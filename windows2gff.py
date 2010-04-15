@@ -1,0 +1,116 @@
+################################################################################
+#
+#   $Id: windows2gff.py 2861 2010-02-23 17:36:32Z andreas $
+#
+#   Copyright (C) 2007 Andreas Heger
+#
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU General Public License
+#   as published by the Free Software Foundation; either version 2
+#   of the License, or (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#################################################################################
+import sys, string, re, optparse, time, os, shutil, tempfile, math
+
+import Experiment
+import GFF
+import IndexedFasta
+
+USAGE="""python %s [OPTIONS] < stdin > stdout
+
+create genomic windows according to user criteria.
+
+examples:
+
+--fixed-windows=500,250: create windows of size 500 bp in steps of 250 bp.
+
+""" % sys.argv[0]
+
+def getFixedWidthWindows( map_contig2size, options ):
+    """return a list of fixed contig sizes."""
+    
+    assert( options.fixed_width_windows )
+    v = map(int, options.fixed_width_windows.split(","))
+    if len(v) == 2:
+        window_size, window_increment = v
+    elif len(v) == 1:
+        window_size, window_increment = v[0], v[0]
+    else:
+        raise ValueError( "could not parse window size '%s': should be size[,increment]" % options.fixed_width_windows )
+
+    windows = []
+
+    for contig, size in map_contig2size.items():
+        for x in range(0, size, window_increment):
+            if x + window_size > size: continue
+            gff = GFF.Entry()
+            gff.feature = "window"
+            gff.mSoucre = "window"
+            gff.contig = contig
+            gff.start = x
+            gff.end = min(size, x + window_size)
+            windows.append( gff )
+
+    return windows
+
+if __name__ == "__main__":
+
+    parser = optparse.OptionParser( version = "%prog version: $Id: windows2gff.py 2861 2010-02-23 17:36:32Z andreas $", usage = USAGE)
+
+    parser.add_option( "-g", "--genome-file", dest="genome_file", type="string",
+                       help="filename with genome (indexed)."  )
+
+    parser.add_option( "-e", "--gff-file", dest="gff_file", type="string",
+                       help="gff file to use."  )
+
+    parser.add_option( "-f", "--fixed-width-windows=", dest="fixed_width_windows", type="string",
+                       help="fixed width windows. Supply the window size as a parameter. Optionally supply an offset." )
+                      
+
+    parser.set_defaults(
+        genome_file = None,
+        fixed_windows = None,
+        features = [],
+        )
+
+    (options, args) = Experiment.Start( parser )
+
+    map_contig2size = {}
+
+    if options.genome_file:
+        fasta = IndexedFasta.IndexedFasta( options.genome_file )
+        map_contig2size = fasta.getContigSizes()
+    else:
+        fasta = None
+
+    if options.gff_file:
+        infile = open( options.gff_file, "r" )
+        gff = GFF.readFromFile( infile )   
+        infile.close()
+        for g in gff:
+            try:
+                map_contig2size[g.mName] = max( map_contig2size[g.mName], g.end )
+            except ValueError:
+                map_contig2size[g.mName] = g.end 
+            
+    else:
+        gff = None
+
+    if options.fixed_width_windows:
+        windows = getFixedWidthWindows( map_contig2size, options )
+        
+    for g in windows:
+        options.stdout.write( str(g) + "\n" )
+
+    if options.loglevel >= 1:
+        options.stdout.write( "# noutput=%i\n" % (len(windows) ) )
+
+    Experiment.Stop()

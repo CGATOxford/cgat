@@ -1,0 +1,21 @@
+#!/bin/bash
+##
+## hsort nlines [unix sort options] < stdin
+## 
+## This script allows you to apply unix sort to a file without 
+## disturbing a header or comments at the beginning of a file.
+##
+## The first nlines lines are ignored and the input has to be
+## piped in.
+
+hlines=$1;
+shift;
+
+awk  -v hlines=${hlines} "BEGIN {take=-hlines; cmd=sprintf(\"sort $* \"); } \
+     take >= 0 { print | cmd; next } \
+     /^#/ { print; next; } \
+     { print; ++take; next } 
+     END{ close(cmd); }"
+    
+
+

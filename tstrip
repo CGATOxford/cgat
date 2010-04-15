@@ -1,0 +1,10 @@
+#!/bin/bash
+
+## Remove header and comments from a tab-separated table
+awk  "BEGIN {take=0; } \
+     /^#/ { next; } \
+     { if(!take) {take=1; next;} print; }"
+
+    
+
+
