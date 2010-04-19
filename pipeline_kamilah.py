@@ -76,6 +76,123 @@ PARAMS.update( {
     "merged": "merged.gtf.gz",
     "transcripts": "transcripts.gtf.gz" } )
 
+###################################################################
+###################################################################
+@files( [ (x, "%sLinc.import" % x[:-len(".gtf.gz")]) for x in EXPERIMENTAL_TRACKS] )
+def importLincRNA( infile, outfile ):
+    '''build a linc RNA set.
+
+        * no coding potential
+        * unknown and intergenic transcripts
+        * no overlap with ``linc_exclude`` (usually: human refseq)
+        * at least ``linc_min_length`` bp in length
+        * at least ``linc_min_reads`` reads in transcript
+
+    '''
+
+    table = outfile[:-len(".import")]
+    track = table[:-len("Linc")]
+
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+
+    Database.executewait( dbhandle, '''DROP TABLE IF EXISTS %(table)s''' % locals())
+    Database.executewait( dbhandle, '''CREATE TABLE %(table)s (gene_id TEXT)''' % locals())
+    Database.executewait( dbhandle, '''CREATE INDEX %(table)s_index1 ON %(table)s (gene_id)''' % locals())
+
+    joins, wheres = [], ["1"]
+
+    if PARAMS["linc_min_reads"] > 0:
+        joins.append( ", %(track)s_coverage as cov" % locals() )
+        wheres.append( "cov.gene_id = m.gene_id2 AND cov.nmatches >= %(i)" % PARAMS["linc_min_reads"] )
+
+    if PARAMS["linc_exclude"] > 0:
+        joins.append( "LEFT JOIN %s_vs_%s_ovl as ovl on ovl.gene_id2 = a.gene_id" %\
+                      (PARAMS["linc_exclude"], track ) )
+        wheres.append( "ovl.gene_id1 IS NULL" )
+
+    wheres = " AND ".join( wheres )
+    joins = " ".join( joins )
+
+    statement = '''INSERT INTO %(table)s 
+                   SELECT DISTINCT(a.gene_id) FROM 
+                          %(track)s_annotation as a
+                          %(joins)s
+                          LEFT JOIN %(track)s_coding AS c on c.gene_id = a.gene_id 
+                    WHERE is_unknown 
+                          AND is_intergenic 
+                          AND exons_sum >= %(linc_min_length)i
+                          AND (c.is_coding IS NULL or not c.is_coding) 
+                          AND %(wheres)s
+                     ''' % dict( PARAMS.items() + locals().items() )
+
+    E.debug( "statement to build lincRNA: %s" % statement)
+
+    Database.executewait( dbhandle, statement % locals())
+
+    dbhandle.commit()
+    
+    cc = dbhandle.cursor()
+    result = cc.execute("SELECT COUNT(*) FROM %(table)s" % locals() ).fetchall()[0][0]
+    E.info( "build lincRNA set for %s: %i entries" % ( track, result ))
+
+    outgtf = "%s.gtf.gz" % table
+
+    E.info( "creating gtf file `%s`" % outgtf )
+    # output gtf file
+    statement = '''%(cmd-sql)s %(database)s "SELECT g.* FROM %(track)s_gtf as g, %(table)s AS t
+                          WHERE t.gene_id = g.gene_id" 
+                | python %(scriptsdir)s/gtf2tab.py --invert --log=%(outfile)s
+                | gzip
+                > %(outgtf)s'''
+    
+    P.run()
+
+###################################################################
+###################################################################
+@files( PARAMS["ancestral_repeats_filename"], "repeats.gtf.gz" )
+def buildRepeatTrack( infile, outfile ):
+    '''build a repeat track as negative control.'''
+
+    nrepeats = 0
+    for gff in GFF.iterator( gzip.open(infile, "r" ) ): nrepeats+=1
+    sample = set( random.sample( xrange( nrepeats), PARAMS["ancestral_repeats_samplesize"]) )
+
+    outf = gzip.open( outfile, "w" )
+    gtf = GTF.Entry()
+    for x,gff in enumerate( GFF.iterator( gzip.open(infile, "r" ) ) ):
+        if not x in sample: continue
+        gtf.fromGFF( gff, "%08i" % x, "%08i" % x )
+        outf.write( "%s\n" % str(gtf) )
+    outf.close()
+
+    E.debug( "created sample of %i repeats out of %i in %s" % (len(sample), nrepeats, outfile))
+
+###################################################################
+###################################################################
+@files( PARAMS["ancestral_repeats_filename"], 
+        "introns.gtf.gz" )
+def buildIntronTrack( infile, outfile ):
+    '''build an intron track as negative control.
+
+    The ``intron`` track is build from ancestral repeats. Here,
+    repeats are taken as exons, and artifical genes are constructed
+    from 2 to 5 ancestral repeats at least 100 bases apart, but
+    within 10 kb of each other.
+
+    '''
+    to_cluster = True
+
+    statement = '''gunzip 
+        < %(infile)s 
+	| %(scriptsdir)s/gff_sort pos
+	| python %(scriptsdir)s/gff2gff.py --join=100,10000,2,5 --log=%(outfile)s.log 
+	| python %(scriptsdir)s/gtf2gtf.py 
+                --filter=gene --sample-size=%(ancestral_repeats_samplesize)i --log=%(outfile)s.log 
+        | gzip
+        > %(outfile)s
+    '''
+    P.run()
+
 ############################################################
 ############################################################
 ############################################################
@@ -143,63 +260,17 @@ def importRepeatInformation( infiles, outfile ):
 
 ###################################################################
 ###################################################################
-@files( PARAMS["ancestral_repeats_filename"], "repeats.gtf.gz" )
-def buildRepeatTrack( infile, outfile ):
-    '''build a repeat track as negative control.'''
-
-    nrepeats = 0
-    for gff in GFF.iterator( gzip.open(infile, "r" ) ): nrepeats+=1
-    sample = set( random.sample( xrange( nrepeats), PARAMS["ancestral_repeats_samplesize"]) )
-
-    outf = gzip.open( outfile, "w" )
-    gtf = GTF.Entry()
-    for x,gff in enumerate( GFF.iterator( gzip.open(infile, "r" ) ) ):
-        if not x in sample: continue
-        gtf.fromGFF( gff, "%08i" % x, "%08i" % x )
-        outf.write( "%s\n" % str(gtf) )
-    outf.close()
-
-    E.debug( "created sample of %i repeats out of %i in %s" % (len(sample), nrepeats, outfile))
-
-###################################################################
-###################################################################
-@files( PARAMS["ancestral_repeats_filename"], 
-        "introns.gtf.gz" )
-def buildIntronTrack( infile, outfile ):
-    '''build an intron track as negative control.
-
-    The ``intron`` track is build from ancestral repeats. Here,
-    repeats are taken as exons, and artifical genes are constructed
-    from 2 to 5 ancestral repeats at least 100 bases apart, but
-    within 10 kb of each other.
-
-    '''
-    to_cluster = True
-
-    statement = '''gunzip 
-        < %(infile)s 
-	| %(scriptsdir)s/gff_sort pos
-	| python %(scriptsdir)s/gff2gff.py --join=100,10000,2,5 --log=%(outfile)s.log 
-	| python %(scriptsdir)s/gtf2gtf.py 
-                --filter=gene --sample-size=%(ancestral_repeats_samplesize)i --log=%(outfile)s.log 
-        | gzip
-        > %(outfile)s
-    '''
-    P.run()
-
-###################################################################
-###################################################################
 @merge( EXPERIMENTAL_TRACKS, PARAMS["merged"] )
 def buildMergedTrack( infiles, outfile ):
 
     infiles = " ".join(infiles)
     statement = '''
 	cat %(infiles)s 
-        | python %(scriptsdir)s/gff2blat.py 
+        | python %(scriptsdir)s/gff2psl.py 
                  --log=%(outfile)s.log 
                  --is-gtf 
                  --allow-duplicates 
-	| python %(scriptsdir)s/blat2blat.py 
+	| python %(scriptsdir)s/psl2psl.py 
                  --log=%(outfile)s.log 
                  --method=rename-query 
                  --unique 
@@ -213,7 +284,7 @@ def buildMergedTrack( infiles, outfile ):
 		--log=%(outfile)s.log 
 		--subdirs 
 		--max-files=60 
-	"python %(scriptsdir)s/blat2assembly.py 
+	"python %(scriptsdir)s/psl2assembly.py 
 		--method=locus 
 		--threshold-merge-distance=0 
 		--threshold-merge-overlap=1 
@@ -226,7 +297,7 @@ def buildMergedTrack( infiles, outfile ):
     P.run()
 
     statement = '''
-	python %(scriptsdir)s/blat2gff.py 
+	python %(scriptsdir)s/psl2gff.py 
 		--log=%(outfile)s.log 
 		--as-gtf
 	< %(outfile)s.locus.psl 
@@ -379,7 +450,7 @@ def buildFilteredAlignment( infiles, outfile ):
     to_cluster = True
     statement = '''gunzip 
 	< %(infile_alignment)s 
-	| python %(scriptsdir)s/blat2blat.py 
+	| python %(scriptsdir)s/psl2psl.py 
 		--method=filter-remove 
 		--filter-query=<(gunzip < %(infile_genes)s)
 		--log=%(outfile)s.log 
@@ -661,7 +732,7 @@ def importRepeats( infile, outfile ):
 @files( [ ( 
             (x, "%s" % y),
             "%s_vs_%s.diff" % (x[:-len(".gtf.gz")], y[:-len(".gtf.gz")])) \
-              for x,y in itertools.product( (PARAMS["genes"], PARAMS["merged"]), TRACKS) ] )
+              for x,y in itertools.product( OVERLAP_TRACKS, TRACKS) ] )
 def makeDifference( infiles, outfile ):
     '''compute the difference between two sets
 
@@ -1040,20 +1111,20 @@ def makeRates( infiles, outfile ):
     statement = '''gunzip 
         < %(infile_gtf)s 
 	| %(scriptsdir)s/gff_sort gene 
-	| python %(scriptsdir)s/gff2blat.py 
+	| python %(scriptsdir)s/gff2psl.py 
                --is-gtf 
                --genome-file=%(genome)s 
                --log=%(outfile)s.log 
 	| pslMap stdin <(gunzip < %(alignment)s ) stdout 
 	| sort -k10,10 -k14,14 -k9,9 -k12,12n 
-	| python %(scriptsdir)s/blat2blat.py 
+	| python %(scriptsdir)s/psl2psl.py 
                 --method=merge 
                 --log=%(outfile)s.log 
-	| python %(scriptsdir)s/blat2blat.py 
+	| python %(scriptsdir)s/psl2psl.py 
                 --method=select-query 
                 --select=most-nmatches 
                 --log=%(outfile)s.log 
-	| python %(scriptsdir)s/blat2blat.py 
+	| python %(scriptsdir)s/psl2psl.py 
                 --method=add-sequence 
                 --filename-target=%(rates_genome)s
                 --filename-queries=%(infile_sequences)s
@@ -1238,7 +1309,8 @@ def makeAnnotatorArchitecture( TRACKS ):
 ############################################################
 @follows( buildAnnotatorGeneSetAnnotations )
 @files( [((track, "%s.annotations" % slice), "%s.%s.sets.annotator" % (track[:-len(".gtf.gz")],slice), slice) \
-             for track,slice in list( itertools.product( TRACKS, ("known", "unknown", "all", "intronic", "intergenic" ))) ] )
+             for track, slice in list( itertools.product( EXPERIMENTAL_TRACKS + DERIVED_TRACKS, 
+                                                          ("known", "unknown", "all", "intronic", "intergenic" ))) ] )
 def makeAnnotatorGeneSets( infiles, outfile, slice ):
     '''compute annotator overlap between sets.
     '''
@@ -1246,6 +1318,7 @@ def makeAnnotatorGeneSets( infiles, outfile, slice ):
     workspaces = ("genomic", "alignable", slice )
 
     infile, infile_annotations = infiles
+
     track = infile[:-len(".gtf.gz")]
     tmpdir = tempfile.mkdtemp( dir = os.getcwd() )
 
@@ -1258,6 +1331,7 @@ def makeAnnotatorGeneSets( infiles, outfile, slice ):
         E.warn( "no segments for %s - no annotator results" % outfile )
         shutil.rmtree( tmpdir )
         P.touch( outfile )
+        return
 
     workspaces, synonyms = PAnnotator.buildAnnotatorWorkSpace( tmpdir, 
                                                                outfile,
