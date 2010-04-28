@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: select_transcripts.py 2263 2008-11-17 16:36:29Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,6 +20,42 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+select_transcripts.py - 
+======================================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+.. todo::
+   
+   describe purpose of the script.
+
+Usage
+-----
+
+Example::
+
+   python select_transcripts.py --help
+
+Type::
+
+   python select_transcripts.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 import os, sys, string, re, getopt, time, optparse
 
 USAGE="""python %s < predictions > genes
@@ -481,7 +518,7 @@ def EliminateRedundantEntries( rep,
                                                        entry.mPid,
                                                        entry.mQuality )
 
-        mem_seq = pepides[mem_id]
+        mem_seq = peptides[mem_id]
         mem_extended_seq = extended_peptides[mem_id]
 
         if options.loglevel >= 4:
@@ -500,9 +537,9 @@ def EliminateRedundantEntries( rep,
         else:
             if mem_quality != this_quality or \
                    mem_quality in options.quality_exclude_same:
-                
-                seq1 = alignlib.makeSequence( rep_seq )
-                seq2 = alignlib.makeSequence( mem_seq )            
+          
+                seq1 = alignlib.makeSequence( str(rep_seq) )
+                seq2 = alignlib.makeSequence( str(mem_seq) )            
 
                 alignator.align( result, seq1, seq2 )
 
@@ -679,7 +716,7 @@ def PrintMembers( rep_id, outfile, eliminated, eliminated_by_method ):
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: select_transcripts.py 2263 2008-11-17 16:36:29Z andreas $", usage = USAGE )
+    parser = optparse.OptionParser( version = "%prog version: $Id: select_transcripts.py 2263 2008-11-17 16:36:29Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option( "-o", "--overlap", dest="overlap_residues", type="int",
                        help="overlap residues.")
