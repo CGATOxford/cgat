@@ -32,14 +32,24 @@ bam2wiggle.py - convert bam to wig/bigwig file
 Purpose
 -------
 
-convert a bam file to a bigwig file.   
+convert a bam file to a bigwig or bedgraph file.   
+
+The script requires the executables :file:`wigToBigWig` and 
+:file:`bedToBigBed` to be in the user's PATH.
 
 Usage
 -----
 
 Type::
 
-   python <script_name>.py --help
+   python bam2wiggle.py --output-format=bigwig in.bam out.bigwig
+
+to convert the :term:`bam` file file:`in.bam` to :term:`bigwig` format 
+and save the result in :term:`out.bigwig`.
+
+Type::
+
+   python bam2wiggle.py --help
 
 for command line help.
 
@@ -53,22 +63,15 @@ import os, sys, re, optparse, itertools, tempfile, shutil, subprocess
 import Experiment as E
 import pysam
 import IOTools
-import IndexedFasta
 
 def main( argv = None ):
     """script main.
-
-    parses command line options in sys.argv, unless *argv* is given.
     """
 
     if not argv: argv = sys.argv
 
     # setup command line parser
     parser = optparse.OptionParser( version = "%prog version: $Id: bam2wiggle.py 2832 2009-11-24 16:11:06Z andreas $", usage = globals()["__doc__"] )
-
-
-    parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
-                      help="filename with genome [default=%default]."  )
 
     parser.add_option("-o", "--output-format", dest="output_format", type="choice",
                       choices=("bedgraph", "wiggle", "bigbed", "bigwig"),
@@ -79,7 +82,6 @@ def main( argv = None ):
 
     parser.set_defaults(
         samfile = None,
-        genome_file = None,
         output_format = "wiggle",
         output_filename = None,
         )
@@ -87,11 +89,14 @@ def main( argv = None ):
     ## add common options (-h/--help, ...) and parse command line 
     (options, args) = E.Start( parser, argv = argv )
 
-    if len(args) == 1:
+    if len(args) >= 1:
         options.samfile = args[0]
 
     if not options.samfile:
         raise ValueError("please provide a bam file")
+
+    if len(args) == 2:
+        options.output_filename = args[1]
 
     samfile = pysam.Samfile( options.samfile, "rb" )
 
@@ -99,12 +104,6 @@ def main( argv = None ):
 
     if options.output_format in ("bigwig", "bigbed"):
         
-        if not options.genome_file:
-            raise ValueError("please supply genome file for bigwig/bigbed computation.")
-
-        #fasta = IndexedFasta.IndexedFasta(options.genome_file )
-        #contig_sizes = fasta.getContigSizes( with_synonyms = False )
-
         if not options.output_filename:
             raise ValueError("please output file for bigwig/bigbed computation.")
 
@@ -138,10 +137,6 @@ def main( argv = None ):
     else:
         outfile = options.stdout
         E.info( "starting output to stdout" )        
-
-
-
-    
 
     if options.output_format in ("wiggle", "bigwig"):
         # wiggle is one-based, so add 1
