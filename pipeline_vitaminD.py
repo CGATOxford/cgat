@@ -6076,7 +6076,7 @@ def full():
     pass
 
 if __name__== "__main__":
-    P.checkFiles( ("genome.fasta", "genome.idx" ) )
-    P.checkExecutables( ("liftOver",) )
+    #P.checkFiles( ("genome.fasta", "genome.idx" ) )
+    #P.checkExecutables( ("liftOver",) )
     sys.exit( P.main(sys.argv) )
 

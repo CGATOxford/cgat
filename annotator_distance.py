@@ -389,7 +389,7 @@ class CountingResults(object):
 
         for label in self.mLabels:
             pvalue = self.mStats[label].pvalue
-            a = scipy.stats.percentileofscore( sim_pvalues, pvalue ) / 100.0
+            a = scipy.stats.percentileofscore( sim_palues, pvalue ) / 100.0
             b = scipy.stats.percentileofscore( obs_pvalues, pvalue ) / 100.0 * len(obs_pvalues ) 
             if b >= 0:
                 qvalue = min( 1.0, a / b )

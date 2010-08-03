@@ -1,0 +1,417 @@
+################################################################################
+#   Gene prediction pipeline 
+#
+#   $Id: Makfefile.orthology_step4 227 2005-11-09 09:56:33Z andreas $
+#
+#   Copyright (C) 2005 Andreas Heger
+#
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU General Public License
+#   as published by the Free Software Foundation; either version 2
+#   of the License, or (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#################################################################################
+
+################################################
+## Step1: pairwise orthology assignments
+STEP1_TARGETS=$(wildcard *-*)
+
+step1: step1.prepare step1.run step1.finish 
+	touch $@
+
+step1.run: step1.prepare
+	$(CMD_LOG) "started $@"
+	$(MAKE) -C step1.dir -k -j $(PARAM_STEP1_NUMJOBS) step1-hook
+	touch $@
+	$(CMD_LOG) "finished $@"
+
+step1-hook: $(STEP1_TARGETS)
+
+## run whole thing on cluster, minimal parallelization of subjob
+$(STEP1_TARGETS):
+	$(CMD_REMOTE_SUBMIT) $(MAKE) -C $@ all CMD_REMOTE_SUBMIT= PARAM_STEP2_NUMJOBS=1 < /dev/null
+
+.PHONY: step1-hook $(STEP1_TARGETS)
+
+################################################
+## create subdirectories for building pairwise orthology sets
+step1.prepare: $(PARAM_SRC_INPUT)
+	$(CMD_LOG) "started $@"
+	$(MAKE) step1.dir 
+	genomes=( $(PARAM_GENOMES) ); \
+	for (( x = 0; x < $(PARAM_NUM_GENOMES) - 1; ++x )); do \
+		for (( y = $$x + 1; y < $(PARAM_NUM_GENOMES); ++y )); do \
+			target_dir=step1.dir/$${genomes[$$x]}-$${genomes[$$y]}; \
+			echo "setting up $${target_dir}" $(TOLOG); \
+			cd $(DIR_SCRIPTS_GENEPREDICTION); \
+			./install_orthology.bash $${genomes[$$x]} $${genomes[$$y]} $(CURDIR)/$${target_dir}; \
+			cd $(CURDIR); \
+			awk -v g1=$${genomes[$$x]} -v g2=$${genomes[$$y]} \
+				'!/^#/ { if ($$3 <= $(PARAM_MAX_DISTANCE)) { \
+			           p1=substr($$1,1,index( $$1, "$(PARAM_SEPARATOR)")-1); \
+				   p2=substr($$2,1,index( $$2, "$(PARAM_SEPARATOR)")-1); \
+				   if ( (p1 == g1 && p2 == g2 ) || \
+				        (p1 == g1 && p2 == g1 ) || \
+				        (p1 == g2 && p2 == g1 ) || \
+				        (p1 == g2 && p2 == g2 ) ) { printf("%s\t%s\t%s\n", $$1, $$2, $$3); } } \
+                          }' < $(PARAM_SRC_INPUT) > $${target_dir}/filtered; \
+		done; \
+	done; 
+	perl -p -i -e "s/sameorg.kaks difforg.kaks//" step1.dir/*/Makefile
+	touch $@
+	$(CMD_LOG) "finished $@"
+
+
+################################################
+## Five stage orthology clustering
+## 1. Pairwise orthology assignment
+## 2. Consistency filtering
+## 3. Combining clusters by overlap
+## 4. Combining clusters by reciprocal blast best hits
+## 5. Adding orphans by reciprocal blast best hits
+STEP1_STAGES=orthologs orthologs_consistent orthologs_consistent_genes \
+		orthologs_consistent_genes_orphans
+
+temp=orthologs_consistent_genes_besthits  orthologs_consistent_genes_besthits_orphans
+STEP1_FINAL_STAGE=orthologs_consistent_genes_orphans
+STEP1_STAGES_COMPONENTS=$(STEP1_STAGES:%=%.components) 
+STEP1_STAGES_STATS=$(STEP1_STAGES:%=%.stats) 
+
+STEP1_STAGES_RESULTS=$(STEP1_STAGES_COMPONENTS) $(STEP1_STAGES_STATS) \
+			$(STEP1_STAGES:%=%.orgs_per_cluster) $(STEP1_STAGES:%=%.stats_missed_queries) \
+			$(STEP1_FINAL_STAGE).pairs 
+
+## create links to result file in parent directory.
+step1.finish: step1.run
+	$(CMD_LOG) "started $@"
+	$(MAKE) -C step1.dir step1.finish-hook
+	ln -s step1.dir/$(STEP1_FINAL_STAGE).components.map orthology.components.map
+	ln -s step1.dir/$(STEP1_FINAL_STAGE).components.sizes orthology.components.sizes
+	ln -s step1.dir/$(STEP1_FINAL_STAGE).pairs orthology.pairs
+	touch orthology.components
+	touch $@
+	$(CMD_LOG) "finished $@"
+
+step1.finish-hook: $(STEP1_STAGES_RESULTS)
+
+step1.stats: $(STEP1_STAGES_STATS)
+
+########################################################################
+## a list of all vertices in the input graph and their map to genes
+predictions2genes: $(PARAM_SRC_INPUT)
+	perl $(DIR_SCRIPTS_TOOLS)graph_links2tokens.pl < $(PARAM_SRC_INPUT) |\
+	awk '!/^#/ { split($$1, a, "$(PARAM_SEPARATOR)"); printf("%s\t%s|%s\n", $$1, a[1], a[3]);}' > $@
+
+########################################################################
+## Concatenating links from the pairwise orthology assignments
+## remove links with a score of more than 1000. (5000 is sometimes set).
+## In some cases the weight field is omitted, thus start at either ff=1 or ff=2
+orthologs.links: 
+	@rm -f $@
+	@for pattern in 1_to_1 1_to_m m_to_1 m_to_m; do \
+		$(CMD_MSG2) "adding $$pattern to $@"; \
+		find . -name "orthology_ortho_$${pattern}" -maxdepth 2 -exec grep -v -e ">" -e "^$$" {} \; |\
+		awk -v pattern=$${pattern} \
+		'{ if (match($$1, "^[0-9]") ) { ff=2; if ($$1 > 1000) { next; } } else {ff=1;} \
+			for (x = ff; x < NF ; ++x) { \
+		 		for (y = x + 1; y <= NF; ++y ) { \
+		   		if ( 0 || substr($$x, 1, index( $$x, "_")) != substr( $$y, 1, index($$y, "_"))) { \
+					printf("%s\t%s\t%s\t%6.4f\n", $$x, $$y, pattern, $$1); \
+		   		} } } }' >> $@; \
+	done
+	$(CMD_LOG) "finished building $@"
+	@perl $(DIR_SCRIPTS_TOOLS)graph_howmany.pl < $@ $(TOLOG)
+
+
+########################################################################
+## building components from a graph. Creates a .map and .sizes file
+%.components: %.links
+	ga_components -m $@.map -s $@.sizes $*.links > $@
+	touch $@
+
+#######################################################################
+## building a consistency weighted graph
+orthologs_consistent.links: orthologs.links
+	cut -f 1,2,4 orthologs.links > $@_tmp;
+	ga_graph -e $(PARAM_ORTHOLOGS_MIN_CONSISTENCY) $@_tmp > $@
+	rm -f $@_tmp
+	$(CMD_LOG) "finished building $@"
+	@perl $(DIR_SCRIPTS_TOOLS)graph_howmany.pl < $@ $(TOLOG)
+
+#######################################################################
+##
+## rejoin clusters with overlapping predictions (transcript clusters)
+##
+## 1. Build bi-partite graph of clusters to genes
+## 2. Write links for genes that maps to two clusters (or more).
+##	add self links, so that ga_components prints singletons.
+## 	These links will have at least a weight two after combination,
+## 	because each cluster has at least two members.
+## 3. Sort the results and combine links. Edge weight is number of shared genes. 
+## 4. Weight links by total number of genes in cluster. Take maximum of
+## 	adjacent vertices to set edge weight
+## 5. Filter graph and keep links with at least $(PARAM_ORTHOLOGS_MIN_PERCENT_OVERLAP) 
+##	shared genes.
+## 6. Cluster graph by components and map old clusters to new clusters.
+%_genes.clusters2genes.links: %.components predictions2genes
+	grep -v "#" < $*.components.map |\
+	python $(DIR_SCRIPTS_TOOLS)substitute_tokens.py --apply=predictions2genes --columns=1  |\
+	sort | uniq > $@
+
+%_genes.clusters2sizes: %_genes.clusters2genes.links
+	cut -f 2 $*_genes.clusters2genes.links | sort | uniq -c | awk '{printf("%s\t%s\n", $$2, $$1);}' > $@
+
+%_genes.clusters2clusters.links: %_genes.clusters2genes.links %_genes.clusters2sizes
+	sort $*_genes.clusters2genes.links |\
+	awk 'BEGIN {li=0;lc=0} { \
+		if ($$1 != li) { \
+			for (x in a) { printf("%s\t%s\t1\n",x,x); delete a[x]; for (y in a) { printf("%s\t%s\t1\n",x,y) } }; \
+			li=$$1; lc=0; \
+		} \
+		if (lc!=$$2) { a[$$2] = 1; }; \
+		lc = $$2; \
+		} \
+	     END { for (x in a) { printf("%s\t%s\t1\n",x,x); for (y in a) { if (x < y) { printf("%s\t%s\t1\n",x,y) } } }; } ' |\
+	sort -k1 -k2 |\
+	python $(DIR_SCRIPTS_TOOLS)graph_combine_links_redundant.py |\
+	cut -f 1,2,5 |\
+	python $(DIR_SCRIPTS_TOOLS)graph_reweight_links.py --self-scores=orthologs_consistent_genes.clusters2sizes --method=normalize-max > $@
+
+%_genes.components: %_genes.clusters2clusters.links
+	awk '$$3 >= $(PARAM_ORTHOLOGS_MIN_PERCENT_OVERLAP)' < $*_genes.clusters2clusters.links | grep -v "#" | cut -f 1,2,5 |\
+	ga_components -i -M - > $@_map;
+	python $(DIR_SCRIPTS_TOOLS)substitute_tokens.py --apply=$@_map --columns=2 < $*.components.map > $@.map
+	cut -f2 $@.map | python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py | grep -v "#" > $@.sizes
+	touch $@
+	$(CMD_LOG) "finished building $@"
+
+#######################################################################
+## 
+## rejoin clusters by reciprocal best hit
+## (Predictions are first mapped to clusters. The reciprocity refers to clusters.)
+##
+## 1. Build bi-partite graph of clusters to clusters using besthits graph.
+## 2. Sort the results and combine links. Count the number of links in each direction.
+## 3. Filter graph and keep links with at least $(PARAM_ORTHOLOGS_MIN_BESTHITS) 
+##	in each direction
+## 4. Cluster graph by components and map old clusters to new clusters.
+%_besthits.clusters2clusters.links: %.components
+	python $(DIR_SCRIPTS_TOOLS)substitute_tokens.py --apply=$*.components.map --columns=1,2 < $(PARAM_SRC_BESTHITS) |\
+	awk '{l=match($$1,"^[0-9]"); r=match($$2,"^[0-9]"); \
+		if (!l || !r || ($$1 == $$2) ) { next; }; \
+		if ($$1 < $$2) { printf("%s\t%s\t+\n", $$1, $$2); } else { printf("%s\t%s\t-\n", $$2, $$1);}}' |\
+	sort -k1,1n -k2,2n -k3,3n -k4,4n |\
+	awk 'BEGIN {la=0;lc=0;np=0;nn=0;} \
+		{ if (la != $$1 || lc != $$2) { printf("%s\t%s\t%i\t%i\n",la,lc,np,nn); la=$$1;lc=$$2;np=0;nn=0; } \
+		  if ($$3 == "+") { np++; } else { nn++;} } \
+	     END { printf("%s\t%s\t%i\t%i\n",la,lc,np,nn); }' \
+	> $@
+	awk '!/^#/ { printf("%s\t%s\t%i\t%i\n", $$1, $$1, $(PARAM_ORTHOLOGS_MIN_BESTHITS), $(PARAM_ORTHOLOGS_MIN_BESTHITS)); }' \
+	< $*.components.sizes >> $@
+
+%_besthits.components: %_besthits.clusters2clusters.links
+	awk '$$3 >= $(PARAM_ORTHOLOGS_MIN_BESTHITS) && $$4 >= $(PARAM_ORTHOLOGS_MIN_BESTHITS)' < $*_besthits.clusters2clusters.links | \
+	grep -v "#" | cut -f 1,2,5 |\
+	ga_components -i -M - > $@_map
+	python $(DIR_SCRIPTS_TOOLS)substitute_tokens.py --apply=$@_map --columns=2 < $*.components.map > $@.map
+	cut -f2 $@.map | python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py | grep -v "#" > $@.sizes
+	touch $@
+	$(CMD_LOG) "finished building $@"
+
+#######################################################################
+## 
+## Add orphans to graph by reciprocal besthit criteria. Orphans are added
+## to existing clusters, if the members of the cluster are reciprocal best 
+## hits to/from the orphan. This is implemented as a filtering step.
+##
+## 1. Map vertices in besthit graph to clusters. Discard links between two clusters.
+##	This graph will contain only edges between orphans and clusters.
+## 2. Mark direction of edges in graph
+# %_orphans.orphans2clusters: %.components
+# 	python $(DIR_SCRIPTS_TOOLS)substitute_tokens.py --apply=$*.components.map --columns=1,2 < $(PARAM_SRC_BESTHITS) |\
+# 	awk '{l=match($$1,"^[0-9]"); r=match($$2,"^[0-9]"); \
+# 		if ( (l && r) || (!l && !r) ) { next; }; \
+# 		if (l) { printf("%s\t%s\t+\n", $$2, $$1); } else { printf("%s\t%s\t-\n", $$1, $$2);}}' |\
+# 	sort |\
+# 	awk 'BEGIN {la=0;lc=0;np=0;nn=0;} \
+# 		{ if (la != $$1 || lc != $$2) { printf("%s\t%s\t%i\t%i\n",la,lc,np,nn); la=$$1;lc=$$2;np=0;nn=0; } \
+# 		  if ($$3 == "+") { np++; } else { nn++;} } \
+# 	     END { printf("%s\t%s\t%i\t%i\n",la,lc,np,nn); }' \
+# 	> $@
+
+# ## take maximum match (only one direction) for deciding which match to take
+# ## for dubious cases.
+# %_orphans.components: %_orphans.orphans2clusters %.components
+# 	cat $*.components.map > $@.map
+# 	awk '$$3 >= $(PARAM_ORTHOLOGS_MIN_ORPHANS) && $$4 >= $(PARAM_ORTHOLOGS_MIN_ORPHANS)' < $*_orphans.orphans2clusters | \
+# 	sort -k1,1 -k2,2 -k3,3nr |\
+# 	awk 'BEGIN { l=0; } { if ($$1==l) { next; } printf("%s\t%s\n", $$1, $$2); l=$$1; }' >> $@.map
+# 	cut -f2 $@.map | python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py | grep -v "#" > $@.sizes
+# 	touch $@
+# 	$(CMD_LOG) "finished building $@"
+define run_add_orphans
+	$(CMD_LOG) "started $@";\
+	cp $*.components.map $@_0.map;\
+	for (( x = 0, y = 1; x < $(PARAM_ORTHOLOGS_ORPHANS_MAX_ITERATIONS); ++x, ++y )); do \
+		lastcount=`cat $@_$$x.map | wc -l`; \
+		$(CMD_LOG2) "# iteration $$x: $$lastcount entries"; \
+		cp $@_$$x.map $@_$$y.map; \
+		awk '!/^#/ { cova = ($$5-$$4+1)/$$12; covb = ($$8-$$7+1)/$$13; \
+		if (cova > covb) { maxcov = cova; mincov = covb; } \
+		else { maxcov = covb; mincov = cova; } \
+		if ( (mincov >= $(PARAM_ORTHOLOGS_MIN_MIN_COVERAGE)) && (maxcov>=$(PARAM_ORTHOLOGS_MIN_MAX_COVERAGE)) ) \
+		{ print; } }' < $${src_best_hits} |\
+		python $(DIR_SCRIPTS_TOOLS)substitute_tokens.py --apply=$@_$$x.map --columns=1,2  |\
+		awk '{l=match($$1,"^[0-9]"); r=match($$2,"^[0-9]"); \
+			if ( (l && r) || (!l && !r) ) { next; }; \
+			if (l) { printf("%s\t%s\t+\n", $$2, $$1); } else { printf("%s\t%s\t-\n", $$1, $$2);}}'|\
+		sort |\
+		awk 'BEGIN {la=0;lc=0;np=0;nn=0;} \
+			{ if (la != $$1 || lc != $$2) { printf("%s\t%s\t%i\t%i\n",la,lc,np,nn); la=$$1;lc=$$2;np=0;nn=0; } \
+		  	if ($$3 == "+") { np++; } else { nn++;} } \
+	     	END { printf("%s\t%s\t%i\t%i\n",la,lc,np,nn); }' |\
+		awk '$$3 >= $(PARAM_ORTHOLOGS_MIN_ORPHANS) && $$4 >= $(PARAM_ORTHOLOGS_MIN_ORPHANS)' |\
+		sort -k1,1 -k3,3nr |\
+		awk 'BEGIN { l=0; } { if ($$1==l) { next; } printf("%s\t%s\n", $$1, $$2); l=$$1; }' >> $@_$$y.map; \
+		thiscount=`cat $@_$$y.map | wc -l`; \
+		if [[ $$thiscount == $$lastcount ]]; then \
+			$(CMD_LOG2) "# finishing at iteration $$y because no improvement: $$thiscount entries"; \
+			break; \
+		fi; \
+	done; \
+	mv $@_$$y.map $@.map
+	cut -f2 $@.map | python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py | grep -v "#" > $@.sizes
+	touch $@
+	$(CMD_LOG) "finished $@"
+endef
+
+%_orphevalue.components: %.components
+	src_best_hits=$(PARAM_SRC_BESTHITS_EVALUE); $(run_add_orphans)
+
+%_orphpid.components: %.components
+	src_best_hits=$(PARAM_SRC_BESTHITS_PID); $(run_add_orphans)
+
+%_orphans.components: %.components
+	$(CMD_LOG) "started $@"
+	cp $*.components.map $@_0.map
+	for (( x = 0, y = 1; x < $(PARAM_ORTHOLOGS_ORPHANS_MAX_ITERATIONS); ++x, ++y )); do \
+		lastcount=`cat $@_$$x.map | wc -l`; \
+		$(CMD_LOG2) "# iteration $$x: $$lastcount entries"; \
+		cp $@_$$x.map $@_$$y.map; \
+		awk '!/^#/  { cova = ($$5-$$4+1)/$$12; covb = ($$8-$$7+1)/$$13; \
+		if (cova > covb) { maxcov = cova; mincov = covb; } \
+		else { maxcov = covb; mincov = cova; } \
+		if ( (mincov >= $(PARAM_ORTHOLOGS_MIN_MIN_COVERAGE)) && (maxcov>=$(PARAM_ORTHOLOGS_MIN_MAX_COVERAGE)) ) \
+		{ print; } }' < $(PARAM_SRC_BESTHITS) |\
+		python $(DIR_SCRIPTS_TOOLS)substitute_tokens.py --apply=$@_$$x.map --columns=1,2  |\
+		awk '{l=match($$1,"^[0-9]"); r=match($$2,"^[0-9]"); \
+			if ( (l && r) || (!l && !r) ) { next; }; \
+			if (l) { printf("%s\t%s\t+\n", $$2, $$1); } else { printf("%s\t%s\t-\n", $$1, $$2);}}'|\
+		sort |\
+		awk 'BEGIN {la=0;lc=0;np=0;nn=0;} \
+			{ if (la != $$1 || lc != $$2) { printf("%s\t%s\t%i\t%i\n",la,lc,np,nn); la=$$1;lc=$$2;np=0;nn=0; } \
+		  	if ($$3 == "+") { np++; } else { nn++;} } \
+	     	END { printf("%s\t%s\t%i\t%i\n",la,lc,np,nn); }' |\
+		awk '$$3 >= $(PARAM_ORTHOLOGS_MIN_ORPHANS) && $$4 >= $(PARAM_ORTHOLOGS_MIN_ORPHANS)' |\
+		sort -k1,1 -k3,3nr |\
+		awk 'BEGIN { l=0; } { if ($$1==l) { next; } printf("%s\t%s\n", $$1, $$2); l=$$1; }' >> $@_$$y.map; \
+		thiscount=`cat $@_$$y.map | wc -l`; \
+		if [[ $$thiscount == $$lastcount ]]; then \
+			$(CMD_LOG2) "# finishing at iteration $$y because no improvement: $$thiscount entries"; \
+			break; \
+		fi; \
+	done; \
+	mv $@_$$y.map $@.map
+	cut -f2 $@.map | python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py | grep -v "#" > $@.sizes
+	touch $@
+	$(CMD_LOG) "finished $@"
+
+##########################################################################
+##########################################################################
+## calculation of statistics
+%.orgs_per_cluster: %.components
+	grep -v "#" $*.components.map |\
+	sort -k 2,2n |\
+	python $(DIR_SCRIPTS_GENEPREDICTION)count_orgs.py \
+	--patterns=$*.patterns --format=map > $@
+
+## check: CG predictions should be in the same cluster as their query.
+## build list of CG predictions plus queries.
+%.stats_missed_queries: %.components best_predictions2queries
+	@rm -f $@_tmp2
+	@grep "pdmel_vs_dmel" $*.components.map  | perl -p -e "s/\|/\t/g" | cut -f 1,2,5 | perl -p -e "s/\t/|/" > $@_tmp2
+	@python $(DIR_SCRIPTS_TOOLS)substitute_tokens.py --columns=1 --apply=$*.components.map --echo < best_predictions2queries |\
+	python $(DIR_SCRIPTS_TOOLS)substitute_tokens.py --columns=2 --apply=$@_tmp2 --echo |\
+	awk '$$1 ~ /^[0-9]/ && $$2 ~ /^[0-9]/' > $@ 
+	rm -f $@_tmp2
+
+%.stats_classes: %.components
+	grep -v "#" $*.components.map | cut -f 1 |\
+	awk 'BEGIN {FS="$(PARAM_SEPARATOR)"; split("$(PARAM_GENOMES)",aa," "); for(x in aa){orgs[aa[x]]=1;} } \
+		{ if ($$1 in orgs) { a[$$1]+=1; b[$$4]+=1;} } \
+	     END { \
+		printf("taxon"); for (x in a) { printf("\t%s",x) } printf("\ncounts"); for (x in a) { printf("\t%i",a[x]) } printf("\n"); \
+		printf("class"); for (x in b) { printf("\t%s",x) } printf("\ncounts"); for (x in b) { printf("\t%i",b[x]) } printf("\n"); \
+		}' $(TOLOG)
+
+%.stats: %.orgs_per_cluster %.components %.stats_missed_queries
+	$(CMD_LOG) "calculating statistics for $*"
+	$(LOG_HR1)
+	@echo -e "# ten largest clusters\nsize\tclusters" $(TOLOG)
+	@cut -f 2 $*.components.sizes | python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py | grep -v "#" | tail -n 10 $(TOLOG)
+	$(LOG_HR2)
+	@echo -e "# summary statistics of clusters\ncatgory\tvalue" $(TOLOG)
+	@cut -f 2 $*.components.sizes | python $(DIR_SCRIPTS_TOOLS)data2stats.py | grep -v "#" $(TOLOG)
+	$(LOG_HR2)
+	@echo -e "# predictions in relation to query\nclass\ttotal\tsame\tdiff" $(TOLOG)
+	@echo -e "all\t`cat $*.stats_missed_queries | wc -l`\t`awk '$$1 == $$2' $*.stats_missed_queries | wc -l`\t`awk '$$1 != $$2' $*.stats_missed_queries | wc -l`" $(TOLOG)
+	@echo -e "CG\t`awk '$$3 ~ /CG/' $*.stats_missed_queries | wc -l`\t`awk '$$3 ~ /CG/ && $$1 == $$2' $*.stats_missed_queries | wc -l`\t`awk '$$3 ~ /CG/ && $$1 != $$2' $*.stats_missed_queries | wc -l`" $(TOLOG)
+	@echo -e "SG\t`awk '$$3 ~ /SG/' $*.stats_missed_queries | wc -l`\t`awk '$$3 ~ /SG/ && $$1 == $$2' $*.stats_missed_queries | wc -l`\t`awk '$$3 ~ /SG/ && $$1 != $$2' $*.stats_missed_queries | wc -l`" $(TOLOG)
+	@echo -e "PG\t`awk '$$3 ~ /PG/' $*.stats_missed_queries | wc -l`\t`awk '$$3 ~ /PG/ && $$1 == $$2' $*.stats_missed_queries | wc -l`\t`awk '$$3 ~ /PG/ && $$1 != $$2' $*.stats_missed_queries | wc -l`" $(TOLOG)
+	@echo -e "RG\t`awk '$$3 ~ /RG/' $*.stats_missed_queries | wc -l`\t`awk '$$3 ~ /RG/ && $$1 == $$2' $*.stats_missed_queries | wc -l`\t`awk '$$3 ~ /RG/ && $$1 != $$2' $*.stats_missed_queries | wc -l`" $(TOLOG)
+	@echo -e "UG\t`awk '$$3 ~ /UG/' $*.stats_missed_queries | wc -l`\t`awk '$$3 ~ /UG/ && $$1 == $$2' $*.stats_missed_queries | wc -l`\t`awk '$$3 ~ /UG/ && $$1 != $$2' $*.stats_missed_queries | wc -l`" $(TOLOG)
+	@echo -e "CP\t`awk '$$3 ~ /CP/' $*.stats_missed_queries | wc -l`\t`awk '$$3 ~ /CP/ && $$1 == $$2' $*.stats_missed_queries | wc -l`\t`awk '$$3 ~ /CP/ && $$1 != $$2' $*.stats_missed_queries | wc -l`" $(TOLOG)
+	@echo -e "SP\t`awk '$$3 ~ /SP/' $*.stats_missed_queries | wc -l`\t`awk '$$3 ~ /SP/ && $$1 == $$2' $*.stats_missed_queries | wc -l`\t`awk '$$3 ~ /SP/ && $$1 != $$2' $*.stats_missed_queries | wc -l`" $(TOLOG)
+	@echo -e "PP\t`awk '$$3 ~ /PP/' $*.stats_missed_queries | wc -l`\t`awk '$$3 ~ /PP/ && $$1 == $$2' $*.stats_missed_queries | wc -l`\t`awk '$$3 ~ /PP/ && $$1 != $$2' $*.stats_missed_queries | wc -l`" $(TOLOG)
+	@echo -e "RP\t`awk '$$3 ~ /RP/' $*.stats_missed_queries | wc -l`\t`awk '$$3 ~ /RP/ && $$1 == $$2' $*.stats_missed_queries | wc -l`\t`awk '$$3 ~ /RP/ && $$1 != $$2' $*.stats_missed_queries | wc -l`" $(TOLOG)
+	@echo -e "UP\t`awk '$$3 ~ /UP/' $*.stats_missed_queries | wc -l`\t`awk '$$3 ~ /UP/ && $$1 == $$2' $*.stats_missed_queries | wc -l`\t`awk '$$3 ~ /UP/ && $$1 != $$2' $*.stats_missed_queries | wc -l`" $(TOLOG)
+	@echo -e "SF\t`awk '$$3 ~ /SF/' $*.stats_missed_queries | wc -l`\t`awk '$$3 ~ /SF/ && $$1 == $$2' $*.stats_missed_queries | wc -l`\t`awk '$$3 ~ /SF/ && $$1 != $$2' $*.stats_missed_queries | wc -l`" $(TOLOG)
+	@echo -e "CF\t`awk '$$3 ~ /CF/' $*.stats_missed_queries | wc -l`\t`awk '$$3 ~ /CF/ && $$1 == $$2' $*.stats_missed_queries | wc -l`\t`awk '$$3 ~ /CF/ && $$1 != $$2' $*.stats_missed_queries | wc -l`" $(TOLOG)
+	@echo -e "PF\t`awk '$$3 ~ /PF/' $*.stats_missed_queries | wc -l`\t`awk '$$3 ~ /PF/ && $$1 == $$2' $*.stats_missed_queries | wc -l`\t`awk '$$3 ~ /PF/ && $$1 != $$2' $*.stats_missed_queries | wc -l`" $(TOLOG)
+	@echo -e "UF\t`awk '$$3 ~ /UF/' $*.stats_missed_queries | wc -l`\t`awk '$$3 ~ /UF/ && $$1 == $$2' $*.stats_missed_queries | wc -l`\t`awk '$$3 ~ /UF/ && $$1 != $$2' $*.stats_missed_queries | wc -l`" $(TOLOG)
+	@echo -e "BF\t`awk '$$3 ~ /BF/' $*.stats_missed_queries | wc -l`\t`awk '$$3 ~ /BF/ && $$1 == $$2' $*.stats_missed_queries | wc -l`\t`awk '$$3 ~ /BF/ && $$1 != $$2' $*.stats_missed_queries | wc -l`" $(TOLOG)
+	$(LOG_HR2)
+	@echo "# Organisms and classes present in clusters" $(TOLOG)
+	@$(MAKE) -s $*.stats_classes
+	$(LOG_HR2)
+	@echo -e "# number of taxa per cluster\ntaxa\tclusters" $(TOLOG)
+	@cut -f 3 $*.orgs_per_cluster | python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py | grep -v "#" $(TOLOG)
+	$(LOG_HR2)
+	@echo -e "# total number of predictions\n`grep -v "#" $*.components.map | wc -l`" $(TOLOG)
+	@if test -e $*.links; then \
+		$(LOG_HR2); \
+		echo -e "# summary of graph\nqueries\tsbjcts\tvertices\tlinks" $(TOLOG); \
+		perl $(DIR_SCRIPTS_TOOLS)graph_howmany.pl < $*.links | grep -v "#" $(TOLOG) ; \
+	fi
+	$(LOG_HR2)
+	@echo -e "# query genes per clusters\tcounts\trelative" $(TOLOG)
+	@grep "$(PARAM_PATTERN_GENOME_MASTER)" $*.components.map |\
+	python $(DIR_SCRIPTS_TOOLS)substitute_tokens.py --column=1 --apply=predictions2genes |\
+	sort -k2,2n | uniq | uniq -f 1 -c | awk '{printf("%s\n", $$1);}' |\
+	python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py --append=normalize |\
+	grep -v "#" $(TOLOG);
+	$(LOG_HR1)
+
+
+
+
+
+
