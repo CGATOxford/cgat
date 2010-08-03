@@ -53,8 +53,12 @@ import sqlite3
 
 import Experiment as E
 import Pipeline as P
+import Stats
 
-PARAMS = P.getParameters()
+try:
+    PARAMS = P.getParameters()
+except IOError:
+    pass
 
 ############################################################
 ############################################################
@@ -109,7 +113,9 @@ def runGOFromFiles( outfile,
                     outdir,
                     fg_file,
                     bg_file,
-                    go_file  ):
+                    go_file,
+                    ontology_file = None,
+                    samples = 1000 ):
     '''check for GO enrichment within a gene list.
 
     The gene list is given in ``fg_file``. It is compared
@@ -120,15 +126,17 @@ def runGOFromFiles( outfile,
 
     to_cluster = True
     
+    if ontology_file == None: ontology_file = PARAMS["go_ontology"]
+
     statement = '''
-    python %(scriptsdir)s/GO.py \
-    --filename-input=%(go_file)s \
-    --genes=%(fg_file)s \
-    --background=%(bg_file)s \
-    --sample=1000 \
-    --fdr \
-    --filename-ontology=%(go_ontology)s \
-    --output-filename-pattern='%(outdir)s/%%(go)s.%%(section)s' \
+    python %(scriptsdir)s/GO.py 
+        --filename-input=%(go_file)s 
+        --genes=%(fg_file)s 
+        --background=%(bg_file)s 
+        --sample=%(samples)s
+        --fdr 
+        --filename-ontology=%(ontology_file)s 
+        --output-filename-pattern='%(outdir)s/%%(go)s.%%(section)s' 
     > %(outfile)s'''
 
     P.run()    
@@ -136,7 +144,12 @@ def runGOFromFiles( outfile,
     dbhandle = sqlite3.connect( PARAMS["database"] )
 
 ############################################################
-def runGOFromDatabase( outfile, outdir, statement_fg, statement_bg, go_file ):
+def runGOFromDatabase( outfile, outdir, 
+                       statement_fg, 
+                       statement_bg, 
+                       go_file,
+                       ontology_file = None,
+                       samples = 1000 ):
     '''Take gene lists from the SQL database using
     ``statement_foreground`` and ``statement_background``
     '''
@@ -160,4 +173,108 @@ def runGOFromDatabase( outfile, outdir, statement_fg, statement_bg, go_file ):
     outf.write("\n".join( map(str, bg ) ) + "\n" )
     outf.close()
     
-    runGOFromFiles( outfile, outdir, fg_file, bg_file, go_file )
+    runGOFromFiles( outfile, outdir, 
+                    fg_file, bg_file, 
+                    go_file,
+                    ontology_file = ontology_file,
+                    samples = samples )
+
+############################################################
+############################################################
+############################################################
+##
+############################################################
+def loadGO( infile, outfile, tablename ):
+    '''import GO results into individual tables.'''
+
+    indir = infile + ".dir"
+
+    if not os.path.exists( indir ):
+        P.touch( outfile )
+        return
+
+    statement = '''
+    python %(toolsdir)s/cat_tables.py %(indir)s/*.overall |\
+    csv2db.py %(csv2db_options)s \
+              --allow-empty \
+              --index=category \
+              --index=goid \
+              --table=%(tablename)s \
+    > %(outfile)s
+    '''
+    P.run()
+
+
+############################################################
+############################################################
+############################################################
+##
+############################################################
+def loadGOs( infiles, outfile, tablename ):
+    '''import GO results into a single table.
+
+    This method also computes a global QValue over all
+    tracks, genesets and annotation sets.
+    '''
+
+    header = False
+
+    tempf1 = P.getTempFile()
+
+    pvalues = []
+
+    for infile in infiles:
+        indir = infile + ".dir"
+
+        if not os.path.exists( indir ):
+            continue
+
+        track, geneset, annotationset = re.search("^(\S+)_vs_(\S+)\.(\S+)", infile ).groups()
+
+        for filename in glob.glob( os.path.join(indir, "*.overall") ):
+            for line in open(filename, "r" ):
+                if line.startswith("#"): continue
+                data = line[:-1].split("\t")
+                if line.startswith("code"):
+                    if header: continue
+                    tempf1.write( "track\tgeneset\tannotationset\t%s" % line )
+                    header = True
+                    assert data[10] == "pover" and data[11] == "punder", "format error, expected pover-punder, got %s-%s" % (data[10], data[11])
+                    continue
+                tempf1.write( "%s\t%s\t%s\t%s" % (track, geneset, annotationset, line) )
+                pvalues.append( min( float(data[10]), float(data[11]) ) )
+
+    tempf1.close()
+
+    E.info( "analysing %i pvalues" % len(pvalues ))
+    fdr = Stats.doFDR( pvalues )
+    E.info( "got %i qvalues" % len(fdr.mQValues ))
+    qvalues = ["global_qvalue" ] + fdr.mQValues
+
+    tempf2 = P.getTempFile()
+
+    for line, qvalue in zip( open(tempf1.name,"r"), qvalues ):
+        tempf2.write( "%s\t%s\n" % (line[:-1], str(qvalue)) )
+
+    tempf2.close()
+    tempfilename = tempf2.name
+    print tempf1.name
+    print tempf2.name
+
+    statement = '''
+    csv2db.py %(csv2db_options)s 
+              --allow-empty 
+              --index=category 
+              --index=track,geneset,annotationset
+              --index=geneset
+              --index=annotationset
+              --index=goid 
+              --table=%(tablename)s 
+    < %(tempfilename)s
+    > %(outfile)s
+    '''
+    P.run()
+
+    #os.unlink( tempf1.name )
+    #os.unlink( tempf2.name )
+    

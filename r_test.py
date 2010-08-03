@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: r_test.py 2782 2009-09-10 11:40:29Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2006 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,17 +20,43 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+r_test.py - t-test and wilcoxon tests
+=====================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+Interface to R to run tests on a vector of values.
+
+Usage
+-----
+
+Example::
+
+   python r_test.py --help
+
+Type::
+
+   python r_test.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 import os, sys, string, re, optparse, time, random
 from rpy import r as R
 import rpy
-
-"""Interface to R to run tests on a vector of values.
-
-Implementation: uses R 
-
-You can supply extra options to 
-"""
-
 import Experiment as E
 import IOTools
 import Stats
@@ -56,7 +83,7 @@ if __name__  == "__main__":
         )
     
     (options, args) = E.Start( parser,
-                                        add_pipe_options = True )
+                               add_pipe_options = True )
 
 
     if options.filename_input:

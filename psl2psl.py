@@ -6,27 +6,40 @@
 ##
 ## Author: Andreas Heger <andreas.heger@helsinki.fi>
 ##
-## $Id: blat2blat.py 2781 2009-09-10 11:33:14Z andreas $
+## $Id: psl2psl.py 2781 2009-09-10 11:33:14Z andreas $
 ##
 ##
 ####
 ####
+'''
+psl2psl.py - manipulate psl files
+===================================
 
-USAGE="""python blat2blat.py [OPTIONS] < input > output
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
 
-perform operations on a blat file.
+Purpose
+-------
 
-Operations:
+This script reads alignments in :term:`psl` format,
+applies one ore more operations on them and then
+outputs them again in :term:`psl`.
 
-merge: merges blat alignments between overlapping entries of query/target
+The following operators are available:
+
+merge
+   merges psl alignments between overlapping entries of query/target
         in a file. Merging is stopped on query/target and/or strand change.
         This script will check for overlaps and will take the longest path
         through a set of overlapping paths.
 
-map: map alignments. Similar to mapPsl, but will apply a map to both query
-        and target. This method requires the two options filter-query and filter-target.
-        Intervals are given in gff or gtf format. In the latter case, the alignment is 
-        threaded through the exons. 
+map 
+   map alignments. Similar to mapPsl, but will apply a map to both query
+   and target. This method requires the two options filter-query and filter-target.
+   Intervals are given in gff or gtf format. In the latter case, the alignment is 
+   threaded through the exons. 
 
 filter-keep
    filter alignments. Only parts of the alignments are kept that are part of the intervals.
@@ -35,7 +48,7 @@ filter-remove
    filter alignments. Only parts of the alignments are kept that are not part of the intervals.
 
 complement
-   complement a blat sequence. For example this will convert exons to introns.
+   complement a psl sequence. For example this will convert exons to introns.
    If an entry contains only a single exon, it is omitted.
 
 select-longest
@@ -58,7 +71,26 @@ remove-overlapping-target
    remove all alignments that are not unique with respect to a target segment
    (requires alignments to be sorted by target)
 
-"""
+Usage
+-----
+
+Example::
+
+   python <script_name>.py --help
+
+Type::
+
+   python <script_name>.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+'''
+
 
 import sys, re, string, optparse, time, os, collections, warnings
 
@@ -118,8 +150,8 @@ def readIntervals( infile, options ):
     E.info("read intervals: %i contigs, %i intervals" % (len(index), ninput))
     return index
 
-def iterator_blat_intervals( options ):
-    """iterate over blat file yield an entry together with overlapping entries.
+def iterator_psl_intervals( options ):
+    """iterate over psl file yield an entry together with overlapping entries.
 
     returns tuples of (match, list(query_intervals), list(target_intervals))
     """
@@ -171,8 +203,8 @@ def iterator_blat_intervals( options ):
 
         yield match, qx, tx
 
-def blatFilter( options, keep = True ):
-    """filter blat entries. 
+def pslFilter( options, keep = True ):
+    """filter psl entries. 
 
     Only positions contained in intervals are kept, unless remove
     is set, in which case only positions not in intervals are kept.
@@ -187,7 +219,7 @@ def blatFilter( options, keep = True ):
     if keep:
         raise "not implemented"
     else:
-        for match, qx, tx in iterator_blat_intervals( options ):
+        for match, qx, tx in iterator_psl_intervals( options ):
 
             map_query2target = match.getMapQuery2Target()
 
@@ -215,8 +247,8 @@ def blatFilter( options, keep = True ):
 
     E.info("ninput=%i, noutput=%i, nskipped=%i, ndiscarded=%i" % (ninput, noutput, nskipped, ndiscarded) )
 
-def blatMap( options ):
-    """thread blat alignments using intervals.
+def pslMap( options ):
+    """thread psl alignments using intervals.
 
     """
 
@@ -229,7 +261,7 @@ def blatMap( options ):
 
     min_length = options.min_aligned
 
-    for match, qx, tx in iterator_blat_intervals( options ):
+    for match, qx, tx in iterator_psl_intervals( options ):
 
         map_query2target = match.getMapQuery2Target()
 
@@ -344,8 +376,8 @@ def blatMap( options ):
     E.info( "map: ninput=%i, noutput=%i, nskipped=%i, ndiscarded=%i, nsmall_queries=%i" % \
                 (ninput, noutput, nskipped, ndiscarded, nskipped_small_queries) )
 
-def blatMerge( options ):
-    """merge blat alignments.
+def pslMerge( options ):
+    """merge psl alignments.
     """
 
     iterator = Blat.BlatIterator( sys.stdin )
@@ -451,7 +483,7 @@ def blatMerge( options ):
 
     E.info("ninput=%i, noutput=%i, nskipped=%i, ndiscarded=%i" % (ninput, noutput, nskipped, ndiscarded) )
 
-def blatAddSequence( query_fasta, sbjct_fasta, options ):
+def pslAddSequence( query_fasta, sbjct_fasta, options ):
 
     iterator = Blat.BlatIterator( sys.stdin )
 
@@ -480,8 +512,8 @@ def blatAddSequence( query_fasta, sbjct_fasta, options ):
 
     E.info("ninput=%i, noutput=%i, nskipped=%i, ndiscarded=%i" % (ninput, noutput, nskipped, ndiscarded) )
 
-def blatComplement( query_fasta, target_fasta, options) :
-    """complenment blat entries.
+def pslComplement( query_fasta, target_fasta, options) :
+    """complenment psl entries.
     """
 
     iterator = Blat.BlatIterator( sys.stdin )
@@ -534,10 +566,10 @@ def blatComplement( query_fasta, target_fasta, options) :
 
     E.info("ninput=%i, noutput=%i, nskipped=%i, ndiscarded=%i" % (ninput, noutput, nskipped, ndiscarded) )
 
-def blatComplementQuery( options) :
-    """complement blat entries. 
+def pslComplementQuery( options) :
+    """complement psl entries. 
 
-    Fill the regions from a second blat file. 
+    Fill the regions from a second psl file. 
     """
 
     iterator = Blat.BlatIterator( sys.stdin )
@@ -586,7 +618,7 @@ def blatComplementQuery( options) :
 
     E.info("ninput=%i, noutput=%i, nskipped=%i, ndiscarded=%i" % (ninput, noutput, nskipped, ndiscarded) )
 
-def blatSelectQuery( options ):
+def pslSelectQuery( options ):
 
     ninput, noutput, ndiscarded, nskipped = 0, 0, 0, 0
 
@@ -617,10 +649,10 @@ def blatSelectQuery( options ):
 
     E.info("ninput=%i, noutput=%i, nskipped=%i, ndiscarded=%i" % (ninput, noutput, nskipped, ndiscarded) )
 
-def iterator_filter_overlapping_query( blats, options ):
+def iterator_filter_overlapping_query( psls, options ):
     
     ninput, noutput, ndiscarded = 0, 0, 0    
-    for block in Blat.iterator_query_overlap( blats, options.threshold_merge_distance ):
+    for block in Blat.iterator_query_overlap( psls, options.threshold_merge_distance ):
         l = len(block)
         ninput += l
         if l > 1: 
@@ -631,10 +663,10 @@ def iterator_filter_overlapping_query( blats, options ):
 
     E.info( "iterator_filter_overlapping_query: ninput=%i, noutput=%i, ndiscarded=%i" % (ninput, noutput,ndiscarded) )
 
-def iterator_filter_overlapping_target( blats, options ):
+def iterator_filter_overlapping_target( psls, options ):
 
     ninput, noutput, ndiscarded = 0, 0, 0    
-    for block in Blat.iterator_target_overlap( blats, options.threshold_merge_distance ):
+    for block in Blat.iterator_target_overlap( psls, options.threshold_merge_distance ):
         l = len(block)
         ninput += l
         if l > 1: 
@@ -654,6 +686,7 @@ def iterator_rename_query( infile, options ):
     while 1:
 
         match = infile.next()
+
         if not match: break
         ninput += 1
 
@@ -664,7 +697,7 @@ def iterator_rename_query( infile, options ):
         else:
             new = map_old2new[match.mQueryId]
             match.mQueryId = new
-            yield match
+        yield match
 
     if options.output_filename_map:
         outfile = open(options.output_filename_map, "w")
@@ -755,7 +788,7 @@ def iterator_filter_fasta( infile, query_fasta, sbjct_fasta, options ):
 
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: blat2blat.py 2781 2009-09-10 11:33:14Z andreas $", usage=USAGE )
+    parser = optparse.OptionParser( version = "%prog version: $Id: psl2psl.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option("--filter-query", dest="filename_filter_query", type="string",
                       help="filename with intervals in the query to filter (in gff format) [default=%default]."  )
@@ -846,25 +879,25 @@ if __name__ == '__main__':
     for method in options.methods:
     
         if "map" == method:
-            blatMap( options )
+            pslMap( options )
             break
         elif "filter-keep" == method:
-            blatFilter( options, keep = True )
+            pslFilter( options, keep = True )
             break
         elif "filter-remove" == method:
-            blatFilter( options, keep = False )
+            pslFilter( options, keep = False )
             break
         elif "merge" == method:
-            blatMerge( options )
+            pslMerge( options )
             break
         elif "add-sequence" == method:
-            blatAddSequence( query_fasta, sbjct_fasta, options )
+            pslAddSequence( query_fasta, sbjct_fasta, options )
             break
         elif "complement" == method:
-            blatComplement( query_fasta, sbjct_fasta, options )
+            pslComplement( query_fasta, sbjct_fasta, options )
             break
         elif "select-query" == method:
-            blatSelectQuery( options )
+            pslSelectQuery( options )
             break
         elif "test" == method:
             iterator = Blat.iterator_test( iterator, options.report_step )
@@ -879,7 +912,7 @@ if __name__ == '__main__':
         elif "remove-overlapping-target" == method:
             iterator = iterator_filter_overlapping_target( iterator, options )
 
-    for blat in iterator:
-        options.stdout.write( "%s\n" % str( blat ) )
+    for psl in iterator:
+        options.stdout.write( "%s\n" % str( psl ) )
 
     E.Stop()

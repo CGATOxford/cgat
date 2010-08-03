@@ -97,7 +97,7 @@ def main( argv = None ):
 
     reader = maf.Reader(options.stdin)
     
-    blat = Blat.Match()
+    psl = Blat.Match()
     for cc in threaditer( reader, (options.query, options.target) ):
         
         ninput += 1
@@ -118,17 +118,17 @@ def main( argv = None ):
 
         assert qs == options.query
         assert ts == options.target
-        blat.mQueryId = qcontig
-        blat.mSbjctId = tcontig
+        psl.mQueryId = qcontig
+        psl.mSbjctId = tcontig
 
-        blat.fromPair( query.start, query.src_size, query.strand, query.text.upper(),
+        psl.fromPair( query.start, query.src_size, query.strand, query.text.upper(),
                        target.start, target.src_size, target.strand, target.text.upper() )
         
         E.debug( "%s\t%s\t%i\t%i\t%s\t%s" % \
                      (qs, qcontig, query.start, query.src_size, query.strand, query.text ) )
         E.debug( "%s\t%s\t%i\t%i\t%s\t%s" % \
                      (ts, tcontig, target.start, target.src_size, target.strand, target.text ) )
-        options.stdout.write( "%s\n" % str(blat) )
+        options.stdout.write( "%s\n" % str(psl) )
         noutput += 1
 
     E.info( "ninput=%i, noutput=%i, nskipped=%i" % (ninput, noutput,nskipped) )

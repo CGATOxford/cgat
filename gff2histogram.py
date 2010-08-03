@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: gff2histogram.py 2781 2009-09-10 11:33:14Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,6 +20,41 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+gff2histogram.py - compute histograms from intervals
+======================================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+This script computes distribution interval sizes, intersegmental distances
+and interval overlap from a list of intervals in :term:`gff` format.
+
+Usage
+-----
+
+Example::
+
+   python gff2histogram.py --help
+
+Type::
+
+   python gff2histogram.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 import sys, string, re, optparse
 
 USAGE="""python %s [OPTIONS] input1 input2

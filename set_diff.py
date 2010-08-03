@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: set_diff.py 2782 2009-09-10 11:40:29Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,9 +20,19 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
-import os, sys, string, re, optparse
+'''
+set_diff.py - compare contents of several files
+===============================================
 
-USAGE = """pairwise comparison of multiple sets. 
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+pairwise comparison of multiple sets. 
 
 The script outputs a tab-separated table with the following fields:
 
@@ -39,7 +50,28 @@ punique1: unique2 / n2
 pcov1: coverage of set1 by set2 = intersection / n1
 pcov2: coverage of set2 by set1 intersection / n2
 pcovmax: maximum coverage of either set = max(pcov1, pcov2)
-"""
+
+Usage
+-----
+
+Example::
+
+   python set_diff.py --help
+
+Type::
+
+   python set_diff.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+import os, sys, string, re, optparse
 
 import Experiment, IOTools
 

@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: WrapperGblocks.py 1799 2008-03-28 11:44:19Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,7 +20,20 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
-import os, sys, string, re, tempfile, popen2
+'''
+WrapperGblocks.py - 
+======================================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Code
+----
+
+'''
+import os, sys, string, re, tempfile
 
 """Wrapper for Gblocks
 """
@@ -44,19 +58,26 @@ class Gblocks:
         os.write( handle_tmpfile, ">s2\n%s\n" % (s2))
         os.close( handle_tmpfile )
 
-        statement = string.join( ( "(", self.mEnvironment, 
-                                   self.mExecutable % filename_tmpfile,
-                                   self.mOptions, ")" ),
-                                 " ")
+        statement = " ".join( "(", self.mEnvironment, 
+                              self.mExecutable % filename_tmpfile,
+                              self.mOptions, ")" )
 
-        (file_stdout, file_stdin, file_stderr) = popen2.popen3( statement )
+        p = subprocess.Popen( statement , 
+                              shell=True, 
+                              stdin=subprocess.PIPE, 
+                              stdout=subprocess.PIPE, 
+                              stderr=subprocess.PIPE, 
+                              close_fds=True)
+
+        (file_stdout, file_stdin, file_stderr) = (p.stdin, p.stdout, p.stderr)
+
         file_stdin.close()
         lines = file_stdout.readlines()
         lines_stderr = file_stderr.readlines()
         exit_code = file_stdout.close()
         file_stderr.close()
         if exit_code:
-            raise "Error while executing statement %s" % statement
+            raise ValueError("Error while executing statement %s" % statement)
 
         if not os.path.exists( filename_tmpfile + "-gb"):
             os.remove( filename_tmpfile )            

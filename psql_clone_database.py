@@ -1,10 +1,10 @@
-
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: psql_clone_database.py 2781 2009-09-10 11:33:14Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -20,17 +20,48 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+psql_clone_database.py - clone a psql schema
+============================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+This script will clone a psql schema
+
+Usage
+-----
+
+Example::
+
+   python psql_clone_database.py src dest
+
+will clone the schema ``src`` to ``dest``. 
+
+Type::
+
+   python psql_clone_database.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 import os, sys, string, re, time, optparse, math, tempfile, copy
 import subprocess
 
 import pgdb
 
 import Experiment
-
-USAGE="""python %s src dest
-
-clone a schema in psql.
-""" % sys.argv[0]
 
 ##---------------------------------------------------------------------------------------------
 def DbExecute( dbhandle, statement ):
@@ -52,7 +83,7 @@ def DbDo( dbhandle, statement ):
 ##------------------------------------------------------------------------------------------
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: psql_clone_database.py 2781 2009-09-10 11:33:14Z andreas $", usage=USAGE)
+    parser = optparse.OptionParser( version = "%prog version: $Id: psql_clone_database.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
     parser.set_defaults( \
         start = None,

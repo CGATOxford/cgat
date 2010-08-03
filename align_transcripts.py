@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: align_transcripts.py 2781 2009-09-10 11:33:14Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2007 Andreas Heger 
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,6 +20,45 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+align_transcripts.py - multiply align transcripts
+=================================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+This script will multiply align transcripts. Transcripts
+are aligned as amino acid sequences and later back-translated
+to codon sequences.
+
+The script is aware of gene structures will correctly align
+exons in sequence. 
+
+Usage
+-----
+
+Example::
+
+   python align_transcripts.py --help
+
+Type::
+
+   python align_transcripts.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 import os, sys, string, re, optparse, math
 
 USAGE="""python %s [OPTIONS] < transcripts > filtered
@@ -485,7 +525,7 @@ def writeToFile( mali, section, options, is_aligned = True ):
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: align_transcripts.py 2781 2009-09-10 11:33:14Z andreas $", usage = USAGE)
+    parser = optparse.OptionParser( version = "%prog version: $Id: align_transcripts.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-m", "--master", dest="master", type="string",
                       help="master sequence."  )

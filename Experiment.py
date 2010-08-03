@@ -1,21 +1,28 @@
-####
-####
-##
-## Project PythonTools
-##
-## Copyright (C) 2002 Andreas Heger All rights reserved
-##
-## Author: Andreas Heger <heger@ebi.ac.uk>
-##
-## $Id: Experiment.py 2803 2009-10-22 13:41:24Z andreas $
-##
-##
-####
-####
-
+################################################################################
+#
+#   MRC FGU Computational Genomics Group
+#
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
+#
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU General Public License
+#   as published by the Free Software Foundation; either version 2
+#   of the License, or (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#################################################################################
 '''
-Experiment - record keeping of experiments
-==========================================
+Experiment.py - record keeping of experiments
+=============================================
 
 Module for record keeping of experiments. This module
 is imported by most CGAT scripts. It provides convenience
@@ -31,7 +38,7 @@ API
 ---
 '''
 
-import string,re,sys,time,inspect,os,optparse,logging,random, collections, types
+import string,re,sys,time,inspect,os,optparse,logging,random, collections, types, subprocess, gzip
 
 
 class DefaultOptions:
@@ -391,29 +398,48 @@ def critical( message):
     '''log critical message, see the :mod:`logging` module'''
     logging.critical( message )
 
-
+def getOutputFile( section ):
+    '''return filename to write to.'''
+    return re.sub( "%s", section, global_options.output_filename_pattern )
+    
 def openOutputFile( section, mode = "w" ):
     """open file for writing substituting section in the
-    output_pattern (if defined)."""
+    output_pattern (if defined).
 
+    If the filename ends with ".gz", the output is opened
+    as a gzip'ed file.
+    """
+
+    fn = getOutputFile( section )
     try:
-        if global_options.output_filename_pattern == "-":
+        if fn == "-":
             return global_options.stdout
         else:
-            fn = re.sub( "%s", section, global_options.output_filename_pattern )
             if not global_options.output_force and os.path.exists( fn ):
                 raise OSError( "file %s already exists, use --force to overwrite existing files." % fn )
-            return open( fn, mode )
+            if fn.endswith(".gz"):
+                return gzip.open( fn, mode )
+            else:
+                return open( fn, mode )
     except AttributeError:        
         return global_options.stdout
 
 
 class Counter(object):
-    '''a lightwight counter. Instantiate and use like this::
+    '''a counter class.
+
+    The counter acts both as a dictionary and
+    a object permitting attribute access.
+
+    Counts are automatically initialized to 0.
+    
+    Instantiate and use like this::
 
        c = Counter()
        c.input += 1
        c.output += 2
+       c["skipped"] += 1
+
        print str(c)
     '''
 
@@ -432,6 +458,15 @@ class Counter(object):
         self._counts[name] = value
     def __str__(self):
         return ", ".join( "%s=%i" % x for x in self._counts.iteritems() )
+    def __iadd__(self, other ):
+        try:
+            for key,val in other.iteritems():
+                self._counts[key] += val
+        except:
+            raise TypeError( "unknown type" )
+        return self
+    def iteritems(self):
+        return self._counts.iteritems()
 
 class Experiment:
     
@@ -535,3 +570,13 @@ class Experiment:
         print "# valid short options are:", self.mShortOptions
         print "# valid long options are:", str(self.mLongOptions)
     
+def run( cmd ):
+    '''executed a command line cmd.
+    
+    raises OSError if process failed or was terminated.
+    '''
+
+    retcode = subprocess.call( cmd, shell=True)
+    if retcode < 0:
+        raise OSError( "process was terminated by signal %i" % -retcode )
+    return retcode

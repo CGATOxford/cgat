@@ -19,18 +19,47 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+diff_gtfs.py - compute overlap between multiple gtf files
+=========================================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+This script compares multiple set of gtf files. It computes
+the overlap between bases, exons and genes between each pair
+of gtf files. 
+
+If results from a previous run are present, existing
+pairs are not re-computed but simply echoed.
+
+Usage
+-----
+
+Example::
+
+   python <script_name>.py --help
+
+Type::
+
+   python <script_name>.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+
 import sys, string, re, optparse, collections
-
-USAGE="""python %s [OPTIONS] input1 input2
-
-compare multiple set of gtf files.
-
-If an old file is given, the old results are read
-in and a new version is output.
-
-Version: $Id: diff_gtfs.py 2781 2009-09-10 11:33:14Z andreas $
-""" % sys.argv[0]
-
 
 import Experiment as E
 import GFF, GTF
@@ -64,7 +93,7 @@ class Counter:
         """read and index."""
 
         idx = {}
-        infile = open(filename, "r")
+        infile = IOTools.openFile(filename, "r")
         for e in GTF.readFromFile(infile):
             if e.contig not in idx: idx[e.contig] = ncl.NCLSimple()
             idx[e.contig].add( e.start,e.end )
@@ -76,7 +105,7 @@ class Counter:
         overlapping_genes = set()
         genes = set()
         # iterate over exons
-        infile = open( filename, "r" )
+        infile = IOTools.openFile( filename, "r" )
         it = GTF.iterator( infile )
 
         nexons, nexons_overlapping = 0, 0
@@ -177,7 +206,7 @@ class CounterGenes(Counter):
         overlapping_genes = set()
         genes = set()
         # iterate over exons
-        infile = open( filename, "r" )
+        infile = IOTools.openFile( filename, "r" )
         it = GTF.iterator( infile )
 
         for this in it:
@@ -228,7 +257,7 @@ class CounterGenes(Counter):
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: diff_gtfs.py 2781 2009-09-10 11:33:14Z andreas $", usage=USAGE)
+    parser = optparse.OptionParser( version = "%prog version: $Id: diff_gtfs.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-s", "--ignore-strand", dest="ignore_strand", action="store_true",
                       help="ignore strand information [default=%default]." )
@@ -285,7 +314,10 @@ if __name__ == "__main__":
     pattern_id = re.compile(options.pattern_id)
 
     def getTitle( x ):
-        return pattern_id.search( x ).groups()[0]
+        try:
+            return pattern_id.search( x ).groups()[0]
+        except AttributeError:
+            return x
 
     ncomputed, nupdated = 0, 0
     for x in range( len(args)):

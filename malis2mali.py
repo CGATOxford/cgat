@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: malis2mali.py 2782 2009-09-10 11:40:29Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2006 Tyler ???? and Andreas Heger 
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,17 +20,17 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
-import os, sys, string, re, optparse, math, time, random, types
+'''
+malis2mali.py - concatenate multiple alignments
+===============================================
 
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
 
-import Experiment
-import IOTools
-import Mali
-
-## import shared helper functions from malis2malis
-from malis2malis import *
-
-MY_USAGE="""python %s [OPTIONS]
+Purpose
+-------
 
 concatenate multiple alignments into a single multiple alignment. 
 
@@ -59,12 +60,40 @@ filter-variants
    only keep variant columns in the multiple alignment. Set ``--width`` to 3 to test for variant
    codons. Gaps will be ignored.
 
-""" % sys.argv[0]
+Usage
+-----
+
+Example::
+
+   python malis2mali.py --help
+
+Type::
+
+   python malis2mali.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+import os, sys, string, re, optparse, math, time, random, types
+
+
+import Experiment
+import IOTools
+import Mali
+
+## import shared helper functions from malis2malis
+from malis2malis import *
 
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: malis2mali.py 2782 2009-09-10 11:40:29Z andreas $", usage = MY_USAGE)
+    parser = optparse.OptionParser( version = "%prog version: $Id: malis2mali.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
 
     addOptions( parser )
 

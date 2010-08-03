@@ -1,3 +1,38 @@
+################################################################################
+#
+#   MRC FGU Computational Genomics Group
+#
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
+#
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU General Public License
+#   as published by the Free Software Foundation; either version 2
+#   of the License, or (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#################################################################################
+'''
+Pipeline.py - Tools for ruffus pipelines
+========================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Code
+----
+
+'''
 import os, sys, re, subprocess, optparse, stat, tempfile, time, random, inspect, types
 import ConfigParser
 
@@ -16,7 +51,7 @@ class PipelineError( Exception ): pass
 PARAMS= { 
     'scriptsdir' : "/home/andreas/cgat",
     'toolsdir' : "/home/andreas/cgat",
-    'cmd-farm' : """farm.py 
+    'cmd-farm' : """/home/andreas/cgat/farm.py 
                 --method=drmaa 
                 --cluster-priority=-10 
 		--cluster-queue=medium_jobs.q 
@@ -25,7 +60,22 @@ PARAMS= {
     'cmd-sql' : """sqlite3 -header -csv -separator $'\\t' """,
            }
 
-def getParameters( filename = "pipeline.ini" ):
+CONFIG = {}
+
+def configToDictionary( config ):
+
+    p = {}
+
+    for section in config.sections():
+        for key,value in config.items( section ):
+            v = IOTools.convertValue( value )
+            p["%s_%s" % (section,key)] = v
+            if section == "general":
+                p["%s" % (key)] = v
+
+    return p
+
+def getParameters( filenames = ["pipeline.ini",] ):
     '''read a config file and return as a dictionary.
 
     Sections and keys are combined with an underscore. If
@@ -46,19 +96,13 @@ def getParameters( filename = "pipeline.ini" ):
     This function also updates the module-wide parameter map.
     
     '''
-    p = {}
-    
-    config = ConfigParser.ConfigParser()
-    config.readfp(open(filename),"r")
 
-    for section in config.sections():
-        for key,value in config.items( section ):
-            v = IOTools.convertValue( value )
-            p["%s_%s" % (section,key)] = v
-            if section == "general":
-                p["%s" % (key)] = v
+    global CONFIG
 
+    CONFIG = ConfigParser.ConfigParser()
+    CONFIG.read( filenames )
 
+    p = configToDictionary( CONFIG )
     PARAMS.update( p )
 
     return p
@@ -170,6 +214,16 @@ def asList( param ):
         return [param,]
     else: return param
 
+def asDict( param ):
+    '''return a section of configuration file as a dictionary.'''
+    return dict(CONFIG.items(param))
+
+def toTable( outfile ):
+    '''convert an outfile (filename) into
+    a table name.'''
+    assert outfile.endswith( ".load" ) 
+    return outfile[:-len(".load")]
+
 def getCallerLocals(decorators=0):
     '''returns locals of caller using frame.
 
@@ -180,6 +234,27 @@ def getCallerLocals(decorators=0):
     f = sys._getframe(2+decorators)
     args = inspect.getargvalues(f)
     return args[3]
+
+def execute( statement, **kwargs ):
+    '''execute a statement locally.'''
+
+    if not kwargs: kwargs = getCallerLocals()
+    
+    E.debug("running %s" % (statement % kwargs))
+
+    process = subprocess.Popen(  statement % kwargs,
+                                 cwd = os.getcwd(), 
+                                 shell = True,
+                                 stdin = subprocess.PIPE,
+                                 stdout = subprocess.PIPE,
+                                 stderr = subprocess.PIPE )
+
+    # process.stdin.close()
+    stdout, stderr = process.communicate()
+
+    if process.returncode != 0:
+        raise PipelineError( "Child was terminated by signal %i: \nThe stderr was: \n%s\n%s\n" % (-process.returncode, stderr, statement ))
+
 
 def run( **kwargs ):
     """run a statement.
@@ -219,7 +294,10 @@ def run( **kwargs ):
     if not kwargs: kwargs = getCallerLocals()
 
     # the actual statement
-    statement = kwargs.get("statement") % dict( PARAMS.items() + kwargs.items() )
+    try:
+        statement = kwargs.get("statement") % dict( PARAMS.items() + kwargs.items() )
+    except KeyError, msg:
+        raise KeyError( "Error when creating command: could not find %s in dictionaries" % msg)
 
     # add bash as prefix to allow advanced shell syntax like 'wc -l <( gunzip < x.gz)'
     # executable option to call() does not work. Note that there will be an extra
@@ -269,15 +347,28 @@ def run( **kwargs ):
         jt.outputPath=":"+ stdout_path
         jt.errorPath=":" + stderr_path
 
-        jobid = session.runJob(jt)
-        retval = session.wait(jobid, drmaa.Session.TIMEOUT_WAIT_FOREVER)
+        if "job_array" in kwargs and kwargs["job_array"] != None:
+            # run an array job
+            start, end, increment = kwargs.get("job_array" )
+            E.debug("starting an array job: %i-%i,%i" % (start, end, increment ))
+            # sge works with 1-based, closed intervals
+            jobids = session.runBulkJobs( jt, start+1, end, increment )
+            E.debug( "%i array jobs have been submitted as jobid %s" % (len(jobids), jobids[0]) )
+            retval = session.synchronize(jobids, drmaa.Session.TIMEOUT_WAIT_FOREVER, True)
+        else:
+            jobid = session.runJob(jt)
+            E.debug( "job has been submitted with jobid %s" % str(jobid ))
+            retval = session.wait(jobid, drmaa.Session.TIMEOUT_WAIT_FOREVER)
 
         stdout = open( stdout_path, "r" ).readlines()
         stderr = open( stderr_path, "r" ).readlines()
 
-        if retval.exitStatus != 0:
-            raise PipelineError( "Child was terminated by signal %i: \nThe stderr was: \n%s\n%s\n" % (retval.exitStatus, "".join( stderr), statement))
-        
+        if "job_array" not in kwargs:
+            if retval.exitStatus != 0:
+                raise PipelineError( "Child was terminated by signal %i: \nThe stderr was: \n%s\n%s\n" % \
+                                         (retval.exitStatus, 
+                                          "".join( stderr), statement))
+            
         session.deleteJobTemplate(jt)
         os.unlink( job_path )
         os.unlink( stdout_path )

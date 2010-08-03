@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: csv_set.py 2782 2009-09-10 11:40:29Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,12 +20,47 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+csv_set.py - set operations on a table
+======================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+.. todo::
+   
+   describe purpose of the script.
+
+Usage
+-----
+
+Example::
+
+   python csv_set.py --help
+
+Type::
+
+   python csv_set.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 import os, sys, string, re, getopt, time, optparse, math, tempfile
 
 import Experiment, CSV
 import csv, hashlib
 
-parser = optparse.OptionParser( version = "%prog version: $Id: csv_set.py 2782 2009-09-10 11:40:29Z andreas $")
 
 class UniqueBuffer:
     mKeys = {}
@@ -37,6 +73,8 @@ class UniqueBuffer:
             self.mOutfile.write(out)
     
 if __name__ == "__main__":
+
+    parser = optparse.OptionParser( version = "%prog version: $Id: csv_set.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option( "-u", "--unique", dest="unique", action="store_true",
                        help="output rows are uniq." )

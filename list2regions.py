@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: list2regions.py 698 2006-07-19 15:53:22Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,25 +20,49 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
-import os, sys, string, re, getopt
+'''
+list2regions.py - predict genes from a list of associations
+===========================================================
 
-USAGE="""python %s [OPTIONS] < exonerate_output > filtered
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
 
-Version: $Id: list2regions.py 698 2006-07-19 15:53:22Z andreas $
+Purpose
+-------
 
-read regions from ensembl and convert them to predictions
-
-Options:
 -h, --help                      print this message.
 -v, --verbose=                  loglevel.
 -p, --peptides=                 file with peptide sequences (FASTA).
--g, --genome-file=           pattern for filenames with the genomic DNA (FASTA).
+-g, --genome-file=              pattern for filenames with the genomic DNA (FASTA).
 -m, --map=                      map of peptide identifiers
 --disable-conflict              turn of resolution of conflicts
 --disable-overlap               turn of resolution of overlaps
 --disable-suboptimal            turn of elimination of suboptimal predictions
 --disable-activation            turn of reactivation of eliminated queries
-""" % sys.argv[0]
+
+Usage
+-----
+
+Example::
+
+   python list2regions.py 
+
+Type::
+
+   python list2regions.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+import os, sys, string, re, getopt
 
 import Experiment
 import Genomics
@@ -47,10 +72,10 @@ import PredictionParser
 param_long_options=["verbose=", "help", "max-percent-overlap=",
                     "min-coverage-query=", "min-score=", "min-percent-identity=",
                     "max-matches=", "peptides=", "genome-file=",
-                    "disable-conflict", "disable-overlap", "disable-suboptimal", "disable-activation",
                     "map="]
 
 param_short_options="v:ho:c:s:i:m:p:"
+
 
 ## pattern for genomes, %s is substituted for the sbjct_token
 param_genome_file = "genome_%s.fasta"
@@ -120,8 +145,7 @@ if __name__ == '__main__':
         filename_genome = param_genome_file % sbjct_token
 
         if last_filename_genome != filename_genome:
-            if param_loglevel >= 2:
-                print "# reading genome %s" % filename_genome
+            E.debug("reading genome %s" % filename_genome)
                 
             forward_sequences, reverse_sequences = Genomics.ReadGenomicSequences( open(filename_genome, "r"))
             last_filename_genome = filename_genome
@@ -142,12 +166,11 @@ if __name__ == '__main__':
         if map_a2b.has_key( query_token ):
             query_token = map_a2b[query_token]
 
-        if param_loglevel >= 2:
-            print "# aligning", query_token, sbjct_token, sbjct_strand, sbjct_genome_from, sbjct_genome_to
+        E.debug( "aligning: %s to %s:%s:%i-%i" %\
+                 (query_token, sbjct_token, sbjct_strand, sbjct_genome_from, sbjct_genome_to))
             
         if not peptide_sequences.has_key( query_token):
-            if param_loglevel >= 1:
-                print "# warning: peptides sequence not found for %s" % query_token
+            E.warn( "peptides sequence not found for %s" % query_token )
             nmissed += 1
             continue
         

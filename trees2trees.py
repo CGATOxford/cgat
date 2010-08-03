@@ -71,7 +71,7 @@ import TreeTools
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: trees2trees.py 2782 2009-09-10 11:40:29Z andreas $", usage = USAGE)
+    parser = optparse.OptionParser( version = "%prog version: $Id: trees2trees.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-c", "--output-filename-map", dest="output_filename_map", type="string",
                       help="filename of map to output."  )

@@ -19,21 +19,46 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+fasta2counts.py - compute some basic stats from sequences
+=========================================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+This script computes same basic counts from a fasta-formatted
+file.
+
+Usage
+-----
+
+Example::
+
+   python <script_name>.py --help
+
+Type::
+
+   python <script_name>.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+
 import os, sys, string, re, getopt, tempfile, time, optparse, math, glob
 
 import Experiment
 import IndexedFasta
-
-USAGE="""python %s [OPTIONS] 
-
-Version: $Id: fasta2counts.py 2781 2009-09-10 11:33:14Z andreas $
-
-extract sequences/sequence regions from a fasta file.
-
-Options:
--h, --help                      print this message.
--v, --verbose=                  loglevel.
-""" % sys.argv[0]
 
 def writeHeader( outfile ):
     outfile.write( "\t".join( ("contig",

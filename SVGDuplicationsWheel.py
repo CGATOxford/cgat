@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: SVGDuplicationsWheel.py 2784 2009-09-10 11:41:14Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,6 +20,19 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+SVGDuplicationsWheel.py - 
+======================================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Code
+----
+
+'''
 import os, sys, string, re, getopt, time, optparse, math, tempfile, bisect
 
 USAGE="""python plot_duplications.py [OPTIONS] < stdin > stdout
@@ -873,7 +887,7 @@ class DuplicationPlot:
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: SVGDuplicationsWheel.py 2784 2009-09-10 11:41:14Z andreas $", usage=USAGE)
+    parser = optparse.OptionParser( version = "%prog version: $Id: SVGDuplicationsWheel.py 2784 2009-09-10 11:41:14Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-e", "--headers", dest="headers", action="store_true",
                       help="first row is a header [ignored]."  )

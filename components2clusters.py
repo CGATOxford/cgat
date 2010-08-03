@@ -1,11 +1,10 @@
-import sys, os, re, getopt
-
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: components2clusters.py 14 2005-08-09 15:24:07Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -21,12 +20,17 @@ import sys, os, re, getopt
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
-import os, sys, string, re, getopt, tempfile, time, popen2
+'''
+components2clusters.py - 
+======================================================
 
-USAGE="""python %s [OPTIONS] < components > out
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
 
-Version: $Id: components2clusters.py 14 2005-08-09 15:24:07Z andreas $
-
+Purpose
+-------
 
 Options:
 -h, --help                      print this message.
@@ -36,7 +40,28 @@ Options:
 -q, --queries=                  output: map_cluster2queries
 -t, --transcripts=              output: map_transcripts2cluster
 -f, --filter=                   only write transcripts in filter
-""" % sys.argv[0]
+
+Usage
+-----
+
+Example::
+
+   python components2clusters.py --help
+
+Type::
+
+   python components2clusters.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+import os, sys, string, re, getopt, tempfile, time, popen2
 
 param_long_options=["verbose=", "help", 
                     "equivalences=", "components=", "queries=", "transcripts=", "filter="]

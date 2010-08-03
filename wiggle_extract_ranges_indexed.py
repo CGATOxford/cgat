@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
 """
+wiggle_extract_ranges_indexed.py - 
+===============================================================================
+
 Reads a list of intervals and a wiggle file. Produces a list of 
 values similar to wiggle_to_simple.py. 
 

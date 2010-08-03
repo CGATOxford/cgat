@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: analyze_codonbias.py 865 2007-01-15 13:44:43Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,6 +20,42 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+analyze_codonbias.py - codonbias analysis
+=========================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+.. todo::
+   
+   describe purpose of the script.
+
+Usage
+-----
+
+Example::
+
+   python analyze_codonbias.py --help
+
+Type::
+
+   python analyze_codonbias.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 import os, sys, string, re, tempfile, subprocess, optparse, random
 
 """Wrapper for adaptive codon bias program

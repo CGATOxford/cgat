@@ -1,26 +1,68 @@
-####
-####
-##
-## Project PairsDBTools
-##
-## Copyright (C) 2002 Andreas Heger All rights reserved
-##
-## Author: Andreas Heger <heger@ebi.ac.uk>
-##
-## $Id: calculate_histogram_2D.py 2782 2009-09-10 11:40:29Z andreas $
-##
-##
-####
-####
+################################################################################
+#
+#   MRC FGU Computational Genomics Group
+#
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
+#
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU General Public License
+#   as published by the Free Software Foundation; either version 2
+#   of the License, or (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#################################################################################
+'''
+calculate_histogram_2D.py - calculate 2D histogram
+==================================================
 
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
 
+Purpose
+-------
+
+This script computes a 2D histogram. The data is a tab-separated
+with ``x``, ``y`` in the first two columns. The columns can be
+changed by the ``-1`` and ``-2`` options.
+
+Usage
+-----
+
+Example::
+
+   python calculate_histogram_2D.py --help
+
+Type::
+
+   python calculate_histogram_2D.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 import sys, re, string, os, getopt, time, optparse
 
 import Experiment
 import Histogram2D
 
 USAGE = """python calculate_histogram.py < stdin > stdout
-read in data and build histogram of column
+
 -1, --column1    column to take [default = 0]
 -2, --column2    column to take [default = 1]
 # at start of line is a comment
@@ -35,7 +77,7 @@ param_titles = True
 ##---------------------------------------------------------------------------------------------------------        
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: calculate_histogram_2D.py 2782 2009-09-10 11:40:29Z andreas $", usage = USAGE)
+    parser = optparse.OptionParser( version = "%prog version: $Id: calculate_histogram_2D.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-t", "--titles", dest="titles", action="store_true",
                       help="input data has title in first row [default=%default]." )

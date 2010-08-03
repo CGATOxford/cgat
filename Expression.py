@@ -11,6 +11,33 @@ import collections
 #import rpy2, rpy2.robjects as ro
 #import rpy2.robjects.numpy2ri
 
+def buildProbeset2Gene( infile, 
+                        outfile, 
+                        database = "hgu133plus2.db",
+                        mapping = "hgu133plus2ENSEMBL" ):
+    
+    '''build map relating a probeset to an ENSEMBL gene_id'''
+    
+    R.library( database )
+
+    # map is a Bimap object
+    m = R(mapping)
+    
+    result = R.toTable(m)
+
+    outf = open( outfile, "w")
+    outf.write( "probe_id\tgene_id\n" )
+    for probeset_id, gene_id in zip(result["probe_id"], 
+                                    result["ensembl_id"] ):
+        outf.write( "%s\t%s\n" % (probeset_id, gene_id))
+    outf.close()
+
+    E.info( "written %i mappings to %s: probes=%i, genes=%i" % \
+                (len(result),
+                 outfile,
+                 len(set(result["probe_id"])),
+                 len(set(result["ensembl_id"])) ) )
+
 class GeneExpressionResult(object):
     pass
 
@@ -18,7 +45,10 @@ class WelchsTTest(object):
     '''base class for computing expression differences.
     '''
 
-    def __call__(self, probesets, treatments, controls):
+    def __call__(self, 
+                 probesets, 
+                 treatments, 
+                 controls):
         
         assert len(probesets) == len(treatments[0])
         assert len(probesets) == len(controls[0])
@@ -51,6 +81,60 @@ class WelchsTTest(object):
 
         return results, nskipped
 
+class SAMR( object ):
+    '''SAM analysis of microarray data.
+
+    Use the Two-Class Unpaired Case Assuming Unequal Variances.
+
+    This uses the samr library.
+
+    Significant genes are either called at *fdr* or the
+    top *ngenes* are returned.
+
+    *treatments* and *control* are arrays of
+    arrays of expression values.
+
+    See 
+
+    https://stat.ethz.ch/pipermail/bioconductor/2008-July/023251.html
+
+    for an explanation of the differences between siggens SAM
+    and Excel SAM. This version is parameterised to reproduce Excel SAM
+    by setting:
+       var.equal = TRUE
+       med = TRUE
+
+    .. note:: 
+        SAM requires log2 scaled expression levels.
+    '''
+    
+    def __call__(self, probesets, 
+                 treatments, 
+                 controls,
+                 pattern = None,
+                 fdr = 0.10,
+                 ngenes = None,
+                 npermutations = 1000,
+                 ndelta=10,
+                 method = "ttest" ):
+
+        if ngenes and fdr:
+            raise ValueError( "either supply ngenes or fdr, but not both.")
+
+        R.library("samr")
+
+        m = numpy.matrix( treatments + controls )
+        m = numpy.transpose(m)
+        labels = numpy.array([1] * len(treatments) + [2] * len(controls))
+
+        R.assign("x", numpy.array(m))
+        R.assign("y", labels)
+        R.assign("probesets", probesets)
+
+        data = R('''data=list( x=x, y=y, geneid=1:length(probesets), genenames=probesets, logged2=TRUE)''' )
+        result = R('''samr.obj<-samr(data,  resp.type="Two class unpaired", nperms=100)''')
+        R('''plot(samr.obj, delta=.4)''')
+
 class SAM( object ):
     '''SAM analysis of microarray data.
 
@@ -63,18 +147,36 @@ class SAM( object ):
 
     Significant genes are either called at *fdr* or the
     top *ngenes* are returned.
-    
+
+    *treatments* and *control* are arrays of
+    arrays of expression values.
+
+    See 
+
+    https://stat.ethz.ch/pipermail/bioconductor/2008-July/023251.html
+
+    for an explanation of the differences between siggens SAM
+    and Excel SAM. To parameterize the FDR to excel sam, set the
+    flag *use_excel_sam*.
+
     .. note:: 
         SAM requires log2 scaled expression levels.
+
+    I ran into trouble using this library. I was not able to
+    reproduce the same results from the original SAM study getting
+    differences in d and in the fdr.
     '''
     
-    def __call__(self, probesets, treatments, controls,
+    def __call__(self, probesets, 
+                 treatments, 
+                 controls,
                  pattern = None,
                  fdr = 0.10,
                  ngenes = None,
                  npermutations = 1000,
                  ndelta=10,
-                 method = "ttest" ):
+                 method = "ttest",
+                 use_excel_sam = False ):
 
         if ngenes and fdr:
             raise ValueError( "either supply ngenes or fdr, but not both.")
@@ -87,8 +189,18 @@ class SAM( object ):
         ## 1000 permutations for P-Values of down to 0.0001. Setting this
         ## to a high value improved reproducibility of results.
 
-        # the option B needs to be not set if wilc.stat is chosen
         kwargs = {}
+        # kwargs set to replicate excel SAM
+        if use_excel_sam:
+            kwargs.update( { "control" : R('''samControl( lambda = 0.5, n.delta = %(ndelta)s ) ''' % locals()),
+                             "med" : True,
+                             "var.equal": True } )
+        else:
+            kwargs.update( { "control" : R('''samControl( n.delta = %(ndelta)s ) ''' % locals()) }, 
+                           )
+
+        # the option B needs to be not set if wilc.stat is chosen
+
         if method == "ttest":
             kwargs["method"] = R('''d.stat''')
             kwargs["B"] = npermutations            
@@ -98,11 +210,12 @@ class SAM( object ):
             kwargs["method"] = R('''cat.stat''')
         else:
             raise ValueError("unknown statistic `%s`" % method )
-        
+
+        E.info( "running sam with the following options: %s" % str(kwargs) )
+
         a = R.sam( numpy.array(m),
                    labels,
                    gene_names=probesets,
-                   n_delta=ndelta,
                    **kwargs )
         
         R.assign( "a", a )
@@ -112,7 +225,9 @@ class SAM( object ):
         gene_data = collections.namedtuple( "sam_fdr", ("row","dvalue","stddev","rawp","qvalue","rfold" ) )
 
         # how to extract the fdr values
-        # fdr_values = [ fdr_data( *x ) for x in R('''a@mat.fdr''') ]
+        fdr_values = [ fdr_data( *x ) for x in R('''a@mat.fdr''') ]
+
+        #print R('''print(a)''')
 
         # find d cutoff
         if fdr != None and fdr > 0:
@@ -133,17 +248,21 @@ class SAM( object ):
                 cutoff = None
         else:
             raise ValueError("either supply ngenes or fdr")
-        
+
         # collect (unadjusted) p-values and qvalues for all probesets
         pvalues = R('''a@p.value''')
         qvalues = R('''a@q.value''')
         
         siggenes = {}        
+        called_genes = set()
         if cutoff != None:
             E.debug( "using cutoff %s" % str(cutoff) )
-
+            
             summary = R.summary( a, cutoff.delta )
             R.assign( "summary", summary )
+
+            called_genes = set(R('''summary@row.sig.genes'''))
+
             r_result = R('''summary@mat.sig''') 
             if len(r_result) > 0:
 
@@ -154,25 +273,23 @@ class SAM( object ):
                     # the qvalue is thus bounded by the threshold in order to get consistent data
                     for x in zip( *[r_result[y] for y in ("Row", "d.value", "stdev", "rawp", "q.value", "R.fold") ] ):
                         if x[4] > fdr:
-                            E.warn( "WARNING: %s has qvalue larger than cutoff, but is called significant. Set to %f" % (str(x), fdr))
-                            x = list(x)
-                            x[4] = fdr
-                        siggenes[probesets[int(x[0])-1]] = gene_data( *x )
+                            E.warn( "%s has qvalue (%f) larger than cutoff, but is called significant." % (str(x), x[4]))
+
                 except TypeError:
                     # only a single value
                     x = [r_result[y] for y in ("Row", "d.value", "stdev", "rawp", "q.value", "R.fold") ]
                     if x[4] > fdr:
-                        E.warn( "WARNING: %s has qvalue larger than cutoff, but is called significant. Set to %f" % (str(x), fdr))
-                        x = list(x)
-                        x[4] = fdr
-                    siggenes[probesets[int(x[0])-1]] = gene_data( *x )
-                
+                        E.warn( "%s has qvalue (%f) larger than cutoff, but is called significant." % (str(x), x[4]))
+
+                siggenes[probesets[int(x[0])-1]] = gene_data( *x )                
+
             if pattern:
                 outfile = pattern % "sam.pdf"
                 R.pdf(outfile)
                 R.plot( a, cutoff.delta )
                 R.plot( a )
                 R.dev_off()
+
         else:
             E.debug( "no cutoff found - no significant genes." )
             
@@ -199,6 +316,8 @@ class SAM( object ):
                 result.pvalue = pvalues[probeset]
                 result.qvalue = qvalues[probeset]
 
+            result.called = probeset in called_genes
+
             genes.append( result )
 
-        return genes, cutoff
+        return genes, cutoff, fdr_values

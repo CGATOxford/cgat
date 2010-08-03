@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: analyze_go.py 309 2005-12-01 15:50:26Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,15 +20,47 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
-import os, sys, string, re, tempfile, subprocess, optparse
+'''
+analyze_go.py - 
+======================================================
 
-"""Wrapper for adaptive codon bias program
-"""
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+.. todo::
+   
+   describe purpose of the script.
+
+Usage
+-----
+
+Example::
+
+   python analyze_go.py --help
+
+Type::
+
+   python analyze_go.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+import os, sys, string, re, tempfile, subprocess, optparse
 
 import Experiment
 import Database
 
-parser = optparse.OptionParser( version = "%prog version: $Id: analyze_go.py 309 2005-12-01 15:50:26Z andreas $")
 
 def WriteBackground( go_type, options, suffix ):
 
@@ -52,6 +85,8 @@ def WriteBackground( go_type, options, suffix ):
     
 
 if __name__ == "__main__":
+
+    parser = optparse.OptionParser( version = "%prog version: $Id: analyze_go.py 309 2005-12-01 15:50:26Z andreas $")
 
     dbhandle = Database.Database()
     

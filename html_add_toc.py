@@ -1,37 +1,61 @@
-#!/usr/bin/env python
-# -*- coding: iso-8859-1 -*-
+################################################################################
 #
-#  Number Headings of a HTML Page
-#  ==============================
+#   MRC FGU Computational Genomics Group
 #
-#  number-html-headings.py in_file.html out_file.html
+#   $Id$
 #
-#  Example:
-#  <h1>First</h1>
-#  <h2>Sub-Item</h2>
-#  <h2>Sub-Item</h2>
+#   Copyright (C) 2009 Andreas Heger
 #
-#  <h1>Second</h1>
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU General Public License
+#   as published by the Free Software Foundation; either version 2
+#   of the License, or (at your option) any later version.
 #
-#  Result:
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
 #
-#  <h1>1 First</h1>
-#  <h2>1.1 Sub-Item</h2>
-#  <h2>1.2 Sub-Item</h2>
-#
-#  <h1>2 Second</h1>
-#
-#  A table of content is inserted if there is "<-- TOC -->" in the
-#  html source.
-#
-#  (c) September 2002 Thomas Guettler <guettli[A]thomas-guettler.de>
-#
-#  This script is in the public domain
-#
-#  Feedback welcome
-#
-# TODO: Use ElementTree
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#################################################################################
+'''
+html_add_toc.py - 
+======================================================
 
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+.. todo::
+   
+   describe purpose of the script.
+
+Usage
+-----
+
+Example::
+
+   python html_add_toc.py --help
+
+Type::
+
+   python html_add_toc.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 import os
 import re
 import sys

@@ -18,6 +18,43 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+gff2coverage.py - compute genomic coverage of gff intervals
+===========================================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+This script computes the genomic coverage of intervals 
+in a :term:`gff` formatted file. The coverage is compute
+per feature.
+
+Usage
+-----
+
+Example::
+
+   python <script_name>.py --help
+
+Type::
+
+   python <script_name>.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+
 import sys, string, re, optparse, time, os, shutil, tempfile, math
 
 import Experiment
@@ -26,7 +63,7 @@ import IndexedFasta
 
 USAGE="""python %s [OPTIONS] < stdin > stdout
 
-compute coverage per feature
+
 """ % sys.argv[0]
 
 def printValues( contig, max_size, window_size, values, options ):
@@ -116,7 +153,7 @@ def processChunk( contig, chunk, options, fasta = None ):
     
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: gff2coverage.py 2781 2009-09-10 11:33:14Z andreas $", usage = USAGE)
+    parser = optparse.OptionParser( version = "%prog version: $Id: gff2coverage.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option( "-g", "--genome-file", dest="genome_file", type="string",
                        help="filename with genome."  )

@@ -1,20 +1,57 @@
 #!/bin/env python
-####
-####
-##
-## Copyright (C) 2007 Andreas Heger All rights reserved
-##
-## Author: Andreas Heger <andreas.heger@dpag.ox.ac.uk>
-##
-## $Id: farm.py 2782 2009-09-10 11:40:29Z andreas $
-##
-##
-####
-####
+################################################################################
+#
+#   MRC FGU Computational Genomics Group
+#
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
+#
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU General Public License
+#   as published by the Free Software Foundation; either version 2
+#   of the License, or (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#################################################################################
+'''
+farm.py - execute a cmd on the cluster
+======================================
 
-USAGE="""farm.py [OPTIONS] cmd [ARGS] < stdin > stdout
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
 
-execute a cmd on the cluster.
+Purpose
+-------
+
+.. todo::
+   
+   describe purpose of the script.
+
+Usage
+-----
+
+Example::
+
+   cat go | farm.py --split-at-colum=1 perl -p -e "s/GO/gaga/"
+
+Type::
+
+   python farm.py --help
+
+for command line help.
+
+Documentation
+-------------
 
 The input on stdin is split for embarrasingly parallel jobs.
 The --split-at-.. options describe how standard input is to
@@ -28,27 +65,33 @@ same order as they are submitted.
 On error, error messages are echoed and nothing is returned.
 The temporary directory is not deleted to allow manual recovery.
 
-Examples:
+Examples
+--------
 
 The following command will split the file "go" at the first column 
-and execute the command perl -p -e "s/GO/gaga/".
+and execute the command perl -p -e "s/GO/gaga/"::
 
    cat go | farm.py --split-at-colum=1 perl -p -e "s/GO/gaga/"
 
 The following command will split a fasta file at each entry and
-compute an approximate sequence length:
+compute an approximate sequence length::
 
    cat genome.fasta | farm.py --split-at-regex="^>(\S+)" "wc -c"
 
-The following command will split a fasta file at every 10 sequences
+The following command will split a fasta file at every 10 sequences::
 
    cat genome.fasta | farm.py --split-at-regex="^>(\S+)" --chunksize=10 "wc -c"
 
-TODO: 
+.. todo::
 
-implement continuation of jobs
-implement better error messages
-"""
+   implement continuation of jobs
+   implement better error messages
+   use sge array jobs for job control
+
+Code
+----
+
+'''
 
 import os, sys, re, string, optparse, time, glob, subprocess, tempfile, shutil, stat
 
@@ -508,7 +551,7 @@ def hasFinished( retcode, filename, output_tag, logfile ):
 
 
 ##--------------------------------------------------------------------
-def runDRMAA( data ):
+def runDRMAA( data, environment ):
     '''run jobs in data using drmaa to connect to the cluster.'''
     # prefix to detect errors within pipes
     prefix = '''detect_pipe_error_helper() 
@@ -539,6 +582,8 @@ def runDRMAA( data ):
 
     for filename, cmd, options, tmpdir, subdirs in data:
 
+        from_stdin, to_stdout = True, True
+
         if subdirs:
             outdir = "%s.dir/" % (filename)
             os.mkdir( outdir )
@@ -550,6 +595,14 @@ def runDRMAA( data ):
             cmd = cmd[:x.start()] + "--log=%s" % logfile + cmd[x.end():]
         else:
             logfile = filename + ".out"
+
+        if "%STDIN%" in cmd:
+            cmd = re.sub("%STDIN%", filename, cmd )
+            from_stdin = False
+
+        if "%STDOUT%" in cmd:
+            cmd = re.sub("%STDOUT%", filename + ".out", cmd )
+            to_stdout = False
 
         cmd = " ".join( re.sub( "\t+", " ", cmd).split( "\n" ) )
         E.debug( "running statement:\n%s" % cmd )
@@ -566,7 +619,15 @@ def runDRMAA( data ):
         # get session for process - only one is permitted
         jt.workingDirectory = os.getcwd()
         jt.remoteCommand = job_path
-        jt.jobEnvironment = { 'BASH_ENV' : '~/.bashrc' }
+        e = { 'BASH_ENV' : '~/.bashrc' }
+        if environment:
+            for en in environment:
+                try:
+                    e[en] = os.environ[en]
+                except KeyError:
+                    raise KeyError("could not export environment variable '%s'" % en )
+        jt.jobEnvironment = e
+
         jt.args = []
         jt.nativeSpecification = "-q %s -p %i -N %s %s" % \
             (kwargs.get("job_queue", options.cluster_queue ),
@@ -576,10 +637,19 @@ def runDRMAA( data ):
         
         # keep stdout and stderr separate
         jt.joinFiles=False
-        # later: allow redirection of stdout and stderr to files; can this even be across hosts?
-        jt.inputPath=":" + filename
-        jt.outputPath=":"+ filename + ".out"
+
+        # use stdin for data
+        if from_stdin: jt.inputPath=":" + filename
+
+        # later: allow redirection of stdout and stderr to files
+        # could this even be across hosts?
+        if to_stdout: 
+            jt.outputPath=":"+ filename + ".out"
+        else:
+            jt.outputPath=":"+ filename + ".stdout"
+
         jt.errorPath=":" + filename + ".err"
+
 
         jobid = session.runJob(jt)
         jobids.append( (jobid, job_path, filename, cmd, logfile) )
@@ -608,7 +678,7 @@ def getOptionParser():
     """create parser and add options."""
 
     parser = optparse.OptionParser( version = "%prog version: $Id: farm.py 2782 2009-09-10 11:40:29Z andreas $", 
-                                    usage=USAGE )
+                                    usage = globals()["__doc__"] )
 
 
     parser.add_option( "--split-at-lines", dest="split_at_lines", type="int",
@@ -633,13 +703,16 @@ def getOptionParser():
                        help = "debug mode. Do not delete temporary file [default=%default]." )
 
     parser.add_option( "--dry-run", dest="dry_run", action="store_true",
-                       help = "dry run. Do not split input and simply forward stdin to stdout - useful for debugging the command [default=%default]." )
+                       help = "dry run. Do not split input and simply forward stdin to stdout - " 
+                              "useful for debugging the command [default=%default]." )
 
     parser.add_option( "--input-header", dest="input_header", action="store_true",
-                       help = "The input stream contains a table header. This header is replicated for each job [default=%default]." )
+                       help = "The input stream contains a table header. " 
+                              "This header is replicated for each job [default=%default]." )
 
     parser.add_option( "--output-header", dest="output_header", action="store_true",
-                       help = "The output jobs contain a table header. The header is removed for each job except for the first [default=%default]." )
+                       help = "The output jobs contain a table header. " 
+                              "The header is removed for each job except for the first [default=%default]." )
 
     parser.add_option( "--output-tag", dest="output_tag", type="string",
                        help = "The output jobs contain a tag in the last line denoting job completion. If the unix return value denotes an error, the presence of this tag is checked [default=%default]." )
@@ -687,6 +760,9 @@ def getOptionParser():
                        choices=("multiprocessing", "threads", "drmaa"),
                        help = "method to submit jobs [%default]")
 
+    parser.add_option( "-e", "--env", dest="environment", type="string", action="append",
+                       help = "environment variables to be passed to the jobs [%default]" )
+
     parser.set_defaults( 
         split_at_lines = None,
         split_at_column = None,
@@ -695,8 +771,8 @@ def getOptionParser():
         split_at_tag = None,
         chunksize = None,
         cluster_cmd = 'qrsh -cwd -now n -v "BASH_ENV=~/.bashrc"',
-        input_header = None,
-        output_header = None,
+        input_header = False,
+        output_header = False,
         debug = False,
         dry_run = False, 
         tmpdir = "./",
@@ -713,11 +789,12 @@ def getOptionParser():
         max_files = None,
         max_lines = None,
         binary = False,
+        environment = [],
         )
 
     ## stop parsing options at the first argument
     parser.disable_interspersed_args()
-    
+
     return parser
     
 ##--------------------------------------------------------------------
@@ -786,7 +863,7 @@ def main():
             results = pool.map( runCommand, data, chunksize = 1 )
         elif options.method == "drmaa":
             results = []
-            runDRMAA( data )
+            runDRMAA( data, environment = options.environment )
         elif options.method == "threading":
             results = []
             def reportError( request, exc_info ):

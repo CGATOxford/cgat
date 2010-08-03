@@ -1,10 +1,10 @@
-#! /bin/env python
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: sequence2sequence.py 2782 2009-09-10 11:40:29Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2006 Tyler ???? and Andreas Heger 
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -20,70 +20,121 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
-import os, sys, string, re, optparse, math, time, tempfile, subprocess
+'''
+sequence2sequence.py - operate on sequences
+======================================================
 
-USAGE="""%s [OPTIONS] < in.faste > out.fasta
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
 
 perform operations (masking, renaming) on a stream of fasta formatted sequences.
 
 Available edit operations are:
 
-translate:              translate sequences using the standard genetic code.
+translate
+   translate sequences using the standard genetic code.
 
-translate-to-stop:      translate until first stop codon
+translate-to-stop
+   translate until first stop codon
 
-truncate-at-stop:       truncate sequence at first stop codon
+truncate-at-stop
+   truncate sequence at first stop codon
 
-back-translate:         convert nucleotide sequence to peptide sequence
-                        Requires parameter of second fasta file with peptide sequences.
+back-translate
+   convert nucleotide sequence to peptide sequence
+   Requires parameter of second fasta file with peptide sequences.
 
-mark-codons:            adds a space after each codon
+mark-codons
+   adds a space after each codon
 
-apply-map:              rename sequence identifiers from a given map
-                        Requires parameter with filename of a map. The map is a 
-                        tab-separated file mapping old to new names.
+apply-map
+   rename sequence identifiers from a given map
+   Requires parameter with filename of a map. The map is a 
+   tab-separated file mapping old to new names.
 
-build-map:              rename sequence identifiers numerically and save output in a tab-separated file. 
-                        Requires parameter with filename of a map. The map is a tab-separated file
-                        mapping new to old names and will be newly created. Any exiting file of the 
-                        same name will be overwritten.
+build-map
+   rename sequence identifiers numerically and save output in a tab-separated file. 
+   Requires parameter with filename of a map. The map is a tab-separated file
+   mapping new to old names and will be newly created. Any exiting file of the 
+   same name will be overwritten.
 
-pseudo-codons:          translate, but keep register with codons
+pseudo-codons
+   translate, but keep register with codons
 
-interleaved-codons:     mix amino acids and codons
+interleaved-codons
+   mix amino acids and codons
 
 map-codons:
 
-remove-gaps:            remove all gaps in the sequence
+remove-gaps
+   remove all gaps in the sequence
 
-mask-stops:             mask all stop codons
+mask-stops
+   mask all stop codons
 
-mask-seg:               mask sequence by running seg
+mask-seg
+   mask sequence by running seg
 
-mask-bias:              mask sequence by running bias
+mask-bias
+   mask sequence by running bias
 
-mask-codons:            mask codon sequence given a masked amino acid sequence.
-                        Requires parameter with masked amino acids in fasta format.
+mask-codons
+   mask codon sequence given a masked amino acid sequence.
+   Requires parameter with masked amino acids in fasta format.
                         
-mask-incomplete-codons: mask codons that are partially masked or gapped
+mask-incomplete-codons
+   mask codons that are partially masked or gapped
 
-mask-stops:             mask stop codons
+mask-stops
+   mask stop codons
  
-remove-stops:           remove stop codons
+remove-stops
+   remove stop codons
 
-upper:                  convert sequence to upper case
+upper
+   convert sequence to upper case
 
-lower:                  convert sequence to lower case
+lower
+   convert sequence to lower case
 
-reverse-complement:     build the reverse complement
+reverse-complement
+   build the reverse complement
 
-shuffle:                shuffle each sequence
+shuffle
+   shuffle each sequence
 
 Parameters are given to the option parameters in a comma-separated list in the order
 that the edit operations are called upon.
-""" % sys.argv[0]
 
-import Experiment
+Exclusion/inclusion is tested before applying any id mapping.
+
+Usage
+-----
+
+Example::
+
+   python sequence2sequence.py --help
+
+Type::
+
+   python sequence2sequence.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+import os, sys, string, re, optparse, math, time, tempfile, subprocess
+import Experiment as E
 import IOTools
 import Genomics
 import FastaIterator
@@ -114,7 +165,7 @@ def getCodons( sequence, gap_chars = "-." ):
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: sequence2sequence.py 2782 2009-09-10 11:40:29Z andreas $", usage = USAGE)
+    parser = optparse.OptionParser( version = "%prog version: $Id: sequence2sequence.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-m", "--method", dest="methods", type="choice", action="append",
                       choices=("translate", 
@@ -143,14 +194,20 @@ if __name__ == '__main__':
     parser.add_option("-p", "--parameters", dest="parameters", type="string",
                       help="parameter stack for methods that require one [default = %default]."  )
 
-    parser.add_option("-i", "--ignore-errors", dest="ignore_errors", action="store_true",
+    parser.add_option("-x", "--ignore-errors", dest="ignore_errors", action="store_true",
                       help="ignore errors [default = %default]." )
+
+    parser.add_option("-e", "--exclude", dest="exclude", type="string",
+                      help="exclude sequences with ids matching pattern [default = %default]." )
+
+    parser.add_option("-n", "--include", dest="include", type="string",
+                      help="include sequences with ids matching pattern [default = %default]." )
 
     parser.add_option("-t", "--type", dest="type", type="choice",
                       choices = ("aa", "na"),
                       help="sequence type (aa or na) [%default]. This option determines which characters to use for masking [default = %default]."  )
 
-    parser.add_option("-e", "--template-identifier", dest="template_identifier", type="string",
+    parser.add_option("-l", "--template-identifier", dest="template_identifier", type="string",
                       help="""template for numerical identifier [default = %default] for the operation --build-map. A %i is replaced by the position of the sequence in the file."""  )
 
     parser.set_defaults(
@@ -165,11 +222,17 @@ if __name__ == '__main__':
         gap_char = "-",
         template_identifier="ID%06i",
         ignore_errors = False,
+        exclude = None,
+        include = None,
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
     options.parameters = options.parameters.split(",")
 
+    rx_include, rx_exclude = None, None
+    if options.include: rx_include = re.compile( options.include )
+    if options.exclude: rx_exclude = re.compile( options.exclude )
+    
     iterator = FastaIterator.FastaIterator( options.stdin )
 
     nseq = 0
@@ -199,7 +262,7 @@ if __name__ == '__main__':
         
         other_iterator = FastaIterator.FastaIterator( open(f, "r") )
 
-    ninput, noutput, nerrors = 0, 0, 0
+    ninput, noutput, nerrors, nskipped = 0, 0, 0, 0
     
     while 1:
         try:
@@ -213,6 +276,15 @@ if __name__ == '__main__':
         
         sequence = re.sub( " ", "", cur_record.sequence)
         l = len(sequence)
+
+
+        if rx_include and not rx_include.search( cur_record.title ):
+            nskipped += 1
+            continue
+
+        if rx_exclude and rx_exclude.search( cur_record.title ):
+            nskipped += 1
+            continue
 
         for method in options.methods:
 
@@ -437,15 +509,15 @@ if __name__ == '__main__':
                 other_record = other_iterator.next()
 
                 if other_record is None:
-                    raise "run out of sequences."
+                    raise ValueError("run out of sequences.")
 
                 if cur_record.title != other_record.title:
-                    raise "sequence titles don't match: %s %s" % (cur_record.title, other_record.title)
+                    raise ValueError("sequence titles don't match: %s %s" % (cur_record.title, other_record.title))
 
                 other_sequence = re.sub( " ", "", other_record.sequence)
 
                 if len(other_sequence) * 3 != len(sequence):
-                    raise "sequences for %s don't have matching lengths %i - %i" % (cur_record.title, len(other_sequence) * 3, len(sequence))
+                    raise ValueError("sequences for %s don't have matching lengths %i - %i" % (cur_record.title, len(other_sequence) * 3, len(sequence)))
 
                 seq = list(sequence)
                 c = 0
@@ -475,9 +547,8 @@ if __name__ == '__main__':
         if p:
             outfile.close()
 
-    if options.loglevel >= 1:
-        options.stdlog.write( "# ninput=%i, noutput=%i, nerrors=%i\n" % (ninput, noutput, nerrors) )
+    E.info( "ninput=%i, noutput=%i, nskipped=%i, nerrors=%i" % (ninput, noutput, nskipped, nerrors) )
         
-    Experiment.Stop()
+    E.Stop()
     
     

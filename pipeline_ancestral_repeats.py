@@ -154,7 +154,7 @@ elif PARAMS["maf_dir"]:
                   --query=%(maf_name_query)s
                   --target=%(maf_name_target)s
                   --log=%(outfile)s.log 
-             | python %(scriptsdir)s/blat2blat.py 
+             | python %(scriptsdir)s/psl2psl.py 
                   --method=filter-fasta 
                   --method=sanitize
                   --filename-queries=%(genome_query)s
@@ -175,11 +175,11 @@ elif PARAMS["maf_dir"]:
 
         statement = '''gunzip < %(infile)s 
              | sort -k10,10 -k12,12n
-             | python %(scriptsdir)s/blat2blat.py 
+             | python %(scriptsdir)s/psl2psl.py 
                   --method=remove-overlapping-query
                   --log=%(outfile)s.log 
              | sort -k14,14 -k16,16n
-             | python %(scriptsdir)s/blat2blat.py 
+             | python %(scriptsdir)s/psl2psl.py 
                   --method=remove-overlapping-target
                   --log=%(outfile)s.log 
              | gzip
@@ -215,7 +215,7 @@ elif PARAMS["maf_dir"]:
                   %(genome_target)s.sizes 
                   %(genome_query)s.sizes 
                   /dev/stdout 
-             | python %(scriptsdir)s/blat2blat.py 
+             | python %(scriptsdir)s/psl2psl.py 
                   --filename-queries=%(genome_query)s
                   --filename-target=%(genome_target)s
                   --method=sanitize
@@ -366,10 +366,10 @@ def buildAlignedRepeats( infiles, outfile ):
     statement = r'''
         gunzip < alignment.psl.gz 
         | %(cmd-farm)s --split-at-lines=100 --log=%(outfile)s.log --binary 
-             "python %(scriptsdir)s/blat2blat.py 
+             "python %(scriptsdir)s/psl2psl.py 
 	        --method=test 
 		--log=%(outfile)s.log 
-	      | python %(scriptsdir)s/blat2blat.py 
+	      | python %(scriptsdir)s/psl2psl.py 
 		--method=map 
 		--filter-query=<(gunzip < %(infile_query)s )
 		--filter-target=<(gunzip < %(infile_target)s )
@@ -392,7 +392,7 @@ def buildRepeatsRates( infile, outfile ):
     statement = '''gunzip < %(infile)s |
     sort -k10,10 -k14,14 -k9,9 -k12,12n |
     %(cmd-farm)s --split-at-lines=10000 --output-header --log=%(outfile)s.log
-          "python %(scriptsdir)s/blat2blat.py 
+          "python %(scriptsdir)s/psl2psl.py 
 		--log=%(outfile)s.log 
 		--method=add-sequence 
 		--filename-queries=%(genome_query)s

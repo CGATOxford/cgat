@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: rename_links.py 2782 2009-09-10 11:40:29Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,19 +20,50 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+rename_links.py - rename all links in a directory
+=================================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+This script reads links in a directory that match a pattern
+and changes the destination into a new pattern keeping 
+name of the link unchanged.
+
+Usage
+-----
+
+Example::
+
+   python rename_links.py --help
+
+Type::
+
+   python rename_links.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 import os, sys, string, re, optparse, fnmatch
 
-import Experiment
-
-USAGE="""python %s [OPTIONS] directory
-
-rename all links in a directory.
-"""
-
+import Experiment as E
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: rename_links.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = optparse.OptionParser( version = "%prog version: $Id: rename_links.py 2782 2009-09-10 11:40:29Z andreas $",
+                                    usage = globals()["__doc__"])
 
     parser.add_option( "-r", "--recursive", dest="recursive", action="store_true",
                        help="proceed recursively through directories." )
@@ -52,7 +84,7 @@ if __name__ == "__main__":
         new_pattern = None,
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if options.old_pattern == None or options.new_pattern == None:
         raise "please specify both an old and a new pattern."
@@ -82,8 +114,7 @@ if __name__ == "__main__":
     ninput, nvisited, nchanged = 0, 0, 0
     for directory in args:
         ninput += 1
-        if options.loglevel >= 1:
-            options.stdlog.write("# processing directory %s\n" % directory )
+        E.info( "processing directory %s" % directory )
             
         for root, directories, files in os.walk(directory):
             for f in files + directories:
@@ -95,7 +126,7 @@ if __name__ == "__main__":
     if options.stdlog >= 1:
         options.stdlog.write("# ndirs=%i, nvisited=%i, nchanged=%i\n" % (ninput, nvisited, nchanged))
     
-    Experiment.Stop()
+    E.Stop()
 
 
 

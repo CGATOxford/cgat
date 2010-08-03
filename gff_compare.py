@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: gff_compare.py 2781 2009-09-10 11:33:14Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,16 +20,47 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
-import sys, string, re, optparse
+'''
+gff_compare.py - compare two gene sets
+======================================
 
-USAGE="""python %s [OPTIONS] target reference
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
 
-benchmark two gff files.
+Purpose
+-------
+
+This script benchmarks two gene predictions. Predictions are given as gff files.
 
 This script is transcript aware but not gene aware, i.e. if there are several
 transcripts for a gene, overcounting happens.
 
-Version: $Id: gff_compare.py 2781 2009-09-10 11:33:14Z andreas $
+Usage
+-----
+
+Example::
+
+   python gff_compare.py --help
+
+Type::
+
+   python gff_compare.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+import sys, string, re, optparse
+
+USAGE="""python %s [OPTIONS] target reference
+
 """ % sys.argv[0]
 
 import Experiment
@@ -243,7 +275,7 @@ def CountMatchesPerGene( gffs,
 ##------------------------------------------------------------------------
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: gff_compare.py 2781 2009-09-10 11:33:14Z andreas $", usage = USAGE )
+    parser = optparse.OptionParser( version = "%prog version: $Id: gff_compare.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option("-f", "--write-full", dest="write_full",
                       help="write full gff entries.", action="store_true"  )

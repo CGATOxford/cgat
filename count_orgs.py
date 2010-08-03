@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: count_orgs.py 1706 2007-12-11 16:46:11Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,6 +20,42 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+count_orgs.py - 
+======================================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+.. todo::
+   
+   describe purpose of the script.
+
+Usage
+-----
+
+Example::
+
+   python count_orgs.py --help
+
+Type::
+
+   python count_orgs.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 import os, sys, string, re, getopt, optparse
 
 import Orthologs
@@ -52,7 +89,7 @@ def GetPattern( data, l ):
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: count_orgs.py 1706 2007-12-11 16:46:11Z andreas $", usage=USAGE)
+    parser = optparse.OptionParser( version = "%prog version: $Id: count_orgs.py 1706 2007-12-11 16:46:11Z andreas $", usage = globals()["__doc__"])
     
     parser.add_option("-t", "--reference-tree", dest="reference_tree", type="string",
                       help="reference tree to read."  )

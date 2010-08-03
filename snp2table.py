@@ -21,6 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 """
+snp2table.py - annotate variants
+================================
 
 :Author: Andreas Heger
 :Release: $Id: snp2table.py 2861 2010-02-23 17:36:32Z andreas $
@@ -32,6 +34,12 @@ Purpose
 
 This script reads a file in samtools pileup -c format and annotates the
 SNPs in that file.
+
+.. note::
+
+   This script is still under construction. There are issues with the
+   phasing of variants, using the wild-type sequence and merging
+   splice and coding variants.
 
 Usage
 -----
@@ -183,7 +191,9 @@ class BaseAnnotatorSNP( BaseAnnotator ):
         "chromosome", 
         "position", 
         "reference_base", 
-        "consensus_base",
+        "consensus_base" )
+
+    mAdditionalHeader = (
         "consensus_quality",
         "snp_quality",
         "rms_mapping_quality",
@@ -196,7 +206,7 @@ class BaseAnnotatorSNP( BaseAnnotator ):
     
     def __str__(self ):
         # truncate the last two columns to make the snp output even length
-        return "\t".join( map(str, self.mSNP)[:10] )
+        return "\t".join( map(str, self.mSNP)[:4] )
 
     def update( self, snp ):
         '''update with snp.'''
@@ -616,6 +626,8 @@ class BaseAnnotatorCodon( BaseAnnotator ):
         # fixate the order of reference codons
         self.mReferenceCodons = tuple( self.mReferenceCodons )
 
+        reference_base = snp.reference_base
+
         # switch reference strand codon to correct strand
         if reference_base != "*" and is_negative_strand:
             reference_base = Genomics.complement( reference_base )
@@ -712,9 +724,10 @@ class BaseAnnotatorCodon( BaseAnnotator ):
         # indels need to be treated differently from SNPs as
         # they have larger effects
         if reference_base == "*":
-            self.updateIndels()
+            self.updateIndels( snp )
         else:
-            self.updateSNPs()
+            self.updateSNPs( snp )
+
     def __str__(self):
         return "\t".join( (self.mCode, 
                            ",".join(self.mReferenceCodons), 

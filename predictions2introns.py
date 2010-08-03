@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: predictions2introns.py 2781 2009-09-10 11:33:14Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,6 +20,42 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+predictions2introns.py - 
+======================================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+.. todo::
+   
+   describe purpose of the script.
+
+Usage
+-----
+
+Example::
+
+   python predictions2introns.py --help
+
+Type::
+
+   python predictions2introns.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 import os, sys, string, re, optparse
 
 USAGE="""python %s < predictions > introns
@@ -65,7 +102,7 @@ def findCodonReverse( sequence, start, found_codons, abort_codons = None ):
 if __name__ == '__main__':
 
     parser = optparse.OptionParser( version = "%prog version: $Id: predictions2introns.py 2781 2009-09-10 11:33:14Z andreas $",
-                                    usage = USAGE )
+                                    usage = globals()["__doc__"] )
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genome."  )

@@ -21,6 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 """
+chain2psl.py - convert a chain file to a psl file
+=================================================
 
 :Author: Andreas Heger
 :Release: $Id: chain2psl.py 2899 2010-04-13 14:37:37Z andreas $
@@ -82,7 +84,7 @@ def main( argv = None ):
     ## do sth
     ninput, nskipped, noutput = 0, 0, 0
 
-    blat = None
+    psl = None
 
     def chain_iterator( infile ):
         lines = []
@@ -100,24 +102,24 @@ def main( argv = None ):
     for lines in chain_iterator(options.stdin):
         
         ninput += 1
-        blat = Blat.Match()
+        psl = Blat.Match()
 
         ( _, 
           _, 
-          blat.mSbjctId,
+          psl.mSbjctId,
           target_length,
           _,
           target_start,
           target_end,
-          blat.mQueryId,
+          psl.mQueryId,
           query_length,
           query_strand,
           query_start, 
           query_end,
           alignment_id ) = lines[0][:-1].split()
         
-        ( blat.mQueryStart, blat.mQueryEnd, blat.mQueryLength,
-          blat.mSbjctStart, blat.mSbjctEnd, blat.mSbjctLength ) = \
+        ( psl.mQueryStart, psl.mQueryEnd, psl.mQueryLength,
+          psl.mSbjctStart, psl.mSbjctEnd, psl.mSbjctLength ) = \
         [ int(x) for x in 
           (query_start, 
            query_end,
@@ -128,7 +130,7 @@ def main( argv = None ):
 
         map_query2target = alignlib.makeAlignmentBlocks()
         
-        qstart, tstart = blat.mQueryStart, blat.mSbjctStart
+        qstart, tstart = psl.mQueryStart, psl.mSbjctStart
         
         for line in lines[1:-1]:
             size, dt, dq = [int(x) for x in line[:-1].split() ]
@@ -144,8 +146,8 @@ def main( argv = None ):
                                       qstart + size,
                                       tstart - qstart )
 
-        blat.fromMap( map_query2target )
-        options.stdout.write("%s\n" % blat )
+        psl.fromMap( map_query2target )
+        options.stdout.write("%s\n" % psl )
         noutput += 1
 
     E.info( "ninput=%i, noutput=%i, nskipped=%i" % (ninput, noutput,nskipped) )

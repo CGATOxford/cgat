@@ -1,8 +1,10 @@
 ################################################################################
 #
-#   $Id: windows2gff.py 2861 2010-02-23 17:36:32Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2007 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -18,21 +20,47 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+windows2gff.py - create genomic windows according
+=================================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+Given indexed genome sequences, output a collection of windows.
+
+Usage
+-----
+
+Example::
+
+   python windows2gff.py --fixed-windows=500,250
+
+creates windows of size 500 bp in steps of 250 bp.
+
+Type::
+
+   python windows2gff.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 import sys, string, re, optparse, time, os, shutil, tempfile, math
 
 import Experiment
 import GFF
 import IndexedFasta
-
-USAGE="""python %s [OPTIONS] < stdin > stdout
-
-create genomic windows according to user criteria.
-
-examples:
-
---fixed-windows=500,250: create windows of size 500 bp in steps of 250 bp.
-
-""" % sys.argv[0]
 
 def getFixedWidthWindows( map_contig2size, options ):
     """return a list of fixed contig sizes."""
@@ -63,7 +91,7 @@ def getFixedWidthWindows( map_contig2size, options ):
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: windows2gff.py 2861 2010-02-23 17:36:32Z andreas $", usage = USAGE)
+    parser = optparse.OptionParser( version = "%prog version: $Id: windows2gff.py 2861 2010-02-23 17:36:32Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option( "-g", "--genome-file", dest="genome_file", type="string",
                        help="filename with genome (indexed)."  )

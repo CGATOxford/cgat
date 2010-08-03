@@ -1,21 +1,62 @@
-####
-####
-##
-##
-## Copyright (C) 2008 Andreas Heger All rights reserved
-##
-## Author: Andreas Heger <heger@ebi.ac.uk>
-##
-## $Id: gff2wiggle_stats.py 2781 2009-09-10 11:33:14Z andreas $
-##
-##
-####
-####
+################################################################################
+#
+#   MRC FGU Computational Genomics Group
+#
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
+#
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU General Public License
+#   as published by the Free Software Foundation; either version 2
+#   of the License, or (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#################################################################################
+'''
+gff2wiggle_stats.py - compute coverage of intervals
+===================================================
 
-USAGE="""python blat2assembly.py [OPTIONS] > output
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
 
-Assemble blat matches overlapping on sbjct.
-"""
+Purpose
+-------
+
+This script builds a :term:`wiggle` file from a :term:`gff` formatted
+file by stacking the intervals in the :term:`gff` formatted file on
+top of each other. The value in the :term:`wiggle` file is the height
+of the stack.
+
+Usage
+-----
+
+Example::
+
+   python gff2wiggle_stats.py --help
+
+Type::
+
+   python gff2wiggle_stats.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 
 import sys, re, string, optparse, time, os, glob
 
@@ -28,7 +69,7 @@ import alignlib
 
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: gff2wiggle_stats.py 2781 2009-09-10 11:33:14Z andreas $", usage=USAGE )
+    parser = optparse.OptionParser( version = "%prog version: $Id: gff2wiggle_stats.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genome."  )

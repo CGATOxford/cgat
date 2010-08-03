@@ -1,10 +1,10 @@
-#!/bin/env python
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: plot_histogram.py 2782 2009-09-10 11:40:29Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -20,11 +20,17 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
-import sys, re, string, os, getopt, time, optparse, array
+'''
+plot_histogram.py - create line plot of tabular data
+====================================================
 
-USAGE="""plot_histogram.py [options] [infile] < stdin
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
 
-histogram plotting utility.
+Purpose
+-------
 
 Reads data in tabular format with observations in rows in
 different samples in columns. The first column provides the
@@ -33,9 +39,28 @@ bins.
 Missing values (na) are ignored.
 
 Reads data from stdin unless infile is given.
-"""
 
+Usage
+-----
 
+Example::
+
+   python plot_histogram.py --help
+
+Type::
+
+   python plot_histogram.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+import sys, re, string, os, getopt, time, optparse, array
 import Experiment as E
 import Histogram
 import MatlabTools
@@ -45,7 +70,7 @@ import numpy.ma
 
 def main():
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: plot_histogram.py 2782 2009-09-10 11:40:29Z andreas $", usage = USAGE)
+    parser = optparse.OptionParser( version = "%prog version: $Id: plot_histogram.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-l", "--legend", dest="legend", type="string",
                       help="legend for plot [default=%default]."  )
@@ -223,7 +248,7 @@ def main():
                                       truncate= xr )
     
     if infile != sys.stdin: infile.close()
-    if data == None or len(data) == 0:
+    if len(data) == 0: # or data == None:
         E.info("empty table: no plot" )
         E.Stop()
         return

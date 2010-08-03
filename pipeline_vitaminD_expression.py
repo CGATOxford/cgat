@@ -1,3 +1,61 @@
+################################################################################
+#
+#   MRC FGU Computational Genomics Group
+#
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
+#
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU General Public License
+#   as published by the Free Software Foundation; either version 2
+#   of the License, or (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#################################################################################
+'''
+pipeline_vitaminD_expression.py - 
+======================================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+.. todo::
+   
+   describe purpose of the script.
+
+Usage
+-----
+
+Example::
+
+   python pipeline_vitaminD_expression.py --help
+
+Type::
+
+   python pipeline_vitaminD_expression.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 import os, sys, re, csv
 import sqlite3
 
@@ -76,7 +134,10 @@ def getExpressionMeasurements( track ):
 
     r = zip(*cc.fetchall())
     nreplicates_sample = len(replicates_sample)
-    return (control, r[0], r[1:nreplicates_sample+1], r[nreplicates_sample+1:])
+    treatments = r[1:nreplicates_sample+1]
+    controls = r[nreplicates_sample+1:]
+
+    return (control, r[0], treatments, controls)
 
 
 ############################################################
@@ -125,7 +186,7 @@ def executeGO( outfile,
     --output-filename-pattern='%(outdir)s/%%(go)s.%%(section)s' \
     > %(outfile)s'''
 
-    P.run( **dict( locals().items() + PARAMS.items() ) )    
+    P.run()    
 
 ############################################################
 ############################################################
@@ -272,19 +333,15 @@ def runGO( infile, outfile, go_file ):
     tablename = "%s_vs_%s_%s" % (track,control,method)
 
     if "sam" in infile:
-        # use <=, as qvalues has been set artificially
-        # to the threshold as siggenes sometimes reports
-        # the qvalue to be higher than the threshold.
-        qvalue = PARAMS["sam_fdr"]
         # do not use DISTINCT as it is much slower
         statement_fg = '''SELECT m.gene_id FROM
         %(tablename)s AS e,
         probeset2transcript AS m
         WHERE e.cluster_id = m.cluster_id AND
-        e.qvalue <= %(qvalue)f''' %\
+        e.called''' %\
         (locals())
     elif "ttest" in infile:
-        pvalue = PARAMS["ttest_pvalue_cutoff"]
+        pvalue = PARAMS["expression_ttest_pvalue_cutoff"]
         statement_fg = '''SELECT m.gene_id FROM
         %(tablename)s AS e,
         probeset2transcript AS m
@@ -335,7 +392,7 @@ def importGO( infile, outfile, suffix ):
               --table=%(tablename)s \
     > %(outfile)s
     '''
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
 
     
              

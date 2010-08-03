@@ -1,25 +1,60 @@
-####
-####
-##
-##
-## Copyright (C) 2008 Andreas Heger All rights reserved
-##
-## Author: Andreas Heger <andreas.heger@helsinki.fi>
-##
-## $Id: gff2blat.py 2781 2009-09-10 11:33:14Z andreas $
-##
-##
-####
-####
+################################################################################
+#
+#   MRC FGU Computational Genomics Group
+#
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
+#
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU General Public License
+#   as published by the Free Software Foundation; either version 2
+#   of the License, or (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#################################################################################
+'''
+gff2psl.py - convert from gff to psl
+====================================
 
-USAGE="""python blat2gff.py [OPTIONS] < input > output
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
 
-convert gff output to blat output.
+Purpose
+-------
 
-Todo:
-- count gaps
-- count mismatches
-"""
+This scripts converts from a :term:`gff` formatted
+file to a :term:`psl` formatted file.
+
+Usage
+-----
+
+Example::
+
+   python <script_name>.py --help
+
+Type::
+
+   python <script_name>.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 
 import sys, re, string, optparse, time, os, glob
 
@@ -33,7 +68,7 @@ import Intervals
 
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: gff2blat.py 2781 2009-09-10 11:33:14Z andreas $", usage=USAGE )
+    parser = optparse.OptionParser( version = "%prog version: $Id: gff2psl.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option( "--is-gtf", dest="is_gtf", action="store_true",
                       help="input is gtf."  )

@@ -1,10 +1,11 @@
-#!/usr/bin/env python
+#! /bin/env python
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: csv2db.py 2782 2009-09-10 11:40:29Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -20,25 +21,53 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
-import os, sys, string, re, time, optparse, tempfile, subprocess, types
+'''
+csv2db.py - upload table to database
+====================================
 
-USAGE = """create a table from a csv separated file and load data into it.
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+create a table from a csv separated file and load data into it.
 
 This module supports backends for postgres and sqlite3. Column types are
 auto-detected.
 
-Example:
-
 Read a table from stdin and create an sqlite3 database. By default, the database
 will reside in a file called csvdb and in a table csv.
 
-  python ~/t/csv2psql.py -b sqlite < stdin 
+  
+.. todo::
 
-TODO:
+   Use file import where appropriate to speed up loading. Currently, this is
+   not always the case.
 
-Use file import where appropriate to speed up loading. Currently data
-is imported via insert statements.
-"""
+Usage
+-----
+
+Example::
+
+   python csv2db.py -b sqlite < stdin 
+
+Type::
+
+   python csv2db.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+import os, sys, string, re, time, optparse, tempfile, subprocess, types
 
 import Experiment as E
 import csv, CSV
@@ -102,9 +131,8 @@ def createTable( dbhandle, error, options, rows = None, headers = None,
         map_column2type, ignored, max_values = CSV.GetMapColumn2Type( rows,
                                                                       ignore_empty = options.ignore_empty,
                                                                       get_max_values = True )
-        if options.loglevel >= 1 and ignored:
-            options.stdlog.write( "# ignored columns: %s\n" % str(ignored) )
-            options.stdlog.flush()
+        if ignored:
+            E.info( "ignored columns: %s" % str(ignored) )
 
         headers = map_column2type.keys()
         headers.sort()
@@ -113,6 +141,8 @@ def createTable( dbhandle, error, options, rows = None, headers = None,
         map_column2type = dict( zip( headers, [None,] * len(headers) ) )
         ignored = 0
 
+    columns_to_ignore = set( [ x.lower() for x in options.ignore_columns] )
+    
     take = []
     ## associate headers to field names
     columns = []
@@ -122,6 +152,8 @@ def createTable( dbhandle, error, options, rows = None, headers = None,
         if options.lowercase:
             hh = string.lower(h)
 
+        if hh in columns_to_ignore: continue
+    
         if hh in present:
             if options.ignore_duplicates:
                 continue
@@ -255,16 +287,18 @@ def run( options, args ):
             break
 
     if len(rows) == 0:
-        if not options.allow_empty or not reader.fieldnames:
-            raise ValueError("empty table")
-        else:
-            # create empty table and exit
-            take, map_column2type, ignored = createTable( dbhandle, error, headers = reader.fieldnames,
-                                                          options = options,
-                                                          existing_tables = existing_tables )
-            E.info( "empty table created" )
-            E.Stop()
+        if options.allow_empty:
+            if not reader.fieldnames:
+                E.warn( "do data - no table created")
+            else:
+                # create empty table and exit
+                take, map_column2type, ignored = createTable( dbhandle, error, headers = reader.fieldnames,
+                                                              options = options,
+                                                              existing_tables = existing_tables )
+                E.info( "empty table created" )
             return
+        else:
+            raise ValueError( "empty table" )
     else:
         take, map_column2type, ignored = createTable( dbhandle, error,
                                                       rows = rows,
@@ -318,14 +352,12 @@ def run( options, args ):
     elif options.insert_many:
         data = []
         for d in row_iter( rows, reader ):
-
             ninput += 1
 
             data.append( [d[x] for x in take] )
 
-            if options.loglevel >= 1 and ninput % options.report_step == 0:
-                options.stdlog.write( "# iteration %i\n" % ninput )
-                options.stdlog.flush()
+            if ninput % options.report_step == 0:
+                E.info( "iteration %i" % ninput )
                 
         statement = "INSERT INTO %s VALUES (%s)" % (options.tablename, ",".join( "?" * len(take ) ) )
 
@@ -358,8 +390,7 @@ def run( options, args ):
             ninput += 1
 
             E.debug( "single insert:\n# %s" % (statement % d) )
-            cc = dbhandle.cursor()
-            cc.execute(statement % d)
+            cc = executewait( dbhandle, statement % d, error, options.retry )
             cc.close()
             
             if options.loglevel >= 1 and ninput % options.report_step == 0:
@@ -371,16 +402,14 @@ def run( options, args ):
         nindex += 1
         try:
             statement = "CREATE INDEX %s_index%i ON %s (%s)" % ( options.tablename, nindex, options.tablename, index )
-            cc = dbhandle.cursor()
-            cc.execute(statement)
+            cc = executewait( dbhandle, statement, error, options.retry )
             cc.close()
             E.info( "added index on column %s" % (index) )
         except error, msg: 
             E.info( "adding index on column %s failed: %s" % (index, msg) )
 
     statement = "SELECT COUNT(*) FROM %s" % ( options.tablename )
-    cc = dbhandle.cursor()
-    cc.execute(statement)
+    cc = executewait( dbhandle, statement, error, options.retry )
     result = cc.fetchone()
     cc.close()
 
@@ -392,7 +421,7 @@ def run( options, args ):
 
 def main( argv = sys.argv ):
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: csv2db.py 2782 2009-09-10 11:40:29Z andreas $", usage = USAGE)
+    parser = optparse.OptionParser( version = "%prog version: $Id: csv2db.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option( "--dialect", dest="dialect", type="string",
                       help="csv dialect to use [default=%default]." )
@@ -414,6 +443,9 @@ def main( argv = sys.argv ):
 
     parser.add_option("-s", "--ignore-same", dest="ignore_same", action="store_true",
                       help="ignore columns with identical values [default=%default]." )
+
+    parser.add_option("--ignore-column", dest="ignore_columns", type="string", action="append",
+                      help="ignore columns [default=%default]." )
     
     parser.add_option("-e", "--ignore-empty", dest="ignore_empty", action="store_true",
                       help="ignore columns which are all empty [default=%default]." )
@@ -448,6 +480,7 @@ def main( argv = sys.argv ):
         ignore_identical = False,
         ignore_empty = False,
         insert_many = False,
+        ignore_columns = [],
         guess_size = 1000,
         report_step = 10000,
         backend="sqlite",

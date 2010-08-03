@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: matrix2tree.py 2782 2009-09-10 11:40:29Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,13 +20,46 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+matrix2tree.py - build tree from a distance matrix
+==================================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+.. todo::
+   
+   describe purpose of the script.
+
+Usage
+-----
+
+Example::
+
+   python matrix2tree.py --help
+
+Type::
+
+   python matrix2tree.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 import os, sys, string, re, getopt, time, optparse, math, tempfile, subprocess, random
 
 from types import *
-""" program $Id: matrix2tree.py 2782 2009-09-10 11:40:29Z andreas $
-normalize branch length in tree by value. If value is 0, the longest branch
-length is chosen.
-"""
+
 import Experiment
 import TreeTools
 import Tree
@@ -117,7 +151,7 @@ if __name__ == "__main__":
     chunks.append( len(lines) )
 
     for x in range(len(chunks) -1 ):
-
+        
         matrix = lines[chunks[x]+1:chunks[x+1]]
 
         ## parse phylip matrix

@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: table2table.py 2782 2009-09-10 11:40:29Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,15 +20,45 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
-import os, sys, string, re, optparse, math, types
+'''
+table2table.py - operate on tables
+==================================
 
-import Experiment
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
 
-USAGE="""python %s [OPTIONS] < table.in > table.out
+Purpose
+-------
 
-apply operations on a table 
-""" % sys.argv[0]
+split-fields
+   Split muliple-value fields in each row at *separator*. Output
+   multiple rows with all combinations.
 
+Usage
+-----
+
+Example::
+
+   python table2table.py --help
+
+Type::
+
+   python table2table.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+import os, sys, string, re, optparse, math, types, itertools
+
+import Experiment as E
 import CSV
 import Stats
 import scipy.stats
@@ -60,7 +91,7 @@ def readAndTransposeTable( infile, options ):
     for r in range(0, len(rows)):
         for c in range( 0, len(rows[r]) ):
             new_rows[c][r] = rows[r][c]
-
+ 
     for row in new_rows:
         options.stdout.write( "\t".join( row ) + "\n")
 
@@ -136,6 +167,12 @@ def readAndGroupTable( infile, options ):
 ##########################################################
 ##########################################################        
 def readAndExpandTable( infile, options ):
+    '''splits fields in table at separator. 
+    
+    If a field in a row contains multiple values,
+    the row is expanded into multiple rows such
+    that all values have space.
+    '''
 
     fields, table  = CSV.ReadTable( infile, with_header = options.has_headers, as_rows = True )
 
@@ -155,7 +192,7 @@ def readAndExpandTable( infile, options ):
         for n in range(nrows):
             options.stdout.write( "\t".join( [ d[n] for d in data ] ) + "\n" )
 
-            ##########################################################
+##########################################################
 ##########################################################
 ##########################################################        
 def readAndJoinTable( infile, options ):
@@ -269,6 +306,12 @@ if __name__ == "__main__":
     parser.add_option("--flatten-table", dest="flatten_table", action="store_true",
                       help="flatten table."  )
 
+    parser.add_option("--split-fields", dest="split_fields", action="store_true",
+                      help="split fields."  )
+
+    parser.add_option("--separator", dest="separator", type="string",
+                      help="separator for multi-valued fields [default=%default]."  )
+
     parser.set_defaults(
         methods = [],
         scale = 1.0,
@@ -291,7 +334,7 @@ if __name__ == "__main__":
         join_column_name = None,
         )
     
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
     options.parameters = options.parameters.split(",")
     
@@ -328,6 +371,21 @@ if __name__ == "__main__":
         for row in table:
             for x in f:
                 options.stdout.write( "%s\t%s\n" % (fields[x], row[x] ))
+
+    elif options.split_fields:
+
+        # split comma separated fields
+        fields, table  = CSV.ReadTable( sys.stdin, 
+                                        with_header = options.has_headers, 
+                                        as_rows = True )
+        
+        options.stdout.write( "%s\n" % ("\t".join(fields)))
+        f = len(fields)
+
+        for row in table:
+            row = [ x.split(options.separator) for x in row ]
+            for d in itertools.product( *row ):
+                options.stdout.write( "%s\n" % "\t".join( d ) )
             
     elif options.group:
 
@@ -353,8 +411,7 @@ if __name__ == "__main__":
         ncols = len(fields)
         nrows = len(table[0])
 
-        if options.loglevel >= 1:
-            options.stdlog.write( "# processing table with %i rows and %i columns.\n" % (nrows, ncols) )
+        E.info( "processing table with %i rows and %i columns" % (nrows, ncols) )
 
         if options.columns == "all":
             options.columns = range( len(fields) )
@@ -413,7 +470,7 @@ if __name__ == "__main__":
                                                                        options.format % e1,
                                                                        options.format % e2,
                                                                        options.format % ((e1 + e2) / 2)) )
-                Experiment.Stop()
+                E.Stop()
                 sys.exit(0)
 
             elif method == "rank":
@@ -488,5 +545,5 @@ if __name__ == "__main__":
             for r in range(nrows):
                 options.stdout.write( "\t".join( [ table[c][r] for c in range(ncols) ] ) + "\n")
 
-    Experiment.Stop()
+    E.Stop()
     

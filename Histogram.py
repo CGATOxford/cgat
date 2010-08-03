@@ -643,8 +643,6 @@ def histogram(values, mode=0, bin_function=None):
             return sort(bins.items(), lambda x,y: cmp(y[1],x[1]))
         else:
             return sort(bins.items())
-        
-
 
 #----------------------------------------------------------------------------------------------------------
 def cumulate( histogram ):

@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: gff2predictions.py 2021 2008-07-10 16:00:48Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,9 +20,45 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+gff2predictions.py - 
+======================================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+.. todo::
+   
+   describe purpose of the script.
+
+Usage
+-----
+
+Example::
+
+   python gff2predictions.py --help
+
+Type::
+
+   python gff2predictions.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 import sys, string, re, optparse
 
-USAGE="""python %s [OPTIONS] < blat > predictions
+USAGE="""python %s [OPTIONS] < psl > predictions
 
 Convert GFF exon list to predictions format.
 
@@ -71,14 +108,14 @@ def checkIdentity( reference, translation, options ):
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: gff2predictions.py 2021 2008-07-10 16:00:48Z andreas $", usage = USAGE)
+    parser = optparse.OptionParser( version = "%prog version: $Id: gff2predictions.py 2021 2008-07-10 16:00:48Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-t", "--trans", dest="trans", 
                       help="input is translated DNA.", action="store_true"  )
 
     parser.add_option("-f", "--format", dest="format", 
                       help="input format.", type="choice",
-                      choices = ("exons", "blat","gff"))
+                      choices = ("exons", "psl","gff"))
 
     parser.add_option("-o", "--output-format", dest="output_format",
                       help="output format", type = "choice",
@@ -108,7 +145,7 @@ if __name__ == "__main__":
     parser.set_defaults(
         trans = False,
         output_format = "predictions",
-        format="blat",
+        format="psl",
         gff_field_id = 'id',
         input_coordinates="both-zero-open",
         filename_peptides = None,
@@ -146,7 +183,7 @@ if __name__ == "__main__":
         
     if options.output_format == "predictions":
         
-        if options.format == "blat":
+        if options.format == "psl":
 
             if options.trans:
                 parser = PredictionParser.PredictionParserBlatTrans()

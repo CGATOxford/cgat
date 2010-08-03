@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: compare_histograms.py 2782 2009-09-10 11:40:29Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2006 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,23 +20,45 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+histograms2kl.py - compute Kullback-Leibler distance
+====================================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+Output the Kullback-Leibler distance between two or
+more distributions given as histograms.
+
+Usage
+-----
+
+Example::
+
+   python histograms2kl.py --help
+
+Type::
+
+   python histograms2kl.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 import os, sys, string, re, optparse, time, random
 
 import math
 import numpy
-
-"""Tests to compare distribution of values
-
-Input: two sets of values. These can be either given
-as values directly or as categories, which will be mapped to
-values.
-
-Question: is the distribution of values different?
-
-Implementation: uses R 
-
-"""
-
 import Experiment
 import pgdb
 import IOTools
@@ -45,8 +68,8 @@ if __name__  == "__main__":
     parser = optparse.OptionParser( version = "%prog version: $Id: compare_histograms.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option( "-m", "--method", dest="method", type="choice",
-                       help="method to use [kl=kullback-leibler",
-                       choices=("kl","k") )
+                       help="method to use [kl=kullback-leibler]",
+                       choices=("kl",) )
     parser.add_option( "-n", "--no-normalize", dest="normalize", action="store_false",
                        help="do not normalize data" )
     parser.add_option( "-p", "--pseudocounts", dest="pseudocounts", type="int",

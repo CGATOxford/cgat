@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: predictions2transcripts.py 1841 2008-05-08 12:07:13Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,20 +20,46 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
-import os, sys, string, re, optparse
+'''
+predictions2transcripts.py - patch predictions into transcripts
+===============================================================
 
-USAGE="""python %s < predictions > genes
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
 
-Version: $Id: predictions2transcripts.py 1841 2008-05-08 12:07:13Z andreas $
+Purpose
+-------
 
 attempt various ways to patch up predictions like
 
   * extending predictions to next start AUG/stopcodon.
   * filling introns (introns without frameshift and stop codon)
-  
-""" % sys.argv[0]
 
-import Experiment
+Usage
+-----
+
+Example::
+
+   python predictions2transcripts.py --help
+
+Type::
+
+   python predictions2transcripts.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+import os, sys, string, re, optparse
+
+import Experiment as E
 import Genomics
 import IndexedFasta
 import Exons
@@ -68,7 +95,7 @@ def findCodonReverse( sequence, start, found_codons, abort_codons = None ):
 if __name__ == '__main__':
 
     parser = optparse.OptionParser( version = "%prog version: $Id: predictions2transcripts.py 1841 2008-05-08 12:07:13Z andreas $",
-                                    usage = USAGE )
+                                    usage = globals()["__doc__"] )
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genome."  )
 
@@ -114,7 +141,7 @@ if __name__ == '__main__':
         output_filename_summary = None,
         )
 
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
     if len(args) > 0:
         print USAGE, "no arguments required."
@@ -150,7 +177,7 @@ if __name__ == '__main__':
     else:
         outfile_summary = None
 
-    for line in sys.stdin:
+    for line in options.stdin:
         
         if line[0] == "#": continue
 
@@ -203,8 +230,7 @@ if __name__ == '__main__':
                                                            options.stop_codons )
                     
                     if found_start:
-                        if options.loglevel >= 1:
-                            options.stdlog.write("# prediction %s: stop found at %i (%i) backtracking ... " % ( p.mPredictionId, start, extension_start - start) )
+                        E.info("prediction %s: stop found at %i (%i) backtracking ..." % ( p.mPredictionId, start, extension_start - start) )
                         
                         ## bracktrack to first start codon
                         found_start = False
@@ -216,19 +242,16 @@ if __name__ == '__main__':
                         else:
                             start = extension_start
 
-                        if options.loglevel >= 1:
-                            if found_start:
-                                options.stdlog.write("start codon found at %i (%i).\n" % ( start, extension_start - start) )
-                            else:
-                                options.stdlog.write("no start codon found.\n" )
+                        if found_start:
+                            E.info("start codon found at %i (%i)." % ( start, extension_start - start) )
+                        else:
+                            E.info("no start codon found." )
                     else:
-                        if options.loglevel >= 1:
-                            options.stdlog.write("# prediction %s: no stop found ... backtracking to start codon.\n" % ( p.mPredictionId ) )
+                        E.info("prediction %s: no stop found ... backtracking to start codon." % ( p.mPredictionId ) )
 
                         found_start, start = findCodonReverse( genomic_sequence, start, options.start_codons )
 
-                        if options.loglevel >= 1:
-                            options.stdlog.write("# prediction %s: no start codon found.\n" % ( p.mPredictionId ) )
+                        E.info("prediction %s: no start codon found." % ( p.mPredictionId ) )
 
             if found_start:
                 start += genome_from
@@ -269,8 +292,7 @@ if __name__ == '__main__':
             map_peptide2genome += p.mMapPeptide2Genome
             if dstop: map_peptide2genome.append( ("G", 0, dstop) )
 
-            if options.loglevel >= 1:
-                options.stdlog.write("# prediction %s: extension: found_start=%i, found_stop=%i, left=%i, right=%i.\n" % ( p.mPredictionId, found_start, found_stop, dstart, dstop ) )
+            E.info("prediction %s: extension: found_start=%i, found_stop=%i, left=%i, right=%i" % ( p.mPredictionId, found_start, found_stop, dstart, dstop ) )
 
             ## save results
             p.mMapPeptide2Genome = map_peptide2genome
@@ -312,10 +334,9 @@ if __name__ == '__main__':
                 lintron = e.mGenomeFrom - last_e.mGenomeTo
                 
                 if lintron > options.fill_introns or (lintron) % 3 != 0:
-                    if options.loglevel >= 4:
-                        options.stdlog.write( "# prediction %s: intron %i of size %i discarded.\n" % \
-                                              (p.mPredictionId,
-                                               nintron, lintron ) )
+                    E.debug( "prediction %s: intron %i of size %i discarded." % \
+                                 (p.mPredictionId,
+                                  nintron, lintron ) )
                     
                     new_exons.append(last_e)
                     last_e = e
@@ -346,33 +367,33 @@ if __name__ == '__main__':
                 else:
                     right_signal = False
 
-                nstops = 0
+                nstops, ngaps = 0, 0
                 for codon in [ sequence[x:x+3] for x in range(0,len(sequence),3) ]:
-                    if codon in options.stop_codons:
-                        nstops += 1
+                    if codon in options.stop_codons: nstops += 1
+                    if "N" in codon.upper(): ngaps += 1
+                        
+                    E.debug( "prediction %s: intron %i of size %i (%i-%i) (%s:%s:%i:%i): stops=%i, gaps=%i, signals=%s,%s." % \
+                                 (p.mPredictionId,
+                                  nintron, lintron,
+                                  offset_left, offset_right,
+                                  p.mSbjctToken, p.mSbjctStrand,
+                                  p.mSbjctGenomeFrom + last_e.mGenomeTo,
+                                  p.mSbjctGenomeFrom + e.mGenomeFrom,
+                                  nstops,
+                                  ngaps,
+                                  left_signal, right_signal ) )
 
-                if options.loglevel >= 3:
-                    options.stdlog.write( "# prediction %s: intron %i of size %i (%i-%i) (%s:%s:%i:%i): stops=%i, signals=%s,%s.\n" % \
-                                          (p.mPredictionId,
-                                           nintron, lintron,
-                                           offset_left, offset_right,
-                                           p.mSbjctToken, p.mSbjctStrand,
-                                           p.mSbjctGenomeFrom + last_e.mGenomeTo,
-                                           p.mSbjctGenomeFrom + e.mGenomeFrom,
-                                           nstops,
-                                           left_signal, right_signal ) )
-
-                if nstops > options.introns_max_stops:
+                if nstops + ngaps > options.introns_max_stops:
                     new_exons.append(last_e)                                        
                     last_e = e
                     continue
                 
-                if options.loglevel >= 1:
-                    options.stdlog.write( "# prediction %s: filling intron %i of size %i: stops=%i, signals=%s,%s\n" % \
-                                          (p.mPredictionId,
-                                           nintron, lintron,
-                                           nstops,
-                                           left_signal, right_signal))
+                E.info( "prediction %s: filling intron %i of size %i: stops=%i, gaps=%i, signals=%s,%s" % \
+                            (p.mPredictionId,
+                             nintron, lintron,
+                             nstops,
+                             ngaps,
+                             left_signal, right_signal))
 
                 e.Merge( last_e )
                 has_filled = True
@@ -388,8 +409,6 @@ if __name__ == '__main__':
                 
                 filled_introns.append(lintron)
                 p.mNIntrons -= 1
-
-                
                 
             new_exons.append(last_e)
 
@@ -404,7 +423,7 @@ if __name__ == '__main__':
         p.mMapPeptide2Translation, p.mTranslation = Genomics.Alignment2PeptideAlignment( \
                p.mMapPeptide2Genome, p.mQueryFrom, 0, genomic_sequence )
 
-        ## output infob
+        ## output info
         if options.output_format == "predictions":
             options.stdout.write( str(p) + "\n" )
         elif options.output_format == "extensions":
@@ -420,13 +439,11 @@ if __name__ == '__main__':
         noutput += 1
         options.stdout.flush()
 
-    if options.loglevel >= 1:
-        options.stdlog.write("# stats  : %s\n" % "\t".join(Stats.DistributionalParameters().getHeaders() ))
-        options.stdlog.write("# left   : %s\n" % str(Stats.DistributionalParameters(left_extensions)) )
-        options.stdlog.write("# right  : %s\n" % str(Stats.DistributionalParameters(right_extensions)) )
-        options.stdlog.write("# introns: %s\n" % str(Stats.DistributionalParameters(filled_introns)) )        
-        
-        options.stdlog.write("# ninput=%i, noutput=%i, nextended=%i, nfilled=%i, nexons_filled=%i\n" % (\
+    E.info("stats  : %s" % "\t".join(Stats.DistributionalParameters().getHeaders() ))
+    E.info("left   : %s" % str(Stats.DistributionalParameters(left_extensions)) )
+    E.info("right  : %s" % str(Stats.DistributionalParameters(right_extensions)) )
+    E.info("introns: %s" % str(Stats.DistributionalParameters(filled_introns)) )        
+    E.info("ninput=%i, noutput=%i, nextended=%i, nfilled=%i, nexons_filled=%i" % (\
             ninput, noutput, nseqs_extended, nseqs_filled, nfilled))
         
-    Experiment.Stop()
+    E.Stop()

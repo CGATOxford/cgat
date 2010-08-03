@@ -1,9 +1,10 @@
-###############################################################################
-#   Gene prediction pipeline 
+################################################################################
 #
-#   $Id: mask_fasta.py 2782 2009-09-10 11:40:29Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,19 +20,45 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
-import os, sys, string, re, optparse, array
+'''
+mask_fasta.py - mask fasta formatted sequences
+==============================================
 
-import Experiment
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
 
-USAGE="""python %s [OPTIONS] [genomic_sequence] [ < genomic sequence]
-
-Version: $Id: mask_fasta.py 2782 2009-09-10 11:40:29Z andreas $
+Purpose
+-------
 
 If the file contains multiple sequence entries, it is split
 at entry boundaries. Currently, individual entries are not
 split.
 
-""" % sys.argv[0]
+Usage
+-----
+
+Example::
+
+   python mask_fasta.py --help
+
+Type::
+
+   python mask_fasta.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+import os, sys, string, re, optparse, array
+
+import Experiment
 
 def maskSequence( sequence, regions, mask_char = "N" ):
     """mask sequence with regions."""

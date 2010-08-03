@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: mali2rates.py 2781 2009-09-10 11:33:14Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,9 +20,17 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
-import os, sys, string, re, optparse, time, math, tempfile, shutil
+'''
+mali2rates.py - calculate rates for sequences in a multiple alignment
+=====================================================================
 
-USAGE="""python mali2rates.py < mali.in > rates.out
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
 
 calculate evolutionary rates for sequences in a multiple alignment.
 
@@ -30,8 +39,27 @@ Default output is as a list of pairwise distances.
 REV: is NOT the general 12 parameter model, but - like in PAML -
 denotes the 9 parameter GTR model.
 
-"""
+Usage
+-----
 
+Example::
+
+   python mali2rates.py --help
+
+Type::
+
+   python mali2rates.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+import os, sys, string, re, optparse, time, math, tempfile, shutil
 import Experiment
 import Mali
 import Genomics
@@ -479,7 +507,7 @@ def runXrate( mali, pairs, options ):
 if __name__ == "__main__":
 
     parser = optparse.OptionParser( version = "%prog version: $Id: mali2rates.py 2781 2009-09-10 11:33:14Z andreas $",
-                                    usage=USAGE)
+                                    usage = globals()["__doc__"])
 
     parser.add_option("-i", "--input-format", dest="input_format", type="choice",
                       choices=("plain", "fasta", "clustal", "stockholm", "phylip" ),

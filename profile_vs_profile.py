@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: profile_vs_profile.py 2781 2009-09-10 11:33:14Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2007 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,26 +20,42 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+profile_vs_profile.py - compare two profile libraries
+=====================================================
 
-#--------------------------------------------------------
-#--------------------------------------------------------
-#--------------------------------------------------------
-# import of system libraries
-#--------------------------------------------------------
-import os, sys, string, re, tempfile, subprocess, optparse, time, math
-import shutil
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
 
-#--------------------------------------------------------
-#--------------------------------------------------------
-#--------------------------------------------------------
-# usage message
-#--------------------------------------------------------
-USAGE="""python %s [OPTIONS]
+Purpose
+-------
 
 compare two profile libraries.
 
-This is version $Id: profile_vs_profile.py 2781 2009-09-10 11:33:14Z andreas $.
-""" % sys.argv[0]
+Usage
+-----
+
+Example::
+
+   python profile_vs_profile.py --help
+
+Type::
+
+   python profile_vs_profile.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+import os, sys, string, re, tempfile, subprocess, optparse, time, math
+import shutil
 
 #--------------------------------------------------------
 #--------------------------------------------------------
@@ -219,7 +236,7 @@ if __name__ == "__main__":
 
     #--------------------------------------------------------
     # command line parsing options
-    parser = optparse.OptionParser( version = "%prog version: $Id: profile_vs_profile.py 2781 2009-09-10 11:33:14Z andreas $", usage = USAGE)
+    parser = optparse.OptionParser( version = "%prog version: $Id: profile_vs_profile.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-q", "--query", dest="query", type="string",
                       help="query profile library." )

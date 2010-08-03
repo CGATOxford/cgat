@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: matrix2matrix.py 2782 2009-09-10 11:40:29Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,14 +20,17 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
-import os, sys, string, re, optparse, math, StringIO
+'''
+matrix2matrix.py - operate on matrices
+======================================
 
-import numpy
-import Experiment as E
-import IOTools
-import CorrespondenceAnalysis
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
 
-USAGE="""python %s [OPTIONS] < stdin > stdout
+Purpose
+-------
 
    * full: full matrix with row and column headers (unless --no-headers is given.)
    * sparse: sparse matrix
@@ -34,18 +38,47 @@ USAGE="""python %s [OPTIONS] < stdin > stdout
 
 Methods:
 
-sort-rows: sort rows by order in --filename-rows
+sort-rows
+   sort rows by order in --filename-rows
 
-sort-columns :sort columns by order in --filename-columns
+sort-columns
+   sort columns by order in --filename-columns
 
-mask-rows: set rows matching ids in --filename-rows to --value
+mask-rows
+   set rows matching ids in --filename-rows to --value
 
-mask-columns: set columns matching ids in --filename-columns to --value
+mask-columns
+   set columns matching ids in --filename-columns to --value
 
-mask-rows-and-columns: set rows and columns matching ids in --filename-columns to --value (and)
+mask-rows-and-columns
+   set rows and columns matching ids in --filename-columns to --value (and)
 
-""" % sys.argv[0]
+Usage
+-----
 
+Example::
+
+   python matrix2matrix.py --help
+
+Type::
+
+   python matrix2matrix.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+import os, sys, string, re, optparse, math, StringIO
+
+import numpy
+import Experiment as E
+import IOTools
+import CorrespondenceAnalysis
 import MatlabTools
 import scipy
 
@@ -157,9 +190,8 @@ if __name__ == "__main__":
 
         nrows, ncols = raw_matrix.shape
 
-        if options.loglevel >= 2:
-            options.stdlog.write( "# read matrix: %i x %i, %i row titles, %i colum titles.\n" %\
-                                  (nrows, ncols, len(row_headers), len(col_headers)))
+        E.debug("read matrix: %i x %i, %i row titles, %i colum titles" %\
+                    (nrows, ncols, len(row_headers), len(col_headers)))
 
         parameter = 0
 
@@ -391,6 +423,10 @@ if __name__ == "__main__":
                             matrix[x,y] = options.value
 
             raw_matrix = numpy.reshape( numpy.array(matrix), matrix.shape )
+
+        else:
+            # for simple re-formatting jobs
+            matrix = raw_matrix
 
         if options.write_separators:
             options.stdout.write( lines[chunks[chunk]] )

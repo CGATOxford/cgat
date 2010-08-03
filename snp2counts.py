@@ -514,8 +514,10 @@ def getCDSPosition( exons, start, end, fasta = None, lcontig = None ):
         cds_end = cds_start + cds_y - cds_x
         cds_phase = (3 - exon_frame + cds_x - exon_start) % 3
 
-        # print "exon_id=", exon_id, "start=", start, "end=", end, "codon_start", cds_x, "cdsy", cds_y, cds_phase, "cds_start", cds_start, "cds_end", cds_end, \
-        # "exon_start=",exon_start, "exon_end=", exon_end, "exon_frame=", exon_frame
+        # print "exon_id=", exon_id, "start=", start, "end=", end, \
+        #     "codon_start", cds_x, "codon_end", cds_y, \
+        #     "cds_phase=", cds_phase, "cds_start", cds_start, "cds_end", cds_end, \
+        #           "exon_start=",exon_start, "exon_end=", exon_end, "exon_frame=", exon_frame
 
         # incomplete bases in a codon at 3' end of this feature:
         # = frame of next feature
@@ -563,9 +565,9 @@ def getCDSPosition( exons, start, end, fasta = None, lcontig = None ):
                 assert exon_frame != 0
                 cds_seq.extend( list("X" * (exon_start - codon_start) ))
                 
-#             print "exon_id=", exon_id, "start=", start, "end=", end, "codon_start", codon_start, "codon_end", codon_end, "cdsx", cds_x, "cdsy", cds_y, cds_phase, "cds_start", cds_start, "cds_end", cds_end, \
-#                  "exon_start=",exon_start, "exon_end=", exon_end, "start_phase=", start_phase, "first_start", first_full_codon_start, "last_end", last_full_codon_end, \
-#                  "split_start", is_split_start, "split_end", is_split_end
+            # print "exon_id=", exon_id, "start=", start, "end=", end, "codon_start", codon_start, "codon_end", codon_end, "cdsx", cds_x, "cdsy", cds_y, cds_phase, "cds_start", cds_start, "cds_end", cds_end, \
+            #      "exon_start=",exon_start, "exon_end=", exon_end, "start_phase=", start_phase, "first_start", first_full_codon_start, "last_end", last_full_codon_end, \
+            #      "split_start", is_split_start, "split_end", is_split_end
             
             cds_seq.extend( list( fasta.getSequence( contig,
                                                      strand,
@@ -602,6 +604,7 @@ def getCDSPosition( exons, start, end, fasta = None, lcontig = None ):
                     intron_id = exon_id - 1
                     
             exon_skipping = True
+
         elif start < exon_start and exon_id > 0:
             # disrupted intronic sequence
             intron_start, intron_end = coordinates[exon_id-1][1], exon_start
@@ -658,10 +661,11 @@ class CounterGenes( Counter ):
         exons = IndexedGenome.IndexedGenome()
         nexons = 0
 
-        with open( filename_exons, "r") as inf:
-            for g in GTF.iterator( inf ):
-                exons.add( g.contig, g.start, g.end, g )
-                nexons += 1
+        inf = IOTools.openFile( filename_exons, "r") 
+        for g in GTF.iterator( inf ):
+            exons.add( g.contig, g.start, g.end, g )
+            nexons += 1
+        inf.close()
 
         self.mExons = exons
         E.info( "indexed %i exons on %i contigs" % (nexons, len(exons) ) )
@@ -756,14 +760,15 @@ class CounterTranscripts( Counter ):
         self.mExons = {}
         nexons = 0
         ntranscripts = 0
-        with open( filename_exons, "r") as inf:
-            for gtfs in GTF.transcript_iterator( GTF.iterator( inf )):
-                start, end = min( [x.start for x in gtfs]), max([x.end for x in gtfs ] )
-                transcripts.add( gtfs[0].contig, start, end, gtfs )
-                nexons += len(gtfs)
-                ntranscripts += 1
-                self.mExons[gtfs[0].transcript_id] = gtfs
-            
+        inf = IOTools.openFile( filename_exons, "r")
+        for gtfs in GTF.transcript_iterator( GTF.iterator( inf )):
+            start, end = min( [x.start for x in gtfs]), max([x.end for x in gtfs ] )
+            transcripts.add( gtfs[0].contig, start, end, gtfs )
+            nexons += len(gtfs)
+            ntranscripts += 1
+            self.mExons[gtfs[0].transcript_id] = gtfs
+        inf.close()
+
         self.mTranscripts = transcripts
         self.mSeleno = seleno
         
@@ -773,10 +778,10 @@ class CounterTranscripts( Counter ):
         # create counter
         self.mCounts = collections.defaultdict( int )
 
-        self.mOutfileIntron = open( self.mFilenamePattern % "intron", "w" )
+        self.mOutfileIntron = IOTools.openFile( self.mFilenamePattern % "intron", "w" )
         self.mOutfileIntron.write("transcript_id\tcontig\tsnp_position\tvariant_type\tvariant_code\tvariant_seq\texon_id\tnexon\tcode\torig_name\torig_seq5\torig_seq3\tvariant_name\tvariant_seq5\tvariant_seq3\tintron_start\tintron_end\tstrand\tnc_start\tnc_end\n")
 
-        self.mOutfileCds = open( self.mFilenamePattern % "cds", "w" )
+        self.mOutfileCds = IOTools.openFile( self.mFilenamePattern % "cds", "w" )
         self.mOutfileCds.write( "\t".join( (
                     "transcript_id",
                     "contig",
@@ -799,10 +804,10 @@ class CounterTranscripts( Counter ):
                     "cds_end", 
                     "cds_len") ) + "\n" )
 
-        self.mOutfileTranscripts = open( self.mFilenamePattern % "translation", "w" )
+        self.mOutfileTranscripts = IOTools.openFile( self.mFilenamePattern % "translation", "w" )
         self.mOutfileTranscripts.write( "transcript_id\tvariant_id\tlast_exon_start\t%s\tseq_na\tseq_aa\n" % "\t".join(TranslationEffect._fields) )
 
-        self.mOutfileSplicing = open( self.mFilenamePattern % "splicing", "w" )
+        self.mOutfileSplicing = IOTools.openFile( self.mFilenamePattern % "splicing", "w" )
         self.mOutfileSplicing.write("transcript_id\tvariant_id\t%s\n" % "\t".join(SplicingEffect._fields) )
 
         self.mTranscriptVariants = {}
@@ -943,8 +948,19 @@ class CounterTranscripts( Counter ):
                                             
             elif variant.code == "-":
                 # add deletion
-                if x == 0: xx, yy = lvariant - (y-x), lvariant
+                if x == 0 and y == r.intron_end - r.intron_start:
+                    # deletion covers full length of intron
+                    if r.intron_id < r.exon_id:
+                        # truncate from start if intron preceding exon
+                        xx, yy = 0, y-x
+                    else:
+                        # truncate from end if intron succceding exon
+                        xx, yy = lvariant - (y-x), lvariant
+                elif x == 0: 
+                    # deletion at 3' end of intron: truncate from the end
+                    xx, yy = lvariant - (y-x), lvariant
                 else: xx, yy = 0, y-x
+
                 if intron_seq[x:y] != variant_seq[xx:yy]:
                     raise ValueError( "expected=%s, got=%s:%s:%s, %i:%i, %i:%i, snp=%s, cds=%s" %\
                                       (variant_seq[xx:yy],
@@ -1039,13 +1055,22 @@ class CounterTranscripts( Counter ):
             # add deletion
             if r.exon_skipping:
                 xx, yy = r.exon_start - r.nc_start, lvariant - (r.nc_end - r.exon_end)
-            elif r.nc_start != None and r.nc_start != r.intron_start:
+            elif r.nc_start != None:
+                # deletion at exon boundary
+                if r.intron_id < r.exon_id:
+                    # deletion at 5' end of exon, take only 3' bases of variant
+                    xx, yy = lvariant - (y-x), lvariant
+                else:
+                    # deletion at 3' end of exon, take only 5' bases of variant
+                    xx, yy = 0, y - x                  
+                # removed the following condition: "and r.nc_start != r.intron_start:"
                 # deletion at 3' end of intron boundary - delete last bases
-                xx, yy = lvariant - (y-x), lvariant
+                # xx, yy = lvariant - (y-x), lvariant
             elif r.cds_start == 0:
-                # deletion at first codon - delete last bases
+                # deletion at first codon - take only 3' bases of variant
                 xx, yy = lvariant - (y-x), lvariant
             else:
+                # deletion after - delete last bases
                 xx, yy = 0, y-x
                 
             if cds_seq[x:y] != variant_seq[xx:yy]:
@@ -1164,6 +1189,9 @@ class CounterTranscripts( Counter ):
 
                 reference_base, variant_seq, variant_bases = self.getSequence( snp, r, variant )
                 
+                # assert variant_seq.lower() in r.cds_seq.lower(), \
+                #     "variant sequence %s not in cds seq %s: %s" % (variant_seq, r.cds_seq, str(r))
+
                 cds_effects = self.collectCodingEffects( snp, r, variant,
                                                          reference_base, variant_seq, variant_bases )
 
@@ -1899,13 +1927,12 @@ class CounterTranscripts( Counter ):
                                         [ None for x in range(nintrons) ] ]
 
             elif len(variant_intron_seqs) == 1:
-                if introns_genotype == "O":
+                if splice_genotype == "O":
                     # is homozygous - duplicate allele
                     variant_intron_seqs.append( variant_intron_seqs[0] )
                 else:
                     # add wildtype
                     variant_intron_seqs[0:0] = [ [ None for x in range(nintrons) ],]
-
 
             assert len(variant_cds_seqs) == 2
             assert len(variant_intron_seqs) == 2
@@ -2049,7 +2076,7 @@ def main( argv = None ):
         fasta = None
 
     if options.filename_seleno:
-        seleno = set( IOTools.readList( open(options.filename_seleno, "r")) )
+        seleno = set( IOTools.readList( IOTools.openFile(options.filename_seleno, "r")) )
     else:
         seleno = {}
 

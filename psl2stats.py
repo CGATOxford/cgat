@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: psl2stats.py 2781 2009-09-10 11:33:14Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,6 +20,42 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+psl2stats.py - 
+======================================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+.. todo::
+   
+   describe purpose of the script.
+
+Usage
+-----
+
+Example::
+
+   python psl2stats.py --help
+
+Type::
+
+   python psl2stats.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 import os, sys, string, re, tempfile, subprocess, optparse, math
 
 USAGE = \
@@ -40,7 +77,7 @@ import bx.bitset_builders
 if __name__ == "__main__":
 
     parser = optparse.OptionParser( version = "%prog version: $Id: psl2stats.py 2781 2009-09-10 11:33:14Z andreas $",
-                                    usage = USAGE)
+                                    usage = globals()["__doc__"])
 
     parser.set_defaults(
         )
@@ -57,17 +94,17 @@ if __name__ == "__main__":
         for start, end in iterator:
             b.set_range( start, end-start )
 
-    for blat in Blat.iterator( options.stdin ):
+    for psl in Blat.iterator( options.stdin ):
 
         addRange( query_bitsets, 
-                  blat.mQueryId, 
-                  blat.mQueryLength,
-                  blat.iterator_query_exons() )
+                  psl.mQueryId, 
+                  psl.mQueryLength,
+                  psl.iterator_query_exons() )
 
         addRange( target_bitsets, 
-                  blat.mSbjctId, 
-                  blat.mSbjctLength,
-                  blat.iterator_sbjct_exons() )
+                  psl.mSbjctId, 
+                  psl.mSbjctLength,
+                  psl.iterator_sbjct_exons() )
         
     def printBitset( outfile, bitsets ):
 

@@ -54,6 +54,8 @@ def ConvertDictionary( d , map = {}):
                 d[k] = float(v)
         except TypeError, msg:
             raise TypeError( "expected string or buffer: offending value = '%s' " % str(v))
+        except ValueError, msg:
+            raise ValueError( "conversion error: %s, %s" % (msg, str(d)))
     return d
 
 def GetMapColumn2Type( rows, ignore_empty = False, get_max_values = False ):

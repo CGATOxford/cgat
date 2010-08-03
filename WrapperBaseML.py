@@ -19,10 +19,12 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
-import os, sys, string, re, tempfile, popen2
-
-"""Wrapper for BaseML
 """
+Wrapper for BaseML
+==================
+
+"""
+import os, sys, string, re, tempfile, subprocess
 
 import Genomics
 import alignlib
@@ -186,7 +188,16 @@ class BaseML:
         self.WriteTree( alignment )
         self.WriteControlFile()
         
-        (file_stdout, file_stdin, file_stderr) = popen2.popen3( "cd %s; %s;" % (self.mTempdir, self.mExecutable ))
+        statement = "cd %s; %s;" % (self.mTempdir, self.mExecutable )
+
+        p = subprocess.Popen( statement , 
+                              shell=True, 
+                              stdin=subprocess.PIPE, 
+                              stdout=subprocess.PIPE, 
+                              stderr=subprocess.PIPE, 
+                              close_fds=True)
+
+        (file_stdout, file_stdin, file_stderr) = (p.stdin, p.stdout, p.stderr)
         
         file_stdin.close()
         lines = file_stdout.readlines()

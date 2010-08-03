@@ -1,4 +1,39 @@
-"""rudimentary multiple alignment class."""
+################################################################################
+#
+#   MRC FGU Computational Genomics Group
+#
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
+#
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU General Public License
+#   as published by the Free Software Foundation; either version 2
+#   of the License, or (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#################################################################################
+'''
+Mali.py - Tools for multiple alignments 
+=======================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Code
+----
+
+'''
+
 import re, sys, string, time, math, types, copy, random
 
 class AlignedString:
@@ -6,11 +41,12 @@ class AlignedString:
     mGapChars = ("-", ".")
     mGapChar = "-"
     
-    def __init__(self, identifier, fr, to, s):
+    def __init__(self, identifier, fr, to, s, is_mangled = False):
         self.mId = identifier
         self.mFrom = fr
         self.mTo = to
         self.mString = s
+        self.mIsMangled = is_mangled
 
     def __len__(self):
         return len(self.mString)
@@ -54,6 +90,14 @@ class AlignedString:
     def insertColumns( self, position, num_columns, char = "-"):
         """insert num_columns columns at position."""
         self.mString = self.mString[:position] + char * num_columns + self.mString[position:]
+
+    def getIdentifier( self ) :
+        '''return demangled identifier.'''
+        if self.mIsMangled:
+            return self.mId.rsplit("_", 1)[0]
+        else:
+            return self.mId
+        
 
     def getResidueNumber( self, position ):
         x = self.mFrom
@@ -165,6 +209,9 @@ class Mali:
 
     def getClone( self ):
         return copy.deepcopy( self )
+
+    def iteritems( self ):
+        return self.mMali.iteritems()
 
     def items(self):
         return self.mMali.items()
@@ -347,8 +394,7 @@ class Mali:
                     xid = id + "-" + str(x)
                     x += 1
                     
-                self.mIdentifiers.append( xid )
-                self.mMali[xid] = AlignedString(xid, int(data[0]) - 1, int(data[2]), data[1] )
+                self.addEntry( AlignedString(xid, int(data[0]) - 1, int(data[2]), data[1] ) )
 
         ###############################################################################
         elif format.lower() == "fasta":
@@ -360,9 +406,8 @@ class Mali:
                     if id:
                         s = re.sub( "\s", "", string.join( fragments, ""))
                         id, fr, to = getId( id, s )
-                        self.mIdentifiers.append(id)
-                        self.mMali[id] = AlignedString(id, fr, to, s)
-                        
+                        self.addEntry( AlignedString(id, fr, to, s) )
+
                     id = re.search( "^(%s)" % pattern_identifier, line[1:-1]).group(0)
                     fragments = []
                     continue
@@ -370,8 +415,7 @@ class Mali:
 
             s = re.sub( "\s", "", string.join( fragments, ""))                
             id, fr, to = getId( id, s )
-            self.mIdentifiers.append(id)
-            self.mMali[id] = AlignedString(id, fr, to, s)
+            self.addEntry( AlignedString(id, fr, to, s) )
 
         ###############################################################################
         elif format.lower() == "phylip":
@@ -508,13 +552,13 @@ class Mali:
             for identifier in self.mIdentifiers:
                 m = self.mMali[identifier]
                 outfile.write("%i\t%s\t%i\t%s\n" % (
-                    m.mFrom+1, m.mString, m.mTo, identifier) )
+                    m.mFrom+1, m.mString, m.mTo, m.getIdentifier()) )
                     
         elif format == "fasta":
             for identifier in self.mIdentifiers:
                 m = self.mMali[identifier]
                 if write_ranges:
-                    outfile.write( ">%s/%i-%i\n%s\n" % (identifier, m.mFrom + 1, m.mTo, m.mString) )
+                    outfile.write( ">%s/%i-%i\n%s\n" % (m.getIdentifier(), m.mFrom + 1, m.mTo, m.mString) )
                 else:
                     outfile.write( ">%s\n%s\n" % (identifier, m.mString) )
                     
@@ -529,11 +573,12 @@ class Mali:
             max_l = 0
             for identifier in self.mIdentifiers:
                 m = self.mMali[identifier]
+                id = m.getIdentifier()
                 # tab does not work as separator
                 if m.mTo and write_ranges:
-                    x = "%s/%i-%i" % (identifier, m.mFrom+1, m.mTo)
+                    x = "%s/%i-%i" % (id, m.mFrom+1, m.mTo)
                 else:
-                    x = "%s" % (identifier)
+                    x = "%s" % (id)
                 max_l = max(max_l, len(x))
             for identifier in self.mAnnotations.keys():
                 x = "#=GC %s" % identifier
@@ -542,11 +587,12 @@ class Mali:
             format = "%-" + str(max_l) + "s  %s\n"
             for identifier in self.mIdentifiers:
                 m = self.mMali[identifier]
+                id = m.getIdentifier()
                 # tab does not work as separator
                 if m.mTo and write_ranges:
-                    x = "%s/%i-%i" % (identifier, m.mFrom+1, m.mTo)
+                    x = "%s/%i-%i" % (id, m.mFrom+1, m.mTo)
                 else:
-                    x = "%s" % (identifier)
+                    x = "%s" % (id)
 
                 outfile.write( format % (x, m.mString) )
                 
@@ -1145,12 +1191,31 @@ class Mali:
         for s in self.mMali.values():
             f(s)
 
+    def filter( self, f ):
+        '''filter multiple alignment using function *f*.
+
+        The function *f* should return True for entries that 
+        should be kept and False for those that should be removed.
+        '''
+        ids, vals = [], []
+        for id in self.mIdentifiers:
+            s = self.mMali[id]
+            if f(s):
+                vals.append(s)
+                ids.append( id )
+        self.mIdentifiers = ids
+        self.mMali = vals
+
 class SequenceCollection( Mali ):
     """reads in a sequence collection, but permits
-    several entries per id. Note that this will conflict
-    with interleaved format.s
+    several entries per id. 
 
-    This mapping is achieved by changing identifiers.
+    Note that this might cause problems with interleaved 
+    formats like phylips or clustal.
+
+    This mapping is achieved by appending a numeric
+    suffix. The suffix is retained for the life-time
+    of the object, but not output to a file.
     """
 
     
@@ -1167,6 +1232,8 @@ class SequenceCollection( Mali ):
                 
             id = "%s_%i" % (id, x)
         self.mIdentifiers.append( id )
+        s.mIsMangled = True
+
         self.mMali[id] = s
 
     def readFromFile( self, infile, format = "fasta" ):
@@ -1255,11 +1322,14 @@ class SequenceCollection( Mali ):
     
 ###############################################################################            
 def convertMali2Alignlib( mali ):
-    """convert a multiple alignment into an alignlib multiple alignment object."""
+    '''convert a multiple alignment of type :class:`Mali`
+    into an alignlib multiple alignment object.
+    '''
+
     import alignlib
     m = alignlib.makeMultipleAlignment()
     for identifier in mali.getIdentifiers():
-        a = alignlib.makeAlignatumFromString( mali[identifier] )
+        a = alignlib.makeAlignatum( mali[identifier] )
         m.add( a )
     return m
 

@@ -1,3 +1,61 @@
+################################################################################
+#
+#   MRC FGU Computational Genomics Group
+#
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
+#
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU General Public License
+#   as published by the Free Software Foundation; either version 2
+#   of the License, or (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#################################################################################
+'''
+graph_links2gdl.py - output graph in gdl format
+===============================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+This script reads a :term:`graph` in :term:`edge list` format and
+converts it into :term:`gdl` format. The :term:`gdl` formatted
+graph can then be layouted and visualized with :file:`aisee`.
+
+Usage
+-----
+
+Example::
+
+   python graph_links2gdl.py --help
+
+Type::
+
+   python graph_links2gdl.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 USAGE = """
 Create a graph from a list of edges.
 
@@ -93,7 +151,7 @@ if __name__ == "__main__":
 
     #--------------------------------------------------------
     # command line parsing options
-    parser = optparse.OptionParser( version = "%prog version: $Id: graph_links2gdl.py 2782 2009-09-10 11:40:29Z andreas $", usage = USAGE)
+    parser = optparse.OptionParser( version = "%prog version: $Id: graph_links2gdl.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-c", "--filename-components", dest="filename_components", type="string",
                       help="filename with component information." )

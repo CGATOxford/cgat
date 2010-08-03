@@ -6,16 +6,46 @@
 ##
 ## Author: Andreas Heger <andreas.heger@helsinki.fi>
 ##
-## $Id: blat2gff.py 2781 2009-09-10 11:33:14Z andreas $
+## $Id: psl2gff.py 2781 2009-09-10 11:33:14Z andreas $
 ##
 ##
 ####
 ####
+'''
+psl2gff.py - convert from psl to gff
+====================================
 
-USAGE="""python blat2gff.py [OPTIONS] < input > output
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
 
-convert blat output to gff output.
-"""
+Purpose
+-------
+
+This script converts a :term:`gff` formatted
+file to a :term:`psl` formatted file.
+
+Usage
+-----
+
+Example::
+
+   python <script_name>.py --help
+
+Type::
+
+   python <script_name>.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 
 import sys, re, string, optparse, time, os, glob
 
@@ -26,7 +56,7 @@ import GFF, GTF
 
 def main():
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: blat2gff.py 2781 2009-09-10 11:33:14Z andreas $", usage=USAGE )
+    parser = optparse.OptionParser( version = "%prog version: $Id: psl2gff.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option("-a", "--as-gtf", dest="as_gtf", action="store_true",
                       help="output as gtf."  )
@@ -55,7 +85,7 @@ def main():
     else:
         gff = GFF.Entry()
 
-    gff.source = "blat"
+    gff.source = "psl"
     gff.feature = "exon"
 
     ids = {}

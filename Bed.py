@@ -1,3 +1,38 @@
+################################################################################
+#
+#   MRC FGU Computational Genomics Group
+#
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
+#
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU General Public License
+#   as published by the Free Software Foundation; either version 2
+#   of the License, or (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#################################################################################
+'''
+Bed.py - Tools for working with bed files
+=========================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Code
+----
+
+'''
 import re
 import ncl
 import numpy
@@ -18,6 +53,7 @@ class Bed(object):
                       'blockStarts': 8 }
 
     def __init__(self):
+        '''empty constructor.'''
         self.contig = None
         self.start = 0
         self.end = 0
@@ -58,9 +94,11 @@ class Track(object):
     def __setitem__(self, key,val): self._d[key] = val
         
 def iterator( infile ):
-    """iterate for parsing a bed formatted file.
+    """iterate over a bed formatted file.
 
-    This iterator yields :class:`Bed` objects.
+    The iterator is :term:`track` aware.
+
+    This iterator yields :class:`Bed` objects. 
     """
 
     track = None
@@ -85,14 +123,14 @@ def bed_iterator( infile ):
     return iterator( infile )
 
 def grouped_iterator( iterator ):
-    '''return bed results grouped by track.'''
+    '''yield bed results grouped by track.'''
     return itertools.groupby( iterator, lambda x: x.mTrack )
 
 def readAndIndex( infile, with_values = False, per_track = False ):
-    """read and index a bed formatted file in *infile*.
+    """read and index a bed formatted file in ``infile``.
 
-    If *with_values* is set, the original bed entry will be kept for
-    further referenc. Otherwise only the intervals will be indexed and
+    If ``with_values`` is set, the original bed entry will be kept for
+    further reference. Otherwise only the intervals will be indexed and
     any additional fields in the bed entry will be ignored.
 
     The default is to use all intervals. If per_track is set,
@@ -132,13 +170,21 @@ def readAndIndex( infile, with_values = False, per_track = False ):
 def binIntervals( iterator, num_bins = 5, method = "equal-bases", bin_edges = None ):
     '''merge adjacent bins by score.
 
-    Several merging methods are possible.
-    equal-bases, equal-intervals.
-    
-    This options requires the fifth field of the bed input file to be
-    present.
+    Several merging methods are possible:
 
-    bins should be non-overlapping.'''
+    equal-bases
+       merge intervals such that each bin contains the equal number of bases
+
+    equal-intervals
+       merge intervals such that each bin contains the equal number intervals
+
+    This options requires the fifth field (score) of the bed input 
+    file to be present.
+
+    bins should be non-overlapping.
+
+    returns a list of intervals (:class:`Bed`) and the bin_edges
+    '''
 
     data = []
     beds = list(iterator)
@@ -201,7 +247,10 @@ def binIntervals( iterator, num_bins = 5, method = "equal-bases", bin_edges = No
     return new_beds, bin_edges
     
 def merge( iterator ):
-    '''merge bed segments.'''
+    '''merge overlapping intervals.
+
+    returns a list of merged intervals.
+    '''
 
     beds = list(iterator)
     if len(beds) == 0: return []

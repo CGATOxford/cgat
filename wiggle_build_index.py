@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
 """
-Build an index file for a wiggle track.
+wiggle_build_index.py - build an index for a wiggle track
+=========================================================
 
 If index_file is not provided wiggle_file.index is used.
 

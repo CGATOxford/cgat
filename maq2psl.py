@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: maq2blat.py 2781 2009-09-10 11:33:14Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,16 +20,52 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+maq2psl.py - 
+======================================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+.. todo::
+   
+   describe purpose of the script.
+
+Usage
+-----
+
+Example::
+
+   python maq2psl.py --help
+
+Type::
+
+   python maq2psl.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 import sys, string, re, optparse
 
 USAGE="""python %s [OPTIONS] < input.view > output.fasta
 
-Convert the output of maqview to blat format.
+Convert the output of maqview to psl format.
 
 Note: the script assumes that the coordinates and the matches are sorted
 correctly. Careful, as "seg1" < "seg10" < "seg9".
 
-Version: $Id: maq2blat.py 2781 2009-09-10 11:33:14Z andreas $
+Version: $Id: maq2psl.py 2781 2009-09-10 11:33:14Z andreas $
 """ % sys.argv[0]
 
 import Experiment
@@ -126,7 +163,7 @@ def matchby_sequence( iter1, iter2, matchfun1, matchfun2 = None ):
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: maq2blat.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = optparse.OptionParser( version = "%prog version: $Id: maq2psl.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genome."  )
@@ -170,8 +207,8 @@ if __name__ == "__main__":
                 assert maq.start >= segment.start, "maq start < segment start: %i < %i" % (maq.start, segment.start)
                 assert maq.start + maq.mLength <= segment.start + 2 * segment_length, "maq end > segment end: %i < %i" % (maq.start + maq.mLength, segment.start + 2 * segment_length)
         
-                blat = Blat.Match()
-                blat.fromMaq( maq )
+                psl = Blat.Match()
+                psl.fromMaq( maq )
 
                 match_start = maq.start
                 segment_start = segment.start
@@ -193,18 +230,18 @@ if __name__ == "__main__":
                                              (match_start, segment_start, left_size, right_size, mapped1_start, mapped1_end, mapped2_start, mapped2_end) )
 
 
-                blat.mSbjctId = contig
-                if genome: blat.mSbjctLength = genome.getLength( contig )
-                blat.mSbjctFrom = mapped1_start
-                blat.mSbjctTo = mapped2_end
-                blat.mNBlocks = 2
-                blat.mBlockSizes= [left_size, right_size]
-                blat.mQueryBlockStarts = [0, left_size]
-                blat.mSbjctBlockStarts = [mapped1_start, mapped2_start]
-                blat.mSbjctNGapsCounts = 1
-                blat.mSbjctNGapsBases = mapped2_start - mapped1_end
+                psl.mSbjctId = contig
+                if genome: psl.mSbjctLength = genome.getLength( contig )
+                psl.mSbjctFrom = mapped1_start
+                psl.mSbjctTo = mapped2_end
+                psl.mNBlocks = 2
+                psl.mBlockSizes= [left_size, right_size]
+                psl.mQueryBlockStarts = [0, left_size]
+                psl.mSbjctBlockStarts = [mapped1_start, mapped2_start]
+                psl.mSbjctNGapsCounts = 1
+                psl.mSbjctNGapsBases = mapped2_start - mapped1_end
 
-                options.stdout.write( str(blat) + "\n" )
+                options.stdout.write( str(psl) + "\n" )
                 noutput += 1
 
     else:
@@ -212,10 +249,10 @@ if __name__ == "__main__":
         for maq in Maq.iterator( options.stdin ):
             ninput += 1
 
-            blat = Blat.Match()
-            blat.fromMaq( maq )
+            psl = Blat.Match()
+            psl.fromMaq( maq )
 
-            options.stdout.write( str(blat) + "\n" )
+            options.stdout.write( str(psl) + "\n" )
             noutput += 1
 
     if options.loglevel >= 1:

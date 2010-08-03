@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: analyze_codonbias_shannon.py 2864 2010-03-03 10:18:16Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,41 +20,50 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
-import os, sys, string, re, tempfile, subprocess, optparse, math
-
-"""
+'''
+fasta2table.py - analyze sequences for codon bias and other sequence properties
+====================================================================================
 
 :Author: Andreas Heger
-:Release: $Id: analyze_codonbias_shannon.py 2864 2010-03-03 10:18:16Z andreas $
+:Release: $Id$
 :Date: |today|
 :Tags: Python
 
 Purpose
 -------
 
-analyze sequences for codon bias and other sequence properties.
+This script reads a collection of sequences in :term:`fasta` format and computes
+various sequence properties (length, information content, codon bias, ...).
 
 Usage
 -----
 
+Example::
+
+   python fasta2table.py --sections=length
+
 Type::
 
-   python <script_name>.py --help
+   python fasta2table.py --help
 
 for command line help.
+
+Documentation
+-------------
+
+This script was formerly called :file:`analyze_codonbias_shannon.py`.
 
 Code
 ----
 
-""" 
-
+'''
+import os, sys, string, re, tempfile, subprocess, optparse, math
 
 import Experiment as E
 import Genomics
 import IOTools
 from SequenceProperties import *
 import FastaIterator
-import Bio.Alphabet.IUPAC
 
 ##---------------------------------------------------------------------------------------------
     

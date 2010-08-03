@@ -1,4 +1,36 @@
-USAGE="""map_residues.py [OPTIONS] alignment < residues.in > residues.out
+################################################################################
+#
+#   MRC FGU Computational Genomics Group
+#
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
+#
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU General Public License
+#   as published by the Free Software Foundation; either version 2
+#   of the License, or (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#################################################################################
+'''
+map_residues.py - liftover for residues
+=======================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
 
 maps a list of residues in a master sequence based on an explicit
 (multiple) alignment.
@@ -7,10 +39,29 @@ Options:
 -m, --master    number of sequence to use as master (default is first row)
 -f, --format    alignment format (plain is the default and so far the only
                 supported option)       
-"""
+
+Usage
+-----
+
+Example::
+
+   python map_residues.py --help
+
+Type::
+
+   python map_residues.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 
 import sys, re, os, string, getopt
-
 import alignlib
 
 param_master = 0

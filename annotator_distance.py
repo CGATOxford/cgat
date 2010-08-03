@@ -1,4 +1,29 @@
+################################################################################
+#
+#   MRC FGU Computational Genomics Group
+#
+#   $Id: snp2table.py 2861 2010-02-23 17:36:32Z andreas $
+#
+#   Copyright (C) 2009 Andreas Heger
+#
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU General Public License
+#   as published by the Free Software Foundation; either version 2
+#   of the License, or (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#################################################################################
 """
+annotator_distance.py - statistical significance of distance between genomic segments
+=====================================================================================
+
 Purpose
 -------
 
@@ -48,8 +73,6 @@ import progressbar
 
 USAGE="""python %s [OPTIONS]
 
-compute statististical significance of the association between
-segments on a genome.
 
 """ % sys.argv[0]
 
@@ -664,7 +687,7 @@ def findMedian( dist ):
 
 def main( argv = sys.argv ):
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: annotator_distance.py 2861 2010-02-23 17:36:32Z andreas $", usage=USAGE)
+    parser = optparse.OptionParser( version = "%prog version: $Id: annotator_distance.py 2861 2010-02-23 17:36:32Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-a", "--filename-annotations", dest="filename_annotations", type="string",
                       help="filename mapping gene ids to annotations (a tab-separated table with two-columns) [default=%default]." )

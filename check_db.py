@@ -1,10 +1,10 @@
-#!/usr/bin/env python
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: check_db.py 2782 2009-09-10 11:40:29Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -20,15 +20,43 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
-import os, sys, string, re, time, optparse, tempfile, subprocess, types
+'''
+check_db.py - do a sanity check for a collection of linked tables
+=================================================================
 
-USAGE = """do a sanity check for a collection of linked tables.
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
 
 field-in-table:  count number of entries of field in tables
 fields-in-table: count number on non-null values in all fields of a table
 tables-on-field: count tables
-"""
 
+Usage
+-----
+
+Example::
+
+   python check_db.py --help
+
+Type::
+
+   python check_db.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+import os, sys, string, re, time, optparse, tempfile, subprocess, types
 import numpy
 import Experiment as E
 
@@ -179,7 +207,7 @@ def doColumnsInTable( dbhandle, error, options ):
 
 def main():
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: check_db.py 2782 2009-09-10 11:40:29Z andreas $", usage = USAGE)
+    parser = optparse.OptionParser( version = "%prog version: $Id: check_db.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-d", "--database", dest="database", type="string",
                       help="database name [default=%default]." )

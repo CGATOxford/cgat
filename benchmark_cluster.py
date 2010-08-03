@@ -1,3 +1,59 @@
+################################################################################
+#
+#   MRC FGU Computational Genomics Group
+#
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
+#
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU General Public License
+#   as published by the Free Software Foundation; either version 2
+#   of the License, or (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#################################################################################
+'''
+benchmark_cluster.py - script for testing the speed of nodes
+============================================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+Benchmark CPU speed of nodes in the cluster.
+
+Usage
+-----
+
+Example::
+
+   python benchmark_cluster.py --help
+
+Type::
+
+   python benchmark_cluster.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 import sys, os, re, subprocess, optparse, tempfile, collections, itertools, random
 
 from multiprocessing import Process
@@ -77,7 +133,7 @@ def writeResults( outfile, results ):
 
 def main():
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: benchmark_cluster.py 2794 2009-09-16 15:27:49Z andreas $", usage = USAGE)
+    parser = optparse.OptionParser( version = "%prog version: $Id: benchmark_cluster.py 2794 2009-09-16 15:27:49Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option( "-s", "--suite", dest="suite", type="choice",
                        choices=("CPU",),

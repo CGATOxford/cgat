@@ -299,22 +299,25 @@ def gene_iterator( gff_iterator, strict = True ):
 
     Note: the entries have to be consecutive in the file, i.e,
     first sorted by transcript and then by gene id.
+
+    Genes with the same name on different contigs are resolved
+    separately in *strict* = False.
     """
-    last = None
+    last = Entry()
     matches = []
     found = set()
     for gffs in transcript_iterator( gff_iterator, strict ):
         
-        if last != gffs[0].gene_id:
-            if last: yield matches
+        if last.gene_id != gffs[0].gene_id or last.contig != gffs[0].contig:
+            if matches: yield matches
             matches = []
-            last = gffs[0].gene_id
+            last = gffs[0]
             assert not strict or last not in found, "duplicate entry %s" % last 
-            found.add(last)
+            found.add(last.gene_id)
 
         matches.append( gffs )
 
-    if last: yield matches
+    if matches: yield matches
 
 def flat_gene_iterator( gff_iterator, strict = True ):
     """iterate over the contents of a gtf file.
@@ -323,22 +326,27 @@ def flat_gene_iterator( gff_iterator, strict = True ):
 
     Note: the entries have to be consecutive in the file, i.e,
     sorted by gene_id
+
+    Genes with the same name on different contigs are resolved
+    separately in *strict* = False
+
     """
 
-    last = None
+    last = Entry()
     matches = []
     found = set()
     for gff in gff_iterator:
         
-        if last != gff.gene_id:
-            if last: yield matches
+        if last.gene_id != gff.gene_id or last.contig != gff.contig:
+            if matches: yield matches
             matches = []
-            last = gff.gene_id
-            assert not strict or last not in found, "duplicate entry %s" % last 
-            found.add(last)
+            last = gff
+            if strict:
+                assert last not in found, "duplicate entry %s" % last.gene_id
+                found.add(last.gene_id)
         matches.append( gff )
 
-    if last: yield matches
+    if matches: yield matches
 
 def merged_gene_iterator( gff_iterator ):
     """iterate over the contents of a gtf file.
@@ -366,20 +374,34 @@ def iterator_filtered( gff_iterator, feature = None, source = None):
         if source and gff.source != source: continue
         yield gff
 
-def iterator_sorted_chunks( gff_iterator, sort_by = "location-start" ):
+def iterator_sorted_chunks( gff_iterator, sort_by = "contig-start" ):
     """iterate over chunks in a sorted order
 
-    sort_by can be "location-start"
+    sort_by can be 
+    
+    contig-start
+       sort by position ignoring the strand
+    contig-strand-start
+       sort by position taking the strand into account
+    
+    returns the chunks. 
     """
     
     ## get all chunks and annotate with sort order
-    if sort_by == "location-start":
+    if sort_by == "contig-start":
         chunks = ([ (x[0].contig, min( [y.start for y in x] ), x) for x in gff_iterator ] )
+        chunks.sort()
+        for contig, start, chunk in chunks:
+            chunk.sort( key = lambda x: (x.contig, x.start) )
+            yield chunk
+    elif sort_by == "contig-strand-start":
+        chunks = ([ (x[0].contig, x[0].strand, min( [y.start for y in x] ), x) for x in gff_iterator ] )
+        chunks.sort()
+        for contig, start, strand, chunk in chunks:
+            chunk.sort( key = lambda x: (x.contig, x.strand, x.start) )
+            yield chunk
     else:
         raise ValueError( "unknown sort order %s" % sort_by )
-    chunks.sort()
-    for contig, start, chunk in chunks:
-        yield chunk
 
 def iterator_min_feature_length( gff_iterator, min_length, feature="exon" ):
     """select only those genes with a minimum length of a given feature."""
@@ -406,8 +428,6 @@ def toIntronIntervals( chunk ):
 
     intervals = Intervals.combine( [ (x.start, x.end) for x in chunk ] )
     return Intervals.complement( intervals )
-    
-
     
 def toSequence( chunk, fasta ):
     """convert a list of gff attributes to a single sequence.

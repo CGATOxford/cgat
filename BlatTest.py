@@ -1,5 +1,38 @@
-# import ExperimentTest as E
+################################################################################
+#
+#   MRC FGU Computational Genomics Group
+#
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
+#
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU General Public License
+#   as published by the Free Software Foundation; either version 2
+#   of the License, or (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#################################################################################
+'''
+BlatTest.py - 
+======================================================
 
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Code
+----
+
+'''
 class Error(Exception):
     """Base class for exceptions in this module."""
 
@@ -24,7 +57,7 @@ class ParsingError(Error):
             self.message = message
 
 class Match:
-    """a blat match.
+    """a psl match.
 
     Block coordinates are on the forward strand for target and on
     the forward/reverse strand for the query depending on the strand.
@@ -62,8 +95,8 @@ class Match:
         This rescales the block positions so that they start at 0 and converts
         the query to forward and the sbjct to forward/reverse coordinates.
 
-        About the psl blat format from the manual at
-        http://genome.ucsc.edu/google/goldenPath/help/blatSpec.html
+        About the psl psl format from the manual at
+        http://genome.ucsc.edu/google/goldenPath/help/pslSpec.html
 
         '''
         In general the coordinates in psl files are "zero based half open." The first base in a sequence is numbered zero rather than one. 
@@ -441,7 +474,7 @@ class MatchPSLX( Match ):
 
 
     def fromPSL( self, other, query_sequence, sbjct_sequence ):
-        """fill entry from a blat match.
+        """fill entry from a psl match.
 
         sequences are on forward strand starting at
         query_from and sbjct_from, respectively.
@@ -503,7 +536,7 @@ class MatchPSLX( Match ):
 
 
 def _iterate( infile ):
-    """iterator over blat output.
+    """iterator over psl output.
 
     The header is optional.
     """
@@ -676,13 +709,13 @@ def iterator_test( infile, report_step = 100000 ):
 
     E.info( "iterator_test: ninput=%i, noutput=%i, nerrors=%i" % (ninput, noutput,nerrors) )
     
-def iterator_per_query( iterator_blat ):
-    """iterate over the contents of a blat file per query
+def iterator_per_query( iterator_psl ):
+    """iterate over the contents of a psl file per query
     """
     
     data = collections.defaultdict( list )
 
-    for match in iterator_blat:
+    for match in iterator_psl:
         data[match.mQueryId].append( match )
 
     for x in data.values():

@@ -1,10 +1,10 @@
-#! /bin/env python
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: mali2mali.py 2782 2009-09-10 11:40:29Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2006 Andreas Heger 
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -20,69 +20,126 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
-import os, sys, string, re, optparse, math, time
+'''
+mali2mali.py - operate on a multiple alignments
+===============================================
 
-import Genomics
-import Masker
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
 
-USAGE="""%s [OPTIONS] < mali.in > mali.out
+Purpose
+-------
 
 perform operations (masking, renaming, conversion, ...) on a multiple alignment
 
 Available edit operations are:
 
-remove-unaligned-ends:  removes unaligned ends (lowercase characters)
+remove-unaligned-ends
+   removes unaligned ends (lowercase characters)
 
-remove-end-gaps:        removes gapped ends.
+remove-end-gaps
+   removes gapped ends.
 
-shift-alignment:        add offset to locations. This requires one parameter, which
-                        should be filename of a file containing id-offset in tabular form.
+shift-alignment
+   add offset to locations. This requires one parameter, which
+   should be filename of a file containing id-offset in tabular form.
 
-mark-transitions:       marks transitions in the alignment. The parameter denotes either
+mark-transitions
+   marks transitions in the alignment. The parameter denotes either
                         (1) a filename to a file containing id-transition pairs in
                         tabular form. There can be multiple transitions for the same id, but
                         they should be on separate lines. Use 'mali' as an id for multiple
                         alignment coordinates.
                         (2) a colon (':') -separated list of transitions
 
-filter-even-transitions: same parameter as above, but will remove all even segments (0, 2, ...).
-keep-odd-segmens:       synonym to filter-even-transitions
+filter-even-transitions
+   same parameter as above, but will remove all even segments (0, 2, ...).
 
-filter-odd-transitions: same parameter as above, but will remove all odd segments (1, 3, ...).
-keep-even-segmens:       synonym to filter-odd-transitions
+keep-odd-segments
+   synonym to filter-even-transitions
 
-lower:                  convert the multiple alignment to lowercase characters.
+filter-odd-transitions
+   same parameter as above, but will remove all odd segments (1, 3, ...).
 
-upper:                  convert the multiple alignment to uppercase characters.
+keep-even-segments
+   synonym to filter-odd-transitions
 
-remove-all-gaps:        remove columns that are completely gaps.
+lower
+   convert the multiple alignment to lowercase characters.
 
-remove-any-gaps:        remove columns that contain at least one gap.
+upper
+   convert the multiple alignment to uppercase characters.
 
-remove-some-gaps:       remove columns that contain some gaps. The amount is specified in
-                        the parameter list as minimum_gaps. A value of
-                        --parameter=3 will remove all columns with three or more gaps.
+remove-all-gaps
+   remove columns that are completely gaps.
 
-add-annotation:         add annotation to mali.
+remove-any-gaps
+   remove columns that contain at least one gap.
 
-recount:                recount alignment ranges.
+remove-some-gaps
+   remove columns that contain some gaps. The amount is specified in
+   the parameter list as minimum_gaps. A value of
+   --parameter=3 will remove all columns with three or more gaps.
 
-remove-empty-sequences: removes all empty sequences from mali.
+add-annotation
+   add annotation to mali.
 
-remove-unaligned-pairs: removes unaligned pairs in the multiple alignment. 
+recount
+   recount alignment ranges.
 
-filter-3rd              return alignment with only third codon positions.
+remove-empty-sequences
+   removes all empty sequences from mali.
 
-filter-4d               return alignment with only the four-fold degenerate site.
+remove-unaligned-pairs
+   removes unaligned pairs in the multiple alignment. 
 
-mask-random-proportion  mask random proportion of colums
+filter-3rd
+   return alignment with only third codon positions.
+
+filter-4d               
+   return alignment with only the four-fold degenerate site.
+
+mask-random-proportion  
+   mask random proportion of colums
+
+exclude-with-stop
+   remove all sequences that contain a stop codon
+
+exclude-with-frameshift
+   remove all sequences that contain an indel that is not
+   a multiple of three. Indels are determined with respect to the first
+   sequence.
 
 Parameters are given to the option parameters in a comma-separated list in the order
 that the edit operations are called upon.
 
-""" % sys.argv[0]
+Usage
+-----
 
-import Experiment
+Example::
+
+   python mali2mali.py --help
+
+Type::
+
+   python mali2mali.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+import os, sys, string, re, optparse, math, time
+
+import Genomics
+import Masker
+import Experiment as E
 import IOTools
 import Mali
 
@@ -134,8 +191,7 @@ def removeUnalignedPairs( mali, options ):
     for id in delete_rows:
         mali.deleteEntry( id )
 
-    if options.loglevel >= 1:
-        options.stdlog.write("# ninput=%i, nremoved=%i, noutput=%i\n" % (nids, len(delete_rows), mali.getLength()))
+    E.info( "ninput=%i, nremoved=%i, noutput=%i" % (nids, len(delete_rows), mali.getLength()))
 
 ##------------------------------------------------------------
 ##------------------------------------------------------------
@@ -310,9 +366,10 @@ def filterMali( mali, method="3rd" ):
     mali.takeColumns( columns )
         
 ##------------------------------------------------------------
-if __name__ == '__main__':
+def main( argv = sys.argv ):
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: mali2mali.py 2782 2009-09-10 11:40:29Z andreas $", usage = USAGE)
+    parser = optparse.OptionParser( version = "%prog version: $Id: mali2mali.py 2782 2009-09-10 11:40:29Z andreas $", 
+                                    usage = globals()["__doc__"])
 
     parser.add_option("-i", "--input-format", dest="input_format", type="choice",
                       choices=("plain", "fasta", "clustal", "stockholm", "phylip" ),
@@ -327,6 +384,9 @@ if __name__ == '__main__':
 
     parser.add_option( "--without-ranges", dest="with_ranges", action="store_false",
                       help="do not output alignment ranges (suffix /from-to after identifier) [default=%default]."  )
+
+    parser.add_option( "-u", "--allow-duplicates", dest="allow_duplicates", action="store_true",
+                      help="permit duplicate entries [default=%default]."  )
 
     parser.add_option("-m", "--method", dest="methods", type="string",
                       help="""methods to apply. Several methods can be specified in a ','-separated list [default=%default]."""  )
@@ -345,26 +405,28 @@ if __name__ == '__main__':
         mask_char = "x",
         gap_chars = "-.nN",
         with_ranges = True,
+        allow_duplicates = False,
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     options.methods = options.methods.split(",")
     options.parameters = options.parameters.split(",")    
     
     ## 1. read multiple alignment in various formats
-    mali = Mali.Mali()
+    if options.allow_duplicates:
+        mali = Mali.SequenceCollection()
+    else:
+        mali = Mali.Mali()
 
     t1 = time.time()
     
     mali.readFromFile( options.stdin, format = options.input_format )
-    
-    if options.loglevel >= 1:
-        options.stdlog.write ( "# read mali with %i entries in %i seconds.\n" % (len(mali), time.time() - t1))
-        options.stdlog.flush()
+
+    E.info( "read mali with %i entries in %i seconds." % (len(mali), time.time() - t1))
         
     if len(mali) == 0:
-        raise "empty multiple alignment"
+        raise ValueError("empty multiple alignment")
 
     for method in options.methods:
 
@@ -394,7 +456,8 @@ if __name__ == '__main__':
             mali.removePattern( lambda x: x.upper() in ("TAG", "TAA", "TGA"),
                                 allowed_matches = 0,
                                 minimum_matches = 1,
-                                frame = 3 )
+                                delete_frame = 3,
+                                search_frame = 3)
         elif method == "shift-alignment":
             map_id2offset = IOTools.ReadMap( open( options.parameters[0], "r"),
                                              map_functions=(str,int) )
@@ -458,18 +521,24 @@ if __name__ == '__main__':
             filterMali( mali, "4d" )
 
         elif method in ("mask-seg", "mask-bias" ):
-
             a, b = method.split("-")
             maskMali( mali, b )
             
-        if options.loglevel >= 1:
-            options.stdlog.write ( "# applied method %s in %i seconds.\n" % (method, time.time() - t1))
-            options.stdlog.flush()
+        elif method == "exclude-with-stop":
+            mali.filter( method = "with-stop" )
+
+        elif method == "exclude-with-stop":
+            mali.filter( method = "with-frameshift" )
+
+        E.info( "applied method %s in %i seconds." % (method, time.time() - t1))
+
             
     mali.writeToFile( options.stdout, 
                       format = options.output_format, 
                       write_ranges = options.with_ranges )
         
-    Experiment.Stop()
+    E.Stop()
 
+if __name__ == "__main__":
+    sys.exit( main( sys.argv ) )
     

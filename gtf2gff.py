@@ -21,6 +21,9 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 """
+gtf2gff.py - flatten a gtf file
+===============================
+
 :Author: Andreas Heger
 :Release: $Id: gtf2gff.py 2861 2010-02-23 17:36:32Z andreas $
 :Date: |today|
@@ -29,9 +32,9 @@
 Purpose
 -------
 
-convert a gtf file into a gff file. In other words, a gene set (gtf), which
-constitutes a hierarchal set of annotations, will be converted in into
-a flat list of genomic segments.
+This scripts converts a :term:`gtf` formatted file into a :term:`gff` formatted file. 
+In other words, a gene set (gtf), which constitutes a hierarchal set of annotations, 
+will be converted in into a flat list of genomic segments.
 
 Various methods can be used to do the conversion (see command line argument *method*):
 

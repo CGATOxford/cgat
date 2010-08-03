@@ -20,12 +20,12 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
-"""
+'''
 script_template.py - template for CGAT scipts
 =============================================
 
 :Author: Andreas Heger
-:Release: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $
+:Release: $Id$
 :Date: |today|
 :Tags: Python
 
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python <script_name>.py --help
+   python script_template.py --help
 
 Type::
 
-   python <script_name>.py --help
+   python script_template.py --help
 
 for command line help.
 
@@ -55,7 +55,7 @@ Documentation
 Code
 ----
 
-""" 
+'''
 
 import os, sys, re, optparse
 

@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: prune_fasta.py 18 2005-08-09 15:32:24Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,29 +20,63 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+prune_fasta.py - prune fasta sequences
+======================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+Given input like::
+
+    >BcDNA:AT01047 AY069026 [start_codon:116]
+    CATACATAGTTCCCAGCAACTCAGGCCGGCAGCTACATAAGACCTTCGTA
+    CCAAATCCAAAACGAAAACCCATTTTTCGCTCCGTTTCGATTCGAACCGT
+    ATTCCAGTCCGCCCAGATGGATATGAACTACCAGTACAAGAAGGACCACT
+    CGTTCGACAAGCGCCGCAACGAAGGCGACAAGATCCGGCGCAAGTATCCG
+    GACCGTGTGCCCGTCATCGTGGAAAAGGCGCCGAAGACGCGTTACGCGGA
+    GCTGGACAAGAAGAAGTACCTGGTGCCGGCGGACCTGACAGTGGGCCAGT
+    TCTACTTTCTCATCCGCAAGCGTATCAATCTGCGTCCCGACGACGCCCTC
+    TTCTTCTTCGTAAACAATGTGATCCCACCGACATCGGCCACCATGGGTGC
+    ACTGTACCAGGAGCACTTCGACAAGGACTACTTCCTCTACATTTCCTATA
+    CCGATGAGAACGTCTATGGACGGCAGTAGACGCGGGCTTGACTCGCGTAA
+    TCGTTTTGGCGGTCGGTTGAGTTTCAATTGTCATTTTTTGCCATTGGCAC
+    TACTCGCTCAATAAAGAATGACTGCTCCTAGCCAGCTAACCAAAAAAAAA
+    AAAAAAAAA
+
+this scripts outputs sequence from start codon to stop codon.
+
+Usage
+-----
+
+Example::
+
+   python prune_fasta.py --help
+
+Type::
+
+   python prune_fasta.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 import sys, re, string, os
 
-"""prune fasta sequences.
+"""
 
 Version: $Id: prune_fasta.py 18 2005-08-09 15:32:24Z andreas $
 
-input:
->BcDNA:AT01047 AY069026 [start_codon:116]
-CATACATAGTTCCCAGCAACTCAGGCCGGCAGCTACATAAGACCTTCGTA
-CCAAATCCAAAACGAAAACCCATTTTTCGCTCCGTTTCGATTCGAACCGT
-ATTCCAGTCCGCCCAGATGGATATGAACTACCAGTACAAGAAGGACCACT
-CGTTCGACAAGCGCCGCAACGAAGGCGACAAGATCCGGCGCAAGTATCCG
-GACCGTGTGCCCGTCATCGTGGAAAAGGCGCCGAAGACGCGTTACGCGGA
-GCTGGACAAGAAGAAGTACCTGGTGCCGGCGGACCTGACAGTGGGCCAGT
-TCTACTTTCTCATCCGCAAGCGTATCAATCTGCGTCCCGACGACGCCCTC
-TTCTTCTTCGTAAACAATGTGATCCCACCGACATCGGCCACCATGGGTGC
-ACTGTACCAGGAGCACTTCGACAAGGACTACTTCCTCTACATTTCCTATA
-CCGATGAGAACGTCTATGGACGGCAGTAGACGCGGGCTTGACTCGCGTAA
-TCGTTTTGGCGGTCGGTTGAGTTTCAATTGTCATTTTTTGCCATTGGCAC
-TACTCGCTCAATAAAGAATGACTGCTCCTAGCCAGCTAACCAAAAAAAAA
-AAAAAAAAA
-output:
-sequence from start codon to stop codon.
 """
 
 param_stop_codons = ("TAG", "TAA", "TGA")

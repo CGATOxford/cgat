@@ -20,15 +20,45 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
-import os, sys, string, re, optparse, types, random, collections
+'''
+gtf2gtf.py - manipulate gtf files
+=================================
 
-USAGE="""python %s [OPTIONS] < in.gtf
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
 
-convert a gtf merging all overlapping exons per gene.
+Purpose
+-------
+
+This scripts reads a :term:`gtf` formatted file from stdin, applies some
+transformation, and outputs a new :term:`gtf` formatted file to stdout.
 
 This script expects the gtf file to be sorted by genes by contig and then by 
 position.
-"""
+
+Usage
+-----
+
+Example::
+
+   python <script_name>.py --help
+
+Type::
+
+   python <script_name>.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+import os, sys, string, re, optparse, types, random, collections
 
 import GTF
 import Experiment as E
@@ -41,13 +71,17 @@ import Components
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: gtf2gtf.py 2861 2010-02-23 17:36:32Z andreas $", usage = USAGE)
+    parser = optparse.OptionParser( version = "%prog version: $Id: gtf2gtf.py 2861 2010-02-23 17:36:32Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-m", "--merge-exons", dest="merge_exons", action="store_true",
                       help="merge overlapping exons of all transcripts within a gene [default=%default]."  )
 
     parser.add_option( "--merge-genes", dest="merge_genes", action="store_true",
                       help="merge overlapping genes if their exons overlap. This ignores the strand [default=%default]."  )
+
+    parser.add_option( "--sort", dest="sort", type="choice",
+                       choices=("gene", "transcript", "position", "contig+gene" ),
+                       help="sort input [default=%default]."  )
 
     parser.add_option("-u", "--with-utr", dest="with_utr", action="store_true",
                       help="include utr in merged transcripts [default=%default]."  )
@@ -60,6 +94,12 @@ if __name__ == '__main__':
 
     parser.add_option("-g", "--set-transcript-to-gene", "--set-transcript2gene", dest="set_transcript2gene", action="store_true",
                       help="set the transcript_id to the gene_id [default=%default]."  )
+
+    parser.add_option( "--set-protein-to-transcript", dest="set_protein2transcript", action="store_true",
+                      help="set the protein_id to the transcript_id [default=%default]."  )
+
+    parser.add_option( "--add-protein-id", dest="add_protein_id", type="string",
+                      help="add the protein_id for each transcript_id. The argument is a filename with a map [default=%default]."  )
 
     parser.add_option("-G", "--set-gene-to-transcript", "--set-gene2transcript", dest="set_gene2transcript", action="store_true",
                       help="set the gene_id to the transcript_id [default=%default]."  )
@@ -77,6 +117,12 @@ if __name__ == '__main__':
     parser.add_option("-r", "--rename", dest="rename", type="choice",
                       choices=("gene", "transcript","longest-gene"),
                       help="rename genes or transcripts with a map given in apply. Those that can not be renamed are removed [default=%default]."  )
+
+    parser.add_option( "--renumber-genes", dest="renumber_genes", type="string", 
+                      help="renumber genes according to pattern [default=%default]."  )
+
+    parser.add_option( "--renumber-transcripts", dest="renumber_transcripts", type="string", 
+                      help="renumber transcripts according to pattern [default=%default]."  )
 
     parser.add_option("-a", "--apply", dest="filename_filter", type="string",
                       help="filename to filter with [default=%default]."  )
@@ -102,18 +148,23 @@ if __name__ == '__main__':
     parser.add_option( "--reset-strand", dest="reset_strand", action="store_true",
                        help="remove strandedness of features." )
 
+    parser.add_option( "--permit-duplicates", dest="strict", action="store_false",
+                       help="permit duplicate genes (on different chromosomes, ...) [default=%default]" )
+
     parser.add_option( "--remove-duplicates", dest="remove_duplicates", type="choice",
-                       choices=("gene", "transcript"),
-                       help="remove duplicates by gene/transcript [%default]" )
-
-
+                       choices=("gene", "transcript", "ucsc"),
+                       help="remove duplicates by gene/transcript. If ``ucsc`` is chosen, transcripts ending on _dup# are removed" 
+                       " this is necessary to remove duplicate entries that are next to each other in the sort order [%default]" )
 
     parser.set_defaults(
+        sort = None,
         merge_exons = False,
         merge_transcripts = False,
         set_score2distance = False,
         set_gene2transcript = False,
         set_transcript2gene = False,
+        set_protein2transcript = False,
+        add_protein_id = None,
         filename_filter = None,
         filter = None,
         exons2introns = None,
@@ -127,6 +178,9 @@ if __name__ == '__main__':
         with_utr = False,
         invert_filter = False,
         remove_duplications = None,
+        renumber_genes = None,
+        renumber_transcripts = None,
+        strict = True,
         )
 
     (options, args) = E.Start( parser )
@@ -146,33 +200,79 @@ if __name__ == '__main__':
             nfeatures += 1
 
     elif options.remove_duplicates:
+
         counts = collections.defaultdict(int)
-        
-        if options.remove_duplicates == "gene":
-            gffs = GTF.gene_iterator(GTF.iterator(options.stdin), strict = False )
-            f = lambda x: x[0][0].gene_id
-            outf = lambda x: "\n".join( [ "\n".join( [ str(y) for y in xx] ) for xx in x] )
-        elif options.remove_duplicates == "transcript":
-            gffs = GTF.transcript_iterator(GTF.iterator(options.stdin), strict = False)
+
+        if options.remove_duplicates == "ucsc":
+            store = []
+            remove = set()
             f = lambda x: x[0].transcript_id
+
+            gffs = GTF.transcript_iterator(GTF.iterator(options.stdin), strict = False)
             outf = lambda x: "\n".join( [ str(y) for y in x] )
 
-        store = []
+            for entry in gffs:
+                ninput += 1
+                store.append(entry)
+                id = f(entry)
+                if "_dup" in id: 
+                    remove.add(re.sub("_dup\d+","", id) )
+                    remove.add( id )
 
-        for entry in gffs:
+            for entry in store:
+                id = f(entry)
+                if id not in remove: 
+                    options.stdout.write( outf(entry) + "\n" )
+                    noutput += 1
+                else:
+                    ndiscarded += 1
+                    E.info("discarded duplicates for %s" % (id))
+        else:
+        
+            if options.remove_duplicates == "gene":
+                gffs = GTF.gene_iterator(GTF.iterator(options.stdin), strict = False )
+                f = lambda x: x[0][0].gene_id
+                outf = lambda x: "\n".join( [ "\n".join( [ str(y) for y in xx] ) for xx in x] )
+
+            elif options.remove_duplicates == "transcript":
+                gffs = GTF.transcript_iterator(GTF.iterator(options.stdin), strict = False)
+                f = lambda x: x[0].transcript_id
+                outf = lambda x: "\n".join( [ str(y) for y in x] )
+
+            store = []
+
+            for entry in gffs:
+                ninput += 1
+                store.append(entry)
+                id = f(entry)
+                counts[id] += 1
+
+            for entry in store:
+                id = f(entry)
+                if counts[id] == 1:
+                    options.stdout.write( outf(entry) + "\n" )
+                    noutput += 1
+                else:
+                    ndiscarded += 1
+                    E.info("discarded duplicates for %s: %i" % (id, counts[id]))
+
+    elif options.sort:
+
+        entries = list(GTF.iterator(options.stdin))
+        if options.sort == "gene":
+            entries.sort( key = lambda x: (x.gene_id, x.transcript_id, x.contig, x.start) )
+        elif options.sort == "contig+gene":
+            entries.sort( key = lambda x: (x.contig,x.gene_id,x.transcript_id,x.start) )
+        elif options.sort == "transcript":
+            entries.sort( key = lambda x: (x.transcript_id, x.contig, x.start) )
+        elif options.sort == "position":
+            entries.sort( key = lambda x: (x.contig, x.start) )
+
+        for gff in entries:
             ninput += 1
-            store.append(entry)
-            id = f(entry)
-            counts[id] += 1
-
-        for entry in store:
-            id = f(entry)
-            if counts[id] == 1:
-                options.stdout.write( outf(entry) + "\n" )
-                noutput += 1
-            else:
-                ndiscarded += 1
-                E.info("discarded duplicates for %s: %i" % (id, counts[id]))
+            options.stdout.write( "%s\n" % str(gff) )                
+            noutput += 1
+            nfeatures += 1
             
     elif options.set_gene2transcript:
 
@@ -185,9 +285,42 @@ if __name__ == '__main__':
             noutput += 1
             nfeatures += 1
 
-    elif options.merge_genes:
+    elif options.set_protein2transcript:
 
-        gffs = GTF.iterator_sorted_chunks( GTF.flat_gene_iterator(GTF.iterator(options.stdin)) )
+        for gff in GTF.iterator(options.stdin):
+            ninput += 1
+            gff.setAttribute( "protein_id", gff.transcript_id)
+            options.stdout.write( "%s\n" % str(gff) )                
+            noutput += 1
+            nfeatures += 1
+
+    elif options.add_protein_id:
+
+        transcript2protein = IOTools.readMap( open( options.add_protein_id, "r") )
+
+        missing = set()
+        for gff in GTF.iterator(options.stdin):
+            ninput += 1
+            if gff.transcript_id not in transcript2protein:
+                if gff.transcript_id not in missing:
+                    E.debug( "removing transcript '%s' due to missing protein id" % gff.transcript_id)
+                    missing.add( gff.transcript_id)
+                ndiscarded += 1
+                continue
+            
+            gff.setAttribute( "protein_id", transcript2protein[gff.transcript_id])
+            options.stdout.write( "%s\n" % str(gff) )                
+            noutput += 1
+            nfeatures += 1
+        
+        E.info("transcripts removed due to missing protein ids: %i" % len(missing))
+
+    elif options.merge_genes:
+        # merges overlapping genes
+        # 
+        gffs = GTF.iterator_sorted_chunks( 
+            GTF.flat_gene_iterator(GTF.iterator(options.stdin)),
+            sort_by = "contig-strand-start" )
         
         def iterate_chunks( gff_chunks ):
 
@@ -196,10 +329,17 @@ if __name__ == '__main__':
 
             for gffs in gff_chunks:
                 d = gffs[0].start - last[-1].end
-                if gffs[0].contig == last[0].contig:
-                    assert gffs[0].start >= last[0].start, "input file should be sorted by contig and position: d=%i:\n%s\n%s\n" % (d, str(last), str(gffs))
 
-                if gffs[0].contig != last[0].contig or d > 0:
+                if gffs[0].contig == last[0].contig and gffs[0].strand == last[0].strand:
+                    assert gffs[0].start >= last[0].start, \
+                        "input file should be sorted by contig, strand and position: d=%i:\nlast=\n%s\nthis=\n%s\n" % \
+                        (d, 
+                         "\n".join( [str(x) for x in last] ),
+                         "\n".join( [str(x) for x in gffs] ) )
+
+                if gffs[0].contig != last[0].contig or \
+                        gffs[0].strand != last[0].strand or \
+                        d > 0:
                     yield to_join
                     to_join = []
 
@@ -222,8 +362,8 @@ if __name__ == '__main__':
 
             intervals = []
             for c in chunks: intervals += [ (x.start, x.end) for x in c ]
-            intervals = Intervals.combine( intervals )
 
+            intervals = Intervals.combine( intervals )
             for start, end in intervals:
                 y = GTF.Entry()
                 y.fromGFF( chunks[0][0], gene_id, transcript_id )
@@ -236,6 +376,28 @@ if __name__ == '__main__':
 
             noutput += 1
         
+    elif options.renumber_genes:
+        
+        map_old2new = {}
+        for gtf in GTF.iterator(options.stdin):
+            ninput += 1
+            if gtf.gene_id not in map_old2new:
+                map_old2new[gtf.gene_id ] = options.renumber_genes % (len(map_old2new) + 1)
+            gtf.setAttribute("gene_id", map_old2new[gtf.gene_id ] )
+            options.stdout.write( "%s\n" % str(gtf) )
+            noutput += 1
+
+    elif options.renumber_transcripts:
+        
+        map_old2new = {}
+        for gtf in GTF.iterator(options.stdin):
+            ninput += 1
+            if gtf.transcript_id not in map_old2new:
+                map_old2new[gtf.transcript_id ] = options.renumber_transcripts % (len(map_old2new) + 1)
+            gtf.setAttribute( "transcript_id",  map_old2new[gtf.transcript_id ] )
+            options.stdout.write( "%s\n" % str(gtf) )
+            noutput += 1
+
     elif options.transcripts2genes:
 
         transcripts = set()
@@ -268,13 +430,22 @@ if __name__ == '__main__':
         for gff in GTF.iterator( options.stdin ):
             ninput += 1
 
-            if is_gene_id and gff.gene_id in map_old2new:
-                gff.gene_id = map_old2new[gff.gene_id]
-            elif not is_gene_id and gff.transcript_id in map_old2new:
-                gff.transcript_id = map_old2new[gff.transcript_id]
+            if is_gene_id:
+                if gff.gene_id in map_old2new:
+                    gff.setAttribute("gene_id", map_old2new[gff.gene_id])
+                else:
+                    E.debug( "removing missing gene_id %s" % gff.gene_id)
+                    ndiscarded += 1
+                    continue
+
             else:
-                ndiscarded += 1
-                continue
+                if gff.transcript_id in map_old2new:
+                    gff.setAttribute("transcript_id", map_old2new[gff.transcript_id])
+                else:
+                    E.debug( "removing missing transcript_id %s" % gff.transcript_id)
+                    ndiscarded += 1
+                    continue
+
             noutput += 1
             options.stdout.write("%s\n" % str(gff))
                 
@@ -428,12 +599,22 @@ if __name__ == '__main__':
                 nfeatures += 1
             noutput += 1
     else:
-        for gffs in GTF.flat_gene_iterator(GTF.iterator(options.stdin)):
+        for gffs in GTF.flat_gene_iterator(GTF.iterator(options.stdin), strict=options.strict ):
 
             ninput += 1
 
             cds_ranges = GTF.asRanges( gffs, "CDS" )
             exon_ranges = GTF.asRanges( gffs, "exon" )
+
+            # sanity checks
+            strands = set( [x.strand for x in gffs ] )
+            contigs = set( [x.contig for x in gffs ] )
+            if len(strands) > 1:
+                raise ValueError( "can not merge gene '%s' on multiple strands: %s" % (gffs[0].gene_id, str(strands)))
+
+            if len(contigs) > 1:
+                raise ValueError( "can not merge gene '%s' on multiple contigs: %s" % (gffs[0].gene_id, str(contigs)))
+
             strand = Genomics.convertStrand( gffs[0].strand )
 
             if cds_ranges and options.with_utr:

@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: mali2kaks.py 2781 2009-09-10 11:33:14Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,16 +20,48 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
-import os, sys, string, re, tempfile, subprocess, optparse, time, math
+'''
+mali2kaks.py - rate analysis with PAML
+======================================
 
-from types import *
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
 
-USAGE = """Pairwise rate analysis with PAML.
+Purpose
+-------
+
+This script will do pairwise rate analysis on a set of multiply aligned
+sequences in :term:`fasta` format.
 
 PAML bails if sequences in a multiple alignment are not overlapping. Thus this
 code checks for each pair the overlap. If a pair is not overlapping, it goes
 into pairwise mode.
-"""
+
+Usage
+-----
+
+Example::
+
+   python mali2kaks.py --help
+
+Type::
+
+   python mali2kaks.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+import os, sys, string, re, tempfile, subprocess, optparse, time, math
+
+from types import *
 
 import Experiment as Experiment
 import WrapperCodeML

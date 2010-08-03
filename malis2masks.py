@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: malis2masks.py 2781 2009-09-10 11:33:14Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2006 Tyler ???? and Andreas Heger 
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,15 +20,43 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
-import os, sys, string, re, optparse, math, time, random, types
+'''
+malis2masks.py - mask positions in a set of malis
+=================================================
 
-USAGE="""python %s [OPTIONS]
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
 
 mask positions in a series of multiple alignments.
 
 Output is a file with masking information.
 
-""" % sys.argv[0]
+Usage
+-----
+
+Example::
+
+   python malis2masks.py --help
+
+Type::
+
+   python malis2masks.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+import os, sys, string, re, optparse, math, time, random, types
 
 import Experiment as E
 import Blat
@@ -46,7 +75,7 @@ def fillAlignment( map_alignment, alignment ):
 
 def main():
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: malis2masks.py 2781 2009-09-10 11:33:14Z andreas $", usage = USAGE)
+    parser = optparse.OptionParser( version = "%prog version: $Id: malis2masks.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("--random-proportion", dest="random_proportion", type="float",
                       help="mask randomly columns in multiple alignments [default=%default]" )

@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: setup.py 2781 2009-09-10 11:33:14Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,10 +20,41 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
-import os, sys, string, re, tempfile, optparse, time
+'''
+setup.py - setup Makefile pipelines
+===================================
 
-"""install blast
-"""
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+This script will setup a Makefile pipeline.
+
+Usage
+-----
+
+Example::
+
+   python setup.py --help
+
+Type::
+
+   python setup.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+import os, sys, string, re, tempfile, optparse, time
 
 import Experiment
 
@@ -108,6 +140,7 @@ if __name__ == "__main__":
         destination = ".",
         force = False,
         project = None,
+        source_directory = "/home/andreas/cgat",
         temporary = "/net/cpp-group/gpipe/tmp",
         temporary_local = None,        
         temporary_remote = None,
@@ -119,19 +152,19 @@ if __name__ == "__main__":
     (options, args) = Experiment.Start( parser )
 
     if not options.method:
-        raise "please specify a method."
+        raise ValueError("please specify a method.")
     
     if len(args) >= 1 and not options.destination:
         options.destination = args[0]
         del args[0]
         
     if not options.destination:
-        raise "please specify a destination directory for installing the scripts."
+        raise ValueError("please specify a destination directory for installing the scripts.")
 
     if not options.temporary_remote:
         options.temporary_remote = options.temporary_local
         
-    source_directory = os.path.realpath(os.path.dirname(sys.argv[0]))
+    source_directory = os.path.realpath(options.source_directory)
     target_directory = options.destination
 
     ## create working directories
@@ -151,9 +184,9 @@ if __name__ == "__main__":
         sys.exit(1)
 
     ## Create makefile
-    source_makefile = source_directory + "/Makefile.%s" % options.method
+    source_makefile = source_directory + "/makefiles/Makefile.%s" % options.method
     if not os.path.exists(source_makefile):
-        raise "unknown method %s: %s not found" % (options.method, source_makefile)
+        raise ValueError("unknown method %s: %s not found" % (options.method, source_makefile))
     
     ## 1. write parameters
     keep = 0
@@ -164,7 +197,10 @@ if __name__ == "__main__":
     outfile.write("# python %s\n#\n" % " ".join(sys.argv))
     outfile.write("############################################\n")
 
-    AddOptions( outfile, open(source_makefile, "r"), source_directory, options )
+    AddOptions( outfile, 
+                open(source_makefile, "r"), 
+                source_directory, 
+                options )
 
     ## add include makefiles
     if options.includes:

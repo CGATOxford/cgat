@@ -1,9 +1,10 @@
 ################################################################################
-#   Geneprediction pipeline 
 #
-#   $Id: introns2rates.py 1799 2008-03-28 11:44:19Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,11 +20,17 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
-import os, sys, string, re, getopt, tempfile
+'''
+introns2rates.py - compute rates of aligned intron sequences
+============================================================
 
-USAGE="""python %s [OPTIONS] < orthologs > genes
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
 
-Version: $Id: introns2rates.py 1799 2008-03-28 11:44:19Z andreas $
+Purpose
+-------
 
 Read a list of aligned introns and compute pairs.
 
@@ -40,7 +47,28 @@ Options:
 --method=                       alignment method [dbaligned|clusaligned|dialigned|dialignedlgs]
 --fixed-alpha=                  fix alpha at value
 --anchor-alignment=             anchor alignment with x residues of A at each side
-""" % sys.argv[0]
+
+Usage
+-----
+
+Example::
+
+   python introns2rates.py --help
+
+Type::
+
+   python introns2rates.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+import os, sys, string, re, getopt, tempfile
 
 import Experiment
 import Genomics

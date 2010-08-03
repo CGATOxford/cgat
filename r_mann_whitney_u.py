@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: r_mann_whitney_u.py 2782 2009-09-10 11:40:29Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2006 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,23 +20,46 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
-import os, sys, string, re, optparse, time, random
-from rpy import r as R
-import rpy
+'''
+r_mann_whitney_u.py - Mann-Whitney U test
+=========================================
 
-"""Mann-Whitney U test
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
 
 Input: two sets of values. These can be either given
 as values directly or as categories, which will be mapped to
 values.
 
-Question: is the distribution of values different?
+Usage
+-----
 
-Implementation: uses R 
+Example::
 
-"""
+   python r_mann_whitney_u.py --help
 
-import Experiment
+Type::
+
+   python r_mann_whitney_u.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+import os, sys, string, re, optparse, time, random
+from rpy import r as R
+import rpy
+import Experiment as E
 import pgdb
 import IOTools
 
@@ -61,9 +85,9 @@ if __name__  == "__main__":
         filename_input_map = None,
         )
     
-    (options, args) = Experiment.Start( parser,
-                                        add_pipe_options = True,
-                                        add_psql_options = True,)
+    (options, args) = E.Start( parser,
+                               add_pipe_options = True,
+                               add_psql_options = True,)
 
 
     map_category2value = {}
@@ -76,8 +100,8 @@ if __name__  == "__main__":
     values2, errors2 = IOTools.ReadList( open(options.filename_input2, "r"),
                                          map_category=map_category2value )    
     
-    options.stdout.write( "# ninput1=%i, nerrors1=%i, ninput2=%i, nerrors2=%i\n" % (len(values1), len(errors1),
-                                                                                    len(values2), len(errors2)) )
+    E.info( "ninput1=%i, nerrors1=%i, ninput2=%i, nerrors2=%i" % (len(values1), len(errors1),
+                                                                  len(values2), len(errors2)) )
 
     if options.hardcopy:
         R.png(options.hardcopy, width=1024, height=768)
@@ -106,4 +130,4 @@ if __name__  == "__main__":
         print x, result[x]
 
 
-    Experiment.Stop()
+    E.Stop()

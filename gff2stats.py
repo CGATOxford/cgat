@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: gff2stats.py 2781 2009-09-10 11:33:14Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,6 +20,42 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+gff2stats.py - count features, etc. in gff file
+===============================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+This script computes the number of entries for each feature,
+source, gene_id and transcript_id in :term:`gff` or :term:`gtf` 
+formatted files.
+
+Usage
+-----
+
+Example::
+
+   python gff2stats.py --help
+
+Type::
+
+   python gff2stats.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 import sys, string, re, optparse, collections
 
 USAGE="""python %s [OPTIONS] input1 input2
@@ -40,7 +77,8 @@ import GFF, GTF
 ##------------------------------------------------------------------------
 def main( argv = sys.argv ):
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: gff2stats.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = optparse.OptionParser( version = "%prog version: $Id: gff2stats.py 2781 2009-09-10 11:33:14Z andreas $",
+                                    usage=globals()["__doc__"])
 
     parser.add_option("--is-gtf", dest="is_gtf", action="store_true",
                       help="input is gtf.")
@@ -53,12 +91,11 @@ def main( argv = sys.argv ):
 
     is_gtf = options.is_gtf
 
+    iterator = GTF.iterator
+
     if is_gtf:
-        iterator = GTF.iterator
         counts_gene_ids = collections.defaultdict( int )
         counts_transcript_ids = collections.defaultdict( int )
-    else:
-        iterator = GFF.iterator
 
     counts_contigs = collections.defaultdict( int )
     counts_strands = collections.defaultdict( int )

@@ -37,7 +37,7 @@ if __name__ == "__main__":
 
     import Experiment
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: benchmark_index.py 2782 2009-09-10 11:40:29Z andreas $", usage = USAGE)
+    parser = optparse.OptionParser( version = "%prog version: $Id: benchmark_index.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
 
     parser.set_defaults(
         methods = [ "lzo", "dictzip", "zlib", "gzip" ],

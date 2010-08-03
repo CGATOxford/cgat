@@ -21,6 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 """
+bam2wiggle.py - convert bam to wig/bigwig file
+==============================================
 
 :Author: Andreas Heger
 :Release: $Id: bam2wiggle.py 2832 2009-11-24 16:11:06Z andreas $
@@ -31,7 +33,6 @@ Purpose
 -------
 
 convert a bam file to a bigwig file.   
-
 
 Usage
 -----
@@ -92,13 +93,17 @@ def main( argv = None ):
     if not options.samfile:
         raise ValueError("please provide a bam file")
 
+    samfile = pysam.Samfile( options.samfile, "rb" )
+
+    contig_sizes = dict( zip( samfile.references, samfile.lengths) )
+
     if options.output_format in ("bigwig", "bigbed"):
         
         if not options.genome_file:
             raise ValueError("please supply genome file for bigwig/bigbed computation.")
 
-        fasta = IndexedFasta.IndexedFasta(options.genome_file )
-        contig_sizes = fasta.getContigSizes( with_synonyms = False )
+        #fasta = IndexedFasta.IndexedFasta(options.genome_file )
+        #contig_sizes = fasta.getContigSizes( with_synonyms = False )
 
         if not options.output_filename:
             raise ValueError("please output file for bigwig/bigbed computation.")
@@ -134,7 +139,9 @@ def main( argv = None ):
         outfile = options.stdout
         E.info( "starting output to stdout" )        
 
-    samfile = pysam.Samfile( options.samfile, "rb" )
+
+
+    
 
     if options.output_format in ("wiggle", "bigwig"):
         # wiggle is one-based, so add 1

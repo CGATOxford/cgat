@@ -1,7 +1,35 @@
-"""iterate over fasta files.
+################################################################################
+#
+#   MRC FGU Computational Genomics Group
+#
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
+#
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU General Public License
+#   as published by the Free Software Foundation; either version 2
+#   of the License, or (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#################################################################################
+"""
+FastaIterator.py - iterate over fasta files
+===========================================
 
-The difference to the biopython iterator is that this one skips over comment lines
-starting with "#".
+The difference to the biopython iterator is that this one 
+skips over comment lines starting with "#".
+
+Code
+----
+
 """
 
 class FastaRecord:
@@ -45,6 +73,8 @@ def iterate( infile ):
     yield FastaRecord(h,''.join(seq))
 
 class FastaIterator:
+    '''a iterator of :term:`fasta` formatted files.
+    '''
 
     def __init__(self, f, *args, **kwargs):
         self.mIterator = iterate(f)
@@ -57,7 +87,11 @@ class FastaIterator:
 
 ##------------------------------------------------------------
 def iterate_together( *args ):
-    """iterate over one or more fasta files and output tuples of sequences."""
+    """iterate synchronously over one or more fasta files.
+
+    The iteration finishes once any of the files is exhausted.
+
+    yield output tuples of sequences."""
     iterators = [ FastaIterator( open(x, "r") ) for x in args ]
 
     while 1:

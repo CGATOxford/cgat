@@ -19,16 +19,49 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+gff2chunks.py - split a gff file into chunks
+=============================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+This scripts splits a gff file into chunks. 
+The input file needs to be sorted appropriately.
+
+Methods:
+
+overlap
+   split into chunks ensuring that overlapping intervals
+   are part of the same chunk
+
+Usage
+-----
+
+Example::
+
+   python <script_name>.py --help
+
+Type::
+
+   python <script_name>.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+
 import sys, re, optparse, os
-
-USAGE="""python %s [OPTIONS] input1 input2
-
-split a gff file into chunks. The input file needs to be sorted
-appropriately.
-
-Version: $Id: gff2chunks.py 2781 2009-09-10 11:33:14Z andreas $
-""" % sys.argv[0]
-
 import Experiment
 import GFF
 
@@ -75,7 +108,7 @@ class OutputChunk:
 ##------------------------------------------------------------------------
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: gff2chunks.py 2781 2009-09-10 11:33:14Z andreas $", usage= USAGE )
+    parser = optparse.OptionParser( version = "%prog version: $Id: gff2chunks.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option( "-m", "--method", dest="method", type="choice",
                        choices=("overlap",),

@@ -1,54 +1,64 @@
-#!/bin/env python
-####
-####
-##
-## Copyright (C) 2007 Andreas Heger All rights reserved
-##
-## Author: Andreas Heger <andreas.heger@dpag.ox.ac.uk>
-##
-## $Id: nofarm.py 2782 2009-09-10 11:40:29Z andreas $
-##
-##
-####
-####
+################################################################################
+#
+#   MRC FGU Computational Genomics Group
+#
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
+#
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU General Public License
+#   as published by the Free Software Foundation; either version 2
+#   of the License, or (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#################################################################################
+'''
+nofarm.py - stand-in for ``farm.py``
+====================================
 
-USAGE="""farm.py [OPTIONS] cmd [ARGS] < stdin > stdout
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
 
-execute a cmd on the cluster.
+Purpose
+-------
 
-The input on stdin is split for embarrasingly parallel jobs.
-The --split-at-.. options describe how standard input is to
-be split. A temporary directory is created in the current
-directory. This directory has be visible on the cluster nodes
-and accessible under the same name.
+This script is a stand-in for :doc:`farm`. Instead of running
+splitting the input and running jobs on the cluster, the command
+is executed as is.
 
-The output is written to stdout. Results are returned in the
-same order as they are submitted.
+This script accepts all the options of ``farm.py``, but ignores
+most of them.
 
-On error, error messages are echoed and nothing is returned.
-The temporary directory is not deleted to allow manual recovery.
+Usage
+-----
 
-Examples:
+Example::
 
-The following command will split the file "go" at the first column 
-and execute the command perl -p -e "s/GO/gaga/".
+   python nofarm.py --help
 
-   cat go | farm.py --split-at-colum=1 perl -p -e "s/GO/gaga/"
+Type::
 
-The following command will split a fasta file at each entry and
-compute an approximate sequence length:
+   python nofarm.py --help
 
-   cat genome.fasta | farm.py --split-at-regex="^>(\S+)" "wc -c"
+for command line help.
 
-The following command will split a fasta file at every 10 sequences
+Documentation
+-------------
 
-   cat genome.fasta | farm.py --split-at-regex="^>(\S+)" --chunksize=10 "wc -c"
+Code
+----
 
-TODO: 
-
-implement continuation of jobs
-implement better error messages
-"""
+'''
 
 import os, sys, re, string, optparse, time, glob, subprocess, tempfile, shutil
 

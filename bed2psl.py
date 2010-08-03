@@ -21,6 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 """
+bed2psl.py - convert a bed file to a psl file
+=============================================
 
 :Author: Andreas Heger
 :Release: $Id: bed2psl.py 2899 2010-04-13 14:37:37Z andreas $
@@ -29,8 +31,6 @@
 
 Purpose
 -------
-
-convert a bed file to a psl file.
 
 Usage
 -----
@@ -92,7 +92,7 @@ def main( argv = None ):
     else:
         fasta = None
 
-    blat = Blat.Match()
+    psl = Blat.Match()
 
     for bed in Bed.iterator(options.stdin):
 
@@ -101,36 +101,36 @@ def main( argv = None ):
         start, end = bed.start, bed.end
 
         if "blockSizes" in bed:
-            blat.mQueryId = bed["name"]
+            psl.mQueryId = bed["name"]
             blocksizes = [ int(x) for x in bed["blockSizes"].split(",")[:-1]]
             sbjctblockstarts = [ int(x) + start for x in bed["blockStarts"].split(",")[:-1]]
             strand = bed["strand"]
         else: 
-            blat.mQueryId = "%i" % ninput
+            psl.mQueryId = "%i" % ninput
             blocksizes = [end - start ]
             sbjctblockstarts = [start,]
 
             strand = "+"
         
-        blat.mSbjctId = bed.contig
-        blat.mSbjctFrom, blat.mSbjctTo = start, end
-        blat.mQueryFrom, blat.mQueryTo = 0, end - start
+        psl.mSbjctId = bed.contig
+        psl.mSbjctFrom, psl.mSbjctTo = start, end
+        psl.mQueryFrom, psl.mQueryTo = 0, end - start
 
-        blat.mBlockSizes = blocksizes
-        blat.mNBlocks = len(blocksizes)
-        blat.strand = strand
+        psl.mBlockSizes = blocksizes
+        psl.mNBlocks = len(blocksizes)
+        psl.strand = strand
         q, qp = [], 0
         for x in blocksizes:
             q.append( qp )
             qp += x 
 
-        blat.mQueryBlockStarts = q
-        blat.mSbjctBlockStarts = sbjctblockstarts
-        blat.mQueryLength = sum( blat.mBlockSizes )
+        psl.mQueryBlockStarts = q
+        psl.mSbjctBlockStarts = sbjctblockstarts
+        psl.mQueryLength = sum( psl.mBlockSizes )
         if fasta:
-            blat.mSbjctLength = fasta.getLength( bed.contig )
+            psl.mSbjctLength = fasta.getLength( bed.contig )
 
-        options.stdout.write( "%s\n" % str(blat) )
+        options.stdout.write( "%s\n" % str(psl) )
         noutput += 1
 
     E.info( "ninput=%i, noutput=%i, nskipped=%i" % (ninput, noutput,nskipped) )

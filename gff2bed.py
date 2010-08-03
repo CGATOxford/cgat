@@ -45,7 +45,12 @@ def main( argv = sys.argv ):
     parser.add_option( "--is-gtf", dest="is_gtf", action="store_true",
                        help="input file is gtf. The name will be set to the gene id [default=%default] ")
 
+    parser.add_option( "--track", dest="track", type="choice",
+                       choices=("feature", "source", None),
+                       help="use feature/source field to define tracks [default=%default] ")
+
     parser.set_defaults(
+        track = None,
         is_gtf = False )
     
     (options, args) = E.Start( parser, add_pipe_options = True )
@@ -59,14 +64,34 @@ def main( argv = sys.argv ):
     else:
         iterator = GFF.iterator( options.stdin )
 
-    bed = Bed.Bed()
-    for gff in iterator:
-        ninput += 1
+    if options.track:
+        all_input = list( iterator )
 
-        bed.fromGFF( gff, is_gtf = is_gtf )
-        options.stdout.write( str(bed) + "\n" )
+        if options.track == "feature":
+            grouper = lambda x: x.feature
+        elif options.track == "source":
+            grouper = lambda x: x.source
 
-        noutput += 1
+        all_input.sort( key = grouper )
+
+        bed = Bed.Bed()
+        for key, vals in itertools.groupby( all_input, grouper ):
+            options.stdout.write( "track name=%s\n" % key )
+            for gff in vals:
+                ninput += 1
+                bed.fromGFF( gff, is_gtf = is_gtf )
+                options.stdout.write( str(bed) + "\n" )
+                noutput += 1
+
+    else:
+        bed = Bed.Bed()
+        for gff in iterator:
+            ninput += 1
+
+            bed.fromGFF( gff, is_gtf = is_gtf )
+            options.stdout.write( str(bed) + "\n" )
+
+            noutput += 1
 
     E.info( "ninput=%i, noutput=%i" % (ninput, noutput) )
 

@@ -21,6 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 """
+pipeline_vitaminD.py - vitaminD project pipeline
+================================================
 
 :Author: Andreas Heger
 :Release: $Id: pipeline_vitaminD.py 2870 2010-03-03 10:20:29Z andreas $
@@ -208,7 +210,7 @@ def importUCSCEncodeTracks( infile, outfile ):
             continue            
             
         E.info( "importing %(tablename)s" % locals() )
-        P.run( **dict( locals().items() + PARAMS.items() ) )
+        P.run()
 
 ############################################################
 ############################################################
@@ -303,7 +305,7 @@ def importRegionsOfInterest( infile, outfile ):
     < %(infile)s > %(outfile)s
     '''
 
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
 
 ###################################################################
 ###################################################################
@@ -621,7 +623,9 @@ def importMergedGWAS( infile, outfile ):
 ###################################################################
 ##
 ###################################################################
-@transform( (importRegionsOfInterest, importGWAS, importMergedGWAS),
+@transform( (importRegionsOfInterest, 
+             importGWAS, 
+             importMergedGWAS ),
             suffix( ".import"),
             "_genes.import")
 def importRegionsOfInterestGenes( infile, outfile ):
@@ -629,6 +633,8 @@ def importRegionsOfInterestGenes( infile, outfile ):
 
     intablename = infile[:-len(".import")]
     tablename = outfile[:-len(".import")]
+
+    E.info( "tablenames: %s, %s" % (intablename, tablename))
 
     dbhandle = sqlite3.connect( PARAMS["database"] )
     
@@ -646,9 +652,14 @@ def importRegionsOfInterestGenes( infile, outfile ):
     notfound = set()
 
     for roi_id, g in cc.execute( statement ):
-        if g == None: continue
-        genes = [x.lower() for x in g.split( "," )]
         counter.input += 1
+
+        if g == None: 
+            counter.nogenes += 1
+            continue
+
+        genes = [x.lower() for x in g.split( "," )]
+
         for gene_name in genes:
             if gene_name in map_gene2id:
                 counter.found += 1
@@ -670,18 +681,18 @@ def importRegionsOfInterestGenes( infile, outfile ):
 
     tmpfilename = tmpf.name
     statement = '''
-    csv2db.py %(csv2db_options)s \
-               --index=roi_id \
-               --map=roi_id:str \
-               --table=%(tablename)s \
-    < %(tmpfilename)s >> %(outfile)s
+    csv2db.py %(csv2db_options)s 
+               --allow-empty
+               --index=roi_id 
+               --map=roi_id:str 
+               --table=%(tablename)s 
+    < %(tmpfilename)s 
+    >> %(outfile)s
     '''
 
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
     
     os.unlink( tmpfilename )
-
-
         
 ###################################################################
 ###################################################################
@@ -701,10 +712,11 @@ def importSNPsOfInterest( infile, outfile ):
                --map=snp:str \
                --map=pos:int \
                --table=%(table)s \
-    < %(infile)s > %(outfile)s
+    < %(infile)s 
+    > %(outfile)s
     '''
 
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
 
 ############################################################
 ############################################################
@@ -731,6 +743,54 @@ def exportRegionsOfInterest( infile, outfile ):
         for contig, start, end, roi_id in cc:
             outs.write("%s\t%i\t%i\t%s\n" % (contig, start, end, roi_id) )
     outs.close()
+
+############################################################
+############################################################
+############################################################
+## import reference intervals
+############################################################
+@files( [ ("%s.bed" % x, "%s_intervals.import" % x) for x in TRACKS_REFERENCE ] )
+def importReferenceIntervals( infile, outfile ):
+    '''import reference intervals'''
+
+    ## add the bed intervals back to table
+    track = infile[:-len(".bed")]
+
+    tmpfile = tempfile.NamedTemporaryFile(delete=False)
+    tmpfilename = tmpfile.name
+
+    headers = ("AvgVal","DisttoStart","GeneList","Length",
+               "PeakCenter","PeakVal","Position",
+               "interval_id","nCpGs","nGenes","nPeaks",
+               "nProbes","nPromoters", 
+               "contig","start","end" )
+
+    avgval,contig,disttostart,end,genelist,length,peakcenter,peakval,position,start,interval_id,ncpgs,ngenes,npeaks,nprobes,npromoters = \
+        0,"",0,0,"",0,0,0,0,0,0,0,0,0,0,0,
+
+    tmpfile.write( "\t".join( headers ) + "\n" )
+
+    for line in open( infile, "r" ):
+        contig, start, end, interval_id = line[:-1].split("\t")[:4]
+        start, end = int(start), int(end)
+        length = end - start
+        npeaks, peakcenter = 1, start + int(length / 2)
+        avgval, peakval, nprobes = 1, 1, 1
+
+        tmpfile.write( "\t".join( map( str, (avgval,disttostart,genelist,length,peakcenter,peakval,position,interval_id,ncpgs,ngenes,npeaks,nprobes,npromoters, contig,start,end) )) + "\n" )
+
+    tmpfile.close()
+
+    statement = '''
+    csv2db.py %(csv2db_options)s \
+              --index=interval_id \
+              --table=%(track)s_intervals \
+    < %(tmpfilename)s > %(outfile)s
+    '''
+
+    P.run()
+
+    os.unlink( tmpfile.name )
 
 ###################################################################
 ###################################################################
@@ -839,7 +899,7 @@ if PARAMS["method"] == "intervals":
         < %(tmpfilename)s > %(outfile)s
         '''
 
-        P.run( **dict( locals().items() + PARAMS.items() ) )
+        P.run()
 
         os.unlink( tmpfile.name )
 
@@ -888,7 +948,7 @@ if PARAMS["method"] == "intervals":
                "(.*).bam",
                r"\1.readstats" )
     def buildBAMStats( infile, outfile ):
-        _buildBAMStats( infile, outfile )
+        PIntervals.buildBAMStats( infile, outfile )
 
     @transform( buildBAMStats,
                 regex(r"(run.*).readstats"),
@@ -1662,7 +1722,7 @@ elif PARAMS["method"] == "bowtie-macs-peakreplicate":
     ############################################################
     @transform( buildBAM,
                 suffix(".bam"),
-                ".readstats" )
+                ".reastats" )
     def buildBAMStats( infile, outfile ):
         PIntervals.buildBAMStats( infile, outfile )
 
@@ -2246,9 +2306,7 @@ def buildBigwig( infile, outfile ):
                 %(infile)s \
                 > %(outfile)s.log'''
      
-    P.run( **dict( locals().items() + PARAMS.items() ) )
-
-
+    P.run()
 
 ############################################################
 ############################################################
@@ -2257,7 +2315,8 @@ def buildBigwig( infile, outfile ):
 ############################################################
 @files( ((PARAMS["filename_affymetrix"], "affymetrix_import" ),) )
 def importAffymetrixAnnotation( infile, outfile):
-    '''import affymetrix probe annotations.'''
+    '''import affymetrix probe annotations.
+    '''
     table = "affymetrix"
 
     statement = '''
@@ -2271,8 +2330,7 @@ def importAffymetrixAnnotation( infile, outfile):
     > %(outfile)s
     '''
 
-    P.run( **dict( locals().items() + PARAMS.items() ) )
-
+    P.run()
 
 ############################################################
 ############################################################
@@ -2421,7 +2479,7 @@ def importProbeset2Transcript( infile, outfile):
     < %(infile)s > %(outfile)s
     '''
 
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
 
 ############################################################
 ############################################################
@@ -2582,7 +2640,7 @@ def importExpressionTracks( infile, outfile):
     < %(infile)s > %(outfile)s
     '''
 
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
 
 ############################################################
 ############################################################
@@ -2626,9 +2684,81 @@ def buildExpressionCorrelation( infiles, outfile):
 ############################################################
 ############################################################
 ############################################################
+## 
+############################################################
+@merge( buildExpressionTracks, "expression_full.correlation")
+def buildExpressionFullCorrelation( infiles, outfile):
+    '''compute correlation between all replicates in all expression sets.
+    '''
+
+    outf = open(outfile, "w")
+    outf.write( "track1\treplicate1\ttrack2\ttreplicate2\t%s\n" % "\t".join(Stats.CorrelationTest().getHeaders()))
+
+    nfiles = len(infiles)
+
+    def _readVals( filename ):
+        '''read replicate values from file.'''
+        vals = []
+        headers = []
+        offset = 10
+
+        lines = open( filename, "r").readlines()
+        data = lines[0][:-1].split("\t")
+        nreplicates = len(data) - offset
+        for x in range(nreplicates):
+            headers.append( data[offset+x] )
+            vals.append( [] )
+        del lines[0]
+        lines.sort()
+        for line in lines:
+            data = line[:-1].split("\t")
+            for x in range( 0, nreplicates ):
+                vals[x].append( float(data[offset+x]) )
+        return nreplicates, vals, headers
+    
+    for f1 in range( nfiles - 1):
+        filename1 = infiles[f1]
+        if not filename1.endswith(".data"): continue
+        track1 = filename1[:-len(".data")]
+
+        nreplicates1, vals1, headers1 = _readVals( filename1 )
+        
+        # do within track correlation
+        for x in range(nreplicates1-1):
+            for y in range( x+1, nreplicates1):
+                outf.write( "\t".join( (track1,
+                                        headers1[x],
+                                        track1,
+                                        headers1[y],
+                                        str( Stats.doCorrelationTest( vals1[x],
+                                                                      vals1[y]) ) ) ) + "\n" )
+        
+        for f2 in range(f1+1, nfiles):
+            filename2 = infiles[f2]
+            if not filename2.endswith(".data"): continue
+            track2 = filename2[:-len(".data")]
+
+            nreplicates2, vals2, headers2 = _readVals( filename2 )
+            
+            for x in range(nreplicates1):
+                for y in range(nreplicates2):
+                    outf.write( "\t".join( (track1,
+                                            headers1[x],
+                                            track2,
+                                            headers2[y],
+                                            str( Stats.doCorrelationTest( vals1[x],
+                                                                          vals2[y]) ) ) ) + "\n" )
+            
+            
+    outf.close()
+
+############################################################
+############################################################
+############################################################
 ##
 ############################################################
-@transform( buildExpressionCorrelation, suffix(".correlation"), "_correlation.import" )
+@transform( (buildExpressionCorrelation, buildExpressionFullCorrelation),
+            suffix(".correlation"), "_correlation.import" )
 def importExpressionCorrelation( infile, outfile):
 
     table = outfile[:-len(".import")] 
@@ -2640,7 +2770,7 @@ def importExpressionCorrelation( infile, outfile):
     < %(infile)s > %(outfile)s
     '''
 
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
 
 ############################################################
 ############################################################
@@ -2661,7 +2791,7 @@ def importExpressionProbesets( infile, outfile):
     < %(infile)s > %(outfile)s
     '''
 
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
 
 ############################################################
 ############################################################
@@ -2679,7 +2809,7 @@ def importExpressionMap( infile, outfile):
     < %(infile)s > %(outfile)s
     '''
 
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
 
 ############################################################
 ############################################################
@@ -2697,7 +2827,7 @@ def buildIntervalProbesetAssociations( infiles, outfile ):
     statement = """
     cat < %(infile)s |\
         python %(scriptsdir)s/bed2gff.py --as-gtf |\
-	python /home/andreas/gpipe/gtf2table.py \
+	python %(scriptsdir)s/gtf2table.py \
 		--counter=neighbours \
 		--log=%(outfile)s.log \
 		--filename-gff=%(probeset)s \
@@ -2707,7 +2837,7 @@ def buildIntervalProbesetAssociations( infiles, outfile ):
                 --headers=id,probeset \
 	> %(outfile)s"""
 
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
 
 ############################################################
 ############################################################
@@ -2726,14 +2856,14 @@ def importIntervalProbesetAssociations( infile, outfile):
     < %(infile)s > %(outfile)s
     '''
 
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
 
 ############################################################
 ############################################################
 ############################################################
 # fix: does not work due to exportIntervalsAsBed
 # (importCombinedIntervals, exportIntervalsAsBed ),
-@transform( [ "%s.bed" % x for x in TRACKS_MASTER ],
+@transform( [ "%s.bed" % x for x in TRACKS_MOTIFS ],
             suffix(".bed"),
             ".fasta" )
 def exportMotifSequences( infile, outfile ):
@@ -2757,7 +2887,7 @@ def exportMotifSequences( infile, outfile ):
         
         seq = fasta.getSequence( contig, "+", start, end)
         outs.write( ">%s\n%s\n" % (id, seq))
-    
+
     cc.close()
     outs.close()
 
@@ -2766,14 +2896,14 @@ def exportMotifSequences( infile, outfile ):
 ############################################################
 # (importCombinedIntervals, exportIntervalsAsBed ),
 # TODO: fix, causes a problem due to exportIntervalsAsBed
-@transform( [ "%s.bed" % x for x in TRACKS_MASTER],
+@transform( [ "%s.bed" % x for x in TRACKS_MOTIFS],
             suffix(".bed"),
             ".controlfasta" )
 def exportMotifControlSequences( infile, outfile ):
     '''for each interval, export the left and right 
     sequence segment of the same size.
     '''
-    
+
     track = infile[:-len(".bed")]
     dbhandle = sqlite3.connect( PARAMS["database"] )
 
@@ -2798,16 +2928,17 @@ def exportMotifControlSequences( infile, outfile ):
         id = "%s_%s_r %s:%i..%i" % (track, str(interval), contig, start, end)
         seq = fasta.getSequence( contig, "+", start, end)
         outs.write( ">%s\n%s\n" % (id, seq))
-    
+
     cc.close()
     outs.close()
 
 ############################################################
 ############################################################
 ############################################################
-@merge( (exportReferenceAsBed, exportIntervalsAsBed ),
+@merge( (exportReferenceAsBed, exportIntervalsAsBed, 
+         ["%s.bed" % x for x in TRACKS_REFERENCE ] ),
         "intervals.overlap" )
-def buildOverlap( infile, outfile ):
+def buildOverlap( infiles, outfile ):
     '''compute overlap between intervals.
     '''
 
@@ -2817,10 +2948,16 @@ def buildOverlap( infile, outfile ):
     else:
         options = ""
 
+    infiles = " ".join(IOTools.flatten(infiles))
+
     statement = '''
-        python %(scriptsdir)s/diff_bed.py %(options)s *.bed > %(outfile)s
+        python %(scriptsdir)s/diff_bed.py 
+               --log=%(outfile)s.log 
+               %(options)s 
+               %(infiles)s 
+        > %(outfile)s
         '''
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
 
 ############################################################
 ############################################################
@@ -2833,20 +2970,22 @@ def importOverlap( infile, outfile ):
     tablename = "overlap"
 
     statement = '''
-    csv2db.py %(csv2db_options)s \
-              --index=set1 \
-              --index=set2 \
-              --table=%(tablename)s \
-    < %(infile)s > %(outfile)s
+    csv2db.py %(csv2db_options)s 
+              --index=set1 
+              --index=set2 
+              --table=%(tablename)s 
+    < %(infile)s 
+    > %(outfile)s
     '''
 
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
 
 ############################################################
 ############################################################
 ############################################################
 @merge( (exportUCSCEncodeTracks, 
          exportReferenceAsBed, 
+         ["%s.bed" % x for x in TRACKS_REFERENCE ],
          combineConditions,
          combineUnstim,
          combineReplicates ),
@@ -2854,7 +2993,7 @@ def importOverlap( infile, outfile ):
 def buildUCSCOverlap( infiles, outfile ):
     '''compute overlap between intervals and the ucsc tracks.
     '''
-    
+
     if os.path.exists(outfile): 
         os.rename( outfile, outfile + ".orig" )
         options = "--update=%s.orig" % outfile
@@ -2863,12 +3002,17 @@ def buildUCSCOverlap( infiles, outfile ):
 
     to_cluster = True
 
-    infiles = " ".join(infiles)
+    infiles = " ".join(IOTools.flatten(infiles))
     statement = '''
-        python %(scriptsdir)s/diff_bed.py --tracks %(options)s %(infiles)s > %(outfile)s
+        python %(scriptsdir)s/diff_bed.py 
+               --tracks 
+               --log=%(outfile)s.log
+               %(options)s 
+               %(infiles)s 
+        > %(outfile)s
         '''
 
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
 
 ############################################################
 ############################################################
@@ -2888,7 +3032,7 @@ def importUCSCOverlap( infile, outfile ):
     < %(infile)s > %(outfile)s
     '''
 
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
 
 
 ############################################################
@@ -3012,8 +3156,8 @@ def makeReadCorrelation( infiles, outfile ):
     --genome=%(genome)s \
     %(infiles)s | gzip > %(outfile)s
     ''' 
-    
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+
+    P.run()
 
 ############################################################
 ############################################################
@@ -3034,7 +3178,7 @@ def makeReadCorrelationTable( infiles, outfile ):
                 data = map(int, line[:-1].split("\t")[2:])
             except ValueError:
                 continue
-            
+
             for x in range(len(data)):
                 if data[x] < correlation_cutoff: break
             else:
@@ -3049,9 +3193,9 @@ def makeReadCorrelationTable( infiles, outfile ):
             len(mat),
             corr[0,1] ) )
         outf.flush()
-        
+
     outf.close()
-    
+
 ############################################################
 ############################################################
 ############################################################
@@ -3121,7 +3265,7 @@ def makeMotifs( infile, outfile ):
     tmpfile.close()
 
     statement = '''
-    %(execmeme)s %(tmpname)s -mod oops -dna -revcomp -nmotifs 1 -text -oc %(tmpdir)s > %(outfile)s
+    %(motifs_execmeme)s %(tmpname)s -mod oops -dna -revcomp -nmotifs 1 -text -oc %(tmpdir)s > %(outfile)s
     '''
     P.run( **dict( locals().items() + PARAMS.items() ) )
 
@@ -3163,7 +3307,7 @@ def runMEME( infile, outfile ):
 
     cutoff = len(data) // 10
     # maximum size of data set (in characters)
-    maxsize = int(PARAMS["meme_max_size"])
+    maxsize = int(PARAMS["motifs_meme_max_size"])
 
     E.info( "runMeme: %s: using at most %i sequences for pattern finding" % (track, cutoff) )
 
@@ -3175,17 +3319,17 @@ def runMEME( infile, outfile ):
 
     masker = Masker.MaskerDustMasker()
 
-    hw = int(PARAMS["meme_halfwidth"])
+    hw = int(PARAMS["motifs_meme_halfwidth"])
     current_size, nseq = 0, 0
     for peakcenter, id, contig in data[:cutoff]:
         start, end = peakcenter - hw, peakcenter + hw
         id = "%s_%s %s:%i..%i" % (track, str(id), contig, start, end)
         seq = fasta.getSequence( contig, "+", start, end )
 
-        if PARAMS["meme_masker"] == "repeatmasker":
+        if PARAMS["motifs_meme_masker"] == "repeatmasker":
             # the genome sequence is repeat masked
             masked_seq = seq
-        elif PARAMS["meme_masker"] == "dustmasker":
+        elif PARAMS["motifs_meme_masker"] == "dustmasker":
             masked_seq = masker( seq.upper() )
 
         # hard mask softmasked characters
@@ -3200,9 +3344,15 @@ def runMEME( infile, outfile ):
     outs.close()
 
     statement = '''
-    %(execmeme)s %(tmpfasta)s -dna -revcomp -mod %(meme_model)s -nmotifs %(meme_nmotifs)s -oc %(tmpdir)s -maxsize %(maxsize)s %(meme_options)s > %(outfile)s.log
+    %(motifs_execmeme)s %(tmpfasta)s -dna -revcomp 
+                 -mod %(motifs_meme_model)s 
+                 -nmotifs %(motifs_meme_nmotifs)s 
+                 -oc %(tmpdir)s 
+                 -maxsize %(maxsize)s 
+                 %(motifs_meme_options)s 
+    > %(outfile)s.log
     '''
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
 
     # copy over results
     try:
@@ -3248,7 +3398,7 @@ def writeSequencesForIntervals( track, filename,
     fasta = IndexedFasta.IndexedFasta( PARAMS["genome"] )
 
     cc = dbhandle.cursor()
-        
+
     if full:
         statement = '''SELECT start, end, interval_id, contig FROM
         %(track)s_intervals ORDER BY peakval DESC''' % locals()
@@ -3257,7 +3407,7 @@ def writeSequencesForIntervals( track, filename,
                        interval_id, contig FROM %(track)s_intervals ORDER BY peakval DESC''' % locals()
     else:
         raise ValueError("either specify full or halfwidth" )
-    
+
     cc.execute( statement )
     data = cc.fetchall()
     cc.close()
@@ -3266,7 +3416,7 @@ def writeSequencesForIntervals( track, filename,
         cutoff = int(len(data) * proportion)
     else:
         cutoff = len(data)
-        
+
         E.info( "writeSequencesForIntervals %s: using at most %i sequences for pattern finding" % (track, cutoff) )
     E.info( "writeSequencesForIntervals %s: masker=%s" % (track,masker))
 
@@ -3291,11 +3441,11 @@ def writeSequencesForIntervals( track, filename,
                                                                                                                           len(data) - nseq ))
             break
         nseq += 1
-        
+
     data = new_data
-            
+
     def maskSequences( sequences, masker ):
-        
+
         if masker == "repeatmasker":
             # the genome sequence is repeat masked
             masked_seq = sequences
@@ -3316,14 +3466,14 @@ def writeSequencesForIntervals( track, filename,
         sequences = [ list(x) for x in sequences ]
         for sequence in sequences: random.shuffle(sequence)
         sequences = maskSequences( ["".join(x) for x in sequences ], masker )
-        
+
     outs = open(filename, "w" )
     for sequence, d in zip( maskSequences( sequences, masker ), data ):
         start, end, id, contig = d
         id = "%s_%s %s:%i..%i" % (track, str(id), contig, start, end)
         outs.write( ">%s\n%s\n" % (id, sequence ) )
     outs.close()
-    
+
     return len(sequences)
 
 # writeSequencesForIntervals( "runEstSub",
@@ -3365,18 +3515,18 @@ def runGLAM2( infile, outfile ):
 
     tmpdir = tempfile.mkdtemp()
     tmpfasta =  os.path.join( tmpdir, "in.fa")
-    
+
     nseq = writeSequencesForIntervals( track, tmpfasta,
                                        full = False,
-                                       halfwidth = int(PARAMS["meme_halfwidth"]),
-                                       maxsize = int(PARAMS["meme_max_size"]),
+                                       halfwidth = int(PARAMS["motifs_meme_halfwidth"]),
+                                       maxsize = int(PARAMS["motifs_meme_max_size"]),
                                        proportion = 0.1 )
 
     min_sequences = int(nseq / 10.0)
     statement = '''
-    %(execglam2)s -2 -O %(tmpdir)s %(glam2_options)s -z %(min_sequences)i n %(tmpfasta)s > %(outfile)s.log
+    %(motifs_execglam2)s -2 -O %(tmpdir)s %(motifs_glam2_options)s -z %(min_sequences)i n %(tmpfasta)s > %(outfile)s.log
     '''
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
 
     # copy over results
     try:
@@ -3410,7 +3560,7 @@ if PARAMS["motifs_tomtom_master_motif"] != "":
         '''compare ab-initio motifs against tomtom.'''
         to_cluster = True
         statement = '''
-           %(exectomtom)s -text -query %(tomtom_master_motif)s -target %(infile)s > %(outfile)s
+           %(motifs_exectomtom)s -text -query %(motifs_tomtom_master_motif)s -target %(infile)s > %(outfile)s
            '''
         P.run( **dict( locals().items() + PARAMS.items() ) )
 
@@ -3458,7 +3608,7 @@ if PARAMS["motifs_tomtom_master_motif"] != "":
         infile_meme = infile[:-len(".tomtom")] + ".meme"
 
         selected = []
-        max_pvalue = float(PARAMS["tomtom_filter_pvalue"])
+        max_pvalue = float(PARAMS["motifs_tomtom_filter_pvalue"])
         for line in open( infile, "r" ):
             if line.startswith( "#Query" ): continue
             (query_id, target_id, 
@@ -3470,7 +3620,7 @@ if PARAMS["motifs_tomtom_master_motif"] != "":
         E.info( "%s: keeping %i motifs" % (infile, len(selected) ) )
 
         PMotifs.filterMotifsFromMEME( infile_meme, outfile, selected )
-        
+
 else:
     ############################################################
     ############################################################
@@ -3483,7 +3633,7 @@ else:
 
     @follows(runTomTom)
     def importTomTom(): pass
-        
+
     ############################################################
     ############################################################
     ############################################################
@@ -3502,7 +3652,7 @@ else:
 @files_re( (exportMotifSequences, exportMotifControlSequences),
            "(\S+).controlfasta",
            [ r"\1.controlfasta", r"\1.fasta",  glob.glob("*.motif")],
-           r"\1.mast" )
+           r"\1.mast.gz" )
 def runMAST( infiles, outfile ):
     '''run mast on all intervals and motifs.
 
@@ -3523,21 +3673,24 @@ def runMAST( infiles, outfile ):
         raise P.PipelineError( "control file %s for %s does not exist" % (controlfile, dbfile))
 
     if os.path.exists(outfile): os.remove( outfile )
-    
+
     for motiffile in motiffiles:
         if IOTools.isEmpty( motiffile ):
             E.info( "skipping empty motif file %s" % motiffile )
             continue
-        
-        of = open(outfile, "a")
+
+        of = gzip.open(outfile, "a")
         motif, x = os.path.splitext( motiffile )
         of.write(":: motif = %s ::\n" % motif )
         of.close()
-        
+
         statement = '''
-        cat %(dbfile)s %(controlfile)s | %(execmast)s %(motiffile)s -stdin -stdout -text -ev %(mast_evalue)f >> %(outfile)s
+        cat %(dbfile)s %(controlfile)s 
+        | %(motifs_execmast)s %(motiffile)s -stdin -stdout -text -ev %(motifs_mast_evalue)f 
+        | gzip 
+        >> %(outfile)s
         '''
-        P.run( **dict( locals().items() + PARAMS.items() ) )
+        P.run()
 
 ############################################################
 ############################################################
@@ -3565,9 +3718,9 @@ def runBioProspector( infiles, outfile ):
                                        proportion = 0.10 )
 
     statement = '''
-    %(execbioprospector)s -i %(tmpfasta)s %(bioprospector_options)s -o %(outfile)s > %(outfile)s.log
+    %(motifs_execbioprospector)s -i %(tmpfasta)s %(motifs_bioprospector_options)s -o %(outfile)s > %(outfile)s.log
     '''
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
 
     os.unlink( tmpfasta )
 
@@ -3594,7 +3747,7 @@ def importBioProspector( infile, outfile ):
 
     tmpfile = P.getTempFile()
     tmpfile.write( "id\tmotif\tstart\tend\tstrand\tarrangement\n" )
-    
+
     for x, motifs in enumerate( results ):
         outname = os.path.join( target_path, "%s_%02i.png" % (track, x ) )
         Bioprospector.build_logo( [y.sequence for y in motifs.matches],
@@ -3611,7 +3764,7 @@ def importBioProspector( infile, outfile ):
             else:
                 arrangement = "SM"
                 distance = 0
-                
+
             arrangement += "%i" % distance
             strand = match.strand[0]
 
@@ -3671,7 +3824,7 @@ def runRegexMotifSearch( infiles, outfile ):
 
     db_counts, control_counts = Motifs.getCounts( db_positions), Motifs.getCounts( control_positions )
     db_seqcounts, control_seqcounts = Motifs.getOccurances( db_positions), Motifs.getCounts( control_positions )
-    
+
     ndb, ncontrol = len( db_positions), len( control_positions )
     outf = open( outfile, "w" )
     outf.write( "motif\tmotifs_db\tmotifs_control\tseq_db\tseq_db_percent\tseq_control\tseq_control_percent\tfold\n" )
@@ -3680,7 +3833,7 @@ def runRegexMotifSearch( infiles, outfile ):
             fold = float(db_seqcounts[motif]) * ncontrol / (ndb * control_seqcounts[motif])
         except ZeroDivisionError:
             fold = 0
-            
+
         outf.write( "%s\t%i\t%i\t%i\t%s\t%i\t%s\t%5.2f\n" % \
                     (motif,
                      db_counts[motif],
@@ -3702,7 +3855,7 @@ def _runNubiscanMotifSearch( infile, outfile, motif, mode="straight" ):
 
     to_cluster = True
     job_options = "-l mem_free=8000M"
-    
+
     track = re.sub( ".nubiscan.*", "", outfile )
     tmpfasta = P.getTempFilename( "." )
 
@@ -3725,21 +3878,24 @@ def _runNubiscanMotifSearch( infile, outfile, motif, mode="straight" ):
                                            halfwidth = 100 )
     else:
         raise ValueError("invalid mode `%s`" % mode )
-    
+
+
+    arrangements = ",".join( PARAMS["motifs_nubiscan_arrangements"] )
+
     statement = '''python %(scriptsdir)s/run_nubiscan.py \
-    --qvalue=%(nubiscan_qvalue)f \
-    --iterations=%(nubiscan_iterations)i \
-    --arrangements=%(nubiscan_arrangements)s \
+    --qvalue=%(motifs_nubiscan_qvalue)f \
+    --iterations=%(motifs_nubiscan_iterations)i \
+    --arrangements=%(arrangements)s \
     --motif=%(motif)s \
     --mask=dust \
     --add-sequence \
     --log=%(outfile)s.log \
     < %(tmpfasta)s > %(outfile)s'''
 
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
 
     os.unlink( tmpfasta )
-    
+
 ############################################################
 ############################################################
 ############################################################
@@ -3803,13 +3959,13 @@ def importNubiscan( infile, outfile ):
         if fileinput.filename().endswith(".log"):
             fileinput.nextfile()
             continue
-        
+
         if line.startswith("#"): continue
 
         if re.match("id\t", line):
-            
+
             base, motif = os.path.splitext(fileinput.filename())
-            
+
             if motif == ".shuffled":
                 base, motif = os.path.splitext(base)
                 motif += "_shuffled"
@@ -3818,7 +3974,7 @@ def importNubiscan( infile, outfile ):
                 motif += "_shifted"
 
             motif = motif[1:]
-            
+
             if first:
                 tmpfile.write("motif\t%s" % line )
                 first = False
@@ -3848,12 +4004,12 @@ def importNubiscan( infile, outfile ):
     P.run( **dict( locals().items() + PARAMS.items() ) )
 
     os.unlink( tmpfilename )
-    
+
 ############################################################
 ############################################################
 ############################################################
 @transform( runMAST,
-            suffix(".mast"),
+            suffix(".mast.gz"),
             "_mast.import" )
 def importMAST( infile, outfile ):
     '''parse mast file and import into database.
@@ -3864,7 +4020,7 @@ def importMAST( infile, outfile ):
     Add columns for the control data as well.
     '''
 
-    tablename = os.path.basename( infile )
+    tablename = outfile[:-len(".import")]
     tmpfile = tempfile.NamedTemporaryFile(delete=False)
 
     tmpfile.write( MAST.Match().header +\
@@ -3873,7 +4029,7 @@ def importMAST( infile, outfile ):
                    "\tr_evalue\tr_pvalue\tr_nmatches\tr_length\tr_start\tr_end" \
                    "\tmin_evalue\tmin_pvalue\tmax_nmatches" + "\n" )
 
-    lines = open(infile).readlines()
+    lines = gzip.open(infile).readlines()
     chunks = [x for x in range(len(lines)) if lines[x].startswith("::") ]
     chunks.append( len(lines) )
 
@@ -3932,7 +4088,7 @@ def importMAST( infile, outfile ):
                                 str(min_pvalue),
                                 str(max_nmatches),
                                 ) + "\n" )
-            
+
     tmpfile.close()
     tmpfilename = tmpfile.name
 
@@ -3981,18 +4137,18 @@ def runGLAM2SCAN( infiles, outfile ):
         raise P.PipelineError( "control file %s for %s does not exist" % (controlfile, dbfile))
 
     if os.path.exists(outfile): os.remove( outfile )
-    
+
     for motiffile in motiffiles:
         of = open(outfile, "a")
         motif, x = os.path.splitext( motiffile )
         of.write(":: motif = %s ::\n" % motif )
         of.close()
-        
+
         statement = '''
-        cat %(dbfile)s %(controlfile)s | %(execglam2scan)s -2 -n %(glam2scan_results)i n %(motiffile)s - >> %(outfile)s
+        cat %(dbfile)s %(controlfile)s | %(motifs_execglam2scan)s -2 -n %(motifs_glam2scan_results)i n %(motiffile)s - >> %(outfile)s
         '''
         P.run( **dict( locals().items() + PARAMS.items() ) )
-        
+
 ############################################################
 ############################################################
 ############################################################
@@ -4018,7 +4174,7 @@ def importGLAM2SCAN( infile, outfile ):
 
         # use real file, as parser can not deal with a
         # list of lines
-        
+
         try:
             motif = re.match( ":: motif = (\S+) ::", lines[chunks[chunk]]).groups()[0]
         except AttributeError:
@@ -4027,12 +4183,12 @@ def importGLAM2SCAN( infile, outfile ):
         if chunks[chunk]+1 == chunks[chunk+1]:
             E.warn( "no results for motif %s - ignored" % motif )
             continue
-        
+
         tmpfile2 = tempfile.NamedTemporaryFile(delete=False)        
         tmpfile2.write( "".join( lines[chunks[chunk]+1:chunks[chunk+1]]) )
         tmpfile2.close()
         glam = Glam2Scan.parse( open(tmpfile2.name, "r") )
-                    
+
         os.unlink( tmpfile2.name )        
 
         # collect control data
@@ -4047,7 +4203,7 @@ def importGLAM2SCAN( infile, outfile ):
                 controls[id].append( match.score )
 
         for id, matches in full_matches.iteritems():
-            
+
             nmatches = len(matches)
             scores = [x.score for x in matches ]
             score = max(scores)
@@ -4060,7 +4216,7 @@ def importGLAM2SCAN( infile, outfile ):
 
             if id not in controls:
                 P.warn( "no controls for %s - increase evalue?" % id )
-            
+
             c = controls[id]
             if len(c) == 0: mmax = "" 
             else: mmax = max(c)
@@ -4093,27 +4249,30 @@ def importGLAM2SCAN( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-@files( [ ("%s.bed" % x, "%s.annotations" % x ) for x in TRACKS_MASTER ] )
+@files( [ ("%s.bed" % x, "%s.annotations" % x ) for x in TRACKS_ANNOTATE] )
 def annotateIntervals( infile, outfile ):
     '''classify chipseq intervals according to their location 
     with respect to the gene set.
     '''
     to_cluster = True
     statement = """
-    cat < %(infile)s |\
-        python %(scriptsdir)s/bed2gff.py --as-gtf |\
-	python /home/andreas/gpipe/gtf2table.py \
-		--counter=position \
-		--counter=classifier-chipseq \
-		--section=exons \
-		--counter=length \
-		--log=%(outfile)s.log \
-		--filename-gff=%(annotation)s \
-		--genome-file=%(genome)s
-	> %(outfile)s"""
+    cat < %(infile)s 
+        | python %(scriptsdir)s/bed2gff.py --as-gtf 
+        | python %(scriptsdir)s/gtf2table.py 
+                --counter=position 
+                --counter=classifier-chipseq 
+                --section=exons 
+                --counter=length 
+                --log=%(outfile)s.log 
+                --filename-gff=%(annotation)s 
+                --genome-file=%(genome)s
+        > %(outfile)s"""
 
     P.run()
 
+############################################################
+############################################################
+############################################################
 def straightImport( infile, outfile, options = "" ):
     '''straight import from gtf2table results.
 
@@ -4131,7 +4290,7 @@ def straightImport( infile, outfile, options = "" ):
     < %(infile)s > %(outfile)s
     '''
 
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
 
 ############################################################
 ############################################################
@@ -4146,27 +4305,58 @@ def importAnnotations( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
+@files( [ ("%s.bed" % x, "%s.tracks" % x, "ucsc_encode.bed" ) for x in TRACKS_ANNOTATE] )
+def annotateTracks( infile, outfile, trackfile ):
+    '''annotate intervals by track overlap
+    '''
+
+    statement = """
+    python %(scriptsdir)s/bed2table.py 
+                --counter=overlap 
+                --log=%(outfile)s.log 
+                --filename-bed=%(trackfile)s 
+                --genome-file=%(genome)s
+    < %(infile)s
+    | perl -p -e "s/name/gene_id/" 
+    > %(outfile)s"""
+
+    P.run()
+
+############################################################
+############################################################
+############################################################
+@transform( annotateTracks, 
+            suffix(".tracks"), 
+            "_tracks.import" )
+def importTracks( infile, outfile ):
+    '''import interval annotations: genome architecture
+    '''
+    straightImport( infile, outfile )
+
+############################################################
+############################################################
+############################################################
 @follows( buildGeneRegions )
-@files( [ ("%s.bed" % x, "%s.tss" % x ) for x in TRACKS_MASTER ] )
+@files( [ ("%s.bed" % x, "%s.tss" % x ) for x in TRACKS_ANNOTATE ] )
 def annotateTSS( infile, outfile ):
 
     to_cluster = True
     statement = """
     cat < %(infile)s |\
         python %(scriptsdir)s/bed2gff.py --as-gtf |\
-	python /home/andreas/gpipe/gtf2table.py \
-		--counter=distance-tss \
-		--log=%(outfile)s.log \
-		--filename-gff=%(transcripts_tss)s \
-		--genome-file=%(genome)s
-	> %(outfile)s"""
+        python %(scriptsdir)s/gtf2table.py \
+                --counter=distance-tss \
+                --log=%(outfile)s.log \
+                --filename-gff=%(transcripts_tss)s \
+                --genome-file=%(genome)s
+        > %(outfile)s"""
 
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
 
 ############################################################
 ############################################################
 ############################################################
-@files( [ ("%s.bed" % x, "%s.repeats" % x ) for x in TRACKS_MASTER ] )
+@files( [ ("%s.bed" % x, "%s.repeats" % x ) for x in TRACKS_ANNOTATE ] )
 def annotateRepeats( infile, outfile ):
     '''count the overlap between intervals and repeats.'''
 
@@ -4174,12 +4364,12 @@ def annotateRepeats( infile, outfile ):
     statement = """
     cat < %(infile)s |\
         python %(scriptsdir)s/bed2gff.py --as-gtf |\
-	python /home/andreas/gpipe/gtf2table.py \
-		--counter=overlap \
-		--log=%(outfile)s.log \
-		--filename-gff=%(repeats)s \
-		--genome-file=%(genome)s
-	> %(outfile)s"""
+        python %(scriptsdir)s/gtf2table.py \
+                --counter=overlap \
+                --log=%(outfile)s.log \
+                --filename-gff=%(repeats)s \
+                --genome-file=%(genome)s
+        > %(outfile)s"""
 
     P.run()
 
@@ -4230,8 +4420,8 @@ def buildExpressionDifferencesTTest( infile, outfile ):
                                                                                                 len(cluster_ids),
                                                                                                 len(treatments),
                                                                                                 len(controls)))
-    
-    result, nskipped = Expression.WelchsTTest()( cluster_ids, controls, treatments )
+
+    result, nskipped = Expression.WelchsTTest()( cluster_ids, treatments, controls )
 
     for s in result:
         # not that values are logged (log2), hence the fold-change
@@ -4276,7 +4466,7 @@ def buildExpressionDifferencesSAM( infile, outfile ):
             pass
 
     outs = open( outfile, "w" )
-    outs.write( "cluster_id\tmean1\tstd1\tmean2\tstd2\tpvalue\tqvalue\tdiff\tfold\n" )
+    outs.write( "cluster_id\tmean1\tstd1\tmean2\tstd2\tpvalue\tqvalue\tdiff\tfold\tcalled\n" )
 
     try:
         control, cluster_ids, treatments, controls = PExpression.getExpressionMeasurements( track )
@@ -4289,91 +4479,38 @@ def buildExpressionDifferencesSAM( infile, outfile ):
                                                                                               len(cluster_ids),
                                                                                               len(treatments),
                                                                                               len(controls)))
-    
-    genes, summary = Expression.SAM()( cluster_ids, treatments, controls,
-                                       pattern = os.path.join(target_path, outfile + "%s"),
-                                       fdr = float(PARAMS["sam_fdr"]),
-                                       ngenes = float(PARAMS["sam_ngenes"]),
-                                       ndelta = float(PARAMS["sam_ndelta"]),
-                                       npermutations = PARAMS["sam_permutations"],
-                                       method = PARAMS["sam_method"] )
+
+    genes, summary, cutoffs = Expression.SAM()( cluster_ids, treatments, controls,
+                                                pattern = os.path.join(target_path, outfile + "%s"),
+                                                fdr = float(PARAMS["expression_sam_fdr"]),
+                                                ngenes = float(PARAMS["expression_sam_ngenes"]),
+                                                ndelta = float(PARAMS["expression_sam_ndelta"]),
+                                                npermutations = PARAMS["expression_sam_permutations"],
+                                                method = PARAMS["expression_sam_method"],
+                                                use_excel_sam = False )
 
     if summary == None:
         E.warn( "no cutoff when running sam for %s" % infile )
-        
+
+    if cutoffs:
+        logs = open( outfile + ".cutoffs", "w" )
+        logs.write("\t".join( cutoffs[0]._fields) + "\n" )
+        for x in cutoffs:
+            logs.write( "\t".join(map(str,x) ) + "\n" )
+        logs.close()
     for s in genes:
-        outs.write ("%s\t%f\t%f\t%f\t%f\t%e\t%f\t%f\t%f\n" % \
-                    (s.probeset, 
-                     s.mean1,
-                     s.stddev1,
-                     s.mean2,
-                     s.stddev2,
-                     s.pvalue, 
-                     s.qvalue, 
-                     s.difference,
-                     s.fold,
-                     ) )
-    outs.close()
-
-############################################################
-############################################################
-############################################################
-#@transform( importExpressionTracks, suffix("_data.import"), ".sam2.expdiff" )
-@transform( ("expAll_36_D3_data.import",), suffix("_data.import"), ".sam2.expdiff" )
-def buildExpressionDifferencesSAM2( infile, outfile ):
-    '''compute stats on expression differences between each set
-    and the appropriate unstimulated set using SAM.
-    '''
-
-    nskipped = 0
-
-    track = infile[:-len("_data.import")]
-
-    target_path = os.path.join( os.path.abspath( PARAMS["exportdir"] ), "SAM2" )
-    if not os.path.exists( target_path): 
-        try:
-            os.makedirs( target_path )
-        except OSError: 
-            pass
-
-    outs = open( outfile, "w" )
-    outs.write( "cluster_id\tmean1\tstd1\tmean2\tstd2\tpvalue\tqvalue\tdiff\tfold\n" )
-
-    try:
-        control, cluster_ids, treatments, controls = PExpression.getExpressionMeasurements( track )
-    except P.PipelineError, msg:
-        E.warn("skipped: %s" % msg )
-        outs.close()
-        return
-
-    E.info( "track=%s, control=%s: computing SAM for %i probesets, %i samples, %i control" % (track, control,
-                                                                                              len(cluster_ids),
-                                                                                              len(treatments),
-                                                                                              len(controls)))
-    
-    genes, summary = Expression.SAM()( cluster_ids, treatments, controls,
-                                       pattern = os.path.join(target_path, outfile + "%s"),
-                                       fdr = float(PARAMS["sam_fdr"]),
-                                       ngenes = float(PARAMS["sam_ngenes"]),
-                                       ndelta = float(PARAMS["sam_ndelta"]),
-                                       npermutations = PARAMS["sam_permutations"],
-                                       method = PARAMS["sam_method"] )
-
-    if summary == None:
-        E.warn( "no cutoff when running sam for %s" % infile )
-        
-    for s in genes:
-        outs.write ("%s\t%f\t%f\t%f\t%f\t%e\t%f\t%f\t%f\n" % \
-                    (s.probeset, 
-                     s.mean1,
-                     s.stddev1,
-                     s.mean2,
-                     s.stddev2,
-                     s.pvalue, 
-                     s.qvalue, 
-                     s.difference,
-                     s.fold,
-                     ) )
+        outs.write ("%s\t%f\t%f\t%f\t%f\t%e\t%f\t%f\t%f\t%i\n" % \
+                        (s.probeset, 
+                         s.mean1,
+                         s.stddev1,
+                         s.mean2,
+                         s.stddev2,
+                         s.pvalue, 
+                         s.qvalue, 
+                         s.difference,
+                         s.fold,
+                         s.called,
+                         ) )
     outs.close()
 
                   
@@ -4401,7 +4538,7 @@ def importExpressionDifferences( infile, outfile ):
          < %(infile)s > %(outfile)s
          '''
 
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
 
 @transform( importExpressionDifferences,
             suffix("_expdiff.import"), 
@@ -4415,10 +4552,10 @@ def exportDifferentiallyExpressedGenes( infile, outfile ):
     track = infile[:-len("_expdiff.import")]
     if track.endswith( ".sam" ):
         field = "qvalue"
-        cutoff = float(PARAMS['sam_export_qvalue_cutoff'])
+        cutoff = float(PARAMS['expression_sam_export_qvalue_cutoff'])
     elif track.endswith( ".ttest" ):
         field = "pvalue"
-        cutoff = float(PARAMS['ttest_export_pvalue_cutoff'])
+        cutoff = float(PARAMS['expression_ttest_export_pvalue_cutoff'])
 
     outs = open(outfile, "w" )
 
@@ -4452,7 +4589,7 @@ def annotateProbesetTSS( infile, outfile ):
     statement = """
     cat < %(infile)s |\
         python %(scriptsdir)s/bed2gff.py --as-gtf |\
-	python /home/andreas/gpipe/gtf2table.py \
+	python %(scriptsdir)s/gtf2table.py \
 		--counter=distance-tss \
 		--log=%(outfile)s.log \
 		--filename-gff=%(probeset)s \
@@ -4517,7 +4654,7 @@ def buildIntervalCounts( infile, outfile ):
     statement = """
     cat < %(infile)s |\
         python %(scriptsdir)s/bed2gff.py --as-gtf |\
-	python /home/andreas/gpipe/gtf2table.py \
+	python %(scriptsdir)s/gtf2table.py \
 		--counter=read-coverage \
 		--log=%(outfile)s.log \
 		--bam-file=%(samfiles_fg)s \
@@ -4528,7 +4665,7 @@ def buildIntervalCounts( infile, outfile ):
     statement = """
     cat < %(infile)s |\
         python %(scriptsdir)s/bed2gff.py --as-gtf |\
-	python /home/andreas/gpipe/gtf2table.py \
+	python %(scriptsdir)s/gtf2table.py \
 		--counter=read-coverage \
 		--log=%(outfile)s.log \
 		--bam-file=%(samfiles_bg)s \
@@ -5234,7 +5371,7 @@ if PARAMS["annotator_master_motif"]:
     @follows( exportRegionsOfInterest, buildAnnotatorGC )
     @files( [ (("%s.bed" % x, "roi.bed"), "%s.annotator_roi_with_motif" % x ) for x in TRACKS_ANNOTATOR ] )
     def makeAnnotatorRegionsOfInterestWithMotif( infiles, outfile ):
-        AexportRegionsOfInternnotator.makeAnnotatorRegionsOfInterest( infiles, outfile, with_motif = PARAMS['annotator_master_motif'] )
+        PAnnotator.makeAnnotatorRegionsOfInterest( infiles, outfile, with_motif = PARAMS['annotator_master_motif'] )
 
     @follows( exportRegionsOfInterest, buildAnnotatorGC )
     @files( [ (("%s.bed" % x, "roi.bed"), "%s.annotator_roi_without_motif" % x ) for x in TRACKS_ANNOTATOR ] )
@@ -5319,7 +5456,6 @@ if PARAMS["annotator_proportion"]:
               importAnnotatorRegionsOfInterestBottom )
     def annotator_proportion():
         pass
-
 else:
     @follows(buildGeneSet)
     def annotator_proportion():
@@ -5331,7 +5467,7 @@ else:
 ##
 ############################################################
 @follows( buildGeneRegions )
-@files( [ ( ( "%s.bed" % x, TARGET_TRANSCRIPTS_TSS), "%s.distance" % x ) for x in TRACKS_MASTER ] )
+@files( [ ( ( "%s.bed" % x, TARGET_TRANSCRIPTS_TSS), "%s.distance" % x ) for x in TRACKS_ANNOTATE ] )
 def annotateTSSIntervalDistance( infiles, outfile ):
     '''annotate the associations between a tss and of a transcript.
     Only the closest distance is recorded in either direction.'''
@@ -5341,7 +5477,7 @@ def annotateTSSIntervalDistance( infiles, outfile ):
     to_cluster = True
 
     statement = """
-	python /home/andreas/gpipe/gtf2table.py \
+	python %(scriptsdir)s/gtf2table.py \
 		--counter=distance \
 		--log=%(outfile)s.log \
                 --reporter=transcripts \
@@ -5376,7 +5512,7 @@ def importTSSIntervalDistance( infile, outfile):
 ##
 ############################################################
 @follows( buildGeneRegions )
-@files( [ ( ( "%s.bed" % x, TARGET_TRANSCRIPTS_TSS), "%s.assoc" % x ) for x in TRACKS_MASTER ] )
+@files( [ ( ( "%s.bed" % x, TARGET_TRANSCRIPTS_TSS), "%s.assoc" % x ) for x in TRACKS_ANNOTATE ] )
 def annotateTSSIntervalAssociations( infiles, outfile ):
     '''annotate the associations between tss and of a transcript.
     All distances within *proximal_distance* are recorded.'''
@@ -5386,7 +5522,7 @@ def annotateTSSIntervalAssociations( infiles, outfile ):
     to_cluster = True
 
     statement = """
-	python /home/andreas/gpipe/gtf2table.py \
+	python %(scriptsdir)s/gtf2table.py \
 		--counter=neighbours \
 		--log=%(outfile)s.log \
                 --reporter=transcripts \
@@ -5505,9 +5641,106 @@ def importExpressionWang( infile, outfile ):
               --table=%(tablename)s \
     < %(tmpname)s > %(outfile)s
     '''
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
 
     os.unlink( tmpname )
+
+###################################################################
+###################################################################
+###################################################################
+## import data from Wang et. al
+###################################################################
+@files( ((PARAMS["filename_expression_kovalenko"], "expression_kovalenko.import"), ) )
+def importExpressionKovalenko( infile, outfile ):
+    '''import gene expression data from Kovalenko et al. (2010) 
+
+    Converts negative fold change into ratios and % qvalues
+    into qvalues.
+    '''
+
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    cc = dbhandle.cursor()
+    map_name2id = dict( cc.execute( "SELECT UPPER(gene_name), gene_id FROM gene_info" ).fetchall() )
+
+    headers = (
+        ("affy_id", "probeset"),
+        ("gene_name", "gene_id"),
+        ("fold_6", "fold_6"),
+        ("qvalue_6", "qvalue_6"),
+        ("fold_24", "fold_24"),
+        ("qvalue_24", "qvalue_24"),
+        ("fold_48", "fold_48"),
+        ("qvalue_48", "qvalue_48"),
+        )
+
+    old_headers = set( [x[0] for x in headers] )
+    new_headers = [x[1] for x in headers]
+    take = []
+    outs = P.getTempFile()
+    first = True
+
+    counts = E.Counter()
+
+    reader = csv.reader( open(infile,"rU") )
+    notfound = set()
+    for row in reader:
+        if first:
+            first = False
+            for x, old_header in enumerate(row ):
+                if old_header in old_headers: take.append( x )
+            outs.write("\t".join(new_headers)+ "\n")
+        else:
+            skip = False
+            new_row = []
+            for x in take:
+                if headers[x][0].startswith("fold"):
+                    foldval = float( row[x] )
+                    if foldval < 0: 
+                        row[x] = str( -1.0 / foldval )
+                elif headers[x][0].startswith("qvalue"):
+                    qvalue = float( row[x] )
+                    row[x] = str(qvalue / 100.0)
+                elif headers[x][0].startswith("gene_name"):
+                    parts = [ c.upper().strip() for c in row[x].split("//") ]
+
+                    for part in parts:
+                        if part in map_name2id:
+                            row[x] = map_name2id[part].upper()
+                            counts.found += 1
+                            break
+                    else:
+                        counts.notfound += 1
+                        notfound.add( row[x] )
+                        skip = True
+                        break
+
+
+                if row[x].strip() != "---":
+                    new_row.append(row[x].strip())
+                else:
+                    new_row.append("")
+                    
+            if skip: continue
+            outs.write("\t".join( new_row )+ "\n")
+
+    outs.close()
+    tmpname = outs.name
+    tablename = outfile[:-len(".import")]
+
+    statement = '''
+    csv2db.py %(csv2db_options)s \
+              --index=probeset \
+              --index=gene_id \
+              --table=%(tablename)s \
+    < %(tmpname)s > %(outfile)s
+    '''
+    P.run()
+
+    os.unlink( tmpname )
+
+    E.info( "%s" % str(counts))
+    if notfound:
+        E.warn("not found: %s" % str(notfound) )
 
 ############################################################
 ############################################################
@@ -5651,6 +5884,7 @@ def importOverlapRegions( infiles, outfile ):
 #     '''compute overlap of intervals with regions of interest.'''
 #     importOverlapRegions( infile, outfile, "gwas.bed" )
 
+
 ###################################################################
 ###################################################################
 ###################################################################
@@ -5722,7 +5956,7 @@ def importSNPCoverage( infile, outfile ):
               --table=%(tablename)s \
     > %(outfile)s
     '''
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
 
 ############################################################
 ############################################################
@@ -5750,7 +5984,7 @@ def importSNPCoverage( infile, outfile ):
 def prepare():
     pass
 
-@follows( buildIntervals )
+@follows( buildIntervals, importReferenceIntervals )
 def intervals():
     pass
 
@@ -5805,14 +6039,13 @@ def correlation():
           annotateRepeats, importRepeats,
           annotateTSSIntervalAssociations, importTSSIntervalAssociations,
           annotateTSSIntervalDistance, importTSSIntervalDistance, 
+          annotateTracks, importTracks,
           buildIntervalCounts, importIntervalCounts,
           buildSNPCoverage, importSNPCoverage,
           importOverlapRegions,
           importOverlapRegionsOfInterestEnsembl,)
-def annotation():
+def annotate():
     pass
-
-
 
 @follows( buildAnnotatorGC,
           makeAnnotatorDistance,
@@ -5830,9 +6063,15 @@ def annotation():
 def annotator():
     pass
 
-@follows( prepare, intervals, build_motifs, find_motifs,
+@follows( prepare, 
+          intervals, 
+          build_motifs, 
+          find_motifs,
           expression,
-          correlation, annotation, annotator )
+          correlation, 
+          annotate, 
+          annotator 
+          )
 def full():
     pass
 

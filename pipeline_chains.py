@@ -122,7 +122,7 @@ def extractPairwiseAlignmentSingleFile(infiles, outfile, track):
                   --query=%(track)s
                   --target=%(maf_master)s
                   --log=%(outfile)s.log 
-             | python %(scriptsdir)s/blat2blat.py 
+             | python %(scriptsdir)s/psl2psl.py 
                   --method=filter-fasta 
                   --method=sanitize
                   --filename-queries=%(genomefile)s
@@ -143,11 +143,11 @@ def buildGenomeAlignmentFromSingleFile( infile, outfile ):
 
     statement = '''gunzip < %(infile)s 
          | sort -k10,10 -k12,12n
-         | python %(scriptsdir)s/blat2blat.py 
+         | python %(scriptsdir)s/psl2psl.py 
               --method=remove-overlapping-query
               --log=%(outfile)s.log 
          | sort -k14,14 -k16,16n
-         | python %(scriptsdir)s/blat2blat.py 
+         | python %(scriptsdir)s/psl2psl.py 
               --method=remove-overlapping-target
               --log=%(outfile)s.log 
          | gzip
@@ -172,7 +172,7 @@ def extractPairwiseAlignment(infile, outfile, track):
                   --query=%(query)s
                   --target=%(maf_master)s
                   --log=%(outfile)s.log 
-             | python %(scriptsdir)s/blat2blat.py 
+             | python %(scriptsdir)s/psl2psl.py 
                   --method=filter-fasta 
                   --method=sanitize
                   --filename-queries=%(genomefile)s
@@ -195,11 +195,11 @@ def buildGenomeAlignment( infiles, outfile ):
 
     statement = '''zcat %(infiles)s 
          | sort -k10,10 -k12,12n
-         | python %(scriptsdir)s/blat2blat.py 
+         | python %(scriptsdir)s/psl2psl.py 
               --method=remove-overlapping-query
               --log=%(outfile)s.log 
          | sort -k14,14 -k16,16n
-         | python %(scriptsdir)s/blat2blat.py 
+         | python %(scriptsdir)s/psl2psl.py 
               --method=remove-overlapping-target
               --log=%(outfile)s.log 
          | gzip
@@ -275,9 +275,10 @@ def buildAlignmentStats( infile, outfile ):
     
     P.run()
 
+@follows( mkdir( "export" ) )
 @transform( buildIndirectMaps, 
-            suffix(".psl.gz"),
-            ".chain.gz" )
+            regex( r"(.*).psl.gz") ,
+            r"export/\1.chain.gz" )
 def convertPslToChain( infile, outfile ):
     '''convert a psl to a chain file.'''
 

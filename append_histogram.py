@@ -1,15 +1,63 @@
+################################################################################
+#
+#   MRC FGU Computational Genomics Group
+#
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
+#
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU General Public License
+#   as published by the Free Software Foundation; either version 2
+#   of the License, or (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#################################################################################
+'''
+append_histogram.py - append columns to histogram
+=================================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+This scripts appends additional columns like cumulative sum, normalized density,
+etc, to an histogram. A histogram is a tab-separated table with the
+bins in the first column and the counts in the second.
+
+Usage
+-----
+
+Example::
+
+   python append_histogram.py --help
+
+Type::
+
+   python append_histogram.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 import sys, re, string, os, optparse
 
-USAGE = """python %s < stdin > stdout
-
-read in data and append columns to a density histogram
-
--> relative frequencies
--> cumulative counts and frequencies in both directions
-
-'#' at start of line is a comment
-
-""" % sys.argv[0]
 
 import Experiment
 import Histogram

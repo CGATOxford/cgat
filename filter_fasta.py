@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: filter_fasta.py 2782 2009-09-10 11:40:29Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2006 Tyler ???? and Andreas Heger 
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,24 +20,43 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+filter_fasta.py - select sequences in a fasta file
+==================================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+This scripts implements some more complex filtering. The sequence
+identifiers need to correspond to the :term:`gpipe id` scheme.
+
+Usage
+-----
+
+Example::
+
+   python filter_fasta.py --help
+
+Type::
+
+   python filter_fasta.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 import os, sys, string, re, optparse, math, time, tempfile, subprocess
 
-USAGE="""python %s [OPTIONS] < mali > mali
-
-reformat and edit a multiple alignment.
-
-Methods are:
-
-translate:      translate sequences.
-
-mark-codons:    add space after each codon
-pseudo-codons:  translate, but keep register with codons
-interleaved-codons: mix amino acids and codons
-
-Parameters are given to the option parameters in a comma-separated list in the order
-that the edit operations are called upon.
-
-""" % sys.argv[0]
 
 import Experiment
 import IOTools
@@ -104,7 +124,7 @@ class MaskerSeg (Masker):
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: filter_fasta.py 2782 2009-09-10 11:40:29Z andreas $", usage = USAGE)
+    parser = optparse.OptionParser( version = "%prog version: $Id: filter_fasta.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-m", "--method", dest="method", type="choice",
                       choices=("longest-transcript", "ids", "quality" ),

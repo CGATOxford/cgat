@@ -21,6 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 """
+fasta2bed.py - compute G+C profile for a DNA sequence
+=====================================================
 
 :Author: Andreas Heger
 :Release: $Id: fasta2bed.py 2861 2010-02-23 17:36:32Z andreas $
@@ -29,8 +31,6 @@
 
 Purpose
 -------
-
-compute G+C profile for a DNA sequence.
 
 Uses GCProfile
 

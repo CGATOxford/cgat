@@ -1,3 +1,38 @@
+################################################################################
+#
+#   MRC FGU Computational Genomics Group
+#
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
+#
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU General Public License
+#   as published by the Free Software Foundation; either version 2
+#   of the License, or (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#################################################################################
+'''
+Variants.py - 
+======================================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Code
+----
+
+'''
 import os, sys, re, optparse, collections
 
 import Experiment as E
@@ -396,8 +431,16 @@ def buildAlleles( sequence, variants, reference_start = 0, phased = True):
 
     return (allele1, allele2)
 
-def buildOffsets( variants, phased = True ):
-    '''collect coordinate offsets'''
+def buildOffsets( variants, phased = True, contig = None ):
+    '''collect coordinate offsets.
+
+    This methods takes a set of variants and computes
+    coordinates offsets based on indels.
+
+    Conflicting variants will be removed. 
+
+    Returns a list of variants, a list of removed variants and a list of offsets.
+    '''
 
     variants.sort()
     offset0, offset1 = 0, 0
@@ -412,14 +455,27 @@ def buildOffsets( variants, phased = True ):
 
         return offset
 
-    for start, end, reference, action, has_wildtype, variantseqs in variants:
+    last_end = 0
+
+    removed_variants, kept_variants = [], []
+    for variant in variants:
     
-        is_homozygous = len(variantseqs) == 1 and not has_wildtype
+        start, end, reference, action, has_wildtype, variantseqs = variant
 
         if action == "=": 
+            kept_variants.append( variant )
             # ignore substitutions
             continue
-        elif action == "-":
+
+        if last_end >= start:
+            removed_variants.append( variant )
+            continue
+
+        kept_variants.append( variant )
+        is_homozygous = len(variantseqs) == 1 and not has_wildtype
+
+        last_end = end
+        if action == "-":
             if phased:
                 offset0 = addDeletion( offsets0, start, end, offset0, variantseqs[0] )
                 offset1 = addDeletion( offsets1, start, end, offset1, variantseqs[1] )
@@ -464,6 +520,7 @@ def buildOffsets( variants, phased = True ):
             print "# variant=",start, end, reference, action, has_wildtype, variantseqs
             print "# offsets:", offsets0[-1], offsets1[-1]
         # add offsets - applies to the end of the variant
+            
 
 
-    return (offsets0, offsets1)
+    return ( kept_variants, removed_variants, (offsets0, offsets1))

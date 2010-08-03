@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: quality2fasta.py 2781 2009-09-10 11:33:14Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2008 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,14 +20,43 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+quality2fasta.py - convert quality scores to fasta/fastq output
+===============================================================
 
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+Convert quality scores to a fasta or fastq formatted file. 
+Quality scores are positive and mapped to the range [a-zA-Z0-9] 
+starting at 0.
+
+Usage
+-----
+
+Example::
+
+   python quality2fasta.py --help
+
+Type::
+
+   python quality2fasta.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 import sys, re, string, os, getopt, time, optparse
-
-USAGE="""quality2fasta.py [options] files
-
-convert quality scores to a fasta or fastq. Quality scores are positive
-and mapped to the range [a-zA-Z0-9] starting at 0.
-"""
 
 import Experiment
 import IndexedFasta

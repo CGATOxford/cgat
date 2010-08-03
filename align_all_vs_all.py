@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: align_all_vs_all.py 2782 2009-09-10 11:40:29Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,6 +20,44 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+align_all_vs_all.py - all-vs-all pairwise alignment
+===================================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+This script computes all-vs-all alignments between
+sequnces in a :term:`fasta` formatted file.
+
+Currently only Smith-Waterman protein alignment is
+implemented.
+
+Usage
+-----
+
+Example::
+
+   python align_all_vs_all.py --help
+
+Type::
+
+   python align_all_vs_all.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 import os, sys, string, re, getopt, time, optparse, math, tempfile
 
 import Experiment

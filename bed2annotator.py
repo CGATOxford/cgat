@@ -1,8 +1,10 @@
 ################################################################################
 #
-#   $Id: bed2annotator.py 2885 2010-04-07 08:46:50Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2007 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -18,6 +20,42 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+bed2annotator.py - 
+======================================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+.. todo::
+   
+   describe purpose of the script.
+
+Usage
+-----
+
+Example::
+
+   python bed2annotator.py --help
+
+Type::
+
+   python bed2annotator.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 import sys, string, re, optparse, time, os, shutil, tempfile, math, itertools, glob, collections
 
 import Experiment as E
@@ -43,7 +81,7 @@ this script will create:
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: bed2annotator.py 2885 2010-04-07 08:46:50Z andreas $", usage = USAGE)
+    parser = optparse.OptionParser( version = "%prog version: $Id: bed2annotator.py 2885 2010-04-07 08:46:50Z andreas $", usage = globals()["__doc__"])
 
         
     parser.add_option( "-g", "--genome-file", dest="genome_file", type="string",

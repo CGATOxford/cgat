@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: diff_fasta.py 2781 2009-09-10 11:33:14Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,26 +20,50 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+diff_fasta.py - compare contents of two fasta files
+===================================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+This script takes two sets of fasta sequences and compares the
+identifiers. It outputs
+
+   * which sequences are missing
+   * which sequences are identical
+   * which sequences are prefixes/suffixes of each other
+
+Usage
+-----
+
+Example::
+
+   python diff_fasta.py --help
+
+Type::
+
+   python diff_fasta.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 import os, sys, string, re, getopt, optparse
 
 import Genomics
 import alignlib
-
-USAGE="""python %s file1 file2
-
-Version: $Id: diff_fasta.py 2781 2009-09-10 11:33:14Z andreas $
-
-count organisms in clusters
-        
-Options:
--h, --help                      print this message.
--v, --verbose=                  loglevel.
-
-""" % sys.argv[0]
-
 import Experiment
-
-parser = optparse.OptionParser( version = "%prog version: $Id: diff_fasta.py 2781 2009-09-10 11:33:14Z andreas $")
 
 def MapIdentifiers( seqs, pattern):
 
@@ -54,6 +79,8 @@ def MapIdentifiers( seqs, pattern):
         seqs[nk] = s
         
 if __name__ == "__main__":
+
+    parser = optparse.OptionParser( version = "%prog version: $Id: diff_fasta.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-s", "--correct-gap-shift", dest="correct_shift", action="store_true",
                       help="correct gap length shifts in alignments.")

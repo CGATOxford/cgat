@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: plot_data.py 2782 2009-09-10 11:40:29Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,19 +20,47 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+plot_data.py - create scatter plot from tabular data
+====================================================
 
-import sys, re, string, os, getopt, time, optparse
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
 
-USAGE="""plot_histogram.py [options] [infile] < stdin
+Purpose
+-------
 
-data plotting utility.
+This scripts creates a scatter plot from tabular data.
 
 Reads data in tabular format with observations in rows in
 different samples in columns. The first column provides the
 bins.
 
 Reads data from stdin unless infile is given.
-"""
+
+Usage
+-----
+
+Example::
+
+   python plot_data.py --help
+
+Type::
+
+   python plot_data.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+import sys, re, string, os, getopt, time, optparse
 
 import Experiment as E
 import Histogram

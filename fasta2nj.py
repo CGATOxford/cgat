@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: fasta2nj.py 2781 2009-09-10 11:33:14Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,20 +20,47 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
-import os, sys, string, re, getopt, tempfile, time, optparse, math, glob
+'''
+fasta2nj.py - convert fasta file to nj input
+============================================
 
-import Experiment, IOTools
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
 
-USAGE="""python %s [OPTIONS] 
-
-Version: $Id: fasta2nj.py 2781 2009-09-10 11:33:14Z andreas $
+Purpose
+-------
 
 convert a fasta file to NJ input.
 
 This script translates identifiers like
 
 species|transcripts|gene|class to transcript_species GENEID=gene
-""" % sys.argv[0]
+
+Usage
+-----
+
+Example::
+
+   python fasta2nj.py --help
+
+Type::
+
+   python fasta2nj.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+import os, sys, string, re, getopt, tempfile, time, optparse, math, glob
+
+import Experiment, IOTools
 
 if __name__ == "__main__":
 

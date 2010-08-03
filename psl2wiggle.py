@@ -6,16 +6,49 @@
 ##
 ## Author: Andreas Heger <heger@ebi.ac.uk>
 ##
-## $Id: blat2wiggle.py 2834 2009-11-24 16:11:23Z andreas $
+## $Id: psl2wiggle.py 2834 2009-11-24 16:11:23Z andreas $
 ##
 ##
 ####
 ####
+'''
+psl2wiggle.py - convert from psl to wiggle
+==========================================
 
-USAGE="""python blat2assembly.py [OPTIONS] > output
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
 
-Assemble blat matches overlapping on sbjct.
-"""
+Purpose
+-------
+
+This script converts from a :term:`psl` formatted
+file to a :term:`wiggle` formatted file by stacking 
+alignments on the target on top of each other.
+
+This script uses the UCSC tools for bigwig/bigbed output.
+
+Usage
+-----
+
+Example::
+
+   python <script_name>.py --help
+
+Type::
+
+   python <script_name>.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 
 import sys, re, string, optparse, time, os, itertools, tempfile, subprocess, shutil
 
@@ -28,7 +61,7 @@ import numpy
 
 def main( argv = sys.argv ):
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: blat2wiggle.py 2834 2009-11-24 16:11:23Z andreas $", usage=USAGE )
+    parser = optparse.OptionParser( version = "%prog version: $Id: psl2wiggle.py 2834 2009-11-24 16:11:23Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genome [default=%default]."  )

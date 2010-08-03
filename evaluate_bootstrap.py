@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: evaluate_bootstrap.py 626 2006-05-23 11:51:24Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,15 +20,17 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
-import os, sys, string, re, getopt, time, sets
+'''
+evaluate_bootstrap.py - evaluate bootstrap results against reference
+====================================================================
 
-from Bio.Nexus import Nexus
-from Bio.Nexus.Nodes import Node
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
 
-
-USAGE="""python %s [OPTIONS] < tree.in > tree.out
-
-Version: $Id: evaluate_bootstrap.py 626 2006-05-23 11:51:24Z andreas $
+Purpose
+-------
 
 read in a tree in newick format and compare bootstrap as given
 by results if they agree with this tree.
@@ -48,7 +51,31 @@ Options:
 -i, --file-inconsistencies=     filename with inconsistencies
 -s, --file-subtrees=            filename with subtrees
 -x, --prefix                    cluster prefix to use
-""" % sys.argv[0]
+
+Usage
+-----
+
+Example::
+
+   python evaluate_bootstrap.py --help
+
+Type::
+
+   python evaluate_bootstrap.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+import os, sys, string, re, getopt, time, sets
+
+from Bio.Nexus import Nexus
+from Bio.Nexus.Nodes import Node
 
 import Experiment
 import TreeTools

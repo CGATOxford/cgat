@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: r_table2scatter.py 2782 2009-09-10 11:40:29Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,10 +20,43 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
-import os, sys, string, re, tempfile, subprocess, optparse, time, math, code
-"""Wrapper for adaptive codon bias program
-"""
+'''
+r_table2scatter.py - R based plots and stats
+============================================
 
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+This script reads a table from a file or stdin. 
+It can compute various stats (correlations, ...)
+and/or plot the data using R.
+
+Usage
+-----
+
+Example::
+
+   python r_table2scatter.py --help
+
+Type::
+
+   python r_table2scatter.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+import os, sys, string, re, tempfile, subprocess, optparse, time, math, code
 import Experiment as E
 import MatlabTools
 import numpy
@@ -397,8 +431,12 @@ def main():
             extra_options += ", ylim=c(%f,%f)" % tuple(map(float, options.yrange.split(",") ) )
 
         if options.hardcopy:
-            R.png(options.hardcopy, width=1024, height=768, type="cairo")
-
+            if options.hardcopy.endswith(".eps"): 
+                R.postscript(options.hardcopy)
+            elif options.hardcopy.endswith(".png"): 
+                R.png(options.hardcopy, width=1024, height=768, type="cairo")
+            elif options.hardcopy.endswith(".jpg"): 
+                R.jpg(options.hardcopy, width=1024, height=768, type="cairo")
 
         for method in options.plot:
 
@@ -569,17 +607,15 @@ title(main='%s');
 
         if options.hardcopy:
             R.dev_off()
-            
-    if options.loglevel >= 1:
-        options.stdlog.write("# matrix added as >matrix< in R.\n")
+
+    E.info( "matrix added as >matrix< in R.")
         
     if not options.hardcopy:
         if options.input_filename:
             interpreter = code.InteractiveConsole(globals())
             interpreter.interact()
         else:
-            if options.loglevel >= 1:
-                options.stdlog.write("# can not start new interactive session as input has come from stdin.\n")
+            E.info( "can not start new interactive session as input has come from stdin.")
 
     E.Stop()
 

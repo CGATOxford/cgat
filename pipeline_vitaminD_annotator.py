@@ -1,3 +1,61 @@
+################################################################################
+#
+#   MRC FGU Computational Genomics Group
+#
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
+#
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU General Public License
+#   as published by the Free Software Foundation; either version 2
+#   of the License, or (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#################################################################################
+'''
+pipeline_vitaminD_annotator.py - 
+======================================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+.. todo::
+   
+   describe purpose of the script.
+
+Usage
+-----
+
+Example::
+
+   python pipeline_vitaminD_annotator.py --help
+
+Type::
+
+   python pipeline_vitaminD_annotator.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 import sys, re, os, tempfile, collections, shutil
 
 import Experiment as E
@@ -35,7 +93,7 @@ def buildAnnotatorWorkSpace( tmpdir, outfile, workspaces=("genomic",), gc_contro
 		--log=%(outfile)s.log \
         > %(tmpworkspace)s''' 
         
-        P.run( **dict( locals().items() + PARAMS.items() ) )
+        P.run()
     else:
         tmpsynonyms = None
 
@@ -141,7 +199,7 @@ def buildAnnotatorAnnotations( tmpdir, outfile,
     else:
         raise P.PipelineError("unknown annotations '%s'" % workspace )
     
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
 
     return tmpannotations
 
@@ -231,7 +289,11 @@ def buildAnnotatorSegmentsFromDatabase( tmpdir, track,
             ''' % locals()
             
     cc = dbhandle.cursor()
-    cc.execute( statement )
+    try:
+        cc.execute( statement )
+    except sqlite3.OperationalError, msg:
+        E.warn( "error in sql statement: %s" % msg)
+        return None
 
     contigs = collections.defaultdict( list )
     for result in cc:
@@ -258,6 +320,14 @@ def runAnnotator( tmpdir, outfile,
                   options = ""):
     '''run annotator.'''
 
+    if tmpsegments == None:
+        E.warn( "no segments - annotator not run for %s" % outfile )
+        return
+
+    if tmpannotations == None:
+        E.warn( "no annotations - annotator not run for %s" % outfile )
+        return
+ 
     to_cluster = True
     job_queue = "medium_jobs.q"
     job_options = "-l mem_free=8000M"
@@ -271,7 +341,8 @@ def runAnnotator( tmpdir, outfile,
 
     if tmpsynonyms:
         workspace_options += " -synonyms %s" % tmpsynonyms
-            
+          
+
     statement = '''
     java -Xmx8000M -cp %(annotator_dir)s/commons-cli-1.0.jar:%(annotator_dir)s/Annotator.jar app.Annotator \
     -verbose 4 -iterations %(annotator_iterations)s \
@@ -281,7 +352,7 @@ def runAnnotator( tmpdir, outfile,
     %(options)s \
     > %(outfile)s '''
     
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
 
 ############################################################
 ############################################################
@@ -307,7 +378,7 @@ def genericImportAnnotator( infiles, outfile, table, workspace, slice, subset, f
                 --regex-id="(.*)%(suffix)s" \
                 %(infile)s > %(tmpfilename)s
         '''
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
 
     tmpfile = P.getTempFile()
     
@@ -325,7 +396,7 @@ def genericImportAnnotator( infiles, outfile, table, workspace, slice, subset, f
             --table=%(table)s 
     < %(tmpfilename2)s > %(outfile)s'''
 
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
     os.unlink( tmpfilename )
     os.unlink( tmpfilename2 )
 
@@ -665,7 +736,7 @@ def makeAnnotatorDistance( infile,
 		--plot 
                 %(options)s < /dev/null > %(outfile)s'''
 
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
 
 
 

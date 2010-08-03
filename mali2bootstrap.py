@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: mali2bootstrap.py 2782 2009-09-10 11:40:29Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,11 +20,17 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
-import os, sys, string, re, random, optparse
+'''
+mali2bootstrap.py - create bootstrap samples from a mali
+========================================================
 
-USAGE="""python %s [OPTIONS] < orthologs > genes
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
 
-Version: $Id: mali2bootstrap.py 2782 2009-09-10 11:40:29Z andreas $
+Purpose
+-------
 
 Read a multiple alignment in write out new alignments
 of the same lengths with columns sampled from the source
@@ -31,7 +38,27 @@ multiple alignment.
 
 The default sampling is with-replacement.
 
-""" % sys.argv[0]
+Usage
+-----
+
+Example::
+
+   python mali2bootstrap.py --help
+
+Type::
+
+   python mali2bootstrap.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+import os, sys, string, re, random, optparse
 
 import Experiment as E
 import Mali
@@ -88,7 +115,7 @@ def getMali( mali, columns, block_size = 1 ):
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: mali2bootstrap.py 2782 2009-09-10 11:40:29Z andreas $", usage = USAGE)
+    parser = optparse.OptionParser( version = "%prog version: $Id: mali2bootstrap.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-i", "--input-format", dest="input_format", type="choice",
                       choices=("plain", "fasta", "clustal", "stockholm", "phylip" ),

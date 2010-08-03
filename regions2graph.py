@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: regions2graph.py 2754 2009-09-04 16:50:22Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,6 +20,42 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+regions2graph.py - 
+======================================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+.. todo::
+   
+   describe purpose of the script.
+
+Usage
+-----
+
+Example::
+
+   python regions2graph.py --help
+
+Type::
+
+   python regions2graph.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 import os, sys, string, re, tempfile, optparse, gzip
 
 USAGE="""python %s [OPTIONS] < exonerate_output > filtered
@@ -503,7 +540,7 @@ def ExchangeStreams( old_predictions, new_predictions ):
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: regions2graph.py 2754 2009-09-04 16:50:22Z andreas $", usage=USAGE )
+    parser = optparse.OptionParser( version = "%prog version: $Id: regions2graph.py 2754 2009-09-04 16:50:22Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option( "-b", "--benchmark", dest="filename_benchmark", type="string",
                       help=""  )

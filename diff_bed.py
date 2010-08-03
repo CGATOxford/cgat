@@ -21,6 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 """
+diff_bed.py - count differences between several bed files
+=========================================================
 
 :Author: Andreas Heger
 :Release: $Id: diff_bed.py 2866 2010-03-03 10:18:49Z andreas $
@@ -29,8 +31,6 @@
 
 Purpose
 -------
-
-count differences between several bed files.
 
 Usage
 -----

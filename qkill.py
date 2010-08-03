@@ -2,7 +2,7 @@
 #
 #   MRC FGU Computational Genomics Group
 #
-#   $Id: script_template.py 2781 2009-09-10 11:33:14Z andreas $
+#   $Id$
 #
 #   Copyright (C) 2009 Andreas Heger
 #
@@ -21,9 +21,11 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 """
+qkill.py - kill jobs in the queue
+==================================
 
 :Author: Andreas Heger
-:Release: $Id: script_template.py 2781 2009-09-10 11:33:14Z andreas $
+:Release: $Id$
 :Date: |today|
 :Tags: Python
 

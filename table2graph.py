@@ -21,6 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 """
+convert adjacency lists to edge lists
+=====================================
 
 :Author: Andreas Heger
 :Release: $Id$
@@ -42,7 +44,6 @@ This will be converted to::
    node1   node2   value1
    node1   node3   value2
    node1   node4   value3
-
 
 Usage
 -----

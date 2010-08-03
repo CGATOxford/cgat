@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: WrapperPhylip.py 2784 2009-09-10 11:41:14Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,6 +20,19 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+WrapperPhylip.py - 
+======================================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Code
+----
+
+'''
 import os, sys, string, re, tempfile, subprocess, optparse, shutil
 
 from types import *
@@ -176,7 +190,7 @@ class Phylip:
             os.mkdir(self.mTempdir)
 
         if self.mInputMatrix and self.mInputData:
-            raise "please specify either input matrix or input data, but not both."
+            raise ValueError("please specify either input matrix or input data, but not both.")
         
         ## prepare input matrix. Should already be in phylip like
         ## format, but long identifiers are shortened and tabs are

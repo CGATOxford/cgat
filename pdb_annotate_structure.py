@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: pdb_annotate_structure.py 2782 2009-09-10 11:40:29Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2007 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,8 +20,42 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+pdb_annotate_structure.py - 
+======================================================
 
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
 
+Purpose
+-------
+
+.. todo::
+   
+   describe purpose of the script.
+
+Usage
+-----
+
+Example::
+
+   python pdb_annotate_structure.py --help
+
+Type::
+
+   python pdb_annotate_structure.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 USAGE="""
 python pdb_annotate_structure.py [OPTIONS] pdb_id
 
@@ -74,7 +109,7 @@ def MapLeft( mapping, row_residue ):
 if __name__ == '__main__':
 
     parser = optparse.OptionParser( version = "%prog version: $Id: pdb_annotate_structure.py 2782 2009-09-10 11:40:29Z andreas $",
-                                    usage = USAGE )
+                                    usage = globals()["__doc__"] )
 
     parser.add_option( "-p", "--filename-pdb", dest="filename_pdb", type="string",
                        help="filename with pdb structure."  )

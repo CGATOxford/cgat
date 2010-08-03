@@ -20,6 +20,9 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
+matrix2stats.py - compute statistics on matrices
+================================================
+
 :Author: Andreas Heger
 :Release: $Id: matrix2stats.py 2795 2009-09-16 15:29:23Z andreas $
 :Date: |today|
@@ -31,7 +34,7 @@ Purpose
 compute statistics on matrices.
 
 Chi-Squared test
-================
+++++++++++++++++
 
 Compute the Chi-squared test on a contingency table.
 If --pairwise is given, the pairwise

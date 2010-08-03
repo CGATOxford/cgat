@@ -1,10 +1,10 @@
-#!/usr/bin/env python
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: csv_cut.py 2782 2009-09-10 11:40:29Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -20,6 +20,50 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+csv_cut.py - select columns from a table
+========================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+extract named columns from a csv formatted table
+
+
+.. todo::
+   
+   describe purpose of the script.
+
+Usage
+-----
+
+Extract the two columns gene and length from a table in standard input::
+
+   python csv_cut.py gene length < stdin
+
+The script permits the use of patterns. For example, the command 
+will select the column gene and all columns that contain the part 'len'::
+
+   python csv_cut.py gene %len% < stdin
+
+Type::
+
+   python csv_cut.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 import os, sys, string, re, getopt, time, optparse, math, tempfile
 
 import Experiment
@@ -28,18 +72,6 @@ import CSV
 
 USAGE="""csv_cut.py [OPTIONS] col1 [col2 [...]] < stdin
 
-extract named columns from a csv formatted table
-
-Example:
-
-Extract the two columns gene and length from a table in standard input:
-
-  csv_cut.py gene length < stdin
-
-The script permits the use of patterns. For example, the command 
-will select the column gene and all columns that contain the part 'len'
-
-  csv_cut.py gene %len% < stdin
 """
 
 class UniqueBuffer:

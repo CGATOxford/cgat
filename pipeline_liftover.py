@@ -80,15 +80,26 @@ PARAMS.update( {
              , suffix(".gtf.gz")
              , '.psl.gz' )
 def convertGtf2Psl( infile, outfile ):
-    """convert a gtf to a psl file."""
+    """convert a gtf to a psl file.
+    
+    This method only takes features of type 'exon' and
+    skips all contigs that are not in the genome sequence
+    (for example the variant human chromosomes).
+    """
     
     track = outfile[:-len(".psl.gz")]
-    genomefile = "%s_genome" % track
+    genomefile = PARAMS["%s_genome" % track]
     
     statement = """gunzip 
     < %(infile)s 
     | awk '$3 == "exon"' 
-    | python %(scriptsdir)s/gff2blat.py 
+    | python %(scriptsdir)s/gff2gff.py 
+           --sanitize=genome 
+           --skip-missing
+           --genome=%(genomefile)s
+           --log=%(outfile)s.log
+    | python %(scriptsdir)s/gff2psl.py 
+           --allow-duplicates
            --is-gtf 
            --log=%(outfile)s.log 
     | gzip > %(outfile)s
@@ -140,7 +151,7 @@ def mergeTranscripts( infile, outfile ):
 		--renumber-column=":id" 
 		--log=%(outfile)s.log 
 		--subdirs \
-        "python %(scriptsdir)s/blat2assembly.py 
+        "python %(scriptsdir)s/psl2assembly.py 
                --staggered=all 
                --method=region
                --method=transcript
@@ -210,7 +221,7 @@ def mapTranscripts( infile, outfile ):
 def convertMappedPslToGtf( infile, outfile ):
     '''convert to gtf for export.'''
     statement = """
-    python %(scriptsdir)s/blat2gff.py --as-gtf 
+    python %(scriptsdir)s/psl2gff.py --as-gtf 
     < %(infile)s 
     | gzip
     > %(outfile)s

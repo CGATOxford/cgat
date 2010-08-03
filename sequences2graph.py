@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: sequences2graph.py 1799 2008-03-28 11:44:19Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,18 +20,43 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+sequences2graph.py - align sequences and put them into a graph
+==============================================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+.. todo::
+   
+   describe purpose of the script.
+
+Usage
+-----
+
+Example::
+
+   python sequences2graph.py --help
+
+Type::
+
+   python sequences2graph.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 import os, sys, string, re, getopt
-
-USAGE="""python %s < sequences > graph
-
-Version: $Id: sequences2graph.py 1799 2008-03-28 11:44:19Z andreas $
-
-align sequences and put them into a graph.
-
-Options:
--h, --help                      print this message.
--v, --verbose=                  loglevel.
-""" % sys.argv[0]
 
 import Experiment
 import Genomics

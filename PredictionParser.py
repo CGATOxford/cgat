@@ -583,7 +583,7 @@ class PredictionParserEntryCaleb( PredictionParserEntry ):
          self.mPercentIdentity, self.mQueryCoverage,
          self.mQueryFrom, self.mQueryTo, self.mQueryLength,
          introns, self.mNFrameShifts, self.mNStopCodons,
-         blat_score, blat_identity, self.mSbjctToken, self.mSbjctStrand, self.mSbjctGenomeFrom,
+         psl_score, psl_identity, self.mSbjctToken, self.mSbjctStrand, self.mSbjctGenomeFrom,
          self.mSbjctGenomeTo, self.mTranslation, cdna, query_aligned_string, sbjct_aligned_string, errors,
          f_name, self.mRank) = data[:24]
         
@@ -1471,7 +1471,7 @@ def Blocks2AlignmentCDNA( query_block_starts,
 
 ##--------------------------------------------------------------------------
 class PredictionParserBlatCDNA (PredictionParser):
-    """Parse output from blat.
+    """Parse output from psl.
 
 Sample line:
 psLayout version 3
@@ -1489,7 +1489,7 @@ match   mis-    rep.    N's     Q gap   Q gap   T gap   T gap   strand  Q       
         PredictionParser.__init__( self )
             
     def ExtractData( self, lines, peptide_sequence, genomic_sequence):
-        """extract data from blat, tab-formatted output.
+        """extract data from psl, tab-formatted output.
         """
 
         matches = Predictions()
@@ -1647,7 +1647,7 @@ match   mis-    rep.    N's     Q gap   Q gap   T gap   T gap   strand  Q       
 
     
 class PredictionParserBlatTrans (PredictionParser):
-    """Parse output from blat.
+    """Parse output from psl.
 
     Query is protein, database is 6frame translation
     
@@ -1666,7 +1666,7 @@ match   mis-    rep.    N's     Q gap   Q gap   T gap   T gap   strand  Q       
         PredictionParser.__init__( self )
             
     def ExtractData( self, lines, peptide_sequence, genomic_sequence):
-        """extract data from blat, tab-formatted output.
+        """extract data from psl, tab-formatted output.
         """
 
         matches = Predictions()
@@ -1919,7 +1919,7 @@ class PredictionParserGFF(PredictionParser):
     def ExtractData( self,
                      lines, peptide_sequence,
                      genomic_sequence ):
-        """extract data from blat, tab-formatted output.
+        """extract data from psl, tab-formatted output.
         """
         raise "this module is incomplete"
     

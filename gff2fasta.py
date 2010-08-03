@@ -19,16 +19,43 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+gff2fasta.py - get sequences from gff file
+==========================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+This script outputs sequences for intervals within
+a :term:`gff` formatted file.
+
+Usage
+-----
+
+Example::
+
+   python <script_name>.py --help
+
+Type::
+
+   python <script_name>.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 import sys, string, re, optparse
-
-USAGE="""python %s [OPTIONS] input1 input2
-
-reformat gff files.
-
-Version: $Id: gff2fasta.py 2861 2010-02-23 17:36:32Z andreas $
-""" % sys.argv[0]
-
-import Experiment
+import Experiment as E
 import GFF, GTF
 import Genomics
 import AGP
@@ -88,7 +115,7 @@ if __name__ == "__main__":
         extend_by = 100,
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if options.genome_file:
         fasta = IndexedFasta.IndexedFasta( options.genome_file )
@@ -133,11 +160,10 @@ if __name__ == "__main__":
 
         if len(chunk) == 0:
             nskipped_noexons += 1
-            if options.loglevel >= 1:
-                options.stdlog.write( "# no features in entry from %s:%i..%i - %s" % (ichunk[0].contig,
-                                                                                      ichunk[0].start,
-                                                                                      ichunk[0].end,
-                                                                                      str(ichunk[0])))
+            E.info("no features in entry from %s:%i..%i - %s" % (ichunk[0].contig,
+                                                                 ichunk[0].start,
+                                                                 ichunk[0].end,
+                                                                 str(ichunk[0])))
             continue
 
         contig, strand = chunk[0].contig, chunk[0].strand 
@@ -204,8 +230,7 @@ if __name__ == "__main__":
         
         noutput += 1
 
-    if options.loglevel >= 1:
-        options.stdlog.write("# ninput=%i, noutput=%i, nmasked=%i, nskipped_noexons=%i, nskipped_masked=%i, nskipped_length=%i\n" %\
-                                 (ninput, noutput, nmasked, nskipped_noexons, nskipped_masked, nskipped_length ) )
+    E.info( "ninput=%i, noutput=%i, nmasked=%i, nskipped_noexons=%i, nskipped_masked=%i, nskipped_length=%i" %\
+                (ninput, noutput, nmasked, nskipped_noexons, nskipped_masked, nskipped_length ) )
 
-    Experiment.Stop()
+    E.Stop()

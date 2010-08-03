@@ -21,6 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 """
+index2gff.py - convert indexed fasta file to gff file
+=====================================================
 
 :Author: Andreas Heger
 :Release: $Id: index2gff.py 2880 2010-04-07 08:44:13Z andreas $
@@ -29,8 +31,6 @@
 
 Purpose
 -------
-
-convert indexed fasta file to gff file
 
 Usage
 -----

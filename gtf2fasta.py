@@ -21,6 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 """
+gtf2fasta.py - annotate genomic bases from a gene set
+=====================================================
 
 :Author: Andreas Heger
 :Release: $Id: gtf2fasta.py 2861 2010-02-23 17:36:32Z andreas $
@@ -30,8 +32,8 @@
 Purpose
 -------
 
-taking a gtf formatted file from ENSEMBL, annotate each base in the genome 
-according to its *function*. The script multiplexes both strands with lower-
+This script takes a :term:`gtf` formatted file from ENSEMBL and annotates each base 
+in the genome according to its *function*. The script multiplexes both strands with lower-
 case characters referring to the forward strand and upper-case characters
 referring to the reverse strand.
 
@@ -82,6 +84,9 @@ The codes and their meaning are:
 +---------------+----------------------------------------------------------------------+
 |y              | unknown base                                                         |
 +---------------+----------------------------------------------------------------------+
+
+This script can be used for a quick-and-dirty annotation of variants in a genome.
+For a better prediction of variant effects in coding variants, see :doc:`gtf2alleles`.
 
 Output files
 ++++++++++++

@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: assignments2pairs.py 2011 2008-07-04 10:40:51Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,6 +20,42 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+assignments2pairs.py - 
+======================================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+.. todo::
+   
+   describe purpose of the script.
+
+Usage
+-----
+
+Example::
+
+   python assignments2pairs.py --help
+
+Type::
+
+   python assignments2pairs.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 import os, sys, string, re, getopt, optparse
 
 USAGE="""python %s [OPTIONS] < assignments > pairs
@@ -40,7 +77,7 @@ Options:
 -m, --max-margin=               maximum margin for missing terminal exons
 -n, --min-margin=               minimum margin to add in any case.
 -d, --default-margin=           margin to use as a default.
--g, --genome-file=           pattern for filenames with the genomic DNA (FASTA).
+-g, --genome-file=              pattern for filenames with the genomic DNA (FASTA).
 -p, --peptides=                 file with protein sequences (FASTA).
 -s, --suffix=                   suffix for output filenames
 -p, --prefix=                   prefix for output filenames
@@ -168,7 +205,7 @@ def WriteEntry( query_token,
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: assignments2pairs.py 2011 2008-07-04 10:40:51Z andreas $", usage=USAGE )
+    parser = optparse.OptionParser( version = "%prog version: $Id: assignments2pairs.py 2011 2008-07-04 10:40:51Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option( "--peptides", dest="filename_peptides", type="string",
                       help=""  )
@@ -594,7 +631,7 @@ if __name__ == '__main__':
         if os.path.getsize(global_filename) == 0:
             os.remove( global_filename)
 
-        
+
     print "# read=%i, skipped=%i, overlaps=%i, adjusted=%i, empty=%i, genome=%i, high_overlaps=%i, unknown=%i" %\
           (ninput, nskipped, noverlaps, nadjusted, nempty, ngenome_notfound, nhigh_overlaps, nunknown )
     

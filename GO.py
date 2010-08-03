@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: GO.py 2883 2010-04-07 08:46:22Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,6 +20,19 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+GO.py - 
+======================================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Code
+----
+
+'''
 import os, sys, string, re, getopt, time, optparse, math, tempfile, subprocess, random
 import collections
 
@@ -26,9 +40,9 @@ import scipy
 import scipy.stats
 import scipy.special
 import numpy
-
+import Stats
 import Database
-import Experiment
+import Experiment as E
 import IOTools
 
 USAGE="""program $Id: GO.py 2883 2010-04-07 08:46:22Z andreas $
@@ -36,6 +50,7 @@ USAGE="""program $Id: GO.py 2883 2010-04-07 08:46:22Z andreas $
 calculate over-/under-representation of GO catergories in gene lists.
 """
 
+MIN_FLOAT = sys.float_info.min
 # The following code was taken from:
 #
 # http://mail.python.org/pipermail/python-list/2006-January/359797.html
@@ -60,7 +75,7 @@ def hypergeometric_gamma(k, n1, n2, t):
         c3 = lnchoose(n1 + n2 ,t)
 
     # print "hyperg:", k, n1, n2, t, math.exp(c1 + c2 - c3)
-    return math.exp(c1 + c2 - c3)
+    return max( math.exp(c1 + c2 - c3), MIN_FLOAT )
 
 def hypergeometric_P( k, n0, n1, t):
 
@@ -106,11 +121,9 @@ def hypergeometric_P( k, n0, n1, t):
 def hypergeometric_Q( k, n0, n1, t):
 
     GSL_DBL_EPSILON=1e-10
-
     assert t <= (n0+n1), "t larger than population size"    
     assert n0 >= 0, "n0 < 0"
     assert n1 >= 0, "n1 < 0"
-
     if k >= n0 or k >= t:
         P = 1.0
     elif (k < 0.0):
@@ -173,43 +186,63 @@ class GOEntry:
         'biological_process' : 'biol_process', 
         }
     
-    def __init__(self):
-        pass
-    
-    def fromOBO( self, infile ):
+    def __init__(self, default_namespace = "ontology" ):
+        self.mNameSpace = default_namespace
+
+    def fromOBO( self, section ):
         """read entry form an OBO formatted file."""
 
         self.mIsA = []
 
-        while 1:
-            line = infile.readline()
-            if not line or line[0] == "\n": break
+        for line in section:
+            
             data = line[:-1].split(":")
             term = data[0]
             rest = ":".join( data[1:] ).strip()
             if term == "name": self.mName = rest
             elif term == "id": self.mId = rest
-            elif term == "namespace": self.mNameSpace = self.mNameSpaceMap[rest]
+            elif term == "namespace": self.mNameSpace = self.mNameSpaceMap.get(rest, rest)
             elif term == "def": self.mDefinition = rest
             elif term == "exact_synonym": self.mSynonym = rest
             elif term == "is_a": self.mIsA.append( rest )
             elif term == "comment": self.mComment = rest
             elif term == "is_obsolete": self.mIsObsolete = True
             
+##-------------------------------------------------------------------------------
+
 def readOntology( infile ):
     """read ontology in OBO format from infile.
 
     returns a dictionary of Ontology entries.
     """
     result = {}
-    while 1:
-        line = infile.readline()
-        if not line: break
-        if line.startswith( "[Term]" ):
-            go = GOEntry()
-            go.fromOBO( infile )
+
+    def iterate_blocks( infile ):
+
+        lines = []
+        
+        for line in infile:
+            if line.strip() == "": 
+                if lines: yield lines
+                lines = []
+                continue
+
+            lines.append( line )
+
+    default_namespace = "ontology"
+
+    for section in iterate_blocks( infile ):
+
+        if section[0].startswith( "[Term]"):
+            go = GOEntry( default_namespace = default_namespace )
+            go.fromOBO( section )
             result[go.mId] = go
-    
+        else:
+            for line in section:
+                data = line[:-1].split(":")
+                if data[0] ==  "default-namespace":
+                    default_namespace = data[1].strip()
+            
     return result
 
 ##-------------------------------------------------------------------------------
@@ -225,6 +258,7 @@ class GOSample:
         self.mProbabilitiesOverRepresentation = mprobovers
         self.mProbabilitiesUnderRepresentation = mprobunders
         self.mCounts = counts
+
 ##-------------------------------------------------------------------------------
 class GOResult:
 
@@ -253,11 +287,11 @@ class GOResult:
             (self.mGOId, self.mSampleCountsCategory, self.mBackgroundCountsCategory )
 
         assert self.mBackgroundCountsTotal >= self.mBackgroundCountsCategory, \
-            "%s: background: more counts in catagory (%i) than in total (%i)." %\
+            "%s: background: more counts in category (%i) than in total (%i)." %\
             (self.mGOId, self.mBackgroundCountsCategory, self.mBackgroundCountsTotal)
 
         assert self.mSampleCountsTotal >= self.mSampleCountsCategory, \
-            "%s: forerground: more counts in catagory (%i) than in total (%i)." %\
+            "%s: forerground: more counts in category (%i) than in total (%i)." %\
             (self.mGOId, self.mSampleCountsCategory, self.mSampleCountsTotal)
 
         if self.mSampleCountsCategory == 0:
@@ -281,15 +315,16 @@ class GOResult:
 
     def __str__(self):
         """return string representation."""        
-        return "%i\t%i\t%s\t%i\t%i\t%s\t%s\t%5.2e\t%5.2e" % (self.mSampleCountsCategory,
-                                                             self.mSampleCountsTotal,
-                                                             IOTools.prettyPercent( self.mSampleCountsCategory, self.mSampleCountsTotal ),
-                                                             self.mBackgroundCountsCategory,
-                                                             self.mBackgroundCountsTotal,
-                                                             IOTools.prettyPercent( self.mBackgroundCountsCategory, self.mBackgroundCountsTotal ),
-                                                             IOTools.prettyFloat( self.mRatio ),
-                                                             self.mProbabilityOverRepresentation,
-                                                             self.mProbabilityUnderRepresentation )
+        return "%i\t%i\t%s\t%i\t%i\t%s\t%s\t%6.4e\t%6.4e\t%6.4e" % (self.mSampleCountsCategory,
+                                                                    self.mSampleCountsTotal,
+                                                                    IOTools.prettyPercent( self.mSampleCountsCategory, self.mSampleCountsTotal ),
+                                                                    self.mBackgroundCountsCategory,
+                                                                    self.mBackgroundCountsTotal,
+                                                                    IOTools.prettyPercent( self.mBackgroundCountsCategory, self.mBackgroundCountsTotal ),
+                                                                    IOTools.prettyFloat( self.mRatio ),
+                                                                    min(self.mProbabilityOverRepresentation,self.mProbabilityUnderRepresentation),
+                                                                    self.mProbabilityOverRepresentation,
+                                                                    self.mProbabilityUnderRepresentation )
 
 ##-------------------------------------------------------------------------------                                           
 class GOResults:
@@ -324,7 +359,10 @@ class GOInfo:
         self.mGOType = go_type
 
     def __str__(self):
-        return "\t".join(map(str, (self.mGOId, self.mGOType, self.mDescription)))
+        if self.mGOId == None:
+            return "\t".join(map(str, ("", "", "")))
+        else:
+            return "\t".join(map(str, (self.mGOId, self.mGOType, self.mDescription)))
     
 
 ##-------------------------------------------------------------------------------
@@ -502,15 +540,20 @@ def AnalyseGO( gene2go,
         
         result_go = GOResult(go_id)
 
-        if go_id in sample_counts:
-            # use gene counts
-            result_go.mSampleCountsCategory = sample_counts[go_id]
-        else:
-            result_go.mSampleCountsCategory = 0
-
+        # use gene counts
+        result_go.mSampleCountsCategory = sample_counts.get( go_id, 0 )
         result_go.mSampleCountsTotal = len(sample_genes)
         result_go.mBackgroundCountsTotal = len(background_genes)
         result_go.mBackgroundCountsCategory = background_counts[go_id]
+
+        E.debug( "processing %s: genes in foreground=%i, genes in backgound=%i, sample_counts=%i, background_counts=%i" % \
+                     ( go_id,
+                       len(sample_genes),
+                       len(background_genes),
+                       sample_counts.get(go_id,0),
+                       background_counts.get(go_id,0),
+                       )
+                 )
 
         if do_probabilities:
             try:
@@ -519,8 +562,8 @@ def AnalyseGO( gene2go,
                 print msg
                 print "# error while calculating probabilities for %s" % go_id
                 print "# genes in sample", sample_genes
-                print "# counts in sample: %i / %i" % ( result_go.mSampleCountsCategory, result_go.mSampleCountsTotal)
-                print "# counts in background %i / %i" % (result_go.mBackgroundCountsCategory, result_go.mBackgroundCountsTotal)
+                print "# counts in sample: %i out of %i total" % ( result_go.mSampleCountsCategory, result_go.mSampleCountsTotal)
+                print "# counts in background %i out of %i total" % (result_go.mBackgroundCountsCategory, result_go.mBackgroundCountsTotal)
                 for x in sample_genes.keys():
                     for y in gene2go[x]:
                         print x, str(y)
@@ -765,8 +808,7 @@ def ReadGeneList( filename_genes, options ):
 
     genes = map( lambda x: x[:-1].split("\t")[0], filter( lambda x: x[0] != "#", infile.readlines()))
     infile.close()
-    if options.loglevel >= 1:        
-        print "# read %i genes from %s" % (len(genes), filename_genes)
+    E.info( "read %i genes from %s" % (len(genes), filename_genes))
 
     ## apply transformation
     if options.gene_pattern:
@@ -782,8 +824,7 @@ def ReadGeneList( filename_genes, options ):
     if filename_genes != "-":
         infile.close()
 
-    if options.loglevel >= 1:
-        print "# after filtering: %i nonredundant genes." % (len(genes))
+    E.info("after filtering: %i nonredundant genes." % (len(genes)))
 
     return genes
 
@@ -791,9 +832,9 @@ def ReadGeneList( filename_genes, options ):
 def GetCode( v ):
     """return a code for over/underrepresentation."""
 
-    if v.mProbabilityOverRepresentation < v.mProbabilityUnderRepresentation:
+    if v.mRatio > 1.0:
         code = "+"
-    elif v.mProbabilityOverRepresentation > v.mProbabilityUnderRepresentation:
+    elif v.mRatio < 1.0:
         code = "-"
     else:
         code = "?"
@@ -803,14 +844,14 @@ def GetCode( v ):
 def convertGo2Goslim( options ):
     """read gene list with GO assignments and convert to GO slim categories."""
     
-    Experiment.info( "reading GO assignments from stdin" )
+    E.info( "reading GO assignments from stdin" )
     gene2gos, go2infos = ReadGene2GOFromFile( options.stdin )
     input_genes, input_goids = countGOs( gene2gos )
 
     #############################################################
     ## read GO ontology from file
     assert options.filename_ontology, "please supply a GO ontology"
-    Experiment.info( "reading ontology from %s" % (options.filename_ontology) )
+    E.info( "reading ontology from %s" % (options.filename_ontology) )
         
     infile = open(options.filename_ontology)
     ontology = readOntology( infile )
@@ -823,14 +864,14 @@ def convertGo2Goslim( options ):
                                                   go_type = go.mNameSpace,
                                                   description = go.mName )
 
-    Experiment.info( "reading GO assignments from %s" % options.filename_slims)
+    E.info( "reading GO assignments from %s" % options.filename_slims)
     go_slims = GetGOSlims( open(options.filename_slims, "r") )
 
     if options.loglevel >=1:
         v = set()
         for x in go_slims.values():
             for xx in x: v.add(xx)
-        Experiment.info( "read go slims from %s: go=%i, slim=%i" %\
+        E.info( "read go slims from %s: go=%i, slim=%i" %\
                                   ( options.filename_slims,
                                     len(go_slims), 
                                     len( v ) ))
@@ -852,14 +893,185 @@ def convertGo2Goslim( options ):
                                             "NA", ) )
                 noutput += 1
 
-    Experiment.info( "ninput_genes=%i, ninput_goids=%i, noutput_gene=%i, noutput_goids=%i, noutput=%i" % \
+    E.info( "ninput_genes=%i, ninput_goids=%i, noutput_gene=%i, noutput_goids=%i, noutput=%i" % \
                          (len(input_genes), len(input_goids),
                           len(output_genes), len(output_goids),
                           noutput) )
+
+def outputResults( outfile, pairs, go2info,
+                   fdrs = None, samples = None ):
+    '''output GO results to outfile.'''
+
+    headers = ["code",
+               "scount", "stotal", "spercent", 
+               "bcount", "btotal", "bpercent", 
+               "ratio",
+               "pvalue", "pover", "punder", 
+               "goid", "category", "description"]
+
+    if fdrs:
+        headers += ["fdr"]
+
+    if samples:
+        headers += ["min", "max", "zscore", "mpover", "mpunder", 
+                    "nfdr_expected",
+                    "CI95lower", "CI95upper" ]
+
+    outfile.write("\t".join(headers) + "\n" )
+
+    nselected = 0
+
+    for k, v in pairs:
+
+        code = GetCode( v )
+
+        n = go2info.get( k, GOInfo() )
+
+        outfile.write("%s\t%s\t%s" % (code, str(v), n))
+        
+        if options.fdr:
+            fdr = fdrs[k][0]
+            outfile.write( "\t%f" % fdr )
+
+        if options.sample:
+
+            if k in samples:
+                s = samples[k]
+            else:
+                outfile.write("\n")
+
+            ## calculate values for z-score
+            if s.mStddev > 0:
+                zscore = abs(float(v.mSampleCountsCategory) - s.mMean) / s.mStddev
+            else:
+                zscore = 0.0
+
+            # the number of expected false positives is the current FDR times the
+            # number of hypothesis selected.
+            nexpected = nselected * fdr
+
+            outfile.write("\t%i\t%i\t%f\t%5.2e\t%5.2e\t%6.4f\t%6.4f\t%6.4f" %\
+                          (s.mMin,
+                           s.mMax,
+                           zscore,
+                           min(s.mProbabilitiesOverRepresentation),
+                           min(s.mProbabilitiesUnderRepresentation),
+                           scipy.mean( s.mCounts ),
+                           scipy.stats.scoreatpercentile( s.mCounts, 5 ),
+                           scipy.stats.scoreatpercentile( s.mCounts, 95 ),
+                           ) )
+
+        outfile.write("\n")
+
+
+def getSamples( gene2go, genes, background, options ):
+
+    sample_size = options.sample
+    # List of all minimum probabilities in simulation
+    simulation_min_pvalues = []
+    E.info( "sampling: calculating %i samples: " % (sample_size))
+
+    counts = {}
+    prob_overs = {}
+    prob_unders = {}
+
+    samples = {}
+
+    options.stdlog.write("# ")
+    options.stdlog.flush()
+
+    for x in range(sample_size):
+
+        if options.loglevel >= 1:
+            options.stdlog.write( "." )
+            options.stdlog.flush()
+
+        ## get shuffled array of genes from background
+        sample_genes = random.sample( background, len(genes) )
+
+        go_results = AnalyseGO( gene2go , sample_genes, background )
+
+        pairs = go_results.mResults.items()
+
+        for k, v in pairs:
+            if k not in counts:
+                counts[k] = []
+                prob_overs[k] = []
+                prob_unders[k] = []
+
+            counts[k].append( v.mSampleCountsCategory )
+            prob_overs[k].append( v.mProbabilityOverRepresentation )
+            prob_unders[k].append( v.mProbabilityUnderRepresentation )                    
+
+            simulation_min_pvalues.append( min( v.mProbabilityUnderRepresentation,
+                                                v.mProbabilityOverRepresentation ) )
+
+
+    if options.loglevel >= 1:
+        sys.stdout.write("\n")
+        sys.stdout.flush()
+
+    E.info("sampling: sorting %i P-Values" % len(simulation_min_pvalues) )
+
+    simulation_min_pvalues.sort()
+    simulation_min_pvalues = numpy.array(simulation_min_pvalues)
+
+    samples = {}
+
+    if options.output_filename_pattern:
+        filename = options.output_filename_pattern % { 'go': ontology, 'section': "samples" }
+        E.info( "sampling results go to %s" % filename )
+        outfile = open(filename, "w")
+    else:
+        outfile = sys.stdout
+
+    outfile.write( "\t".join( ("goid", "min", "max", "mean", "median", "stddev", 
+                               "CI95lower", "CI95upper",
+                               "pover", "punder", "goid",
+                               "category", "description") ) + "\n" )
+    for k in counts.keys():
+
+        c = counts[k]
+
+        prob_overs[k].sort()
+        prob_unders[k].sort()
+
+        s = GOSample(min(c),
+                     max(c),
+                     scipy.mean(c),
+                     numpy.std(c),
+                     numpy.array(prob_overs[k]),
+                     numpy.array(prob_unders[k]),
+                     counts[k] )
+
+        samples[k] = s
+
+        if k in go2info:
+            n = go2info[k]
+        else:
+            n = "?"
+
+        outfile.write( "%s\t%i\t%i\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%s\n" %\
+                       (k,
+                        min(c),
+                        max(c),
+                        scipy.mean(c),
+                        scipy.median(c),
+                        numpy.std(c),
+                        scipy.stats.scoreatpercentile( c, 5 ),
+                        scipy.stats.scoreatpercentile( c, 95 ),
+                        min(prob_overs[k]),
+                        min(prob_unders[k]),
+                        n ))
+    if options.output_filename_pattern:
+        outfile.close()
+
+    return samples, simulation_min_pvalues
+
 ##---------------------------------------------------------------------------    
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: GO.py 2883 2010-04-07 08:46:22Z andreas $", usage=USAGE)
+    parser = optparse.OptionParser( version = "%prog version: $Id: GO.py 2883 2010-04-07 08:46:22Z andreas $", usage = globals()["__doc__"])
 
     dbhandle = Database.Database()
     
@@ -879,8 +1091,10 @@ if __name__ == "__main__":
                        choices=("fdr", "pover", "ratio" ),
                        help="output sort order [default=%default]." )
 
-    parser.add_option( "-c", "--category", dest="go_category", type="string",
-                       help="go category to analyse [biol_process|cell_location|mol_function] [default=%default]." )
+    parser.add_option( "--ontology", dest="ontology", type="choice",
+                       choices=("biol_process","cell_location","mol_function", "mgi" ),
+                       help="go ontologies to analyze. Ontologies are tested separately."
+                       " [default=%default]." )
 
     parser.add_option( "-t", "--threshold", dest="threshold", type="float",
                        help="significance threshold [>1.0 = all ]. If --fdr is set, this refers to the fdr, otherwise it is a cutoff for p-values." )
@@ -922,7 +1136,7 @@ if __name__ == "__main__":
                          filename_genes = "-",
                          filename_background = None,
                          filename_slims = None,
-                         go_category = "biol_process,cell_location,mol_function",
+                         ontology = [],
                          filename_categories = None,
                          filename_dump = None,
                          sample = 0,
@@ -934,24 +1148,20 @@ if __name__ == "__main__":
                          sort_order = "ratio",
                          get_genes = None )
 
-    (options, args) = Experiment.Start( parser, add_mysql_options = True )
-    options.go_category = options.go_category.split(",")
-
-    if options.fdr and options.sample == 0:
-        print USAGE
-        raise "please supply a sample size for determining the empirical FDR"
+    (options, args) = E.Start( parser, add_mysql_options = True )
 
     if options.go2goslim:
         convertGo2Goslim( options )
-        Experiment.Stop()
+        E.Stop()
         sys.exit(0)
+
+    if options.fdr and options.sample == 0:
+        E.warn( "fdr will be computed without sampling" )
 
     #############################################################
     ## dump GO
     if options.filename_dump:
-        if options.loglevel >= 1:        
-            options.stdlog.write( "# dumping GO categories to %s\n" % (options.filename_dump) )
-            sys.stdout.flush()
+        E.info( "dumping GO categories to %s" % (options.filename_dump) )
 
         dbhandle.Connect( options )
             
@@ -960,16 +1170,13 @@ if __name__ == "__main__":
                             dbhandle,
                             options )
         outfile.close()
-        Experiment.Stop()
+        E.Stop()
         sys.exit(0)
 
     #############################################################
     ## read GO categories from file
     if options.filename_input:
-        if options.loglevel >= 1:        
-            options.stdlog.write( "# reading association of categories and genes from %s\n" % (options.filename_input) )
-            sys.stdout.flush()
-        
+        E.info( "reading association of categories and genes from %s" % (options.filename_input) )
         infile = open(options.filename_input)
         gene2gos, go2infos = ReadGene2GOFromFile( infile )
         infile.close()
@@ -977,9 +1184,7 @@ if __name__ == "__main__":
     #############################################################
     ## read GO ontology from file
     if options.filename_ontology:
-        if options.loglevel >= 1:        
-            options.stdlog.write( "# reading ontology from %s\n" % (options.filename_ontology) )
-            sys.stdout.flush()
+        E.info( "reading ontology from %s" % (options.filename_ontology) )
         
         infile = open(options.filename_ontology)
         ontology = readOntology( infile )
@@ -1006,13 +1211,19 @@ if __name__ == "__main__":
         background = ()
 
     #############################################################
+    ## sort out which ontologies to test
+    if options.ontology == []: 
+        if options.filename_input:
+            options.ontology = gene2gos.keys()
+
+    #############################################################
     ## get go categories for genes
-    for go_category in options.go_category:
+    for ontology in options.ontology:
 
         #############################################################
         ## get/read association of GO categories to genes
         if options.filename_input:
-            gene2go, go2info = gene2gos[go_category], go2infos[go_category]
+            gene2go, go2info = gene2gos[ontology], go2infos[ontology]
         else:
             if options.loglevel >= 1:
                 options.stdlog.write( "# reading data from database ..." )
@@ -1020,16 +1231,18 @@ if __name__ == "__main__":
 
             dbhandle.Connect( options )
             gene2go, go2info = ReadGene2GOFromDatabase( dbhandle,
-                                                        go_category,
+                                                        ontology,
                                                         options.database, options.species )
 
             if options.loglevel >= 1:
                 options.stdlog.write( "finished.\n" )
                 sys.stdout.flush()
 
-        if options.loglevel >= 1:
-            ngenes, ncategories, nmaps = CountGO( gene2go )        
-            options.stdlog.write( "# read GO assignments: %i genes mapped to %i categories (%i maps)\n" % (ngenes, ncategories, nmaps) )
+        if len(go2info) == 0:
+            E.warn( "could not find information for terms - could be mismatch between ontologies")
+
+        ngenes, ncategories, nmaps = CountGO( gene2go )        
+        E.info( "read GO assignments: %i genes mapped to %i categories (%i maps)" % (ngenes, ncategories, nmaps) )
 
         #############################################################
         ## sanity check:            
@@ -1089,134 +1302,35 @@ if __name__ == "__main__":
 
             ## skip to next GO class
             if not (bg or ng): continue
-                
+
             options.stdout.write( "# genes in GO category %s\n" % options.get_genes )
             options.stdout.write( "gene\tset\n" )
             for x in fg: options.stdout.write("%s\t%s\n" % ("fg", x))
             for x in bg: options.stdout.write("%s\t%s\n" % ("bg", x))           
             for x in ng: options.stdout.write("%s\t%s\n" % ("ng", x))                       
 
-            if options.loglevel >= 1:
-                options.stdlog.write("# nfg=%i, nbg=%i, nng=%i\n" % (len(fg), len(bg), len(ng) ))
+            E.info( "nfg=%i, nbg=%i, nng=%i" % (len(fg), len(bg), len(ng) ))
                 
-            Experiment.Stop()
+            E.Stop()
             sys.exit(0)
                   
+        #############################################################
+        ## do the analysis
+        go_results = AnalyseGO( gene2go, genes, background )
+
+        if len(go_results.mSampleGenes) == 0:
+            E.warn( "no genes with GO categories - analysis aborted" )
+            E.Stop()
+            sys.exit(0)
+
+        pairs = go_results.mResults.items()
+
         #############################################################################
         ## sampling
         ## for each GO-category:
         ##      get maximum and minimum counts in x samples -> calculate minimum/maximum significance
         ##      get average and stdev counts in x samples -> calculate z-scores for test set
-        samples = {}
-        simulation_min_pvalues = None
-        if options.sample:
-
-            sample_size = options.sample
-            # List of all minimum probabilities in simulation
-            simulation_min_pvalues = []
-            if options.loglevel >= 1:
-                options.stdlog.write( "# sampling: calculating %i samples: " % (sample_size))
-                sys.stdout.flush()
-                
-            counts = {}
-            prob_overs = {}
-            prob_unders = {}
-            
-            for x in range(sample_size):
-
-                if options.loglevel >= 1:
-                    options.stdlog.write( "." )
-                    options.stdlog.flush()
-                    
-                ## get shuffled array of genes from background
-                sample_genes = random.sample( background, len(genes) )
-
-                go_results = AnalyseGO( gene2go , sample_genes, background )
-
-                pairs = go_results.mResults.items()
-                
-                for k, v in pairs:
-                    if k not in counts:
-                        counts[k] = []
-                        prob_overs[k] = []
-                        prob_unders[k] = []
-                    
-                    counts[k].append( v.mSampleCountsCategory )
-                    prob_overs[k].append( v.mProbabilityOverRepresentation )
-                    prob_unders[k].append( v.mProbabilityUnderRepresentation )                    
-                    
-                    simulation_min_pvalues.append( min( v.mProbabilityUnderRepresentation,
-                                                        v.mProbabilityOverRepresentation ) )
-
-
-            if options.loglevel >= 1:
-                sys.stdout.write("\n")
-                sys.stdout.flush()
-
-            if options.loglevel >= 1:
-                options.stdlog.write( "# sampling: sorting %i P-Values\n" % len(simulation_min_pvalues) )
-                sys.stdout.flush()
-            
-            simulation_min_pvalues.sort()
-            simulation_min_pvalues = numpy.array(simulation_min_pvalues)
-                
-            samples = {}
-
-            if options.output_filename_pattern:
-
-                filename = options.output_filename_pattern % { 'go': go_category, 'section': "samples" }
-                options.stdlog.write( "# sampling results go to %s\n" % filename )
-                outfile = open(filename, "w")
-            else:
-                outfile = sys.stdout
-                
-            outfile.write( "\t".join( ("goid", "min", "max", "mean", "median", "stddev", 
-                                       "CI95lower", "CI95upper",
-                                       "pover", "punder", "goid",
-                                       "category", "description") ) + "\n" )
-            for k in counts.keys():
-
-                c = counts[k]
-
-                prob_overs[k].sort()
-                prob_unders[k].sort()
-
-                s = GOSample(min(c),
-                             max(c),
-                             scipy.mean(c),
-                             numpy.std(c),
-                             numpy.array(prob_overs[k]),
-                             numpy.array(prob_unders[k]),
-                             counts[k] )
-                
-                samples[k] = s
-                              
-                if k in go2info:
-                    n = go2info[k]
-                else:
-                    n = "?"
-                
-                outfile.write( "%s\t%i\t%i\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%s\n" %\
-                               (k,
-                                min(c),
-                                max(c),
-                                scipy.mean(c),
-                                scipy.median(c),
-                                numpy.std(c),
-                                scipy.stats.scoreatpercentile( c, 5 ),
-                                scipy.stats.scoreatpercentile( c, 95 ),
-                                min(prob_overs[k]),
-                                min(prob_unders[k]),
-                                n ))
-            if options.output_filename_pattern:
-                outfile.close()
-                
-
-        #############################################################
-        ## do the analysis
-        go_results = AnalyseGO( gene2go, genes, background )
-
-        pairs = go_results.mResults.items()
+        samples, simulation_min_pvalues = getSamples( gene2go, genes, background, options )
 
         #############################################################
         ## calculate fdr for each hypothesis
@@ -1224,60 +1338,69 @@ if __name__ == "__main__":
 
         if options.fdr:
 
-            if options.loglevel >= 1:
-                options.stdlog.write( "# calculating the FDRs\n" )
-                sys.stdout.flush()
+            E.info( "calculating the FDRs" )
                 
-            observed_min_pvalues = map( lambda x: min(x[1].mProbabilityOverRepresentation,
-                                                      x[1].mProbabilityUnderRepresentation),
-                                        pairs )
-            observed_min_pvalues.sort()
-            observed_min_pvalues = numpy.array( observed_min_pvalues )
+            observed_min_pvalues = [ min(x[1].mProbabilityOverRepresentation,
+                                         x[1].mProbabilityUnderRepresentation) for x in pairs ]
 
-            for k, v in pairs:
-
-                if k in samples:
-                    s = samples[k]
-                else:
-                    raise "category %s not in samples" % k
+            if options.sample == 0:
+                # compute fdr via Storey's method
+                fdr_data = Stats.doFDR( observed_min_pvalues )
                 
-                ## calculate values for z-score
-                if s.mStddev > 0:
-                    zscore = abs(float(v.mSampleCountsCategory) - s.mMean) / s.mStddev
-                else:
-                    zscore = 0.0
+                for pair, qvalue in zip( pairs, fdr_data.mQValues ):
+                    fdrs[pair[0]] = (qvalue, 1.0, 1.0)
 
-                #############################################################
-                # FDR:
-                # For each p-Value p at node n:
-                #   a = average number of nodes in each simulation run with P-Value < p
-                #           this can be obtained from the array of all p-values and all nodes
-                #           simply divided by the number of samples.
-                #      aka: expfpos=experimental false positive rate
-                #   b = number of nodes in observed data, that have a P-Value of less than p.
-                #      aka: pos=positives in observed data
-                #   fdr = a/b
-                pvalue = min(v.mProbabilityOverRepresentation,
-                             v.mProbabilityUnderRepresentation)
+            else:
+                # compute P-values from sampling
+                observed_min_pvalues.sort()
+                observed_min_pvalues = numpy.array( observed_min_pvalues )
 
-                # calculate values for FDR: 
-                # nfdr = number of entries with P-Value better than node.
-                a = 0
-                while a < len(simulation_min_pvalues) and \
-                          simulation_min_pvalues[a] < pvalue:
-                    a += 1
-                a = float(a) / float(sample_size)
-                b = 0
-                while b < len(observed_min_pvalues) and \
-                        observed_min_pvalues[b] < pvalue:
-                    b += 1
+                sample_size = options.sample
 
-                if b > 0:
-                    fdr = min(1.0, float(a) / float(b))
-                else:
-                    fdr = 0.0
-                    
-                fdrs[k] = (fdr, a, b)
+                for k, v in pairs:
+
+                    if k in samples:
+                        s = samples[k]
+                    else:
+                        raise KeyError("category %s not in samples" % k)
+
+                    ## calculate values for z-score
+                    if s.mStddev > 0:
+                        zscore = abs(float(v.mSampleCountsCategory) - s.mMean) / s.mStddev
+                    else:
+                        zscore = 0.0
+
+                    #############################################################
+                    # FDR:
+                    # For each p-Value p at node n:
+                    #   a = average number of nodes in each simulation run with P-Value < p
+                    #           this can be obtained from the array of all p-values and all nodes
+                    #           simply divided by the number of samples.
+                    #      aka: expfpos=experimental false positive rate
+                    #   b = number of nodes in observed data, that have a P-Value of less than p.
+                    #      aka: pos=positives in observed data
+                    #   fdr = a/b
+                    pvalue = min(v.mProbabilityOverRepresentation,
+                                 v.mProbabilityUnderRepresentation)
+
+                    # calculate values for FDR: 
+                    # nfdr = number of entries with P-Value better than node.
+                    a = 0
+                    while a < len(simulation_min_pvalues) and \
+                              simulation_min_pvalues[a] < pvalue:
+                        a += 1
+                    a = float(a) / float(sample_size)
+                    b = 0
+                    while b < len(observed_min_pvalues) and \
+                            observed_min_pvalues[b] < pvalue:
+                        b += 1
+
+                    if b > 0:
+                        fdr = min(1.0, float(a) / float(b))
+                    else:
+                        fdr = 1.0
+
+                    fdrs[k] = (fdr, a, b)
 
         if options.sort_order == "fdr":
             pairs.sort( lambda x, y: cmp(fdrs[x[0]], fdrs[y[0]] ) )           
@@ -1287,79 +1410,33 @@ if __name__ == "__main__":
             pairs.sort( lambda x, y: cmp(x[1].mProbabilityOverRepresentation, y[1].mProbabilityOverRepresentation))
 
         #############################################################
-        ## output the result selected
-        if options.output_filename_pattern:
-            filename = options.output_filename_pattern % { 'go': go_category, 'section': "results" }
-            if options.loglevel >= 1:
-                options.stdlog.write( "# results go to %s\n" % filename)
-            outfile = open(filename, "w")
-        else:
-            outfile = sys.stdout
-        
-        headers = ["code", "goid", "scount", "stotal", "spercent", "bcount", "btotal", "bpercent",
-                   "ratio",
-                   "pover", "punder", "goid", "category", "description"]
-
-        if options.sample:
-            headers += ["min", "max", "zscore", "mpover", "mpunder", "pos", "expfpos", "fdr", "nfdr_expected",
-                        "expected", "CI95lower", "CI95upper" ]
-        
-        outfile.write("\t".join(headers) + "\n" )
-
-        nselected = 0
+        # output filtered results
+        filtered_pairs = []
 
         for k, v in pairs:
             
-            code = GetCode( v )
+            is_ok = False
 
-            is_ok = True
+            pvalue = min(v.mProbabilityOverRepresentation, v.mProbabilityUnderRepresentation) 
 
             if options.fdr:
                 (fdr, expfpos, pos) = fdrs[k]
-                is_ok = fdr < options.threshold
+                if fdr < options.threshold: is_ok = True
             else:
-                is_ok = min(v.mProbabilityOverRepresentation, v.mProbabilityUnderRepresentation) < options.threshold
-                    
-            if is_ok:
+                if pvalue < options.threshold: is_ok = True
                 
-                nselected += 1
-                
-                if k in go2info:
-                    n = go2info[k]
-                else:
-                    n = "?"
-                    
-                outfile.write("%s\t%s\t%s\t%s" % (code, k, str(v), n))
+            if is_ok: filtered_pairs.append( (k,v) )
 
-                if options.sample:
+        nselected = len(filtered_pairs)
 
-                    if k in samples:
-                        s = samples[k]
-                    else:
-                        outfile.write("\n")
-                    
-                    ## calculate values for z-score
-                    if s.mStddev > 0:
-                        zscore = abs(float(v.mSampleCountsCategory) - s.mMean) / s.mStddev
-                    else:
-                        zscore = 0.0
+        if options.output_filename_pattern:
+            filename = options.output_filename_pattern % { 'go': ontology, 'section': "results" }
+            E.info( "results go to %s" % filename)
+            outfile = open(filename, "w")
+        else:
+            outfile = sys.stdout
 
-                    # the number of expected false positives is the current FDR times the
-                    # number of hypothesis selected.
-                    nexpected = nselected * fdr
-                    
-                    outfile.write("\t%i\t%i\t%f\t%5.2e\t%5.2e\t%i\t%5.2f\t%5.2e\t%6.4f\t%6.4f\t%6.4f\t%6.4f" %\
-                                  (s.mMin,
-                                   s.mMax,
-                                   zscore,
-                                   min(s.mProbabilitiesOverRepresentation),
-                                   min(s.mProbabilitiesUnderRepresentation),
-                                   pos, expfpos, fdr, nexpected,
-                                   scipy.mean( s.mCounts ),
-                                   scipy.stats.scoreatpercentile( s.mCounts, 5 ),
-                                   scipy.stats.scoreatpercentile( s.mCounts, 95 ),
-                                   ) )
-                outfile.write("\n")
+        outputResults( outfile, filtered_pairs, go2info, fdrs = fdrs, samples = samples )
 
         if options.output_filename_pattern:
             outfile.close()
@@ -1368,75 +1445,13 @@ if __name__ == "__main__":
         ## output the full result
             
         if options.output_filename_pattern:
-            filename = options.output_filename_pattern % { 'go': go_category, 'section': "overall" }
-            if options.loglevel >= 1:
-                options.stdlog.write( "# a list of all categories and pvalues goes to %s\n" % filename )
+            filename = options.output_filename_pattern % { 'go': ontology, 'section': "overall" }
+            E.info( "a list of all categories and pvalues goes to %s" % filename )
             outfile = open(filename, "w")
         else:
             outfile = sys.stdout
         
-        headers = ["code", "goid", "passed", 
-                   "scount", "stotal", "spercent", 
-                   "bcount", "btotal", "bpercent",
-                   "ratio", "pover", "punder", 
-                   "goid", "category", "description"]
-
-        if options.sample:
-            headers += ["min", "max", "zscore", "mpover", "mpunder", "pos", "expfpos", "fdr", "mean", "CI95lower", "CI95upper" ]
-
-        outfile.write("\t".join(headers) + "\n" )
-
-        for k, v in pairs:
-            
-            code = GetCode( v )
-
-            is_ok = "0"
-
-            if options.fdr:
-                (fdr, expfpos, pos) = fdrs[k]
-                if fdr < options.threshold: is_ok = "1"
-            else:
-                if min(v.mProbabilityOverRepresentation, v.mProbabilityUnderRepresentation) < options.threshold: is_ok = "1"
-                
-            if k in go2info:
-                n = go2info[k]
-            else:
-                n = "?"
-
-            outfile.write("%s\t%s\t%s\t%s\t%s" % (code, k, is_ok, str(v), n))
-
-            if options.sample:
-
-                if k in samples:
-                    s = samples[k]
-                else:
-                    outfile.write("\n")
-
-                if options.fdr:
-                    (fdr, expfpos, pos) = fdrs[k]
-                else:
-                    (fdr, expfpos, pos) = 0, 0, 0
-                    
-                ## calculate values for z-score
-                if s.mStddev > 0:
-                    zscore = abs(float(v.mSampleCountsCategory) - s.mMean) / s.mStddev
-                else:
-                    zscore = 0.0
-
-                # the number of expected false positives is the current FDR times the
-                # number of hypothesis selected.
-                outfile.write("\t%i\t%i\t%f\t%5.2e\t%5.2e\t%i\t%5.2f\t%5.2e\t%f\t%f\t%f" %\
-                                  (s.mMin,
-                                   s.mMax,
-                                   zscore,
-                                   min(s.mProbabilitiesOverRepresentation),
-                                   min(s.mProbabilitiesUnderRepresentation),
-                                   pos, expfpos, fdr,
-                                   scipy.mean( s.mCounts ),
-                                   scipy.stats.scoreatpercentile( s.mCounts, 5 ),
-                                   scipy.stats.scoreatpercentile( s.mCounts, 95 ),
-                                   ) )
-            outfile.write("\n")
+        outputResults( outfile, pairs, go2info, fdrs = fdrs, samples = samples )
 
         if options.output_filename_pattern:
             outfile.close()
@@ -1446,14 +1461,14 @@ if __name__ == "__main__":
         ngenes, ncategories, nmaps = CountGO( gene2go )
 
         if options.output_filename_pattern:
-            filename = options.output_filename_pattern % { 'go': go_category, 'section': "parameters" }
+            filename = options.output_filename_pattern % { 'go': ontology, 'section': "parameters" }
             if options.loglevel >= 1:
                 options.stdlog.write( "# parameters go to %s\n" % filename )
             outfile = open(filename, "w")
         else:
             outfile = sys.stdout
             
-        outfile.write( "# input go mappings for category '%s'\n" % go_category )
+        outfile.write( "# input go mappings for category '%s'\n" % ontology )
         outfile.write( "value\tparameter\n" )
         outfile.write( "%i\tmapped genes\n" % ngenes )
         outfile.write( "%i\tmapped categories\n" % ncategories )
@@ -1493,16 +1508,16 @@ if __name__ == "__main__":
                 go2genes[go.mGOId].append( gene )
             
         if options.output_filename_pattern:
-            filename = options.output_filename_pattern % { 'go': go_category, 'section': "fg" }
+            filename = options.output_filename_pattern % { 'go': ontology, 'section': "fg" }
             if options.loglevel >= 1:
                 options.stdlog.write( "# results go to %s\n" % filename )
             outfile = open(filename, "w")
         else:
             outfile = sys.stdout
 
-        headers = ["code", "goid", "scount", "stotal", "spercent", "bcount", "btotal", "bpercent",
+        headers = ["code", "scount", "stotal", "spercent", "bcount", "btotal", "bpercent",
                    "ratio", 
-                   "pover", "punder", "goid", "category", "description", "fg"]
+                   "pvalue", "pover", "punder", "goid", "category", "description", "fg"]
 
         for k, v in pairs:
 
@@ -1511,16 +1526,16 @@ if __name__ == "__main__":
             if k in go2info:
                 n = go2info[k]
             else:
-                n = "?"
+                n = GOInfo()
                 
             if k in go2genes:
                 g = ";".join( go2genes[k] )
             else:
                 g = ""
 
-            outfile.write("%s\t%s\t%s\t%s\t%s\n" % (code, k, str(v), n, g ) )
+            outfile.write("%s\t%s\t%s\t%s\n" % (code, str(v), n, g ) )
 
         if outfile != sys.stdout:
             outfile.close()
 
-    Experiment.Stop()
+    E.Stop()

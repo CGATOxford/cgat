@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: sequences2mali.py 2782 2009-09-10 11:40:29Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2006 Andreas Heger 
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,14 +20,41 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
-import os, sys, string, re, optparse, math, time
+'''
+sequences2mali.py - build pileup mali from a set of sequences
+=============================================================
 
-USAGE="""python %s [OPTIONS] < sequences > mali
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
 
 convert a set of sequences into a multiple alignment
 
-Currently implemented is only adding to mali.
-""" % sys.argv[0]
+Usage
+-----
+
+Example::
+
+   python sequences2mali.py --help
+
+Type::
+
+   python sequences2mali.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+import os, sys, string, re, optparse, math, time
 
 import Experiment
 import IOTools
@@ -50,7 +78,7 @@ def convertMali2Mali( mali ):
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: sequences2mali.py 2782 2009-09-10 11:40:29Z andreas $", usage = USAGE)
+    parser = optparse.OptionParser( version = "%prog version: $Id: sequences2mali.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-i", "--input-format", dest="input_format", type="choice",
                       choices=("plain", "fasta", "clustal", "stockholm", "phylip" ),

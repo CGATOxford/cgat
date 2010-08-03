@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: annotator.py 2861 2010-02-23 17:36:32Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,6 +20,41 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+annotator.py - analyse annotator results
+========================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+This script takes annotator results, parses them, 
+filters by FDR and outputs the results 
+
+Usage
+-----
+
+Example::
+
+   python annotator.py --help
+
+Type::
+
+   python annotator.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 import sys, string, re, optparse, collections, bisect, os
 
 USAGE="""python %s [OPTIONS] input1 input2
@@ -506,7 +542,7 @@ def doFDR( options, args ):
                                        extra_values) )
 
 def main():
-    parser = optparse.OptionParser( version = "%prog version: $Id: annotator.py 2861 2010-02-23 17:36:32Z andreas $", usage=USAGE)
+    parser = optparse.OptionParser( version = "%prog version: $Id: annotator.py 2861 2010-02-23 17:36:32Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-g", "--filename-gtf", dest="filename_gtf", type="string",
                       help="filename with gtf information. Used to map a segment to a gene name [default=%default]." )

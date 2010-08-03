@@ -1,12 +1,45 @@
-USAGE=""" calculate a roc curve (true positive rate versus false positive rate)
+################################################################################
+#
+#   MRC FGU Computational Genomics Group
+#
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
+#
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU General Public License
+#   as published by the Free Software Foundation; either version 2
+#   of the License, or (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#################################################################################
+'''
+data2roc.py - compute ROC data
+==============================
 
-python data2roc.py [OTPIONS] < in > out
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+This script calculates a roc curve (true positive rate versus 
+false positive rate)
 
 Input is from stdin, first field is +/- or 1/0 for a true
 or false positive, respectively. The input needs to be
 sorted appropriately. 
 
-If the options --false-negative is set, the input is +/- or 1/0 for a 
+If the option ``--false-negative`` is set, the input is +/- or 1/0 for a 
 true positive or false negative, respectively.
 
 Output on stdout is a tab-separated table with the following
@@ -18,11 +51,31 @@ TPR: true positive rate  = true_positives /  predicted
 P: predicted
 FPR: false positive rate = false positives  / predicted
 value: value
-"""
+
+Usage
+-----
+
+Example::
+
+   python data2roc.py < data.in > roc.out
+
+Type::
+
+   python data2roc.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 
 import string, re, getopt, sys, optparse
 
-import Experiment
+import Experiment as E
 
 def doMultiple( options ):
 
@@ -71,7 +124,7 @@ def main( argv = None ):
 
     if not argv: argv = sys.argv
  
-    parser = optparse.OptionParser( version = "%prog version: $Id: data2roc.py 2782 2009-09-10 11:40:29Z andreas $", usage = USAGE)
+    parser = optparse.OptionParser( version = "%prog version: $Id: data2roc.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-p", "--positives", dest="positives", type="float",
                       help="total number of true positives. If not set, take all true positives encountered [default=%default]." )
@@ -98,7 +151,7 @@ def main( argv = None ):
         multiple = False,
         bin_by_score = True )
 
-    options, args = Experiment.Start( parser, argv = sys.argv )
+    options, args = E.Start( parser, argv = sys.argv )
 
     if options.multiple:
         doMultiple( options )
@@ -204,10 +257,9 @@ def main( argv = None ):
         last_positives = true_positives
         last_tpr = tpr
 
-    if options.loglevel >= 1:
-        options.stdlog.write( "# ninput=%i, noutput=%i, nskipped=%i\n" % (ninput, noutput, nskipped))
+    E.info( "ninput=%i, noutput=%i, nskipped=%i" % (ninput, noutput, nskipped))
 
-    Experiment.Stop()
+    E.Stop()
 
 if __name__ == "__main__":
     sys.exit( main( sys.argv ) )

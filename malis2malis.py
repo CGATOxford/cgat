@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: malis2malis.py 2782 2009-09-10 11:40:29Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2006 Tyler ???? and Andreas Heger 
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,9 +20,17 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
-import os, sys, string, re, optparse, math, time, random, types, collections
+'''
+malis2malis.py - extract subsets of malis
+=========================================
 
-USAGE="""python %s [OPTIONS]
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
 
 extract sequences from a set of multiple alignments and distribute into new directories.
 
@@ -33,6 +42,31 @@ This file is a tab separated table containing the following fields:
 3       component_id    The component_id which under which the directory shall be stored.
                         This is optional, if no third column is specified, the input_id
                         is used.
+
+Usage
+-----
+
+Example::
+
+   python malis2malis.py --help
+
+Type::
+
+   python malis2malis.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+import os, sys, string, re, optparse, math, time, random, types, collections
+
+USAGE="""python %s [OPTIONS]
+
 """ % sys.argv[0]
 
 import Experiment as E
@@ -570,7 +604,7 @@ def selectComponents( component_ids,
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: malis2malis.py 2782 2009-09-10 11:40:29Z andreas $", usage = USAGE)
+    parser = optparse.OptionParser( version = "%prog version: $Id: malis2malis.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-d", "--pattern-output", dest="pattern_output", type="string",
                       help="filename pattern for output multiple alignment files."  )

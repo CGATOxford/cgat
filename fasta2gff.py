@@ -19,6 +19,42 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+fasta2gff.py - create random segments from fasta file
+=====================================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+This script creates a random sample of "exons" from 
+a fasta file.
+
+Usage
+-----
+
+Example::
+
+   python <script_name>.py --help
+
+Type::
+
+   python <script_name>.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+
 import os, sys, string, re, getopt, tempfile, time, optparse, math, glob
 
 import Experiment as E
@@ -27,7 +63,7 @@ import GFF, GTF
 
 USAGE="""python %s [OPTIONS] 
 
-extract fragments from a genome.
+
 
 Version: $Id: fasta2gff.py 2861 2010-02-23 17:36:32Z andreas $
 """ % sys.argv[0]

@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: shuffle_fasta.py 2782 2009-09-10 11:40:29Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,13 +20,41 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
-import os, sys, string, re, getopt, time, optparse, math, tempfile, random
+'''
+shuffle_fasta.py - shuffle sequences
+====================================
 
-""" program $Id: shuffle_fasta.py 2782 2009-09-10 11:40:29Z andreas $
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
 
 shuffle a set of fasta sequences.
 
-"""
+Usage
+-----
+
+Example::
+
+   python shuffle_fasta.py --help
+
+Type::
+
+   python shuffle_fasta.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+import os, sys, string, re, getopt, time, optparse, math, tempfile, random
 import Experiment
 import Genomics
 import Bio

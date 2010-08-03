@@ -368,7 +368,7 @@ if __name__ == "__main__":
 
     import Experiment
     
-    parser = optparse.OptionParser( version = "%prog version: $Id: GenomicIO.py 2781 2009-09-10 11:33:14Z andreas $", usage = USAGE)
+    parser = optparse.OptionParser( version = "%prog version: $Id: GenomicIO.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
     (options, args) = Experiment.Start( parser )
 

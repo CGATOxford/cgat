@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: cds2codons.py 2781 2009-09-10 11:33:14Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,15 +20,44 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+cds2codons.py - remove frameshifts from cdna sequences
+======================================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+Given a map between peptide to cds sequences, print out
+sequences with only codons.
+
+Usage
+-----
+
+Example::
+
+   python cds2codons.py --help
+
+Type::
+
+   python cds2codons.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 import os, sys, string, re, getopt, time, sets, optparse, math, tempfile
 
-""" program $Id: cds2codons.py 2781 2009-09-10 11:33:14Z andreas $
-
-given a map between peptide to cds sequences, print out
-sequences with only codons.
-"""
 import Experiment, Genomics
-
 import alignlib
 
 class Map:

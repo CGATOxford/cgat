@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: blat2predictions.py 14 2005-08-09 15:24:07Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,13 +20,49 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+psl2predictions.py - 
+======================================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+.. todo::
+   
+   describe purpose of the script.
+
+Usage
+-----
+
+Example::
+
+   python psl2predictions.py --help
+
+Type::
+
+   python psl2predictions.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 import sys, string, re, getopt
 
-USAGE="""python %s [OPTIONS] < blat > predictions
+USAGE="""python %s [OPTIONS] < psl > predictions
 
 Convert BLAT output to predictions.
 
-Version: $Id: blat2predictions.py 14 2005-08-09 15:24:07Z andreas $
+Version: $Id: psl2predictions.py 14 2005-08-09 15:24:07Z andreas $
 
 Options:
 -h, --help                      print this message.

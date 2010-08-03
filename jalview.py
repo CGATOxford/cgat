@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: jalview.py 2782 2009-09-10 11:40:29Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,20 +20,49 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+jalview.py - build annotation for viewing in jalview
+==========================================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+This script will build annotations for a multiple alignment
+such that both can be visualized with :file:`jalview`.
+
+Usage
+-----
+
+Example::
+
+   python jalview.py --help
+
+Type::
+
+   python jalview.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 import os, sys, string, re, tempfile, subprocess, optparse, time, math
 
 import Experiment
 import Mali
 
-USAGE = """Pairwise rate analysis with PAML.
-
-PAML bails if sequences in a multiple alignment are not overlapping. Thus this
-code checks for each pair the overlap. If a pair is not overlapping, it goes
-into pairwise mode.
-"""
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: jalview.py 2782 2009-09-10 11:40:29Z andreas $", usage = USAGE )
+    parser = optparse.OptionParser( version = "%prog version: $Id: jalview.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option("-m", "--method", dest="method", type="choice", 
                       choices=("list2annotation", ),

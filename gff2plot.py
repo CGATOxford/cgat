@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: gff2plot.py 2781 2009-09-10 11:33:14Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,21 +20,22 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+gff2plot.py - plot genomic data
+===============================
 
-import sys, re, string, os, getopt, time, optparse, types
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
 
-import ConfigParser
-import matplotlib
-import pylab
-import matplotlib.ticker
-import scipy.stats
-import numpy
+Purpose
+-------
 
-USAGE="""plot_histogram.py [options] [infile] < stdin
+This script creates plots from genome wide data supplied in :term:`gff` format.
 
-data plotting utility for data in gff format. 
-
-This script creates colorful plots for genomic data.
+Usage
+-----
 
 The data is given in gff files denoting windows. The score field
 in the gff file denotes the value of a window.
@@ -47,64 +49,89 @@ as a heat-map.
 The layout of the plot is given by a config file. The config
 file is arranged in plots that contain one more data tracks.
 
-Here is an example of a track file:
+Here is an example of a track file::
 
-################################################
-## Start of track file
-################################################
-## tracks
-[paralogs-ds]
-filename=paralogs_ds_median_score.dff
-style=matrix
+    ################################################
+    ## Start of track file
+    ################################################
+    ## tracks
+    [paralogs-ds]
+    filename=paralogs_ds_median_score.dff
+    style=matrix
 
-[orthologs-ds]
-filename=orthologs_ds_median_score.dff
-style=matrix
+    [orthologs-ds]
+    filename=orthologs_ds_median_score.dff
+    style=matrix
 
-[variable-ds]
-filename=variable_ds_median_score.dff
-style=matrix                                                                                                                                                                                                               
+    [variable-ds]
+    filename=variable_ds_median_score.dff
+    style=matrix                                                                                                                                                                                                               
 
-[median<intronic>]
-filename=regions_intronic_median_score.dff
+    [median<intronic>]
+    filename=regions_intronic_median_score.dff
 
-[<intronic>]
-filename=regions_intronic_mean_score.dff
+    [<intronic>]
+    filename=regions_intronic_mean_score.dff
 
-## add multi-track tracks
-[median ds]
-tracks=paralogs-ds, orthologs-ds, variable-ds
-text=dS computed from paralog trees using a
-        single omega for each ortholog group.
-        For paralogs, the distance is between
-        C. elegans and C. briggsae. For
-        orthologs, the distance is for the
-        C. elegans terminal lineage, only.
+    ## add multi-track tracks
+    [median ds]
+    tracks=paralogs-ds, orthologs-ds, variable-ds
+    text=dS computed from paralog trees using a
+            single omega for each ortholog group.
+            For paralogs, the distance is between
+            C. elegans and C. briggsae. For
+            orthologs, the distance is for the
+            C. elegans terminal lineage, only.
 
 
-[intron-lengths]
-tracks=median<intronic>,<intronic>
+    [intron-lengths]
+    tracks=median<intronic>,<intronic>
 
-# add vertical lines to the graph
-[vlines]
-filename=boxes.gff
-color=k
-linewidth=3
+    # add vertical lines to the graph
+    [vlines]
+    filename=boxes.gff
+    color=k
+    linewidth=3
 
-# global options for the figure
-[figure]
-# size of a figure in inches
-figsize=12,12
+    # global options for the figure
+    [figure]
+    # size of a figure in inches
+    figsize=12,12
 
-# create a plot for the legend
-[legend]
-# size of the legend in inches
-figsize=12,12
+    # create a plot for the legend
+    [legend]
+    # size of the legend in inches
+    figsize=12,12
 
-################################################
-## End of track file
-################################################
-"""
+    ################################################
+    ## End of track file
+    ################################################
+
+Example::
+
+   python gff2plot.py --help
+
+Type::
+
+   python gff2plot.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+import sys, re, string, os, getopt, time, optparse, types
+
+import ConfigParser
+import matplotlib
+import pylab
+import matplotlib.ticker
+import scipy.stats
+import numpy
 
 import Experiment
 
@@ -445,7 +472,7 @@ def layoutTracks( tracks ):
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: gff2plot.py 2781 2009-09-10 11:33:14Z andreas $", usage = USAGE)
+    parser = optparse.OptionParser( version = "%prog version: $Id: gff2plot.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-f", "--file", dest="filenames", type="string",
                       help="files[s] to take data from,stdin = -."  )

@@ -1,8 +1,8 @@
 ################################################################################
 #
-#   Gene prediction pipeline 
+#   MRC FGU Computational Genomics Group
 #
-#   $Id: gtf2tab.py 2887 2010-04-07 08:48:04Z andreas $
+#   $Id$
 #
 #   Copyright (C) 2009 Andreas Heger
 #
@@ -20,9 +20,17 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
-import os, sys, string, re, optparse
+'''
+gtf2tab.py - convert gtf file to a tab-separated table
+======================================================
 
-USAGE="""python %s [OPTIONS] < in.gtf
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
 
 convert gtf formatted file to tab-separated table with column headers for 
 table import.
@@ -32,16 +40,35 @@ the forward strand).
 
 If -a/--attributes is set, attributes are converted into separate columns.
 
-"""
+Usage
+-----
 
-import GFF, GTF
+Example::
+
+   python gtf2tab.py --help
+
+Type::
+
+   python gtf2tab.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+import os, sys, string, re, optparse
+import GFF, GTF, fastgtf
 import Experiment as E
 
 def main():
     '''
     main function
     '''
-    parser = optparse.OptionParser( version = "%prog version: $Id: gtf2tab.py 2887 2010-04-07 08:48:04Z andreas $", usage = USAGE)
+    parser = optparse.OptionParser( version = "%prog version: $Id: gtf2tab.py 2887 2010-04-07 08:48:04Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option( "-o", "--only-attributes", dest="only_attributes", action="store_true",
                        help="output attributes as separate columns [default=%default]." )
@@ -66,6 +93,10 @@ def main():
         for gtf in GTF.iterator( options.stdin ):
             data.append(gtf)
             attributes = attributes.union( set(gtf.keys()) )
+
+        # remove gene_id and transcript_id, as they are used
+        # explicitely later
+        attributes.difference_update( ["gene_id", "transcript_id"] ) 
             
         attributes = sorted(list(attributes))
 
@@ -83,6 +114,7 @@ def main():
                                                            gtf.transcript_id,
                                                            ))))
                 for a in attributes:
+                    if a in ("gene_id", "transcript_id"): continue
                     try:
                         val = getattr( gtf, a )
                     except AttributeError:
@@ -145,17 +177,25 @@ def main():
         options.stdout.write("\t".join( header ) + "\n" )
 
         for gtf in GTF.iterator( options.stdin ):
+            
+            attributes = []
+            for a in gtf.keys():
+                if a in ("gene_id", "transcript_id"): continue
+                attributes.append( '%s %s' % (a, fastgtf.quote(gtf[a])) )
+
+            attributes = "; ".join( attributes )
+            
             options.stdout.write( "\t".join( map(str, (gtf.contig,
                                                        gtf.source,
                                                        gtf.feature,
                                                        gtf.start,
                                                        gtf.end,
-                                                       gtf.score,
+                                                       fastgtf.toDot( gtf.score ),
                                                        gtf.strand,
                                                        gtf.frame,
                                                        gtf.gene_id,
                                                        gtf.transcript_id,
-                                                       str(gtf.attributes),
+                                                       attributes,
                                                        ) ) ) + "\n" )
             E.Stop()
 

@@ -1,10 +1,10 @@
 ################################################################################
 #
-#   Gene prediction pipeline 
+#   MRC FGU Computational Genomics Group
 #
-#   $Id: IndexedFasta.py 2801 2009-10-22 13:40:39Z andreas $
+#   $Id$
 #
-#   Copyright (C) 2007 Andreas Heger
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,10 +19,20 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#
 #################################################################################
-## TODO: properly abstract index so that it can be either in memory or on disk
+'''
+IndexedFasta.py - 
+======================================================
 
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Code
+----
+
+'''
 import os, sys, array, string, re, types, optparse, time, struct, math, tarfile, logging
 import platform, anydbm
 
@@ -248,17 +258,16 @@ class MultipleFastaIterator:
                         try:
                             identifier = re.search(regex_identifier, line[1:-1]).groups()[0]
                         except AttributeError:
-                            raise "could not parse identifier from line %s - check the input" % line[1:-1]
+                            raise ValueError("could not parse identifier from line %s - check the input" % line[1:-1])
                     else:
                         identifier = re.split("\s", line[1:-1])[0]
 
                 else:
                     if not identifier:
-                        raise "refusing to emit sequence without identifier - check the input"
+                        raise ValueError("refusing to emit sequence without identifier - check the input")
                     yield identifier, line.strip()
 
         for filename in self.mFilenames:
-
             if filename.endswith( "tar.gz" ):
                 tf = tarfile.open( filename, "r" )
                 for f in tf:
@@ -272,7 +281,7 @@ class MultipleFastaIterator:
 
                 tf.close()
                 continue
-            elif filename.endswith == ".gz":
+            elif filename.endswith(".gz"):
                 infile = gzip.open( filename, "r" )
             elif filename == "-":
                 infile = sys.stdin
@@ -349,7 +358,7 @@ def createDatabase( db, iterator,
             db_name = db + ".rle"
             write_chunks = True
         else:
-            raise "unknown compression library: %s" % compression
+            raise ValueError("unknown compression library: %s" % compression)
 
         index_name = db + ".cdx"
 
@@ -1005,7 +1014,7 @@ def main():
 
     import Experiment as E
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: IndexedFasta.py 2801 2009-10-22 13:40:39Z andreas $", usage = USAGE)
+    parser = optparse.OptionParser( version = "%prog version: $Id: IndexedFasta.py 2801 2009-10-22 13:40:39Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option( "-e", "--extract", dest="extract", type="string",
                        help="""extract region for testing purposes. Format is contig:strand:from:to. The default coordinates are

@@ -1,21 +1,71 @@
-#!/bin/env python
+################################################################################
+#
+#   MRC FGU Computational Genomics Group
+#
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
+#
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU General Public License
+#   as published by the Free Software Foundation; either version 2
+#   of the License, or (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#################################################################################
+'''
+csvs2csv.py - join tables
+=========================
 
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+This script reads several tab-separated tables and joins them.
+
+.. note:: 
+   working with multiple columns per table and sorting is
+   not implemented correctly and likely to fail.
+
+Usage
+-----
+
+Example::
+
+   python combine_tables.py --help
+
+Type::
+
+   python combine_tables.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 import sys, re, string, os, time, glob, optparse
-
-USAGE = """python %s < stdin > stdout
-
-'#' at start of line is a comment
-
-Note: working with multiple columns per table and sorting is
-not implemented correctly and likely to fail.
-""" % sys.argv[0]
 
 import Experiment
 
 ##---------------------------------------------------------------------------------------------------------        
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: combine_tables.py 2782 2009-09-10 11:40:29Z andreas $", usage = USAGE)
+    parser = optparse.OptionParser( version = "%prog version: $Id: combine_tables.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-t", "--no-titles", dest="titles", action="store_false",
                       help="no titles in input."  )

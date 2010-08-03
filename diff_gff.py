@@ -19,11 +19,18 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
-import sys, string, re, optparse
+'''diff_gff.py - compare two gff files
+======================================
 
-USAGE="""python %s [OPTIONS] input1 input2
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
 
-compare to gff files.
+Purpose
+-------
+
+This script compares the intervals in two :term:`gff` formatted files.
 
 The script outputs the following symbols:
 
@@ -38,8 +45,25 @@ if --write-equivalent is set, then it also outputs overlapping entries:
 =: identical entries
 |: half-identical entries, only one boundary is matching
 
-Version: $Id: diff_gff.py 2781 2009-09-10 11:33:14Z andreas $
-""" % sys.argv[0]
+Usage
+-----
+
+Example::
+
+   python <script_name>.py --help
+
+Type::
+
+   python <script_name>.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+'''
 
 import Experiment
 import GFF, GTF
@@ -130,7 +154,7 @@ def getFile( options, section ):
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: diff_gff.py 2781 2009-09-10 11:33:14Z andreas $", usage=USAGE)
+    parser = optparse.OptionParser( version = "%prog version: $Id: diff_gff.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-e", "--write-equivalent", dest="write_equivalent", 
                       help="write equivalent entries [default=%default].", action="store_true"  )

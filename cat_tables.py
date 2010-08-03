@@ -21,6 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 """
+cat_tables.py - concatenate tables
+==================================
 
 :Author: Andreas Heger
 :Release: $Id: script_template.py 2781 2009-09-10 11:33:14Z andreas $

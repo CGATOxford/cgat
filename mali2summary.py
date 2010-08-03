@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: mali2summary.py 2782 2009-09-10 11:40:29Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2006 Tyler ???? and Andreas Heger 
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,16 +20,45 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
-import os, sys, string, re, optparse, math, time
+'''
+mali2summary.py - compute summary stats on a mali
+=================================================
 
-USAGE="""python %s [OPTIONS] < mali > table
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
 
 output summary information on a multiple alignment.
 
 * column/row occupancy
-""" % sys.argv[0]
 
-import Experiment
+Usage
+-----
+
+Example::
+
+   python mali2summary.py --help
+
+Type::
+
+   python mali2summary.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+import os, sys, string, re, optparse, math, time
+
+import Experiment as E
 import IOTools
 import Mali
 import scipy
@@ -83,7 +113,7 @@ def analyzeMali( mali, options, prefix_row = "" ):
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: mali2summary.py 2782 2009-09-10 11:40:29Z andreas $", usage = USAGE)
+    parser = optparse.OptionParser( version = "%prog version: $Id: mali2summary.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-i", "--input-format", dest="input_format", type="choice",
                       choices=("plain", "fasta", "clustal", "stockholm" ),
@@ -105,8 +135,7 @@ if __name__ == '__main__':
         pattern_mali = None,
         )
 
-    (options, args) = Experiment.Start( parser )
-
+    (options, args) = E.Start( parser )
 
     if options.pattern_mali:
         prefix_header = "prefix\t"
@@ -123,8 +152,7 @@ if __name__ == '__main__':
 
         ids, errors = IOTools.ReadList( sys.stdin )
 
-        if options.loglevel >= 2:
-            options.stdlog.write("# read %i identifiers.\n" % len(ids))
+        E.debug( "read %i identifiers.\n" % len(ids))
 
         nsubstitutions=len(re.findall("%s", options.pattern_mali))
             
@@ -145,9 +173,8 @@ if __name__ == '__main__':
                 nempty += 1
                 continue
 
-            if options.loglevel >= 2:
-                options.stdlog.write ( "# read mali with %i entries from %s.\n" % (len(mali), filename))
-                options.stdlog.flush()
+            E.debug( "read mali with %i entries from %s.\n" % (len(mali), filename))
+
                 
             if analyzeMali( mali, options, prefix_row = "%s\t" % id ):
                 noutput += 1
@@ -162,16 +189,12 @@ if __name__ == '__main__':
         if mali.isEmpty():
             nempty += 1
         else:
-
-            if options.loglevel >= 2:
-                options.stdlog.write ( "# read mali with %i entries.\n" % (len(mali)))
-                options.stdlog.flush()
+            E.debug( "read mali with %i entries." % (len(mali)))
 
             if analyzeMali( mali, options, prefix_row = "" ):
                 noutput += 1
 
-    if options.loglevel >= 1:
-        options.stdlog.write ( "# ninput=%i, noutput=%i, nskipped=%i, nempty=%i.\n" % (ninput, noutput, nskipped, nempty))
+    E.info( "ninput=%i, noutput=%i, nskipped=%i, nempty=%i." % (ninput, noutput, nskipped, nempty))
         
-    Experiment.Stop()
+    E.Stop()
     

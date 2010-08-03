@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: peptides2cds.py 2890 2010-04-07 08:58:54Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,22 +20,51 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
-import os, sys, string, re, tempfile, time, optparse
+'''
+peptides2cds.py - map peptide sequences onto nucleic acid sequences
+===================================================================
 
-USAGE="""python %s [OPTIONS] < links > fasta
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
 
-Version: $Id: peptides2cds.py 2890 2010-04-07 08:58:54Z andreas $
+Purpose
+-------
 
 build a map between peptides to cdnas. This script deals with
-frameshifts and gaps, but not with missing residues. In other words,
-the cds and peptide sequences must be identical.
-""" % sys.argv[0]
+frameshifts but not with larger indels. 
 
-import Experiment
+This script requires the :mod:`alignlib` library and :file:`muscle`
+to be installed.
+
+Usage
+-----
+
+Example::
+
+   python peptides2cds.py --help
+
+Type::
+
+   python peptides2cds.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+import os, sys, string, re, tempfile, time, optparse
+import Experiment as E
 import BlastAlignments
 import alignlib
 import Genomics
 import FastaIterator
+import IOTools
 
 def AlignExhaustive( seq_wobble, seq_cds, seq_peptide, map_p2c, options, diag_width = 2 ):
     """Align two sequences.
@@ -396,10 +426,18 @@ if __name__ == "__main__":
     parser = optparse.OptionParser( version = "%prog version: $Id: peptides2cds.py 2890 2010-04-07 08:58:54Z andreas $")
 
     parser.add_option("-p", "--peptides", dest="filename_peptides", type="string",
-                      help="filename with peptides."  )
+                      help="filename with peptide sequences [%default]."  )
     
-    parser.add_option("-c", "--cds", dest="filename_cds", type="string",
-                      help="filename with cds."  )
+    parser.add_option("-c", "--cds", "--cdnas", dest="filename_cdna", type="string",
+                      help="filename with cdna sequences [%default]."  )
+
+    parser.add_option("-m", "--map", dest="filename_map", type="string",
+                      help="filename with map of peptide identifiers to cdna identifiers [%default]."  )
+
+    parser.add_option( "--output-identifier", dest="output_identifier", type="choice",
+                       choices=("cdna", "peptide"),
+                       help="output identifier to use [%default]."  )
+
 
     parser.add_option("-f", "--output-format=", dest="output_format", type="choice",
                       choices=("alignment", "fasta"),
@@ -407,55 +445,59 @@ if __name__ == "__main__":
     
     parser.set_defaults(
         peptides=None,
-        filename_cds = None,
+        filename_cdna = None,
         output_format="alignment",
+        filename_map = None,
         stop_codons = ("TAG", "TAA", "TGA"),
+        output_identifier = "peptide",
         )
 
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
-    if not options.filename_cds:
-        raise "please supply filename with cds sequences."
+    if not options.filename_cdna:
+        raise ValueError("please supply filename with cds sequences.")
 
     if options.filename_peptides:
         infile = open(options.filename_peptides, "r") 
     else:
         infile = sys.stdin
 
-    if options.loglevel >= 1:
-        print "# reading cds sequences...",
-        sys.stdout.flush()
-        
-    cds_sequences = Genomics.ReadPeptideSequences( open(options.filename_cds, "r") )    
+    if options.filename_map:
+        E.info( "reading map" )
+        map_peptide2cds = IOTools.readMap( IOTools.openFile( options.filename_map, "r" ) )
+        E.info( "read map for %i identifiers" % len(map_peptide2cds) )
+    else:
+        map_peptide2cds = {}
 
-    if options.loglevel >= 1:
-        print "done, read %i" % len(cds_sequences)
-        sys.stdout.flush()
+    E.info( "reading cds sequences" )
+        
+    cds_sequences = Genomics.ReadPeptideSequences( IOTools.openFile(options.filename_cdna, "r") )    
+
+    E.info( "read %i cds sequences" % len(cds_sequences))
 
     ninput, noutput = 0, 0
     nskipped, nnosequence = 0, 0
 
+    # iterate over peptide sequences
     iterator = FastaIterator.FastaIterator( infile )
 
-    while 1:
-        cur_record = iterator.next()
+    use_cds_id = options.output_identifier == "cds"
 
-        if cur_record is None: break
+    for cur_record in iterator:
 
         ninput += 1
         
-        k = re.split("\s+", cur_record.title)[0]
+        peptide_identifier = re.split("\s+", cur_record.title)[0]
+        cds_identifier = map_peptide2cds.get( peptide_identifier, peptide_identifier )
 
-        if k not in cds_sequences:
+        if cds_identifier not in cds_sequences:
             nnosequence += 1
             continue
 
         p = cur_record.sequence
-        c = cds_sequences[k]
+        c = cds_sequences[cds_identifier]
         
-        if options.loglevel >= 2:
-            print "# processing %s: laa=%i (without gaps=%i), lna=%i" % (k, len(p), len(re.sub("-", "", p)), len(c))
-            sys.stdout.flush()
+        E.debug("processing %s: laa=%i (without gaps=%i), lna=%i" % (peptide_identifier, len(p), len(re.sub("-", "", p)), len(c)))
 
         try:
             map_p2c = getMapPeptide2Cds( p, c, options )
@@ -463,9 +505,14 @@ if __name__ == "__main__":
             nskipped += 1
             continue
             
+        if use_cds_id:
+            identifier = cds_identifier
+        else:
+            identifier = peptide_identifier
+
         if options.output_format =="alignment":
-            options.stdout.write("\t".join( map(str, (k, alignlib.AlignmentFormatEmissions( map_p2c ),
-                                                      len(cur_record.sequence), len(cds_sequences[k])) ) )+"\n")
+            options.stdout.write("\t".join( map(str, (identifier, alignlib.AlignmentFormatEmissions( map_p2c ),
+                                                      len(cur_record.sequence), len(cds_sequences[identifier])) ) )+"\n")
             
         elif options.output_format == "fasta":
 
@@ -477,17 +524,16 @@ if __name__ == "__main__":
 
             s = alignatum.getString()
             if len(s) != len(p) * 3:
-                raise ValueError, "incomplete aligned string for %s: %s, cds=%s" % (cur_record.title, s, c )
+                raise ValueError ("incomplete aligned string for %s: %s, cds=%s" % (cur_record.title, s, c ))
             
-            options.stdout.write( ">%s\n%s\n" % (cur_record.title, s ))
+            options.stdout.write( ">%s\n%s\n" % (identifier, s ))
 
         noutput += 1
         sys.stdout.flush()
 
-    if options.loglevel >= 1:
-        options.stdlog.write( "# ninput=%i, noutput=%i, nnosequence=%i, nskipped=%i\n" % (ninput, noutput, nnosequence, nskipped) )
+    E.info( "ninput=%i, noutput=%i, nnosequence=%i, nskipped=%i" % (ninput, noutput, nnosequence, nskipped) )
         
-    Experiment.Stop()
+    E.Stop()
             
 
 

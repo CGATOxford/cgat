@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: extractseq.py 2861 2010-02-23 17:36:32Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,21 +20,46 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+extractseq.py - extract sequences/sequence regions from a fasta file
+====================================================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+.. todo::
+   
+   describe purpose of the script.
+
+Usage
+-----
+
+Example::
+
+   python extractseq.py --help
+
+Type::
+
+   python extractseq.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 import os, sys, string, re, getopt, tempfile, time, optparse, math
 
 import Experiment as E
 import GFF, IndexedFasta
-
-USAGE="""python %s [OPTIONS] 
-
-Version: $Id: extractseq.py 2861 2010-02-23 17:36:32Z andreas $
-
-extract sequences/sequence regions from a fasta file.
-
-Options:
--h, --help                      print this message.
--v, --verbose=                  loglevel.
-""" % sys.argv[0]
 
 if __name__ == "__main__":
 

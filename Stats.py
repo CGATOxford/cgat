@@ -1,8 +1,44 @@
+################################################################################
+#
+#   MRC FGU Computational Genomics Group
+#
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
+#
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU General Public License
+#   as published by the Free Software Foundation; either version 2
+#   of the License, or (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#################################################################################
+'''
+Stats.py - 
+======================================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Code
+----
+
+'''
 import types
 import math
 import numpy
 import scipy
 import scipy.stats
+import scipy.interpolate
 import collections
 from rpy import r as R
 import rpy
@@ -656,7 +692,7 @@ def doFDR(pvalues,
         R.assign( "pi0", pi0 )
 
     if pi0 <= 0:
-        raise ValueError( "The estimated pi0 <= 0. Check that you have valid p-values or use another vlambda method." )
+        raise ValueError( "The estimated pi0 (%f) <= 0. Check that you have valid p-values or use another vlambda method." % pi0)
 
     if fdr_level != None and (fdr_level <= 0 or fdr_level > 1):
         raise ValueError( "'fdr_level' must be within (0, 1].")
@@ -702,6 +738,8 @@ for(i in (m-1):1)
 qvalues
 """)
 
+    xvalues = R('''qvalues''')
+    
     result = FDRResult()
     result.mQValues = qvalues
 
@@ -713,6 +751,131 @@ qvalues
     result.mPValues = pvalues
     result.mPi0 = pi0
     result.mLambda = vlambda
+
+    result.xvalues = xvalues
+
+    return result
+
+def doFDRPython(pvalues, 
+                vlambda=numpy.arange(0,0.95,0.05), 
+                pi0_method="smoother", 
+                fdr_level=None, 
+                robust=False,
+                smooth_df = 3,
+                smooth_log_pi0 = False,
+                pi0 = None):
+    """modeled after code taken from http://genomics.princeton.edu/storeylab/qvalue/linux.html.
+
+    I did not like the error handling so I translated most to python.
+    
+    Compute FDR after method by Storey et al. (2002).
+    """
+
+    if min(pvalues) < 0 or max(pvalues) > 1:
+        raise ValueError( "p-values out of range" )
+
+    m = len(pvalues)
+    pvalues = numpy.array( pvalues, dtype = numpy.float )
+
+    if pi0 == None:
+        if type(vlambda) == float:
+            vlambda = (vlambda,)
+
+        if len(vlambda) > 1 and len(vlambda) < 4:
+            raise ValueError(" if length of vlambda greater than 1, you need at least 4 values." )
+
+        if len(vlambda) > 1 and (min(vlambda) < 0 or max(vlambda) >= 1):
+            raise ValueError( "vlambda must be within [0, 1).")
+
+        # estimate pi0
+        if len(vlambda)==1: 
+            vlambda = vlambda[0]
+            if  vlambda < 0 or vlambda >=1 :
+                raise ValueError( "vlambda must be within [0, 1).")
+
+            pi0 = numpy.mean( [ x >= vlambda for x in pvalues ] ) / (1.0 - vlambda)
+            pi0 = min(pi0, 1.0)
+        else:
+
+            pi0 = numpy.zeros( len(vlambda), numpy.float )
+
+            for i in range( len(vlambda) ):
+                pi0[i] = numpy.mean( [x >= vlambda[i] for x in pvalues ]) / (1.0 -vlambda[i] )
+
+            if pi0_method=="smoother":
+
+                if smooth_log_pi0: pi0 = math.log(pi0)
+                tck = scipy.interpolate.splrep( vlambda, pi0, k = smooth_df )
+                pi0 = scipy.interpolate.splev( max(vlambda), tck )
+                if smooth_log_pi0: pi0 = math.exp(pi0)
+
+            elif pi0_method=="bootstrap":
+
+                minpi0 = min(pi0)
+
+                mse = numpy.zeros( len(vlambda), numpy.float )
+                pi0_boot = numpy.zeros( len(vlambda), numpy.float )
+
+                for i in xrange(100):
+                    # sample pvalues
+                    idx_boot = numpy.random.random_integers( 0, m-1, m) 
+                    pvalues_boot = pvalues[idx_boot]
+
+                    for x in xrange( len(vlambda )):
+                        # compute number of pvalues larger than lambda[x]
+                        pi0_boot[x] = numpy.mean( pvalues_boot > vlambda[x]) / (1.0 - vlambda[x]) 
+                    mse += (pi0_boot - minpi0) ** 2
+                pi0 = min( pi0[mse==min(mse)] )
+            else:
+                raise ValueError( "'pi0_method' must be one of 'smoother' or 'bootstrap'.")
+
+            pi0 = min(pi0,1.0)
+    
+    if pi0 <= 0:
+        raise ValueError( "The estimated pi0 <= 0. Check that you have valid p-values or use another vlambda method." )
+
+    if fdr_level != None and (fdr_level <= 0 or fdr_level > 1):
+        raise ValueError( "'fdr_level' must be within (0, 1].")
+
+    # compute qvalues
+
+    idx = numpy.argsort( pvalues )
+    # monotonically decreasing bins, so that bins[i-1] > x >=  bins[i]
+    bins = numpy.unique( pvalues )[::-1]
+
+    # v[i] = number of observations less than or equal to pvalue[i]
+    # could this be done more elegantly?
+    val2bin = len(bins) - numpy.digitize( pvalues, bins )
+    v = numpy.zeros( m, dtype = numpy.int )
+    lastbin = None
+    for x in xrange( m-1, -1, -1 ):
+        bin = val2bin[idx[x]]
+        if bin != lastbin: c = x
+        v[idx[x]] = c+1
+        lastbin = bin
+
+    qvalues = pvalues * pi0 * m / v
+    if robust:
+        qvalues /= ( 1.0 - ( 1.0 - pvalues)**m )
+
+    # bound qvalues by 1 and make them monotonic
+    qvalues[idx[m-1]] = min(qvalues[idx[m-1]],1.0)
+    for i in xrange(m-1):
+        qvalues[idx[i]] = min(min(qvalues[idx[i]],qvalues[idx[i+1]]),1.0)
+
+    result = FDRResult()
+    result.mQValues = qvalues
+
+    if fdr_level != None:
+        result.mPassed = [ x <= fdr_level for x in result.mQValues ]
+    else:
+        result.mPassed = [ False for x in result.mQValues ]
+        
+    result.mPValues = pvalues
+    result.mPi0 = pi0
+    result.mLambda = vlambda
+    
+    result.xvalues = qvalues
     
     return result
 
@@ -980,3 +1143,5 @@ def doMannWhitneyUTest( xvals, yvals ):
         r_result )
 
     return result
+
+

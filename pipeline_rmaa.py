@@ -35,11 +35,39 @@ Rmaa mapping pipeline.
 Usage
 -----
 
+In the working directory, create a directory :file:`reads`.
+Within this directory, create a subdirectory for each sample
+that was sequenced. For example, if samples from liver and
+brain have been sequenced, create the two directories::
+
+   mkdir reads/brain
+   mkdir reads/liver
+
+Within each directory, copy or link the compressed solexa
+export files::
+
+   ln -s <path>solexa_brain1.export.gz reads/brain/lane1.export.gz
+   ln -s <path>solexa_brain1.export.gz reads/brain/lane2.export.gz
+   ln -s <path>solexa_liver1.export.gz reads/liver/lane1.export.gz
+   ln -s <path>solexa_liver1.export.gz reads/liver/lane2.export.gz
+
+The pipeline expects paired end results.
+
+Next, create a configuration file :file:`pipeline.ini` and set the correct
+paths to the annotation files. The directory 
+:file:`/net/cpp-data/backup/andreas/projects/rmaa/run` contains an example.
+
+The pipeline can be started with 
+   
+   python <cgat_dir>pipeline_rmaa.py make full
+   
 Type::
 
-   python <script_name>.py --help
+   python pipeline_rmaa.py --help
 
 for command line help.
+
+
 
 Notes
 -----
@@ -55,6 +83,11 @@ Additional features added:
    * There are separate execution paths for ``nonmulti`` and ``multi``. These
    could probably be merged by appropriate parameterizing.
    * Use scratch disk for fastq files
+   * Refactor helper scripts: 
+       * add proper documentation and interface
+       * merge with main cgat source tree
+   * Substitute ``aire`` with different clustering program - 
+       it is fails unless data is absolutely right.
 
 Code
 ----
@@ -65,55 +98,24 @@ Code
 # load modules
 from ruffus import *
 
-import sys, os, re, shutil, itertools, math, glob, logging
-from ConfigParser import *
+import sys, os, re, shutil, itertools, math, glob, logging, time
 
 # for plotting
-import matplotlib
-import pylab
+try:
+    import matplotlib
+    import pylab
+    PLOT = True
+except RuntimeError:
+    PLOT = False
+
 import numpy
 
-# from basic_headers import run_cmd, run_cmd_output, run_cmd_qsub
-# from commands import getoutput
-
+# load options from the config file
 import Pipeline as P
+PARAMS = P.getParameters()
 import Experiment as E
 
-PARAMS = P.getParameters()
-
-# load options from the config file
-configdict=ConfigParser()
-configdict.read('./rmaa.conf')
-
-#TOPHAT_PATH=configdict.defaults()['tophat_path']
-REMOVE_BASES_FROM_RIGHT=int(configdict.get('GENERAL','remove_bases_from_right')) # how many bases to cut off from the export file (for example base 51 used for phasing in a 50 bp PE read)
-LIBRARY_CODES=dict(configdict.items('LIBRARIES'))
-SEQUENCE_START_DATE=str(configdict.get('GENERAL','sequence_start_date'))
-NEW_QUALS=configdict.getboolean('GENERAL','new_quals')
-MAX_INTRON=configdict.get('GENERAL','max_intron')
-JUNCTIONS_FILE=configdict.get('GENERAL','junctions_file')
-GENOME=configdict.get('GENERAL','genome')
-GENES_FILE=configdict.get('GENERAL','genes_file')
-RMAAPATH=os.getenv("RMAAPATH")
-DATABASES=dict(configdict.items('DATABASES'))
-FOLD_DIFFS=str(configdict.get('GENERAL','fold_diffs')).split(',')
-MIN_READS_TO_CLASSIFY=configdict.get('GENERAL','min_reads_to_classify')
-K_NEIGHB=str(configdict.get('GENERAL','k_neighb')).split(',')
-REF_GTF=configdict.get('GENERAL','ref_gtf')
-SEQUENCE_DIR=configdict.get('GENERAL','sequence_dir')
-CHROM_SIZES=configdict.get('GENERAL','chrom_sizes')
-MIN_RPKM_TREE=str(configdict.get('GENERAL','min_rpkm_tree')).split(',')
-MIN_GENE_LEN=configdict.get('GENERAL','min_gene_len')
-MIN_RPKM=str(configdict.get('GENERAL','min_rpkm')).split(',')
-MIN_DIFF=str(configdict.get('GENERAL','min_diff')).split(',')
-MIN_RPKM_VAR=str(configdict.get('GENERAL','min_rpkm_var'))
-MIN_RPKM_TERM_VAR=str(configdict.get('GENERAL','min_rpkm_term_var'))
-MIN_GENES_TERM_VAR=str(configdict.get('GENERAL','min_genes_term_var'))
-CUFF_MIN_ISOFORM=str(configdict.get('GENERAL','cuff_min_isoform'))
-CUFF_PRE_MRNA=str(configdict.get('GENERAL','cuff_pre_mrna'))
-CLUSTER_LVL=str(configdict.get('GENERAL','cluster_lvl')).split(',')
-FDR=configdict.get('GENERAL','fdr')
-MIN_GENES_TO_CLUSTER=configdict.get('GENERAL','min_genes_to_cluster')   # min # genes required to cluster the results
+USECLUSTER=True
 
 # there can be several samples per tissue
 parameters = ( ["reads/tissue1/sample1.export.gz", 
@@ -123,16 +125,12 @@ parameters = ( ["reads/tissue1/sample1.export.gz",
                 ("reads/tissue2/sample1.1.fq.gz", 
                  "reads/tissue2/sample1.2.fq.gz") ],
                )
-parameters2 = ( ( ["reads/tissue1/sample1.export.gz",], "reads/tissue1/insert_sizes"),
-                ( ["reads/tissue2/sample1.export.gz",], "reads/tissue2/insert_sizes"), )
-
-USECLUSTER=False
-
-@files(parameters)
+@files( [ ( x, ("%s.1.fq.gz" % x[:-len(".export.gz")], 
+                "%s.2.fg.gz" % x[:-len(".export.gz")] ) ) \
+              for x in glob.glob("reads/*/*.export.gz" ) ] )
 def exportToFastQ( infile, outfiles):
     """
     Creates fastq files of paired-ended reads from export files.
- 
     """
 
     to_cluster = USECLUSTER
@@ -149,8 +147,10 @@ def exportToFastQ( infile, outfiles):
    
     P.run()
 
-@files(parameters2)
-def getInsertSize( infiles, outfile):
+
+@files( [ ( "%s/*.export.gz" % x, "%s/insert_sizes" % x )
+          for x in glob.glob("reads/*" ) if os.path.isdir(x) ] )
+def estimateInsertSizes( infiles, outfile):
     """
     Plots the internal insert size distribution and calculates the average and standard deviation based on the FWHM
     """
@@ -163,8 +163,11 @@ def getInsertSize( infiles, outfile):
     zcat %(infiles)s | python %(rmaadir)s/return_insert_sizes.py > %(outfile)s
     '''
     P.run()
-
+    # required to resolve strange timing issues
+    # when trying to open the file in the next command
+    P.touch( outfile )
     ins_sizes_array=numpy.array( [map(int, x[:-1].split("\t")) for x in open(outfile, "r")] )
+
     max_freq=ins_sizes_array[:,1].max()
     half_max=float(max_freq)/2.0
     E.info( "maximum frequency=%i, halfwidth=%i" % (max_freq, half_max))
@@ -182,10 +185,7 @@ def getInsertSize( infiles, outfile):
 
     FWHM=FWHMmax-FWHMmin
     std_dev=int(float(FWHM)/2.3548)
-    ins_size=int(FWHMmin+float(FWHM)/2.0)-REMOVE_BASES_FROM_RIGHT
-
-    my_str= "".join(["For ", ",".join(infiles), " FWHM is ", str(FWHM), " ranging from ", str(FWHMmin), " to ", str(FWHMmax), ". std dev ", str(std_dev), " and ins size ", str(ins_size)])
-    loglibraries.write(my_str)
+    ins_size=int(FWHMmin+float(FWHM)/2.0)-PARAMS["remove_bases_from_right"]
 
     E.info( "".join(["For ", infiles, " FWHM is ", str(FWHM), " ranging from ", str(FWHMmin), " to ", str(FWHMmax), ". std dev ", 
                      str(std_dev), " and ins size ", str(ins_size)] ) )
@@ -197,11 +197,12 @@ def getInsertSize( infiles, outfile):
             x.append(bin)
             y.append(value)
 
-    pylab.title("Insert size")
-    pylab.xlabel('inner distance between sequenced ends')
-    pylab.ylabel('frequency based on unique eland mappings')
-    pylab.scatter(x,y)
-    pylab.savefig(outfile + ".png")
+    if PLOT:
+        pylab.title("Insert size")
+        pylab.xlabel('inner distance between sequenced ends')
+        pylab.ylabel('frequency based on unique eland mappings')
+        pylab.scatter(x,y)
+        pylab.savefig(outfile + ".png")
 
     fwhm_file=open(outfile + ".txt", 'w')
     my_str='%s\t%s\n' % (ins_size, std_dev)
@@ -215,7 +216,7 @@ def getInsertSizes( dirname ):
        
     return ins_size, std_dev
 
-@follows( exportToFastQ, getInsertSize, mkdir("logs/juncs"))
+@follows( exportToFastQ, estimateInsertSizes, mkdir("logs/juncs"))
 @collate( exportToFastQ, regex(r"reads\/(.+)\/(.+)\..\.fq.gz$"), r'reads/\1/\2.junctions' )
 def findJunctions(infiles, outfile):
     '''map reads using all known junctions in order to identify new possible junctions - 
@@ -248,10 +249,14 @@ def findJunctions(infiles, outfile):
            --mate-inner-dist %(ins_size)i 
            --mate-std-dev %(std_dev)i 
            --max-intron-length %(max_intron)i 
+
+@transform( getInsertSize, suffix("_sizes"), "_sizes.txt" )
+def plotInsertSize( infile, outfile ):
            --raw-juncs %(junctions_file)s 
            --closure-search 
            --microexon-search 
-           -p %(nslots)i 
+
+           -p %(nsslots)i 
            %(bowtiedir)s/%(genome)s
            %(tmpfilename)s.1.fq
            %(tmpfilename)s.2.fq
@@ -266,14 +271,12 @@ def findJunctions(infiles, outfile):
 def combineJunctions(infiles, outfile):
     '''collate all junctions found with tophat together.'''
     
-    infiles = " ".join(infiles)
-    statement = '''
-    cat %(infiles)s
-    | grep -v description 
-    | python %(rmaadir)s/combine_junctions.py 
-    | sort 
+    estimateInsert" ".sjoin(infiles)
+    '''summarize the insert size
+    '''statement = '''
+    | p
     | uniq 
-    > %(outfile)s'''
+    infilefile)s'''
     P.run()
 
 @follows( combineJunctions)
@@ -307,6 +310,8 @@ def mapReads(infiles, outfile):
 
     junctions_file = "reads/all.junctions"
 
+    # WARNING: contents of tmpfile can get large (20Gb or more)
+
     statement = '''
     gunzip < %(fastq1)s > %(tmpfilename)s.1.fq;
     gunzip < %(fastq2)s > %(tmpfilename)s.2.fq;
@@ -322,11 +327,12 @@ def mapReads(infiles, outfile):
     >& %(outfile)s.log;
     samtools view -bT %(bowtiedir)s/%(genome)s.fa %(tmpfilename)s/accepted_hits.sam 2>%(outfile)s.log1 > %(outfile)s; 
     rm -f %(tmpfilename)s/accepted_hits.sam >& %(outfile)s.log2;
-    mv %(tmpfilename)s %(outfile)s.final >& %(outfile)s.log3
+    rm -rf %(tmpfilename)s >& %(outfile)s.log3
     ''' 
 
     P.run()
 
+@follows( mkdir( "mappings" ) )
 @collate( mapReads,
           regex(r"reads/(.+)/(.+).bam$"),
           r'mappings/\1.multi.bam' )
@@ -399,7 +405,7 @@ def buildGeneModels(infile, outfile):
 
     P.run()
 
-@follows( mkdir("transcripts"))
+@follows( mkdir("transcripts") )
 @collate( buildGeneModels,
           regex(r"mappings/(.+).gtf$"), 
           'transcripts/summary.txt' )
@@ -525,15 +531,27 @@ def calculateRPKMs(infiles, outfile):
     P.run()
 
 def generate_calculate_term_params():
-    for dbname, location in DATABASES.iteritems():
+    for dbname, location in P.asDict("databases").iteritems():
         yield [ "mappings/unique.rpkm.all", "mappings/unique.term_patterns.%s" % dbname, location ]
 
 @follows(calculateRPKMs)
 @files( generate_calculate_term_params )
-def calculate_term_patterns(input, output, params):
-    my_cmd = 'qrsh -now n -cwd -V -l mem_free=5G $RMAAPATH/sort_patterns_by_rel_std_dev.py %s %s %s %s > %s' % ( input, params, MIN_RPKM_TERM_VAR, MIN_GENES_TERM_VAR, output ); run_cmd(my_cmd)
+def calculateTermPatterns(infile, outfile, params):
+    '''calculate variation between tissues according to (GO) terms.
+    
+    Might be buggy
+    '''
 
-# 
+    to_cluster = USECLUSTER
+    job_options = "-l mem_free=5G"
+    
+    statement = '''
+    python %(rmaadir)s/sort_patterns_by_rel_std_dev.py 
+    %(infile)s %(params)s %(min_rpkm_term_var)i %(min_genes_term_var)i 
+    > %(outfile)s
+    '''
+    P.run()
+
 @follows( mkdir("graphs"))
 @transform(adjustCountsMulti, suffix(".counts.all"), ".rpkm.all")
 def calculateRPKMsMulti(infiles, outfile):
@@ -631,7 +649,7 @@ def buildCDTFiles( infile, outfiles, min_rpkm, min_diff ):
        cdt_file.write( "EWEIGT\t\t\t%s\n" % ( "\t".join( ["1"] * len(labels))))
 
        counts = E.Counter()
-
+       counts.output = 0
        for line in open(infile,"r"):
 
            if line.startswith("Name"): continue
@@ -711,26 +729,35 @@ exit
     '''
     P.run()
 
-    shutil.move( os.path.join( tmpdir, "all.fct"), centroid_filename )
-    shutil.move( os.path.join( tmpdir, "all.mb"), membership_filename )
+    try:
+        shutil.move( os.path.join( tmpdir, "all.fct"), centroid_filename )
+        shutil.move( os.path.join( tmpdir, "all.mb"), membership_filename )
+    except IOError,msg:
+        E.warn("no results for %s,%s: %s" % (centroid_filename,
+                                             membership_filename,
+                                             msg))
+        P.touch( centroid_filename )
+        P.touch( membership_filename )
 
     shutil.rmtree( tmpdir )
+
+def getBadClusters():
+    '''return a list of runs that should not be submitted to clustering.'''
+    try:
+        bad_clusters=[ x[:-1] for x in open('fuzzy_k/bad_clusters','r').readlines()]
+    except IOError:
+        bad_clusters = []
+    return bad_clusters
 
 # extract & calculate enrichments in fuzzyK clusters over the background sets; 
 # extract for several different cutoffs of "membership" 
 # note some clusters may be degenerate (NEED ANOTHER SCRIPT TO PREPROCESS!)...
-if not os.path.isfile('fuzzy_k/bad_clusters'):
-    P.touch( 'fuzzy_k/bad_clusters')
-
 def generate_fuzzy_clusters_params():
-    bad_clusters=[]
-    bad_clustersf = open('fuzzy_k/bad_clusters','r')
-    for line in bad_clustersf:
-        bad_clusters.append(line.rstrip('\n'))
-    bad_clustersf.close()
-    for min_rpkm in MIN_RPKM:
-        for min_diff in MIN_DIFF:
-            for cluster_lvl in CLUSTER_LVL:
+
+    bad_clusters=getBadClusters()
+    for min_rpkm in PARAMS["min_rpkm"]:
+        for min_diff in PARAMS["min_diff"]:
+            for cluster_lvl in PARAMS["cluster_lvl"]:
                 if not "fuzzy_k/all-%s-%s.pcl" % (min_rpkm, min_diff) in bad_clusters:
                     yield [ "fuzzy_k/membership-%s-%s" % (min_rpkm, min_diff), "fuzzy_k/cluster-%s-%s-%s.0" % (min_rpkm, min_diff, cluster_lvl), cluster_lvl ]
 
@@ -751,11 +778,10 @@ def extractClusters(infile, outfile, param0 ):
 def generate_fuzzy_enrich_params():
     '''find enrichments.'''
 
-    bad_clusters=[ x[:-1] for x in open('fuzzy_k/bad_clusters','r').readlines()]
-
+    bad_clusters=getBadClusters()
     for min_rpkm, min_diff, cluster_lvl in \
            itertools.product( PARAMS["min_rpkm"], PARAMS["min_diff"], PARAMS["cluster_lvl" ] ):
-       for dbname, location in DATABASES.iteritems():
+       for dbname, location in P.asDict("databases").iteritems():
           if "fuzzy_k/all-%s-%s.pcl" % (min_rpkm, min_diff) in bad_clusters: continue
           yield [ ["fuzzy_k/background-%s-%s" % (min_rpkm, min_diff), 
                    glob.glob("fuzzy_k/cluster-%s-%s-%s.*" % (min_rpkm, min_diff, cluster_lvl)), location], 
@@ -788,7 +814,7 @@ def computeEnrichments(infiles, outfiles):
 
 def generate_enrichments_high_expn_params():
     for min_rpkm in PARAMS["min_rpkm_tree"]:
-        for dbname, location in DATABASES.iteritems():
+        for dbname, location in P.asDict("databases").iteritems():
             yield [ ['mappings/unique.rpkm.all', location], 
                     "high_expn/high_expn.%s.%s" % (dbname, min_rpkm), min_rpkm ]
 
@@ -823,7 +849,7 @@ def computeEnrichmentsHighlyExpressedGenes( infiles, outfile, min_rpkm):
 
 # Calculate results of all enrichments.  For each database, find the best combination of parameters and report this file to a final analysis directory along with the relevant reference files.
 def generate_params_report():
-    for dbname, location in DATABASES.iteritems():
+    for dbname, location in P.asDict("databases").iteritems():
         yield [glob.glob("fuzzy_k/%s-summary-cluster-*-*-*.*" % dbname), 
                "best_conditions/clustering_summary_%s.txt" % dbname]
 
@@ -868,7 +894,7 @@ def reportBestParams(infiles, outfile):
         shutil.copyfile( x, "best_conditions/%s" % os.path.basename(x) )
        
 def generate_params_totalRNAfunctions():
-    for dbname, location in DATABASES.iteritems():
+    for dbname, location in P.asDict("databases").iteritems():
         yield [['mappings/unique.rpkm.all', location], 
                ["overall_annotations/totalRNA.%s" % dbname, 
                 "overall_annotations/totalRNA_diffs.%s" % dbname]]

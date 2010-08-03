@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: quality2masks.py 2781 2009-09-10 11:33:14Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2006 Tyler ???? and Andreas Heger 
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,22 +20,43 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+quality2masks.py - mask low-quality bases in multiple alignment
+===============================================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+.. todo::
+   
+   describe purpose of the script.
+
+Usage
+-----
+
+Example::
+
+   python quality2masks.py --help
+
+Type::
+
+   python quality2masks.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 import os, sys, string, re, optparse, math, time, random, types
-
-USAGE="""python %s [OPTIONS]
-
-extract sequences from a set of multiple alignments and distribute into new directories.
-
-Files can be split according to an input file given to the option --filename-components.
-This file is a tab separated table containing the following fields:
-
-1       sequence        a sequence identifier
-2       input_id        The id under which the alignment is found.
-3       component_id    The component_id which under which the directory shall be stored.
-                        This is optional, if no third column is specified, the input_id
-                        is used.
-""" % sys.argv[0]
-
 import Experiment as E
 import Blat
 import Iterators
@@ -52,7 +74,7 @@ def fillAlignment( map_alignment, alignment ):
 
 def main():
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: quality2masks.py 2781 2009-09-10 11:33:14Z andreas $", usage = USAGE)
+    parser = optparse.OptionParser( version = "%prog version: $Id: quality2masks.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("--quality-threshold", dest="quality_threshold", type="int",
                       help="quality threshold for masking positions [default=%default]" )
@@ -61,7 +83,7 @@ def main():
                       help="shuffle quality scores before masking [default=%default]" )
 
     parser.add_option("--filename-map", dest="filename_map", type="string",
-                      help="filename in blat psl format mapping entries in multiple alignment to the genome [default=%default]" )
+                      help="filename in psl format mapping entries in multiple alignment to the genome [default=%default]" )
 
     parser.add_option("-q", "--quality-file", dest="quality_file", type="string",
                       help="filename with genomic base quality information [default=%default]."  )

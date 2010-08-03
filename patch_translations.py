@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: patch_translations.py 1841 2008-05-08 12:07:13Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,7 +20,42 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+patch_translations.py - 
+======================================================
 
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+.. todo::
+   
+   describe purpose of the script.
+
+Usage
+-----
+
+Example::
+
+   python patch_translations.py --help
+
+Type::
+
+   python patch_translations.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 USAGE="""recalculated translations from a predictions file.
 """
 
@@ -34,7 +70,7 @@ import Genomics
 if __name__ == '__main__':
 
     parser = optparse.OptionParser( version = "%prog version: $Id: patch_translations.py 1841 2008-05-08 12:07:13Z andreas $",
-                                    usage = USAGE )
+                                    usage = globals()["__doc__"] )
 
     parser.add_option( "-g", "--genome-file", dest="genome_file", type="string",
                        help="filename with genome."  )

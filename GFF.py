@@ -1,11 +1,16 @@
-"""Classes and methods for dealing with gff formatted files.
+"""
+GFF.py - Classes and methods for dealing with gff formatted files
+=================================================================
+
+.. note::
+   This module is deprecated - use fastgtf instead.
 
 The default GFF version is now 2. This module needs updating to
 
    * deal with multiple values
    * correct quoting of free text values
    
-Currently GFF and GTF is handled separately. Should be merged.
+Currently GFF and GTF is handled separately. Should be merged
 
 """
 

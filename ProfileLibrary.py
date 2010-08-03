@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: ProfileLibrary.py 2781 2009-09-10 11:33:14Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2007 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,12 +20,19 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+ProfileLibrary.py - 
+======================================================
 
-#--------------------------------------------------------
-#--------------------------------------------------------
-#--------------------------------------------------------
-# import of system libraries
-#--------------------------------------------------------
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Code
+----
+
+'''
 import os, sys, string, re, tempfile, subprocess, optparse, time, math
 
 #--------------------------------------------------------
@@ -216,7 +224,7 @@ if __name__ == "__main__":
 
     #--------------------------------------------------------
     # command line parsing options
-    parser = optparse.OptionParser( version = "%prog version: $Id: ProfileLibrary.py 2781 2009-09-10 11:33:14Z andreas $", usage = USAGE)
+    parser = optparse.OptionParser( version = "%prog version: $Id: ProfileLibrary.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-p", "--prefix", dest="prefix", type="string",
                       help="prefix to use for the profile library." )

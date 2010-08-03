@@ -19,9 +19,18 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
-"""some helper functions for working with genomic data files.
+"""
+Genomics.py - Tools for working with genomic data
+=================================================
 
-Version: $Id: Genomics.py 2882 2010-04-07 08:45:52Z andreas $
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Code
+----
+
 """
 
 import numpy
@@ -29,7 +38,6 @@ import os, sys, string, re, time, array, hashlib, base64, tempfile, math
 import alignlib
 
 import AString
-import Bio.SeqIO
 import Bio.Alphabet
 
 ## For caching genome files: remember last one read
@@ -185,7 +193,7 @@ def oldParseFasta2Hash( infile, filter = None):
         if line[0] == ">":
             if key:
                 if not filter or key in filter:
-                    parsed[key] = AString( re.sub( "\s", "", string.join( fragments, "")))
+                    parsed[key] = AString.AString( re.sub( "\s", "", string.join( fragments, "")))
                 
             key = re.match(">(\S+)", line[:-1]).groups()[0]
             x = string.find(key,":")
@@ -196,7 +204,7 @@ def oldParseFasta2Hash( infile, filter = None):
         fragments.append( line[:-1] )
 
     if not filter or key in filter:
-        parsed[key] = AString( re.sub( "\s", "", string.join( fragments, "")))
+        parsed[key] = AString.AString( re.sub( "\s", "", string.join( fragments, "")))
 
     return parsed
 
@@ -230,12 +238,12 @@ def ReadGenomicSequences( infile,
 
     if mask:
         for k in forward_sequences.keys():
-            forward_sequences[k] = AString( string.translate( forward_sequences[k][:], string.maketrans("acgtn", "NNNNN")))
+            forward_sequences[k] = AString.AString( string.translate( forward_sequences[k][:], string.maketrans("acgtn", "NNNNN")))
 
     if do_reverse:
         reverse_sequences = {}
         for k, s in forward_sequences.items():
-            reverse_sequences[k] = AString( complement( s[:] ) )
+            reverse_sequences[k] = AString.AString( complement( s[:] ) )
 
     if not as_array:
         for k in forward_sequences.keys():

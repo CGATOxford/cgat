@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: SequenceProperties.py 2805 2009-10-22 13:41:39Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,6 +20,19 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+SequenceProperties.py - 
+======================================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Code
+----
+
+'''
 import os, sys, string, re, tempfile, subprocess, optparse, math, hashlib, base64
 
 """classes for extracting and reporting sequence properties on nucleotide sequences.
@@ -31,7 +45,7 @@ import Bio.Alphabet.IUPAC
 
 class SequenceProperties(object):
 
-    mPseudoCounts = 1
+    mPseudoCounts = 0
     
     def __init__(self ):
 
@@ -70,7 +84,7 @@ class SequenceProperties(object):
 ###########################################################################
 class SequencePropertiesLength(SequenceProperties):
 
-    mPseudoCounts = 1
+    mPseudoCounts = 0
     
     def __init__( self ):
         
@@ -138,13 +152,73 @@ class SequencePropertiesHid(SequenceProperties):
         self.mHid = hid
 
     def getFields(self):       
-        
         fields = SequenceProperties.getFields(self)
         return fields + [ self.mHid, ]
 
     def getHeaders( self ):
         fields = SequenceProperties.getHeaders(self)
         return fields + ["hid",]
+
+###########################################################################
+class SequencePropertiesCounts(SequenceProperties):
+    
+    def __init__(self, alphabet ):
+        
+        SequenceProperties.__init__(self)
+        self.mAlphabet = alphabet
+        self.mCounts = {}
+        self.mCountsOthers = 0
+
+        for x in self.mAlphabet: self.mCounts[x] = 0
+        
+    def addProperties( self, other ):
+        SequenceProperties.addProperties( self, other )
+        for na, count in other.mCounts.items():
+            self.mCounts[na] += count
+        self.mCountsOthers += self.mCountsOthers
+
+    def loadSequence( self, sequence ):
+        """load sequence properties from a sequence."""
+
+        SequenceProperties.loadSequence( self, sequence )        
+
+        ## counts of amino acids
+        self.mCounts = {}
+        for x in self.mAlphabet: self.mCounts[x] = 0
+        self.mCountsOthers = 0
+
+        for na in sequence.upper():
+            try:    
+                self.mCounts[na] += 1
+            except KeyError:
+                self.mCountsOthers +=1 
+        
+    def getFields(self):
+
+        fields = SequenceProperties.getFields(self)
+        fields.append( "%i" % self.mCountsOthers )
+        t = 0
+        
+        for x in self.mAlphabet:
+            fields.append( "%i" % self.mCounts[x] )
+            t += self.mCounts[x]
+
+        if t == 0:
+            for x in self.mAlphabet:
+                fields.append( "na" )
+        else:
+            for x in self.mAlphabet:
+                fields.append( "%f" % (float(self.mCounts[x]) / t))
+
+        return fields
+
+    def getHeaders( self ):
+
+        fields = SequenceProperties.getHeaders(self)
+        fields.append( "nUnk")
+        fields.extend( ["n%s" % x for x in self.mAlphabet ] )
+        fields.extend( ["p%s" % x for x in self.mAlphabet ] )
+        return fields
 
 ###########################################################################
 class SequencePropertiesNA(SequenceProperties):
@@ -455,7 +529,7 @@ class SequencePropertiesDegeneracy (SequenceProperties):
 ###########################################################################
 class SequencePropertiesAA(SequenceProperties):
     
-    mPseudoCounts = 1
+    mPseudoCounts = 0
     
     def __init__(self, reference_usage = [] ):
         
@@ -517,9 +591,66 @@ class SequencePropertiesAA(SequenceProperties):
         return fields
 
 ###########################################################################
+class SequencePropertiesEntropy(SequencePropertiesCounts):
+
+    mPseudoCounts = 0
+    
+    def __init__(self, alphabet ):
+        
+        SequencePropertiesCounts.__init__(self, alphabet = alphabet )
+        
+        self.mEntropy = None
+
+    def addProperties( self, other ):
+        SequencePropertiesCounts.addProperties( self, other )
+        
+    def updateProperties( self ):
+
+        SequencePropertiesCounts.updateProperties( self )
+        
+        self.mProperties = []
+
+        self.mEntropy = self.getEntropy()
+        
+    def getEntropy( self, usage = None ):
+        """return entropy of a source in terms of a reference usage.
+
+        Also called conditional entropy or encoding cost.
+        """
+
+        e = None
+
+        v = self.mCounts.values() 
+        total = sum( v ) + len(v) * self.mPseudoCounts
+        pc = self.mPseudoCounts 
+        if total != 0:
+            e = 0
+            frequencies = [ float(x + pc) / total for x in v ]
+            for f in frequencies:
+                if f > 0: e -= f * math.log( f )
+        return e
+
+    def getFields(self):
+
+        fields = SequenceProperties.getFields(self)
+        if self.mEntropy != None:
+            fields.append("%f" % self.mEntropy)
+        else:
+            fields.append("na" )
+
+        return fields
+
+    def getHeaders( self ):
+
+        fields = SequenceProperties.getHeaders(self)
+        fields.append("entropy")
+        return fields
+
+
+###########################################################################
 class SequencePropertiesCodons(SequenceProperties):
 
-    mPseudoCounts = 1
+    mPseudoCounts = 0
     
     def __init__(self ):
         
@@ -580,7 +711,7 @@ class SequencePropertiesCodons(SequenceProperties):
 ###########################################################################
 class SequencePropertiesCodonUsage(SequencePropertiesCodons):
 
-    mPseudoCounts = 1
+    mPseudoCounts = 0
     
     def __init__(self ):
         
@@ -628,7 +759,7 @@ class SequencePropertiesCodonUsage(SequencePropertiesCodons):
 class SequencePropertiesCodonTranslator(SequencePropertiesCodonUsage):
     """This class outputs the sequence with codons replaced by their frequencies.
     """
-    mPseudoCounts = 1
+    mPseudoCounts = 0
     
     def __init__(self ):
         
@@ -670,7 +801,7 @@ class SequencePropertiesCodonTranslator(SequencePropertiesCodonUsage):
 ###########################################################################
 class SequencePropertiesBias(SequencePropertiesCodons):
 
-    mPseudoCounts = 1
+    mPseudoCounts = 0
     
     def __init__(self, reference_usage = [] ):
         
@@ -768,7 +899,7 @@ class SequencePropertiesBias(SequencePropertiesCodons):
 class SequencePropertiesAminoAcids(SequenceProperties):
     '''sequence properties of amino acid sequences.'''
 
-    mPseudoCounts = 1
+    mPseudoCounts = 0
 
     def __init__(self, reference_usage = [] ):
         
@@ -777,7 +908,8 @@ class SequencePropertiesAminoAcids(SequenceProperties):
         ## counts of amino acids
         self.mCountsAA = {}
         for x in Bio.Alphabet.IUPAC.extended_protein.letters: self.mCountsAA[x] = 0
-        
+        self.mOtherCounts = 0
+
     def addProperties( self, other ):
         SequenceProperties.addProperties( self, other )
 
@@ -792,9 +924,14 @@ class SequencePropertiesAminoAcids(SequenceProperties):
 
         ## set to zero
         for x in Bio.Alphabet.IUPAC.extended_protein.letters: self.mCountsAA[x] = 0
+        self.mOtherCounts = 0
 
-        for aa in sequence: self.mCountsAA[aa] += 1
-
+        for aa in sequence: 
+            if aa == "-": continue
+            try:
+                self.mCountsAA[aa] += 1
+            except KeyError:
+                self.mOtherCounts += 1
 
     def getFields(self):
 

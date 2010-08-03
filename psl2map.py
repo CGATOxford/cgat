@@ -6,21 +6,51 @@
 ##
 ## Author: Andreas Heger <heger@ebi.ac.uk>
 ##
-## $Id: blat2map.py 2781 2009-09-10 11:33:14Z andreas $
+## $Id: psl2map.py 2781 2009-09-10 11:33:14Z andreas $
 ##
 ##
 ####
 ####
 
-USAGE="""python blat2map.py [OPTIONS] > output
+'''
+psl2map.py - build a mappping from blat alignments
+==================================================
 
-build a map of queries to sbjcts from blat results.
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+This scripts reads :term:`psl` formatted alignments and builds a map of queries 
+to targets. The mapping can be restricted by different measures of uniqueness.
 
 If polyA processing is turned on, the non-overlapping terminus of each read will 
 be checked if they are mostly A. If they are, the query coverage will be adjusted
-appropriately and the read flagged in the section polyA.k
+appropriately and the read flagged in the section polyA.
 
-"""
+Usage
+-----
+
+Example::
+
+   python <script_name>.py --help
+
+Type::
+
+   python <script_name>.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 
 import sys, re, string, optparse, time, os, tempfile, shutil
 
@@ -241,7 +271,7 @@ def selectMatches( query_id, matches, options, queries_fasta = None ):
 
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: blat2map.py 2781 2009-09-10 11:33:14Z andreas $", usage=USAGE )
+    parser = optparse.OptionParser( version = "%prog version: $Id: psl2map.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option("--input-filename-queries", dest="input_filename_queries", type="string",
                       help="fasta filename with queries - required for polyA analysis [%default]."  )
@@ -256,7 +286,7 @@ if __name__ == '__main__':
                        help="OUTPUT filename with queries for which all matches have been discarded [%default].")
 
     parser.add_option( "-o", "--output-format", dest="output_format", type="choice" ,
-                       choices=("map", "blat" ),
+                       choices=("map", "psl" ),
                        help="output format to choose [%default].")
 
     parser.add_option( "-z", "--from-zipped", dest="from_zipped", action="store_true",
@@ -612,7 +642,7 @@ if __name__ == '__main__':
                                 ",".join( map(str,match.mQueryBlockStarts)),
                                 ",".join( map(str,match.mSbjctBlockStarts)), 
                                 ))))
-                elif options.output_format == "blat":
+                elif options.output_format == "psl":
                     options.stdout.write( str(match) + "\n" )
 
             noutput += 1
@@ -623,7 +653,7 @@ if __name__ == '__main__':
             
     if options.output_format == "map":
         options.stdout.write( "\t".join( ("query_id", "sbjct_id", "sstrand", "qcoverage","scoverage", "pid", "qlen", "slen", "qfrom", "qto", "sfrom", "sto", "blocks", "qstarts", "sstarts" ) ) + "\n" )
-    elif options.output_format == "blat":
+    elif options.output_format == "psl":
         options.stdout.write( Blat.Match().getHeader() + "\n" )
 
     ################################################

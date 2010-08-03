@@ -6,15 +6,28 @@
 ##
 ## Author: Andreas Heger <heger@ebi.ac.uk>
 ##
-## $Id: blat2assembly.py 2781 2009-09-10 11:33:14Z andreas $
+## $Id: psl2assembly.py 2781 2009-09-10 11:33:14Z andreas $
 ##
 ##
 ####
 ####
+'''
+psl2assembly.py - assemble (long) reads on genome
+==================================================
 
-USAGE="""python blat2assembly.py [OPTIONS] < input > output
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
 
 Assemble reads on a reference genome. Overlapping reads are merged.
+
+This script is useful for building transcript models from
+long aligned reads (for example, 454 reads or ESTs).
+
 The script is aware of splice motifs and modifies alignments 
 around intron boundaries to conform to splice site signals.
 
@@ -33,7 +46,25 @@ output files are:
 
 .sbjct_coverage: coverage statistics of the target genome
 
-"""
+Usage
+-----
+
+Example::
+
+   python <script_name>.py --help
+
+Type::
+
+   python <script_name>.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+'''
 
 import sys, re, string, optparse, time, os, tempfile, shutil, collections, math
 
@@ -393,7 +424,7 @@ class BuilderTranscribedLocus(Builder):
 
         match = Blat.Match()
         match.fromMap( map_transcript2genome )
-        ## ambiguous strands are labelled "+" as blat does not know
+        ## ambiguous strands are labelled "+" as psl does not know
         if strand == "-":
             match.strand = "-"
         else:
@@ -1598,7 +1629,7 @@ def readMapId2Coverage( infile ):
 
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: blat2assembly.py 2781 2009-09-10 11:33:14Z andreas $", usage=USAGE )
+    parser = optparse.OptionParser( version = "%prog version: $Id: psl2assembly.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genome [default=%default]."  )

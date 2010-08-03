@@ -22,6 +22,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 """
+gtf2alleles.py - predict effects of variants on gene set
+========================================================
 
 :Author: Andreas Heger
 :Release: $Id: gtf2alleles.py 2886 2010-04-07 08:47:46Z andreas $
@@ -36,6 +38,8 @@ each transcript is split into separate alleles.
 
 Alleles are built from variants stored in an sqlite database (see the
 options ``--database`` and ``--tablename``).
+
+Alleles are built from transcripts in a gene set (*--filename-exons*).
 
 Caveats
 -------
@@ -68,6 +72,7 @@ import Genomics
 import GFF, GTF, Blat
 import Variants 
 import alignlib
+import pysam
 
 Allele = collections.namedtuple( 'Allele',
                                  '''cds, 
@@ -91,6 +96,74 @@ Allele = collections.namedtuple( 'Allele',
                                     cds_original_len,
                                     nsplice_noncanonical,
                                  ''')
+
+
+class VariantGetter(object):
+    '''base class for objects returning variants.'''
+    pass
+
+class VariantGetterSqlite(VariantGetter):
+    '''retrieve variants from an sqlite table in pileup format.'''
+
+    def __init__(self, dbname, tablename ):
+        self.dbname = dbname
+        self.tablename = tablename
+        
+        self.dbhandle = sqlite3.connect( dbname )
+
+        self.statement = '''SELECT 
+                   pos, reference, genotype 
+                   FROM %(tablename)s
+                   WHERE contig = '%(contig)s' AND 
+                   pos BETWEEN %(start)s and %(end)s
+                '''
+        
+    def __call__( self, contig, start, end ):
+
+        cc = self.dbhandle.cursor()
+        tablename = self.tablename
+        cc.execute( self.statement % locals() )
+        variants = map( Variants.Variant._make, cc.fetchall())
+        cc.close()
+        return variants
+
+class VariantGetterPileup(VariantGetter):
+    '''retrieve variants from file in pileup format.'''
+
+    def __init__(self, filename ):
+        self.tabix = pysam.Tabixfile( filename )
+        self.contigs = set(self.tabix.contigs)
+
+    def __call__(self, contig, start, end ):
+
+        variants = []
+        if contig not in self.contigs: return []
+
+        for line in self.tabix.fetch( contig, start, end ):
+            data = line[:-1].split()
+            contig, pos, reference, genotype = data[:4]
+            variants.append( Variants.Variant._make( (int(pos), reference, genotype) ) )
+        return variants
+    
+class VariantGetterVCF( VariantGetter ):
+    '''retrieve variants from tabix indexed vcf file.'''
+    
+    def __init__(self, filename, column ):
+        self.tabix = pysam.Tabixfile( filename )
+        self.column = column
+
+    def __call__(self, contig, start, end ):
+        
+        for line in self.tabix.fetch( contig, start, end ):
+            data = line[:-1].split()
+            ref, alt, genotype_info = data[3], data[4], data[self.column]
+
+            if genotype_info == ".": continue
+
+            # skip variants not present
+            genotypes = genotype_info.split(":")[0].split("/")
+
+            print ref, alt, genotypes
 
 def collectExonIntronSequences( transcripts, fasta ):
     '''collect all the wild type sequences for exons and introns
@@ -304,7 +377,8 @@ def buildAlleles( transcript,
     def _buildAllele( allele_id, 
                       transcript, exons, 
                       introns, offsets, 
-                      virtual_coordinates = False):
+                      virtual_coordinates = False,
+                      reference_exons = None ):
 
         def _getOffset( pos, offsets):
             x = 0
@@ -394,6 +468,7 @@ def buildAlleles( transcript,
         genome_pos = genome_start + len(exon_seq)
         last_end = exon.end 
 
+        # correct for deletions at start/end of exon
         start_offset, end_offset = _getEndOffsets( exon_sequence )
 
         # length of original transcript
@@ -510,8 +585,8 @@ def buildAlleles( transcript,
                     ", offset at end=",_getOffset( exon.start, offsets)
 
             genome_pos += len(intron_seq)
-
-            # assertion - check if genomic coordinate is consistent with offset
+            
+            # assertion - check if genomic coordinate of intron is consistent with offset
             test_offset =_getOffset( exon.start, offsets )
             is_offset = genome_pos - exon.start
             assert is_offset == test_offset, "intron offset difference: %i != %i" % (is_offset, test_offset)
@@ -536,6 +611,7 @@ def buildAlleles( transcript,
                                lcds, 
                                exon_sequence, 
                                exon.start )
+
             lcds += len(exon_seq)
             last_end = exon.end
 
@@ -617,6 +693,10 @@ def buildAlleles( transcript,
                 cds = cds[:cds_first_stop]
                 peptide[:pep_first_stop]
                 lpeptide, lcds = len(peptide), len(cds)
+                reference_first_stop_start, reference_first_stop_end = \
+                    (map_cds2reference.mapRowToCol( cds_first_stop ),
+                     map_cds2reference.mapRowToCol( cds_first_stop + 3 ) )
+
         else:
             # -1 for no stop codon found
             pep_first_stop = -1
@@ -685,11 +765,20 @@ def main( argv = None ):
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genome [default=%default]."  )
     parser.add_option("-t", "--tablename", dest="tablename", type="string",
-                      help="tablename [default=%default]."  )
+                      help="tablename to get variants from (in samtools pileup format) [default=%default]."  )
     parser.add_option("-d", "--database", dest="database", type="string",
                       help="sqlite3 database [default=%default]."  )
     parser.add_option("-f", "--filename-exons", dest="filename_exons", type="string",
-                      help="filename with exon information (gtf formatted file)  [default=%default]."  )
+                      help="filename with transcript model information (gtf formatted file)  [default=%default]."  )
+    parser.add_option("-r", "--filename-reference", dest="filename_reference", type="string",
+                      help="filename with transcript models of a reference gene set. Stop codons that do not"
+                      " overlap any of the exons in this file are ignore (gtf-formatted file)  [default=%default]."  )
+    parser.add_option( "--filename-vcf", dest="filename_vcf", type="string",
+                      help="filename with variants in VCF format. Should be indexed by tabix  [default=%default]."  )
+    parser.add_option( "--filename-pileup", dest="filename_pileup", type="string",
+                      help="filename with variants in samtools pileup format. Should be indexed by tabix  [default=%default]."  )
+    parser.add_option( "--column-vcf", dest="column_vcf", type="string",
+                      help="column for species of interest in vcf formatted file [1-based]  [default=%default]."  )
     parser.add_option("-s", "--filename-seleno", dest="filename_seleno", type="string",
                       help="filename of a list of transcript ids that are selenoproteins [default=%default]."  )
     parser.add_option("-m", "--module", dest="modules", type="choice", action="append",
@@ -704,6 +793,7 @@ def main( argv = None ):
     parser.set_defaults(
             genome_file = None,
             filename_exons = None,
+            filename_referenec = None,
             filename_seleno = None,
             modules = [],
             border = 200,
@@ -711,16 +801,15 @@ def main( argv = None ):
             tablename = None,
             database = "csvdb",
             output = [],
-            with_knockouts = False
+            with_knockouts = False,
+            filename_vcf = None,
+            vcf_column = 10,
             )
 
     ## add common options (-h/--help, ...) and parse command line 
     (options, args) = E.Start( parser, argv = argv, add_output_options = True )
 
     ninput, nskipped, noutput = 0, 0, 0
-
-    if not options.database or not options.tablename:
-        raise ValueError("please supply both database and tablename")
 
     if options.genome_file:
         fasta = IndexedFasta.IndexedFasta( options.genome_file )
@@ -734,16 +823,17 @@ def main( argv = None ):
 
     infile_gtf = GTF.gene_iterator( GTF.iterator( options.stdin) )
 
-
-    dbhandle = sqlite3.connect( options.database )
-
-    tablename = options.tablename
-    statement = '''SELECT 
-                   pos, reference, genotype 
-                   FROM %(tablename)s
-                   WHERE contig = '%(contig)s' AND 
-                   pos BETWEEN %(extended_start)s and %(extended_end)s
-                '''
+    # acquire variants from SQLlite database
+    if options.tablename:
+        if not options.database:
+            raise ValueError("please supply both database and tablename")
+        variant_getter = VariantGetterSqlite( options.database, options.tablename )
+    elif options.filename_pileup:
+        variant_getter = VariantGetterPileup( options.filename_pileup )
+    elif options.filename_vcf:
+        variant_getter = VariantGetterVCF( options.filename_vcf, options.vcf_column - 1 )
+    else:
+        raise ValueError("please specify a source of variants." )
 
     if len(options.output) == 0 or "all" in options.output:
         output_all = True
@@ -777,7 +867,7 @@ def main( argv = None ):
     separator = options.separator
 
     for transcripts in infile_gtf:
-        
+
         gene_id = transcripts[0][0].gene_id
 
         overall_start = min( [min( [x.start for x in y]) for y in transcripts] )
@@ -790,15 +880,12 @@ def main( argv = None ):
                     (gene_id, contig, overall_start, overall_end, strand ))
 
         ninput += 1
-        extended_start = overall_start - options.border
-        extended_end = overall_end + options.border
+        extended_start = max( 0, overall_start - options.border )
+        extended_end = min( lcontig, overall_end + options.border )
 
         if contig.startswith("chr"): contig = contig[3:]
 
-        cc = dbhandle.cursor()
-        cc.execute( statement % locals() )
-        variants = map( Variants.Variant._make, cc.fetchall())
-        cc.close()
+        variants = variant_getter( contig, extended_start, extended_end )
 
         E.debug( "%s: found %i variants in %s:%i..%i" % \
                      (gene_id, len(variants), contig, extended_start, extended_end ))
@@ -815,14 +902,24 @@ def main( argv = None ):
         # as the transcript
         variants = Variants.updateVariants( variants, lcontig, strand )
 
+        # deal with overlapping but consistent variants
         variants = Variants.mergeVariants( variants )
 
         E.debug( "%s: found %i variants after merging in %s:%i..%i" % \
                      (gene_id, len(variants), contig, extended_start, extended_end ))
-        
 
         if E.global_options.loglevel >= 10:
             print "# merged variants:", variants
+
+        # collect coordinate offsets and remove conflicting variants
+        variants, removed_variants, offsets = Variants.buildOffsets( variants, contig = contig ) 
+        
+        if len(removed_variants) > 0:
+            E.warn("removed %i conflicting variants" % len(removed_variants) )
+            for v in removed_variants:
+                E.info("removed variant: %s" % str(v))
+
+        E.info( "%i variants after filtering" % len(variants) )
 
         if len(variants) > 0:
             # build variants
@@ -852,10 +949,10 @@ def main( argv = None ):
         else:
             variant_exons, variant_introns = None, None
 
-        # collect coordinate offsets
-        offsets = Variants.buildOffsets( variants ) 
-
         for transcript in transcripts:
+
+            transcript.sort( key = lambda x: x.start)
+
             transcript_id = transcript[0].transcript_id
             alleles = buildAlleles( transcript, 
                                     variant_exons, 

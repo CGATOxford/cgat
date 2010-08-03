@@ -21,6 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 """
+bam_correlation.py - compute coverage correlation between bam files
+===================================================================
 
 :Author: Andreas Heger
 :Release: $Id: bam_correlation.py 2861 2010-02-23 17:36:32Z andreas $
@@ -29,8 +31,6 @@
 
 Purpose
 -------
-
-compute correlation between bam files.
 
 Usage
 -----

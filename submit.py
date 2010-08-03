@@ -1,16 +1,61 @@
-####
-####
-##
-## Copyright (C) 2007 Andreas Heger All rights reserved
-##
-## Author: Andreas Heger <andreas.heger@dpag.ox.ac.uk>
-##
-## $Id: submit.py 2782 2009-09-10 11:40:29Z andreas $
-##
-##
-####
-####
+################################################################################
+#
+#   MRC FGU Computational Genomics Group
+#
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
+#
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU General Public License
+#   as published by the Free Software Foundation; either version 2
+#   of the License, or (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#################################################################################
+'''
+submit.py - run a collection of qsub scripts on the cluster
+===========================================================
 
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+This script will submit a collection of qsub scripts on the cluster.
+The script will only submit those jobs for which a result is not 
+present.
+
+Usage
+-----
+
+Example::
+
+   python submit.py *.qsub
+
+Type::
+
+   python submit.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 USAGE="""python submit.py [OPTIONS] 
 
 submit a list of jobs to the cluster.
@@ -36,7 +81,7 @@ def isNewer( a, b ):
 
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: submit.py 2782 2009-09-10 11:40:29Z andreas $", usage=USAGE )
+    parser = optparse.OptionParser( version = "%prog version: $Id: submit.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option( "-g", "--glob", dest="glob_pattern", type="string" ,
                        help="glob pattern to use for collecting cluster jobs descriptions [%default]")

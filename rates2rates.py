@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: rates2rates.py 2781 2009-09-10 11:33:14Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,9 +20,17 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
-import os, sys, string, re, getopt, time, optparse, math, tempfile
+'''
+rates2rates.py - operate on rates
+=================================
 
-USAGE=""" program $Id: rates2rates.py 2781 2009-09-10 11:33:14Z andreas $
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
 
 input = tab separated table ids, rates and G+C
 
@@ -30,7 +39,27 @@ biases. The mutational bias is estimated from a given
 distribution of rates and G+C content in neutrally 
 evolving regions, for example ancestral repeats.
 
-"""
+Usage
+-----
+
+Example::
+
+   python rates2rates.py --help
+
+Type::
+
+   python rates2rates.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+import os, sys, string, re, getopt, time, optparse, math, tempfile
 import Experiment as E
 import CSV
 import IOTools
@@ -69,7 +98,7 @@ def readRates( infile ):
 
 def main():
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: rates2rates.py 2781 2009-09-10 11:33:14Z andreas $", usage = USAGE)
+    parser = optparse.OptionParser( version = "%prog version: $Id: rates2rates.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option( "--output-filename-pattern", dest="output_filename_pattern", type="string",
                       help="pattern for additional output files [%default]."  )

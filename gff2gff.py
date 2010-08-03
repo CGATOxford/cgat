@@ -19,14 +19,44 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+gff2gff.py - manipulate gff files
+=================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+This scripts reads a :term:`gff` formatted file, operates
+on it and outputs the new intervals in :term:`gff` format.
+
+Usage
+-----
+
+Example::
+
+   python <script_name>.py --help
+
+Type::
+
+   python <script_name>.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+
 import sys, string, re, optparse
 
-USAGE="""python %s [OPTIONS] input1 input2
-
-reformat and modify gff files.
-
-Version: $Id: gff2gff.py 2868 2010-03-03 10:19:52Z andreas $
-""" % sys.argv[0]
 
 import Experiment as E
 import GFF, GTF
@@ -267,6 +297,10 @@ a,b=minimum,maximum number of features.""" )
     if options.genome_file:
         genome_fasta = IndexedFasta.IndexedFasta( options.genome_file )
         contigs = genome_fasta.getContigSizes()
+        
+    if (options.forward_coordinates or options.forward_strand) and not contigs: 
+        raise ValueError( "inverting coordinates requires genome file")
+
 
     if options.input_filename_agp:
         agp = AGP.AGP()
@@ -459,13 +493,14 @@ a,b=minimum,maximum number of features.""" )
                      str(outofrange_contigs) ) )
     else:
 
+        
         for gff in gffs:
 
             if options.forward_coordinates:
-                gff.Invert( contigs[gff.contig] )
+                gff.invert( contigs[gff.contig] )
 
             if options.forward_strand:
-                gff.Invert( contigs[gff.contig] )
+                gff.invert( contigs[gff.contig] )
                 gff.strand = "+"
 
             if agp:

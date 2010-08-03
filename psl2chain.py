@@ -78,29 +78,29 @@ def main( argv = None ):
     ## do sth
     ninput, nskipped, noutput = 0, 0, 0
 
-    for blat in Blat.iterator(options.stdin):
+    for psl in Blat.iterator(options.stdin):
         ninput += 1
-        if blat.strand == "-":
-            qstart, qend = blat.mQueryLength - blat.mQueryTo, blat.mQueryLength - blat.mQueryFrom
+        if psl.strand == "-":
+            qstart, qend = psl.mQueryLength - psl.mQueryTo, psl.mQueryLength - psl.mQueryFrom
         else:
-            qstart, qend = blat.mQueryFrom, blat.mQueryTo
+            qstart, qend = psl.mQueryFrom, psl.mQueryTo
 
         options.stdout.write( "chain %i %s %i %s %i %i %s %i %s %i %i %i\n" % \
-                                  (blat.mNMatches, 
-                                   blat.mSbjctId,
-                                   blat.mSbjctLength,
+                                  (psl.mNMatches, 
+                                   psl.mSbjctId,
+                                   psl.mSbjctLength,
                                    "+",
-                                   blat.mSbjctFrom,
-                                   blat.mSbjctTo,
-                                   blat.mQueryId,
-                                   blat.mQueryLength,
-                                   blat.strand,
+                                   psl.mSbjctFrom,
+                                   psl.mSbjctTo,
+                                   psl.mQueryId,
+                                   psl.mQueryLength,
+                                   psl.strand,
                                    qstart,
                                    qend,
                                    ninput ) )
             
         size, tend, qend = 0, None, None
-        for qstart, tstart, size in blat.getBlocks():
+        for qstart, tstart, size in psl.getBlocks():
             if tend != None:
                 options.stdout.write( "\t%i\t%i\n" % (tstart - tend, qstart - qend) )
             qend, tend = qstart + size, tstart + size

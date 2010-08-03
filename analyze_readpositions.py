@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: analyze_readpositions.py 2781 2009-09-10 11:33:14Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,11 +20,46 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+analyze_readpositions.py - compute read coverage on transcripts
+===============================================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+
+input = stream of counts on a transcript
+
+Usage
+-----
+
+Example::
+
+   python analyze_readpositions.py --help
+
+Type::
+
+   python analyze_readpositions.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 import os, sys, string, re, getopt, time, optparse, math, tempfile
 
 USAGE=""" program $Id: analyze_readpositions.py 2781 2009-09-10 11:33:14Z andreas $
 
-input = stream of counts on a transcript
+
 """
 import Experiment
 import CSV
@@ -33,7 +69,7 @@ import numpy
 
 def main():
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: analyze_readpositions.py 2781 2009-09-10 11:33:14Z andreas $", usage = USAGE)
+    parser = optparse.OptionParser( version = "%prog version: $Id: analyze_readpositions.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option( "--output-filename-pattern", dest="output_filename_pattern", type="string",
                       help="pattern for additional output files [%default]."  )
@@ -151,9 +187,8 @@ def main():
         outfile5.write( "%i\t%s\n" % (x, "\t".join( [ "%6.4f" % histograms[y][0][x] for y in range(len(options.maximum_reads) ) ] )))
         outfile3.write( "%i\t%s\n" % (x, "\t".join( [ "%6.4f" % histograms[y][1][x] for y in range(len(options.maximum_reads) ) ] )))
 
-    if options.loglevel >= 1:
-        options.stdlog.write( "# ninput=%i, noutput=%i, nmaxreads=%i, nfull=%i, nmincov=%i, nskipped=%i, nlength=%i\n" %\
-                              (ninput, noutput, nmaxreads, nfull, nmincov, nskipped, nlength) )
+    E.info( "ninput=%i, noutput=%i, nmaxreads=%i, nfull=%i, nmincov=%i, nskipped=%i, nlength=%i" %\
+                (ninput, noutput, nmaxreads, nfull, nmincov, nskipped, nlength) )
     
     Experiment.Stop()
 

@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: evaluate_mali.py 2781 2009-09-10 11:33:14Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,15 +20,22 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
-import os, sys, string, re, getopt, math
+'''
+evaluate_mali.py - evaluate a multiple alignment
+================================================
 
-import evaluate_bootstrap
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
 
-USAGE="""python %s [OPTIONS] < exonerate_output > filtered
+Purpose
+-------
 
 Evaluate a multiple alignment. Remove gaps if so wished.
 
-Version = $Id: evaluate_mali.py 2781 2009-09-10 11:33:14Z andreas $
+
+
 
 Options:
 -h, --help                      print this message.
@@ -53,6 +61,36 @@ Options:
 --file-bootstrap=               filename with bootstrap patterns.
 --file-tree=                    filename of reference tree
 --only-headers                  dump out headers only.
+
+Usage
+-----
+
+Example::
+
+   python evaluate_mali.py --help
+
+Type::
+
+   python evaluate_mali.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+.. note::
+   This script is used in the OPTIC pipeline
+
+Code
+----
+
+'''
+import os, sys, string, re, getopt, math
+
+import evaluate_bootstrap
+
+USAGE="""python %s [OPTIONS] < exonerate_output > filtered
+
 """ % sys.argv[0]
 
 param_long_options=["verbose=", "help", "file-output=",

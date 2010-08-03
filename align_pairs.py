@@ -1,9 +1,10 @@
 ################################################################################
-#   Geneprediction pipeline 
 #
-#   $Id: align_pairs.py 2781 2009-09-10 11:33:14Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,16 +20,41 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+'''
+align_pairs.py - align nucleotide sequence pairs
+================================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+Read a file of unaligned nucleotide sequence pairs and align them.
+
+Usage
+-----
+
+Example::
+
+   python align_pairs.py --help
+
+Type::
+
+   python align_pairs.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 import os, sys, string, re, getopt, tempfile, optparse
-
-USAGE="""python %s [OPTIONS] < orthologs > genes
-
-Version: $Id: align_pairs.py 2781 2009-09-10 11:33:14Z andreas $
-
-Read a file of unaligned nucleotide sequence pairs and aligns them.
-
-""" % sys.argv[0]
-
 import Experiment
 import alignlib
 import AlignedPairs
@@ -101,7 +127,7 @@ def getFile( section, options ):
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: align_pairs.py 2781 2009-09-10 11:33:14Z andreas $", usage=USAGE )
+    parser = optparse.OptionParser( version = "%prog version: $Id: align_pairs.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option("--skip-statistics", dest="skip_stats", action="store_true",
                       help="do not compute alignment statistics [%default]."  )
@@ -238,11 +264,10 @@ CATEGORY\tMETHOD\tTOKEN1\tID1\tTOTAL1\tLEN1\tTOKEN2\tID2\tTOTAL2\tLEN2\tNALIGNED
                 outfile_psl.write( str(entry) + "\n" )
 
             npairs += 1
-            
-    if options.loglevel >= 1:
-        options.stdlog.write( "# input=%i, skipped=%i, nerrors=%i, transcripts=%i, pairs=%i\n" % (ninput, nskipped,
-                                                                                                  nerrors,
-                                                                                                  ntoken_pairs, npairs ) )
-    Experiment.Stop()
+     
+    E.info( "input=%i, skipped=%i, nerrors=%i, transcripts=%i, pairs=%i" % (ninput, nskipped,
+                                                                            nerrors,
+                                                                            ntoken_pairs, npairs ) )
+    E.Stop()
     sys.exit(0)
 

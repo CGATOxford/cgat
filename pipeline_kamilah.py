@@ -76,6 +76,52 @@ PARAMS.update( {
     "merged": "merged.gtf.gz",
     "transcripts": "transcripts.gtf.gz" } )
 
+
+def getSourceTrack( track, all_tracks ):
+    '''if track is in derived tracks, get the source track.
+
+    returns None if track is not a derived track
+    '''
+    if len(all_tracks) == 0: return None
+
+    # get rid of any extensions
+    all_tracks = [ re.sub("\..*$", "", x) for x in all_tracks ]
+    track = re.sub("\..*$", "", track )
+
+    if len(all_tracks) == 1:
+        if len(os.path.commonprefix( (track, all_tracks[0]))) > 0:
+            return all_tracks[0]
+        else:
+            return None
+
+    # get all tracks with a common prefix of length 3 or more
+    prefixes = [ t for t in all_tracks if len(os.path.commonprefix( (track, t) ) ) > 3 ]
+
+    prefixes.sort( key = lambda x: len(x) )
+    # return the shortest
+    return prefixes[0]
+
+def getRelatedTracks( track, all_tracks ):
+    '''return tracks in ``all_tracks`` that are related to ``track`` (including itself)
+
+    related tracks are build by merging or slicing another track.
+    '''
+
+    source = getSourceTrack( track, all_tracks )
+
+    if not source: source = track
+
+    related = set([x for x in all_tracks if x.startswith( source ) ])
+
+    if track not in related: related.add( track )
+    
+    for x in related:
+        if x in EXPERIMENTAL_TRACKS:
+            related.add( PARAMS["merged"] )
+            break
+
+    return list(related)
+
 ###################################################################
 ###################################################################
 @files( [ (x, "%sLinc.import" % x[:-len(".gtf.gz")]) for x in EXPERIMENTAL_TRACKS] )
@@ -260,12 +306,14 @@ def importRepeatInformation( infiles, outfile ):
 
 ###################################################################
 ###################################################################
-@merge( EXPERIMENTAL_TRACKS, PARAMS["merged"] )
-def buildMergedTrack( infiles, outfile ):
+@files( [ (PARAMS["%s_merge" % x], "%s.gtf.gz" % x) for x in P.asList(PARAMS["merge"])] +\
+            [ (EXPERIMENTAL_TRACKS, PARAMS["merged"] ) ] )
+def buildMergedTracks( infiles, outfile ):
+    '''merge tracks.'''
 
     infiles = " ".join(infiles)
     statement = '''
-	cat %(infiles)s 
+	zcat %(infiles)s 
         | python %(scriptsdir)s/gff2psl.py 
                  --log=%(outfile)s.log 
                  --is-gtf 
@@ -301,6 +349,7 @@ def buildMergedTrack( infiles, outfile ):
 		--log=%(outfile)s.log 
 		--as-gtf
 	< %(outfile)s.locus.psl 
+        | gzip
         > %(outfile)s
     '''
     P.run()
@@ -1307,20 +1356,33 @@ def makeAnnotatorArchitecture( TRACKS ):
     pass
 
 ############################################################
-@follows( buildAnnotatorGeneSetAnnotations )
-@files( [((track, "%s.annotations" % slice), "%s.%s.sets.annotator" % (track[:-len(".gtf.gz")],slice), slice) \
+@files( [ (track, "%s.%s.sets.annotator" % (track[:-len(".gtf.gz")],slice), slice) \
              for track, slice in list( itertools.product( EXPERIMENTAL_TRACKS + DERIVED_TRACKS, 
                                                           ("known", "unknown", "all", "intronic", "intergenic" ))) ] )
-def makeAnnotatorGeneSets( infiles, outfile, slice ):
+def makeAnnotatorGeneSets( infile, outfile, slice ):
     '''compute annotator overlap between sets.
     '''
     
     workspaces = ("genomic", "alignable", slice )
 
-    infile, infile_annotations = infiles
-
     track = infile[:-len(".gtf.gz")]
+
+    infiles = ANNOTATOR_TRACKS
+
+    related = getRelatedTracks( infile, infiles )
+
+    if related:
+        E.info("removing related tracks %s from %s" % \
+                   ( related, infile ) )
+        related = set(related)
+        infiles = [x for x in TRACKS if x not in related ]
+        
     tmpdir = tempfile.mkdtemp( dir = os.getcwd() )
+
+    annotations = os.path.join( tmpdir, "annotations")
+    PAnnotator.buildGeneSetAnnotations( infiles,
+                                        annotations,
+                                        slice )
 
     segments = PAnnotator.buildAnnotatorSlicedSegments( tmpdir, 
                                                         outfile, 
@@ -1340,7 +1402,7 @@ def makeAnnotatorGeneSets( infiles, outfile, slice ):
     
     PAnnotator.runAnnotator( tmpdir, 
                              outfile, 
-                             infile_annotations, 
+                             annotations, 
                              segments, 
                              workspaces, 
                              synonyms )
@@ -1373,7 +1435,7 @@ def setup():
           importRepeatInformation,
           buildGenes,
           buildGeneRegions,
-          buildMergedTrack,
+          buildMergedTracks,
           buildFilteredAlignment,
           importGTF)
 def prepare():
@@ -1399,7 +1461,6 @@ def rates():
     pass
 
 @follows( buildAnnotatorGCWorkspace, 
-          buildAnnotatorGeneSetAnnotations,
           importAnnotatorGeneSets)
 def annotator():
     pass

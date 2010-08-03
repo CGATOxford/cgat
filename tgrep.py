@@ -1,9 +1,10 @@
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: tgrep.py 2782 2009-09-10 11:40:29Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -19,17 +20,53 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
-import os, sys, string, re, tempfile, subprocess, optparse, time
+'''
+tgrep.py - do greps in tab-separated tables
+===========================================
 
-"""do greps in tab-separated tables.
-"""
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+Grep for one or more patterns in a tab-separated table. If multiple
+patterns are provided, this can be quicker than a standard grep as
+only particular columns are checked.
+
+Patterns may not contain wild cards.
+
+Usage
+-----
+
+Example::
+
+   python tgrep.py --help
+
+Type::
+
+   python tgrep.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+import os, sys, string, re, tempfile, subprocess, optparse, time
 
 import Experiment
 
-parser = optparse.OptionParser( version = "%prog version: $Id: tgrep.py 2782 2009-09-10 11:40:29Z andreas $")
+
 
 if __name__ == "__main__":
 
+    parser = optparse.OptionParser( version = "%prog version: $Id: tgrep.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option("-c", "--columns", dest="columns", type="string",
                       help="columns to test from table." )

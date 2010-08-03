@@ -1,10 +1,10 @@
-#!/bin/env python
 ################################################################################
-#   Gene prediction pipeline 
 #
-#   $Id: data2bins.py 2782 2009-09-10 11:40:29Z andreas $
+#   MRC FGU Computational Genomics Group
 #
-#   Copyright (C) 2004 Andreas Heger
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -20,19 +20,46 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
-import sys, re, string, os, getopt, time, optparse, math, bisect
+'''
+data2bins.py - split table according to values in a column
+==========================================================
 
-USAGE="""data2bins.py [options] [infile] < stdin
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
 
 Separate data in table according to a column.
 
 Missing values (na) are ignored.
 
 Reads data from stdin unless infile is given.
-"""
 
-import Experiment
-import Histogram
+Usage
+-----
+
+Example::
+
+   python data2bins.py --help
+
+Type::
+
+   python data2bins.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+import sys, re, string, os, getopt, time, optparse, math, bisect
+import Experiment as E
 import CSV
 
 class Outputter:
@@ -54,7 +81,8 @@ class Outputter:
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: data2bins.py 2782 2009-09-10 11:40:29Z andreas $", usage = USAGE)
+    parser = optparse.OptionParser( version = "%prog version: $Id: data2bins.py 2782 2009-09-10 11:40:29Z andreas $", 
+                                    usage = globals()["__doc__"])
 
     parser.add_option("--column", dest="column", type="int",
                       help="column to split on."  )
@@ -81,7 +109,7 @@ if __name__ == "__main__":
         output_filename_pattern = "bin%i",
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
     options.column -= 1
 
     if args:
@@ -109,8 +137,7 @@ if __name__ == "__main__":
     elif options.method == "pass":
         pass
     
-    if options.loglevel >= 2:
-        options.stdlog.write("# bins=%s\n" % str(bins))
+    E.debug( "bins=%s" % str(bins))
 
     outputters = []
     for x in xrange(0,len(bins)):
@@ -127,7 +154,6 @@ if __name__ == "__main__":
         for x in xrange(0,len(bins)):
             options.stdlog.write("# %i\t%f\t%i\t%s\n" % (x, bins[x], outputters[x].mCounts, outputters[x].mFilename) )
             
-    if options.loglevel >= 1:
-        options.stdlog.write("# ninput=%i, noutput=%i\n" % (len(data), sum( (x.mCounts for x in outputters )) ))
+    E.info( "ninput=%i, noutput=%i" % (len(data), sum( (x.mCounts for x in outputters )) ))
     
-    Experiment.Stop()
+    E.Stop()

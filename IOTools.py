@@ -1,4 +1,39 @@
-"""Tools for often occuring file I/O problems."""
+################################################################################
+#
+#   MRC FGU Computational Genomics Group
+#
+#   $Id$
+#
+#   Copyright (C) 2009 Andreas Heger
+#
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU General Public License
+#   as published by the Free Software Foundation; either version 2
+#   of the License, or (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#################################################################################
+'''
+IOTools - tools for I/O operations
+==================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Code
+----
+
+'''
+
 import string, re, sys, os, collections, types, glob, stat, gzip
 
 import numpy
@@ -139,8 +174,8 @@ def readMultiMap( infile,
         try:
             key = map_functions[0](d[columns[0]])
             val = map_functions[1](d[columns[1]])
-        except ValueError:
-            raise "parsing error in line %s." % l[:-1]
+        except (ValueError, IndexError), msg:
+            raise ValueError( "parsing error in line %s: %s" % (l[:-1], msg) )
             
         if key not in m: m[key] = []
         m[key].append(val)
@@ -599,7 +634,17 @@ def iterate_tabular( infile, sep="\t" ):
     
 
 def openFile( filename, mode = "r" ):
-    '''open file in filename for reading.'''
+    '''open file in *filename* with mode *mode*.
+
+    gzip - compressed files are recognized by the
+    suffix ``.gz`` and opened transparently.
+
+    Note that there are differences in the file
+    like objects returned, for example in the
+    ability to seek.
+
+    returns a file or file-like object.
+    '''
     
     _, ext = os.path.splitext( filename )
 
