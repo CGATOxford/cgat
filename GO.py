@@ -817,7 +817,7 @@ def DumpGOFromDatabase( outfile,
 
     outfile.write("go_type\tgene_id\tgo_id\tdescription\tevidence\n" )
 
-    for go_type in options.go_category:
+    for go_type in options.ontology:
 
         genes = collections.defaultdict( int )
         categories = collections.defaultdict( int )
@@ -1202,7 +1202,7 @@ if __name__ == "__main__":
                        choices=("fdr", "pover", "ratio" ),
                        help="output sort order [default=%default]." )
 
-    parser.add_option( "--ontology", dest="ontology", type="choice",
+    parser.add_option( "--ontology", dest="ontology", type="choice", action="append",
                        choices=("biol_process","cell_location","mol_function", "mgi" ),
                        help="go ontologies to analyze. Ontologies are tested separately."
                        " [default=%default]." )
@@ -1248,7 +1248,6 @@ if __name__ == "__main__":
                          filename_background = None,
                          filename_slims = None,
                          ontology = [],
-                         filename_categories = None,
                          filename_dump = None,
                          sample = 0,
                          fdr = False,
@@ -1272,6 +1271,10 @@ if __name__ == "__main__":
     #############################################################
     ## dump GO
     if options.filename_dump:
+        # set default orthologies to GO
+        if not options.ontology:
+            options.ontology = ["biol_process", "mol_function", "cell_location"] 
+
         E.info( "dumping GO categories to %s" % (options.filename_dump) )
 
         dbhandle.Connect( options )
@@ -1323,7 +1326,7 @@ if __name__ == "__main__":
 
     #############################################################
     ## sort out which ontologies to test
-    if options.ontology == []: 
+    if not options.ontology: 
         if options.filename_input:
             options.ontology = gene2gos.keys()
 
