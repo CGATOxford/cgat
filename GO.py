@@ -21,13 +21,129 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-GO.py - 
-======================================================
+GO.py - compute GO enrichment from gene lists
+=============================================
 
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
 :Tags: Python
+
+Usage
+-----
+
+The script ``GO.py`` will test for enrichment or depletion 
+of GO categories within a gene list.
+
+The script uses a hypergeometric test to check if a particular
+GO category is enriched in a foreground set with respect
+to a background set. Multiple testing is controlled by 
+computing an empirical false discovery rate using a sampling 
+procedure.
+
+A GO analysis proceeds in three steps:
+
+   1. building gene to GO assignments
+   2. create one or more gene lists with foreground and background
+   3. run one or more GO analyses for each of the foreground gene lists
+
+Building gene to GO assignments
++++++++++++++++++++++++++++++++
+
+The easiest way to obtain a map from gene identifiers to GO assignments
+is to down download GO assignments from the ENSEMBL database. The command
+below will download go assignments for the human gene set
+and save it in the file :file:`gene2go.data`::
+
+   python GO.py 
+      --filename-dump=gene2go.data
+      --host=ensembldb.ensembl.org
+      --user=anonymous 
+      --database=homo_sapiens_core_54_36p
+      --port=5306 
+   > gene2go.log
+
+In order to use GOslim categories, an additional mapping step needs to be performed.
+The sequence of commands is::
+
+    wget http://www.geneontology.org/GO_slims/goslim_goa.obo
+    wget http://www.geneontology.org/ontology/gene_ontology.obo
+    map2slim -outmap go2goslim.map goslim_goa.obo gene_ontology.obo
+    python GO.py 
+                --go2goslim 
+                --filename-ontology=gene_ontology.obo 
+                --slims=go2goslim.map 
+                --log=goslim.log 
+        < gene2go.data > gene2goslim.data
+
+The first two commands obtain GOslim information. 
+`map2slim <http://search.cpan.org/~cmungall/go-perl/scripts/map2slim>`_
+is part of Chris Mungall's `go-perl <http://search.cpan.org/~cmungall/go-perl/>`_ module 
+and the last command converts the gene-to-GO assignment into gene-to-GOSlim assignments.
+
+The gene-to-GO mapping can be constructed any other way. It is simply 
+a table of tab-separated values::
+
+   go_type gene_id go_id   description     evidence
+   biol_process    ENSG00000151729 GO:0000002      mitochondrial genome maintenance        NA
+   biol_process    ENSG00000025708 GO:0000002      mitochondrial genome maintenance        NA
+   biol_process    ENSG00000115204 GO:0000002      mitochondrial genome maintenance        NA
+   ...
+
+Building gene lists
++++++++++++++++++++
+
+GO requires a list of genes to test for enrichment. This list is simply
+a table of gene identifiers. For example::
+
+   ENSG00000116586
+   ENSG00000065809
+   ENSG00000164048
+   ENSG00000115137
+   ENSG00000121210
+
+If no background is given, all genes that have GO assignments will constitute
+the background. 
+
+Running the GO analysis
++++++++++++++++++++++++
+
+The command below runs a GO analysis, computing an FDR using 10.000 samples::
+
+    python GO.py 
+        --filename-input=gene2go.data
+        --genes=foreground
+        --background=background 
+        --sample=10000
+        --fdr 
+        --filename-ontology=gene_ontology.obo
+        --output-filename-pattern='result/%(go)s.%(section)s' 
+   > go.log
+
+The output will be stored in the directory :file:`result` and output files will be
+created according to the pattern ``<go>.<section>``. ``<go>`` is one of 
+``biol_process``, ``mol_function`` and ``cell_location``.
+``<section>`` denotes the file contents. Files output are:
+
++------------+----------------------------------------------+
+|``section`` | contents                                     |
++------------+----------------------------------------------+
+|samples     |sampling statistics                           |
++------------+----------------------------------------------+
+|overall     |table with full results                       |
++------------+----------------------------------------------+
+|results     |table with only the significant results       |
++------------+----------------------------------------------+
+|parameters  |input and sampling parameters                 |
++------------+----------------------------------------------+
+|fg          |assigments for genes in the foreground set    |
++------------+----------------------------------------------+
+
+
+Other options
++++++++++++++
+
+The script can accept other ontologies than just GO ontologies. 
 
 Code
 ----
@@ -44,11 +160,6 @@ import Stats
 import Database
 import Experiment as E
 import IOTools
-
-USAGE="""program $Id: GO.py 2883 2010-04-07 08:46:22Z andreas $
-
-calculate over-/under-representation of GO catergories in gene lists.
-"""
 
 MIN_FLOAT = sys.float_info.min
 # The following code was taken from:
