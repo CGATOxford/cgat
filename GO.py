@@ -1129,10 +1129,11 @@ def getSamples( gene2go, genes, background, options ):
 
     samples = {}
 
+
     if options.output_filename_pattern:
         filename = options.output_filename_pattern % { 'go': ontology, 'section': "samples" }
         E.info( "sampling results go to %s" % filename )
-        outfile = open(filename, "w")
+        outfile = IOTools.openFile( filename, "w", create_dir = True )
     else:
         outfile = sys.stdout
 
@@ -1279,7 +1280,7 @@ if __name__ == "__main__":
 
         dbhandle.Connect( options )
             
-        outfile = open(options.filename_dump, "w")
+        outfile = IOTools.openFile( options.filename_dump, "w", create_dir = True )
         DumpGOFromDatabase( outfile,
                             dbhandle,
                             options )
@@ -1318,11 +1319,11 @@ if __name__ == "__main__":
     #############################################################
     ## get background
     if options.filename_background:
-        background = ReadGeneList( options.filename_background, options )
+        input_background = ReadGeneList( options.filename_background, options )
         missing = set(genes).difference( set(background))
         assert len(missing) == 0, "%i genes in foreground but not in background: %s" % (len(missing), str(missing))
     else:
-        background = ()
+        input_background = None
 
     #############################################################
     ## sort out which ontologies to test
@@ -1358,6 +1359,14 @@ if __name__ == "__main__":
         ngenes, ncategories, nmaps = CountGO( gene2go )        
         E.info( "read GO assignments: %i genes mapped to %i categories (%i maps)" % (ngenes, ncategories, nmaps) )
 
+
+        if input_background == None:
+            background = tuple(gene2go.keys())
+        else:
+            background = input_background 
+            
+        E.info( "(unfiltered) foreground=%i, background=%i" % (len(genes), len(background)))
+
         #############################################################
         ## sanity check:            
         ## are all of the foreground genes in the dataset
@@ -1384,7 +1393,7 @@ if __name__ == "__main__":
                 if options.filename_map_slims == "-":
                     outfile = options.stdout
                 else:
-                    outfile=open(options.filename_map_slims, "w")
+                    outfile=IOTools.openFile(options.filename_map_slims, "w" )
 
                 outfile.write( "GO\tGOSlim\n" )
                 for go, go_slim in go_slims.items():
@@ -1546,7 +1555,7 @@ if __name__ == "__main__":
         if options.output_filename_pattern:
             filename = options.output_filename_pattern % { 'go': ontology, 'section': "results" }
             E.info( "results go to %s" % filename)
-            outfile = open(filename, "w")
+            outfile = IOTools.openFile(filename, "w", create_dir = True)
         else:
             outfile = sys.stdout
 
@@ -1561,7 +1570,7 @@ if __name__ == "__main__":
         if options.output_filename_pattern:
             filename = options.output_filename_pattern % { 'go': ontology, 'section': "overall" }
             E.info( "a list of all categories and pvalues goes to %s" % filename )
-            outfile = open(filename, "w")
+            outfile = IOTools.openFile(filename, "w", create_dir = True)
         else:
             outfile = sys.stdout
         
@@ -1578,7 +1587,7 @@ if __name__ == "__main__":
             filename = options.output_filename_pattern % { 'go': ontology, 'section': "parameters" }
             if options.loglevel >= 1:
                 options.stdlog.write( "# parameters go to %s\n" % filename )
-            outfile = open(filename, "w")
+            outfile = IOTools.openFile(filename, "w", create_dir = True)
         else:
             outfile = sys.stdout
             
@@ -1625,7 +1634,7 @@ if __name__ == "__main__":
             filename = options.output_filename_pattern % { 'go': ontology, 'section': "fg" }
             if options.loglevel >= 1:
                 options.stdlog.write( "# results go to %s\n" % filename )
-            outfile = open(filename, "w")
+            outfile = IOTools.openFile(filename, "w", create_dir = True)
         else:
             outfile = sys.stdout
 
