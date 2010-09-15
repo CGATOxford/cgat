@@ -1243,6 +1243,10 @@ if __name__ == "__main__":
 
     parser.add_option( "--get-genes", dest="get_genes", type="string",
                        help="list all genes in the with a certain GOID [default=%default]." )
+
+    parser.add_option( "--strict", dest="strict", action="store_true",
+                       help="require all genes in foreground to be part of background. "
+                       "If not set, genes in foreground will be added to the background [default=%default]." )
     
     parser.set_defaults( species = None,
                          filename_genes = "-",
@@ -1257,7 +1261,8 @@ if __name__ == "__main__":
                          filename_map_slims = None,
                          gene_pattern = None,
                          sort_order = "ratio",
-                         get_genes = None )
+                         get_genes = None,
+                         strict = False )
 
     (options, args) = E.Start( parser, add_mysql_options = True )
 
@@ -1320,8 +1325,8 @@ if __name__ == "__main__":
     ## get background
     if options.filename_background:
         input_background = ReadGeneList( options.filename_background, options )
-        missing = set(genes).difference( set(background))
-        assert len(missing) == 0, "%i genes in foreground but not in background: %s" % (len(missing), str(missing))
+
+        E.info( "read %i genes for background" % len(input_background) )
     else:
         input_background = None
 
@@ -1359,12 +1364,27 @@ if __name__ == "__main__":
         ngenes, ncategories, nmaps = CountGO( gene2go )        
         E.info( "read GO assignments: %i genes mapped to %i categories (%i maps)" % (ngenes, ncategories, nmaps) )
 
-
+        ##################################################################
+        ##################################################################
+        ##################################################################
+        ## build background - reconcile with foreground
+        ##################################################################
         if input_background == None:
             background = tuple(gene2go.keys())
         else:
             background = input_background 
             
+        missing = set(genes).difference( set(background))
+
+        if options.strict:
+            assert len(missing) == 0, \
+                "%i genes in foreground but not in background: %s" % (len(missing), str(missing))
+        else:
+            if len(missing) != 0:
+                E.warn( "%i genes in foreground that are not in background - added to background of %i" %\
+                            (len(missing), len(background)) )
+            background.extend( missing )
+
         E.info( "(unfiltered) foreground=%i, background=%i" % (len(genes), len(background)))
 
         #############################################################
