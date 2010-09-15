@@ -633,8 +633,11 @@ def iterate_tabular( infile, sep="\t" ):
         yield line[:-1].split(sep)
     
 
-def openFile( filename, mode = "r" ):
+def openFile( filename, mode = "r", create_dir = False ):
     '''open file in *filename* with mode *mode*.
+
+    If *create* is set, the directory containing filename
+    will be created if it does not exist.
 
     gzip - compressed files are recognized by the
     suffix ``.gz`` and opened transparently.
@@ -648,7 +651,13 @@ def openFile( filename, mode = "r" ):
     
     _, ext = os.path.splitext( filename )
 
+    if create_dir:
+        dirname = os.path.dirname( filename )
+        if dirname and not os.path.exists( dirname ):
+            os.makedirs( dirname )
+            
     if ext.lower() in (".gz", ):
         return gzip.open( filename, mode )
     else:
         return open( filename, mode )
+
