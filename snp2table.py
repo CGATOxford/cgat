@@ -554,14 +554,12 @@ class BaseAnnotatorCodon( BaseAnnotator ):
         self.mAnnotations = IndexedFasta.IndexedFasta( annotations_file )
         self.mJunctions = junctions
 
-    def updateSNPs( self, snp ):
+    def updateSNPs( self, snp, is_negative_strand ):
         '''update SNPs.'''
 
         contig = snp.chromosome
         lcontig = self.mFasta.getLength( contig )
-
-        code = self.mAnnotations.getSequence( contig, "+", snp.position, snp.position+1 )
-        self.mCode = code
+        reference_base = snp.reference_base
 
         if snp.consensus_base in 'ACGTacgt':
             # homozygous substitution
@@ -569,6 +567,100 @@ class BaseAnnotatorCodon( BaseAnnotator ):
         else:
             # heterozygous substitution
             self.mVariantType.append( "E" )
+
+        # switch reference strand codon to correct strand
+        if reference_base != "*" and is_negative_strand:
+            reference_base = Genomics.complement( reference_base )
+
+        # collect all possible variants of reference codons
+        for reference_codon in self.mReferenceCodons:
+
+            self.mReferenceAAs.append( Genomics.translate( reference_codon ) )
+
+            # process single base changes
+            variant_bases = Genomics.resolveAmbiguousNA( snp.consensus_base )
+
+            if reference_codon[ pos ] != reference_base:
+                raise ValueError( "base mismatch at %i (codon=%s,%i): codon:%s != genome:%s; `%s`" % \
+                                  (snp.position, reference_codon, pos, reference_codon[pos], reference_base, ";".join(map(str, snp))) )
+
+            for variant_base in variant_bases:
+                if is_negative_strand:
+                    variant_base = Genomics.complement( variant_base )
+
+        self.mVariantAAs.extend( [ Genomics.translate( x ) for x in self.mVariantCodons ] )
+
+    def updateIndels( self, snp, is_negative_strand ):
+
+        contig = snp.chromosome
+        lcontig = self.mFasta.getLength( contig )
+
+        # get location of insertion/deletion. The location
+        # is after position, hence get position and position + 1
+        code = self.mAnnotations.getSequence( contig, "+", snp.position, snp.position+2 )
+        self.mCode = code
+
+        variants = snp.genotype.split("/")
+        for variant in variants:
+
+            if variant[0] == "*":
+                self.mVariantType.append( "W" )
+
+            elif variant[0] == "+":
+                toinsert = variant[1:] 
+                self.mVariantType.append( "I" )
+                
+            elif variant[0] == "-":
+                todelete = variant[1:]
+                # deletions need to be looked at in a wider range
+                self.mVariantType.append( "D" )
+                
+            else:
+                raise ValueError( "unknown variant sign '%s'" % variant[0] )
+
+
+        # ignore non-coding Indels
+        if code[0] and code[1] not in 'abcABC': return
+
+        if is_negative_strand:
+            variants = [ Genomics.complement(x) for x in variants ]
+
+        for reference_codon in self.mReferenceCodons:
+
+            variants = snp.genotype.split("/")
+            variants = [ x[1:] for x in variants ]
+
+            for variant in variants:
+                if len(variant) % 3 != 0:
+                    self.mVariantCodons.append( "!" )
+                else:
+                    self.mVariantCodons.append( variant )
+
+            self.mVariantAAs.extend( [ Genomics.translate( x ) for x in self.mVariantCodons ] )
+
+    def update( self, snp ):
+        '''update with snp.'''
+
+        contig = snp.chromosome
+        lcontig = self.mFasta.getLength( contig )
+
+        # check for codon:
+        self.mReferenceCodons = []
+        self.mVariantCodons = []
+        self.mReferenceAAs = []
+        self.mVariantAAs = []
+        self.mVariantType = []
+
+        if snp.position >= lcontig:
+            E.warn("snp is out of range: %s:%i => %s" % (contig, lcontig, ";".join( map(str, snp)) ))
+            self.mCode = "X"
+            return
+
+        reference_base = snp.reference_base
+
+        ######
+        code = self.mAnnotations.getSequence( contig, "+", snp.position, snp.position+1 )
+        self.mCode = code
 
         # ignore non-coding SNPs
         if code not in 'abcABC': return
@@ -626,107 +718,13 @@ class BaseAnnotatorCodon( BaseAnnotator ):
         # fixate the order of reference codons
         self.mReferenceCodons = tuple( self.mReferenceCodons )
 
-        reference_base = snp.reference_base
-
-        # switch reference strand codon to correct strand
-        if reference_base != "*" and is_negative_strand:
-            reference_base = Genomics.complement( reference_base )
-
-        # collect all possible variants of reference codons
-        for reference_codon in self.mReferenceCodons:
-
-            self.mReferenceAAs.append( Genomics.translate( reference_codon ) )
-
-            # process single base changes
-            variant_bases = Genomics.resolveAmbiguousNA( snp.consensus_base )
-
-            if reference_codon[ pos ] != reference_base:
-                raise ValueError( "base mismatch at %i (codon=%s,%i): codon:%s != genome:%s; `%s`" % \
-                                  (snp.position, reference_codon, pos, reference_codon[pos], reference_base, ";".join(map(str, snp))) )
-
-            for variant_base in variant_bases:
-                if is_negative_strand:
-                    variant_base = Genomics.complement( variant_base )
-
-        self.mVariantAAs.extend( [ Genomics.translate( x ) for x in self.mVariantCodons ] )
-
-    def updateIndels( self, snp ):
-
-        contig = snp.chromosome
-        lcontig = self.mFasta.getLength( contig )
-
-        # get location of insertion/deletion. The location
-        # is after position, hence get position and position + 1
-        code = self.mAnnotations.getSequence( contig, "+", snp.position, snp.position+2 )
-        self.mCode = code
-
-        variants = snp.genotype.split("/")
-        for variant in variants:
-
-            if variant[0] == "*":
-                self.mVariantType.append( "W" )
-
-            elif variant[0] == "+":
-                toinsert = variant[1:] 
-                self.mVariantType.append( "I" )
-                
-            elif variant[0] == "-":
-                todelete = variant[1:]
-                # deletions need to be looked at in a wider range
-                self.mVariantType.append( "D" )
-                
-            else:
-                raise ValueError( "unknown variant sign '%s'" % variant[0] )
-
-
-        # ignore non-coding Indels
-        if code[0] and code[1] not in 'abcABC': return
-
-        vc = list(reference_codon)
-        vc[pos] = variant_base
-        self.mVariantCodons.append( "".join( vc) )
-
-        variants = snp.genotype.split("/")
-        variants = [ x[1:] for x in variants ]
-        
-        if is_negative_strand:
-            variants = [ Genomics.complement(x) for x in variants ]
-
-        for variant in variants:
-            if len(variant) % 3 != 0:
-                self.mVariantCodons.append( "!" )
-            else:
-                self.mVariantCodons.append( variant )
-
-        self.mVariantAAs.extend( [ Genomics.translate( x ) for x in self.mVariantCodons ] )
-
-    def update( self, snp ):
-        '''update with snp.'''
-
-        contig = snp.chromosome
-        lcontig = self.mFasta.getLength( contig )
-
-        # check for codon:
-        self.mReferenceCodons = []
-        self.mVariantCodons = []
-        self.mReferenceAAs = []
-        self.mVariantAAs = []
-        self.mVariantType = []
-
-        if snp.position >= lcontig:
-            E.warn("snp is out of range: %s:%i => %s" % (contig, lcontig, ";".join( map(str, snp)) ))
-            self.mCode = "X"
-            return
-
-        reference_base = snp.reference_base
-
         # process according to variant type
         # indels need to be treated differently from SNPs as
         # they have larger effects
         if reference_base == "*":
-            self.updateIndels( snp )
+            self.updateIndels( snp, is_negative_strand )
         else:
-            self.updateSNPs( snp )
+            self.updateSNPs( snp, is_negative_strand )
 
     def __str__(self):
         return "\t".join( (self.mCode, 

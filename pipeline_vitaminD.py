@@ -5012,6 +5012,26 @@ def makeAnnotatorGWAS( infiles, outfile ):
     PAnnotator.makeAnnotatorRegionsOfInterest( infiles, outfile )
 
 @follows( buildGeneRegions, buildAnnotatorGC )
+@files( [ (("%s.bed" % x, "gwas.bed" ), "%s.annotator_gwas_with_motif" % x ) for x in TRACKS_ANNOTATOR ] )
+def makeAnnotatorGWASWithMotif( infiles, outfile ):
+    '''check statistical overlap between intervals and and other genomic features
+    defined in the file PARAMS["gwas"].
+    '''
+    PAnnotator.makeAnnotatorRegionsOfInterest( infiles, 
+                                               outfile,
+                                               with_motif = PARAMS['annotator_master_motif'] )
+
+@follows( buildGeneRegions, buildAnnotatorGC )
+@files( [ (("%s.bed" % x, "gwas.bed" ), "%s.annotator_gwas_without_motif" % x ) for x in TRACKS_ANNOTATOR ] )
+def makeAnnotatorGWASWithoutMotif( infiles, outfile ):
+    '''check statistical overlap between intervals and and other genomic features
+    defined in the file PARAMS["gwas"].
+    '''
+    PAnnotator.makeAnnotatorRegionsOfInterest( infiles, 
+                                               outfile,
+                                               without_motif = PARAMS['annotator_master_motif'] )
+
+@follows( buildGeneRegions, buildAnnotatorGC )
 @files( [ (("%s.bed" % x, "selection.bed" ), "%s.annotator_selection" % x ) for x in TRACKS_ANNOTATOR ] )
 def makeAnnotatorSelection( infiles, outfile ):
     '''check statistical overlap between intervals and and other genomic features

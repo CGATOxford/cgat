@@ -190,7 +190,7 @@ elif PARAMS["filename_vcf"]:
 
         The parser is incomplete (only looks at unphased data, etc.)
 
-        IT ALSO IGNORES HETEROZYGOUS CALLS
+        IT ALSO IGNORES HETEROZYGOUS CALLS.
 
         Both vcf and pileup employ 1-based coordinate systems.
         '''
@@ -231,7 +231,7 @@ elif PARAMS["filename_vcf"]:
                 genotype = [ variants[int(x)] for x in genotype ]
                 lengths = [len(x) for x in genotype] + [len(ref)]
                 is_snp = len( set(lengths) ) == 1 and lengths[0] == 1
-                
+
                 # skip genotypes for which no call can be made
                 if "." in genotype: continue
 
@@ -241,7 +241,7 @@ elif PARAMS["filename_vcf"]:
                     # skip wild type 
                     if genotype == "%s%s" % (ref,ref):
                         continue
-                    
+
                     outfiles.write( h, 
                                 "\t".join( map(str, (
                                 contig,
@@ -303,7 +303,7 @@ elif PARAMS["filename_vcf"]:
                                 shared = len(prefix) + len(suffix) - len(ref) 
                                 if shared < 0:
                                     raise ValueError()
-                                
+
                                 return "+%s" % variant[len(prefix):-(len(suffix)-shared)], len(prefix)
                         else:
                             assert 0, "snp?"
@@ -329,10 +329,10 @@ elif PARAMS["filename_vcf"]:
                         print line,
                         counts.errors += 1
                         continue
-                    
+
                     assert len(set(offsets )) == 1
                     offset = offsets[0]
-                    
+
                     genotypes = "/".join( genotypes )
                     outfiles.write( h, 
                                 "\t".join( map(str, (
@@ -354,9 +354,14 @@ elif PARAMS["filename_vcf"]:
         E.info("%s" % str(counts))
 
         for outfile in outfiles:
+            # need to sort as overlapping indels might not be in correct
+            # order even if input was sorted.
+            E.info("sorting %s" % outfile )
+            statement = "gunzip < %(outfile)s | sort -k1,1 -k2,2n | bgzip > %(outfile)s.tmp; mv %(outfile)s.tmp %(outfile)s"
+            P.run()
+
             E.info("compressing and indexing %s" % outfile )
             pysam.tabix_index( outfile, preset = "vcf" )
-
     
     ###################################################################
     ###################################################################
@@ -614,6 +619,8 @@ def importMGI( infile, outfile ):
     filename = "mgi_biomart.tsv" 
 
     if False:
+        R.library("biomaRt")
+
         columns = {
 
             "marker_symbol_107" : "marker_symbol", 
@@ -962,6 +969,40 @@ def importMGIPhenotypesViaReports( infile, outfile ):
         P.run()
 
         os.unlink( tmpfilename )
+
+@files( ((None, "ensembl2omim.tsv"),))
+def importOMIMFromEnsembl( infile, outfile ):
+    '''download gene id - OMIM associations via BIOMART.
+
+    Note that missing numerical entries are set to -2147483648. 
+    These will be set to 0.
+    '''
+
+    R.library("biomaRt")
+    
+    columns = {
+        "ensembl_gene_id" : "gene_id",
+        "mim_gene_accession" : "mim_gene_id",
+        "mim_morbid_accession" : "mim_morbid_id",
+        "mim_morbid_description" : "mim_morbid_description",
+        }
+
+    keys = columns.keys()
+
+    mart = R.useMart(biomart="ensembl", dataset="hsapiens_gene_ensembl")
+    result = R.getBM( attributes=keys, mart=mart )
+    
+    outf = open( outfile, "w" )
+    outf.write( "\t".join( [columns[x] for x in keys ] ) + "\n" )
+    
+    for x in ("mim_gene_accession", "mim_morbid_accession"):
+        result[x] = [ ("", y)[y >= 0] for y in result[x] ]
+
+    for data in zip( *[ result[x] for x in keys] ):
+        outf.write( "\t".join( map(str, data) ) + "\n" )
+
+    outf.close()
+
 
 ###################################################################
 ###################################################################
@@ -2860,7 +2901,10 @@ def alleles(): pass
 @follows( loadPolyphen, loadPolyphenMap, loadPanther )
 def effects(): pass
 
-@follows( prepare, consequences, effects, alleles )
+@follows( loadAnnotations, loadAnnotationsSummary)
+def annotations(): pass
+
+@follows( prepare, consequences, effects, alleles, annotations )
 def full():
     pass
 

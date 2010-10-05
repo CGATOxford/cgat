@@ -1247,6 +1247,17 @@ if __name__ == "__main__":
     parser.add_option( "--strict", dest="strict", action="store_true",
                        help="require all genes in foreground to be part of background. "
                        "If not set, genes in foreground will be added to the background [default=%default]." )
+
+    parser.add_option("-q", "--qvalue-method", dest="qvalue_method", type="choice",
+                      choices = ( "empirical", "storey" ),
+                      help="method to perform multiple testing correction by controlling the fdr [default=%default]."  )
+
+    # parser.add_option( "--qvalue-lambda", dest="qvalue_lambda", type="float",
+    #                   help="fdr computation: lambda [default=%default]."  )
+
+    # parser.add_option( "--qvalue-pi0-method", dest="qvalue_pi0_method", type="choice",
+    #                    choices = ("smoother", "bootstrap" ),
+    #                    help="fdr computation: method for estimating pi0 [default=%default]."  )
     
     parser.set_defaults( species = None,
                          filename_genes = "-",
@@ -1262,7 +1273,9 @@ if __name__ == "__main__":
                          gene_pattern = None,
                          sort_order = "ratio",
                          get_genes = None,
-                         strict = False )
+                         strict = False,
+                         qvalue_method = "empirical",
+                         )
 
     (options, args) = E.Start( parser, add_mysql_options = True )
 
@@ -1481,19 +1494,22 @@ if __name__ == "__main__":
 
         if options.fdr:
 
-            E.info( "calculating the FDRs" )
-                
+            E.info( "calculating the FDRs using method `%s`" % options.qvalue_method )
+
             observed_min_pvalues = [ min(x[1].mProbabilityOverRepresentation,
                                          x[1].mProbabilityUnderRepresentation) for x in pairs ]
 
-            if options.sample == 0:
+            if options.qvalue_method == "storey":
+
                 # compute fdr via Storey's method
                 fdr_data = Stats.doFDR( observed_min_pvalues )
-                
+
                 for pair, qvalue in zip( pairs, fdr_data.mQValues ):
                     fdrs[pair[0]] = (qvalue, 1.0, 1.0)
 
-            else:
+            if options.qvalue_method == "empirical":
+                assert options.sample > 0, "requiring a sample size of > 0"
+
                 # compute P-values from sampling
                 observed_min_pvalues.sort()
                 observed_min_pvalues = numpy.array( observed_min_pvalues )
