@@ -1383,7 +1383,7 @@ if __name__ == "__main__":
         ## build background - reconcile with foreground
         ##################################################################
         if input_background == None:
-            background = tuple(gene2go.keys())
+            background = list(gene2go.keys())
         else:
             background = input_background 
             
@@ -1507,7 +1507,7 @@ if __name__ == "__main__":
                 for pair, qvalue in zip( pairs, fdr_data.mQValues ):
                     fdrs[pair[0]] = (qvalue, 1.0, 1.0)
 
-            if options.qvalue_method == "empirical":
+            elif options.qvalue_method == "empirical":
                 assert options.sample > 0, "requiring a sample size of > 0"
 
                 # compute P-values from sampling
