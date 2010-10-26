@@ -348,7 +348,9 @@ def buildFragments( exons, input, pseudogenes, options, coordinate_factor=3,
                     if (peptide_end - dto) % coordinate_factor != 0 :
                         pseudogenes.add( e.mQueryToken )
 
-                    assert( x <= y )
+                    # assert that boundaries work, but ignore errors in last exon
+                    if x < len(input[e.mQueryToken]):
+                        assert x <= y, "sanity check x <= y failed: x=%i, y=%i, l=%i" % (x, y, len(input[e.mQueryToken]) )
 
                     # only add meaningfull fragments with non-zero length.
                     if x < y and x < len(input[e.mQueryToken]) and x >= 0:
