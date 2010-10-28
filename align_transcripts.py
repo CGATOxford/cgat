@@ -348,8 +348,8 @@ def buildFragments( exons, input, pseudogenes, options, coordinate_factor=3,
                     if (peptide_end - dto) % coordinate_factor != 0 :
                         pseudogenes.add( e.mQueryToken )
 
-                    # assert that boundaries work, but ignore errors in last exon
-                    if x < len(input[e.mQueryToken]):
+                    # assert that boundaries work, but ignore errors in last exon or intervals that are smaller than a codon
+                    if x < len(input[e.mQueryToken]) and end - start > 3:
                         assert x <= y, "sanity check x <= y failed: x=%i, y=%i, l=%i" % (x, y, len(input[e.mQueryToken]) )
 
                     # only add meaningfull fragments with non-zero length.
@@ -771,20 +771,28 @@ sequences will be aligned to the cds sequences. This produces better coordinates
                     ndifferences += 1
                     d = ee[-1].mPeptideTo - map_peptide2cds[key].getColTo()
                     if d == 3:
-                        E.warn("assuming difference is stop codon - exon shortened." )
+                        E.warn("%s: assuming difference is stop codon - exon shortened." )
                         nstop_codons += 1
                     elif d > 0:
-                        E.warn("fixing difference." )
+                        E.warn("%s: fixing difference of %i nucleotides - incomplete stop-codon?" % (key,d) )
                     else:
                         # if the exon information extends to higher residues than the map_peptide2cds
                         raise ValueError("not able to fix exon boundary incongruence: %i != %i." %\
                                              (ee[-1].mPeptideTo, map_p2c.getColTo()))
                     
+                    old_peptide_end, old_genome_end = ee[-1].mPeptideTo, ee[-1].mGenomeTo 
                     ee[-1].mPeptideTo -= d
+                    ee[-1].mGenomeTo -= d
+
                     d = ee[-1].mPeptideTo - ee[-1].mPeptideFrom
                     if d <= 0:
                         del ee[-1]
                         ee[-1].mPeptideTo += d
+                        ee[-1].mGenomeTo += d
+
+                    E.debug( "%s: fixed exon end from %i to %i (%i to %i)" % \
+                                 (key, old_peptide_end, ee[-1].mPeptideTo,
+                                  old_genome_end, ee[-1].mGenomeTo ) )
 
                 for e in ee:
                     # map boundaries

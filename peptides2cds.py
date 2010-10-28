@@ -212,7 +212,7 @@ def AlignCodonBased( seq_wobble, seq_cds, seq_peptide, map_p2c, options,
             x_start = max(0, x - dx )
             # map to ensure that no ambiguous residue mappings
             # exist after re-alignment
-            y_start = map_p2c.mapRowToCol( x_start, alignlib.RIGHT )
+            y_start = max(0, map_p2c.mapRowToCol( x_start, alignlib.RIGHT ))
 
             if (x_start, y_start) == last_start:
                 raise ValueError( "infinite loop detected" )
