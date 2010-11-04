@@ -506,7 +506,7 @@ def CountGeneFeatures( first_position,
             ## reset split codon. Do a sanity check.
             if len(partial_codon) % 3 != 0:
                 print alignment
-                raise ValueError, "split codon was not multiple of three!"
+                # raise ValueError, "split codon was not multiple of three!"
                 
             partial_codon = []
             
