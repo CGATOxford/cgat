@@ -40,10 +40,10 @@ import Genomics, FastaIterator
 import numpy
 
 def countMotifs( infile, motifs ):
-    '''find regular expression motifs in
-    sequences within infile.'''
+    '''find regular expression *motifs* in
+    sequences within fasta formatted *infile*.
+    '''
     
-
     it = FastaIterator.FastaIterator( infile )
     positions = []
     while 1:
@@ -84,4 +84,43 @@ def getOccurances( matches ):
             counts[m] += 1
     return counts
 
+iupacdict = {
+    'A':'A',
+    'C':'C',
+    'G':'G',
+    'T':'T',
+    'M':'AC',
+    'R':'AG',
+    'W':'AT',
+    'S':'CG',
+    'Y':'CT',
+    'K':'GT',
+    'V':'ACG',
+    'H':'ACT',
+    'D':'AGT',
+    'B':'CGT',
+    'X':'ACGT',
+    'N':'ACGT'}
 
+regexdict = dict( ( (x[1],x[0]) for x in iupacdict.iteritems() ) )
+
+def iupac2regex( pattern ):
+    '''convert iupac to regex pattern'''
+    pass
+
+def regex2iupac( pattern ):
+    '''convert regex to iupac pattern'''
+    
+    def _split(p):
+        g = p.split("[")
+        for c in g[0]: yield c
+        for x in g[1:]:
+            a,b = x.split("]")
+            yield "".join(sorted(a))
+            for c in b: yield c
+        
+    a = []
+    for x in _split(pattern):
+        a.append( regexdict[x] )
+    return "".join( a )
+                   

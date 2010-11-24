@@ -614,7 +614,8 @@ def doFDR(pvalues,
           fdr_level=None, 
           robust=False,
           smooth_df = 3,
-          smooth_log_pi0 = False):
+          smooth_log_pi0 = False,
+          plot = False ):
     """modeled after code taken from http://genomics.princeton.edu/storeylab/qvalue/linux.html.
 
     I did not like the error handling so I translated most to python.
@@ -656,9 +657,19 @@ def doFDR(pvalues,
                 pi0 = math.log(pi0)
                 
             R.assign( "smooth_df", smooth_df)
-
             spi0 = R("""spi0 <- smooth.spline(vlambda,pi0, df = smooth_df)""")
+            if plot:
+                import matplotlib.pyplot as plt
+                plt.figure()
+                plt.plot( vlambda, pi0 )
+                x2 = numpy.arange( 0, 1, 0.001 )
+                R.assign( "x2", x2)
+                y2 = R("""y2 <- predict( spi0, x = x2 )$y""")
+                plt.plot( x2, y2 )
+                plt.show()
+            
             pi0 = R("""pi0 <- predict( spi0, x = max(vlambda) )$y""")
+
             if smooth_log_pi0:
                 pi0 = math.exp(pi0)
 
@@ -731,15 +742,16 @@ if(robust)
 }
 qvalues[u[m]] <- min(qvalues[u[m]],1)
 
+rqvalues <- qvalues
 for(i in (m-1):1) 
 {
    qvalues[u[i]] <- min(qvalues[u[i]],qvalues[u[i+1]],1)
 }
+
+
 qvalues
 """)
 
-    xvalues = R('''qvalues''')
-    
     result = FDRResult()
     result.mQValues = qvalues
 
@@ -752,8 +764,6 @@ qvalues
     result.mPi0 = pi0
     result.mLambda = vlambda
 
-    result.xvalues = xvalues
-
     return result
 
 def doFDRPython(pvalues, 
@@ -763,7 +773,8 @@ def doFDRPython(pvalues,
                 robust=False,
                 smooth_df = 3,
                 smooth_log_pi0 = False,
-                pi0 = None):
+                pi0 = None,
+                plot = False ):
     """modeled after code taken from http://genomics.princeton.edu/storeylab/qvalue/linux.html.
 
     I did not like the error handling so I translated most to python.
@@ -800,12 +811,26 @@ def doFDRPython(pvalues,
             pi0 = numpy.zeros( len(vlambda), numpy.float )
 
             for i in range( len(vlambda) ):
-                pi0[i] = numpy.mean( [x >= vlambda[i] for x in pvalues ]) / (1.0 -vlambda[i] )
+                pi0[i] = numpy.mean( [x >= vlambda[i] for x in pvalues ]) / (1.0 - vlambda[i] )
 
             if pi0_method=="smoother":
 
                 if smooth_log_pi0: pi0 = math.log(pi0)
-                tck = scipy.interpolate.splrep( vlambda, pi0, k = smooth_df )
+
+                tck = scipy.interpolate.splrep( vlambda,
+                                                pi0, 
+                                                k = smooth_df,
+                                                s = 10000 )
+                
+                if plot:
+                    import matplotlib.pyplot as plt
+                    plt.figure()
+                    plt.plot( vlambda, pi0 )
+                    x2 = numpy.arange( 0, 1, 0.001 )
+                    y2 = scipy.interpolate.splev( x2, tck )
+                    plt.plot( x2, y2 )
+                    plt.show()
+                
                 pi0 = scipy.interpolate.splev( max(vlambda), tck )
                 if smooth_log_pi0: pi0 = math.exp(pi0)
 
@@ -838,7 +863,6 @@ def doFDRPython(pvalues,
         raise ValueError( "'fdr_level' must be within (0, 1].")
 
     # compute qvalues
-
     idx = numpy.argsort( pvalues )
     # monotonically decreasing bins, so that bins[i-1] > x >=  bins[i]
     bins = numpy.unique( pvalues )[::-1]
@@ -860,7 +884,7 @@ def doFDRPython(pvalues,
 
     # bound qvalues by 1 and make them monotonic
     qvalues[idx[m-1]] = min(qvalues[idx[m-1]],1.0)
-    for i in xrange(m-1):
+    for i in xrange(m-2,-1,-1):
         qvalues[idx[i]] = min(min(qvalues[idx[i]],qvalues[idx[i+1]]),1.0)
 
     result = FDRResult()

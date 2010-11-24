@@ -107,7 +107,7 @@ position
    reference base position  (0-based)
 reference_base
    reference base. For indels, this is ``*``.
-consensus_base
+genotype
    consensus base. For indels, this is the genotype
 consensus_quality
    consensus quality
@@ -191,7 +191,7 @@ class BaseAnnotatorSNP( BaseAnnotator ):
         "chromosome", 
         "position", 
         "reference_base", 
-        "consensus_base" )
+        "genotype" )
 
     mAdditionalHeader = (
         "consensus_quality",
@@ -234,8 +234,8 @@ class BaseAnnotatorExons( BaseAnnotator ):
         '''update with snp.'''
 
         exons = list(self.mExons.get( snp.chromosome, 
-                                      snp.position, 
-                                      snp.position+1))
+                                      snp.pos, 
+                                      snp.pos+1))
 
         if exons:
             for start, end, gff in exons:
@@ -361,11 +361,11 @@ class BaseAnnotatorSpliceSites( BaseAnnotator ):
         if reference_base != "*":
             if seq[pos].upper() != reference_base.upper():
                 raise ValueError( "base mismatch at snp %i, expected %s, got %s in %s at position %i; snp=%s" % \
-                                  (snp.position, reference_base, seq[pos], seq, pos,
+                                  (snp.pos, reference_base, seq[pos], seq, pos,
                                    ";".join(map(str, snp))) )
 
             # single base changes
-            variant_bases = Genomics.resolveAmbiguousNA( snp.consensus_base )
+            variant_bases = Genomics.resolveAmbiguousNA( snp.genotype )
             if len(variant_bases) == 1:
                 is_homozygous = True
             else:
@@ -417,7 +417,7 @@ class BaseAnnotatorSpliceSites( BaseAnnotator ):
 
                     if deleted != todelete:
                         raise ValueError( "base mismatch at indel %i, expected %s, got %s in %s at position %i(%i:%i); is_negative_strand=%s, snp=%s" % \
-                                (snp.position, todelete, deleted, seq, pos, xstart, xend,
+                                (snp.pos, todelete, deleted, seq, pos, xstart, xend,
                                  is_negative_strand,
                                  ";".join(map(str, snp))) )
                     del s[xstart:xend]
@@ -436,8 +436,8 @@ class BaseAnnotatorSpliceSites( BaseAnnotator ):
         '''update with snp.'''
 
         junctions = list(self.mJunctions.get( snp.chromosome, 
-                                              snp.position, 
-                                              snp.position+1))
+                                              snp.pos, 
+                                              snp.pos+1))
 
         self.mResults = []
 
@@ -446,7 +446,7 @@ class BaseAnnotatorSpliceSites( BaseAnnotator ):
         if junctions:
             for start, end, data in junctions:
                 strand, intron_start, intron_end, gene_id, transcript_id = data
-                snp_pos = snp.position
+                snp_pos = snp.pos
                 
                 if strand == "-":
                     lcontig = self.mFasta.getLength( snp.chromosome )
@@ -468,7 +468,7 @@ class BaseAnnotatorSpliceSites( BaseAnnotator ):
                     has_overlap = ""
                     
                 E.debug( "building a splice site for %s:%s:%i, splice=%i:%i:%s (snp=%i), splice_name=%s, has_overlap=%s" %\
-                         (snp.chromosome, strand, snp.position,
+                         (snp.chromosome, strand, snp.pos,
                           intron_start, intron_end, strand, snp_pos,
                           str(splice_name),
                           str(has_overlap) ))
@@ -485,7 +485,7 @@ class BaseAnnotatorSpliceSites( BaseAnnotator ):
                     raise ValueError( "no overlap?")
 
                 E.debug( "building a splice site for %s:%s:%i, splice=%i:%i:%s, splice_name=%s, distance=%i, has_overlap=%s, is_homozygous=%s, new_seqs=%s" %\
-                         (snp.chromosome, strand, snp.position,
+                         (snp.chromosome, strand, snp.pos,
                           intron_start, intron_end, strand,
                           str(splice_name),
                           distance,
@@ -554,14 +554,14 @@ class BaseAnnotatorCodon( BaseAnnotator ):
         self.mAnnotations = IndexedFasta.IndexedFasta( annotations_file )
         self.mJunctions = junctions
 
-    def updateSNPs( self, snp, is_negative_strand ):
+    def updateSNPs( self, snp, is_negative_strand, pos ):
         '''update SNPs.'''
 
         contig = snp.chromosome
         lcontig = self.mFasta.getLength( contig )
         reference_base = snp.reference_base
 
-        if snp.consensus_base in 'ACGTacgt':
+        if snp.genotype in 'ACGTacgt':
             # homozygous substitution
             self.mVariantType.append( "O" )
         else:
@@ -578,11 +578,11 @@ class BaseAnnotatorCodon( BaseAnnotator ):
             self.mReferenceAAs.append( Genomics.translate( reference_codon ) )
 
             # process single base changes
-            variant_bases = Genomics.resolveAmbiguousNA( snp.consensus_base )
+            variant_bases = Genomics.resolveAmbiguousNA( snp.genotype )
 
             if reference_codon[ pos ] != reference_base:
                 raise ValueError( "base mismatch at %i (codon=%s,%i): codon:%s != genome:%s; `%s`" % \
-                                  (snp.position, reference_codon, pos, reference_codon[pos], reference_base, ";".join(map(str, snp))) )
+                                      (snp.pos, reference_codon, pos, reference_codon[pos], reference_base, ";".join(map(str, snp))) )
 
             for variant_base in variant_bases:
                 if is_negative_strand:
@@ -597,7 +597,7 @@ class BaseAnnotatorCodon( BaseAnnotator ):
 
         # get location of insertion/deletion. The location
         # is after position, hence get position and position + 1
-        code = self.mAnnotations.getSequence( contig, "+", snp.position, snp.position+2 )
+        code = self.mAnnotations.getSequence( contig, "+", snp.pos, snp.pos+2 )
         self.mCode = code
 
         variants = snp.genotype.split("/")
@@ -651,7 +651,7 @@ class BaseAnnotatorCodon( BaseAnnotator ):
         self.mVariantAAs = []
         self.mVariantType = []
 
-        if snp.position >= lcontig:
+        if snp.pos >= lcontig:
             E.warn("snp is out of range: %s:%i => %s" % (contig, lcontig, ";".join( map(str, snp)) ))
             self.mCode = "X"
             return
@@ -659,64 +659,68 @@ class BaseAnnotatorCodon( BaseAnnotator ):
         reference_base = snp.reference_base
 
         ######
-        code = self.mAnnotations.getSequence( contig, "+", snp.position, snp.position+1 )
+        code = self.mAnnotations.getSequence( contig, "+", snp.pos, snp.pos+1 )
         self.mCode = code
 
+        is_negative_strand = False
+
+        pos = None
         # ignore non-coding SNPs
-        if code not in 'abcABC': return
+        if code in 'abcABC': 
 
-        pos = "abcABC".find(code)
-        is_negative_strand = code in 'ABC'
-        if is_negative_strand:
-            pos -= 3
-            position = lcontig - snp.position - 1
-            strand = "-"
-        else:
-            position = snp.position
-            strand = "+"
+            pos = "abcABC".find(code)
+            is_negative_strand = code in 'ABC'
 
-        # start, end are forward/negative strand coordinates
-        offset = pos % 3 
-        start, end = position - offset, position - offset + 3
+            if is_negative_strand:
+                pos -= 3
+                position = lcontig - snp.pos - 1
+                strand = "-"
+            else:
+                position = snp.pos
+                strand = "+"
 
-        # If a codon is split by an intron, several 
-        # reference codons are possible. 
-        self.mReferenceCodons = set()
-        if self.mJunctions:
-            if contig in self.mJunctions:
-                j = self.mJunctions[contig]
-                for x in xrange(start, end):
-                    if x in j:
-                        # found a junction within codon
-                        for junction_strand, next_start, frame in j[x]:
+            # start, end are forward/negative strand coordinates
+            offset = pos % 3 
+            start, end = position - offset, position - offset + 3
 
-                            # wrong strand
-                            if (junction_strand == "-") != is_negative_strand:
-                                continue
+            # If a codon is split by an intron, several 
+            # reference codons are possible. 
+            self.mReferenceCodons = set()
+            if self.mJunctions:
+                if contig in self.mJunctions:
+                    j = self.mJunctions[contig]
+                    for x in xrange(start, end):
+                        if x in j:
+                            # found a junction within codon
+                            for junction_strand, next_start, frame in j[x]:
 
-                            # codon is complete, junction within frame
-                            if frame == 0:
-                                self.mReferenceCodons.add( self.mFasta.getSequence( contig, strand, start, end ).upper() )                                    
-                                continue
+                                # wrong strand
+                                if (junction_strand == "-") != is_negative_strand:
+                                    continue
 
-                            codon = self.mFasta.getSequence( contig, strand, start, x + 1) + \
-                                self.mFasta.getSequence( contig, strand, next_start, next_start + end - (x+1))
+                                # codon is complete, junction within frame
+                                if frame == 0:
+                                    self.mReferenceCodons.add( self.mFasta.getSequence( contig, strand, start, end ).upper() )                                    
+                                    continue
 
-                            # position within codon
-                            y = x + 1 - start
-                            E.debug( "building a split codon for %s:%s:%i(%i) start=%i, split=%i, cont=%i, end=%i: codon=%s:%s" % \
-                                     (contig, strand, snp.position, position, start, x+1, next_start, next_start + end - (x+1),
-                                     codon[:y], codon[y:]))
+                                codon = self.mFasta.getSequence( contig, strand, start, x + 1) + \
+                                    self.mFasta.getSequence( contig, strand, next_start, next_start + end - (x+1))
 
-                            assert len(codon) == 3
-                            self.mReferenceCodons.add( codon.upper() )
+                                # position within codon
+                                y = x + 1 - start
+                                E.debug( "building a split codon for %s:%s:%i(%i) start=%i, split=%i, cont=%i, end=%i: codon=%s:%s" % \
+                                         (contig, strand, snp.pos, position, start, x+1, next_start, next_start + end - (x+1),
+                                         codon[:y], codon[y:]))
 
-        # ordinary codon                
-        if not self.mReferenceCodons:
-            self.mReferenceCodons.add( self.mFasta.getSequence( contig, strand, start, end ).upper() )
+                                assert len(codon) == 3
+                                self.mReferenceCodons.add( codon.upper() )
 
-        # fixate the order of reference codons
-        self.mReferenceCodons = tuple( self.mReferenceCodons )
+            # ordinary codon                
+            if not self.mReferenceCodons:
+                self.mReferenceCodons.add( self.mFasta.getSequence( contig, strand, start, end ).upper() )
+
+            # fixate the order of reference codons
+            self.mReferenceCodons = tuple( self.mReferenceCodons )
 
         # process according to variant type
         # indels need to be treated differently from SNPs as
@@ -724,7 +728,7 @@ class BaseAnnotatorCodon( BaseAnnotator ):
         if reference_base == "*":
             self.updateIndels( snp, is_negative_strand )
         else:
-            self.updateSNPs( snp, is_negative_strand )
+            self.updateSNPs( snp, is_negative_strand, pos )
 
     def __str__(self):
         return "\t".join( (self.mCode, 

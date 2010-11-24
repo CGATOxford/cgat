@@ -638,12 +638,14 @@ class Prediction:
         (self.score, self.mQueryCoverage, self.mPercentIdentity, self.mPercentSimilarity) = map (\
             float, (self.score, self.mQueryCoverage, self.mPercentIdentity, self.mPercentSimilarity))
 
-        (self.mPredictionId, self.mQueryFrom, self.mQueryTo, self.mQueryLength,
+        (self.mPredictionId, 
+         self.mQueryFrom, self.mQueryTo, self.mQueryLength,
          self.mSbjctFrom, self.mSbjctTo,
          self.mSbjctGenomeFrom, self.mSbjctGenomeTo,
          self.mNGaps, self.mNIntrons, self.mNSplits, self.mNStopCodons,
          self.mNFrameShifts, self.mNAssembled) = map (\
-            int, ( self.mPredictionId, self.mQueryFrom, self.mQueryTo, self.mQueryLength,
+            int, ( self.mPredictionId,
+                   self.mQueryFrom, self.mQueryTo, self.mQueryLength,
                    self.mSbjctFrom, self.mSbjctTo,
                    self.mSbjctGenomeFrom, self.mSbjctGenomeTo,
                    self.mNGaps, self.mNIntrons, self.mNSplits, self.mNStopCodons,
@@ -763,3 +765,17 @@ class Predictions :
             p.score += pp.score
 
         return p
+
+
+def iterate( infile ):
+    '''iterate over predicions in infile.'''
+
+    for line in infile:
+        if line.startswith("#"): continue
+        if line.startswith("id\tquery_token"): continue
+        p = Prediction()
+        p.read( line )
+        yield p
+        
+
+    

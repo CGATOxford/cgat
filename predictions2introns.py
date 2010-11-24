@@ -195,7 +195,10 @@ if __name__ == '__main__':
             if intron_is_l3:
                 ## get sequence, include also residues from split codons
                 ## when checking for stop codons.
-                if e.mAlignment[0][0] == "S":
+                ## note that e.mAlignment can sometimes be empty. This might
+                ## be an exonerate bug. In the alignment string there are two
+                ## consecutive exons.
+                if e.mAlignment and e.mAlignment[0][0] == "S":
                     offset_left = last_e.mAlignment[-1][2]
                     offset_right = e.mAlignment[0][2]
                 else:

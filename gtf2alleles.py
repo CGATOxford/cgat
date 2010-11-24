@@ -654,10 +654,12 @@ def buildAlleles( transcript,
 
         # find the first stop codon
         if start_frame != 0:
-            # ignore first incomplete base
+            # ignore first, potentially incomplete base
             pep_first_stop = peptide.upper().find( "X", 1 )
         else:
             pep_first_stop = peptide.upper().find( "X" )
+
+        E.debug("%s: translated peptide = %s, first stop at %i" % (transcript_id, peptide, pep_first_stop))
 
         peptide = peptide.replace( "?", "x" )
 
@@ -688,7 +690,7 @@ def buildAlleles( transcript,
                 reference_first_stop_start, reference_first_stop_end = \
                     (map_cds2reference.mapRowToCol( cds_first_stop ),
                      map_cds2reference.mapRowToCol( cds_first_stop + 3 ) )
-            elif cds_first_stop < len(peptide) - 1:
+            elif pep_first_stop < len(peptide) - 1:
                 is_stop_truncated = True
                 cds = cds[:cds_first_stop]
                 peptide[:pep_first_stop]
@@ -696,6 +698,11 @@ def buildAlleles( transcript,
                 reference_first_stop_start, reference_first_stop_end = \
                     (map_cds2reference.mapRowToCol( cds_first_stop ),
                      map_cds2reference.mapRowToCol( cds_first_stop + 3 ) )
+            else:
+                E.warn( "first stop at %i(cds=%i) ignored: last exon start at %i" % \
+                            (pep_first_stop, 
+                             cds_first_stop,
+                             cds_starts[-1]) )
 
         else:
             # -1 for no stop codon found
@@ -883,7 +890,7 @@ def main( argv = None ):
         extended_start = max( 0, overall_start - options.border )
         extended_end = min( lcontig, overall_end + options.border )
 
-        if contig.startswith("chr"): contig = contig[3:]
+        # if contig.startswith("chr"): contig = contig[3:]
 
         variants = variant_getter( contig, extended_start, extended_end )
 

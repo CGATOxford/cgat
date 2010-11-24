@@ -846,69 +846,70 @@ if __name__ == "__main__":
                        help="PAML should cleanup data:  0=only gaps within pair are removed, 1=columns in the mali with gaps are removed.")
 
     parser.add_option("--dump", dest="dump", action="store_true",
-                      help="dump raw output.")
+                      help="dump raw output [%default].")
     
     parser.add_option( "--set-optimization-threshold", dest="optimization_threshold", type="string",
-                      help="set paml optimization threshold.")
+                      help="set paml optimization threshold [%default].")
     
     parser.add_option("-i", "--input-format", dest="input_format", type="choice",
                       choices=("plain", "fasta", "clustal", "stockholm", "phylip" ),
-                      help="input format of multiple alignment"  )
+                      help="input format of multiple alignment [%default]."  )
 
     parser.add_option( "--pairwise", dest="pairwise", action="store_true",
-                      help="force pairwise comparison.")
+                      help="force pairwise comparison [%default].")
 
     parser.add_option( "--iteration", dest="iteration", type="choice",
                        choices=("all-vs-all", "first-vs-all", "pairwise", "tree" ),
-                       help="iteration mode." )
+                       help="iteration mode [%default]." )
 
     parser.add_option( "--no-clean", dest="clean_mali", action="store_false",
                       help="do not clean multiple alignment before submitting to codeml. It might take too long for very large sequences.")
 
     parser.add_option( "--method", dest="method", type="choice",
-                       choices=("paml", "xrate") )
+                       choices=("paml", "xrate"),
+                       help = "choose method for rate computation [%default]" )
 
     parser.add_option( "--xrate-model", dest="xrate_model", type="choice", 
                       choices=("f3x4-two", "f3x4-four", "sn", "akaksgc", "ef3x4-four", "f3x4-fourproducts" ),
-                      help="models to use."  )
+                      help="models to use [%default]."  )
 
     parser.add_option("-w", "--write", dest="write", type="choice", action="append",
                       choices=("input_fixed", "trained_fixed", "input_variable", "trained_variable", "all" ),
-                      help="output sections to write."  )
+                      help="output sections to write [%default]."  )
 
     parser.add_option("-o", "--output-pattern", dest="output_pattern", type="string",
-                      help="output pattern for output files." )
+                      help="output pattern for output files [%default]." )
 
     parser.add_option("--xrate-insert-frequencies", dest="xrate_insert_frequencies", action="store_true",
-                      help="estimate codon frequencies from input." )
+                      help="estimate codon frequencies from input [%default]." )
 
     parser.add_option("--xrate-uniform-frequencies", dest="xrate_insert_frequencies", action="store_false",
-                      help="use uniform codon frequencies." )
+                      help="use uniform codon frequencies [%default]." )
 
     parser.add_option("--xrate-fix-frequencies", dest="xrate_fix_frequencies", action="store_true",
-                      help="set initial frequencies to const." )
+                      help="set initial frequencies to const [%default]." )
 
     parser.add_option("--xrate-estimate-frequencies", dest="xrate_fix_frequencies", action="store_false",
-                      help="estimate nucleotide frequencies." )
+                      help="estimate nucleotide frequencies [%default]." )
 
     parser.add_option("--xrate-fix-rates", dest="fix_rates", type="string",
                       help="""fix rates to specified values. Note that the number of rates has to match the ones
-in the model. Provide values in a comma-separated list.""")
+in the model. Provide values in a comma-separated list [%default].""")
 
     parser.add_option( "--xrate-min-increment", dest="xrate_min_increment", type = float,
-                       help="minimum increment to stop iteration in xrate." )    
+                       help="minimum increment to stop iteration in xrate [%default]." )    
 
     parser.add_option( "--min-overlap", dest="min_overlap", type="int",
-                       help="minimum overlap between a sequence pair in residues.")
+                       help="minimum overlap between a sequence pair in residues [%default].")
     
     parser.add_option( "--with-rho", dest="with_rho", action="store_true",
-                      help="output rho values (substitution rates per codon). This requires a patched version of PAML."  )
+                      help="output rho values (substitution rates per codon). This requires a patched version of PAML [%default]."  )
 
     parser.add_option( "--with-counts", dest="with_counts", action="store_true",
-                      help="output counts of aligned positions, transitions and transversions."  )
+                      help="output counts of aligned positions, transitions and transversions [%default]."  )
 
     parser.add_option( "--remove-stops", dest="remove_stops", action="store_true",
-                      help="remove stop codons."  )
+                      help="remove stop codons [%default]."  )
 
     parser.add_option("--replicates", dest="replicates", type="int",
                       help="in benchmarking mode expect ## replicates [%default]." )

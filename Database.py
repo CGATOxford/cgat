@@ -327,7 +327,11 @@ def executewait( dbhandle, statement, error = None, retries = -1, wait=5):
 
         
 
-
+def getColumnNames( dbhandle, table ):
+    '''get column names of a table from a database.'''
+    
+    cc = executewait( dbhandle, "SELECT * FROM %s LIMIT 1" % table )
+    return tuple([ x[0] for x in cc.description ])
 
 
 

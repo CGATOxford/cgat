@@ -66,7 +66,7 @@ PARAM_CLUSTER_OPTIONS?=
 ## in calling Makefile.
 ################################################
 ## database
-PARAM_PSQL_DATABASE?=andreas
+PARAM_PSQL_DATABASE?=postgres
 ## host
 PARAM_PSQL_HOST?=db
 ## user
@@ -87,6 +87,10 @@ CMD_TABLE_PREFIX=`echo $* | perl -p -e "s/\./_/g"`
 
 ## Options for python scripts
 PSQL_PYTHON_OPTIONS=--connection=$(PARAM_PSQL_HOST):$(PARAM_PSQL_DATABASE)
+
+#########################################################################
+## empty target
+nop:
 
 #########################################################################
 ## output help - a list of primary targets, parameters and rules defined
@@ -144,7 +148,7 @@ CMD_CLOSE?=@echo "\# job finished at: `date`" >> $@
 ## record benchmarking information
 PYTHON_BENCHMARK_OPTIONS?=--timeit=$(DIR_ROOT)timeit.log --timeit-name=$@
 PYTHON_OPTIONS?=$(PYTHON_BENCHMARK_OPTIONS)
-CMD_BENCHMARK=run.py $(PYTHON_OPTIONS)
+CMD_BENCHMARK=python $(DIR_SCRIPTS)run.py $(PYTHON_OPTIONS)
 
 #########################################################################
 ## prefix for commands to be executed on cluster nodes

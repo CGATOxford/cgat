@@ -796,6 +796,7 @@ if __name__ == '__main__':
     parser.add_option("--filter-target", dest="filename_filter_target", type="string",
                       help="filename with intervals in the target to filter (in gff format) [default=%default]."  )
 
+
     parser.add_option("-m", "--method", dest="methods", type="choice", action="append",
                       choices=("map", "merge", 
                                "add-sequence", "complement", 
@@ -811,6 +812,10 @@ if __name__ == '__main__':
     parser.add_option("--select", dest="select", type="choice",
                       choices=("most-nmatches", "least-nmatches", "most-nmismatches", "least-nmismatches" ),
                       help="entry to select [default=%default]."  )
+
+    parser.add_option("--header", dest="header", type="choice",
+                      choices=( "none", "table", "full" ),
+                      help="output psl header [default=%default]."  )
 
     parser.add_option("--format", dest="format", type="choice",
                       choices=("gff", "gtf" ),
@@ -857,6 +862,7 @@ if __name__ == '__main__':
                          id_format = "%06i",
                          unique = False,
                          output_filename_map = None,
+                         header = None,
                          test = None )
     
     (options, args) = E.Start( parser, add_pipe_options = True )
@@ -875,6 +881,12 @@ if __name__ == '__main__':
         raise ValueError( "please supply both indexed query and target/genome sequence data." )
 
     iterator = Blat.iterator( options.stdin )
+
+    if options.header != None or options.header != "none":
+        if options.header == "table":
+            options.stdout.write( "\t".join( Blat.FIELDS ) + "\n" )
+        elif options.header == "full":
+            options.stdout.write( Blat.HEADER + "\n" )
 
     for method in options.methods:
     

@@ -65,7 +65,7 @@ The sequences are assumed to be nucleotide sequences.
 """
 
 import Experiment
-import IndexedFasta, Blat
+import IndexedFasta, Blat, Genomics
 
 import psyco_full
 import sys
@@ -94,11 +94,27 @@ if __name__ == "__main__":
                       choices=("full", "pileup-query", "pileup-target", "gapless" ),
                       help="method to use for constructing the alignment [%default]."  )
 
+    parser.add_option("--forward-query", dest="forward_query", action="store_true",
+                      help="reverse-complement sequences such that query is always on forward strand [%default]"  )
+
+    parser.add_option("--target-prefix", dest="target_prefix", type="string",
+                      help="prefix to use for target [%default]."  )
+
+    parser.add_option("--query-prefix", dest="query_prefix", type="string",
+                      help="prefix to use for query [%default]."  )
+
+    parser.add_option("--id", dest="id", type="choice",
+                      choices=("numeric", "query"),
+                      help = "choose type of identifier to use [%default]" )
+
     parser.set_defaults(
         filename_query = None,
         filename_target = None,
         method = "full",
         output_format_id = "%06i",
+        target_prefix = "",
+        query_prefix = "",
+        forward_query = False,
         )
     
     (options, args) = Experiment.Start( parser )
@@ -123,13 +139,19 @@ if __name__ == "__main__":
         t = target.getSequence( match.mSbjctId, "+", match.mSbjctFrom, match.mSbjctTo )
         query_ali, sbjct_ali = getAlignment( m, q, t, options )
 
-        options.stdout.write(">%s:%s/%i-%i\n%s\n>%s:%s%s/%i-%i\n%s\n" % \
-                                 ( options.output_format_id % id,
-                                   match.mQueryId, match.mQueryFrom, match.mQueryTo,
-                                   query_ali,
-                                   options.output_format_id % id, 
-                                   match.mSbjctId, match.strand, match.mSbjctFrom, match.mSbjctTo,
-                                   sbjct_ali ) )
+        if match.strand == "-" and options.forward_query:
+            query_ali = Genomics.complement( query_ali )
+            sbjct_ali = Genomics.complement( sbjct_ali )
+
+        options.stdout.write(">%s%s:%s/%i-%i\n%s\n>%s%s:%s%s/%i-%i\n%s\n" % \
+                                 (options.query_prefix, 
+                                  options.output_format_id % id,
+                                  match.mQueryId, match.mQueryFrom, match.mQueryTo,
+                                  query_ali,
+                                  options.target_prefix,
+                                  options.output_format_id % id, 
+                                  match.mSbjctId, match.strand, match.mSbjctFrom, match.mSbjctTo,
+                                  sbjct_ali ) )
         id += 1
 
     Experiment.Stop()

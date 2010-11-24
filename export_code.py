@@ -21,8 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-export_code.py - 
-======================================================
+export_code.py - package all code from a pipeline
+=================================================
 
 :Author: Andreas Heger
 :Release: $Id$
@@ -32,9 +32,10 @@ export_code.py -
 Purpose
 -------
 
-.. todo::
-   
-   describe purpose of the script.
+This script analyses makefile based pipelines and
+copies all the python scripts and libraries needed
+for running it into a single package.
+
 
 Usage
 -----
@@ -58,7 +59,7 @@ Code
 '''
 import sys, string, re, optparse, time, os, shutil, tempfile
 
-import Experiment
+import Experiment as E
 
 USAGE="""python %s
 """ % sys.argv[0]
@@ -118,78 +119,10 @@ have.
 README_GPIPE="""
 SETUP
 
-The gene prediction pipeline requires several input files:
+Documentation can be found at 
 
-1. peptides.fasta: a set of peptide sequences (transcripts). These are the templates
-used for gene finding and transcript prediction. This a standard fasta formatted file.
-The identifier is the everything on the first line up to the first white space
-character.
+http://wwwfgu.anat.ox.ac.uk/~andreas/documentation/cgat/pipelines/Gpipe.html
 
-2. genome.fasta and genome.idx: An indexed genome file. The index and the file can
-be created from a set of fasta formatted input files by the command:
-
-        python %(dir)s/IndexedFasta.py genome files
-
-3. peptides2genes: A map of transcripts to genes. This file contains a tab-separated list
-that map transcripts to genes in the input peptide set. The format is:
-
-        gene1   transcript1
-        gene1   transcript2
-        gene2   transcript3
-        ...
-
-4. Check if everything is present. Run
-
-        make check-setup
-
-RUNNING
-
-The pipeline uses makefiles to control script logic. Before executing any make commands,
-run
-
-        source setup.csh
-
-to update your paths and other environment variables.
-
-Setup the tables in the databases by running the following command:
-
-        make prepare
-
-This needs to be done only once.
-
-Then run:
-
-        make all
-
-to predict transcripts. Output goes to the file "log" in the working directory.
-
-NOTES:
-
-The pipeline assumes that various bioinformatic tools are in the system path. Requirements are:
-
-   * exonerate
-   * seg
-
-Furthermore, the pipeline requires:
-
-   * a postgres database server (http://www.postgresql.org)
-   * various python modules (numpy, ...), see check_setup.py
-   * alignlib (see http://ekhidna.biocenter.helsinki.fi/downloads/alignlib)) with
-     the python extension installed.
-
-We use Sun Grid Engine as job queueing system and assume that for all nodes
-the code and data can be reached via the same mount point. All jobs that are run on
-the cluster are prefixed by the MAKE variable $(CMD_REMOTE_SUBMIT). You can set this
-variable to the empty string to run everything locally or on a mosix cluster:
-
-        make all CMD_REMOTE_SUBMIT=
-
-DISCLAIMER:
-
-This pipeline was developed for the resources and setup we have here. Though the scripts
-(python and perl) and makefiles should be portable thanks to the widespread distribution of
-perl, python and make, you might have to dig into code if your setup varies from the one we
-have.
 """
 
 def getMakefiles( makefiles, source_directory = "", ignore_missing = False):
@@ -249,7 +182,7 @@ def getScripts( makefiles, source_directory ):
     scripts = set()
     
     for makefile in makefiles:
-        for line in open( source_directory + makefile,"r"):        
+        for line in open( makefile,"r"):        
             if re.search( "python", line):
                 try:
                     python_scripts = re.search( "python\s+(\S+.py)", line ).groups()
@@ -316,16 +249,23 @@ if __name__ == "__main__":
                       choices=("geneprediction", "codonbias", "geneprediction",
                                "codeml_benchmark" ) )
 
+    parser.add_option( "--test", dest="test", action = "store_true",
+                       help = "testing mode [%default]" )
+
+    parser.add_option( "--release", dest="version", type="string",
+                       help = "the version string [%default]" )
+                       
+
     parser.set_defaults(
         tool_set = "geneprediction",
-        libdirs = ("/net/cpp-group/lib/python/", ),
-        scriptdirs = ("/net/cpp-group/scripts/tools/", ),
+        libdirs = ("/home/andreas/cgat/", ),
+        scriptdirs = ("/home/andreas/cgat/", ),
         name = None,
         version = "0.0.1",
         test = False,
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     source_directory = os.path.realpath(os.path.dirname(sys.argv[0])) + "/"
     
@@ -339,35 +279,34 @@ if __name__ == "__main__":
         method = options.tool_set
         readme = README_GENERIC
         if options.name == None: options.name = options.tool_set
-        
-    makefiles = getMakefiles( makefiles, source_directory )
+    else: 
+        raise ValueError( "unknown toolset %s" % options.tool_set)
 
     if options.test:
         tmp_dir = "tmp"
         os.mkdir(tmp_dir)
     else:
         tmp_dir = tempfile.mkdtemp()
-
-    target_directory= "%s/%s-%s/" % ( tmp_dir, options.name, options.version )
-
-    os.mkdir( target_directory )
-
+        
     nmissed_makefiles, nmissed_scripts, nmissed_modules = 0, 0, 0
 
+    makefiles = getMakefiles( makefiles, os.path.join( source_directory, "makefiles" ) )
+    target_directory= "%s/%s-%s/makefiles/" % ( tmp_dir, options.name, options.version )
+    os.makedirs( target_directory )
+
     for makefile in makefiles:
-        
-        if os.path.exists( source_directory + makefile ):
-            shutil.copy( source_directory + makefile,
-                         target_directory + makefile )
-            
-            if options.loglevel >= 1:
-                options.stdout.write("makefile added: %s\n" % makefile )
+
+        src = os.path.join( source_directory, makefile )
+
+        if os.path.exists( src ):
+            shutil.copy( src, target_directory )
+            E.info( "makefile added: %s" % makefile )
         else:
-            if options.loglevel >= 1:            
-                options.stdout.write("makefile missed: %s\n" % makefile )
+            E.warn( "makefile missed: %s" % makefile )
             nmissed_makefiles += 1
             
     scripts = getScripts( makefiles, source_directory )
+    target_directory= "%s/%s-%s/" % ( tmp_dir, options.name, options.version )
     modules = set()
     for language, script in scripts:
 
@@ -375,19 +314,17 @@ if __name__ == "__main__":
         script = os.path.basename( script )        
         script = script[script.find(")")+1:]
 
-        for dir in (source_directory,) + options.scriptdirs:
-            if os.path.exists( dir + script ):
-                shutil.copy( dir + script,
-                             target_directory + script )
+        for d in (source_directory,) + options.scriptdirs:
+            src = os.path.join( source_directory, script )
 
+            if os.path.exists( src ):
+                shutil.copy( src, target_directory )
                 if language == "python":
                     modules.add( script )
-                if options.loglevel >= 1:
-                    options.stdout.write("script added: %s from %s\n" % (script, dir) )
+                E.info( "script added: %s from %s" % (script, dir) )
                 break
         else:
-            if options.loglevel >= 1:
-                options.stdout.write("script missed: %s\n" % (script) )
+            E.warn( "script missed: %s" % (script) )
             nmissed_scripts += 1
 
     modules, system_modules = getModules( modules,
@@ -444,11 +381,10 @@ if __name__ == "__main__":
     os.system( "tar -C %s -czf %s/%s-%s.tgz %s-%s" % (tmp_dir, tmp_dir, options.name, options.version,
                                                       options.name, options.version, ) )
     
-    if options.loglevel >= 1:
-        options.stdlog.write("# nmissed: makefiles=%i, scripts=%i, modules=%i\n" % (nmissed_makefiles, nmissed_scripts, nmissed_modules ) )
+    E.info( "nmissed: makefiles=%i, scripts=%i, modules=%i" % (nmissed_makefiles, nmissed_scripts, nmissed_modules ) )
 
     if not options.test:
         shutil.copy( "%s/%s-%s.tgz" % (tmp_dir, options.name, options.version) , "." )
         shutil.rmtree( tmp_dir )
         
-    Experiment.Stop()
+    E.Stop()

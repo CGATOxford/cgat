@@ -32,11 +32,10 @@ create-log-hook:
 	@ls -l $(PARAM_INPUT_GENOME).{fasta,idx} $(TOLOG)
 	@echo "#################`date`#############################" $(TOLOG)
 	@echo "# program versions:" $(TOLOG)
-	@echo "genewise  : `which genewise`	`genewise -version | grep Version`" $(TOLOG)
-	@echo "exonerate : `which exonerate`     `exonerate --version | head -n 1`" $(TOLOG)
-	@echo "python    : `which python`	`python -V 2>&1`" $(TOLOG) 
-	@echo "perl      : `which perl`		`perl -v | grep 'This is'` " $(TOLOG)
-	@echo "cd-hit    : `which cd-hit`" $(TOLOG)
+	@echo "exonerate : `which exonerate | head -n 1`     `exonerate --version | head -n 1`" $(TOLOG)
+	@echo "python    : `which python | head -n 1`	`python -V 2>&1`" $(TOLOG) 
+	@echo "perl      : `which perl | head -n 1`		`perl -v | grep 'This is'` " $(TOLOG)
+	@echo "seg       : `which seg | head -n 1`" $(TOLOG)
 	@echo "#################`date`#############################" $(TOLOG)
 
 #########################################################################

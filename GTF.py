@@ -582,3 +582,7 @@ def readAndIndex( iterator ):
         index.add( gtf.contig, gtf.start, gtf.end, gtf )
 
     return index
+
+def getGene2Transcript( iterator ):
+    '''return a dictionary mapping a gene to its transcripts.'''
+    

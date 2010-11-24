@@ -72,7 +72,7 @@ class UsageError(Error):
 
 class Muscle:
 
-    mExecutable = "muscle -maxmb 4000"
+    mExecutable = "muscle -maxmb 10000"
     
     def __init__( self ):
         

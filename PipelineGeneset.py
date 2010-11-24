@@ -285,7 +285,7 @@ def buildCDNAFasta( infile, outfile ):
 ############################################################
 ############################################################
 def buildPeptideFasta( infile, outfile ):
-    '''load ENSEMBL peptide file
+    '''create ENSEMBL peptide file
 
     *infile* is an ENSEMBL .pep.all.fa.gz file.
     '''
@@ -300,6 +300,29 @@ def buildPeptideFasta( infile, outfile ):
     '''
 
     P.run()
+
+############################################################
+############################################################
+############################################################
+def loadPeptideSequences( infile, outfile ):
+    '''load ENSEMBL peptide file into database
+
+    *infile* is an ENSEMBL .pep.all.fa.gz file.
+    '''
+    table = P.toTable( outfile )
+
+    statement = '''gunzip 
+    < %(infile)s
+    | perl -p -e 'if ("^>") { s/ .*//};'
+    | python %(scriptsdir)s/fasta2table.py --section=length --section=sequence
+    | perl -p -e 's/id/protein_id/'
+    | csv2db.py %(csv2db_options)s 
+              --index=protein_id 
+              --table=%(table)s 
+    > %(outfile)s'''
+
+    P.run()
+
 
 ############################################################
 ############################################################
@@ -337,7 +360,6 @@ def buildCDSFasta( infile, outfile ):
     tmpfile.close()
     
     tmpfilename = tmpfile.name
-
 
     statement = '''
     python %(scriptsdir)s/peptides2cds.py 

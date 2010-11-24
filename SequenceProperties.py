@@ -79,7 +79,32 @@ class SequenceProperties(object):
     def getHeaders( self ):
         return []
 
+###########################################################################
+class SequencePropertiesSequence(SequenceProperties):
 
+    sequence = ""
+    def __init__( self ):
+        SequenceProperties.__init__(self)
+        
+    def addProperties( self, other ):
+        """add properties."""
+        SequenceProperties.addProperties(self,other)                
+
+    def updateProperties( self ):
+        SequenceProperties.updateProperties(self)        
+
+    def loadSequence( self, sequence ):
+        """load sequence properties from a sequence."""
+        SequenceProperties.loadSequence( self, sequence )
+        self.sequence = sequence
+
+    def getFields(self):
+        fields = SequenceProperties.getFields(self)
+        return fields + [ self.sequence,]
+    
+    def getHeaders( self ):
+        fields = SequenceProperties.getHeaders(self)
+        return fields + ["sequence"]
 
 ###########################################################################
 class SequencePropertiesLength(SequenceProperties):
@@ -96,7 +121,6 @@ class SequencePropertiesLength(SequenceProperties):
         SequenceProperties.addProperties(self,other)                
 
     def updateProperties( self ):
-        
         SequenceProperties.updateProperties(self)        
     
     def loadSequence( self, sequence ):

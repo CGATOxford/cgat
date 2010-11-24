@@ -155,7 +155,7 @@ def Start( parser = None,
         parser.add_option("-U", "--user", dest="user", type="string",
                           help="database user name [%default]."  )
         
-        parser.set_defaults( psql_connection = "db:andreas" )
+        parser.set_defaults( psql_connection = "fgu202:postgres" )
         parser.set_defaults( user = "" )
         
     if add_cluster_options:

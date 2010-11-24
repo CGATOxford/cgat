@@ -151,7 +151,6 @@ def segmentFixedWidthWindows( infile, window_size ):
         contig = re.sub("\s.*", "", cur_record.title )
         seq = cur_record.sequence
         size = len(cur_record.sequence)
-
         
         for x in range(0, size, window_increment):
             s = seq[x:x+window_size].upper()
@@ -193,7 +192,8 @@ def main( argv = None ):
                       help="Choose n as minimum length [default=%default]" )
 
     parser.add_option("-m", "--method", dest="method", type="choice",
-                      choices = ("GCProfile", "fixed-width-windows" ),
+                      choices = ("GCProfile", 
+                                 "fixed-width-windows-gc" ),
                       help="Method to use for segmentation [default=%default]" )
 
     parser.add_option( "-w", "--window-size=", dest="window_size", type="int",

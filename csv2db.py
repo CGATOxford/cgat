@@ -178,7 +178,8 @@ def createTable( dbhandle, error, options, rows = None, headers = None,
             t = "TEXT"
 
         # remove special characters from column names
-        hh = re.sub( "[,;.:\-\+/]", "_", hh)
+        hh = re.sub( '''['"]''', "", hh)
+        hh = re.sub( "[,;.:\-\+/ ()]", "_", hh)
         columns.append( "%s %s" % (hh, t))
 
     # delete old table if it exists
@@ -220,7 +221,7 @@ def createTable( dbhandle, error, options, rows = None, headers = None,
             if not options.retry:
                 raise error, msg
             if not re.search("locked", str(msg)):
-                raise error, msg
+                raise error( "%s: %s" % (msg, statement))
             time.sleep(5)
             continue
         break

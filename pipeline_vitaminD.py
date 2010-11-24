@@ -83,10 +83,10 @@ import pipeline_vitaminD_expression as PExpression
 import pipeline_vitaminD_intervals as PIntervals
 import pipeline_vitaminD_motifs as PMotifs
 import PipelineGeneset as PGeneset
+import time
 
 if not os.path.exists("conf.py"):
     raise IOError( "could not find configuration file conf.py" )
-
 execfile("conf.py")
 
 TARGET_ANNOTATION= 'ensembl_regions.gff'
@@ -122,7 +122,7 @@ def indexGenome( infile, outfile ):
     '''
 
     statement = '''fold %(infile)s > %(outfile)s'''
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
     
     pysam.faidx( outfile )
 
@@ -1081,7 +1081,7 @@ elif PARAMS["method"] == "bowtie-macs":
              { if ($1 != "") { readname=sprintf( "%%s_%%s:%%s:%%s:%%s:%%s", $1,$2,$3,$4,$5,$6);}
               else { readname=sprintf( "%%s:%%s:%%s:%%s:%%s", $1,$3,$4,$5,$6); }
               printf("@%%s\\n%%s\\n+\\n%%s\\n",readname,$9,$10);}' |\
-        bowtie --sam %(bowtie_options)s %(bowtie_index)s - 2>%(outfile)s.log |\
+        bowtie --sam %(intervals_bowtie_options)s %(intervals_bowtie_index)s - 2>%(outfile)s.log |\
         samtools import %(genome)s - %(tmpfilename)s >& %(outfile)s.log;
         samtools sort %(tmpfilename)s %(prefix)s;
         samtools index %(outfile)s;
@@ -1109,15 +1109,14 @@ elif PARAMS["method"] == "bowtie-macs":
                 regex(r"(run.*).readstats"),
                 inputs( (r"\1.bam", r"\1.readstats") ),
                 r"\1.norm.bam" )
-    def normalizeBAMPerReplicate( infile, outfile ):
+    def normalizeBAMPerReplicate( infiles, outfile ):
         '''build a normalized BAM file such that all
         files have approximately the same number of 
         reads.
 
         Duplicated reads are removed at the same time.
         '''
-        track = infile[:-len(".bam")]
-        PIntervals.buildNormalizedBAM( ((infile,track + ".readstats"),), outfile )
+        PIntervals.buildNormalizedBAM( (infiles,), outfile )
 
     ############################################################
     ############################################################
@@ -1126,15 +1125,14 @@ elif PARAMS["method"] == "bowtie-macs":
                 regex(r"(control.*).readstats"),
                 inputs( (r"\1.bam", r"\1.readstats") ),
                 r"\1.norm.bam" )
-    def normalizeBAMControls( infile, outfile ):
+    def normalizeBAMControls( infiles, outfile ):
         '''build a normalized BAM file such that all
         files have approximately the same number of 
         reads.
 
         Duplicated reads are removed at the same time.
         '''
-        track = infile[:-len(".bam")]
-        PIntervals.buildNormalizedBAM( ((infile,track + ".readstats"),), outfile )
+        PIntervals.buildNormalizedBAM( (infiles,), outfile )
 
     ############################################################
     ############################################################
@@ -1241,6 +1239,9 @@ elif PARAMS["method"] == "bowtie-macs":
                 "_bed.import" )
     def importCombinedIntervals( infiles, outfile ):
         PIntervals.importCombinedIntervals( infiles, outfile )
+
+    @follows( exportIntervalsAsBed )
+    def combineReplicates( ): pass
 
     ############################################################
     ############################################################
@@ -1484,14 +1485,14 @@ elif PARAMS["method"] == "bowtie-macs-replicate":
              { if ($1 != "") { readname=sprintf( "%%s_%%s:%%s:%%s:%%s:%%s", $1,$2,$3,$4,$5,$6);}
               else { readname=sprintf( "%%s:%%s:%%s:%%s:%%s", $1,$3,$4,$5,$6); }
               printf("@%%s\\n%%s\\n+\\n%%s\\n",readname,$9,$10);}' |\
-        bowtie --sam %(bowtie_options)s %(bowtie_index)s - 2>%(outfile)s.log |\
+        bowtie --sam %(intevals_bowtie_options)s %(intervals_bowtie_index)s - 2>%(outfile)s.log |\
         samtools import %(genome)s - %(tmpfilename)s >& %(outfile)s.log;
         samtools sort %(tmpfilename)s %(prefix)s;
         samtools index %(outfile)s;
         rm -f %(tmpfilename)s
         '''
 
-        P.run( **dict( locals().items() + PARAMS.items() ) )
+        P.run()
 
         if os.path.exists( tmpfilename ):
             os.unlink( tmpfilename )
@@ -3562,7 +3563,7 @@ if PARAMS["motifs_tomtom_master_motif"] != "":
         statement = '''
            %(motifs_exectomtom)s -text -query %(motifs_tomtom_master_motif)s -target %(infile)s > %(outfile)s
            '''
-        P.run( **dict( locals().items() + PARAMS.items() ) )
+        P.run()
 
     ############################################################
     ############################################################
@@ -3597,7 +3598,7 @@ if PARAMS["motifs_tomtom_master_motif"] != "":
         < %(tmpname)s > %(outfile)s
         '''
 
-        P.run( **dict( locals().items() + PARAMS.items() ) )
+        P.run()
         os.unlink( tmpname )
 
     @transform( runTomTom, suffix(".tomtom"), ".motif" )
@@ -6094,6 +6095,32 @@ def annotator():
           )
 def full():
     pass
+
+@files( ((".", "clean.log"),))
+def clean( infile, outfile):
+    '''remove all files not necessary for document creation.'''
+    
+    patterns = ("*.controlfasta",
+                "*.mast.gz",
+                "*.norm.bam",
+                "*.norm.bam.bai",
+                )
+    
+    cleaned = P.clean( patterns, dry_run = False )
+
+    outf = open( outfile, "a" )
+
+    outf.write( "filename\tsize\taccess\tmodified\tcreated\n" )
+    
+    for filename, statinfo in cleaned:
+        outf.write( "\t".join( map(str, (filename,
+                                         statinfo.st_size,
+                                         statinfo.st_atime,
+                                         statinfo.st_mtime,
+                                         statinfo.st_ctime)) ) + "\n" )
+    
+    outf.close()
+
 
 if __name__== "__main__":
     #P.checkFiles( ("genome.fasta", "genome.idx" ) )

@@ -33,7 +33,7 @@ Code
 ----
 
 '''
-import os, sys, re, subprocess, optparse, stat, tempfile, time, random, inspect, types
+import os, sys, re, subprocess, optparse, stat, tempfile, time, random, inspect, types, glob
 import ConfigParser
 
 import drmaa
@@ -239,7 +239,9 @@ def execute( statement, **kwargs ):
     '''execute a statement locally.'''
 
     if not kwargs: kwargs = getCallerLocals()
-    
+
+    kwargs = dict( PARAMS.items() + kwargs.items() )    
+
     E.debug("running %s" % (statement % kwargs))
 
     process = subprocess.Popen(  statement % kwargs,
@@ -255,6 +257,45 @@ def execute( statement, **kwargs ):
     if process.returncode != 0:
         raise PipelineError( "Child was terminated by signal %i: \nThe stderr was: \n%s\n%s\n" % (-process.returncode, stderr, statement ))
 
+_exec_prefix = '''detect_pipe_error_helper() 
+    {
+    while [ "$#" != 0 ] ; do
+        # there was an error in at least one program of the pipe
+        if [ "$1" != 0 ] ; then return 1 ; fi
+        shift 1
+    done
+    return 0 
+    }
+    detect_pipe_error() {
+    detect_pipe_error_helper "${PIPESTATUS[@]}"
+    return $?
+    }
+    '''
+
+_exec_suffix = "; detect_pipe_error"
+
+def buildStatement( **kwargs ):
+    '''build statement from kwargs.'''
+
+    # the actual statement
+    try:
+        statement = kwargs.get("statement") % dict( PARAMS.items() + kwargs.items() )
+    except KeyError, msg:
+        raise KeyError( "Error when creating command: could not find %s in dictionaries" % msg)
+
+    # add bash as prefix to allow advanced shell syntax like 'wc -l <( gunzip < x.gz)'
+    # executable option to call() does not work. Note that there will be an extra
+    # indirection.
+    statement = " ".join( re.sub( "\t+", " ", statement).split( "\n" ) )
+
+    E.debug( "running statement:\n%s" % statement )
+
+    return statement
+
+def expandStatement( statement ):
+    '''add exec_prefix and exec_suffix to statement.'''
+    
+    return " ".join( (_exec_prefix, statement, _exec_suffix) )
 
 def run( **kwargs ):
     """run a statement.
@@ -274,48 +315,92 @@ def run( **kwargs ):
           still works.
     """
 
-    # prefix to detect errors within pipes
-    prefix = '''detect_pipe_error_helper() 
-    {
-    while [ "$#" != 0 ] ; do
-        # there was an error in at least one program of the pipe
-        if [ "$1" != 0 ] ; then return 1 ; fi
-        shift 1
-    done
-    return 0 
-    }
-    detect_pipe_error() {
-    detect_pipe_error_helper "${PIPESTATUS[@]}"
-    return $?
-    }
-    '''
-    suffix = "; detect_pipe_error"
-
     if not kwargs: kwargs = getCallerLocals()
 
-    # the actual statement
-    try:
-        statement = kwargs.get("statement") % dict( PARAMS.items() + kwargs.items() )
-    except KeyError, msg:
-        raise KeyError( "Error when creating command: could not find %s in dictionaries" % msg)
+    # run multiple jobs
+    if kwargs.get( "statements" ):
 
-    # add bash as prefix to allow advanced shell syntax like 'wc -l <( gunzip < x.gz)'
-    # executable option to call() does not work. Note that there will be an extra
-    # indirection.
-    statement = " ".join( re.sub( "\t+", " ", statement).split( "\n" ) )
+        statement_list = []
+        for statement in kwargs.get("statements"): 
+            kwargs["statement"] = statement
+            statement_list.append(buildStatement( **kwargs))
+            
+        if kwargs.get( "dryrun", False ): return
 
-    E.debug( "running statement:\n%s" % statement )
+        # get session for process - only one is permitted
+        pid = os.getpid()
+        if pid not in global_sessions: global_sessions[pid]=drmaa.Session()            
+        session = global_sessions[pid]
 
-    if kwargs.get( "dryrun", False ):
-        return
+        jt = session.createJobTemplate()
+        jt.workingDirectory = os.getcwd()
+        jt.jobEnvironment = { 'BASH_ENV' : '~/.bashrc' }
+        jt.args = []
+        jt.nativeSpecification = "-q %s -p %i -N %s %s" % \
+            (kwargs.get("job_queue", global_options.cluster_queue ),
+             kwargs.get("job_priority", global_options.cluster_priority ),
+             os.path.basename(kwargs.get("outfile", "ruffus" )),
+             kwargs.get("job_options", global_options.cluster_options))
+        
+        # keep stdout and stderr separate
+        jt.joinFiles=False
 
-    statement = " ".join( (prefix, statement, suffix) )
+        jobids, filenames = [], []
+        for statement in statement_list:
+            # create job scrip
+            tmpfile = tempfile.NamedTemporaryFile( dir = os.getcwd() , delete = False )
+            tmpfile.write( "#!/bin/bash\n" ) #  -l -O expand_aliases\n" )
+            tmpfile.write( expandStatement(statement) + "\n" )
+            tmpfile.close()
 
-    if (kwargs.get( "job_queue" ) or kwargs.get( "to_cluster" )) and not global_options.without_cluster:
+            # build paths
+            job_path = os.path.abspath( tmpfile.name )
+            stdout_path = job_path + ".stdout" 
+            stderr_path = job_path + ".stderr" 
+            jt.remoteCommand = job_path
+            jt.outputPath=":"+ stdout_path
+            jt.errorPath=":" + stderr_path
+
+            os.chmod( job_path, stat.S_IRWXG | stat.S_IRWXU )
+
+            jobid = session.runJob(jt)
+            jobids.append( jobid )
+            filenames.append( (job_path, stdout_path, stderr_path) )
+
+            E.debug( "job has been submitted with jobid %s" % str(jobid ))
+        
+        E.debug( "waiting for %i jobs to finish " % len(jobids) )
+        session.synchronize(jobids, drmaa.Session.TIMEOUT_WAIT_FOREVER, False)
+        
+        # collect and clean up
+        for jobid, statement, paths in zip( jobids, statement_list, filenames) :
+            job_path, stdout_path, stderr_path = paths
+            retval = session.wait(jobid, drmaa.Session.TIMEOUT_WAIT_FOREVER)
+
+            stdout = open( stdout_path, "r" ).readlines()
+            stderr = open( stderr_path, "r" ).readlines()
+            if retval.exitStatus != 0:
+                raise PipelineError( "Child was terminated by signal %i: \nThe stderr was: \n%s\n%s\n" % \
+                                         (retval.exitStatus, 
+                                          "".join( stderr),
+                                          statement ) )
+
+            os.unlink( job_path )
+            os.unlink( stdout_path )
+            os.unlink( stderr_path )
+            
+        session.deleteJobTemplate(jt)
+
+    # run a single parallel job
+    elif (kwargs.get( "job_queue" ) or kwargs.get( "to_cluster" )) and not global_options.without_cluster:
+
+        statement = buildStatement( **kwargs )
+
+        if kwargs.get( "dryrun", False ): return
 
         tmpfile = tempfile.NamedTemporaryFile( dir = os.getcwd() , delete = False )
         tmpfile.write( "#!/bin/bash\n" ) #  -l -O expand_aliases\n" )
-        tmpfile.write( statement + "\n" )
+        tmpfile.write( expandStatement( statement ) + "\n" )
         tmpfile.close()
 
         job_path = os.path.abspath( tmpfile.name )
@@ -375,11 +460,15 @@ def run( **kwargs ):
         os.unlink( stderr_path )
 
     else:
+        statement = buildStatement( **kwargs )
+
+        if kwargs.get( "dryrun", False ): return
+ 
         if "<(" in statement:
             if "'" in statement: raise ValueError( "advanced bash syntax combined with single quotes" )
             statement = """/bin/bash -c '%s'""" % statement
 
-        process = subprocess.Popen(  statement,
+        process = subprocess.Popen(  expandStatement( statement ),
                                      cwd = os.getcwd(), 
                                      shell = True,
                                      stdin = subprocess.PIPE,
@@ -391,6 +480,7 @@ def run( **kwargs ):
 
         if process.returncode != 0:
             raise PipelineError( "Child was terminated by signal %i: \nThe stderr was: \n%s\n%s\n" % (-process.returncode, stderr, statement ))
+
 
 def main( args = sys.argv ):
 
@@ -449,6 +539,26 @@ def main( args = sys.argv ):
         raise
 
     E.Stop()
+
+
+def clean( patterns, dry_run = False ):
+    '''clean up files given by glob *patterns*.
+
+    returns list of files deleted together with their statinfo.
+    '''
+
+    cleaned = []
+
+    for p in patterns:
+        files = glob.glob( p )
+        for x in files:
+            statinfo = os.stat( x )
+            cleaned.append( (x, statinfo) )
+            if dry_run: continue
+            os.unlink( x )
+        E.info( "%i files: %s" % (len(files), p ))
+
+    return cleaned
 
 if __name__ == "__main__":
     parser = optparse.OptionParser( version = "%prog version: $Id: Pipeline.py 2799 2009-10-22 13:40:13Z andreas $")

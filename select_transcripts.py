@@ -118,7 +118,7 @@ def getRangesFromExons( exons, both_strands = False, contig_sizes = None ):
     """
 
     if both_strands == True and contig_sizes == None:
-        raise "supply contig_sizes, if ranges are to computed on both strands."
+        raise ValueError( "supply contig_sizes, if ranges are to computed on both strands.")
     
     filter_ranges = {}
     for key, ee in exons.items():
@@ -920,7 +920,7 @@ if __name__ == '__main__':
             options.stdlog.write( "done - read exons for %i transcripts\n" % (len(exons) ))
 
         if len(exons) == 0:
-            raise "no exons found in table."
+            raise ValueError("no exons found in table.")
             
         # flag terminal exons
         Exons.SetRankToPositionFlag( exons )
@@ -974,9 +974,9 @@ if __name__ == '__main__':
             options.stdlog.flush()
 
     if options.remove_exon_swoppers and not exons:
-        raise "please specify exon table if using --remove-swoppers."
+        raise ValueError( "please specify exon table if using --remove-swoppers." )
     if options.remove_gene_spanners and not exons:
-        raise "please specify exon table if using --remove-gene-spanners."
+        raise ValueError( "please specify exon table if using --remove-gene-spanners." )
 
     ########################################################################################
     ## remove predictions spanning other predictions but do not overlap with them on an exon level.

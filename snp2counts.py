@@ -676,7 +676,7 @@ class CounterGenes( Counter ):
     def update( self, snp ):
         '''update with snp.'''
 
-        exons = list(self.mExons.get( snp.chromosome, snp.position, snp.position+1))
+        exons = list(self.mExons.get( snp.chromosome, snp.pos, snp.pos+1))
 
         if exons:
             for start, end, gtf in exons:
@@ -837,19 +837,19 @@ class CounterTranscripts( Counter ):
                 if variant[0] == "*":
                     continue
                 elif variant[0] == "+":
-                    start = min( start, snp.position )
-                    end = max( end, snp.position + 2 )
+                    start = min( start, snp.pos )
+                    end = max( end, snp.pos + 2 )
                 elif variant[0] == "-":
-                    # deletions are after the base denoted by snp.position
-                    start = min( start, snp.position + 1 )
+                    # deletions are after the base denoted by snp.pos
+                    start = min( start, snp.pos + 1 )
                     # pos + 1 + len(var) - 1 = pos + len(var)
-                    end = max( end, snp.position + len(variant) )
+                    end = max( end, snp.pos + len(variant) )
                 else:
                     raise ValueError( "unknown variant sign '%s'" % variant[0] )
         else:
             # a single base SNP
-            start = min( start, snp.position )
-            end = max( end, snp.position + 1 )
+            start = min( start, snp.pos )
+            end = max( end, snp.pos + 1 )
 
         start, end = max(0,start),min(end,lcontig)
         if start == end:
@@ -1137,16 +1137,16 @@ class CounterTranscripts( Counter ):
                 elif variant[0] == "+":
                     variant_types.append( "I")
                     # insertions affect the base before and after the insertion
-                    variants_to_test.append( Variant._make( (variant[0], variant[1:], snp.position, snp.position + 1)) )
+                    variants_to_test.append( Variant._make( (variant[0], variant[1:], snp.pos, snp.pos + 1)) )
                 elif variant[0] == "-":
                     variant_types.append( "D") 
-                    # deletions are after the base denoted by snp.position
-                    start = snp.position + 1 
+                    # deletions are after the base denoted by snp.pos
+                    start = snp.pos + 1 
                     # pos + 1 + len(var) - 1 = pos + len(var)
-                    end = snp.position + len(variant)
+                    end = snp.pos + len(variant)
                     variants_to_test.append( Variant._make( (variant[0], variant[1:], start, end) ) )
         else:
-            if snp.consensus_base in 'ACGTacgt':
+            if snp.genotype in 'ACGTacgt':
                 # homozygous substitution
                 variant_types.append( "O" )
             else:
@@ -1154,13 +1154,13 @@ class CounterTranscripts( Counter ):
                 variant_types.append( "E" )
                 is_homozygous = False
 
-            for base in Genomics.resolveAmbiguousNA( snp.consensus_base ).upper():
+            for base in Genomics.resolveAmbiguousNA( snp.genotype ).upper():
                 if base == snp.reference_base: continue
-                variants_to_test.append( Variant._make( ("=", base, snp.position, snp.position+1 ) ) )
+                variants_to_test.append( Variant._make( ("=", base, snp.pos, snp.pos+1 ) ) )
 
         self.mVariantTypes = variant_types
         E.debug( "snp: %s:%i variants_to_test=%i, transcripts=%i, is_homozygous=%s" %\
-                 (snp.chromosome, snp.position,
+                 (snp.chromosome, snp.pos,
                   len(variants_to_test), len(transcripts), str(is_homozygous) ))
 
         counts = E.Counter()
@@ -1173,7 +1173,7 @@ class CounterTranscripts( Counter ):
             all_splice_changes, all_splice_effects, all_cds_effects = [], [], []
             for variant in variants_to_test:
 
-                E.debug( "snp: %s:%i variant=%i:%i:%s:%s, transcript=%s" % (snp.chromosome, snp.position,
+                E.debug( "snp: %s:%i variant=%i:%i:%s:%s, transcript=%s" % (snp.chromosome, snp.pos,
                                                                             variant.start,
                                                                             variant.end,
                                                                             variant.code,
@@ -1279,7 +1279,7 @@ class CounterTranscripts( Counter ):
             self.mOutfileIntron.write( "%s\n" % "\t".join( \
                 ( exons[0].transcript_id,
                   snp.chromosome,
-                  "%i" % snp.position,
+                  "%i" % snp.pos,
                   ",".join( self.mVariantTypes ),
                   variant.code,
                   variant.sequence,
@@ -1350,7 +1350,7 @@ class CounterTranscripts( Counter ):
             self.mOutfileCds.write( "%s\n" % "\t".join( \
                 ( exons[0].transcript_id,
                   snp.chromosome,
-                  "%i" % snp.position,
+                  "%i" % snp.pos,
                   snp.reference_base,
                   ",".join( self.mVariantTypes ),
                   variant.code,
@@ -2036,6 +2036,46 @@ class CounterTranscripts( Counter ):
         E.info( "splice counts: %s" % (str(splice_counts)) )
         E.info( "combined counts: %s" % (str(all_counts)) )
 
+class CounterContigs( Counter ):
+    '''count variants across the genome per chromosome.'''
+
+    mHeader = [ "genome_%s" % x for x in ( "ntranscripts", "nused", "pos" )]
+
+    def __init__(self, *args, **kwargs):
+        Counter.__init__(self, *args,**kwargs)
+
+        # create counter
+        self.mCountsSNPs = collections.defaultdict( int )
+        self.mCountsIndels = collections.defaultdict( int )
+
+    def update( self, snp ):
+        '''update with snp.'''
+
+        if snp.reference_base == "*":
+            self.mCountsIndels[snp.chromosome] += 1
+        else:
+            self.mCountsSNPs[snp.chromosome] += 1
+
+    def writeTable( self, outfile ):
+
+        outfile.write( "contig\tsize\tnindels\tnsnps\n" )
+        total_snps, total_indels, total_length = 0, 0, 0
+        for key in sorted(self.mCountsSNPs.keys()):
+            total_snps += self.mCountsSNPs[key]
+            total_indels += self.mCountsIndels[key]
+            total_length += self.mFasta.getLength(key)
+            outfile.write( "\t".join( (key,
+                                       "%i" % self.mFasta.getLength(key),
+                                       "%i" % self.mCountsIndels[key],
+                                       "%i" % self.mCountsSNPs[key] ) ) + "\n" )
+
+        outfile.write( "\t".join( ("total",
+                                   "%i" % total_length,
+                                   "%i" % total_indels,
+                                   "%i" % total_snps ) ) + "\n" )
+
+
+
 def main( argv = None ):
     """script main.
 
@@ -2054,7 +2094,7 @@ def main( argv = None ):
     parser.add_option("-s", "--filename-seleno", dest="filename_seleno", type="string",
                       help="filename of a list of transcript ids that are selenoproteins [default=%default]."  )
     parser.add_option("-m", "--module", dest="modules", type="choice", action="append",
-                      choices=("gene-counts", "transcript-effects"),
+                      choices=("gene-counts", "transcript-effects", "contig-counts"),
                       help="modules to apply [default=%default]."  )
 
 
@@ -2093,6 +2133,9 @@ def main( argv = None ):
             modules.append( CounterTranscripts( options.filename_exons, fasta=fasta,
                                                 pattern = options.output_filename_pattern,
                                                 seleno = seleno ) )
+            
+        elif module == "contig-counts":
+            modules.append( CounterContigs( fasta=fasta ) )
             
     options.stdout.write( "\t".join( [x.getHeader() for x in modules]) + "\n" )
 

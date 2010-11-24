@@ -50,7 +50,7 @@ Code
 
 """
 from ruffus import *
-import sys, glob, gzip, os, itertools, CSV, re, math, types, collections
+import sys, glob, gzip, os, itertools, CSV, re, math, types, collections, time
 import optparse, shutil
 import sqlite3
 import GFF, GTF
@@ -63,6 +63,8 @@ import FastaIterator
 import PipelineGeneset as PGeneset
 import PipelineEnrichment as PEnrichment
 import PipelineGO as PGO
+import PipelineBiomart as PBiomart
+import PipelineDatabase as PDatabase
 import scipy.stats
 import Stats
 import pysam
@@ -180,7 +182,7 @@ elif PARAMS["filename_pileup"]:
 
 elif PARAMS["filename_vcf"]:
     @split( PARAMS["filename_vcf"], "*.pileup.gz" )
-    def importSNPs( infile, outfile ):
+    def buildPileups( infile, outfile ):
         '''build samtools pileup formatted files from vcf formatted files.
 
         The column to strain mapping are determined dynamically.
@@ -192,15 +194,50 @@ elif PARAMS["filename_vcf"]:
 
         IT ALSO IGNORES HETEROZYGOUS CALLS.
 
-        Both vcf and pileup employ 1-based coordinate systems.
+        Both vcf and pileup employ 1-based coordinate systems. Adds "chr" prefix.
+
+        This method applies two potential filters:
+
+        1. filename_refseq_filter: 
+               remove all variants not in refseq regions
+        2. filename_snp_filter: 
+               remove all SNPs in a blacklist. Note that the code
+               assumes that the blacklist is not too large.
+
         '''
 
         outfiles = IOTools.FilePool( "mouse%s.pileup.gz" )
+
+        if "filename_snp_filter" in PARAMS:
+            def _defdict(): return collections.defaultdict( list )
+            filter_snps = collections.defaultdict( _defdict )
+            x = 0
+            for line in IOTools.openFile(PARAMS["filename_snp_filter"], "r" ):
+                if line.startswith("track"):continue
+                if line.startswith("#"):continue
+                
+                data = line[:-1].split("\t")
+                track, contig, pos = data[0], data[1], int(data[2])
+                track = track[len("mouse"):]
+                filter_snps[track][contig].append( pos )
+                x += 1
+
+            E.info("removing %i false positive SNPs" % x )
+        else:
+            filter_snps = None
+
+        if "filename_refseq_filter" in PARAMS:
+            E.info( "reading segment filter")
+            intervals = GTF.readAndIndex( GTF.iterator( IOTools.openFile(PARAMS["filename_refseq_filter"], "r") ) )
+            E.info( "read segment filter")
+        else:
+            intervals = None
 
         inf = gzip.open(infile,"r")
         headers = []
         ninput = 0
         counts = E.Counter()
+
         for line in inf:
             data = line[:-1].split("\t")
             if line.startswith("#CHROM"):
@@ -211,20 +248,48 @@ elif PARAMS["filename_vcf"]:
 
             contig, pos, ref = data[0], data[1], data[3]
 
-            # if contig != "19": continue
-
             pos = int(pos)
             variants = [ref]
             variants.extend( data[4].split(",") )
             counts.input += 1
 
+            contig = "chr%s" % contig
+
+            if intervals:
+                if not intervals.contains( contig, pos-1, pos ):
+                    counts.filter += 1
+                    continue
+                
             for h, genotype_info in zip(headers, data[9:]):
+
                 # no variant for this strain - skip
                 if genotype_info == "." or genotype_info.startswith("./."): continue
 
-                # determine the genotype base
-                genotype = genotype_info.split(":")[0].split("/")
+                # determine the genotype base - this is a hard-coded order
+                # revise if input file formats change.
+                consensus_quality, genotype_quality, read_depth = "0", "0", "0"
 
+                dd = genotype_info.split(":")
+
+                if len(dd) == 5:
+                    genotype, mapping_quality, hcg, genotype_quality, read_depth = dd
+                    if hcg != "1": continue
+                elif len(dd) == 4:
+                    genotype, mapping_quality, genotype_quality, read_depth = dd
+                elif len(dd) == 2:
+                    genotype, genotype_quality = dd
+                elif len(dd) == 1:
+                    genotype = dd[0]
+                else:
+                    raise ValueError( "parsing error for %s: line=%s" % (genotype_info, line) )
+
+                genotype = genotype.split("/")
+
+                if filter_snps:
+                    if pos-1 in filter_snps[h][contig]:
+                        counts.filtered_snps += 1
+                        continue
+                
                 # ignore heterozygous calls
                 if len(set(genotype)) != 1: continue
 
@@ -241,19 +306,19 @@ elif PARAMS["filename_vcf"]:
                     # skip wild type 
                     if genotype == "%s%s" % (ref,ref):
                         continue
-
+                    
                     outfiles.write( h, 
                                 "\t".join( map(str, (
-                                contig,
-                                pos,
-                                ref,
-                                Genomics.encodeGenotype( genotype ),
-                                "0",
-                                "0",
-                                "0",
-                                "0",
-                                genotype,
-                                "<" * len(genotype) ) ) ) + "\n" )
+                                    contig,
+                                    pos,
+                                    ref,
+                                    Genomics.encodeGenotype( genotype ),
+                                    consensus_quality,
+                                    genotype_quality,
+                                    mapping_quality,
+                                    read_depth,
+                                    genotype,
+                                    "<" * len(genotype) ) ) ) + "\n" )
                 else:
 
                     def getPrefix( s1, s2 ):
@@ -350,19 +415,31 @@ elif PARAMS["filename_vcf"]:
                                 "0",
                                 "0") ) ) + "\n" )
 
+            counts.output += 1
         outfiles.close()
+
         E.info("%s" % str(counts))
 
-        for outfile in outfiles:
-            # need to sort as overlapping indels might not be in correct
-            # order even if input was sorted.
-            E.info("sorting %s" % outfile )
-            statement = "gunzip < %(outfile)s | sort -k1,1 -k2,2n | bgzip > %(outfile)s.tmp; mv %(outfile)s.tmp %(outfile)s"
-            P.run()
+    @transform( buildPileups, suffix(".pileup.gz"), ".pileup.gz.tbi")
+    def indexPileups( infile, outfile ):
 
-            E.info("compressing and indexing %s" % outfile )
-            pysam.tabix_index( outfile, preset = "vcf" )
-    
+        # need to sort as overlapping indels might not be in correct
+        # order even if input was sorted.
+        E.info("sorting %s" % infile )
+        statement = "gunzip < %(infile)s | sort -k1,1 -k2,2n | bgzip > %(infile)s.tmp; mv %(infile)s.tmp %(infile)s"
+        P.run()
+
+        time.sleep(1)
+
+        if os.path.exists( outfile ):
+            os.remove( outfile )
+            
+        E.info("compressing and indexing %s" % infile )
+        pysam.tabix_index( infile, preset = "vcf" )
+
+    @follows( indexPileups )
+    def importSNPs(): pass
+            
     ###################################################################
     ###################################################################
     ###################################################################
@@ -387,6 +464,22 @@ elif PARAMS["filename_vcf"]:
         '''
 
         P.run()
+
+@transform( buildPileups, suffix(".pileup.gz"), ".pileup.stats")
+def countPileups( infile, outfile ):
+    '''get some basic counts from the pileup files.'''
+
+    to_cluster = True
+
+    statement = '''gunzip < %(infile)s
+    | python %(scriptsdir)s/snp2counts.py
+            --genome-file=genome 
+            --module=contig-counts
+    > %(outfile)s
+    '''
+
+    P.run()
+        
 
 ###################################################################
 ###################################################################
@@ -611,6 +704,90 @@ if "refseq_filename_gtf" in PARAMS:
         #        --table=%(table)s
         #     > %(outfile_load)s'''
         # P.run()
+
+@files( "%s.fasta" % PARAMS["genome"], "%s.fa" % PARAMS["genome"])
+def indexGenome( infile, outfile ):
+    '''index the genome for samtools.
+
+    Samtools does not like long lines, so create a new file
+    with split lines (what a waste).
+    '''
+
+    # statement = '''fold %(infile)s | perl -p -e "s/chr//" > %(outfile)s'''
+    statement = '''fold %(infile)s > %(outfile)s'''
+    P.run()
+    
+    pysam.faidx( outfile )
+
+@follows(indexGenome)
+@transform( buildPileups, suffix(".pileup.gz"), ".validated.gz" )
+def createSNPValidationData( infile, outfile ):
+    '''build validation table for SNPs against expression data.
+    '''
+
+    track = infile[:-len(".pileup.gz")]
+    strain = track[len("mouse"):]
+    
+    pattern = "%s/*%s*.bam" % (PARAMS["rnaseq_data"], strain)
+    
+    to_cluster = True
+
+    statement = '''gunzip
+        < %(infile)s
+        | python %(scriptsdir)s/snp2snp.py 
+              --method=validate
+              --filename-reference="%(pattern)s"
+              --min-coverage=%(rnaseq_min_coverage)i
+              --filename-genome=%(genome)s.fa
+              --log=%(outfile)s.log
+        | gzip
+        > %(outfile)s'''
+
+    P.run()
+
+@transform( createSNPValidationData, suffix(".gz"), ".load" )
+def loadSNPValidationData( infile, outfile ):
+    '''load expression values from Petr Danecek.
+    
+    These are one measurement per gene. I assume he chose
+    one (the longest?) transcripts per gene and computed 
+    read counts for those. 
+    
+    The values are PRKM values.
+    
+    '''
+    table = P.toTable( outfile )
+
+    statement = '''gunzip < %(infile)s
+          | csv2db.py %(csv2db_options)s 
+               --index=contig
+               --table=%(table)s
+           > %(outfile)s
+        '''
+    P.run()
+
+@merge( loadSNPValidationData, "snp_blacklist.tsv.gz" )
+def buildSNPBlacklist( infiles, outfile ):
+    '''build a blacklist of all putative false positive SNPs.'''
+    
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    cc = dbhandle.cursor()
+
+    outf = IOTools.openFile( outfile, "w" )
+
+    for infile in infiles:
+        track = infile[:-len(".validated.load")]
+        statement = '''
+             SELECT contig, pos 
+             FROM %(track)s_validated
+             WHERE status = 'W' 
+             ORDER by contig, pos
+        '''
+        cc.execute( statement % locals() )
+        for contig, pos in cc: outf.write( "%s\t%s\t%i\n" % (track, contig, pos ))
+        
+    outf.close()
+        
 
 @files( ((None, "mgi.import"),))
 def importMGI( infile, outfile ):
@@ -970,16 +1147,16 @@ def importMGIPhenotypesViaReports( infile, outfile ):
 
         os.unlink( tmpfilename )
 
-@files( ((None, "ensembl2omim.tsv"),))
-def importOMIMFromEnsembl( infile, outfile ):
+@files( ((None, "gene2omim.load"),))
+def loadGene2Omim( infile, outfile ):
     '''download gene id - OMIM associations via BIOMART.
 
     Note that missing numerical entries are set to -2147483648. 
     These will be set to 0.
     '''
 
-    R.library("biomaRt")
-    
+    tablename = P.toTable( outfile )
+
     columns = {
         "ensembl_gene_id" : "gene_id",
         "mim_gene_accession" : "mim_gene_id",
@@ -987,22 +1164,199 @@ def importOMIMFromEnsembl( infile, outfile ):
         "mim_morbid_description" : "mim_morbid_description",
         }
 
-    keys = columns.keys()
+    data = PBiomart.biomart_iterator( columns.keys()
+                                      , biomart = "ensembl"
+                                      , dataset = "hsapiens_gene_ensembl" )
 
-    mart = R.useMart(biomart="ensembl", dataset="hsapiens_gene_ensembl")
-    result = R.getBM( attributes=keys, mart=mart )
-    
-    outf = open( outfile, "w" )
-    outf.write( "\t".join( [columns[x] for x in keys ] ) + "\n" )
-    
-    for x in ("mim_gene_accession", "mim_morbid_accession"):
-        result[x] = [ ("", y)[y >= 0] for y in result[x] ]
+    def transform_data( data ):
+        for result in data:
+            for x in ("mim_gene_accession", "mim_morbid_accession"):
+                result[x] = ("", result[x])[result[x] >= 0]
+            yield result
 
-    for data in zip( *[ result[x] for x in keys] ):
-        outf.write( "\t".join( map(str, data) ) + "\n" )
+    PDatabase.importFromIterator( outfile
+                                  , tablename
+                                  , transform_data(data)
+                                  , columns = columns 
+                                  , indices = ("gene_id", ) )
+
+@files( ((None, "human2mouse.load"),))
+def loadHumanOrthologs( infile, outfile ):
+    '''download human2mouse orthologs
+    '''
+
+    tablename = P.toTable( outfile )
+
+    columns = {
+        "ensembl_gene_id" : "hs_gene_id",
+        "mouse_ensembl_gene" : "gene_id",
+        "mouse_orthology_type" : "orthology_type",
+        "mouse_homolog_ds" : "ds",
+        }
+    
+    data = PBiomart.biomart_iterator( columns.keys()
+                                      , biomart = "ensembl"
+                                      , dataset = "hsapiens_gene_ensembl" )
+
+    PDatabase.importFromIterator( outfile
+                                  , tablename
+                                  , data
+                                  , columns = columns 
+                                  , indices = ("hs_gene_id", "gene_id", ) )
+
+#####################################################################
+#####################################################################
+#####################################################################
+## 
+#####################################################################
+@files( ( (PARAMS["expression_data"], "expression_data.load"),) )
+def loadExpressionDataDanecek( infile, outfile ):
+    '''load expression values from Petr Danecek.
+    
+    These are one measurement per gene. I assume he chose
+    one (the longest?) transcripts per gene and computed 
+    read counts for those. 
+    
+    The values are PRKM values.
+    
+    '''
+    table = P.toTable( outfile )
+
+    statement = '''    
+           gunzip < %(infile)s
+           | awk '/^#Chrom/ { for (x = 5; x <= NF; ++x) { $x="mouse" $x; }; } {print};'
+           | perl -p -e "s/^#//; s/ /\\t/g; s/geneID/transcript_id\\tgene_id/; s/[|]/\\t/"
+           | csv2db.py %(csv2db_options)s 
+               --index=gene_id 
+               --index=transcript_id 
+               --table=%(table)s
+           > %(outfile)s
+        '''
+    P.run()
+
+@files( ( (PARAMS["expression_data_dir"], "expression_data.load" ),) )
+def loadExpressionData( infile, outfile ):
+    '''load expression values from Grant.
+    
+    These are measurements per transcript. There are several conditions
+    '''
+
+    table = P.toTable( outfile )
+
+    dirs = glob.glob( os.path.join(infile, "*_Transcriptome") )
+
+    data = []
+    genes = set()
+    counter = E.Counter()
+
+    for d in dirs:
+        basename = os.path.basename( d )
+        track = "mouse" + re.sub( "_Mouse.*", "", basename )
+        track = re.sub("SPRETUS", "SPRET", track )
+        track = re.sub("C57", "C57BL", track )
+        files = glob.glob( os.path.join( d, "*/genes.expr") )
+        counter.dirs += 1
+
+        for f in files:
+            values = collections.defaultdict( str )
+            parts = f.split("/")
+            condition = re.sub(".*_", "", parts[-2])
+
+            reader = CSV.DictReader( open( f, "r"), dialect="excel-tab" )
+            for row in reader:
+                if row["status"] == "OK":
+                    values[row["gene_id"]] = row["FPKM"]
+            data.append( (track + "_" + condition, values ) )
+            genes.update( set( values.keys() ) )
+            counter.files += 1
+
+    outf = P.getTempFile()    
+    
+    outf.write( "transcript_id\t" + \
+                    "\t".join( [ x[0] for x in data] ) + "\n" )
+
+    counter.genes = len(genes)
+
+    for gene_id in genes:
+        outf.write( gene_id )
+        for x in range(len(data)):
+            outf.write( "\t%s" % data[x][1][gene_id] )
+        outf.write("\n" )
 
     outf.close()
 
+    E.info("%s" % str(counter))
+
+    tmpfile = outf.name
+
+    statement = '''    
+            csv2db.py %(csv2db_options)s 
+                --index=transcript_id 
+                --table=%(table)s
+            < %(tmpfile)s
+            > %(outfile)s
+         '''
+    P.run()
+
+    os.unlink(outf.name)
+
+@split( loadExpressionData, "*.expression_genes.tsv" )
+def summarizeExpressionPerGene( infile, outfile ):
+    '''summarize expression data per gene by combining all transcripts
+    per gene.'''
+
+    intable = "expression_data"
+
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    columns = Database.getColumnNames( dbhandle, intable ) 
+    strains = list(set([ "_".join( x.split("_")[:-1] ) for x in columns if x != "transcript_id" ]))
+
+    total = collections.defaultdict( list )
+
+    for strain in strains:
+        E.info( "summarizing strain %s" % strain )
+        per_gene = collections.defaultdict( list )
+        matched_columns = [ x for x in columns if re.match( strain, x ) ]
+        
+        fields = ",".join(matched_columns)
+        statement = '''SELECT i.gene_id, %(fields)s 
+                    FROM %(intable)s as a, transcript_info AS i 
+                    WHERE i.transcript_id = a.transcript_id
+                    ''' % locals()
+        cc = dbhandle.cursor()
+
+        for data in cc.execute( statement ):
+            per_gene[data[0]].extend( data[1:] )
+            total[data[0]].extend( data[1:] )
+            
+        outf = open( "%s.expression_genes.tsv" % strain, "w")
+        outf.write("gene_id\t%s\n" % Stats.Summary().getHeader() )
+        
+        for gene_id,d in per_gene.iteritems():
+            outf.write( "%s\t%s\n" % (gene_id, str( Stats.Summary( d ) ) ))
+            
+        outf.close()
+
+    outf = open("all.expression_genes.tsv", "w")
+    outf.write("gene_id\t%s\n" % Stats.Summary().getHeader() )
+    
+    for gene_id,d in total.iteritems():
+        outf.write( "%s\t%s\n" % (gene_id, str( Stats.Summary( d ) ) ))
+    outf.close()
+
+@transform( summarizeExpressionPerGene, suffix(".tsv"), ".load")
+def loadExpressionPerGene( infile, outfile ):
+    '''load expression values.'''
+    
+    table = P.toTable( outfile )
+    statement = '''    
+            csv2db.py %(csv2db_options)s 
+                --index=gene_id 
+                --table=%(table)s
+            < %(infile)s
+            > %(outfile)s
+    '''
+    P.run()
 
 ###################################################################
 ###################################################################
@@ -1354,7 +1708,7 @@ def summarizeAnnotations( infile, outfile ):
     # count substitutions for each category
     statement = '''gunzip 
     < %(infile)s
-    | python %(scriptsdir)s/csv_cut.py code reference_base consensus_base variant_type 
+    | python %(scriptsdir)s/csv_cut.py code reference_base genotype variant_type 
     | awk '$4 == "variant_type" { printf("%%s-%%s-%%s\\tcounts\\n", $1,$2,$3); } 
            $4 == "E" || $4 == "O" {printf("%%s-%%s-%%s\\t1\\n", $1,$2,$3)}'
     | python %(scriptsdir)s/table2table.py --group=1 --group-function=sum 
@@ -1621,6 +1975,65 @@ def summarizeAllelesPerGene( infile, outfile ):
     dbhandle.commit()
 
     P.touch(outfile)
+
+@merge(summarizeAllelesPerGene, 
+       "summary_alleles_genes.load" )
+def combineSummaryAllelesPerGene( infiles, outfile ):
+    
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+
+    tracks = [ x[:-len("_alleles_genes.load")] for x in infiles ]
+    
+    tablename_prefix = P.toTable( outfile )
+
+    fields = ", ".join( ["%s INT" % x for x in tracks] )
+
+    statement_create = '''
+    CREATE TABLE %(tablename)s 
+           ( gene_id TEXT,
+             total INT,
+             %(fields)s )''' 
+
+    statement_insert = '''
+    INSERT INTO %(tablename)s
+             VALUES( '%(gene_id)s', %(total)i, %(matrix)s )
+    '''
+
+    statement_allgenes = "SELECT DISTINCT gene_id FROM gene_info"
+
+    for field in ("is_knockout", "is_truncated" ):
+
+        tablename = "%s_%s" % (tablename_prefix, field )
+        E.info( "creating %s" % tablename )
+
+        all_genes = dict( [ (x[0],set()) 
+                            for x in Database.executewait( dbhandle, statement_allgenes % locals() )] )
+
+        Database.executewait( dbhandle, "DROP TABLE IF EXISTS %(tablename)s" % locals() )
+        Database.executewait( dbhandle, statement_create % locals() )
+        
+        for track in tracks:
+            statement = """SELECT gene_id 
+                           FROM %(track)s_alleles_genes
+                           WHERE %(field)s"""
+            
+            genes = [x[0] for x in Database.executewait( dbhandle, statement % locals() )]
+            
+            for gene in genes:
+                all_genes[gene].add( track )
+                
+        for gene_id, data in all_genes.iteritems():
+            matrix = [0] * len(tracks)
+            for x, track in enumerate(tracks): 
+                if track in data: matrix[x] = 1
+            total = sum(matrix)
+            matrix = ",".join( [str(x) for x in matrix ] )
+            Database.executewait( dbhandle, statement_insert % locals() )
+
+        Database.executewait( dbhandle,
+                              "CREATE INDEX %(tablename)s_index1 on %(tablename)s (gene_id)" % locals())
+
+    P.touch( outfile )
 
 ###################################################################
 ###################################################################
@@ -2334,7 +2747,7 @@ def buildPolyphenInput( infiles, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-@transform( (buildPolyphenInput, "*.input"), suffix(".input"), ".features")
+@transform( buildPolyphenInput, suffix(".input"), ".features")
 def buildPolyphenFeatures( infile, outfile ):
     '''run polyphen on the cluster.
 
@@ -2386,7 +2799,8 @@ def buildPolyphenFeatures( infile, outfile ):
 ###################################################################
 ###################################################################
 
-@files( [ ( buildPolyphenFeatures, "polyphen_%s.output.gz" % x, x ) for x in P.asList( PARAMS["polyphen_models"] ) ] )
+@files( [ ( buildPolyphenFeatures, "polyphen_%s.output.gz" % x, x ) \
+              for x in P.asList( PARAMS["polyphen_models"] ) ] )
 def runPolyphen( infile, outfile, model ):
     '''run POLYPHEN on feature tables to classify SNPs.
     '''
@@ -2819,6 +3233,7 @@ def buildSharedSNPMatrix( infiles, outfiles ):
 ## Enrichment analysis
 ###################################################################
 @files( ((None, "workspace_genomic.bed", "genomic" ),
+         (None, "workspace_cds.bed", "cds" ),
          ) )
 def buildEnrichmentWorkspaces( infile, outfile, workspace ):
     PEnrichment.buildWorkSpace( outfile, workspace )
@@ -2827,14 +3242,16 @@ def buildEnrichmentWorkspaces( infile, outfile, workspace ):
 def buildEnrichmentIsochores( infile, outfile ):
     PEnrichment.buildIsochoresGC( infile, outfile )
 
-@follows( mkdir( "enrichment.dir") )
-@transform( "*_effects.load", regex("(.*)_effects.load"), r"enrichment.dir/\1.bed.gz" )
+@follows( mkdir( "enrichment.dir"), loadPolyphen, loadPolyphenMap )
+@transform( "*_effects.load", 
+            regex("(.*)_effects.load"), 
+            r"enrichment.dir/\1.deleterious.bed.gz" )
 def buildDeleteriousSNPs( infile, outfile ):
 
     track = infile[:-len("_effects.load")]
     
     outf = gzip.open(outfile, "w")
-    outf.write( "track name=%s\n" % track )
+    outf.write( "track name=%s.deleterious\n" % track )
 
     dbhandle = sqlite3.connect( PARAMS["database"] )
     cc = dbhandle.cursor()
@@ -2855,23 +3272,242 @@ def buildDeleteriousSNPs( infile, outfile ):
         
     outf.close()
 
-@files( ((None, "enrichment.table" ), ) )
-def runGAT( infiles, outfile ):
-    '''run Enrichment analysis
+@follows( mkdir( "enrichment.dir"), loadPolyphen, loadPolyphenMap )
+@transform( "*_effects.load", 
+            regex("(.*)_effects.load"), 
+            r"enrichment.dir/\1.benign.bed.gz" )
+def buildBenignSNPs( infile, outfile ):
+
+    track = infile[:-len("_effects.load")]
+    
+    outf = gzip.open(outfile, "w")
+    outf.write( "track name=%s.benign\n" % track )
+
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    cc = dbhandle.cursor()
+
+    statement = '''SELECT DISTINCT map.contig, map.pos 
+                          FROM polyphen_map AS map,
+                          polyphen_HumDiv as result
+                          WHERE map.track = '%(track)s'
+                                AND map.snp_id = result.snp_id
+                                AND NOT (result.prediction = 'possiblydamaging'
+                                    OR result.prediction = 'probablydamaging')
+                          ''' % locals()
+
+    cc.execute(statement)
+    
+    for contig, pos in cc:
+        outf.write( "%s\t%i\t%i\n" % (contig, pos, pos+1) )
+        
+    outf.close()
+
+@merge( (buildBenignSNPs, buildDeleteriousSNPs), 
+        ("enrichment.dir/all.benign.bed.gz",
+         "enrichment.dir/all.deleterious.bed.gz" ),
+        )
+def mergeSNPs( infiles, outfiles ):
+
+    statement = '''zcat enrichment.dir/mouse*.benign.bed.gz 
+                | grep -v "track" 
+                | sort -k 1,1 -k2,2n 
+                | uniq 
+                | awk 'BEGIN {printf("track name=all.benign\\n");} {print}' 
+                | gzip > enrichment.dir/all.benign.bed.gz
+    '''
+    P.run()
+
+    statement = '''zcat enrichment.dir/mouse*.deleterious.bed.gz 
+                | grep -v "track" 
+                | sort -k 1,1 -k2,2n 
+                | uniq 
+                | awk 'BEGIN {printf("track name=all.deleterious\\n");} {print}' 
+                | gzip > enrichment.dir/all.deleterious.bed.gz
+    '''
+    P.run()
+
+@merge( (buildBenignSNPs, buildDeleteriousSNPs), 
+        "enrichment.dir/isochores.bed" )
+def buildSNPDensityIsochores( infile, outfile ):
+    '''build isochores with SNP density.'''
+
+    statement = '''
+           python %(scriptsdir)s/windows2gff.py 
+                --genome=%(genome)s
+                --fixed-width-windows=1000000
+                --output-format=bed
+           > tmp.bed'''
+    P.run()
+
+    statement = '''
+           zcat enrichment.dir/mouse*.benign.bed.gz enrichment.dir/mouse*.deleterious.bed.gz
+                | grep -v "track" 
+                | sort -k 1,1 -k2,2n 
+                | uniq > tmp2.bed
+    '''
+    P.run()
+ 
+
+@follows( buildEnrichmentWorkspaces )
+@merge( (buildDeleteriousSNPs, buildBenignSNPs, mergeSNPs), "qtl.table" )
+def runGATOnQTLs( infiles, outfile ):
+    '''run enrichment analysisusing the qtl definitions from
+    Jonathan Flint's group.
     '''
 
-    workspaces = [ "genome.bed", ]
-    annotations = [ "/net/cpp-compute/backup/andreas/projects/mousestrains/data/qtl/martins/merged.bed", ]
+    segments = IOTools.flatten( infiles )
+    
+    workspaces = [ "workspace_cds.bed", ]
 
-    workspaces = " ".join( [ "--workspace=%s" for x in workspaces ] )
-    annotations = " ".join( [ "--annotation=%s" for x in annotations ] )
-    segments = " ".join( [ "--segments=%s" for x in segments ] )
+    annotations = [ "/net/cpp-compute/backup/andreas/projects/mousestrains/data/qtl/martins/merged.bed", 
+                    "/net/cpp-compute/backup/andreas/projects/mousestrains/data/qtl/jonathans/qtl_merged.bed", 
+                    "/net/cpp-compute/backup/andreas/projects/mousestrains/data/qtl/jonathans/qtl_full.bed", 
+                    "/net/cpp-compute/backup/andreas/projects/mousestrains/data/qtl/jonathans/qtl_rest.bed", 
+                    ]
+
+    workspaces = " ".join( [ "--workspace-file=%s" % x for x in workspaces ] )
+    annotations = " ".join( [ "--annotation-file=%s" % x for x in annotations ] )
+    segments = " ".join( [ "--segment-file=%s" % x for x in segments ] )
+
+    to_cluster = True
+    job_options = "-l mem_free=8000M"
 
     statement = '''gatrun.py
                   %(workspaces)s
                   %(segments)s
                   %(annotations)s
-                  --num-samples=100
+                  --force
+                  --num-samples=10000
+    > %(outfile)s
+    '''
+    P.run()
+
+@follows( buildEnrichmentWorkspaces )
+@merge( mergeSNPs, "qtl_small.table" )
+def runGATOnQTLsSmall( infiles, outfile ):
+    '''run enrichment analysisusing the qtl definitions from
+    Jonathan Flint's group.
+    '''
+
+    segments = IOTools.flatten( infiles )
+    
+    workspaces = [ "workspace_cds.bed", ]
+
+    annotations = [ "/net/cpp-compute/backup/andreas/projects/mousestrains/data/qtl/martins/merged.bed", 
+                    "/net/cpp-compute/backup/andreas/projects/mousestrains/data/qtl/jonathans/qtl_merged.bed", 
+                    "/net/cpp-compute/backup/andreas/projects/mousestrains/data/qtl/jonathans/qtl_full.bed", 
+                    "/net/cpp-compute/backup/andreas/projects/mousestrains/data/qtl/jonathans/qtl_rest.bed", 
+                    ]
+
+    workspaces = " ".join( [ "--workspace-file=%s" % x for x in workspaces ] )
+    annotations = " ".join( [ "--annotation-file=%s" % x for x in annotations ] )
+    segments = " ".join( [ "--segment-file=%s" % x for x in segments ] )
+
+    to_cluster = True
+    job_options = "-l mem_free=8000M"
+
+    statement = '''gatrun.py
+                  %(workspaces)s
+                  %(segments)s
+                  %(annotations)s
+                  --force
+                  --num-samples=10000
+    > %(outfile)s
+    '''
+    P.run()
+
+
+###################################################################
+###################################################################
+###################################################################
+def correlateExpressionAndNMD( infiles, outfile, join_field = "transcript_id" ):
+    
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+
+    columns = Database.getColumnNames( dbhandle, "expression_data" ) 
+    
+    outf = open( outfile, "w" )
+
+    outf.write( "track\t%s\t%s\n" % (join_field, Stats.Summary().getHeader() ))
+            
+    knockouts = set()
+    expressed = set()
+
+    for infile in infiles:
+        table = P.toTable(infile )
+
+        if table.endswith( "_alleles_genes"):
+            track = table[:-len("_alleles_genes")]
+        elif table.endswith( "_alleles_transcripts"):
+            track = table[:-len("_alleles_transcripts")]
+
+        cols = [ x for x in columns if re.search(track, x) ]
+        if len(cols) == 0: 
+            E.warn("no expression data for %s" % track)
+            continue
+
+        where = " AND ".join( [ "e.%s > 10" % x for x in cols ] )
+        fields = ",".join( cols )
+
+        statement = '''
+        SELECT a.%(join_field)s
+               FROM %(table)s as a
+               WHERE is_nmd_knockout 
+        ''' % locals()
+
+        result = set(list(Database.executewait( dbhandle, statement )))
+
+        knockouts.update( result )
+        nknockouts = len(result)
+
+        statement = '''
+        SELECT a.%(join_field)s, %(fields)s
+               FROM %(table)s as a, transcript_info AS i, expression_data as e 
+               WHERE is_nmd_knockout AND a.%(join_field)s = i.%(join_field)s
+                     AND i.transcript_id = e.transcript_id 
+                     AND %(where)s
+               ORDER by a.%(join_field)s
+        ''' % locals()
+
+        result = list(Database.executewait( dbhandle, statement ))
+        nexpressed = len(result)
+        
+        E.info( "track=%s, nknockouts=%i, nexpressed=%i" % (track, nknockouts, nexpressed) )
+
+        expressed.update( set( [x[0] for x in result] ) )
+
+        for gene_id, grouper in itertools.groupby( result, key = lambda x: x[0] ):
+            gg = list(grouper)
+            s = [item for sublist in gg for item in sublist[1:]]
+            outf.write( "\t".join( (track, gene_id, str(Stats.Summary(s) )) )+ "\n" )
+
+    outf.close()
+            
+    E.info( "knockouts=%i, with expression=%i" % (len(knockouts), len(expressed)))
+
+@follows( loadExpressionData )
+@merge( summarizeAllelesPerTranscript, "nmd_sanity_transcript.table" )
+def correlateExpressionAndNMDByTranscript( infiles, outfile ):
+    correlateExpressionAndNMD( infiles, outfile, join_field = "transcript_id" )
+
+@follows( loadExpressionData )
+@merge( summarizeAllelesPerGene, "nmd_sanity_gene.table" )
+def correlateExpressionAndNMDByGene( infiles, outfile ):
+    correlateExpressionAndNMD( infiles, outfile, join_field = "gene_id" )
+
+@transform( (correlateExpressionAndNMDByTranscript, correlateExpressionAndNMDByGene), 
+            suffix(".table"),
+            ".load" )
+def loadNMDSanity( infile, outfile ):
+    '''load sanity table into database'''
+    table = P.toTable( outfile )
+
+    statement = '''
+    cat < %(infile)s
+    | csv2db.py %(csv2db_options)s
+              --index=track
+              --index=transcript_id
+              --table=%(table)s
     > %(outfile)s
     '''
     P.run()
@@ -2886,7 +3522,9 @@ def runGAT( infiles, outfile ):
 @follows( loadTranscripts,
           loadTranscriptInformation,
           loadGeneStats,
-          loadGeneInformation )
+          loadGeneInformation,
+          loadHumanOrthologs,
+          loadGene2Omim )
 def prepare():
     pass
 
@@ -2895,7 +3533,8 @@ def consequences(): pass
 
 @follows( buildAlleles, loadAlleles,
           summarizeAllelesPerTranscript,
-          summarizeAllelesPerGene )
+          summarizeAllelesPerGene,
+          combineSummaryAllelesPerGene )
 def alleles(): pass
 
 @follows( loadPolyphen, loadPolyphenMap, loadPanther )
@@ -2907,6 +3546,16 @@ def annotations(): pass
 @follows( prepare, consequences, effects, alleles, annotations )
 def full():
     pass
+
+@follows( runGATOnQTLs, runGATOnQTLsSmall)
+def qtl(): pass
+
+@follows( loadExpressionData, 
+          correlateExpressionAndNMDByTranscript, 
+          correlateExpressionAndNMDByGene, 
+          loadExpressionPerGene,
+          loadNMDSanity )
+def expression(): pass
 
 @files( [ (None, "clone.log" ),] )
 def clone( infile, outfile):
@@ -2924,7 +3573,46 @@ def clone( infile, outfile):
         P.execute( "ln -fs %(src_dir)s/*.pileup.* . ")
         P.execute( "ln -fs %(src_dir)s/genome.* . ")
         
-        
+
+###################################################################
+@merge( (alleles, prepare),  "genes.views" )
+def createViewGenes( infile, outfile ):
+    '''create view in database for genes.
+
+    This view aggregates all information on a per-gene
+    basis. There is only a single entry per gene.
+    '''
+    
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    Database.executewait( dbhandle, "DROP VIEW IF EXISTS view_genes" )
+
+    knockouts = ",".join( ["nmd.%s AS %s_nmd_knockout" % (track, track) for track in TRACKS ] )
+
+    statement = '''
+    CREATE VIEW view_genes AS
+    SELECT i.gene_id AS gene_id, 
+           i.gene_name AS gene_name,
+           nmd.total AS nmd_knockout_total, 
+           %(knockouts)s,
+           human_ortho.hs_gene_id AS hs_gene_id,
+           human_ortho.ds AS hs_ds,
+           omim.mim_gene_id as omim_gene_id,
+           omim.mim_morbid_description as omim_description,
+           omim.mim_morbid_id as omim_morbid_id
+    FROM gene_info AS i,
+         summary_alleles_genes_is_knockout AS nmd ON i.gene_id = nmd.gene_id
+    LEFT JOIN human2mouse AS human_ortho ON 
+          human_ortho.gene_id = i.gene_id AND 
+          human_ortho.orthology_type = "ortholog_one2one"
+    LEFT JOIN gene2omim as omim ON omim.gene_id = human_ortho.hs_gene_id
+    '''
+
+    Database.executewait( dbhandle, statement % locals() )
+
+@follows( createViewGenes )
+def views():
+    pass
+
 if __name__== "__main__":
     # P.checkFiles( ("genome.fasta", "genome.idx" ) )
     sys.exit( P.main(sys.argv) )

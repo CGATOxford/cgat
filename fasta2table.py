@@ -75,8 +75,8 @@ def main( argv = None ):
     parser.add_option("-w", "--filename-weights", dest="filename_weights", type="string",
                       help="filename with codon frequencies. Multiple filenames can be separated by comma." )
     
-    parser.add_option("-s", "--sections", dest="sections", type="string",
-                      help="which sections to output. Possible choices are [length|na|aa|degeneracy|bias|codons|codon-usage|codon-translator]" )
+    parser.add_option("-s", "--sections", dest="sections", type="string", action="append",
+                      help="which sections to output. Possible choices are [length|na|aa|degeneracy|bias|codons|codon-usage|codon-translator|sequence]" )
 
     parser.add_option("-t", "--type", dest="seqtype", type="choice",
                       choices=("na", "aa"),
@@ -88,7 +88,7 @@ def main( argv = None ):
     parser.set_defaults(
         filename_weights = "uniform",
         pseudocounts = 1,
-        sections = "length",
+        sections = [],
         regex_identifier = "(.+)",
         seqtype = "na",
         )
@@ -96,8 +96,6 @@ def main( argv = None ):
     (options, args) = E.Start( parser, argv = argv )
     options.filename_weights = options.filename_weights.split(",")
 
-    options.sections = options.sections.split(",")
-    
     rx = re.compile( options.regex_identifier )
 
     reference_codons = []
@@ -132,6 +130,8 @@ def main( argv = None ):
         if options.seqtype == "na":
             if section == "length":
                 s = SequencePropertiesLength()
+            elif section == "sequence":
+                s = SequencePropertiesSequence()
             elif section == "hid":
                 s = SequencePropertiesHid()
             elif section == "na":
@@ -153,6 +153,8 @@ def main( argv = None ):
         elif options.seqtype == "aa":
             if section == "length":
                 s = SequencePropertiesLength()
+            elif section == "sequence":
+                s = SequencePropertiesSequence()
             elif section == "hid":
                 s = SequencePropertiesHid()
             elif section == "aa":

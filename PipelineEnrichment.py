@@ -123,6 +123,8 @@ def buildWorkSpace( outfile, workspace):
        the full genome
     intronic
        introns (requires annotator_regions to be set)
+    exonic
+       exonic (requires annotator_regions to be set)
     intergenic
        introns (requires annotator_regions to be set)
     geneterritories
@@ -140,6 +142,8 @@ def buildWorkSpace( outfile, workspace):
     to_cluster = True
     job_options = "-l mem_free=4000M"
 
+    workspace = workspace.lower()
+
     if workspace == "genomic":
         P.checkParameter( "genome" )
 
@@ -151,18 +155,19 @@ def buildWorkSpace( outfile, workspace):
         > %(outfile)s
         '''
 
-    elif workspace in ("intergenic", "intronic", "CDS" ):
+    elif workspace in ("intergenic", "intronic", "cds" ):
 
         P.checkParameter( "enrichment_regions" )
 
+        workspace_upper = workspace.upper()
+
         statement = '''
-        awk '$3 == "%(workspace)s"' 
-        < %(enrichment_regions)s
-        | python %(scriptsdir)s/gff2enrichment.py 
-                --section=workspace 
-                --max-length=0 
-                --log=%(outfile)s.log 
-                --remove-regex='%(enrichment_remove_pattern)s'
+        gunzip < %(enrichment_regions)s 
+        | awk 'BEGIN {printf("track name=%(workspace)s\\n"); } 
+               ($3 == "%(workspace)s" 
+               || $3 == "%(workspace_upper)s") 
+               && !( $1 ~ /%(enrichment_remove_pattern)s/)
+               { printf("%%s\\t%%i\\t%%i\\n", $1, $4-1, $5); }'
         > %(outfile)s
         '''
     elif workspace == "unknown":

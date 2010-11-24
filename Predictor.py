@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-Predictor.py - 
+Predictor.py - running gene predictions with exonerate
 ======================================================
 
 :Author: Andreas Heger
@@ -58,7 +58,7 @@ chr1    pseudogene.org  pseudogene (Duplicated) 33226224        33226423        
 The file has to be sorted appropriately so that all the regions belonging to a group are adjacent.
 """
 
-import Experiment
+import Experiment as E
 import Genomics
 import IndexedFasta
 import Prediction
@@ -1495,7 +1495,6 @@ def runOnCluster( filename_peptides, filename_genome, options, parser_options ):
 def predictFromGFF( options ):
     """run predictions from a gff file that associates queries with genomic regions.
     """
-
     
     if not options.genome_file or not options.filename_peptides or options.filename_peptides == "-":
         raise "the --from-pairs option requires both a genome and an indexed set of queries."""
@@ -1591,8 +1590,68 @@ def predictFromGFF( options ):
 
     if options.from_gff != "-": infile.close()
 
-    if options.loglevel >= 1:
-        options.stdlog.write( "# ninput=%i, noutput=%i, nskipped=%i\n" % (ninput, noutput, nskipped))
+    E.info( "ninput=%i, noutput=%i, nskipped=%i" % (ninput, noutput, nskipped))
+
+def predictFromPairs( options ):
+    """run predictions from two fasta files, one with peptide sequences and the
+    other with genomic sequences. 
+
+    Sequences are associated via the identifier.
+
+    The cds file should be indexd.
+    """
+    
+    if not options.genome_file or not options.filename_peptides or options.filename_peptides == "-":
+        raise "the --from-pairs option requires both a genome and an indexed set of queries."""
+
+
+    try:
+        fasta = IndexedFasta.IndexedFasta( options.genome_file )
+    except KeyError:
+        fasta = Genomics.ReadGenomicSequences( open(options.genome_file, "r"), do_reverse = False )
+
+    try:
+        peptides = IndexedFasta.IndexedFasta( options.filename_peptides )
+        keys = peptides.getContigs()
+    except KeyError:
+        peptides = Genomics.ReadPeptideSequences( open(options.filename_peptides, "r") )
+        keys = peptides.keys()
+
+    ninput, noutput, nskipped = 0, 0, 0
+
+    predictor = getPredictor( options, parser_options )
+
+    options.stdout.write( "%s\n" % Prediction.Prediction().getHeader() )
+
+    for query in keys:
+
+        ninput += 1
+        peptide_sequence = peptides[query]
+
+        if query not in fasta:
+            E.warn( "query %s not cds database: skipped" % (query,))
+            nskipped += 1
+            continue
+
+        genomic_sequence = fasta[query]
+
+        E.debug( "predicting query %s against sequence of %i" % (query, len(genomic_sequence)))
+
+        result = predictor.predictFromSequences( 
+            peptide_sequence,
+            genomic_sequence, 
+            options = options.options )
+        
+        noutput += 1
+
+        for r in result:
+            r.mPredictionId = query
+            r.mQueryToken = query
+            options.stdout.write( "%s\n" % str(r))
+            
+        options.stdout.flush()
+
+    E.info( "ninput=%i, noutput=%i, nskipped=%i" % (ninput, noutput, nskipped))
 
 if __name__ == "__main__":
 
@@ -1616,6 +1675,9 @@ if __name__ == "__main__":
                        help="""read a list of query identifiers and genomic locations from a tab-separated file (- for stdin) and run a 
 predictor for each. 
 """ )
+
+    parser.add_option( "--from-pairs", dest="from_pairs", action="store_true",
+                       help="""predict pairs of peptide/cds sequences from the two fasta files. The identifiers must match""")
 
     parser.add_option("-R", "--filename-ranges", dest="filename_ranges", type="string",
                       help="filename with genomic ranges to scan a set of queries against."  )
@@ -1678,11 +1740,13 @@ predictor for each.
         upstream_queries = [] ,
         input_coordinate_format= "zero-both",
         add_flank = 0,
+        from_pairs = False,
+        from_gff = None,
         )
 
-    (options, args) = Experiment.Start( parser,
-                                        add_pipe_options = True,
-                                        add_cluster_options = True )
+    (options, args) = E.Start( parser,
+                               add_pipe_options = True,
+                               add_cluster_options = True )
 
     parser_options = {}
 
@@ -1698,7 +1762,13 @@ predictor for each.
     if options.from_gff:
 
         predictFromGFF( options )
-        Experiment.Stop()
+        E.Stop()
+        sys.exit(0)
+
+    elif options.from_pairs:
+        
+        predictFromPairs( options )
+        E.Stop()
         sys.exit(0)
         
     if options.filename_ranges:
@@ -1715,7 +1785,6 @@ predictor for each.
         outfile, filename_genome = tempfile.mkstemp()
        
         for line in infile:
-            
             if line[0] == "#": continue
 
             sbjct_token, sbjct_strand, sbjct_from, sbjct_to = line[:-1].split(":")
@@ -1792,8 +1861,7 @@ predictor for each.
     else:
         result = runLocally( filename_peptides, filename_genome, options, parser_options )        
 
-    if options.loglevel >= 1:
-        options.stdout.write( "# obtained %i results.\n" % len(result))
+    E.info( "obtained %i results" % len(result))
 
     ##########################################################################
     ##########################################################################
@@ -1841,8 +1909,7 @@ predictor for each.
                 try:
                     contig, strand, xfrom, xto, lcontig = coord.split(":")
                 except ValueError:
-                    if options.loglevel >= 1:
-                        options.stdlog.write("# skipped: can not parse coordinates for %s = %s\n" % (id, coord))
+                    E.warn( "skipped: can not parse coordinates for %s = %s" % (id, coord))
                     continue
 
                 coordinates[id] = ( contig, strand, int(xfrom), int(xto), int(lcontig) )
@@ -1877,6 +1944,7 @@ predictor for each.
         ## true contig size).
                 
         options.forward_coordinates = False
+
     if options.forward_coordinates:
         for r in result:
             lgenome = fasta.getLength( sbjct_token )
@@ -1894,5 +1962,5 @@ predictor for each.
     if options.filename_peptides == "-" and not options.dry_run:
         os.remove( filename_peptides)
 
-    Experiment.Stop()
+    E.Stop()
 

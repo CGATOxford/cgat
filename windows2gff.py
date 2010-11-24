@@ -58,7 +58,7 @@ Code
 '''
 import sys, string, re, optparse, time, os, shutil, tempfile, math
 
-import Experiment
+import Experiment as E
 import GFF
 import IndexedFasta
 
@@ -94,22 +94,26 @@ if __name__ == "__main__":
     parser = optparse.OptionParser( version = "%prog version: $Id: windows2gff.py 2861 2010-02-23 17:36:32Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option( "-g", "--genome-file", dest="genome_file", type="string",
-                       help="filename with genome (indexed)."  )
+                       help="filename with genome (indexed) for getting contig sizes."  )
 
     parser.add_option( "-e", "--gff-file", dest="gff_file", type="string",
-                       help="gff file to use."  )
+                       help="gff file to use for getting contig sizes."  )
 
     parser.add_option( "-f", "--fixed-width-windows=", dest="fixed_width_windows", type="string",
                        help="fixed width windows. Supply the window size as a parameter. Optionally supply an offset." )
-                      
+
+    parser.add_option( "-o", "--output-format=", dest="output_format", type="choice",
+                       choices=("gff", "bed"),
+                       help="output format [%default]" )
 
     parser.set_defaults(
         genome_file = None,
         fixed_windows = None,
         features = [],
+        output_format = "gff",
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     map_contig2size = {}
 
@@ -132,13 +136,23 @@ if __name__ == "__main__":
     else:
         gff = None
 
+    if map_contig2size == None:
+        raise ValueError( "no source of contig sizes supplied" )
+
     if options.fixed_width_windows:
         windows = getFixedWidthWindows( map_contig2size, options )
         
-    for g in windows:
-        options.stdout.write( str(g) + "\n" )
+    if options.output_format == "gff":
+        for g in windows:
+            options.stdout.write( str(g) + "\n" )
+            
+    elif options.output_format == "bed":
+        for g in windows:
+            options.stdout.write("\t".join(map(str, 
+                                               (g.contig, 
+                                               g.start,
+                                               g.end )) ) + "\n" )
 
-    if options.loglevel >= 1:
-        options.stdout.write( "# noutput=%i\n" % (len(windows) ) )
+    E.info( "noutput=%i\n" % (len(windows) ))
 
-    Experiment.Stop()
+    E.Stop()

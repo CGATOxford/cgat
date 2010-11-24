@@ -135,8 +135,7 @@ if __name__ == "__main__":
 
     for line in sys.stdin:
 
-        if line[0] == "#":
-            continue
+        if line[0] == "#": continue
         if line[0] == ">":
             print line[:-1]
             continue

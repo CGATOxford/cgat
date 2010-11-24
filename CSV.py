@@ -125,6 +125,8 @@ def ReadTable( lines,
 
     lines = filter(lambda x: x[0] != "#", lines)
 
+    if len(lines) == 0: return [], []
+
     if with_header:
         fields = lines[0][:-1].split("\t")
         del lines[0]

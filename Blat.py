@@ -61,6 +61,13 @@ class ParsingError(Error):
         else:
             self.message = message
 
+HEADER = """psLayout version 3
+
+match   mis-    rep.    N's     Q gap   Q gap   T gap   T gap   strand  Q       Q       Q       Q       T       T       T       T       block   blockSizes      qStarts  tStarts
+        match                   count   bases   count   bases           name    size    start   end     name    size    start   end     count
+---------------------------------------------------------------------------------------------------------------------------------------------------------------"""
+
+
 class Match:
     """a psl match.
 
@@ -432,13 +439,7 @@ class Match:
 
     def getHeader( self ):
 
-        return \
-"""psLayout version 3
-
-match   mis-    rep.    N's     Q gap   Q gap   T gap   T gap   strand  Q       Q       Q       Q       T       T       T       T       block   blockSizes      qStarts  tStarts
-        match                   count   bases   count   bases           name    size    start   end     name    size    start   end     count
----------------------------------------------------------------------------------------------------------------------------------------------------------------"""
-
+        return HEADER
 
     def getHeaders(self):
         return ("match", "mismatch", "repeats", "Ns", 
@@ -745,5 +746,24 @@ def iterator_per_query( iterator_psl ):
 
     raise StopIteration
         
-    
-
+FIELDS = ("matches",
+          "misMatches",
+          "repMatches",
+          "nCount",
+          "qNumInsert",
+          "qBaseInsert",
+          "tNumInsert",
+          "tBaseInsert",
+          "strand",
+          "qName",
+          "qSize",
+          "qStart",
+          "qEnd",
+          "tName",
+          "tSize",
+          "tStart",
+          "tEnd",
+          "blockCount",
+          "blockSizes",
+          "qStarts",
+          "tStarts" )

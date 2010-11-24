@@ -277,13 +277,13 @@ if __name__  == "__main__":
 
     t2 = time.time()
 
-    if options.loglevel >= 1:
-        options.stdlog.write( "# retrieved locations in %i seconds.\n" % (t2 - t1) )
+    E.info( "retrieved locations in %i seconds" % (t2 - t1) )
         
     for transcripts1, transcripts2, genes1, genes2, weight in orthologs:
-
+        ninput += 1
         Write( transcripts1, map_transcript2location1, options.fix1, options )
         Write( transcripts2, map_transcript2location2, options.fix2, options )        
+        noutput += 1
 
     E.info( "ninput=%i, noutput=%i, nmissed=%i, skipped=%i" % (ninput, noutput, nmissed, nskipped) )
     E.Stop()
