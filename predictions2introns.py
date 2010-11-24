@@ -198,7 +198,7 @@ if __name__ == '__main__':
                 ## note that e.mAlignment can sometimes be empty. This might
                 ## be an exonerate bug. In the alignment string there are two
                 ## consecutive exons.
-                if e.mAlignment and e.mAlignment[0][0] == "S":
+                if e.mAlignment and last_e.mAlignment and e.mAlignment[0][0] == "S":
                     offset_left = last_e.mAlignment[-1][2]
                     offset_right = e.mAlignment[0][2]
                 else:
