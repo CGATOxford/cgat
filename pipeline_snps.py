@@ -3304,16 +3304,18 @@ def buildBenignSNPs( infile, outfile ):
 
 @merge( (buildBenignSNPs, buildDeleteriousSNPs), 
         ("enrichment.dir/all.benign.bed.gz",
-         "enrichment.dir/all.deleterious.bed.gz" ),
+         "enrichment.dir/all.deleterious.bed.gz",
+         "enrichment.dir/all.ambiguous.bed.gz", ),
         )
 def mergeSNPs( infiles, outfiles ):
 
+    tmp1 = P.getTempFilename()
+    tmp2 = P.getTempFilename()
     statement = '''zcat enrichment.dir/mouse*.benign.bed.gz 
                 | grep -v "track" 
                 | sort -k 1,1 -k2,2n 
                 | uniq 
-                | awk 'BEGIN {printf("track name=all.benign\\n");} {print}' 
-                | gzip > enrichment.dir/all.benign.bed.gz
+                > %(tmp1)s
     '''
     P.run()
 
@@ -3321,10 +3323,36 @@ def mergeSNPs( infiles, outfiles ):
                 | grep -v "track" 
                 | sort -k 1,1 -k2,2n 
                 | uniq 
-                | awk 'BEGIN {printf("track name=all.deleterious\\n");} {print}' 
-                | gzip > enrichment.dir/all.deleterious.bed.gz
+                > %(tmp2)s 
     '''
     P.run()
+
+    statement = '''intersectBed -a %(tmp1)s -b %(tmp2)s 
+                   | awk 'BEGIN {printf("track name=all.ambiguous\\n");} {print}' 
+                   > enrichment.dir/all.ambiguous.bed'''
+    P.run()
+    
+    statement = '''intersectBed -v -a %(tmp1)s -b enrichment.dir/all.ambiguous.bed
+                   | awk 'BEGIN {printf("track name=all.benign\\n");} {print}' 
+                   | gzip
+                   > enrichment.dir/all.benign.bed.gz'''
+
+    P.run()
+
+    statement = '''intersectBed -v -a %(tmp2)s -b enrichment.dir/all.ambiguous.bed
+                   | awk 'BEGIN {printf("track name=all.deleterious\\n");} {print}' 
+                   | gzip
+                   > enrichment.dir/all.deleterious.bed.gz'''
+
+    P.run()
+
+    statement = '''gzip enrichment.dir/all.ambiguous.bed'''
+    P.run()
+
+    os.unlink( tmp1 )
+    os.unlink( tmp2 )
+    
+
 
 @merge( (buildBenignSNPs, buildDeleteriousSNPs), 
         "enrichment.dir/isochores.bed" )
@@ -3348,6 +3376,25 @@ def buildSNPDensityIsochores( infile, outfile ):
     P.run()
  
 
+@merge([ "/net/cpp-compute/backup/andreas/projects/mousestrains/data/qtl/jonathans/qtl_merged.bed", 
+         "/net/cpp-compute/backup/andreas/projects/mousestrains/data/qtl/jonathans/qtl_full.bed", 
+         "/net/cpp-compute/backup/andreas/projects/mousestrains/data/qtl/jonathans/qtl_rest.bed", 
+         ], "qtl.summary.tsv")
+def QTLSummary( infiles, outfile ):
+
+    for infile in infiles:
+        basename = os.path.basename( infile )
+        statement = '''
+        python %(scriptsdir)s/bed2gff.py
+        < %(infile)s
+        | python %(scriptsdir)s/gff2histogram.py
+               --method=all
+               --output-filename-pattern=%(outfile)s.%(basename)s
+               --log=%(outfile)s.log
+        > %(outfile)s
+        '''
+        P.run()
+        
 @follows( buildEnrichmentWorkspaces )
 @merge( (buildDeleteriousSNPs, buildBenignSNPs, mergeSNPs), "qtl.table" )
 def runGATOnQTLs( infiles, outfile ):
@@ -3359,8 +3406,7 @@ def runGATOnQTLs( infiles, outfile ):
     
     workspaces = [ "workspace_cds.bed", ]
 
-    annotations = [ "/net/cpp-compute/backup/andreas/projects/mousestrains/data/qtl/martins/merged.bed", 
-                    "/net/cpp-compute/backup/andreas/projects/mousestrains/data/qtl/jonathans/qtl_merged.bed", 
+    annotations = [ "/net/cpp-compute/backup/andreas/projects/mousestrains/data/qtl/jonathans/qtl_merged.bed", 
                     "/net/cpp-compute/backup/andreas/projects/mousestrains/data/qtl/jonathans/qtl_full.bed", 
                     "/net/cpp-compute/backup/andreas/projects/mousestrains/data/qtl/jonathans/qtl_rest.bed", 
                     ]
@@ -3376,6 +3422,9 @@ def runGATOnQTLs( infiles, outfile ):
                   %(workspaces)s
                   %(segments)s
                   %(annotations)s
+                  --output-stats=annotations
+                  --output-stats=workspaces
+                  --output-filename-pattern=enrichment.dir/%%s.tsv
                   --force
                   --num-samples=10000
     > %(outfile)s
@@ -3393,8 +3442,7 @@ def runGATOnQTLsSmall( infiles, outfile ):
     
     workspaces = [ "workspace_cds.bed", ]
 
-    annotations = [ "/net/cpp-compute/backup/andreas/projects/mousestrains/data/qtl/martins/merged.bed", 
-                    "/net/cpp-compute/backup/andreas/projects/mousestrains/data/qtl/jonathans/qtl_merged.bed", 
+    annotations = [ "/net/cpp-compute/backup/andreas/projects/mousestrains/data/qtl/jonathans/qtl_merged.bed", 
                     "/net/cpp-compute/backup/andreas/projects/mousestrains/data/qtl/jonathans/qtl_full.bed", 
                     "/net/cpp-compute/backup/andreas/projects/mousestrains/data/qtl/jonathans/qtl_rest.bed", 
                     ]
@@ -3410,12 +3458,45 @@ def runGATOnQTLsSmall( infiles, outfile ):
                   %(workspaces)s
                   %(segments)s
                   %(annotations)s
+                  --output-stats=annotations
+                  --output-stats=workspaces
+                  --output-filename-pattern=enrichment.dir/%%s.tsv
                   --force
                   --num-samples=10000
     > %(outfile)s
     '''
     P.run()
 
+@transform( (runGATOnQTLs, ), suffix(".table"), ".load") 
+def loadGATOnQTLs( infile, outfile ):
+    
+    table = P.toTable( outfile )
+
+    statement = '''
+    cat < %(infile)s
+    | csv2db.py %(csv2db_options)s
+              --index=track
+              --index=annotation
+              --table=%(table)s
+    > %(outfile)s
+    '''
+    P.run()
+
+    stat_files = glob.glob( "enrichment.dir/stats_*.tsv" )
+    
+    for stat_file in stat_files:
+        basename = os.path.basename(stat_file)
+        table = os.path.splitext( basename )[0]
+        statement = '''
+        cat < %(stat_file)s
+        | csv2db.py %(csv2db_options)s
+              --index=track
+              --index=contig
+              --table=%(table)s
+    >> %(outfile)s
+    '''
+        P.run()
+        
 
 ###################################################################
 ###################################################################
