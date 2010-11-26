@@ -49,9 +49,9 @@ step9.exons.load: step9.exons
 	$(PRELOG)
 	@$(CONNECTION) "DELETE FROM $(PARAM_TABLE_NAME_EXONS);" > /dev/null
 	@$(CONNECTION) "DELETE FROM $(PARAM_TABLE_NAME_EXONS_SUMMARY);" > /dev/null
-	@grep -v "#" $<_summary | sort -k{1,1}n |\
+	@grep -v -e "#" -e "prediction_id" $<_summary | sort -k{1,1}n |\
 	$(CONNECTION) "COPY $(PARAM_TABLE_NAME_EXONS_SUMMARY) FROM STDIN WITH NULL AS 'na'" > $@ 
-	@grep -v "#" $< |\
+	@grep -v -e "#" -e "prediction_id" $< |\
 	$(CONNECTION) "COPY $(PARAM_TABLE_NAME_EXONS) FROM STDIN WITH NULL AS 'na'" >> $@ 
 	$(CMD_LOG) "loaded into $(PARAM_TABLE_NAME_EXONS_SUMMARY): `$(CONNECTION) 'SELECT COUNT(*) FROM $(PARAM_TABLE_NAME_EXONS_SUMMARY);' -t `"
 	$(CMD_LOG) "loaded into $(PARAM_TABLE_NAME_EXONS): `$(CONNECTION) 'SELECT COUNT(*) FROM $(PARAM_TABLE_NAME_EXONS);' -t `"  

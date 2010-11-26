@@ -118,8 +118,6 @@ if __name__ == '__main__':
         print USAGE, "no arguments required."
         sys.exit(2)
 
-
-
     reference_exon_boundaries = {}
     if options.filename_boundaries:
         reference_exon_boundaries = Exons.ReadExonBoundaries( open( options.filename_boundaries, "r"),
@@ -131,6 +129,25 @@ if __name__ == '__main__':
                 
     if options.filename_exons:
         outfile_exons = open( options.filename_exons, "w")
+        outfile_exons.write( "%s\n" % "\t".join( (
+                    "prediction_id",
+                    "exon_id",
+                    "exon_from",
+                    "exon_to",
+                    "exon_frame",
+                    "reference_id",
+                    "reference_from",
+                    "reference_to",
+                    "reference_phase",
+                    "pidentity",
+                    "psimilarity",
+                    "nframeshifts",
+                    "ngaps",
+                    "nstopcodons",
+                    "is_ok BOOLEAN",
+                    "genome_exon_from",
+                    "genome_exon_to") ) )
+
     else:
         outfile_exons = None
 
@@ -149,7 +166,26 @@ if __name__ == '__main__':
     nempty_alignments = 0
 
     fasta = IndexedFasta.IndexedFasta( options.genome_file )
+
+    option.stdout.write( "%s\n" % "\t".join( (
+                "prediction_id", 
+                "number",
+                "dubious_exons",
+                "boundaries_sum",
+                "boundaries_max",
+                "identical_exons",
+                "inserted_exons",
+                "deleted_exons",
+                "inserted_introns",
+                "deleted_introns",
+                "truncated_Nterminus",
+                "truncated_Cterminus",
+                "deleted_Nexons",
+                "deleted_Cexons",
+                "inserted_Nexons",
+                "inserted_Cexons" ) ) )
     
+
     for line in sys.stdin:
 
         if line[0] == "#": continue
