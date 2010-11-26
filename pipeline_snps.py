@@ -52,6 +52,7 @@ Code
 from ruffus import *
 import sys, glob, gzip, os, itertools, CSV, re, math, types, collections, time
 import optparse, shutil
+import numpy
 import sqlite3
 import GFF, GTF
 import Experiment as E
@@ -718,6 +719,40 @@ def indexGenome( infile, outfile ):
     P.run()
     
     pysam.faidx( outfile )
+
+map_synonym2strains = \
+    { 'SPRETUS' : 'SPRET',
+      'A' : 'A_J',
+      'BALBC': 'BALB' }
+    
+@split( PARAMS["sv_data"], "mouse*.sv.bed.gz")
+def importSVs( infile, outfiles ):
+    '''import SV data.
+
+    SV data is simply a set of bed-formatted files for
+    each strain.
+    '''
+    
+    statement = "tar -xvzf %(infile)s"
+    
+    P.run()
+    
+    c = E.Counter()
+
+    for infile in glob.glob( "*merged.tab" ):
+        c.nfiles += 1
+        dirname, basename = os.path.split(infile)
+        track = re.sub("_.*", "", basename).upper()
+        if track in map_synonym2strains:
+            track = map_synonym2strains[track]
+        outfile = "mouse%s.sv.bed.gz" % track
+        statement = """cat %(infile)s | awk '{printf("chr%%s\\n", $0);}' | sort -k1,1 -k2,2n | bgzip > %(outfile)s; tabix -f -p bed %(outfile)s"""
+        P.run()
+        os.unlink( infile )
+        E.info( "created %s" % outfile )
+        
+    os.unlink( "README" )
+    E.info( "%s" % c )
 
 @follows(indexGenome)
 @transform( buildPileups, suffix(".pileup.gz"), ".validated.gz" )
@@ -2100,244 +2135,6 @@ def makeSNPCountsPerGene( infiles, outfile ):
     """ 
     P.run()
 
-
-###################################################################
-@files( [ (None, "assignments.go" ), ] )
-def createGO( infile, outfile ):
-    '''get GO assignments from ENSEMBL'''
-    PGO.createGO( infile, outfile )
-
-############################################################
-@files_re( createGO, "(.*).go", r"\1.goslim") 
-def createGOSlim( infile, outfile ):
-    '''get GO assignments from ENSEMBL'''
-    PGO.createGOSlim( infile, outfile )
-
-
-############################################################
-@files( ( (importMGI, "assignments.mgi"),) )
-def createMGI( infile, outfile ):
-    '''get GO assignments from MGI'''
-
-    dbhandle = sqlite3.connect( PARAMS["database"] )
-
-    statement = '''
-                 SELECT DISTINCT 'MPheno.ontology', m2g.gene_id, a2p.phenotype_id, p.term, 'NA' 
-                 FROM mgi_marker2gene as m2g, 
-                      mgi_marker2allele as m2a, 
-                      mgi_allele2phenotype as a2p, 
-                      mgi_phenotypes as p 
-                 WHERE m2g.marker_id = m2a.marker_id AND 
-                       a2p.allele_id = m2a.allele_id AND 
-                       p.phenotype_id = a2p.phenotype_id
-                ''' 
-    cc = dbhandle.cursor()
-    data = cc.execute(statement).fetchall()
-    
-    outf = open(outfile, "w")
-    outf.write( "\n".join( [ "\t".join(x) for x in data ] ) + "\n" )
-    outf.close()
-
-###################################################################
-@follows(summarizeEffectsPerGene, createGO, createGOSlim, createMGI)
-@files( [ ("%s_effects_genes.load" % x, "%s_%s.%s" % (x,y,z), (x,y,z)) for x,y,z in 
-      itertools.product( TRACKS_GO, 
-                         ("nmdknockouttranscript",
-                          "nmdaffectedtranscript",
-                          "nmdknockoutgenes",
-                          "nmdaffectedgenes"),
-                         ("go", "goslim", "mgi") ) ] )
-def runGOAnalysesOnEffects( infile, outfile, options ):
-    '''run GO analysis on transcripts that have been knocked out
-    by premature stop codons.
-
-    ``options`` is a tuple of (``track``, ``analysis``, ``ontology``)
-
-    ``analysis`` can be:
-
-    nmdknockouttranscript
-        genes for which one transcript has been knocked out
-        due to NMD
-    nmdaffectedtranscript
-        genes in which one transcript is affected by NMD
-    nmdknockoutgenes
-        genes in which all transcripts have been knocked out 
-        due to NMD
-
-    '''
-        
-    track, analysis, ontology = options
-
-    # setup foreground set
-    if analysis == "nmdknockouttranscript":
-        field_where = "e.nmd_knockout > 0"
-    elif analysis == "nmdaffectedtranscript":
-        field_where = "e.nmd_affected > 0"
-    elif analysis == "nmdknockoutgenes":
-        field_where = "e.nmd_knockout = e.ntranscripts"
-
-    statement_fg = '''
-    SELECT DISTINCT e.gene_id 
-        FROM
-            %(track)s_effects_genes AS e
-        WHERE 
-              %(field_where)s
-        ORDER BY e.gene_id
-    ''' % locals()
-
-    # setup background set
-    statement_bg = '''SELECT DISTINCT gene_id FROM gene_info''' % locals()
-        
-    # choose ontology
-    if ontology == "go":
-        gofile = "assignments.go"
-    elif ontogoly == "goslim":
-        gofile = "assignments.goslim"
-
-    # create result directory
-    outdir = os.path.abspath( outfile + ".dir" )
-    try: os.makedirs( outdir )
-    except OSError: pass
-
-    # run
-    PGO.runGOFromDatabase( outfile, 
-                           outdir, 
-                           statement_fg,
-                           statement_bg,
-                           gofile,
-                           samples = 0)
-
-###################################################################
-@follows(summarizeAllelesPerGene, createGO, createGOSlim)
-@files( [ ("%s_alleles_genes.load" % x, "%s_vs_%s.%s" % (x,y,z), (x,y,z)) for x,y,z in 
-      itertools.product( TRACKS_GO, 
-                         ("stoptruncated",
-                          "nmdknockout",
-                          "splicetruncated",
-                          "knockout"),
-                         ("goslim", 
-                          "go",
-                          "mgi",
-                          ) ) ] )
-def runGOAnalysesOnAlleles( infile, outfile, options ):
-    '''run GO analysis on transcripts that have been knocked out
-    by premature stop codons.
-
-    ``options`` is a tuple of (``track``, ``analysis``, ``ontology``)
-
-    ``analysis`` can be:
-
-    stoptruncated
-        genes that are truncated due to stops
-    nmdknockout
-        genes that are knocked out due to NMD
-    splicetruncated
-        genes that are truncated due to deleted splice sites
-    knockout
-        any of the above
-
-    '''
-        
-    track, analysis, ontology = options
-
-    # setup foreground set
-    if analysis == "stoptruncated":
-        field_where = "e.is_truncated"
-    elif analysis == "nmdknockout":
-        field_where = "e.is_nmd_knockout"
-    elif analysis == "splicetruncated":
-        field_where = "is_splice_truncated"
-    elif analysis == "knockout":
-        field_where = "(e.is_nmd_knockout or e.is_truncated or e.is_splice_truncated)"
-    else:
-        raise ValueError( "unknown analysis '%s'" % analysis )
-
-    statement_fg = '''
-    SELECT DISTINCT e.gene_id 
-        FROM
-            %(track)s_alleles_genes AS e
-        WHERE 
-              %(field_where)s
-        ORDER BY e.gene_id
-    ''' % locals()
-
-    # setup background set
-    statement_bg = '''SELECT DISTINCT gene_id FROM gene_info''' % locals()
-        
-    # choose ontology
-    if ontology == "go":
-        gofile = "assignments.go"
-        ontology_file = PARAMS["go_ontology"]
-    elif ontology == "goslim":
-        gofile = "assignments.goslim"
-        ontology_file = PARAMS["go_ontology"]
-    elif ontology == "mgi":
-        gofile = "assignments.mgi"
-        ontology_file = PARAMS["mgi_ontology"]
-
-    # create result directory
-    outdir = os.path.abspath( outfile + ".dir" )
-    try: os.makedirs( outdir )
-    except OSError: pass
-
-    # run
-    PGO.runGOFromDatabase( outfile, 
-                           outdir, 
-                           statement_fg,
-                           statement_bg,
-                           gofile,
-                           ontology_file = ontology_file,
-                           samples = 1000 )
-    
-############################################################################
-@merge( runGOAnalysesOnAlleles, "alleles_go.load")
-def loadGOs( infile, outfile ):
-    '''load go results.'''
-    tablename = P.toTable( outfile )
-    PGO.loadGOs( infile, outfile, tablename )
-
-############################################################################
-@transform( runGOAnalysesOnAlleles, suffix(".go"), "_go.load")
-def loadGO( infile, outfile ):
-    '''load go results.'''
-    tablename = P.toTable( outfile )
-    PGO.loadGO( infile, outfile, tablename )
-
-############################################################################
-@transform( runGOAnalysesOnAlleles, suffix(".goslim"), "_goslim.load")
-def loadGOSlim( infile, outfile ):
-    '''load goslim results.'''
-    tablename = P.toTable( outfile )
-    PGO.loadGO( infile, outfile, tablename )
-
-############################################################################
-@files( ((loadGOs, "goresults.table"),))
-def mergeGO( infile, outfile ):
-    '''merge all GO anlyses.
-
-    * collect all P-Values for all categories and experiments.
-    * compute stats on it
-    '''
-
-    dbhandle = sqlite3.connect( PARAMS["database"] )
-
-    statement = '''SELECT track, geneset, annotationset, category, min(pover,punder) 
-                   FROM alleles_go'''
-    cc = dbhandle.cursor()
-    data = cc.execute(statement).fetchall()
-    
-    pvalues = [ x[4] for x in data ]
-    E.info( "analysing %i pvalues" % len(pvalues ))
-
-    fdr = Stats.doFDR( pvalues )
-    E.info( "got %i qvalues" % len(fdr.mQValues ))
-
-    for d, qvalue in zip( data, fdr.mQValues ):
-        if qvalue > 0.05: continue
-        print data, qvalue
-    
-    Database.executewait( dbhandle, '''ALTER TABLE %(table)s ADD COLUMN is_coding FLOAT''' % locals())
-
 ############################################################################
 @follows( mkdir( os.path.join( PARAMS["scratchdir"], "malis.dir" ) ) )
 @merge( buildAlleles, "malis.map" )
@@ -2996,9 +2793,7 @@ def analysePolyphen( infile, outfile ):
                                 ) ) + "\n" )
 
     outf.close()
-
     
-
 ###################################################################
 ###################################################################
 ###################################################################
@@ -3593,6 +3388,389 @@ def loadNMDSanity( infile, outfile ):
     '''
     P.run()
 
+
+###################################################################
+###################################################################
+###################################################################
+## SV analysis
+###################################################################
+@transform( importSVs, suffix(".sv.bed.gz"), ".sv.overlap.tsv.gz" )
+def countOverlapBetweenSVsandTranscripts( infile, outfile ):
+
+    to_cluster = True
+
+    statement = '''
+    zcat %(transcripts)s 
+    | python %(scriptsdir)s/gtf2table.py 
+          --genome-file=%(genome)s 
+          --counter=overlap 
+          --filename-gff=%(infile)s 
+          --filename-format=bed 
+          --reporter=transcripts
+          --log=%(outfile)s.log
+    | gzip
+    > %(outfile)s
+    '''
+    P.run()
+
+###################################################################
+###################################################################
+###################################################################
+## gene list analyses
+###################################################################
+@files( [ (None, "assignments.go" ), ] )
+def createGO( infile, outfile ):
+    '''get GO assignments from ENSEMBL'''
+    PGO.createGO( infile, outfile )
+
+############################################################
+@files_re( createGO, "(.*).go", r"\1.goslim") 
+def createGOSlim( infile, outfile ):
+    '''get GO assignments from ENSEMBL'''
+    PGO.createGOSlim( infile, outfile )
+
+
+############################################################
+@files( ( (importMGI, "assignments.mgi"),) )
+def createMGI( infile, outfile ):
+    '''get GO assignments from MGI'''
+
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+
+    statement = '''
+                 SELECT DISTINCT 'MPheno.ontology', m2g.gene_id, a2p.phenotype_id, p.term, 'NA' 
+                 FROM mgi_marker2gene as m2g, 
+                      mgi_marker2allele as m2a, 
+                      mgi_allele2phenotype as a2p, 
+                      mgi_phenotypes as p 
+                 WHERE m2g.marker_id = m2a.marker_id AND 
+                       a2p.allele_id = m2a.allele_id AND 
+                       p.phenotype_id = a2p.phenotype_id
+                ''' 
+    cc = dbhandle.cursor()
+    data = cc.execute(statement).fetchall()
+    
+    outf = open(outfile, "w")
+    outf.write( "\n".join( [ "\t".join(x) for x in data ] ) + "\n" )
+    outf.close()
+
+###################################################################
+@follows(summarizeEffectsPerGene, createGO, createGOSlim, createMGI)
+@files( [ ("%s_effects_genes.load" % x, "%s_%s.%s" % (x,y,z), (x,y,z)) for x,y,z in 
+      itertools.product( TRACKS_GO, 
+                         ("nmdknockouttranscript",
+                          "nmdaffectedtranscript",
+                          "nmdknockoutgenes",
+                          "nmdaffectedgenes"),
+                         ("go", "goslim", "mgi") ) ] )
+def runGOAnalysesOnEffects( infile, outfile, options ):
+    '''run GO analysis on transcripts that have been knocked out
+    by premature stop codons.
+
+    ``options`` is a tuple of (``track``, ``analysis``, ``ontology``)
+
+    ``analysis`` can be:
+
+    nmdknockouttranscript
+        genes for which one transcript has been knocked out
+        due to NMD
+    nmdaffectedtranscript
+        genes in which one transcript is affected by NMD
+    nmdknockoutgenes
+        genes in which all transcripts have been knocked out 
+        due to NMD
+
+    '''
+        
+    track, analysis, ontology = options
+
+    # setup foreground set
+    if analysis == "nmdknockouttranscript":
+        field_where = "e.nmd_knockout > 0"
+    elif analysis == "nmdaffectedtranscript":
+        field_where = "e.nmd_affected > 0"
+    elif analysis == "nmdknockoutgenes":
+        field_where = "e.nmd_knockout = e.ntranscripts"
+
+    statement_fg = '''
+    SELECT DISTINCT e.gene_id 
+        FROM
+            %(track)s_effects_genes AS e
+        WHERE 
+              %(field_where)s
+        ORDER BY e.gene_id
+    ''' % locals()
+
+    # setup background set
+    statement_bg = '''SELECT DISTINCT gene_id FROM gene_info''' % locals()
+        
+    # choose ontology
+    if ontology == "go":
+        gofile = "assignments.go"
+    elif ontogoly == "goslim":
+        gofile = "assignments.goslim"
+
+    # create result directory
+    outdir = os.path.abspath( outfile + ".dir" )
+    try: os.makedirs( outdir )
+    except OSError: pass
+
+    # run
+    PGO.runGOFromDatabase( outfile, 
+                           outdir, 
+                           statement_fg,
+                           statement_bg,
+                           gofile,
+                           samples = 0)
+
+###################################################################
+@follows(summarizeAllelesPerGene, createGO, createGOSlim)
+@files( [ ("%s_alleles_genes.load" % x, "%s_vs_%s.%s" % (x,y,z), (x,y,z)) for x,y,z in 
+      itertools.product( TRACKS_GO, 
+                         ("stoptruncated",
+                          "nmdknockout",
+                          "splicetruncated",
+                          "knockout"),
+                         ("goslim", 
+                          "go",
+                          "mgi",
+                          ) ) ] )
+def runGOAnalysesOnAlleles( infile, outfile, options ):
+    '''run GO analysis on transcripts that have been knocked out
+    by premature stop codons.
+
+    ``options`` is a tuple of (``track``, ``analysis``, ``ontology``)
+
+    ``analysis`` can be:
+
+    stoptruncated
+        genes that are truncated due to stops
+    nmdknockout
+        genes that are knocked out due to NMD
+    splicetruncated
+        genes that are truncated due to deleted splice sites
+    knockout
+        any of the above
+
+    '''
+        
+    track, analysis, ontology = options
+
+    # setup foreground set
+    if analysis == "stoptruncated":
+        field_where = "e.is_truncated"
+    elif analysis == "nmdknockout":
+        field_where = "e.is_nmd_knockout"
+    elif analysis == "splicetruncated":
+        field_where = "is_splice_truncated"
+    elif analysis == "knockout":
+        field_where = "(e.is_nmd_knockout or e.is_truncated or e.is_splice_truncated)"
+    else:
+        raise ValueError( "unknown analysis '%s'" % analysis )
+
+    statement_fg = '''
+    SELECT DISTINCT e.gene_id 
+        FROM
+            %(track)s_alleles_genes AS e
+        WHERE 
+              %(field_where)s
+        ORDER BY e.gene_id
+    ''' % locals()
+
+    # setup background set
+    statement_bg = '''SELECT DISTINCT gene_id FROM gene_info''' % locals()
+        
+    # choose ontology
+    if ontology == "go":
+        gofile = "assignments.go"
+        ontology_file = PARAMS["go_ontology"]
+    elif ontology == "goslim":
+        gofile = "assignments.goslim"
+        ontology_file = PARAMS["go_ontology"]
+    elif ontology == "mgi":
+        gofile = "assignments.mgi"
+        ontology_file = PARAMS["mgi_ontology"]
+
+    # create result directory
+    outdir = os.path.abspath( outfile + ".dir" )
+    try: os.makedirs( outdir )
+    except OSError: pass
+
+    # run
+    PGO.runGOFromDatabase( outfile, 
+                           outdir, 
+                           statement_fg,
+                           statement_bg,
+                           gofile,
+                           ontology_file = ontology_file,
+                           samples = 1000 )
+
+@merge(summarizeAllelesPerGene, "polyphen.genelist" )
+def buildGeneListMatrixPolyphen( infiles, outfile ):
+
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    cc = dbhandle.cursor()
+
+    all_genes = [ x[0] for x in cc.execute( '''SELECT DISTINCT gene_id FROM gene_info''' % locals() )]
+
+    predictions = ("benign",
+                   "probablydamaging",
+                   "possiblydamaging",
+                   "unknown")
+
+    gene2row = dict( [(x[1],x[0]) for x in enumerate( all_genes ) ] )
+    tracks = [ x[:-len("_alleles_genes.load")] for x in infiles ]
+    matrix = numpy.zeros( (len(all_genes), len( predictions ) * len(tracks) ), numpy.int )
+    
+    col = 0
+    for track in tracks:
+        
+        for prediction in predictions:
+            statement = '''
+            SELECT DISTINCT i.gene_id 
+            FROM
+            transcript_info AS i,
+            polyphen_map AS map,
+            polyphen_HumVar as polyphen
+            WHERE 
+            polyphen.snp_id = map.snp_id AND
+            map.track = '%(track)s' AND
+            map.transcript_id = i.transcript_id AND
+            prediction = '%(prediction)s' '''
+
+            genes = [ x[0] for x in cc.execute( statement % locals() ) ]
+            for gene_id in genes:
+                matrix[gene2row[gene_id]][col] = 1
+            col += 1
+            
+    outf = open( outfile, "w")
+    outf.write( "gene_id\t%s\n" % "\t".join( "%s_%s" % (x,y) for x,y in itertools.product( tracks, predictions) ) )
+    for gene_id in all_genes:
+        outf.write( "%s\t%s\n" % (gene_id, "\t".join( map(str, matrix[gene2row[gene_id]] ) ) ) )
+    outf.close()
+
+###################################################################
+@follows( runPolyphen )
+@follows(summarizeAllelesPerGene, createGO, createGOSlim)
+@files( [ ("%s_alleles_genes.load" % x, "%s_vs_%s.%s" % (x,y,z), (x,y,z)) for x,y,z in 
+      itertools.product( TRACKS_GO, 
+                         ("benign",
+                          "probablydamaging",
+                          "possiblydamaging",
+                          "unknown"),
+                         ("goslim", 
+                          "go",
+                          "mgi",
+                          ) ) ] )
+def runGOAnalysesOnPolyphen( infile, outfile, options ):
+    '''run GO analysis on transcripts that have been knocked out
+    by premature stop codons.
+
+    ``options`` is a tuple of (``track``, ``analysis``, ``ontology``)
+
+    ``analysis`` can be any of the polyphen classes:
+         benign
+         probablydamaging
+         possiblydamaging
+         unknown
+
+    '''
+        
+    track, analysis, ontology = options
+
+    # setup foreground set
+    field_where = "polyphen.prediction = '%(analysis)s'" % locals()
+    
+    statement_fg = '''
+    SELECT DISTINCT i.gene_id 
+        FROM
+            transcript_info AS i,
+            polyphen_map AS map,
+            polyphen_HumVar as polyphen
+        WHERE 
+              polyphen.snp_id = map.snp_id AND
+              map.transcript_id = i.transcript_id AND
+              %(field_where)s 
+        ORDER BY i.gene_id
+    ''' % locals()
+
+    # setup background set
+    statement_bg = '''SELECT DISTINCT gene_id FROM gene_info''' % locals()
+        
+    # choose ontology
+    if ontology == "go":
+        gofile = "assignments.go"
+        ontology_file = PARAMS["go_ontology"]
+    elif ontology == "goslim":
+        gofile = "assignments.goslim"
+        ontology_file = PARAMS["go_ontology"]
+    elif ontology == "mgi":
+        gofile = "assignments.mgi"
+        ontology_file = PARAMS["mgi_ontology"]
+
+    # create result directory
+    outdir = os.path.abspath( outfile + ".dir" )
+    try: os.makedirs( outdir )
+    except OSError: pass
+
+    # run
+    PGO.runGOFromDatabase( outfile, 
+                           outdir, 
+                           statement_fg,
+                           statement_bg,
+                           gofile,
+                           ontology_file = ontology_file,
+                           samples = 1000 )
+    
+############################################################################
+@merge( runGOAnalysesOnAlleles, "alleles_go.load")
+def loadGOs( infile, outfile ):
+    '''load go results.'''
+    tablename = P.toTable( outfile )
+    PGO.loadGOs( infile, outfile, tablename )
+
+############################################################################
+@transform( runGOAnalysesOnAlleles, suffix(".go"), "_go.load")
+def loadGO( infile, outfile ):
+    '''load go results.'''
+    tablename = P.toTable( outfile )
+    PGO.loadGO( infile, outfile, tablename )
+
+############################################################################
+@transform( runGOAnalysesOnAlleles, suffix(".goslim"), "_goslim.load")
+def loadGOSlim( infile, outfile ):
+    '''load goslim results.'''
+    tablename = P.toTable( outfile )
+    PGO.loadGO( infile, outfile, tablename )
+
+############################################################################
+@files( ((loadGOs, "goresults.table"),))
+def mergeGO( infile, outfile ):
+    '''merge all GO anlyses.
+
+    * collect all P-Values for all categories and experiments.
+    * compute stats on it
+    '''
+
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+
+    statement = '''SELECT track, geneset, annotationset, category, min(pover,punder) 
+                   FROM alleles_go'''
+    cc = dbhandle.cursor()
+    data = cc.execute(statement).fetchall()
+    
+    pvalues = [ x[4] for x in data ]
+    E.info( "analysing %i pvalues" % len(pvalues ))
+
+    fdr = Stats.doFDR( pvalues )
+    E.info( "got %i qvalues" % len(fdr.mQValues ))
+
+    for d, qvalue in zip( data, fdr.mQValues ):
+        if qvalue > 0.05: continue
+        print data, qvalue
+    
+    Database.executewait( dbhandle, '''ALTER TABLE %(table)s ADD COLUMN is_coding FLOAT''' % locals())
+
 ###################################################################
 ###################################################################
 ###################################################################
@@ -3625,11 +3803,18 @@ def effects(): pass
 def annotations(): pass
 
 @follows( prepare, consequences, effects, alleles, annotations )
-def full():
-    pass
+def full(): pass
 
 @follows( runGATOnQTLs, runGATOnQTLsSmall)
 def qtl(): pass
+
+@follows( importSVs, countOverlapBetweenSVsandTranscripts)
+def svs(): pass
+
+@follows( runGOAnalysesOnEffects,
+          runGOAnalysesOnAlleles,
+          runGOAnalysesOnPolyphen )
+def go(): pass
 
 @follows( loadExpressionData, 
           correlateExpressionAndNMDByTranscript, 
