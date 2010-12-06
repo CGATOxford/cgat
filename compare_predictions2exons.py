@@ -68,7 +68,7 @@ Build a file with exon comparisions between genes.
 """ % sys.argv[0]
 
 import alignlib
-import Experiment
+import Experiment as E
 import Genomics
 import IndexedFasta
 import PredictionParser
@@ -112,7 +112,7 @@ if __name__ == '__main__':
         stop_codons = ("TAG", "TAA", "TGA"), )
 
 
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
     if len(args) > 0:
         print USAGE, "no arguments required."
@@ -123,9 +123,7 @@ if __name__ == '__main__':
         reference_exon_boundaries = Exons.ReadExonBoundaries( open( options.filename_boundaries, "r"),
                                                               do_invert = 1,
                                                               remove_utr = 1)
-        if options.loglevel >= 1:
-            print "# read exon boundaries for %i queries" % len(reference_exon_boundaries)
-            sys.stdout.flush()
+        E.info( "read exon boundaries for %i queries" % len(reference_exon_boundaries) )
                 
     if options.filename_exons:
         outfile_exons = open( options.filename_exons, "w")
@@ -144,7 +142,7 @@ if __name__ == '__main__':
                     "nframeshifts",
                     "ngaps",
                     "nstopcodons",
-                    "is_ok BOOLEAN",
+                    "is_ok",
                     "genome_exon_from",
                     "genome_exon_to") ) )
 
@@ -153,9 +151,7 @@ if __name__ == '__main__':
 
     if options.filename_peptides:
         peptide_sequences = Genomics.ReadPeptideSequences( open(options.filename_peptides, "r") )
-        if options.loglevel >= 1:
-            print "# read peptide sequences for %i queries" % len(peptide_sequences)
-            sys.stdout.flush()            
+        E.info("read peptide sequences for %i queries" % len(peptide_sequences) )
     else:
         peptide_sequences = {}
 
@@ -167,7 +163,7 @@ if __name__ == '__main__':
 
     fasta = IndexedFasta.IndexedFasta( options.genome_file )
 
-    option.stdout.write( "%s\n" % "\t".join( (
+    options.stdout.write( "%s\n" % "\t".join( (
                 "prediction_id", 
                 "number",
                 "dubious_exons",
@@ -184,7 +180,6 @@ if __name__ == '__main__':
                 "deleted_Cexons",
                 "inserted_Nexons",
                 "inserted_Cexons" ) ) )
-    
 
     for line in sys.stdin:
 
@@ -592,10 +587,8 @@ if __name__ == '__main__':
 
     if outfile_exons: outfile_exons.close()
 
-    if options.loglevel >= 1:
-        options.stdlog.write( "# found=%i, missed_exons=%i, missed_length=%i, empty_alis=%i\n" % (nfound,
-                                                                                                  nmissed_exons,
-                                                                                                  nmissed_length,
-                                                                                                  nempty_alignments) )
-
-    Experiment.Stop()
+    E.info( "found=%i, missed_exons=%i, missed_length=%i, empty_alis=%i" % (nfound,
+                                                                            nmissed_exons,
+                                                                            nmissed_length,
+                                                                            nempty_alignments) )
+    E.Stop()

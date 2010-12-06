@@ -500,16 +500,21 @@ def CountGeneFeatures( first_position,
     partial_codon = []
     
     first_state = True
+
     for state, l_protein, l_genome in alignment:
 
         if state in ("G", "M", "P"):
-            ## reset split codon. Do a sanity check.
-            if len(partial_codon) % 3 != 0:
+
+            ## reset split codon. Do a sanity check, but ignore first split codon
+            # in the case of exon alignments
+            if len(partial_codon) % 3 != 0 and not first_state:
+                raise ValueError ("split codon was not multiple of three: partial_codon=%s, alignment=%s" % \
+                                      (partial_codon, alignment ) )
                 # print alignment
-                # raise ValueError, "split codon was not multiple of three!"
-                pass
+                # pass
 
             partial_codon = []
+            first_state = False
             
         if state in ("M", "G"):
             # check for stop codons, ignore the first border_stop_codon nucleotides
@@ -544,30 +549,30 @@ def CountGeneFeatures( first_position,
 
         elif state == "S":
 
-            ## Ignore alignments that start with a split codon.
-            if not first_state:
-                nsplits += 1
+            # I used to ignore alignments that start with a split codon as they
+            # might have been incomplet. However, the code below seems to work for split codens
+            # if not first_state:
+            nsplits += 1
 
-                ## check for stop-codons in split codons as well:
-                for x in range(l_genome):
-                    partial_codon.append( (current_pos_cds + x, current_pos_genome + x) )
+            ## check for stop-codons in split codons as well:
+            for x in range(l_genome):
+                partial_codon.append( (current_pos_cds + x, current_pos_genome + x) )
+                
+            if border_stop_codon < 3 and genomic_sequence and len(partial_codon) % 3 == 0:
 
-                if border_stop_codon < 3 and genomic_sequence and len(partial_codon) % 3 == 0:
-                    
-                    for x in range( 0, len(partial_codon), 3 ):
-                        codon = "".join(genomic_sequence[c[1]] for c in partial_codon[x:x+3]).upper()
-                        if codon in stop_codons:
-                            nstopcodons += 1
-                            disruptions.append( ("split-stop",
-                                                 partial_codon[x][0], partial_codon[x+2][0],
-                                                 partial_codon[x][1], partial_codon[x+2][1]) )
+                for x in range( 0, len(partial_codon), 3 ):
+                    codon = "".join(genomic_sequence[c[1]] for c in partial_codon[x:x+3]).upper()
+                    if codon in stop_codons:
+                        nstopcodons += 1
+                        disruptions.append( ("split-stop",
+                                             partial_codon[x][0], partial_codon[x+2][0],
+                                             partial_codon[x][1], partial_codon[x+2][1]) )
         ## advance in cds
         if state in ( "M", "G", "F", "S"):
             current_pos_cds += l_genome
             
         current_pos_genome += l_genome
-        first_state = False
-        
+
     return nintrons, nframeshifts, ngaps, nsplits, nstopcodons, disruptions
 
 ##------------------------------------------------------------
