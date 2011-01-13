@@ -27,8 +27,9 @@
 :Date: |today|
 :Tags: Python
 
+=================
 ChIP-Seq pipeline
------------------
+=================
 
 The ChIP-Seq pipeline imports reads from one or more ChIP-Seq experiments and
 performs the following tasks:
@@ -38,23 +39,44 @@ performs the following tasks:
    * annotate intervals with respect to a reference gene set
    * describe de-novo motifs using MEME and BioProspector
    * find canonical motifs using MAST
+
+Maybe:
    * perform enrichment analysis against UCSC tracks
    * perform GO analysis of peaks close to protein coding genes.
 
 Configuration
--------------
+=============
 
 Input
+=====
+
+Reads
 -----
 
+Input are :file:`_export.txt.gz`-formatted files from Illumina. The files should be
+labeled in the following way::
+
+   sample-condition-replicate_export.txt.gz
+
+For example::
+
+   GM00855-D3-R1_export.txt.gz
+   GM00855-D3-R2_export.gz
+   GM00855-input-R1_export.gz
+   GM00855-unstim-R1_export.txt.gz
+   GM00855-unstim-R2_export.txt.gz
+
+Note that neither ``sample``, ``condition`` or ``replicate`` should contain 
+``_`` (underscore) and ``.`` (dot) characters as these are used by the pipeline.
+
 Output
-------
+======
 
 The results of the computation are all stored in an sqlite relational
 database file.
 
 Usage
------
+=====
 
 Type::
 
@@ -84,77 +106,116 @@ import cStringIO
 import pysam
 import numpy
 import gzip
-import Expression
 import Masker
 import Glam2Scan
 import fileinput
-import Motifs, nubiscan
+import Motifs
 import gff2annotator
 import Bioprospector
 
+import pipeline_chipseq_intervals as PIntervals
+
 import pipeline_vitaminD_annotator as PAnnotator
-import pipeline_vitaminD_expression as PExpression
-import pipeline_vitaminD_intervals as PIntervals
+
 import pipeline_vitaminD_motifs as PMotifs
 import PipelineGeneset as PGeneset
 
-if not os.path.exists("conf.py"):
-    raise IOError( "could not find configuration file conf.py" )
-
-execfile("conf.py")
-
-TARGET_ANNOTATION= 'ensembl_regions.gff'
-TARGET_GENESET= 'ensembl.gtf'
-TARGET_PROMOTORS = 'promotors.gtf'
-TARGET_TSS = 'tss.gtf'
-TARGET_REPEATS = 'repeats.gff'
-TARGET_TRANSCRIPTS = 'transcripts.gtf.gz'
-TARGET_PROBESET = 'probeset.gtf'
-TARGET_TRANSCRIPTS_TSS = 'transcripts_tss.gtf'
-TARGET_TRANSCRIPTS_PROMOTORS = 'transcripts_promotors.gtf'
-TARGET_ANNOTATOR_GENETERRITORIES='annotator_geneterritories.gff'
-TARGET_MAPPABILITY='mappability.bed'
 BAM_SUFFIX = ".norm.bam"
 
-PARAMS = P.getParameters()
+###################################################
+###################################################
+###################################################
+## Pipeline configuration
+###################################################
+P.getParameters( 
+    ["%s.ini" % __file__[:-len(".py")],
+     "../pipeline.ini",
+     "pipeline.ini" ] )
+
+PARAMS = P.PARAMS
+
+###################################################################
+###################################################################
+## Helper functions mapping tracks to conditions, etc
+###################################################################
+def splitTrack( track ):
+    '''split track into tuple tissue, condition, replicate.'''
+
+    d = track.split("-")
+    tissue, condition, replicate = None, None, None
+    if len(d) == 3: tissue, condition, replicate = d
+    elif len(d) == 2: tissue, condition = d
+    elif len(d) == 1: tissue = d[0]
+    return tissue, condition, replicate
+
+def getControl( track ):
+    '''return appropriate control for a track
+    
+    Assumption: a control has no replicate.
+    '''
+    tissue, condition, replicate = splitTrack(track)
+    return "-".join( (tissue, PARAMS["tracks_control"] ) )
+
+def isReplicate( track ):
+    '''return true if track is a replicate.'''
+    return splitTrack(track)[2] != None
+
+## all tracks
+TRACKS_ALL=[ x[:-len( "_export.txt.gz")] for x in glob.glob( "*_export.txt.gz" ) if PARAMS["tracks_control"] not in x]
+
+
+## all experiments (combinations of sample + condition)
+TRACKS_EXPERIMENTS = list(set([ "-".join( splitTrack(x)[0:2]) for x in TRACKS_ALL ] ) )
+
+
+## aggregate by condition
+TRACKS_CONDITIONS = list(set([ "-".join( ("agg", splitTrack(x)[1])) for x in TRACKS_ALL ] ) )
+
+## aggregate by tissue
+TRACKS_TISSUES = list(set([ "-".join( (splitTrack(x)[0], "agg")) for x in TRACKS_ALL ] ) )
+
+## todo: discover these automatically
+REPLICATES=PARAMS["tracks_replicates"]
+CONDITIONS=PARAMS["tracks_conditions"]
+TISSUES=PARAMS["tracks_tissues"]
+
+TRACKS_NOT_UNSTIM = [ "%s" % x for x in TRACKS_CONDITIONS + TRACKS_EXPERIMENTS if not re.search("Unstim",x)]
+TRACKS_SUBTRACT = [ "%sSub" % x for x in TRACKS_NOT_UNSTIM ]
+TRACKS_MASTER = TRACKS_EXPERIMENTS + TRACKS_CONDITIONS + TRACKS_SUBTRACT
+TRACKS_CORRELATION = TRACKS_MASTER + TRACKS_ALL
+
+RUNS=[ "%02i" % x for x in range(1,17) ]
+
+# tracks with reference ChIPSeq Intervals
+TRACKS_REFERENCE = ["refGR"]
+
+# tracks to use for running annotator
+TRACKS_ANNOTATE = TRACKS_MASTER + TRACKS_REFERENCE
+
+# tracks to use for running annotator
+TRACKS_ANNOTATOR = TRACKS_MASTER + TRACKS_REFERENCE
+
+# tracks to submit for motif analysi
+TRACKS_MOTIFS = TRACKS_MASTER + TRACKS_REFERENCE
+ 
+TRACKS_ROI = ( "pritchard_ASIA", "pritchard_CEU", "pritchard_YRI" )
+
+TRACKS_REGIONS = ["roi", "gwas", "gwas_merged", "selection" ]
+
+FILEPATTERN="run%(tissue)s%(condition)s%(replicate)s"
+
+###################################################################
+###################################################################
+
+if os.path.exists("conf.py"):
+    E.info( "reading additional configuration from conf.py" )
+    execfile("conf.py")
 
 ###################################################################
 ###################################################################
 ###################################################################
 ## General preparation tasks
 ###################################################################
-
-############################################################
-############################################################
-############################################################
-@files( "genome.fasta", "genome.fa" )
-def indexGenome( infile, outfile ):
-    '''index the genome for samtools.
-
-    Samtools does not like long lines, so create a new file
-    with split lines (what a waste).
-    '''
-
-    statement = '''fold %(infile)s > %(outfile)s'''
-    P.run( **dict( locals().items() + PARAMS.items() ) )
-    
-    pysam.faidx( outfile )
-
-############################################################
-############################################################
-############################################################
-## get UCSC tables
-############################################################
-def getUCSCTracks(infile = PARAMS["filename_ucsc_encode"]):
-    '''return a list of UCSC tracks from infile.'''
-    tables = []
-    with open(infile) as f:
-        for line in f:
-            if line.startswith("#"): continue
-            tablename = line[:-1].strip()
-            if tablename == "": continue
-            tables.append( tablename )
-    return tables
 
 ############################################################
 ############################################################
@@ -181,7 +242,7 @@ def buildGenomeGCSegmentation( infile, outfile ):
         --log=%(outfile)s.log \
     < %(genome)s.fasta > %(outfile)s'''
 
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
 
 ############################################################
 ############################################################
@@ -201,829 +262,20 @@ def buildAnnotatorGC( infile, outfile ):
         --log=%(outfile)s.log \
     < %(infile)s > %(outfile)s'''
 
-    P.run( **dict( locals().items() + PARAMS.items() ) )
-
-############################################################
-############################################################
-############################################################
-## import UCSC encode tracks
-############################################################
-@posttask( touch_file("ucsc_encode.import") )
-@files( PARAMS["filename_ucsc_encode"], "ucsc_encode.import") 
-def importUCSCEncodeTracks( infile, outfile ):
-    
-    statement = '''
-    mysql --user=genome --host=genome-mysql.cse.ucsc.edu -A -B -e "SELECT * FROM %(tablename)s" %(ucsc_database)s |\
-    csv2db.py %(csv2db_options)s \
-              --table=%(tablename)s \
-    >> %(outfile)s
-
-    '''
-
-    dbhandle = sqlite3.connect( PARAMS["database"] )
-
-    cc = dbhandle.cursor()
-    tables = set( [ x[0] for x in cc.execute( "SELECT name FROM sqlite_master WHERE type='table'") ] )
-    cc.close()
-    
-    for tablename in getUCSCTracks( infile ):
-        if tablename in tables:
-            E.info( "skipping %(tablename)s - already exists" % locals())
-            continue            
-            
-        E.info( "importing %(tablename)s" % locals() )
-        P.run( **dict( locals().items() + PARAMS.items() ) )
-
-############################################################
-############################################################
-############################################################
-## import UCSC encode tracks
-############################################################
-@files( PARAMS["filename_mappability"], PARAMS["annotator_mappability"] ) 
-def exportUCSCMappabilityTrackToBed( infile, outfile ):
-    '''convert wiggle track with mappability information to a bed-formatted file
-    with only the mappable regions in the genome.'''
-    
-    infile = gzip.open( infile, "r" )
-
-    outf = open( outfile, "w" )
-    
-    for line in infile:
-        if line.startswith("fixedStep" ):
-            contig, start, step = re.match( "fixedStep chrom=(\S+) start=(\d+) step=(\d+)", line ).groups()
-            start, step = int(start)-1, int(step)
-            end = start + step
-            last_val = None
-        else:
-            val = int(line)
-            if last_val != val:
-                if last_val == 1:
-                    outf.write( "\t".join( (contig, str(start), str(end ) ) ) + "\n" )
-                start = end
-                end = start + step
-            else:
-                end += step
-            last_val = val
-    outf.close()
-    
-############################################################
-############################################################
-############################################################
-## export UCSC encode tracks as bed
-############################################################
-@transform( importUCSCEncodeTracks, suffix(".import"), ".bed")
-def exportUCSCEncodeTracks( infile, outfile ):
-
-    dbhandle = sqlite3.connect( PARAMS["database"] )
-
-    outs = open(outfile, "w")
-    for tablename in getUCSCTracks():
-        outs.write( "track name=%s\n" % tablename )
-        
-        cc = dbhandle.cursor()
-        statement = "SELECT chrom, chrostart, chroend FROM %s ORDER by chrom, chrostart" % (tablename)
-        cc.execute( statement )
-        for contig, start, end in cc:
-            outs.write("%s\t%i\t%i\n" % (contig, start, end) )
-    outs.close()
-
-############################################################
-############################################################
-############################################################
-@files( PARAMS["filename_ensembl_geneset"], "transcript_info.import" )
-def importTranscriptInformation( infile, outfile ):
-    '''import the transrcipt set.'''
-    PGeneset.importTranscriptInformation( infile, outfile )
-
-############################################################
-############################################################
-############################################################
-@files( PARAMS["filename_ensembl_geneset"], "gene_info.import" )
-def importGeneInformation( infile, outfile ):
-    '''import the transrcipt set.'''
-    PGeneset.importGeneInformation( infile, outfile )
-
-###################################################################
-###################################################################
-###################################################################
-##
-###################################################################
-@files( ( ( PARAMS["filename_regions_of_interest"], "roi.import" ),
-          ( PARAMS["filename_selection"], "selection.import" ) ) )
-def importRegionsOfInterest( infile, outfile ):
-    '''import regions of interest.'''
-    
-    table = outfile[:-len(".import")]
-
-    statement = '''
-    csv2db.py %(csv2db_options)s \
-               --dialect=excel \
-               --index=class \
-               --index=roi_id \
-               --map=roi_id:str \
-               --map=start:int \
-               --map=end:int \
-               --table=%(table)s \
-    < %(infile)s > %(outfile)s
-    '''
-
-    P.run( **dict( locals().items() + PARAMS.items() ) )
-
-###################################################################
-###################################################################
-###################################################################
-##
-###################################################################
-@merge( PARAMS["filename_regions_of_interest"], "snps.import" )
-def importSNPs( infile, outfile ):
-    '''import snps from :term:`roi` file.'''
-
-    reader = csv.DictReader( open(infile,"rU") )
-    ids = {}
-    for row in reader:
-        
-        roi_id, contig, start, end, snps =\
-                row["roi_id"], row["contig"], row["start"], row["end"], row["snp"]
-        snps = snps.split(",")
-        for snp in snps:
-            s = snp.strip()
-            if s == "na" or s == "": continue
-            try:
-                ids[snp.strip()] = (roi_id, contig, int(start), int(end))
-            except ValueError:
-                # ignore empty roi
-                continue
-            
-    tmpf = P.getTempFile()
-    tmpf.write("roi_id\tsnp\tcontig\tpos\n" )
-
-    counter = E.Counter()
-    
-    found = set()
-    inf = gzip.open( PARAMS["filename_dbsnp"], "r" )
-    for line in inf:
-        data = line[:-1].split("\t")
-        contig, snp, pos = data[1], data[4], data[2]
-        if snp not in ids: continue
-
-        roi_id, roi_contig, roi_start, roi_end = ids[snp]
-
-        if contig != roi_contig or not roi_start <= int(pos) < roi_end:
-            counter.out_of_range += 1
-            continue
-
-        counter.accepted += 1
-
-        tmpf.write( "%s\t%s\t%s\t%s\n" % (roi_id, snp, contig, pos ) )
-        found.add( snp )
-
-    inf.close()
-
-    table = outfile[:-len(".import")]
-    
-    tmpfilename = tmpf.name
-    statement = '''
-    csv2db.py %(csv2db_options)s \
-               --index=roi_id \
-               --map=roi_id:str \
-               --table=%(table)s \
-    < %(tmpfilename)s > %(outfile)s
-    '''
-    P.run( **dict( locals().items() + PARAMS.items() ) )
-    
-    os.unlink( tmpfilename )
-
-    outfile = open( outfile, "a" )
-    outfile.write( "input=%i, found=%i, %s\n" % (len(ids), len(found), str(counter)))
-    outfile.write( "snps not found: %s\n" % ",".join( set(ids.keys()).difference( found) ) )
-    outfile.close()
-    
-    E.info( "snp import: input=%i, found=%i, %s" % (len(ids), len(found), str(counter)))
-
-    if len(ids) != len(found):
-        E.warn( "snps not found: %s" % ",".join( set(ids.keys()).difference( found) ) )
-
-###################################################################
-###################################################################
-###################################################################
-##
-###################################################################
-@merge( PARAMS["filename_gwas"], "gwas.import" )
-def importGWAS( infile, outfile ):
-    '''import GWAS intervals. 
-
-    GWAS intervals are defined by their marking SNP. Each 
-    snp is looked up in dbsnp and extended by ``gwas_interval_halfwidth``.
-
-    The same SNP can be part of multiple gwas studies.
-
-    The script checks not for overlap between annotations.
-    '''
-
-    reader = csv.DictReader( open(infile,"rU") )
-
-    ids = collections.defaultdict( list )
-    last_gwas = None
-
-    for row in reader:
-
-        snps, gwas, genes = row["snp"], row["class"], row["genes"]
-        if gwas == "": gwas = last_gwas
-
-        snps = snps.split(",")
-        for snp in snps:
-            s = snp.strip()
-            if s == "na" or s == "": continue
-            genes=re.sub(" ", "", genes.lower())
-            ids[s.strip()].append( (gwas,genes) )
-
-        last_gwas = gwas
-            
-    tmpf = P.getTempFile()
-    tmpf.write( "%s\n" % "\t".join( ("roi_id","snp","class","contig","pos","start","end","genes")) )
-
-    counter = E.Counter()
-    
-    found = set()
-    inf = gzip.open( PARAMS["filename_dbsnp"], "r" )
-    nsnps = 0
-    halfwidth = PARAMS["gwas_interval_halfwidth"]
-    for line in inf:
-        data = line[:-1].split("\t")
-        contig, snp, pos = data[1], data[4], data[2]
-        if snp not in ids: continue
-        if contig == None or contig == "": 
-            counter.unmapped += 1
-            continue
-            
-        counter.accepted += 1
-        pos = int(pos)
-        for gwas, genes in ids[snp]:
-            nsnps += 1
-            tmpf.write( "%s\n" % "\t".join( map(str, 
-                                                (nsnps, 
-                                                 snp, 
-                                                 gwas,
-                                                 contig, 
-                                                 pos, 
-                                                 pos - halfwidth,
-                                                 pos + halfwidth,
-                                                 genes
-                                                 ) )  ))
-
-            
-        found.add( snp )
-
-    inf.close()
-    tmpf.close()
-
-    table = outfile[:-len(".import")]
-    
-    tmpfilename = tmpf.name
-    statement = '''
-    csv2db.py %(csv2db_options)s \
-               --index=roi_id \
-               --index=class \
-               --map=roi_id:str \
-               --table=%(table)s \
-    < %(tmpfilename)s > %(outfile)s
-    '''
-    P.run( **locals() )
-    
-    os.unlink( tmpfilename )
-
-    outfile = open( outfile, "a" )
-    outfile.write( "input=%i, found=%i, %s\n" % (len(ids), len(found), str(counter)))
-    outfile.write( "snps not found: %s\n" % ",".join( set(ids.keys()).difference( found) ) )
-    outfile.close()
-    
-    E.info( "gwas import: input=%i, found=%i, %s" % (len(ids), len(found), str(counter)))
-
-    if len(ids) != len(found):
-        E.warn( "snps not found: %s" % ",".join( set(ids.keys()).difference( found) ) )
-
-###################################################################
-###################################################################
-###################################################################
-##
-###################################################################
-@merge( PARAMS["filename_gwas"], "gwas_merged.import" )
-def importMergedGWAS( infile, outfile ):
-    '''import GWAS intervals. 
-
-    GWAS intervals are defined by their marking SNP. Each 
-    snp is looked up in dbsnp and extended by ``gwas_interval_halfwidth``.
-
-    The same SNP can be part of multiple gwas studies.
-
-    This method checks for overlap between annotations
-    '''
-
-    reader = csv.DictReader( open(infile,"rU") )
-
-    ids = collections.defaultdict( list )
-    last_gwas = None
-
-    for row in reader:
-
-        snps, gwas, genes = row["snp"], row["class"], row["genes"]
-        if gwas == "": gwas = last_gwas
-
-        snps = snps.split(",")
-        for snp in snps:
-            s = snp.strip()
-            if s == "na" or s == "": continue
-            genes=re.sub(" ", "", genes.lower())
-            ids[s.strip()].append( (gwas,genes) )
-
-        last_gwas = gwas
-            
-    counter = E.Counter()
-    
-    found = set()
-    inf = gzip.open( PARAMS["filename_dbsnp"], "r" )
-    halfwidth = PARAMS["gwas_interval_halfwidth"]
-    # collecat all snp coordinates for each gwas interval
-    intervals = collections.defaultdict( list )
-    for line in inf:
-        data = line[:-1].split("\t")
-        contig, snp, pos = data[1], data[4], data[2]
-        if snp not in ids: continue
-        if contig == None or contig == "": 
-            counter.unmapped += 1
-            continue
-            
-        counter.accepted += 1
-        pos = int(pos)
-        for gwas, genes in ids[snp]:
-            intervals[gwas].append( (contig, pos, snp) )
-            
-        found.add( snp )
-
-    inf.close()
-    
-    tmpf = P.getTempFile()
-    tmpf.write( "%s\n" % "\t".join( ("roi_id","snp","class","contig","pos","start","end","genes")) )
-
-
-    roi_id = 0
-    for gwas, snps in intervals.iteritems():
-        
-        def iter_overlaps( snps, halfwidth ):
-
-            snps.sort()
-            last_contig, last_pos, last_snp = snps[0]
-            width = halfwidth * 2
-            r = [(last_pos,last_snp)]
-            for contig, pos, snp in snps[1:]:
-                if last_contig != contig or \
-                        pos - last_pos > width:
-                    yield last_contig, r
-                    r = []
-                    last_contig = contig
-                    last_pos = pos
-                r.append( (pos, snp) )
-            yield last_contig, r
-                
-            
-        for contig, overlaps in iter_overlaps( snps, halfwidth ):
-            pos = [x[0] for x in overlaps]
-            pos.sort()
-            start = pos[0] - halfwidth
-            end = pos[-1] + halfwidth
-            genes = []
-            xsnps = [x[1] for x in overlaps]
-            for snp in xsnps:
-                for gwas, ggenes in ids[snp]:
-                    if ggenes: 
-                        genes.append( ggenes )
-            genes = sorted(set(genes))
-
-            roi_id += 1
-            tmpf.write( "%s\n" % "\t".join( map(str, 
-                                                (roi_id, 
-                                                 ",".join(xsnps), 
-                                                 gwas,
-                                                 contig, 
-                                                 ",".join(map(str,pos)), 
-                                                 start,
-                                                 end,
-                                                 ",".join(genes),
-                                                 ) )  ))
-
-
-
-    tmpf.close()
-
-    table = outfile[:-len(".import")]
-    
-    tmpfilename = tmpf.name
-    statement = '''
-    csv2db.py %(csv2db_options)s \
-               --index=roi_id \
-               --index=class \
-               --map=roi_id:str \
-               --table=%(table)s \
-    < %(tmpfilename)s > %(outfile)s
-    '''
-    P.run( **locals() )
-    
-    os.unlink( tmpfilename )
-
-    outfile = open( outfile, "a" )
-    outfile.write( "input=%i, found=%i, %s\n" % (len(ids), len(found), str(counter)))
-    outfile.write( "snps not found: %s\n" % ",".join( set(ids.keys()).difference( found) ) )
-    outfile.close()
-    
-    E.info( "gwas import: input=%i, found=%i, %s" % (len(ids), len(found), str(counter)))
-
-    if len(ids) != len(found):
-        E.warn( "snps not found: %s" % ",".join( set(ids.keys()).difference( found) ) )
-
-###################################################################
-###################################################################
-###################################################################
-##
-###################################################################
-@transform( (importRegionsOfInterest, importGWAS, importMergedGWAS),
-            suffix( ".import"),
-            "_genes.import")
-def importRegionsOfInterestGenes( infile, outfile ):
-    '''import association between regions of interest and genes implicated in disease.'''
-
-    intablename = infile[:-len(".import")]
-    tablename = outfile[:-len(".import")]
-
-    dbhandle = sqlite3.connect( PARAMS["database"] )
-    
-    statement = "SELECT lower(gene_name), gene_id FROM gene_info"
-    cc = dbhandle.cursor()
-    map_gene2id = dict( cc.execute( statement ).fetchall() )
-
-    statement = "SELECT roi_id, lower(genes) FROM %(intablename)s" % locals()
-
-    tmpf = P.getTempFile()
-    tmpf.write("roi_id\tgene_id\tgene_name\n" )
-    
-    cc = dbhandle.cursor()
-    counter = E.Counter()
-    notfound = set()
-
-    for roi_id, g in cc.execute( statement ):
-        if g == None: continue
-        genes = [x.lower() for x in g.split( "," )]
-        counter.input += 1
-        for gene_name in genes:
-            if gene_name in map_gene2id:
-                counter.found += 1
-                tmpf.write( "%s\n" %\
-                            "\t".join( map(str,
-                                           ( roi_id, map_gene2id[gene_name], gene_name) ) ) )
-            else:
-                counter.missed += 1
-                notfound.add( gene_name )
-
-    E.info( "importRegionsOfInterestGenes: %s" % (str(counter)))
-
-    outf = open( outfile, "a" )
-    outf.write( "%s\n" % (str(counter)))
-    outf.write( "gene names not found: %s\n" % ",".join(notfound) )
-    outf.close()
-
-    tmpf.close()
-
-    tmpfilename = tmpf.name
-    statement = '''
-    csv2db.py %(csv2db_options)s \
-               --index=roi_id \
-               --map=roi_id:str \
-               --table=%(tablename)s \
-    < %(tmpfilename)s >> %(outfile)s
-    '''
-
-    P.run( **dict( locals().items() + PARAMS.items() ) )
-    
-    os.unlink( tmpfilename )
-
-
-        
-###################################################################
-###################################################################
-###################################################################
-##
-###################################################################
-@merge( PARAMS["filename_snps_of_interest"], "snps_of_interest.import" )
-def importSNPsOfInterest( infile, outfile ):
-    '''import regions of interest.'''
-    
-    table = outfile[:-len(".import")]
-
-    statement = '''
-    csv2db.py %(csv2db_options)s \
-               --dialect=excel \
-               --index=snp \
-               --map=snp:str \
-               --map=pos:int \
-               --table=%(table)s \
-    < %(infile)s > %(outfile)s
-    '''
-
-    P.run( **dict( locals().items() + PARAMS.items() ) )
-
-############################################################
-############################################################
-############################################################
-## export regions of interest
-############################################################
-@transform( (importRegionsOfInterest, importGWAS, importMergedGWAS), suffix(".import"), ".bed")
-def exportRegionsOfInterest( infile, outfile ):
-
-    dbhandle = sqlite3.connect( PARAMS["database"] )
-    cc = dbhandle.cursor()
-        
-    outs = open(outfile, "w")
-    tablename = outfile[:-len(".bed")]
-
-    tracks = [x[0] for x in cc.execute( "SELECT DISTINCT class FROM %(tablename)s" % locals() ).fetchall()]
-    
-    for track in tracks:
-        
-        outs.write( "track name=%s\n" % track )
-
-        statement = "SELECT contig, max(0,start), end, roi_id FROM %(tablename)s WHERE class = '%(track)s' ORDER by contig, start" % locals()
-        cc.execute( statement )
-        for contig, start, end, roi_id in cc:
-            outs.write("%s\t%i\t%i\t%s\n" % (contig, start, end, roi_id) )
-    outs.close()
+    P.run()
 
 ###################################################################
 ###################################################################
 ###################################################################
 ## Version 1: import from given bed files
 ###################################################################
-
-if PARAMS["method"] == "intervals":
-    ###################################################################
-    ###################################################################
-    ###################################################################
-    ##
-    ###################################################################
-    @files( PARAMS["filename_intervals"], [ "%s.intervals" % x for x in TRACKS_RAW] )
-    def createIntervals( infile, outfiles ):
-        '''create intervals files from the input csv file.
-        '''
-        tmpdir = tempfile.mkdtemp()
-        reader = csv.reader( open(infile,"rU") )
-
-        # convert to well formatted file for stats
-        output_files_info = IOTools.FilePool( output_pattern = "%s.intervals" )
-        output_files_bed = IOTools.FilePool( output_pattern = os.path.join( tmpdir, "%s.bed" ) )
-
-        for row in reader:
-            # process header
-            row = [ re.sub( "\s", "", x) for x in row ]
-            row = [ re.sub( "^#", "n", x) for x in row ]
-
-            if row[0] == 'Sample':
-                row = [ re.sub( "^#", "n", x) for x in row ]
-                row = [ re.sub( "\s", "", x) for x in row ]
-                row[1] = "interval_id"
-                # delete coordinates
-                del row[2:5]
-                output_files_info.setHeader( "\t".join(row[1:])+ "\n" )
-            else:
-                # convert to 0-based open/closed coordinates
-                # start
-                row[3] = str(int(row[3]) - 1)
-                # PeakCenter
-                row[7] = str(int(row[7]) - 1)
-                # add chr
-                row[2] = "chr%s" % row[2]
-
-                run_id, cell, condition, replicate = row[0].split("_")
-                id = "run%s%s%s" % (cell, condition, replicate)
-
-                # output coordinates
-                output_files_bed.write( id, "\t".join( row[2:5] + row[1:2] ) + "\n" )
-
-                # delete coordinates
-                del row[2:5]
-                output_files_info.write( id, "\t".join( row[1:])+ "\n" )
-
-        output_files_bed.close()
-        output_files_info.close()
-
-        if PARAMS["filename_chain"]:
-            chain = PARAMS["filename_chain"]
-            statement = '''liftOver %(filename)s %(chain)s %(basename)s %(basename)s.unmapped'''
-
-        else:
-            statement = '''cp %(filename)s %(basename)s'''
-
-        for filename in output_files_bed.keys():
-            basename = os.path.basename( filename )
-            P.run( **dict( locals().items() + PARAMS.items() ) )
-
-        shutil.rmtree( tmpdir )
-
+if PARAMS["mapping_mapper"] == "bowtie":
+    
     ############################################################
     ############################################################
     ############################################################
-    ##
-    ############################################################
-    @transform( "*.intervals", suffix(".intervals"), "_intervals.import" )
-    def importIntervals( infile, outfile ):
-
-        ## add the bed intervals back to table
-        track = infile[:-len(".intervals")]
-
-        tmpfile = tempfile.NamedTemporaryFile(delete=False)
-        tmpfilename = tmpfile.name
-        map_id2coords = {}
-        for line in open( track + ".bed", "r" ):
-            contig, start, end, id = line[:-1].split("\t")[:4]
-            map_id2coords[id] = (contig, start, end )
-
-        for line in open( infile ):
-            if line.startswith( "interval_id"):
-                tmpfile.write( "%s\t%s\t%s\t%s\n" % ((line[:-1],"contig","start","end") ) )
-            else:
-                id = line[:-1].split( "\t")[0]
-                try:
-                    tmpfile.write( "%s\t%s\t%s\t%s\n" % ((line[:-1],) +  map_id2coords[id]))
-                except KeyError:
-                    P.warn( "%s -> interval %s - omitted due to mapping problems" % (infile, id) )
-
-        tmpfile.close()
-
-        statement = '''
-        csv2db.py %(csv2db_options)s \
-                  --index=interval_id \
-                  --table=%(track)s_intervals \
-        < %(tmpfilename)s > %(outfile)s
-        '''
-
-        P.run( **dict( locals().items() + PARAMS.items() ) )
-
-        os.unlink( tmpfile.name )
-
-    # @transform( importIntervals, suffix("_intervals.import"), ".bed" )
-    @transform( "*_intervals.import", suffix("_intervals.import"), ".bed" )
-    def exportIntervalsAsBed( infile, outfile ):
-        _exportIntervalsAsBed( infile, outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @files_re( PARAMS["filename_reads"],
-               "(\S+).export.txt.gz", 
-               r"\1.bam" )
-    def buildBAM( infile, outfile ):
-        '''build bam formatted files. The files will be sorted
-        and indexed.
-
-        The resultant BAM files contain
-
-        1. all the uniquely mapped reads
-        2. all the unmapped reads that have passed the quality filter.
-        '''
-
-        tmpfilename = P.getTempFilename()
-
-        statement = '''
-        /net/cpp-group/src/samtools/b64/samtools-0.1.6/misc/export2sam.pl \
-        <(gunzip < %(infile)s) |\
-        sed "s/.fa//" |\
-        samtools import <( cut -f 1,4 %(genome)s.idx ) - %(tmpfilename)s
-        '''
-
-        P.run( **dict( locals().items() + PARAMS.items() ) )
-
-        prefix = outfile[:-len(".bam")]
-        pysam.sort( tmpfilename, prefix ) 
-        pysam.index( outfile )
-
-        os.unlink( tmpfilename )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @files_re( buildBAM, 
-               "(.*).bam",
-               r"\1.readstats" )
-    def buildBAMStats( infile, outfile ):
-        _buildBAMStats( infile, outfile )
-
-    @transform( buildBAMStats,
-                regex(r"(run.*).readstats"),
-                inputs( (r"\1.bam", r"\1.readstats") ),
-                r"\1.norm.bam" )
-    def normalizeBAMPerReplicate( infile, outfile ):
-        '''build a normalized BAM file such that all
-        files have approximately the same number of 
-        reads.
-
-        Duplicated reads are removed at the same time.
-        '''
-        track = infile[:-len(".bam")]
-        PIntervals.buildNormalizedBAM( ((infile,track + ".readstats"),), outfile )
-
-    @follows( buildBAMStats )
-    @files( [ ( [ ("%s%s.bam" % (x,y), "%s%s.readstats" % (x,y))  for y in REPLICATES],
-                "%s.norm.bam" % x) for x in TRACKS_EXPERIMENTS ] )
-    def normalizeBAMPerExperiment( infiles, outfile ):
-        '''build a normalized BAM file such that all
-        files have approximately the same number of 
-        reads.
-
-
-        Duplicated reads are removed at the same time.
-
-        Merge reads from several replicates.
-        '''
-        PIntervals.buildNormalizedBAM( infiles, outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @follows( exportIntervalsAsBed )
-    @files( [ ( ["run%s%s.bed" % (y,x) for y in CELLLINES],
-                "run%s.bed" % x, 
-                x) for x in CONDITIONS ] )
-    def combineConditions( infile, outfile, track ):
-        '''combine conditions between cell lines. 
-
-        The conditions are merged via intersection.
-        '''
-
-        conditions = [ "run%s%s.bed" % (x,track) for x in CELLLINES ]
-        PIntervals.intersectBedFiles( conditions, outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @follows( combineConditions )
-    @files( [ ( ("%s.bed" % x, "runUnstim.bed"),
-                "%sSub.bed" % x, 
-                x) for x in TRACKS_EXPERIMENTS + TRACKS_CONDITIONS if not re.search("Unstim",x) ] )
-    def combineUnstim( infiles, outfile, track ):
-        '''remove the unstimulated data sets from the individual tracks. 
-        '''
-
-        infile, subtract = infiles
-        PIntervals.subtractBedFiles( infile, subtract, outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @follows( exportIntervalsAsBed )
-    @files( [ ( ["%s%s.bed" % (x,y) for y in REPLICATES],
-                "%s.bed" % x, 
-                x) for x in TRACKS_EXPERIMENTS ] )
-    def combineReplicates( infile, outfile, track ):
-        '''combine replicates between experiments.
-
-        The replicates are combined using intersection.
-        '''
-
-        replicates = [ "%s%s.bed" % (track, x) for x in REPLICATES  if os.path.exists( "%s%s.bed" % (track, x) ) ]
-        PIntervals.intersectBedFiles( replicates, outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @transform( (combineReplicates,
-                 combineConditions, 
-                 combineUnstim, 
-                 normalizeBAMPerExperiment, 
-                 normalizeBAMPerReplicate),
-                suffix(".bed"),
-                "_bed.import" )
-    def importCombinedIntervals( infiles, outfile ):
-        PIntervals.importCombinedIntervals( infiles, outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    ## master target for this section
-    ############################################################
-    @follows( importCombinedIntervals )
-    def buildIntervals():
-        pass
-
-###################################################################
-###################################################################
-###################################################################
-## Version 2: peak calling to get intervals
-###################################################################
-elif PARAMS["method"] == "bowtie-macs":
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @follows( indexGenome )
-    @transform( PARAMS["filename_reads"], 
-                regex("(\S+).export.txt.gz"), 
+    @transform( "*_export.txt.gz", 
+                regex("(\S+)_export.txt.gz"), 
                 r"\1.bam" )
     def buildBAM( infile, outfile ):
         '''re-map eland formatted reads with bowtie
@@ -1052,886 +304,79 @@ elif PARAMS["method"] == "bowtie-macs":
         rm -f %(tmpfilename)s
         '''
 
-        P.run( **dict( locals().items() + PARAMS.items() ) )
+        P.run()
 
         if os.path.exists( tmpfilename ):
             os.unlink( tmpfilename )
+else:
+    raise ValueError("unknown mapper %s" % PARAMS["mapping_mapper"] )
+
+###################################################################
+###################################################################
+###################################################################
+## process reads
+###################################################################
+
+############################################################
+############################################################
+############################################################
+@transform( buildBAM,
+            suffix(".bam"),
+            ".readstats" )
+def buildBAMStats( infile, outfile ):
+    '''count number of reads mapped, duplicates, ....'''
+    PIntervals.buildBAMStats( infile, outfile )
+
+############################################################
+############################################################
+############################################################
+@transform( buildBAMStats,
+            regex(r"(.*).readstats"),
+            inputs( (r"\1.bam", r"\1.readstats") ),
+            r"\1.norm.bam" )
+def normalizeBAMPerReplicate( infiles, outfile ):
+    '''build a normalized BAM file such that all
+    files have approximately the same number of 
+    reads.
+
+    Duplicated reads are removed at the same time.
+    '''
+    PIntervals.buildNormalizedBAM( (infiles,), 
+                                   outfile,
+                                   PARAMS["calling_normalize"])
+
+if PARAMS["calling_caller"] == "macs":
 
     ############################################################
     ############################################################
     ############################################################
-    @transform( buildBAM,
-                suffix(".bam"),
-                ".readstats" )
-    def buildBAMStats( infile, outfile ):
-        PIntervals.buildBAMStats( infile, outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @transform( buildBAMStats,
-                regex(r"(run.*).readstats"),
-                inputs( (r"\1.bam", r"\1.readstats") ),
-                r"\1.norm.bam" )
-    def normalizeBAMPerReplicate( infile, outfile ):
-        '''build a normalized BAM file such that all
-        files have approximately the same number of 
-        reads.
-
-        Duplicated reads are removed at the same time.
-        '''
-        track = infile[:-len(".bam")]
-        PIntervals.buildNormalizedBAM( ((infile,track + ".readstats"),), outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @transform( buildBAMStats,
-                regex(r"(control.*).readstats"),
-                inputs( (r"\1.bam", r"\1.readstats") ),
-                r"\1.norm.bam" )
-    def normalizeBAMControls( infile, outfile ):
-        '''build a normalized BAM file such that all
-        files have approximately the same number of 
-        reads.
-
-        Duplicated reads are removed at the same time.
-        '''
-        track = infile[:-len(".bam")]
-        PIntervals.buildNormalizedBAM( ((infile,track + ".readstats"),), outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @follows( buildBAMStats )
-    @files( [ ( [ ("%s%s.bam" % (x,y), "%s%s.readstats" % (x,y))  for y in REPLICATES],
-                "%s.norm.bam" % x) for x in TRACKS_EXPERIMENTS ] )
-    def normalizeBAMPerExperiment( infiles, outfile ):
-        '''build a normalized BAM file such that all
-        files have approximately the same number of 
-        reads.
-
-        Duplicated reads are removed at the same time.
-
-        Merge reads from several replicates.
-        '''
-        PIntervals.buildNormalizedBAM( infiles, outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @follows( normalizeBAMControls )
-    @transform( (normalizeBAMPerReplicate, normalizeBAMPerExperiment ),
-               regex("run(.*).norm.bam"),
-               r"run\1.macs" )
-    def runMACS( infile, outfile ):
+    @follows( normalizeBAMPerReplicate )
+    @files( [ (("%s.norm.bam" % x, "%s.norm.bam" % getControl(x)), "%s.macs" % x ) for x in TRACKS_ALL ] )
+    def runMACS( infiles, outfile ):
         '''run MACS for peak detection.'''
-        PIntervals.runMACS( infile, outfile )
-        
-    ############################################################
-    ############################################################
-    ############################################################
-    @transform( runMACS,
-                suffix(".macs"),
-                "_macs.import" )
-    def importMACS( infile, outfile ):
-        PIntervals.importMACS( infile, outfile )
-        
-    ############################################################
-    ############################################################
-    ############################################################
-    @merge( runMACS, "macs.summary" )
-    def summarizeMACS( infiles, outfile ):
-        '''run MACS for peak detection.'''
-
-        PIntervals.summarizeMACS( infiles, outfile )
-
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @transform( summarizeMACS,
-                suffix(".summary"),
-                "_summary.import" )
-    def importMACSSummary( infile, outfile ):
-        '''import macs summary.'''
-        PIntervals.importMACSSummary( infile, outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @transform( importMACS, suffix("_macs.import"), ".bed" )
-    def exportIntervalsAsBed( infile, outfile ):
-        PIntervals.exportIntervalsAsBed( infile, outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @follows( exportIntervalsAsBed )
-    @files( [ ( ["run%s%s.bed" % (y,x) for y in CELLLINES],
-                "run%s.bed" % x, 
-                x) for x in CONDITIONS ] )
-    def combineConditions( infile, outfile, track ):
-        '''combine conditions between cell lines. 
-
-        The conditions are merged via intersection.
-        '''
-
-        conditions = [ "run%s%s.bed" % (x,track) for x in CELLLINES ]
-        PIntervals.intersectBedFiles( conditions, outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @follows( combineConditions )
-    @files( [ ( ("%s.bed" % x, "runUnstim.bed"),
-                "%sSub.bed" % x, 
-                x) for x in TRACKS_EXPERIMENTS + TRACKS_CONDITIONS if not re.search("Unstim",x) ] )
-    def combineUnstim( infiles, outfile, track ):
-        '''remove the unstimulated data sets from the individual tracks. 
-        '''
-
-        infile, subtract = infiles
-        PIntervals.subtractBedFiles( infile, subtract, outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @transform( (combineConditions, 
-                 combineUnstim, 
-                 normalizeBAMPerExperiment, 
-                 normalizeBAMPerReplicate),
-                suffix(".bed"),
-                "_bed.import" )
-    def importCombinedIntervals( infiles, outfile ):
-        PIntervals.importCombinedIntervals( infiles, outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    ## master target for this section
-    ############################################################
-    @follows( importCombinedIntervals, summarizeMACS )
-    def buildIntervals():
-        pass
-
-###################################################################
-###################################################################
-###################################################################
-## Version 3: peak calling with MACS from ELAND mapped reads
-###################################################################
-elif PARAMS["method"] == "eland":
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @follows( indexGenome )
-    @transform( PARAMS["filename_reads"], 
-                regex("(\S+).export.txt.gz"), 
-                r"\1.bam" )
-    def buildBAM( infile, outfile ):
-        '''build bam formatted files. The files will be sorted
-        and indexed.
-
-        The resultant BAM files contain
-
-        1. all the uniquely mapped reads
-        2. all the unmapped reads that have passed the quality filter.
-        '''
-
-        tmpfilename = P.getTempFilename()
+        infile, controlfile = infiles
 
         statement = '''
-        /net/cpp-group/src/samtools/b64/samtools-0.1.6/misc/export2sam.pl \
-        <(gunzip < %(infile)s) |\
-        sed "s/.fa//" |\
-        samtools import <( cut -f 1,4 %(genome)s.idx ) - %(tmpfilename)s
-        '''
-
-        P.run( **dict( locals().items() + PARAMS.items() ) )
-
-        prefix = outfile[:-len(".bam")]
-        pysam.sort( tmpfilename, prefix ) 
-        pysam.index( outfile )
-
-        os.unlink( tmpfilename )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @transform( buildBAM,
-                suffix(".bam"),
-                ".readstats" )
-    def buildBAMStats( infile, outfile ):
-        PIntervals.buildBAMStats( infile, outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @transform( buildBAMStats,
-                regex(r"(run.*).readstats"),
-                inputs( (r"\1.bam", r"\1.readstats") ),
-                r"\1.norm.bam" )
-    def normalizeBAMPerReplicate( infile, outfile ):
-        '''build a normalized BAM file such that all
-        files have approximately the same number of 
-        reads.
-
-        Duplicated reads are removed at the same time.
-        '''
-        track = infile[:-len(".bam")]
-        PIntervals.buildNormalizedBAM( ((infile,track + ".readstats"),), outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @transform( buildBAMStats,
-                regex(r"(control.*).readstats"),
-                inputs( (r"\1.bam", r"\1.readstats") ),
-                r"\1.norm.bam" )
-    def normalizeBAMControls( infile, outfile ):
-        '''build a normalized BAM file such that all
-        files have approximately the same number of 
-        reads.
-
-        Duplicated reads are removed at the same time.
-        '''
-        track = infile[:-len(".bam")]
-        PIntervals.buildNormalizedBAM( ((infile,track + ".readstats"),), outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @follows( buildBAMStats )
-    @files( [ ( [ ("%s%s.bam" % (x,y), "%s%s.readstats" % (x,y))  for y in REPLICATES],
-                "%s.norm.bam" % x) for x in TRACKS_EXPERIMENTS ] )
-    def normalizeBAMPerExperiment( infiles, outfile ):
-        '''build a normalized BAM file such that all
-        files have approximately the same number of 
-        reads.
-
-        Duplicated reads are removed at the same time.
-
-        Merge reads from several replicates.
-        '''
-        PIntervals.buildNormalizedBAM( infiles, outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @follows( normalizeBAMControls )
-    @transform( (normalizeBAMPerReplicate, normalizeBAMPerExperiment ),
-               regex("run(.*).norm.bam"),
-               r"run\1.macs" )
-    def runMACS( infile, outfile ):
-        '''run MACS for peak detection.'''
-        PIntervals.runMACS( infile, outfile )
-        
-    ############################################################
-    ############################################################
-    ############################################################
-    @transform( runMACS,
-                suffix(".macs"),
-                "_macs.import" )
-    def importMACS( infile, outfile ):
-        PIntervals.importMACS( infile, outfile )
-        
-    ############################################################
-    ############################################################
-    ############################################################
-    @merge( runMACS, "macs.summary" )
-    def summarizeMACS( infiles, outfile ):
-        '''run MACS for peak detection.'''
-
-        PIntervals.summarizeMACS( infiles, outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @transform( summarizeMACS,
-                suffix(".summary"),
-                "_summary.import" )
-    def importMACSSummary( infile, outfile ):
-        '''import macs summary.'''
-        PIntervals.importMACSSummary( infile, outfile )
-
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @transform( importMACS, suffix("_macs.import"), ".bed" )
-    def exportIntervalsAsBed( infile, outfile ):
-        PIntervals.exportIntervalsAsBed( infile, outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @follows( exportIntervalsAsBed )
-    @files( [ ( ["run%s%s.bed" % (y,x) for y in CELLLINES],
-                "run%s.bed" % x, 
-                x) for x in CONDITIONS ] )
-    def combineConditions( infile, outfile, track ):
-        '''combine conditions between cell lines. 
-
-        The conditions are merged via intersection.
-        '''
-
-        conditions = [ "run%s%s.bed" % (x,track) for x in CELLLINES ]
-        PIntervals.intersectBedFiles( conditions, outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @follows( combineConditions )
-    @files( [ ( ("%s.bed" % x, "runUnstim.bed"),
-                "%sSub.bed" % x, 
-                x) for x in TRACKS_EXPERIMENTS + TRACKS_CONDITIONS if not re.search("Unstim",x) ] )
-    def combineUnstim( infiles, outfile, track ):
-        '''remove the unstimulated data sets from the individual tracks. 
-        '''
-
-        infile, subtract = infiles
-        PIntervals.subtractBedFiles( infile, subtract, outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @transform( (combineConditions, 
-                 combineUnstim, 
-                 normalizeBAMPerExperiment, 
-                 normalizeBAMPerReplicate),
-                suffix(".bed"),
-                "_bed.import" )
-    def importCombinedIntervals( infiles, outfile ):
-        PIntervals.importCombinedIntervals( infiles, outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    ## master target for this section
-    ############################################################
-    @follows( importCombinedIntervals, importMACSSummary )
-    def buildIntervals():
-        pass
-
-###################################################################
-###################################################################
-###################################################################
-## Version 4: peak calling with MACS from bowtie, combine by intersection
-###################################################################
-elif PARAMS["method"] == "bowtie-macs-replicate":
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @follows( indexGenome )
-    @transform( PARAMS["filename_reads"], 
-                regex("(\S+).export.txt.gz"), 
-                r"\1.bam" )
-    def buildBAM( infile, outfile ):
-        '''re-map eland formatted reads with bowtie
-        '''
-        to_cluster = True
-
-        # require 4Gb of free memory
-        job_options = "-l mem_free=4000M"
-
-        job_options += " -q server_jobs.q"
-
-        tmpfilename = P.getTempFilename()
-
-        prefix = outfile[:-len(".bam")]
-
-        statement = '''
-        gunzip < %(infile)s |\
-        awk '$11 != "QC" || $10 ~ /(\d+):(\d+):(\d+)/ \
-             { if ($1 != "") { readname=sprintf( "%%s_%%s:%%s:%%s:%%s:%%s", $1,$2,$3,$4,$5,$6);}
-              else { readname=sprintf( "%%s:%%s:%%s:%%s:%%s", $1,$3,$4,$5,$6); }
-              printf("@%%s\\n%%s\\n+\\n%%s\\n",readname,$9,$10);}' |\
-        bowtie --sam %(bowtie_options)s %(bowtie_index)s - 2>%(outfile)s.log |\
-        samtools import %(genome)s - %(tmpfilename)s >& %(outfile)s.log;
-        samtools sort %(tmpfilename)s %(prefix)s;
-        samtools index %(outfile)s;
-        rm -f %(tmpfilename)s
-        '''
-
-        P.run( **dict( locals().items() + PARAMS.items() ) )
-
-        if os.path.exists( tmpfilename ):
-            os.unlink( tmpfilename )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @transform( buildBAM,
-                suffix(".bam"),
-                ".readstats" )
-    def buildBAMStats( infile, outfile ):
-        PIntervals.buildBAMStats( infile, outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @transform( buildBAMStats,
-                regex(r"(run.*).readstats"),
-                inputs( (r"\1.bam", r"\1.readstats") ),
-                r"\1.norm.bam" )
-    def normalizeBAMPerReplicate( infile, outfile ):
-        '''build a normalized BAM file such that all
-        files have approximately the same number of 
-        reads.
-
-        Duplicated reads are removed at the same time.
-        '''
-        track = infile[:-len(".bam")]
-        PIntervals.buildNormalizedBAM( ((infile,track + ".readstats"),), outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @follows( buildBAMStats )
-    @files( [ ( [ ("%s%s.bam" % (x,y), "%s%s.readstats" % (x,y))  for y in REPLICATES],
-                "%s.norm.bam" % x) for x in TRACKS_EXPERIMENTS ] )
-    def normalizeBAMPerExperiment( infiles, outfile ):
-        '''build a normalized BAM file such that all
-        files have approximately the same number of 
-        reads.
-
-
-        Duplicated reads are removed at the same time.
-
-        Merge reads from several replicates.
-        '''
-        PIntervals.buildNormalizedBAM( infiles, outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @transform( buildBAMStats,
-                regex(r"(control.*).readstats"),
-                inputs( (r"\1.bam", r"\1.readstats") ),
-                r"\1.norm.bam" )
-    def normalizeBAMControls( infile, outfile ):
-        '''build a normalized BAM file such that all
-        files have approximately the same number of 
-        reads.
-
-        Duplicated reads are removed at the same time.
-        '''
-        track = infile[:-len(".bam")]
-        PIntervals.buildNormalizedBAM( ((infile,track + ".readstats"),), outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @follows( normalizeBAMControls )
-    @transform( normalizeBAMPerReplicate,
-                regex("run(.*).norm.bam"),
-                r"run\1.macs" )
-    def runMACS( infile, outfile ):
-        '''run MACS for peak detection.'''
-        PIntervals.runMACS( infile, outfile )
-        
-    ############################################################
-    ############################################################
-    ############################################################
-    @transform( runMACS,
-                suffix(".macs"),
-                "_macs.import" )
-    def importMACS( infile, outfile ):
-        PIntervals.importMACS( infile, outfile )
-        
-    ############################################################
-    ############################################################
-    ############################################################
-    @merge( runMACS, "macs.summary" )
-    def summarizeMACS( infiles, outfile ):
-        '''run MACS for peak detection.'''
-
-        PIntervals.summarizeMACS( infiles, outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @transform( summarizeMACS,
-                suffix(".summary"),
-                "_summary.import" )
-    def importMACSSummary( infile, outfile ):
-        '''import macs summary.'''
-        PIntervals.importMACSSummary( infile, outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @transform( importMACS, suffix("_macs.import"), ".bed" )
-    def exportIntervalsAsBed( infile, outfile ):
-        PIntervals.exportIntervalsAsBed( infile, outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @follows( exportIntervalsAsBed )
-    @files( [ ( ["%s%s.bed" % (x,y) for y in REPLICATES],
-                "%s.bed" % x, 
-                x) for x in TRACKS_EXPERIMENTS ] )
-    def combineReplicates( infile, outfile, track ):
-        '''combine replicates between experiments.
-
-        The replicates are combined using intersection.
-        '''
-
-        replicates = [ "%s%s.bed" % (track, x) for x in REPLICATES  if os.path.exists( "%s%s.bed" % (track, x) ) ]
-        PIntervals.intersectBedFiles( replicates, outfile )
-        
-    ############################################################
-    ############################################################
-    ############################################################
-    @follows( exportIntervalsAsBed, combineReplicates )
-    @files( [ ( ["run%s%s.bed" % (y,x) for y in CELLLINES],
-                "run%s.bed" % x, 
-                x) for x in CONDITIONS ] )
-    def combineConditions( infile, outfile, track ):
-        '''combine conditions between cell lines. 
-
-        The conditions are merged via intersection.
-        '''
-
-        conditions = [ "run%s%s.bed" % (x,track) for x in CELLLINES ]
-        PIntervals.intersectBedFiles( conditions, outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @follows( combineConditions )
-    @files( [ ( ("%s.bed" % x, "runUnstim.bed"),
-                "%sSub.bed" % x, 
-                x) for x in TRACKS_EXPERIMENTS + TRACKS_CONDITIONS if not re.search("Unstim",x) ] )
-    def combineUnstim( infiles, outfile, track ):
-        '''remove the unstimulated data sets from the individual tracks. 
-        '''
-
-        infile, subtract = infiles
-        PIntervals.subtractBedFiles( infile, subtract, outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @transform( (combineReplicates,
-                 combineConditions, 
-                 combineUnstim, 
-                 normalizeBAMPerReplicate),
-                suffix(".bed"),
-                "_bed.import" )
-    def importCombinedIntervals( infiles, outfile ):
-        PIntervals.importCombinedIntervals( infiles, outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    ## master target for this section
-    ############################################################
-    @follows( importCombinedIntervals, importMACSSummary )
-    def buildIntervals():
-        pass
+            macs14 -t %(infile)s 
+                   -c %(controlfile)s
+                   --diag
+                   --name=%(outfile)s
+                   --format=BAM
+                   %(macs_options)s 
+            >& %(outfile)s''' 
     
-
-###################################################################
-###################################################################
-###################################################################
-## Version 4: peak calling with MACS from bowtie, combine by intersection of peaks, not intervals.
-###################################################################
-elif PARAMS["method"] == "bowtie-macs-peakreplicate":
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @follows( indexGenome )
-    @transform( PARAMS["filename_reads"], 
-                regex("(\S+).export.txt.gz"), 
-                r"\1.bam" )
-    def buildBAM( infile, outfile ):
-        '''re-map eland formatted reads with bowtie
-        '''
-        to_cluster = True
-
-        # require 4Gb of free memory
-        job_options = "-l mem_free=4000M"
-
-        job_options += " -q server_jobs.q"
-
-        tmpfilename = P.getTempFilename()
-
-        prefix = outfile[:-len(".bam")]
-
-        statement = '''
-        gunzip < %(infile)s |\
-        awk '$11 != "QC" || $10 ~ /(\d+):(\d+):(\d+)/ \
-             { if ($1 != "") { readname=sprintf( "%%s_%%s:%%s:%%s:%%s:%%s", $1,$2,$3,$4,$5,$6);}
-              else { readname=sprintf( "%%s:%%s:%%s:%%s:%%s", $1,$3,$4,$5,$6); }
-              printf("@%%s\\n%%s\\n+\\n%%s\\n",readname,$9,$10);}' |\
-        bowtie --sam %(bowtie_options)s %(bowtie_index)s - 2>%(outfile)s.log |\
-        samtools import %(genome)s - %(tmpfilename)s >& %(outfile)s.log;
-        samtools sort %(tmpfilename)s %(prefix)s;
-        samtools index %(outfile)s;
-        rm -f %(tmpfilename)s
-        '''
-
-        P.run( **dict( locals().items() + PARAMS.items() ) )
-
-        if os.path.exists( tmpfilename ):
-            os.unlink( tmpfilename )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @transform( buildBAM,
-                suffix(".bam"),
-                ".readstats" )
-    def buildBAMStats( infile, outfile ):
-        PIntervals.buildBAMStats( infile, outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @transform( buildBAMStats,
-                regex(r"(run.*).readstats"),
-                inputs( (r"\1.bam", r"\1.readstats") ),
-                r"\1.norm.bam" )
-    def normalizeBAMPerReplicate( infile, outfile ):
-        '''build a normalized BAM file such that all
-        files have approximately the same number of 
-        reads.
-
-        Duplicated reads are removed at the same time.
-        '''
-        track = infile[:-len(".bam")]
-        PIntervals.buildNormalizedBAM( ((infile,track + ".readstats"),), outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @follows( buildBAMStats )
-    @files( [ ( [ ("%s%s.bam" % (x,y), "%s%s.readstats" % (x,y))  for y in REPLICATES],
-                "%s.norm.bam" % x) for x in TRACKS_EXPERIMENTS ] )
-    def normalizeBAMPerExperiment( infiles, outfile ):
-        '''build a normalized BAM file such that all
-        files have approximately the same number of 
-        reads.
-
-
-        Duplicated reads are removed at the same time.
-
-        Merge reads from several replicates.
-        '''
-        PIntervals.buildNormalizedBAM( infiles, outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @transform( buildBAMStats,
-                regex(r"(control.*).readstats"),
-                inputs( (r"\1.bam", r"\1.readstats") ),
-                r"\1.norm.bam" )
-    def normalizeBAMControls( infile, outfile ):
-        '''build a normalized BAM file such that all
-        files have approximately the same number of 
-        reads.
-
-        Duplicated reads are removed at the same time.
-        '''
-        track = infile[:-len(".bam")]
-        PIntervals.buildNormalizedBAM( ((infile,track + ".readstats"),), outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @follows( normalizeBAMControls )
-    @transform( normalizeBAMPerReplicate,
-                regex("run(.*).norm.bam"),
-                r"run\1.macs" )
-    def runMACS( infile, outfile ):
-        '''run MACS for peak detection.'''
-        PIntervals.runMACS( infile, outfile )
+        P.run() 
         
     ############################################################
     ############################################################
     ############################################################
     @transform( runMACS,
-                suffix(".macs"),
-                "_macs.import" )
-    def importMACS( infile, outfile ):
-        PIntervals.importMACS( infile, outfile )
-        
-    ############################################################
-    ############################################################
-    ############################################################
-    @merge( runMACS, "macs.summary" )
-    def summarizeMACS( infiles, outfile ):
-        '''run MACS for peak detection.'''
-        PIntervals.summarizeMACS( infiles, outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @transform( summarizeMACS,
-                suffix(".summary"),
-                "_summary.import" )
-    def importMACSSummary( infile, outfile ):
-        '''import macs summary.'''
-        PIntervals.importMACSSummary( infile, outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @transform( importMACS, suffix("_macs.import"), ".bed" )
-    def exportIntervalsAsBed( infile, outfile ):
-        PIntervals.exportPeaksAsBed( infile, outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @follows( exportIntervalsAsBed )
-    @files( [ ( ["%s%s.bed" % (x,y) for y in REPLICATES],
-                "%s.bed" % x, 
-                x) for x in TRACKS_EXPERIMENTS ] )
-    def combineReplicates( infile, outfile, track ):
-        '''combine replicates between experiments.
-
-        The replicates are combined using intersection.
-        '''
-
-        replicates = [ "%s%s.bed" % (track, x) for x in REPLICATES  if os.path.exists( "%s%s.bed" % (track, x) ) ]
-        PIntervals.intersectBedFiles( replicates, outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @follows( exportIntervalsAsBed, combineReplicates )
-    @files( [ ( ["run%s%s.bed" % (y,x) for y in CELLLINES],
-                "run%s.bed" % x, 
-                x) for x in CONDITIONS ] )
-    def combineConditions( infile, outfile, track ):
-        '''combine conditions between cell lines. 
-
-        The conditions are merged via intersection.
-        '''
-
-        conditions = [ "run%s%s.bed" % (x,track) for x in CELLLINES ]
-        PIntervals.intersectBedFiles( conditions, outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @follows( combineConditions )
-    @files( [ ( ("%s.bed" % x, "runUnstim.bed"),
-                "%sSub.bed" % x, 
-                x) for x in TRACKS_EXPERIMENTS + TRACKS_CONDITIONS if not re.search("Unstim",x) ] )
-    def combineUnstim( infiles, outfile, track ):
-        '''remove the unstimulated data sets from the individual tracks. 
-        '''
-
-        infile, subtract = infiles
-        PIntervals.subtractBedFiles( infile, subtract, outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @transform( (combineReplicates,
-                 combineConditions, 
-                 combineUnstim, 
-                 normalizeBAMPerReplicate),
-                suffix(".bed"),
-                "_bed.import" )
-    def importCombinedIntervals( infiles, outfile ):
-        PIntervals.importCombinedIntervals( infiles, outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    ## master target for this section
-    ############################################################
-    @follows( importCombinedIntervals, importMACSSummary )
-    def buildIntervals():
-        pass
-
-###################################################################
-###################################################################
-###################################################################
-## Version5: peak calling from bed intervals.
-###################################################################
-elif PARAMS["method"] == "bed-macs-replicate":
-
-    BAM_SUFFIX = ".bam"
-    ############################################################
-    ############################################################
-    ############################################################
-    @transform( "run*.bed.gz",
-               suffix(".bed.gz"),
-               ".bam" )
-    def buildBAM( infile, outfile ):
-        '''build bam formatted files from bed files.
-        The resultant files are sorted and indexed.
-        The BAM files are filled with dummy sequences
-        and quality scores.
-        '''
-
-        tmpfilename1 = P.getTempFilename()
-        tmpfilename2 = P.getTempFilename()
-
-        outf = open( tmpfilename1, "w" )
-        fasta = IndexedFasta.IndexedFasta( PARAMS["genome"] )
-        
-        # convert to SAM
-        for x,b in enumerate( Bed.iterator( gzip.open( infile ) )):
-            l = b.end - b.start
-            strand = b.mFields[2]
-            if strand == "+": flag = "0"
-            elif strand == "-": flag = "16"
-            else: raise ValueError("unknown strand in %s" % str(b))
-            outf.write( "\t".join( 
-                ( "read%i" % x,
-                  flag,
-                  b.contig,
-                  str(b.start+1),
-                  "10",
-                  "%iM" % l,
-                  "*", "0", "0",
-                  "A" * l,
-                  "A" * l,
-                  "MD:Z:%i" % l )) + "\n" )
-        
-        outf.close()
-            
-        statement = '''
-        samtools import <( cut -f 1,4 %(genome)s.idx ) %(tmpfilename1)s %(tmpfilename2)s >& %(outfile)s.log
-        '''
-        P.run( **dict( locals().items() + PARAMS.items() ) )
-
-        prefix = outfile[:-len(".bam")]
-        pysam.sort( tmpfilename2, prefix ) 
-        pysam.index( outfile )
-
-        os.unlink( tmpfilename1 )
-        os.unlink( tmpfilename2 )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @transform( buildBAM,
-                suffix(".bam"),
-                ".macs" )
-    def runMACS( infile, outfile ):
-        '''run MACS for peak detection.'''
-        PIntervals.runMACS( infile, outfile )
-        
-    ############################################################
-    ############################################################
-    ############################################################
-    @transform( runMACS,
-                suffix(".macs"),
-                "_macs.import" )
-    def importMACS( infile, outfile ):
-        PIntervals.importMACS( infile, outfile, suffix = ".bam" )
+                regex(r"(.*).macs"),
+                inputs( (r"\1.macs", r"\1.norm.bam") ),
+                r"\1_macs.import" )
+    def importMACS( infiles, outfile ):
+        infile, bamfile = infiles
+        PIntervals.importMACS( infile, outfile, bamfile )
         
     ############################################################
     ############################################################
@@ -1959,44 +404,75 @@ elif PARAMS["method"] == "bed-macs-replicate":
     def exportIntervalsAsBed( infile, outfile ):
         PIntervals.exportIntervalsAsBed( infile, outfile )
 
-    ############################################################
-    ############################################################
-    ############################################################
-    @follows( exportIntervalsAsBed )
-    def combineReplicates( ): pass
-    
-    @follows( exportIntervalsAsBed, combineReplicates )
-    def combineConditions( ): pass
+else:
+    raise ValueError("unknown peak caller %s" % PARAMS["calling_caller"] )
 
-    @follows( combineConditions )
-    def combineUnstim(): pass
+############################################################
+############################################################
+############################################################
+@follows( exportIntervalsAsBed )
+@files( [ ( ["%s%s.bed" % (x,y) for y in REPLICATES],
+            "%s.bed" % x, 
+            x) for x in TRACKS_EXPERIMENTS ] )
+def combineReplicates( infile, outfile, track ):
+    '''combine replicates between experiments.
 
-    @follows( exportIntervalsAsBed )
-    def normalizeBAMPerExperiment(): pass
-    
-    @follows( exportIntervalsAsBed )
-    def normalizeBAMPerReplicate(): pass
+    The replicates are combined using intersection.
+    '''
 
-    ############################################################
-    ############################################################
-    ############################################################
-    @transform( ( combineReplicates,
-                  combineConditions, 
-                  combineUnstim ),
-                suffix(".bed"),
-                "_bed.import" )
-    def importCombinedIntervals( infiles, outfile ):
-        PIntervals.importCombinedIntervals( infiles, outfile )
+    replicates = [ "%s%s.bed" % (track, x) for x in REPLICATES  if os.path.exists( "%s%s.bed" % (track, x) ) ]
+    PIntervals.intersectBedFiles( replicates, outfile )
 
-    ############################################################
-    ############################################################
-    ############################################################
-    ## master target for this section
-    ############################################################
-    @follows( exportIntervalsAsBed,
-              importCombinedIntervals,
-              importMACSSummary )
-    def buildIntervals(): pass
+############################################################
+############################################################
+############################################################
+@follows( exportIntervalsAsBed, combineReplicates )
+@files( [ ( ["run%s%s.bed" % (y,x) for y in TISSUES],
+            "run%s.bed" % x, 
+            x) for x in CONDITIONS ] )
+def combineConditions( infile, outfile, track ):
+    '''combine conditions between cell lines. 
+
+    The conditions are merged via intersection.
+    '''
+
+    conditions = [ "run%s%s.bed" % (x,track) for x in TISSUES ]
+    PIntervals.intersectBedFiles( conditions, outfile )
+
+############################################################
+############################################################
+############################################################
+@follows( combineConditions )
+@files( [ ( ("%s.bed" % x, "runUnstim.bed"),
+            "%sSub.bed" % x, 
+            x) for x in TRACKS_EXPERIMENTS + TRACKS_CONDITIONS if not re.search("Unstim",x) ] )
+def combineUnstim( infiles, outfile, track ):
+    '''remove the unstimulated data sets from the individual tracks. 
+    '''
+
+    infile, subtract = infiles
+    PIntervals.subtractBedFiles( infile, subtract, outfile )
+
+############################################################
+############################################################
+############################################################
+@transform( (combineReplicates,
+             combineConditions, 
+             combineUnstim, 
+             normalizeBAMPerReplicate),
+            suffix(".bed"),
+            "_bed.import" )
+def importCombinedIntervals( infiles, outfile ):
+    PIntervals.importCombinedIntervals( infiles, outfile )
+
+############################################################
+############################################################
+############################################################
+## master target for this section
+############################################################
+@follows( importCombinedIntervals, importMACSSummary )
+def buildIntervals():
+    pass
 
 ###################################################################
 ###################################################################
@@ -2008,7 +484,7 @@ elif PARAMS["method"] == "bed-macs-replicate":
 ############################################################
 ############################################################
 @follows( exportIntervalsAsBed )
-@files_re( ["%s.bed" % x for x in TRACKS_RAW],
+@files_re( ["%s.bed" % x for x in TRACKS_ALL],
           combine( "(.*).bed" ),
           "merged.bed" )
 def makeMerged( infiles, outfile ):
@@ -2018,172 +494,15 @@ def makeMerged( infiles, outfile ):
     '''
     PIntervals.mergeBedFiles( infiles, outfile )
 
-############################################################
-############################################################
-############################################################
-@files(( 
-        ( (PARAMS["filename_map_ensembl2refseq"], 
-           PARAMS["filename_ensembl_geneset"], 
-           PARAMS["filename_refseq_geneset"]), TARGET_TRANSCRIPTS), 
-        ),)
-def buildTranscripts( infiles, outfile ):
-    '''build a file with all transcripts. 
-
-    remove duplicate transcripts (within the refseq track there usually are).
-    '''
-    map_ensembl2refseq, ensembl, refseq = infiles
-    to_cluster = True
-
-    statement = '''
-    cat %(ensembl)s | gunzip |
-    awk '$3 == "exon"' |\
-    sed "s/hg18_refGene/protein_coding/" |\
-    python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome)s --log=%(outfile)s.log |\
-    python %(scriptsdir)s/gtf2gtf.py --remove-duplicates=gene --log=%(outfile)s.log |\
-    gzip > %(outfile)s'''
-    P.run( **dict( locals().items() + PARAMS.items() ) )
-
-    statement = '''
-    cat %(refseq)s | gunzip |
-    awk '$3 == "exon"' |\
-    sed "s/hg18_refGene/protein_coding/" |\
-    python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome)s --log=%(outfile)s.log |\
-    python %(scriptsdir)s/gtf2gtf.py --filter=gene --apply=<(cut -f 3 %(map_ensembl2refseq)s | sort | uniq) --invert-filter |\
-    python %(scriptsdir)s/gtf2gtf.py --remove-duplicates=gene --log=%(outfile)s.log |\
-    gzip > %(outfile)s'''
-    # disabled - only work with ENSEMBL
-    # P.run( **dict( locals().items() + PARAMS.items() ) )
-
-############################################################
-############################################################
-############################################################
-@files( PARAMS["filename_ensembl_geneset"], TARGET_ANNOTATOR_GENETERRITORIES )
-def buildAnnotatorGeneTerritories( infile, outfile ):
-    '''build gene territories.'''
-
-    to_cluster=True
-    
-    radius = PARAMS['annotator_gene_territories_radius']
-    statement = '''
-    gunzip < %(infile)s |\
-        awk '$2 == "protein_coding"' |\
-        python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome)s |\
-        python %(scriptsdir)s/gtf2gtf.py --merge-transcripts --with-utr --log=%(outfile)s.log |\
-        python %(scriptsdir)s/gtf2gtf.py --filter=longest-gene --log=%(outfile)s.log |\
-        %(scriptsdir)s/gff_sort pos |\
-        python %(scriptsdir)s/gtf2gff.py \
-                                --genome-file=%(genome)s --log=%(outfile)s.log \
-                                --radius=%(radius)s --method=territories > %(outfile)s'''
-
-    P.run( **dict( locals().items() + PARAMS.items() ) )
-
-############################################################
-############################################################
-############################################################
-@files_re( buildTranscripts, "(.*).gtf.gz", r"\1_gtf.import")
-def importTranscripts( infile, outfile ):
-    '''import the transrcipt set.'''
-    table = "transcripts"
-
-    statement = '''
-    gunzip < %(infile)s |\
-    python %(scriptsdir)s/gtf2tab.py |\
-    csv2db.py %(csv2db_options)s \
-              --index=interval_id \
-              --index=transcript_id \
-              --index=gene_id \
-              --table=%(table)s \
-    > %(outfile)s'''
-
-    P.run( **dict( locals().items() + PARAMS.items() ) )
-
-############################################################
-############################################################
-############################################################
-@files( PARAMS["filename_repeats"], TARGET_REPEATS)
-def buildRepeats( infile, outfile ):
-    '''import ucsc repeat tracks.
-    '''
-
-    instream = gzip.open( infile )
-    tmpfile = tempfile.NamedTemporaryFile(delete=False)
-    tmpfilename = tmpfile.name
-
-    gff = GFF.Entry()
-    gff.feature = "exon"
-    gff.source = "repeat"
-    
-    for line in instream:
-        if line.startswith("#bin"): continue
-        (bin,swScore,milliDiv,milliDel,milliIns,\
-         genoName,genoStart,genoEnd,genoLeft,\
-         strand,repName,repClass,repFamily,repStart,repEnd,repLeft,id) =\
-         line[:-1].split("\t")
-         
-        if repClass not in REPEATS: continue
-
-        gff.strand = strand
-        gff.contig = genoName
-        gff.start = int(genoStart)-1
-        gff.end = int(genoEnd)
-        gff.addAttribute( "name", repName )
-        gff.addAttribute( "class", repClass )
-        gff.addAttribute( "family", repFamily )
         
-        tmpfile.write ( str(gff) + "\n" )
-         
-    tmpfile.close()
-
-    E.info( "created temporary file" )
-    statement = """sort -k1,1 -k4,4n < %(tmpfilename)s |\
-	python %(scriptsdir)s/gff2gff.py --merge-features=0,10,0,0 --log=%(outfile)s.log \
-	> %(outfile)s"""
-
-    P.run( **dict( locals().items() + PARAMS.items() ) )
-    
-    os.unlink( tmpfile.name )
-        
-############################################################
-############################################################
-############################################################
-@files( PARAMS["filename_ensembl_geneset"], TARGET_ANNOTATION )
-def buildGeneRegions( infile, outfile ):
-    '''annotate genomic regions with reference gene set.
-
-    Only considers protein coding genes. In case of overlapping
-    genes, only take the longest (in genomic coordinates).
-    Genes not on UCSC contigs are removed.
-    '''
-    PGeneset.buildGeneRegions( infile, outfile, only_protein_coding = True )
 
 ############################################################
 ############################################################
 ############################################################
-@files( PARAMS["filename_ensembl_geneset"], TARGET_GENESET )
-def buildGeneSet( infile, outfile ):
-    '''build a collection of exons from the protein-coding
-    section of the ENSEMBL gene set. The exons include both CDS
-    and UTR.
-
-    The set is filtered in the same way as in :meth:`buildGeneRegions`.
-    '''
-    PGeneset.buildGeneSet( infile, outfile, only_protein_coding = True )
-
-############################################################
-############################################################
-############################################################
-@files( buildGeneSet, "gene_stats.import" )
-def importGeneStats( infile, outfile ):
-    '''import the transrcipt set.'''
-    PGeneset.importGeneStats( infile, outfile )
-
-############################################################
-############################################################
-############################################################
-@files( [ ("%s.idx" % PARAMS["filename_genome"], "genome.gff"), ] )
+@files( [ ("%s.idx" % PARAMS["genome"], "genome.gff"), ] )
 def buildGenome( infile, outfile ):
 
-    fasta = IndexedFasta.IndexedFasta( PARAMS["filename_genome"] )
+    fasta = IndexedFasta.IndexedFasta( PARAMS["genome"] )
 
     entry = GFF.Entry()
     entry.start = 0
@@ -2201,60 +520,7 @@ def buildGenome( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-@follows( buildTranscripts )
-@files( ( (PARAMS["filename_ensembl_geneset"], TARGET_PROMOTORS ),
-          (TARGET_TRANSCRIPTS, TARGET_TRANSCRIPTS_PROMOTORS), ) )
-def buildPromotorRegions( infile, outfile ):
-    '''annotate promotor regions from reference gene set.'''
-    statement = """
-        gunzip < %(infile)s |\
-        python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome)s --log=%(outfile)s.log |\
-        python %(scriptsdir)s/gtf2gff.py --method=promotors --promotor=%(promotor_size)s \
-                              --genome-file=%(genome)s --log=%(outfile)s.log > %(outfile)s
-    """
-
-    P.run( **dict( locals().items() + PARAMS.items() ) )
-
-############################################################
-############################################################
-############################################################
-@follows( buildTranscripts )
-@files( ( (PARAMS["filename_ensembl_geneset"], TARGET_TSS), 
-          (TARGET_TRANSCRIPTS, TARGET_TRANSCRIPTS_TSS), ) )
-def buildTSSRegions( infile, outfile ):
-    '''annotate transcription start sites from reference gene set.
-
-    Similar to promotors, except that the witdth is set to 1.
-    '''
-    statement = """
-        gunzip < %(infile)s |\
-        python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome)s --log=%(outfile)s.log |\
-        python %(scriptsdir)s/gtf2gff.py --method=promotors --promotor=1 --genome-file=%(genome)s --log=%(outfile)s.log > %(outfile)s
-    """
-
-    P.run( **dict( locals().items() + PARAMS.items() ) )
-
-############################################################
-############################################################
-############################################################
-@follows( buildPromotorRegions, buildGeneRegions, buildTSSRegions )
-@files( [ ("%s.gtf" % x, "%s.bed" % x ) for x in ("ensembl", "promotors", "tss" ) ] )
-def exportReferenceAsBed( infile, outfile ):
-    '''export a reference gtf file as bed for computing overlap.'''
-
-    bed = Bed.Bed()
-    outfile = open( outfile, "w" )
-    with open(infile, "r") as inf: 
-        for gff in GTF.iterator( inf ):
-            bed.contig, bed.start, bed.end = gff.contig, gff.start, gff.end
-            bed.mFields = [ gff.gene_id ]
-            outfile.write( "%s\n" % str(bed) )
-    outfile.close()
-
-############################################################
-############################################################
-############################################################
-@files_re( (buildBAM, normalizeBAMPerExperiment, normalizeBAMPerReplicate),
+@files_re( (buildBAM, normalizeBAMPerReplicate),
            "(.*).bam",
            r"\1.bigwig" )
 def buildBigwig( infile, outfile ):
@@ -2271,486 +537,7 @@ def buildBigwig( infile, outfile ):
                 %(infile)s \
                 > %(outfile)s.log'''
      
-    P.run( **dict( locals().items() + PARAMS.items() ) )
-
-
-
-############################################################
-############################################################
-############################################################
-##
-############################################################
-@files( ((PARAMS["filename_affymetrix"], "affymetrix_import" ),) )
-def importAffymetrixAnnotation( infile, outfile):
-    '''import affymetrix probe annotations.'''
-    table = "affymetrix"
-
-    statement = '''
-    gunzip < %(infile)s |\
-    sed "s/probeset_id/probeset/" |\
-    csv2db.py %(csv2db_options)s \
-              --dialect=excel \
-              --index=probeset \
-              --index=mrna_id \
-              --table=%(table)s \
-    > %(outfile)s
-    '''
-
-    P.run( **dict( locals().items() + PARAMS.items() ) )
-
-
-############################################################
-############################################################
-############################################################
-##
-############################################################
-@files( importAffymetrixAnnotation, "probeset2transcript.table")
-def buildProbeset2Transcript( infile, outfile):
-    '''build map relating a probeset to a transcript_id, gene_id, ...
-
-    1. only take those that can be mapped to transcripts in table transcripts
-    2. check consistency of location with transcripts in table transcripts
-    3. remove those with cross hybridyzation signals
-
-    '''
-
-    dbhandle = sqlite3.connect( PARAMS["database"] )
-
-    E.debug( "collecting exons")
-    with gzip.open(PARAMS["transcripts"]) as inf:
-        exons = GTF.readAndIndex( GTF.iterator( inf ) )
-
-    E.debug( "collecting transcripts")
-    cc = dbhandle.cursor()
-    statement = "SELECT transcript_id, gene_id, source, contig, min(start), max(end), strand FROM transcripts GROUP BY transcript_id, gene_id, source, contig"
-    cc.execute( statement )
-    map_transcript2gene = {}
-    for transcript_id, gene_id, source, contig, start, end, strand in cc.fetchall():
-        map_transcript2gene[transcript_id] = (gene_id, source, contig, start, end, strand )
-
-    counter = E.Counter()
-
-    cc = dbhandle.cursor()
-    statement = "SELECT probeset, transcript_cluster_id, seqname, start, stop, mrna_assignment, crosshyb_type FROM affymetrix"
-    cc.execute( statement )
-
-    outf_notfound = open( outfile + ".notfound", "w")
-    outf_notfound.write("probeset\tcause\tcontig\tstart\tend\tmrna_assignment\n" )
-
-    outf = open( outfile, "w" )
-    outf.write( "probeset\tcluster_id\tprobe_contig\tprobe_start\tprobe_end\ttranscript_id\tgene_id\tsource\tcontig\tstart\tend\tstrand\n" )
-
-    genes_found, transcripts_found = set(), set()
-
-    for probeset, transcript_cluster_id, contig, start, end, mrna_assignment, crosshyb_type in cc.fetchall():
-        start -= 1 
-        if mrna_assignment == "---":
-            counter.probesets_unassigned += 1
-            continue
-
-        data = [ x.strip().split(" // ") for x in mrna_assignment.split("///") ]
-        found, mapped, mismapped, nxhyb = 0, 0, 0, 0
-
-        # collect transcripts by exon overlap
-        try:
-            overlaps = [ x[2] for x in exons.get( contig, start, end ) ]
-        except KeyError:
-            overlaps = []
-
-        transcripts = set( [x.transcript_id for x in overlaps ] )
-
-        for transcript_id, seqname, score, direct_probes, possible_probes, xhyb in data:
-
-            if xhyb != "0":
-                nxhyb += 1
-                continue
-
-            # collect transcripts from annotation file
-            if transcript_id.startswith("ENST"):
-                found += 1
-                    
-                try:
-                    gene_id, other_source, other_contig, other_start, other_end, other_strand = map_transcript2gene[transcript_id]
-                except KeyError:
-                    continue
-
-                mapped += 1
-
-                if transcript_id not in transcripts:
-                    mismapped += 1
-                    continue
-                
-                if other_contig != contig or \
-                        min(other_end,end) - max(other_start, start) < 0:
-                    mismapped += 1
-                    continue
-
-                outf.write("%s\t%s\t%s\t%i\t%i\t%s\t%s\t%s\t%s\t%i\t%i\t%s\n" % \
-                               (probeset, transcript_cluster_id, contig, start, end,
-                                transcript_id, gene_id, other_source,
-                                other_contig, other_start, other_end, other_strand))
-
-                genes_found.add(gene_id)
-                transcripts_found.add(transcript_id)
-
-        if found == 0: 
-            counter.probesets_notfound += 1
-            code = "no ENSEMBL"
-        elif mapped == 0:
-            counter.probesets_unmapped += 1
-            code = "not in transcripts"
-        elif mapped > 0 and mapped == mismapped:
-            counter.probesets_mismapped += 1
-            code = "mismapped"
-        elif mapped > 0 and mapped == nxhyb:
-            counter.probesets_crosshyb += 1
-            code = "cross-hybridized"
-        elif mapped > 0 and mapped == nxhyb + mismapped:
-            counter.probesets_errors += 1
-            code = "errors"
-        else:
-            counter.probesets_found += 1
-            code = None
-
-        if code:
-            outf_notfound.write("%s\t%s\t%s\t%i\t%i\t%s\n" % (probeset, code, contig, start, end, mrna_assignment) )
-
-    outf_notfound.close()
-    outf.close()
-
-    E.info( "mapping results: %s" % str(counter))
-    E.info( "genes found: %i(%5.2f%%): transcripts found %i(%5.2f%%)" %\
-                (len(genes_found),
-                 100.0 * len(genes_found) / len( set( [x[0] for x in map_transcript2gene.values()]) ),
-                 len(transcripts_found),
-                 100.0 * len(transcripts_found) / len( map_transcript2gene.keys() ) ) )
-
-############################################################
-############################################################
-############################################################
-##
-############################################################
-@transform( buildProbeset2Transcript, suffix(".table"), "_table.import" )
-def importProbeset2Transcript( infile, outfile):
-
-    table = outfile[:-len("_table.import")] 
-
-    statement = '''
-    csv2db.py %(csv2db_options)s \
-              --index=probeset \
-              --index=cluster_id \
-              --index=transcript_id \
-              --index=gene_id \
-              --table=%(table)s \
-    < %(infile)s > %(outfile)s
-    '''
-
-    P.run( **dict( locals().items() + PARAMS.items() ) )
-
-############################################################
-############################################################
-############################################################
-## OBSOLETE
-@files( ((importProbeset2Transcript, TARGET_PROBESET),) )
-def exportProbesetLocations( infile, outfile ):
-    '''export probeset locations.
-    
-    Probeset locations map the range of a transcript onto
-    a probeset.
-    '''
-
-    dbhandle = sqlite3.connect( PARAMS["database"] )
-    cc = dbhandle.cursor()
-    # statement = "SELECT contig, COUNT(DISTINCT contig), min(start), max(end), t.strand, e.probeset, COUNT(DISTINCT t.transcript_id) FROM transcripts AS t, expression as e WHERE t.transcript_id = e.mrna_id GROUP BY t.strand, e.probeset" 
-    statement = "SELECT contig, 1, start, end, strand, cluster_id, transcript_id, gene_id, COUNT(DISTINCT gene_id) FROM probeset2transcript GROUP BY cluster_id, transcript_id"
-    cc.execute( statement )
-
-    gff = GTF.Entry()
-    gff.source = "cluster_id"
-    gff.feature = "exon"
-
-    outs = open(outfile, "w")
-    noutput, nskipped = 0,0
-    max_len = int(PARAMS["max_probeset_length"])
-    for contig, ncontigs, start, end, strand, cluster_id, transcript_id, gene_id, ngenes in cc:
-        if ncontigs > 1:
-            E.warn( "cluster_id %s: multiple contigs" % cluster_id)
-            nskipped += 1
-            continue
-        if ngenes > 1:
-            E.warn( "cluster_id %s: multiple genes" % cluster_id)
-            nskipped += 1
-            continue
-        if end - start > max_len:
-            E.warn( "cluster_id %s: range (%s:%i..%i) larger than cutoff (%i>%i)" % \
-                        (cluster_id, contig, start, end, end-start, max_len))
-            nskipped += 1
-            continue
-            
-        gff.contig = contig
-        gff.start = start 
-        gff.end = end
-        gff.strand = strand
-        gff.gene_id = transcript_id
-        gff.transcript_id = cluster_id
-        outs.write( str(gff) + "\n" )
-        noutput += 1
-    outs.close()
-
-    E.info( "%i cluster_ids exported: %i skipped" %(noutput, nskipped) )
-
-############################################################
-############################################################
-############################################################
-## OBSOLETE
-@transform( exportProbesetLocations, suffix(".gtf"), "_gtf.import")
-def importProbesetLocations( infile, outfile ):
-    '''import probeset locations.'''
-
-    tablename = outfile[:-len(".import")]
-
-    statement = '''
-    python %(scriptsdir)s/gtf2tab.py < %(infile)s |\
-    csv2db.py %(csv2db_options)s \
-              --index=id \
-              --index=probeset \
-              --table=%(tablename)s \
-    > %(outfile)s
-    '''
-
-    P.run( **dict( locals().items() + PARAMS.items() ) )
-
-############################################################
-############################################################
-############################################################
-##
-############################################################
-@split( (PARAMS["filename_expression"], PARAMS["filename_expression2"],importProbeset2Transcript),
-        ("expression.skipped", "expression.table",  "expression.map", "exp*.data"))
-def buildExpressionTracks( infiles, outfiles ):
-    '''build expression tracks from FILENAME_EXPRESSION and FILENAME_EXPRESSION2'''
-
-    # start with a clean sheet
-    for f in outfiles:
-        try:
-            os.remove( f )
-        except OSError:
-            pass
-
-
-    outf = open( "expression.map", "w" )
-    outf.write("tablename\tcellline\ttime\tstimulus\n" )
-
-    for index, infile in enumerate(infiles):
-        map_exp2columns = collections.defaultdict( list )
-        if infile == PARAMS["filename_expression"]:
-            map_exp2columns = { 'GM00855_00_D3' : (3,4,5),
-                                'GM00855_36_D3' : (6,7,8),
-                                'GM00855_36_Est' : (9,10,11),
-                                'GM00855_36_D3Est' : (12,13,14),
-                                'GM00861_00_D3' : (15,16,17),
-                                'GM00861_36_D3' : (18,19,20),
-                                'GM00861_36_Est' : (21,22,23),
-                                'GM00861_36_D3Est' : (24,25,26),
-                                'All_00_D3' : (3,4,5,15,16,17),
-                                'All_36_D3' : (6,7,8,18,19,20),
-                                'All_36_Est' : (9,10,11,21,22,23),
-                                'All_36_D3Est' : (12,13,14,24,25,26),
-                                }
-            
-            PExpression.buildExpressionTracks( infile, outfiles, map_exp2columns, suffix = "" )
-            for key in map_exp2columns.keys():
-                cellline, time, stimulus = key.split("_")
-                outf.write( "\t".join( (key, cellline, time, stimulus) ) + "\n" )
-                
-        elif infile == PARAMS["filename_expression2"]:
-            x = 1
-            stimulus = "D3"
-            # pool lymphoblastoid cell lines (lcl) and others separately
-
-            for cell in ('GMO7019', 'GMO7348', 'GM18054',
-                         'Ag09309', 'HL60', 'K562', 
-                         'HEPG2', 'AG09319', 'GM12878'):
-                for timepoint in ('00', '08', '36'):
-                    key = "%s_%s_%s" % (cell, timepoint, stimulus)
-                    map_exp2columns[ key ] = (x,x+1)
-                    if cell.startswith( "GM" ):
-                        key2 = "%s_%s_%s" % ("LCL", timepoint, stimulus)
-                    else:
-                        key2 = "%s_%s_%s" % ("nonLCL", timepoint, stimulus)
-                                            
-                    map_exp2columns[key2].extend( [x, x+1] )
-                    x += 2
-
-            PExpression.buildExpressionTracks( infile, outfiles, map_exp2columns, suffix = ".%0i" % index )
-            for key in map_exp2columns.keys():
-                cellline, time, stimulus = key.split("_")
-                outf.write( "\t".join( (key, cellline, time, stimulus) ) + "\n" )
-
-    outf.close()
-        
-############################################################
-############################################################
-############################################################
-##
-############################################################
-@transform( buildExpressionTracks, suffix(".data"), "_data.import" )
-def importExpressionTracks( infile, outfile):
-
-    table = outfile[:-len("_data.import")] + "_levels"
-
-    statement = '''
-    csv2db.py %(csv2db_options)s \
-              --index=cluster_id \
-              --table=%(table)s \
-    < %(infile)s > %(outfile)s
-    '''
-
-    P.run( **dict( locals().items() + PARAMS.items() ) )
-
-############################################################
-############################################################
-############################################################
-## 
-############################################################
-@merge( buildExpressionTracks, "expression.correlation")
-def buildExpressionCorrelation( infiles, outfile):
-    '''compute correlation between replicates in expression sets.'''
-
-    outf = open(outfile, "w")
-    outf.write( "track\treplicate1\treplicate2\t%s\n" % "\t".join(Stats.CorrelationTest().getHeaders()))
-    offset = 10
-    for filename in infiles:
-        if not filename.endswith(".data"): continue
-        vals = []
-        headers = []
-        track = filename[:-len(".data")]
-        inf = open( filename, "r")
-        for line in inf:
-            if line.startswith("#"): continue
-            data = line[:-1].split("\t")
-            if line.startswith("cluster_id"):
-                nreplicates = len(data) - offset
-                for x in range(nreplicates):
-                    headers.append( data[offset+x] )
-                    vals.append( [] )
-                continue
-            for x in range( 0, nreplicates ):
-                vals[x].append( float(data[offset+x]) )
-
-        for x in range(nreplicates-1):
-            for y in range( x+1, nreplicates):
-                outf.write( "\t".join( (track,
-                                        headers[x],
-                                        headers[y],
-                                        str( Stats.doCorrelationTest( vals[x],
-                                                                      vals[y]) ) ) ) + "\n" )
-    outf.close()
-
-############################################################
-############################################################
-############################################################
-##
-############################################################
-@transform( buildExpressionCorrelation, suffix(".correlation"), "_correlation.import" )
-def importExpressionCorrelation( infile, outfile):
-
-    table = outfile[:-len(".import")] 
-
-    statement = '''
-    csv2db.py %(csv2db_options)s \
-              --index=track \
-              --table=%(table)s \
-    < %(infile)s > %(outfile)s
-    '''
-
-    P.run( **dict( locals().items() + PARAMS.items() ) )
-
-############################################################
-############################################################
-############################################################
-##
-############################################################
-@transform( buildExpressionTracks, suffix(".table"), "_table.import" )
-def importExpressionProbesets( infile, outfile):
-
-    table = outfile[:-len("_table.import")]
-
-    statement = '''
-    csv2db.py %(csv2db_options)s \
-              --index=cluster_id \
-              --index=mrna_id \
-              --index=genesymbol \
-              --table=%(table)s \
-    < %(infile)s > %(outfile)s
-    '''
-
-    P.run( **dict( locals().items() + PARAMS.items() ) )
-
-############################################################
-############################################################
-############################################################
-##
-############################################################
-@transform( buildExpressionTracks, suffix(".map"), "_map.import" )
-def importExpressionMap( infile, outfile):
-
-    table = outfile[:-len(".import")]
-
-    statement = '''
-    csv2db.py %(csv2db_options)s \
-              --table=%(table)s \
-    < %(infile)s > %(outfile)s
-    '''
-
-    P.run( **dict( locals().items() + PARAMS.items() ) )
-
-############################################################
-############################################################
-############################################################
-# @follows( importCombinedIntervals, exportIntervalsAsBed, exportProbesetLocations )
-@files_re( [ x for x in glob.glob("run*.bed") if not isReplicate( x[:-len("bed")] ) ],
-           "(.*).bed", 
-           (r"\1.bed", TARGET_PROBESET),
-           r"\1.assoc" )
-def buildIntervalProbesetAssociations( infiles, outfile ):
-    '''build association between probesets and intervals.'''
-
-    to_cluster = True
-    infile, probeset = infiles
-    statement = """
-    cat < %(infile)s |\
-        python %(scriptsdir)s/bed2gff.py --as-gtf |\
-	python /home/andreas/gpipe/gtf2table.py \
-		--counter=neighbours \
-		--log=%(outfile)s.log \
-		--filename-gff=%(probeset)s \
-                --proximal-distance=%(proximal_distance)s \
-		--genome-file=%(genome)s |\
-        python %(toolsdir)s\table2graph.py \
-                --headers=id,probeset \
-	> %(outfile)s"""
-
-    P.run( **dict( locals().items() + PARAMS.items() ) )
-
-############################################################
-############################################################
-############################################################
-@files_re( buildIntervalProbesetAssociations,
-           "(.*).assoc",
-           r"\1_assoc.import")
-def importIntervalProbesetAssociations( infile, outfile):
-    tablename = outfile[:-len(".import")]
-
-    statement = '''
-    csv2db.py %(csv2db_options)s \
-              --index=id \
-              --index=probeset \
-              --table=%(tablename)s \
-    < %(infile)s > %(outfile)s
-    '''
-
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
 
 ############################################################
 ############################################################
@@ -2826,93 +613,94 @@ def exportMotifControlSequences( infile, outfile ):
     cc.close()
     outs.close()
 
-############################################################
-############################################################
-############################################################
-@merge( (exportReferenceAsBed, exportIntervalsAsBed ),
-        "intervals.overlap" )
-def buildOverlap( infile, outfile ):
-    '''compute overlap between intervals.
-    '''
-
-    if os.path.exists(outfile): 
-        os.rename( outfile, outfile + ".orig" )
-        options = "--update=%s.orig" % outfile
-    else:
-        options = ""
-
-    statement = '''
-        python %(scriptsdir)s/diff_bed.py %(options)s *.bed > %(outfile)s
-        '''
-    P.run( **dict( locals().items() + PARAMS.items() ) )
-
-############################################################
-############################################################
-############################################################
-@transform( buildOverlap, suffix(".overlap"), "_overlap.import" )
-def importOverlap( infile, outfile ):
-    '''import overlap results.
-    '''
-
-    tablename = "overlap"
-
-    statement = '''
-    csv2db.py %(csv2db_options)s \
-              --index=set1 \
-              --index=set2 \
-              --table=%(tablename)s \
-    < %(infile)s > %(outfile)s
-    '''
-
-    P.run( **dict( locals().items() + PARAMS.items() ) )
-
-############################################################
-############################################################
-############################################################
-@merge( (exportUCSCEncodeTracks, 
-         exportReferenceAsBed, 
-         combineConditions,
-         combineUnstim,
-         combineReplicates ),
-        "ucsc.overlap" )
-def buildUCSCOverlap( infiles, outfile ):
-    '''compute overlap between intervals and the ucsc tracks.
-    '''
-    
-    if os.path.exists(outfile): 
-        os.rename( outfile, outfile + ".orig" )
-        options = "--update=%s.orig" % outfile
-    else:
-        options = ""
-
-    to_cluster = True
-
-    infiles = " ".join(infiles)
-    statement = '''
-        python %(scriptsdir)s/diff_bed.py --tracks %(options)s %(infiles)s > %(outfile)s
+if 0:
+    ############################################################
+    ############################################################
+    ############################################################
+    @merge( (PARAMS["overlap"], exportIntervalsAsBed ),
+            "intervals.overlap" )
+    def buildOverlap( infile, outfile ):
+        '''compute overlap between intervals.
         '''
 
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+        if os.path.exists(outfile): 
+            os.rename( outfile, outfile + ".orig" )
+            options = "--update=%s.orig" % outfile
+        else:
+            options = ""
 
-############################################################
-############################################################
-############################################################
-@transform( buildUCSCOverlap, suffix(".overlap"), "_overlap.import" )
-def importUCSCOverlap( infile, outfile ):
-    '''import overlap results.
-    '''
+        statement = '''
+            python %(scriptsdir)s/diff_bed.py %(options)s *.bed > %(outfile)s
+            '''
 
-    tablename = "ucsc_overlap"
+        P.run()
 
-    statement = '''
-    csv2db.py %(csv2db_options)s \
-              --index=set1 \
-              --index=set2 \
-              --table=%(tablename)s \
-    < %(infile)s > %(outfile)s
-    '''
+    ############################################################
+    ############################################################
+    ############################################################
+    @transform( buildOverlap, suffix(".overlap"), "_overlap.import" )
+    def importOverlap( infile, outfile ):
+        '''import overlap results.
+        '''
 
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+        tablename = "overlap"
+
+        statement = '''
+        csv2db.py %(csv2db_options)s 
+                  --index=set1 
+                  --index=set2 
+                  --table=%(tablename)s 
+        < %(infile)s > %(outfile)s
+        '''
+
+        P.run()
+
+    ############################################################
+    ############################################################
+    ############################################################
+    @merge( (exportUCSCEncodeTracks, 
+             combineConditions,
+             combineUnstim,
+             combineReplicates ),
+            "ucsc.overlap" )
+    def buildUCSCOverlap( infiles, outfile ):
+        '''compute overlap between intervals and the ucsc tracks.
+        '''
+
+        if os.path.exists(outfile): 
+            os.rename( outfile, outfile + ".orig" )
+            options = "--update=%s.orig" % outfile
+        else:
+            options = ""
+
+        to_cluster = True
+
+        infiles = " ".join(infiles)
+        statement = '''
+            python %(scriptsdir)s/diff_bed.py --tracks %(options)s %(infiles)s > %(outfile)s
+            '''
+
+        P.run( **dict( locals().items() + PARAMS.items() ) )
+
+    ############################################################
+    ############################################################
+    ############################################################
+    @transform( buildUCSCOverlap, suffix(".overlap"), "_overlap.import" )
+    def importUCSCOverlap( infile, outfile ):
+        '''import overlap results.
+        '''
+
+        tablename = "ucsc_overlap"
+
+        statement = '''
+        csv2db.py %(csv2db_options)s \
+                  --index=set1 \
+                  --index=set2 \
+                  --table=%(tablename)s \
+        < %(infile)s > %(outfile)s
+        '''
+
+        P.run( **dict( locals().items() + PARAMS.items() ) )
 
 
 ############################################################
@@ -3421,7 +1209,7 @@ def runGLAM2( infile, outfile ):
 ## selecting which motifs to run
 ############################################################
 
-if PARAMS["tomtom_master_motif"] != "":
+if PARAMS["motifs_tomtom_master_motif"] != "":
     ############################################################
     ############################################################
     ## filter motifs by a master motif
@@ -3434,9 +1222,9 @@ if PARAMS["tomtom_master_motif"] != "":
         '''compare ab-initio motifs against tomtom.'''
         to_cluster = True
         statement = '''
-           %(exectomtom)s -text -query %(tomtom_master_motif)s -target %(infile)s > %(outfile)s
+           tomtom -text -query %(tomtom_master_motif)s -target %(infile)s > %(outfile)s
            '''
-        P.run( **dict( locals().items() + PARAMS.items() ) )
+        P.run()
 
     ############################################################
     ############################################################
@@ -3482,7 +1270,7 @@ if PARAMS["tomtom_master_motif"] != "":
         infile_meme = infile[:-len(".tomtom")] + ".meme"
 
         selected = []
-        max_pvalue = float(PARAMS["tomtom_filter_pvalue"])
+        max_pvalue = float(PARAMS["motifs_tomtom_filter_pvalue"])
         for line in open( infile, "r" ):
             if line.startswith( "#Query" ): continue
             (query_id, target_id, 
@@ -3559,7 +1347,8 @@ def runMAST( infiles, outfile ):
         of.close()
         
         statement = '''
-        cat %(dbfile)s %(controlfile)s | %(execmast)s %(motiffile)s -stdin -stdout -text -ev %(mast_evalue)f >> %(outfile)s
+        cat %(dbfile)s %(controlfile)s 
+        mast %(motiffile)s -stdin -stdout -text -ev %(motif_mast_evalue)f >> %(outfile)s
         '''
         P.run( **dict( locals().items() + PARAMS.items() ) )
 
@@ -3589,9 +1378,9 @@ def runBioProspector( infiles, outfile ):
                                        proportion = 0.10 )
 
     statement = '''
-    %(execbioprospector)s -i %(tmpfasta)s %(bioprospector_options)s -o %(outfile)s > %(outfile)s.log
+    bioprospector -i %(tmpfasta)s %(bioprospector_options)s -o %(outfile)s > %(outfile)s.log
     '''
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
 
     os.unlink( tmpfasta )
 
@@ -3661,7 +1450,7 @@ def importBioProspector( infile, outfile ):
     < %(tmpfilename)s > %(outfile)s
     '''
 
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
 
 ############################################################
 ############################################################
@@ -3715,164 +1504,6 @@ def runRegexMotifSearch( infiles, outfile ):
                      IOTools.prettyPercent( control_seqcounts[motif], ncontrol),
                      fold) )
 
-############################################################
-############################################################
-############################################################
-##
-############################################################
-def _runNubiscanMotifSearch( infile, outfile, motif, mode="straight" ):
-    '''run NUBISCAN to find matches to nuclear receptors.
-    '''
-
-    to_cluster = True
-    job_options = "-l mem_free=8000M"
-    
-    track = re.sub( ".nubiscan.*", "", outfile )
-    tmpfasta = P.getTempFilename( "." )
-
-    if mode == "shuffled":
-        nseq = writeSequencesForIntervals( track,
-                                           tmpfasta,
-                                           full = False,
-                                           halfwidth = 100,
-                                           shuffled = True )
-    elif mode == "shifted":
-        nseq = writeSequencesForIntervals( track,
-                                           tmpfasta,
-                                           full = False,
-                                           halfwidth = 100,
-                                           offset = -1000000)
-    elif mode == "straight":
-        nseq = writeSequencesForIntervals( track,
-                                           tmpfasta,
-                                           full = False,
-                                           halfwidth = 100 )
-    else:
-        raise ValueError("invalid mode `%s`" % mode )
-    
-    statement = '''python %(scriptsdir)s/run_nubiscan.py \
-    --qvalue=%(nubiscan_qvalue)f \
-    --iterations=%(nubiscan_iterations)i \
-    --arrangements=%(nubiscan_arrangements)s \
-    --motif=%(motif)s \
-    --mask=dust \
-    --add-sequence \
-    --log=%(outfile)s.log \
-    < %(tmpfasta)s > %(outfile)s'''
-
-    P.run( **dict( locals().items() + PARAMS.items() ) )
-
-    os.unlink( tmpfasta )
-    
-############################################################
-############################################################
-############################################################
-# todo: fix, causes a problem: exportSequences and exportMASTControlSequences,
-@transform( exportMotifSequences,
-            suffix(".fasta"),
-            ".nubiscan.rxrvdr")
-def runNubiscanVDR( infile, outfile ):
-    _runNubiscanMotifSearch( infile, outfile, motif = "rxrvdr", mode = "straight" )
-
-@transform( exportMotifSequences,
-            suffix(".fasta"),
-            ".nubiscan.rxrvdr.shuffled")
-def runNubiscanVDRShuffled( infile, outfile ):
-    _runNubiscanMotifSearch( infile, outfile, motif = "rxrvdr", mode = "shuffled" )
-
-@transform( exportMotifSequences,
-            suffix(".fasta"),
-            ".nubiscan.rxrvdr.shifted")
-def runNubiscanVDRShifted( infile, outfile ):
-    _runNubiscanMotifSearch( infile, outfile, motif = "rxrvdr", mode = "shifted" )
-
-############################################################
-############################################################
-############################################################
-# todo: fix, causes a problem: exportSequences and exportMASTControlSequences,
-@transform( exportMotifSequences,
-            suffix(".fasta"),
-            ".nubiscan.nr")
-def runNubiscanNR( infile, outfile ):
-    _runNubiscanMotifSearch( infile, outfile, motif = "nr", mode = "straight" )
-
-@transform( exportMotifSequences,
-            suffix(".fasta"),
-            ".nubiscan.nr.shuffled")
-def runNubiscanNRShuffled( infile, outfile ):
-    _runNubiscanMotifSearch( infile, outfile, motif = "nr", mode = "shuffled" )
-
-@transform( exportMotifSequences,
-            suffix(".fasta"),
-            ".nubiscan.nr.shifted")
-def runNubiscanNRShifted( infile, outfile ):
-    _runNubiscanMotifSearch( infile, outfile, motif = "nr", mode = "shifted" )
-
-############################################################
-############################################################
-############################################################
-# todo: fix, causes a problem: exportSequences and exportMASTControlSequences,
-@transform( (runNubiscanVDR, runNubiscanNR),
-            suffix( ".nubiscan.rxrvdr" ),
-            "_nubiscan.import" )
-def importNubiscan( infile, outfile ):
-
-    tablename = outfile[:-len(".import")]
-    track = tablename[:-len("_nubiscan")]
-
-    tmpfile = P.getTempFile()
-    first = True
-
-    for line in fileinput.input( glob.glob("%s.nubiscan.*" % (track))):
-        if fileinput.filename().endswith(".log"):
-            fileinput.nextfile()
-            continue
-        
-        if line.startswith("#"): continue
-
-        if re.match("id\t", line):
-            
-            base, motif = os.path.splitext(fileinput.filename())
-            
-            if motif == ".shuffled":
-                base, motif = os.path.splitext(base)
-                motif += "_shuffled"
-            elif motif == ".shifted":
-                base, motif = os.path.splitext(base)
-                motif += "_shifted"
-
-            motif = motif[1:]
-            
-            if first:
-                tmpfile.write("motif\t%s" % line )
-                first = False
-            continue
-
-        line = re.sub( "run\S+_", "", line)
-        # patch for fixing ids
-        data = line.split("\t")
-        data[0] = re.sub(" ", "", data[0])
-        line = "\t".join(data)
-
-        tmpfile.write("%s\t%s" % (motif, line))
-    tmpfile.close()
-    tmpfilename = tmpfile.name
-
-    statement = '''
-    csv2db.py %(csv2db_options)s \
-    --allow-empty \
-    -b sqlite \
-    --index=id \
-    --index=motif \
-    --index=id,motif \
-    --table=%(tablename)s \
-    < %(tmpfilename)s > %(outfile)s
-    '''
-
-    P.run( **dict( locals().items() + PARAMS.items() ) )
-
-    os.unlink( tmpfilename )
-    
 ############################################################
 ############################################################
 ############################################################
@@ -4170,7 +1801,6 @@ def importAnnotations( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-@follows( buildGeneRegions )
 @files( [ ("%s.bed" % x, "%s.tss" % x ) for x in TRACKS_MASTER ] )
 def annotateTSS( infile, outfile ):
 
@@ -4185,7 +1815,7 @@ def annotateTSS( infile, outfile ):
 		--genome-file=%(genome)s
 	> %(outfile)s"""
 
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
 
 ############################################################
 ############################################################
@@ -4228,247 +1858,6 @@ def importRepeats( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-@transform( importExpressionTracks, suffix("_data.import"), ".ttest.expdiff" )
-def buildExpressionDifferencesTTest( infile, outfile ):
-    '''compute stats on expression differences between each set
-    and the appropriate unstimulated set.
-
-    A FDR Q-Value is computed as well for each pairwise comparison.
-    '''
-
-    nskipped = 0
-
-    track = infile[:-len("_data.import")]
-
-    outs = open( outfile, "w" )
-    outs.write( "cluster_id\tmean1\tvar1\tmean2\tvar2\tdf\tpvalue\tqvalue\tdiff\tdiff95lower\tdiff95upper\tfold\tfold95lower\tfold95upper\n" )
-
-    try:
-        control, cluster_ids, treatments, controls = PExpression.getExpressionMeasurements( track )
-    except P.PipelineError, msg:
-        E.warn("skipped: %s" % msg )
-        outs.close()
-        return
-
-    E.info( "track=%s, control=%s: computing ttest for %i probesets, %i samples, %i control" % (track, control,
-                                                                                                len(cluster_ids),
-                                                                                                len(treatments),
-                                                                                                len(controls)))
-    
-    result, nskipped = Expression.WelchsTTest()( cluster_ids, controls, treatments )
-
-    for s in result:
-        # not that values are logged (log2), hence the fold-change
-        # is exp( mean1 - mean2 )
-        fold = math.pow(2,s.mMean1-s.mMean2)
-        outs.write ("%s\t%f\t%f\t%f\t%f\t%5.2f\t%e\t%e\t%f\t%f\t%f\t%f\t%f\t%f\n" % \
-                    (s.mProbeset, 
-                     s.mMean1,
-                     s.mSampleVariance1,
-                     s.mMean2, 
-                     s.mSampleVariance2,
-                     s.mDegreesFreedom,
-                     s.mPValue, 
-                     s.mQValue, 
-                     s.mDifference,
-                     s.mDifferenceLower,
-                     s.mDifferenceUpper,
-                     fold,
-                     math.pow(2,s.mDifferenceLower),
-                     math.pow(2,s.mDifferenceUpper),
-                     ) )
-    outs.close()
-
-############################################################
-############################################################
-############################################################
-@transform( importExpressionTracks, suffix("_data.import"), ".sam.expdiff" )
-def buildExpressionDifferencesSAM( infile, outfile ):
-    '''compute stats on expression differences between each set
-    and the appropriate unstimulated set using SAM.
-    '''
-
-    nskipped = 0
-
-    track = infile[:-len("_data.import")]
-
-    target_path = os.path.join( os.path.abspath( PARAMS["exportdir"] ), "SAM" )
-    if not os.path.exists( target_path): 
-        try:
-            os.makedirs( target_path )
-        except OSError: 
-            pass
-
-    outs = open( outfile, "w" )
-    outs.write( "cluster_id\tmean1\tstd1\tmean2\tstd2\tpvalue\tqvalue\tdiff\tfold\n" )
-
-    try:
-        control, cluster_ids, treatments, controls = PExpression.getExpressionMeasurements( track )
-    except P.PipelineError, msg:
-        E.warn("skipped: %s" % msg )
-        outs.close()
-        return
-
-    E.info( "track=%s, control=%s: computing SAM for %i probesets, %i samples, %i control" % (track, control,
-                                                                                              len(cluster_ids),
-                                                                                              len(treatments),
-                                                                                              len(controls)))
-    
-    genes, summary = Expression.SAM()( cluster_ids, treatments, controls,
-                                       pattern = os.path.join(target_path, outfile + "%s"),
-                                       fdr = float(PARAMS["sam_fdr"]),
-                                       ngenes = float(PARAMS["sam_ngenes"]),
-                                       ndelta = float(PARAMS["sam_ndelta"]),
-                                       npermutations = PARAMS["sam_permutations"],
-                                       method = PARAMS["sam_method"] )
-
-    if summary == None:
-        E.warn( "no cutoff when running sam for %s" % infile )
-        
-    for s in genes:
-        outs.write ("%s\t%f\t%f\t%f\t%f\t%e\t%f\t%f\t%f\n" % \
-                    (s.probeset, 
-                     s.mean1,
-                     s.stddev1,
-                     s.mean2,
-                     s.stddev2,
-                     s.pvalue, 
-                     s.qvalue, 
-                     s.difference,
-                     s.fold,
-                     ) )
-    outs.close()
-
-############################################################
-############################################################
-############################################################
-#@transform( importExpressionTracks, suffix("_data.import"), ".sam2.expdiff" )
-@transform( ("expAll_36_D3_data.import",), suffix("_data.import"), ".sam2.expdiff" )
-def buildExpressionDifferencesSAM2( infile, outfile ):
-    '''compute stats on expression differences between each set
-    and the appropriate unstimulated set using SAM.
-    '''
-
-    nskipped = 0
-
-    track = infile[:-len("_data.import")]
-
-    target_path = os.path.join( os.path.abspath( PARAMS["exportdir"] ), "SAM2" )
-    if not os.path.exists( target_path): 
-        try:
-            os.makedirs( target_path )
-        except OSError: 
-            pass
-
-    outs = open( outfile, "w" )
-    outs.write( "cluster_id\tmean1\tstd1\tmean2\tstd2\tpvalue\tqvalue\tdiff\tfold\n" )
-
-    try:
-        control, cluster_ids, treatments, controls = PExpression.getExpressionMeasurements( track )
-    except P.PipelineError, msg:
-        E.warn("skipped: %s" % msg )
-        outs.close()
-        return
-
-    E.info( "track=%s, control=%s: computing SAM for %i probesets, %i samples, %i control" % (track, control,
-                                                                                              len(cluster_ids),
-                                                                                              len(treatments),
-                                                                                              len(controls)))
-    
-    genes, summary = Expression.SAM()( cluster_ids, treatments, controls,
-                                       pattern = os.path.join(target_path, outfile + "%s"),
-                                       fdr = float(PARAMS["sam_fdr"]),
-                                       ngenes = float(PARAMS["sam_ngenes"]),
-                                       ndelta = float(PARAMS["sam_ndelta"]),
-                                       npermutations = PARAMS["sam_permutations"],
-                                       method = PARAMS["sam_method"] )
-
-    if summary == None:
-        E.warn( "no cutoff when running sam for %s" % infile )
-        
-    for s in genes:
-        outs.write ("%s\t%f\t%f\t%f\t%f\t%e\t%f\t%f\t%f\n" % \
-                    (s.probeset, 
-                     s.mean1,
-                     s.stddev1,
-                     s.mean2,
-                     s.stddev2,
-                     s.pvalue, 
-                     s.qvalue, 
-                     s.difference,
-                     s.fold,
-                     ) )
-    outs.close()
-
-                  
-@transform( (buildExpressionDifferencesSAM, buildExpressionDifferencesTTest), 
-           suffix(".expdiff"), 
-            "_expdiff.import")
-def importExpressionDifferences( infile, outfile ):
-    '''import expression differences.
-    '''
-
-    track, method, control = PExpression.getExpressionMatch( infile )
-
-    if track == control:
-        outs = open( outfile, "w" )
-        outs.close()
-        return
-
-    tablename = "%s_vs_%s_%s" % (track,control,method)
-        
-    statement = '''
-    csv2db.py %(csv2db_options)s \
-              --allow-empty \
-              --index=cluster_id \
-              --table=%(tablename)s \
-         < %(infile)s > %(outfile)s
-         '''
-
-    P.run( **dict( locals().items() + PARAMS.items() ) )
-
-@transform( importExpressionDifferences,
-            suffix("_expdiff.import"), 
-            "_expdiff.export")
-def exportDifferentiallyExpressedGenes( infile, outfile ):
-    '''import expression differences.
-    '''
-
-    dbhandle = sqlite3.connect( PARAMS["database"] )
-
-    track = infile[:-len("_expdiff.import")]
-    if track.endswith( ".sam" ):
-        field = "qvalue"
-        cutoff = float(PARAMS['sam_export_qvalue_cutoff'])
-    elif track.endswith( ".ttest" ):
-        field = "pvalue"
-        cutoff = float(PARAMS['ttest_export_pvalue_cutoff'])
-
-    outs = open(outfile, "w" )
-
-    track, method, control = PExpression.getExpressionMatch( track + ".expdiff" )
-
-    if track == control:
-        outs.close()
-        return
-
-    tablename = "%s_vs_%s_%s" % (track,control,method)
-
-    statement = '''SELECT d.cluster_id, genesymbol, fold, pvalue, qvalue, ee.description 
-                    FROM %(tablename)s as d, expression as ee on ee.cluster_id = d.cluster_id where %(field)s < %(cutoff)f''' % locals()
-    cc = dbhandle.cursor()
-    cc.execute( statement )
-
-    outs.write( "cluster_id\tgenesymbol\tfold\tpvalue\tqvalue\tdescription\n" )
-    for x in cc:
-        outs.write( "\t".join( map(str, x) ) + "\n" )
-        
-    outs.close()
-
-############################################################
-############################################################
-############################################################
-@follows( buildGeneRegions )
 @files( [ ("%s.bed" % x, "%s.probetss" % x ) for x in TRACKS_MASTER ] )
 def annotateProbesetTSS( infile, outfile ):
 
@@ -4483,7 +1872,7 @@ def annotateProbesetTSS( infile, outfile ):
 		--genome-file=%(genome)s
 	> %(outfile)s"""
 
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
 
 ############################################################
 ############################################################
@@ -4491,19 +1880,18 @@ def annotateProbesetTSS( infile, outfile ):
 ## count coverage within intervals for each track agains all
 ## the Unstim tracks
 ############################################################
-@follows( buildGeneRegions )
 @files( [ ("%s.bed" % x, "%s.readcounts" % x ) for x in TRACKS_NOT_UNSTIM ] )
 def buildIntervalCounts( infile, outfile ):
     '''count read density in bed files.
     '''
     track = outfile[:-len(".readcounts")]
 
-    cellline, condition, replicate = splitTrack( track )
+    tissue, condition, replicate = splitTrack( track )
 
     samfiles_fg, samfiles_bg = [], []
 
     # save original, because condition is later assigned to
-    one = cellline and condition
+    one = tissue and condition
     two = condition
 
     if REPLICATES:
@@ -4514,11 +1902,11 @@ def buildIntervalCounts( infile, outfile ):
             for replicate in REPLICATES:
                 samfiles_bg.append( FILEPATTERN % locals() + BAM_SUFFIX )
         elif two:
-            for cellline in CELLLINES:
+            for tissue in TISSUES:
                 for replicate in REPLICATES:
                     samfiles_fg.append( FILEPATTERN % locals() + BAM_SUFFIX )
             condition = "Unstim"
-            for cellline in CELLLINES:
+            for tissue in TISSUES:
                 for replicate in REPLICATES:
                     samfiles_bg.append( FILEPATTERN % locals() + BAM_SUFFIX )
 
@@ -4567,7 +1955,7 @@ def buildIntervalCounts( infile, outfile ):
     %(tmpfile1)s %(tmpfile2)s > %(outfile)s
     '''
 
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
     os.unlink( tmpfile1 )
     os.unlink( tmpfile2 )
 
@@ -4584,7 +1972,7 @@ def importIntervalCounts( infile, outfile ):
     < %(infile)s > %(outfile)s
     '''
 
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
 
 ############################################################
 ############################################################
@@ -4618,46 +2006,6 @@ def viewBigwig( infiles, outfile ):
         outs.write( '''track type=bigWig name="%(track)s" description="%(track)s" bigDataUrl=%(url)s\n''' \
             % locals() )
     outs.close()
-
-############################################################
-############################################################
-############################################################
-## export expression calls
-############################################################
-@merge( importExpressionDifferences, "expression_differences_%s.bed" % PARAMS["version"] )
-def viewExpressionDifferences( infiles, outfile ):
-    '''export a bed file with genes called as differentially expressed.'''
-    dbhandle = sqlite3.connect( PARAMS["database"] )
-
-    outs = open( outfile, "w" )
-
-    for infile in infiles:
-        track, method, control = PExpression.getExpressionMatch( infile[:-len(".import")] )
-        if track == control: continue
-        table = "%(track)s_vs_%(control)s_%(method)s" % locals()
-        
-        statement = """SELECT DISTINCT g.contig, g.start, g.end, exp.probeset
-                          FROM %(table)s AS exp, probeset_gtf AS g
-                          WHERE g.gene_id = exp.probeset AND \
-                          exp.pvalue < 0.10
-                   """ % locals()
-        cc = dbhandle.cursor()
-        cc.execute(statement)
-
-        outs.write( '''track name="%(track)s_%(method)s" description="%(track)s - %(method)s" visibility=2\n''' % locals() )
-        for contig, start, end, probeset in cc:
-            if contig == "chrMT": contig = "chrM"
-            bed = Bed.Bed()
-            bed.contig, bed.start, bed.end = contig, start, end
-            bed.mFields = [ probeset ]
-            outs.write( "%s\n" % str(bed) )
-
-    outs.close()
-
-    dest = os.path.join( PARAMS["ucsc_dir"], outfile ) 
-    shutil.copyfile( outfile, dest )
-    print "paste the following into the UCSC browser:"
-    print '''http://wwwfgu.anat.ox.ac.uk/~andreas/ucsc_tracks/%(outfile)s''' % locals()
 
 ############################################################
 ############################################################
@@ -4711,1066 +2059,14 @@ def viewIntervals( infiles, outfiles ):
 ############################################################
 ############################################################
 ############################################################
-## get GO assignments
 ############################################################
-@files( [ (None, PARAMS["filename_go"] ), ] )
-def createGO( infile, outfile ):
-    '''get GO assignments from ENSEMBL'''
-    
-    statement = '''
-        python %(scriptsdir)s/GO.py \
-                     --filename-dump=%(outfile)s \
-                     --host=ensembldb.ensembl.org \
-                     --user=anonymous \
-                     --database=%(go_database)s \
-                     --port=5306 > %(outfile)s.log
-        '''
-
-    P.run( **dict( locals().items() + PARAMS.items() ) )
-
-############################################################
-############################################################
-############################################################
-## get GO Slim assignments
-############################################################
-@files_re( createGO, "(.*).go", r"\1.goslim") 
-def createGOSlim( infile, outfile ):
-    '''get GO assignments from ENSEMBL'''
-    
-    statement = '''
-        wget http://www.geneontology.org/GO_slims/goslim_goa.obo
-    '''
-
-    P.run( **dict( locals().items() + PARAMS.items() ) )
-
-    statement = '''
-        wget http://www.geneontology.org/ontology/gene_ontology.obo
-    '''
-
-    P.run( **dict( locals().items() + PARAMS.items() ) )
-
-    
-    statement = '''
-        /net/cpp-group/server/lib/perl5/5.10.0/bin/map2slim -outmap go2goslim.map goslim_goa.obo gene_ontology.obo
-    '''
-
-    P.run( **dict( locals().items() + PARAMS.items() ) )
-
-    statement = '''
-        python %(scriptsdir)s/GO.py \
-                --go2goslim \
-                --filename-ontology=gene_ontology.obo \
-                --slims=go2goslim.map \
-                --log=%(outfile)s.log \
-        < %(infile)s > %(outfile)s
-        '''
-
-    P.run( **dict( locals().items() + PARAMS.items() ) )
-    
 ############################################################
 ############################################################
 ############################################################
 ##
 ############################################################
-@follows( buildGeneRegions )
-@files( [ ("%s.bed" % x, "%s-%s.annodist" % (x,y) ) \
-              for x,y in itertools.product( TRACKS_ANNOTATOR, (TARGET_TSS, "intergenic", "intronic", "genic")) ] )
-def makeAnnotatorDistance( infile, outfile):
-    '''check statistical association between intervals and transcription
-    start sites.'''
 
-    track,workspace = outfile[:-len(".annodist")].split("-")
-
-    if workspace == "intronic":
-        builder = "gtf-intronic"
-        workspace = TARGET_GENESET
-    elif workspace == "genic":
-        builder = "gtf-genic"
-        workspace = TARGET_GENESET
-    elif workspace == "intergenic":
-        builder = "gtf-intergenic"
-        workspace = TARGET_GENESET
-    else:
-        builder = "gtf-intergenic"
-
-    PAnnotator.makeAnnotatorDistance( infile, outfile, builder, workspace, 
-                                      workspace_label = "direction" )
-
-
-@follows( buildGeneRegions )
-@files( [ ("%s.bed" % x, 
-           "%s-expression.annodist" % (x) ) \
-              for x in TRACKS_MASTER ] )
-def makeAnnotatorDistanceExpression( infile, outfile):
-    '''check statistical association between intervals and transcription
-    start sites.
-
-    Look at different expression sets.
-    '''
-
-    track,workspace = outfile[:-len(".annodist")].split("-")
-    
-    builder = "gtf-intergenic"
-    workspace = TARGET_GENESET
-
-    tmpannotations= PAnnotator.buildAnnotatorDistanceAnnotations( "expression" )
-                                                    
-    PAnnotator.makeAnnotatorDistance( infile, 
-                                      outfile, 
-                                      builder,
-                                      workspace,
-                                      workspace_label = "annotation",
-                                      annotations = tmpannotations,
-                                      )
-    
-    os.unlink( tmpannotations )
-
-@follows( buildGeneRegions )
-@files( [ ("%s.bed" % x, 
-           "%s-expressionnopromotor.annodist" % (x) ) \
-              for x in TRACKS_MASTER ] )
-def makeAnnotatorDistanceWithoutPromotorExpression( infile, outfile):
-    '''check statistical association between intervals and transcription
-    start sites.
-
-    Look at different expression sets.
-    '''
-
-    track,workspace = outfile[:-len(".annodist")].split("-")
-    
-    builder = "gtf-intergenic"
-
-    tmpfilename = P.getTempFilename( ".")
-
-    # build workspace: add 5kb on either side of
-    # a transcription start site.
-    statement = '''
-    python %(scriptsdir)s/gff2gff.py 
-            --genome=genome 
-            --extend 
-            --add-up-flank=%(promotor_size)i 
-            --add-down-flank=%(promotor_size)i 
-    < %(tss)s > %(tmpfilename)s
-    '''
-
-    P.run( **dict( locals().items() + PARAMS.items() ) )
-
-    workspace = tmpfilename
-
-    tmpannotations= PAnnotator.buildAnnotatorDistanceAnnotations( "expression" )
-                                                    
-    PAnnotator.makeAnnotatorDistance( infile, 
-                                      outfile, 
-                                      builder,
-                                      workspace,
-                                      workspace_label = "annotation",
-                                      annotations = tmpannotations,
-                                      )
-    
-    os.unlink( tmpannotations )
-
-
-############################################################
-############################################################
-############################################################
-##
-############################################################
-@follows( buildGeneRegions, buildAnnotatorGC )
-@files( [ ("%s.bed" % x, "%s.annotator_architecture" % x ) for x in TRACKS_ANNOTATOR ] )
-def makeAnnotatorArchitecture( infile, outfile ):
-    '''check statistical overlap between intervals and and other genomic features
-    defined in the file PARAMS["annotations"].
-
-    Annotator is run with the following parameters:
-    1. Segments: the interval track
-    2. Annotations:
-       1. genomic architecture (PARAMS["annotation"])
-       2. promotors (PARAMS["promotors"])
-    3. Workspace: the full genome
-    '''
-    PAnnotator.makeAnnotatorArchitecture( infile, outfile )
-
-@follows( buildGeneRegions, buildAnnotatorGC )
-@files( [ (("%s.bed" % x, "gwas.bed" ), "%s.annotator_gwas" % x ) for x in TRACKS_ANNOTATOR ] )
-def makeAnnotatorGWAS( infiles, outfile ):
-    '''check statistical overlap between intervals and and other genomic features
-    defined in the file PARAMS["gwas"].
-    '''
-    PAnnotator.makeAnnotatorRegionsOfInterest( infiles, outfile )
-
-@follows( buildGeneRegions, buildAnnotatorGC )
-@files( [ (("%s.bed" % x, "selection.bed" ), "%s.annotator_selection" % x ) for x in TRACKS_ANNOTATOR ] )
-def makeAnnotatorSelection( infiles, outfile ):
-    '''check statistical overlap between intervals and and other genomic features
-    defined in the file PARAMS["selection"].
-    '''
-    PAnnotator.makeAnnotatorRegionsOfInterest( infiles, outfile )
-    
-############################################################
-############################################################
-############################################################
-##
-############################################################
-@follows( exportUCSCEncodeTracks, buildAnnotatorGC )
-@files( [ (("%s.bed" % x, "ucsc_encode.bed"), "%s.annotator_tracks" % x ) for x in TRACKS_ANNOTATOR ] )
-def makeAnnotatorTracks( infiles, outfile ):
-    PAnnotator.makeAnnotatorTracks( infiles, outfile )
-    
-############################################################
-############################################################
-############################################################
-##
-############################################################
-@follows( exportRegionsOfInterest, buildAnnotatorGC )
-@files( [ (("%s.bed" % x, "roi.bed"), "%s.annotator_roi" % x ) for x in TRACKS_ANNOTATOR ] )
-def makeAnnotatorRegionsOfInterest( infiles, outfile ):
-    PAnnotator.makeAnnotatorRegionsOfInterest( infiles, outfile )
-
-############################################################
-############################################################
-############################################################
-##
-############################################################
-@follows( exportUCSCEncodeTracks, buildAnnotatorGC )
-@files( [ (("%s.bed" % x, "ucsc_encode.bed"), "%s.annotator_promotors" % x ) for x in TRACKS_ANNOTATOR ] )
-def makeAnnotatorPromotors( infiles, outfile ):
-    '''check statistical overlap between intervals and selected ucsc tracks
-
-    Annotator is run with the following parameters:
-    1. Segments: the interval track
-    2. Annotations:
-       1. ucsc encode features
-    3. Workspace:
-       1. the mappable part of the genome
-       2. GC controlled
-    '''
-
-    infile, infile_annotations = infiles
-    tmpdir = P.getTempDir( dir = os.getcwd() )
-
-    annotations = PAnnotator.buildAnnotatorAnnotations( tmpdir, outfile, bedfiles=(infile_annotations,) )
-    
-    workspaces, synonyms = PAnnotator.buildAnnotatorWorkSpace( tmpdir, outfile,
-                                                    workspaces = ("mappable", "promotors"),
-                                                    gc_control = True )
-
-    segments = PAnnotator.buildAnnotatorSegments( tmpdir, infile, outfile )
-
-    PAnnotator.runAnnotator( tmpdir, outfile, annotations, segments, workspaces, synonyms )
-
-    shutil.rmtree( tmpdir )
-
-############################################################
-############################################################
-############################################################
-##
-############################################################
-@merge( makeAnnotatorTracks,
-        "annotator_tracks.import" )
-def importAnnotatorTracks( infiles, outfile ):
-    PAnnotator.genericImportAnnotator( infiles, outfile, "annotator_tracks", "genome", "all", "all", "annotator" )
-
-############################################################
-############################################################
-############################################################
-##
-############################################################
-@merge( makeAnnotatorArchitecture,
-        "annotator_architecture.import" )
-def importAnnotatorArchitecture( infiles, outfile ):
-    PAnnotator.genericImportAnnotator( infiles, outfile, "annotator_architecture", "genome", "all", "all", "annotator" )
-
-############################################################
-############################################################
-############################################################
-##
-############################################################
-@merge( makeAnnotatorRegionsOfInterest,
-        "annotator_roi.import" )
-def importAnnotatorRegionsOfInterest( infiles, outfile ):
-    PAnnotator.genericImportAnnotator( infiles, outfile, "annotator_roi", "genome", "all", "all", "annotator" )
-
-@merge( makeAnnotatorGWAS,
-        "annotator_gwas.import" )
-def importAnnotatorGWAS( infiles, outfile ):
-    PAnnotator.genericImportAnnotator( infiles, outfile, "annotator_gwas", "genome", "all", "all", "annotator" )
-
-@merge( makeAnnotatorSelection,
-        "annotator_selection.import" )
-def importAnnotatorSelection( infiles, outfile ):
-    PAnnotator.genericImportAnnotator( infiles, outfile, "annotator_selection", "genome", "all", "all", "annotator" )
-
-@follows( importAnnotatorRegionsOfInterest,
-          importAnnotatorGWAS,
-          importAnnotatorSelection )
-def annotator_regions(): pass
-    
-    
-############################################################
-############################################################
-############################################################
-##
-############################################################
-@merge( makeAnnotatorPromotors,
-        "annotator_promotors.import" )
-def importAnnotatorPromotors( infiles, outfile ):
-    PAnnotator.genericImportAnnotator( infiles, outfile, "annotator_promotors", "genome", "all", "all", "annotator" )
-
-############################################################
-############################################################
-############################################################
-## GO annotator analysis
-## scan within promotors only
-## scan within gene territories only
-############################################################
-@follows( buildGeneRegions )
-@files( [ ("%s.bed" % x, "%s.annotator_promotors_go" % x,
-           PARAMS["filename_go"], "promotors" ) for x in TRACKS_ANNOTATOR ] )
-def makeAnnotatorPromotorsGO( infile, outfile, gofile, workspace ):
-    PAnnotator.makeAnnotatorGO( infile, outfile, gofile, workspace )
-
-@follows( buildGeneRegions )
-@files( [ ("%s.bed" % x, "%s.annotator_promotors_goslim" % x,
-           PARAMS["filename_goslim"], "promotors" ) for x in TRACKS_ANNOTATOR ] )
-def makeAnnotatorPromotorsGOSlim( infile, outfile, gofile, workspace ):
-    PAnnotator.makeAnnotatorGO( infile, outfile, gofile, workspace )
-
-@follows( buildGeneRegions )
-@files( [ ("%s.bed" % x, "%s.annotator_territories_go" % x,
-           PARAMS["filename_go"], "gene-territories" ) for x in TRACKS_ANNOTATOR ] )
-def makeAnnotatorTerritoriesGO( infile, outfile, gofile, workspace ):
-    PAnnotator.makeAnnotatorGO( infile, outfile, gofile,workspace )
-
-@follows( buildGeneRegions )
-@files( [ ("%s.bed" % x, "%s.annotator_territories_goslim" % x,
-           PARAMS["filename_goslim"], "gene-territories" ) for x in TRACKS_ANNOTATOR ] )
-def makeAnnotatorTerritoriesGOSlim( infile, outfile, gofile, workspace ):
-    PAnnotator.makeAnnotatorGO( infile, outfile, gofile, workspace )
-
-############################################################
-############################################################
-############################################################
-##
-############################################################
-@merge( makeAnnotatorPromotorsGO, "annotator_promotors_go.import" )
-def importAnnotatorPromotorsGO( infiles, outfile ):
-    PAnnotator.genericImportAnnotator( infiles, outfile,
-                                      "annotator_promotors_go", "promotors",
-                                      "all", "all",
-                                      fdr_method = "annotator-estimate" )
-
-@merge( makeAnnotatorPromotorsGOSlim, "annotator_promotors_goslim.import" )
-def importAnnotatorPromotorsGOSlim( infiles, outfile ):
-    PAnnotator.genericImportAnnotator( infiles, outfile,
-                                      "annotator_promotors_goslim", "promotors",
-                                      "all", "all",
-                                      fdr_method = "annotator" )
-
-@merge( makeAnnotatorTerritoriesGO, "annotator_territories_go.import" )
-def importAnnotatorTerritoriesGO( infiles, outfile ):
-    PAnnotator.genericImportAnnotator( infiles, outfile,
-                                      "annotator_territories_go", "territories",
-                                      "all", "all",
-                                      fdr_method = "annotator-estimate" )
-
-@merge( makeAnnotatorTerritoriesGOSlim, "annotator_territories_goslim.import" )
-def importAnnotatorTerritoriesGOSlim( infiles, outfile ):
-    PAnnotator.genericImportAnnotator( infiles, outfile,
-                                      "annotator_territories_goslim", "territories",
-                                      "all", "all",
-                                      fdr_method = "annotator" )
-
-
-############################################################
-############################################################
-############################################################
-## optional annotator analysis:
-##
-## GO annotator analysis for regions of interest
-## Note that in contrast to other annotator analyses, the 
-## segments used are those for regions of interest on not
-## the ChIPSeq intervals.
-############################################################
-if PARAMS["annotator_master_roi"]:
-
-    @follows( buildGeneRegions )
-    @files( [ ("roi.bed", 
-               "%s.annotator_roi_goslim" % x ,
-               x,
-               PARAMS["filename_goslim"], 
-               "gene-territories" ) for x in TRACKS_ROI ] )
-    def makeAnnotatorROIGOSlim( infile, outfile, roi_class, gofile, workspace ):
-        '''do GO annotator analysis on selection intervals.
-        '''
-        PAnnotator.makeAnnotatorROIGO( roi_class, outfile, gofile, workspace, overlap=None )
-
-    @follows( buildGeneRegions )
-    @files( [ ("roi.bed", 
-               "%s.annotator_roi_go" % x ,
-               x,
-               PARAMS["filename_go"], 
-               "gene-territories" ) for x in TRACKS_ROI ] )
-    def makeAnnotatorROIGO( infile, outfile, roi_class, gofile, workspace ):
-        '''do GO annotator analysis on selection intervals.
-        '''
-        PAnnotator.makeAnnotatorROIGO( roi_class, outfile, gofile, workspace, overlap=None )
-
-    @follows( buildGeneRegions )
-    @files( [ ("roi.bed", 
-               "%s.annotator_roi_overlap_goslim" % x ,
-               x,
-               PARAMS["filename_goslim"], 
-               "gene-territories" ) for x in TRACKS_ROI ] )
-    def makeAnnotatorROIOverlapGOSlim( infile, outfile, roi_class, gofile, workspace ):
-        '''do GO annotator analysis on selection intervals.
-        '''
-        PAnnotator.makeAnnotatorROIGO( roi_class, outfile, gofile, workspace, overlap=PARAMS["annotator_master_roi"] )
-
-    @follows( buildGeneRegions )
-    @files( [ ("roi.bed", 
-               "%s.annotator_roi_overlap_go" % x ,
-               x,
-               PARAMS["filename_go"], 
-               "gene-territories" ) for x in TRACKS_ROI ] )
-    def makeAnnotatorROIOverlapGO( infile, outfile, roi_class, gofile, workspace ):
-        '''do GO annotator analysis on selection intervals.
-        '''
-        PAnnotator.makeAnnotatorROIGO( roi_class, outfile, gofile, workspace, overlap=PARAMS["annotator_master_roi"] )
-
-    @merge( makeAnnotatorROIGO, "annotator_roi_go.import" )
-    def importAnnotatorROIGO( infiles, outfile ):
-        PAnnotator.genericImportAnnotator( infiles, outfile,
-                                          "annotator_roi_go", "territories",
-                                          "all", "all",
-                                          fdr_method = "annotator-estimate" )
-
-    @merge( makeAnnotatorROIGOSlim, "annotator_roi_goslim.import" )
-    def importAnnotatorROIGOSlim( infiles, outfile ):
-        PAnnotator.genericImportAnnotator( infiles, outfile,
-                                          "annotator_roi_goslim", "territories",
-                                          "all", "all",
-                                          fdr_method = "annotator" )
-
-
-    @merge( makeAnnotatorROIOverlapGO, "annotator_roi_overlap_go.import" )
-    def importAnnotatorROIOverlapGO( infiles, outfile ):
-        PAnnotator.genericImportAnnotator( infiles, outfile,
-                                          "annotator_roi_overlap_go", "territories",
-                                          "all", "all",
-                                          fdr_method = "annotator-estimate" )
-
-
-    @merge( makeAnnotatorROIOverlapGOSlim, "annotator_roi_overlap_goslim.import" )
-    def importAnnotatorROIOverlapGOSlim( infiles, outfile ):
-        PAnnotator.genericImportAnnotator( infiles, outfile,
-                                          "annotator_roi_overlap_goslim", "territories",
-                                          "all", "all",
-                                          fdr_method = "annotator" )
-
-    @follows( makeAnnotatorROIGO,            importAnnotatorROIGO,          
-              makeAnnotatorROIGOSlim,        importAnnotatorROIGOSlim,      
-              makeAnnotatorROIOverlapGO,     importAnnotatorROIOverlapGO,   
-              makeAnnotatorROIOverlapGOSlim, importAnnotatorROIOverlapGOSlim, )
-    def annotator_roi():
-        pass
-else:
-    @follows(buildGeneSet)
-    def annotator_roi():
-        pass
-
-############################################################
-############################################################
-############################################################
-## optional annotator section: 
-## run annotator analysis on interval sets that overlap/do not
-##          overlap motifs.
-############################################################
-if PARAMS["annotator_master_motif"]:
-
-    @follows( buildGeneRegions, buildAnnotatorGC )
-    @files( [ ("%s.bed" % x, "%s.annotator_architecture_with_motif" % x ) for x in TRACKS_ANNOTATOR ] )
-    def makeAnnotatorArchitectureWithMotif( infile, outfile ):
-        '''check statistical overlap between intervals and and other genomic features
-        defined in the file PARAMS["annotations"].
-
-        Annotator is run with the following parameters:
-        1. Segments: the interval track, only those with motifs
-        2. Annotations:
-           1. genomic architecture (PARAMS["annotation"])
-           2. promotors (PARAMS["promotors"])
-        3. Workspace: the full genome
-        '''
-        PAnnotator.makeAnnotatorArchitecture( infile, outfile, with_motif = PARAMS['annotator_master_motif'] )
-
-    @follows( buildGeneRegions, buildAnnotatorGC )
-    @files( [ ("%s.bed" % x, "%s.annotator_architecture_without_motif" % x ) for x in TRACKS_ANNOTATOR ] )
-    def makeAnnotatorArchitectureWithoutMotif( infile, outfile ):
-        '''check statistical overlap between intervals and and other genomic features
-        defined in the file PARAMS["annotations"].
-
-        Annotator is run with the following parameters:
-        1. Segments: the interval track, only those without motifs
-        2. Annotations:
-           1. genomic architecture (PARAMS["annotation"])
-           2. promotors (PARAMS["promotors"])
-        3. Workspace: the full genome
-        '''
-        PAnnotator.makeAnnotatorArchitecture( infile, outfile, without_motif = PARAMS['annotator_master_motif'] )
-
-
-    @follows( exportUCSCEncodeTracks, buildAnnotatorGC )
-    @files( [ (("%s.bed" % x, "ucsc_encode.bed"), "%s.annotator_tracks_with_motif" % x ) for x in TRACKS_ANNOTATOR ] )
-    def makeAnnotatorTracksWithMotif( infiles, outfile ):
-        '''check statistical overlap between intervals and selected ucsc tracks
-
-        Annotator is run with the following parameters:
-        1. Segments: the interval track, but stratified according to
-                     whether they have or do not have a motif.
-        2. Annotations:
-           1. ucsc encode features
-           2. disease intervals (regions of interest)
-        3. Workspace: the full genome
-        '''
-
-        PAnnotator.makeAnnotatorTracks( infiles, outfile, with_motif = PARAMS['annotator_master_motif'] )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    ##
-    ############################################################
-    @follows( exportUCSCEncodeTracks, buildAnnotatorGC )
-    @files( [ (("%s.bed" % x, "ucsc_encode.bed"), "%s.annotator_tracks_without_motif" % x ) for x in TRACKS_ANNOTATOR ] )
-    def makeAnnotatorTracksWithoutMotif( infiles, outfile ):
-        '''check statistical overlap between intervals and selected ucsc tracks
-
-        Annotator is run with the following parameters:
-        1. Segments: the interval track, but stratified according to
-                     whether they have or do not have a motif.
-        2. Annotations:
-           1. ucsc encode features
-           2. disease intervals (regions of interest)
-        3. Workspace: the full genome
-        '''
-
-        PAnnotator.makeAnnotatorTracks( infiles, outfile, without_motif = PARAMS['annotator_master_motif'] )
-
-    @follows( exportRegionsOfInterest, buildAnnotatorGC )
-    @files( [ (("%s.bed" % x, "roi.bed"), "%s.annotator_roi_with_motif" % x ) for x in TRACKS_ANNOTATOR ] )
-    def makeAnnotatorRegionsOfInterestWithMotif( infiles, outfile ):
-        AexportRegionsOfInternnotator.makeAnnotatorRegionsOfInterest( infiles, outfile, with_motif = PARAMS['annotator_master_motif'] )
-
-    @follows( exportRegionsOfInterest, buildAnnotatorGC )
-    @files( [ (("%s.bed" % x, "roi.bed"), "%s.annotator_roi_without_motif" % x ) for x in TRACKS_ANNOTATOR ] )
-    def makeAnnotatorRegionsOfInterestWithoutMotif( infiles, outfile ):
-        PAnnotator.makeAnnotatorRegionsOfInterest( infiles, outfile, without_motif = PARAMS['annotator_master_motif'] )
-
-    @merge( makeAnnotatorArchitectureWithMotif,
-            "annotator_architecture_with_motif.import" )
-    def importAnnotatorArchitectureWithMotif( infiles, outfile ):
-        PAnnotator.genericImportAnnotator( infiles, outfile, "annotator_architecture_with_motif", "genome", "all", "all", "annotator" )
-
-    @merge( makeAnnotatorArchitectureWithoutMotif,
-            "annotator_architecture_without_motif.import" )
-    def importAnnotatorArchitectureWithoutMotif( infiles, outfile ):
-        PAnnotator.genericImportAnnotator( infiles, outfile, "annotator_architecture_without_motif", "genome", "all", "all", "annotator" )
-
-    @merge( makeAnnotatorTracksWithMotif,
-            "annotator_tracks_with_motif.import" )
-    def importAnnotatorTracksWithMotif( infiles, outfile ):
-        PAnnotator.genericImportAnnotator( infiles, outfile, "annotator_tracks_with_motif", "genome", "all", "all", "annotator" )
-
-    @merge( makeAnnotatorTracksWithoutMotif,
-            "annotator_tracks_without_motif.import" )
-    def importAnnotatorTracksWithoutMotif( infiles, outfile ):
-        PAnnotator.genericImportAnnotator( infiles, outfile, "annotator_tracks_without_motif", "genome", "all", "all", "annotator" )
-
-    @merge( makeAnnotatorRegionsOfInterestWithMotif,
-            "annotator_roi_with_motif.import" )
-    def importAnnotatorRegionsOfInterestWithMotif( infiles, outfile ):
-        PAnnotator.genericImportAnnotator( infiles, outfile, "annotator_roi_with_motif", "genome", "all", "all", "annotator" )
-
-    @merge( makeAnnotatorRegionsOfInterestWithoutMotif,
-            "annotator_roi_without_motif.import" )
-    def importAnnotatorRegionsOfInterestWithoutMotif( infiles, outfile ):
-        PAnnotator.genericImportAnnotator( infiles, outfile, "annotator_roi_without_motif", "genome", "all", "all", "annotator" )
-
-    @follows( makeAnnotatorArchitectureWithMotif, importAnnotatorArchitectureWithMotif,
-              makeAnnotatorArchitectureWithoutMotif, importAnnotatorArchitectureWithoutMotif,
-              makeAnnotatorTracksWithMotif, importAnnotatorTracksWithMotif,
-              makeAnnotatorTracksWithoutMotif, importAnnotatorTracksWithoutMotif,
-              makeAnnotatorRegionsOfInterestWithMotif, importAnnotatorRegionsOfInterestWithMotif,
-              makeAnnotatorRegionsOfInterestWithoutMotif, importAnnotatorRegionsOfInterestWithoutMotif )
-    def annotator_motifs():
-        pass
-
-else:
-    @follows(buildGeneSet)
-    def annotator_motifs():
-        pass
-
-############################################################
-############################################################
-############################################################
-## optional annotator section: 
-## run annotator analysis on top/bottom of interval sets 
-############################################################
-
-if PARAMS["annotator_proportion"]:
-    @follows( exportRegionsOfInterest, buildAnnotatorGC )
-    @files( [ (("%s.bed" % x, "roi.bed"), "%s.annotator_roi_top" % x ) for x in TRACKS_ANNOTATOR ] )
-    def makeAnnotatorRegionsOfInterestTop( infiles, outfile ):
-        PAnnotator.makeAnnotatorRegionsOfInterest( infiles, outfile, proportion = PARAMS['annotator_proportion'] )
-
-    @follows( exportRegionsOfInterest, buildAnnotatorGC )
-    @files( [ (("%s.bed" % x, "roi.bed"), "%s.annotator_roi_bottom" % x ) for x in TRACKS_ANNOTATOR ] )
-    def makeAnnotatorRegionsOfInterestBottom( infiles, outfile ):
-        PAnnotator.makeAnnotatorRegionsOfInterest( infiles, outfile, proportion = -PARAMS['annotator_proportion'] )
-
-    @merge( makeAnnotatorRegionsOfInterestTop,
-            "annotator_roi_top.import" )
-    def importAnnotatorRegionsOfInterestTop( infiles, outfile ):
-        PAnnotator.genericImportAnnotator( infiles, outfile, "annotator_roi_top", "genome", "all", "all", "annotator" )
-
-    @merge( makeAnnotatorRegionsOfInterestBottom,
-            "annotator_roi_bottom.import" )
-    def importAnnotatorRegionsOfInterestBottom( infiles, outfile ):
-        PAnnotator.genericImportAnnotator( infiles, outfile, "annotator_roi_bottom", "genome", "all", "all", "annotator" )
-
-    @follows( makeAnnotatorRegionsOfInterestTop,
-              importAnnotatorRegionsOfInterestTop,
-              makeAnnotatorRegionsOfInterestBottom,
-              importAnnotatorRegionsOfInterestBottom )
-    def annotator_proportion():
-        pass
-
-else:
-    @follows(buildGeneSet)
-    def annotator_proportion():
-        pass
-
-############################################################
-############################################################
-############################################################
-##
-############################################################
-@follows( buildGeneRegions )
-@files( [ ( ( "%s.bed" % x, TARGET_TRANSCRIPTS_TSS), "%s.distance" % x ) for x in TRACKS_MASTER ] )
-def annotateTSSIntervalDistance( infiles, outfile ):
-    '''annotate the associations between a tss and of a transcript.
-    Only the closest distance is recorded in either direction.'''
-
-    infile_bed, infile_tss = infiles
-
-    to_cluster = True
-
-    statement = """
-	python /home/andreas/gpipe/gtf2table.py \
-		--counter=distance \
-		--log=%(outfile)s.log \
-                --reporter=transcripts \
-		--filename-gff=<( python %(scriptsdir)s/bed2gff.py --as-gtf < %(infile_bed)s) \
-                --filename-format=gtf \
-		--genome-file=%(genome)s \
-	< %(infile_tss)s > %(outfile)s"""
-
-    P.run( **dict( locals().items() + PARAMS.items() ) )
-
-############################################################
-############################################################
-############################################################
-@files_re( annotateTSSIntervalDistance,
-           "(.*).distance",
-           r"\1_distance.import")
-def importTSSIntervalDistance( infile, outfile):
-    tablename = outfile[:-len(".import")]
-
-    statement = '''
-    csv2db.py %(csv2db_options)s \
-              --index=transcript_id \
-              --table=%(tablename)s \
-    < %(infile)s > %(outfile)s
-    '''
-
-    P.run( **dict( locals().items() + PARAMS.items() ) )
-
-############################################################
-############################################################
-############################################################
-##
-############################################################
-@follows( buildGeneRegions )
-@files( [ ( ( "%s.bed" % x, TARGET_TRANSCRIPTS_TSS), "%s.assoc" % x ) for x in TRACKS_MASTER ] )
-def annotateTSSIntervalAssociations( infiles, outfile ):
-    '''annotate the associations between tss and of a transcript.
-    All distances within *proximal_distance* are recorded.'''
-
-    infile_bed, infile_tss = infiles
-
-    to_cluster = True
-
-    statement = """
-	python /home/andreas/gpipe/gtf2table.py \
-		--counter=neighbours \
-		--log=%(outfile)s.log \
-                --reporter=transcripts \
-                --proximal-distance=%(proximal_distance)i \
-		--filename-gff=<( python %(scriptsdir)s/bed2gff.py --as-gtf < %(infile_bed)s) \
-		--genome-file=%(genome)s \
-	< %(infile_tss)s |\
-        python %(toolsdir)s/table2graph.py \
-                --headers=transcript_id,id \
-    > %(outfile)s"""
-
-    P.run( **dict( locals().items() + PARAMS.items() ) )
-
-############################################################
-############################################################
-############################################################
-@files_re( annotateTSSIntervalAssociations,
-           "(.*).assoc",
-           r"\1_assoc.import")
-def importTSSIntervalAssociations( infile, outfile):
-    tablename = outfile[:-len(".import")]
-
-    statement = '''
-    csv2db.py %(csv2db_options)s \
-              --index=id \
-              --index=transcript_id \
-              --table=%(tablename)s \
-    < %(infile)s > %(outfile)s
-    '''
-
-    P.run( **dict( locals().items() + PARAMS.items() ) )
-
-############################################################
-############################################################
-############################################################
-@files( PARAMS["filename_t1d"], "t1d.bed" )
-def buildDiseaseIntervals( infile, outfile):
-
-    reader = csv.reader( open(infile,"rU") )
-    fasta = IndexedFasta.IndexedFasta( FILENAME_GENOME )
-
-    outs = open( outfile, "w" )
-
-    for row in reader:
-        if row[0] == "Locus": 
-            headers = row
-            continue
-        loc, chrom, start, end = row[:4]
-        if loc == "": continue
-        start, end = int(start)-1, int(end)
-        
-        contig = fasta.getToken( re.sub("[pq]\d[.0-9]*", "", chrom) )
-
-        outs.write("%s\t%i\t%i\t%s\n" % (contig, start, end, loc) )
-
-    outs.close()
-
-###################################################################
-###################################################################
-###################################################################
-## import data from Wang et. al
-###################################################################
-@files( ((PARAMS["filename_expression_wang"], "expression_wang.import"), ) )
-def importExpressionWang( infile, outfile ):
-    '''import gene expression data from Wang et al. (2005) 
-    
-    :pmid:`16002434`
-    '''
-
-    headers = (
-        ("Probe Set ID", "probeset"),
-        ("Accession", "accession"),
-        ("Chromosomal Location", "chromosome"),
-        ("Gene Title", "genetitle"),
-        ("Gene Symbol", "genesymbol"),
-        ("Entrez Gene", "entrezgene"),
-        ("Score", "score"),
-        ("Q-value", "qvalue"),
-        ("Gene Symbol (May2005)", "genesymbol1"),
-        ("Entrez Gene (May 2005)", "entrezgene1"),
-        ("Unigene (Release # 184)", "unigene",),
-        ("DR3 cons.","d3_cons" ),
-        ("DR3 1 mism.","d3_mismatch",),
-        ("ER6 cons.", "er6_cons"), )
-
-    old_headers = set( [x[0] for x in headers] )
-    new_headers = [x[1] for x in headers]
-    take = []
-    outs = P.getTempFile()
-    first = True
-
-    reader = csv.reader( open(infile,"rU") )
-    for row in reader:
-        if first:
-            first = False
-            for x, old_header in enumerate(row ):
-                if old_header in old_headers: take.append( x )
-            outs.write("\t".join(new_headers)+ "\n")
-        else:
-            new_row = []
-            for x in take:
-                if row[x].strip() != "---":
-                    new_row.append(row[x].strip())
-                else:
-                    new_row.append("")
-            outs.write("\t".join( new_row )+ "\n")
-            
-    outs.close()
-    tmpname = outs.name
-    tablename = outfile[:-len(".import")]
-
-    statement = '''
-    csv2db.py %(csv2db_options)s \
-              --index=probeset \
-              --index=genesymbol \
-              --table=%(tablename)s \
-    < %(tmpname)s > %(outfile)s
-    '''
-    P.run( **dict( locals().items() + PARAMS.items() ) )
-
-    os.unlink( tmpname )
-
-############################################################
-############################################################
-############################################################
-## run GO analysis on differentially expressed genes
-############################################################
-@transform( importExpressionDifferences,
-            suffix( ".import"),
-            ".goslim" )
-def runExpressionGOSlim( infile, outfile ):
-    '''run GOSlim analysis on expression tracks.'''
-    PExpression.runGO( infile, outfile, PARAMS["filename_goslim"] )
-
-@transform( importExpressionDifferences,
-            suffix( ".import"),
-            ".go" )
-def runExpressionGO( infile, outfile ):
-    '''run GO analysis on expression tracks.'''
-    PExpression.runGO( infile, outfile, PARAMS["filename_go"] )
-
-############################################################
-############################################################
-############################################################
-## import GO analyses
-############################################################
-@transform( runExpressionGO,
-            suffix(".go"),
-            ("_go.import") )
-def importExpressionGO( infile, outfile ):
-    PExpression.importGO( infile, outfile, "go" )
-
-@transform( runExpressionGOSlim,
-            suffix(".goslim"),
-            ("_goslim.import") )
-def importExpressionGOSlim( infile, outfile ):
-    PExpression.importGO( infile, outfile, "goslim" )
-
-############################################################
-############################################################
-############################################################
-@transform( buildGeneSet, suffix(".gtf"), "_roi.import" )
-def importOverlapRegionsOfInterestEnsembl( infile, outfile ):
-    '''compute overlap of intervals with regions of interest.'''
-
-    tmpfilename = P.getTempFilename( "." )
-    
-    PGeneset.buildOverlapWithEnsembl( infile,  
-                                      tmpfilename,
-                                      "roi.bed" )
-
-    tablename = outfile[:-len(".import")]
-
-    statement = '''
-        csv2db.py %(csv2db_options)s \
-            --allow-empty \
-            --index=interval_id \
-            --index=roi_id \
-            --table=%(tablename)s \
-        < %(tmpfilename)s > %(outfile)s
-        '''
-
-    P.run()
-    
-    os.unlink( tmpfilename )
-    os.unlink( tmpfilename+".log" )
-
-############################################################
-############################################################
-############################################################
-@transform( buildGeneSet, suffix(".gtf"), "_gwas.import" )
-def importGWASEnsembl( infile, outfile ):
-    '''compute overlap of intervals with regions of interest.'''
-
-    tmpfilename = P.getTempFilename( "." )
-    
-    PGeneset.buildOverlapWithEnsembl( infile,  
-                                      tmpfilename,
-                                      "gwas.bed" )
-
-    tablename = outfile[:-len(".import")]
-
-    statement = '''
-        csv2db.py %(csv2db_options)s \
-            --allow-empty \
-            --index=interval_id \
-            --index=roi_id \
-            --table=%(tablename)s \
-        < %(tmpfilename)s > %(outfile)s
-        '''
-
-    P.run()
-    
-    os.unlink( tmpfilename )
-    os.unlink( tmpfilename+".log" )
-
-############################################################
-############################################################
-############################################################
-@follows( buildGeneRegions, importRegionsOfInterest )
-@files( [ ( ("%s.bed" % x, "%s.bed" % y), "%s_%s.import" % (x,y))  
-        for x,y in itertools.product( TRACKS_ANNOTATOR, TRACKS_REGIONS) ] )
-def importOverlapRegions( infiles, outfile ):
-    '''compute overlap of infile with bedfile.
-    '''
-
-    infile, bedfile = infiles
-
-    tablename = outfile[:-len(".import")]
-    to_cluster = True
-    statement = '''
-        python %(scriptsdir)s/bed2graph.py \
-            --output=name \
-            --log=%(outfile)s \
-            %(infile)s %(bedfile)s |\
-        sed "s/name1/interval_id/; s/name2/roi_id/" |\
-        csv2db.py %(csv2db_options)s \
-            --allow-empty \
-            --index=interval_id \
-            --index=roi_id \
-            --table=%(tablename)s \
-        > %(outfile)s
-        '''
-    
-    P.run()
-
-# ############################################################
-# ############################################################
-# ############################################################
-# @follows( buildGeneRegions, importRegionsOfInterest )
-# @files( [ ("%s.bed" % x, "%s_roi.import" % x ) for x in TRACKS_ANNOTATOR ] )
-# def importOverlapRegionsOfInterest( infile, outfile ):
-#     '''compute overlap of intervals with regions of interest.'''
-#     importOverlapRegions( infile, outfile, "roi.bed" )
-    
-# ############################################################
-# ############################################################
-# ############################################################
-# @follows( buildGeneRegions, importGWAS )
-# @files( [ ("%s.bed" % x, "%s_gwas.import" % x ) for x in TRACKS_ANNOTATOR ] )
-# def importOverlapGWAS( infile, outfile ):
-#     '''compute overlap of intervals with regions of interest.'''
-#     importOverlapRegions( infile, outfile, "gwas.bed" )
-
-###################################################################
-###################################################################
-###################################################################
-## compute the coverage of snps
-###################################################################
-@follows( importSNPsOfInterest, runMACS )
-@transform(  "*.bam", 
-             regex( r"(.*).bam"),
-             inputs( (r"\1.bam", "snps_of_interest.import",) ), 
-             r"\1.snpcoverage" )
-def buildSNPCoverage( infiles, outfile ):
-
-    infile, other = infiles
-    dbhandle = sqlite3.connect( PARAMS["database"] )
-    cc = dbhandle.cursor()
-
-    tmpfilename = P.getTempFilename()
-
-    outf = open(outfile, "w")
-    fields = pysam.Pileup.PileupSubstitution._fields
-    outf.write( "snp\tnreads\t%s\n" % "\t".join( fields ))
-
-    samfile = pysam.Samfile( infile, "rb" )
-    
-    for snp, contig, pos, reference in cc.execute( "SELECT snp, contig, pos, reference FROM snps_of_interest"):
-
-        # count reads in neighbourhood
-        start = pos - PARAMS["snp_halfwidth"]
-        end = pos + PARAMS["snp_halfwidth"] + 1
-        nreads = len( list(samfile.fetch( contig, start, end ) ))
-
-        # collect pileup stats
-        start = pos
-        end = pos + 1
-        statement = '''
-        samtools pileup -f genome.fa -c -S <(samtools view -h %(infile)s %(contig)s:%(start)i-%(end)i ) 2>/dev/null > %(tmpfilename)s
-        '''
-        P.run( **dict( locals().items() + PARAMS.items() ) )
-
-        for s in pysam.Pileup.iterate(open( tmpfilename, "r")):
-            if s.position == pos:
-                if s.reference_base != reference:
-                    E.warn("mismatch for snp %s: expected %s, but got %s" % (snp, reference, s.reference_base))
-                outf.write( "%s\t%i\t%s\n" % (snp, 
-                                              nreads,
-                                              "\t".join( map(str,s)) ) )
-                break
-        else:
-            outf.write( "%s\t%i\t%s\n" % (snp, 
-                                          nreads,
-                                          "\t".join( [""] * len(fields)) ) )
-
-    os.unlink( tmpfilename )
-
-############################################################
-############################################################
-############################################################
-@transform( buildSNPCoverage, suffix( ".snpcoverage" ), "_snpcoverage.import")
-def importSNPCoverage( infile, outfile ):
-
-    tablename = outfile[:-len(".import")]
-    
-    statement = '''
-    sed "s/chromosome/contig/" < %(infile)s |\
-    csv2db.py %(csv2db_options)s \ 
-              --allow-empty \
-              --index=snp \
-              --index=genesymbol \
-              --table=%(tablename)s \
-    > %(outfile)s
-    '''
-    P.run( **dict( locals().items() + PARAMS.items() ) )
-
-############################################################
-############################################################
-############################################################
-############################################################
-############################################################
-############################################################
-############################################################
-##
-############################################################
-
-@follows( indexGenome, buildGenome,
-          buildGeneRegions, buildGeneSet, buildPromotorRegions, buildTSSRegions,
-          buildRepeats, buildTranscripts, buildTSSRegions,
-          importTranscripts,
-          importRegionsOfInterest, exportRegionsOfInterest,
-          importSNPsOfInterest,
-          exportReferenceAsBed,
-          importUCSCEncodeTracks, exportUCSCEncodeTracks,
-          importTranscriptInformation,
-          importGeneInformation, importGeneStats,
-          importGWAS,
-          buildAnnotatorGeneTerritories,
-          importRegionsOfInterestGenes )
+@follows( )
 def prepare():
     pass
 
@@ -5778,20 +2074,8 @@ def prepare():
 def intervals():
     pass
 
-@follows( buildBigwig, viewIntervals, viewBigwig, viewExpressionDifferences )
+@follows( buildBigwig, viewIntervals, viewBigwig )
 def export():
-    pass
-
-@follows( importAffymetrixAnnotation, buildProbeset2Transcript, importProbeset2Transcript,
-          buildExpressionTracks, importExpressionTracks,
-          importExpressionProbesets, importExpressionMap,
-          buildExpressionCorrelation, importExpressionCorrelation,
-          importExpressionDifferences, exportDifferentiallyExpressedGenes,
-          runExpressionGOSlim, runExpressionGO,
-          importExpressionGOSlim, importExpressionGO,
-          )
-def expression():
-    '''run expression data related analyses.'''
     pass
 
 @follows( makeMotifs,
@@ -5810,16 +2094,7 @@ def build_motifs():
 def find_motifs():
     pass
 
-@follows( runNubiscanNR, runNubiscanVDR,
-          runNubiscanNRShuffled, runNubiscanVDRShuffled,
-          runNubiscanNRShifted, runNubiscanVDRShifted,
-          importNubiscan)
-def run_nubiscan():
-    pass
-
 @follows( importCorrelation, 
-          importOverlap,
-          importUCSCOverlap,
           reproducibility)
 def correlation():
     pass
@@ -5827,41 +2102,24 @@ def correlation():
 @follows( annotateIntervals, importAnnotations, 
           annotateTSS, importTSS, 
           annotateRepeats, importRepeats,
-          annotateTSSIntervalAssociations, importTSSIntervalAssociations,
-          annotateTSSIntervalDistance, importTSSIntervalDistance, 
-          buildIntervalCounts, importIntervalCounts,
-          buildSNPCoverage, importSNPCoverage,
-          importOverlapRegions,
-          importOverlapRegionsOfInterestEnsembl,)
+          #annotateTSSIntervalAssociations, importTSSIntervalAssociations,
+          #annotateTSSIntervalDistance, importTSSIntervalDistance, 
+          buildIntervalCounts, importIntervalCounts )
 def annotation():
     pass
 
-
-
-@follows( buildAnnotatorGC,
-          makeAnnotatorDistance,
-          makeAnnotatorArchitecture, importAnnotatorArchitecture,
-          makeAnnotatorTracks, importAnnotatorTracks,
-          makeAnnotatorPromotorsGO, importAnnotatorPromotorsGO, 
-          makeAnnotatorPromotorsGOSlim, importAnnotatorPromotorsGOSlim,
-          makeAnnotatorTerritoriesGO, importAnnotatorTerritoriesGO,
-          makeAnnotatorTerritoriesGOSlim, importAnnotatorTerritoriesGOSlim,
-          annotator_regions,
-          annotator_proportion,
-          annotator_motifs,
-          annotator_roi,
-          )
-def annotator():
-    pass
-
-@follows( prepare, intervals, build_motifs, find_motifs,
-          expression,
-          correlation, annotation, annotator )
+@follows( prepare, intervals, 
+          build_motifs, find_motifs,
+          correlation, annotation )
 def full():
     pass
 
 if __name__== "__main__":
-    P.checkFiles( ("genome.fasta", "genome.idx" ) )
-    P.checkExecutables( ("liftOver",) )
+
+    print( "tracks found: %s" % TRACKS_ALL )
+    print( "tracks by experiment: %s" % TRACKS_EXPERIMENTS )
+    print( "tracks by condition: %s" % TRACKS_CONDITIONS )
+    print( "tracks by tissue: %s" % TRACKS_TISSUES )
+
     sys.exit( P.main(sys.argv) )
 

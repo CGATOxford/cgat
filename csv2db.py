@@ -322,6 +322,7 @@ def run( options, args ):
 
     ninput = 0
 
+
     if options.insert_quick:
         outfile, filename = tempfile.mkstemp()
         

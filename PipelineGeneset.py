@@ -275,6 +275,7 @@ def buildCDNAFasta( infile, outfile ):
     < %(infile)s
     | perl -p -e 'if ("^>") { s/ .*//};'
     | python %(scriptsdir)s/index_fasta.py
+       --force
     %(dbname)s - 
     > %(dbname)s.log
     '''
@@ -295,6 +296,7 @@ def buildPeptideFasta( infile, outfile ):
     < %(infile)s
     | perl -p -e 'if ("^>") { s/ .*//};'
     | python %(scriptsdir)s/index_fasta.py
+       --force
     %(dbname)s - 
     > %(dbname)s.log
     '''

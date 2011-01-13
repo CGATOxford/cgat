@@ -500,7 +500,13 @@ def buildAlleles( transcript,
             start_offset, end_offset = _getEndOffsets( exon_sequence )
 
             intron_key = (last_end, exon.start)
-            intron_sequence = introns[intron_key] 
+            
+            if last_end == exon.start:
+                # catch empty introns
+                intron_sequence = []
+                intron_key = None
+            else:
+                intron_sequence = introns[intron_key] 
             intron_seq = "".join( intron_sequence )
 
             ###################################################
@@ -573,16 +579,19 @@ def buildAlleles( transcript,
 
             if E.global_options.loglevel >= 8:
                 print "%i: intron_indels (%i-%i):" % (allele_id, last_end, exon.start)
-                for x,c in enumerate(introns[intron_key]):
-                    if len(c) != 1: print x + last_end, ":%s:" % c 
-                print
-                print introns[intron_key]
-                print "genome_pos=", genome_pos, \
-                    ",intron=%i-%i" % (genome_pos, genome_pos + len(intron_seq)), \
-                    ", len(intron_seq)=", len(intron_seq), \
-                    ", len(intron)=", exon.start-last_end, \
-                    ", offset at start=",_getOffset( last_end, offsets), \
-                    ", offset at end=",_getOffset( exon.start, offsets)
+                if intron_key:
+                    for x,c in enumerate(introns[intron_key]):
+                        if len(c) != 1: print x + last_end, ":%s:" % c 
+                    print
+                    print introns[intron_key]
+                    print "genome_pos=", genome_pos, \
+                        ",intron=%i-%i" % (genome_pos, genome_pos + len(intron_seq)), \
+                        ", len(intron_seq)=", len(intron_seq), \
+                        ", len(intron)=", exon.start-last_end, \
+                        ", offset at start=",_getOffset( last_end, offsets), \
+                        ", offset at end=",_getOffset( exon.start, offsets)
+                else:
+                    print "empty intron"
 
             genome_pos += len(intron_seq)
             

@@ -56,7 +56,7 @@ Code
 
 '''
 import os, sys, string, re, optparse, math, time, tempfile, subprocess, types, bisect, array, collections
-import GFF, GTF, Bed
+import GFF, GTF, Bed, IOTools
 import Experiment as E
 import IndexedFasta
 import Stats
@@ -84,13 +84,15 @@ def readIntervalsFromGFF( filename_gff,
 
     assert not (with_values and with_records), "both with_values and with_records are true."
 
+    ninput = 0
+
     if format in ("gtf", "gff"):
         infile = None
         # read data without value
         if type(filename_gff) == types.StringType:
             E.info(  "loading data from %s for source '%s' and feature '%s'" % (filename_gff, source, feature) )
 
-            infile = open( filename_gff, "r")        
+            infile = IOTools.openFile( filename_gff, "r")        
             if format == "gtf":
                 iterator_gff = GTF.iterator(infile)
             elif format == "gff":
@@ -121,19 +123,23 @@ def readIntervalsFromGFF( filename_gff,
 
     elif format == "bed":
         if merge_genes: raise ValueError("can not merge genes from bed format" )
-        iterator = Bed.iterator( open(filename_gff, "r") )
+        iterator = Bed.iterator( IOTools.openFile(filename_gff, "r") )
         e = collections.defaultdict( list )
         if with_values:
             for bed in iterator:
+                ninput += 1
                 e[bed.contig].append( (bed.start,bed.end,bed.mFields[0]) )
         elif with_records:
             for bed in iterator:
+                ninput += 1
                 bed.gene_id = bed.mFields[0]
                 bed.transcript_id = bed.gene_id
                 e[bed.contig].append( (bed.start,bed.end,bed) )
         else:
             for bed in iterator:
+                ninput += 1
                 e[bed.contig].append( (bed.start,bed.end) )
+        E.info("read intervals for %i contigs from %s: %i intervals" % (len(e), filename_gff, ninput) )
 
     else:
         raise ValueError("unknown format %s" % format )

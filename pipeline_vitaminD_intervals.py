@@ -8,8 +8,6 @@ import cStringIO
 import Experiment as E
 import Pipeline as P
 
-PARAMS = P.getParameters()
-
 import csv
 import IndexedFasta, IndexedGenome, FastaIterator, Genomics
 import IOTools
@@ -20,10 +18,21 @@ import numpy
 import gzip
 import fileinput
 
-if not os.path.exists("conf.py"):
-    raise IOError( "could not find configuration file conf.py" )
+###################################################
+###################################################
+###################################################
+## Pipeline configuration
+###################################################
+P.getParameters( 
+    ["%s.ini" % __file__[:-len(".py")],
+     "../pipeline.ini",
+     "pipeline.ini" ] )
 
-execfile("conf.py")
+PARAMS = P.PARAMS
+
+if os.path.exists("conf.py"):
+    E.info( "reading additional configuration from conf.py" )
+    execfile("conf.py")
 
 ############################################################
 ############################################################
@@ -75,13 +84,14 @@ def getMinimumMappedReads( infiles ):
 ############################################################
 ##
 ############################################################
-def buildNormalizedBAM( infiles, outfile ):
-    '''build a normalized BAM file such that all
-    files have approximately the same number of 
-    reads.
+def buildNormalizedBAM( infiles, outfile, normalize = True ):
+    '''build a normalized BAM file.
 
-    Duplicated reads are removed at the same time.
+    Infiles are merged and duplicated reads are removed. 
+    If *normalize* is set, reads are removed such that all 
+    files will have approximately the same number of reads.
     '''
+
     min_reads = getMinimumMappedReads( glob.glob("*.readstats") )
     
     samfiles = []
@@ -106,7 +116,7 @@ def buildNormalizedBAM( infiles, outfile ):
                 nduplicates += 1
                 continue
 
-            if random.random() <= threshold:
+            if normalize and random.random() <= threshold:
                 pysam_out.write( read )
                 noutput += 1
 

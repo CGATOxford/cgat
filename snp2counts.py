@@ -169,6 +169,7 @@ def iterateOverFrames( variant_seq ):
     '''
 
     frame_at_start = len("".join(variant_seq[:3]) ) % 3
+    frame_at_end = 0
     start = 0
     for x in range( 3, len(variant_seq ), 3 ):
 

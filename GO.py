@@ -160,6 +160,7 @@ import Stats
 import Database
 import Experiment as E
 import IOTools
+import CSV
 
 MIN_FLOAT = sys.float_info.min
 # The following code was taken from:
@@ -382,7 +383,7 @@ class GOResult:
     mProbabilityOverRepresentation = 0
     mProbabilityUnderRepresentation = 0
 
-    def __init__(self, goid):
+    def __init__(self, goid = None):
         self.mGOId = goid
 
     def UpdateProbabilities( self ):
@@ -423,6 +424,12 @@ class GOResult:
             self.mRatio = "na"
         else:
             self.mRatio = float(self.mSampleCountsCategory) * self.mBackgroundCountsTotal / self.mSampleCountsTotal / self.mBackgroundCountsCategory 
+
+    def getHeaders( self ):
+        return ["scount", "stotal", "spercent", 
+                "bcount", "btotal", "bpercent", 
+                "ratio",
+                "pvalue", "pover", "punder" ]
 
     def __str__(self):
         """return string representation."""        
@@ -475,6 +482,8 @@ class GOInfo:
         else:
             return "\t".join(map(str, (self.mGOId, self.mGOType, self.mDescription)))
     
+    def getHeaders( self ):
+        return ["goid", "go_catagory", "go_description" ]
 
 ##-------------------------------------------------------------------------------
 class GOMatch(GOInfo):
@@ -908,9 +917,8 @@ def countGOs( gene2gos ):
     return genes, goids
 
 ##---------------------------------------------------------------------------
-def ReadGeneList( filename_genes, options ):
-    
-    """read gene list from filename."""
+def ReadGeneList( filename_genes, gene_pattern = None ):
+    """read a gene list from filename."""
 
     if filename_genes == "-":
         infile = sys.stdin
@@ -919,11 +927,12 @@ def ReadGeneList( filename_genes, options ):
 
     genes = map( lambda x: x[:-1].split("\t")[0], filter( lambda x: x[0] != "#", infile.readlines()))
     infile.close()
+
     E.info( "read %i genes from %s" % (len(genes), filename_genes))
 
     ## apply transformation
-    if options.gene_pattern:
-        rx = re.compile(options.gene_pattern)
+    if gene_pattern:
+        rx = re.compile(gene_pattern)
         genes = map( lambda x: rx.search( x ).groups()[0], genes )
             
     #############################################################
@@ -938,6 +947,38 @@ def ReadGeneList( filename_genes, options ):
     E.info("after filtering: %i nonredundant genes." % (len(genes)))
 
     return genes
+
+##---------------------------------------------------------------------------
+def ReadGeneLists( filename_genes, gene_pattern = None ):
+    """read gene lists from filename in matrix.
+
+    returns a tuple (list of all genes, dictionary of gene lists) 
+    """
+
+    if filename_genes == "-":
+        infile = sys.stdin
+    else:
+        infile = open(filename_genes,"r")
+
+    headers, table = CSV.ReadTable( infile.readlines(), as_rows = False )
+
+    if filename_genes != "-": infile.close()
+
+    all_genes = table[0]
+    infile.close()
+
+    E.info( "read %i genes from %s" % (len(all_genes), filename_genes))
+
+    if gene_pattern:
+        rx = re.compile(gene_pattern)
+        all_genes = map( lambda x: rx.search( x ).groups()[0], all_genes )
+
+    gene_lists = {}
+    for header, col in zip( headers[1:], table[1:]):
+        s = list(set([x for x,y in zip(all_genes, col) if y != "0" ]))
+        gene_lists[header] = s
+
+    return all_genes, gene_lists 
 
 ##---------------------------------------------------------------------------
 def GetCode( v ):
@@ -1057,10 +1098,6 @@ def outputResults( outfile, pairs, go2info,
             else:
                 zscore = 0.0
 
-            # the number of expected false positives is the current FDR times the
-            # number of hypothesis selected.
-            nexpected = nselected * fdr
-
             outfile.write("\t%i\t%i\t%f\t%5.2e\t%5.2e\t%6.4f\t%6.4f\t%6.4f" %\
                           (s.mMin,
                            s.mMax,
@@ -1129,7 +1166,6 @@ def getSamples( gene2go, genes, background, options ):
 
     samples = {}
 
-
     if options.output_filename_pattern:
         filename = options.output_filename_pattern % { 'go': ontology, 'section': "samples" }
         E.info( "sampling results go to %s" % filename )
@@ -1175,10 +1211,94 @@ def getSamples( gene2go, genes, background, options ):
                         min(prob_overs[k]),
                         min(prob_unders[k]),
                         n ))
+
     if options.output_filename_pattern:
         outfile.close()
 
     return samples, simulation_min_pvalues
+
+def computeFDRs( go_results, options ):
+
+    pairs = go_results.mResults.items()
+
+    E.info( "calculating the FDRs using method `%s`" % options.qvalue_method )
+
+    samples = None
+
+    observed_min_pvalues = [ min(x[1].mProbabilityOverRepresentation,
+                                 x[1].mProbabilityUnderRepresentation) for x in pairs ]
+
+    if options.qvalue_method == "storey":
+
+        # compute fdr via Storey's method
+        fdr_data = Stats.doFDR( observed_min_pvalues )
+
+        for pair, qvalue in zip( pairs, fdr_data.mQValues ):
+            fdrs[pair[0]] = (qvalue, 1.0, 1.0)
+
+    elif options.qvalue_method == "empirical":
+        assert options.sample > 0, "requiring a sample size of > 0"
+
+        #############################################################################
+        ## sampling
+        ## for each GO-category:
+        ##      get maximum and minimum counts in x samples -> calculate minimum/maximum significance
+        ##      get average and stdev counts in x samples -> calculate z-scores for test set
+        samples, simulation_min_pvalues = getSamples( gene2go, genes, background, options )
+
+        # compute P-values from sampling
+        observed_min_pvalues.sort()
+        observed_min_pvalues = numpy.array( observed_min_pvalues )
+
+        sample_size = options.sample
+
+        for k, v in pairs:
+
+            if k in samples:
+                s = samples[k]
+            else:
+                raise KeyError("category %s not in samples" % k)
+
+            ## calculate values for z-score
+            if s.mStddev > 0:
+                zscore = abs(float(v.mSampleCountsCategory) - s.mMean) / s.mStddev
+            else:
+                zscore = 0.0
+
+            #############################################################
+            # FDR:
+            # For each p-Value p at node n:
+            #   a = average number of nodes in each simulation run with P-Value < p
+            #           this can be obtained from the array of all p-values and all nodes
+            #           simply divided by the number of samples.
+            #      aka: expfpos=experimental false positive rate
+            #   b = number of nodes in observed data, that have a P-Value of less than p.
+            #      aka: pos=positives in observed data
+            #   fdr = a/b
+            pvalue = min(v.mProbabilityOverRepresentation,
+                         v.mProbabilityUnderRepresentation)
+
+            # calculate values for FDR: 
+            # nfdr = number of entries with P-Value better than node.
+            a = 0
+            while a < len(simulation_min_pvalues) and \
+                      simulation_min_pvalues[a] < pvalue:
+                a += 1
+            a = float(a) / float(sample_size)
+            b = 0
+            while b < len(observed_min_pvalues) and \
+                    observed_min_pvalues[b] < pvalue:
+                b += 1
+
+            if b > 0:
+                fdr = min(1.0, float(a) / float(b))
+            else:
+                fdr = 1.0
+
+            fdrs[k] = (fdr, a, b)
+
+
+    return fdrs, samples
 
 ##---------------------------------------------------------------------------    
 if __name__ == "__main__":
@@ -1332,7 +1452,8 @@ if __name__ == "__main__":
 
     #############################################################
     ## get foreground gene list
-    genes = ReadGeneList( options.filename_genes, options )
+    genes = ReadGeneList( options.filename_genes, 
+                          gene_pattern = options.gene_pattern )
         
     #############################################################
     ## get background
@@ -1367,9 +1488,7 @@ if __name__ == "__main__":
                                                         ontology,
                                                         options.database, options.species )
 
-            if options.loglevel >= 1:
-                options.stdlog.write( "finished.\n" )
-                sys.stdout.flush()
+            E.log( "finished" )
 
         if len(go2info) == 0:
             E.warn( "could not find information for terms - could be mismatch between ontologies")
@@ -1481,85 +1600,12 @@ if __name__ == "__main__":
 
         pairs = go_results.mResults.items()
 
-        #############################################################################
-        ## sampling
-        ## for each GO-category:
-        ##      get maximum and minimum counts in x samples -> calculate minimum/maximum significance
-        ##      get average and stdev counts in x samples -> calculate z-scores for test set
-        samples, simulation_min_pvalues = getSamples( gene2go, genes, background, options )
-
         #############################################################
         ## calculate fdr for each hypothesis
-        fdrs = {}
-
         if options.fdr:
-
-            E.info( "calculating the FDRs using method `%s`" % options.qvalue_method )
-
-            observed_min_pvalues = [ min(x[1].mProbabilityOverRepresentation,
-                                         x[1].mProbabilityUnderRepresentation) for x in pairs ]
-
-            if options.qvalue_method == "storey":
-
-                # compute fdr via Storey's method
-                fdr_data = Stats.doFDR( observed_min_pvalues )
-
-                for pair, qvalue in zip( pairs, fdr_data.mQValues ):
-                    fdrs[pair[0]] = (qvalue, 1.0, 1.0)
-
-            elif options.qvalue_method == "empirical":
-                assert options.sample > 0, "requiring a sample size of > 0"
-
-                # compute P-values from sampling
-                observed_min_pvalues.sort()
-                observed_min_pvalues = numpy.array( observed_min_pvalues )
-
-                sample_size = options.sample
-
-                for k, v in pairs:
-
-                    if k in samples:
-                        s = samples[k]
-                    else:
-                        raise KeyError("category %s not in samples" % k)
-
-                    ## calculate values for z-score
-                    if s.mStddev > 0:
-                        zscore = abs(float(v.mSampleCountsCategory) - s.mMean) / s.mStddev
-                    else:
-                        zscore = 0.0
-
-                    #############################################################
-                    # FDR:
-                    # For each p-Value p at node n:
-                    #   a = average number of nodes in each simulation run with P-Value < p
-                    #           this can be obtained from the array of all p-values and all nodes
-                    #           simply divided by the number of samples.
-                    #      aka: expfpos=experimental false positive rate
-                    #   b = number of nodes in observed data, that have a P-Value of less than p.
-                    #      aka: pos=positives in observed data
-                    #   fdr = a/b
-                    pvalue = min(v.mProbabilityOverRepresentation,
-                                 v.mProbabilityUnderRepresentation)
-
-                    # calculate values for FDR: 
-                    # nfdr = number of entries with P-Value better than node.
-                    a = 0
-                    while a < len(simulation_min_pvalues) and \
-                              simulation_min_pvalues[a] < pvalue:
-                        a += 1
-                    a = float(a) / float(sample_size)
-                    b = 0
-                    while b < len(observed_min_pvalues) and \
-                            observed_min_pvalues[b] < pvalue:
-                        b += 1
-
-                    if b > 0:
-                        fdr = min(1.0, float(a) / float(b))
-                    else:
-                        fdr = 1.0
-
-                    fdrs[k] = (fdr, a, b)
+            fdrs, samples  = computeFDRs( go_results, options )
+        else:
+            fdrs, samples = {}, None
 
         if options.sort_order == "fdr":
             pairs.sort( lambda x, y: cmp(fdrs[x[0]], fdrs[y[0]] ) )           
@@ -1595,7 +1641,11 @@ if __name__ == "__main__":
         else:
             outfile = sys.stdout
 
-        outputResults( outfile, filtered_pairs, go2info, fdrs = fdrs, samples = samples )
+        outputResults( outfile, 
+                       filtered_pairs, 
+                       go2info, 
+                       fdrs = fdrs, 
+                       samples = samples )
 
         if options.output_filename_pattern:
             outfile.close()

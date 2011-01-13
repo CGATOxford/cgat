@@ -609,7 +609,7 @@ class FDRResult:
             R.dev_off()
 
 def doFDR(pvalues, 
-          vlambda=numpy.arange(0,0.95,0.05), 
+          vlambda=None,
           pi0_method="smoother", 
           fdr_level=None, 
           robust=False,
@@ -623,8 +623,14 @@ def doFDR(pvalues,
     Compute FDR after method by Storey et al. (2002).
     """
 
+    # set to default of qvalue method
+    if vlambda == None: vlambda = numpy.arange(0,0.95,0.05)
+
     if min(pvalues) < 0 or max(pvalues) > 1:
         raise ValueError( "p-values out of range" )
+
+    if type(vlambda) == float:
+        vlambda = (vlambda, )
 
     if len(vlambda) > 1 and len(vlambda) < 4:
         raise ValueError(" If length of vlambda greater than 1, you need at least 4 values." )
@@ -767,7 +773,7 @@ qvalues
     return result
 
 def doFDRPython(pvalues, 
-                vlambda=numpy.arange(0,0.95,0.05), 
+                vlambda=None,
                 pi0_method="smoother", 
                 fdr_level=None, 
                 robust=False,
@@ -784,6 +790,9 @@ def doFDRPython(pvalues,
 
     if min(pvalues) < 0 or max(pvalues) > 1:
         raise ValueError( "p-values out of range" )
+
+    # set to default of qvalue method
+    if vlambda == None: vlambda = numpy.arange(0,0.95,0.05)
 
     m = len(pvalues)
     pvalues = numpy.array( pvalues, dtype = numpy.float )

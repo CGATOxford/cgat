@@ -720,8 +720,14 @@ def indexGenome( infile, outfile ):
     
     pysam.faidx( outfile )
 
+##############################################################################
+##############################################################################
+##############################################################################
+## import structural variant data
+##############################################################################
 map_synonym2strains = \
     { 'SPRETUS' : 'SPRET',
+      'LP': 'LP_J',
       'A' : 'A_J',
       'BALBC': 'BALB' }
     
@@ -754,76 +760,40 @@ def importSVs( infile, outfiles ):
     os.unlink( "README" )
     E.info( "%s" % c )
 
-@follows(indexGenome)
-@transform( buildPileups, suffix(".pileup.gz"), ".validated.gz" )
-def createSNPValidationData( infile, outfile ):
-    '''build validation table for SNPs against expression data.
-    '''
+######################################################################
+######################################################################
+######################################################################
+@files( ((None, "pseudogenes.load" ),) )
+def importPseudogenes( infile, outfile ):
+    '''import pseudogene data from pseudogenes.org'''
 
-    track = infile[:-len(".pileup.gz")]
-    strain = track[len("mouse"):]
-    
-    pattern = "%s/*%s*.bam" % (PARAMS["rnaseq_data"], strain)
-    
-    to_cluster = True
+    tmpfile = "pseudogenes.tsv" 
 
-    statement = '''gunzip
-        < %(infile)s
-        | python %(scriptsdir)s/snp2snp.py 
-              --method=validate
-              --filename-reference="%(pattern)s"
-              --min-coverage=%(rnaseq_min_coverage)i
-              --filename-genome=%(genome)s.fa
-              --log=%(outfile)s.log
-        | gzip
-        > %(outfile)s'''
-
-    P.run()
-
-@transform( createSNPValidationData, suffix(".gz"), ".load" )
-def loadSNPValidationData( infile, outfile ):
-    '''load expression values from Petr Danecek.
-    
-    These are one measurement per gene. I assume he chose
-    one (the longest?) transcripts per gene and computed 
-    read counts for those. 
-    
-    The values are PRKM values.
-    
-    '''
-    table = P.toTable( outfile )
-
-    statement = '''gunzip < %(infile)s
-          | csv2db.py %(csv2db_options)s 
-               --index=contig
-               --table=%(table)s
-           > %(outfile)s
-        '''
-    P.run()
-
-@merge( loadSNPValidationData, "snp_blacklist.tsv.gz" )
-def buildSNPBlacklist( infiles, outfile ):
-    '''build a blacklist of all putative false positive SNPs.'''
-    
-    dbhandle = sqlite3.connect( PARAMS["database"] )
-    cc = dbhandle.cursor()
-
-    outf = IOTools.openFile( outfile, "w" )
-
-    for infile in infiles:
-        track = infile[:-len(".validated.load")]
+    # download
+    if not os.path.exists( tmpfile + ".gz"):    
         statement = '''
-             SELECT contig, pos 
-             FROM %(track)s_validated
-             WHERE status = 'W' 
-             ORDER by contig, pos
-        '''
-        cc.execute( statement % locals() )
-        for contig, pos in cc: outf.write( "%s\t%s\t%i\n" % (track, contig, pos ))
-        
-    outf.close()
-        
+        wget -O %(tmpfile)s http://tables.pseudogene.org/dump.cgi?table=Mouse56;
+        gzip %(tmpfile)s
+        ''' % locals()
 
+        P.run()
+
+    tablename = P.toTable( outfile )
+
+    statement = '''
+    zcat %(tmpfile)s.gz
+    | perl -p -i -e "s/Parent Protein/protein_id/; s/Chromosome/contig/; s/Start Coordinate/start/; s/Stop Coordiante/end/"
+    | csv2db.py %(csv2db_options)s 
+                     --table=%(tablename)s
+                     --index=protein_id
+    > %(outfile)s
+    '''
+
+    P.run()
+
+######################################################################
+######################################################################
+######################################################################
 @files( ((None, "mgi.import"),))
 def importMGI( infile, outfile ):
     '''create via BIOMART'''
@@ -886,6 +856,9 @@ def importMGI( infile, outfile ):
             mgi = R.useMart(biomart="biomart", dataset="markers")
             result = R.getBM( attributes=keys, 
                               mart=mgi )
+
+            if len(result[keys[0]]) == 0:
+                raise ValueError("no data for %s: using keys=%s" % (filename, keys) )
 
             outf = open( filename, "w" )
             outf.write( "\t".join( [columns[x] for x in keys ] ) + "\n" )
@@ -1182,7 +1155,7 @@ def importMGIPhenotypesViaReports( infile, outfile ):
 
         os.unlink( tmpfilename )
 
-@files( ((None, "gene2omim.load"),))
+@files( ((PARAMS["ensembl_filename_gtf"], "gene2omim.load"),))
 def loadGene2Omim( infile, outfile ):
     '''download gene id - OMIM associations via BIOMART.
 
@@ -1215,7 +1188,7 @@ def loadGene2Omim( infile, outfile ):
                                   , columns = columns 
                                   , indices = ("gene_id", ) )
 
-@files( ((None, "human2mouse.load"),))
+@files( ((PARAMS["ensembl_filename_gtf"], "human2mouse.load"),))
 def loadHumanOrthologs( infile, outfile ):
     '''download human2mouse orthologs
     '''
@@ -1393,6 +1366,127 @@ def loadExpressionPerGene( infile, outfile ):
     '''
     P.run()
 
+##############################################################################
+##############################################################################
+##############################################################################
+## validate SNPS using expression data
+##############################################################################
+@follows(indexGenome,loadExpressionData)
+@transform( buildPileups, suffix(".pileup.gz"), ".validated.gz" )
+def createSNPValidationData( infile, outfile ):
+    '''build validation table for SNPs against expression data.
+    '''
+
+    track = infile[:-len(".pileup.gz")]
+    strain = track[len("mouse"):]
+    
+    pattern = "%s/*%s*.bam" % (PARAMS["rnaseq_data"], strain)
+    
+    to_cluster = True
+
+    statement = '''gunzip
+        < %(infile)s
+        | python %(scriptsdir)s/snp2snp.py 
+              --method=validate
+              --filename-reference="%(pattern)s"
+              --min-coverage=%(rnaseq_min_coverage)i
+              --filename-genome=%(genome)s.fa
+              --log=%(outfile)s.log
+        | gzip
+        > %(outfile)s'''
+
+    P.run()
+
+@transform( createSNPValidationData, suffix(".gz"), ".load" )
+def loadSNPValidationData( infile, outfile ):
+    '''load expression values from Petr Danecek.
+    
+    These are one measurement per gene. I assume he chose
+    one (the longest?) transcripts per gene and computed 
+    read counts for those. 
+    
+    The values are PRKM values.
+    
+    '''
+    table = P.toTable( outfile )
+
+    statement = '''gunzip < %(infile)s
+          | csv2db.py %(csv2db_options)s 
+               --index=contig
+               --table=%(table)s
+           > %(outfile)s
+        '''
+    P.run()
+
+@merge( loadSNPValidationData, "snp_blacklist.tsv.gz" )
+def buildSNPBlacklist( infiles, outfile ):
+    '''build a blacklist of all putative false positive SNPs.'''
+    
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    cc = dbhandle.cursor()
+
+    outf = IOTools.openFile( outfile, "w" )
+
+    for infile in infiles:
+        track = infile[:-len(".validated.load")]
+        statement = '''
+             SELECT contig, pos 
+             FROM %(track)s_validated
+             WHERE status = 'W' 
+             ORDER by contig, pos
+        '''
+        cc.execute( statement % locals() )
+        for contig, pos in cc: outf.write( "%s\t%s\t%i\n" % (track, contig, pos ))
+        
+    outf.close()
+
+@files( ((None, "mouseC57BL.recalls.gz" ), ) )
+def recallGenomicSNPs( infiles, outfile ):
+    '''validate the genomic SNP calls for C57BL6 using the
+    same methodology as for the RNASeq calls.
+
+    This tool requires a file
+    
+    xgenome.fa/xgenome.fa.fai in the build directory with
+    samtools conform contig names (i.e. without the ``chr``
+    prefix).
+    '''
+    filename_bam = "ftp://ftp.sanger.ac.uk/pub/mouse_genomes/current_bams/C57BL.bam"
+
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    cc = dbhandle.cursor()
+    
+    statement = "SELECT contig, pos, reference, genotype, status, genotypes FROM mouseC57BL_validated"
+    
+    samfile = pysam.Samfile( filename_bam, "rb")  
+    fastafile = pysam.Fastafile( "xgenome.fa" )
+    i = samfile.pileup( select = "snpcalls", fastafile = fastafile )
+    caller = pysam.SNPCaller( i )
+
+    outf= IOTools.openFile( outfile, "w" )
+    outf.write( "\t".join( ("contig", "pos", "ref", 
+                           "orig_genotype", "rnaseq_status", "rnaseq_genotypes", 
+                           "recall_genotype", "recall_consensus_quality", 
+                           "recall_snp_quality", "recall_mapping_quality", "recall_coverage" ) ) + "\n" )
+
+    for contig, pos, ref, genotype, status, genotypes in cc.execute(statement):
+
+        contig = re.sub("chr", "", contig)
+        try:
+            call = caller.call( contig, pos )
+        except ValueError, msg:
+            E.warn( "could not call %s:%i: msg=%s" % (contig, pos, msg) )
+
+        outf.write( "\t".join( map(str, (contig, pos, ref, genotype, status, genotypes, 
+                                         call.genotype,
+                                         call.consensus_quality,
+                                         call.snp_quality,
+                                         call.mapping_quality,
+                                         call.coverage ) ) ) + "\n" )
+        outf.flush()
+
+    outf.close()
+        
 ###################################################################
 ###################################################################
 ###################################################################
@@ -1718,9 +1812,10 @@ def loadAnnotations( infile, outfile ):
 
     tablename = P.toTable( outfile )
 
-    statement = ''' gunzip 
+    statement = '''gunzip 
     < %(infile)s
     | csv2db.py %(csv2db_options)s 
+              --quick
               --map=gene_id:str 
               --index=gene_id 
               --table=%(tablename)s
@@ -1746,7 +1841,10 @@ def summarizeAnnotations( infile, outfile ):
     | python %(scriptsdir)s/csv_cut.py code reference_base genotype variant_type 
     | awk '$4 == "variant_type" { printf("%%s-%%s-%%s\\tcounts\\n", $1,$2,$3); } 
            $4 == "E" || $4 == "O" {printf("%%s-%%s-%%s\\t1\\n", $1,$2,$3)}'
-    | python %(scriptsdir)s/table2table.py --group=1 --group-function=sum 
+    | sort 
+    | uniq -c 
+    | awk 'BEGIN{ printf("code-reference_base-genotype\\tcounts\\n" ); } \
+                  $2 !~ /^code/ {printf("%%s\\t%%i\\n",$2,$1);}'
     | perl -p -i -e "s/-/\\t/g unless (/^#/)"
     > %(outfile)s
     '''
@@ -2350,11 +2448,97 @@ def buildMAF( infiles, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
+@files(((PARAMS["filename_vcf"], "export/variants.tsv.gz"),) )
+def exportVariantTable( infile, outfile ):
+    '''simplify VCF file.
+
+    IT ALSO IGNORES HETEROZYGOUS CALLS.
+
+    Both vcf and pileup employ 1-based coordinate systems. Adds "chr" prefix.
+
+    '''
+
+    outf = IOTools.openFile( outfile, "w" )
+
+    inf = gzip.open(infile,"r")
+    headers = []
+    ninput = 0
+    counts = E.Counter()
+
+    for line in inf:
+        data = line[:-1].split("\t")
+        if line.startswith("#CHROM"):
+            if not headers: headers = data[9:]
+            outf.write("contig\tpos\t%s\n" % "\t".join( headers) )
+            continue
+        elif line.startswith("#"):
+            continue
+
+        contig, pos, ref = data[0], data[1], data[3]
+
+        pos = int(pos)
+        counts.input += 1
+
+        contig = "chr%s" % contig
+
+        output_genotypes = []
+        for h, genotype_info in zip(headers, data[9:]):
+
+            # no variant for this strain - skip
+            if genotype_info == "." or genotype_info.startswith("./."): 
+                output_genotype = "1"
+            
+            else:
+                # determine the genotype base - this is a hard-coded order
+                # revise if input file formats change.
+                consensus_quality, genotype_quality, read_depth = "0", "0", "0"
+
+                dd = genotype_info.split(":")
+                
+                if len(dd) == 5:
+                    genotype, mapping_quality, hcg, genotype_quality, read_depth = dd
+                    if hcg != "1": output_genotype = "?"
+                elif len(dd) == 4:
+                    genotype, mapping_quality, genotype_quality, read_depth = dd
+                elif len(dd) == 2:
+                    genotype, genotype_quality = dd
+                elif len(dd) == 1:
+                    genotype = dd[0]
+                else:
+                    raise ValueError( "parsing error for %s: line=%s" % (genotype_info, line) )
+
+                genotype = genotype.split("/")
+            
+                # ignore heterozygous calls
+                if len(set(genotype)) != 1: 
+                    output_genotype = "h"
+                else:
+                    genotype = list(genotype)[0]
+                    output_genotype = int(genotype) + 1
+
+            output_genotypes.append( output_genotype )
+
+        
+        counts.output += 1
+        
+        outf.write( "%s\t%i\t%s\n" % (contig, pos, "\t".join(map(str, output_genotypes ) ) ) )
+
+    outf.close()
+
+    E.info("%s" % str(counts))
+
+###################################################################
+###################################################################
+###################################################################
 @merge(summarizeAllelesPerGene, 
-       "export/nmd_knockouts.tsv.gz" )
-def exportKnockoutLists( infiles, outfile ):
-    
-    outf = gzip.open( outfile, "w")
+       ( "export/nmd_knockouts.tsv.gz",
+         "export/nmd_knockouts_summary.tsv.gz",
+         ) )
+def exportKnockoutLists( infiles, outfiles ):
+
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+
+    outf = gzip.open( outfiles[0], "w")
     
     headers = ("strain",
                "gene_id", 
@@ -2366,8 +2550,6 @@ def exportKnockoutLists( infiles, outfile ):
                "stops-end" )
     
     outf.write("%s\n" % "\t".join(headers))
-
-    dbhandle = sqlite3.connect( PARAMS["database"] )
 
     for infile in infiles:
 
@@ -2387,10 +2569,42 @@ def exportKnockoutLists( infiles, outfile ):
                         WHERE g.gene_id = i.gene_id AND g.is_nmd_knockout
         ''' % locals()
         
-        print statement
         outf.write( "\n".join( ["\t".join(map(str,x)) \
                                     for x in Database.executewait( dbhandle, statement ).fetchall() ] ) + "\n" )
 
+    outf.close()
+
+    headers = ( "gene_id", 
+                "gene_name", 
+                "nmd_knockout_total",
+                "strains" )
+
+    outf = gzip.open( outfiles[1], "w")    
+    outf.write("%s\n" % "\t".join(headers))
+
+    columns = ["%s_nmd_knockout" % t for t in TRACKS ]
+    fields = ",".join( columns )
+
+    statement = '''
+        SELECT DISTINCT gene_id, gene_name, nmd_knockout_total, %(fields)s 
+        FROM view_genes WHERE nmd_knockout_total > 0
+        ''' % locals()
+        
+    data = list(dbhandle.execute( statement ))
+
+    d = dict(zip( ["gene_id", "gene_name", "nmd_knockout_total" ] + columns, zip(*data )))
+
+    c = []
+    for x in range(len(d["gene_id"])):
+        s = []
+        for t in TRACKS:
+            if d["%s_nmd_knockout" % t][x] != 0: s.append( t )
+        c.append( ",".join(s) )
+
+    for t in TRACKS: del d["%s_nmd_knockout" % t]
+    
+    for d,strains in zip(data,c):
+        outf.write( "\t".join( map(str, d[:3]) ) + "\t%s\n" % strains )
     outf.close()
 
 ###################################################################
@@ -3030,7 +3244,7 @@ def buildSharedSNPMatrix( infiles, outfiles ):
 @files( ((None, "workspace_genomic.bed", "genomic" ),
          (None, "workspace_cds.bed", "cds" ),
          ) )
-def buildEnrichmentWorkspaces( infile, outfile, workspace ):
+def buildQTLWorkspaces( infile, outfile, workspace ):
     PEnrichment.buildWorkSpace( outfile, workspace )
 
 @files( (("%s.fasta" % PARAMS["genome"], "workspace_isochores.bed.gz" ), ) )
@@ -3190,7 +3404,7 @@ def QTLSummary( infiles, outfile ):
         '''
         P.run()
         
-@follows( buildEnrichmentWorkspaces )
+@follows( buildQTLWorkspaces )
 @merge( (buildDeleteriousSNPs, buildBenignSNPs, mergeSNPs), "qtl.table" )
 def runGATOnQTLs( infiles, outfile ):
     '''run enrichment analysisusing the qtl definitions from
@@ -3226,7 +3440,7 @@ def runGATOnQTLs( infiles, outfile ):
     '''
     P.run()
 
-@follows( buildEnrichmentWorkspaces )
+@follows( buildQTLWorkspaces )
 @merge( mergeSNPs, "qtl_small.table" )
 def runGATOnQTLsSmall( infiles, outfile ):
     '''run enrichment analysisusing the qtl definitions from
@@ -3388,30 +3602,132 @@ def loadNMDSanity( infile, outfile ):
     '''
     P.run()
 
-
 ###################################################################
 ###################################################################
 ###################################################################
 ## SV analysis
 ###################################################################
-@transform( importSVs, suffix(".sv.bed.gz"), ".sv.overlap.tsv.gz" )
-def countOverlapBetweenSVsandTranscripts( infile, outfile ):
-
+@transform( importSVs, suffix(".sv.bed.gz"), 
+            add_inputs( buildTranscripts),
+            ".sv.overlap" )
+def countOverlapBetweenSVsandTranscripts( infiles, outfile ):
+    '''count overlap between structural variants and gene models.
+    perform analysis separately for insertions, deletions and
+    insertions+deletions combined (and all the other types of SVs).
+    '''
     to_cluster = True
 
-    statement = '''
-    zcat %(transcripts)s 
-    | python %(scriptsdir)s/gtf2table.py 
+    infile, transcripts = infiles
+
+    patterns = ( ("ins", "~ /^ins/" ),
+                 ("del", "~ /^del/" ),
+                 ("other", "!~ /^(ins|del)/"),
+                 ("all", "" ), )
+                  
+    for suffix, tst in patterns:
+
+        statement = '''
+        zcat %(transcripts)s 
+        | python %(scriptsdir)s/gtf2table.py 
           --genome-file=%(genome)s 
           --counter=overlap 
-          --filename-gff=%(infile)s 
+          --filename-gff=<( zcat < %(infile)s | awk 'tolower($4) %(tst)s'  )
           --filename-format=bed 
           --reporter=transcripts
-          --log=%(outfile)s.log
-    | gzip
-    > %(outfile)s
+          --log=%(outfile)s
+        | gzip
+        > %(outfile)s.%(suffix)s.gz
+        '''
+
+        P.run()
+        
+###################################################################
+###################################################################
+###################################################################
+@transform( countOverlapBetweenSVsandTranscripts,
+            suffix(".sv.overlap"),
+            "_sv_overlap.load" )
+def loadSVOverlap( infile, outfile ):
+    '''load SV overlap data.'''
+    
+    table = P.toTable( outfile )
+
+    for pattern in ("ins", "del", "other", "all" ):
+
+        tt = table + "_%s" % pattern
+        suffix = ".%s.gz" % pattern
+            
+        statement = '''
+        zcat < %(infile)s%(suffix)s
+        | csv2db.py %(csv2db_options)s
+                  --index=transcript_id
+                  --table=%(tt)s
+        >> %(outfile)s
+        '''
+        P.run()
+
+###################################################################
+###################################################################
+###################################################################
+@transform(loadSVOverlap, 
+           suffix("_sv_overlap.load"),
+           "_sv_genes.load" )
+def summarizeSVsPerGene( infile, outfile ):
+    '''summarize effects on a per-gene level.
+
+    For each SV type, create a column ``naffected_`` listing
+    the number of transcripts per gene affected by that particular
+    variant type and a flag ``is_`` if all transcripts are
+    affected.
+
     '''
-    P.run()
+    
+    tablename = outfile[:-len(".load")]
+    track = infile[:-len(".load")]
+
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    patterns = ("ins", "del", "other", "all" )
+
+    tables = ["%s_%s AS a%i" \
+                  % (track,pattern,x) for x,pattern in enumerate(patterns) ]
+    sqltables = ",".join(tables)
+
+    sqlcount = ["SUM( case when a%i.nover > 0 THEN 1 ELSE 0 END) AS naffected_%s" \
+                    % (x,pattern) for x,pattern in enumerate(patterns) ]
+    sqlcount = ", ".join( sqlcount)
+
+    sqldummy = [ "0 AS is_%s" % pattern for pattern in patterns ]
+    sqldummy = ", ".join( sqldummy )
+
+    sqlwhere = ["a%i.transcript_id = i.transcript_id" \
+                    % x for x,pattern in enumerate( patterns) ]
+
+    sqlwhere = " AND ".join( sqlwhere )
+
+    statement = '''
+        CREATE TABLE %(tablename)s AS
+        SELECT DISTINCT 
+               i.gene_id AS gene_id,
+               COUNT( DISTINCT i.transcript_id ) AS ntranscripts,
+               %(sqlcount)s,
+               %(sqldummy)s
+        FROM transcript_info AS i,
+             %(sqltables)s
+        WHERE %(sqlwhere)s
+        GROUP BY i.gene_id
+        ''' % locals()
+        
+    Database.executewait( dbhandle, "DROP TABLE IF EXISTS %(tablename)s" % locals() )
+    Database.executewait( dbhandle, statement )
+    Database.executewait( dbhandle, "CREATE INDEX %(tablename)s_gene_id ON %(tablename)s (gene_id)" % locals())
+
+    for pattern in patterns:
+        Database.executewait( dbhandle, 
+                              "UPDATE %(tablename)s SET is_%(pattern)s = naffected_%(pattern)s == ntranscripts" % locals())
+        
+    dbhandle.commit()
+
+    P.touch(outfile)
 
 ###################################################################
 ###################################################################
@@ -3429,6 +3745,22 @@ def createGOSlim( infile, outfile ):
     '''get GO assignments from ENSEMBL'''
     PGO.createGOSlim( infile, outfile )
 
+############################################################
+@transform( (createGO, createGOSlim), regex( r"assignments.(\S+)$" ),
+        r"\1_assignments.load" )
+def loadGOAssignments( infile, outfile ):
+
+    table = P.toTable( outfile )
+
+    statement = '''
+    cat < %(infile)s
+    | csv2db.py %(csv2db_options)s
+              --table=%(table)s
+              --index=gene_id
+              --index=go_id
+    > %(outfile)s
+    '''
+    P.run()
 
 ############################################################
 @files( ( (importMGI, "assignments.mgi"),) )
@@ -3454,90 +3786,73 @@ def createMGI( infile, outfile ):
     outf.write( "\n".join( [ "\t".join(x) for x in data ] ) + "\n" )
     outf.close()
 
-###################################################################
-@follows(summarizeEffectsPerGene, createGO, createGOSlim, createMGI)
-@files( [ ("%s_effects_genes.load" % x, "%s_%s.%s" % (x,y,z), (x,y,z)) for x,y,z in 
-      itertools.product( TRACKS_GO, 
-                         ("nmdknockouttranscript",
-                          "nmdaffectedtranscript",
-                          "nmdknockoutgenes",
-                          "nmdaffectedgenes"),
-                         ("go", "goslim", "mgi") ) ] )
-def runGOAnalysesOnEffects( infile, outfile, options ):
-    '''run GO analysis on transcripts that have been knocked out
-    by premature stop codons.
 
-    ``options`` is a tuple of (``track``, ``analysis``, ``ontology``)
 
-    ``analysis`` can be:
+####################################################################
+def buildGeneMatrix( tracks, analysis, statement, outfile ):
+    '''build a gene matrix.
 
-    nmdknockouttranscript
-        genes for which one transcript has been knocked out
-        due to NMD
-    nmdaffectedtranscript
-        genes in which one transcript is affected by NMD
-    nmdknockoutgenes
-        genes in which all transcripts have been knocked out 
-        due to NMD
-
+    A gene matrix is an n x m matrix for n genes and m gene lists.
+    Each column contains a 1 if a gene is present in a gene list,
+    otherwise it is 0.
     '''
+
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    cc = dbhandle.cursor()
+
+    all_genes = [ x[0] for x in cc.execute( '''SELECT DISTINCT gene_id FROM gene_info''' % locals() )]
+
+    gene2row = dict( [(x[1],x[0]) for x in enumerate( all_genes ) ] )
+    matrix = numpy.zeros( (len(all_genes), len( analysis ) * len(tracks) ), numpy.int )
+
+    col = 0
+    for track in tracks:
         
-    track, analysis, ontology = options
+        for label, field_where in analysis:
+            genes = [ x[0] for x in cc.execute( statement % locals() ) ]
+            for gene_id in genes:
+                matrix[gene2row[gene_id]][col] = 1
+            col += 1
+            
+    outf = open( outfile, "w")
+    outf.write( "gene_id\t%s\n" % "\t".join( "%s_%s" % (x,y[0]) for x,y in itertools.product( tracks, analysis) ) )
+    for gene_id in all_genes:
+        outf.write( "%s\t%s\n" % (gene_id, "\t".join( map(str, matrix[gene2row[gene_id]] ) ) ) )
+    outf.close()
 
-    # setup foreground set
-    if analysis == "nmdknockouttranscript":
-        field_where = "e.nmd_knockout > 0"
-    elif analysis == "nmdaffectedtranscript":
-        field_where = "e.nmd_affected > 0"
-    elif analysis == "nmdknockoutgenes":
-        field_where = "e.nmd_knockout = e.ntranscripts"
+####################################################################
+@merge(summarizeAllelesPerGene, "effects.genematrix" )
+def buildGeneMatrixEffects( infiles, outfile ):
+    '''build gene matrix with consequences data.
 
-    statement_fg = '''
-    SELECT DISTINCT e.gene_id 
-        FROM
-            %(track)s_effects_genes AS e
-        WHERE 
-              %(field_where)s
-        ORDER BY e.gene_id
-    ''' % locals()
+    Note that this analysis is confounded by gene length.
+    '''
 
-    # setup background set
-    statement_bg = '''SELECT DISTINCT gene_id FROM gene_info''' % locals()
-        
-    # choose ontology
-    if ontology == "go":
-        gofile = "assignments.go"
-    elif ontogoly == "goslim":
-        gofile = "assignments.goslim"
+    analysis = ( ("benign", "benign" ),
+                 ( "probablydamaging", "probablydamaging" ),
+                 ( "possiblydamaging", "possiblydamaging" ),
+                 ( "unknown", "unknown") )
+    
+    tracks = [ x[:-len("_alleles_genes.load")] for x in infiles ]
 
-    # create result directory
-    outdir = os.path.abspath( outfile + ".dir" )
-    try: os.makedirs( outdir )
-    except OSError: pass
+    statement = '''
+            SELECT DISTINCT i.gene_id 
+            FROM
+            transcript_info AS i,
+            polyphen_map AS map,
+            polyphen_HumVar as polyphen
+            WHERE 
+            polyphen.snp_id = map.snp_id AND
+            map.track = '%(track)s' AND
+            map.transcript_id = i.transcript_id AND
+            prediction = '%(field_where)s' '''
 
-    # run
-    PGO.runGOFromDatabase( outfile, 
-                           outdir, 
-                           statement_fg,
-                           statement_bg,
-                           gofile,
-                           samples = 0)
+    buildGeneMatrix( tracks, analysis, statement, outfile )
 
-###################################################################
-@follows(summarizeAllelesPerGene, createGO, createGOSlim)
-@files( [ ("%s_alleles_genes.load" % x, "%s_vs_%s.%s" % (x,y,z), (x,y,z)) for x,y,z in 
-      itertools.product( TRACKS_GO, 
-                         ("stoptruncated",
-                          "nmdknockout",
-                          "splicetruncated",
-                          "knockout"),
-                         ("goslim", 
-                          "go",
-                          "mgi",
-                          ) ) ] )
-def runGOAnalysesOnAlleles( infile, outfile, options ):
-    '''run GO analysis on transcripts that have been knocked out
-    by premature stop codons.
+####################################################################
+@merge(summarizeAllelesPerGene, "alleles.genematrix" )
+def buildGeneMatrixAlleles( infiles, outfile ):
+    '''build gene matrix from alleles results
 
     ``options`` is a tuple of (``track``, ``analysis``, ``ontology``)
 
@@ -3552,224 +3867,200 @@ def runGOAnalysesOnAlleles( infile, outfile, options ):
     knockout
         any of the above
 
+    Note that the analysis here needs to be background adjusted.
+    NMD transcripts and splice truncated transcripts are only 
+    multiple exon transcripts, while stoptruncated ones are
+    only single exon ones.
+
     '''
-        
-    track, analysis, ontology = options
 
-    # setup foreground set
-    if analysis == "stoptruncated":
-        field_where = "e.is_truncated"
-    elif analysis == "nmdknockout":
-        field_where = "e.is_nmd_knockout"
-    elif analysis == "splicetruncated":
-        field_where = "is_splice_truncated"
-    elif analysis == "knockout":
-        field_where = "(e.is_nmd_knockout or e.is_truncated or e.is_splice_truncated)"
-    else:
-        raise ValueError( "unknown analysis '%s'" % analysis )
+    analysis = ( ( "stoptruncated", "e.is_truncated" ),
+                 ( "nmdknockout", "e.is_nmd_knockout" ),
+                 ( "splicetruncated", "e.is_splice_truncated" ),
+                 ( "knockout", "(e.is_nmd_knockout or e.is_truncated or e.is_splice_truncated)" ) )
 
-    statement_fg = '''
-    SELECT DISTINCT e.gene_id 
-        FROM
-            %(track)s_alleles_genes AS e
-        WHERE 
-              %(field_where)s
-        ORDER BY e.gene_id
-    ''' % locals()
-
-    # setup background set
-    statement_bg = '''SELECT DISTINCT gene_id FROM gene_info''' % locals()
-        
-    # choose ontology
-    if ontology == "go":
-        gofile = "assignments.go"
-        ontology_file = PARAMS["go_ontology"]
-    elif ontology == "goslim":
-        gofile = "assignments.goslim"
-        ontology_file = PARAMS["go_ontology"]
-    elif ontology == "mgi":
-        gofile = "assignments.mgi"
-        ontology_file = PARAMS["mgi_ontology"]
-
-    # create result directory
-    outdir = os.path.abspath( outfile + ".dir" )
-    try: os.makedirs( outdir )
-    except OSError: pass
-
-    # run
-    PGO.runGOFromDatabase( outfile, 
-                           outdir, 
-                           statement_fg,
-                           statement_bg,
-                           gofile,
-                           ontology_file = ontology_file,
-                           samples = 1000 )
-
-@merge(summarizeAllelesPerGene, "polyphen.genelist" )
-def buildGeneListMatrixPolyphen( infiles, outfile ):
-
-    dbhandle = sqlite3.connect( PARAMS["database"] )
-    cc = dbhandle.cursor()
-
-    all_genes = [ x[0] for x in cc.execute( '''SELECT DISTINCT gene_id FROM gene_info''' % locals() )]
-
-    predictions = ("benign",
-                   "probablydamaging",
-                   "possiblydamaging",
-                   "unknown")
-
-    gene2row = dict( [(x[1],x[0]) for x in enumerate( all_genes ) ] )
     tracks = [ x[:-len("_alleles_genes.load")] for x in infiles ]
-    matrix = numpy.zeros( (len(all_genes), len( predictions ) * len(tracks) ), numpy.int )
     
-    col = 0
-    for track in tracks:
-        
-        for prediction in predictions:
-            statement = '''
-            SELECT DISTINCT i.gene_id 
+    statement = '''
+            SELECT DISTINCT e.gene_id 
             FROM
-            transcript_info AS i,
-            polyphen_map AS map,
-            polyphen_HumVar as polyphen
+                  %(track)s_alleles_genes AS e
             WHERE 
-            polyphen.snp_id = map.snp_id AND
-            map.track = '%(track)s' AND
-            map.transcript_id = i.transcript_id AND
-            prediction = '%(prediction)s' '''
+                %(field_where)s
+            '''
 
-            genes = [ x[0] for x in cc.execute( statement % locals() ) ]
-            for gene_id in genes:
-                matrix[gene2row[gene_id]][col] = 1
-            col += 1
-            
-    outf = open( outfile, "w")
-    outf.write( "gene_id\t%s\n" % "\t".join( "%s_%s" % (x,y) for x,y in itertools.product( tracks, predictions) ) )
-    for gene_id in all_genes:
-        outf.write( "%s\t%s\n" % (gene_id, "\t".join( map(str, matrix[gene2row[gene_id]] ) ) ) )
-    outf.close()
+    buildGeneMatrix( tracks, analysis, statement, outfile )
 
-###################################################################
-@follows( runPolyphen )
-@follows(summarizeAllelesPerGene, createGO, createGOSlim)
-@files( [ ("%s_alleles_genes.load" % x, "%s_vs_%s.%s" % (x,y,z), (x,y,z)) for x,y,z in 
-      itertools.product( TRACKS_GO, 
-                         ("benign",
-                          "probablydamaging",
-                          "possiblydamaging",
-                          "unknown"),
-                         ("goslim", 
-                          "go",
-                          "mgi",
-                          ) ) ] )
-def runGOAnalysesOnPolyphen( infile, outfile, options ):
-    '''run GO analysis on transcripts that have been knocked out
-    by premature stop codons.
+####################################################################
+@merge(summarizeEffectsPerGene, "consequences.genematrix" )
+def buildGeneMatrixConsequences( infiles, outfile ):
+    '''build gene matrix from effecs results
 
-    ``options`` is a tuple of (``track``, ``analysis``, ``ontology``)
+    nmdknockouttranscript
+        genes for which one transcript has been knocked out
+        due to NMD
+    nmdaffectedtranscript
+        genes in which one transcript is affected by NMD
+    nmdknockoutgenes
+        genes in which all transcripts have been knocked out 
+        due to NMD
 
-    ``analysis`` can be any of the polyphen classes:
-         benign
-         probablydamaging
-         possiblydamaging
-         unknown
-
-    '''
-        
-    track, analysis, ontology = options
-
-    # setup foreground set
-    field_where = "polyphen.prediction = '%(analysis)s'" % locals()
-    
-    statement_fg = '''
-    SELECT DISTINCT i.gene_id 
-        FROM
-            transcript_info AS i,
-            polyphen_map AS map,
-            polyphen_HumVar as polyphen
-        WHERE 
-              polyphen.snp_id = map.snp_id AND
-              map.transcript_id = i.transcript_id AND
-              %(field_where)s 
-        ORDER BY i.gene_id
-    ''' % locals()
-
-    # setup background set
-    statement_bg = '''SELECT DISTINCT gene_id FROM gene_info''' % locals()
-        
-    # choose ontology
-    if ontology == "go":
-        gofile = "assignments.go"
-        ontology_file = PARAMS["go_ontology"]
-    elif ontology == "goslim":
-        gofile = "assignments.goslim"
-        ontology_file = PARAMS["go_ontology"]
-    elif ontology == "mgi":
-        gofile = "assignments.mgi"
-        ontology_file = PARAMS["mgi_ontology"]
-
-    # create result directory
-    outdir = os.path.abspath( outfile + ".dir" )
-    try: os.makedirs( outdir )
-    except OSError: pass
-
-    # run
-    PGO.runGOFromDatabase( outfile, 
-                           outdir, 
-                           statement_fg,
-                           statement_bg,
-                           gofile,
-                           ontology_file = ontology_file,
-                           samples = 1000 )
-    
-############################################################################
-@merge( runGOAnalysesOnAlleles, "alleles_go.load")
-def loadGOs( infile, outfile ):
-    '''load go results.'''
-    tablename = P.toTable( outfile )
-    PGO.loadGOs( infile, outfile, tablename )
-
-############################################################################
-@transform( runGOAnalysesOnAlleles, suffix(".go"), "_go.load")
-def loadGO( infile, outfile ):
-    '''load go results.'''
-    tablename = P.toTable( outfile )
-    PGO.loadGO( infile, outfile, tablename )
-
-############################################################################
-@transform( runGOAnalysesOnAlleles, suffix(".goslim"), "_goslim.load")
-def loadGOSlim( infile, outfile ):
-    '''load goslim results.'''
-    tablename = P.toTable( outfile )
-    PGO.loadGO( infile, outfile, tablename )
-
-############################################################################
-@files( ((loadGOs, "goresults.table"),))
-def mergeGO( infile, outfile ):
-    '''merge all GO anlyses.
-
-    * collect all P-Values for all categories and experiments.
-    * compute stats on it
+    Note that the analysis here needs to be background adjusted.
+    For example, NMD transcripts are only multiple exon transcripts.
     '''
 
-    dbhandle = sqlite3.connect( PARAMS["database"] )
+    analysis = ( ( "nmdknockouttranscript", "e.nmd_knockout > 0" ),
+                 ( "nmdaffectedtranscript", "e.nmd_affected > 0" ),
+                 ( "nmdknockoutgenes", "e.nmd_knockout = e.ntranscripts" ) )
 
-    statement = '''SELECT track, geneset, annotationset, category, min(pover,punder) 
-                   FROM alleles_go'''
-    cc = dbhandle.cursor()
-    data = cc.execute(statement).fetchall()
+    tracks = [ x[:-len("_effects_genes.load")] for x in infiles ]
+
+    statement = '''
+            SELECT DISTINCT e.gene_id 
+            FROM
+                  %(track)s_effects_genes AS e
+            WHERE 
+                %(field_where)s
+            '''
+
     
-    pvalues = [ x[4] for x in data ]
-    E.info( "analysing %i pvalues" % len(pvalues ))
+    buildGeneMatrix( tracks, analysis, statement, outfile )
 
-    fdr = Stats.doFDR( pvalues )
-    E.info( "got %i qvalues" % len(fdr.mQValues ))
+####################################################################
+@merge(summarizeSVsPerGene, "svs.genematrix" )
+def buildGeneMatrixStructuralVariants( infiles, outfile ):
+    '''build gene matrix from effecs results
 
-    for d, qvalue in zip( data, fdr.mQValues ):
-        if qvalue > 0.05: continue
-        print data, qvalue
+    deletions
+        genes that contain deletions
+
+    insertions
+        genes that contain insertions
+
+    all
+        genes that contain any sort of structural variant
+
+    '''
+
+    analysis = ( ( "sv_deletion", "e.is_del" ),
+                 ( "sv_insertion", "e.is_ins" ),
+                 ( "sv_all", "e.is_all" ) )
+
+    tracks = [ x[:-len("_sv_genes.load")] for x in infiles ]
+
+    statement = '''
+            SELECT DISTINCT e.gene_id 
+            FROM
+                  %(track)s_sv_genes AS e
+            WHERE 
+                %(field_where)s
+            '''
     
-    Database.executewait( dbhandle, '''ALTER TABLE %(table)s ADD COLUMN is_coding FLOAT''' % locals())
+    buildGeneMatrix( tracks, analysis, statement, outfile )
+
+####################################################################
+@follows( buildGeneMatrixConsequences,
+          buildGeneMatrixAlleles,
+          buildGeneMatrixEffects,
+          buildGeneMatrixStructuralVariants)
+@files( [ ((x,y), "%s_vs_%s.gla" % (re.sub(".genematrix", "", x), \
+                                    re.sub("assignments.", "", y) ) )\
+              for x,y in \
+              itertools.product( \
+            glob.glob("*.genematrix" ),
+            glob.glob("assignments.*") ) 
+          if not y.endswith(".log") ] )
+def runGeneListAnalysis( infiles, outfile):
+    '''run a gene list analysis.'''
+
+    genematrix, assignments = infiles
+
+    to_cluster = True
+
+    try:
+        options = "--qvalue-lambda=%(genelist_analysis_qvalue_lambda)f" % PARAMS
+    except TypeError:
+        options = ""
+
+    statement = '''
+    python %(scriptsdir)s/genelist_analysis.py 
+           --format=matrix 
+           --filename-assignments=%(assignments)s 
+           --fdr 
+           --qvalue-method=%(genelist_analysis_qvalue_method)s
+           --log=%(outfile)s.log
+           %(options)s
+    < %(genematrix)s
+    > %(outfile)s
+    '''
+    
+    P.run()
+
+###########################################################################
+@transform( runGeneListAnalysis, suffix(".gla"), "_gla.load" )
+def loadGeneListAnalysis( infile, outfile ):
+    '''load gene list analysis results.'''
+    table = P.toTable( outfile )
+
+    statement = '''
+    cat < %(infile)s
+    | csv2db.py %(csv2db_options)s
+              --table=%(table)s
+              --index=gene_list
+              --index=pvalue
+              --index=fdr
+    > %(outfile)s
+    '''
+    P.run()
+
+# ############################################################################
+# @merge( runGOAnalysesOnAlleles, "alleles_go.load")
+# def loadGOs( infile, outfile ):
+#     '''load go results.'''
+#     tablename = P.toTable( outfile )
+#     PGO.loadGOs( infile, outfile, tablename )
+
+# ############################################################################
+# @transform( runGOAnalysesOnAlleles, suffix(".go"), "_go.load")
+# def loadGO( infile, outfile ):
+#     '''load go results.'''
+#     tablename = P.toTable( outfile )
+#     PGO.loadGO( infile, outfile, tablename )
+
+# ############################################################################
+# @transform( runGOAnalysesOnAlleles, suffix(".goslim"), "_goslim.load")
+# def loadGOSlim( infile, outfile ):
+#     '''load goslim results.'''
+#     tablename = P.toTable( outfile )
+#     PGO.loadGO( infile, outfile, tablename )
+
+# ############################################################################
+# @files( ((loadGOs, "goresults.table"),))
+# def mergeGO( infile, outfile ):
+#     '''merge all GO anlyses.
+
+#     * collect all P-Values for all categories and experiments.
+#     * compute stats on it
+#     '''
+
+#     dbhandle = sqlite3.connect( PARAMS["database"] )
+
+#     statement = '''SELECT track, geneset, annotationset, category, min(pover,punder) 
+#                    FROM alleles_go'''
+#     cc = dbhandle.cursor()
+#     data = cc.execute(statement).fetchall()
+    
+#     pvalues = [ x[4] for x in data ]
+#     E.info( "analysing %i pvalues" % len(pvalues ))
+
+#     fdr = Stats.doFDR( pvalues )
+#     E.info( "got %i qvalues" % len(fdr.mQValues ))
+
+#     for d, qvalue in zip( data, fdr.mQValues ):
+#         if qvalue > 0.05: continue
+#         print data, qvalue
+    
+#     Database.executewait( dbhandle, '''ALTER TABLE %(table)s ADD COLUMN is_coding FLOAT''' % locals())
 
 ###################################################################
 ###################################################################
@@ -3783,11 +4074,14 @@ def mergeGO( infile, outfile ):
           loadGeneStats,
           loadGeneInformation,
           loadHumanOrthologs,
-          loadGene2Omim )
+          loadGene2Omim,
+          createGO,
+          createGOSlim,
+          createMGI )
 def prepare():
     pass
 
-@follows( makeEffects, loadEffects )
+@follows( makeEffects, loadEffects, summarizeEffectsPerGene )
 def consequences(): pass
 
 @follows( buildAlleles, loadAlleles,
@@ -3805,15 +4099,23 @@ def annotations(): pass
 @follows( prepare, consequences, effects, alleles, annotations )
 def full(): pass
 
-@follows( runGATOnQTLs, runGATOnQTLsSmall)
+@follows( buildQTLWorkspaces, 
+          runGATOnQTLs, 
+          runGATOnQTLsSmall)
 def qtl(): pass
 
-@follows( importSVs, countOverlapBetweenSVsandTranscripts)
+@follows( importSVs, 
+          countOverlapBetweenSVsandTranscripts,
+          loadSVOverlap )
 def svs(): pass
 
-@follows( runGOAnalysesOnEffects,
-          runGOAnalysesOnAlleles,
-          runGOAnalysesOnPolyphen )
+@follows( buildGeneMatrixConsequences,
+          buildGeneMatrixAlleles,
+          buildGeneMatrixEffects,
+          runGeneListAnalysis,
+          loadGeneListAnalysis,
+          loadGOAssignments,
+          )
 def go(): pass
 
 @follows( loadExpressionData, 
@@ -3822,6 +4124,12 @@ def go(): pass
           loadExpressionPerGene,
           loadNMDSanity )
 def expression(): pass
+
+@follows( loadSNPValidationData,
+          buildSNPBlacklist,
+          recallGenomicSNPs )
+def validation(): pass
+
 
 @files( [ (None, "clone.log" ),] )
 def clone( infile, outfile):

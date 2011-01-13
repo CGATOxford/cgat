@@ -49,9 +49,9 @@ global_sessions = {}
 class PipelineError( Exception ): pass
 
 PARAMS= { 
-    'scriptsdir' : "/home/andreas/cgat",
-    'toolsdir' : "/home/andreas/cgat",
-    'cmd-farm' : """/home/andreas/cgat/farm.py 
+    'scriptsdir' : "/ifs/devel/cgat",
+    'toolsdir' : "/ifs/devel/cgat",
+    'cmd-farm' : """/ifs/devel/cgat/farm.py 
                 --method=drmaa 
                 --cluster-priority=-10 
 		--cluster-queue=medium_jobs.q 
@@ -329,7 +329,12 @@ def run( **kwargs ):
 
         # get session for process - only one is permitted
         pid = os.getpid()
-        if pid not in global_sessions: global_sessions[pid]=drmaa.Session()            
+        if pid not in global_sessions: 
+
+            E.debug( "creating new drmaa session for pid %i" % pid )
+            global_sessions[pid]=drmaa.Session()            
+            global_sessions[pid].initialize()
+
         session = global_sessions[pid]
 
         jt = session.createJobTemplate()
@@ -412,7 +417,10 @@ def run( **kwargs ):
         # get session for process - only one is permitted
         pid = os.getpid()
         if pid not in global_sessions:
+            E.debug( "creating new drmaa session for pid %i" % pid )
             global_sessions[pid]=drmaa.Session()            
+            global_sessions[pid].initialize()
+
         session = global_sessions[pid]
 
         jt = session.createJobTemplate()
@@ -443,13 +451,19 @@ def run( **kwargs ):
         else:
             jobid = session.runJob(jt)
             E.debug( "job has been submitted with jobid %s" % str(jobid ))
-            retval = session.wait(jobid, drmaa.Session.TIMEOUT_WAIT_FOREVER)
+            try:
+                retval = session.wait(jobid, drmaa.Session.TIMEOUT_WAIT_FOREVER)
+            except Exception, msg:
+                # ignore message 24
+                # code 24: drmaa: Job finished but resource usage information and/or termination status could not be provided.":
+                if not msg.message.startswith("code 24"): raise
+                retval = None
 
         stdout = open( stdout_path, "r" ).readlines()
         stderr = open( stderr_path, "r" ).readlines()
 
         if "job_array" not in kwargs:
-            if retval.exitStatus != 0:
+            if retval and retval.exitStatus != 0:
                 raise PipelineError( "Child was terminated by signal %i: \nThe stderr was: \n%s\n%s\n" % \
                                          (retval.exitStatus, 
                                           "".join( stderr), statement))
@@ -530,10 +544,18 @@ def main( args = sys.argv ):
             pipeline_run( [ options.pipeline_target ], multiprocess = options.multiprocess, verbose = options.loglevel )
         elif options.pipeline_action == "show":
             pipeline_printout( options.stdout, [ options.pipeline_target ], verbose = options.loglevel )
-        elif options.pipeline_action == "plot":
+        elif options.pipeline_action == "svg":
             pipeline_printout_graph( options.stdout, 
                                      options.pipeline_format,
                                      [ options.pipeline_target ] )
+        elif options.pipeline_action == "plot":
+            outf, filename = tempfile.mkstemp()
+            pipeline_printout_graph( os.fdopen(outf,"w"),
+                                     options.pipeline_format,
+                                     [ options.pipeline_target ] )
+            execute( "inkscape %s" % filename ) 
+            os.unlink( filename )
+
     except ruffus_exceptions.RethrownJobError, value:
         print "re-raising exception"
         raise

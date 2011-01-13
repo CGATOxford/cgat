@@ -333,23 +333,23 @@ def annotateGenome( iterator, fasta, options, default_code = DEFAULT_CODE ):
 
     E.info("allocated memory for %i contigs" % len(fasta))
 
-    ninput, noutput, nskipped_contig = 0, 0, 0
+    counter = E.Counter()
 
     # output splice junctions
     outfile_junctions = E.openOutputFile( "junctions" )
     outfile_junctions.write( "contig\tstrand\tpos1\tpos2\tframe\tgene_id\ttranscript_id\n" )
     for gtfs in iterator:
 
-        ninput += 1
+        counter.input += 1
 
-        if ninput % options.report_step == 0:
-            E.info( "iteration %i" % ninput )
+        if counter.input % options.report_step == 0:
+            E.info( "iteration %i" % counter.input )
 
         try:
             contig = fasta.getToken( gtfs[0].contig )
         except KeyError, msg:
             E.warn( "contig %s not found - annotation ignored" % gtfs[0].contig )
-            nskipped_contig += 1
+            counter.skipped_contig += 1
             continue
 
         lcontig = fasta.getLength( contig )
@@ -375,6 +375,10 @@ def annotateGenome( iterator, fasta, options, default_code = DEFAULT_CODE ):
             # collect exons for utr
             exons = [ (x.start, x.end) for x in gtfs if x.feature == "exon" ]
             cds = [ (x.start, x.end) for x in gtfs if x.feature == "CDS" ]
+            if len(cds) == 0:
+                counter.skipped_transcripts += 1
+                E.warn( "protein-coding transcript %s without CDS - skipped" % gtfs[0].transcript_id )
+                continue
 
             exons = Intervals.truncate( exons, cds )
             start, end = cds[0][0], cds[-1][1]
@@ -447,8 +451,8 @@ def annotateGenome( iterator, fasta, options, default_code = DEFAULT_CODE ):
                                                c.transcript_id,
                                                ) )
                 end = ender(c)
-                
-    E.info( "finished reading %i genes" % ninput )
+
+    E.info( "finished reading genes: %s" % str(counter) )
 
     outfile_junctions.close()
 

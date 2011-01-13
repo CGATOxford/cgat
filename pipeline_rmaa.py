@@ -30,7 +30,7 @@
 Purpose
 -------
 
-Rmaa mapping pipeline.
+Rnaseq pipeline for short-read data.
 
 Usage
 -----
@@ -67,8 +67,6 @@ Type::
 
 for command line help.
 
-
-
 Notes
 -----
 
@@ -80,6 +78,8 @@ Additional features added:
 
 .. todo::
 
+   Todolist for refactoring:
+
    * There are separate execution paths for ``nonmulti`` and ``multi``. These
    could probably be merged by appropriate parameterizing.
    * Use scratch disk for fastq files
@@ -89,6 +89,35 @@ Additional features added:
    * Substitute ``aire`` with different clustering program - 
        it is fails unless data is absolutely right.
 
+.. todo::
+
+   Todolist for general RNAseq analysis
+   * Add DESeq for differential expression analysis
+      * Poisson-model with overdispersion
+         * estimated from data
+         * good way to deal with expression levels statistically (according to Gerton)
+   * Add Augustus to build gene models
+   * Add visualizations
+
+Overview
+--------
+
+The pipeline has the following major compononts:
+
+1. Compute mean insert size distribution from data.
+
+2. Discover splice junctions (combineJunctions)
+
+3. Map reads (mapReads)
+
+4. build and compare gene models
+
+5. calculate RPKM values
+
+6. Analyze samples
+   cluster by expression similarity
+   define groups of co-regulated genes
+
 Code
 ----
 
@@ -97,6 +126,8 @@ Code
 
 # load modules
 from ruffus import *
+
+import Experiment as E
 
 import sys, os, re, shutil, itertools, math, glob, logging, time
 
@@ -112,8 +143,15 @@ import numpy
 
 # load options from the config file
 import Pipeline as P
-PARAMS = P.getParameters()
-import Experiment as E
+P.getParameters( 
+    ["%s.ini" % __file__[:-len(".py")],
+     "../pipeline.ini",
+     "pipeline.ini" ] )
+PARAMS = P.PARAMS
+
+if os.path.exists("conf.py"): 
+    E.info( "reading additional configuration from conf.py" )
+    execfile("conf.py")
 
 USECLUSTER=True
 
@@ -249,14 +287,10 @@ def findJunctions(infiles, outfile):
            --mate-inner-dist %(ins_size)i 
            --mate-std-dev %(std_dev)i 
            --max-intron-length %(max_intron)i 
-
-@transform( getInsertSize, suffix("_sizes"), "_sizes.txt" )
-def plotInsertSize( infile, outfile ):
            --raw-juncs %(junctions_file)s 
            --closure-search 
            --microexon-search 
-
-           -p %(nsslots)i 
+           -p %(nslots)i 
            %(bowtiedir)s/%(genome)s
            %(tmpfilename)s.1.fq
            %(tmpfilename)s.2.fq
@@ -270,13 +304,15 @@ def plotInsertSize( infile, outfile ):
 @merge(findJunctions, "reads/all.junctions")
 def combineJunctions(infiles, outfile):
     '''collate all junctions found with tophat together.'''
-    
-    estimateInsert" ".sjoin(infiles)
-    '''summarize the insert size
-    '''statement = '''
-    | p
+
+    infiles = " ".join(infiles)
+    statement = '''
+    cat %(infiles)s
+    | grep -v description 
+    | python %(rmaadir)s/combine_junctions.py 
+    | sort 
     | uniq 
-    infilefile)s'''
+    > %(outfile)s'''
     P.run()
 
 @follows( combineJunctions)
@@ -325,9 +361,9 @@ def mapReads(infiles, outfile):
            %(tmpfilename)s.1.fq
            %(tmpfilename)s.2.fq
     >& %(outfile)s.log;
-    samtools view -bT %(bowtiedir)s/%(genome)s.fa %(tmpfilename)s/accepted_hits.sam 2>%(outfile)s.log1 > %(outfile)s; 
-    rm -f %(tmpfilename)s/accepted_hits.sam >& %(outfile)s.log2;
-    rm -rf %(tmpfilename)s >& %(outfile)s.log3
+    mv %(tmpfilename)s/accepted_hits.bam %(outfile)s 2>> %(outfile)s.log; 
+    rm -rf %(tmpfilename)s 2>> %(outfile)s.log;
+    rm -f %(tmpfilename)s.1.fq %(tmpfilename)s.2.fq 2>> %(outfile)s.log
     ''' 
 
     P.run()
@@ -417,8 +453,8 @@ def compareGeneModels(infiles, outfile):
     statement = '''
               cuffcompare 
                     -o %(outfile)s
-                    -r %(ref_gtf)s 
-                    -s %(sequence_dir)s 
+                    -r %(files_gtf)s 
+                    -s %(bowtiedir)s/%(genome)s.fa 
                     %(infiles)s >& %(outfile)s.log 
     '''
     P.run()
@@ -440,7 +476,7 @@ def combineGeneModels(infiles, outfiles):
                  > %(outfile1)s'''
     P.run()
 
-    statement = '''cat %(infiles)s %(ref_gtf)s 
+    statement = '''cat %(infiles)s %(files_gtf)s 
                  | awk '$3 == "exon"'
                  | python %(scriptsdir)s/gtf2gtf.py --merge-genes --log=%(outfile2)s.log
                  | python %(scriptsdir)s/gtf2gtf.py --renumber-genes="ALL%%010i" --log=%(outfile2)s.log
@@ -455,7 +491,7 @@ def countReads(infile, outfile):
     job_options = "-l mem_free=10G"
     
     statement = '''
-    python %(rmaadir)s/count_reads_in_genes.py %(genes_file)s %(infile)s > %(outfile)s 
+    python %(rmaadir)s/count_reads_in_genes.py %(files_genes)s %(infile)s > %(outfile)s 
     '''
     P.run()
 
@@ -468,7 +504,7 @@ def countReadsMulti(infile, outfile):
     job_options = "-l mem_free=10G"
     
     statement = '''
-    python %(rmaadir)s/count_reads_in_genes.py %(genes_file)s %(infile)s > %(outfile)s 
+    python %(rmaadir)s/count_reads_in_genes.py %(files_genes)s %(infile)s > %(outfile)s 
     '''
     P.run()
 
@@ -502,7 +538,7 @@ def adjustCountsMulti(infiles, outfiles):
           > %(outfile0)s'''
     P.run()
 
-@follows( mkdir("graphs"))
+@follows( mkdir("graphs") )
 @transform(adjustCounts, suffix(".counts.all"), ".rpkm.all")
 def calculateRPKMs(infiles, outfile):
     '''calculate RPKMs from adjusted read counts'''
@@ -514,19 +550,6 @@ def calculateRPKMs(infiles, outfile):
     statement = '''
     python %(rmaadir)s/calculate_rpkms.py %(infile)s 
     > %(outfile)s
-    '''
-    P.run()
-
-    statement = '''
-    python %(rmaadir)s/sort_genes_by_rel_std_dev.py 
-                     %(outfile)s %(min_rpkm_var)i 
-    > %(outfile)s.rel_std_dev.%(min_rpkm_var)i'''
-    
-    P.run()
-
-    statement = '''
-    python %(rmaadir)s/sort_genes_by_expn.py %(outfile)s 
-    > %(outfile)s.sorted_by_expression
     '''
     P.run()
 
@@ -637,54 +660,57 @@ def buildCDTFiles( infile, outfiles, min_rpkm, min_diff ):
     '''build cdt files for fuzzy k clustering.'''
    
     cdt_filename, background_filename = outfiles
-    # create cdt file
-    labels = open(infile).readline().rstrip('\n').split('\t')[2::]
+
 
     min_diff_threshold = math.log( min_diff, 2)
     min_gene_len = PARAMS["min_gene_len"]
     background_file = open( background_filename, "w" )
 
     with open( cdt_filename, "w" ) as cdt_file:
-       cdt_file.write( "UID\tNAME\tGWEIGHT\t%s\n" % ("\t".join( labels ) ) )
-       cdt_file.write( "EWEIGT\t\t\t%s\n" % ( "\t".join( ["1"] * len(labels))))
+        
+        counts = E.Counter()
+        counts.output = 0
+        for line in open(infile,"r"):
+            
+            if line.startswith("#"): continue
+            if line.startswith("gene_id"): 
+                # create cdt file
+                labels = line.rstrip('\n').split('\t')[2::]
+                cdt_file.write( "UID\tNAME\tGWEIGHT\t%s\n" % ("\t".join( labels ) ) )
+                cdt_file.write( "EWEIGT\t\t\t%s\n" % ( "\t".join( ["1"] * len(labels))))
+                continue
 
-       counts = E.Counter()
-       counts.output = 0
-       for line in open(infile,"r"):
-
-           if line.startswith("Name"): continue
-
-           data = line[:-1].split("\t")
-           counts.input += 1
-
+            data = line[:-1].split("\t")
+            counts.input += 1
+            
            # exclude genes that are too short
-           if int(data[1]) < min_gene_len:    
-               counts.skipped_length += 1
-               continue
+            if int(data[1]) < min_gene_len:    
+                counts.skipped_length += 1
+                continue
 
-           name = data[0]
-           la = map(float, data[2:])
+            name = data[0]
+            la = map(float, data[2:])
 
            # exclude lowly expressed genes
-           if max(la) < min_rpkm: 
-               counts.skipped_rpkm += 1
-               continue
+            if max(la) < min_rpkm: 
+                counts.skipped_rpkm += 1
+                continue
 
-           background_file.write(name + "\n")
+            background_file.write(name + "\n")
 
-           # to handle any zero values, add 0.01 to every RPKM
-           la = map(lambda x: x + 0.01, la)    
-           avg_rpkm = float(sum(la) ) / len(la)
-           ratios = [ math.log( x/avg_rpkm, 2) for x in la]
+            # to handle any zero values, add 0.01 to every RPKM
+            la = map(lambda x: x + 0.01, la)    
+            avg_rpkm = float(sum(la) ) / len(la)
+            ratios = [ math.log( x/avg_rpkm, 2) for x in la]
 
-           if max(ratios) < min_diff_threshold:
-               counts.skipped_diff += 1
-               continue
+            if max(ratios) < min_diff_threshold:
+                counts.skipped_diff += 1
+                continue
 
-           cdt_file.write( "%s\t%s\t%i\t%s\n" % (name, name, 1, 
-                                                 "\t".join(map(str,ratios)) ) )
-
-           counts.output += 1
+            cdt_file.write( "%s\t%s\t%i\t%s\n" % (name, name, 1, 
+                                                  "\t".join(map(str,ratios)) ) )
+            
+            counts.output += 1
 
     background_file.close()
    
@@ -917,8 +943,7 @@ def reportTotalRNAFunctions(infiles, outfiles):
     
     P.run()
 
-@follows( reportBestParams, 
-          makeTreesAllGenes, 
+@follows( makeTreesAllGenes, 
           combineJunctions, 
           combineBams, 
           uniquifyBams, 
@@ -926,12 +951,20 @@ def reportTotalRNAFunctions(infiles, outfiles):
           compareGeneModels, 
           calculateRPKMs, 
           calculateRPKMsMulti, 
-          makeBigwigs, 
-          makeBigwigsMulti, 
-          reportTotalRNAFunctions, 
-          computeEnrichmentsHighlyExpressedGenes,
           mkdir("web") )
+def basic(): pass
+
+@follows( computeEnrichmentsHighlyExpressedGenes,
+          reportTotalRNAFunctions, 
+          reportBestParams )
+def analysis(): pass
+
+@follows( basic, analysis )
 def full(): pass
+
+@follows( makeBigwigs, 
+          makeBigwigsMulti )
+def export(): pass
 
 if __name__== "__main__":
     sys.exit( P.main(sys.argv) )

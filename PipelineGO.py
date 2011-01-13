@@ -135,6 +135,7 @@ def runGOFromFiles( outfile,
         --background=%(bg_file)s 
         --sample=%(samples)s
         --fdr 
+        --qvalue-method=storey
         --filename-ontology=%(ontology_file)s 
         --output-filename-pattern='%(outdir)s/%%(go)s.%%(section)s' 
     > %(outfile)s'''
