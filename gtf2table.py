@@ -645,7 +645,7 @@ class Classifier(Counter):
         E.info( "loading data from %s" % (filename_gff) )
             
         gffs = []
-        infile = open( filename_gff, "r")     
+        infile = IOTools.openFile( filename_gff, "r")     
         for g in GTF.iterator(infile):
             gffs.append( g )
 

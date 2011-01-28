@@ -95,7 +95,7 @@ class Counter:
             nbases += this.end - this.start 
             
             try:
-                intervals = list(idx[this.contig].find( this.start, this.end ))
+                intervals = list(idx[this.contig].find( max(0, this.start), this.end ))
             except KeyError:
                 continue
             

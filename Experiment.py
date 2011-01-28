@@ -171,7 +171,7 @@ def Start( parser = None,
                           help="additional options for cluster jobs, passed on to qrsh [%default]."  )
         
         parser.set_defaults( use_cluster = False,
-                             cluster_queue = "medium_jobs.q",
+                             cluster_queue = "all.q",
                              cluster_priority = -10,
                              cluster_num_jobs = 100,
                              cluster_options = "")

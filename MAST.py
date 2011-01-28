@@ -119,7 +119,7 @@ def parse( infile ):
             last_end = 0
             try:
                 for part in parts:
-                    is_motif = part.startswith( "[" )
+                    is_motif = part[0] in "[<"
                     if is_motif:
                         code = part[1:-1]
                         match.positions.append( pos )

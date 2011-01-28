@@ -197,12 +197,11 @@ def readTable( file,
                truncate = None,
                cumulate_out_of_range = True,
                ):
-    """read a matrix. There probably is a routine for this in Numpy, which
+    """read a table of values. There probably is a routine for this in Numpy, which
     I haven't found yet.
 
     If cumulate_out_of_range is set to true, the terminal bins will
     contain the cumulative values of bins out of range.
-    
     """
 
     lines = filter( lambda x: x[0] != "#", file.readlines())
@@ -521,14 +520,20 @@ class FilePoolMemory( FilePool ):
         self.data[filename].append(line)
         self.mCounts[filename] += 1
 
-def prettyFloat( val, format = "%5.2f" ):
-    """output a float or "na" if not defined"""
+def val2str( val, format = "%5.2f", na = "na" ):
+    if type(val) == int: return format % val
+    elif type(val) == float: return format % val
+
     try:
         x = format % val
     except (ValueError, TypeError):
-        x = "na"
+        x = na
     return x
-    
+
+def prettyFloat( val, format = "%5.2f" ):
+    """deprecated, use val2str"""
+    return val2str( val, format )
+
 def prettyPercent( numerator, denominator, format = "%5.2f" ):
     """output a percent value or "na" if not defined"""
     try:

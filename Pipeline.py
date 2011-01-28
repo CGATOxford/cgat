@@ -33,7 +33,7 @@ Code
 ----
 
 '''
-import os, sys, re, subprocess, optparse, stat, tempfile, time, random, inspect, types, glob
+import os, sys, re, subprocess, optparse, stat, tempfile, time, random, inspect, types, glob, shutil
 import ConfigParser
 
 import drmaa
@@ -54,7 +54,7 @@ PARAMS= {
     'cmd-farm' : """/ifs/devel/cgat/farm.py 
                 --method=drmaa 
                 --cluster-priority=-10 
-		--cluster-queue=medium_jobs.q 
+		--cluster-queue=all.q 
 		--cluster-num-jobs=100 
 		--cluster-options="" """,
     'cmd-sql' : """sqlite3 -header -csv -separator $'\\t' """,
@@ -218,11 +218,52 @@ def asDict( param ):
     '''return a section of configuration file as a dictionary.'''
     return dict(CONFIG.items(param))
 
+def quote( track ):
+    '''quote track such that is applicable for a table name.'''
+    return re.sub( "[-(),\[\].]", "_", track)
+
 def toTable( outfile ):
     '''convert an outfile (filename) into
-    a table name.'''
+    a table name.
+
+    The table name is quoted.
+    '''
     assert outfile.endswith( ".load" ) 
-    return outfile[:-len(".load")]
+    name = outfile[:-len(".load")]
+    return quote( name )
+
+def load( infile, outfile, options = "" ):
+    '''straight import from tab separated table.
+
+    The table name is given by outfile without the
+    ".load" suffix.
+    '''
+
+    tablename = toTable( outfile )
+
+    if infile.endswith(".gz"): cat = "zcat"
+    else: cat = "cat"
+
+    statement = '''%(cat)s %(infile)s
+    | csv2db.py %(csv2db_options)s 
+              %(options)s 
+              --table=%(tablename)s 
+    > %(outfile)s
+    '''
+
+    run()
+
+def snip( filename, extension = None):
+    '''return prefix of filename.
+
+    If extension is given, make sure that filename has the extension.
+    '''
+    if extension: 
+        assert filename.endswith( extension )        
+        return filename[:-len(extension)]
+
+    root, ext = os.path.splitext( filename )
+    return root
 
 def getCallerLocals(decorators=0):
     '''returns locals of caller using frame.
@@ -257,6 +298,8 @@ def execute( statement, **kwargs ):
     if process.returncode != 0:
         raise PipelineError( "Child was terminated by signal %i: \nThe stderr was: \n%s\n%s\n" % (-process.returncode, stderr, statement ))
 
+    return stdout, stderr
+
 _exec_prefix = '''detect_pipe_error_helper() 
     {
     while [ "$#" != 0 ] ; do
@@ -286,7 +329,8 @@ def buildStatement( **kwargs ):
     # add bash as prefix to allow advanced shell syntax like 'wc -l <( gunzip < x.gz)'
     # executable option to call() does not work. Note that there will be an extra
     # indirection.
-    statement = " ".join( re.sub( "\t+", " ", statement).split( "\n" ) )
+    statement = " ".join( re.sub( "\t+", " ", statement).split( "\n" ) ).strip()
+    if statement.endswith(";"): statement = statement[:-1]
 
     E.debug( "running statement:\n%s" % statement )
 
@@ -296,6 +340,47 @@ def expandStatement( statement ):
     '''add exec_prefix and exec_suffix to statement.'''
     
     return " ".join( (_exec_prefix, statement, _exec_suffix) )
+
+def getStdoutStderr( stdout_path, stderr_path, tries=5 ):
+    '''get stdout/stderr allowing for same lag.
+
+    Try at most *tries* times. If unsuccessfull, throw PipelineError.
+
+    Removes the files once they are read. 
+
+    Returns tuple of stdout and stderr.
+    '''
+    x = tries
+    while x >= 0:
+        if os.path.exists( stdout_path ): break
+        time.sleep(1)
+        x -= 1
+            
+    x = tries
+    while x >= 0:
+        if os.path.exists( stderr_path ): break
+        time.sleep(1)
+        x -= 1
+
+    try:
+        stdout = open( stdout_path, "r" ).readlines()
+    except IOError, msg:
+        E.warn( "could not open stdout: %s" % msg )
+        stdout = []
+            
+    try:
+        stderr = open( stderr_path, "r" ).readlines()
+    except IOError, msg:
+        E.warn( "could not open stdout: %s" % msg )
+        stderr = []
+
+    try:
+        os.unlink( stdout_path )
+        os.unlink( stderr_path )
+    except OSError, msg:
+        pass
+
+    return stdout, stderr
 
 def run( **kwargs ):
     """run a statement.
@@ -382,8 +467,8 @@ def run( **kwargs ):
             job_path, stdout_path, stderr_path = paths
             retval = session.wait(jobid, drmaa.Session.TIMEOUT_WAIT_FOREVER)
 
-            stdout = open( stdout_path, "r" ).readlines()
-            stderr = open( stderr_path, "r" ).readlines()
+            stdout, stderr = getStdoutStderr( stdout_path, stderr_path )
+
             if retval.exitStatus != 0:
                 raise PipelineError( "Child was terminated by signal %i: \nThe stderr was: \n%s\n%s\n" % \
                                          (retval.exitStatus, 
@@ -391,8 +476,6 @@ def run( **kwargs ):
                                           statement ) )
 
             os.unlink( job_path )
-            os.unlink( stdout_path )
-            os.unlink( stderr_path )
             
         session.deleteJobTemplate(jt)
 
@@ -454,13 +537,12 @@ def run( **kwargs ):
             try:
                 retval = session.wait(jobid, drmaa.Session.TIMEOUT_WAIT_FOREVER)
             except Exception, msg:
-                # ignore message 24
+                # ignore message 24 in PBS
                 # code 24: drmaa: Job finished but resource usage information and/or termination status could not be provided.":
                 if not msg.message.startswith("code 24"): raise
                 retval = None
 
-        stdout = open( stdout_path, "r" ).readlines()
-        stderr = open( stderr_path, "r" ).readlines()
+        stdout, stderr = getStdoutStderr( stdout_path, stderr_path )
 
         if "job_array" not in kwargs:
             if retval and retval.exitStatus != 0:
@@ -470,8 +552,6 @@ def run( **kwargs ):
             
         session.deleteJobTemplate(jt)
         os.unlink( job_path )
-        os.unlink( stdout_path )
-        os.unlink( stderr_path )
 
     else:
         statement = buildStatement( **kwargs )
@@ -496,12 +576,37 @@ def run( **kwargs ):
             raise PipelineError( "Child was terminated by signal %i: \nThe stderr was: \n%s\n%s\n" % (-process.returncode, stderr, statement ))
 
 
+USAGE = '''
+usage: %prog [OPTIONS] [CMD] [target]
+
+Execute pipeline %prog.
+
+Commands can be any of the following
+
+make <target>
+   run all tasks required to build *target*
+
+show <target>
+   show tasks required to build *target* without executing them
+
+plot <target>
+   plot image (using inkscape) of pipeline state for *target*
+
+config
+   write a new configuration file pipeline.ini with default values
+
+dump
+   write pipeline configuration to stdout
+
+'''
+
 def main( args = sys.argv ):
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: Pipeline.py 2799 2009-10-22 13:40:13Z andreas $")
+    parser = optparse.OptionParser( version = "%prog version: $Id: Pipeline.py 2799 2009-10-22 13:40:13Z andreas $",
+                                    usage = USAGE )
     
     parser.add_option( "--pipeline-action", dest="pipeline_action", type="choice",
-                       choices=("make", "show", "plot" ),
+                       choices=("make", "show", "plot", "dump", "config" ),
                        help="action to take [default=%default]." )
 
     parser.add_option( "--pipeline-format", dest="pipeline_format", type="choice",
@@ -532,36 +637,57 @@ def main( args = sys.argv ):
     global global_args
     global_options, global_args = options, args
     PARAMS["dryrun"] = options.dry_run
+    
+    version, _ = execute( "hg identify %s" % PARAMS["scriptsdir"] )
+
+    E.info( "code location: %s" % PARAMS["scriptsdir"] )
+    E.info( "code version: %s" % version[:-1] )
 
     if args: 
         options.pipeline_action = args[0]
         if len(args) > 1:
             options.pipeline_target = args[1]
 
+    if options.pipeline_action in ("make", "show", "svg", "plot"):
 
-    try:
-        if options.pipeline_action == "make":
-            pipeline_run( [ options.pipeline_target ], multiprocess = options.multiprocess, verbose = options.loglevel )
-        elif options.pipeline_action == "show":
-            pipeline_printout( options.stdout, [ options.pipeline_target ], verbose = options.loglevel )
-        elif options.pipeline_action == "svg":
-            pipeline_printout_graph( options.stdout, 
-                                     options.pipeline_format,
-                                     [ options.pipeline_target ] )
-        elif options.pipeline_action == "plot":
-            outf, filename = tempfile.mkstemp()
-            pipeline_printout_graph( os.fdopen(outf,"w"),
-                                     options.pipeline_format,
-                                     [ options.pipeline_target ] )
-            execute( "inkscape %s" % filename ) 
-            os.unlink( filename )
+        try:
+            if options.pipeline_action == "make":
+                pipeline_run( [ options.pipeline_target ], multiprocess = options.multiprocess, verbose = options.loglevel )
+            elif options.pipeline_action == "show":
+                pipeline_printout( options.stdout, [ options.pipeline_target ], verbose = options.loglevel )
+            elif options.pipeline_action == "svg":
+                pipeline_printout_graph( options.stdout, 
+                                         options.pipeline_format,
+                                         [ options.pipeline_target ] )
+            elif options.pipeline_action == "plot":
+                outf, filename = tempfile.mkstemp()
+                pipeline_printout_graph( os.fdopen(outf,"w"),
+                                         options.pipeline_format,
+                                         [ options.pipeline_target ] )
+                execute( "inkscape %s" % filename ) 
+                os.unlink( filename )
 
-    except ruffus_exceptions.RethrownJobError, value:
-        print "re-raising exception"
-        raise
+        except ruffus_exceptions.RethrownJobError, value:
+            print "re-raising exception"
+            raise
+
+    elif options.pipeline_action == "dump":
+        print "dump = %s" % str(PARAMS)
+    elif options.pipeline_action == "config":
+        if os.path.exists("pipeline.ini"):
+            raise ValueError( "file `pipeline.ini` already exists" )
+        f = sys._getframe(1)
+        caller = inspect.getargvalues(f).locals["__file__"]
+        configfile = os.path.splitext(caller)[0] + ".ini" 
+        if not os.path.exists( configfile ):
+            raise ValueError( "default config file `%s` not found"  % configfile )
+        shutil.copyfile( configfile, "pipeline.ini" )
+        E.info( "created new configuration file `pipeline.ini` " )
+    else:
+        raise ValueError("unknown pipeline action %s" % options.pipeline_action )
+
 
     E.Stop()
-
 
 def clean( patterns, dry_run = False ):
     '''clean up files given by glob *patterns*.
@@ -582,9 +708,38 @@ def clean( patterns, dry_run = False ):
 
     return cleaned
 
+def peekParameters( workingdir, pipeline ):
+    '''peak configuration parameters from an external directory.
+    '''
+    
+    dirname = os.path.dirname( __file__ )
+    pipeline = os.path.join( dirname, pipeline )
+    assert os.path.exists( pipeline ), "can't find pipeline source %s" % pipeline
+    assert os.path.exists( workingdir ), "can't find working dir %s" % workingdir
+    
+    process = subprocess.Popen(  "python %s -v 0 dump" % pipeline,
+                                 cwd = workingdir, 
+                                 shell = True,
+                                 stdin = subprocess.PIPE,
+                                 stdout = subprocess.PIPE,
+                                 stderr = subprocess.PIPE )
+
+    # process.stdin.close()
+    stdout, stderr = process.communicate()
+
+    if process.returncode != 0:
+        raise PipelineError( "Child was terminated by signal %i: \nThe stderr was: \n%s\n" % (-process.returncode, stderr ))
+
+    assert stdout.startswith("dump")
+    exec( stdout )
+    return dump
+
 if __name__ == "__main__":
+
     parser = optparse.OptionParser( version = "%prog version: $Id: Pipeline.py 2799 2009-10-22 13:40:13Z andreas $")
+
     (options, args) = E.Start( parser, add_cluster_options = True )
+
     #global global_options
     #global global_args
     global_options, global_args = options, args
@@ -592,3 +747,4 @@ if __name__ == "__main__":
     run( **{"statement" : "printenv > test.out", "job_queue" : "server_jobs.q", "job_priority" : -10 } )
     run( **{"statement" : "printenv > test2.out", "job_queue" : "server_jobs.q", "job_priority" : -10 } )
     run( **{"statement" : "printenv > test3.out", "job_queue" : "server_jobs.q", "job_priority" : -10 } )
+    

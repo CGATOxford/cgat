@@ -283,13 +283,13 @@ def findJunctions(infiles, outfile):
     tophat --output-dir %(tmpfilename)s
            --butterfly-search 
            --min-anchor-length 5 
+           --closure-search 
+           --microexon-search 
            --min-isoform-fraction 0.0 
            --mate-inner-dist %(ins_size)i 
            --mate-std-dev %(std_dev)i 
            --max-intron-length %(max_intron)i 
            --raw-juncs %(junctions_file)s 
-           --closure-search 
-           --microexon-search 
            -p %(nslots)i 
            %(bowtiedir)s/%(genome)s
            %(tmpfilename)s.1.fq

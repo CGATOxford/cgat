@@ -410,11 +410,35 @@ def loadGeneStats( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-def buildProteinCodingTranscripts( infile, outfile ):
+def buildExons( infile, outfile ):
+    '''build a collection of transcripts from the ENSEMBL gene set.
+
+    Only the exon portion is kept.
+
+    Removes any transcripts with very long (> 3Mb) introns.
+    '''
+
+    to_cluster = True
+
+    statement = '''
+    gunzip < %(infile)s 
+    | awk '$3 == "exon"' 
+    | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome)s --log=%(outfile)s.log 
+    | python %(scriptsdir)s/gtf2gtf.py --remove-duplicates=gene --log=%(outfile)s.log 
+    | gzip > %(outfile)s
+    '''
+    P.run()
+
+############################################################
+############################################################
+############################################################
+def buildCDS( infile, outfile ):
     '''build a collection of transcripts from the protein-coding
     section of the ENSEMBL gene set.
 
-    Only CDS are used.
+    Only CDS exons are parts of exons are output - UTR's are removed.
+
+    Removes any transcripts with very long (> 3Mb) introns.
     '''
 
     to_cluster = True

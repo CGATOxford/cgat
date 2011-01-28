@@ -35,17 +35,42 @@ The ChIP-Seq pipeline imports reads from one or more ChIP-Seq experiments and
 performs the following tasks:
 
    * align reads to the genome
-   * call peaks using MACS (TODO: at QuEST)
+   * call peaks 
    * annotate intervals with respect to a reference gene set
-   * describe de-novo motifs using MEME and BioProspector
-   * find canonical motifs using MAST
-
-Maybe:
-   * perform enrichment analysis against UCSC tracks
-   * perform GO analysis of peaks close to protein coding genes.
+   * describe de-novo motifs
+   * find motifs within intervals
 
 Configuration
 =============
+
+The pipeline looks for a configuration file in several places:
+
+   1. The default configuration in the :term:`code directory`.
+   2. A shared configuration file :file:`../pipeline.ini`.
+   3. A local configuration :file:`pipeline.ini`.
+
+The order is as above. Thus, a local configuration setting will
+override a shared configuration setting and a default configuration
+setting.
+
+Configuration files follow the ini format (see the python
+`ConfigParser <http://docs.python.org/library/configparser.html>` documentation).
+The configuration file is organized by section and the variables are documented within 
+the file. In order to get a local configuration file in the current directory, type::
+
+    python <codedir>/pipeline_chipseq.py config
+
+The following sections and parameters probably should be changed from the default 
+values:
+
+Dependencies
+============
+
+The pipeline requires the information from the following pipelines:
+
+:doc:`pipeline_annotations`
+   set the configuration variable :py:data:`annotations_database` and 
+   :py:data:`annotations_dir`.
 
 Input
 =====
@@ -67,7 +92,20 @@ For example::
    GM00855-unstim-R2_export.txt.gz
 
 Note that neither ``sample``, ``condition`` or ``replicate`` should contain 
-``_`` (underscore) and ``.`` (dot) characters as these are used by the pipeline.
+``_`` (underscore) and ``.`` (dot) characters as these are used by the pipeline
+to delineate tasks.
+
+Optional inputs
+---------------
+
+Reference motifs
+++++++++++++++++
+
+Reference motifs are described by fasta-formatted multiple alignments, see for
+example Jaspar download. The motifs are build by running MEME on the file.
+
+Reference motifs should end in the suffix ".motif.fasta", for example,
+:file:`rxrvdr.motif.fasta`.
 
 Output
 ======
@@ -84,12 +122,8 @@ Type::
 
 for command line help.
 
-Code
-----
-
-TODO: currently the bed files and the intervals are inconsistent 
-    (due to filtering, there are more intervals in the bed files than
-     in the table. The ids do correspond).
+Targets
+-------
 
 """
 import sys, tempfile, optparse, shutil, itertools, csv, math, random, re, glob, os, shutil, collections
@@ -101,7 +135,8 @@ import csv
 import sqlite3
 import IndexedFasta, IndexedGenome, FastaIterator, Genomics
 import IOTools
-import MAST, GTF, GFF, Bed, Stats
+import MAST, GTF, GFF, Bed
+# import Stats
 import cStringIO
 import pysam
 import numpy
@@ -114,13 +149,10 @@ import gff2annotator
 import Bioprospector
 
 import pipeline_chipseq_intervals as PIntervals
-
 import pipeline_vitaminD_annotator as PAnnotator
-
 import pipeline_vitaminD_motifs as PMotifs
 import PipelineGeneset as PGeneset
-
-BAM_SUFFIX = ".norm.bam"
+import PipelineTracks
 
 ###################################################
 ###################################################
@@ -134,135 +166,86 @@ P.getParameters(
 
 PARAMS = P.PARAMS
 
+PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],
+                                       "pipeline_annotations.py" )
+
+# check compatibility
+assert( PARAMS["genome"] == PARAMS_ANNOTATIONS["genome"] )
+
+###################################################################
 ###################################################################
 ###################################################################
 ## Helper functions mapping tracks to conditions, etc
 ###################################################################
-def splitTrack( track ):
-    '''split track into tuple tissue, condition, replicate.'''
-
-    d = track.split("-")
-    tissue, condition, replicate = None, None, None
-    if len(d) == 3: tissue, condition, replicate = d
-    elif len(d) == 2: tissue, condition = d
-    elif len(d) == 1: tissue = d[0]
-    return tissue, condition, replicate
+# load all tracks - exclude input/control tracks
+TRACKS = PipelineTracks.Tracks( PipelineTracks.Sample ).loadFromDirectory( 
+    [ x for x in glob.glob( "*_export.txt.gz" ) if PARAMS["tracks_control"] not in x ],
+      "(\S+)_export.txt.gz" )
 
 def getControl( track ):
     '''return appropriate control for a track
-    
-    Assumption: a control has no replicate.
     '''
-    tissue, condition, replicate = splitTrack(track)
-    return "-".join( (tissue, PARAMS["tracks_control"] ) )
+    n = track.clone()
+    n.condition = PARAMS["tracks_control"]
+    return n
 
-def isReplicate( track ):
-    '''return true if track is a replicate.'''
-    return splitTrack(track)[2] != None
+def getUnstimulated( track ):
+    '''return unstimulated condition for a track
+    '''
+    n = track.clone()
+    n.condition = PARAMS["tracks_unstimulated"]
+    return n
 
-## all tracks
-TRACKS_ALL=[ x[:-len( "_export.txt.gz")] for x in glob.glob( "*_export.txt.gz" ) if PARAMS["tracks_control"] not in x]
-
-
-## all experiments (combinations of sample + condition)
-TRACKS_EXPERIMENTS = list(set([ "-".join( splitTrack(x)[0:2]) for x in TRACKS_ALL ] ) )
-
-
-## aggregate by condition
-TRACKS_CONDITIONS = list(set([ "-".join( ("agg", splitTrack(x)[1])) for x in TRACKS_ALL ] ) )
-
-## aggregate by tissue
-TRACKS_TISSUES = list(set([ "-".join( (splitTrack(x)[0], "agg")) for x in TRACKS_ALL ] ) )
-
-## todo: discover these automatically
-REPLICATES=PARAMS["tracks_replicates"]
-CONDITIONS=PARAMS["tracks_conditions"]
-TISSUES=PARAMS["tracks_tissues"]
-
-TRACKS_NOT_UNSTIM = [ "%s" % x for x in TRACKS_CONDITIONS + TRACKS_EXPERIMENTS if not re.search("Unstim",x)]
-TRACKS_SUBTRACT = [ "%sSub" % x for x in TRACKS_NOT_UNSTIM ]
-TRACKS_MASTER = TRACKS_EXPERIMENTS + TRACKS_CONDITIONS + TRACKS_SUBTRACT
-TRACKS_CORRELATION = TRACKS_MASTER + TRACKS_ALL
-
-RUNS=[ "%02i" % x for x in range(1,17) ]
-
-# tracks with reference ChIPSeq Intervals
-TRACKS_REFERENCE = ["refGR"]
-
-# tracks to use for running annotator
-TRACKS_ANNOTATE = TRACKS_MASTER + TRACKS_REFERENCE
-
-# tracks to use for running annotator
-TRACKS_ANNOTATOR = TRACKS_MASTER + TRACKS_REFERENCE
-
-# tracks to submit for motif analysi
-TRACKS_MOTIFS = TRACKS_MASTER + TRACKS_REFERENCE
- 
-TRACKS_ROI = ( "pritchard_ASIA", "pritchard_CEU", "pritchard_YRI" )
-
-TRACKS_REGIONS = ["roi", "gwas", "gwas_merged", "selection" ]
-
-FILEPATTERN="run%(tissue)s%(condition)s%(replicate)s"
+def getSubtracted( track ):
+    '''return "subtracted" condition for a track
+    '''
+    n = track.clone()
+    n.condition += PARAMS["tracks_unstimulated"]
+    return n
 
 ###################################################################
 ###################################################################
-
+###################################################################
+# if conf.py exists: execute to change the above assignmentsn
 if os.path.exists("conf.py"):
     E.info( "reading additional configuration from conf.py" )
     execfile("conf.py")
+
+
+###################################################################
+###################################################################
+###################################################################
+# define aggregates
+###################################################################
+# aggregate per experiment
+EXPERIMENTS = PipelineTracks.Aggregate( TRACKS, "condition", "tissue" )
+# aggregate per condition
+CONDITIONS = PipelineTracks.Aggregate( TRACKS, "condition" )
+# aggregate per tissue
+TISSUES = PipelineTracks.Aggregate( TRACKS, "tissue" )
+
+# compound targets : all experiments
+TRACKS_MASTER = EXPERIMENTS.keys() + CONDITIONS.keys() + TISSUES.keys()
+
+# compound targets : correlation between tracks
+TRACKS_CORRELATION = TRACKS_MASTER + list(TRACKS)
+
+# tracks for subtraction of unstim condition
+TOSUBTRACT = [ x for x in EXPERIMENTS if not x.condition == PARAMS["tracks_unstimulated"] ]
+
+# print "EXP=", EXPERIMENTS
+# print "COND=", CONDITIONS
+# print "TISSUES=", TISSUES
+# print "TOSUBTRACT=", TOSUBTRACT
+# print "MASTER=", TRACKS_MASTER
+# print "CORRELATION=", TRACKS_CORRELATION
+
 
 ###################################################################
 ###################################################################
 ###################################################################
 ## General preparation tasks
 ###################################################################
-
-############################################################
-############################################################
-############################################################
-## 
-############################################################
-@files( "genome.fasta", "genome_gc.bed" )
-def buildGenomeGCSegmentation( infile, outfile ):
-    '''segment the genome into windows according to G+C content.'''
-
-    to_cluster = True
-    
-    old_statement = '''
-    python %(scriptsdir)s/fasta2bed.py \
-        --method=GCProfile \
-        --segmentation-threshold=300 \
-        --gap-size=10000 \
-        --log=%(outfile)s.log \
-    < %(genome)s.fasta > %(outfile)s'''
-
-    statement = '''
-    python %(scriptsdir)s/fasta2bed.py \
-        --method=fixed-width-windows --window-size=1000 \
-        --log=%(outfile)s.log \
-    < %(genome)s.fasta > %(outfile)s'''
-
-    P.run()
-
-############################################################
-############################################################
-############################################################
-## 
-############################################################
-@files( buildGenomeGCSegmentation, "annotator_gc.bed" )
-def buildAnnotatorGC( infile, outfile ):
-    '''compute G+C regions.'''
-
-    to_cluster = True
-    statement = '''
-    python %(scriptsdir)s/bed2bed.py \
-        --method=bins \
-        --num-bins=%(annotator_gc_bins)s \
-        --binning-method=%(annotator_gc_method)s \
-        --log=%(outfile)s.log \
-    < %(infile)s > %(outfile)s'''
-
-    P.run()
 
 ###################################################################
 ###################################################################
@@ -283,9 +266,7 @@ if PARAMS["mapping_mapper"] == "bowtie":
         to_cluster = True
 
         # require 4Gb of free memory
-        job_options = "-l mem_free=4000M"
-
-        job_options += " -q server_jobs.q"
+        # job_options = "-l mem_free=4000M"
 
         tmpfilename = P.getTempFilename()
 
@@ -345,487 +326,31 @@ def normalizeBAMPerReplicate( infiles, outfile ):
                                    outfile,
                                    PARAMS["calling_normalize"])
 
-if PARAMS["calling_caller"] == "macs":
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @follows( normalizeBAMPerReplicate )
-    @files( [ (("%s.norm.bam" % x, "%s.norm.bam" % getControl(x)), "%s.macs" % x ) for x in TRACKS_ALL ] )
-    def runMACS( infiles, outfile ):
-        '''run MACS for peak detection.'''
-        infile, controlfile = infiles
-
-        statement = '''
-            macs14 -t %(infile)s 
-                   -c %(controlfile)s
-                   --diag
-                   --name=%(outfile)s
-                   --format=BAM
-                   %(macs_options)s 
-            >& %(outfile)s''' 
-    
-        P.run() 
-        
-    ############################################################
-    ############################################################
-    ############################################################
-    @transform( runMACS,
-                regex(r"(.*).macs"),
-                inputs( (r"\1.macs", r"\1.norm.bam") ),
-                r"\1_macs.import" )
-    def importMACS( infiles, outfile ):
-        infile, bamfile = infiles
-        PIntervals.importMACS( infile, outfile, bamfile )
-        
-    ############################################################
-    ############################################################
-    ############################################################
-    @merge( runMACS, "macs.summary" )
-    def summarizeMACS( infiles, outfile ):
-        '''run MACS for peak detection.'''
-
-        PIntervals.summarizeMACS( infiles, outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @transform( summarizeMACS,
-                suffix(".summary"),
-                "_summary.import" )
-    def importMACSSummary( infile, outfile ):
-        '''import macs summary.'''
-        PIntervals.importMACSSummary( infile, outfile )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @transform( importMACS, suffix("_macs.import"), ".bed" )
-    def exportIntervalsAsBed( infile, outfile ):
-        PIntervals.exportIntervalsAsBed( infile, outfile )
-
-else:
-    raise ValueError("unknown peak caller %s" % PARAMS["calling_caller"] )
-
 ############################################################
 ############################################################
 ############################################################
-@follows( exportIntervalsAsBed )
-@files( [ ( ["%s%s.bed" % (x,y) for y in REPLICATES],
-            "%s.bed" % x, 
-            x) for x in TRACKS_EXPERIMENTS ] )
-def combineReplicates( infile, outfile, track ):
-    '''combine replicates between experiments.
-
-    The replicates are combined using intersection.
-    '''
-
-    replicates = [ "%s%s.bed" % (track, x) for x in REPLICATES  if os.path.exists( "%s%s.bed" % (track, x) ) ]
-    PIntervals.intersectBedFiles( replicates, outfile )
-
-############################################################
-############################################################
-############################################################
-@follows( exportIntervalsAsBed, combineReplicates )
-@files( [ ( ["run%s%s.bed" % (y,x) for y in TISSUES],
-            "run%s.bed" % x, 
-            x) for x in CONDITIONS ] )
-def combineConditions( infile, outfile, track ):
-    '''combine conditions between cell lines. 
-
-    The conditions are merged via intersection.
-    '''
-
-    conditions = [ "run%s%s.bed" % (x,track) for x in TISSUES ]
-    PIntervals.intersectBedFiles( conditions, outfile )
-
-############################################################
-############################################################
-############################################################
-@follows( combineConditions )
-@files( [ ( ("%s.bed" % x, "runUnstim.bed"),
-            "%sSub.bed" % x, 
-            x) for x in TRACKS_EXPERIMENTS + TRACKS_CONDITIONS if not re.search("Unstim",x) ] )
-def combineUnstim( infiles, outfile, track ):
-    '''remove the unstimulated data sets from the individual tracks. 
-    '''
-
-    infile, subtract = infiles
-    PIntervals.subtractBedFiles( infile, subtract, outfile )
-
-############################################################
-############################################################
-############################################################
-@transform( (combineReplicates,
-             combineConditions, 
-             combineUnstim, 
-             normalizeBAMPerReplicate),
-            suffix(".bed"),
-            "_bed.import" )
-def importCombinedIntervals( infiles, outfile ):
-    PIntervals.importCombinedIntervals( infiles, outfile )
-
-############################################################
-############################################################
-############################################################
-## master target for this section
-############################################################
-@follows( importCombinedIntervals, importMACSSummary )
-def buildIntervals():
-    pass
-
-###################################################################
-###################################################################
-###################################################################
-## general import
-###################################################################
-
-############################################################
-############################################################
-############################################################
-@follows( exportIntervalsAsBed )
-@files_re( ["%s.bed" % x for x in TRACKS_ALL],
-          combine( "(.*).bed" ),
-          "merged.bed" )
-def makeMerged( infiles, outfile ):
-    '''combine all experiments.
-
-    The replicates are combined using a merge.
-    '''
-    PIntervals.mergeBedFiles( infiles, outfile )
-
-        
-
-############################################################
-############################################################
-############################################################
-@files( [ ("%s.idx" % PARAMS["genome"], "genome.gff"), ] )
-def buildGenome( infile, outfile ):
-
-    fasta = IndexedFasta.IndexedFasta( PARAMS["genome"] )
-
-    entry = GFF.Entry()
-    entry.start = 0
-    entry.feature = "contig"
-    entry.source = "genome"
-    outs = open( outfile, "w" )
-
-    for contig, size in fasta.getContigSizes( with_synonyms = False ).iteritems():
-        entry.contig = contig
-        entry.end = int(size)
-        outs.write( "%s\n" % str(entry) )
-    outs.close()
-
-
-############################################################
-############################################################
-############################################################
-@files_re( (buildBAM, normalizeBAMPerReplicate),
-           "(.*).bam",
-           r"\1.bigwig" )
-def buildBigwig( infile, outfile ):
-    '''convert BAM to bigwig file.'''
-
-    # no bedToBigBed on the 32 bit cluster
-    to_cluster = True
-    job_queue = "server_jobs.q"
-
-    statement = '''python %(scriptsdir)s/bam2wiggle.py \
-                --genome-file=%(genome)s \
-                --output-format=bigwig \
-                --output-filename=%(outfile)s \
-                %(infile)s \
-                > %(outfile)s.log'''
-     
-    P.run()
-
-############################################################
-############################################################
-############################################################
-# fix: does not work due to exportIntervalsAsBed
-# (importCombinedIntervals, exportIntervalsAsBed ),
-@transform( [ "%s.bed" % x for x in TRACKS_MASTER ],
-            suffix(".bed"),
-            ".fasta" )
-def exportMotifSequences( infile, outfile ):
-    '''export sequences for all intervals.
-    '''
-    
-    track = infile[:-len(".bed")]
-    dbhandle = sqlite3.connect( PARAMS["database"] )
-
-    fasta = IndexedFasta.IndexedFasta( PARAMS["genome"] )
-
-    cc = dbhandle.cursor()
-    statement = "SELECT interval_id, contig, start, end FROM %s_intervals" % track
-    cc.execute( statement )
-
-    outs = open( outfile, "w")
-
-    for result in cc:
-        interval, contig, start, end = result
-        id = "%s_%s %s:%i..%i" % (track, str(interval), contig, start, end)
-        
-        seq = fasta.getSequence( contig, "+", start, end)
-        outs.write( ">%s\n%s\n" % (id, seq))
-    
-    cc.close()
-    outs.close()
-
-############################################################
-############################################################
-############################################################
-# (importCombinedIntervals, exportIntervalsAsBed ),
-# TODO: fix, causes a problem due to exportIntervalsAsBed
-@transform( [ "%s.bed" % x for x in TRACKS_MASTER],
-            suffix(".bed"),
-            ".controlfasta" )
-def exportMotifControlSequences( infile, outfile ):
-    '''for each interval, export the left and right 
-    sequence segment of the same size.
-    '''
-    
-    track = infile[:-len(".bed")]
-    dbhandle = sqlite3.connect( PARAMS["database"] )
-
-    fasta = IndexedFasta.IndexedFasta( PARAMS["genome"] )
-
-    cc = dbhandle.cursor()
-    statement = "SELECT interval_id, contig, start, end FROM %s_intervals" % track
-    cc.execute( statement )
-
-    outs = open( outfile, "w")
-
-    for result in cc:
-        interval, contig, xstart, xend = result
-        l = xend - xstart
-        lcontig = fasta.getLength( contig )
-        start, end = max(0,xstart-l), xend-l
-        id = "%s_%s_l %s:%i..%i" % (track, str(interval), contig, start, end)
-        seq = fasta.getSequence( contig, "+", start, end)
-        outs.write( ">%s\n%s\n" % (id, seq))
-
-        start, end = xstart+l, min(lcontig,xend+l)
-        id = "%s_%s_r %s:%i..%i" % (track, str(interval), contig, start, end)
-        seq = fasta.getSequence( contig, "+", start, end)
-        outs.write( ">%s\n%s\n" % (id, seq))
-    
-    cc.close()
-    outs.close()
-
-if 0:
-    ############################################################
-    ############################################################
-    ############################################################
-    @merge( (PARAMS["overlap"], exportIntervalsAsBed ),
-            "intervals.overlap" )
-    def buildOverlap( infile, outfile ):
-        '''compute overlap between intervals.
-        '''
-
-        if os.path.exists(outfile): 
-            os.rename( outfile, outfile + ".orig" )
-            options = "--update=%s.orig" % outfile
-        else:
-            options = ""
-
-        statement = '''
-            python %(scriptsdir)s/diff_bed.py %(options)s *.bed > %(outfile)s
-            '''
-
-        P.run()
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @transform( buildOverlap, suffix(".overlap"), "_overlap.import" )
-    def importOverlap( infile, outfile ):
-        '''import overlap results.
-        '''
-
-        tablename = "overlap"
-
-        statement = '''
-        csv2db.py %(csv2db_options)s 
-                  --index=set1 
-                  --index=set2 
-                  --table=%(tablename)s 
-        < %(infile)s > %(outfile)s
-        '''
-
-        P.run()
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @merge( (exportUCSCEncodeTracks, 
-             combineConditions,
-             combineUnstim,
-             combineReplicates ),
-            "ucsc.overlap" )
-    def buildUCSCOverlap( infiles, outfile ):
-        '''compute overlap between intervals and the ucsc tracks.
-        '''
-
-        if os.path.exists(outfile): 
-            os.rename( outfile, outfile + ".orig" )
-            options = "--update=%s.orig" % outfile
-        else:
-            options = ""
-
-        to_cluster = True
-
-        infiles = " ".join(infiles)
-        statement = '''
-            python %(scriptsdir)s/diff_bed.py --tracks %(options)s %(infiles)s > %(outfile)s
-            '''
-
-        P.run( **dict( locals().items() + PARAMS.items() ) )
-
-    ############################################################
-    ############################################################
-    ############################################################
-    @transform( buildUCSCOverlap, suffix(".overlap"), "_overlap.import" )
-    def importUCSCOverlap( infile, outfile ):
-        '''import overlap results.
-        '''
-
-        tablename = "ucsc_overlap"
-
-        statement = '''
-        csv2db.py %(csv2db_options)s \
-                  --index=set1 \
-                  --index=set2 \
-                  --table=%(tablename)s \
-        < %(infile)s > %(outfile)s
-        '''
-
-        P.run( **dict( locals().items() + PARAMS.items() ) )
-
-
-############################################################
-############################################################
-############################################################
-## targets to do with the analysis of replicates
-############################################################
-if REPLICATES:
-
-    @files( [( ["%s%s.bed" % (x,y) for y in REPLICATES], "%s.reproducibility" % x, x) for x in TRACKS_EXPERIMENTS ] )
-    def makeReproducibility( infile, outfile, track ):
-        '''compute overlap between intervals.
-
-        Note the exon percentages are approxmations assuming that there are
-        not more than one intervals in one set overlapping one in the other set.
-        '''
-
-        dbhandle = sqlite3.connect( PARAMS["database"] )
-
-        data = []
-        for replicate in REPLICATES:
-            cc = dbhandle.cursor()
-            statement = "SELECT contig, start, end, peakval FROM %(track)s%(replicate)s_intervals" % locals()
-            cc.execute( statement )
-            data.append( cc.fetchall() )
-
-        ma = int(max( [ x[3] for x in itertools.chain( *data ) ] ) + 1)
-
-        nexons1, nexons2, nexons_overlapping = [0] * ma, [0] * ma, [0] * ma
-        nbases1, nbases2, nbases_overlapping = [0] * ma, [0] * ma, [0] * ma
-
-        idx = IndexedGenome.IndexedGenome()
-        for contig, start, end, peakval in data[0]:
-            peakval = int(peakval)
-            for x in range( 0, peakval):
-                nexons1[x] += 1
-                nbases1[x] += end - start
-            idx.add( contig, start, end, peakval )
-
-        for contig, start, end, peakval in data[1]:
-            peakval = int(peakval)
-            for x in range( 0, peakval):
-                nexons2[x] += 1
-                nbases2[x] += end - start
-
-            try:
-                intervals = list(idx.get( contig, start, end ))
-            except KeyError:
-                continue
-
-            if len(intervals) == 0: continue
-
-            for other_start,other_end,other_peakval in intervals:
-                ovl = min(end, other_end ) - max(start, other_start )
-                for x in range( 0, min( other_peakval, peakval) ):
-                    nexons_overlapping[x] += 1
-                    nbases_overlapping[x] += ovl
-
-        outs = open( outfile, "w" )
-        outs.write("peakval\tnexons1\tnexons2\tnexons_union\tnexons_ovl\tpexons_ovl\tpexons_union\tnbases1\tnbases2\tnbases_union\tnbases_ovl\tpbases_ovl\tpbases_union\n" )
-        total_bases = nbases1[0] + nbases2[0] - nbases_overlapping[0]
-        for x in range(0, ma):
-            bases_union = nbases1[x] + nbases2[x] - nbases_overlapping[x]
-            exons_union = nexons1[x] + nexons2[x] - nexons_overlapping[x]
-            outs.write( "\t".join( (str(x),
-                                    str(nexons1[x]),
-                                    str(nexons2[x]),
-                                    str(exons_union),
-                                    str(nexons_overlapping[x]),
-                                    IOTools.prettyPercent( nbases_overlapping[x], bases_union),
-                                    IOTools.prettyPercent( bases_union, total_bases),
-                                    str(nbases1[x]),
-                                    str(nbases2[x]),
-                                    str(bases_union),
-                                    str(nbases_overlapping[x]),
-                                    IOTools.prettyPercent( nbases_overlapping[x], bases_union),
-                                    IOTools.prettyPercent( bases_union, total_bases),
-                                    )) + "\n" )
-
-        outs.close()
-
-    @files_re( makeReproducibility, "(.*).reproducibility", r"\1_reproducibility.import" )
-    def importReproducibility( infile, outfile ):
-        '''import Reproducibility results
-        '''
-
-        tablename = outfile[:-len(".import")] 
-
-        statement = '''
-        csv2db.py %(csv2db_options)s \
-                  --table=%(tablename)s \
-        < %(infile)s > %(outfile)s
-        '''
-
-        P.run( **dict( locals().items() + PARAMS.items() ) )
-
-    @follows( importReproducibility )
-    def reproducibility(): pass
-
-else:
-
-    @follows( buildGeneSet )
-    def reproducibility(): pass
-
-############################################################
-############################################################
-############################################################
-@files( [( ["%s%s.norm.bam" % (x,y) for y in REPLICATES], "%s.readcorrelations.gz" % x) for x in TRACKS_EXPERIMENTS ] )
+@follows( normalizeBAMPerReplicate )
+@files( [( [ "%s.norm.bam" % y.asFile() for y in EXPERIMENTS.getTracks(x)], 
+           "%s.readcorrelations.gz" % x.asFile()) 
+         for x in EXPERIMENTS ] )
 def makeReadCorrelation( infiles, outfile ):
     '''compute correlation between reads.
     '''
 
     to_cluster = True
-    job_options = "-l mem_free=8000M"
+    # job_options = "-l mem_free=8000M"
 
     infiles = " ".join(infiles)
 
     statement = '''
-    python %(scriptsdir)s/bam_correlation.py \
-    --log=%(outfile)s.log \
-    --genome=%(genome)s \
-    %(infiles)s | gzip > %(outfile)s
+    python %(scriptsdir)s/bam_correlation.py 
+           --log=%(outfile)s.log 
+           --genome=%(genome)s 
+           %(infiles)s 
+    | gzip > %(outfile)s
     ''' 
     
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
 
 ############################################################
 ############################################################
@@ -863,67 +388,565 @@ def makeReadCorrelationTable( infiles, outfile ):
         outf.flush()
         
     outf.close()
+
+if PARAMS["calling_caller"] == "macs":
+
+    ############################################################
+    ############################################################
+    ############################################################
+    @follows( normalizeBAMPerReplicate )
+    @files( [ (("%s.norm.bam" % x.asFile(), 
+                "%s.norm.bam" % getControl(x).asFile()), 
+               "%s.macs" % x.asFile() ) for x in TRACKS ] )
+    def runMACS( infiles, outfile ):
+        '''run MACS for peak detection.'''
+        infile, controlfile = infiles
+
+        statement = '''
+            macs14 -t %(infile)s 
+                   -c %(controlfile)s
+                   --diag
+                   --name=%(outfile)s
+                   --format=BAM
+                   %(macs_options)s 
+            >& %(outfile)s''' 
+    
+        P.run() 
+        
+    ############################################################
+    ############################################################
+    ############################################################
+    @transform( runMACS,
+                regex(r"(.*).macs"),
+                inputs( (r"\1.macs", r"\1.norm.bam") ),
+                r"\1_macs.load" )
+    def loadMACS( infiles, outfile ):
+        infile, bamfile = infiles
+        PIntervals.loadMACS( infile, outfile, bamfile )
+        
+    ############################################################
+    ############################################################
+    ############################################################
+    @merge( runMACS, "macs.summary" )
+    def summarizeMACS( infiles, outfile ):
+        '''run MACS for peak detection.'''
+
+        PIntervals.summarizeMACS( infiles, outfile )
+
+    ############################################################
+    ############################################################
+    ############################################################
+    @transform( summarizeMACS,
+                suffix(".summary"),
+                "_summary.load" )
+    def loadMACSSummary( infile, outfile ):
+        '''load macs summary.'''
+        PIntervals.loadMACSSummary( infile, outfile )
+
+    ############################################################
+    ############################################################
+    ############################################################
+    @transform( loadMACS, suffix("_macs.load"), ".bed" )
+    def exportIntervalsAsBed( infile, outfile ):
+        PIntervals.exportMacsAsBed( infile, outfile )
+
+else:
+    raise ValueError("unknown peak caller %s" % PARAMS["calling_caller"] )
+
+############################################################
+############################################################
+############################################################
+@follows( exportIntervalsAsBed )
+@files( [( [ "%s.bed" % y.asFile() for y in EXPERIMENTS.getTracks(x)], 
+           "%s.bed" % x.asFile()) 
+         for x in EXPERIMENTS ] )
+def combineExperiment( infiles, outfile ):
+    '''combine replicates between experiments.
+
+    The replicates are combined using intersection.
+    '''
+
+    PIntervals.intersectBedFiles( infiles, outfile )
+
+############################################################
+############################################################
+############################################################
+@collate( combineExperiment, 
+          regex(r"(.+)-(.+)\.bed"),  
+          r"agg-\2.bed")
+def combineCondition( infiles, outfile ):
+    '''combine conditions between cell lines. 
+
+    The conditions are merged via intersection.
+    '''
+    PIntervals.intersectBedFiles( infiles, outfile )
+
+############################################################
+############################################################
+############################################################
+@collate( combineExperiment, 
+          regex(r"(.+)-(.+)\.bed"),  
+          r"\1-agg.bed")
+def combineTissue( infiles, outfile ):
+    '''combine conditions between cell lines. 
+
+    The conditions are merged via intersection.
+    '''
+    PIntervals.intersectBedFiles( infiles, outfile )
+
+############################################################
+############################################################
+############################################################
+@follows( combineExperiment, combineCondition )
+@files( [ ( ("%s.bed" % x.asFile(), 
+             "%s.bed" % getUnstimulated(x).asFile()),
+            "%s.bed" % getSubtracted(x).asFile() ) for x in TOSUBTRACT ] )
+def subtractUnstim( infiles, outfile ):
+    '''remove the unstimulated data sets from the individual tracks. 
+    '''
+
+    infile, subtract = infiles
+    PIntervals.subtractBedFiles( infile, subtract, outfile )
+
+############################################################
+############################################################
+############################################################
+@transform( (combineExperiment,
+             combineCondition, 
+             subtractUnstim, 
+             normalizeBAMPerReplicate),
+            suffix(".bed"),
+            "_bed.load" )
+def loadCombinedIntervals( infile, outfile ):
+    '''load combined intervals.
+
+    Also, re-evaluate the intervals by counting reads within
+    the interval. In contrast to the initial pipeline, the
+    genome is not binned. In particular, the meaning of the
+    columns in the table changes to:
+
+    nProbes: number of reads in interval
+    PeakCenter: position with maximum number of reads in interval
+    AvgVal: average coverage within interval
+
+    If *replicates* is true, only replicates will be considered
+    for the counting. Otherwise the counts aggregate both replicates
+    and conditions.
+    '''
+
+    tmpfile = tempfile.NamedTemporaryFile(delete=False)
+
+    headers = ("AvgVal","DisttoStart","GeneList","Length","PeakCenter","PeakVal","Position","interval_id","nCpGs","nGenes","nPeaks","nProbes","nPromoters", "contig","start","end" )
+
+    tmpfile.write( "\t".join(headers) + "\n" )
+
+    avgval,contig,disttostart,end,genelist,length,peakcenter,peakval,position,start,interval_id,ncpgs,ngenes,npeaks,nprobes,npromoters = \
+        0,"",0,0,"",0,0,0,0,0,0,0,0,0,0,0,
+
+    samfiles, offsets = [], []
+
+    track = infile[:-len(".bed")]
+    replicates = getReplicates( track, TRACKS_ALL )
+    assert len(replicates) > 0
+    
+    for t in replicates:
+        fn = t + ".norm.bam"
+        assert os.path.exists( fn )
+        samfiles.append( pysam.Samfile( fn,  "rb" ) )
+        if os.path.exists( t + ".macs" ):
+            offsets.append( PIntervals.getPeakShift( t + ".macs" ) )
+
+    mlength = int(PARAMS["calling_merge_min_interval_length"])
+
+    for line in open(infile, "r"):
+        contig, start, end, interval_id = line[:-1].split()[:4]
+
+        start, end = int(start), int(end)
+
+        # remove very short intervals
+        if end-start < mlength: continue
+
+        npeaks, peakcenter, length, avgval, peakval, nprobes = PIntervals.countPeaks( contig, start, end, samfiles, offsets )
+
+        tmpfile.write( "\t".join( map( str, (avgval,disttostart,genelist,length,peakcenter,peakval,position,interval_id,ncpgs,ngenes,npeaks,nprobes,npromoters, contig,start,end) )) + "\n" )
+ 
+    tmpfile.close()
+
+    tmpfilename = tmpfile.name
+    statement = '''
+    csv2db.py %(csv2db_options)s
+              --index=interval_id 
+              --table=%(track)s_intervals
+    < %(tmpfilename)s 
+    > %(outfile)s
+    '''
+
+    P.run()
+    os.unlink( tmpfile.name )
+
+############################################################
+############################################################
+############################################################
+@merge( exportIntervalsAsBed, "merged.bed" )
+def buildMergedIntervals( infiles, outfile ):
+    '''combine all experiments.
+
+    The replicates are combined using a merge.
+    '''
+    PIntervals.mergeBedFiles( infiles, outfile )
+
+############################################################
+############################################################
+############################################################
+## master target for this section
+############################################################
+@follows( loadCombinedIntervals, 
+          buildMergedIntervals,
+          loadMACSSummary )
+def buildIntervals():
+    pass
+
+###################################################################
+###################################################################
+###################################################################
+## general import
+###################################################################
+
+############################################################
+############################################################
+############################################################
+@files_re( (buildBAM, normalizeBAMPerReplicate),
+           "(.*).bam",
+           "%s/\1.bigwig" % PARAMS["exportdir"])
+def exportBigwig( infile, outfile ):
+    '''convert BAM to bigwig file.'''
+
+    # no bedToBigBed on the 32 bit cluster
+    to_cluster = True
+
+    statement = '''python %(scriptsdir)s/bam2wiggle.py \
+                --genome-file=%(genome)s \
+                --output-format=bigwig \
+                --output-filename=%(outfile)s \
+                %(infile)s \
+                > %(outfile)s.log'''
+     
+    P.run()
+
+############################################################
+############################################################
+############################################################
+# fix: does not work due to exportIntervalsAsBed
+# (loadCombinedIntervals, exportIntervalsAsBed ),
+@follows( buildIntervals )
+@transform( [ "%s.bed" % x.asFile() for x in TRACKS_MASTER ],
+            suffix(".bed"),
+            ".fasta" )
+def exportMotifSequences( infile, outfile ):
+    '''export sequences for all intervals.
+    '''
+    
+    track = P.snip( infile, ".bed" )
+
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+
+    fasta = IndexedFasta.IndexedFasta( PARAMS["genome"] )
+
+    cc = dbhandle.cursor()
+    statement = "SELECT interval_id, contig, start, end FROM %s_intervals" % P.quote( track )
+    cc.execute( statement )
+
+    outs = open( outfile, "w")
+
+    for result in cc:
+        interval, contig, start, end = result
+        id = "%s_%s %s:%i..%i" % (track, str(interval), contig, start, end)
+        
+        seq = fasta.getSequence( contig, "+", start, end)
+        outs.write( ">%s\n%s\n" % (id, seq))
+    
+    cc.close()
+    outs.close()
+
+############################################################
+############################################################
+############################################################
+# (loadCombinedIntervals, exportIntervalsAsBed ),
+# TODO: fix, causes a problem due to exportIntervalsAsBed
+@follows( buildIntervals )
+@transform( [ "%s.bed" % x.asFile() for x in TRACKS_MASTER],
+            suffix(".bed"),
+            ".controlfasta" )
+def exportMotifControlSequences( infile, outfile ):
+    '''for each interval, export the left and right 
+    sequence segment of the same size.
+    '''
+    
+    track = P.snip( infile, ".bed")
+
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+
+    fasta = IndexedFasta.IndexedFasta( PARAMS["genome"] )
+
+    table = "%s_intervals" % (P.quote( track ) )
+    cc = dbhandle.cursor()
+    statement = "SELECT interval_id, contig, start, end FROM %s" % table
+    cc.execute( statement )
+
+    outs = open( outfile, "w")
+
+    for result in cc:
+        interval, contig, xstart, xend = result
+        l = xend - xstart
+        lcontig = fasta.getLength( contig )
+        start, end = max(0,xstart-l), xend-l
+        id = "%s_%s_l %s:%i..%i" % (track, str(interval), contig, start, end)
+        seq = fasta.getSequence( contig, "+", start, end)
+        outs.write( ">%s\n%s\n" % (id, seq))
+
+        start, end = xstart+l, min(lcontig,xend+l)
+        id = "%s_%s_r %s:%i..%i" % (track, str(interval), contig, start, end)
+        seq = fasta.getSequence( contig, "+", start, end)
+        outs.write( ">%s\n%s\n" % (id, seq))
+    
+    cc.close()
+    outs.close()
+
+############################################################
+############################################################
+############################################################
+@merge( (exportIntervalsAsBed, 
+         combineExperiment, 
+         combineCondition,
+         ),
+        "intervals.overlap" )
+def buildOverlap( infiles, outfile ):
+    '''compute overlap between intervals.
+    '''
+
+    if os.path.exists(outfile): 
+        # note: update does not work due to quoting
+        os.rename( outfile, outfile + ".orig" )
+        options = "--update=%s.orig" % outfile
+    else:
+        options = ""
+
+    infiles = " ".join( infiles )
+
+    # note: need to quote track names
+    statement = '''
+        python %(scriptsdir)s/diff_bed.py %(options)s %(infiles)s 
+        | awk -v OFS="\\t" '!/^#/ { gsub( /-/,"_", $1); gsub(/-/,"_",$2); } {print}'
+        > %(outfile)s
+        '''
+
+    P.run()
+
+############################################################
+############################################################
+############################################################
+@transform( buildOverlap, suffix(".overlap"), "_overlap.load" )
+def loadOverlap( infile, outfile ):
+    '''load overlap results.
+    '''
+
+    tablename = "overlap"
+
+    statement = '''
+    csv2db.py %(csv2db_options)s 
+              --index=set1 
+              --index=set2 
+              --table=%(tablename)s 
+    < %(infile)s > %(outfile)s
+    '''
+
+    P.run()
+
+if 0:
+    ############################################################
+    ############################################################
+    ############################################################
+    @merge( (exportUCSCEncodeTracks, 
+             combineConditions,
+             combineUnstim,
+             combineExperiment ),
+            "ucsc.overlap" )
+    def buildUCSCOverlap( infiles, outfile ):
+        '''compute overlap between intervals and the ucsc tracks.
+        '''
+
+        if os.path.exists(outfile): 
+            os.rename( outfile, outfile + ".orig" )
+            options = "--update=%s.orig" % outfile
+        else:
+            options = ""
+
+        to_cluster = True
+
+        infiles = " ".join(infiles)
+        statement = '''
+            python %(scriptsdir)s/diff_bed.py --tracks %(options)s %(infiles)s > %(outfile)s
+            '''
+
+        P.run()
+
+    ############################################################
+    ############################################################
+    ############################################################
+    @transform( buildUCSCOverlap, suffix(".overlap"), "_overlap.import" )
+    def importUCSCOverlap( infile, outfile ):
+        '''import overlap results.
+        '''
+
+        tablename = "ucsc_overlap"
+
+        statement = '''
+        csv2db.py %(csv2db_options)s \
+                  --index=set1 \
+                  --index=set2 \
+                  --table=%(tablename)s \
+        < %(infile)s > %(outfile)s
+        '''
+
+        P.run()
+
+############################################################
+############################################################
+############################################################
+## targets to do with the analysis of replicates
+############################################################
+@follows( buildIntervals )
+@files( [ ([ "%s.bed" % y.asFile() for y in EXPERIMENTS.getTracks( x )], 
+           "%s.reproducibility" % x.asFile) for x in EXPERIMENTS ] )
+def makeReproducibility( infiles, outfile ):
+    '''compute overlap between intervals.
+
+    Note the exon percentages are approximations assuming that there are
+    not more than one intervals in one set overlapping one in the other set.
+    '''
+
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+
+    data = []
+    for replicate in infiles:
+        cc = dbhandle.cursor()
+        tablename = "%s_intervals" % P.quote( P.snip(replicate, ".bed") )
+        statement = "SELECT contig, start, end, peakval FROM %(tablename)s" % locals()
+        cc.execute( statement )
+        data.append( cc.fetchall() )
+
+    ma = int(max( [ x[3] for x in itertools.chain( *data ) ] ) + 1)
+
+    nexons1, nexons2, nexons_overlapping = [0] * ma, [0] * ma, [0] * ma
+    nbases1, nbases2, nbases_overlapping = [0] * ma, [0] * ma, [0] * ma
+
+    idx = IndexedGenome.IndexedGenome()
+    for contig, start, end, peakval in data[0]:
+        peakval = int(peakval)
+        for x in range( 0, peakval):
+            nexons1[x] += 1
+            nbases1[x] += end - start
+        idx.add( contig, start, end, peakval )
+
+    for contig, start, end, peakval in data[1]:
+        peakval = int(peakval)
+        for x in range( 0, peakval):
+            nexons2[x] += 1
+            nbases2[x] += end - start
+
+        try:
+            intervals = list(idx.get( contig, start, end ))
+        except KeyError:
+            continue
+
+        if len(intervals) == 0: continue
+
+        for other_start,other_end,other_peakval in intervals:
+            ovl = min(end, other_end ) - max(start, other_start )
+            for x in range( 0, min( other_peakval, peakval) ):
+                nexons_overlapping[x] += 1
+                nbases_overlapping[x] += ovl
+
+    outs = open( outfile, "w" )
+    outs.write("peakval\tnexons1\tnexons2\tnexons_union\tnexons_ovl\tpexons_ovl\tpexons_union\tnbases1\tnbases2\tnbases_union\tnbases_ovl\tpbases_ovl\tpbases_union\n" )
+    total_bases = nbases1[0] + nbases2[0] - nbases_overlapping[0]
+    for x in range(0, ma):
+        bases_union = nbases1[x] + nbases2[x] - nbases_overlapping[x]
+        exons_union = nexons1[x] + nexons2[x] - nexons_overlapping[x]
+        outs.write( "\t".join( (str(x),
+                                str(nexons1[x]),
+                                str(nexons2[x]),
+                                str(exons_union),
+                                str(nexons_overlapping[x]),
+                                IOTools.prettyPercent( nbases_overlapping[x], bases_union),
+                                IOTools.prettyPercent( bases_union, total_bases),
+                                str(nbases1[x]),
+                                str(nbases2[x]),
+                                str(bases_union),
+                                str(nbases_overlapping[x]),
+                                IOTools.prettyPercent( nbases_overlapping[x], bases_union),
+                                IOTools.prettyPercent( bases_union, total_bases),
+                                )) + "\n" )
+
+    outs.close()
+
+@transform( makeReproducibility, suffix(".reproducibility"), "_reproducibility.load" )
+def loadReproducibility( infile, outfile ):
+    '''load Reproducibility results
+    '''
+    P.load( infile, outfile )
+
+@follows( loadReproducibility )
+def reproducibility(): pass
     
 ############################################################
 ############################################################
 ############################################################
 ##
 ############################################################
-@follows( makeMerged )
-@files_re( ["%s.bed" % x for x in TRACKS_CORRELATION],
+@follows( buildMergedIntervals )
+@files_re( ["%s.bed" % x.asFile() for x in TRACKS_CORRELATION],
            combine("(.*).bed"),
            "peakval.correlation" )
 def makePeakvalCorrelation( infiles, outfile ):
     '''compute correlation of interval properties between sets for field peakval.
     '''
-    PIntervals.makeIntervalCorrelation( infiles, outfile, "peakval" )
+    PIntervals.makeIntervalCorrelation( infiles, outfile, "peakval", "merged.bed" )
 
-@follows( makeMerged )
-@files_re( ["%s.bed" % x for x in TRACKS_CORRELATION],
+@follows( buildMergedIntervals )
+@files_re( ["%s.bed" % x.asFile() for x in TRACKS_CORRELATION],
            combine("(.*).bed"),
            "avgval.correlation" )
 def makeAvgvalCorrelation( infiles, outfile ):
     '''compute correlation of interval properties between sets for field peakval.
     '''
-    PIntervals.makeIntervalCorrelation( infiles, outfile, "avgval" )
+    PIntervals.makeIntervalCorrelation( infiles, outfile, "avgval", "merged.bed" )
 
-@follows( makeMerged )
-@files_re( ["%s.bed" % x for x in TRACKS_CORRELATION],
+@follows( buildMergedIntervals )
+@files_re( ["%s.bed" % x.asFile() for x in TRACKS_CORRELATION],
            combine("(.*).bed"),
            "length.correlation" )
 def makeLengthCorrelation( infiles, outfile ):
     '''compute correlation of interval properties between sets for field peakval.
     '''
-    PIntervals.makeIntervalCorrelation( infiles, outfile, "length" )
+    PIntervals.makeIntervalCorrelation( infiles, outfile, "length", "merged.bed" )
 
 @transform( ( makePeakvalCorrelation, makeAvgvalCorrelation, makeLengthCorrelation ),
             suffix(".correlation"),
-            "_correlation.import")
-def importCorrelation( infile, outfile ):
+            "_correlation.load")
+def loadCorrelation( infile, outfile ):
+    '''load correlation data.'''
+    P.load( infile, outfile, "--index=id --map=default:float --map=id:int" )
 
-    tablename = outfile[:-len(".import")] 
-
-    statement = '''
-    csv2db.py %(csv2db_options)s \
-              --index=id \
-              --map=default:float \
-              --table=%(tablename)s \
-    < %(infile)s > %(outfile)s
+############################################################
+############################################################
+############################################################
+@transform( "*.motif.fasta",
+            suffix(".motif.fasta"),
+            ".motif" )
+def buildReferenceMotifs( infile, outfile ):
+    '''build motif from jasper sites by running MEME.
     '''
-
-    P.run( **dict( locals().items() + PARAMS.items() ) )
-
-
-
-
-############################################################
-############################################################
-############################################################
-@files_re( "*.sites",
-           "(.*).sites",
-           r"\1.motif" )
-def makeMotifs( infile, outfile ):
-    '''build motifs from jasper sites by running MEME.'''
 
     tmpdir = tempfile.mkdtemp()
     tmpname = os.path.join( tmpdir, "tmpfile") 
@@ -933,9 +956,9 @@ def makeMotifs( infile, outfile ):
     tmpfile.close()
 
     statement = '''
-    %(execmeme)s %(tmpname)s -mod oops -dna -revcomp -nmotifs 1 -text -oc %(tmpdir)s > %(outfile)s
+    meme %(tmpname)s -mod oops -dna -revcomp -nmotifs 1 -text -oc %(tmpdir)s > %(outfile)s
     '''
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
 
     shutil.rmtree( tmpdir )
 
@@ -958,17 +981,17 @@ def runMEME( infile, outfile ):
     * Sequence is run through dustmasker
     '''
     to_cluster = True
-    job_queue = "medium_jobs.q"
-    job_options = "-l mem_free=8000M"
+    # job_options = "-l mem_free=8000M"
 
     target_path = os.path.join( os.path.abspath(PARAMS["exportdir"]), "meme", outfile )
 
     dbhandle = sqlite3.connect( PARAMS["database"] )
     fasta = IndexedFasta.IndexedFasta( PARAMS["genome"] )
 
-    track = infile[:-len(".fasta")]
+    track = P.snip(infile, ".fasta")
+
     cc = dbhandle.cursor()
-    statement = "SELECT peakcenter, interval_id, contig FROM %s_intervals ORDER BY peakval DESC" % track
+    statement = "SELECT peakcenter, interval_id, contig FROM %s_intervals ORDER BY peakval DESC" % P.quote(track)
     cc.execute( statement )
     data = cc.fetchall()
     cc.close()
@@ -994,10 +1017,10 @@ def runMEME( infile, outfile ):
         id = "%s_%s %s:%i..%i" % (track, str(id), contig, start, end)
         seq = fasta.getSequence( contig, "+", start, end )
 
-        if PARAMS["meme_masker"] == "repeatmasker":
+        if PARAMS["motifs_masker"] == "repeatmasker":
             # the genome sequence is repeat masked
             masked_seq = seq
-        elif PARAMS["meme_masker"] == "dustmasker":
+        elif PARAMS["motifs_masker"] == "dustmasker":
             masked_seq = masker( seq.upper() )
 
         # hard mask softmasked characters
@@ -1012,9 +1035,9 @@ def runMEME( infile, outfile ):
     outs.close()
 
     statement = '''
-    %(execmeme)s %(tmpfasta)s -dna -revcomp -mod %(meme_model)s -nmotifs %(meme_nmotifs)s -oc %(tmpdir)s -maxsize %(maxsize)s %(meme_options)s > %(outfile)s.log
+    meme %(tmpfasta)s -dna -revcomp -mod %(meme_model)s -nmotifs %(meme_nmotifs)s -oc %(tmpdir)s -maxsize %(maxsize)s %(meme_options)s > %(outfile)s.log
     '''
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
 
     # copy over results
     try:
@@ -1061,12 +1084,16 @@ def writeSequencesForIntervals( track, filename,
 
     cc = dbhandle.cursor()
         
+    tablename = "%s_intervals" % P.quote( track )
     if full:
-        statement = '''SELECT start, end, interval_id, contig FROM
-        %(track)s_intervals ORDER BY peakval DESC''' % locals()
+        statement = '''SELECT start, end, interval_id, contig 
+                       FROM %(tablename)s 
+                       ORDER BY peakval DESC''' % locals()
     elif halfwidth:
         statement = '''SELECT peakcenter - %(halfwidth)s, peakcenter + %(halfwidth)s,
-                       interval_id, contig FROM %(track)s_intervals ORDER BY peakval DESC''' % locals()
+                       interval_id, contig 
+                       FROM %(tablename)s 
+                       ORDER BY peakval DESC''' % locals()
     else:
         raise ValueError("either specify full or halfwidth" )
     
@@ -1170,7 +1197,6 @@ def runGLAM2( infile, outfile ):
     * Sequence is run through dustmasker
     '''
     to_cluster = True
-    job_queue = "server_jobs.q"
 
     target_path = os.path.join( os.path.abspath( PARAMS["exportdir"] ), "glam2", outfile )
     track = infile[:-len(".fasta")]
@@ -1209,57 +1235,67 @@ def runGLAM2( infile, outfile ):
 ## selecting which motifs to run
 ############################################################
 
-if PARAMS["motifs_tomtom_master_motif"] != "":
+if PARAMS["tomtom_master_motif"] != "":
     ############################################################
     ############################################################
     ## filter motifs by a master motif
     ############################################################
     ############################################################
     ############################################################
-    @follows( makeMotifs )
+    @follows( buildReferenceMotifs )
     @transform( runMEME, suffix(".meme"), ".tomtom" )
     def runTomTom( infile, outfile ):
         '''compare ab-initio motifs against tomtom.'''
         to_cluster = True
         statement = '''
-           tomtom -text -query %(tomtom_master_motif)s -target %(infile)s > %(outfile)s
+           tomtom -text %(tomtom_master_motif)s %(infile)s > %(outfile)s
            '''
         P.run()
 
     ############################################################
     ############################################################
     ############################################################
-    @transform( runTomTom, suffix(".tomtom"), "_tomtom.import" )
-    def importTomTom( infile, outfile ):
+    @transform( runTomTom, suffix(".tomtom"), "_tomtom.load" )
+    def loadTomTom( infile, outfile ):
         '''compare ab-initio motifs against tomtom.'''
 
         tmpfile = P.getTempFile()
 
         tmpfile.write( "\t".join( \
             ("query_id", "target_id",
-             "optimal_offset", "pvalue", "qvalue", "overlap", "query_consensus",
+             "optimal_offset", "pvalue", "evalue", "qvalue", 
+             "overlap", "query_consensus",
              "target_consensus", "orientation") ) + "\n" )
 
         for line in open( infile, "r" ):
             if line.startswith( "#Query" ): continue
-            (query_id, target_id, 
-             optimal_offset, pvalue, qvalue, overlap, query_consensus,
-             target_consensus, orientation) = line[:-1].split("\t")
+            data = line[:-1].split("\t")
+            (query_id, 
+             target_id, 
+             optimal_offset, 
+             pvalue, 
+             evalue,
+             qvalue, 
+             overlap, 
+             query_consensus,
+             target_consensus, 
+             orientation) = data
             tmpfile.write( line )
 
         tmpfile.close()
 
         tmpname = tmpfile.name
-        tablename = outfile[:-len(".import")]
+        tablename = P.toTable( outfile )
 
         statement = '''
-        csv2db.py %(csv2db_options)s \
-                  --allow-empty \
-                  --table=%(tablename)s \
-        < %(tmpname)s > %(outfile)s
+        csv2db.py %(csv2db_options)s 
+                  --allow-empty 
+                  --table=%(tablename)s 
+        < %(tmpname)s 
+        > %(outfile)s
         '''
 
-        P.run( **dict( locals().items() + PARAMS.items() ) )
+        P.run()
         os.unlink( tmpname )
 
     @transform( runTomTom, suffix(".tomtom"), ".motif" )
@@ -1270,11 +1306,11 @@ if PARAMS["motifs_tomtom_master_motif"] != "":
         infile_meme = infile[:-len(".tomtom")] + ".meme"
 
         selected = []
-        max_pvalue = float(PARAMS["motifs_tomtom_filter_pvalue"])
+        max_pvalue = float(PARAMS["tomtom_filter_pvalue"])
         for line in open( infile, "r" ):
             if line.startswith( "#Query" ): continue
             (query_id, target_id, 
-             optimal_offset, pvalue, qvalue, overlap, query_consensus,
+             optimal_offset, pvalue, evalue, qvalue, overlap, query_consensus,
              target_consensus, orientation) = line[:-1].split("\t")
             if float(pvalue) <= max_pvalue:
                 selected.append( target_id )
@@ -1294,7 +1330,7 @@ else:
     def runTomTom(): pass
 
     @follows(runTomTom)
-    def importTomTom(): pass
+    def loadTomTom(): pass
         
     ############################################################
     ############################################################
@@ -1310,11 +1346,11 @@ else:
 ############################################################
 ############################################################
 # todo: fix, causes a problem: exportSequences and exportMASTControlSequences,
-@follows( makeMotifs, filterMotifs )
+@follows( buildReferenceMotifs, filterMotifs )
 @files_re( (exportMotifSequences, exportMotifControlSequences),
            "(\S+).controlfasta",
            [ r"\1.controlfasta", r"\1.fasta",  glob.glob("*.motif")],
-           r"\1.mast" )
+           r"\1.mast.gz" )
 def runMAST( infiles, outfile ):
     '''run mast on all intervals and motifs.
 
@@ -1324,33 +1360,42 @@ def runMAST( infiles, outfile ):
     10000 is a heuristic.
     '''
     to_cluster = True
-    job_queue = "medium_jobs.q"
-    # only use new nodes, as /bin/csh is not installed
-    # on the old ones.
-    job_options = "-l mem_free=8000M"
+
+    # job_options = "-l mem_free=8000M"
 
     controlfile, dbfile, motiffiles  = infiles
     controlfile = dbfile[:-len(".fasta")] + ".controlfasta"
     if not os.path.exists( controlfile ):
         raise P.PipelineError( "control file %s for %s does not exist" % (controlfile, dbfile))
 
+    # remove previous results
     if os.path.exists(outfile): os.remove( outfile )
     
+    tmpdir = P.getTempDir()
+    tmpfile = P.getTempFilename()
+
     for motiffile in motiffiles:
         if IOTools.isEmpty( motiffile ):
             E.info( "skipping empty motif file %s" % motiffile )
             continue
         
-        of = open(outfile, "a")
+        of = open(tmpfile, "a")
         motif, x = os.path.splitext( motiffile )
         of.write(":: motif = %s ::\n" % motif )
         of.close()
         
         statement = '''
         cat %(dbfile)s %(controlfile)s 
-        mast %(motiffile)s -stdin -stdout -text -ev %(motif_mast_evalue)f >> %(outfile)s
+        | mast %(motiffile)s - -nohtml -oc %(tmpdir)s -ev %(mast_evalue)f %(mast_options)s >> %(outfile)s.log;
+        cat %(tmpdir)s/mast.txt >> %(tmpfile)s
         '''
-        P.run( **dict( locals().items() + PARAMS.items() ) )
+        P.run()
+
+    statement = "gzip < %(tmpfile)s > %(outfile)s" 
+    P.run()
+
+    shutil.rmtree( tmpdir )
+    os.unlink( tmpfile )
 
 ############################################################
 ############################################################
@@ -1367,7 +1412,7 @@ def runBioProspector( infiles, outfile ):
 
     # only use new nodes, as /bin/csh is not installed
     # on the old ones.
-    job_options = "-l mem_free=8000M"
+    # job_options = "-l mem_free=8000M"
 
     tmpfasta = P.getTempFilename( "." )
     track = outfile[:-len(".bioprospector")]
@@ -1378,7 +1423,7 @@ def runBioProspector( infiles, outfile ):
                                        proportion = 0.10 )
 
     statement = '''
-    bioprospector -i %(tmpfasta)s %(bioprospector_options)s -o %(outfile)s > %(outfile)s.log
+    BioProspector -i %(tmpfasta)s %(bioprospector_options)s -o %(outfile)s > %(outfile)s.log
     '''
     P.run()
 
@@ -1389,11 +1434,11 @@ def runBioProspector( infiles, outfile ):
 ############################################################
 ##
 ############################################################
-@transform( runBioProspector, suffix(".bioprospector"), "_bioprospector.import")
-def importBioProspector( infile, outfile ):
-    '''import results from bioprospector.'''
+@transform( runBioProspector, suffix(".bioprospector"), "_bioprospector.load")
+def loadBioProspector( infile, outfile ):
+    '''load results from bioprospector.'''
 
-    tablename = outfile[:-len(".import")]
+    tablename = outfile[:-len(".load")]
     target_path = os.path.join( os.path.abspath( PARAMS["exportdir"] ), "bioprospector" )
 
     try:
@@ -1508,10 +1553,10 @@ def runRegexMotifSearch( infiles, outfile ):
 ############################################################
 ############################################################
 @transform( runMAST,
-            suffix(".mast"),
-            "_mast.import" )
-def importMAST( infile, outfile ):
-    '''parse mast file and import into database.
+            suffix(".mast.gz"),
+            "_mast.load" )
+def loadMAST( infile, outfile ):
+    '''parse mast file and load into database.
 
     Parse several motif runs and add them to the same
     table.
@@ -1519,7 +1564,8 @@ def importMAST( infile, outfile ):
     Add columns for the control data as well.
     '''
 
-    tablename = os.path.basename( infile )
+    tablename = P.toTable( outfile )
+
     tmpfile = tempfile.NamedTemporaryFile(delete=False)
 
     tmpfile.write( MAST.Match().header +\
@@ -1528,7 +1574,7 @@ def importMAST( infile, outfile ):
                    "\tr_evalue\tr_pvalue\tr_nmatches\tr_length\tr_start\tr_end" \
                    "\tmin_evalue\tmin_pvalue\tmax_nmatches" + "\n" )
 
-    lines = open(infile).readlines()
+    lines = IOTools.openFile(infile).readlines()
     chunks = [x for x in range(len(lines)) if lines[x].startswith("::") ]
     chunks.append( len(lines) )
 
@@ -1602,7 +1648,7 @@ def importMAST( infile, outfile ):
     < %(tmpfilename)s > %(outfile)s
     '''
 
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
     os.unlink( tmpfile.name )
 
 ############################################################
@@ -1615,7 +1661,7 @@ def importMAST( infile, outfile ):
 #           [ r"\1.controlfasta", r"\1.fasta", glob.glob("*.glam2")],
 #           r"\1.glam2scan" )
 
-@follows( makeMotifs, runGLAM2 )
+@follows( buildReferenceMotifs, runGLAM2 )
 @files_re( (exportMotifSequences, exportMotifControlSequences),
            "(\S+).controlfasta",
            [ r"\1.controlfasta", r"\1.fasta",  glob.glob("*.glam2")],
@@ -1625,10 +1671,9 @@ def runGLAM2SCAN( infiles, outfile ):
     '''
 
     to_cluster = True
-    job_queue = "medium_jobs.q"
     # only use new nodes, as /bin/csh is not installed
     # on the old ones.
-    job_options = "-l mem_free=8000M"
+    # job_options = "-l mem_free=8000M"
 
     controlfile, dbfile, motiffiles  = infiles
     controlfile = dbfile[:-len(".fasta")] + ".controlfasta"
@@ -1653,15 +1698,15 @@ def runGLAM2SCAN( infiles, outfile ):
 ############################################################
 @transform( runGLAM2SCAN,
             suffix(".glam2scan"),
-            "_glam.import" )
-def importGLAM2SCAN( infile, outfile ):
-    '''parse mast file and import into database.
+            "_glam.load" )
+def loadGLAM2SCAN( infile, outfile ):
+    '''parse mast file and load into database.
 
     Parse several motif runs and add them to the same
     table.
     '''
 
-    tablename = outfile[:-len(".import")]
+    tablename = outfile[:-len(".load")]
     tmpfile = tempfile.NamedTemporaryFile(delete=False)
     tmpfile.write( "motif\tid\tnmatches\tscore\tscores\tncontrols\tmax_controls\n" )
 
@@ -1742,76 +1787,61 @@ def importGLAM2SCAN( infile, outfile ):
     < %(tmpfilename)s > %(outfile)s
     '''
 
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
     os.unlink( tmpfile.name )
 
 ############################################################
 ############################################################
 ############################################################
-@files( [ ("%s.bed" % x, "%s.annotations" % x ) for x in TRACKS_MASTER ] )
+@follows( buildIntervals )
+@files( [ ("%s.bed" % x.asFile(), 
+           "%s.annotations" % x.asFile() ) for x in TRACKS_MASTER ] )
 def annotateIntervals( infile, outfile ):
     '''classify chipseq intervals according to their location 
     with respect to the gene set.
     '''
     to_cluster = True
-    statement = """
-    cat < %(infile)s |\
-        python %(scriptsdir)s/bed2gff.py --as-gtf |\
-	python /home/andreas/gpipe/gtf2table.py \
-		--counter=position \
-		--counter=classifier-chipseq \
-		--section=exons \
-		--counter=length \
-		--log=%(outfile)s.log \
-		--filename-gff=%(annotation)s \
-		--genome-file=%(genome)s
-	> %(outfile)s"""
 
+    annotation_file = os.path.join( PARAMS["annotations_dir"],
+                                    PARAMS_ANNOTATIONS["interface_annotation"] )
+
+    statement = """
+    cat < %(infile)s 
+    | python %(scriptsdir)s/bed2gff.py --as-gtf 
+    | python %(scriptsdir)s/gtf2table.py 
+		--counter=position 
+		--counter=classifier-chipseq 
+		--section=exons 
+		--counter=length 
+		--log=%(outfile)s.log 
+		--filename-gff=%(annotation_file)s 
+		--genome-file=%(genome)s
+    > %(outfile)s"""
+    
     P.run()
 
-def straightImport( infile, outfile, options = "" ):
-    '''straight import from gtf2table results.
-
-    The table name is given by outfile without the
-    ".import" suffix.
-    '''
-
-    tablename = outfile[:-len(".import")]
-
-    statement = '''
-    csv2db.py %(csv2db_options)s \
-              --index=gene_id \
-              %(options)s \
-              --table=%(tablename)s \
-    < %(infile)s > %(outfile)s
-    '''
-
-    P.run( **dict( locals().items() + PARAMS.items() ) )
-
 ############################################################
 ############################################################
 ############################################################
-@follows( annotateIntervals )
-@files_re( "*.annotations", "(.*).annotations", r"\1_annotations.import" )
-def importAnnotations( infile, outfile ):
-    '''import interval annotations: genome architecture
-    '''
-    straightImport( infile, outfile )
-
-############################################################
-############################################################
-############################################################
-@files( [ ("%s.bed" % x, "%s.tss" % x ) for x in TRACKS_MASTER ] )
+@follows( buildIntervals )
+@files( [ ("%s.bed" % x.asFile(), 
+           "%s.tss" % x.asFile() ) for x in TRACKS_MASTER ] )
 def annotateTSS( infile, outfile ):
+    '''compute distance to TSS'''
 
     to_cluster = True
+
+    annotation_file = os.path.join( PARAMS["annotations_dir"],
+                                    PARAMS_ANNOTATIONS["interface_tss"] )
+
     statement = """
-    cat < %(infile)s |\
-        python %(scriptsdir)s/bed2gff.py --as-gtf |\
-	python /home/andreas/gpipe/gtf2table.py \
-		--counter=distance-tss \
-		--log=%(outfile)s.log \
-		--filename-gff=%(transcripts_tss)s \
+    cat < %(infile)s 
+        | python %(scriptsdir)s/bed2gff.py --as-gtf 
+	| python %(scriptsdir)s/gtf2table.py 
+		--counter=distance-tss 
+		--log=%(outfile)s.log 
+		--filename-gff=%(annotation_file)s 
+                --filename-format="bed" 
 		--genome-file=%(genome)s
 	> %(outfile)s"""
 
@@ -1820,69 +1850,61 @@ def annotateTSS( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-@files( [ ("%s.bed" % x, "%s.repeats" % x ) for x in TRACKS_MASTER ] )
+@follows( buildIntervals )
+@files( [ ("%s.bed" % x.asFile(), 
+           "%s.repeats" % x.asFile() ) for x in TRACKS_MASTER ] )
 def annotateRepeats( infile, outfile ):
     '''count the overlap between intervals and repeats.'''
 
     to_cluster = True
+
+    annotation_file = os.path.join( PARAMS["annotations_dir"],
+                                    PARAMS_ANNOTATIONS["interface_repeats"] )
+
     statement = """
     cat < %(infile)s |\
         python %(scriptsdir)s/bed2gff.py --as-gtf |\
-	python /home/andreas/gpipe/gtf2table.py \
+	python %(scriptsdir)s/gtf2table.py \
 		--counter=overlap \
 		--log=%(outfile)s.log \
-		--filename-gff=%(repeats)s \
+		--filename-gff=%(annotation_file)s \
 		--genome-file=%(genome)s
 	> %(outfile)s"""
 
     P.run()
 
 ############################################################
-############################################################
-############################################################
-@files_re( annotateTSS, "(.*).tss", r"\1_tss.import" )
-def importTSS( infile, outfile ):
-    '''import interval annotations: distance to transcription start sites
+@transform( annotateIntervals, suffix(".annotations"), "_annotations.load" )
+def loadAnnotations( infile, outfile ):
+    '''load interval annotations: genome architecture
     '''
-    straightImport( infile, outfile, options = "--index=closest_id --index=id5 --index=id3" )
+    P.load( infile, outfile, "--index=gene_id" )
 
 ############################################################
-############################################################
-############################################################
-@transform( annotateRepeats, suffix(".repeats"), "_repeats.import" )
-def importRepeats( infile, outfile ):
-    '''import interval annotations: repeats
+@transform( annotateTSS, suffix( ".tss"), "_tss.load" )
+def loadTSS( infile, outfile ):
+    '''load interval annotations: distance to transcription start sites
     '''
-    straightImport( infile, outfile )
+    P.load( infile, outfile, "--index=gene_id --index=closest_id --index=id5 --index=id3" )
+
+############################################################
+@transform( annotateRepeats, suffix(".repeats"), "_repeats.load" )
+def loadRepeats( infile, outfile ):
+    '''load interval annotations: repeats
+    '''
+    P.load( infile, outfile, "--index=gene_id" )
 
 ############################################################
 ############################################################
 ############################################################
-@files( [ ("%s.bed" % x, "%s.probetss" % x ) for x in TRACKS_MASTER ] )
-def annotateProbesetTSS( infile, outfile ):
-
-    to_cluster = True
-    statement = """
-    cat < %(infile)s |\
-        python %(scriptsdir)s/bed2gff.py --as-gtf |\
-	python /home/andreas/gpipe/gtf2table.py \
-		--counter=distance-tss \
-		--log=%(outfile)s.log \
-		--filename-gff=%(probeset)s \
-		--genome-file=%(genome)s
-	> %(outfile)s"""
-
-    P.run()
-
+## count coverage within intervals for each track against
+## the unstimulated tracks
 ############################################################
-############################################################
-############################################################
-## count coverage within intervals for each track agains all
-## the Unstim tracks
-############################################################
-@files( [ ("%s.bed" % x, "%s.readcounts" % x ) for x in TRACKS_NOT_UNSTIM ] )
+@follows( subtractUnstim )
+@files( [ ("%s.bed" % x.asFile(), "%s.readcounts" % x.asFile() ) for x in TOSUBTRACT ] )
 def buildIntervalCounts( infile, outfile ):
-    '''count read density in bed files.
+    '''count read density in bed files comparing stimulated versus
+    unstimulated binding.
     '''
     track = outfile[:-len(".readcounts")]
 
@@ -1890,68 +1912,52 @@ def buildIntervalCounts( infile, outfile ):
 
     samfiles_fg, samfiles_bg = [], []
 
-    # save original, because condition is later assigned to
-    one = tissue and condition
-    two = condition
+    # collect foreground and background bam files
+    fg_replicates = getReplicates( track, TRACKS_ALL )
+    for replicate in fg_replicates:
+        samfiles_fg.append( replicate + ".norm.bam" )
 
-    if REPLICATES:
-        if one:
-            for replicate in REPLICATES:
-                samfiles_fg.append( FILEPATTERN % locals() + BAM_SUFFIX )
-            condition = "Unstim"
-            for replicate in REPLICATES:
-                samfiles_bg.append( FILEPATTERN % locals() + BAM_SUFFIX )
-        elif two:
-            for tissue in TISSUES:
-                for replicate in REPLICATES:
-                    samfiles_fg.append( FILEPATTERN % locals() + BAM_SUFFIX )
-            condition = "Unstim"
-            for tissue in TISSUES:
-                for replicate in REPLICATES:
-                    samfiles_bg.append( FILEPATTERN % locals() + BAM_SUFFIX )
+    bg_replicates = getReplicates( buildTrack( tissue, PARAMS["tracks_unstimulated"], "") , 
+                                   TRACKS_ALL )
 
-    else:
-        samfiles_fg.append( FILEPATTERN % locals() + BAM_SUFFIX )
-        condition = "Unstim"
-        if os.path.exists(FILEPATTERN % locals() + BAM_SUFFIX ):
-            samfiles_bg.append( FILEPATTERN % locals() + BAM_SUFFIX )
-        else:
-            samfiles_bg = samfiles_fg
-            
+    for replicate in bg_replicates:
+        samfiles_bg.append( replicate + ".norm.bam" )
+
     samfiles_fg = ",".join(samfiles_fg)
     samfiles_bg = ",".join(samfiles_bg)
 
     tmpfile1 = P.getTempFilename( os.getcwd() ) + ".fg"
     tmpfile2 = P.getTempFilename( os.getcwd() ) + ".bg"
 
+    # start counting
     to_cluster = True
 
     statement = """
-    cat < %(infile)s |\
-        python %(scriptsdir)s/bed2gff.py --as-gtf |\
-	python /home/andreas/gpipe/gtf2table.py \
-		--counter=read-coverage \
-		--log=%(outfile)s.log \
-		--bam-file=%(samfiles_fg)s \
-	> %(tmpfile1)s"""
+    cat < %(infile)s 
+    | python %(scriptsdir)s/bed2gff.py --as-gtf 
+    | python %(scriptsdir)s/gtf2table.py 
+		--counter=read-coverage 
+		--log=%(outfile)s.log 
+		--bam-file=%(samfiles_fg)s 
+    > %(tmpfile1)s"""
 
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
 
     statement = """
-    cat < %(infile)s |\
-        python %(scriptsdir)s/bed2gff.py --as-gtf |\
-	python /home/andreas/gpipe/gtf2table.py \
-		--counter=read-coverage \
-		--log=%(outfile)s.log \
-		--bam-file=%(samfiles_bg)s \
-	> %(tmpfile2)s"""
+    cat < %(infile)s 
+    | python %(scriptsdir)s/bed2gff.py --as-gtf 
+    | python %(scriptsdir)s/gtf2table.py 
+		--counter=read-coverage 
+		--log=%(outfile)s.log 
+		--bam-file=%(samfiles_bg)s 
+    > %(tmpfile2)s"""
 
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
 
     statement = '''
-    python %(toolsdir)s/combine_tables.py \
-           --add-file-prefix \
-           --regex-filename="[.](\S+)$" \
+    python %(toolsdir)s/combine_tables.py 
+           --add-file-prefix 
+           --regex-filename="[.](\S+)$" 
     %(tmpfile1)s %(tmpfile2)s > %(outfile)s
     '''
 
@@ -1960,19 +1966,13 @@ def buildIntervalCounts( infile, outfile ):
     os.unlink( tmpfile2 )
 
 
-@files_re( buildIntervalCounts, "(.*).readcounts", r"\1_readcounts.import" )
-def importIntervalCounts( infile, outfile ):
-    '''import interval counts.'''
-    tablename = outfile[:-len(".import")]
-
-    statement = '''
-    csv2db.py %(csv2db_options)s \
-              --index=gene_id \
-              --table=%(tablename)s \
-    < %(infile)s > %(outfile)s
-    '''
-
-    P.run()
+############################################################
+@transform( buildIntervalCounts, 
+            suffix(".readcounts"), 
+            "_readcounts.load" )
+def loadIntervalCounts( infile, outfile ):
+    '''load interval counts.'''
+    P.load( infile, outfile, "--index=gene_id" )
 
 ############################################################
 ############################################################
@@ -1985,7 +1985,7 @@ def importIntervalCounts( infile, outfile ):
 ############################################################
 ## export bigwig tracks
 ############################################################
-@files_re(buildBigwig,combine("(.*).bigwig"), "bigwig.view")
+@files_re(exportBigwig,combine("(.*).bigwig"), "bigwig.view")
 def viewBigwig( infiles, outfile ):
 
     outs = open( outfile, "w" )
@@ -2066,60 +2066,66 @@ def viewIntervals( infiles, outfiles ):
 ##
 ############################################################
 
-@follows( )
-def prepare():
-    pass
-
-@follows( buildIntervals )
+@follows( buildIntervals, makeReadCorrelationTable )
 def intervals():
+    '''compute binding intervals.'''
     pass
 
-@follows( buildBigwig, viewIntervals, viewBigwig )
+@follows( exportBigwig, viewIntervals, viewBigwig )
 def export():
+    '''export files.'''
     pass
 
-@follows( makeMotifs,
+@follows( buildReferenceMotifs,
           exportMotifSequences,
           runMEME,
-          runTomTom, importTomTom,
-          filterMotifs,
-          runGLAM2, 
-          exportMotifControlSequences,
+          runTomTom, loadTomTom,
           runBioProspector )
-def build_motifs():
+#          runGLAM2, 
+def discover_motifs():
+    '''run motif discovery.'''
     pass
 
-@follows( runMAST, importMAST,
-          runGLAM2SCAN, importGLAM2SCAN )
-def find_motifs():
+@follows( filterMotifs,
+          exportMotifControlSequences,
+          runMAST, loadMAST )
+#          runGLAM2SCAN, loadGLAM2SCAN )
+def detect_motifs():
+    '''run motif detection.'''
     pass
 
-@follows( importCorrelation, 
+@follows( loadCorrelation, 
+          loadOverlap,
           reproducibility)
 def correlation():
+    '''run the correlation targets.'''
     pass
 
-@follows( annotateIntervals, importAnnotations, 
-          annotateTSS, importTSS, 
-          annotateRepeats, importRepeats,
-          #annotateTSSIntervalAssociations, importTSSIntervalAssociations,
-          #annotateTSSIntervalDistance, importTSSIntervalDistance, 
-          buildIntervalCounts, importIntervalCounts )
+@follows( annotateIntervals, loadAnnotations, 
+          annotateTSS, loadTSS, 
+          annotateRepeats, loadRepeats,
+          #annotateTSSIntervalAssociations, loadTSSIntervalAssociations,
+          #annotateTSSIntervalDistance, loadTSSIntervalDistance, 
+          buildIntervalCounts, loadIntervalCounts )
 def annotation():
+    '''run the annotation targets.'''
     pass
 
-@follows( prepare, intervals, 
-          build_motifs, find_motifs,
-          correlation, annotation )
+@follows( intervals, 
+          discover_motifs, 
+          detect_motifs,
+          correlation, 
+          annotation )
 def full():
+    '''run the full pipeline.'''
     pass
 
 if __name__== "__main__":
 
-    print( "tracks found: %s" % TRACKS_ALL )
-    print( "tracks by experiment: %s" % TRACKS_EXPERIMENTS )
-    print( "tracks by condition: %s" % TRACKS_CONDITIONS )
-    print( "tracks by tissue: %s" % TRACKS_TISSUES )
+    # print( "# tracks found: %s" % TRACKS_ALL )
+    # print( "# tracks by experiment: %s" % TRACKS_EXPERIMENTS )
+    # print( "# tracks by condition: %s" % TRACKS_CONDITIONS )
+    # print( "# tracks by tissue: %s" % TRACKS_TISSUES )
 
     sys.exit( P.main(sys.argv) )
 
