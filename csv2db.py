@@ -272,7 +272,13 @@ def run( options, args ):
         infile = gzip.GzipFile( fileobj= options.stdin, mode='r')
     else:
         infile = options.stdin
-    reader = CSV.DictReader( infile, dialect=options.dialect )
+
+    if options.header != None:
+        options.header = [x.strip() for x in options.header.split(",")]
+
+    reader = CSV.DictReader( infile, 
+                             dialect=options.dialect, 
+                             fieldnames = options.header )
 
     rows = []
     for row in reader:
@@ -286,7 +292,7 @@ def run( options, args ):
 
         if len(rows) >= options.guess_size:
             break
-
+        
     if len(rows) == 0:
         if options.allow_empty:
             if not reader.fieldnames:
@@ -437,6 +443,9 @@ def main( argv = sys.argv ):
     parser.add_option("-d", "--database", dest="database", type="string",
                       help="database name for sqlite3 [default=%default]." )
 
+    parser.add_option("-H", "--header", dest="header", type="string",
+                      help="',' separated list of header for files without header [default=%default]." )
+
     parser.add_option("-l", "--lowercase", dest="lowercase", action="store_true",
                       help="force lower case column names [default=%default]." )
 
@@ -483,6 +492,7 @@ def main( argv = sys.argv ):
         ignore_empty = False,
         insert_many = False,
         ignore_columns = [],
+        header = None,
         guess_size = 1000,
         report_step = 10000,
         backend="sqlite",
