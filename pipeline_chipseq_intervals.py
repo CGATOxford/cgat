@@ -169,7 +169,6 @@ def buildBAMStats( infile, outfile ):
         outs.write( "%s\t%s\n" % (data[0], " ".join(data[1:]) ) )
     pysam_in = pysam.Samfile( infile, "rb" )
 
-
     outs_dupl = open( outfile + ".duplicates", "w" )
     outs_dupl.write( "contig\tpos\tcounts\n" )
 
@@ -302,23 +301,47 @@ def mergeBedFiles( infiles, outfile ):
 ############################################################
 def intersectBedFiles( infiles, outfile ):
     '''generic method for merging bed files.
+
+    Bed files are normalized (overlapping intervals within 
+    a file are merged) before intersection. 
+
+    Intervals are renumbered.
     '''
 
     if len(infiles) == 1:
         shutil.copyfile( infiles[0], outfile )
-        return
 
-    if len(infiles) > 2:
-        raise ValueError( "can't deal with more than two files to merge into %s" % outfile )
-
-    statement = '''
-        intersectBed -a %s -b %s |\
-        cut -f 1,2,3,4,5 |\
-        awk 'BEGIN { OFS="\\t"; } {$4=++a; print;}'
+    elif len(infiles) == 2:
+        
+        statement = '''
+        intersectBed -a %s -b %s 
+        | cut -f 1,2,3,4,5 
+        | awk 'BEGIN { OFS="\\t"; } {$4=++a; print;}'
         > %%(outfile)s 
         ''' % (infiles[0], infiles[1])
 
-    P.run()
+        P.run()
+        
+    else:
+
+        tmpfile = P.getTempFilename(".")
+
+        # need to merge incrementally
+        fn = infiles[0]
+        statement = '''mergeBed -i %(fn)s > %(tmpfile)s'''
+        P.run()
+        
+        for fn in infiles[1:]:
+            statement = '''mergeBed -i %(fn)s | intersectBed -a %(tmpfile)s -b stdin > %(tmpfile)s.tmp; mv %(tmpfile)s.tmp %(tmpfile)s'''
+            P.run()
+
+        statement = '''cat %(tmpfile)s
+        | cut -f 1,2,3,4,5 
+        | awk 'BEGIN { OFS="\\t"; } {$4=++a; print;}'
+        > %(outfile)s '''
+        P.run()
+
+        os.unlink( tmpfile )
 
 ############################################################
 ############################################################
@@ -334,7 +357,7 @@ def subtractBedFiles( infile, subtractfile, outfile ):
         > %%(outfile)s 
         ''' % locals()
 
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
 
 ############################################################
 ############################################################

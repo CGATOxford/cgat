@@ -80,10 +80,8 @@ def combineGFF( gffs, options, merge = True ):
     else:
         min_distance, max_distance, min_features, max_features = map(int, options.join_features.split(",") )
 
-    if options.loglevel >= 1:
-        options.stdlog.write("# joining features: min distance=%i, max_distance=%i, at least %i and at most %i features.\n" %\
-                                 (min_distance, max_distance, min_features, max_features) )
-        options.stdlog.flush()
+    E.info( "joining features: min distance=%i, max_distance=%i, at least %i and at most %i features." %
+            (min_distance, max_distance, min_features, max_features) )
 
     def iterate_chunks( gffs ):
 
@@ -146,14 +144,75 @@ def combineGFF( gffs, options, merge = True ):
     if options.loglevel >= 1:
         options.stdlog.write( "# ninput=%i, noutput=%i, nfeatures=%i\n" % (ninput, noutput, nfeatures) )
         
+def cropGFFUnique( gffs, options ):
+    """crop intervals in gff file.
+
+    only unique regions are kept. This method ignores any features.
+    """
+
+    # read regions to crop with and convert intervals to intersectors
+    E.info( "reading gff for cropping: started." )
+    gffs = list(gffs)
+    if len(gffs) == 0: return
+    gffs.sort( key = lambda x: (x.contig, x.strand, x.start ) )
+    outf = options.stdout
+
+    last = gffs[0]
+    c = E.Counter()
+
+    c.input = len(gffs)
+
+    for this in gffs[1:]:
+        if ( this.contig != last.contig or
+             this.strand != last.strand or 
+             last.end <= this.start):
+            # no overlap
+            if last.start < last.end: 
+                c.output += 1
+                outf.write( "%s\n" % str(last) )
+            last = this
+            
+        elif this.end <= last.start:
+            # this ends before last (happens in multiway overlaps)
+            # nothing happens
+            pass
+            
+        elif last.end <= this.end:
+            # last ends before this
+            l = last.end
+            last.end = this.start
+            this.start = l
+            if last.start < last.end: 
+                E.info( "overlap" )
+                E.info( str(this) )
+                E.info( str(last) )
+                c.overlaps += 1
+                c.output += 1
+                outf.write( "%s\n" % str(last) )
+            last = this
+
+        elif last.end > this.end:
+            # this within last - split last
+            l = last.end
+            last.end = this.start
+            if last.start < last.end: 
+                c.output += 1
+                c.splits += 1
+                outf.write( "%s\n" % str(last) )
+            last.start = this.end
+            last.end = l
+
+    if last.start < last.end: 
+        c.output += 1
+        outf.write( "%s\n" % str(last) )
+
+    E.info( "cropping finished: %s" % str(c) )
 
 def cropGFF( gffs, options ):
     """crop intervals in gff file."""
 
     # read regions to crop with and convert intervals to intersectors
-    if options.loglevel >= 1:
-        options.stdlog.write("# reading gff for cropping: started.\n" )
-        options.stdlog.flush()
+    E.info( "reading gff for cropping: started." )
 
     other_gffs = GFF.iterator( open( options.crop, "r") )
     cropper = GFF.readAsIntervals( other_gffs )
@@ -165,10 +224,8 @@ def cropGFF( gffs, options ):
             ntotal += 1
         cropper[contig] = intersector
 
-    if options.loglevel >= 1:
-        options.stdlog.write("# reading gff for cropping: finished.\n" )
-        options.stdlog.write("# reading gff for cropping: %i contigs with %i intervals.\n" % (len(cropper), ntotal ) )
-        options.stdlog.flush()
+    E.info( "reading gff for cropping: finished." )
+    E.info( "reading gff for cropping: %i contigs with %i intervals." % (len(cropper), ntotal ) )
 
     ninput, noutput, ncropped, ndeleted = 0, 0, 0, 0
 
@@ -251,12 +308,17 @@ if __name__ == "__main__":
                        help="""extract all elements overlapping a range. A range is specified by eithor 'contig:from..to', 'contig:+:from..to', or 'from,to' .""" )
 
     parser.add_option( "--join-features", dest="join_features", type="string",
-                       help="""join features into a single transcript. Consecutive features are grouped into the same transcript/gene. The options expects a,b,c,d as input; a,b=minimum/maximum distance between features, 
-a,b=minimum,maximum number of features.""" )
+                       help="join features into a single transcript. Consecutive features are grouped "
+                       " into the same transcript/gene. The options expects a,b,c,d as input; "
+                       " a,b=minimum/maximum distance between features, "
+                       " c,d=minimum,maximum number of features.""" )
 
     parser.add_option( "--merge-features", dest="merge_features", type="string",
                        help="""merge features. Consecutive features are merged into a single feature. The options expects a,b,c,d as input; a,b=minimum/maximum distance between features, 
 a,b=minimum,maximum number of features.""" )
+
+    parser.add_option( "--crop-unique", dest="crop_unique", action="store_true",
+                       help = "crop overlapping intervals, keeping only intervals that are unique [default=%default]" )
 
     parser.add_option( "--crop", dest="crop", type="string",
                        help="""crop features in gff file with features in another file. If a feature falls in the middle of another, two entries will be output.""" )
@@ -281,6 +343,7 @@ a,b=minimum,maximum number of features.""" )
         complement_groups=False,
         combine_groups=False,
         crop = None,
+        crop_unique = False,
         filter_range = None,
         join_features = None,
         merge_features = None,
@@ -398,14 +461,20 @@ a,b=minimum,maximum number of features.""" )
             options.stdout.write( str(x) + "\n" )
 
     elif options.join_features:
+
         combineGFF( gffs, options, merge = False )
 
     elif options.merge_features:
+
         combineGFF( gffs, options, merge = True )
 
     elif options.crop:
         
         cropGFF( gffs, options )
+
+    elif options.crop_unique:
+        
+        cropGFFUnique( gffs, options )
 
     elif options.filter_range:
 

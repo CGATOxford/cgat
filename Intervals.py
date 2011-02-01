@@ -193,6 +193,8 @@ def getIntersections( intervals ):
             
     return new_intervals
 
+
+
 #----------------------------------------------------------------
 def RemoveIntervalsContained( intervals ):
     """
@@ -326,7 +328,11 @@ def ShortenIntervalsOverlap( intervals, to_remove ):
 
 #----------------------------------------------------------------
 def joined_iterator( intervals1, intervals2 ):
-    """iterate over the combination of two intervals."""
+    """iterate over the combination of two intervals.
+
+    returns the truncated intervals delineating the
+    ranges of overlap between intervals1 and intervals2.
+    """
 
     intervals1.sort()
     intervals2.sort()
@@ -360,7 +366,8 @@ def joined_iterator( intervals1, intervals2 ):
 def intersect( intervals1, intervals2 ):
     """intersect two interval sets.
 
-    Return a set of intervals that is spanned by both.
+    Return a set of intervals that is spanned by intervals in
+    both sets. Returns the union of the two intervals.
     """
     if not intervals1 or not intervals2: return []
     

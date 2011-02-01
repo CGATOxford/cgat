@@ -69,6 +69,8 @@ import IOTools
 import Components
 
 ##------------------------------------------------------------
+## This script needs some attention.
+##------------------------------------------------------------
 if __name__ == '__main__':
 
     parser = optparse.OptionParser( version = "%prog version: $Id: gtf2gtf.py 2861 2010-02-23 17:36:32Z andreas $", usage = globals()["__doc__"])
@@ -88,6 +90,13 @@ if __name__ == '__main__':
 
     parser.add_option("-t", "--merge-transcripts", dest="merge_transcripts", action="store_true",
                       help="merge all transcripts within a gene. The entry will span the whole gene (exons and introns). The transcript does not include the UTR unless --with-utr is set. [default=%default]."  )
+
+    parser.add_option( "--intersect-transcripts", dest="intersect_transcripts", action="store_true",
+                      help="intersect all transcripts within a gene. The entry will only span those bases "
+                      " that are covered by all transcrips."
+                      " The transcript does not include the UTR unless --with-utr is set. This options"
+                      " will remove all other features (stop_codon, etc.) "
+                      " [default=%default]."  )
 
     parser.add_option("-i", "--merge-introns", dest="merge_introns", action="store_true",
                       help="merge all introns within a gene [default=%default]."  )
@@ -181,6 +190,7 @@ if __name__ == '__main__':
         renumber_genes = None,
         renumber_transcripts = None,
         strict = True,
+        intersect_transcripts = False,
         )
 
     (options, args) = E.Start( parser )
@@ -375,6 +385,7 @@ if __name__ == '__main__':
                 nfeatures += 1
 
             noutput += 1
+
         
     elif options.renumber_genes:
         
@@ -598,6 +609,36 @@ if __name__ == '__main__':
                 options.stdout.write( "%s\n" % str( gff ) )
                 nfeatures += 1
             noutput += 1
+        
+    elif options.intersect_transcripts:
+        
+        for gffs in GTF.gene_iterator(GTF.iterator(options.stdin), strict=options.strict ):
+            
+            ninput += 1
+            r = []
+            for g in gffs:
+                if options.with_utr:
+                    ranges = GTF.asRanges( g, "exon" )
+                else:
+                    ranges = GTF.asRanges( g, "CDS" )
+                r.append( ranges )
+                
+            result = r[0]
+            for r in r[1:]:
+                result = Intervals.intersect( result, r )
+            
+            entry = GTF.Entry()
+            entry.copy( gffs[0][0] )
+            entry.clearAttributes()
+            entry.transcript_id = "merged"
+            entry.feature = "exon"
+            for start, end in result:
+                entry.start = start
+                entry.end = end
+                options.stdout.write( "%s\n" % str( entry ) )
+                nfeatures += 1
+                
+            noutput += 1
     else:
         for gffs in GTF.flat_gene_iterator(GTF.iterator(options.stdin), strict=options.strict ):
 
@@ -700,6 +741,5 @@ if __name__ == '__main__':
                 nfeatures += 1
             noutput += 1
 
-    if options.loglevel >= 1:
-        options.stdlog.write( "# ninput=%i, noutput=%i, nfeatures=%i, ndiscarded=%i\n" % (ninput, noutput, nfeatures, ndiscarded) )
+    E.info("ninput=%i, noutput=%i, nfeatures=%i, ndiscarded=%i\n" % (ninput, noutput, nfeatures, ndiscarded) )
     E.Stop()

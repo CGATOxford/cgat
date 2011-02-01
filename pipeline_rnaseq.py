@@ -31,12 +31,37 @@
 RNA-Seq pipeline
 ====================
 
-The RNA-Seq pipeline imports mapped reads from one or more
-RNA-Seq experiments and performs the following tasks:
+The RNA-Seq pipeline imports unmapped reads from one or more
+RNA-Seq experiments. It assumes the data derive from multiple 
+tissues/conditions (:term:`experiment`) with one or more 
+biological and/or technical replicates (:term:`replicate`).
 
-   * predict transcripts
-   * estimate expression levels of transcripts
-   * predict differentially expressed transcripts/genes
+The pipeline performs the following tasks:
+
+   * analyse each experiment:
+      * for each replicate
+          * map reads using tophat for each term:`replicate` separately. 
+          * predict splice isoforms and expression levels with :term:`cufflinks`.
+          * estimate expression levels of reference gene set with :term:`cufflinks`.
+          * annotate isoforms in replicates with genomic annotations
+      * compare isoforms in replicates within each :term:`experiment` (:term:`cuffcompare`) 
+          and to reference gene set.
+      * TODO: summary statistics on reproducibily within each experiment
+   * build a combined gene set including the reference gene set and isoforms predicted by :term:`cufflinks`.
+      * compare all isoforms in all experiments+isoforms (:term:`cuffcompare`) to each other 
+         and the reference gene set
+      * TODO: summary statistics on isoforms with respect to gene set
+   * estimate differential expression levels of transcripts
+      * different gene sets
+         * reference gene set
+         * combined gene set
+      * different methods
+         * :term:`DESeg` (tag counting)
+            * using FPKM
+            * using tag-counting in union-intersection genes
+         * :term:`cuffdiff``
+      * TODO: summary statistics on differential expression
+   
 
 Usage
 -----
@@ -102,6 +127,9 @@ import numpy, sqlite3
 import GTF, IOTools
 import Tophat
 from rpy2.robjects import r as R
+import rpy2.robjects as ro
+
+import pipeline_chipseq_intervals as PIntervals
 
 ###################################################
 ###################################################
@@ -129,9 +157,10 @@ import PipelineTracks
 TRACKS = PipelineTracks.Tracks( PipelineTracks.Sample ).loadFromDirectory( 
             glob.glob( "*.sra" ), "(\S+).sra" )
 
-EXPERIMENTS = PipelineTracks.Aggregate( TRACKS, "condition", "tissue" )
-CONDITIONS = PipelineTracks.Aggregate( TRACKS, "condition" )
-TISSUES = PipelineTracks.Aggregate( TRACKS, "tissue" )
+ALL = PipelineTracks.Aggregate( TRACKS )
+EXPERIMENTS = PipelineTracks.Aggregate( TRACKS, labels = ("condition", "tissue" ) )
+CONDITIONS = PipelineTracks.Aggregate( TRACKS, labels = ("condition", ) )
+TISSUES = PipelineTracks.Aggregate( TRACKS, labels = ("tissue", ) )
 
 ###################################################################
 ###################################################################
@@ -203,6 +232,7 @@ def mapReadsFromSRAWithTophat( infile, outfile ):
     mv %(tmpfilename)s/accepted_hits.bam %(outfile)s; 
     mv %(tmpfilename)s/tmp/junctions.bed %(prefix)s.junctions.bed; 
     rm -f %(prefix)s.fastq; 
+    samtools index %(outfile)s
     '''
 
     # rm -rf %(tmpfilename)s
@@ -249,6 +279,7 @@ def mapReadsFromSRAWithBowtie( infile, outfile ):
     samtools index %(outfile)s;
     rm -f %(tmpfilename)s;
     rm -f %(prefix)s.fastq; 
+    samtools index %(outfile)s
     '''
 
     P.run()
@@ -270,9 +301,19 @@ def collectLogFiles( infile, outfile ):
 
     outf.close()
 
-def getInsertSizes( reads ):
-    return 200, 50
-
+############################################################
+############################################################
+############################################################
+@transform( "*.bam",
+            suffix(".bam"),
+            ".readstats" )
+def buildBAMStats( infile, outfile ):
+    '''count number of reads mapped, duplicates, etc.'''
+    PIntervals.buildBAMStats( infile, outfile )
+    
+#########################################################################
+#########################################################################
+#########################################################################
 @merge( PARAMS_ANNOTATIONS["ensembl_filename_gtf"],
         "transcripts.gtf.gz" )
 def buildTranscripts( infile, outfile ):
@@ -340,9 +381,105 @@ def buildTranscripts( infile, outfile ):
 
     E.info( "%s\n" % str(c) )
 
+#########################################################################
+#########################################################################
+#########################################################################
+@merge( buildTranscripts, 
+        "unique_exons.bed.gz" )
+def buildUniqueExons( infile, outfile ):
+    '''build union/intersection genes according to Bullard et al. (2010) BMC Bioinformatics.
+    '''
+
+    to_cluster = USECLUSTER
+    statement = '''
+    gunzip < %(infile)s
+    | python %(scriptsdir)s/gtf2gtf.py --intersect-transcripts --log=%(outfile)s.log
+    | python %(scriptsdir)s/gff2gff.py --is-gtf --crop-unique  --log=%(outfile)s.log
+    | python %(scriptsdir)s/gff2bed.py --is-gtf --log=%(outfile)s.log
+    | gzip 
+    > %(outfile)s
+    '''
+
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform("*.bam", 
+           suffix(".bam"), 
+           add_inputs( buildUniqueExons),
+           ".coverage.bed.gz")
+def buildExonCoverage( infiles, outfile ):
+    '''compute coverage of exons with reads.
+    '''
+
+    infile, exons = infiles
+
+    to_cluster = USECLUSTER
+
+    # set filter options
+    # for example, only properly paired reads
+    flag_filter = "-f 0x2"
+    flag_filter = ""
+
+    statement = '''
+    samtools view -b %(flag_filter)s %(infile)s
+    | bamToBed -i stdin 
+    | coverageBed -a stdin -b %(exons)s 
+    | gzip
+    > %(outfile)s
+    '''
+
+    P.run()
+
+
+#########################################################################
+#########################################################################
+#########################################################################
+@merge(buildExonCoverage,
+       "genelevel_raw_tagcounts.tsv.gz" )
+def buildRawGeneLevelTagCounts( infiles, outfile ):
+    '''aggregate exon level tag counts for each gene.
+
+    coverageBed adds the following four columns:
+
+    1) The number of features in A that overlapped (by at least one base pair) the B interval.
+    2) The number of bases in B that had non-zero coverage from features in A.
+    3) The length of the entry in B.
+    4) The fraction of bases in B that had non-zero coverage from features in A.
+    '''
+
+    to_cluster = USECLUSTER
+    
+    src = " ".join( [ "<( zcat %s | groupBy -i stdin -g 4 -c 7 -o sum | sort -k1,1)" % x for x in infiles ] )
+    
+    tmpfile = P.getTempFilename( "." )
+    
+    statement = '''paste %(src)s 
+                > %(tmpfile)s'''
+    
+    P.run()
+
+    outf = IOTools.openFile( outfile, "w")
+    tracks = [P.snip(x, ".coverage.bed.gz" ) for x in infiles ]
+    outf.write( "gene_id\t%s\n" % "\t".join( tracks ) )
+    
+    for line in open( tmpfile, "r" ):
+        data = line[:-1].split("\t")
+        genes = list(set([ data[x] for x in range(0,len(data), 2 ) ]))
+        values = [ data[x] for x in range(1,len(data), 2 ) ]
+        assert len(genes) == 1, "paste command failed, wrong number of genes per line"
+        outf.write( "%s\t%s\n" % (genes[0], "\t".join(map(str, values) ) ) )
+    
+    outf.close()
+
+#########################################################################
+#########################################################################
+#########################################################################
 @transform("*.bam", suffix(".bam"), ".gtf.gz")
 def buildGeneModels(infile, outfile):
-    '''build transcript models - run cufflinks on each region seperately'''
+    '''build transcript models - run cufflinks on each region seperately
+    '''
 
     to_cluster = USECLUSTER    
 
@@ -372,12 +509,55 @@ def buildGeneModels(infile, outfile):
 
     shutil.rmtree( tmpfilename )
 
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( buildGeneModels, 
+            suffix(".gtf.gz"),
+            ".annotations.gz" )
+def annotateTranscripts( infile, outfile ):
+    '''classify chipseq intervals according to their location 
+    with respect to the gene set.
+    '''
+    to_cluster = USECLUSTER
+
+    annotation_file = os.path.join( PARAMS["annotations_dir"],
+                                    PARAMS_ANNOTATIONS["interface_annotation"] )
+
+    statement = """
+    zcat < %(infile)s 
+    | python %(scriptsdir)s/gtf2table.py 
+                --reporter=transcripts
+		--counter=position 
+		--counter=classifier
+		--section=exons 
+		--counter=length 
+		--log=%(outfile)s.log 
+		--filename-gff=%(annotation_file)s 
+		--genome-file=%(genome_dir)s/%(genome)s
+    | gzip
+    > %(outfile)s"""
+    
+    P.run()
+
+############################################################
+@transform( annotateTranscripts, suffix(".annotations"), "_annotations.load" )
+def loadAnnotations( infile, outfile ):
+    '''load interval annotations: genome architecture
+    '''
+    P.load( infile, outfile, "--index=gene_id" )
+
+#########################################################################
+#########################################################################
+#########################################################################
 @transform("*.bam", 
            suffix(".bam"), 
            add_inputs( buildTranscripts),
            ".ref.gtf.gz")
 def estimateExpressionLevels(infiles, outfile):
-    '''estimate expression levels.'''
+    '''estimate expression levels against a set
+    of reference gene models.
+    '''
 
     to_cluster = USECLUSTER    
 
@@ -404,50 +584,51 @@ def estimateExpressionLevels(infiles, outfile):
               %(bamfile)s 
     >& %(outfile)s.log;
     gzip < transcripts.gtf > %(outfile)s;
-    mv genes.expr %(outfile)s.genes.expr;
-    mv transcripts.expr %(outfile)s.transcripts.expr
+    mv -f genes.expr %(outfile)s.genes.expr;
+    mv -f transcripts.expr %(outfile)s.transcripts.expr
     '''
 
     P.run()
 
     shutil.rmtree( tmpfilename )
 
-@transform( (estimateExpressionLevels,
-             buildGeneModels), 
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( (estimateExpressionLevels, buildGeneModels), 
             suffix(".gtf.gz"), 
-            ".gtf.load")
-def loadGeneModels( infile, outfile ):
-    
-    track = P.snip( outfile, ".gtf.load" )
+            "_gene_expression.load")
+def loadExpressionLevels( infile, outfile ):
+    '''load expression level measurements.'''
+
+    track = P.snip( outfile, "_gene_expression.load" )
     P.load( infile + ".genes.expr",
-            outfile = track + ".genes.load",
+            outfile = track + "_gene_expression.load",
             options = "--index=gene_id" )
 
-    tablename = track + "_transcripts_expression"
+    tablename = track + "_transcript_expression"
     infile2 = infile + ".transcripts.expr"
 
     statement = '''cat %(infile2)s
     | perl -p -e "s/trans_id/transcript_id/"
     | csv2db.py %(csv2db_options)s 
-              --index=gene_id 
+              --index=transcript_id 
               --table=%(tablename)s 
     > %(outfile)s
     '''
 
     P.run()
 
-@merge( buildGeneModels, "transcripts.compare" )
-# suffix(".gtf.gz"), 
-# add_inputs( buildTranscripts ),
-# ".cuffcompare" )
-def compareTranscripts( infiles, outfile ):
+#########################################################################
+#########################################################################
+#########################################################################
+def runCuffCompare( infiles, outfile, reffile ):
     '''run cuffcompare.
 
     Will create a .tmap and .refmap input file for each input file.
     '''
 
     to_cluster = USECLUSTER
-    reffile = "transcripts.gtf.gz"
 
     tmpdir = P.getTempDir( "." )
     
@@ -462,31 +643,60 @@ def compareTranscripts( infiles, outfile ):
                 -r <( gunzip < %(reffile)s)
                 %(inf)s
     > %(outfile)s.log;
-    gzip %(outfile)s.combined.gtf
+    gzip -f %(outfile)s.{combined.gtf,tracking,loci};
     '''
 
     P.run()
 
     shutil.rmtree( tmpdir )
 
-@transform( compareTranscripts, suffix(".compare"), "_compare.load" )
+#########################################################################
+#########################################################################
+#########################################################################
+@follows( buildGeneModels )
+@files( [( ([ "%s.gtf.gz" % y.asFile() for y in EXPERIMENTS.getTracks(x)], buildTranscripts), 
+           "%s.cuffcompare" % x.asFile()) 
+         for x in EXPERIMENTS ] )
+def compareTranscriptsPerExperiment( infiles, outfile ):
+    '''compare transcript models between replicates within each experiment.'''
+    infiles, reffile = infiles
+    runCuffCompare( infiles, outfile, reffile )
+
+#########################################################################
+#########################################################################
+#########################################################################
+@merge( buildGeneModels, "%s.cuffcompare" % ALL.keys()[0].asFile() )
+def compareTranscriptsBetweenExperiments( infiles, outfile ):
+    '''compare transcript models between replicates in all experiments.'''
+    # needs to be paramterized, unfortunately @merge has no add_inputs
+    reffile = "transcripts.gtf.gz"
+    runCuffCompare( infiles, outfile, reffile )
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( (compareTranscriptsBetweenExperiments, 
+             compareTranscriptsPerExperiment),
+            suffix(".cuffcompare"), 
+            "_cuffcompare.load" )
 def loadTranscriptComparison( infile, outfile ):
     '''load data from transcript comparison.'''
-
 
     tmpfile = P.getTempFilename()
     
     outf = open( tmpfile, "w")
     outf.write( "track\tcontig\t%s\n" % "\t".join( Tophat.CuffCompareResult.getHeaders() ) )
     result = Tophat.parseTranscriptComparison( IOTools.openFile( infile ))
+    tracks = []
     for track, vv in result.iteritems():
         track = P.snip( os.path.basename(track), ".gtf.gz" )
+        tracks.append( track )
         for contig, v in vv.iteritems():
             if v.is_empty: continue
             outf.write( "%s\t%s\t%s\n" % (P.quote( track ), contig, str(v) ) )
     outf.close()
 
-    tablename = P.toTable( outfile )
+    tablename = P.toTable( outfile ) + "_benchmark"
 
     statement = '''cat %(tmpfile)s
     | csv2db.py %(csv2db_options)s 
@@ -500,6 +710,61 @@ def loadTranscriptComparison( infile, outfile ):
     
     os.unlink( tmpfile )
 
+    tablename = P.toTable( outfile ) + "_tracking"
+    
+    headers = ",".join( ( "transfrag_id",
+                          "locus_id",
+                          "transcript_id",
+                          "code", ) + tuple( tracks ) )
+
+    statement = '''zcat %(infile)s.tracking.gz 
+    | csv2db.py %(csv2db_options)s
+              --header=%(headers)s
+              --index=locus_id
+              --index=transfrag_id
+              --table=%(tablename)s 
+    >> %(outfile)s
+    '''
+
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@files( [ ( ([ "%s.bam" % xx.asFile() for xx in EXPERIMENTS[x] ], 
+             [ "%s.bam" % yy.asFile() for yy in EXPERIMENTS[y] ]),
+            "%s_vs_%s.expression" % (x.asFile(),y.asFile()) )
+              for x,y in itertools.combinations( EXPERIMENTS, 2) ] )
+def estimateDifferentialExpressionPairwise( infiles, outfile ):
+    '''estimate differential expression using cuffdiff.
+
+    Replicates are grouped.
+    '''
+    
+    to_cluster = USECLUSTER
+    reffile = "transcripts.gtf.gz"        
+
+    outdir = outfile + ".dir" 
+    try: os.mkdir( outdir )
+    except OSError: pass
+
+    reps = "%s    %s" % (",".join( infiles[0]),
+                         ",".join( infiles[1]) )
+    
+    statement = '''
+    cuffdiff -o %(outdir)s
+             --verbose
+             -r %(cufflinks_genome_dir)s/%(genome)s.fa
+             -p 20
+             <(gunzip < %(reffile)s)
+             %(reps)s
+    >& %(outfile)s
+    '''
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
 @merge("*.bam", 
        "expression.compare")
 def estimateDifferentialExpression( infiles, outfile ):
@@ -516,38 +781,76 @@ def estimateDifferentialExpression( infiles, outfile ):
     except OSError: pass
 
     # replicates are separated by ","
-    replicates = getReplicateGroups( [ P.snip( x ) for x in infiles ] )
     reps = []
-    for track, r in replicates.iteritems():
-        reps.append( ",".join( [ "%s.bam" % buildTrack(*rr) for rr in r] ) )
-    reps = " ".join( reps )
+    for group, replicates in EXPERIMENTS.iteritems():
+        reps.append( ",".join( [ "%s.bam" % r.asFile() for r in replicates] ) )
+    reps = "   ".join( reps )
 
     statement = '''
     cuffdiff -o %(outdir)s
              --verbose
              -r %(cufflinks_genome_dir)s/%(genome)s.fa
              -p 20
-             <(gunzip < %(reffile)s | grep "chr20" | grep "protein_coding") 
+             <(gunzip < %(reffile)s)
              %(reps)s
     >& %(outfile)s
     '''
     P.run()
 
-@merge("*.genes.load",
-       "gene_tagcounts.tsv.gz")
-def buildExpressionTable( infiles, outfile ):
-    '''estimate differential expression using DESeq
-    '''
-
-    dbhandle = sqlite3.connect( PARAMS["database"] )
+#########################################################################
+#########################################################################
+#########################################################################
+def getLibrarySizes( infiles ):
     
+    vals = []
+    for infile in infiles:
+        assert infile.endswith( ".readstats")
+        val, cont = [ x[:-1].split("\t") for x in open(infile).readlines() if re.search( "\tmapped", x ) ][0]
+        vals.append(int(val))
+        
+    return vals
+
+#########################################################################
+#########################################################################
+#########################################################################
+@merge( loadExpressionLevels,
+        "genelevel_fpkm_tagcounts.tsv.gz")
+def buildFPKMGeneLevelTagCounts( infiles, outfile ):
+    '''build tag counts using normalized counts from tophat.
+
+    These are gene-length normalized count levels.
+
+    They are obtained by multiplying the FPKM value
+    by the median library size.
+    '''
+    infiles = [ x for x in infiles if x.endswith( ".ref_gene_expression.load" ) ]
+
+    tracks = [ P.snip( x,".ref_gene_expression.load" ) for x in infiles ]
+
+    # get normalization values
+    library_sizes = getLibrarySizes( [ "%s.readstats" % x for x in tracks ] )
+    if len(library_sizes) == 0: raise ValueError("could not get library sizes" )
+
+    median_library_size = numpy.median( library_sizes )
+
+    # dbhandle = sqlite3.connect( os.path.join( PARAMS["annotations_dir"],
+    #                                           PARAMS_ANNOTATIONS["interface_database"] ) )
+    # cc = dbhandle.cursor()    
+    # median_gene_length = numpy.median( [ x for x in cc.execute( "SELECT sum FROM gene_stats") ] )
+
+    scale = median_library_size / 1000000.0
+
+    E.info( "normalization: median library size=%i, factor=1.0 / %f" % \
+                (median_library_size, scale) )
+
+    # normalize
+    results = []
+    dbhandle = sqlite3.connect( PARAMS["database"] )
     cc = dbhandle.cursor()    
 
-    results = []
-    tracks = [ P.snip( x,".genes.load" ) for x in infiles ]
     for track in tracks:
-        table = "%s_ref_genes" % P.quote(track)
-        statement = "SELECT gene_id, FPKM FROM %(table)s" % locals()
+        table = "%s_ref_gene_expression" % P.quote(track)
+        statement = "SELECT gene_id, FPKM / %(scale)f FROM %(table)s" % locals()
         results.append( dict( cc.execute( statement ).fetchall() ) )
     
     outf = IOTools.openFile( outfile, "w" )
@@ -560,7 +863,11 @@ def buildExpressionTable( infiles, outfile ):
     outf.close()
             
 
-@transform( buildExpressionTable,
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( (buildRawGeneLevelTagCounts,
+             buildFPKMGeneLevelTagCounts),
             suffix(".tsv.gz"),
             ".diff")
 def estimateDifferentialExpressionDESeq( infile, outfile ):
@@ -576,25 +883,64 @@ def estimateDifferentialExpressionDESeq( infile, outfile ):
 
     # get conditions to test
     # note that tracks in R use a '.' as separator
-    tracks = [ re.sub( "\.", "-", x) for x in R('''colnames(counts_table)''') ]
+    tracks = R('''colnames(counts_table)''')
 
     map_track2column = dict( [ (y,x) for x,y in enumerate( tracks ) ] )
     
     conds = [None] * len(tracks)
-    for group, replicates in getReplicateGroups( tracks ).iteritems():
+    for group, replicates in EXPERIMENTS.iteritems():
         for r in replicates:
-            conds[map_track2column[buildTrack(*r)]] = ".".join(group)
-    print conds
-    
-    # R(''' cds <- newCountDataSet( counts_table, conds )''')
+            conds[map_track2column[r.asR()]] = group.asR()
 
+    ro.globalenv['conds'] = ro.StrVector(conds)
+
+    # this analysis follows the 'Analysing RNA-Seq data with the "DESeq" package'
+    # tutorial 
+    R('''cds <-newCountDataSet( counts_table, conds) ''')
+    R('''cds <- estimateSizeFactors( cds )''')
+    R('''cds <- estimateVarianceFunctions( cds )''')
+
+    E.info("creating diagnostic plots" ) 
+    size_factors = R('''sizeFactors( cds )''')
+    R.png( "%s_scvplot.png" % outfile )
+    R('''scvPlot( cds, ylim = c(0,3))''')
+    R['dev.off']()
+
+    R('''vsd <- getVarianceStabilizedData( cds )''' )
+    R('''dists <- dist( t( vsd ) )''')
+    R.png( "%s_heatmap.png" % outfile )
+    R('''heatmap( as.matrix( dists ), symm=TRUE )''' )
+    R['dev.off']()
+
+    for track in conds:
+        R.png( "%s_fit_%s.png" % (outfile, track) )
+        R('''diagForT <- varianceFitDiagnostics( cds, "%s" )''' % track )
+        R('''smoothScatter( log10(diagForT$baseMean), log10(diagForT$baseVar) )''')
+        R('''lines( log10(fittedBaseVar) ~ log10(baseMean), diagForT[ order(diagForT$baseMean), ], col="red" )''')
+        R['dev.off']()
+        R.png( "%s_residuals_%s.png" % (outfile, track) )
+        R('''residualsEcdfPlot( cds, "%s" )''' % track )
+        R['dev.off']()
+
+    E.info("calling differential expression")
+
+    for x,y in itertools.combinations( conds, 2 ):
+        R('''res <- nbinomTest( cds, '%s', '%s' )''' % (x,y))
+        R.png( "%s_diff_%s_vs_%s.png" % (outfile, x, y) )
+        R('''plot( res$baseMean, res$log2FoldChange, log="x", pch=20, cex=.1, col = ifelse( res$padj < .1, "red", "black" ) )''')
+        R['dev.off']()
+
+
+#########################################################################
+#########################################################################
+#########################################################################
 @follows(mapReadsFromSRAWithTophat )
 def mapReads(): pass
 
 @follows( mapReads,
           buildGeneModels,
+          loadTranscriptComparison,
           estimateExpressionLevels,
-          compareTranscripts,
           estimateDifferentialExpression )
 def full(): pass
 

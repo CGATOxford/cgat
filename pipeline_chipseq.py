@@ -187,6 +187,7 @@ def getControl( track ):
     '''
     n = track.clone()
     n.condition = PARAMS["tracks_control"]
+    n.replicate = "R1"
     return n
 
 def getUnstimulated( track ):
@@ -200,8 +201,17 @@ def getSubtracted( track ):
     '''return "subtracted" condition for a track
     '''
     n = track.clone()
-    n.condition += PARAMS["tracks_unstimulated"]
+    n.condition += PARAMS["tracks_subtract"]
     return n
+
+def getUnsubtracted( track ):
+    '''return "unsubtracted" condition for a track
+    '''
+    n = track.clone()
+    if n.condition.endswith( PARAMS["tracks_subtract"] ):
+        n.condition = n.condition[:-len(PARAMS["tracks_subtract"])]
+    return n
+    
 
 ###################################################################
 ###################################################################
@@ -218,11 +228,11 @@ if os.path.exists("conf.py"):
 # define aggregates
 ###################################################################
 # aggregate per experiment
-EXPERIMENTS = PipelineTracks.Aggregate( TRACKS, "condition", "tissue" )
+EXPERIMENTS = PipelineTracks.Aggregate( TRACKS, labels = ("condition", "tissue") )
 # aggregate per condition
-CONDITIONS = PipelineTracks.Aggregate( TRACKS, "condition" )
+CONDITIONS = PipelineTracks.Aggregate( TRACKS, labels = ("condition",) )
 # aggregate per tissue
-TISSUES = PipelineTracks.Aggregate( TRACKS, "tissue" )
+TISSUES = PipelineTracks.Aggregate( TRACKS, labels = ("tissue",) )
 
 # compound targets : all experiments
 TRACKS_MASTER = EXPERIMENTS.keys() + CONDITIONS.keys() + TISSUES.keys()
@@ -402,15 +412,17 @@ if PARAMS["calling_caller"] == "macs":
         '''run MACS for peak detection.'''
         infile, controlfile = infiles
 
+        to_cluster = True
+
         statement = '''
             macs14 -t %(infile)s 
                    -c %(controlfile)s
-                   --diag
                    --name=%(outfile)s
                    --format=BAM
+                   --diag
                    %(macs_options)s 
             >& %(outfile)s''' 
-    
+
         P.run() 
         
     ############################################################
@@ -471,9 +483,10 @@ def combineExperiment( infiles, outfile ):
 ############################################################
 ############################################################
 ############################################################
-@collate( combineExperiment, 
-          regex(r"(.+)-(.+)\.bed"),  
-          r"agg-\2.bed")
+@follows( exportIntervalsAsBed )    
+@files( [( [ "%s.bed" % y.asFile() for y in CONDITIONS.getTracks(x)], 
+           "%s.bed" % x.asFile()) 
+         for x in CONDITIONS ] )
 def combineCondition( infiles, outfile ):
     '''combine conditions between cell lines. 
 
@@ -484,9 +497,10 @@ def combineCondition( infiles, outfile ):
 ############################################################
 ############################################################
 ############################################################
-@collate( combineExperiment, 
-          regex(r"(.+)-(.+)\.bed"),  
-          r"\1-agg.bed")
+@follows( exportIntervalsAsBed )    
+@files( [( [ "%s.bed" % y.asFile() for y in TISSUES.getTracks(x)], 
+           "%s.bed" % x.asFile()) 
+         for x in TISSUES ] )
 def combineTissue( infiles, outfile ):
     '''combine conditions between cell lines. 
 
@@ -545,19 +559,27 @@ def loadCombinedIntervals( infile, outfile ):
 
     samfiles, offsets = [], []
 
-    track = infile[:-len(".bed")]
-    replicates = getReplicates( track, TRACKS_ALL )
+    track = PipelineTracks.Sample( filename = P.snip( infile, ".bed") )
+
+    # get replicates / aggregated tracks associated with track
+    # remove subtraction as not relevant for tag counting
+    unsubtracted_track = getUnsubtracted ( track )
+    replicates = PipelineTracks.Aggregate( TRACKS, track = unsubtracted_track ).getTracks( unsubtracted_track )
+
     assert len(replicates) > 0
     
+    # setup files
     for t in replicates:
-        fn = t + ".norm.bam"
-        assert os.path.exists( fn )
+        fn = "%s.norm.bam" % t.asFile()
+        assert os.path.exists( fn ), "could not find bamfile %s for track %s" % ( fn, str(t))
         samfiles.append( pysam.Samfile( fn,  "rb" ) )
-        if os.path.exists( t + ".macs" ):
-            offsets.append( PIntervals.getPeakShift( t + ".macs" ) )
+        fn = "%s.macs" % t.asFile()
+        if os.path.exists( fn ):
+            offsets.append( PIntervals.getPeakShift( fn ) )
 
     mlength = int(PARAMS["calling_merge_min_interval_length"])
 
+    # count tags
     for line in open(infile, "r"):
         contig, start, end, interval_id = line[:-1].split()[:4]
 
@@ -566,17 +588,23 @@ def loadCombinedIntervals( infile, outfile ):
         # remove very short intervals
         if end-start < mlength: continue
 
-        npeaks, peakcenter, length, avgval, peakval, nprobes = PIntervals.countPeaks( contig, start, end, samfiles, offsets )
+        npeaks, peakcenter, length, avgval, peakval, nprobes = \
+            PIntervals.countPeaks( contig, start, end, samfiles, offsets )
 
-        tmpfile.write( "\t".join( map( str, (avgval,disttostart,genelist,length,peakcenter,peakval,position,interval_id,ncpgs,ngenes,npeaks,nprobes,npromoters, contig,start,end) )) + "\n" )
+        tmpfile.write( "\t".join( map( str, (avgval,disttostart,genelist,length,
+                                             peakcenter,peakval,position,interval_id,
+                                             ncpgs,ngenes,npeaks,nprobes,npromoters, 
+                                             contig,start,end) )) + "\n" )
  
     tmpfile.close()
 
     tmpfilename = tmpfile.name
+    tablename = "%s_intervals" % track.asTable()
+    
     statement = '''
     csv2db.py %(csv2db_options)s
               --index=interval_id 
-              --table=%(track)s_intervals
+              --table=%(tablename)s
     < %(tmpfilename)s 
     > %(outfile)s
     '''
@@ -904,7 +932,7 @@ def reproducibility(): pass
 ############################################################
 ##
 ############################################################
-@follows( buildMergedIntervals )
+@follows( buildIntervals )
 @files_re( ["%s.bed" % x.asFile() for x in TRACKS_CORRELATION],
            combine("(.*).bed"),
            "peakval.correlation" )
@@ -913,7 +941,7 @@ def makePeakvalCorrelation( infiles, outfile ):
     '''
     PIntervals.makeIntervalCorrelation( infiles, outfile, "peakval", "merged.bed" )
 
-@follows( buildMergedIntervals )
+@follows( buildIntervals )
 @files_re( ["%s.bed" % x.asFile() for x in TRACKS_CORRELATION],
            combine("(.*).bed"),
            "avgval.correlation" )
@@ -922,7 +950,7 @@ def makeAvgvalCorrelation( infiles, outfile ):
     '''
     PIntervals.makeIntervalCorrelation( infiles, outfile, "avgval", "merged.bed" )
 
-@follows( buildMergedIntervals )
+@follows( buildIntervals )
 @files_re( ["%s.bed" % x.asFile() for x in TRACKS_CORRELATION],
            combine("(.*).bed"),
            "length.correlation" )

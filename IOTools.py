@@ -607,14 +607,14 @@ def which(program):
 
     return None
 
-def convertValue( value ):
+def convertValue( value, list_detection = False ):
     '''convert a value to int, float or str.'''
     rx_int = re.compile("^\s*[+-]*[0-9]+\s*$")
     rx_float = re.compile("^\s*[+-]*[0-9.]+[.+\-eE][+-]*[0-9.]*\s*$")
 
     if value == None: return value
 
-    if "," in value:
+    if list_detection and "," in value:
         values = []
         for value in value.split(","):
             if rx_int.match( value ):
