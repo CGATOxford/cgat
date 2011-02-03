@@ -40,7 +40,6 @@ API
 
 import string,re,sys,time,inspect,os,optparse,logging,random, collections, types, subprocess, gzip
 
-
 class DefaultOptions:
     stdlog = sys.stdout
     stdout = sys.stdout
@@ -270,7 +269,7 @@ def Start( parser = None,
             level=lvl,
             format='%(asctime)s %(levelname)s %(message)s',
             stream = global_options.stdlog )
-        
+
     return global_options, global_args
     
 def Stop():

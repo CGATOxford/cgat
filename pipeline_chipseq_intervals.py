@@ -641,6 +641,7 @@ def getCounts( contig, start, end, samfiles, offsets = [] ):
                 
             # on the - strand, shift tags downstream
             xstart, xend = max(0, start + offset), max(0, end + offset)
+
             for read in samfile.fetch( contig, xstart, xend ):
                 if not read.is_reverse: continue
                 nreads += 1
@@ -667,12 +668,6 @@ def countPeaks( contig, start, end, samfiles, offsets = None):
     '''
 
     nreads, counts = getCounts( contig, start, end, samfiles, offsets )
-
-    # nreads can be 0 if the intervals overlap only slightly
-    # and due to the binning, no reads are actually in the overlap region.
-    # However, these intervals should be small and have already be deleted via 
-    # the merge_min_interval_length cutoff, so I keep the assertion.
-    assert nreads > 0, "no reads in interval %s:%i-%i" % (contig, start, end)
 
     length = end - start            
     nprobes = nreads

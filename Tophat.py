@@ -214,11 +214,69 @@ def parseTranscriptComparison( infile ):
         yield dataset, blocks
     
     result = collections.defaultdict( dict )
-
+    tracks = []
     for track, blocks in __blocker( infile ):
+        tracks.append( track )
         for contig, block in blocks.iteritems():
             r = CuffCompareResult()
             r.fromLines( block )
             result[track][contig] = r
 
-    return result
+    return tracks, result
+
+Locus = collections.namedtuple( "Locus", "locus_id contig strand start end transcript_ids transcripts" )
+Tracking = collections.namedtuple( "Tracking", "transfrag_id locus_id ref_gene_id ref_transcript_id code transcripts" )
+TranscriptInfo = collections.namedtuple( "Transfrag", "gene_id transcript_id fmi fpkm conf_lo conf_hi cov len" )
+
+def iterate_tracking( infile ):
+    '''parse .tracking output file from cuffcompare
+
+    returns iterator with list of loci.
+    '''
+    for line in infile:
+        data = line[:-1].split("\t")
+        transfrag_id, locus_id, transcript_id, code = [x.strip() for x in data[:4]]
+        if transcript_id == "-":
+            ref_gene_id, ref_transcript_id = "", ""
+        else:
+            ref_gene_id, ref_transcript_id = transcript_id.split("|")
+
+        transcripts = []
+        for c in data[4:]:
+            if c == "-": 
+                transcripts.append( None )
+            else: 
+                (gene_id, transcript_id, fmi, fpkm, conf_lo, conf_hi, cov, length )= c.split("|")
+                (fpkm, conf_lo, conf_hi, cov) = map(float, (fpkm, conf_lo, conf_hi, cov))
+                if length == "-": length = 0
+                (fmi, length) = map( int, (fmi, length) )
+
+                transcripts.append( TranscriptInfo._make( 
+                        ( gene_id, transcript_id, fmi, fpkm, conf_lo, conf_hi, cov, length )) )
+                
+        yield Tracking._make( (transfrag_id, locus_id, ref_gene_id, ref_transcript_id, code, transcripts ) )
+
+                                    
+def iterate_locus( infile ):
+    '''parse .loci output file from cuffcompare
+
+    returns iterator with list of loci.
+    '''
+                                    
+    for line in infile:
+        data = line[:-1].split("\t")
+        locus_id, pos = data[:2]
+                                    
+        contig, strand, start, end = re.match( "(\S+)\[(\S*)\](\d+)-(\d+)", pos ).groups()
+        start, end = map(int, (start, end ) )
+
+        # some [] contains the 0 byte, convert to empty field
+        if strand not in "+-": strand = ""
+        transcripts = []
+        for c in data[2:]:
+            if c == "-": 
+                transcripts.append( () )
+            else: 
+                transcripts.append( c.split(",") )
+
+        yield Locus._make( (locus_id, contig, strand, start, end, transcripts[1], transcripts[1:] ) )

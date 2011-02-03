@@ -33,11 +33,12 @@ Code
 ----
 
 '''
-import os, sys, re, subprocess, optparse, stat, tempfile, time, random, inspect, types, glob, shutil
+import os, sys, re, subprocess, optparse, stat, tempfile, time, random, inspect, types, glob, shutil, logging
 import ConfigParser
 
 import drmaa
 from ruffus import *
+import logging as L
 import Experiment as E
 import IOTools
 
@@ -191,7 +192,7 @@ def log( loglevel, message ):
     E.log( loglevel, message )
 
 def info( message ):
-    E.info( message )
+    L.info( message )
 
 def warning( message ):
     E.warning( message )
@@ -200,7 +201,7 @@ def warn( message ):
     E.warning( message )
 
 def debug( message ):
-    E.debug( message )
+    L.debug( message )
 
 def error( message ):
     E.error( message )
@@ -283,7 +284,7 @@ def execute( statement, **kwargs ):
 
     kwargs = dict( PARAMS.items() + kwargs.items() )    
 
-    E.debug("running %s" % (statement % kwargs))
+    L.debug("running %s" % (statement % kwargs))
 
     process = subprocess.Popen(  statement % kwargs,
                                  cwd = os.getcwd(), 
@@ -332,7 +333,7 @@ def buildStatement( **kwargs ):
     statement = " ".join( re.sub( "\t+", " ", statement).split( "\n" ) ).strip()
     if statement.endswith(";"): statement = statement[:-1]
 
-    E.debug( "running statement:\n%s" % statement )
+    L.debug( "running statement:\n%s" % statement )
 
     return statement
 
@@ -416,7 +417,7 @@ def run( **kwargs ):
         pid = os.getpid()
         if pid not in global_sessions: 
 
-            E.debug( "creating new drmaa session for pid %i" % pid )
+            L.debug( "creating new drmaa session for pid %i" % pid )
             global_sessions[pid]=drmaa.Session()            
             global_sessions[pid].initialize()
 
@@ -457,9 +458,9 @@ def run( **kwargs ):
             jobids.append( jobid )
             filenames.append( (job_path, stdout_path, stderr_path) )
 
-            E.debug( "job has been submitted with jobid %s" % str(jobid ))
+            L.debug( "job has been submitted with jobid %s" % str(jobid ))
         
-        E.debug( "waiting for %i jobs to finish " % len(jobids) )
+        L.debug( "waiting for %i jobs to finish " % len(jobids) )
         session.synchronize(jobids, drmaa.Session.TIMEOUT_WAIT_FOREVER, False)
         
         # collect and clean up
@@ -500,7 +501,7 @@ def run( **kwargs ):
         # get session for process - only one is permitted
         pid = os.getpid()
         if pid not in global_sessions:
-            E.debug( "creating new drmaa session for pid %i" % pid )
+            L.debug( "creating new drmaa session for pid %i" % pid )
             global_sessions[pid]=drmaa.Session()            
             global_sessions[pid].initialize()
 
@@ -526,14 +527,14 @@ def run( **kwargs ):
         if "job_array" in kwargs and kwargs["job_array"] != None:
             # run an array job
             start, end, increment = kwargs.get("job_array" )
-            E.debug("starting an array job: %i-%i,%i" % (start, end, increment ))
+            L.debug("starting an array job: %i-%i,%i" % (start, end, increment ))
             # sge works with 1-based, closed intervals
             jobids = session.runBulkJobs( jt, start+1, end, increment )
-            E.debug( "%i array jobs have been submitted as jobid %s" % (len(jobids), jobids[0]) )
+            L.debug( "%i array jobs have been submitted as jobid %s" % (len(jobids), jobids[0]) )
             retval = session.synchronize(jobids, drmaa.Session.TIMEOUT_WAIT_FOREVER, True)
         else:
             jobid = session.runJob(jt)
-            E.debug( "job has been submitted with jobid %s" % str(jobid ))
+            L.debug( "job has been submitted with jobid %s" % str(jobid ))
             try:
                 retval = session.wait(jobid, drmaa.Session.TIMEOUT_WAIT_FOREVER)
             except Exception, msg:
@@ -575,6 +576,15 @@ def run( **kwargs ):
         if process.returncode != 0:
             raise PipelineError( "Child was terminated by signal %i: \nThe stderr was: \n%s\n%s\n" % (-process.returncode, stderr, statement ))
 
+
+class MultiLineFormatter(logging.Formatter):
+    '''logfile formatter: add identation for multi-line entries.'''
+
+    def format(self, record):
+        str = logging.Formatter.format(self, record)
+        header, footer = str.split(record.message)
+        str = str.replace('\n', '\n' + ' '*len(header))
+        return str
 
 USAGE = '''
 usage: %prog [OPTIONS] [CMD] [target]
@@ -627,11 +637,13 @@ def main( args = sys.argv ):
         pipeline_format = "svg",
         pipeline_target = "full",
         multiprocess = 2,
+        logfile = "pipeline.log",
         dry_run = False,
         without_cluster = False,
         )
 
-    (options, args) = E.Start( parser, add_cluster_options = True )
+    (options, args) = E.Start( parser, 
+                               add_cluster_options = True )
 
     global global_options
     global global_args
@@ -640,8 +652,6 @@ def main( args = sys.argv ):
     
     version, _ = execute( "hg identify %s" % PARAMS["scriptsdir"] )
 
-    E.info( "code location: %s" % PARAMS["scriptsdir"] )
-    E.info( "code version: %s" % version[:-1] )
 
     if args: 
         options.pipeline_action = args[0]
@@ -652,7 +662,25 @@ def main( args = sys.argv ):
 
         try:
             if options.pipeline_action == "make":
-                pipeline_run( [ options.pipeline_target ], multiprocess = options.multiprocess, verbose = options.loglevel )
+                
+                # set up extra file logger
+                handler = logging.FileHandler( filename = options.logfile, 
+                                               mode = "a" )
+                handler.setFormatter( MultiLineFormatter( '%(asctime)s %(levelname)s %(module)s.%(funcName)s.%(lineno)d %(message)s' ) )
+                logger = logging.getLogger()
+                logger.addHandler( handler )
+
+                L.info( E.GetHeader() )
+                L.info( "code location: %s" % PARAMS["scriptsdir"] )
+                L.info( "code version: %s" % version[:-1] )
+
+                pipeline_run( [ options.pipeline_target ], 
+                              multiprocess = options.multiprocess, 
+                              logger = logger,
+                              verbose = options.loglevel )
+
+                L.info( GetFooter() )
+
             elif options.pipeline_action == "show":
                 pipeline_printout( options.stdout, [ options.pipeline_target ], verbose = options.loglevel )
             elif options.pipeline_action == "svg":
@@ -682,10 +710,9 @@ def main( args = sys.argv ):
         if not os.path.exists( configfile ):
             raise ValueError( "default config file `%s` not found"  % configfile )
         shutil.copyfile( configfile, "pipeline.ini" )
-        E.info( "created new configuration file `pipeline.ini` " )
+        L.info( "created new configuration file `pipeline.ini` " )
     else:
         raise ValueError("unknown pipeline action %s" % options.pipeline_action )
-
 
     E.Stop()
 
@@ -704,7 +731,7 @@ def clean( patterns, dry_run = False ):
             cleaned.append( (x, statinfo) )
             if dry_run: continue
             os.unlink( x )
-        E.info( "%i files: %s" % (len(files), p ))
+        L.info( "%i files: %s" % (len(files), p ))
 
     return cleaned
 
@@ -730,8 +757,10 @@ def peekParameters( workingdir, pipeline ):
     if process.returncode != 0:
         raise PipelineError( "Child was terminated by signal %i: \nThe stderr was: \n%s\n" % (-process.returncode, stderr ))
 
-    assert stdout.startswith("dump")
-    exec( stdout )
+    for line in stdout.split("\n"):
+        if line.startswith("dump"):
+            exec( line )
+
     return dump
 
 if __name__ == "__main__":

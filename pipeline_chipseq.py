@@ -579,18 +579,31 @@ def loadCombinedIntervals( infile, outfile ):
 
     mlength = int(PARAMS["calling_merge_min_interval_length"])
 
+    c = E.Counter()
     # count tags
     for line in open(infile, "r"):
+        c.input += 1
         contig, start, end, interval_id = line[:-1].split()[:4]
 
         start, end = int(start), int(end)
 
         # remove very short intervals
-        if end-start < mlength: continue
+        if end-start < mlength: 
+            c.skipped_length += 1
+            continue
 
         npeaks, peakcenter, length, avgval, peakval, nprobes = \
             PIntervals.countPeaks( contig, start, end, samfiles, offsets )
 
+        # nreads can be 0 if the intervals overlap only slightly
+        # and due to the binning, no reads are actually in the overlap region.
+        # However, most of these intervals should be small and have already be deleted via 
+        # the merge_min_interval_length cutoff.
+        # do not output intervals without reads.
+        if nprobes == 0:
+            c.skipped_reads += 1
+            
+        c.output += 1
         tmpfile.write( "\t".join( map( str, (avgval,disttostart,genelist,length,
                                              peakcenter,peakval,position,interval_id,
                                              ncpgs,ngenes,npeaks,nprobes,npromoters, 
@@ -611,6 +624,8 @@ def loadCombinedIntervals( infile, outfile ):
 
     P.run()
     os.unlink( tmpfile.name )
+
+    E.info( "%s\n" % str(c) )
 
 ############################################################
 ############################################################
@@ -1934,22 +1949,20 @@ def buildIntervalCounts( infile, outfile ):
     '''count read density in bed files comparing stimulated versus
     unstimulated binding.
     '''
-    track = outfile[:-len(".readcounts")]
-
-    tissue, condition, replicate = splitTrack( track )
+    track = TRACKS.factory( filename = outfile[:-len(".readcounts")] )
 
     samfiles_fg, samfiles_bg = [], []
 
     # collect foreground and background bam files
-    fg_replicates = getReplicates( track, TRACKS_ALL )
+    fg_replicates = PipelineTracks.Aggregate( TRACKS, track = track )[track]
     for replicate in fg_replicates:
-        samfiles_fg.append( replicate + ".norm.bam" )
+        samfiles_fg.append( replicate.asFile() + ".norm.bam" )
 
-    bg_replicates = getReplicates( buildTrack( tissue, PARAMS["tracks_unstimulated"], "") , 
-                                   TRACKS_ALL )
+    unstim = getUnstimulated( track )
+    bg_replicates = PipelineTracks.Aggregate( TRACKS, track = unstim )[unstim]
 
     for replicate in bg_replicates:
-        samfiles_bg.append( replicate + ".norm.bam" )
+        samfiles_bg.append( replicate.asFile() + ".norm.bam" )
 
     samfiles_fg = ",".join(samfiles_fg)
     samfiles_bg = ",".join(samfiles_bg)

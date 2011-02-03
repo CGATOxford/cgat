@@ -61,7 +61,6 @@ The pipeline performs the following tasks:
             * using tag-counting in union-intersection genes
          * :term:`cuffdiff``
       * TODO: summary statistics on differential expression
-   
 
 Usage
 -----
@@ -120,8 +119,9 @@ Code
 from ruffus import *
 
 import Experiment as E
+import logging as L
 
-import sys, os, re, shutil, itertools, math, glob, logging, time
+import sys, os, re, shutil, itertools, math, glob, time
 
 import numpy, sqlite3
 import GTF, IOTools
@@ -168,7 +168,7 @@ TISSUES = PipelineTracks.Aggregate( TRACKS, labels = ("tissue", ) )
 ##
 ###################################################################
 if os.path.exists("conf.py"): 
-    E.info( "reading additional configuration from conf.py" )
+    L.info( "reading additional configuration from conf.py" )
     execfile("conf.py")
 
 USECLUSTER=True
@@ -366,7 +366,7 @@ def buildTranscripts( infile, outfile ):
             if not is_ok: break
 
         if not is_ok: 
-            E.info( "removing transcript %s" % all_exons[0].transcript_id )
+            L.info( "removing transcript %s" % all_exons[0].transcript_id )
             c.skipped += 1
             continue
 
@@ -379,7 +379,7 @@ def buildTranscripts( infile, outfile ):
 
         c.output += 1
 
-    E.info( "%s\n" % str(c) )
+    L.info( "%s\n" % str(c) )
 
 #########################################################################
 #########################################################################
@@ -680,17 +680,29 @@ def compareTranscriptsBetweenExperiments( infiles, outfile ):
             suffix(".cuffcompare"), 
             "_cuffcompare.load" )
 def loadTranscriptComparison( infile, outfile ):
-    '''load data from transcript comparison.'''
+    '''load data from transcript comparison.
+
+    creates four tables:
+    <track>_benchmark
+    <track>_tracking
+    <track>_transfrags
+    <track>_loci
+    '''
 
     tmpfile = P.getTempFilename()
-    
+    tmpfile2 = P.getTempFilename()
+
+    #########################################################
+    ## load benchmarking data
+    #########################################################
     outf = open( tmpfile, "w")
     outf.write( "track\tcontig\t%s\n" % "\t".join( Tophat.CuffCompareResult.getHeaders() ) )
-    result = Tophat.parseTranscriptComparison( IOTools.openFile( infile ))
-    tracks = []
+    tracks, result = Tophat.parseTranscriptComparison( IOTools.openFile( infile ))
+
+    tracks = [ P.snip( os.path.basename(x), ".gtf.gz" ) for x in tracks ]
+
     for track, vv in result.iteritems():
         track = P.snip( os.path.basename(track), ".gtf.gz" )
-        tracks.append( track )
         for contig, v in vv.iteritems():
             if v.is_empty: continue
             outf.write( "%s\t%s\t%s\n" % (P.quote( track ), contig, str(v) ) )
@@ -706,27 +718,114 @@ def loadTranscriptComparison( infile, outfile ):
     > %(outfile)s
     '''
 
-    P.run()
+    # P.run()
     
-    os.unlink( tmpfile )
+    #########################################################
+    ## load tracking information
+    #########################################################
+    outf = open( tmpfile, "w")
+    outf.write( "%s\n" % "\t".join( ( "transfrag_id",
+                                      "locus_id",
+                                      "ref_gene_id",
+                                      "ref_transcript_id",
+                                      "code", 
+                                      "nexperiments" ) ) )
+ 
+    outf2 = open( tmpfile2, "w")
+    outf2.write( "%s\n" % "\t".join( ( "transfrag_id",
+                                       "track",
+                                       "gene_id",
+                                       "transcript_id",
+                                       "fmi", 
+                                       "fpkm", 
+                                       "conf_lo", 
+                                       "conf_hi", 
+                                       "cov",
+                                       "length" ) ) )
+ 
+    for transfrag in Tophat.iterate_tracking( IOTools.openFile( "%s.tracking.gz" % infile, "r") ):
 
-    tablename = P.toTable( outfile ) + "_tracking"
+        nexperiments = len( [x for x in transfrag.transcripts if x] )
+
+        outf.write( "%s\n" % \
+                        "\t".join( (transfrag.transfrag_id, 
+                                    transfrag.locus_id, 
+                                    transfrag.ref_gene_id,
+                                    transfrag.ref_transcript_id,
+                                    transfrag.code,
+                                    str(nexperiments))))
+
+        for track, t in zip(tracks, transfrag.transcripts):
+            if t:
+                outf2.write("%s\n" % (map(str, (track,
+                                                transfrag.transfrag_id ) + t ) ) )
+                
+        
+    outf.close()
+    outf2.close()
+
+    tablename = P.toTable( outfile ) + "_transcripts"
     
-    headers = ",".join( ( "transfrag_id",
-                          "locus_id",
-                          "transcript_id",
-                          "code", ) + tuple( tracks ) )
-
-    statement = '''zcat %(infile)s.tracking.gz 
+    statement = '''cat %(tmpfile)s
     | csv2db.py %(csv2db_options)s
-              --header=%(headers)s
               --index=locus_id
               --index=transfrag_id
+              --index=code
               --table=%(tablename)s 
     >> %(outfile)s
     '''
 
     P.run()
+
+    tablename = P.toTable( outfile ) + "_tracking"
+    
+    statement = '''cat %(tmpfile2)s
+    | csv2db.py %(csv2db_options)s
+              --index=locus_id
+              --index=transfrag_id
+              --index=code
+              --table=%(tablename)s 
+    >> %(outfile)s
+    '''
+
+    P.run()
+
+    #########################################################
+    ## load tracking information
+    #########################################################
+    outf = open( tmpfile, "w")
+    outf.write( "%s\n" % "\t".join( ( "locus_id",
+                                      "contig",
+                                      "strand",
+                                      "start",
+                                      "end", 
+                                      "nexperiments", ) + tuple(tracks) ) )
+    
+    for locus in Tophat.iterate_locus( IOTools.openFile( "%s.loci.gz" % infile, "r") ):
+        
+        counts = [ len(x) for x in locus.transcripts ] 
+        nexperiments = len( [x for x in counts if x > 0] )
+
+        outf.write( "%s\t%s\t%s\t%i\t%i\t%i\t%s\n" % \
+                        (locus.locus_id, locus.contig, locus.strand, 
+                         locus.start, locus.end,
+                         nexperiments,
+                         "\t".join( map( str, counts) ) ) )
+    outf.close()
+    
+    tablename = P.toTable( outfile ) + "_loci"
+
+    statement = '''cat %(tmpfile)s
+    | csv2db.py %(csv2db_options)s
+              --index=locus_id
+              --table=%(tablename)s 
+    >> %(outfile)s
+    '''
+
+    P.run()
+
+    os.unlink( tmpfile )
+    os.unlink( tmpfile2 )
 
 #########################################################################
 #########################################################################
@@ -840,7 +939,7 @@ def buildFPKMGeneLevelTagCounts( infiles, outfile ):
 
     scale = median_library_size / 1000000.0
 
-    E.info( "normalization: median library size=%i, factor=1.0 / %f" % \
+    L.info( "normalization: median library size=%i, factor=1.0 / %f" % \
                 (median_library_size, scale) )
 
     # normalize
@@ -900,7 +999,7 @@ def estimateDifferentialExpressionDESeq( infile, outfile ):
     R('''cds <- estimateSizeFactors( cds )''')
     R('''cds <- estimateVarianceFunctions( cds )''')
 
-    E.info("creating diagnostic plots" ) 
+    L.info("creating diagnostic plots" ) 
     size_factors = R('''sizeFactors( cds )''')
     R.png( "%s_scvplot.png" % outfile )
     R('''scvPlot( cds, ylim = c(0,3))''')
@@ -922,7 +1021,7 @@ def estimateDifferentialExpressionDESeq( infile, outfile ):
         R('''residualsEcdfPlot( cds, "%s" )''' % track )
         R['dev.off']()
 
-    E.info("calling differential expression")
+    L.info("calling differential expression")
 
     for x,y in itertools.combinations( conds, 2 ):
         R('''res <- nbinomTest( cds, '%s', '%s' )''' % (x,y))
