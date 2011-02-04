@@ -129,6 +129,7 @@ Targets
 import sys, tempfile, optparse, shutil, itertools, csv, math, random, re, glob, os, shutil, collections
 
 import Experiment as E
+import logging as L
 import Pipeline as P
 from ruffus import *
 import csv
@@ -218,7 +219,7 @@ def getUnsubtracted( track ):
 ###################################################################
 # if conf.py exists: execute to change the above assignmentsn
 if os.path.exists("conf.py"):
-    E.info( "reading additional configuration from conf.py" )
+    L.info( "reading additional configuration from conf.py" )
     execfile("conf.py")
 
 
@@ -235,7 +236,7 @@ CONDITIONS = PipelineTracks.Aggregate( TRACKS, labels = ("condition",) )
 TISSUES = PipelineTracks.Aggregate( TRACKS, labels = ("tissue",) )
 
 # compound targets : all experiments
-TRACKS_MASTER = EXPERIMENTS.keys() + CONDITIONS.keys() + TISSUES.keys()
+TRACKS_MASTER = EXPERIMENTS.keys() + CONDITIONS.keys()
 
 # compound targets : correlation between tracks
 TRACKS_CORRELATION = TRACKS_MASTER + list(TRACKS)
@@ -625,7 +626,7 @@ def loadCombinedIntervals( infile, outfile ):
     P.run()
     os.unlink( tmpfile.name )
 
-    E.info( "%s\n" % str(c) )
+    L.info( "%s\n" % str(c) )
 
 ############################################################
 ############################################################
@@ -860,7 +861,7 @@ if 0:
 ############################################################
 @follows( buildIntervals )
 @files( [ ([ "%s.bed" % y.asFile() for y in EXPERIMENTS.getTracks( x )], 
-           "%s.reproducibility" % x.asFile) for x in EXPERIMENTS ] )
+           "%s.reproducibility" % x.asFile()) for x in EXPERIMENTS ] )
 def makeReproducibility( infiles, outfile ):
     '''compute overlap between intervals.
 
@@ -1043,7 +1044,7 @@ def runMEME( infile, outfile ):
     # maximum size of data set (in characters)
     maxsize = int(PARAMS["meme_max_size"])
 
-    E.info( "runMeme: %s: using at most %i sequences for pattern finding" % (track, cutoff) )
+    L.info( "runMeme: %s: using at most %i sequences for pattern finding" % (track, cutoff) )
 
     fasta = IndexedFasta.IndexedFasta( PARAMS["genome"] )
 
@@ -1070,7 +1071,7 @@ def runMEME( infile, outfile ):
         masked_seq = re.sub( "[a-z]","N", masked_seq )
         current_size += len(masked_seq)
         if current_size >= maxsize: 
-            E.info( "runMEME: %s: maximum size (%i) reached - only %i sequences output" % (track, maxsize, nseq))
+            L.info( "runMEME: %s: maximum size (%i) reached - only %i sequences output" % (track, maxsize, nseq))
             break
         nseq += 1
         outs.write( ">%s\n%s\n" % (id, masked_seq))
@@ -1149,8 +1150,8 @@ def writeSequencesForIntervals( track, filename,
     else:
         cutoff = len(data)
         
-        E.info( "writeSequencesForIntervals %s: using at most %i sequences for pattern finding" % (track, cutoff) )
-    E.info( "writeSequencesForIntervals %s: masker=%s" % (track,masker))
+        L.info( "writeSequencesForIntervals %s: using at most %i sequences for pattern finding" % (track, cutoff) )
+    L.info( "writeSequencesForIntervals %s: masker=%s" % (track,masker))
 
     fasta = IndexedFasta.IndexedFasta( PARAMS["genome"] )
     masker_object = Masker.MaskerDustMasker()
@@ -1162,14 +1163,14 @@ def writeSequencesForIntervals( track, filename,
         lcontig = fasta.getLength( contig )
         start, end = max(0, start + offset), min(end + offset, lcontig)
         if start >= end:
-            E.info( "writeSequencesForIntervals %s: sequence %s is empty: start=%i, end=%i, offset=%i - ignored" % (track, id, start, end, offset))
+            L.info( "writeSequencesForIntervals %s: sequence %s is empty: start=%i, end=%i, offset=%i - ignored" % (track, id, start, end, offset))
             continue
         seq = fasta.getSequence( contig, "+", start, end )
         sequences.append( seq )
         new_data.append( (start, end, id, contig) )
         current_size += len(seq)
         if maxsize and current_size >= maxsize: 
-            E.info( "writeSequencesForIntervals %s: maximum size (%i) reached - only %i sequences output (%i ignored)" % (track, maxsize, nseq,
+            L.info( "writeSequencesForIntervals %s: maximum size (%i) reached - only %i sequences output (%i ignored)" % (track, maxsize, nseq,
                                                                                                                           len(data) - nseq ))
             break
         nseq += 1
@@ -1358,7 +1359,7 @@ if PARAMS["tomtom_master_motif"] != "":
             if float(pvalue) <= max_pvalue:
                 selected.append( target_id )
 
-        E.info( "%s: keeping %i motifs" % (infile, len(selected) ) )
+        L.info( "%s: keeping %i motifs" % (infile, len(selected) ) )
 
         PMotifs.filterMotifsFromMEME( infile_meme, outfile, selected )
         
@@ -1414,12 +1415,12 @@ def runMAST( infiles, outfile ):
     # remove previous results
     if os.path.exists(outfile): os.remove( outfile )
     
-    tmpdir = P.getTempDir()
-    tmpfile = P.getTempFilename()
+    tmpdir = P.getTempDir( "." )
+    tmpfile = P.getTempFilename( "." )
 
     for motiffile in motiffiles:
         if IOTools.isEmpty( motiffile ):
-            E.info( "skipping empty motif file %s" % motiffile )
+            L.info( "skipping empty motif file %s" % motiffile )
             continue
         
         of = open(tmpfile, "a")
@@ -1768,7 +1769,7 @@ def loadGLAM2SCAN( infile, outfile ):
             raise P.PipelineError("parsing error in line '%s'" % lines[chunks[chunk]])
 
         if chunks[chunk]+1 == chunks[chunk+1]:
-            E.warn( "no results for motif %s - ignored" % motif )
+            L.warn( "no results for motif %s - ignored" % motif )
             continue
         
         tmpfile2 = tempfile.NamedTemporaryFile(delete=False)        
@@ -1846,7 +1847,7 @@ def annotateIntervals( infile, outfile ):
     to_cluster = True
 
     annotation_file = os.path.join( PARAMS["annotations_dir"],
-                                    PARAMS_ANNOTATIONS["interface_annotation"] )
+                                    PARAMS_ANNOTATIONS["interface_annotation_gff"] )
 
     statement = """
     cat < %(infile)s 
@@ -1875,7 +1876,7 @@ def annotateTSS( infile, outfile ):
     to_cluster = True
 
     annotation_file = os.path.join( PARAMS["annotations_dir"],
-                                    PARAMS_ANNOTATIONS["interface_tss"] )
+                                    PARAMS_ANNOTATIONS["interface_tss_bed"] )
 
     statement = """
     cat < %(infile)s 
@@ -1902,7 +1903,7 @@ def annotateRepeats( infile, outfile ):
     to_cluster = True
 
     annotation_file = os.path.join( PARAMS["annotations_dir"],
-                                    PARAMS_ANNOTATIONS["interface_repeats"] )
+                                    PARAMS_ANNOTATIONS["interface_repeats_gff"] )
 
     statement = """
     cat < %(infile)s |\

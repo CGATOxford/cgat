@@ -234,4 +234,10 @@ class Tracks:
     def __iter__(self):
         return self.tracks.__iter__()
 
-    
+    def __len__(self):
+        return len(self.tracks)
+
+
+def getSamplesInTrack( track,tracks ):
+    '''return all tracks in *tracks* that constitute *track*.'''
+    return Aggregate( tracks, track = track )[track]

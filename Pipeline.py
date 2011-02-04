@@ -679,7 +679,7 @@ def main( args = sys.argv ):
                               logger = logger,
                               verbose = options.loglevel )
 
-                L.info( GetFooter() )
+                L.info( E.GetFooter() )
 
             elif options.pipeline_action == "show":
                 pipeline_printout( options.stdout, [ options.pipeline_target ], verbose = options.loglevel )

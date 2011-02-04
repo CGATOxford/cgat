@@ -130,6 +130,7 @@ from rpy2.robjects import r as R
 import rpy2.robjects as ro
 
 import pipeline_chipseq_intervals as PIntervals
+import Stats
 
 ###################################################
 ###################################################
@@ -155,7 +156,9 @@ PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],
 import PipelineTracks
 
 TRACKS = PipelineTracks.Tracks( PipelineTracks.Sample ).loadFromDirectory( 
-            glob.glob( "*.sra" ), "(\S+).sra" )
+    glob.glob( "*.sra" ), "(\S+).sra" )
+
+assert len(TRACKS) > 0, "no tracks found in current directory"
 
 ALL = PipelineTracks.Aggregate( TRACKS )
 EXPERIMENTS = PipelineTracks.Aggregate( TRACKS, labels = ("condition", "tissue" ) )
@@ -183,9 +186,7 @@ def mapReadsFromSRAWithTophat( infile, outfile ):
     '''map reads from short read archive sequences
     using tophat
     
-    not paired-ended.
-
-    TODO: unpack reads on scratch disk
+    Need to implement paired-ended data (i.e. two fastq files)
 
     There is a bug in tophat 1.1.4, see:
     http://seqanswers.com/forums/showthread.php?t=8103
@@ -207,35 +208,34 @@ def mapReadsFromSRAWithTophat( infile, outfile ):
     rm -f fixed.sam fixed2.sam
     '''
 
-    tmpfilename = outfile + ".dir" #P.getTempFilename()
-    
-    if os.path.exists( tmpfilename ):
-        os.unlink( tmpfilename )
+    # note that the directory tmpdir1 needs to exist for fastq-dump
+    # while tmpdir2 must not exist for tophat.
+    tmpdir1 = P.getTempDir()
+    tmpdir2 = os.path.join( tmpdir1 + "tophat" )
 
-    # job_options= "-pe dedicated 4-8 -l mem_free=3G -R y"
+    to_cluster = USECLUSTER
+    
+    # -l mem_free=3G 
+    job_options= "-pe dedicated %i -R y" % PARAMS["tophat_threads"]
 
     prefix = P.snip( infile, ".sra" )
 
     # tophat does a seek operation on the fq files, hence they
-    # need to be unpacked into uncompressed real files
-
-    # todo: use scratch dir for fastq files
-
+    # need to be unpacked into (uncompressed) physical files
     statement = '''
-    fastq-dump %(infile)s ;
-    tophat --output-dir %(tmpfilename)s
-           --quiet
+    fastq-dump --outdir %(tmpdir1)s %(infile)s ;
+    tophat --output-dir %(tmpdir2)s
+           --num-threads %(tophat_threads)i
            %(tophat_options)s
            %(bowtie_index_dir)s/%(genome)s
-           %(prefix)s.fastq
+           %(tmpdir1)s/%(prefix)s.fastq
     >& %(outfile)s.log;
-    mv %(tmpfilename)s/accepted_hits.bam %(outfile)s; 
-    mv %(tmpfilename)s/tmp/junctions.bed %(prefix)s.junctions.bed; 
-    rm -f %(prefix)s.fastq; 
+    mv %(tmpdir2)s/accepted_hits.bam %(outfile)s; 
+    mv %(tmpdir2)s/tmp/junctions.bed %(prefix)s.junctions.bed; 
+    mv %(tmpdir2)s/logs %(outfile)s.logs;
+    rm -rf %(tmpdir2)s %(tmpdir1)s;
     samtools index %(outfile)s
     '''
-
-    # rm -rf %(tmpfilename)s
 
     P.run()
 
@@ -717,9 +717,11 @@ def loadTranscriptComparison( infile, outfile ):
               --table=%(tablename)s 
     > %(outfile)s
     '''
-
-    # P.run()
     
+    P.run()
+    
+    L.info( "loaded %s" % tablename )
+
     #########################################################
     ## load tracking information
     #########################################################
@@ -732,8 +734,8 @@ def loadTranscriptComparison( infile, outfile ):
                                       "nexperiments" ) ) )
  
     outf2 = open( tmpfile2, "w")
-    outf2.write( "%s\n" % "\t".join( ( "transfrag_id",
-                                       "track",
+    outf2.write( "%s\n" % "\t".join( ( "track",
+                                       "transfrag_id",
                                        "gene_id",
                                        "transcript_id",
                                        "fmi", 
@@ -757,14 +759,13 @@ def loadTranscriptComparison( infile, outfile ):
 
         for track, t in zip(tracks, transfrag.transcripts):
             if t:
-                outf2.write("%s\n" % (map(str, (track,
-                                                transfrag.transfrag_id ) + t ) ) )
+                outf2.write("%s\n" % "\t".join( map(str, (track,
+                                                          transfrag.transfrag_id ) + t ) ) )
                 
-        
     outf.close()
     outf2.close()
 
-    tablename = P.toTable( outfile ) + "_transcripts"
+    tablename = P.toTable( outfile ) + "_tracking"
     
     statement = '''cat %(tmpfile)s
     | csv2db.py %(csv2db_options)s
@@ -776,19 +777,24 @@ def loadTranscriptComparison( infile, outfile ):
     '''
 
     P.run()
+    L.info( "loaded %s" % tablename )
 
-    tablename = P.toTable( outfile ) + "_tracking"
+    tablename = P.toTable( outfile ) + "_transcripts"
     
     statement = '''cat %(tmpfile2)s
     | csv2db.py %(csv2db_options)s
-              --index=locus_id
               --index=transfrag_id
-              --index=code
+              --index=ref_gene_id
+              --index=ref_transcript_id
+              --index=transcript_id
+              --index=gene_id
+              --index=track
               --table=%(tablename)s 
     >> %(outfile)s
     '''
 
     P.run()
+    L.info( "loaded %s" % tablename )
 
     #########################################################
     ## load tracking information
@@ -823,16 +829,49 @@ def loadTranscriptComparison( infile, outfile ):
     '''
 
     P.run()
+    L.info( "loaded %s" % tablename )
 
     os.unlink( tmpfile )
     os.unlink( tmpfile2 )
 
 #########################################################################
 #########################################################################
+@transform( loadTranscriptComparison, suffix("_cuffcompare.load"), ".reproducibility" )
+def buildReproducibility( infile, outfile ):
+    '''all-vs-all comparison between samples.'''
+
+    track = TRACKS.factory( filename = outfile[:-len(".reproducibility")] )
+    
+    replicates = PipelineTracks.getSamplesInTrack( track, TRACKS )
+
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    cc = dbhandle.cursor()    
+
+    tablename = "%s_cuffcompare_transcripts" % track.asTable()
+    
+    for rep1, rep2 in itertools.combinations( replicates, 2 ):
+        
+        track1, track2 = rep1.asFile(), rep2.asFile()
+
+        statement = '''SELECT a.fpkm, b.fpkm 
+                       FROM %(tablename)s AS a, 
+                            %(tablename)s AS b
+                       WHERE a.transfrag_id = b.transfrag_id AND 
+                             a.track = '%(track1)s' AND 
+                             b.track = '%(track2)s' 
+                    '''
+        data = cc.execute( statement % locals() ).fetchall()
+        x,y = zip( *data )
+        result = Stats.doCorrelationTest( x, y)
+        print str(result)
+    
+
+#########################################################################
+#########################################################################
 #########################################################################
 @files( [ ( ([ "%s.bam" % xx.asFile() for xx in EXPERIMENTS[x] ], 
              [ "%s.bam" % yy.asFile() for yy in EXPERIMENTS[y] ]),
-            "%s_vs_%s.expression" % (x.asFile(),y.asFile()) )
+            "%s_vs_%s.cuffdiff" % (x.asFile(),y.asFile()) )
               for x,y in itertools.combinations( EXPERIMENTS, 2) ] )
 def estimateDifferentialExpressionPairwise( infiles, outfile ):
     '''estimate differential expression using cuffdiff.
