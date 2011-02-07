@@ -40,8 +40,12 @@ import scipy
 import scipy.stats
 import scipy.interpolate
 import collections
-from rpy import r as R
-import rpy
+from rpy2.robjects import r as R
+import rpy2.robjects as ro
+import rpy2.robjects.numpy2ri
+
+#from rpy import r as R
+#import rpy
 
 def getSignificance( pvalue, thresholds=[0.05, 0.01, 0.001] ):
     """return cartoon of significance of a p-Value."""
@@ -674,7 +678,7 @@ def doFDR(pvalues,
                 plt.plot( x2, y2 )
                 plt.show()
             
-            pi0 = R("""pi0 <- predict( spi0, x = max(vlambda) )$y""")
+            pi0 = R("""pi0 <- predict( spi0, x = max(vlambda) )$y""")[0]
 
             if smooth_log_pi0:
                 pi0 = math.exp(pi0)
@@ -701,7 +705,7 @@ def doFDR(pvalues,
                 }
                 mse <- mse + (pi0_boot-minpi0)^2
             }
-            pi0 <- min(pi0[mse==min(mse)])""")
+            pi0 <- min(pi0[mse==min(mse)])""")[0]
         else:
             raise ValueError( "'pi0_method' must be one of 'smoother' or 'bootstrap'.")
 
@@ -719,7 +723,7 @@ def doFDR(pvalues,
 
     # change by Alan
     # ranking function which returns number of observations less than or equal
-    R.assign( "pvalues", pvalues )
+    ro.globalenv['pvalues'] = ro.FloatVector( pvalues )
     R.assign( "robust", robust )
     qvalues = R("""u <- order(pvalues)
     qvalues.rank <- function(x) 
