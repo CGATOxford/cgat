@@ -197,7 +197,7 @@ def main():
                                                        gtf.transcript_id,
                                                        attributes,
                                                        ) ) ) + "\n" )
-            E.Stop()
+    E.Stop()
 
 if __name__ == '__main__':
     sys.exit(main())

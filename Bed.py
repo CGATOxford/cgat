@@ -66,10 +66,11 @@ class Bed(object):
     def fromGFF( self, gff, is_gtf = False, name="gene_id" ):
         """fill from gff formatted entry."""
         self.contig, self.start, self.end = gff.contig, gff.start, gff.end
-        if is_gtf: self.mFields = [getattr( gff, name), 
-                                   [gff.score,0][gff.score == None], 
-                                   gff.strand ]
-
+        if is_gtf: 
+            self.mFields = [getattr( gff, name), 
+                            [gff.score,0][gff.score == None], 
+                            gff.strand ]
+        
     def __contains__(self, key ):
         return self.map_key2field[key] < len(self.mFields)
 
@@ -130,6 +131,37 @@ def bed_iterator( infile ):
 def grouped_iterator( iterator ):
     '''yield bed results grouped by track.'''
     return itertools.groupby( iterator, lambda x: x.mTrack )
+
+def blocked_iterator( iterator ):
+    '''yield blocked bed results.'''
+
+    last_id = None
+    blocks = []
+
+    def _update( bed, blocks ):
+        blocks.sort()
+        bed.start, bed.end = blocks[0][0], blocks[-1][1]
+        s = bed.start
+        # hacky - needs be abstracted into Bed object
+        bed.mFields.extend( [""] * (9 - len(bed.mFields)))
+        bed.mFields[3] = str(bed.start)
+        bed.mFields[4] = str(bed.end)
+        bed.mFields[5] = 0
+        bed.mFields[6] = len(blocks)
+        bed.mFields[7] = ",".join( [str(y-x) for x,y in blocks ])
+        bed.mFields[8] = ",".join( [str(x-s) for x,y in blocks])
+        return bed
+
+    last_bed = None
+    for bed in iterator:
+        if last_id != bed.name:
+            if last_id: yield _update(last_bed, blocks)
+            blocks = []
+            last_id = bed.name
+        last_bed = bed
+        blocks.append( (bed.start, bed.end) )
+    
+    yield _update(bed, blocks)
 
 def readAndIndex( infile, with_values = False, per_track = False ):
     """read and index a bed formatted file in ``infile``.

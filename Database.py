@@ -292,7 +292,6 @@ class Database:
         
         return 
 
-
 def executewait( dbhandle, statement, error = None, retries = -1, wait=5):
     '''execute an sql ``statement``.
 
@@ -323,9 +322,6 @@ def executewait( dbhandle, statement, error = None, retries = -1, wait=5):
             continue
         break
     return cc
-        
-
-        
 
 def getColumnNames( dbhandle, table ):
     '''get column names of a table from a database.'''
@@ -334,6 +330,8 @@ def getColumnNames( dbhandle, table ):
     return tuple([ x[0] for x in cc.description ])
 
 
-
-
+def getTables( dbhandle ):
+    
+    cc = executewait( dbhandle, """select name from sqlite_master where type='table'""")
+    return tuple([ x[0] for x in cc ])
 

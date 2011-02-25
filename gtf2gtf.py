@@ -35,7 +35,7 @@ Purpose
 This scripts reads a :term:`gtf` formatted file from stdin, applies some
 transformation, and outputs a new :term:`gtf` formatted file to stdout.
 
-This script expects the gtf file to be sorted by genes by contig and then by 
+This script expects the gtf file to be sorted by genes and then by 
 position.
 
 Usage
@@ -60,7 +60,7 @@ Code
 '''
 import os, sys, string, re, optparse, types, random, collections
 
-import GTF
+import GFF,GTF
 import Experiment as E
 import IndexedFasta
 import Genomics
@@ -78,11 +78,18 @@ if __name__ == '__main__':
     parser.add_option("-m", "--merge-exons", dest="merge_exons", action="store_true",
                       help="merge overlapping exons of all transcripts within a gene [default=%default]."  )
 
+    parser.add_option( "--merge-exons-distance", dest="merge_exons_distance", type="int",
+                      help="distance to merge exons over [default=%default]."  )
+
+    parser.add_option( "--unset-genes", dest="unset_genes", type="string",
+                      help="unset gene identifiers, keeping transcripts intact,"
+                       " set to pattern [default=%default]."  )
+
     parser.add_option( "--merge-genes", dest="merge_genes", action="store_true",
                       help="merge overlapping genes if their exons overlap. This ignores the strand [default=%default]."  )
 
     parser.add_option( "--sort", dest="sort", type="choice",
-                       choices=("gene", "transcript", "position", "contig+gene" ),
+                       choices=("gene", "transcript", "position", "contig+gene", "position+gene" ),
                        help="sort input [default=%default]."  )
 
     parser.add_option("-u", "--with-utr", dest="with_utr", action="store_true",
@@ -157,6 +164,10 @@ if __name__ == '__main__':
     parser.add_option( "--reset-strand", dest="reset_strand", action="store_true",
                        help="remove strandedness of features." )
 
+    parser.add_option( "--remove-overlapping", dest="remove_overlapping", type="string",
+                       help="remove all transcripts that overlap intervals in a gff-formatted file."
+                       " The comparison ignores strand [%default]." )
+
     parser.add_option( "--permit-duplicates", dest="strict", action="store_false",
                        help="permit duplicate genes (on different chromosomes, ...) [default=%default]" )
 
@@ -168,6 +179,7 @@ if __name__ == '__main__':
     parser.set_defaults(
         sort = None,
         merge_exons = False,
+        merge_exons_distance = 0,
         merge_transcripts = False,
         set_score2distance = False,
         set_gene2transcript = False,
@@ -187,7 +199,9 @@ if __name__ == '__main__':
         with_utr = False,
         invert_filter = False,
         remove_duplications = None,
+        remove_overlapping = None,
         renumber_genes = None,
+        unset_genes = None,
         renumber_transcripts = None,
         strict = True,
         intersect_transcripts = False,
@@ -277,6 +291,11 @@ if __name__ == '__main__':
             entries.sort( key = lambda x: (x.transcript_id, x.contig, x.start) )
         elif options.sort == "position":
             entries.sort( key = lambda x: (x.contig, x.start) )
+        elif options.sort == "position+gene":
+            entries.sort( key = lambda x: (x.gene_id, x.start) )
+            genes = list( GTF.flat_gene_iterator(entries) )
+            genes.sort( key = lambda x: (x[0].contig, x[0].start) )
+            entries = IOTools.flatten( genes )
 
         for gff in entries:
             ninput += 1
@@ -374,19 +393,22 @@ if __name__ == '__main__':
             for c in chunks: intervals += [ (x.start, x.end) for x in c ]
 
             intervals = Intervals.combine( intervals )
+            # take single strand
+            strand = chunks[0][0].strand
+
             for start, end in intervals:
                 y = GTF.Entry()
                 y.fromGFF( chunks[0][0], gene_id, transcript_id )
                 y.start = start
                 y.end = end
-                y.strand = "."
+                y.strand = strand
+
                 if info: y.addAttribute( "merged", info )
                 options.stdout.write( "%s\n" % str(y ) )
                 nfeatures += 1
 
             noutput += 1
 
-        
     elif options.renumber_genes:
         
         map_old2new = {}
@@ -398,14 +420,27 @@ if __name__ == '__main__':
             options.stdout.write( "%s\n" % str(gtf) )
             noutput += 1
 
+    elif options.unset_genes:
+        
+        map_old2new = {}
+        for gtf in GTF.iterator(options.stdin):
+            ninput += 1
+            key = gtf.transcript_id
+            if key not in map_old2new:
+                map_old2new[key] = options.unset_genes % (len(map_old2new) + 1)
+            gtf.setAttribute( "gene_id",  map_old2new[key] )
+            options.stdout.write( "%s\n" % str(gtf) )
+            noutput += 1
+
     elif options.renumber_transcripts:
         
         map_old2new = {}
         for gtf in GTF.iterator(options.stdin):
             ninput += 1
-            if gtf.transcript_id not in map_old2new:
-                map_old2new[gtf.transcript_id ] = options.renumber_transcripts % (len(map_old2new) + 1)
-            gtf.setAttribute( "transcript_id",  map_old2new[gtf.transcript_id ] )
+            key = (gtf.gene_id, gtf.transcript_id)
+            if key not in map_old2new:
+                map_old2new[key] = options.renumber_transcripts % (len(map_old2new) + 1)
+            gtf.setAttribute( "transcript_id",  map_old2new[key] )
             options.stdout.write( "%s\n" % str(gtf) )
             noutput += 1
 
@@ -609,7 +644,27 @@ if __name__ == '__main__':
                 options.stdout.write( "%s\n" % str( gff ) )
                 nfeatures += 1
             noutput += 1
+
+    elif options.remove_overlapping:
         
+        index = GFF.readAndIndex( GFF.iterator( IOTools.openFile( options.remove_overlapping, "r" ) ) )
+        
+        for gffs in GTF.transcript_iterator(GTF.iterator(options.stdin)):
+            ninput += 1
+            found = False
+            for e in gffs:
+                if index.contains( e.contig, e.start, e.end ):
+                    found = True
+                    break
+            
+            if found:
+                ndiscarded += 1    
+            else:
+                noutput += 1
+                for e in gffs: 
+                    nfeatures += 1
+                    options.stdout.write( "%s\n" % str(e ) )
+
     elif options.intersect_transcripts:
         
         for gffs in GTF.gene_iterator(GTF.iterator(options.stdin), strict=options.strict ):
@@ -689,6 +744,9 @@ if __name__ == '__main__':
 
             if options.merge_exons:
 
+                utr_ranges = Intervals.combineAtDistance( utr_ranges, options.merge_exons_distance )
+                output_ranges = Intervals.combineAtDistance( output_ranges, options.merge_exons_distance )
+
                 for feature, start, end in utr_ranges:
                     entry = GTF.Entry()
                     entry.copy( gffs[0] )
@@ -741,5 +799,5 @@ if __name__ == '__main__':
                 nfeatures += 1
             noutput += 1
 
-    E.info("ninput=%i, noutput=%i, nfeatures=%i, ndiscarded=%i\n" % (ninput, noutput, nfeatures, ndiscarded) )
+    E.info("ninput=%i, noutput=%i, nfeatures=%i, ndiscarded=%i" % (ninput, noutput, nfeatures, ndiscarded) )
     E.Stop()

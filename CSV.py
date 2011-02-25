@@ -12,7 +12,7 @@ def ConvertDictionary( d , map = {}):
     """
 
     rx_int = re.compile("^\s*[+-]*[0-9]+\s*$")
-    rx_float = re.compile("^\s*[+-]*[0-9.]+[.+\-eE][+-]*[0-9.]*\s*$")
+    rx_float = re.compile( "^[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?$" )
 
     # pre-process with 'default'
     if "default" in map:

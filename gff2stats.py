@@ -57,23 +57,111 @@ Code
 
 '''
 import sys, string, re, optparse, collections
-
-USAGE="""python %s [OPTIONS] input1 input2
-
-compute simple statistics on the size of features and the 
-distance between features in a gff file.
-
-Methods:
-  hist: histogram of distance/sizes
-  stats: descriptive statistics of distance/sizes
-  overlaps: output overlapping features
-
-Version: $Id: gff2stats.py 2781 2009-09-10 11:33:14Z andreas $
-""" % sys.argv[0]
-
 import Experiment as E
 import GFF, GTF
+import Stats, IOTools, Intervals
 
+class counter_gff:
+
+    fields = ("contigs", "strands", "features", "sources")
+
+    def __init__(self, iter ):
+        self.iter = iter
+
+        self.counts_contigs = collections.defaultdict( int )
+        self.counts_strands = collections.defaultdict( int )
+        self.counts_features = collections.defaultdict( int )
+        self.counts_sources = collections.defaultdict( int )
+        
+    def next(self):
+        
+        entry = self.iter.next()
+        
+        self.counts_contigs[entry.contig] += 1
+        self.counts_features[entry.feature] += 1
+        self.counts_sources[entry.source] += 1
+        self.counts_strands[entry.strand] += 1
+    
+        return entry 
+
+    def __iter__(self):
+        return self
+
+    def __str__(self):
+        return "\t".join( map(str, ( len(self.counts_contigs),
+                                     len(self.counts_strands),
+                                     len(self.counts_features),
+                                     len(self.counts_sources) )))
+
+
+class counter_exons:
+    
+    fields = ( "genes", "transcripts", "single_exon_transcripts", ) +\
+        tuple([ "exon_count_%s" % x for x in Stats.Summary.fields ] ) +\
+        tuple([ "exon_size_%s" % x for x in Stats.Summary.fields ] ) +\
+        tuple([ "intron_size_%s" % x for x in Stats.Summary.fields ] ) +\
+        tuple([ "transcript_size_%s" % x for x in Stats.Summary.fields ] )
+    
+    def __init__(self, iter ):
+
+        self.iter = iter
+
+        self.counts_gene_ids = collections.defaultdict( int )
+        self.counts_transcript_ids = collections.defaultdict( int )
+        self.counts_exons_per_transcript = collections.defaultdict( list )
+
+    def next(self ):
+
+        while 1:
+            entry = self.iter.next()
+            if entry.feature == "exon": break
+
+        self.counts_gene_ids[entry.gene_id] += 1
+        self.counts_transcript_ids[entry.transcript_id] += 1
+        self.counts_exons_per_transcript[entry.transcript_id].append( (entry.start, entry.end) )
+
+        return entry
+
+    def __iter__(self):
+        return self
+    
+    def __str__(self):
+        
+        single_exon_transcripts = 0
+        exons_per_transcript = []
+        intron_sizes = []
+        transcript_lengths = []
+        exon_sizes = []
+        
+        for x in self.counts_exons_per_transcript.values():
+
+            x.sort()
+            x = Intervals.combine( x )
+            transcript_lengths.append ( x[-1][1] - x[0][0] )
+
+            exons_per_transcript.append( len(x))
+        
+            for start, end in x:
+                exon_sizes.append( end - start )
+    
+            if len(x) == 1: 
+                single_exon_transcripts += 1
+                continue
+
+            last_end = x[0][1]
+            for start, end in x[1:]:
+                intron_sizes.append( start - last_end )
+                last_end = end
+
+        return "\t".join( map(str, ( len(self.counts_gene_ids),
+                                     len(self.counts_transcript_ids),
+                                     single_exon_transcripts,
+                                     Stats.Summary(exons_per_transcript),
+                                     Stats.Summary(exon_sizes),
+                                     Stats.Summary(intron_sizes),
+                                     Stats.Summary(transcript_lengths),
+                                     )) )
+    
 ##------------------------------------------------------------------------
 def main( argv = sys.argv ):
 
@@ -89,39 +177,42 @@ def main( argv = sys.argv ):
 
     (options, args) = E.Start( parser, add_output_options = True )
 
-    is_gtf = options.is_gtf
-
-    iterator = GTF.iterator
-
-    if is_gtf:
-        counts_gene_ids = collections.defaultdict( int )
-        counts_transcript_ids = collections.defaultdict( int )
-
-    counts_contigs = collections.defaultdict( int )
-    counts_strands = collections.defaultdict( int )
-    counts_features = collections.defaultdict( int )
-    counts_sources = collections.defaultdict( int )
-        
-    for entry in iterator( sys.stdin ):
-        counts_contigs[entry.contig] += 1
-        counts_features[entry.feature] += 1
-        counts_sources[entry.source] += 1
-        counts_strands[entry.strand] += 1
-        if is_gtf:
-            counts_gene_ids[entry.gene_id] += 1
-            counts_transcript_ids[entry.transcript_id] += 1
+    if len(args) == 0:
+        files = [ sys.stdin ]
+    else: 
+        files = args
     
-    def printStats( title, stats ):
-        outfile = options.stdout
-        outfile.write( "%s: %i\n" % (title, len(stats) ) )
+    options.stdout.write( "track\t%s" % ("\t".join(counter_gff.fields) ))
+        
+    if options.is_gtf:
+        options.stdout.write( "\t%s" % ("\t".join(counter_exons.fields)))
+    options.stdout.write("\n")
 
-    printStats( "contigs", counts_contigs )
-    printStats( "features", counts_features )
-    printStats( "sources", counts_sources )
-    printStats( "strands", counts_strands )
-    if is_gtf:
-        printStats( "gene_ids", counts_gene_ids )
-        printStats( "transcript_ids", counts_transcript_ids )
+    for f in files:
+        if f == options.stdin:
+            infile = f
+        else:
+            infile = IOTools.openFile( f )
+
+        counters = []
+        if options.is_gtf:
+            iterator = GTF.iterator( infile )
+            counters.append( counter_gff( iterator ) )
+            counters.append( counter_exons( counters[0] ) )
+        else:
+            iterator = GFF.iterator( infile )
+            counters.append( counter_gff( iterator ) )
+
+        c = counters[-1]
+        for x in c: pass
+        
+        options.stdout.write( f )
+        for c in counters:
+            options.stdout.write("\t%s" % str( c ))
+        options.stdout.write( "\n" )        
+        
+
+        if infile != sys.stdin: infile.close()
 
     E.Stop()
 

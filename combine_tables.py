@@ -60,7 +60,8 @@ Code
 '''
 import sys, re, string, os, time, glob, optparse
 
-import Experiment
+import IOTools
+import Experiment as E
 
 ##---------------------------------------------------------------------------------------------------------        
 if __name__ == '__main__':
@@ -119,7 +120,7 @@ if __name__ == '__main__':
         regex_filename = "(.*)"
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if options.headers: 
         if "," in options.headers:
@@ -149,19 +150,18 @@ if __name__ == '__main__':
         print USAGE, "no tables specified/found."
         sys.exit(1)
 
-    if options.loglevel >= 1:
-        options.stdlog.write( "# combining %i tables.\n" % len(options.filenames) )
-        sys.stdout.flush()
-        if len(options.filenames) == 1:
-            for line in open(options.filenames[0]):
-                options.stdout.write( line )
-            Experiment.Stop()
-            sys.exit(0)
+    E.info( "combining %i tables" % len(options.filenames) )
+
+    if len(options.filenames) == 1:
+        for line in open(options.filenames[0]):
+            options.stdout.write( line )
+        E.Stop()
+        sys.exit(0)
         
     if options.headers and options.headers[0] != "auto" and \
        len(options.headers) != len(options.filenames):
-        raise "number of provided headers (%i) is not equal to number filenames (%i)." %\
-              (len(options.headers), len(options.filenames))
+        raise ValueError("number of provided headers (%i) is not equal to number filenames (%i)." %\
+                             (len(options.headers), len(options.filenames)) )
 
     tables = []
     keys = {}
@@ -177,9 +177,7 @@ if __name__ == '__main__':
         prefix = os.path.basename( filename )
 
         if os.path.exists(filename):
-            file = open(filename, "r")
-            lines = filter( lambda x: x[0] <> "#", file)
-            
+            lines = [ x for x in IOTools.openFile(filename, "r").readlines() if not x.startswith("#") and x.strip()]
         else:
             lines = []
 
@@ -345,6 +343,6 @@ if __name__ == '__main__':
 
             sys.stdout.write("\n")
     
-    Experiment.Stop()
+    E.Stop()
 
 

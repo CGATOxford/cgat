@@ -280,6 +280,9 @@ def run( options, args ):
                              dialect=options.dialect, 
                              fieldnames = options.header )
 
+    if options.replace_header:
+        reader.next()
+
     rows = []
     for row in reader:
 
@@ -446,6 +449,9 @@ def main( argv = sys.argv ):
     parser.add_option("-H", "--header", dest="header", type="string",
                       help="',' separated list of header for files without header [default=%default]." )
 
+    parser.add_option( "--replace-header", dest="replace_header", action="store_true",
+                       help="replace header with --header instead of adding it [default=%default]." )
+
     parser.add_option("-l", "--lowercase", dest="lowercase", action="store_true",
                       help="force lower case column names [default=%default]." )
 
@@ -493,6 +499,7 @@ def main( argv = sys.argv ):
         insert_many = False,
         ignore_columns = [],
         header = None,
+        replace_header = False,
         guess_size = 1000,
         report_step = 10000,
         backend="sqlite",

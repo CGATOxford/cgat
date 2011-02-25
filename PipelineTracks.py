@@ -85,6 +85,7 @@ class Sample(object):
 
     def __init__(self, filename = None ):
         collections.namedtuple.__init__(self)
+        self.data = collections.OrderedDict( zip( self.attributes, [None] * len(self.attributes) ) )
         if filename: self.fromFile( filename )
 
     def clone( self ):
@@ -178,9 +179,8 @@ class Aggregate:
             self.aggregates = labels
         elif track:
             self.aggregates = track.toLabels()
-            if len(self.aggregates) == 0:
-                raise ValueError( "track not an aggregate %s" % str(track))
         else:
+            # aggregate all
             self.aggregates = []
 
         self.track2groups = collections.defaultdict( list )
@@ -237,6 +237,10 @@ class Tracks:
     def __len__(self):
         return len(self.tracks)
 
+    def __add__(self, other ):
+        assert self.factory == other.factory
+        self.tracks.extend( other.tracks )
+        return self
 
 def getSamplesInTrack( track,tracks ):
     '''return all tracks in *tracks* that constitute *track*.'''

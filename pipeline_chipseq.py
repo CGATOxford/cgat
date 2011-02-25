@@ -21,15 +21,14 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 """
+=================
+ChIP-Seq pipeline
+=================
 
 :Author: Andreas Heger
 :Release: $Id: pipeline_chipseq.py 2900 2010-04-13 14:38:00Z andreas $
 :Date: |today|
 :Tags: Python
-
-=================
-ChIP-Seq pipeline
-=================
 
 The ChIP-Seq pipeline imports reads from one or more ChIP-Seq experiments and
 performs the following tasks:
@@ -130,7 +129,6 @@ import sys, tempfile, optparse, shutil, itertools, csv, math, random, re, glob, 
 
 import Experiment as E
 import logging as L
-import Pipeline as P
 from ruffus import *
 import csv
 import sqlite3
@@ -160,6 +158,7 @@ import PipelineTracks
 ###################################################
 ## Pipeline configuration
 ###################################################
+import Pipeline as P
 P.getParameters( 
     ["%s.ini" % __file__[:-len(".py")],
      "../pipeline.ini",
@@ -170,8 +169,6 @@ PARAMS = P.PARAMS
 PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],
                                        "pipeline_annotations.py" )
 
-# check compatibility
-assert( PARAMS["genome"] == PARAMS_ANNOTATIONS["genome"] )
 
 ###################################################################
 ###################################################################
@@ -2168,6 +2165,11 @@ if __name__== "__main__":
     # print( "# tracks by experiment: %s" % TRACKS_EXPERIMENTS )
     # print( "# tracks by condition: %s" % TRACKS_CONDITIONS )
     # print( "# tracks by tissue: %s" % TRACKS_TISSUES )
+
+    # check compatibility
+    assert PARAMS["genome"] == PARAMS_ANNOTATIONS["genome"] 
+    # sanity checks
+    assert len(TRACKS_ALL) > 0
 
     sys.exit( P.main(sys.argv) )
 

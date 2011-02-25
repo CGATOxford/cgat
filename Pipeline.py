@@ -215,6 +215,22 @@ def asList( param ):
         return [param,]
     else: return param
 
+def flatten(l, ltypes=(list, tuple)):
+    '''flatten a nested list/tuple.'''
+    ltype = type(l)
+    l = list(l)
+    i = 0
+    while i < len(l):
+        while isinstance(l[i], ltypes):
+            if not l[i]:
+                l.pop(i)
+                i -= 1
+                break
+            else:
+                l[i:i + 1] = l[i]
+        i += 1
+    return ltype(l)
+
 def asDict( param ):
     '''return a section of configuration file as a dictionary.'''
     return dict(CONFIG.items(param))
@@ -581,10 +597,11 @@ class MultiLineFormatter(logging.Formatter):
     '''logfile formatter: add identation for multi-line entries.'''
 
     def format(self, record):
-        str = logging.Formatter.format(self, record)
-        header, footer = str.split(record.message)
-        str = str.replace('\n', '\n' + ' '*len(header))
-        return str
+        s = logging.Formatter.format(self, record)
+        if record.message:
+            header, footer = s.split(record.message)
+            s = s.replace('\n', '\n' + ' '*len(header))
+        return s
 
 USAGE = '''
 usage: %prog [OPTIONS] [CMD] [target]

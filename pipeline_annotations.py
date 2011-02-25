@@ -21,36 +21,107 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 """
+===================
+Annotation pipeline
+===================
 
 :Author: Andreas Heger
 :Release: $Id: pipeline_chipseq.py 2900 2010-04-13 14:38:00Z andreas $
 :Date: |today|
 :Tags: Python
 
-===================
-Annotation pipeline
-===================
+The annotation pipeline imports various annotations and organizes them
+for use in other pipelines.
 
-The annotation pipeline imports various annotations that can be used
-in other pipelines.
+   * a geneset (from ENSEMBL gene sets)
+   * repeats (from UCSC repeatmasker tracks)
 
-   * a geneset
-   * UCSC tracks
+This pipeline works on a single genome. Annotations are often shared
+between versions within the same project or even between projects, hence
+this separate pipeline. The output of this pipeline is used by various
+other pipelines, for example the the :doc:`pipeline_rnaseq` and the 
+:doc:`pipeline_chipseq`.
 
-The pipeline works on a single genome.
+Overview
+========
 
-Configuration
-=============
+The pipeline takes as input an ENSEMBL gene set and builds various gene sets
+of interest. 
 
-Input
+Usage
 =====
 
+See :ref:`PipelineSettingUp` and :ref:`PipelineRunning` on general information how to use CGAT pipelines.
 
-Output
-======
+Configuration
+-------------
+
+The :file:`pipeline.ini` needs to be edited so that it points to the
+appropriate locations of the auxiliary files. See especially:
+
+1. section ``[ensembl]`` with the location of the ENSEMBL dump
+    files (``filename_gtf``, filename_pep``, ``filename_cdna``)
+
+2. section ``[general]`` with the location of the indexed genomic
+    fasta files to use and the name of the genome (default=``hg19``),
+    see :doc:`IndexedFasta`.
+
+3. section ``[ucsc]`` with the name of the database to use (default=``hg19``).
+
+Input
+-----
+
+This script requires no input within the :term:`working directory`. 
+
+Pipeline output
+===============
 
 The results of the computation are all stored in an sqlite relational
-database file.
+database file. Additional files are output in the working directory
+for use in other pipelines. These are:
+
+csvdb
+   An sqlite database with most of the information created by this pipeline
+
+annotation_gff.gz
+   A :term:`gff` formatted file annotating the genome with respect to the geneset.
+   Annotations are non-overlapping.
+
+cds.gtf.gz
+   A :term:`gtf` formatted file with only the CDS parts of transcripts.
+
+exons.gtf.gz
+   A :term:`gtf` formatted file with only the exon parts of transcripts.
+
+genes.gtf.gz
+   A :term:`gtf` formatted file of gene models. In gene models, all overlapping transcripts
+   have been merged.
+
+peptides.fasta
+   A :term:`fasta` formatted file of peptide sequences of coding transcripts.
+
+cds.fasta
+   A :term:`fasta` formatted file of coding sequence of coding transcripts.
+
+cdna.fasta
+   A :term:`fasta` formatted file of transcripts including both coding and non-coding parts.
+
+contigs.tsv
+   A :term:`tsv` formatted table with contig sizes
+
+tss.bed.gz
+   A :term:`bed` formatted file with transcription start sites.
+
+promotors.bed.gs
+   A :term:`bed` formatted file with promotor regions (fixed witdth segments upstream of 
+   transcription start sites).
+
+repeats.bed.gz
+   A :term:`bed` formatted file of repetitive sequences (obtained from UCSC repeatmasker tracks).
+
+rna.gff.gz
+   A :term:`gff` formatted file of repetitive RNA sequences in the genome
+   (obtained from UCSC repeatmasker tracks).
 
 Usage
 =====
@@ -348,48 +419,49 @@ def exportRegionAsBed( infile, outfile ):
 ############################################################
 ## UCSC tracks
 ############################################################
-
-############################################################
-############################################################
-############################################################
-@files( ((None, PARAMS["interface_repeats_gff"] ), ) )
-def importRepeatsFromUCSC( infile, outfile ):
-    '''import repeats from a UCSC formatted file.
-
-    The repeats are stored as a :term:`gff` formatted file.
-    '''
-
-    repclasses="','".join(PARAMS["ucsc_repeattypes"] )
-
-    # Repeats are either stored in a single ``rmsk`` table (hg19) or in
-    # individual ``rmsk`` tables (mm9) like chr1_rmsk, chr2_rmsk, ....
-    # In order to do a single statement, the ucsc mysql database is 
-    # queried for tables that end in rmsk.
+def connectToUCSC():
     dbhandle = MySQLdb.Connect( host = PARAMS["ucsc_host"],
                                 user = PARAMS["ucsc_user"] )
 
     cc = dbhandle.cursor()
     cc.execute( "USE %s " %  PARAMS["ucsc_database"] )
 
+    return dbhandle
+
+def getRepeatsFromUCSC( dbhandle, repclasses, outfile ):
+    '''select repeats from UCSC and write to *outfile* in gff format.
+    '''
+
+    # Repeats are either stored in a single ``rmsk`` table (hg19) or in
+    # individual ``rmsk`` tables (mm9) like chr1_rmsk, chr2_rmsk, ....
+    # In order to do a single statement, the ucsc mysql database is 
+    # queried for tables that end in rmsk.
     cc = dbhandle.cursor()
     cc.execute("SHOW TABLES LIKE '%rmsk'")
     tables = [ x[0] for x in cc.fetchall()]
     if len(tables) == 0:
         raise ValueError( "could not find any `rmsk` tables" )
 
-    tmpfile = P.getTempFile()
+    # now collect repeats
+    tmpfile = P.getTempFile(".")
     
     for table in tables:
         E.info( "loading repeats from %s" % table )
         cc = dbhandle.cursor()
-        cc.execute("""SELECT genoName, 'repeat', 'exon', genoStart+1, genoEnd, strand, '.', '.', 
+        sql = """SELECT genoName, 'repeat', 'exon', genoStart+1, genoEnd, strand, '.', '.', 
                       CONCAT('class \\"', repClass, '\\"; family \\"', repFamily, '\\";')
                FROM %(table)s
-               WHERE repClass in ('%(repclasses)s') """ % locals() )
+               WHERE repClass in ('%(repclasses)s') """ % locals() 
+        E.debug( "executing sql statement: %s" % sql )
+        cc.execute( sql )
         for data in cc.fetchall():
             tmpfile.write( "\t".join(map(str,data)) + "\n" )
 
     tmpfile.close()
+
+    to_cluster = True
+
+    # sort gff and make sure that names are correct
     tmpfilename = tmpfile.name
 
     statement = '''cat %(tmpfilename)s
@@ -403,8 +475,38 @@ def importRepeatsFromUCSC( infile, outfile ):
         > %(outfile)s
     '''
     P.run()
-    
-    os.unlink( tmpfilename )
+
+    os.unlink( tmpfilename)
+
+############################################################
+############################################################
+############################################################
+@files( ((None, PARAMS["interface_rna_gff"] ), ) )
+def importRNAAnnotationFromUCSC( infile, outfile ):
+    '''import RNA from a UCSC formatted file.
+
+    The RNA are taken from the repeat-masker track.
+
+    The RNA are stored as a :term:`gff` formatted file.
+    '''
+
+    repclasses="','".join(PARAMS["ucsc_rnatypes"].split(",") )
+    dbhandle = connectToUCSC()
+    getRepeatsFromUCSC( dbhandle, repclasses, outfile )
+
+############################################################
+############################################################
+############################################################
+@files( ((None, PARAMS["interface_repeats_gff"] ), ) )
+def importRepeatsFromUCSC( infile, outfile ):
+    '''import repeats from a UCSC formatted file.
+
+    The repeats are stored as a :term:`gff` formatted file.
+    '''
+
+    repclasses="','".join(PARAMS["ucsc_repeattypes"].split(","))
+    dbhandle = connectToUCSC()
+    getRepeatsFromUCSC( dbhandle, repclasses, outfile )
 
 if 0:
     ############################################################
@@ -505,7 +607,6 @@ if 0:
             for contig, start, end in cc:
                 outs.write("%s\t%i\t%i\n" % (contig, start, end) )
         outs.close()
-
 
 ##################################################################
 ##################################################################

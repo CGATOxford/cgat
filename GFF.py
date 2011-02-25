@@ -38,6 +38,7 @@ Currently GFF and GTF is handled separately. Should be merged.
 
 import string, sys, re, types
 import fastgtf
+import IndexedGenome
 
 class Entry:
     """read/write gff formatted entry.
@@ -418,4 +419,16 @@ def iterator_overlaps( gff_iterator, min_overlap = 0 ):
         end = max( end, this.end )
 
     yield matches
+
+def readAndIndex( iterator ):
+    '''read from gtf stream and index.
+
+    returns an :class:`IndexedGenome.IndexedGenome`
+    '''
+
+    index = IndexedGenome.IndexedGenome()
+    for gtf in iterator:
+        index.add( gtf.contig, gtf.start, gtf.end, gtf )
+
+    return index
 

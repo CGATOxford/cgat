@@ -25,6 +25,8 @@ The script currently implements the following methods:
 1. merge: merge adjacent intervals. The option ``--merge-distance``
    permits the merging of segments that are up to a certain distance apart.
 
+2. block: build blocked bed file (bed12 format) from individual blocks.
+
 Usage
 -----
 
@@ -124,14 +126,15 @@ def filterGenome( iterator, contigs ):
     E.info( "ninput=%i, noutput=%i, nskipped_contig=%i, nskipped_range=%i" % \
                 (ninput, noutput, nskipped_contig, nskipped_range) )
 
-    
+
+
 def main( argv = sys.argv ):
 
     parser = optparse.OptionParser( version = "%prog version: $Id: bed2bed.py 2861 2010-02-23 17:36:32Z andreas $", 
                                     usage = globals()["__doc__"] )
 
     parser.add_option( "-m", "--method", dest="methods", type="choice", action="append",
-                       choices=("merge", "filter-genome", "bins" ),
+                       choices=("merge", "filter-genome", "bins", "block" ),
                        help="method to apply [default=%default]"  )
 
     parser.add_option( "--num-bins", dest="num_bins", type="int",
@@ -179,13 +182,16 @@ def main( argv = sys.argv ):
                                                      method = options.binning_method,
                                                      bin_edges = bin_edges)
             E.info("# split bed: bin_edges=%s" % (str(bin_edges)))
-                
+            
+        elif method == "block":
+            processor = Bed.blocked_iterator( processor )
+            
     noutput = 0
     for bed in processor:
         options.stdout.write( str(bed) + "\n" )
         noutput += 1
 
-    E.info( "noutput=%i\n" % (noutput) )
+    E.info( "noutput=%i" % (noutput) )
 
     E.Stop()
 

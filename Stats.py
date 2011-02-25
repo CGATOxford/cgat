@@ -44,9 +44,6 @@ from rpy2.robjects import r as R
 import rpy2.robjects as ro
 import rpy2.robjects.numpy2ri
 
-#from rpy import r as R
-#import rpy
-
 def getSignificance( pvalue, thresholds=[0.05, 0.01, 0.001] ):
     """return cartoon of significance of a p-Value."""
     n = 0
@@ -378,6 +375,9 @@ class Summary( Result ):
 
     mean, median, min, max, samplestd, sum, counts
     """
+
+    fields = ("nval", "min", "max", "mean", "median", "stddev", "sum", "q1", "q3")
+
     def __init__(self, values = None, 
                  format = "%6.4f", mode="float",
                  allow_empty = True ):
@@ -428,11 +428,11 @@ class Summary( Result ):
 
     def getHeaders( self ):
         """returns header of column separated values."""
-        return ("nval", "min", "max", "mean", "median", "stddev", "sum", "q1", "q3")
+        return self.fields
 
     def getHeader( self ):
         """returns header of column separated values."""
-        return "\t".join( self.getHeaders())
+        return "\t".join( cls.getHeaders())
 
     def __str__( self ):
         """return string representation of data."""
@@ -939,6 +939,13 @@ class CorrelationTest:
             self.mPValue = s_result[1]
             self.mNObservations = 0
             self.mAlternative = "two-sided"
+        else:
+            self.mCoefficient = 0
+            self.mPValue = 1
+            self.mSignificance = "na"
+            self.mNObservations = 0
+            self.mAlternative = "na"
+            self.mMethod = "na"
 
         if method: self.mMethod = method
 
@@ -953,7 +960,9 @@ class CorrelationTest:
             "%i" % self.mNObservations,
             self.mMethod,
             self.mAlternative ) )
-    def getHeaders(self):
+    
+    @classmethod
+    def getHeaders(cls):
         return ("coeff", "pvalue", "significance", "observations", "method", "alternative" )
     
 def filterMasked( xvals, yvals, missing = ("na", "Nan", None, ""), dtype = numpy.float ):

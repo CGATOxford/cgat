@@ -571,6 +571,7 @@ class nested_dict(collections.defaultdict):
                 yield (key,), value
 
 def flatten(l, ltypes=(list, tuple)):
+    '''flatten a nested list/tuple.'''
     ltype = type(l)
     l = list(l)
     i = 0

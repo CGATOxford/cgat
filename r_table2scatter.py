@@ -81,9 +81,6 @@ def readTable( lines,
     """
 
     # now import R as stdin has been read.
-    from rpy import r as R
-    import rpy
-
     take = take_columns
     
     handle, name = tempfile.mkstemp()
@@ -134,7 +131,7 @@ def readTable( lines,
         
     outfile.close()
 
-    rpy.set_default_mode(rpy.NO_CONVERSION)
+    # rpy.set_default_mode(rpy.NO_CONVERSION)
     # note that the conversion is not perfect. Some missing values are assigned to "nan", while some
     # are -2147483648. They seem to treated correctly, though, within R, but note that when computing
     # something like sum(), the result in python after conversion might be -2147483648.
@@ -143,7 +140,7 @@ def readTable( lines,
     else:
         matrix = R("""%s <- read.table( '%s', na.string = c("NA", "na", 'nan', 'NaN'), col.names=headers, sep="\t" )""" % (assign, name) )
 
-    rpy.set_default_mode(rpy.BASIC_CONVERSION)
+    # rpy.set_default_mode(rpy.BASIC_CONVERSION)
     os.remove( name )
 
     return matrix, headers, c, legend
@@ -293,10 +290,6 @@ def main():
         E.warn( "empty input" )
         E.Stop()
         return
-
-    # now import R as stdin has been read.
-    from rpy import r as R
-    import rpy
 
     matrix, headers, colours, legend = readTable( lines,
                                                   "matrix",

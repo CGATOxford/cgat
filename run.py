@@ -1,3 +1,4 @@
+#! /bin/env python
 ################################################################################
 #
 #   MRC FGU Computational Genomics Group

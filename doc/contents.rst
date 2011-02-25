@@ -7,7 +7,7 @@ Welcome to the CGAT script collection
 =====================================
 
 This document contains documentation for scripts and libraries written
-for/by CGAT.
+for/by CGAT. 
 
 .. note::
    The documentation is currently under construction.
@@ -49,12 +49,11 @@ These are:
 Pipelines
 =========
 
-There are couple of makefile-based pipelines.
-
 .. toctree::
    :maxdepth: 2
 
    pipelines.rst
+   setup.rst
 
 Indices and tables
 ==================

@@ -147,11 +147,11 @@ def buildGeneRegions( infile, outfile, only_proteincoding = False ):
             < %(infile)s
             | %(filter_cmd)s 
             | python %(scriptsdir)s/gtf2gtf.py --sort=gene
-            | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome)s 
+            | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s 
             | python %(scriptsdir)s/gtf2gtf.py --merge-exons --with-utr --log=%(outfile)s.log 
             | python %(scriptsdir)s/gtf2gtf.py --filter=longest-gene --log=%(outfile)s.log 
             | python %(scriptsdir)s/gtf2gtf.py --sort=position
-            | python %(scriptsdir)s/gtf2gff.py --genome-file=%(genome)s --log=%(outfile)s.log --flank=%(geneset_flank)s 
+            | python %(scriptsdir)s/gtf2gff.py --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log --flank=%(geneset_flank)s 
             | gzip 
             > %(outfile)s
         """
@@ -182,7 +182,7 @@ def buildProteinCodingGenes( infile, outfile ):
             < %(infile)s 
             | awk '$2 == "protein_coding"' 
             | python %(scriptsdir)s/gtf2gtf.py --sort=contig+gene
-            | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome)s 
+            | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s 
             | python %(scriptsdir)s/gtf2gtf.py --merge-exons --permit-duplicates --log=%(outfile)s.log 
             | python %(scriptsdir)s/gtf2gtf.py --filter=longest-gene --log=%(outfile)s.log 
             | awk '$3 == "exon"' 
@@ -341,7 +341,7 @@ def buildCDSFasta( infile, outfile ):
     statement = '''gunzip < %(infile)s
     | python %(scriptsdir)s/gff2fasta.py
         --is-gtf 
-        --genome=%(genome)s
+        --genome=%(genome_dir)s/%(genome)s
     | python %(scriptsdir)s/index_fasta.py
     %(dbname)s --force - 
     > %(dbname)s.log
@@ -387,8 +387,8 @@ def loadGeneStats( infile, outfile ):
     The *infile* is the *outfile* from :meth:`buildGenes`
     '''
 
-    # do not run on cluster - 32/64 bit incompatible.
-    # to_cluster = True
+    # ?do not run on cluster - 32/64 bit incompatible
+    to_cluster = True
 
     table = outfile[:-len(".load")]
 
@@ -396,7 +396,7 @@ def loadGeneStats( infile, outfile ):
     gunzip < %(infile)s |\
     python %(scriptsdir)s/gtf2table.py \
           --log=%(outfile)s.log \
-          --genome=%(genome)s \
+          --genome=%(genome_dir)s/%(genome)s \
           --counter=position \
           --counter=length \
           --counter=composition-na |\
@@ -423,7 +423,7 @@ def buildExons( infile, outfile ):
     statement = '''
     gunzip < %(infile)s 
     | awk '$3 == "exon"' 
-    | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome)s --log=%(outfile)s.log 
+    | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
     | python %(scriptsdir)s/gtf2gtf.py --remove-duplicates=gene --log=%(outfile)s.log 
     | gzip > %(outfile)s
     '''
@@ -447,7 +447,7 @@ def buildCDS( infile, outfile ):
     gunzip < %(infile)s 
     | awk '$2 == "protein_coding"' 
     | awk '$3 == "CDS"' 
-    | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome)s --log=%(outfile)s.log 
+    | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
     | python %(scriptsdir)s/gtf2gtf.py --remove-duplicates=gene --log=%(outfile)s.log 
     | gzip > %(outfile)s
     '''
@@ -487,7 +487,7 @@ def loadTranscriptStats( infile, outfile ):
     gunzip < %(infile)s |\
     python %(scriptsdir)s/gtf2table.py \
           --log=%(outfile)s.log \
-          --genome=%(genome)s \
+          --genome=%(genome_dir)s/%(genome)s \
           --reporter=transcripts \
           --counter=position \
           --counter=length \
@@ -538,9 +538,9 @@ def buildPromotorRegions( infile, outfile ):
     '''annotate promotor regions from reference gene set.'''
     statement = """
         gunzip < %(infile)s |\
-        python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome)s --log=%(outfile)s.log |\
+        python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log |\
         python %(scriptsdir)s/gtf2gff.py --method=promotors --promotor=%(promotor_size)s \
-                              --genome-file=%(genome)s --log=%(outfile)s.log 
+                              --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
         | gzip 
         > %(outfile)s
     """
@@ -556,8 +556,8 @@ def buildTSSRegions( infile, outfile ):
     '''
     statement = """
         gunzip < %(infile)s |\
-        python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome)s --log=%(outfile)s.log |\
-        python %(scriptsdir)s/gtf2gff.py --method=promotors --promotor=1 --genome-file=%(genome)s --log=%(outfile)s.log > %(outfile)s
+        python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log |\
+        python %(scriptsdir)s/gtf2gff.py --method=promotors --promotor=1 --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log > %(outfile)s
     """
     P.run()
 

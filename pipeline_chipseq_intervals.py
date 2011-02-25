@@ -157,7 +157,8 @@ def buildNormalizedBAM( infiles, outfile, normalize = True ):
 ############################################################
 ############################################################
 def buildBAMStats( infile, outfile ):
-    '''calculate bamfile statistics
+    '''calculate bamfile statistics - currently only single-ended
+    duplicates.
     '''
 
     # no bedToBigBed
@@ -167,6 +168,7 @@ def buildBAMStats( infile, outfile ):
     for line in pysam.flagstat( infile ):
         data = line[:-1].split( " ")
         outs.write( "%s\t%s\n" % (data[0], " ".join(data[1:]) ) )
+
     pysam_in = pysam.Samfile( infile, "rb" )
 
     outs_dupl = open( outfile + ".duplicates", "w" )
@@ -182,6 +184,9 @@ def buildBAMStats( infile, outfile ):
     counts = collections.defaultdict( int )
     count = 0
 
+    # count nh, nm tags
+    nh, nm = [], []
+
     for read in pysam_in.fetch():
 
         ninput += 1
@@ -195,6 +200,7 @@ def buildBAMStats( infile, outfile ):
             outs_dupl.write("%s\t%i\t%i\n" % (last_contig, last_pos, count) )
             counts[count] += 1
 
+        
         count = 1
         last_contig, last_pos = read.rname, read.pos
 
