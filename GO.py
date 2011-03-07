@@ -1458,7 +1458,8 @@ if __name__ == "__main__":
     #############################################################
     ## get background
     if options.filename_background:
-        input_background = ReadGeneList( options.filename_background, options )
+        input_background = ReadGeneList( options.filename_background, 
+                                         gene_pattern = options.gene_pattern )
 
         E.info( "read %i genes for background" % len(input_background) )
     else:
