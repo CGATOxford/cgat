@@ -21,48 +21,92 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 """
+===========================
+Ancestral repeats pipeline
+===========================
 
 :Author: Andreas Heger
 :Release: $Id: pipeline_ancestral_repeats.py 2876 2010-03-27 17:42:11Z andreas $
 :Date: |today|
 :Tags: Python
 
-Purpose
--------
+The ancestral repeats pipeline defines ancestral repeats for a pair of genomes
+and computes rates for these.
 
 This pipeline performs the following actions:
 
+   * collect repeatmasker annotation from external databases. Currently implemented are:
+      * UCSC
+      * Ensembl
    * build pairwise genomic alignment from axt or maf files
    * define ancestral repeats
    * compute rates of ancestral repeats
 
-The pairwise genomic alignment is stored in :term:`psl` format
-with genome1 as the query and genome2 as the target.
-
-.. note::
-   The pipeline only works, if genome1 is the reference species
-   in the maf files. This is a result of maf2Axt requiring that
-   the strand of the reference species is always positive and 
-   I have not figured out how to invert maf alignments.
 
 Usage
+=====
+
+See :ref:`PipelineSettingUp` and :ref:`PipelineRunning` on general information how to use CGAT pipelines.
+
+Configuration
+-------------
+
+The pipeline expects a :term:`query` and :term:`target` genome. These should be set in the general section.
+For each genome there should then be section on how to obtain the repeatmasker tracks. The default
+configuration file gives an example.
+
+Input
 -----
+
+The pipeline starts from an empty working directory. It will collect the input
+data from directories specified in the configuration files.
+
+The genomic alignment can both be build from :term:`axt` formatted pairwise alignments
+and from :term:`maf` formatted multiple alignmentns. However, the latter currently 
+only works if the :term:`query` genome is the reference species in the maf files. 
+
+This is a consequence of :file:`maf2Axt` requiring that the strand of the reference species 
+is always positive and I have not figured out how to invert maf alignments.
+
+.. note::
+   ENSEMBL import is not thoroughly tested.
+   :term:`maf` formatted import is not thoroughly tested.
 
 Type::
 
-   python <script_name>.py --help
+   python pipeline_ancestral_repeats.py --help
 
 for command line help.
 
+Output
+======
+
+The pipeline builds the following files:
+
+aligned_repeats.psl.gz
+   :term:`psl` formatted files of alignments between ancestral repeats
+ 
+aligned_repeats.rates.gz
+   rates between ancestral repeats
+
+alignment.psl.gz
+   :term:`psl` formatted genomic alignment between query and target.
+
+<query>_rates.gff
+   :term:`gff` formatted file of ancestral repeats on the query. The score field is set
+   to the estimated substitution rate of the repeat.
+
+
 Code
-----
+====
 
 
 """
 import sys, tempfile, optparse, shutil, itertools, csv, math, random, re, glob, os, shutil, collections
 
 import Experiment as E
-import Pipeline as P
+import logging as L
+
 from ruffus import *
 import csv
 import sqlite3
@@ -70,26 +114,38 @@ import IndexedFasta, IndexedGenome, FastaIterator, Genomics
 import GFF, GTF, Blat
 import IOTools
 
-if not os.path.exists("conf.py"):
-    raise IOError( "could not find configuration file conf.py" )
+###################################################
+###################################################
+###################################################
+## Pipeline configuration
+###################################################
+import Pipeline as P
+P.getParameters( 
+    ["%s.ini" % __file__[:-len(".py")],
+     "../pipeline.ini",
+     "pipeline.ini" ] )
+PARAMS = P.PARAMS
 
-execfile("conf.py")
+USECLUSTER=True
 
-PARAMS = P.getParameters()
+#########################################################################
+#########################################################################
+#########################################################################
+if os.path.exists("conf.py"): 
+    L.info( "reading additional configuration from conf.py" )
+    execfile("conf.py")
 
 def getGenomes():
     '''return genome names of query and target.'''
 
-    genome_query = PARAMS["%s_genome" % PARAMS["query"]]
-    genome_target = PARAMS["%s_genome" % PARAMS["target"]]
+    genome_query = os.path.join( PARAMS["genome_dir"], PARAMS["query"] )
+    genome_target = os.path.join( PARAMS["genome_dir"], PARAMS["target"] )
     return genome_query, genome_target
         
 #########################################################################
 #########################################################################
 #########################################################################
-@transform( "*.idx",
-            suffix(".idx"), 
-            ".sizes" )
+@files( [ ("%s/%s.idx" % (PARAMS["genome_dir"], x), "%s.sizes" % x) for x in (PARAMS["query"], PARAMS["target"]) ] )
 def buildSizes( infile, outfile ):
     '''extract size information from genomes.'''
     outf = open(outfile, "w")
@@ -97,49 +153,52 @@ def buildSizes( infile, outfile ):
         data = line[:-1].split( "\t" )
         if len(data) >= 4:
             contig = data[0]
-            if contig.startswith("chr"): contig = contig[3:]
             outf.write("%s\t%s\n" % (contig, data[3]))
     outf.close()
 
 #########################################################################
 #########################################################################
 #########################################################################
-if PARAMS["axt_dir"]:
+if "axt_dir" in PARAMS:
     ## build pairwise alignment from axt formatted data.'''
     @follows( buildSizes )
-    @merge( "%s/*.axt.gz" % PARAMS["axt_dir"], "alignment.psl" )
+    @merge( "%s/*.axt.gz" % PARAMS["axt_dir"], "alignment.psl.gz" )
     def buildGenomeAlignment(infiles, outfile):
         '''build pairwise genomic aligment from axt files.'''
+
+        to_cluster = USECLUSTER
     
         try:
             os.remove( outfile )
         except OSError:
             pass
 
-        genome_query, genome_target = getGenomes()
-
         for infile in infiles:
             E.info( "adding %s" % infile )
-            statement = '''gunzip < %(infile)s |
-                           axtToPsl 
+            statement = '''gunzip < %(infile)s 
+                           | axtToPsl 
                                /dev/stdin
-                               %(genome_query)s.sizes 
-                               %(genome_target)s.sizes 
-                               /dev/stdout |
-                           pslSwap /dev/stdin /dev/stdout 
-                           >> %(outfile)s
+                               %(query)s.sizes 
+                               %(target)s.sizes 
+                               /dev/stdout 
+                           | pslSwap /dev/stdin /dev/stdout 
+                           | gzip >> %(outfile)s
                            '''
+            P.run()
 
-            P.run( **locals() )
+            
 
-elif PARAMS["maf_dir"]:
+elif "maf_dir" in PARAMS:
     @follows( buildSizes )
     @merge( "%s/*.maf.gz" % PARAMS["maf_dir"], "alignment.raw.psl.gz" )
     def buildRawGenomeAlignment(infiles, outfile):
-        '''build pairwise genomic aligment from maf files.'''
+        '''build pairwise genomic aligment from maf files.
+        '''
     
         try: os.remove( outfile )
         except OSError: pass
+
+        to_cluster = USECLUSTER
 
         for infile in infiles:
             # skip maf files without Hsap on top.
@@ -195,6 +254,8 @@ elif PARAMS["maf_dir"]:
         try: os.remove( outfile )
         except OSError: pass
 
+        to_cluster = USECLUSTER
+
         for infile in infiles:
             # skip maf files without Hsap on top.
             if "other" in infile or "supercontig" in infile: continue
@@ -212,8 +273,8 @@ elif PARAMS["maf_dir"]:
                   -stripDb 
              | axtToPsl 
                   /dev/stdin 
-                  %(genome_target)s.sizes 
-                  %(genome_query)s.sizes 
+                  %(target)s.sizes 
+                  %(query)s.sizes 
                   /dev/stdout 
              | python %(scriptsdir)s/psl2psl.py 
                   --filename-queries=%(genome_query)s
@@ -222,7 +283,9 @@ elif PARAMS["maf_dir"]:
              | gzip 
              >> %(outfile)s
              '''
-            P.run( **locals() )
+            P.run()
+else:
+    raise ValueError( "configuration error: please specify either maf_dir or axt_dir" )
 
 #########################################################################
 #########################################################################
@@ -255,7 +318,7 @@ def importRepeatsFromUCSC( infile, outfile, ucsc_database, repeattypes, genome )
     if len(tables) == 0:
         raise ValueError( "could not find any `rmsk` tables" )
 
-    tmpfile = P.getTempFile()
+    tmpfile = P.getTempFile(".")
     
     for table in tables:
         E.info( "loading repeats from %s" % table )
@@ -269,6 +332,8 @@ def importRepeatsFromUCSC( infile, outfile, ucsc_database, repeattypes, genome )
 
     tmpfile.close()
     tmpfilename = tmpfile.name
+
+    to_cluster = USECLUSTER
 
     statement = '''cat %(tmpfilename)s
         | %(scriptsdir)s/gff_sort pos 
@@ -311,22 +376,23 @@ def importRepeatsFromEnsembl( infile, outfile, ensembl_database, repeattypes, ge
 #########################################################################
 #########################################################################
 ########################################################################
-@transform( "*_genome.fasta", suffix("_genome.fasta"), "_repeats.gff.gz")
-def importRepeats( infile, outfile ):
-    
-    track = infile[:-len("_genome.fasta")]
+@files( [ (None, "%s_repeats.gff.gz" % x, x) for x in (PARAMS["query"], PARAMS["target"]) ] )
+def importRepeats( infile, outfile, track ):
+    '''import repeats from external sources.'''
 
     source = PARAMS["%s_source" % track] 
+    genome = os.path.join( PARAMS["genome_dir"], track)
+
     if source == "ensembl":
         importRepeatsFromEnsembl( infile, outfile, 
                                   PARAMS["%s_database" % track],
                                   repeattypes = PARAMS["%s_repeattypes" % track],
-                                  genome = "%s_genome" % track )                                  
+                                  genome = genome )
     elif source == "ucsc":
         importRepeatsFromUCSC( infile, outfile, 
                                PARAMS["%s_database" % track],
                                repeattypes = PARAMS["%s_repeattypes" % track],
-                               genome = "%s_genome" % track )                                  
+                               genome = genome )
         
 #########################################################################
 #########################################################################
@@ -361,11 +427,16 @@ def buildAlignedRepeats( infiles, outfile ):
     infile_target = PARAMS["target"] + "_merged.gff.gz"
     infile_query = PARAMS["query"] + "_merged.gff.gz" 
 
+    # using farm.py to send to cluster
     to_cluster = False
+
+    # granularity should be set automatically.
+    granularity=5000
+
     # need to escape pipe symbols within farm.py command
     statement = r'''
         gunzip < alignment.psl.gz 
-        | %(cmd-farm)s --split-at-lines=100 --log=%(outfile)s.log --binary 
+        | %(cmd-farm)s --split-at-lines=%(granularity)i --log=%(outfile)s.log --binary 
              "python %(scriptsdir)s/psl2psl.py 
 	        --method=test 
 		--log=%(outfile)s.log 
@@ -384,8 +455,7 @@ def buildAlignedRepeats( infiles, outfile ):
 @files( buildAlignedRepeats, "aligned_repeats.rates.gz" )
 def buildRepeatsRates( infile, outfile ):
     '''compute rates for individual aligned repeats.'''
-    # path ruffus bug:
-    infile = infile[0]
+
     to_cluster = False
     genome_query, genome_target = getGenomes()
 
@@ -410,8 +480,8 @@ def buildRepeatsRates( infile, outfile ):
    ".stats")
 def computeAlignmentStats( infile, outfile ):
     '''compute alignment coverage statistics'''
-    
-    to_cluster = True
+
+    to_cluster = USECLUSTER
 
     statement = '''
     gunzip < %(infile)s |
@@ -446,7 +516,7 @@ def computeRepeatsCounts( infile, outfile ):
 def buildRepeatDistribution( infile, outfile ):
     '''count size and distance distribution of repeats.'''
 
-    to_cluster = True
+    to_cluster = USECLUSTER
 
     statement = '''gunzip
     < %(infile)s 
@@ -464,7 +534,7 @@ def buildRepeatDistribution( infile, outfile ):
 def exportRatesAsGFF( infile, outfile ):
     '''export gff file with rate as score.'''
 
-    to_cluster = True
+    to_cluster = USECLUSTER
     statement = '''gunzip
     < %(infile)s 
     | python %(toolsdir)s/csv_cut.py qName qStart qEnd distance converged 

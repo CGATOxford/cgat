@@ -235,7 +235,11 @@ def iterate_tracking( infile ):
     '''
     for line in infile:
         data = line[:-1].split("\t")
-        transfrag_id, locus_id, transcript_id, code = [x.strip() for x in data[:4]]
+        try:
+            transfrag_id, locus_id, transcript_id, code = [x.strip() for x in data[:4]]
+        except ValueError:
+            raise ValueError("parsing error: expected transfrag_id, locus_id, transcript_id, code, got %s" % str(data))
+
         if transcript_id == "-":
             ref_gene_id, ref_transcript_id = "", ""
         else:

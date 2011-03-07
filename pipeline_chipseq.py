@@ -135,7 +135,6 @@ import sqlite3
 import IndexedFasta, IndexedGenome, FastaIterator, Genomics
 import IOTools
 import MAST, GTF, GFF, Bed
-# import Stats
 import cStringIO
 import pysam
 import numpy
@@ -176,7 +175,7 @@ PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],
 ## Helper functions mapping tracks to conditions, etc
 ###################################################################
 # load all tracks - exclude input/control tracks
-TRACKS = PipelineTracks.Tracks( PipelineTracks.Sample ).loadFromDirectory( 
+TRACKS = PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
     [ x for x in glob.glob( "*_export.txt.gz" ) if PARAMS["tracks_control"] not in x ],
       "(\S+)_export.txt.gz" )
 
@@ -218,7 +217,6 @@ def getUnsubtracted( track ):
 if os.path.exists("conf.py"):
     L.info( "reading additional configuration from conf.py" )
     execfile("conf.py")
-
 
 ###################################################################
 ###################################################################

@@ -81,7 +81,7 @@ class Sample(object):
     '''a sample/track.
     '''
 
-    attributes = ( "tissue", "condition", "replicate")
+    attributes = ( "experiment", )
 
     def __init__(self, filename = None ):
         collections.namedtuple.__init__(self)
@@ -154,6 +154,11 @@ class Sample(object):
             object.__getattribute__(self, "data" )[key] = val
         else:
             object.__setattr__( self, key, val)
+
+class Sample3(Sample):
+    '''a sample/track.
+    '''
+    attributes = ( "tissue", "condition", "replicate")
 
 class Aggregate:
     

@@ -109,11 +109,12 @@ of two files, the actual pipeline (e.g., :file:`pipeline_rnaseq.py`) and an asso
 configuration file with default values for pipeline parameters (e.g., :file:`pipeline_rnaseq.ini`).
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 1	
    
    scripts/pipeline_chipseq.rst
    scripts/pipeline_annotations.rst
    scripts/pipeline_rnaseq.rst
+   scripts/pipeline_ancestral_repeats.rst
 
 Make-based pipelines
 ====================

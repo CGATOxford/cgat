@@ -276,7 +276,8 @@ fastq.1.gz, fastq2.2.gz
 
 .. note::
 
-   Quality scores need to be of the same scale for all input files.
+   Quality scores need to be of the same scale for all input files. Thus it might be
+   difficult to mix different formats.
 
 Optional inputs
 +++++++++++++++
@@ -722,73 +723,7 @@ def buildReferenceTranscriptome( infile, outfile ):
 #########################################################################
 ##
 #########################################################################
-@transform( "*.sra", suffix(".sra"), add_inputs( buildJunctions), ".bam" )
-def mapReadsFromSRAWithTophat( infiles, outfile ):
-    '''map reads from short read archive sequences
-    using tophat
-    
-    Need to implement paired-ended data (i.e. two fastq files)
-
-    There is a bug in tophat 1.1.4, see:
-    http://seqanswers.com/forums/showthread.php?t=8103
-    and 
-    http://seqanswers.com/forums/showthread.php?t=8817
-
-    Applying the suggested fix:
-    
-    cd xxx.dir
-
-    # Fix the SO:sorted header
-    sed s/sorted/unsorted/ tmp/accepted_hits.sam > fixed.sam
-
-    # Use picard to fix clipping
-    java -jar /ifs/apps/bio/picard-tools-1.38/CleanSam.jar INPUT=fixed.sam OUTPUT=fixed2.sam
-
-    # Convert to bam
-    java -jar /ifs/apps/bio/picard-tools-1.38/SortSam.jar INPUT=fixed2.sam OUTPUT=accepted_hits.bam SORT_ORDER=coordinate 
-    rm -f fixed.sam fixed2.sam
-    '''
-
-    infile, reffile = infiles
-
-    # note that the directory tmpdir1 needs to exist for fastq-dump
-    # while tmpdir2 must not exist for tophat.
-    tmpdir1 = P.getTempDir()
-    tmpdir2 = os.path.join( tmpdir1 + "tophat" )
-
-    to_cluster = USECLUSTER
-    
-    # -l mem_free=3G 
-    job_options= "-pe dedicated %i -R y" % PARAMS["tophat_threads"]
-
-    track = P.snip( infile, ".sra" )
-
-    # tophat does a seek operation on the fq files, hence they
-    # need to be unpacked into (uncompressed) physical files
-    statement = '''
-    fastq-dump --outdir %(tmpdir1)s %(infile)s ;
-    tophat --output-dir %(tmpdir2)s
-           --num-threads %(tophat_threads)i
-           --raw-juncs <( gunzip < %(reffile)s )
-           %(tophat_options)s
-           %(bowtie_index_dir)s/%(genome)s
-           %(tmpdir1)s/%(track)s.fastq
-    >& %(outfile)s.log;
-    mv %(tmpdir2)s/accepted_hits.bam %(outfile)s; 
-    gzip < %(tmpdir2)s/junctions.bed > %(track)s.junctions.bed.gz; 
-    mv %(tmpdir2)s/logs %(outfile)s.logs;
-    rm -rf %(tmpdir2)s %(tmpdir1)s;
-    samtools index %(outfile)s
-    '''
-
-    P.run()
-
-#########################################################################
-#########################################################################
-#########################################################################
-##
-#########################################################################
-@transform( "*.sra", suffix(".sra"), add_inputs( buildReferenceTranscriptome ), ".bam" )
+@transform( "*.sra", suffix(".sra"), add_inputs( buildReferenceTranscriptome ), ".trans.bam" )
 def mapReadsFromSRAWithBowtieAgainstTranscriptome( infiles, outfile ):
     '''map reads from short read archive sequence using bowtie against
     transcriptome data.
@@ -810,7 +745,7 @@ def mapReadsFromSRAWithBowtieAgainstTranscriptome( infiles, outfile ):
     fastq-dump --outdir %(tmpdir)s %(infile)s ;
     bowtie --quiet --sam
            --threads %(bowtie_threads)i
-           %(bowtie_options)s 
+           %(bowtie_transcript_options)s 
            %(prefix)s 
            %(tmpdir)s/%(track)s.fastq 2>%(outfile)s.log
     | samtools import %(reffile)s - %(tmpdir)s/out.sam 1>&2 2>> %(outfile)s.log;
@@ -829,50 +764,6 @@ def mapReadsFromSRAWithBowtieAgainstTranscriptome( infiles, outfile ):
 #########################################################################
 ##
 #########################################################################
-@transform( "*.fastq.gz", suffix(".fastq.gz"), add_inputs( buildJunctions), ".bam" )
-def mapSingleEndedReadsFromFastQWithTophat( infiles, outfile ):
-    '''map reads from short read archive sequences
-    using tophat
-    
-    Need to implement paired-ended data (i.e. two fastq files)
-    '''
-
-    infile, reffile = infiles
-
-    track = P.snip( infile, ".fastq.gz" )
-    # note that the directory tmpdir1 needs to exist for fastq-dump
-    # while tmpdir2 must not exist for tophat.
-    tmpfile1 = P.getTempFilename()
-    tmpfile2 = os.path.join( tmpfile1 + "tophat" )
-
-    to_cluster = USECLUSTER
-    
-    # -l mem_free=3G 
-    job_options= "-pe dedicated %i -R y" % PARAMS["tophat_threads"]
-
-    # tophat does a seek operation on the fq files, hence they
-    # need to be unpacked into (uncompressed) physical files
-    statement = '''
-    gunzip < %(infile)s 
-    | python %(scriptsdir)s/fastq2fastq.py --change-format=phred64 --guess-format=phred64 --log=%(outfile)s.log
-    > %(tmpfile1)s;
-    tophat --output-dir %(tmpfile2)s
-           --phred64-quals
-           --num-threads %(tophat_threads)i
-           --raw-juncs <( gunzip < %(reffile)s )
-           %(tophat_options)s
-           %(bowtie_index_dir)s/%(genome)s
-           %(tmpfile1)s
-    >> %(outfile)s.log 2>&1;
-    mv %(tmpfile2)s/accepted_hits.bam %(outfile)s; 
-    gzip < %(tmpfile2)s/junctions.bed > %(track)s.junctions.bed.gz; 
-    mv %(tmpfile2)s/logs %(outfile)s.logs;
-    rm -rf %(tmpfile2)s %(tmpfile1)s;
-    samtools index %(outfile)s
-    '''
-
-    P.run()
-
 @transform( ("*.fastq.1.gz", 
              "*.fastq.gz",
              "*.sra"),
@@ -880,68 +771,13 @@ def mapSingleEndedReadsFromFastQWithTophat( infiles, outfile ):
             add_inputs( buildJunctions), 
             r"\1.bam" )
 def mapReadsWithTophat( infiles, outfile ):
-    '''map reads from fastq or sra files.
+    '''map reads from .fastq or .sra files.
     '''
-    # to_cluster = USECLUSTER
+    job_options= "-pe dedicated %i -R y" % PARAMS["tophat_threads"]
+    to_cluster = USECLUSTER
     m = PipelineMapping.Tophat()
     infile, reffile = infiles
     statement = m.build( (infile,), outfile ) 
-    P.run()
-
-#########################################################################
-#########################################################################
-#########################################################################
-@transform( "*.fastq.1.gz", suffix(".fastq.1.gz"), add_inputs( buildJunctions), ".bam" )
-def mapPairedEndedReadsFromFastQWithTophat( infile, outfile ):
-    '''map reads from short read archive sequences
-    using tophat
-    
-    Need to implement paired-ended data (i.e. two fastq files)
-    '''
-
-    infile, reffile = infiles
-
-    track = P.snip( infile, ".fastq.1.gz" )
-    infile2 = "%s.fastq.2.gz" % track
-    if not os.path.exists( infile2 ):
-        raise ValueError("can not find paired ended file '%s' for '%s'" % (infile2, infile))
-
-    # note that the directory tmpdir1 needs to exist for fastq-dump
-    # while tmpdir2 must not exist for tophat.
-    tmpfile1 = P.getTempFilename()
-    tmpfile2 = os.path.join( tmpfile1 + "tophat" )
-    tmpfile3 = P.getTempFilename()
-
-    to_cluster = USECLUSTER
-    
-    # -l mem_free=3G 
-    job_options= "-pe dedicated %i -R y" % PARAMS["tophat_threads"]
-
-    # tophat does a seek operation on the fq files, hence they
-    # need to be unpacked into (uncompressed) physical files
-    statement = '''
-    gunzip < %(infile)s 
-    | python %(scriptsdir)s/fastq2fastq.py --change-format=phred64 --guess-format=phred64 --log=%(outfile)s.log
-    > %(tmpfile1)s;
-    gunzip < %(infile2)s 
-    | python %(scriptsdir)s/fastq2fastq.py --change-format=phred64 --guess-format=phred64 --log=%(outfile)s.log
-    > %(tmpfile3)s;
-    tophat --output-dir %(tmpfile2)s
-           --mate-inner-dist %(tophat_mate_inner_dist)i
-           --phred64-quals
-           --num-threads %(tophat_threads)i
-           --raw-juncs <( gunzip < %(reffile)s )
-           %(tophat_options)s
-           %(bowtie_index_dir)s/%(genome)s
-           %(tmpfile1)s %(tmpfile3)s
-    >> %(outfile)s.log 2>&1;
-    mv %(tmpfile2)s/accepted_hits.bam %(outfile)s; 
-    gzip < %(tmpfile2)s/junctions.bed > %(track)s.junctions.bed.gz; 
-    mv %(tmpfile2)s/logs %(outfile)s.logs;
-    rm -rf %(tmpfile2)s %(tmpfile1)s $(tmpfile3)s;
-    samtools index %(outfile)s
-    '''
-
     P.run()
 
 #########################################################################
@@ -988,10 +824,7 @@ def mapReadsFromSRAWithBowtie( infile, outfile ):
 
     P.run()
 
-@follows( 
-    mapReadsFromSRAWithTophat,
-    mapSingleEndedReadsFromFastQWithTophat,
-    mapPairedEndedReadsFromFastQWithTophat )
+@follows( mapReadsWithTophat )
 def buildBAMs(): pass
 
 ############################################################

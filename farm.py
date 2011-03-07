@@ -575,6 +575,7 @@ def runDRMAA( data, environment ):
     cwd = os.getcwd()
 
     session = drmaa.Session()            
+    session.initialize()
     jt = session.createJobTemplate()
     
     jobids = []

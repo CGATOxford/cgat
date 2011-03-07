@@ -432,7 +432,7 @@ class Summary( Result ):
 
     def getHeader( self ):
         """returns header of column separated values."""
-        return "\t".join( cls.getHeaders())
+        return "\t".join( self.getHeaders())
 
     def __str__( self ):
         """return string representation of data."""

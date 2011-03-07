@@ -778,7 +778,11 @@ class CodeML:
         else:
             raise ParsingError( "unknown PAML program", lines[0] )
 
-        if result.mVersion not in ("paml 3.14b, May 2005", "paml 3.15, November 2005", "paml version 4, June 2007"):
+        if result.mVersion not in ("paml 3.14b, May 2005", 
+                                   "paml 3.15, November 2005", 
+                                   "paml version 4, June 2007",
+                                   "paml version 4.4c, August 2010",
+                                   ):
             raise "unknown paml version %s" % result.mVersion
 
 ##         if result.mModel not in ("free dN/dS Ratios for branches", "One dN/dS ratio", "several dN/dS ratios for branches"):
@@ -1634,8 +1638,8 @@ class BaseML( CodeML) :
         if not lines: return
         
         if re.match( "Parameters  in the rate matrix", lines[0] ):
-            del lines[0]
-            del lines[0]
+            while not lines[0].startswith( "Rate parameters"):
+                del lines[0]
             d = re.split("\s+", re.search("Rate parameters: +(.*)", lines[0]).groups()[0] )
             result.mRevRateBaseParameters= map(float, d)
             del lines[0]

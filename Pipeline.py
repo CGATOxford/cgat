@@ -317,6 +317,9 @@ def execute( statement, **kwargs ):
 
     return stdout, stderr
 
+# Definition of helper functions for job scripts
+# detect_pipe_error(): propagate error of programs not at the end of a pipe
+# checkpoint(): exit a set of chained commands (via ;) if the previous command failed.
 _exec_prefix = '''detect_pipe_error_helper() 
     {
     while [ "$#" != 0 ] ; do
@@ -329,6 +332,10 @@ _exec_prefix = '''detect_pipe_error_helper()
     detect_pipe_error() {
     detect_pipe_error_helper "${PIPESTATUS[@]}"
     return $?
+    }
+    checkpoint() {
+        detect_pipe_error;
+        if [ $? != 0 ]; then exit 1; fi;
     }
     '''
 
