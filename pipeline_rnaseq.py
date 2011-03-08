@@ -723,40 +723,29 @@ def buildReferenceTranscriptome( infile, outfile ):
 #########################################################################
 ##
 #########################################################################
-@transform( "*.sra", suffix(".sra"), add_inputs( buildReferenceTranscriptome ), ".trans.bam" )
-def mapReadsFromSRAWithBowtieAgainstTranscriptome( infiles, outfile ):
+@transform( ("*.fastq.1.gz", 
+             "*.fastq.gz",
+             "*.sra"),
+            regex( r"(\S+).(fastq.1.gz|fastq.gz|sra)"), 
+            add_inputs( buildReferenceTranscriptome ), 
+            r"\1.trans.bam" )
+def mapReadsWithBowtieAgainstTranscriptome( infiles, outfile ):
     '''map reads from short read archive sequence using bowtie against
     transcriptome data.
+
     '''
 
+    # Mapping will permit up to two mismatches.
+    # Only report one of the matches in the best stratum.
+    # Additional matches are mostly to alternative transcripts
+    # and only inflate the file sizes.
+    job_options= "-pe dedicated %i -R y" % PARAMS["bowtie_threads"]
+    to_cluster = USECLUSTER
+    m = PipelineMapping.BowtieTranscripts()
     infile, reffile = infiles
     prefix = P.snip( reffile, ".fa" )
-
-    # note that the directory tmpdir needs to exist for fastq-dump
-    tmpdir = P.getTempDir()
-
-    to_cluster = USECLUSTER
-    
-    job_options= "-pe dedicated %i -R y" % PARAMS["tophat_threads"]
-
-    track = P.snip( infile, ".sra" )
-
-    statement = '''
-    fastq-dump --outdir %(tmpdir)s %(infile)s ;
-    bowtie --quiet --sam
-           --threads %(bowtie_threads)i
-           %(bowtie_transcript_options)s 
-           %(prefix)s 
-           %(tmpdir)s/%(track)s.fastq 2>%(outfile)s.log
-    | samtools import %(reffile)s - %(tmpdir)s/out.sam 1>&2 2>> %(outfile)s.log;
-    checkpoint;
-    samtools sort %(tmpdir)s/out.sam %(track)s;
-    checkpoint;
-    samtools index %(outfile)s;
-    checkpoint;
-    rm -rf %(tmpdir)s;
-    '''
-
+    bowtie_options = "-v 2 --best -k 1"
+    statement = m.build( (infile,), outfile ) 
     P.run()
 
 #########################################################################
@@ -772,11 +761,14 @@ def mapReadsFromSRAWithBowtieAgainstTranscriptome( infiles, outfile ):
             r"\1.bam" )
 def mapReadsWithTophat( infiles, outfile ):
     '''map reads from .fastq or .sra files.
+
+    A list with known splice junctions is supplied.
     '''
     job_options= "-pe dedicated %i -R y" % PARAMS["tophat_threads"]
     to_cluster = USECLUSTER
     m = PipelineMapping.Tophat()
     infile, reffile = infiles
+    tophat_options = PARAMS["tophat_options"] + " --raw-juncs <( gunzip < %(reffile)s ) "
     statement = m.build( (infile,), outfile ) 
     P.run()
 
@@ -799,7 +791,7 @@ def mapReadsFromSRAWithBowtie( infile, outfile ):
     if os.path.exists( tmpfilename ):
         os.unlink( tmpfilename )
 
-    # job_options= "-pe dedicated 4-8 -l mem_free=3G -R y"
+    # job_options= "-pe dedicated 4-8 -l mem_free=15G -R y"
 
     track = P.snip( infile, ".sra" )
 
