@@ -758,7 +758,7 @@ def mapReadsWithBowtieAgainstTranscriptome( infiles, outfile ):
              "*.sra"),
             regex( r"(\S+).(fastq.1.gz|fastq.gz|sra)"), 
             add_inputs( buildJunctions), 
-            r"\1.bam" )
+            r"\1.genome.bam" )
 def mapReadsWithTophat( infiles, outfile ):
     '''map reads from .fastq or .sra files.
 
@@ -772,53 +772,31 @@ def mapReadsWithTophat( infiles, outfile ):
     statement = m.build( (infile,), outfile ) 
     P.run()
 
-#########################################################################
-#########################################################################
-#########################################################################
-@transform( "*.sra", suffix(".sra"), ".bam" )
-def mapReadsFromSRAWithBowtie( infile, outfile ):
-    '''map reads from short read archive sequences
-    using bowtie
+############################################################
+############################################################
+############################################################
+@collate( (mapReadsWithTophat, mapReadsWithBowtieAgainstTranscriptome),
+          regex(r"(.+)\..*.bam"),  
+          add_inputs( buildCodingGeneSet ), 
+          r"\1.bam")
+def buildBAMs( infiles, outfile):
+
+    genome, transcriptome, reffile = infiles[0][0], infiles[1][0], infiles[0][1]
+
+    assert genome.endswith( ".genome.bam" )
     
-    TODO: unpack reads on scratch disk
-
-    '''
-
-    to_cluster = USECLUSTER
-
-    tmpfilename = outfile + ".dir" #P.getTempFilename()
-    
-    if os.path.exists( tmpfilename ):
-        os.unlink( tmpfilename )
-
-    # job_options= "-pe dedicated 4-8 -l mem_free=15G -R y"
-
-    track = P.snip( infile, ".sra" )
-
-    # tophat does a seek operation on the fq files, hence they
-    # need to be unpacked into uncompressed real files
-
-    # todo: use scratch dir for fastq files
-    tmpfilename = P.getTempFilename()
-
     statement = '''
-    fastq-dump %(infile)s ;
-    bowtie --quiet --sam
-           %(bowtie_options)s 
-           %(bowtie_index_dir)s/%(genome)s 
-           %(track)s.fastq 2>%(outfile)s.log
-    | samtools import %(cufflinks_genome_dir)s/%(genome)s.fa - %(tmpfilename)s 1>&2 2>> %(outfile)s.log;
-    samtools sort %(tmpfilename)s %(track)s;
-    rm -f %(tmpfilename)s;
-    rm -f %(track)s.fastq; 
-    samtools index %(outfile)s
+    python %(scriptsdir)s/rnaseq_bams2bam.py 
+       --filename-gtf=%(reffile)s
+       --filename-mismapped=%(outfile)s.mismapped.bam
+       %(transcriptome)s %(genome)s %(outfile)s
+    > %(outfile)s.log;
+    checkpoint;
+    samtools index %(outfile)s 2>&1 >> %(outfile)s.log;
+    samtools index %(outfile)s.mismapped.bam 2>&1 >> %(outfile)s.log;
     '''
-
     P.run()
-
-@follows( mapReadsWithTophat )
-def buildBAMs(): pass
-
+        
 ############################################################
 ############################################################
 ############################################################

@@ -342,10 +342,14 @@ _exec_prefix = '''detect_pipe_error_helper()
 _exec_suffix = "; detect_pipe_error"
 
 def buildStatement( **kwargs ):
-    '''build statement from kwargs.'''
+    '''build statement from kwargs.
+
+    Options in PARAMS are added, but kwargs takes precedence.
+    '''
 
     # the actual statement
     try:
+        # note the order of addition to make sure that kwargs takes precedence
         statement = kwargs.get("statement") % dict( PARAMS.items() + kwargs.items() )
     except KeyError, msg:
         raise KeyError( "Error when creating command: could not find %s in dictionaries" % msg)
