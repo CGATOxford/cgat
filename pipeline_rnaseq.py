@@ -252,6 +252,9 @@ Configuration
 Input
 -----
 
+
+
+
 Reads
 +++++
 
@@ -282,33 +285,34 @@ fastq.1.gz, fastq2.2.gz
 Optional inputs
 +++++++++++++++
 
-The pipeline requires the results from an :doc:`pipeline_annotations`.
-
 Requirements
 ------------
+
+The pipeline requires the results from :doc:`pipeline_annotations`.
 
 On top of the default CGAT setup, the pipeline requires the following software to be in the 
 path:
 
-+--------------------+-------------------+----------------------------------------+
-|*Program*           |*Version*          |*Purpose*                               |
-+--------------------+-------------------+----------------------------------------+
-|bowtie_             |>=0.12.7           |read mapping                            |
-+--------------------+-------------------+----------------------------------------+
-|tophat_             |>=1.2.0            |read mapping                            |
-+--------------------+-------------------+----------------------------------------+
-|cufflinks_          |>=0.9.3            |transcription levels                    |
-+--------------------+-------------------+----------------------------------------+
-|samtools            |>=0.1.12           |bam/sam files                           |
-+--------------------+-------------------+----------------------------------------+
-|Picard              |                   |bam/sam files                           |
-+--------------------+-------------------+----------------------------------------+
-|bedtools            |                   |working with intervals                  |
-+--------------------+-------------------+----------------------------------------+
-|R/DESeq             |                   |differential expression                 |
-+--------------------+-------------------+----------------------------------------+
-|sra-tools           |                   |extracting reads from .sra files        |
-+--------------------+-------------------+----------------------------------------+
++--------------------+-------------------+------------------------------------------------+
+|*Program*           |*Version*          |*Purpose*                                       |
++--------------------+-------------------+------------------------------------------------+
+|bowtie_             |>=0.12.7           |read mapping                                    |
++--------------------+-------------------+------------------------------------------------+
+|tophat_             |>=1.2.0            |read mapping                                    |
++--------------------+-------------------+------------------------------------------------+
+|cufflinks_          |>=0.9.3            |transcription levels                            |
++--------------------+-------------------+------------------------------------------------+
+|samtools            |>=0.1.12           |bam/sam files                                   |
++--------------------+-------------------+------------------------------------------------+
+|bedtools            |                   |working with intervals                          |
++--------------------+-------------------+------------------------------------------------+
+|R/DESeq             |                   |differential expression                         |
++--------------------+-------------------+------------------------------------------------+
+|sra-tools           |                   |extracting reads from .sra files                |
++--------------------+-------------------+------------------------------------------------+
+|picard              |>=1.38             |bam/sam files. The .jar files need to be in your|
+|                    |                   | CLASSPATH environment variable.                |
++--------------------+-------------------+------------------------------------------------+
 
 Pipeline output
 ===============
@@ -800,8 +804,8 @@ def buildBAMs( infiles, outfile):
 ############################################################
 ############################################################
 ############################################################
-@follows( buildBAMs )
-@transform( "*.bam", suffix(".bam" ), ".bam.stats")
+@transform( (mapReadsWithTophat, buildBAMs), 
+            suffix(".bam" ), ".bam.stats")
 def buildAlignmentStats( infile, outfile ):
     '''build alignment stats using picard.
 
@@ -810,9 +814,12 @@ def buildAlignmentStats( infile, outfile ):
 
     to_cluster = USECLUSTER
 
+    # replace the SO field from tophat/samtools with coordinate to indicate
+    # that the file is sorted by coordinate.
+    # naturally - the bam files should be sorted.
     statement = '''
-    java -Xmx2g -jar /ifs/apps/bio/picard-tools-1.38/CollectMultipleMetrics.jar 
-            I=<(samtools view -h %(infile)s | perl -p -e "s/sorted/coordinate/" ) 
+    java -Xmx2g net.sf.picard.analysis.CollectMultipleMetrics
+            I=<(samtools view -h %(infile)s | perl -p -e "s/SO:\S+/SO:coordinate/" ) 
             O=%(outfile)s 
             R=%(cufflinks_genome_dir)s/%(genome)s.fa
             ASSUME_SORTED=true
@@ -885,8 +892,7 @@ def loadAlignmentStats( infiles, outfile ):
 ############################################################
 ############################################################
 ############################################################
-@follows( buildBAMs )
-@merge( "*.bam", "tophat_stats.tsv" )
+@merge( mapReadsWithTophat, "tophat_stats.tsv" )
 def buildTophatStats( infiles, outfile ):
 
     def _select( lines, pattern ):
@@ -947,8 +953,7 @@ def loadTophatStats( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-@follows( buildBAMs )
-@transform( "*.bam",
+@transform( (mapReadsWithTophat, mapReadsWithBowtieAgainstTranscriptome, buildBAMs), 
             suffix(".bam"),
             ".readstats" )
 def buildBAMStats( infile, outfile ):
@@ -1017,7 +1022,7 @@ def loadBAMStats( infiles, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@transform("*.bam", suffix(".bam"), ".gtf.gz")
+@transform( buildBAMs, suffix(".bam"), ".gtf.gz")
 def buildGeneModels(infile, outfile):
     '''build transcript models - run cufflinks on each region seperately
     '''
@@ -2429,9 +2434,7 @@ def loadDESeqStats( infile, outfile ):
           )
 def mapping(): pass
 
-
-@follows( mapping,
-          buildGeneModels,
+@follows( buildGeneModels,
           loadTranscriptComparison,
           buildAbinitioGeneSet,
           buildReferenceGeneSet,
@@ -2445,8 +2448,7 @@ def mapping(): pass
           )
 def genesets(): pass
 
-@follows( mapping, genesets,
-          loadCuffdiff,
+@follows( loadCuffdiff,
           loadDESeq,
           buildCuffdiffPlots,
           loadCuffdiffStats,

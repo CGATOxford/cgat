@@ -1473,12 +1473,12 @@ if __name__ == "__main__":
 
     #############################################################
     ## get go categories for genes
-    for ontology in options.ontology:
+    for test_ontology in options.ontology:
 
         #############################################################
         ## get/read association of GO categories to genes
         if options.filename_input:
-            gene2go, go2info = gene2gos[ontology], go2infos[ontology]
+            gene2go, go2info = gene2gos[test_ontology], go2infos[test_ontology]
         else:
             if options.loglevel >= 1:
                 options.stdlog.write( "# reading data from database ..." )
@@ -1486,7 +1486,7 @@ if __name__ == "__main__":
 
             dbhandle.Connect( options )
             gene2go, go2info = ReadGene2GOFromDatabase( dbhandle,
-                                                        ontology,
+                                                        test_ontology,
                                                         options.database, options.species )
 
             E.log( "finished" )
@@ -1555,7 +1555,7 @@ if __name__ == "__main__":
                 if outfile != options.stdout:
                     outfile.close()
 
-            gene2go = MapGO2Slims( gene2go, go_slims, ontology )
+            gene2go = MapGO2Slims( gene2go, go_slims, ontology = ontology )
 
             if options.loglevel >=1:
                 ngenes, ncategories, nmaps = CountGO( gene2go )
@@ -1636,7 +1636,7 @@ if __name__ == "__main__":
         nselected = len(filtered_pairs)
 
         if options.output_filename_pattern:
-            filename = options.output_filename_pattern % { 'go': ontology, 'section': "results" }
+            filename = options.output_filename_pattern % { 'go': test_ontology, 'section': "results" }
             E.info( "results go to %s" % filename)
             outfile = IOTools.openFile(filename, "w", create_dir = True)
         else:
@@ -1655,7 +1655,7 @@ if __name__ == "__main__":
         ## output the full result
             
         if options.output_filename_pattern:
-            filename = options.output_filename_pattern % { 'go': ontology, 'section': "overall" }
+            filename = options.output_filename_pattern % { 'go': test_ontology, 'section': "overall" }
             E.info( "a list of all categories and pvalues goes to %s" % filename )
             outfile = IOTools.openFile(filename, "w", create_dir = True)
         else:
@@ -1671,14 +1671,14 @@ if __name__ == "__main__":
         ngenes, ncategories, nmaps = CountGO( gene2go )
 
         if options.output_filename_pattern:
-            filename = options.output_filename_pattern % { 'go': ontology, 'section': "parameters" }
+            filename = options.output_filename_pattern % { 'go': test_ontology, 'section': "parameters" }
             if options.loglevel >= 1:
                 options.stdlog.write( "# parameters go to %s\n" % filename )
             outfile = IOTools.openFile(filename, "w", create_dir = True)
         else:
             outfile = sys.stdout
             
-        outfile.write( "# input go mappings for category '%s'\n" % ontology )
+        outfile.write( "# input go mappings for category '%s'\n" % test_ontology )
         outfile.write( "value\tparameter\n" )
         outfile.write( "%i\tmapped genes\n" % ngenes )
         outfile.write( "%i\tmapped categories\n" % ncategories )
@@ -1718,7 +1718,7 @@ if __name__ == "__main__":
                 go2genes[go.mGOId].append( gene )
             
         if options.output_filename_pattern:
-            filename = options.output_filename_pattern % { 'go': ontology, 'section': "fg" }
+            filename = options.output_filename_pattern % { 'go': test_ontology, 'section': "fg" }
             if options.loglevel >= 1:
                 options.stdlog.write( "# results go to %s\n" % filename )
             outfile = IOTools.openFile(filename, "w", create_dir = True)

@@ -622,6 +622,7 @@ def genome():
           loadTranscriptInformation,
           loadGeneStats,
           loadGeneInformation,
+          importRNAAnnotationFromUCSC,
           buildExonTranscripts,
           buildSelenoList)
 def geneset():
