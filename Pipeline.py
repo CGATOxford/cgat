@@ -106,7 +106,7 @@ def getParameters( filenames = ["pipeline.ini",] ):
     p = configToDictionary( CONFIG )
     PARAMS.update( p )
 
-    return p
+    return PARAMS
 
 def checkFiles( filenames ):
     """check for the presence/absence of files"""
@@ -636,6 +636,9 @@ config
 dump
    write pipeline configuration to stdout
 
+touch
+   touch files only, do not run
+
 '''
 
 def main( args = sys.argv ):
@@ -686,7 +689,7 @@ def main( args = sys.argv ):
         if len(args) > 1:
             options.pipeline_target = args[1]
 
-    if options.pipeline_action in ("make", "show", "svg", "plot"):
+    if options.pipeline_action in ("make", "show", "svg", "plot", "touch"):
 
         try:
             if options.pipeline_action == "make":
@@ -711,6 +714,12 @@ def main( args = sys.argv ):
 
             elif options.pipeline_action == "show":
                 pipeline_printout( options.stdout, [ options.pipeline_target ], verbose = options.loglevel )
+
+            elif options.pipeline_action == "touch":
+                pipeline_run( [ options.pipeline_target ], 
+                              touch_files_only = True,
+                              verbose = options.loglevel )
+
             elif options.pipeline_action == "svg":
                 pipeline_printout_graph( options.stdout, 
                                          options.pipeline_format,

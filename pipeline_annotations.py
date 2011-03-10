@@ -26,7 +26,7 @@ Annotation pipeline
 ===================
 
 :Author: Andreas Heger
-:Release: $Id: pipeline_chipseq.py 2900 2010-04-13 14:38:00Z andreas $
+:Release: $Id$
 :Date: |today|
 :Tags: Python
 
@@ -87,6 +87,9 @@ annotation_gff.gz
    A :term:`gff` formatted file annotating the genome with respect to the geneset.
    Annotations are non-overlapping.
 
+geneset.gtf.gz
+   A full gene set.
+
 cds.gtf.gz
    A :term:`gtf` formatted file with only the CDS parts of transcripts.
 
@@ -123,21 +126,19 @@ rna.gff.gz
    A :term:`gff` formatted file of repetitive RNA sequences in the genome
    (obtained from UCSC repeatmasker tracks).
 
-Usage
-=====
+Example
+=======
 
-Type::
+Example data is available at http://www.cgat.org/~andreas/sample_data/pipeline_annotations.tgz.
+To run the example, simply unpack and untar::
 
-   python <script_name>.py --help
-
-for command line help.
+   wget http://www.cgat.org/~andreas/sample_data/pipeline_annotations.tgz
+   tar -xvzf pipeline_annotations.tgz
+   cd pipeline_annotations
+   python <srcdir>/pipeline_annotations.py make full
 
 Code
-----
-
-TODO: currently the bed files and the intervals are inconsistent 
-    (due to filtering, there are more intervals in the bed files than
-     in the table. The ids do correspond).
+====
 
 """
 import sys, tempfile, optparse, shutil, itertools, csv, math, random, re, glob, os, shutil, collections
@@ -151,7 +152,7 @@ import sqlite3
 # for UCSC import
 import MySQLdb
 
-import IndexedFasta, IOTools
+import IndexedFasta, IOTools, GFF
 import PipelineGeneset as PGeneset
 
 ###################################################
@@ -159,29 +160,28 @@ import PipelineGeneset as PGeneset
 ###################################################
 ## Pipeline configuration
 ###################################################
-P.getParameters( 
+PARAMS = P.getParameters( 
     ["%s.ini" % __file__[:-len(".py")],
      "../pipeline.ini",
      "pipeline.ini" ] )
-
-PARAMS = P.PARAMS
 
 if os.path.exists("conf.py"):
     E.info( "reading additional configuration from conf.py" )
     execfile("conf.py")
 
-###################################################################
-###################################################################
-###################################################################
+############################################################
+############################################################
+############################################################
 ## genome section
 ############################################################
 ############################################################
 ############################################################
-@files( PARAMS["genome"] + ".fasta", PARAMS['interface_contigs'] )
+@files( os.path.join( PARAMS["genome_dir"], PARAMS["genome"] + ".fasta"), PARAMS['interface_contigs'] )
 def buildContigSizes( infile, outfile ):
     '''output contig sizes
     '''
-    fasta = IndexedFasta.IndexedFasta( PARAMS["genome"] )
+    prefix = P.snip( infile, ".fasta" )
+    fasta = IndexedFasta.IndexedFasta( prefix )
     outs = IOTools.openFile(outfile, "w" )
 
     for contig, size in fasta.getContigSizes( with_synonyms = False ).iteritems():
@@ -193,6 +193,25 @@ def buildContigSizes( infile, outfile ):
 ###################################################################
 ###################################################################
 ## gene set section
+############################################################
+############################################################
+############################################################
+@files( PARAMS["ensembl_filename_gtf"], PARAMS['interface_geneset_gtf'] )
+def buildGeneSet( infile, outfile ):
+    '''build a gene set - reconciles chromosome names.
+    '''
+    to_cluster = True
+
+    statement = '''zcat %(infile)s
+    | python %(scriptsdir)s/gff2gff.py 
+                  --sanitize=genome 
+                  --skip-missing 
+                  --genome-file=%(genome_dir)s/%(genome)s 
+                  --log=%(outfile)s.log
+    | gzip > %(outfile)s
+    '''
+    P.run()
+
 ############################################################
 ############################################################
 ############################################################
@@ -367,9 +386,9 @@ def buildPromotorRegions( infile, outfile ):
     statement = """
         gunzip < %(infile)s 
         | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing 
-                                           --genome-file=%(genome)s --log=%(outfile)s.log 
+                                           --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
         | python %(scriptsdir)s/gtf2gff.py --method=promotors --promotor=%(geneset_promotor_size)s
-                              --genome-file=%(genome)s --log=%(outfile)s.log 
+                              --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
         | python %(scriptsdir)s/gff2bed.py --is-gtf --name=transcript_id --log=%(outfile)s.log 
         | gzip 
         > %(outfile)s
@@ -388,8 +407,8 @@ def buildTSSRegions( infile, outfile ):
     '''
     statement = """
         gunzip < %(infile)s 
-        | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome)s --log=%(outfile)s.log 
-        | python %(scriptsdir)s/gtf2gff.py --method=promotors --promotor=1 --genome-file=%(genome)s --log=%(outfile)s.log 
+        | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
+        | python %(scriptsdir)s/gtf2gff.py --method=promotors --promotor=1 --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
         | python %(scriptsdir)s/gff2bed.py --is-gtf --name=transcript_id --log=%(outfile)s.log 
         | gzip
         > %(outfile)s
@@ -469,7 +488,7 @@ def getRepeatsFromUCSC( dbhandle, repclasses, outfile ):
         | python %(scriptsdir)s/gff2gff.py 
             --sanitize=genome 
             --skip-missing 
-            --genome-file=%(genome)s
+            --genome-file=%(genome_dir)s/%(genome)s
             --log=%(outfile)s.log 
         | gzip
         > %(outfile)s
@@ -483,16 +502,17 @@ def getRepeatsFromUCSC( dbhandle, repclasses, outfile ):
 ############################################################
 @files( ((None, PARAMS["interface_rna_gff"] ), ) )
 def importRNAAnnotationFromUCSC( infile, outfile ):
-    '''import RNA from a UCSC formatted file.
+    '''import repetetive RNA from a UCSC formatted file.
 
-    The RNA are taken from the repeat-masker track.
+    The repetetive RNA are taken from the repeat-masker track.
 
-    The RNA are stored as a :term:`gff` formatted file.
+    The results are stored as a :term:`gff` formatted file.
     '''
 
     repclasses="','".join(PARAMS["ucsc_rnatypes"].split(",") )
     dbhandle = connectToUCSC()
     getRepeatsFromUCSC( dbhandle, repclasses, outfile )
+
 
 ############################################################
 ############################################################
@@ -507,6 +527,72 @@ def importRepeatsFromUCSC( infile, outfile ):
     repclasses="','".join(PARAMS["ucsc_repeattypes"].split(","))
     dbhandle = connectToUCSC()
     getRepeatsFromUCSC( dbhandle, repclasses, outfile )
+
+############################################################
+############################################################
+############################################################
+@merge( (importRepeatsFromUCSC, 
+         importRNAAnnotationFromUCSC,
+         PARAMS["ensembl_filename_gtf"] ),
+        PARAMS["interface_genomic_context_bed"] )
+def buildGenomicContext( infiles, outfile ):
+    '''build a file with genomic context.
+    
+    The output is a bed formatted file, annotating genomic segments
+    according to whether they are any of the ENSEMBL annotations.
+    
+    It also adds the RNA and repeats annotations from the UCSC.
+
+    The annotations can be partially or fully overlapping.
+
+    Adjacent features (less than 10 bp apart) of the same type are merged.
+    '''
+
+    to_cluster = True
+
+    repeats_gff, rna_gff, annotations_gtf = infiles
+
+    tmpfile1 = P.getTempFilename( "." )
+    tmpfile2 = P.getTempFilename( "." )
+
+    distance=10
+
+    statement = """
+            gunzip 
+            < %(annotations_gtf)s
+            | python %(scriptsdir)s/gtf2gtf.py --sort=gene
+            | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s 
+            | python %(scriptsdir)s/gtf2gtf.py --merge-exons --log=%(outfile)s.log 
+            | python %(scriptsdir)s/gff2bed.py --name=source --is-gtf --log=%(outfile)s.log
+            | sort -k 1,1 -k2,2n
+            | python %(scriptsdir)s/bed2bed.py --method=merge --merge-by-name --merge-distance=%(distance)i --log=%(outfile)s.log
+            > %(tmpfile1)s
+    """
+    P.run()
+            
+    # from repeats and rna: take class
+    statement = '''
+    zcat %(repeats_gff)s %(rna_gff)s 
+    | python %(scriptsdir)s/gff2bed.py --name=family --is-gtf -v 0 
+    | sort -k 1,1 -k2,2n
+    | python %(scriptsdir)s/bed2bed.py --method=merge --merge-by-name --merge-distance=%(distance)i --log=%(outfile)s.log
+    > %(tmpfile2)s ''' 
+    
+    P.run()
+
+    statement = '''
+    sort --merge -k1,1 -k2,2n %(tmpfile1)s %(tmpfile2)s 
+    | gzip
+    > %(outfile)s
+    '''
+    P.run()
+
+    os.unlink(tmpfile1)
+    os.unlink(tmpfile2)
+
+############################################################
+############################################################
+############################################################
 
 if 0:
     ############################################################
@@ -618,15 +704,22 @@ def genome():
     '''import information on geneset.'''
     pass
 
-@follows( loadCDSTranscripts,
+@follows( buildGeneSet,
+          loadCDSTranscripts,
           loadTranscriptInformation,
           loadGeneStats,
           loadGeneInformation,
-          importRNAAnnotationFromUCSC,
           buildExonTranscripts,
           buildSelenoList)
 def geneset():
     '''import information on geneset.'''
+    pass
+
+@follows( importRepeatsFromUCSC,
+          importRNAAnnotationFromUCSC,
+          buildGenomicContext )
+def repeats():
+    '''import repeat annotations.'''
     pass
 
 @follows( buildPeptideFasta,
@@ -642,7 +735,7 @@ def promotors():
     '''build promotors.'''
     pass
 
-@follows( geneset, fasta, promotors, genome )
+@follows( geneset, fasta, promotors, genome, repeats )
 def full():
     '''build all targets.'''
     pass

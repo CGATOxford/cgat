@@ -178,7 +178,8 @@ class Tophat( Mapper ):
                    --num-threads %%(tophat_threads)i
                    %%(tophat_options)s
                    %%(bowtie_index_dir)s/%%(genome)s
-                   %(infiles)s >> %(outfile)s.log;
+                   %(infiles)s 
+                   >> %(outfile)s.log 2>&1 ;
             ''' % locals()
 
         elif nfiles == 2:
@@ -191,7 +192,8 @@ class Tophat( Mapper ):
                    --num-threads %%(tophat_threads)i
                    %%(tophat_options)s
                    %%(bowtie_index_dir)s/%%(genome)s
-                   %(infiles1)s %(infiles2)s >> %(outfile)s.log;
+                   %(infiles1)s %(infiles2)s 
+                   >> %(outfile)s.log 2>&1 ;
             ''' % locals()
         else:
             raise ValueError( "unexpected number reads to map: %i " % nfiles )

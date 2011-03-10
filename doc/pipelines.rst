@@ -14,6 +14,19 @@ produce some output data.
 Each pipeline is usually coupled with a :term:`SphinxReport` document to summarize and 
 visualize the results.
 
+It really helps if you are familiar with following:
+
+   * the unix command line to run and debug the pipeline
+   * python_ in order to understand what happens in the pipeline
+   * ruffus_ in order to understand the pipeline code
+   * sge_ in order to monitor your jobs
+   * mercurial_ in order to up-to-date code
+
+.. _python: http:www.python.org
+.. _ruffus: http://code.google.com/p/ruffus/
+.. _sge: http://wikis.sun.com/display/GridEngine/Home
+.. _mercurial: http://mercurial.selenic.com/wiki/
+
 .. _PipelineSettingUp:
 
 Setting up a pipeline
@@ -87,9 +100,58 @@ show <task>
 plot <task>
    plot image (requires `inkscape <http://inkscape.org/>`_) of pipeline state for :term:`task`
 
+touch <task>
+   touch files without running :term:`task` or its pre-requisites. This sets the 
+   timestamps for files in :term:`task` and its pre-requisites such that they will 
+   seem up-to-date to the pipeline.
+
 config
    write a new configuration file :file:`pipeline.ini` with default values. An existing 
    configuration file will not be overwritten.
+
+In case you are running a long pipeline, make sure you start it appropriately, for example::
+
+   nice -19 nohup <src>/pipeline_<name>.py make full
+
+This will keep the pipeline running if you close the terminal.
+
+Troubleshooting
+---------------
+
+Many things can go wrong while running the pipeline. Look out for
+
+   * bad input format. The pipeline does not perform sanity checks on the input format.
+       If the input is bad, you might see wrong or missing results or an error message.
+   * pipeline disrutions. Problems with the cluster, the file system or the controlling terminal 
+       might all cause the pipeline to abort.
+   * bugs. The pipeline makes many implicit assumptions about the input files and the programs it
+       runs. If program versions change or inputs change, the pipeline might not be able to deal with it.
+       The result will be wrong or missing results or an error message.
+
+If the pipeline aborts, locate the step that caused the error by reading the logfiles and
+the error messages on stderr (:file:`nohup.out`). See if you can understand the error and guess
+the likely problem (new program versions, badly formatted input, ...). If you are able to fix 
+the error, remove the output files of the step in which the error occured and restart the 
+pipeline. It should continue from the appropriate location.
+
+.. note::
+   Look out for upstream errors. For example, the pipeline might build a geneset filtering
+   by a certain set of contigs. If the contig names do not match, the geneset will be empty,
+   but the geneset building step might conclude successfully. However, you might get an error
+   in any of the downstream steps complaining that the gene set is empty. To fix this, fix
+   the error and delete the files created by the geneset building step and not just the step
+   that threw the error.
+
+Updating to the latest code version
++++++++++++++++++++++++++++++++++++
+
+To get the latest bugfixes, go into the :term:`source directory` and type::
+
+   hg pull
+   hg update
+
+The first command retrieves the latest changes from the master repository
+and the second command updates your local version with these changes.
 
 .. _PipelineDocumentation:
 
@@ -99,7 +161,6 @@ Building pipeline documentation
 .. todo::
    write sphinxreport documentation
    integrate with pipeline
-
 
 Ruffus-based pipelines
 ======================

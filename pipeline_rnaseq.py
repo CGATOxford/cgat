@@ -252,9 +252,6 @@ Configuration
 Input
 -----
 
-
-
-
 Reads
 +++++
 
@@ -353,6 +350,19 @@ for various levels.
 <geneset>_<method>_<level>_levels
     Expression levels
 
+Example
+=======
+
+Example data is available at http://www.cgat.org/~andreas/sample_data/rnaseq.tgz.
+To run the example, simply unpack and untar::
+
+   wget http://www.cgat.org/~andreas/sample_data/pipeline_rnaseq.tgz
+   tar -xvzf pipeline_rnaseq.tgz
+   cd pipeline_rnaseq
+   python <srcdir>/pipeline_rnaseq.py make full
+
+.. note:: 
+   For the pipeline to run, install the :doc:`pipeline_annotations` as well.
 
 Glossary
 ========
@@ -393,7 +403,7 @@ import Database
 import sys, os, re, shutil, itertools, math, glob, time, gzip, collections, random
 
 import numpy, sqlite3
-import GTF, IOTools
+import GTF, IOTools, IndexedFasta
 import Tophat
 from rpy2.robjects import r as R
 import rpy2.robjects as ro
@@ -497,7 +507,7 @@ def writePrunedGTF( infile, outfile ):
     # remove \0 bytes within gtf file
     statement = '''%(uncompress)s %(infile)s 
     | %(cmds)s 
-    | python %(scriptsdir)s/gtf2gtf.py --sort=contig+gene
+    | python %(scriptsdir)s/gtf2gtf.py --sort=contig+gene --log=%(outfile)s.log
     | %(compress)s > %(outfile)s'''
 
     P.run()
@@ -505,7 +515,7 @@ def writePrunedGTF( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@merge( PARAMS_ANNOTATIONS["ensembl_filename_gtf"],
+@merge( os.path.join( PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_geneset_gtf"]),
         "reference.gtf.gz" )
 def buildReferenceGeneSet( infile, outfile ):
     '''sanitize transcripts file for cufflinks analysis.
@@ -519,7 +529,8 @@ def buildReferenceGeneSet( infile, outfile ):
     The result is run through cuffdiff in order to add the p_id and tss_id tags
     required by cuffdiff. 
 
-    This will only keep sources of the type 'exon'.
+    This will only keep sources of the type 'exon'. It will also remove
+    any transcripts not in the reference genome.
 
     Cuffdiff requires overlapping genes to have different tss_id tags.
     '''
@@ -533,10 +544,18 @@ def buildReferenceGeneSet( infile, outfile ):
 
     tmpf = gzip.open( tmpfilename, "w" )
 
+    E.info( "filtering by contig and removing long introns" )
+
+    contigs = set(IndexedFasta.IndexedFasta( os.path.join( PARAMS["genome_dir"], PARAMS["genome"]) ).getContigs())
+    
     gene_ids = {}
     for all_exons in GTF.transcript_iterator( GTF.iterator( IOTools.openFile( infile )) ):
 
         c.info += 1
+
+        if all_exons[0].contig not in contigs:
+            c.missing_contig += 1
+            continue
 
         is_ok = True
 
@@ -579,16 +598,17 @@ def buildReferenceGeneSet( infile, outfile ):
 
         for e in new_exons:
             # add chr prefix 
-            tmpf.write( "chr%s\n" % str(e) )
+            tmpf.write( "%s\n" % str(e) )
             c.exons += 1
 
         c.output += 1
 
-    L.info( "%s\n" % str(c) )
+    L.info( "%s" % str(c) )
 
     tmpf.close()
 
-    # add tss_id.
+    #################################################
+    E.info( "adding tss_id and p_id" )
 
     # The p_id attribute is set if the fasta sequence is given.
     # However, there might be some errors in cuffdiff downstream:
@@ -607,6 +627,9 @@ def buildReferenceGeneSet( infile, outfile ):
     > %(outfile)s.log
     '''
     P.run()
+
+    #################################################
+    E.info( "resetting gene_id and transcript_id" )
 
     # reset gene_id and transcript_id to ENSEMBL ids
     # cufflinks patch: 
@@ -698,6 +721,8 @@ def buildReferenceTranscriptome( infile, outfile ):
     '''build reference transcriptome
     '''
 
+    to_cluster = USECLUSTER
+
     statement = '''
     zcat %(infile)s
     | python %(scriptsdir)s/gff2fasta.py
@@ -772,7 +797,7 @@ def mapReadsWithTophat( infiles, outfile ):
     to_cluster = USECLUSTER
     m = PipelineMapping.Tophat()
     infile, reffile = infiles
-    tophat_options = PARAMS["tophat_options"] + " --raw-juncs <( gunzip < %(reffile)s ) "
+    tophat_options = PARAMS["tophat_options"] + " --raw-juncs <( gunzip < %(reffile)s ) " % locals()
     statement = m.build( (infile,), outfile ) 
     P.run()
 
@@ -788,9 +813,12 @@ def buildBAMs( infiles, outfile):
     genome, transcriptome, reffile = infiles[0][0], infiles[1][0], infiles[0][1]
 
     assert genome.endswith( ".genome.bam" )
-    
+
+    to_cluster = USECLUSTER
+
     statement = '''
     python %(scriptsdir)s/rnaseq_bams2bam.py 
+       --force
        --filename-gtf=%(reffile)s
        --filename-mismapped=%(outfile)s.mismapped.bam
        %(transcriptome)s %(genome)s %(outfile)s
@@ -826,6 +854,63 @@ def buildAlignmentStats( infile, outfile ):
     >& %(outfile)s
     '''
     
+    P.run()
+
+############################################################
+############################################################
+############################################################
+@transform( (mapReadsWithTophat, buildBAMs),
+            suffix(".bam"),
+            add_inputs( os.path.join( PARAMS["annotations_dir"],
+                                      PARAMS_ANNOTATIONS["interface_genomic_context_bed"] ) ),
+            ".mappingstats" )
+def buildMappingStats( infiles, outfile ):
+    '''build mapping stats.
+
+    Examines the context to where reads align.
+
+    A read is assigned to the genomic context that it
+    overlaps by at least 50%. Thus some reads mapping
+    several contexts might be dropped.
+    '''
+
+    infile, reffile = infiles
+
+    min_overlap = 0.5
+
+    to_cluster = USECLUSTER
+    statement = '''
+       python %(scriptsdir)s/rnaseq_bam_vs_bed.py
+              --min-overlap=%(min_overlap)f
+              --log=%(outfile)s.log
+              %(infile)s %(reffile)s
+       > %(outfile)s
+       '''
+
+    P.run()
+
+############################################################
+############################################################
+############################################################
+@merge( buildMappingStats, "mapping_stats.load" )
+def loadMappingStats( infiles, outfile ):
+    """load mapping statistics."""
+
+    header = ",".join( [P.snip( x, ".mappingstats") for x in infiles] )
+    filenames = " ".join( infiles  )
+    tablename = P.toTable( outfile )
+
+    statement = """python %(scriptsdir)s/combine_tables.py
+                      --headers=%(header)s
+                      --missing=0
+                   %(filenames)s
+                | perl -p -e "s/bin/track/"
+                | python %(scriptsdir)s/table2table.py --transpose
+                | csv2db.py
+                      --index=track
+                      --table=%(tablename)s 
+                > %(outfile)s
+                """
     P.run()
 
 ############################################################

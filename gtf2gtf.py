@@ -744,7 +744,9 @@ if __name__ == '__main__':
 
             if options.merge_exons:
 
-                utr_ranges = Intervals.combineAtDistance( utr_ranges, options.merge_exons_distance )
+                # need to combine per feature - skip
+                # utr_ranges = Intervals.combineAtDistance( utr_ranges, options.merge_exons_distance )
+
                 output_ranges = Intervals.combineAtDistance( output_ranges, options.merge_exons_distance )
 
                 for feature, start, end in utr_ranges:

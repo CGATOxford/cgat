@@ -63,14 +63,20 @@ class Bed(object):
     def __str__(self):
         return "\t".join( (self.contig, str(self.start), str(self.end) ) + tuple(map(str, self.mFields)))
 
-    def fromGFF( self, gff, is_gtf = False, name="gene_id" ):
+    def fromGFF( self, gff, is_gtf = False, name=None ):
         """fill from gff formatted entry."""
         self.contig, self.start, self.end = gff.contig, gff.start, gff.end
-        if is_gtf: 
-            self.mFields = [getattr( gff, name), 
-                            [gff.score,0][gff.score == None], 
-                            gff.strand ]
-        
+        if is_gtf:
+            if name: 
+                self.mFields = [getattr( gff, name), 
+                                [gff.score,0][gff.score == None], 
+                                gff.strand ]
+        else:
+            if name:
+                self.mFields = [gff[name],
+                                [gff.score,0][gff.score == None], 
+                                gff.strand ]
+            
     def __contains__(self, key ):
         return self.map_key2field[key] < len(self.mFields)
 

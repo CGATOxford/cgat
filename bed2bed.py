@@ -64,11 +64,13 @@ import GFF, GTF
 import IndexedFasta, IOTools
 import Bed
 
-def merge( iterator, max_distance = 0 ):
+def merge( iterator, max_distance = 0, by_name = False ):
     """iterator for merging adjacent bed entries.
 
     *max_distance* > 0 permits merging of intervals that are
     not directly adjacent.
+
+    If *by_name = True*, only entries with the same name are merged.
     """
 
     def iterate_chunks( iterator ):
@@ -81,7 +83,8 @@ def merge( iterator, max_distance = 0 ):
                 assert bed.start >= last.start, "input file should be sorted by contig and position: d=%i:\n%s\n%s\n" % (d, last, bed)
             
             if bed.contig != last.contig or \
-                    d > max_distance:
+                    d > max_distance or \
+                    (by_name and last.name != bed.name) :
                 yield to_join
                 to_join = []
 
@@ -150,6 +153,9 @@ def main( argv = sys.argv ):
     parser.add_option( "--merge-distance", dest="merge_distance", type="int",
                       help="distance in bases over which to merge that are not directly adjacent [default=%default]"  )
 
+    parser.add_option( "--merge-by-name", dest="merge_by_name", action="store_true",
+                      help="only merge intervals with the same name [default=%default]"  )
+
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genome."  )
 
@@ -166,14 +172,14 @@ def main( argv = sys.argv ):
         genome_fasta = IndexedFasta.IndexedFasta( options.genome_file )
         contigs = genome_fasta.getContigSizes()
 
-
     processor = Bed.iterator( options.stdin )
 
     for method in options.methods:
         if method ==  "filter-genome":
             processor = filterGenome( processor, contigs )
         elif method == "merge":
-            processor = merge( processor, options.merge_distance )
+            processor = merge( processor, options.merge_distance,
+                               by_name = options.merge_by_name )
         elif method == "bins":
             if options.bin_edges: bin_edges = map(float, options.bin_edges.split(","))
             else: bin_edges = None

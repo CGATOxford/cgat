@@ -191,8 +191,10 @@ def main( argv = sys.argv ):
     for f in files:
         if f == options.stdin:
             infile = f
+            options.stdout.write( "stdin" )
         else:
             infile = IOTools.openFile( f )
+            options.stdout.write( f )
 
         counters = []
         if options.is_gtf:
@@ -206,7 +208,7 @@ def main( argv = sys.argv ):
         c = counters[-1]
         for x in c: pass
         
-        options.stdout.write( f )
+
         for c in counters:
             options.stdout.write("\t%s" % str( c ))
         options.stdout.write( "\n" )        
