@@ -410,7 +410,6 @@ import rpy2.robjects as ro
 
 import PipelineGeneset
 import PipelineMapping
-import pipeline_chipseq_intervals as PIntervals
 import Stats
 
 # levels of cuffdiff analysis
@@ -462,9 +461,9 @@ GENESETS = ("novel", "abinitio", "reference", "refcoding" )
 ###################################################################
 ##
 ###################################################################
-if os.path.exists("conf.py"): 
-    L.info( "reading additional configuration from conf.py" )
-    execfile("conf.py")
+if os.path.exists("pipeline_conf.py"): 
+    L.info( "reading additional configuration from pipeline_conf.py" )
+    execfile("pipeline_conf.py")
 
 USECLUSTER=True
 
@@ -1039,7 +1038,7 @@ def loadTophatStats( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-@transform( (mapReadsWithTophat, mapReadsWithBowtieAgainstTranscriptome, buildBAMs), 
+@transform( (mapReadsWithTophat, buildBAMs), 
             suffix(".bam"),
             ".readstats" )
 def buildBAMStats( infile, outfile ):
@@ -1073,6 +1072,7 @@ def loadBAMStats( infiles, outfile ):
     header = ",".join( [P.snip( x, ".readstats") for x in infiles] )
     filenames = " ".join( [ "<( cut -f 1,2 < %s)" % x for x in infiles ] )
     tablename = P.toTable( outfile )
+    E.info( "loading bam stats - summary" )
     statement = """python %(scriptsdir)s/combine_tables.py
                       --headers=%(header)s
                       --missing=0
@@ -1084,10 +1084,11 @@ def loadBAMStats( infiles, outfile ):
                       --index=track
                       --table=%(tablename)s 
                 > %(outfile)s
-                """
+            """
     P.run()
 
     for suffix in ("nm", "nh"):
+        E.info( "loading bam stats - %s" % suffix )
         filenames = " ".join( [ "%s.%s" % (x, suffix) for x in infiles ] )
         tname = "%s_%s" % (tablename, suffix)
         
@@ -1097,7 +1098,6 @@ def loadBAMStats( infiles, outfile ):
                 | python %(scriptsdir)s/csv2db.py
                       --header=%(suffix)s,%(header)s
                       --replace-header
-                      --index=track
                       --table=%(tname)s 
                 >> %(outfile)s
                 """
@@ -1826,38 +1826,38 @@ def loadReproducibility( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@files( [ ( ([ "%s.bam" % xx.asFile() for xx in EXPERIMENTS[x] ], 
-             [ "%s.bam" % yy.asFile() for yy in EXPERIMENTS[y] ]),
-            "%s_vs_%s.cuffdiff" % (x.asFile(),y.asFile()) )
-              for x,y in itertools.combinations( EXPERIMENTS, 2) ] )
-def estimateDifferentialExpressionPairwise( infiles, outfile ):
-    '''estimate differential expression using cuffdiff.
+# @files( [ ( ([ "%s.bam" % xx.asFile() for xx in EXPERIMENTS[x] ], 
+#              [ "%s.bam" % yy.asFile() for yy in EXPERIMENTS[y] ]),
+#             "%s_vs_%s.cuffdiff" % (x.asFile(),y.asFile()) )
+#           for x,y in itertools.combinations( EXPERIMENTS, 2) ] )
+# def estimateDifferentialExpressionPairwise( infiles, outfile ):
+#     '''estimate differential expression using cuffdiff.
 
-    Replicates are grouped.
-    '''
+#     Replicates are grouped.
+#     '''
     
-    to_cluster = USECLUSTER
-    job_options= "-pe dedicated %i -R y" % PARAMS["cuffdiff_threads"]
+#     to_cluster = USECLUSTER
+#     job_options= "-pe dedicated %i -R y" % PARAMS["cuffdiff_threads"]
 
-    reffile = "reference.gtf.gz"        
+#     reffile = "reference.gtf.gz"        
 
-    outdir = outfile + ".dir" 
-    try: os.mkdir( outdir )
-    except OSError: pass
+#     outdir = outfile + ".dir" 
+#     try: os.mkdir( outdir )
+#     except OSError: pass
 
-    reps = "%s    %s" % (",".join( infiles[0]),
-                         ",".join( infiles[1]) )
+#     reps = "%s    %s" % (",".join( infiles[0]),
+#                          ",".join( infiles[1]) )
     
-    statement = '''
-    cuffdiff -o %(outdir)s
-             --verbose
-             -r %(cufflinks_genome_dir)s/%(genome)s.fa
-             --num-threads %(cuffdiff_threads)i
-             <(gunzip < %(reffile)s)
-             %(reps)s
-    >& %(outfile)s
-    '''
-    P.run()
+#     statement = '''
+#     cuffdiff -o %(outdir)s
+#              --verbose
+#              -r %(cufflinks_genome_dir)s/%(genome)s.fa
+#              --num-threads %(cuffdiff_threads)i
+#              <(gunzip < %(reffile)s)
+#              %(reps)s
+#     >& %(outfile)s
+#     '''
+#     P.run()
 
 #########################################################################
 #########################################################################
@@ -2517,6 +2517,7 @@ def loadDESeqStats( infile, outfile ):
           loadTophatStats,
           loadBAMStats,
           loadAlignmentStats,
+          loadContextStats,
           )
 def mapping(): pass
 
@@ -2549,19 +2550,28 @@ def full(): pass
 def export(): pass
 
 @follows( mkdir( "doc" ) )
-def setup_doc():
+def build_doc():
     '''setup documentation directory.'''
-    print "running setupdoc"
+    E.info( "running setupdoc" )
+
     docdir = "/ifs/devel/pipelines/pipeline_rnaseq"
 
+    to_cluster = USECLUSTER
+    
+    job_options= "-pe dedicated %i -R y" % PARAMS["report_threads"]
+
     statement = '''
-    sphinxreport-build --num-jobs=10 
+    rm -rf doc _cache;
+    sphinxreport-build 
+           --num-jobs=%(report_threads)s
            sphinx-build 
                     -b html 
-                    -d doc/doctrees   
+                    -d %(report_doctrees)s
                     -c . 
-           %(docdir)s doc/html
+           %(docdir)s %(report_html)s
     '''
+
+    P.run()
 
 if __name__== "__main__":
     sys.exit( P.main(sys.argv) )

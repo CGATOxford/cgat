@@ -676,6 +676,8 @@ def main( args = sys.argv ):
     (options, args) = E.Start( parser, 
                                add_cluster_options = True )
 
+    L.info( "test") 
+
     global global_options
     global global_args
     global_options, global_args = options, args
@@ -683,6 +685,7 @@ def main( args = sys.argv ):
     
     version, _ = execute( "hg identify %s" % PARAMS["scriptsdir"] )
 
+    L.info( "test") 
 
     if args: 
         options.pipeline_action = args[0]
@@ -693,14 +696,14 @@ def main( args = sys.argv ):
 
         try:
             if options.pipeline_action == "make":
-                
+
                 # set up extra file logger
                 handler = logging.FileHandler( filename = options.logfile, 
                                                mode = "a" )
                 handler.setFormatter( MultiLineFormatter( '%(asctime)s %(levelname)s %(module)s.%(funcName)s.%(lineno)d %(message)s' ) )
                 logger = logging.getLogger()
                 logger.addHandler( handler )
-
+                
                 L.info( E.GetHeader() )
                 L.info( "code location: %s" % PARAMS["scriptsdir"] )
                 L.info( "code version: %s" % version[:-1] )
@@ -802,15 +805,19 @@ def peekParameters( workingdir, pipeline ):
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: Pipeline.py 2799 2009-10-22 13:40:13Z andreas $")
+    main()
 
-    (options, args) = E.Start( parser, add_cluster_options = True )
+    #parser = optparse.OptionParser( version = "%prog version: $Id: Pipeline.py 2799 2009-10-22 13:40:13Z andreas $")
+
+    #(options, args) = E.Start( parser, add_cluster_options = True )
 
     #global global_options
     #global global_args
-    global_options, global_args = options, args
+    #global_options, global_args = options, args
 
-    run( **{"statement" : "printenv > test.out", "job_queue" : "server_jobs.q", "job_priority" : -10 } )
-    run( **{"statement" : "printenv > test2.out", "job_queue" : "server_jobs.q", "job_priority" : -10 } )
-    run( **{"statement" : "printenv > test3.out", "job_queue" : "server_jobs.q", "job_priority" : -10 } )
+    #L.info("in main")
+
+    #run( **{"statement" : "printenv > test.out", "job_queue" : "server_jobs.q", "job_priority" : -10 } )
+    #run( **{"statement" : "printenv > test2.out", "job_queue" : "server_jobs.q", "job_priority" : -10 } )
+    #run( **{"statement" : "printenv > test3.out", "job_queue" : "server_jobs.q", "job_priority" : -10 } )
     

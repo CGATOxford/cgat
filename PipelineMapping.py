@@ -255,7 +255,7 @@ class BowtieTranscripts( Mapper ):
                        --threads %%(bowtie_threads)i
                        %%(bowtie_options)s
                        %%(prefix)s
-                       -1 %(infiles1)s -2 %(infiles2)s >> %(outfile)s.log; 
+                       -1 %(infiles1)s -2 %(infiles2)s 
                        2>%(outfile)s.log
                | samtools import %%(reffile)s - %(tmpdir_fastq)s/out.bam 1>&2 2>> %(outfile)s.log;
             ''' % locals()            
