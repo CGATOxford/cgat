@@ -102,9 +102,7 @@ def main( argv = None ):
     tmpfilename = tmpfile.name
     min_overlap = options.min_overlap
     
-    statement = """intersectBed -abam %(bamfile)s -b %(bedfile)s -bed -wo -f %(min_overlap)f
-       | groupBy -i ovl -g 4 -c 10 -o collapse
-       > %(tmpfilename)s""" % locals()
+    statement = """intersectBed -abam %(bamfile)s -b %(bedfile)s -bed -wo -f %(min_overlap)f | groupBy -i stdin -g 4 -c 10 -o collapse > %(tmpfilename)s""" % locals()
 
     E.info( "running %s" % statement )
     E.run( statement )

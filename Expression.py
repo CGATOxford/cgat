@@ -4,12 +4,16 @@ import Stats
 import math
 import numpy
 import Experiment as E
-import rpy
-from rpy import r as R
+
+#import rpy
+#from rpy import r as R
+
+from rpy2.robjects import r as R
+import rpy2.robjects as ro
+import rpy2.robjects.numpy2ri
+
 import collections
 
-#import rpy2, rpy2.robjects as ro
-#import rpy2.robjects.numpy2ri
 
 def buildProbeset2Gene( infile, 
                         outfile, 

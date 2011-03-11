@@ -863,11 +863,11 @@ def buildAlignmentStats( infile, outfile ):
             suffix(".bam"),
             add_inputs( os.path.join( PARAMS["annotations_dir"],
                                       PARAMS_ANNOTATIONS["interface_genomic_context_bed"] ) ),
-            ".mappingstats" )
-def buildMappingStats( infiles, outfile ):
-    '''build mapping stats.
+            ".contextstats" )
+def buildContextStats( infiles, outfile ):
+    '''build mapping context stats.
 
-    Examines the context to where reads align.
+    Examines the genomic context to where reads align.
 
     A read is assigned to the genomic context that it
     overlaps by at least 50%. Thus some reads mapping
@@ -892,19 +892,20 @@ def buildMappingStats( infiles, outfile ):
 ############################################################
 ############################################################
 ############################################################
-@merge( buildMappingStats, "mapping_stats.load" )
-def loadMappingStats( infiles, outfile ):
-    """load mapping statistics."""
+@merge( buildContextStats, "context_stats.load" )
+def loadContextStats( infiles, outfile ):
+    """load context mapping statistics."""
 
-    header = ",".join( [P.snip( x, ".mappingstats") for x in infiles] )
+    header = ",".join( [P.snip( x, ".contextstats") for x in infiles] )
     filenames = " ".join( infiles  )
     tablename = P.toTable( outfile )
 
     statement = """python %(scriptsdir)s/combine_tables.py
                       --headers=%(header)s
                       --missing=0
+                      --skip-titles
                    %(filenames)s
-                | perl -p -e "s/bin/track/"
+                | perl -p -e "s/bin/track/; s/\?/Q/g"
                 | python %(scriptsdir)s/table2table.py --transpose
                 | csv2db.py
                       --index=track
@@ -2546,6 +2547,21 @@ def expression(): pass
 def full(): pass
 
 def export(): pass
+
+@follows( mkdir( "doc" ) )
+def setup_doc():
+    '''setup documentation directory.'''
+    print "running setupdoc"
+    docdir = "/ifs/devel/pipelines/pipeline_rnaseq"
+
+    statement = '''
+    sphinxreport-build --num-jobs=10 
+           sphinx-build 
+                    -b html 
+                    -d doc/doctrees   
+                    -c . 
+           %(docdir)s doc/html
+    '''
 
 if __name__== "__main__":
     sys.exit( P.main(sys.argv) )

@@ -50,14 +50,14 @@ global_sessions = {}
 class PipelineError( Exception ): pass
 
 PARAMS= { 
-    'scriptsdir' : "/ifs/devel/cgat",
-    'toolsdir' : "/ifs/devel/cgat",
-    'cmd-farm' : """/ifs/devel/cgat/farm.py 
+    'scriptsdir' : os.path.dirname( __file__ ),
+    'toolsdir' : os.path.dirname( __file__ ),
+    'cmd-farm' : """%s/farm.py 
                 --method=drmaa 
                 --cluster-priority=-10 
 		--cluster-queue=all.q 
 		--cluster-num-jobs=100 
-		--cluster-options="" """,
+		--cluster-options="" """ % os.path.dirname( __file__ ),
     'cmd-sql' : """sqlite3 -header -csv -separator $'\\t' """,
            }
 
