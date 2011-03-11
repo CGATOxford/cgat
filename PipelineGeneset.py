@@ -216,7 +216,7 @@ def loadGeneInformation( infile, outfile, only_proteincoding = False ):
     | python %(scriptsdir)s/gtf2tab.py --full --only-attributes -v 0
     | python %(toolsdir)s/csv_cut.py --remove exon_number transcript_id transcript_name protein_id
     | hsort 1 | uniq 
-    | csv2db.py %(csv2db_options)s 
+    | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
               --index=gene_id 
               --index=gene_name 
               --map=gene_name:str 
@@ -250,7 +250,7 @@ def loadTranscriptInformation( infile, outfile,
     | python %(scriptsdir)s/gtf2tab.py --full --only-attributes -v 0
     | python %(toolsdir)s/csv_cut.py --remove exon_number 
     | hsort 1 | uniq 
-    | csv2db.py %(csv2db_options)s 
+    | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
               --index=transcript_id 
               --index=gene_id 
               --index=protein_id 
@@ -318,7 +318,7 @@ def loadPeptideSequences( infile, outfile ):
     | perl -p -e 'if ("^>") { s/ .*//};'
     | python %(scriptsdir)s/fasta2table.py --section=length --section=sequence
     | perl -p -e 's/id/protein_id/'
-    | csv2db.py %(csv2db_options)s 
+    | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
               --index=protein_id 
               --table=%(table)s 
     > %(outfile)s'''
@@ -400,7 +400,7 @@ def loadGeneStats( infile, outfile ):
           --counter=position \
           --counter=length \
           --counter=composition-na |\
-    csv2db.py %(csv2db_options)s \
+    python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
               --index=gene_id \
               --map=gene_id:str \
               --table=%(table)s \
@@ -463,7 +463,7 @@ def loadTranscripts( infile, outfile ):
     statement = '''
     gunzip < %(infile)s 
     | python %(scriptsdir)s/gtf2tab.py
-    | csv2db.py %(csv2db_options)s 
+    | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
               --index=transcript_id 
               --index=gene_id 
               --table=%(table)s 
@@ -492,7 +492,7 @@ def loadTranscriptStats( infile, outfile ):
           --counter=position \
           --counter=length \
           --counter=composition-na |\
-    csv2db.py %(csv2db_options)s \
+    python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
               --index=gene_id \
               --map=gene_id:str \
               --table=%(table)s \
@@ -523,7 +523,7 @@ def loadProteinStats( infile, outfile ):
           --section=aa 
           --regex-identifier="(\S+)" |
     sed "s/^id/protein_id/" |
-    csv2db.py %(csv2db_options)s 
+    python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
               --index=protein_id 
               --map=protein_id:str 
               --table=%(table)s 

@@ -622,7 +622,7 @@ if 0:
 
         statement = '''
         mysql --user=genome --host=genome-mysql.cse.ucsc.edu -A -B -e "SELECT * FROM %(tablename)s" %(ucsc_database)s |\
-        csv2db.py %(csv2db_options)s \
+        python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
                   --table=%(tablename)s \
         >> %(outfile)s
 

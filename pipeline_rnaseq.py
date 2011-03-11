@@ -907,7 +907,7 @@ def loadContextStats( infiles, outfile ):
                    %(filenames)s
                 | perl -p -e "s/bin/track/; s/\?/Q/g"
                 | python %(scriptsdir)s/table2table.py --transpose
-                | csv2db.py
+                | python %(scriptsdir)s/csv2db.py
                       --index=track
                       --table=%(tablename)s 
                 > %(outfile)s
@@ -942,7 +942,7 @@ def loadAlignmentStats( infiles, outfile ):
     tmpfilename = outf.name
 
     statement = '''cat %(tmpfilename)s
-                | csv2db.py
+                | python %(scriptsdir)s/csv2db.py
                       --index=track
                       --table=%(tablename)s 
                 > %(outfile)s
@@ -963,7 +963,7 @@ def loadAlignmentStats( infiles, outfile ):
         statement = """python %(scriptsdir)s/combine_tables.py
                       --missing=0
                    %(filenames)s
-                | csv2db.py
+                | python %(scriptsdir)s/csv2db.py
                       --header=%(column)s,%(header)s
                       --replace-header
                       --index=track
@@ -1080,7 +1080,7 @@ def loadBAMStats( infiles, outfile ):
                 | perl -p -e "s/bin/track/"
                 | perl -p -e "s/unique/unique_alignments/"
                 | python %(scriptsdir)s/table2table.py --transpose
-                | csv2db.py
+                | python %(scriptsdir)s/csv2db.py
                       --index=track
                       --table=%(tablename)s 
                 > %(outfile)s
@@ -1094,7 +1094,7 @@ def loadBAMStats( infiles, outfile ):
         statement = """python %(scriptsdir)s/combine_tables.py
                       --missing=0
                    %(filenames)s
-                | csv2db.py
+                | python %(scriptsdir)s/csv2db.py
                       --header=%(suffix)s,%(header)s
                       --replace-header
                       --index=track
@@ -1211,7 +1211,7 @@ def loadExpressionLevels( infile, outfile ):
 
     statement = '''cat %(infile2)s
     | perl -p -e "s/trans_id/transcript_id/"
-    | csv2db.py %(csv2db_options)s 
+    | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
               --index=transcript_id 
               --table=%(tablename)s 
     > %(outfile)s
@@ -1327,7 +1327,7 @@ def loadTranscriptComparison( infile, outfile ):
     tablename = P.toTable( outfile ) + "_benchmark"
 
     statement = '''cat %(tmpfile)s
-    | csv2db.py %(csv2db_options)s
+    | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --allow-empty
               --index=track
               --index=contig
@@ -1395,7 +1395,7 @@ def loadTranscriptComparison( infile, outfile ):
 
     tablename = P.toTable( outfile ) + "_tracking"
     statement = '''cat %(tmpfile)s
-    | csv2db.py %(csv2db_options)s
+    | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --index=locus_id
               --index=transfrag_id
               --index=code
@@ -1408,7 +1408,7 @@ def loadTranscriptComparison( infile, outfile ):
 
     tablename = P.toTable( outfile ) + "_transcripts"
     statement = '''cat %(tmpfile2)s
-    | csv2db.py %(csv2db_options)s
+    | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --index=transfrag_id
               --index=ref_gene_id
               --index=ref_transcript_id
@@ -1424,7 +1424,7 @@ def loadTranscriptComparison( infile, outfile ):
 
     tablename = P.toTable( outfile ) + "_fpkm"
     statement = '''cat %(tmpfile3)s
-    | csv2db.py %(csv2db_options)s
+    | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --index=transfrag_id
               --table=%(tablename)s 
     >> %(outfile)s
@@ -1459,7 +1459,7 @@ def loadTranscriptComparison( infile, outfile ):
     tablename = P.toTable( outfile ) + "_loci"
 
     statement = '''cat %(tmpfile)s
-    | csv2db.py %(csv2db_options)s
+    | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --index=locus_id
               --table=%(tablename)s 
     >> %(outfile)s
@@ -1971,7 +1971,7 @@ def loadCuffdiff( infile, outfile ):
                               { $9 = $9 / log(2); 
                                 if( $6 == "OK" && ($7 < %(cuffdiff_fpkm_expressed)f || $8 < %(cuffdiff_fpkm_expressed)f )) { $6 = "NOCALL"; };
                                 print; } '
-        | csv2db.py %(csv2db_options)s
+        | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --allow-empty
               --index=track1
               --index=track2
@@ -1990,7 +1990,7 @@ def loadCuffdiff( infile, outfile ):
         tablename = prefix + "_" + level + "_levels" 
 
         statement = '''cat %(indir)s/%(fn)s
-        | csv2db.py %(csv2db_options)s
+        | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --allow-empty
               --index=tracking_id
               --table=%(tablename)s 
@@ -2483,7 +2483,7 @@ def loadDESeq( infile, outfile ):
     # add gene level follow convention "<level>_diff"
     tablename = P.snip( outfile, ".load") + "_gene_diff" 
     statement = '''cat %(infile)s
-            | csv2db.py %(csv2db_options)s
+            | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --allow-empty
               --index=track1
               --index=track2
