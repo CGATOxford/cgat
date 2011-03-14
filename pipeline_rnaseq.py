@@ -2552,16 +2552,19 @@ def export(): pass
 @follows( mkdir( "doc" ) )
 def build_doc():
     '''setup documentation directory.'''
-    E.info( "running setupdoc" )
 
-    docdir = "/ifs/devel/pipelines/pipeline_rnaseq"
+    E.info( "starting documentation build process from scratch" )
 
-    to_cluster = USECLUSTER
+    dirname, basename = os.path.split( os.path.abspath( __file__ ) )
+    docdir = os.path.join( dirname, "pipeline_docs", P.snip( basename, ".py" ) )
+
+    # requires libtk, which is not present on the nodes
+    to_cluster = False
     
     job_options= "-pe dedicated %i -R y" % PARAMS["report_threads"]
 
     statement = '''
-    rm -rf doc _cache;
+    rm -rf doc _cache _static;
     sphinxreport-build 
            --num-jobs=%(report_threads)s
            sphinx-build 
