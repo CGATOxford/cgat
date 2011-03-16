@@ -249,6 +249,10 @@ See :ref:`PipelineSettingUp` and :ref:`PipelineRunning` on general information h
 Configuration
 -------------
 
+The pipeline requires a configured :file:`pipeline.ini` file. 
+
+The sphinxreport report requires a :file:`conf.py` file (see :ref:`PipelineDocumenation`).
+
 Input
 -----
 
@@ -760,19 +764,24 @@ def buildReferenceTranscriptome( infile, outfile ):
 def mapReadsWithBowtieAgainstTranscriptome( infiles, outfile ):
     '''map reads from short read archive sequence using bowtie against
     transcriptome data.
-
     '''
 
-    # Mapping will permit up to two mismatches.
-    # Only report one of the matches in the best stratum.
-    # Additional matches are mostly to alternative transcripts
-    # and only inflate the file sizes.
+    # Mapping will permit up to one mismatches. This is sufficient
+    # as the downstream filter in rnaseq_bams2bam requires the
+    # number of mismatches less than the genomic number of mismatches.
+    # Change this, if the number of permitted mismatches for the genome
+    # increases.
+
+    # Output all valid matches in the best stratum. This will 
+    # inflate the file sizes due to matches to alternative transcripts
+    # but otherwise matches to paralogs will be missed (and such
+    # reads would be filtered out).
     job_options= "-pe dedicated %i -R y" % PARAMS["bowtie_threads"]
     to_cluster = USECLUSTER
     m = PipelineMapping.BowtieTranscripts()
     infile, reffile = infiles
     prefix = P.snip( reffile, ".fa" )
-    bowtie_options = "-v 2 --best -k 1"
+    bowtie_options = "-v 2 --best --strata -a"
     statement = m.build( (infile,), outfile ) 
     P.run()
 
@@ -806,10 +815,11 @@ def mapReadsWithTophat( infiles, outfile ):
 @collate( (mapReadsWithTophat, mapReadsWithBowtieAgainstTranscriptome),
           regex(r"(.+)\..*.bam"),  
           add_inputs( buildCodingGeneSet ), 
-          r"\1.bam")
+          r"\1.bam" )
 def buildBAMs( infiles, outfile):
 
     genome, transcriptome, reffile = infiles[0][0], infiles[1][0], infiles[0][1]
+    outfile_mismapped = P.snip(outfile, ".bam") + ".mismapped.bam"
 
     assert genome.endswith( ".genome.bam" )
 
@@ -819,28 +829,35 @@ def buildBAMs( infiles, outfile):
     python %(scriptsdir)s/rnaseq_bams2bam.py 
        --force
        --filename-gtf=%(reffile)s
-       --filename-mismapped=%(outfile)s.mismapped.bam
+       --filename-mismapped=%(outfile_mismapped)s
        %(transcriptome)s %(genome)s %(outfile)s
     > %(outfile)s.log;
     checkpoint;
     samtools index %(outfile)s 2>&1 >> %(outfile)s.log;
-    samtools index %(outfile)s.mismapped.bam 2>&1 >> %(outfile)s.log;
+    samtools index %(outfile_mismapped)s 2>&1 >> %(outfile)s.log;
     '''
     P.run()
         
 ############################################################
 ############################################################
 ############################################################
-@transform( (mapReadsWithTophat, buildBAMs), 
+@transform( buildBAMs, suffix(".bam"), ".mismapped.bam" )
+def buildMismappedBAMs( infile, outfile ):
+    '''pseudo target - update the mismapped bam files.'''
+    P.touch( outfile )
+
+############################################################
+############################################################
+############################################################
+@transform( (mapReadsWithTophat, buildBAMs, buildMismappedBAMs), 
             suffix(".bam" ), ".bam.stats")
 def buildAlignmentStats( infile, outfile ):
     '''build alignment stats using picard.
 
     Note that picards counts reads but they are in fact alignments.
     '''
-
     to_cluster = USECLUSTER
-
+    
     # replace the SO field from tophat/samtools with coordinate to indicate
     # that the file is sorted by coordinate.
     # naturally - the bam files should be sorted.
@@ -855,63 +872,6 @@ def buildAlignmentStats( infile, outfile ):
     
     P.run()
 
-############################################################
-############################################################
-############################################################
-@transform( (mapReadsWithTophat, buildBAMs),
-            suffix(".bam"),
-            add_inputs( os.path.join( PARAMS["annotations_dir"],
-                                      PARAMS_ANNOTATIONS["interface_genomic_context_bed"] ) ),
-            ".contextstats" )
-def buildContextStats( infiles, outfile ):
-    '''build mapping context stats.
-
-    Examines the genomic context to where reads align.
-
-    A read is assigned to the genomic context that it
-    overlaps by at least 50%. Thus some reads mapping
-    several contexts might be dropped.
-    '''
-
-    infile, reffile = infiles
-
-    min_overlap = 0.5
-
-    to_cluster = USECLUSTER
-    statement = '''
-       python %(scriptsdir)s/rnaseq_bam_vs_bed.py
-              --min-overlap=%(min_overlap)f
-              --log=%(outfile)s.log
-              %(infile)s %(reffile)s
-       > %(outfile)s
-       '''
-
-    P.run()
-
-############################################################
-############################################################
-############################################################
-@merge( buildContextStats, "context_stats.load" )
-def loadContextStats( infiles, outfile ):
-    """load context mapping statistics."""
-
-    header = ",".join( [P.snip( x, ".contextstats") for x in infiles] )
-    filenames = " ".join( infiles  )
-    tablename = P.toTable( outfile )
-
-    statement = """python %(scriptsdir)s/combine_tables.py
-                      --headers=%(header)s
-                      --missing=0
-                      --skip-titles
-                   %(filenames)s
-                | perl -p -e "s/bin/track/; s/\?/Q/g"
-                | python %(scriptsdir)s/table2table.py --transpose
-                | python %(scriptsdir)s/csv2db.py
-                      --index=track
-                      --table=%(tablename)s 
-                > %(outfile)s
-                """
-    P.run()
 
 ############################################################
 ############################################################
@@ -1038,7 +998,7 @@ def loadTophatStats( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-@transform( (mapReadsWithTophat, buildBAMs), 
+@transform( (mapReadsWithTophat, buildBAMs, buildMismappedBAMs), 
             suffix(".bam"),
             ".readstats" )
 def buildBAMStats( infile, outfile ):
@@ -1104,14 +1064,84 @@ def loadBAMStats( infiles, outfile ):
     
         P.run()
 
+############################################################
+############################################################
+############################################################
+@transform( (mapReadsWithTophat, buildBAMs, buildMismappedBAMs),
+            suffix(".bam"),
+            add_inputs( os.path.join( PARAMS["annotations_dir"],
+                                      PARAMS_ANNOTATIONS["interface_genomic_context_bed"] ) ),
+            ".contextstats" )
+def buildContextStats( infiles, outfile ):
+    '''build mapping context stats.
+
+    Examines the genomic context to where reads align.
+
+    A read is assigned to the genomic context that it
+    overlaps by at least 50%. Thus some reads mapping
+    several contexts might be dropped.
+    '''
+
+    infile, reffile = infiles
+
+    min_overlap = 0.5
+
+    to_cluster = USECLUSTER
+    statement = '''
+       python %(scriptsdir)s/rnaseq_bam_vs_bed.py
+              --min-overlap=%(min_overlap)f
+              --log=%(outfile)s.log
+              %(infile)s %(reffile)s
+       > %(outfile)s
+       '''
+
+    P.run()
+
+############################################################
+############################################################
+############################################################
+@follows( loadBAMStats )
+@merge( buildContextStats, "context_stats.load" )
+def loadContextStats( infiles, outfile ):
+    """load context mapping statistics."""
+
+    header = ",".join( [P.snip( x, ".contextstats") for x in infiles] )
+    filenames = " ".join( infiles  )
+    tablename = P.toTable( outfile )
+
+    statement = """python %(scriptsdir)s/combine_tables.py
+                      --headers=%(header)s
+                      --missing=0
+                      --skip-titles
+                   %(filenames)s
+                | perl -p -e "s/bin/track/; s/\?/Q/g"
+                | python %(scriptsdir)s/table2table.py --transpose
+                | python %(scriptsdir)s/csv2db.py
+                      --index=track
+                      --table=%(tablename)s 
+                > %(outfile)s
+                """
+    P.run()
+    
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    
+    cc = Database.executewait( dbhandle, '''ALTER TABLE %(tablename)s ADD COLUMN mapped INTEGER''' % locals())
+    statement = '''UPDATE %(tablename)s SET mapped = 
+                                       (SELECT b.mapped FROM bam_stats AS b 
+                                            WHERE %(tablename)s.track = b.track)''' % locals()
+
+    cc = Database.executewait( dbhandle, statement )
+    dbhandle.commit()
     
 #########################################################################
 #########################################################################
 #########################################################################
-@transform( buildBAMs, suffix(".bam"), ".gtf.gz")
-def buildGeneModels(infile, outfile):
+@transform( buildBAMs, suffix(".bam"), r"\1.gtf.gz")
+def buildGeneModels(infiles, outfile):
     '''build transcript models - run cufflinks on each region seperately
     '''
+
+    infile, infile_mismapped = infiles
 
     to_cluster = USECLUSTER    
     job_options= "-pe dedicated %i -R y" % PARAMS["cufflinks_threads"]
@@ -2549,9 +2579,9 @@ def full(): pass
 
 def export(): pass
 
-@follows( mkdir( "doc" ) )
-def build_doc():
-    '''setup documentation directory.'''
+@follows( mkdir( "report" ) )
+def build_report():
+    '''build report from scratch.'''
 
     E.info( "starting documentation build process from scratch" )
 
@@ -2564,7 +2594,7 @@ def build_doc():
     job_options= "-pe dedicated %i -R y" % PARAMS["report_threads"]
 
     statement = '''
-    rm -rf doc _cache _static;
+    rm -rf report _cache _static;
     sphinxreport-build 
            --num-jobs=%(report_threads)s
            sphinx-build 
@@ -2572,6 +2602,34 @@ def build_doc():
                     -d %(report_doctrees)s
                     -c . 
            %(docdir)s %(report_html)s
+    > report.log
+    '''
+
+    P.run()
+
+@follows( mkdir( "report" ) )
+def update_report():
+    '''update report.'''
+
+    E.info( "starting documentation build process from scratch" )
+
+    dirname, basename = os.path.split( os.path.abspath( __file__ ) )
+    docdir = os.path.join( dirname, "pipeline_docs", P.snip( basename, ".py" ) )
+
+    # requires libtk, which is not present on the nodes
+    to_cluster = False
+    
+    job_options= "-pe dedicated %i -R y" % PARAMS["report_threads"]
+
+    statement = '''
+    sphinxreport-build 
+           --num-jobs=%(report_threads)s
+           sphinx-build 
+                    -b html 
+                    -d %(report_doctrees)s
+                    -c . 
+           %(docdir)s %(report_html)s
+    > report.log
     '''
 
     P.run()

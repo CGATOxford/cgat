@@ -692,7 +692,7 @@ def main( args = sys.argv ):
         if len(args) > 1:
             options.pipeline_target = args[1]
 
-    if options.pipeline_action in ("make", "show", "svg", "plot", "touch"):
+    if options.pipeline_action in ("make", "show", "svg", "plot", "touch" ):
 
         try:
             if options.pipeline_action == "make":

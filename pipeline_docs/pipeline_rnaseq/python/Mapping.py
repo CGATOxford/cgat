@@ -11,6 +11,8 @@ class MappingSummary( SingleTableTrackerRows ):
     table = "bam_stats"
 class AlignmentSummary( SingleTableTrackerRows ):
     table = "alignment_stats"
+class MappingContext( SingleTableTrackerRows ):
+    table = "context_stats"
 
 class MappingFlagsMismatches( SingleTableTrackerHistogram ):
     table = "bam_stats_nm"

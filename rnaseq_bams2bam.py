@@ -177,7 +177,7 @@ def main( argv = None ):
 
             # ignore reads that are not mapped to transcripts
             if match.is_unmapped: continue
-            # ignore reads that are mapped to transcripts with more
+            # ignore reads that are mapped to transcripts with
             # more mismatches than the genomic location
             if match.opt("NM") > read_mismatches: continue
 
@@ -205,7 +205,8 @@ def main( argv = None ):
             c.unmapped_transcript += 1
             c.output += 1
             output_samfile.write( read )
-
+            
+        
     E.info( "finished filtering" )
 
     E.info( "%s" % str(c))

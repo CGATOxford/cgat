@@ -188,17 +188,28 @@ def main( argv = None ):
     outs = options.stdout
     outs.write( "category\tcounts\tpercent\tof\n" )
     outs.write( "total\t%i\t%5.2f\ttotal\n" % (ninput, 100.0 ) )
+    if ninput == 0: 
+        E.warn( "no input - skipped" )
+        E.Stop()
+        return
+
     nmapped = ninput - flags_counts[4]
     outs.write( "mapped\t%i\t%5.2f\ttotal\n" % (nmapped, 100.0 * nmapped / ninput ) )
+    if nmapped == 0: 
+        E.warn( "no mapped reads - skipped" )
+        E.Stop()
+        return
 
     for x in flags:
         outs.write( "%s\t%i\t%5.2f\tmapped\n" % ( FLAGS[x], flags_counts[x], 100.0 * flags_counts[x] / ninput ) )
 
     outs.write( "rna\t%i\t%5.2f\tmapped\n" % (nrna, 100.0 * nrna / nmapped ) )
     outs.write( "no_rna\t%i\t%5.2f\tmapped\n" % (nfiltered, 100.0 * nfiltered / nmapped ) )
-    outs.write( "duplicates\t%i\t%5.2f\tno_rna\n" % (nduplicates, 100.0* nduplicates / nfiltered))
-    outs.write( "unique\t%i\t%5.2f\tno_rna\n" % (nfiltered - nduplicates,
-                                                 100.0*(nfiltered - nduplicates)/nfiltered))
+
+    if nfiltered > 0:
+        outs.write( "duplicates\t%i\t%5.2f\tno_rna\n" % (nduplicates, 100.0* nduplicates / nfiltered))
+        outs.write( "unique\t%i\t%5.2f\tno_rna\n" % (nfiltered - nduplicates,
+                                                     100.0*(nfiltered - nduplicates)/nfiltered))
 
     nreads = nmapped
     outs.write( "reads_total\t%i\t%5.2f\treads_total\n" % (nreads, 100.0 ) )

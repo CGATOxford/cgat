@@ -113,6 +113,8 @@ def main( argv = None ):
     E.info( "counting" )
 
     for line in infile:
+        if not line.strip(): continue
+
         read, annotations = line[:-1].split("\t")
         annotations = annotations.split(",")[:-1]
         for anno in annotations:

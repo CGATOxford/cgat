@@ -223,6 +223,12 @@ class BowtieTranscripts( Mapper ):
 
     def mapper( self, infiles, outfile ):
         '''build mapping statement on infiles.
+
+        .. note:: a filter on bamfiles removes any /1 and /2
+            markers from reads. The reason is that these
+            markers are removed for paired-end data, but
+            not for single-end data and will cause
+            problems using read name lookup.
         '''
 
         num_files = [ len( x ) for x in infiles ]
@@ -243,6 +249,7 @@ class BowtieTranscripts( Mapper ):
                        %%(prefix)s 
                        %(infiles)s
                        2>%(outfile)s.log
+               | awk -v OFS="\\t" '{sub(/\/[12]$/,"",$1);print}'
                | samtools import %%(reffile)s - %(tmpdir_fastq)s/out.bam 1>&2 2>> %(outfile)s.log;
             ''' % locals()
 
