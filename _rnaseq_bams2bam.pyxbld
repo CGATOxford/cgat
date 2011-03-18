@@ -1,0 +1,16 @@
+# link against pysam
+
+def make_ext(modname, pyxfilename):
+    from distutils.extension import Extension
+    import pysam, os
+    dirname = os.path.dirname( pysam.__file__ )[:-len("pysam")]
+    return Extension(name = modname,
+                     sources=[pyxfilename],
+                     #library_dirs + libraries does not work as it would require csamtools.so to start with lib
+                     #library_dirs = ['/ifs/devel/pysam/pysam-0.4/build/lib.linux-x86_64-2.7'],
+                     #libraries= ['csamtools'],
+                     extra_link_args=[ os.path.join( dirname, "csamtools.so")],
+                     include_dirs = ['/ifs/devel/pysam/pysam-0.4/samtools', 
+                                     '/ifs/devel/pysam/pysam-0.4/pysam',
+                                     ] )
+

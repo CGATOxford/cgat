@@ -1137,11 +1137,9 @@ def loadContextStats( infiles, outfile ):
 #########################################################################
 #########################################################################
 @transform( buildBAMs, suffix(".bam"), r"\1.gtf.gz")
-def buildGeneModels(infiles, outfile):
+def buildGeneModels(infile, outfile):
     '''build transcript models - run cufflinks on each region seperately
     '''
-
-    infile, infile_mismapped = infiles
 
     to_cluster = USECLUSTER    
     job_options= "-pe dedicated %i -R y" % PARAMS["cufflinks_threads"]

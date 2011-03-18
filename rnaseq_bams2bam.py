@@ -72,6 +72,10 @@ import Experiment as E
 import GTF, IOTools
 import pysam
 
+import pyximport
+pyximport.install(build_in_temp=False)
+import _rnaseq_bams2bam
+
 def main( argv = None ):
     """script main.
 
@@ -118,8 +122,6 @@ def main( argv = None ):
 
     E.info( "read %i transcripts from geneset" % len(transcripts) )
 
-    E.info( "building index of transcriptome reads" )
-    
     transcripts_samfile = pysam.Samfile( bamfile_transcripts, "rb" )
     genome_samfile = pysam.Samfile( bamfile_genome, "rb" )
 
@@ -136,78 +138,9 @@ def main( argv = None ):
     else:
         output_mismapped = None
 
-    index = pysam.IndexedReads( transcripts_samfile )
-    index.build()
-    
-    E.info( "finished building index" )
-
-    c = E.Counter()
-
-    E.info( "starting filtering" )
-
-    for read in genome_samfile:
-        c.input += 1
-
-        if read.is_unmapped:
-            c.unmapped_genome += 1
-            c.output += 1
-            output_samfile.write( read )
-            continue
-
-        # get transcripts that read matches to
-        try:
-            matches = list( index.find( read.qname ) )
-        except KeyError:
-            c.notfound += 1
-            c.output += 1
-            output_samfile.write( read )
-            continue
-        
-        g_contig = genome_samfile.getrname( read.tid )
-
-        # set mapped = True, if read is mapped to transcripts
-        #
-        # set location_ok = True, if read matches in expected location
-        # according to transcripts
-        location_ok = False
-        mapped = False
-        read_mismatches = read.opt("NM")
-
-        for match in matches:
-
-            # ignore reads that are not mapped to transcripts
-            if match.is_unmapped: continue
-            # ignore reads that are mapped to transcripts with
-            # more mismatches than the genomic location
-            if match.opt("NM") > read_mismatches: continue
-
-            mapped = True
-
-            # find transcript
-            transcript_id = transcripts_samfile.getrname( match.tid )
-            gtfs = transcripts[transcript_id]
-            t_contig, t_start, t_end = gtfs[0].contig, gtfs[0].start, gtfs[-1].end
-            
-            # does read map to genomic transcript location?
-            if g_contig == t_contig and t_start <= read.pos <= t_end:
-                location_ok = True
-                break
-
-        if location_ok:
-            c.location_ok += 1
-            c.output += 1
-            output_samfile.write( read )
-        elif mapped:
-            c.mismapped += 1
-            if output_mismapped:
-                output_mismapped.write( read )
-        else:
-            c.unmapped_transcript += 1
-            c.output += 1
-            output_samfile.write( read )
-            
-        
-    E.info( "finished filtering" )
+    c = _rnaseq_bams2bam.filter( genome_samfile, transcripts_samfile,
+                             output_samfile, output_mismapped,
+                             transcripts )
 
     E.info( "%s" % str(c))
 
