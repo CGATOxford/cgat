@@ -825,11 +825,17 @@ def buildBAMs( infiles, outfile):
 
     to_cluster = USECLUSTER
 
+    if "tophat_unique" in PARAMS:
+        options = "--unique"
+    else:
+        options = ""
+
     statement = '''
     python %(scriptsdir)s/rnaseq_bams2bam.py 
        --force
        --filename-gtf=%(reffile)s
        --filename-mismapped=%(outfile_mismapped)s
+       %(options)s
        %(transcriptome)s %(genome)s %(outfile)s
     > %(outfile)s.log;
     checkpoint;

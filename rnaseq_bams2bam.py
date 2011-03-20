@@ -97,6 +97,9 @@ def main( argv = None ):
     parser.add_option( "-f", "--force", dest="force", action = "store_true",
                        help = "force overwriting of existing files [%default]" )
 
+    parser.add_option( "-u", "--unique", dest="unique", action = "store_true",
+                       help = "remove reads not matching uniquely [%default]" )
+
     parser.set_defaults(
         filename_gtf = None,
         filename_mismapped = None,
@@ -140,9 +143,10 @@ def main( argv = None ):
 
     c = _rnaseq_bams2bam.filter( genome_samfile, transcripts_samfile,
                              output_samfile, output_mismapped,
-                             transcripts )
+                             transcripts,
+                                 unique = options.unique )
 
-    E.info( "%s" % str(c))
+    options.stdout.write( "category\tcounts\n%s\n" % c.asTable() )
 
     transcripts_samfile.close()
     genome_samfile.close()
