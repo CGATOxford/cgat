@@ -468,7 +468,7 @@ class Counter(object):
         return self._counts.iteritems()
     def asTable( self ):
         '''return values as tab-separated table (without header).'''
-        return '\n'.join( "%s\t%i" % x for x in in self._counts.iteritems() )
+        return '\n'.join( "%s\t%i" % x for x in self._counts.iteritems() )
 
 class Experiment:
     
