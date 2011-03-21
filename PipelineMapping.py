@@ -48,6 +48,7 @@ Code
 
 import os, sys, shutil, glob
 import Pipeline as P
+import IOTools
 
 class Mapper( object ):
     '''map reads.
@@ -69,6 +70,7 @@ class Mapper( object ):
         Mapping qualities are changed to solexa format.
         '''
         tmpdir_fastq = P.getTempDir()
+        #print outfile
 
         # create temporary directory again for nodes
         statement = [ "mkdir -p %s" % tmpdir_fastq ]
@@ -145,7 +147,7 @@ class Mapper( object ):
         
         assert cmd_preprocess.strip().endswith(";")
         assert cmd_mapper.strip().endswith(";")
-        assert cmd_postprocess.strip().endswith(";")
+        assert not( cmd_postprocess and cmd_postprocess.strip().endswith(";"))
         assert cmd_clean.strip().endswith(";")
 
         statement = " checkpoint; ".join( (cmd_preprocess, 
@@ -154,6 +156,21 @@ class Mapper( object ):
                                            cmd_clean ) )
 
         return statement
+
+
+class fastqc( Mapper ):
+    
+    def mapper( self, infiles, outfile ):
+        '''build mapping statement on infiles.'''
+        
+        statement = []
+        statement.append('''mkdir -p %(outfile)s;''' % locals())
+        for f in infiles:
+            for i, x in enumerate(f):
+                track = P.snip( os.path.basename( x ), ".fastq" )
+                statement.append( '''fastqc --outdir=%(outfile)s %(x)s >> %(track)s.log;''' % locals() )
+        return " ".join( statement )
+
 
 class Tophat( Mapper ):
     
