@@ -62,6 +62,11 @@ import MatlabTools
 import numpy
 import Stats
 
+from rpy2.robjects import r as R
+import rpy2.robjects as ro
+import rpy2.robjects.numpy2ri
+
+
 def readTable( lines,
                assign,
                separator = "\t",
@@ -175,7 +180,7 @@ def main():
 
     parser.add_option("-c", "--columns", dest="columns", type="string",
                       help="columns to take from table. Choices are 'all', 'all-but-first' or a ','-separated list of columns." )
-
+    
     parser.add_option( "--logscale", dest="logscale", type="string",
                       help="log-transform one or both axes [default=%Default]."  )
 
@@ -308,7 +313,8 @@ def main():
                                                  row_names = options.legend )
     R.assign("headers", headers)
 
-    ndata = R( """length( matrix[,1] )""" )
+    ndata = R( """length( matrix[,1] )""" )[0]
+
     if options.loglevel >=1:
         options.stdlog.write("# read matrix: %ix%i\n" % (len(headers),ndata) )
 
@@ -348,12 +354,12 @@ def main():
                     else:
                         options.stdout.write( "%s\t%s\t%6.4f\t%s\t%e\t%i\t%s\t%s\n" % \
                                                   (headers[x], headers[y],
-                                                   result['estimate']['cor'], 
-                                                   Stats.getSignificance( float(result['p.value']) ),
-                                                   result['p.value'],
-                                                   result['parameter']['df'],
-                                                   result['method'], 
-                                                   result['alternative']))
+                                                   result.rx2('estimate').rx2('cor')[0], 
+                                                   Stats.getSignificance( float(result.rx2('p.value')[0]) ),
+                                                   result.rx2('p.value')[0],
+                                                   result.rx2('parameter').rx2('df')[0],
+                                                   result.rx2('method')[0], 
+                                                   result.rx2('alternative')[0]) )
 
         elif method == "spearman":
             options.stdout.write( "\t".join( ("var1", "var2",

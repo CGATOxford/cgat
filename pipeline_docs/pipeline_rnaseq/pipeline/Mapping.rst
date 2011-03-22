@@ -5,6 +5,20 @@ Mapping
 Mapping results
 ===============
 
++---------------------------------------+--------------------------------------------------+
+|*Filename*                             |*Contents*                                        |
++---------------------------------------+--------------------------------------------------+
+|:term:`track`.bam                      |Alignments after QC and filtering. This is the set|
+|                                       |used for subsequent analyses.                     |
++---------------------------------------+--------------------------------------------------+
+|:term:`track`.genome.bam               |Alignments of reads mapped on the chromosome      |
++---------------------------------------+--------------------------------------------------+
+|:term:`track`.trans.bam                |Alignments of reads reads mapped to transcripts   |
++---------------------------------------+--------------------------------------------------+
+|:term:`track`.mismapped.bam            |Alignments flagged as :term:`mismapped`           |
++---------------------------------------+--------------------------------------------------+
+
+
 Alignments
 ----------
 

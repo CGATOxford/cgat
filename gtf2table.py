@@ -1703,6 +1703,45 @@ class CounterReadCoverage(Counter):
                            "%5.2f" % (100.0 * self.mCovered / self.mTotalLength),
                            str(s),))
 
+##-----------------------------------------------------------------------------------
+class CounterReadCounts(Counter):
+    '''compute number of reads overlapping with exons.
+
+    Requires bam files to compute that coverage. Multiple bam
+    files can be supplied, these will be summed up.
+
+    Both unique and non-unique counts are collected. Uniqueness
+    is simply checked through alignment start position.
+    '''
+    
+    mHeader = ( "all_counts", "unique_counts",)
+    
+    def __init__(self, bamfiles, *args, **kwargs ):
+        Counter.__init__(self, *args, **kwargs )
+        if not bamfiles: raise ValueError("supply --bam-file options for readcoverage")
+        self.mBamFiles = bamfiles
+
+    def count(self):
+        segments = self.getSegments()
+        contig = self.getContig()
+
+        nunique_counts, nnonunique_counts = 0, 0
+
+        for start, end in segments:
+            for samfile in self.mBamFiles:
+                last_pos = None
+                for read in samfile.fetch( contig, start, end ):
+                    nnonunique_counts += 1
+                    if last_pos != read.pos:
+                        last_pos = read.pos
+                        nunique_counts += 1
+                    
+        self.mUniqueCounts = nunique_counts
+        self.mNonUniqueCounts = nnonunique_counts
+
+    def __str__(self):
+        return "\t".join( map(str, (self.mNonUniqueCounts, self.mUniqueCounts ) ) )
+
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
@@ -1742,7 +1781,7 @@ if __name__ == '__main__':
                       choices=("length", "splice", "composition-na", "overlap", 
                                "classifier", "classifier-chipseq",
                                "overlap-transcripts",
-                               "read-coverage",
+                               "read-coverage", "read-counts",
                                'neighbours',
                                "proximity", "proximity-exclusive", "proximity-lengthmatched",
                                "position", "territories", "splice-comparison", 
@@ -1818,6 +1857,9 @@ if __name__ == '__main__':
         elif c == "read-coverage":
             counters.append( CounterReadCoverage( bamfiles,
                                                   options = options ) )
+        elif c == "read-counts":
+            counters.append( CounterReadCounts( bamfiles,
+                                                options = options ) )
 
         elif c == "splice-comparison":
             counters.append( CounterSpliceSiteComparison( fasta=fasta, 

@@ -1042,6 +1042,7 @@ def loadBAMStats( infiles, outfile ):
     statement = """python %(scriptsdir)s/combine_tables.py
                       --headers=%(header)s
                       --missing=0
+                      --ignore-empty
                    %(filenames)s
                 | perl -p -e "s/bin/track/"
                 | perl -p -e "s/unique/unique_alignments/"
@@ -1059,11 +1060,13 @@ def loadBAMStats( infiles, outfile ):
         tname = "%s_%s" % (tablename, suffix)
         
         statement = """python %(scriptsdir)s/combine_tables.py
+                      --header=%(header)s
+                      --skip-titles
                       --missing=0
+                      --ignore-empty
                    %(filenames)s
+                | perl -p -e "s/bin/%(suffix)s/"
                 | python %(scriptsdir)s/csv2db.py
-                      --header=%(suffix)s,%(header)s
-                      --replace-header
                       --table=%(tname)s 
                 >> %(outfile)s
                 """
@@ -2316,6 +2319,8 @@ def buildExonCoverage( infiles, outfile ):
 
     to_cluster = USECLUSTER
 
+    # note: needs to set flags appropriately for
+    # single-end/paired-end data sets
     # set filter options
     # for example, only properly paired reads
     flag_filter = "-f 0x2"
@@ -2329,6 +2334,45 @@ def buildExonCoverage( infiles, outfile ):
     > %(outfile)s
     '''
 
+    P.run()
+
+
+#########################################################################
+#########################################################################
+#########################################################################
+@follows( mkdir("genecounts.dir") )
+@transform( buildBAMs, 
+            regex(r"(\S+).bam"), 
+            add_inputs( buildCodingGeneSet ),
+            r"genecounts.dir/\1.genecounts.tsv.gz" )
+def buildGeneLevelReadCounts( infiles, outfile):
+    '''count reads falling into transcrpts of protein coding 
+       gene models.
+
+    .. note::
+       In paired-end data sets each mate will be counted. Thus
+       the actual read counts are approximately twice the fragment
+       counts.
+
+    These data are used to check if duplicate reads
+    are correlated with expression level.
+    '''
+    infile, geneset = infiles
+    
+    to_cluster = USECLUSTER
+
+    statement = '''
+    zcat %(geneset)s 
+    | python %(scriptsdir)s/gtf2table.py 
+          --reporter=transcripts
+          --bam-file=%(infile)s 
+          --counter=read-counts 
+          --counter=length
+          --counter=read-coverage
+    | gzip
+    > %(outfile)s
+    '''
+    
     P.run()
 
 #########################################################################
@@ -2410,7 +2454,7 @@ def runDESeq( infile, outfile ):
 
 
     # load data 
-    R('''library('DESeq')''')
+    R('''suppressMessages(library('DESeq'))''')
     R( '''counts_table <- read.delim( '%s', header = TRUE, row.names = 1, stringsAsFactors = TRUE )''' % infile )
 
     # get conditions to test
@@ -2593,7 +2637,7 @@ def build_report():
     docdir = os.path.join( dirname, "pipeline_docs", P.snip( basename, ".py" ) )
 
     # requires libtk, which is not present on the nodes
-    to_cluster = False
+    to_cluster = True
     
     job_options= "-pe dedicated %i -R y" % PARAMS["report_threads"]
 

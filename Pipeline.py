@@ -347,6 +347,9 @@ def buildStatement( **kwargs ):
     Options in PARAMS are added, but kwargs takes precedence.
     '''
 
+    if "statement" not in kwargs:
+        raise ValueError("'statement' not defined")
+
     # the actual statement
     try:
         # note the order of addition to make sure that kwargs takes precedence
