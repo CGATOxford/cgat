@@ -147,7 +147,7 @@ class Mapper( object ):
         
         assert cmd_preprocess.strip().endswith(";")
         assert cmd_mapper.strip().endswith(";")
-        assert not( cmd_postprocess and cmd_postprocess.strip().endswith(";"))
+        assert not( cmd_postprocess and cmd_pqostprocess.strip().endswith(";"))
         assert cmd_clean.strip().endswith(";")
 
         statement = " checkpoint; ".join( (cmd_preprocess, 
@@ -164,7 +164,7 @@ class fastqc( Mapper ):
         '''build mapping statement on infiles.'''
         
         statement = []
-        statement.append('''mkdir -p %(outfile)s;''' % locals())
+        #statement.append('''mkdir -p %(outfile)s;''' % locals())
         for f in infiles:
             for i, x in enumerate(f):
                 track = P.snip( os.path.basename( x ), ".fastq" )

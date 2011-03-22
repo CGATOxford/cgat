@@ -172,11 +172,12 @@ import PipelineTracks
 #########################################################################
 #########################################################################
 #########################################################################
+@follows(mkdir("fastqc"))
 @transform( ("*.fastq.1.gz", 
               "*.fastq.gz",
               "*.sra"),
               regex( r"(\S+).(fastq.1.gz|fastq.gz|sra)"),
-              r"fastqc")
+              r"fastqc/\1.result")
 def runFastqc(infiles, outfile):
         '''convert sra files to fastq and check mapping qualities are in solexa format. 
 
