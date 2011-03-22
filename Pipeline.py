@@ -347,6 +347,9 @@ def buildStatement( **kwargs ):
     Options in PARAMS are added, but kwargs takes precedence.
     '''
 
+    if "statement" not in kwargs:
+        raise ValueError("'statement' not defined")
+
     # the actual statement
     try:
         # note the order of addition to make sure that kwargs takes precedence
@@ -692,7 +695,7 @@ def main( args = sys.argv ):
         if len(args) > 1:
             options.pipeline_target = args[1]
 
-    if options.pipeline_action in ("make", "show", "svg", "plot", "touch"):
+    if options.pipeline_action in ("make", "show", "svg", "plot", "touch" ):
 
         try:
             if options.pipeline_action == "make":

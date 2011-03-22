@@ -26,6 +26,7 @@ It really helps if you are familiar with following:
 .. _ruffus: http://code.google.com/p/ruffus/
 .. _sge: http://wikis.sun.com/display/GridEngine/Home
 .. _mercurial: http://mercurial.selenic.com/wiki/
+.. _sphinxreport: http://code.google.com/p/sphinx-report/
 
 .. _PipelineSettingUp:
 
@@ -158,9 +159,26 @@ and the second command updates your local version with these changes.
 Building pipeline documentation
 -------------------------------
 
-.. todo::
-   write sphinxreport documentation
-   integrate with pipeline
+Some of the pipelines are associated with an automated report generator to display
+summary information as a set of nicely formatted :term:`html` pages. In order to
+build the documentation, drop the appropriate :file:`conf.py` configuration
+into the :term:`working directory` and run the pipeline command:
+
+   nice -19 pipeline_<name>.py make build_report
+
+This will create the report from scratch in the current directory. The report can
+be viewed opening the file :file:`<work>/report/html/contents.html` in your browser.
+
+Sphinxreport is quite powerful, but also runs quite slowly on large projects that
+need to generate a multitude of plots and tables. In order to speed up this process,
+there are some advanced features that Sphinxreport offers:
+
+   * caching of results
+   * multiprocessing
+   * incremental builds
+   * separate build directory
+
+Please see the sphinxreport_ documentation for more information.
 
 Ruffus-based pipelines
 ======================
@@ -245,7 +263,7 @@ Archivability
 There probably is not one toolset to satisfy all these criteria.. We use the following 
 tools to build a pipeline:
 
-   * ruffus to control the main computational steps
-   * sqlite to store the results of the computational steps
-   * SphinxReport to visualize the data in the sqlite database
+   * ruffus_ to control the main computational steps
+   * sqlite_ to store the results of the computational steps
+   * sphinxreport_ to visualize the data in the sqlite database
 

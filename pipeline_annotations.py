@@ -554,9 +554,12 @@ def buildGenomicContext( infiles, outfile ):
 
     tmpfile1 = P.getTempFilename( "." )
     tmpfile2 = P.getTempFilename( "." )
+    tmpfile3 = P.getTempFilename( "." )
+    tmpfile4 = P.getTempFilename( "." )
 
     distance=10
 
+    # add ENSEMBL annotations
     statement = """
             gunzip 
             < %(annotations_gtf)s
@@ -570,18 +573,37 @@ def buildGenomicContext( infiles, outfile ):
     """
     P.run()
             
-    # from repeats and rna: take class
+    # rna
     statement = '''
     zcat %(repeats_gff)s %(rna_gff)s 
     | python %(scriptsdir)s/gff2bed.py --name=family --is-gtf -v 0 
-    | sort -k 1,1 -k2,2n
+    | sort -k1,1 -k2,2n
     | python %(scriptsdir)s/bed2bed.py --method=merge --merge-by-name --merge-distance=%(distance)i --log=%(outfile)s.log
     > %(tmpfile2)s ''' 
-    
+    P.run()
+
+    ## add aggregate intervals for repeats
+    statement = '''
+    zcat %(repeats_gff)s 
+    | python %(scriptsdir)s/gff2bed.py --name=family --is-gtf -v 0 
+    | awk -v OFS="\\t" '{$4 = "repeats"; print}'
+    | sort -k1,1 -k2,2n
+    | python %(scriptsdir)s/bed2bed.py --method=merge --merge-by-name --merge-distance=%(distance)i --log=%(outfile)s.log
+    > %(tmpfile3)s ''' 
+    P.run()
+
+    ## add aggregate intervals for rna
+    statement = '''
+    zcat %(rna_gff)s 
+    | python %(scriptsdir)s/gff2bed.py --name=family --is-gtf -v 0 
+    | awk -v OFS="\\t" '{$4 = "repetetive_rna"; print}'
+    | sort -k1,1 -k2,2n
+    | python %(scriptsdir)s/bed2bed.py --method=merge --merge-by-name --merge-distance=%(distance)i --log=%(outfile)s.log
+    > %(tmpfile4)s ''' 
     P.run()
 
     statement = '''
-    sort --merge -k1,1 -k2,2n %(tmpfile1)s %(tmpfile2)s 
+    sort --merge -k1,1 -k2,2n %(tmpfile1)s %(tmpfile2)s %(tmpfile3)s %(tmpfile4)s 
     | gzip
     > %(outfile)s
     '''
@@ -589,6 +611,33 @@ def buildGenomicContext( infiles, outfile ):
 
     os.unlink(tmpfile1)
     os.unlink(tmpfile2)
+    os.unlink(tmpfile3)
+    os.unlink(tmpfile4)
+
+@transform( buildGenomicContext, suffix(".bed.gz"), ".tsv")
+def buildGenomicContextStats( infile, outfile ):
+    '''analysis overlap of genomic contexts.'''
+    
+    to_cluster= True
+    tmpdir = P.getTempDir(".")
+    
+    statement = '''zcat %(infile)s
+    | python %(scriptsdir)s/split_file.py
+        --pattern-output=%(tmpdir)s/%%s.bed
+        --column=4
+    > %(outfile)s.log
+    '''
+    
+    P.run()
+    
+    statement = '''
+    python %(scriptsdir)s/diff_bed.py
+       %(tmpdir)s/*.bed
+    > %(outfile)s
+    '''
+    P.run()
+    
+    shutil.rmtree( tmpdir )
 
 ############################################################
 ############################################################

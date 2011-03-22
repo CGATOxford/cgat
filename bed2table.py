@@ -161,15 +161,7 @@ if __name__ == '__main__':
                       help="select range on which counters will operate [default=%default]."  )
 
     parser.add_option("-c", "--counter", dest="counters", type="choice", action="append",
-                      choices=("length", "splice", "composition-na", "overlap", 
-                               "classifier", "classifier-chipseq",
-                               "overlap-transcripts",
-                               "read-coverage",
-                               'neighbours',
-                               "proximity", "proximity-exclusive", "proximity-lengthmatched",
-                               "position", "territories", "splice-comparison", 
-                               "distance", "distance-genes", "distance-tss",
-                               "coverage", "quality", "overrun" ),
+                      choices=( "overlap", ),
                       help="select counters to apply [default=%default]."  )
 
     parser.add_option( "--add-gtf-source", dest="add_gtf_source", action="store_true",
@@ -207,50 +199,14 @@ if __name__ == '__main__':
     else:
         quality = None
 
-    if options.bam_files:
-        bamfiles = []
-        for bamfile in options.bam_files.split(","):
-            bamfiles.append( pysam.Samfile(bamfile, "rb" ) )
-    else:
-        bamfiles = None
-
     counters = []
 
     for c in options.counters:
-        if c == "position":
-            for section in options.sections:
-                counters.append( CounterPosition( section = section, options = options ) )
-        elif c == "length":
-            for section in options.sections:
-                counters.append( CounterLengths( section = section, options = options ) )
-        elif c == "splice":
-            counters.append( CounterSpliceSites( fasta=fasta ) )
-        elif c == "quality":
-            counters.append( CounterQuality( fasta=quality ) )
-        elif c == "overrun":
-            counters.append( CounterOverrun( filename_gff = options.filename_gff,
-                                             options = options ) )
-        elif c == "read-coverage":
-            counters.append( CounterReadCoverage( bamfiles,
-                                                  options = options ) )
-
-        elif c == "splice-comparison":
-            counters.append( CounterSpliceSiteComparison( fasta=fasta, 
-                                                          filename_gff = options.filename_gff,
-                                                          feature=None, 
-                                                          source=None, 
-                                                          options=options ) )
-        elif c == "composition-na":
-            counters.append( CounterCompositionNucleotides( fasta=fasta,
-                                                            section = section,
-                                                            options = options ) )
-
-        elif c == "overlap":
-            
+        if c == "overlap":
             counters.append( CounterOverlap( filename = options.filename_bed,
                                              fasta=fasta,
                                              options = options) )
-
+            
 
     options.stdout.write( "\t".join( [ "contig", "start", "end", "name" ] ) )
     for counter in counters: 

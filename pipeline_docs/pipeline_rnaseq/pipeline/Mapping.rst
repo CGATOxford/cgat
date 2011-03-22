@@ -5,6 +5,20 @@ Mapping
 Mapping results
 ===============
 
++---------------------------------------+--------------------------------------------------+
+|*Filename*                             |*Contents*                                        |
++---------------------------------------+--------------------------------------------------+
+|:term:`track`.bam                      |Alignments after QC and filtering. This is the set|
+|                                       |used for subsequent analyses.                     |
++---------------------------------------+--------------------------------------------------+
+|:term:`track`.genome.bam               |Alignments of reads mapped on the chromosome      |
++---------------------------------------+--------------------------------------------------+
+|:term:`track`.trans.bam                |Alignments of reads reads mapped to transcripts   |
++---------------------------------------+--------------------------------------------------+
+|:term:`track`.mismapped.bam            |Alignments flagged as :term:`mismapped`           |
++---------------------------------------+--------------------------------------------------+
+
+
 Alignments
 ----------
 
@@ -32,6 +46,8 @@ BAM files for each :term:`track`.
 
 Reads
 -----
+.. todo::
+   alignment and read tables identical
 
 .. report:: Mapping.MappingSummary
    :render: table
@@ -102,3 +118,65 @@ results for each :term:`track`.
    :render: table
 
    Tophat results
+
+Context results
+===============
+
+The following table lists the genomic context that reads map to. Counts are in terms of alignments.
+Note that some of these contexts can be overlapping, thus some alignments might be counted several
+times. Also, an alignment is assigned to the genomic context that it overlaps by at least 50%. Thus some
+alignments spanning several contexts might be dropped.
+
+.. report:: Mapping.MappingContext
+   :render: table
+   :force:
+
+   Number of alignments that align in a certain genomic context
+
+Ribosomal RNA
+-------------
+
+Ribosomal RNA is one of the most abundant transcripts in a cell and dominates RNASeq samples
+until it is removed. The following plots and tables examine the number of alignments to
+repetitive RNA. Repetetive RNA annotation is taken from the UCSC repeatmasker tracks.
+
+.. report:: Mapping.MappingContext
+   :render: table
+   :slices: mapped,RNA,rRNA,scRNA,snRNA,srpRNA,tRNA
+
+   Number of alignments that align to repetitive RNA annotations from 
+   the UCSC repeatmasker track
+
+.. report:: Mapping.MappingContext
+   :render: pie-plot
+   :pie-first-is-total: notRNA
+   :groupby: track
+   :slices: mapped,RNA,rRNA,scRNA,snRNA,srpRNA,tRNA
+   :layout: column-3
+   :width: 200
+
+   Proportion of alignments that align to repetitive RNA annotations from 
+   the UCSC repeatmasker track
+
+
+Protein coding expression
+-------------------------
+
+The following plots list the number of alignments to protein coding and (protein coding) 
+pseudogene exons. The annotations are taken from the ENSEMBL gene set.
+
+.. report:: Mapping.MappingContext
+   :render: pie-plot
+   :pie-first-is-total: genomic
+   :groupby: track
+   :slices: mapped,protein_coding,pseudogene
+   :layout: column-3
+   :width: 200
+
+   Proportion of alignments that align to protein coding genes or pseudo genes.
+
+
+
+
+
+

@@ -99,6 +99,9 @@ if __name__ == '__main__':
     parser.add_option( "--keep-empty", dest="ignore_empty", action="store_false",
                       help="keep empty tables. The default is to ignore them." )
 
+    parser.add_option( "--ignore-empty", dest="ignore_empty", action="store_true",
+                      help="ignore empty tables - this is the default [%default]." )
+
     parser.add_option( "--add-file-prefix", dest="add_file_prefix", action="store_true",
                       help="add file prefix to columns headers in multi-column tables [default=%default]" )
 

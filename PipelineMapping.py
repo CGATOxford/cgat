@@ -168,8 +168,62 @@ class fastqc( Mapper ):
         for f in infiles:
             for i, x in enumerate(f):
                 track = P.snip( os.path.basename( x ), ".fastq" )
-                statement.append( '''fastqc --outdir=%(outfile)s %(x)s >> %(track)s.log;''' % locals() )
+                statement.append( '''fastqc --outdir=fastqc %(x)s >> fastqc/%(track)s.log;''' % locals() )
         return " ".join( statement )
+
+class bwa( Mapper ):
+    
+    def mapper( self, infiles, outfile ):
+        '''build mapping statement on infiles.
+        '''
+
+        num_files = [ len( x ) for x in infiles ]
+        
+        if max(num_files) != min(num_files):
+            raise ValueError("mixing single and paired-ended data not possible." )
+        
+        nfiles = max(num_files)
+        
+        tmpdir_bwa = os.path.join( self.tmpdir_fastq + "bwa" )
+        tmpdir_fastq = self.tmpdir_fastq
+
+        if nfiles == 1:
+            infiles = ",".join( [ x[0] for x in infiles ] )
+            statement = '''
+            bwa aln %%(bwa_index_dir)s/%%(genome)s %(infiles)s > %(tmpdir_bwa)s/%(track)s.sai; 
+            bwa samse %%(bwa_index_dir)s/%%(genome)s %(tmpdir_bwa)s/%(track)s.sai %(infiles)s > %(tmpdir_bwa)s/%(track)s.bam
+            ''' % locals()
+
+        elif nfiles == 2:
+            infiles1 = ",".join( [ x[0] for x in infiles ] )
+            infiles2 = ",".join( [ x[1] for x in infiles ] )
+
+            statement = '''
+            bwa aln %%(bwa_index_dir)s/%%(genome)s %(infiles1)s > %(tmpdir_bwa)s/%(track)s.1.sai;
+            bwa aln %%(bwa_index_dir)s/%%(genome)s %(infiles2)s > %(tmpdir_bwa)s/%(track)s.2.sai;  
+            bwa sampe %%(bwa_index_dir)s/%%(genome)s %(tmpdir_bwa)s/%(track)s.1.sai %(tmpdir_bwa)s/%(track)s.2.sai %(infiles1)s %(infiles2)s > %(tmpdir_bwa)s/%(outfile)s.bam;
+            ''' % locals()
+        else:
+            raise ValueError( "unexpected number reads to map: %i " % nfiles )
+
+        self.tmpdir_bwa = tmpdir_bwa
+
+        return statement
+    
+    def postprocess( self, infiles, outfile ):
+        '''collect output data and postprocess.'''
+        
+        track = P.snip( outfile, ".bam" )
+        tmpdir_bwa = self.tmpdir_bwa
+
+        statement = '''
+            samtools rmdup
+            samtools sort
+            samtools index %(outfile)s;
+            mv %(tmpdir_bwa)s/logs %(outfile)s.logs;
+            ''' % locals()
+
+        return statement
 
 
 class Tophat( Mapper ):
@@ -240,6 +294,12 @@ class BowtieTranscripts( Mapper ):
 
     def mapper( self, infiles, outfile ):
         '''build mapping statement on infiles.
+
+        .. note:: a filter on bamfiles removes any /1 and /2
+            markers from reads. The reason is that these
+            markers are removed for paired-end data, but
+            not for single-end data and will cause
+            problems using read name lookup.
         '''
 
         num_files = [ len( x ) for x in infiles ]
@@ -260,6 +320,7 @@ class BowtieTranscripts( Mapper ):
                        %%(prefix)s 
                        %(infiles)s
                        2>%(outfile)s.log
+               | awk -v OFS="\\t" '{sub(/\/[12]$/,"",$1);print}'
                | samtools import %%(reffile)s - %(tmpdir_fastq)s/out.bam 1>&2 2>> %(outfile)s.log;
             ''' % locals()
 
