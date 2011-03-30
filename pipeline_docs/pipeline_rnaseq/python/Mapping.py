@@ -13,6 +13,8 @@ class AlignmentSummary( SingleTableTrackerRows ):
     table = "alignment_stats"
 class MappingContext( SingleTableTrackerRows ):
     table = "context_stats"
+class FilteringSummary( SingleTableTrackerRows ):
+    table = "mapping_stats"
 
 class MappingFlagsMismatches( SingleTableTrackerHistogram ):
     table = "bam_stats_nm"

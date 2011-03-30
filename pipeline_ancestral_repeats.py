@@ -78,6 +78,11 @@ Type::
 
 for command line help.
 
+Requirements
+------------
+
+
+
 Output
 ======
 
@@ -92,10 +97,22 @@ aligned_repeats.rates.gz
 alignment.psl.gz
    :term:`psl` formatted genomic alignment between query and target.
 
-<query>_rates.gff
+<query>_rates.gff.gz
    :term:`gff` formatted file of ancestral repeats on the query. The score field is set
    to the estimated substitution rate of the repeat.
 
+Example
+=======
+
+Example data is available at http://www.cgat.org/~andreas/sample_data/pipeline_ancestral_repeats.tgz.
+To run the example, simply unpack and untar::
+
+   wget http://www.cgat.org/~andreas/sample_data/pipeline_ancestral_repeats.tgz
+   tar -xvzf pipeline_ancestral_repeats.tgz
+   cd pipeline_ancestral_repeats
+   python <srcdir>/pipeline_ancestral_repeats.py make full
+
+The example data builds ancestral repeats between human hg19:chr19 and mouse mm9:chr7.
 
 Code
 ====
@@ -162,7 +179,7 @@ def buildSizes( infile, outfile ):
 if "axt_dir" in PARAMS:
     ## build pairwise alignment from axt formatted data.'''
     @follows( buildSizes )
-    @merge( "%s/*.axt.gz" % PARAMS["axt_dir"], "alignment.psl.gz" )
+    @merge( "%s/*.axt.gz" % PARAMS["axt_dir"], PARAMS["interface_alignment_psl"] )
     def buildGenomeAlignment(infiles, outfile):
         '''build pairwise genomic aligment from axt files.'''
 
@@ -247,7 +264,7 @@ elif "maf_dir" in PARAMS:
         P.run()
 
     @follows( buildSizes )
-    @merge( "%s/*.maf.gz" % PARAMS["maf_dir"], "alignment.psl.gz" )
+    @merge( "%s/*.maf.gz" % PARAMS["maf_dir"], PARAMS["interface_alignment+psl"] )
     def buildGenomeAlignmentUCSCTools(infiles, outfile):
         '''build pairwise genomic aligment from maf files.'''
     
@@ -435,7 +452,7 @@ def buildAlignedRepeats( infiles, outfile ):
 
     # need to escape pipe symbols within farm.py command
     statement = r'''
-        gunzip < alignment.psl.gz 
+        gunzip < %(interface_alignment_psl)s
         | %(cmd-farm)s --split-at-lines=%(granularity)i --log=%(outfile)s.log --binary 
              "python %(scriptsdir)s/psl2psl.py 
 	        --method=test 
@@ -530,7 +547,7 @@ def buildRepeatDistribution( infile, outfile ):
 ########################################################
 ########################################################
 ########################################################
-@files( buildRepeatsRates, "%s_rates.gff.gz" % PARAMS["query"])
+@files( buildRepeatsRates, PARAMS["interface_rates_query_gff"] )
 def exportRatesAsGFF( infile, outfile ):
     '''export gff file with rate as score.'''
 

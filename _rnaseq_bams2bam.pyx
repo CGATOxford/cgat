@@ -10,13 +10,23 @@ def filter( Samfile genome_samfile,
             Samfile output_samfile,
             Samfile output_mismapped,
             transcripts,
-            unique = False ):
+            unique = False,
+            remove_contigs = None ):
     '''
     This method uses the flag NM.
 
     To conserve memory, the tid and NM flag from *transcripts_samfile*
     are packed into memory. As a consequence, this method requires 
     max(NM) < 256 (2^8) and max(tid) < 16777216 (2^24)
+
+    If *unique* is set, only uniquely matching reads will be output.
+    If remove is given, reads mapping to such contigs will be removed.
+
+    If remove_contigs is given, contigs that are in remove_contigs will
+    be removed. Note that this will only remove the alignment, but not
+    all alignments of a particuluar read and the NH flag will *NOT* be
+    updated.
+
     '''
     cdef int ninput = 0
     cdef int nunmapped_genome = 0
@@ -26,8 +36,11 @@ def filter( Samfile genome_samfile,
     cdef int nnotfound = 0
     cdef int nlocation_ok = 0
     cdef int nnonunique = 0
-    cdef bint c_unique = unique
+    cdef int nremoved_contigs = 0
 
+    cdef bint c_unique = unique
+    cdef int * remove_contig_tids 
+    cdef int nremove_contig_tids = 0
     cdef AlignedRead read
     cdef AlignedRead match
 
@@ -35,7 +48,8 @@ def filter( Samfile genome_samfile,
     # build index
     # this method will start indexing from the current file position
     # if you decide
-    cdef int ret = 1
+    cdef int ret = 1#
+    cdef int x
     cdef bam1_t * b = <bam1_t*>calloc(1, sizeof( bam1_t) )
     cdef uint64_t pos
     cdef uint8_t * v
@@ -44,6 +58,13 @@ def filter( Samfile genome_samfile,
     cdef int tid
     cdef int transript_tid
     cdef long val
+
+    # setup list of contigs to remove:
+    if remove_contigs:
+        nremove_contig_tids = len(remove_contigs)
+        remove_contig_tids = <int*>malloc( sizeof(int) * nremove_contig_tids )
+        for x, rname in enumerate( remove_contigs):
+            remove_contig_tids[x] = genome_samfile.gettid( rname )
 
     # L = 4 bytes
     def _gen(): return array.array('L') 
@@ -70,6 +91,14 @@ def filter( Samfile genome_samfile,
         ninput += 1
         # if ninput > 10000: break
 
+        # is unmapped?
+        if read._delegate.core.flag & 4:
+            nunmapped_genome += 1
+            noutput += 1
+            output_samfile.write( read )
+            continue
+
+        # optionally remove non-unique reads
         if c_unique:
             v = bam_aux_get(read._delegate, 'NH')
             if v != NULL:
@@ -78,12 +107,12 @@ def filter( Samfile genome_samfile,
                     nnonunique += 1
                     continue
 
-        # is unmapped?
-        if read._delegate.core.flag & 4:
-            nunmapped_genome += 1
-            noutput += 1
-            output_samfile.write( read )
-            continue
+        # optionally remove reads matched to certain contigs
+        if nremove_contig_tids:
+            for x from 0 <= x < nremove_contig_tids:
+                if remove_contig_tids[x] == read.tid:
+                    nremoved_contigs += 1
+                    continue
 
         # get transcripts that read matches to
         try:
@@ -93,7 +122,7 @@ def filter( Samfile genome_samfile,
             noutput += 1
             output_samfile.write( read )
             continue
-        
+
         g_contig = genome_samfile.getrname( read.tid )
 
         # set mapped = True, if read is mapped to transcripts
@@ -140,13 +169,17 @@ def filter( Samfile genome_samfile,
 
     c = E.Counter()
     c.input = ninput
-    c.unmapped_genome = nunmapped_genome
-    c.non_unique = nnonunique
-    c.unmapped_transcript = nunmapped_transcript
-    c.mismapped = nmismapped
+    c.removed_nonunique = nnonunique
+    c.removed_mismapped = nmismapped
+    c.removed_contigs = nremoved_contigs
     c.output = noutput
+    c.unmapped_genome = nunmapped_genome
+    c.unmapped_transcript = nunmapped_transcript
     c.notfound = nnotfound
     c.location_ok = nlocation_ok 
+
+    if nremove_contig_tids:
+        free( remove_contig_tids )
 
     E.info( "filtering finished" )
 

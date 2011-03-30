@@ -2,13 +2,13 @@
 Mapping
 =======
 
-Mapping results
-===============
+This section reports results from the mapping stage. It reports summary statistics from various
+:term:`bam` formatted files that the pipeline creates:
 
 +---------------------------------------+--------------------------------------------------+
 |*Filename*                             |*Contents*                                        |
 +---------------------------------------+--------------------------------------------------+
-|:term:`track`.bam                      |Alignments after QC and filtering. This is the set|
+|:term:`track`.accepted.bam             |Alignments after QC and filtering. This is the set|
 |                                       |used for subsequent analyses.                     |
 +---------------------------------------+--------------------------------------------------+
 |:term:`track`.genome.bam               |Alignments of reads mapped on the chromosome      |
@@ -18,6 +18,47 @@ Mapping results
 |:term:`track`.mismapped.bam            |Alignments flagged as :term:`mismapped`           |
 +---------------------------------------+--------------------------------------------------+
 
+Mapping results
+===============
+
+Filtering
+---------
+
+The RNASeq pipeline offers two filtering options:
+
+1. Remove reads that map better to a reference transcriptome. These are
+   often mismapped reads in which the splice-site detection failed.
+
+2. [Optional] Remove reads that are non-unique. By default these are left in.
+
++------------------------------+--------------------------------------------------+
+|*Column*                      |*Content*                                         |
++------------------------------+--------------------------------------------------+
+|input                         |genomic alignments input to the filtering stage   |
++------------------------------+--------------------------------------------------+
+|output                        |genomic alignments output after the filtering     |
++------------------------------+--------------------------------------------------+
+|removed_mismapped             |genomic alignments removed because they are likely|
+|                              |mismapped alignments                              |
++------------------------------+--------------------------------------------------+
+|removed_contigs               |genomic alignmentsn removed because aligned to    |
+|                              |unwanted contigs (e.g. chrM).                     |
++------------------------------+--------------------------------------------------+
+|removed_nonunique_alignments  |genomic alignments that have been removed because |
+|                              |they are non-unique                               |
++------------------------------+--------------------------------------------------+
+   
+.. report:: Mapping.FilteringSummary
+   :render: table
+   :slices: input,output,removed_mismapped,removed_nonunique_alignments,removed_contigs
+
+   Filtering summary
+
+.. report:: Mapping.FilteringSummary
+   :render: interleaved-bar-plot
+   :slices: input,output,removed_mismapped,removed_nonunique_alignments,removed_contigs
+
+   Filtering summary
 
 Alignments
 ----------
@@ -27,17 +68,20 @@ BAM files for each :term:`track`.
 
 .. report:: Mapping.MappingSummary
    :render: table
+   :tracks: r(.accepted)
    :slices: total,mapped,reverse,rna,duplicates
 
    Mapping summary
 
 .. report:: Mapping.MappingSummary
    :render: interleaved-bar-plot
+   :tracks: r(.accepted)
    :slices: total,mapped,reverse,rna,duplicates
 
    Mapping summary
 
 .. report:: Mapping.MappingFlagsMismatches
+   :tracks: r(.accepted)
    :render: line-plot
    :as-lines:
    :layout: column-2
@@ -47,19 +91,24 @@ BAM files for each :term:`track`.
 Reads
 -----
 
+The following table 
+
 .. report:: Mapping.MappingSummary
    :render: table
+   :tracks: r(.accepted)
    :slices: reads_total,reads_mapped,reads_norna,reads_norna_unique_alignments
 
    Mapping summary
 
 .. report:: Mapping.MappingSummary
    :render: interleaved-bar-plot
+   :tracks: r(.accepted)
    :slices: reads_total,reads_mapped,reads_norna,reads_norna_unique_alignments
 
    Mapping summary
 
 .. report:: Mapping.MappingFlagsHits
+   :tracks: r(.accepted)
    :render: line-plot
    :as-lines:
    :layout: column-2
@@ -76,23 +125,27 @@ for a definition of the field contents.
 (note: PF=pass filter, reads that pass the vendor's filter criteria).
 
 .. report:: Mapping.AlignmentSummary
+   :tracks: r(.accepted)
    :render: table
 
    Alignments summary
 
 .. report:: Mapping.AlignmentSummary
+   :tracks: r(.accepted)
    :render: interleaved-bar-plot
    :slices: PCT_PF_READS,PCT_PF_READS_ALIGNED,STRAND_BALANCE
 
    Percentage quantities
 
 .. report:: Mapping.AlignmentSummary
+   :tracks: r(.accepted)
    :render: interleaved-bar-plot
    :slices: TOTAL_READS,PF_READS,PF_READS_ALIGNED,PF_HQ_ALIGNED_READS
 
    Percentage quantities
 
 .. report:: Mapping.AlignmentQualityByCycle
+   :tracks: r(.accepted)
    :render: line-plot
    :as-lines:
    :yrange: 0,
@@ -100,6 +153,7 @@ for a definition of the field contents.
    mean quality score by cycle
 
 .. report:: Mapping.AlignmentQualityDistribution
+   :tracks: r(.accepted)
    :render: line-plot
    :as-lines:
    :yrange: 0,
@@ -131,31 +185,32 @@ alignments spanning several contexts might be dropped.
 
    Number of alignments that align in a certain genomic context
 
-Ribosomal RNA
--------------
+Ribosomal expression
+--------------------
 
 Ribosomal RNA is one of the most abundant transcripts in a cell and dominates RNASeq samples
 until it is removed. The following plots and tables examine the number of alignments to
 repetitive RNA. Repetetive RNA annotation is taken from the UCSC repeatmasker tracks.
 
 .. report:: Mapping.MappingContext
+   :tracks: r(.accepted)
    :render: table
-   :slices: mapped,RNA,rRNA,scRNA,snRNA,srpRNA,tRNA
+   :slices: mapped,RNA,rRNA,scRNA,snRNA,srpRNA,tRNA,ribosomal_coding
 
    Number of alignments that align to repetitive RNA annotations from 
    the UCSC repeatmasker track
 
 .. report:: Mapping.MappingContext
+   :tracks: r(.accepted)
    :render: pie-plot
    :pie-first-is-total: notRNA
    :groupby: track
-   :slices: mapped,RNA,rRNA,scRNA,snRNA,srpRNA,tRNA
+   :slices: mapped,RNA,rRNA,scRNA,snRNA,srpRNA,tRNA,ribosomal_coding
    :layout: column-3
    :width: 200
 
    Proportion of alignments that align to repetitive RNA annotations from 
    the UCSC repeatmasker track
-
 
 Protein coding expression
 -------------------------
@@ -164,6 +219,7 @@ The following plots list the number of alignments to protein coding and (protein
 pseudogene exons. The annotations are taken from the ENSEMBL gene set.
 
 .. report:: Mapping.MappingContext
+   :tracks: r(.accepted)
    :render: pie-plot
    :pie-first-is-total: genomic
    :groupby: track

@@ -81,7 +81,7 @@ def GetNextLine( infile ):
 
 class Counts:
 
-    mPercentFormat = "%5.2f"
+    mPercentFormat = "%.2f"
 
     def __init__(self, add_percent ):
 

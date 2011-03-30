@@ -89,7 +89,7 @@ if __name__ == '__main__':
                       help="merge overlapping genes if their exons overlap. This ignores the strand [default=%default]."  )
 
     parser.add_option( "--sort", dest="sort", type="choice",
-                       choices=("gene", "transcript", "position", "contig+gene", "position+gene" ),
+                       choices=("gene", "transcript", "position", "contig+gene", "position+gene", "gene+position" ),
                        help="sort input [default=%default]."  )
 
     parser.add_option("-u", "--with-utr", dest="with_utr", action="store_true",
@@ -285,6 +285,8 @@ if __name__ == '__main__':
         entries = list(GTF.iterator(options.stdin))
         if options.sort == "gene":
             entries.sort( key = lambda x: (x.gene_id, x.transcript_id, x.contig, x.start) )
+        elif options.sort == "gene":
+            entries.sort( key = lambda x: (x.gene_id, x.contig, x.start) )
         elif options.sort == "contig+gene":
             entries.sort( key = lambda x: (x.contig,x.gene_id,x.transcript_id,x.start) )
         elif options.sort == "transcript":

@@ -251,7 +251,9 @@ Configuration
 
 The pipeline requires a configured :file:`pipeline.ini` file. 
 
-The sphinxreport report requires a :file:`conf.py` file (see :ref:`PipelineDocumenation`).
+The sphinxreport report requires a :file:`conf.py` and :file:`sphinxreport.ini` file 
+(see :ref:`PipelineDocumenation`). To start with, use the files supplied with the
+:ref:`Example` data.
 
 Input
 -----
@@ -357,7 +359,7 @@ for various levels.
 Example
 =======
 
-Example data is available at http://www.cgat.org/~andreas/sample_data/rnaseq.tgz.
+Example data is available at http://www.cgat.org/~andreas/sample_data/pipeline_rnaseq.tgz.
 To run the example, simply unpack and untar::
 
    wget http://www.cgat.org/~andreas/sample_data/pipeline_rnaseq.tgz
@@ -387,10 +389,6 @@ Glossary
 .. _tophat: http://tophat.cbcb.umd.edu/
 .. _bowtie: http://bowtie-bio.sourceforge.net/index.shtml
 
-.. todo::
-
-   abstract source of sequences and library type from
-   mapping processes.
 
 Code
 ====
@@ -449,7 +447,9 @@ TRACKS = PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory(
     PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
     glob.glob( "*.fastq.gz" ), "(\S+).fastq.gz" ) +\
     PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
-    glob.glob( "*.fastq.1.gz" ), "(\S+).fastq.1.gz" )
+    glob.glob( "*.fastq.1.gz" ), "(\S+).fastq.1.gz" ) +\
+    PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
+    glob.glob( "*.csfasta.gz" ), "(\S+).csfasta.gz" )
 
 ALL = PipelineTracks.Sample3()
 EXPERIMENTS = PipelineTracks.Aggregate( TRACKS, labels = ("condition", "tissue" ) )
@@ -458,7 +458,10 @@ TISSUES = PipelineTracks.Aggregate( TRACKS, labels = ("tissue", ) )
 
 ###################################################################
 ## genesets build - needs to be defined statically.
-GENESETS = ("novel", "abinitio", "reference", "refcoding" )
+GENESETS = ("novel", "abinitio", "reference", "refcoding", "lincrna" )
+
+# reference gene set for QC purposes
+REFERENCE= "refcoding"
 
 ###################################################################
 ###################################################################
@@ -518,7 +521,8 @@ def writePrunedGTF( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@merge( os.path.join( PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_geneset_gtf"]),
+@merge( os.path.join( PARAMS["annotations_dir"], 
+                      PARAMS_ANNOTATIONS["interface_geneset_gtf"]),
         "reference.gtf.gz" )
 def buildReferenceGeneSet( infile, outfile ):
     '''sanitize transcripts file for cufflinks analysis.
@@ -682,7 +686,23 @@ def buildReferenceGeneSet( infile, outfile ):
 #########################################################################
 @transform( buildReferenceGeneSet, 
             suffix("reference.gtf.gz"),
-            "refcoding.gtf.gz" )
+            "lincrna.gtf.gz" )
+def buildLincRNAGeneSet( infile, outfile ):
+    '''build a new gene set with only protein coding 
+    transcripts.'''
+    
+    to_cluster = True
+    statement = '''
+    zcat %(infile)s | awk '$2 == "lincRNA"' | gzip > %(outfile)s
+    '''
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( buildReferenceGeneSet, 
+            suffix("reference.gtf.gz"),
+            "%s.gtf.gz" % REFERENCE )
 def buildCodingGeneSet( infile, outfile ):
     '''build a new gene set with only protein coding 
     transcripts.'''
@@ -721,7 +741,10 @@ def buildJunctions( infile, outfile ):
 #########################################################################
 @transform( buildCodingGeneSet, suffix(".gtf.gz"), ".fa")
 def buildReferenceTranscriptome( infile, outfile ):
-    '''build reference transcriptome
+    '''build reference transcriptome. 
+
+    The reference transcriptome contains all known 
+    protein coding transcripts.
     '''
 
     to_cluster = USECLUSTER
@@ -744,8 +767,16 @@ def buildReferenceTranscriptome( infile, outfile ):
     
     prefix = P.snip( outfile, ".fa" )
 
+    # build raw index
     statement = '''
     bowtie-build -f %(outfile)s %(prefix)s >> %(outfile)s.log 2>&1
+    '''
+
+    P.run()
+
+    # build color space index
+    statement = '''
+    bowtie-build -f %(outfile)s %(prefix)s_cs >> %(outfile)s.log 2>&1
     '''
 
     P.run()
@@ -757,8 +788,9 @@ def buildReferenceTranscriptome( infile, outfile ):
 #########################################################################
 @transform( ("*.fastq.1.gz", 
              "*.fastq.gz",
-             "*.sra"),
-            regex( r"(\S+).(fastq.1.gz|fastq.gz|sra)"), 
+             "*.sra",
+             "*.csfasta.gz" ),
+            regex( r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz)"), 
             add_inputs( buildReferenceTranscriptome ), 
             r"\1.trans.bam" )
 def mapReadsWithBowtieAgainstTranscriptome( infiles, outfile ):
@@ -792,8 +824,9 @@ def mapReadsWithBowtieAgainstTranscriptome( infiles, outfile ):
 #########################################################################
 @transform( ("*.fastq.1.gz", 
              "*.fastq.gz",
-             "*.sra"),
-            regex( r"(\S+).(fastq.1.gz|fastq.gz|sra)"), 
+             "*.sra",
+             "*.csfasta.gz"),
+            regex( r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz)"), 
             add_inputs( buildJunctions), 
             r"\1.genome.bam" )
 def mapReadsWithTophat( infiles, outfile ):
@@ -815,20 +848,24 @@ def mapReadsWithTophat( infiles, outfile ):
 @collate( (mapReadsWithTophat, mapReadsWithBowtieAgainstTranscriptome),
           regex(r"(.+)\..*.bam"),  
           add_inputs( buildCodingGeneSet ), 
-          r"\1.bam" )
+          r"\1.accepted.bam" )
 def buildBAMs( infiles, outfile):
 
     genome, transcriptome, reffile = infiles[0][0], infiles[1][0], infiles[0][1]
-    outfile_mismapped = P.snip(outfile, ".bam") + ".mismapped.bam"
+    outfile_mismapped = P.snip(outfile, ".accepted.bam") + ".mismapped.bam"
 
     assert genome.endswith( ".genome.bam" )
 
     to_cluster = USECLUSTER
 
-    if "tophat_unique" in PARAMS:
-        options = "--unique"
-    else:
-        options = ""
+    options = []
+    if "tophat_unique" in PARAMS and PARAMS["tophat_unique"]:
+        options.append( "--unique" )
+
+    if "tophat_remove_contigs" in PARAMS and PARAMS["tophat_remove_contigs"]:
+        options.append( "--remove-contigs=%s" % PARAMS["tophat_remove_contigs"] )
+        
+    options = " ".join(options)
 
     statement = '''
     python %(scriptsdir)s/rnaseq_bams2bam.py 
@@ -843,11 +880,11 @@ def buildBAMs( infiles, outfile):
     samtools index %(outfile_mismapped)s 2>&1 >> %(outfile)s.log;
     '''
     P.run()
-        
+
 ############################################################
 ############################################################
 ############################################################
-@transform( buildBAMs, suffix(".bam"), ".mismapped.bam" )
+@transform( buildBAMs, suffix(".accepted.bam"), ".mismapped.bam" )
 def buildMismappedBAMs( infile, outfile ):
     '''pseudo target - update the mismapped bam files.'''
     P.touch( outfile )
@@ -1000,6 +1037,31 @@ def buildTophatStats( infiles, outfile ):
 @transform( buildTophatStats, suffix(".tsv"), ".load" )
 def loadTophatStats( infile, outfile ):
     P.load( infile, outfile )
+        
+############################################################
+############################################################
+############################################################
+@merge( buildBAMs, "mapping_stats.load" )
+def loadMappingStats( infiles, outfile ):
+
+    header = ",".join( [P.snip( x, ".bam") for x in infiles] )
+    filenames = " ".join( [ "%s.log" % x for x in infiles ] )
+    tablename = P.toTable( outfile )
+
+    statement = """python %(scriptsdir)s/combine_tables.py
+                      --headers=%(header)s
+                      --missing=0
+                      --ignore-empty
+                   %(filenames)s
+                | perl -p -e "s/bin/track/"
+                | perl -p -e "s/unique/unique_alignments/"
+                | python %(scriptsdir)s/table2table.py --transpose
+                | python %(scriptsdir)s/csv2db.py
+                      --index=track
+                      --table=%(tablename)s 
+                > %(outfile)s
+            """
+    P.run()
 
 ############################################################
 ############################################################
@@ -1145,7 +1207,7 @@ def loadContextStats( infiles, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@transform( buildBAMs, suffix(".bam"), r"\1.gtf.gz")
+@transform( buildBAMs, suffix(".accepted.bam"), r"\1.gtf.gz")
 def buildGeneModels(infile, outfile):
     '''build transcript models - run cufflinks on each region seperately
     '''
@@ -1307,7 +1369,7 @@ def runCuffCompare( infiles, outfile, reffile ):
 #########################################################################
 #########################################################################
 @follows( buildGeneModels )
-@files( [( ([ "%s.gtf.gz" % y.asFile() for y in EXPERIMENTS.getTracks(x)], buildCodingGeneSet), 
+@files( [( ([ "%s.gtf.gz" % y.asFile() for y in EXPERIMENTS[x]], buildCodingGeneSet), 
            "%s.cuffcompare" % x.asFile()) 
          for x in EXPERIMENTS ] )
 def compareTranscriptsPerExperiment( infiles, outfile ):
@@ -1322,7 +1384,7 @@ def compareTranscriptsPerExperiment( infiles, outfile ):
 def compareTranscriptsBetweenExperiments( infiles, outfile ):
     '''compare transcript models between replicates in all experiments.'''
     # needs to be parameterized, unfortunately @merge has no add_inputs
-    reffile = "refcoding.gtf.gz"
+    reffile = "%s.gtf.gz" % REFERENCE
     runCuffCompare( infiles, outfile, reffile )
 
 #########################################################################
@@ -1676,6 +1738,7 @@ def buildNovelGeneSet( infiles, outfile ):
          buildFullGeneSet,
          buildReferenceGeneSet,
          buildCodingGeneSet,
+         buildLincRNAGeneSet,
          buildNovelGeneSet),
         "geneset_stats.tsv" )
 def buildGeneSetStats( infiles, outfile ):
@@ -1714,6 +1777,44 @@ def loadGeneSetStats( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
+@transform( (
+        buildReferenceGeneSet,
+        buildCodingGeneSet,
+        buildAbinitioGeneSet,
+        buildFullGeneSet,
+        buildLincRNAGeneSet,
+        buildNovelGeneSet),
+            suffix(".gtf.gz"),
+            ".mappability.gz" )
+def annotateTranscriptsMappability( infile, outfile ):
+    '''classify transcripts with respect to the gene set.
+    '''
+    # script will be farmed out
+    to_cluster = False
+
+    statement = """
+    zcat < %(infile)s 
+    | %(cmd-farm)s --split-at-column=1 --output-header --log=%(outfile)s.log --max-files=60 
+    "python %(scriptsdir)s/gtf2table.py 
+                --reporter=transcripts
+                --counter=bigwig-counts
+                --bigwig-file=%(geneset_mappability)s
+		--log=%(outfile)s.log"
+    | gzip
+    > %(outfile)s"""
+    
+    P.run()
+
+############################################################
+@transform( annotateTranscriptsMappability, suffix(".mappability.gz"), "_mappability.load" )
+def loadTranscriptsMappability( infile, outfile ):
+    '''load interval annotations: genome architecture
+    '''
+    P.load( infile, outfile, "--index=transcript_id" )
+
+#########################################################################
+#########################################################################
+#########################################################################
 @transform( (buildFullGeneSet,
              buildNovelGeneSet),
             suffix(".gtf.gz"),
@@ -1741,7 +1842,6 @@ def annotateTranscripts( infile, outfile ):
     > %(outfile)s"""
     
     P.run()
-
 
 ############################################################
 @transform( annotateTranscripts, suffix(".annotations"), "_annotations.load" )
@@ -1902,6 +2002,7 @@ def loadReproducibility( infile, outfile ):
 @transform( (buildFullGeneSet, 
              buildReferenceGeneSet,
              buildCodingGeneSet,
+             buildLincRNAGeneSet,
              buildNovelGeneSet),
             suffix(".gtf.gz"),
             "_geneinfo.load" )
@@ -1914,6 +2015,20 @@ def loadGeneSetGeneInformation( infile, outfile ):
 @transform( (buildFullGeneSet, 
              buildReferenceGeneSet,
              buildCodingGeneSet,
+             buildLincRNAGeneSet,
+             buildNovelGeneSet),
+            suffix(".gtf.gz"),
+            "_transcript2gene.load" )
+def loadGeneInformation( infile, outfile ):
+    PipelineGeneset.loadTranscripts( infile, outfile )
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( (buildFullGeneSet, 
+             buildReferenceGeneSet,
+             buildCodingGeneSet,
+             buildLincRNAGeneSet,
              buildNovelGeneSet),
             suffix(".gtf.gz"),
             "_transcriptinfo.load" )
@@ -1926,6 +2041,7 @@ def loadGeneSetTranscriptInformation( infile, outfile ):
 @transform( (buildFullGeneSet, 
              buildReferenceGeneSet,
              buildCodingGeneSet,
+             buildLincRNAGeneSet,
              buildNovelGeneSet),
             suffix(".gtf.gz"),
             ".cuffdiff" )
@@ -1946,7 +2062,7 @@ def runCuffdiff( infile, outfile ):
     # replicates are separated by ","
     reps, labels = [], []
     for group, replicates in EXPERIMENTS.iteritems():
-        reps.append( ",".join( [ "%s.bam" % r.asFile() for r in replicates] ) )
+        reps.append( ",".join( [ "%s.accepted.bam" % r.asFile() for r in replicates] ) )
         labels.append( group.asFile() )
 
     reps = "   ".join( reps )
@@ -2272,7 +2388,6 @@ def buildFPKMGeneLevelTagCounts( infiles, outfile ):
     for gene_id in gene_ids:
         outf.write( "%s\t%s\n" % ( gene_id, "\t".join( [str(int(x[gene_id])) for x in results ] ) ) )
     outf.close()
-            
 
 #########################################################################
 #########################################################################
@@ -2280,6 +2395,7 @@ def buildFPKMGeneLevelTagCounts( infiles, outfile ):
 @transform( (buildReferenceGeneSet, 
              buildCodingGeneSet,
              buildNovelGeneSet,
+             buildLincRNAGeneSet,
              buildFullGeneSet),
             suffix(".gtf.gz"),
             ".union.bed.gz" )
@@ -2308,7 +2424,7 @@ def buildUnionExons( infile, outfile ):
 #########################################################################
 # note - needs better implementation, currently no dependency checks.
 @follows( buildUnionExons, mkdir( "exon_coverage.dir" ) )
-@files( [ ( ("%s.bam" % x.asFile(), "%s.union.bed.gz" % y ),
+@files( [ ( ("%s.accepted.bam" % x.asFile(), "%s.union.bed.gz" % y ),
             ("exon_coverage.dir/%s_vs_%s.bed.gz" % (x.asFile(),y ) ) )
           for x,y in itertools.product( TRACKS, GENESETS) ] )
 def buildExonCoverage( infiles, outfile ):
@@ -2323,11 +2439,14 @@ def buildExonCoverage( infiles, outfile ):
     # single-end/paired-end data sets
     # set filter options
     # for example, only properly paired reads
-    flag_filter = "-f 0x2"
-    flag_filter = ""
+    paired = False
+    if paired:
+        flag_filter = "-f 0x2"
+    else:
+        flag_filter = ""
 
     statement = '''
-    samtools view -b %(flag_filter)s %(infile)s
+    samtools view -b %(flag_filter)s -q %(deseq_min_mapping_quality)s %(infile)s
     | bamToBed -i stdin 
     | coverageBed -a stdin -b %(exons)s 
     | gzip
@@ -2336,16 +2455,15 @@ def buildExonCoverage( infiles, outfile ):
 
     P.run()
 
-
 #########################################################################
 #########################################################################
 #########################################################################
-@follows( mkdir("genecounts.dir") )
+@follows( mkdir("transcript_counts.dir") )
 @transform( buildBAMs, 
-            regex(r"(\S+).bam"), 
+            regex(r"(\S+).accepted.bam"), 
             add_inputs( buildCodingGeneSet ),
-            r"genecounts.dir/\1.genecounts.tsv.gz" )
-def buildGeneLevelReadCounts( infiles, outfile):
+            r"transcript_counts.dir/\1.transcript_counts.tsv.gz" )
+def buildTranscriptLevelReadCounts( infiles, outfile):
     '''count reads falling into transcrpts of protein coding 
        gene models.
 
@@ -2366,14 +2484,23 @@ def buildGeneLevelReadCounts( infiles, outfile):
     | python %(scriptsdir)s/gtf2table.py 
           --reporter=transcripts
           --bam-file=%(infile)s 
-          --counter=read-counts 
           --counter=length
+          --prefix="exons_"
+          --counter=read-counts 
+          --prefix=""
           --counter=read-coverage
+          --prefix=coverage_
     | gzip
     > %(outfile)s
     '''
     
     P.run()
+
+@transform(buildTranscriptLevelReadCounts,
+           suffix(".tsv.gz"),
+           ".load" )
+def loadTranscriptLevelReadCounts( infile, outfile ):
+    P.load( infile, outfile )
 
 #########################################################################
 #########################################################################
@@ -2596,6 +2723,7 @@ def loadDESeqStats( infile, outfile ):
           loadBAMStats,
           loadAlignmentStats,
           loadContextStats,
+          loadMappingStats,
           )
 def mapping(): pass
 
@@ -2605,11 +2733,15 @@ def mapping(): pass
           buildReferenceGeneSet,
           buildCodingGeneSet,
           buildFullGeneSet,
+          buildLincRNAGeneSet,
           buildNovelGeneSet,
+          loadGeneInformation,
           loadGeneSetStats,
           loadGeneSetGeneInformation,
           loadGeneSetTranscriptInformation,
-          loadReproducibility
+          loadReproducibility,
+          loadTranscriptsMappability,
+          loadTranscriptLevelReadCounts,
           )
 def genesets(): pass
 
@@ -2632,55 +2764,14 @@ def build_report():
     '''build report from scratch.'''
 
     E.info( "starting documentation build process from scratch" )
-
-    dirname, basename = os.path.split( os.path.abspath( __file__ ) )
-    docdir = os.path.join( dirname, "pipeline_docs", P.snip( basename, ".py" ) )
-
-    # requires libtk, which is not present on the nodes
-    to_cluster = True
-    
-    job_options= "-pe dedicated %i -R y" % PARAMS["report_threads"]
-
-    statement = '''
-    rm -rf report _cache _static;
-    sphinxreport-build 
-           --num-jobs=%(report_threads)s
-           sphinx-build 
-                    -b html 
-                    -d %(report_doctrees)s
-                    -c . 
-           %(docdir)s %(report_html)s
-    > report.log
-    '''
-
-    P.run()
+    P.run_report( clean = True )
 
 @follows( mkdir( "report" ) )
 def update_report():
     '''update report.'''
 
-    E.info( "starting documentation build process from scratch" )
-
-    dirname, basename = os.path.split( os.path.abspath( __file__ ) )
-    docdir = os.path.join( dirname, "pipeline_docs", P.snip( basename, ".py" ) )
-
-    # requires libtk, which is not present on the nodes
-    to_cluster = False
-    
-    job_options= "-pe dedicated %i -R y" % PARAMS["report_threads"]
-
-    statement = '''
-    sphinxreport-build 
-           --num-jobs=%(report_threads)s
-           sphinx-build 
-                    -b html 
-                    -d %(report_doctrees)s
-                    -c . 
-           %(docdir)s %(report_html)s
-    > report.log
-    '''
-
-    P.run()
+    E.info( "updating documentation" )
+    P.run_report( clean = False )
 
 if __name__== "__main__":
     sys.exit( P.main(sys.argv) )

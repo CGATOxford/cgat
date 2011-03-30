@@ -1003,6 +1003,12 @@ def parseCoordinates( s ):
                 start, end = d[1].split("..")
             else:
                 start = d[1]
+    else:
+        contig = s
+        strand = "+"
+        start = "0" 
+        # full sequence
+        end = "0"
 
     start = int( re.sub( ",", "", start) )
     if end: end = int( re.sub( ",", "", end) )

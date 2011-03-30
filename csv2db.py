@@ -285,7 +285,6 @@ def run( options, args ):
 
     rows = []
     for row in reader:
-
         try:
             rows.append( CSV.ConvertDictionary( row , map=options.map ))
         except TypeError, msg:
@@ -316,7 +315,6 @@ def run( options, args ):
                                                       existing_tables = existing_tables )
 
     E.info("read %i rows for type guessing" % len(rows) )
-
     def row_iter( rows, reader):
         for row in rows: 
             yield quoteRow( row, take, map_column2type, 

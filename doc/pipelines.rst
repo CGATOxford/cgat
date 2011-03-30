@@ -6,7 +6,7 @@ The pipelines below are ready-made pipelines for certain simple tasks. Pipelines
 script, though there are some legacy pipelines written in ``make``.
 
 Introduction
-------------
+=============
 
 A pipeline takes input data and performs a series of automated steps (:term:`task`) on it to 
 produce some output data. 
@@ -31,7 +31,7 @@ It really helps if you are familiar with following:
 .. _PipelineSettingUp:
 
 Setting up a pipeline
----------------------
+======================
 
 Before starting, check that your computing environment is appropriate
 (see :ref:`CGATSetup`). Once all components are in place, setting up a 
@@ -78,7 +78,7 @@ following pipeline specific conventions.
 .. _PipelineRunning:
 
 Running a pipeline
-------------------
+===================
 
 Pipelines are controlled by a single python script called :file:`pipeline_<name>.py`
 that lives in the :term:`source directory`. Command line usage information is available
@@ -144,7 +144,7 @@ pipeline. It should continue from the appropriate location.
    that threw the error.
 
 Updating to the latest code version
-+++++++++++++++++++++++++++++++++++
+-----------------------------------
 
 To get the latest bugfixes, go into the :term:`source directory` and type::
 
@@ -157,12 +157,12 @@ and the second command updates your local version with these changes.
 .. _PipelineDocumentation:
 
 Building pipeline documentation
--------------------------------
+================================
 
 Some of the pipelines are associated with an automated report generator to display
 summary information as a set of nicely formatted :term:`html` pages. In order to
-build the documentation, drop the appropriate :file:`conf.py` configuration
-into the :term:`working directory` and run the pipeline command:
+build the documentation, drop the appropriate :file:`conf.py` and :file:`sphinxreport.ini`
+configuration files into the :term:`working directory` and run the pipeline command:
 
    nice -19 pipeline_<name>.py make build_report
 
@@ -181,7 +181,7 @@ there are some advanced features that Sphinxreport offers:
 Please see the sphinxreport_ documentation for more information.
 
 Ruffus-based pipelines
-======================
+========================
 
 Ruffus based pipelines start with the :file:`pipeline_` prefix. Each pipeline consists
 of two files, the actual pipeline (e.g., :file:`pipeline_rnaseq.py`) and an associated
@@ -189,14 +189,15 @@ configuration file with default values for pipeline parameters (e.g., :file:`pip
 
 .. toctree::
    :maxdepth: 1	
-   
-   scripts/pipeline_chipseq.rst
-   scripts/pipeline_annotations.rst
-   scripts/pipeline_rnaseq.rst
+
+   scripts/pipeline_annotations.rst   
    scripts/pipeline_ancestral_repeats.rst
+   scripts/pipeline_chipseq.rst
+   scripts/pipeline_rnaseq.rst
+   scripts/pipeline_transcriptome.rst
 
 Make-based pipelines
-====================
+======================
 
 .. toctree::
    :maxdepth: 1
@@ -206,7 +207,7 @@ Make-based pipelines
    pipelines/MapTranscripts454.rst
 
 Background
-==========
+============
 
 There really are two types of pipelines. In ``production pipelines`` the inputs are usually
 the same every time the pipeline is run and the output is known beforehand. For example, 

@@ -126,6 +126,12 @@ rna.gff.gz
    A :term:`gff` formatted file of repetitive RNA sequences in the genome
    (obtained from UCSC repeatmasker tracks).
 
+go.tsv.gz
+   A list of :term:`GO` assignments for each gene.
+
+goslim.tsv.gz
+   A list of :term:`GOSlim` assignments for each gene.
+
 Example
 =======
 
@@ -154,6 +160,7 @@ import MySQLdb
 
 import IndexedFasta, IOTools, GFF
 import PipelineGeneset as PGeneset
+import PipelineGO
 
 ###################################################
 ###################################################
@@ -176,7 +183,8 @@ if os.path.exists("conf.py"):
 ############################################################
 ############################################################
 ############################################################
-@files( os.path.join( PARAMS["genome_dir"], PARAMS["genome"] + ".fasta"), PARAMS['interface_contigs'] )
+@files( os.path.join( PARAMS["genome_dir"], PARAMS["genome"] + ".fasta"), 
+        PARAMS['interface_contigs'] )
 def buildContigSizes( infile, outfile ):
     '''output contig sizes
     '''
@@ -188,6 +196,34 @@ def buildContigSizes( infile, outfile ):
         outs.write( "%s\t%i\n" % ( contig,size) )
 
     outs.close()
+
+############################################################
+############################################################
+############################################################
+@files( os.path.join( PARAMS["genome_dir"], PARAMS["genome"] + ".fasta"), 
+        PARAMS["interface_genome_tsv"])
+def buildGenomeInformation( infile, outfile ):
+    '''compute genome composition information.'''
+
+    to_cluster = True
+
+    statement = '''
+    cat %(infile)s
+    | python %(scriptsdir)s/fasta2table.py 
+        --section=length
+        --section=na
+    | gzip
+    > %(outfile)s
+    '''
+    P.run()
+
+############################################################
+############################################################
+############################################################
+@transform( buildGenomeInformation, suffix(".tsv.gz"), ".load" )
+def loadGenomeInformation( infile, outfile ):
+    '''load genome information.'''
+    P.load( infile, outfile )
 
 ###################################################################
 ###################################################################
@@ -531,117 +567,6 @@ def importRepeatsFromUCSC( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-@merge( (importRepeatsFromUCSC, 
-         importRNAAnnotationFromUCSC,
-         PARAMS["ensembl_filename_gtf"] ),
-        PARAMS["interface_genomic_context_bed"] )
-def buildGenomicContext( infiles, outfile ):
-    '''build a file with genomic context.
-    
-    The output is a bed formatted file, annotating genomic segments
-    according to whether they are any of the ENSEMBL annotations.
-    
-    It also adds the RNA and repeats annotations from the UCSC.
-
-    The annotations can be partially or fully overlapping.
-
-    Adjacent features (less than 10 bp apart) of the same type are merged.
-    '''
-
-    to_cluster = True
-
-    repeats_gff, rna_gff, annotations_gtf = infiles
-
-    tmpfile1 = P.getTempFilename( "." )
-    tmpfile2 = P.getTempFilename( "." )
-    tmpfile3 = P.getTempFilename( "." )
-    tmpfile4 = P.getTempFilename( "." )
-
-    distance=10
-
-    # add ENSEMBL annotations
-    statement = """
-            gunzip 
-            < %(annotations_gtf)s
-            | python %(scriptsdir)s/gtf2gtf.py --sort=gene
-            | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s 
-            | python %(scriptsdir)s/gtf2gtf.py --merge-exons --log=%(outfile)s.log 
-            | python %(scriptsdir)s/gff2bed.py --name=source --is-gtf --log=%(outfile)s.log
-            | sort -k 1,1 -k2,2n
-            | python %(scriptsdir)s/bed2bed.py --method=merge --merge-by-name --merge-distance=%(distance)i --log=%(outfile)s.log
-            > %(tmpfile1)s
-    """
-    P.run()
-            
-    # rna
-    statement = '''
-    zcat %(repeats_gff)s %(rna_gff)s 
-    | python %(scriptsdir)s/gff2bed.py --name=family --is-gtf -v 0 
-    | sort -k1,1 -k2,2n
-    | python %(scriptsdir)s/bed2bed.py --method=merge --merge-by-name --merge-distance=%(distance)i --log=%(outfile)s.log
-    > %(tmpfile2)s ''' 
-    P.run()
-
-    ## add aggregate intervals for repeats
-    statement = '''
-    zcat %(repeats_gff)s 
-    | python %(scriptsdir)s/gff2bed.py --name=family --is-gtf -v 0 
-    | awk -v OFS="\\t" '{$4 = "repeats"; print}'
-    | sort -k1,1 -k2,2n
-    | python %(scriptsdir)s/bed2bed.py --method=merge --merge-by-name --merge-distance=%(distance)i --log=%(outfile)s.log
-    > %(tmpfile3)s ''' 
-    P.run()
-
-    ## add aggregate intervals for rna
-    statement = '''
-    zcat %(rna_gff)s 
-    | python %(scriptsdir)s/gff2bed.py --name=family --is-gtf -v 0 
-    | awk -v OFS="\\t" '{$4 = "repetetive_rna"; print}'
-    | sort -k1,1 -k2,2n
-    | python %(scriptsdir)s/bed2bed.py --method=merge --merge-by-name --merge-distance=%(distance)i --log=%(outfile)s.log
-    > %(tmpfile4)s ''' 
-    P.run()
-
-    statement = '''
-    sort --merge -k1,1 -k2,2n %(tmpfile1)s %(tmpfile2)s %(tmpfile3)s %(tmpfile4)s 
-    | gzip
-    > %(outfile)s
-    '''
-    P.run()
-
-    os.unlink(tmpfile1)
-    os.unlink(tmpfile2)
-    os.unlink(tmpfile3)
-    os.unlink(tmpfile4)
-
-@transform( buildGenomicContext, suffix(".bed.gz"), ".tsv")
-def buildGenomicContextStats( infile, outfile ):
-    '''analysis overlap of genomic contexts.'''
-    
-    to_cluster= True
-    tmpdir = P.getTempDir(".")
-    
-    statement = '''zcat %(infile)s
-    | python %(scriptsdir)s/split_file.py
-        --pattern-output=%(tmpdir)s/%%s.bed
-        --column=4
-    > %(outfile)s.log
-    '''
-    
-    P.run()
-    
-    statement = '''
-    python %(scriptsdir)s/diff_bed.py
-       %(tmpdir)s/*.bed
-    > %(outfile)s
-    '''
-    P.run()
-    
-    shutil.rmtree( tmpdir )
-
-############################################################
-############################################################
-############################################################
 
 if 0:
     ############################################################
@@ -743,12 +668,181 @@ if 0:
                 outs.write("%s\t%i\t%i\n" % (contig, start, end) )
         outs.close()
 
+###################################################################
+###################################################################
+###################################################################
+## gene list analyses
+###################################################################
+@files( [ (None, PARAMS["interface_go"] ), ] )
+def createGO( infile, outfile ):
+    '''get GO assignments from ENSEMBL'''
+    PipelineGO.createGO( infile, outfile )
+
+############################################################
+@transform( createGO, 
+            regex("(.*)"),
+            PARAMS["interface_goslim"])
+def createGOSlim( infile, outfile ):
+    '''get GO assignments from ENSEMBL'''
+    PipelineGO.createGOSlim( infile, outfile )
+
+############################################################
+@transform( (createGO, createGOSlim), 
+            suffix(".tsv.gz"),
+            r"\1_assignments.load" )
+def loadGOAssignments( infile, outfile ):
+
+    table = P.toTable( outfile )
+
+    statement = '''
+    zcat < %(infile)s
+    | csv2db.py %(csv2db_options)s
+              --table=%(table)s
+              --index=gene_id
+              --index=go_id
+    > %(outfile)s
+    '''
+    P.run()
+
+############################################################
+############################################################
+############################################################
+@merge( (importRepeatsFromUCSC, 
+         importRNAAnnotationFromUCSC,
+         PARAMS["ensembl_filename_gtf"],
+         buildGenes,
+         createGO,
+         ),
+        PARAMS["interface_genomic_context_bed"] )
+def buildGenomicContext( infiles, outfile ):
+    '''build a file with genomic context.
+    
+    The output is a bed formatted file, annotating genomic segments
+    according to whether they are any of the ENSEMBL annotations.
+    
+    It also adds the RNA and repeats annotations from the UCSC.
+
+    The annotations can be partially or fully overlapping.
+
+    Adjacent features (less than 10 bp apart) of the same type are merged.
+    '''
+
+    to_cluster = True
+
+    repeats_gff, rna_gff, annotations_gtf, genes_gff, go_tsv = infiles
+
+    tmpfile = P.getTempFilename( "." )
+    tmpfiles = [ "%s_%i" % (tmpfile, x) for x in range( 5 ) ]
+
+    distance=10
+
+    # add ENSEMBL annotations
+    statement = """
+            gunzip 
+            < %(annotations_gtf)s
+            | python %(scriptsdir)s/gtf2gtf.py --sort=gene
+            | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s 
+            | python %(scriptsdir)s/gtf2gtf.py --merge-exons --log=%(outfile)s.log 
+            | python %(scriptsdir)s/gff2bed.py --name=source --is-gtf --log=%(outfile)s.log
+            | sort -k 1,1 -k2,2n
+            | python %(scriptsdir)s/bed2bed.py --method=merge --merge-by-name --merge-distance=%(distance)i --log=%(outfile)s.log
+            > %(tmpfile)s_0
+    """
+    P.run()
+            
+    # rna
+    statement = '''
+    zcat %(repeats_gff)s %(rna_gff)s 
+    | python %(scriptsdir)s/gff2bed.py --name=family --is-gtf -v 0 
+    | sort -k1,1 -k2,2n
+    | python %(scriptsdir)s/bed2bed.py --method=merge --merge-by-name --merge-distance=%(distance)i --log=%(outfile)s.log
+    > %(tmpfile)s_1''' 
+    P.run()
+
+    ## add aggregate intervals for repeats
+    statement = '''
+    zcat %(repeats_gff)s 
+    | python %(scriptsdir)s/gff2bed.py --name=family --is-gtf -v 0 
+    | awk -v OFS="\\t" '{$4 = "repeats"; print}'
+    | sort -k1,1 -k2,2n
+    | python %(scriptsdir)s/bed2bed.py --method=merge --merge-by-name --merge-distance=%(distance)i --log=%(outfile)s.log
+    > %(tmpfile)s_2''' 
+    P.run()
+
+    ## add aggregate intervals for rna
+    statement = '''
+    zcat %(rna_gff)s 
+    | python %(scriptsdir)s/gff2bed.py --name=family --is-gtf -v 0 
+    | awk -v OFS="\\t" '{$4 = "repetetive_rna"; print}'
+    | sort -k1,1 -k2,2n
+    | python %(scriptsdir)s/bed2bed.py --method=merge --merge-by-name --merge-distance=%(distance)i --log=%(outfile)s.log
+    > %(tmpfile)s_3 ''' 
+    P.run()
+
+    ## add ribosomal protein coding genes
+    goids = ("GO:0003735", )
+    
+    patterns = "-e %s" % ( "-e ".join( goids ) )
+    
+    statement = ''' 
+    zcat %(genes_gff)s
+    | python %(scriptsdir)s/gtf2gtf.py 
+        --apply=<(zcat %(go_tsv)s |grep %(patterns)s | cut -f 2 | sort | uniq)
+        --filter=gene
+        --log=%(outfile)s.log
+    | python %(scriptsdir)s/gff2bed.py 
+        --log=%(outfile)s.log
+    | awk -v OFS="\t" '{$4 = "ribosomal_coding"; print}'
+    | sort -k1,1 -k2,2n
+    | python %(scriptsdir)s/bed2bed.py --method=merge --merge-by-name --merge-distance=%(distance)i --log=%(outfile)s.log
+    > %(tmpfile)s_4
+    '''
+    P.run()
+
+    ## sort and merge
+    files = " ".join( tmpfiles )
+    statement = '''
+    sort --merge -k1,1 -k2,2n %(files)s
+    | gzip
+    > %(outfile)s
+    '''
+    P.run()
+
+    for x in tmpfiles: os.unlink(x)
+
+@transform( buildGenomicContext, suffix(".bed.gz"), ".tsv")
+def buildGenomicContextStats( infile, outfile ):
+    '''analysis overlap of genomic contexts.'''
+    
+    to_cluster= True
+    tmpdir = P.getTempDir(".")
+    
+    statement = '''zcat %(infile)s
+    | python %(scriptsdir)s/split_file.py
+        --pattern-output=%(tmpdir)s/%%s.bed
+        --column=4
+    > %(outfile)s.log
+    '''
+    
+    P.run()
+    
+    statement = '''
+    python %(scriptsdir)s/diff_bed.py
+       %(tmpdir)s/*.bed
+    > %(outfile)s
+    '''
+    P.run()
+
+    
+    shutil.rmtree( tmpdir )
+
 ##################################################################
 ##################################################################
 ##################################################################
 ## Primary targets
 ##################################################################
-@follows( buildContigSizes )
+@follows( buildContigSizes,
+          loadGenomeInformation )
 def genome():
     '''import information on geneset.'''
     pass
@@ -784,7 +878,12 @@ def promotors():
     '''build promotors.'''
     pass
 
-@follows( geneset, fasta, promotors, genome, repeats )
+@follows( loadGOAssignments, )
+def ontologies():
+    '''create and load ontologies'''
+    pass
+
+@follows( geneset, fasta, promotors, genome, repeats, ontologies )
 def full():
     '''build all targets.'''
     pass

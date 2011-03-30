@@ -6,6 +6,7 @@ from SphinxReport.odict import OrderedDict as odict
 from RnaseqReport import *
 
 class TrackerExpressionGeneset( TrackerSQL ):
+    min_fpkm = 1
     @property
     def tracks( self ):
         tables = set(self.getTableNames())
@@ -26,30 +27,38 @@ class ExpressionFPKM( TrackerExpressionGeneset ):
     def __call__(self, track, slice = None ):
         c = "%s_FPKM" % slice
         if c not in self.getColumns( track ): return None
-        statement = '''SELECT %(slice)s_fpkm FROM %(track)s'''
+        statement = '''SELECT %(slice)s_fpkm FROM %(track)s WHERE %(slice)s_fpkm > %(min_fpkm)f'''
         data = self.getValues( statement )
         return odict( (("fpkm", data ),) )
 
+class ExpressionNormalizedFPKM( TrackerExpressionGeneset ):
+    def __call__(self, track, slice = None ):
+        c = "%s_FPKM" % slice
+        if c not in self.getColumns( track ): return None
+        max_fpkm = float(self.getValue( '''SELECT max(%(slice)s_fpkm) FROM %(track)s'''))
+        statement = '''SELECT CAST( %(slice)s_fpkm AS FLOAT) / %(max_fpkm)f FROM %(track)s WHERE %(slice)s_fpkm > %(min_fpkm)f'''
+        data = self.getValues( statement )
+        d = float(len(data))
+        return odict( (("percent of max(fpkm)", data),) )
+
 class ExpressionFPKMConfidence( TrackerExpressionGeneset ):
-    min_fpkm = 1
 
     def __call__(self, track, slice = None ):
         c = "%s_FPKM" % slice
         if c not in self.getColumns( track ): return None
         statement = '''SELECT (%(slice)s_conf_hi - %(slice)s_conf_lo ) / %(slice)s_fpkm 
-                       FROM %(track)s WHERE %(slice)s_fpkm > %(min_fpkm)i'''
+                       FROM %(track)s WHERE %(slice)s_fpkm > %(min_fpkm)f'''
         data = self.getValues( statement )
         return odict( (("relative_error", data ),) )
 
 class ExpressionFPKMConfidenceCorrelation( TrackerExpressionGeneset ):
-    min_fpkm = 1
 
     def __call__(self, track, slice = None ):
         c = "%s_FPKM" % slice
         if c not in self.getColumns( track ): return None
         statement = '''SELECT %(slice)s_fpkm AS fpkm, 
                               (%(slice)s_conf_hi - %(slice)s_conf_lo ) AS confidence
-                       FROM %(track)s WHERE %(slice)s_fpkm > %(min_fpkm)i'''
+                       FROM %(track)s WHERE %(slice)s_fpkm > %(min_fpkm)f'''
         data = self.getAll( statement )
         return data
 

@@ -38,8 +38,8 @@ class GeneModelsBenchmark( TrackerGenemodels ):
                """ % self.members(locals()))
 
 class GeneModelsCodes( TrackerSQL ):
-    mPattern = "_cuffcompare_tracking"
-    mAsTables = True
+    pattern = "(.*)_cuffcompare_tracking"
+    as_tables = True
 
     def getSlices( self, subset = None ):
         return tuple("=cjeiopruxs.*")
@@ -135,5 +135,15 @@ class TransfragReproducibility( TrackerSQL ):
         return data
 
 class GenesetSummary( SingleTableTrackerRows ):
+    '''summary properties of genesets.'''
     table = "geneset_stats"
     column = "track"
+
+
+class GenesetMappability( TrackerSQL ):
+    '''return average mappability for all transcripts.'''
+    mPattern = "_mappability"
+
+    def __call__( self, track, slice = None ):
+        return odict( (('mean', self.getValues( '''SELECT mean FROM %(track)s_mappability''' )), ))
+

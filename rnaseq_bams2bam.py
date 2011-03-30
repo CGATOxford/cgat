@@ -94,6 +94,9 @@ def main( argv = None ):
     parser.add_option( "-m", "--filename-mismapped", dest="filename_mismapped", type="string",
                        help = "output bam file for mismapped reads [%default]" )
 
+    parser.add_option( "-c", "--remove-contigs", dest="remove_contigs", type="string",
+                       help = "','-separated list of contigs to remove [%default]" )
+
     parser.add_option( "-f", "--force", dest="force", action = "store_true",
                        help = "force overwriting of existing files [%default]" )
 
@@ -103,6 +106,7 @@ def main( argv = None ):
     parser.set_defaults(
         filename_gtf = None,
         filename_mismapped = None,
+        remove_contigs = None,
         force = False,
         )
 
@@ -113,6 +117,9 @@ def main( argv = None ):
         raise ValueError( "please supply three bam files" )
     
     bamfile_transcripts, bamfile_genome, bamfile_output = args
+
+    if options.remove_contigs:
+        options.remove_contigs = options.remove_contigs.split(",")
 
     if options.filename_gtf == None:
         raise ValueError( "please supply a file with the gene set." )
@@ -142,10 +149,11 @@ def main( argv = None ):
         output_mismapped = None
 
     c = _rnaseq_bams2bam.filter( genome_samfile, transcripts_samfile,
-                             output_samfile, output_mismapped,
-                             transcripts,
-                                 unique = options.unique )
-
+                                 output_samfile, output_mismapped,
+                                 transcripts,
+                                 unique = options.unique,
+                                 remove_contigs = options.remove_contigs )
+    
     options.stdout.write( "category\tcounts\n%s\n" % c.asTable() )
 
     transcripts_samfile.close()

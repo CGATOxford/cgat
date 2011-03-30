@@ -75,12 +75,12 @@ def main( argv = None ):
     parser.add_option("-w", "--filename-weights", dest="filename_weights", type="string",
                       help="filename with codon frequencies. Multiple filenames can be separated by comma." )
     
-    parser.add_option("-s", "--sections", dest="sections", type="string", action="append",
-                      help="which sections to output. Possible choices are [length|na|aa|degeneracy|bias|codons|codon-usage|codon-translator|sequence]" )
+    parser.add_option("-s", "--section", dest="sections", type="string", action="append",
+                      help="which sections to output. Possible choices are length|na|aa|degeneracy|bias|codons|codon-usage|codon-translator|sequence, [%default]" )
 
     parser.add_option("-t", "--type", dest="seqtype", type="choice",
                       choices=("na", "aa"),
-                      help="type of sequence: na=nucleotides, aa=amino acids [default=%default].")
+                      help="type of sequence: na=nucleotides, aa=amino acids [%default].")
 
     parser.add_option("-e", "--regex-identifier", dest="regex_identifier", type="string",
                       help="regular expression to extract identifier from fasta description line." )

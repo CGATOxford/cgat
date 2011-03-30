@@ -6,6 +6,7 @@ from SphinxReport.odict import OrderedDict as odict
 # get from config file
 UCSC_DATABASE="hg19"
 EXPORTDIR="export"
+REFERENCE="refcoding"
 
 ###################################################################
 ###################################################################
@@ -33,15 +34,6 @@ CONDITIONS = PipelineTracks.Aggregate( TRACKS, labels = ("condition", ) )
 TISSUES = PipelineTracks.Aggregate( TRACKS, labels = ("tissue", ) )
 
 ###########################################################################
-## shorthand
-MAP_TRACKS = {
-    'default' : EXPERIMENTS,
-    'experiments' : EXPERIMENTS,
-    'conditions' : CONDITIONS,
-    'tissues' : TISSUES,
-    'merged' : ALL }
-
-###########################################################################
 ## tracks for the gene sets
 class GenesetTrack( PipelineTracks.Sample ):
     attributes = ("geneset",)
@@ -51,6 +43,16 @@ GENESET_TRACKS = PipelineTracks.Tracks( GenesetTrack ).loadFromDirectory(
     "%s/(\S+).cuffdiff" % datadir )
 
 CUFFDIFF_LEVELS= ("gene", "isoform", "cds", "tss")
+
+###########################################################################
+## shorthand
+MAP_TRACKS = {
+    'default' : EXPERIMENTS,
+    'experiments' : EXPERIMENTS,
+    'conditions' : CONDITIONS,
+    'tissues' : TISSUES,
+    'merged' : ALL,
+    'geneset-summary': GENESET_TRACKS }
 
 ###########################################################################
 def selectTracks( subset ):

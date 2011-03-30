@@ -8,12 +8,15 @@ build process within the RNASeq pipeline.
 Gene set
 ========
 
-The following table lists results from the final gene set. 
+The following sections summarize the contents from the final 
+gene sets. 
 
 .. toctree::
    :maxdepth: 2
 
    GeneModelsFinalSummary.rst
+   GeneModelsFinalMappability.rst
+   ReferenceCoverage.rst
 
 Intermediate results
 ====================

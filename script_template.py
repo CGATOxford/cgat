@@ -93,10 +93,10 @@ def main( argv = None ):
         noutput += 1
 
     E.info( "ninput=%i, noutput=%i, nskipped=%i" % (ninput, noutput,nskipped) )
-
+    
     ## write footer and output benchmark information.
     E.Stop()
-
+    
 if __name__ == "__main__":
     sys.exit( main( sys.argv) )
 

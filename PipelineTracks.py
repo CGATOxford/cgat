@@ -193,8 +193,13 @@ class Aggregate:
             key = track.asAggregate( *self.aggregates )
             self.track2groups[key].append( track )
 
-    def getTracks( self, key ):
-        return self.track2groups[key]
+    def getTracks( self, pattern = None ):
+        '''return all tracks within this aggregate.'''
+        r = sum([x for x in self.track2groups.values()], [] )
+        if pattern:
+            return [ pattern % x for x in r ]
+        else:
+            return r
 
     def __str__(self):
         x = []
@@ -203,7 +208,7 @@ class Aggregate:
         return "\n".join(x)
 
     def __getitem__(self, key):
-        return self.getTracks( key )
+        return self.track2groups[key]
     
     def __iter__(self):
         return self.track2groups.keys().__iter__()
@@ -225,12 +230,25 @@ class Tracks:
         self.factory = factory
         self.tracks = []
 
-    def loadFromDirectory( self, files, pattern ):
-        '''load tracks from a list of files, applying pattern.'''
+    def loadFromDirectory( self, files, pattern, exclude = None ):
+        '''load tracks from a list of files, applying pattern.
+
+        If set, exclude files matching patterns in *exclude*.
+        '''
         tracks = []
         rx = re.compile(pattern)
+        
+        if exclude: to_exclude = [ re.compile(x) for x in exclude]
 
         for f in files:
+            if exclude:
+                skip = False
+                for x in to_exclude:
+                    if x.search( f ): 
+                        skip = True
+                        break
+                if skip: continue
+
             tracks.append( self.factory( filename = rx.search( f ).groups()[0] ) )
 
         self.tracks = tracks
@@ -242,10 +260,28 @@ class Tracks:
     def __len__(self):
         return len(self.tracks)
 
-    def __add__(self, other ):
+    def __iadd__(self, other ):
         assert self.factory == other.factory
         self.tracks.extend( other.tracks )
         return self
+
+    def __add__(self, other ):
+        assert self.factory == other.factory
+        n = copy.deepcopy( self )
+        n.tracks.extend( other.tracks )
+        return n
+
+    def __contains__(self, key ):
+        # do parsing (i.e. filenames versus tablenames?)
+        return key in self.tracks
+
+    def getTracks( self, pattern = None ):
+        '''return all tracks in set. '''
+        if pattern:
+            return [ pattern % x for x in self.tracks ]
+        else:
+            return self.tracks
+
 
 def getSamplesInTrack( track,tracks ):
     '''return all tracks in *tracks* that constitute *track*.'''

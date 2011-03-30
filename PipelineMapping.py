@@ -57,6 +57,7 @@ class Mapper( object ):
     All in a single statement to be send to the cluster.
     '''
     
+    datatype = "fastq"
 
     def __init__(self):
         pass
@@ -86,14 +87,27 @@ class Mapper( object ):
                     f = glob.glob( os.path.join( outdir, "*_[12].fastq" ) )
                 shutil.rmtree( outdir )
                 fastqfiles.append( [ "%s/%s" % (tmpdir_fastq, os.path.basename( x )) for x in sorted(f) ] )
-                statement.append( "fastq-dump --outdir %(tmpdir_fastq)s %(infile)s;" % locals() )
-
+                statement.append( "fastq-dump --outdir %(tmpdir_fastq)s %(infile)s" % locals() )
+                
             elif infile.endswith( ".fastq.gz" ):
                 track = P.snip( os.path.basename( infile ), ".fastq.gz" )
                 statement.append(  """gunzip < %(infile)s 
                                       | python %%(scriptsdir)s/fastq2fastq.py --change-format=sanger --guess-format=phred64 --log=%(outfile)s.log
-                                      > %(tmpdir_fastq)s/%(track)s.fastq;""" % locals() )
+                                      > %(tmpdir_fastq)s/%(track)s.fastq""" % locals() )
                 fastqfiles.append( ("%s/%s.fastq" % (tmpdir_fastq, track),) )
+
+            elif infile.endswith( ".csfasta.gz" ):
+                track = P.snip( os.path.basename( infile ), ".csfasta.gz" )
+                quality = P.snip( infile, ".csfasta.gz" ) + ".qual.gz"
+                if not os.path.exists( quality ):
+                    raise ValueRerror( "no quality file for %s" % infile )
+                statement.append(  """gunzip < %(infile)s 
+                                      > %(tmpdir_fastq)s/%(track)s.csfasta""" % locals() )
+                statement.append(  """gunzip < %(quality)s 
+                                      > %(tmpdir_fastq)s/%(track)s.qual""" % locals() )
+                fastqfiles.append( ("%s/%s.csfasta" % (tmpdir_fastq, track),
+                                    "%s/%s.qual" % (tmpdir_fastq, track) ) )
+                self.datatype = "solid"
 
             elif infile.endswith( ".fastq.1.gz" ):
 
@@ -107,7 +121,7 @@ class Mapper( object ):
                                      > %(tmpdir_fastq)s/%(track)s.1.fastq;
                                      gunzip < %(infile2)s 
                                      | python %%(scriptsdir)s/fastq2fastq.py --change-format=sanger --guess-format=phred64 --log=%(outfile)s.log
-                                     > %(tmpdir_fastq)s/%(track)s.2.fastq;
+                                     > %(tmpdir_fastq)s/%(track)s.2.fastq
                                  """ % locals() )
                 fastqfiles.append( ("%s/%s.1.fastq" % (tmpdir_fastq, track),
                                     "%s/%s.2.fastq" % (tmpdir_fastq, track) ) )
@@ -116,7 +130,7 @@ class Mapper( object ):
 
         self.tmpdir_fastq = tmpdir_fastq
 
-        return " ; ".join( statement), fastqfiles
+        return "; ".join( statement) + ";", fastqfiles
 
     def mapper( self, infiles, outfile ):
         '''build mapping statement on infiles.
@@ -171,18 +185,32 @@ class Tophat( Mapper ):
         tmpdir_tophat = os.path.join( self.tmpdir_fastq + "tophat" )
         tmpdir_fastq = self.tmpdir_fastq
 
+        # add options specific to data type
+        data_options = []
+        if self.datatype == "solid":
+            data_options.append( "--quals --integer-quals --color" )
+            index_file = "%(bowtie_index_dir)s/%(genome)s_cs"
+        else:
+            index_file = "%(bowtie_index_dir)s/%(genome)s"
+
+        data_options = " ".join( data_options )
+
         if nfiles == 1:
             infiles = ",".join( [ x[0] for x in infiles ] )
             statement = '''
             tophat --output-dir %(tmpdir_tophat)s
                    --num-threads %%(tophat_threads)i
+                   %(data_options)s
                    %%(tophat_options)s
-                   %%(bowtie_index_dir)s/%%(genome)s
+                   %(index_file)s
                    %(infiles)s 
                    >> %(outfile)s.log 2>&1 ;
             ''' % locals()
 
         elif nfiles == 2:
+            # this section works both for paired-ended fastq files
+            # and color space mapping (separate quality file)
+            # Use the --quals setting for the latter.
             infiles1 = ",".join( [ x[0] for x in infiles ] )
             infiles2 = ",".join( [ x[1] for x in infiles ] )
 
@@ -190,8 +218,9 @@ class Tophat( Mapper ):
             tophat --output-dir %(tmpdir_tophat)s
                    --mate-inner-dist %%(tophat_mate_inner_dist)i
                    --num-threads %%(tophat_threads)i
+                   %(data_options)s
                    %%(tophat_options)s
-                   %%(bowtie_index_dir)s/%%(genome)s
+                   %(index_file)s
                    %(infiles1)s %(infiles2)s 
                    >> %(outfile)s.log 2>&1 ;
             ''' % locals()
@@ -217,7 +246,6 @@ class Tophat( Mapper ):
 
         return statement
 
-
 class BowtieTranscripts( Mapper ):
     '''map with bowtie against transcripts.'''
 
@@ -235,6 +263,16 @@ class BowtieTranscripts( Mapper ):
         
         if max(num_files) != min(num_files):
             raise ValueError("mixing single and paired-ended data not possible." )
+
+        # add options specific to data type
+        data_options = []
+        if self.datatype == "solid":
+            data_options.append( "--quals --integer-quals --color" )
+            index_prefix = "%(prefix)s_cs"
+        else:
+            index_prefix = "%(prefix)s"
+
+        data_options = " ".join( data_options )
         
         nfiles = max(num_files)
         
@@ -245,8 +283,9 @@ class BowtieTranscripts( Mapper ):
             statement = '''
                 bowtie --quiet --sam
                        --threads %%(bowtie_threads)i
+                       %(data_options)s
                        %%(bowtie_options)s
-                       %%(prefix)s 
+                       %(index_prefix)s
                        %(infiles)s
                        2>%(outfile)s.log
                | awk -v OFS="\\t" '{sub(/\/[12]$/,"",$1);print}'
@@ -260,8 +299,9 @@ class BowtieTranscripts( Mapper ):
             statement = '''
                 bowtie --quiet --sam
                        --threads %%(bowtie_threads)i
+                       %(data_options)s
                        %%(bowtie_options)s
-                       %%(prefix)s
+                       %(index_prefix)s
                        -1 %(infiles1)s -2 %(infiles2)s 
                        2>%(outfile)s.log
                | samtools import %%(reffile)s - %(tmpdir_fastq)s/out.bam 1>&2 2>> %(outfile)s.log;

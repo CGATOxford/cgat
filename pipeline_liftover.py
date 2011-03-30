@@ -21,31 +21,77 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 """
+====================
+Liftover pipeline
+====================
 
 :Author: Andreas Heger
 :Release: $Id: pipeline_liftover.py 2900 2010-04-13 14:38:00Z andreas $
 :Date: |today|
 :Tags: Python
 
-Purpose
--------
+The liftover pipeline maps a set of intervals from one or more genomes
+to a target genome. It uses the :term:`liftover` tool from UCSC.
 
-Pipeline for mapping a set of intervals onto a reference or target genome.
+Overview
+========
+
+Usage
+=====
+
+See :ref:`PipelineSettingUp` and :ref:`PipelineRunning` on general information how to use CGAT pipelines.
+
+Configuration
+-------------
+
+The pipeline requires a configured :file:`pipeline.ini` file. 
+
+The sphinxreport report requires a :file:`conf.py` and :file:`sphinxreport.ini` file 
+(see :ref:`PipelineDocumenation`). To start with, use the files supplied with the
+:ref:`Example` data.
+
+Input
+-----
+
+Requirements
+------------
+
+Pipeline output
+===============
+
+Example
+=======
+
+Example data is available at http://www.cgat.org/~andreas/sample_data/pipeline_rnaseq.tgz.
+To run the example, simply unpack and untar::
+
+   wget http://www.cgat.org/~andreas/sample_data/pipeline_rnaseq.tgz
+   tar -xvzf pipeline_rnaseq.tgz
+   cd pipeline_rnaseq
+   python <srcdir>/pipeline_rnaseq.py make full
+
+.. note:: 
+   For the pipeline to run, install the :doc:`pipeline_annotations` as well.
+
+Glossary
+========
+
+.. glossary::
+
+   liftover
+      ucsc_ tool to convert coordinates between assemblies
+
+.. _ucsc: http://genome.ucsc.edu/
+
 
 .. todo::
    * make the merging step optional. Currently overlapping intervals are merged.
 
-Usage
------
-
-Type::
-
-   python <script_name>.py --help
-
-for command line help.
 
 Code
-----
+====
+
+
 
 """
 import sys, tempfile, optparse, shutil, itertools, csv, math, random, re, glob, os, shutil, collections
@@ -53,32 +99,50 @@ import csv, gzip
 from ruffus import *
 import sqlite3
 
-import IOTools
 import Experiment as E
 import Pipeline as P
-import IndexedFasta, IndexedGenome, FastaIterator, Genomics
-import IOTools, Database, GFF, GTF
-import Database
+import IOTools
 
-import PipelineGeneset as PGeneset
-import PipelineAnnotator as PAnnotator
+###################################################
+###################################################
+###################################################
+## Pipeline configuration
+###################################################
 
-if not os.path.exists("conf.py"):
-    raise IOError( "could not find configuration file conf.py" )
+# load options from the config file
+import Pipeline as P
+P.getParameters( 
+    ["%s.ini" % __file__[:-len(".py")],
+     "../pipeline.ini",
+     "pipeline.ini" ] )
+PARAMS = P.PARAMS
 
-execfile("conf.py")
+###################################################################
+###################################################################
+###################################################################
+##
+###################################################################
+if os.path.exists("pipeline_conf.py"): 
+    L.info( "reading additional configuration from pipeline_conf.py" )
+    execfile("pipeline_conf.py")
 
 PARAMS = P.getParameters()
 
-PARAMS.update( {
-    "annotation" : "regions.gff",
-    "genes": "genes.gtf",
-    "transcripts": "transcripts.gtf.gz" } )
-
 ###################################################################
-@transform(  [ x for x in glob.glob('*.gtf.gz') if not x.endswith(".mapped.gtf.gz") ]
-             , suffix(".gtf.gz")
-             , '.psl.gz' )
+###################################################################
+## Helper functions mapping tracks to conditions, etc
+###################################################################
+import PipelineTracks
+
+TRACKS = PipelineTracks.Tracks( PipelineTracks.Sample ).loadFromDirectory( 
+    glob.glob( "*.gtf.gz" ), "(\S+).gtf.gz", exclude = (".mapped.gtf.gz", ))
+
+#####################################################################
+#####################################################################
+#####################################################################
+@transform(  TRACKS.getTracks( "%s.gtf.gz" ),
+             suffix(".gtf.gz"),
+             '.psl.gz' )
 def convertGtf2Psl( infile, outfile ):
     """convert a gtf to a psl file.
     
@@ -88,7 +152,9 @@ def convertGtf2Psl( infile, outfile ):
     """
     
     track = outfile[:-len(".psl.gz")]
-    genomefile = PARAMS["%s_genome" % track]
+    genomefile = os.path.join( PARAMS["genome_dir"], PARAMS["%s_genome" % track]) 
+    if not os.path.exists( genomefile + ".fasta"):
+        raise IOError( "genome %s does not exist" % genomefile )
     
     statement = """gunzip 
     < %(infile)s 
@@ -114,7 +180,9 @@ def convertBed2Psl( infile, outfile ):
     """convert a bed to a psl file."""
     
     track = outfile[:-len(".bed.gz")]
-    genomefile = PARAMS["%s_genome" % track]
+    genomefile = os.path.join( PARAMS["genome_dir"], PARAMS["%s_genome" % track])
+    if not os.path.exists( genomefile + ".fasta"):
+        raise IOError( "genome %s does not exist" % genomefile )
     
     statement = """gunzip < %(infile)s 
     | python %(scriptsdir)s/bed2psl.py 
@@ -138,7 +206,7 @@ def mergeTranscripts( infile, outfile ):
     """
 
     track = outfile[:-len(".transcripts")]
-    genomefile = PARAMS["%s_genome" % track]
+    genomefile = os.path.join( PARAMS["genome_dir"], PARAMS["%s_genome" % track])
     
     statement = """
         gunzip < %(infile)s 
@@ -176,7 +244,14 @@ def mapMergedTranscripts( infile, outfile ):
     """
 
     track = outfile[:-len(".merged.mapped.psl")]
-    chainfile = PARAMS["%s_chain" % track]
+    chainfile = os.path.join( PARAMS["ucsc_dir"], 
+                              PARAMS["%s_genome" % track],
+                              "liftover",
+                              "%sTo%s.over.chain.gz" % \
+                                  (PARAMS["%s_genome" % track],
+                                   PARAMS["genome"].capitalize() ) )
+    if not os.path.exists( chainfile ):
+        raise IOError("chain file %s does not exist" % chainfile )
 
     statement = """
         liftOver -minMatch=0.2 -minBlocks=0.01 -pslT 

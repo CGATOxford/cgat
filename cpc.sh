@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# farm.py needs to be on the path
+#
+# Changes by AH:
+#1. use blastx instead of blastall -p blastx
+#2. change directory paths
+#3.  
+
 ######################################################################
 # 
 # Arguments
@@ -14,25 +21,37 @@ arg_output_evd_plot_feat_base=$4
 
 arg_blast_db=$5
 
+
+if [ $# -lt 4 ]; then
+    echo "usage: cpc.sh in.fasta result.table working_dir result_evidence.out"
+    exit 1;
+fi
+
 ######################################################################
 # 
 # Constants: for the directory settings
 # 
 
-MYOWN_LOC=/net/cpp-group/tools/cpc-0.9/bin;		# XXX: some hacking:)
-DATA_DIR="$MYOWN_LOC/../data"
-LIB_DIR="$MYOWN_LOC/../libs"
+if test -z "$CPC_HOME"; then
+    echo "environment variable CPC_HOME not defined, quitting..." > /dev/stderr
+    exit 1
+fi
+
+MYOWN_LOC=$CPC_HOME
+DATA_DIR="$MYOWN_LOC/data"
+LIB_DIR="$MYOWN_LOC/libs"
+PROT_DIR="$MYOWN_LOC/share"
 
 ## location of the farm script to send jobs to the cluster
-APP_FARM="/net/cpp-group/scripts/farm.py --split-at-regex=^>(\S+) --chunksize=50 --log=${arg_working_dir}/farm.log --cluster-queue=medium_jobs.q --cluster-priority=-10 --tmpdir=${arg_working_dir}"
+APP_FARM="farm.py --split-at-regex=^>(\S+) --chunksize=50 --log=${arg_working_dir}/farm.log --tmpdir=${arg_working_dir}"
 
 if [ -n "$arg_blast_db" ]; then
     m_blast_db=$arg_blast_db;
 else 
-    m_blast_db=$DATA_DIR/prot_db;
+    m_blast_db=$PROT_DIR/prot_db;
 fi 
 
-echo "using blast database ${m_blast_db}"
+echo "# using blast database ${m_blast_db}"
 
 m_framefinder_model=$DATA_DIR/framefinder.model
 
@@ -41,16 +60,16 @@ m_libsvm_model=$DATA_DIR/libsvm.model # Prob
 m_libsvm_model2=$DATA_DIR/libsvm.model2	# Prob + weighted version
 m_libsvm_range=$DATA_DIR/libsvm.range
 
-c_extract_blast_feat="$MYOWN_LOC/extract_blastx_features.pl"
-c_extract_ff_feat="$MYOWN_LOC/extract_framefinder_feats.pl"
-c_add_missing_entries="$MYOWN_LOC/add_missing_entries.pl"
-c_feat2libsvm="$MYOWN_LOC/feat2libsvm.pl"
-c_lsv_cbind="$MYOWN_LOC/lsv_cbind.pl"
-c_join_columns="$MYOWN_LOC/join_columns.pl"
-c_predict="$MYOWN_LOC/predict.pl"
-c_generate_plot_feats="$MYOWN_LOC/generate_plot_features.pl"
-c_split_plot_feats="$MYOWN_LOC/split_plot_features_by_type.pl"
-c_index_blast_report="$MYOWN_LOC/make_blast_report_index.pl"
+c_extract_blast_feat="$MYOWN_LOC/bin/extract_blastx_features.pl"
+c_extract_ff_feat="$MYOWN_LOC/bin/extract_framefinder_feats.pl"
+c_add_missing_entries="$MYOWN_LOC/bin/add_missing_entries.pl"
+c_feat2libsvm="$MYOWN_LOC/bin/feat2libsvm.pl"
+c_lsv_cbind="$MYOWN_LOC/bin/lsv_cbind.pl"
+c_join_columns="$MYOWN_LOC/bin/join_columns.pl"
+c_predict="$MYOWN_LOC/bin/predict.pl"
+c_generate_plot_feats="$MYOWN_LOC/bin/generate_plot_features.pl"
+c_split_plot_feats="$MYOWN_LOC/bin/split_plot_features_by_type.pl"
+c_index_blast_report="$MYOWN_LOC/bin/make_blast_report_index.pl"
 
 # 
 # Constants: for the remote blast
@@ -61,7 +80,7 @@ c_blast_smp_client="$MYOWN_LOC/server/client.pl"
 
 if test ! -d "${arg_working_dir}"; then
     mkdir -p ${arg_working_dir}; \
-    echo "creating working dir ${arg_working_dir}"; \
+    echo "# creating working dir ${arg_working_dir}"; \
 fi
 
 
@@ -69,10 +88,10 @@ fi
 # 
 # Step 0: detect necessary applications
 # 
-APP_BLAST=`which blastall 2> /dev/null`
+APP_BLAST=`which blastp 2> /dev/null`
 test -x "$APP_BLAST" || (echo "Can't find blastall on your path, check it!" > /dev/stderr && exit 1)
 ## reset to blastall found in path, this will map it for the nodes
-APP_BLAST="blastall"
+APP_BLAST="blastx"
 
 APP_FF=`which framefinder 2> /dev/null`	# FF == FrameFinder
 if test ! -x "$APP_FF"; then
@@ -114,13 +133,11 @@ fi
 
 # BLASTX settings: Combining the BLAST and Frith2006(PLoS & RNA) protocols
 # XXX: the remote server will NOT use their own settings...
-blast_opts="-S 1";              # only the same strand
-blast_opts="$blast_opts -e 1e-10"; # as a quick setting (BLAST 9.3.2)
-blast_opts="$blast_opts -g F";  # un-gapped blast (Frith2006, PLoS)
-blast_opts="$blast_opts -f 14"; # Neighborhood word threshold score, default=12 (BLAST 9.3.2)
-blast_opts="$blast_opts -a 2";  # 2 CPUs, boost the performance
-
-blast_opts="$blast_opts -d $m_blast_db"	# database settings
+blast_opts="-strand plus";              # only the same strand
+blast_opts="$blast_opts -evalue 1e-10"; # as a quick setting (BLAST 9.3.2)
+blast_opts="$blast_opts -ungapped";  # un-gapped blast (Frith2006, PLoS)
+blast_opts="$blast_opts -threshold 14"; # Neighborhood word threshold score, default=12 (BLAST 9.3.2)
+blast_opts="$blast_opts -db $m_blast_db"	# database settings
 
 # Framefinder settings
 ff_opts="-r False -w $m_framefinder_model /dev/stdin"
@@ -128,17 +145,23 @@ ff_opts="-r False -w $m_framefinder_model /dev/stdin"
 # Entry the working space...
 old_pwd=`pwd`
 
+echo "# blast options: $blast_opts"
+
 # cd $arg_working_dir || (echo "Can't enter the working space ($arg_working_dir), quitting...." > /dev/stderr && exit 2)
 
 # Determine the right mode (local or remote) for running BLAST
 input_seq_size=`stat -Lc "%s" $arg_input_seq`;
 
 # local version
-(cat $arg_input_seq | $APP_FARM $APP_BLAST -p blastx $blast_opts | tee $arg_working_dir/blastx.bls | perl $APP_BLAST2TAB | tee $arg_working_dir/blastx.table | perl $c_extract_blast_feat ) > $arg_working_dir/blastx.feat1 &
+echo "running blast"
+(cat $arg_input_seq | $APP_BLAST $blast_opts | tee $arg_working_dir/blastx.bls | perl $APP_BLAST2TAB | tee $arg_working_dir/blastx.table | perl $c_extract_blast_feat ) > $arg_working_dir/blastx.feat1 &
 
+echo "running framefinder"
 (cat $arg_input_seq | $APP_FF $ff_opts | tee $arg_working_dir/ff.fa1 | perl $c_extract_ff_feat ) > $arg_working_dir/ff.feat &
 
 wait;
+
+echo "finished running blast and framefinder"
 
 # a quick fix: adding possible missing entries due to blastx
 cat $arg_input_seq | perl $c_add_missing_entries $arg_working_dir/blastx.feat1 > $arg_working_dir/blastx.feat

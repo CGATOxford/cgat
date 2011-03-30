@@ -32,7 +32,7 @@ Purpose
 
 build pairwise genomic alignments from a set of multiple alignments.
 
-Starting from a multiple genomic alignment in maf, this pipeline builds
+Starting from a multiple genomic alignment in :term:`maf` format, this pipeline builds
 a set of pairwise mappings between various query genomes and a single
 reference or target genome. 
 

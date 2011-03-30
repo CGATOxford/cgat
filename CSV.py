@@ -26,9 +26,10 @@ def ConvertDictionary( d , map = {}):
     else:
         default = False
 
-    for k,v in d.items():
+    for k,vv in d.items():
 
-        if v == None: continue
+        if vv == None: continue
+        v = vv.strip()
         try:
             if k in map:
                 if map[k] == "int":

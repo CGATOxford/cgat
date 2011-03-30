@@ -416,14 +416,14 @@ def pslMerge( options ):
                 if d > 0 or not f(xx,yy):
                     continue
                 else:
-                    graph.add_edge( x, y, -d )
+                    graph.add_edge( x, y, { 'weight' : -d } )
 
         source = len(matches)
         target = len(matches) + 1
         for x in range(len(matches)):
             xx = matches[x]
-            graph.add_edge( source, x, xx.mQueryFrom) 
-            graph.add_edge( x, target, xx.mQueryLength - xx.mQueryTo )
+            graph.add_edge( source, x, { 'weight': xx.mQueryFrom } ) 
+            graph.add_edge( x, target, { 'weight' : xx.mQueryLength - xx.mQueryTo } )
 
         if options.loglevel >= 6:
             networkx.write_edgelist( graph, options.stdlog )
