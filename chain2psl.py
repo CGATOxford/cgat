@@ -37,14 +37,20 @@ formatted file to a `psl <http://genome.ucsc.edu/FAQ/FAQformat.html#format2>`_
 formatted file.
 
 This tool is equivalent to chainToPsl except that it will not compute the number
-of matching, mismatching, etc. bases.
+of matching, mismatching, etc. bases and thus does not require the sequences.
 
-The nomenclature the UCSC uses is :file:`TargetToQuery.chain` for mapping ``target``
-to ``query`` (according to the UCSC documentation, ``target`` is the first entry
-in ``chain`` files). I have been using the nomenclature ``QueryToTarget.psl``. Hence,
+The nomenclature the UCSC uses is for its chain files is :file:`targetToQuery.chain` for 
+mapping ``query`` to ``target`` (reference). According to the UCSC documentation, 
+``target`` is the first entry in ``chain`` files. 
+
+I have been using the nomenclature ``QueryToTarget.psl``. In following this convention,
 the correct way to converting a psl file is::
 
-   python psl2chain.py < queryToTarget.psl > targetToQuery.chain
+   python chain2psl.py < targetToQuery.chain > QueryToTarget.psl
+
+If you would like to keep the TargetToQuery convention, you will need to add a pslSwap::
+
+   python chain2psl.py < targetToQuery.chain | pslSwap stdin stdout > targetToQuery.psl
 
 Usage
 -----
@@ -108,7 +114,7 @@ def main( argv = None ):
           _, 
           psl.mSbjctId,
           target_length,
-          _,
+          target_strand,
           target_start,
           target_end,
           psl.mQueryId,
@@ -147,6 +153,18 @@ def main( argv = None ):
                                       tstart - qstart )
 
         psl.fromMap( map_query2target )
+
+        # sort out strand
+        # target_strand is always positive
+        assert( target_strand == "+" )
+
+        # if query strand is negative
+        if query_strand == "-": 
+            # invert both query and target
+            psl.switchTargetStrand()
+            # manually invert the query coordinates
+            psl.mQueryFrom, psl.mQueryTo = psl.mQueryLength - psl.mQueryTo, psl.mQueryLength - psl.mQueryFrom
+
         options.stdout.write("%s\n" % psl )
         noutput += 1
 

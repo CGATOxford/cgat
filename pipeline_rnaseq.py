@@ -713,6 +713,51 @@ def buildCodingGeneSet( infile, outfile ):
     '''
     P.run()
 
+@transform( buildCodingGeneSet, 
+            suffix( "%s.gtf.gz" % REFERENCE ),
+            "%s.gff.gz" % REFERENCE )
+def buildGeneRegions( infile, outfile ):
+    '''annotate genomic regions with reference gene set.
+    '''
+    PipelineGeneset.buildGeneRegions( infile, outfile )
+    
+
+
+@transform( buildGeneRegions,
+            suffix( "%s.gff.gz" % REFERENCE ),
+            "%s.terminal_exons.bed.gz" % REFERENCE )
+def buildTerminalExons( infile, outfile ):
+    '''output terminal truncated exons.'''
+    
+    size = 50 
+
+    outf1 = IOTools.openFile( outfile, "w" )
+        
+    for gff in GTF.flat_gene_iterator( GTF.iterator_filtered( GTF.iterator( IOTools.openFile( infile )),
+                                                              feature = "exon" )):
+        gene_id, contig, strand = gff[0].gene_id, gff[0].contig, gff[0].strand
+
+        gff.sort( key = lambda x: x.start )
+
+        if strand == "-":
+            exon = gff[0].start, gff[0].end
+            cut_exon = gff[0].start, gff[0].start + size
+        elif strand == "+":
+            exon = gff[-1].start, gff[-1].end
+            cut_exon = gff[-1].end - size, gff[-1].end
+        else:
+            continue
+
+        outf1.write( "%s\t%i\t%i\t%s\t%i\t%s\n" % (contig, cut_exon[0], cut_exon[1], gene_id, 0, strand ) )
+        
+    outf1.close()
+
+    '''
+    zcat refcoding_terminal_exons.bed.gz | python ~/cgat/bed2gff.py --as-gtf | python ~/cgat/gtf2table.py --counter=read-coverage --bam-file=heart-library-R1.accepted.bam >& exon.coverage
+    '''
+
+            
+
 #########################################################################
 #########################################################################
 #########################################################################
@@ -776,7 +821,7 @@ def buildReferenceTranscriptome( infile, outfile ):
 
     # build color space index
     statement = '''
-    bowtie-build -f %(outfile)s %(prefix)s_cs >> %(outfile)s.log 2>&1
+    bowtie-build -C -f %(outfile)s %(prefix)s_cs >> %(outfile)s.log 2>&1
     '''
 
     P.run()
@@ -906,7 +951,7 @@ def buildAlignmentStats( infile, outfile ):
     # naturally - the bam files should be sorted.
     statement = '''
     java -Xmx2g net.sf.picard.analysis.CollectMultipleMetrics
-            I=<(samtools view -h %(infile)s | perl -p -e "s/SO:\S+/SO:coordinate/" ) 
+            I=<(samtools view -h %(infile)s | perl -p -e "if (/^\\@HD/) { s/\\bSO:\S+/\\bSO:coordinate/}" ) 
             O=%(outfile)s 
             R=%(cufflinks_genome_dir)s/%(genome)s.fa
             ASSUME_SORTED=true
@@ -1243,6 +1288,39 @@ def buildGeneModels(infile, outfile):
 
     shutil.rmtree( tmpfilename )
 
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( buildGeneModels,
+            suffix(".gtf.gz"),
+            add_inputs( buildCodingGeneSet ),
+            ".class.tsv.gz" )
+def classifyTranscripts( infiles, outfile ):
+    '''classify transcripts against a reference gene set.
+    '''
+    
+    infile, reffile = infiles
+
+    statement = '''gunzip 
+    < %(infile)s 
+    | python %(scriptsdir)s/gtf2gtf.py --sort=transcript
+    | %(cmd-farm)s --split-at-column=1 --output-header --log=%(outfile)s.log --max-files=60 
+	"python %(scriptsdir)s/gtf2table.py 
+		--counter=position 
+		--counter=classifier 
+		--section=exons 
+		--counter=length 
+		--counter=splice 
+		--counter=splice-comparison 
+		--log=%(outfile)s.log 
+                --filename-format=gff
+		--filename-gff=%(annotation)s 
+		--genome-file=%(genome_dir)s/%(genome)s"
+    | gzip
+    > %(outfile)s
+    '''
+    P.run()
+
 
 #########################################################################
 #########################################################################
@@ -1365,6 +1443,8 @@ def runCuffCompare( infiles, outfile, reffile ):
 
     shutil.rmtree( tmpdir )
 
+
+
 #########################################################################
 #########################################################################
 #########################################################################
@@ -1397,11 +1477,15 @@ def compareTranscriptsBetweenExperiments( infiles, outfile ):
 def loadTranscriptComparison( infile, outfile ):
     '''load data from transcript comparison.
 
-    creates four tables:
+    This task creates two tables:
+
     <track>_benchmark
-    <track>_tracking
-    <track>_transfrags
     <track>_loci
+
+    The following tables are only present if there are
+    multiple replicates in a sample:
+
+    <track>_tracking 
     '''
     tracks, result = Tophat.parseTranscriptComparison( IOTools.openFile( infile ))
     tracks = [ P.snip( os.path.basename(x), ".gtf.gz" ) for x in tracks ]
@@ -1463,31 +1547,36 @@ def loadTranscriptComparison( infile, outfile ):
     outf3 = open( tmpfile3, "w" )
     outf3.write( "transfrag_id\t%s\n" % "\t".join( [ P.quote( x ) for x in tracks ] ) )
 
-    for transfrag in Tophat.iterate_tracking( IOTools.openFile( "%s.tracking.gz" % infile, "r") ):
+    fn = "%s.tracking.gz" % infile
 
-        nexperiments = len( [x for x in transfrag.transcripts if x] )
+    if os.path.exists( fn ):
+        for transfrag in Tophat.iterate_tracking( IOTools.openFile( fn, "r") ):
 
-        outf.write( "%s\n" % \
-                        "\t".join( (transfrag.transfrag_id, 
-                                    transfrag.locus_id, 
-                                    transfrag.ref_gene_id,
-                                    transfrag.ref_transcript_id,
-                                    transfrag.code,
-                                    str(nexperiments))))
+            nexperiments = len( [x for x in transfrag.transcripts if x] )
 
-        outf3.write( "%s" % transfrag.transfrag_id )
+            outf.write( "%s\n" % \
+                            "\t".join( (transfrag.transfrag_id, 
+                                        transfrag.locus_id, 
+                                        transfrag.ref_gene_id,
+                                        transfrag.ref_transcript_id,
+                                        transfrag.code,
+                                        str(nexperiments))))
 
-        for track, t in zip(tracks, transfrag.transcripts):
-            if t:
-                outf2.write("%s\n" % "\t".join( map(str, (track,
-                                                          transfrag.transfrag_id ) + t ) ) )
+            outf3.write( "%s" % transfrag.transfrag_id )
+
+            for track, t in zip(tracks, transfrag.transcripts):
+                if t:
+                    outf2.write("%s\n" % "\t".join( map(str, (track,
+                                                              transfrag.transfrag_id ) + t ) ) )
+
+                    outf3.write( "\t%f" % t.fpkm )
+                else:
+                    outf3.write( "\t" )
+
+            outf3.write( "\n" )
+    else:
+        E.warn( "no tracking file %s - skipped " )
             
-                outf3.write( "\t%f" % t.fpkm )
-            else:
-                outf3.write( "\t" )
-                
-        outf3.write( "\n" )
-
     outf.close()
     outf2.close()
     outf3.close()
@@ -1495,6 +1584,7 @@ def loadTranscriptComparison( infile, outfile ):
     tablename = P.toTable( outfile ) + "_tracking"
     statement = '''cat %(tmpfile)s
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+              --allow-empty
               --index=locus_id
               --index=transfrag_id
               --index=code
@@ -1508,6 +1598,7 @@ def loadTranscriptComparison( infile, outfile ):
     tablename = P.toTable( outfile ) + "_transcripts"
     statement = '''cat %(tmpfile2)s
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+              --allow-empty
               --index=transfrag_id
               --index=ref_gene_id
               --index=ref_transcript_id
@@ -1524,6 +1615,7 @@ def loadTranscriptComparison( infile, outfile ):
     tablename = P.toTable( outfile ) + "_fpkm"
     statement = '''cat %(tmpfile3)s
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+              --allow-empty
               --index=transfrag_id
               --table=%(tablename)s 
     >> %(outfile)s
@@ -1853,10 +1945,14 @@ def loadAnnotations( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
+def hasReplicates( track ):
+    '''indicator function - return true if track has replicates'''
+    replicates = PipelineTracks.getSamplesInTrack( track, TRACKS )
+    return len(replicates) > 1
+
 @follows( loadTranscriptComparison, mkdir( os.path.join( PARAMS["exportdir"], "cuffcompare" ) ) )
-@transform( compareTranscriptsPerExperiment, 
-            suffix(".cuffcompare"), 
-            ".reproducibility" )
+@files( [ ("%s.cuffcompare" % x.asFile(), "%s.reproducibility" % x.asFile() )
+          for x in EXPERIMENTS if hasReplicates( x )] )
 def buildReproducibility( infile, outfile ):
     '''all-vs-all comparison between samples.
 
@@ -2455,6 +2551,7 @@ def buildExonCoverage( infiles, outfile ):
 
     P.run()
 
+
 #########################################################################
 #########################################################################
 #########################################################################
@@ -2591,7 +2688,12 @@ def runDESeq( infile, outfile ):
     
     sample2condition = [None] * len(tracks)
     conditions = []
+    no_replicates = False
     for group, replicates in EXPERIMENTS.iteritems():
+        if len(replicates) == 1:
+            E.warn( "only one replicate in %s - replicates will be ignored in ALL data sets for variance estimation" )
+            no_replicates = True
+
         for r in replicates:
             sample2condition[map_track2column[r.asR()]] = group.asR()
         conditions.append( group )
@@ -2609,7 +2711,11 @@ def runDESeq( infile, outfile ):
     # tutorial 
     R('''cds <-newCountDataSet( counts_table, conds) ''')
     R('''cds <- estimateSizeFactors( cds )''')
-    R('''cds <- estimateVarianceFunctions( cds )''')
+
+    if no_replicates:
+        R('''cds <- estimateVarianceFunctions( cds, method="blind" )''')
+    else:
+        R('''cds <- estimateVarianceFunctions( cds )''')
 
     L.info("creating diagnostic plots" ) 
     size_factors = R('''sizeFactors( cds )''')
@@ -2627,12 +2733,13 @@ def runDESeq( infile, outfile ):
         condition = track.asR()
         R.png( build_filename1( section = "fit", **locals() ) )
         R('''diagForT <- varianceFitDiagnostics( cds, "%s" )''' % condition )
-        R('''smoothScatter( log10(diagForT$baseMean), log10(diagForT$baseVar) )''')
-        R('''lines( log10(fittedBaseVar) ~ log10(baseMean), diagForT[ order(diagForT$baseMean), ], col="red" )''')
-        R['dev.off']()
-        R.png( build_filename1( section = "residuals", **locals() ) )
-        R('''residualsEcdfPlot( cds, "%s" )''' % condition )
-        R['dev.off']()
+        if not no_replicates:
+            R('''smoothScatter( log10(diagForT$baseMean), log10(diagForT$baseVar) )''')
+            R('''lines( log10(fittedBaseVar) ~ log10(baseMean), diagForT[ order(diagForT$baseMean), ], col="red" )''')
+            R['dev.off']()
+            R.png( build_filename1( section = "residuals", **locals() ) )
+            R('''residualsEcdfPlot( cds, "%s" )''' % condition )
+            R['dev.off']()
 
     L.info("calling differential expression")
 
@@ -2641,7 +2748,7 @@ def runDESeq( infile, outfile ):
     fdr = PARAMS["cuffdiff_fdr"]
     isna = R["is.na"]
 
-    for track1,track2 in itertools.combinations( conditions, 2 ):
+    for track1, track2 in itertools.combinations( conditions, 2 ):
         R('''res <- nbinomTest( cds, '%s', '%s' )''' % (track1.asR(),track2.asR()))
 
         R.png( build_filename2( section = "significance", **locals() ) )

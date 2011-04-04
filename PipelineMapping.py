@@ -41,6 +41,16 @@ might contain single end or paired end data or both).
 A pipeline might get several input data (:term:`fastq` and :term:`sra`
 formatted files at the same time).
 
+The module currently is able to deal with:
+
+   * tophat mapping against genome
+   * bowtie mapping against transcriptome
+
+It implements:
+   * .sra: paired-end and single-end
+   * .fastq: paired-end and single-end
+   * .csfasta: colour-space, single-end
+
 Code
 ----
 
@@ -209,8 +219,7 @@ class Tophat( Mapper ):
 
         elif nfiles == 2:
             # this section works both for paired-ended fastq files
-            # and color space mapping (separate quality file)
-            # Use the --quals setting for the latter.
+            # and single-end color space mapping (separate quality file)
             infiles1 = ",".join( [ x[0] for x in infiles ] )
             infiles2 = ",".join( [ x[1] for x in infiles ] )
 
@@ -264,22 +273,34 @@ class BowtieTranscripts( Mapper ):
         if max(num_files) != min(num_files):
             raise ValueError("mixing single and paired-ended data not possible." )
 
+        nfiles = max(num_files)
+
+        # transpose files
+        infiles = zip( *infiles )
+
         # add options specific to data type
         data_options = []
         if self.datatype == "solid":
-            data_options.append( "--quals --integer-quals --color" )
+            data_options.append( "-f -C" )
+            if nfiles == 2:
+                # single end,
+                # second file will colors (unpaired data)
+                data_options.append( "--quals %s" % ",".join( infiles[1] ) )
+                nfiles -= 1
+            elif nfiles == 4:
+                data_options.append( "-Q1 %s -Q2 %s" % (",".join(infiles[2], infiles[3])) )
+                nfiles -= 2
+            else:
+                raise ValueError( "unexpected number of files" )
             index_prefix = "%(prefix)s_cs"
         else:
             index_prefix = "%(prefix)s"
 
         data_options = " ".join( data_options )
-        
-        nfiles = max(num_files)
-        
         tmpdir_fastq = self.tmpdir_fastq
 
         if nfiles == 1:
-            infiles = ",".join( [ x[0] for x in infiles ] )
+            infiles = ",".join( infiles[0])
             statement = '''
                 bowtie --quiet --sam
                        --threads %%(bowtie_threads)i
@@ -293,8 +314,8 @@ class BowtieTranscripts( Mapper ):
             ''' % locals()
 
         elif nfiles == 2:
-            infiles1 = ",".join( [ x[0] for x in infiles ] )
-            infiles2 = ",".join( [ x[1] for x in infiles ] )
+            infiles1 = ",".join( infiles[0] )
+            infiles2 = ",".join( infiles[1] )
 
             statement = '''
                 bowtie --quiet --sam

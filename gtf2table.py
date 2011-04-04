@@ -840,6 +840,131 @@ class ClassifierChIPSeq(Classifier):
             h.append( str(self.mCounters[key]) )
         return "\t".join( h )
 
+
+##-----------------------------------------------------------------------------------
+class ClassifierRNASeq(Classifier):
+    """classify RNASeq intervals based on a reference annotation.
+
+    This assumes the input is a genome annotation derived from an ENSEMBL gtf file
+    created with gtf2gff.py.
+    
+    A transcript is classified as (threshold = self.mThresholdMinCoverage)
+
+    known:     overlaps exons of a known gene
+    novel:     overlaps any other region but exons
+    ambiguous: can't say
+
+    The main classes are subclassed further:
+
+    The classification for known exons depends on the annotation in the gff file.
+    Theses are:
+
+    pc:        protein coding
+    utr:       is a utr transcript (not overlapping the coding part of a gene)
+    pseudo:    pseudogene
+    npc:       non of the above
+
+    Novel transcripts are classified as:
+
+    intronic-sense:          intronic transcripts of expressed genes that are
+                             within the same orientation.
+
+    intronic-antisense:      intronic transcripts of expressed genes in anti-sense direction.
+    
+    intronic-unprocessed:    intronic transcripts of expressed genes with orientation unknown
+ 
+    intronic-novel:          intronic transcripts of genes that are not expressed.
+    
+    associated-runon:        possible polymerase run-off. These are transcripts within
+                             a certain number of bases from the 3' end of a gene within
+                             the same direction.
+                             
+    associated-downstream:   possible polymerase run-off. These are transcripts within
+                             a certain number of bases from the 3' end of a gene within
+                             the opposite or unknown direction.
+
+    associated-upstream:     transcripts within upstream regions of genes.
+
+    Expression is determined by read-counts of the whole gene. Taking flanking exons
+    does not work as these might be belong to an isoform that is not expressed.
+
+    The area for runon is determined by fitting an exponential decay function 
+    to regions within 50 kb downstream of the terminal exon of a gene. 
+
+    """
+
+    mHeader = [ "is_cds", "is_utr", "is_upstream", "is_downstream", "is_intronic", "is_intergenic", "is_flank", "is_ambiguous" ]
+
+    # sources to use for classification
+    sources = ("", ) # "protein_coding", "pseudogene", )
+
+    # minimum coverage of a transcript to assign it to a class
+    mThresholdMinCoverage = 95
+
+    # full coverage of a transcript to assign it to a class
+    mThresholdFullCoverage = 99
+
+    # some coverage of a transcript to assign it to a class
+    mThresholdSomeCoverage = 10
+
+    def count(self):
+        
+        for key in self.mKeys:
+            self.mCounters[key](self.mGFFs)
+
+        def s_min( *args ):
+            return sum( [ self.mCounters[x].mPOverlap1 for x in args ] ) >= self.mThresholdMinCoverage
+
+        def s_excl( *args ):
+            return sum( [ self.mCounters[x].mPOverlap1 for x in args ] ) < (100 - self.mThresholdMinCoverage)
+
+        def s_full( *args ):
+            return sum( [ self.mCounters[x].mPOverlap1 for x in args ] ) >= self.mThresholdFullCoverage
+
+        def s_some( *args ):
+            return sum( [ self.mCounters[x].mPOverlap1 for x in args ] ) >= self.mThresholdSomeCoverage
+
+        self.mIsCDS, self.mIsUTR, self.mIsIntergenic = False, False, False
+        self.mIsUpStream, self.mIsDownStream, self.mIsIntronic = False, False, False
+        self.mIsFlank, self.mIsAmbiguous = False, False
+
+        self.mIsCDS = s_full( ":CDS" )        
+        self.mIsUTR = s_full( ":UTR", ":UTR3", ":UTR5" ) 
+        self.mIsIntergenic = s_full( ":intergenic", ":telomeric" )
+
+        if not(self.mIsCDS or self.mIsUTR or self.mIsIntergenic):
+            self.mIsUpStream = s_some( ":5flank", ":UTR5" )
+            if not self.mIsUpStream: 
+                self.mIsDownStream = s_some( ":3flank", ":UTR3" )
+                if not self.mIsDownStream:
+                    self.mIsIntronic = s_some( ":intronic" )
+                    if not self.mIsIntronic:
+                        self.mIsFlank = s_some( ":flank" )
+
+        self.mIsAmbiguous = not( self.mIsUTR or \
+                                     self.mIsIntergenic or self.mIsIntronic or self.mIsCDS or \
+                                     self.mIsUpStream or self.mIsDownStream or self.mIsFlank)
+
+    def __str__(self):
+
+        def to( v ):
+            if v: return "1" 
+            else: return "0"
+
+        h = [ to(x) for x in (self.mIsCDS, 
+                              self.mIsUTR, 
+                              self.mIsUpStream,
+                              self.mIsDownStream,
+                              self.mIsIntronic,
+                              self.mIsIntergenic,
+                              self.mIsFlank,
+                              self.mIsAmbiguous,
+                              ) ]
+
+        for key in self.mKeys:
+            h.append( str(self.mCounters[key]) )
+        return "\t".join( h )
+
 ##-----------------------------------------------------------------------------------
 class CounterOverrun(Counter):
     """count intron overrun. 

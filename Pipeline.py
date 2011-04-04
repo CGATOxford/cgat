@@ -215,7 +215,7 @@ def critical( message):
 def asList( param ):
     '''return a param as a list'''
     if type(param) not in (types.ListType, types.TupleType):
-        return [param,]
+        return [x.strip() for x in param.split(",")]
     else: return param
 
 def flatten(l, ltypes=(list, tuple)):

@@ -195,6 +195,8 @@ configuration file with default values for pipeline parameters (e.g., :file:`pip
    scripts/pipeline_chipseq.rst
    scripts/pipeline_rnaseq.rst
    scripts/pipeline_transcriptome.rst
+   scripts/pipeline_chains.rst
+   scripts/pipeline_liftover.rst
 
 Make-based pipelines
 ======================

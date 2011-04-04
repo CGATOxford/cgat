@@ -246,7 +246,7 @@ def mapMergedTranscripts( infile, outfile ):
     track = outfile[:-len(".merged.mapped.psl")]
     chainfile = os.path.join( PARAMS["ucsc_dir"], 
                               PARAMS["%s_genome" % track],
-                              "liftover",
+                              "liftOver",
                               "%sTo%s.over.chain.gz" % \
                                   (PARAMS["%s_genome" % track],
                                    PARAMS["genome"].capitalize() ) )
@@ -274,10 +274,12 @@ def mapTranscripts( infile, outfile ):
     """
 
     track = outfile[:-len(".mapped.psl")]
-    chainfile = PARAMS["%s_chain" % track]
-
-    if not os.path.exists( chainfile ):
-        raise OSError("chain %s not found" % chainfile)
+    chainfile = os.path.join( PARAMS["ucsc_dir"], 
+                              PARAMS["%s_genome" % track],
+                              "liftOver",
+                              "%sTo%s.over.chain.gz" % \
+                                  (PARAMS["%s_genome" % track],
+                                   PARAMS["genome"].capitalize() ) )
 
     statement = """
         liftOver -minMatch=0.2 -minBlocks=0.01 -pslT 
