@@ -1032,6 +1032,7 @@ def computeROC( values ):
     last_value, last_fpr = None, None
     tp, fp = 0, 0
     tn, fn = ntotal - npositives, npositives 
+
     for value, is_positive in values:
         if is_positive: 
             tp += 1
@@ -1041,9 +1042,17 @@ def computeROC( values ):
             tn -= 1
 
         if last_value != value:
-            tpr = float(tp) / (tp + fn)
-            fpr = float(fp) / (fp + tn)
-            
+
+            try:
+                tpr = float(tp) / (tp + fn)
+            except ZeroDivisionError:
+                tpr = 0
+
+            try:
+                fpr = float(fp) / (fp + tn)
+            except ZeroDivisionError:
+                fpr = 0
+                
             if last_fpr != fpr:
                 roc.append( (fpr,tpr) )
                 last_fpr = fpr

@@ -251,7 +251,8 @@ def compareChains( pairs1, pairs2 ):
 
 def outputMismatches( pairs1, pairs2, 
                       output_mismatches = False, 
-                      output_unique = False):
+                      output_unique = False,
+                      output_matches = False ):
     '''output mismatches.
 
     This is a very slow operation.
@@ -274,7 +275,11 @@ def outputMismatches( pairs1, pairs2,
             x = chain1.mapRowToCol( pos )
             y = chain2.mapRowToCol( pos )
 
-            if x == y: continue
+            if x == y: 
+                if output_matches:
+                    outfile.write( "%s\t%s\t%s\t%i\t%i\t%i\t%s\n" %
+                                   ( key1 + (pos, x, y, "=") ) )
+                continue
 
             mismatch =  x != -1 and y != -1
             
@@ -284,8 +289,8 @@ def outputMismatches( pairs1, pairs2,
                                    ( key1 + (pos, x, y, x-y) ) )
             else:
                 if output_unique:
-                    outfile.write( "%s\t%s\t%s\t%i\t%i\t%i\n" %
-                                   ( key1 + (pos, x, y) ) )
+                    outfile.write( "%s\t%s\t%s\t%i\t%i\t%i\t%s\n" %
+                                   ( key1 + (pos, x, y, "-") ) )
                             
 
 def main( argv = None ):
@@ -301,7 +306,13 @@ def main( argv = None ):
                                     usage = globals()["__doc__"] )
 
     parser.add_option( "-m", "--output-mismatches", dest="output_mismatches", action = "store_true",
-                       help = "output mismaches [%default]" )
+                       help = "output mismatches [%default]" )
+
+    parser.add_option( "-a", "--output-matches", dest="output_matches", action = "store_true",
+                       help = "output matches [%default]" )
+
+    parser.add_option( "-u", "--output-unique", dest="output_unique", action = "store_true",
+                       help = "output unique positions [%default]" )
 
     parser.add_option( "-r", "--restrict", dest="restrict", type = "string",
                        help = "restrict analysis to a chromosome pair (chr1:chr1:+) [%default]" )
@@ -417,7 +428,8 @@ def main( argv = None ):
     if options.output_mismatches or options.output_unique:
         outputMismatches( pairs1, pairs2,
                           output_mismatches = options.output_mismatches,
-                          output_unique = options.output_unique
+                          output_unique = options.output_unique,
+                          output_matches = options.output_matches,
                           )
 
     ## write footer and output benchmark information.

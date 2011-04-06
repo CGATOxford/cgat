@@ -18,6 +18,7 @@ if os.path.exists("conf.py"):
 
 ###################################################################
 # cf. pipeline_rnaseq.py
+# This should be automatically gleaned from pipeline_rnaseq.py
 ###################################################################
 import PipelineTracks
 
@@ -26,7 +27,9 @@ TRACKS = PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory(
     PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
     glob.glob( "%s/*.fastq.gz" % datadir), "%s/(\S+).fastq.gz" % datadir ) +\
     PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
-    glob.glob( "%s/*.fastq.1.gz" % datadir), "%s/(\S+).fastq.1.gz" % datadir )
+    glob.glob( "%s/*.fastq.1.gz" % datadir), "%s/(\S+).fastq.1.gz" % datadir ) +\
+    PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
+    glob.glob( "*.csfasta.gz" ), "(\S+).csfasta.gz" )
 
 ALL = PipelineTracks.Aggregate( TRACKS )
 EXPERIMENTS = PipelineTracks.Aggregate( TRACKS, labels = ("condition", "tissue" ) )

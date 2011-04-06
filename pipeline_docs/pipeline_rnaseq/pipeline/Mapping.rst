@@ -18,8 +18,32 @@ This section reports results from the mapping stage. It reports summary statisti
 |:term:`track`.mismapped.bam            |Alignments flagged as :term:`mismapped`           |
 +---------------------------------------+--------------------------------------------------+
 
+.. note::
+
+   Please be aware that there is a difference between :term:`read` and :term:`alignment`
+   counts. A single :term:`read` might map to several genomic positions and give rise
+   to several alignments. Only if the pipeline employs unique-ness filtering will 
+   :term:`read` and :term:`alignment` counts be the same.
+
 Mapping results
 ===============
+
+Tophat results
+--------------
+
+Mapping reads with tophat_ across splice-junctions is the first step in the RNASeq 
+analysis pipeline. The following table present an overview of tophat results for 
+each :term:`track`.
+
+.. report:: Mapping.TophatSummary
+   :render: table
+
+   Tophat results
+
+.. note:: 
+
+   Unmapped reads are not carried over into subsequence analyses, hence the number
+   of input and mapped reads will be the same. Only the latter is shown.
 
 Filtering
 ---------
@@ -69,14 +93,14 @@ BAM files for each :term:`track`.
 .. report:: Mapping.MappingSummary
    :render: table
    :tracks: r(.accepted)
-   :slices: total,mapped,reverse,rna,duplicates
+   :slices: mapped,reverse,rna,duplicates
 
    Mapping summary
 
 .. report:: Mapping.MappingSummary
    :render: interleaved-bar-plot
    :tracks: r(.accepted)
-   :slices: total,mapped,reverse,rna,duplicates
+   :slices: mapped,reverse,rna,duplicates
 
    Mapping summary
 
@@ -96,14 +120,14 @@ The following table
 .. report:: Mapping.MappingSummary
    :render: table
    :tracks: r(.accepted)
-   :slices: reads_total,reads_mapped,reads_norna,reads_norna_unique_alignments
+   :slices: reads_mapped,reads_norna,reads_norna_unique_alignments
 
    Mapping summary
 
 .. report:: Mapping.MappingSummary
    :render: interleaved-bar-plot
    :tracks: r(.accepted)
-   :slices: reads_total,reads_mapped,reads_norna,reads_norna_unique_alignments
+   :slices: reads_mapped,reads_norna,reads_norna_unique_alignments
 
    Mapping summary
 
@@ -133,14 +157,14 @@ for a definition of the field contents.
 .. report:: Mapping.AlignmentSummary
    :tracks: r(.accepted)
    :render: interleaved-bar-plot
-   :slices: PCT_PF_READS,PCT_PF_READS_ALIGNED,STRAND_BALANCE
+   :slices: PCT_PF_READS_ALIGNED,STRAND_BALANCE
 
    Percentage quantities
 
 .. report:: Mapping.AlignmentSummary
    :tracks: r(.accepted)
    :render: interleaved-bar-plot
-   :slices: TOTAL_READS,PF_READS,PF_READS_ALIGNED,PF_HQ_ALIGNED_READS
+   :slices: PF_READS_ALIGNED,PF_HQ_ALIGNED_READS
 
    Percentage quantities
 
@@ -160,16 +184,6 @@ for a definition of the field contents.
 
    quality score distribution
 
-Tophat results
-==============
-
-The following table present an overview of tophat
-results for each :term:`track`.
-
-.. report:: Mapping.TophatSummary
-   :render: table
-
-   Tophat results
 
 Context results
 ===============

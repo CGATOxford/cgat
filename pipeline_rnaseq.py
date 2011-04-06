@@ -291,7 +291,8 @@ Optional inputs
 Requirements
 ------------
 
-The pipeline requires the results from :doc:`pipeline_annotations`.
+The pipeline requires the results from :doc:`pipeline_annotations`. Set the configuration variable 
+:py:data:`annotations_database` and :py:data:`annotations_dir`.
 
 On top of the default CGAT setup, the pipeline requires the following software to be in the 
 path:
@@ -388,7 +389,6 @@ Glossary
 .. _cufflinks: http://cufflinks.cbcb.umd.edu/index.html
 .. _tophat: http://tophat.cbcb.umd.edu/
 .. _bowtie: http://bowtie-bio.sourceforge.net/index.shtml
-
 
 Code
 ====
@@ -722,7 +722,6 @@ def buildGeneRegions( infile, outfile ):
     PipelineGeneset.buildGeneRegions( infile, outfile )
     
 
-
 @transform( buildGeneRegions,
             suffix( "%s.gff.gz" % REFERENCE ),
             "%s.terminal_exons.bed.gz" % REFERENCE )
@@ -756,7 +755,38 @@ def buildTerminalExons( infile, outfile ):
     zcat refcoding_terminal_exons.bed.gz | python ~/cgat/bed2gff.py --as-gtf | python ~/cgat/gtf2table.py --counter=read-coverage --bam-file=heart-library-R1.accepted.bam >& exon.coverage
     '''
 
-            
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( buildGeneRegions, suffix( ".gff.gz"), "_introns.gtf.gz" )
+def buildIntronGeneModels(infile, outfile ):
+    '''build intron-transcipts.
+
+    Intron-transcripts are the reverse complement of transcripts.
+
+    10 bp are truncated on either end of an intron.
+
+    Introns are filtered by a minimum length (100).
+    '''
+
+    to_cluster = True
+    
+    statement = '''gunzip
+        < %(infile)s 
+	| %(scriptsdir)s/gff_sort gene 
+	| python %(scriptsdir)s/gtf2gtf.py 
+               --exons2introns 
+               --intron-min-length=100 
+               --intron-border=10 
+               --log=%(outfile)s.log
+	| python %(scriptsdir)s/gtf2gtf.py 
+              --set-transcript-to-gene 
+              --log=%(outfile)s.log 
+	| perl -p -e 's/intron/exon/'
+        | gzip
+        > %(outfile)s
+    '''
+    P.run()
 
 #########################################################################
 #########################################################################
@@ -2498,7 +2528,7 @@ def buildFPKMGeneLevelTagCounts( infiles, outfile ):
 def buildUnionExons( infile, outfile ):
     '''build union/intersection genes according to Bullard et al. (2010) BMC Bioinformatics.
 
-    Builds a multi-segment bed file
+    Builds a single-segment bed file.
     '''
 
     to_cluster = USECLUSTER
@@ -2507,8 +2537,7 @@ def buildUnionExons( infile, outfile ):
     | python %(scriptsdir)s/gtf2gtf.py --intersect-transcripts --with-utr --log=%(outfile)s.log
     | python %(scriptsdir)s/gff2gff.py --is-gtf --crop-unique  --log=%(outfile)s.log
     | python %(scriptsdir)s/gff2bed.py --is-gtf --log=%(outfile)s.log
-    | sort -k4,4 -k1,1 -k2,2n
-    | python %(scriptsdir)s/bed2bed.py --method=block  --log=%(outfile)s.log
+    | sort -k1,1 -k2,2n
     | gzip 
     > %(outfile)s
     '''
@@ -2519,11 +2548,11 @@ def buildUnionExons( infile, outfile ):
 #########################################################################
 #########################################################################
 # note - needs better implementation, currently no dependency checks.
-@follows( buildUnionExons, mkdir( "exon_coverage.dir" ) )
+@follows( buildUnionExons, mkdir( "exon_counts.dir" ) )
 @files( [ ( ("%s.accepted.bam" % x.asFile(), "%s.union.bed.gz" % y ),
-            ("exon_coverage.dir/%s_vs_%s.bed.gz" % (x.asFile(),y ) ) )
+            ("exon_counts.dir/%s_vs_%s.bed.gz" % (x.asFile(),y ) ) )
           for x,y in itertools.product( TRACKS, GENESETS) ] )
-def buildExonCoverage( infiles, outfile ):
+def buildExonLevelReadCounts( infiles, outfile ):
     '''compute coverage of exons with reads.
     '''
 
@@ -2541,16 +2570,53 @@ def buildExonCoverage( infiles, outfile ):
     else:
         flag_filter = ""
 
+    # note: the -split option only concerns the stream in A - multiple
+    # segments in B are not split. Hence counting has to proceed via
+    # single exons - this can lead to double counting if exon counts
+    # are later aggregated.
+
     statement = '''
     samtools view -b %(flag_filter)s -q %(deseq_min_mapping_quality)s %(infile)s
-    | bamToBed -i stdin 
-    | coverageBed -a stdin -b %(exons)s 
+    | coverageBed -abam stdin -b %(exons)s -split
+    | sort -k1,1 -k2,2n
     | gzip
     > %(outfile)s
     '''
 
     P.run()
 
+#########################################################################
+#########################################################################
+#########################################################################
+@follows( buildUnionExons, mkdir( "gene_counts.dir" ) )
+@transform( buildBAMs, 
+            regex(r"(\S+).accepted.bam"), 
+            add_inputs( buildCodingGeneSet ),
+            r"gene_counts.dir/\1.gene_counts.tsv.gz" )
+def buildGeneLevelReadCounts( infiles, outfile ):
+    '''compute coverage of exons with reads.
+    '''
+
+    infile, exons = infiles
+
+    to_cluster = USECLUSTER
+
+    statement = '''
+    zcat %(exons)s 
+    | python %(scriptsdir)s/gtf2table.py 
+          --reporter=genes
+          --bam-file=%(infile)s 
+          --counter=length
+          --prefix="exons_"
+          --counter=read-counts 
+          --prefix=""
+          --counter=read-coverage
+          --prefix=coverage_
+    | gzip
+    > %(outfile)s
+    '''
+    
+    P.run()
 
 #########################################################################
 #########################################################################
@@ -2561,7 +2627,7 @@ def buildExonCoverage( infiles, outfile ):
             add_inputs( buildCodingGeneSet ),
             r"transcript_counts.dir/\1.transcript_counts.tsv.gz" )
 def buildTranscriptLevelReadCounts( infiles, outfile):
-    '''count reads falling into transcrpts of protein coding 
+    '''count reads falling into transcripts of protein coding 
        gene models.
 
     .. note::
@@ -2602,10 +2668,10 @@ def loadTranscriptLevelReadCounts( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@collate(buildExonCoverage,
-         regex(r"exon_coverage.dir/(.+)_vs_(.+)\.bed.gz"),  
-         r"\2.tagcounts.tsv.gz")
-def buildRawGeneLevelTagCounts( infiles, outfile ):
+@collate(buildExonLevelReadCounts,
+         regex(r"exon_counts.dir/(.+)_vs_(.+)\.bed.gz"),  
+         r"\2.exon_counts.tsv.gz")
+def aggregateExonLevelReadCounts( infiles, outfile ):
     '''aggregate exon level tag counts for each gene.
 
     coverageBed adds the following four columns:
@@ -2617,12 +2683,15 @@ def buildRawGeneLevelTagCounts( infiles, outfile ):
 
     For bed6: use column 7
     For bed12: use column 13
+
+    This method uses the maximum number of reads
+    found in any exon as the tag count.
     '''
     
     to_cluster = USECLUSTER
 
     # aggregate not necessary for bed12 files, but kept in
-    src = " ".join( [ "<( zcat %s | groupBy -i stdin -g 4 -c 13 -o sum | sort -k1,1)" % x for x in infiles ] )
+    src = " ".join( [ "<( zcat %s | sort -k4,4 | groupBy -i stdin -g 4 -c 7 -o max | sort -k1,1)" % x for x in infiles ] )
 
     tmpfile = P.getTempFilename( "." )
     
@@ -2632,7 +2701,7 @@ def buildRawGeneLevelTagCounts( infiles, outfile ):
     P.run()
 
     tracks = [P.snip(x, ".bed.gz" ) for x in infiles ]
-    tracks = [re.match( "exon_coverage.dir/(\S+)_vs.*", x).groups()[0] for x in tracks ]
+    tracks = [re.match( "exon_counts.dir/(\S+)_vs.*", x).groups()[0] for x in tracks ]
 
     outf = IOTools.openFile( outfile, "w")
     outf.write( "gene_id\t%s\n" % "\t".join( tracks ) )
@@ -2652,8 +2721,8 @@ def buildRawGeneLevelTagCounts( infiles, outfile ):
 #########################################################################
 #########################################################################
 @follows( mkdir( os.path.join( PARAMS["exportdir"], "deseq" ) ) )
-@transform( buildRawGeneLevelTagCounts,
-            suffix(".tagcounts.tsv.gz"),
+@transform( aggregateExonLevelReadCounts,
+            suffix(".exon_counts.tsv.gz"),
             ".deseq")
 def runDESeq( infile, outfile ):
     '''estimate differential expression using DESeq.

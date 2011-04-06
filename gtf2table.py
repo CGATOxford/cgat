@@ -1789,6 +1789,7 @@ class CounterReadCoverage(Counter):
 
     Requires bam files to compute that coverage. Multiple bam
     files can be supplied, these will be summed up.
+
     '''
     
     mHeader = ("length", "pcovered",) + Stats.Summary().getHeaders()
@@ -1816,10 +1817,13 @@ class CounterReadCoverage(Counter):
             offset = start - l
             for samfile in self.mBamFiles:
                 for read in samfile.fetch( contig, start, end ):
+                    # only count positions actually overlapping
+                    positions = read.positions
+                    if not positions: continue
                     nreads += 1
-                    rstart = max( 0, read.pos - offset )
-                    rend = min( length, read.pos - offset + read.rlen ) 
-                    counts[ rstart:rend ] += 1
+                    for p in positions:
+                        pos = p - offset
+                        if 0 <= pos < length: counts[ pos ] += 1
             l += end - start
 
         self.mTotalLength = length
@@ -1861,6 +1865,7 @@ class CounterReadCounts(Counter):
             for samfile in self.mBamFiles:
                 last_pos = None
                 for read in samfile.fetch( contig, start, end ):
+                    if not read.overlap( start, end ): continue
                     nnonunique_counts += 1
                     if last_pos != read.pos:
                         last_pos = read.pos

@@ -612,6 +612,14 @@ if __name__ == '__main__':
                     output_ranges.append( (last, start) )
                     last = end
 
+                if options.intron_border:
+                    b = options.intron_border
+                    output_ranges = [ (x[0]+b, x[1]-b ) for x in output_ranges ]
+
+                if options.intron_min_length:
+                    l = options.intron_min_length
+                    output_ranges = [ x for x in output_ranges if x[1]-x[0] > l ]
+            
                 for start, end in output_ranges:
                     
                     entry = GTF.Entry()

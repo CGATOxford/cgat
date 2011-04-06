@@ -48,11 +48,18 @@ def getPeakShift( infile ):
     shift = None
     with open(infile, "r") as ins:
         rx = re.compile("#2 predicted fragment length is (\d+) bps")
+        r2 = re.compile("#2 Use (\d)+ as shiftsize, \d+ as fragment length" )
         for line in ins:
             x = rx.search(line)
             if x: 
                 shift = int(x.groups()[0])
                 break
+            x = r2.search(line)
+            if x: 
+                shift = int(x.groups()[0])
+                E.warn( "shift size was set automatically - see MACS logfiles" )
+                break
+            
     return shift
 
 ############################################################
