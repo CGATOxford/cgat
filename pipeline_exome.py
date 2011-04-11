@@ -152,8 +152,8 @@ import Stats
 import Pipeline as P
 P.getParameters( 
     ["%s.ini" % __file__[:-len(".py")],
-     "../pipeline.ini",
-     "pipeline.ini" ] )
+     "../exome.ini",
+     "exome.ini" ] )
 PARAMS = P.PARAMS
 
 USECLUSTER = True
@@ -182,18 +182,38 @@ import PipelineTracks
 #########################################################################
 #########################################################################
 #########################################################################
-@follows(mkdir("bam"))
 @transform( ("*.fastq.1.gz", 
               "*.fastq.gz",
               "*.sra"),
               regex( r"(\S+).(fastq.1.gz|fastq.gz|sra)"),
-              r"bam/\1.bam")
+              r"\1/bam/\1.bam")
 def mapReads(infiles, outfile):
         '''Map reads to the genome using BWA '''
         to_cluster = USECLUSTER
+        track = P.snip( os.path.basename(outfile), ".bam" )
+        try: os.mkdir( track )
+        except OSError: pass
+        try: os.mkdir( '''%(track)s/bam''' % locals() )
+        except OSError: pass
         m = PipelineMapping.bwa()
         statement = m.build((infiles,), outfile) 
-        print statement
+        #print statement
+        P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( mapReads,
+              regex( r"(\S+)/bam/(\S+).bam"),
+              r"\1/bam/\1.roi.bam")
+def filterBamROI(infiles, outfile):
+        '''Filter alignments in BAM format to regions of interest from a bed file.
+           Todo: use multiple BAM files'''
+        to_cluster = USECLUSTER
+        statement = '''intersectBed -u -abam %(infiles)s -b %%(roi_bed)s > %(outfile)s; ''' % locals()
+        statement += '''samtools index %(outfile)s; ''' % locals()
+        #print statement
         P.run()
 
 
@@ -201,28 +221,175 @@ def mapReads(infiles, outfile):
 #########################################################################
 #########################################################################
 #########################################################################
-@follows(mkdir("variants"))
-@transform( "*.bam",
-              regex( r"(\S+).bam"),
-              r"variants/\1.bcf")
-def runSAMtools(infiles, outfile):
+@transform( (mapReads, filterBamROI), 
+            suffix(".bam"),
+            ".readstats" )
+def buildBAMStats( infile, outfile ):
+    '''count number of reads mapped, duplicates, etc. '''
+
+    to_cluster = USECLUSTER
+    scriptsdir = PARAMS["general_scriptsdir"]
+
+    statement = '''python %(scriptsdir)s/bam2stats.py --force 
+                   --output-filename-pattern=%(outfile)s.%%s < %(infile)s > %(outfile)s'''
+
+    P.run()
+
+
+#########################################################################
+#########################################################################
+#########################################################################
+#########################################################################
+@merge( buildBAMStats, "bam_stats.load" )
+def loadBAMStats( infiles, outfile ):
+    '''import bam statisticis.'''
+
+    scriptsdir = PARAMS["general_scriptsdir"]
+    header = ",".join( [P.snip( os.path.basename(x), ".readstats") for x in infiles] )
+    filenames = " ".join( [ "<( cut -f 1,2 < %s)" % x for x in infiles ] )
+    tablename = P.toTable( outfile )
+    E.info( "loading bam stats - summary" )
+    statement = """python %(scriptsdir)s/combine_tables.py
+                      --headers=%(header)s
+                      --missing=0
+                      --ignore-empty
+                   %(filenames)s
+                | perl -p -e "s/bin/track/"
+                | perl -p -e "s/unique/unique_alignments/"
+                | python %(scriptsdir)s/table2table.py --transpose
+                | python %(scriptsdir)s/csv2db.py
+                      --index=track
+                      --table=%(tablename)s 
+                > %(outfile)s
+            """
+    P.run()
+
+    for suffix in ("nm", "nh"):
+        E.info( "loading bam stats - %s" % suffix )
+        filenames = " ".join( [ "%s.%s" % (x, suffix) for x in infiles ] )
+        tname = "%s_%s" % (tablename, suffix)
+        
+        statement = """python %(scriptsdir)s/combine_tables.py
+                      --header=%(header)s
+                      --skip-titles
+                      --missing=0
+                      --ignore-empty
+                   %(filenames)s
+                | perl -p -e "s/bin/%(suffix)s/"
+                | python %(scriptsdir)s/csv2db.py
+                      --table=%(tname)s 
+                      --allow-empty
+                >> %(outfile)s
+                """
+        P.run()
+
+
+#########################################################################
+#########################################################################
+#########################################################################
+#########################################################################
+@transform((mapReads, filterBamROI),
+              regex( r"(\S+)/bam/(\S+).bam"),
+              r"\1/bam/\2.cov.bamstats")
+def coverageStats(infiles, outfile):
+        '''Generate coverage statistics for regions of interest from a bed file using BAMstats'''
+        to_cluster = USECLUSTER
+        statement = '''bamstats -i %(infiles)s -o %(outfile)s -f %%(roi_bed)s; ''' % locals()
+        #print statement
+        P.run()
+
+
+#########################################################################
+#########################################################################
+#########################################################################
+#########################################################################
+@transform((mapReads, filterBamROI),
+              regex( r"(\S+)/bam/(\S+).bam"),
+              r"\1/bam/\2.cov.bedtools")
+def coverageStatsBedtools(infiles, outfile):
+        '''Generate coverage statistics for regions of interest from a bed file using bedtools'''
+        to_cluster = USECLUSTER
+        statement = '''coverageBed -abam %(infiles)s -b %%(roi_bed)s -hist > %(outfile)s;''' % locals()
+        #print statement
+        P.run()
+
+
+#########################################################################
+#########################################################################
+#########################################################################
+#########################################################################
+@merge( coverageStats, "coverage_stats.load" )
+def loadCoverageStats( infiles, outfile ):
+    '''import coverage statistics.'''
+
+    scriptsdir = PARAMS["general_scriptsdir"]
+    header = ",".join( [P.snip( os.path.basename(x), ".cov.bamstats") for x in infiles] )
+    #filenames = " ".join( [ "<( cut -f 1,2 < %s)" % x for x in infiles ] )
+    tablename = P.toTable( outfile )
+    E.info( "loading coverage stats - summary" )
+    statement = """python %(scriptsdir)s/combine_tables.py
+                      --headers=%(header)s
+                      --missing=0
+                      --ignore-empty
+                   %(infiles)s
+                | perl -p -e "s/bin/track/"
+                | python %(scriptsdir)s/csv2db.py
+                      --index=track
+                      --table=%(tablename)s 
+                > %(outfile)s
+            """
+    P.run()
+
+
+#########################################################################
+#########################################################################
+#########################################################################
+#########################################################################
+@transform(   (mapReads, filterBamROI),
+              regex( r"(\S+)/bam/(\S+).bam"),
+              r"\1/variants/\2.vcf")
+def callVariantsSAMtools(infiles, outfile):
         '''Perform SNV and indel called from gapped alignment using SAMtools '''
         to_cluster = USECLUSTER
         statement = []
-        statement.append('''mkdir -p %(outfile)s;''' % locals())
-        gd = PARAMS["genome_dir"]
-        #print type(infiles)
-        g = PARAMS["genome"]
-        track = P.snip( os.path.basename( infiles ), ".bam" )
-        statement.append('''samtools mpileup -ugf %(gd)s/%(g)s.fa %(infiles)s | bcftools view -bvcg - > %(outfile)s; ''' % locals() )
+        outfolder = infiles[:infiles.find("/")]
+        try: os.mkdir( '''%(outfolder)s/variants''' % locals() )
+        except OSError: pass
+        track = P.snip( os.path.basename(infiles), ".bam" )
+        statement.append('''samtools mpileup -ugf %%(genome_dir)s/%%(genome)s.fa %(infiles)s | bcftools view -bvcg - > %(outfolder)s/variants/%(track)s.bcf; ''' % locals() )
+        statement.append('''bcftools view %(outfolder)s/variants/%(track)s.bcf | vcfutils.pl varFilter -d 10 -D 100 > %(outfile)s; ''' % locals() )
+        statement.append('''vcf-stats %(outfile)s > %(outfile)s.stats;''' % locals() )
         statement = " ".join( statement )
-        print statement
+        #print statement
         P.run()
 
 #########################################################################
 #########################################################################
 #########################################################################
-@follows( runSAMtools )
+#########################################################################
+@transform( callVariantsSAMtools,
+              regex( r"(\S+)/variants/(\S+).vcf"),
+              r"\1/roi_variants/\2.vcf")
+def filterVariantROI(infiles, outfile):
+        '''Filter variant calls in vcf format to regions of interest from a bed file'''
+        to_cluster = USECLUSTER
+        outfolder = infiles[:infiles.find("/")]
+        try: os.mkdir( '''%(outfolder)s/roi_variants''' % locals() )
+        except OSError: pass
+        statement = '''intersectBed -u -a %(infiles)s -b %%(roi_bed)s > %(outfile)s; ''' % locals()
+        #print statement
+        P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@follows( mapReads,
+          filterBamROI,
+          buildBAMStats,
+          loadBAMStats,
+          coverageStats,
+          callVariantsSAMtools,
+          filterVariantROI  )
 def full(): pass
 
 

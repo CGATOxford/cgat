@@ -130,7 +130,10 @@ import rpy2.robjects as ro
 import PipelineGeneset
 import PipelineMapping
 import Stats
+import PipelineTracks
+import Pipeline as P
 
+USECLUSTER = True
 
 ###################################################
 ###################################################
@@ -139,20 +142,20 @@ import Stats
 ###################################################
 
 # load options from the config file
-import Pipeline as P
-P.getParameters( 
-    ["%s.ini" % __file__[:-len(".py")],
-     "../pipeline.ini",
-     "pipeline.ini" ] )
-PARAMS = P.PARAMS
+#import Pipeline as P
+#P.getParameters( 
+#    ["%s.ini" % __file__[:-len(".py")],
+#     "../pipeline.ini",
+#     "pipeline.ini" ] )
+#PARAMS = P.PARAMS
 
-USECLUSTER = True
+
 
 ###################################################################
 ###################################################################
 ## Helper functions mapping tracks to conditions, etc
 ###################################################################
-import PipelineTracks
+
 
 # collect sra nd fastq.gz tracks
 #TRACKS = PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
@@ -180,15 +183,18 @@ import PipelineTracks
               r"fastqc/\1.result")
 def runFastqc(infiles, outfile):
         '''convert sra files to fastq and check mapping qualities are in solexa format. 
-
-            perform quality control checks on reads from .fastq files.
-
-            An output directory must be supplied '''
+           Perform quality control checks on reads from .fastq files.'''
         to_cluster = USECLUSTER
         m = PipelineMapping.fastqc()
         statement = m.build((infiles,), outfile) 
         print statement
         P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+# ToDo: create Sphinxreport page linking to all html reports from a run
+
 
 #########################################################################
 #########################################################################

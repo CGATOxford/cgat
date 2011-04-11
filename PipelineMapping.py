@@ -147,7 +147,8 @@ class Mapper( object ):
         
         assert cmd_preprocess.strip().endswith(";")
         assert cmd_mapper.strip().endswith(";")
-        assert not( cmd_postprocess and cmd_pqostprocess.strip().endswith(";"))
+        if cmd_postprocess:
+           assert cmd_postprocess.strip().endswith(";")
         assert cmd_clean.strip().endswith(";")
 
         statement = " checkpoint; ".join( (cmd_preprocess, 
@@ -174,8 +175,7 @@ class fastqc( Mapper ):
 class bwa( Mapper ):
     
     def mapper( self, infiles, outfile ):
-        '''build mapping statement on infiles.
-        '''
+        '''build mapping statement on infiles.'''
 
         num_files = [ len( x ) for x in infiles ]
         
@@ -185,43 +185,45 @@ class bwa( Mapper ):
         nfiles = max(num_files)
         
         tmpdir_bwa = os.path.join( self.tmpdir_fastq + "bwa" )
+        statement = [ "mkdir -p %s;" % tmpdir_bwa ]
         tmpdir_fastq = self.tmpdir_fastq
 
         if nfiles == 1:
             infiles = ",".join( [ x[0] for x in infiles ] )
-            statement = '''
-            bwa aln %%(bwa_index_dir)s/%%(genome)s %(infiles)s > %(tmpdir_bwa)s/%(track)s.sai; 
-            bwa samse %%(bwa_index_dir)s/%%(genome)s %(tmpdir_bwa)s/%(track)s.sai %(infiles)s > %(tmpdir_bwa)s/%(track)s.bam
-            ''' % locals()
+            track = P.snip( os.path.basename( infiles ), ".fastq" )
+            statement.append('''
+            bwa aln %%(bwa_aln_options)s %%(bwa_index_dir)s/%%(genome)s %(infiles)s > %(tmpdir_bwa)s/%(track)s.sai; 
+            bwa samse %%(bwa_index_dir)s/%%(genome)s %(tmpdir_bwa)s/%(track)s.sai %(infiles)s > %(tmpdir_bwa)s/%(track)s.sam;
+            ''' % locals() )
 
         elif nfiles == 2:
             infiles1 = ",".join( [ x[0] for x in infiles ] )
             infiles2 = ",".join( [ x[1] for x in infiles ] )
+            track = P.snip( os.path.basename( infiles1 ), ".1.fastq" )
+            track1 = P.snip( os.path.basename( infiles1 ), ".fastq" )
+            track2 = P.snip( os.path.basename( infiles2 ), ".fastq" )
 
-            statement = '''
-            bwa aln %%(bwa_index_dir)s/%%(genome)s %(infiles1)s > %(tmpdir_bwa)s/%(track)s.1.sai;
-            bwa aln %%(bwa_index_dir)s/%%(genome)s %(infiles2)s > %(tmpdir_bwa)s/%(track)s.2.sai;  
-            bwa sampe %%(bwa_index_dir)s/%%(genome)s %(tmpdir_bwa)s/%(track)s.1.sai %(tmpdir_bwa)s/%(track)s.2.sai %(infiles1)s %(infiles2)s > %(tmpdir_bwa)s/%(outfile)s.bam;
-            ''' % locals()
+            statement.append('''
+            bwa aln %%(bwa_aln_options)s %%(bwa_index_dir)s/%%(genome)s %(infiles1)s > %(tmpdir_bwa)s/%(track1)s.sai;
+            bwa aln %%(bwa_aln_options)s %%(bwa_index_dir)s/%%(genome)s %(infiles2)s > %(tmpdir_bwa)s/%(track2)s.sai;  
+            bwa sampe %%(bwa_sampe_options)s %%(bwa_index_dir)s/%%(genome)s %(tmpdir_bwa)s/%(track1)s.sai %(tmpdir_bwa)s/%(track2)s.sai %(infiles1)s %(infiles2)s > %(tmpdir_bwa)s/%(track)s.sam;
+            ''' % locals() )
         else:
-            raise ValueError( "unexpected number reads to map: %i " % nfiles )
+            raise ValueError( "unexpected number read files to map: %i " % nfiles )
 
         self.tmpdir_bwa = tmpdir_bwa
 
-        return statement
+        return " ".join( statement )
     
     def postprocess( self, infiles, outfile ):
         '''collect output data and postprocess.'''
         
-        track = P.snip( outfile, ".bam" )
+        track = P.snip( os.path.basename(outfile), ".bam" )
         tmpdir_bwa = self.tmpdir_bwa
 
         statement = '''
-            samtools rmdup
-            samtools sort
-            samtools index %(outfile)s;
-            mv %(tmpdir_bwa)s/logs %(outfile)s.logs;
-            ''' % locals()
+            samtools view -buS %(tmpdir_bwa)s/%(track)s.sam | samtools sort -o - - | samtools rmdup - %(outfile)s; 
+            samtools index %(outfile)s;''' % locals()
 
         return statement
 
