@@ -102,6 +102,10 @@ path:
 |picard              |>=1.38             |bam/sam files. The .jar files need to be in your|
 |                    |                   | CLASSPATH environment variable.                |
 +--------------------+-------------------+------------------------------------------------+
+|vcf-tools           |                   |                                                |
++--------------------+-------------------+------------------------------------------------+
+|BAMStats            |                   |                                                |
++--------------------+-------------------+------------------------------------------------+
 
 Pipeline output
 ===============
@@ -140,30 +144,21 @@ import rpy2.robjects as ro
 import PipelineGeneset
 import PipelineMapping
 import Stats
-
-
-###################################################
-###################################################
-###################################################
-## Pipeline configuration
-###################################################
-
-# load options from the config file
+import PipelineTracks
 import Pipeline as P
-P.getParameters( 
-    ["%s.ini" % __file__[:-len(".py")],
-     "../exome.ini",
-     "exome.ini" ] )
-PARAMS = P.PARAMS
 
 USECLUSTER = True
 
-###################################################################
-###################################################################
-## Helper functions mapping tracks to conditions, etc
-###################################################################
-import PipelineTracks
+#########################################################################
+#########################################################################
+#########################################################################
+# load options from the config file
+P.getParameters( ["%s.ini" % __file__[:-len(".py")], "../exome.ini", "exome.ini" ] )
+PARAMS = P.PARAMS
 
+#########################################################################
+#########################################################################
+#########################################################################
 # collect sra nd fastq.gz tracks
 #TRACKS = PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
 #    glob.glob( "*.sra" ), "(\S+).sra" ) +\
@@ -177,72 +172,81 @@ import PipelineTracks
 #CONDITIONS = PipelineTracks.Aggregate( TRACKS, labels = ("condition", ) )
 #TISSUES = PipelineTracks.Aggregate( TRACKS, labels = ("tissue", ) )
 
-
 #########################################################################
+#########################################################################
+#########################################################################
+@merge( PARAMS["roi_bed"], "roi.load" )
+def loadROI( infiles, outfile ):
+    '''Import regions of interest bed file into SQLite.'''
+
+    scriptsdir = PARAMS["general_scriptsdir"]
+    header = "chr,start,stop,feature"
+    tablename = P.toTable( outfile )
+    E.info( "loading regions of interest" )
+    statement = '''cat %(infiles)s
+            | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+              --allow-empty
+              --header=%(header)s
+              --index=feature
+              --table=%(tablename)s 
+            > %(outfile)s  '''      
+    P.run()
+
 #########################################################################
 #########################################################################
 #########################################################################
 @transform( ("*.fastq.1.gz", 
-              "*.fastq.gz",
-              "*.sra"),
-              regex( r"(\S+).(fastq.1.gz|fastq.gz|sra)"),
-              r"\1/bam/\1.bam")
+             "*.fastq.gz",
+             "*.sra"),
+             regex( r"(\S+).(fastq.1.gz|fastq.gz|sra)"),
+             r"\1/bam/\1.bam")
 def mapReads(infiles, outfile):
-        '''Map reads to the genome using BWA '''
-        to_cluster = USECLUSTER
-        track = P.snip( os.path.basename(outfile), ".bam" )
-        try: os.mkdir( track )
-        except OSError: pass
-        try: os.mkdir( '''%(track)s/bam''' % locals() )
-        except OSError: pass
-        m = PipelineMapping.bwa()
-        statement = m.build((infiles,), outfile) 
-        #print statement
-        P.run()
-
-#########################################################################
-#########################################################################
-#########################################################################
-#########################################################################
-@transform( mapReads,
-              regex( r"(\S+)/bam/(\S+).bam"),
-              r"\1/bam/\1.roi.bam")
-def filterBamROI(infiles, outfile):
-        '''Filter alignments in BAM format to regions of interest from a bed file.
-           Todo: use multiple BAM files'''
-        to_cluster = USECLUSTER
-        statement = '''intersectBed -u -abam %(infiles)s -b %%(roi_bed)s > %(outfile)s; ''' % locals()
-        statement += '''samtools index %(outfile)s; ''' % locals()
-        #print statement
-        P.run()
-
-
-#########################################################################
-#########################################################################
-#########################################################################
-#########################################################################
-@transform( (mapReads, filterBamROI), 
-            suffix(".bam"),
-            ".readstats" )
-def buildBAMStats( infile, outfile ):
-    '''count number of reads mapped, duplicates, etc. '''
-
+    '''Map reads to the genome using BWA '''
     to_cluster = USECLUSTER
-    scriptsdir = PARAMS["general_scriptsdir"]
-
-    statement = '''python %(scriptsdir)s/bam2stats.py --force 
-                   --output-filename-pattern=%(outfile)s.%%s < %(infile)s > %(outfile)s'''
-
+    track = P.snip( os.path.basename(outfile), ".bam" )
+    try: os.mkdir( track )
+    except OSError: pass
+    try: os.mkdir( '''%(track)s/bam''' % locals() )
+    except OSError: pass
+    m = PipelineMapping.bwa()
+    statement = m.build((infiles,), outfile) 
     P.run()
 
+#########################################################################
+#########################################################################
+#########################################################################
+#@transform( mapReads,
+#              regex( r"(\S+)/bam/(\S+).bam"),
+#              r"\1/bam/\1.roi.bam")
+#def filterBamROI(infiles, outfile):
+#        '''Filter alignments in BAM format to regions of interest from a bed file.
+#           Todo: use multiple BAM files'''
+#        to_cluster = USECLUSTER
+#        statement = '''intersectBed -u -abam %(infiles)s -b %%(roi_bed)s > %(outfile)s; ''' % locals()
+#        statement += '''samtools index %(outfile)s; ''' % locals()
+#        #print statement
+#        P.run()
 
 #########################################################################
+#########################################################################
+#########################################################################
+@transform( mapReads, 
+            regex(r"(\S+)/bam/(\S+).bam"),
+            r"\1/bam/\2.readstats" )
+def buildBAMStats( infile, outfile ):
+    '''Count number of reads mapped, duplicates, etc. '''
+    to_cluster = USECLUSTER
+    scriptsdir = PARAMS["general_scriptsdir"]
+    statement = '''python %(scriptsdir)s/bam2stats.py --force 
+                   --output-filename-pattern=%(outfile)s.%%s < %(infile)s > %(outfile)s'''
+    P.run()
+
 #########################################################################
 #########################################################################
 #########################################################################
 @merge( buildBAMStats, "bam_stats.load" )
 def loadBAMStats( infiles, outfile ):
-    '''import bam statisticis.'''
+    '''Import bam statistics into SQLite'''
 
     scriptsdir = PARAMS["general_scriptsdir"]
     header = ",".join( [P.snip( os.path.basename(x), ".readstats") for x in infiles] )
@@ -260,8 +264,7 @@ def loadBAMStats( infiles, outfile ):
                 | python %(scriptsdir)s/csv2db.py
                       --index=track
                       --table=%(tablename)s 
-                > %(outfile)s
-            """
+                > %(outfile)s"""
     P.run()
 
     for suffix in ("nm", "nh"):
@@ -279,119 +282,180 @@ def loadBAMStats( infiles, outfile ):
                 | python %(scriptsdir)s/csv2db.py
                       --table=%(tname)s 
                       --allow-empty
-                >> %(outfile)s
-                """
+                >> %(outfile)s """
         P.run()
 
+#########################################################################
+#########################################################################
+#########################################################################
+#@transform( mapReads, 
+#            regex( r"(\S+)/bam/(\S+).bam",
+#            r"\1/bam/\2.picardstats" )
+#def PicardBAMStats( infile, outfile ):
+#    '''Gather BAM file statistics using Picard '''
+#    to_cluster = USECLUSTER
+#    scriptsdir = PARAMS["general_scriptsdir"]
+#    statement = '''python %(scriptsdir)s/bam2stats.py --force 
+#                   --output-filename-pattern=%(outfile)s.%%s < %(infile)s > %(outfile)s'''
+#    P.run()
 
 #########################################################################
 #########################################################################
 #########################################################################
-#########################################################################
-@transform((mapReads, filterBamROI),
-              regex( r"(\S+)/bam/(\S+).bam"),
-              r"\1/bam/\2.cov.bamstats")
-def coverageStats(infiles, outfile):
-        '''Generate coverage statistics for regions of interest from a bed file using BAMstats'''
-        to_cluster = USECLUSTER
-        statement = '''bamstats -i %(infiles)s -o %(outfile)s -f %%(roi_bed)s; ''' % locals()
-        #print statement
-        P.run()
-
-
-#########################################################################
-#########################################################################
-#########################################################################
-#########################################################################
-@transform((mapReads, filterBamROI),
-              regex( r"(\S+)/bam/(\S+).bam"),
-              r"\1/bam/\2.cov.bedtools")
-def coverageStatsBedtools(infiles, outfile):
-        '''Generate coverage statistics for regions of interest from a bed file using bedtools'''
-        to_cluster = USECLUSTER
-        statement = '''coverageBed -abam %(infiles)s -b %%(roi_bed)s -hist > %(outfile)s;''' % locals()
-        #print statement
-        P.run()
-
-
-#########################################################################
-#########################################################################
-#########################################################################
-#########################################################################
-@merge( coverageStats, "coverage_stats.load" )
-def loadCoverageStats( infiles, outfile ):
-    '''import coverage statistics.'''
-
-    scriptsdir = PARAMS["general_scriptsdir"]
-    header = ",".join( [P.snip( os.path.basename(x), ".cov.bamstats") for x in infiles] )
-    #filenames = " ".join( [ "<( cut -f 1,2 < %s)" % x for x in infiles ] )
-    tablename = P.toTable( outfile )
-    E.info( "loading coverage stats - summary" )
-    statement = """python %(scriptsdir)s/combine_tables.py
-                      --headers=%(header)s
-                      --missing=0
-                      --ignore-empty
-                   %(infiles)s
-                | perl -p -e "s/bin/track/"
-                | python %(scriptsdir)s/csv2db.py
-                      --index=track
-                      --table=%(tablename)s 
-                > %(outfile)s
-            """
+@transform( mapReads,
+            regex( r"(\S+)/bam/(\S+).bam"),
+            r"\1/bam/\2.cov.bamstats" )
+def buildCoverageStats(infiles, outfile):
+    '''Generate coverage statistics for regions of interest from a bed file using BAMStats'''
+    to_cluster = USECLUSTER
+    filename = P.snip( os.path.basename(outfile), ".cov.bamstats")
+    statement = '''bamstats -i %(infiles)s -o %(outfile)s.tmp -f %%(roi_bed)s; ''' % locals()
+    statement += '''awk '{if (NR==1) print "Track\t" $0; else print "%(filename)s\t" $0}' %(outfile)s.tmp > %(outfile)s; 
+                        rm %(outfile)s.tmp; ''' % locals()
+    #print statement
     P.run()
 
+#########################################################################
+#########################################################################
+#########################################################################
+@merge( buildCoverageStats, "coverage_stats.load" )
+def loadCoverageStats( infiles, outfile ):
+    '''Import coverage statistics into SQLite'''
+    scriptsdir = PARAMS["general_scriptsdir"]
+    header = "track,feature,feature_length,cov_mean,cov_median,cov_sd,cov_q1,cov_q3,cov_2_5,cov_97_5,cov_min,cov_max"
+    filenames = " ".join(infiles)
+    tablename = P.toTable( outfile )
+    E.info( "loading coverage stats..." )
+    statement = '''cat %(filenames)s | sed -e /Track/D
+            | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+              --allow-empty
+              --header=%(header)s
+              --index=track
+              --index=feature
+              --table=%(tablename)s 
+            > %(outfile)s; '''
+    P.run()
 
 #########################################################################
 #########################################################################
 #########################################################################
+#@transform((mapReads, filterBamROI),
+#              regex( r"(\S+)/bam/(\S+).bam"),
+#              r"\1/bam/\2.cov.bedtools")
+#def coverageStatsBedtools(infiles, outfile):
+#        '''Generate coverage statistics for regions of interest from a bed file using bedtools'''
+#        to_cluster = USECLUSTER
+#        statement = '''coverageBed -abam %(infiles)s -b %%(roi_bed)s -hist > %(outfile)s;''' % locals()
+#        P.run()
+
 #########################################################################
-@transform(   (mapReads, filterBamROI),
-              regex( r"(\S+)/bam/(\S+).bam"),
-              r"\1/variants/\2.vcf")
+#########################################################################
+#########################################################################
+@transform( mapReads,
+            regex( r"(\S+)/bam/(\S+).bam"),
+            r"\1/variants/\2.vcf")
 def callVariantsSAMtools(infiles, outfile):
-        '''Perform SNV and indel called from gapped alignment using SAMtools '''
-        to_cluster = USECLUSTER
-        statement = []
-        outfolder = infiles[:infiles.find("/")]
-        try: os.mkdir( '''%(outfolder)s/variants''' % locals() )
-        except OSError: pass
-        track = P.snip( os.path.basename(infiles), ".bam" )
-        statement.append('''samtools mpileup -ugf %%(genome_dir)s/%%(genome)s.fa %(infiles)s | bcftools view -bvcg - > %(outfolder)s/variants/%(track)s.bcf; ''' % locals() )
-        statement.append('''bcftools view %(outfolder)s/variants/%(track)s.bcf | vcfutils.pl varFilter -d 10 -D 100 > %(outfile)s; ''' % locals() )
-        statement.append('''vcf-stats %(outfile)s > %(outfile)s.stats;''' % locals() )
-        statement = " ".join( statement )
-        #print statement
-        P.run()
+    '''Perform SNV and indel called from gapped alignment using SAMtools '''
+    to_cluster = USECLUSTER
+    statement = []
+    outfolder = infiles[:infiles.find("/")]
+    try: os.mkdir( '''%(outfolder)s/variants''' % locals() )
+    except OSError: pass
+    track = P.snip( os.path.basename(infiles), ".bam" )
+    statement.append('''samtools mpileup -ugf %%(genome_dir)s/%%(genome)s.fa %(infiles)s | bcftools view -bvcg - > %(outfolder)s/variants/%(track)s.bcf; ''' % locals() )
+    statement.append('''bcftools view %(outfolder)s/variants/%(track)s.bcf | vcfutils.pl varFilter -d 10 -D 100 > %(outfile)s; ''' % locals() )
+    statement.append('''vcf-stats %(outfile)s > %(outfile)s.stats;''' % locals() )
+    statement = " ".join( statement )
+    #print statement
+    P.run()
 
-#########################################################################
 #########################################################################
 #########################################################################
 #########################################################################
 @transform( callVariantsSAMtools,
-              regex( r"(\S+)/variants/(\S+).vcf"),
-              r"\1/roi_variants/\2.vcf")
-def filterVariantROI(infiles, outfile):
-        '''Filter variant calls in vcf format to regions of interest from a bed file'''
-        to_cluster = USECLUSTER
-        outfolder = infiles[:infiles.find("/")]
-        try: os.mkdir( '''%(outfolder)s/roi_variants''' % locals() )
-        except OSError: pass
-        statement = '''intersectBed -u -a %(infiles)s -b %%(roi_bed)s > %(outfile)s; ''' % locals()
-        #print statement
-        P.run()
+            regex( r"(\S+)/variants/(\S+).vcf"),
+            r"\1/roi_variants/\2.vcf")
+def filterVariantsROI(infiles, outfile):
+    '''Filter variant calls in vcf format to regions of interest from a bed file'''
+    to_cluster = USECLUSTER
+    outfolder = infiles[:infiles.find("/")]
+    try: os.mkdir( '''%(outfolder)s/roi_variants''' % locals() )
+    except OSError: pass
+    statement  = '''intersectBed -u -a %(infiles)s -b %%(roi_bed)s > %(outfile)s; ''' % locals()
+    statement += '''(cat %(infiles)s | grep ^#; cat %(outfile)s;) > %(outfile)s;''' % locals()
+    #print statement
+    P.run()
 
 #########################################################################
 #########################################################################
 #########################################################################
-@follows( mapReads,
-          filterBamROI,
+@transform( filterVariantsROI,
+            regex( r"(\S+)/roi_variants/(\S+).vcf"),
+            r"\1/roi_variants/\2.vcfstats")
+def buildVCFstats(infiles, outfile):
+    '''Filter variant calls in vcf format to regions of interest from a bed file'''
+    to_cluster = USECLUSTER
+    statement = '''vcf-stats %(infiles)s > %(outfile)s;''' % locals()
+    #print statement
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@merge( (buildVCFstats), "variant_stats.load" )
+def loadVariantStats( infiles, outfile ):
+    '''Import variant statistics into SQLite'''
+    scriptsdir = PARAMS["general_scriptsdir"]
+    filenames = " ".join(infiles)
+    tablename = P.toTable( outfile )
+    E.info( "loading coverage stats..." )
+    statement = '''python %(scriptsdir)s/vcfstats2db.py %(filenames)s | 
+                   grep -v ^# > varstats.txt;
+                   cat varstats.txt | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+                       --allow-empty
+                       --index=track
+                       --table=%(tablename)s 
+                   > %(outfile)s '''
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@follows( loadROI,
+          mapReads,
           buildBAMStats,
           loadBAMStats,
-          coverageStats,
+          buildCoverageStats,
+          loadCoverageStats,
           callVariantsSAMtools,
-          filterVariantROI  )
+          filterVariantsROI,
+          buildVCFstats,
+          loadVariantStats )
 def full(): pass
 
+
+@follows( mkdir( "report" ) )
+def build_report():
+    '''build report from scratch.'''
+
+    E.info( "starting documentation build process from scratch" )
+    dirname, basename = os.path.split( os.path.abspath( __file__ ) )
+    docdir = os.path.join( dirname, "pipeline_docs", P.snip( basename, ".py" ) )
+
+    # requires libtk, which is not present on the nodes
+    to_cluster = True
+    job_options= "-pe dedicated %i -R y" % PARAMS["report_threads"]
+    statement = '''
+    rm -rf report _cache _static;
+    sphinxreport-build 
+           --num-jobs=%(report_threads)s
+           sphinx-build 
+                    -b html 
+                    -d %(report_doctrees)s
+                    -c . 
+           %(docdir)s %(report_html)s
+    > report.log '''
+    P.run()
 
 if __name__== "__main__":
     sys.exit( P.main(sys.argv) )
