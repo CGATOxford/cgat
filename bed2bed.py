@@ -104,7 +104,7 @@ def merge( iterator, max_distance = 0, by_name = False ):
         yield a
         noutput += 1
 
-    E.info( "ninput=%i, noutput=%i\n" % (ninput, noutput) )
+    E.info( "ninput=%i, noutput=%i" % (ninput, noutput) )
 
 
 def filterGenome( iterator, contigs ):

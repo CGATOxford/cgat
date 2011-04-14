@@ -194,7 +194,7 @@ if __name__ == '__main__':
         exons = Genomics.Alignment2ExonBoundaries( entry.mMapPeptide2Genome,
                                                    query_from = entry.mQueryFrom,
                                                    sbjct_from = entry.mSbjctGenomeFrom,
-                                                   add_stop_codon = 1 )
+                                                   add_stop_codon = 0 )
 
         if exons[-1][4] != entry.mSbjctGenomeTo:
             print "# WARNING: discrepancy in exon calculation!!!"
@@ -241,13 +241,12 @@ if __name__ == '__main__':
                                                                       sbjct_sequence ) * 100
                 percent_similarity = alignlib.calculatePercentSimilarity( entry.mMapPeptide2Translation ) * 100
                 
-            if options.loglevel >= 3:
-                print "# prediction %s: percent identity/similarity: before=%5.2f/%5.2f, realigned=%5.2f/%5.2f\n" % (
+            E.debug( "prediction %s: percent identity/similarity: before=%5.2f/%5.2f, realigned=%5.2f/%5.2f" % (
                     str(entry.mPredictionId), 
                     entry.mPercentSimilarity,
                     entry.mPercentIdentity,
                     percent_similarity,
-                    percent_identity )
+                    percent_identity ) )
                 
         else:
             query_sequence = None
@@ -376,7 +375,7 @@ if __name__ == '__main__':
                 # if less than options.slipping_exon_boundary: boundary is 0
                 # check if end is more than options.splipping_exon_boundary apart as well.
                 if exon_to - exon_from <= options.slipping_exon_boundary or \
-                   ref_to - ref_from <= options.slipping_exon_boundary:
+                        ref_to - ref_from <= options.slipping_exon_boundary:
                     boundary = 0
                 else:
                     boundary = options.slipping_exon_boundary
@@ -444,6 +443,7 @@ if __name__ == '__main__':
                             truncated_Nterminal_exon = dfrom
                         dfrom = 0
                             
+                    ## truncated terminal exons
                     if e == len(exons)-1 and r == len(ref_exons)-1 and dto <= (entry.mQueryLength - entry.mQueryTo) * 3 and dto > 0:
                         if is_good_exon:                        
                             truncated_Cterminal_exon = dto
@@ -454,6 +454,10 @@ if __name__ == '__main__':
                         dfrom = 0
                             
                     if e == len(exons)-1 and dto <= (entry.mQueryLength - entry.mQueryTo) * 3 and dto > 0:
+                        dto = 0
+
+                    ## permit difference of one codon (assumed to be stop)
+                    if e == len(exons)-1 and r == len(ref_exons)-1 and dto == 3:
                         dto = 0
 
                     ## deal with different boundary conditions:

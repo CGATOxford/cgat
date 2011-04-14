@@ -64,6 +64,8 @@ import SequenceProperties
 import Genomics
 import Intervals
 
+import bx
+import bx.bbi.bigwig_file
 import bx.intervals.io
 import bx.intervals.intersection
 import alignlib
@@ -164,10 +166,13 @@ class Counter:
 
     mMinIntronSize = 10
 
-    def __init__(self, fasta = None, section = None, options = None):
+    def __init__(self, fasta = None, section = None, options = None, prefix = None):
         self.mFasta = fasta
         self.mSection = section
         self.mOptions = options
+
+        if prefix:
+            self.mHeader = tuple(["%s%s" % (prefix, x) for x in self.mHeader ])
 
     def __call__(self, gffs):
         self.mGFFs = gffs
@@ -761,6 +766,131 @@ class ClassifierChIPSeq(Classifier):
        exons.
     ambiguous
        none of the above
+    """
+
+    mHeader = [ "is_cds", "is_utr", "is_upstream", "is_downstream", "is_intronic", "is_intergenic", "is_flank", "is_ambiguous" ]
+
+    # sources to use for classification
+    sources = ("", ) # "protein_coding", "pseudogene", )
+
+    # minimum coverage of a transcript to assign it to a class
+    mThresholdMinCoverage = 95
+
+    # full coverage of a transcript to assign it to a class
+    mThresholdFullCoverage = 99
+
+    # some coverage of a transcript to assign it to a class
+    mThresholdSomeCoverage = 10
+
+    def count(self):
+        
+        for key in self.mKeys:
+            self.mCounters[key](self.mGFFs)
+
+        def s_min( *args ):
+            return sum( [ self.mCounters[x].mPOverlap1 for x in args ] ) >= self.mThresholdMinCoverage
+
+        def s_excl( *args ):
+            return sum( [ self.mCounters[x].mPOverlap1 for x in args ] ) < (100 - self.mThresholdMinCoverage)
+
+        def s_full( *args ):
+            return sum( [ self.mCounters[x].mPOverlap1 for x in args ] ) >= self.mThresholdFullCoverage
+
+        def s_some( *args ):
+            return sum( [ self.mCounters[x].mPOverlap1 for x in args ] ) >= self.mThresholdSomeCoverage
+
+        self.mIsCDS, self.mIsUTR, self.mIsIntergenic = False, False, False
+        self.mIsUpStream, self.mIsDownStream, self.mIsIntronic = False, False, False
+        self.mIsFlank, self.mIsAmbiguous = False, False
+
+        self.mIsCDS = s_full( ":CDS" )        
+        self.mIsUTR = s_full( ":UTR", ":UTR3", ":UTR5" ) 
+        self.mIsIntergenic = s_full( ":intergenic", ":telomeric" )
+
+        if not(self.mIsCDS or self.mIsUTR or self.mIsIntergenic):
+            self.mIsUpStream = s_some( ":5flank", ":UTR5" )
+            if not self.mIsUpStream: 
+                self.mIsDownStream = s_some( ":3flank", ":UTR3" )
+                if not self.mIsDownStream:
+                    self.mIsIntronic = s_some( ":intronic" )
+                    if not self.mIsIntronic:
+                        self.mIsFlank = s_some( ":flank" )
+
+        self.mIsAmbiguous = not( self.mIsUTR or \
+                                     self.mIsIntergenic or self.mIsIntronic or self.mIsCDS or \
+                                     self.mIsUpStream or self.mIsDownStream or self.mIsFlank)
+
+    def __str__(self):
+
+        def to( v ):
+            if v: return "1" 
+            else: return "0"
+
+        h = [ to(x) for x in (self.mIsCDS, 
+                              self.mIsUTR, 
+                              self.mIsUpStream,
+                              self.mIsDownStream,
+                              self.mIsIntronic,
+                              self.mIsIntergenic,
+                              self.mIsFlank,
+                              self.mIsAmbiguous,
+                              ) ]
+
+        for key in self.mKeys:
+            h.append( str(self.mCounters[key]) )
+        return "\t".join( h )
+
+
+##-----------------------------------------------------------------------------------
+class ClassifierRNASeq(Classifier):
+    """classify RNASeq intervals based on a reference annotation.
+
+    This assumes the input is a genome annotation derived from an ENSEMBL gtf file
+    created with gtf2gff.py.
+    
+    A transcript is classified as (threshold = self.mThresholdMinCoverage)
+
+    known:     overlaps exons of a known gene
+    novel:     overlaps any other region but exons
+    ambiguous: can't say
+
+    The main classes are subclassed further:
+
+    The classification for known exons depends on the annotation in the gff file.
+    Theses are:
+
+    pc:        protein coding
+    utr:       is a utr transcript (not overlapping the coding part of a gene)
+    pseudo:    pseudogene
+    npc:       non of the above
+
+    Novel transcripts are classified as:
+
+    intronic-sense:          intronic transcripts of expressed genes that are
+                             within the same orientation.
+
+    intronic-antisense:      intronic transcripts of expressed genes in anti-sense direction.
+    
+    intronic-unprocessed:    intronic transcripts of expressed genes with orientation unknown
+ 
+    intronic-novel:          intronic transcripts of genes that are not expressed.
+    
+    associated-runon:        possible polymerase run-off. These are transcripts within
+                             a certain number of bases from the 3' end of a gene within
+                             the same direction.
+                             
+    associated-downstream:   possible polymerase run-off. These are transcripts within
+                             a certain number of bases from the 3' end of a gene within
+                             the opposite or unknown direction.
+
+    associated-upstream:     transcripts within upstream regions of genes.
+
+    Expression is determined by read-counts of the whole gene. Taking flanking exons
+    does not work as these might be belong to an isoform that is not expressed.
+
+    The area for runon is determined by fitting an exponential decay function 
+    to regions within 50 kb downstream of the terminal exon of a gene. 
+
     """
 
     mHeader = [ "is_cds", "is_utr", "is_upstream", "is_downstream", "is_intronic", "is_intergenic", "is_flank", "is_ambiguous" ]
@@ -1659,6 +1789,7 @@ class CounterReadCoverage(Counter):
 
     Requires bam files to compute that coverage. Multiple bam
     files can be supplied, these will be summed up.
+
     '''
     
     mHeader = ("length", "pcovered",) + Stats.Summary().getHeaders()
@@ -1686,10 +1817,13 @@ class CounterReadCoverage(Counter):
             offset = start - l
             for samfile in self.mBamFiles:
                 for read in samfile.fetch( contig, start, end ):
+                    # only count positions actually overlapping
+                    positions = read.positions
+                    if not positions: continue
                     nreads += 1
-                    rstart = max( 0, read.pos - offset )
-                    rend = min( length, read.pos - offset + read.rlen ) 
-                    counts[ rstart:rend ] += 1
+                    for p in positions:
+                        pos = p - offset
+                        if 0 <= pos < length: counts[ pos ] += 1
             l += end - start
 
         self.mTotalLength = length
@@ -1731,6 +1865,7 @@ class CounterReadCounts(Counter):
             for samfile in self.mBamFiles:
                 last_pos = None
                 for read in samfile.fetch( contig, start, end ):
+                    if not read.overlap( start, end ): continue
                     nnonunique_counts += 1
                     if last_pos != read.pos:
                         last_pos = read.pos
@@ -1741,6 +1876,55 @@ class CounterReadCounts(Counter):
 
     def __str__(self):
         return "\t".join( map(str, (self.mNonUniqueCounts, self.mUniqueCounts ) ) )
+
+##-----------------------------------------------------------------------------------
+class CounterBigwigCounts(Counter):
+    '''obtain bigwig values and return summary stats.
+
+    Requires a bigwig files to compute.
+    '''
+    
+    mHeader = ("length", "pcovered",) + Stats.Summary().getHeaders()
+    
+    # discard segments with size > mMaxLength in order
+    # to avoid out-of-memory
+    mMaxLength = 100000
+
+    def __init__(self, bigwig_file, *args, **kwargs ):
+        Counter.__init__(self, *args, **kwargs )
+        if not bigwig_file: raise ValueError("supply --bigwig-file options for bigwig")
+        self.mBigwigFile = bigwig_file
+
+    def count(self):
+        segments = self.getSegments()
+
+        length = sum( [x[1] - x[0] for x in segments ] )
+        nreads = 0
+        contig = self.getContig()
+
+        t, valid = None, None
+        l = 0
+        for start, end in segments:
+            d = self.mBigwigFile.summarize( contig, start, end, end - start)
+            if t != None: 
+                t = numpy.append( t, d.sum_data)
+                valid = numpy.append( valid, d.valid_count )
+            else: t, valid = d.sum_data, d.valid_count
+
+            l += end - start
+
+        self.mTotalLength = length
+        valid = valid[valid > 0]
+
+        self.mCovered = len(valid)
+        self.mResult = t
+
+    def __str__(self):
+        s = Stats.Summary( self.mResult, mode = "int" )
+        return "\t".join( (str(self.mTotalLength),
+                           "%5.2f" % (100.0 * self.mCovered / self.mTotalLength),
+                           str(s),))
+
 
 ##------------------------------------------------------------
 if __name__ == '__main__':
@@ -1755,6 +1939,9 @@ if __name__ == '__main__':
 
     parser.add_option("-b", "--bam-file", dest="bam_files", type="string",
                       help="filename with read mapping information. Multiple files can be submitted in a comma-separated list [default=%default]."  )
+
+    parser.add_option("-i", "--bigwig-file", dest="bigwig_file", type="string",
+                      help="filename with bigwig information [default=%default]."  )
 
     parser.add_option("-f", "--filename-gff", dest="filename_gff", type="string",
                       help="filename with extra gff file (for counter: overlap) [default=%default]."  )
@@ -1781,7 +1968,9 @@ if __name__ == '__main__':
                       choices=("length", "splice", "composition-na", "overlap", 
                                "classifier", "classifier-chipseq",
                                "overlap-transcripts",
-                               "read-coverage", "read-counts",
+                               "read-coverage", 
+                               "read-counts",
+                               "bigwig-counts",
                                'neighbours',
                                "proximity", "proximity-exclusive", "proximity-lengthmatched",
                                "position", "territories", "splice-comparison", 
@@ -1794,6 +1983,9 @@ if __name__ == '__main__':
 
     parser.add_option( "--proximal-distance", dest="proximal_distance", type="int",
                       help="distance to be considered proximal to an interval [default=%default]."  )
+
+    parser.add_option( "--prefix", dest="prefixes", type="string", action="append",
+                      help="add prefix to column headers - prefixes are used in the same order as the counters [default=%default]."  )
 
     parser.set_defaults(
         genome_file = None,
@@ -1808,9 +2000,14 @@ if __name__ == '__main__':
         add_gtf_source = False,
         proximal_distance = 10000, 
         bam_files = None,
+        prefixes = []
         )
 
     (options, args) = E.Start( parser )
+
+    if options.prefixes:
+        if len(options.prefixes) != len(options.counters):
+            raise ValueError("if any prefix is given, the number of prefixes must be the same as the number of counters" )
 
     # get files
     if options.genome_file:
@@ -1825,11 +2022,16 @@ if __name__ == '__main__':
         quality = None
 
     if options.bam_files:
-        bamfiles = []
+        bam_files = []
         for bamfile in options.bam_files.split(","):
-            bamfiles.append( pysam.Samfile(bamfile, "rb" ) )
+            bam_files.append( pysam.Samfile(bamfile, "rb" ) )
     else:
-        bamfiles = None
+        bam_files = None
+
+    if options.bigwig_file:
+        bigwig_file = bx.bbi.bigwig_file.BigWigFile( open(options.bigwig_file))
+    else:
+        bigwig_file = None
 
     counters = []
 
@@ -1840,38 +2042,46 @@ if __name__ == '__main__':
     if not options.gff_sources: options.gff_sources.append( None )
     if not options.gff_features: options.gff_features.append( None )
 
-    for c in options.counters:
+    for n, c in enumerate(options.counters):
+        if options.prefixes:
+            prefix = options.prefixes[n]
+        else:
+            prefix = None
+
         if c == "position":
             for section in options.sections:
-                counters.append( CounterPosition( section = section, options = options ) )
+                counters.append( CounterPosition( section = section, options = options, prefix = prefix ) )
         elif c == "length":
             for section in options.sections:
-                counters.append( CounterLengths( section = section, options = options ) )
+                counters.append( CounterLengths( section = section, options = options, prefix = prefix ) )
         elif c == "splice":
-            counters.append( CounterSpliceSites( fasta=fasta ) )
+            counters.append( CounterSpliceSites( fasta=fasta, prefix = prefix ) )
         elif c == "quality":
-            counters.append( CounterQuality( fasta=quality ) )
+            counters.append( CounterQuality( fasta=quality, prefix = prefix ) )
         elif c == "overrun":
             counters.append( CounterOverrun( filename_gff = options.filename_gff,
-                                             options = options ) )
+                                             options = options, prefix = prefix ) )
         elif c == "read-coverage":
-            counters.append( CounterReadCoverage( bamfiles,
-                                                  options = options ) )
+            counters.append( CounterReadCoverage( bam_files,
+                                                  options = options, prefix = prefix ) )
         elif c == "read-counts":
-            counters.append( CounterReadCounts( bamfiles,
-                                                options = options ) )
+            counters.append( CounterReadCounts( bam_files,
+                                                options = options, prefix = prefix ) )
+        elif c == "bigwig-counts":
+            counters.append( CounterBigwigCounts( bigwig_file,
+                                                  options = options, prefix = prefix ) )
 
         elif c == "splice-comparison":
             counters.append( CounterSpliceSiteComparison( fasta=fasta, 
                                                           filename_gff = options.filename_gff,
                                                           feature=None, 
                                                           source=None, 
-                                                          options=options ) )
+                                                          options=options, prefix = prefix ) )
         elif c == "composition-na":
             for section in options.sections:
                 counters.append( CounterCompositionNucleotides( fasta=fasta,
                                                                 section = section,
-                                                                options = options ) )
+                                                                options = options, prefix = prefix ) )
 
         elif c in ( "overlap", "overlap-transcripts", 
                     "proximity", "proximity-exclusive", "proximity-lengthmatched",
@@ -1910,16 +2120,16 @@ if __name__ == '__main__':
                                                    source = source,
                                                    fasta=fasta,
                                                    section = section,
-                                                   options = options) )
+                                                   options = options, prefix = prefix) )
 
         elif c == "classifier":
             counters.append( Classifier( filename_gff = options.filename_gff,
                                          fasta = fasta,
-                                         options = options) )
+                                         options = options, prefix = prefix) )
         elif c == "classifier-chipseq":
             counters.append( ClassifierChIPSeq( filename_gff = options.filename_gff,
                                                 fasta = fasta,
-                                                options = options) )
+                                                options = options, prefix = prefix) )
 
     if options.reporter == "genes":
         iterator = GTF.flat_gene_iterator

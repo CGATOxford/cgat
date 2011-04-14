@@ -2097,13 +2097,19 @@ def main( argv = None ):
     parser.add_option("-m", "--module", dest="modules", type="choice", action="append",
                       choices=("gene-counts", "transcript-effects", "contig-counts"),
                       help="modules to apply [default=%default]."  )
-
+    parser.add_option("-i", "--input-format", dest="input_format", type="choice",
+                      choices = ("pileup", "vcf" ),
+                      help="input format [default=%default]."  )
+    parser.add_option( "--vcf-sample", dest="vcf_sample", type="string",
+                      help="sample id in vcf file to analyse [default=%default]."  )
 
     parser.set_defaults(
         genome_file = None,
         filename_exons = None,
         filename_seleno = None,
-        modules = []
+        modules = [],
+        input_format = "pileup",
+        vcf_sample = None,
         )
 
     ## add common options (-h/--help, ...) and parse command line 
@@ -2111,6 +2117,7 @@ def main( argv = None ):
 
     ninput, nskipped, noutput = 0, 0, 0
 
+    ################################
     if options.genome_file:
         fasta = IndexedFasta.IndexedFasta( options.genome_file )
     else:
@@ -2121,6 +2128,15 @@ def main( argv = None ):
     else:
         seleno = {}
 
+    # setup iterator
+    if options.input_format == "pileup":
+        iterator = pysam.Pileup.iterate(sys.stdin)
+    elif options.input_format == "vcf":
+        if not options.vcf_sample:
+            raise ValueError( "vcf format requires sample id (--vcf-sample) to be set" )
+        iterator = pysam.Pileup.iterate_from_vcf( sys.stdin, options.vcf_sample )
+
+    ################################
     modules = []
     for module in options.modules:
         if module == "gene-counts":
@@ -2140,7 +2156,7 @@ def main( argv = None ):
             
     options.stdout.write( "\t".join( [x.getHeader() for x in modules]) + "\n" )
 
-    for snp in pysam.Pileup.iterate(sys.stdin):
+    for snp in iterator:
         ninput += 1
 
         # translate chromosome according to fasta

@@ -416,14 +416,14 @@ def pslMerge( options ):
                 if d > 0 or not f(xx,yy):
                     continue
                 else:
-                    graph.add_edge( x, y, -d )
+                    graph.add_edge( x, y, { 'weight' : -d } )
 
         source = len(matches)
         target = len(matches) + 1
         for x in range(len(matches)):
             xx = matches[x]
-            graph.add_edge( source, x, xx.mQueryFrom) 
-            graph.add_edge( x, target, xx.mQueryLength - xx.mQueryTo )
+            graph.add_edge( source, x, { 'weight': xx.mQueryFrom } ) 
+            graph.add_edge( x, target, { 'weight' : xx.mQueryLength - xx.mQueryTo } )
 
         if options.loglevel >= 6:
             networkx.write_edgelist( graph, options.stdlog )
@@ -650,16 +650,40 @@ def pslSelectQuery( options ):
     E.info("ninput=%i, noutput=%i, nskipped=%i, ndiscarded=%i" % (ninput, noutput, nskipped, ndiscarded) )
 
 def iterator_filter_overlapping_query( psls, options ):
-    
+    '''remove alignments that overlap on query.
+
+    If multiple alignments overlap, the one with the highest number
+    of matching nucleotides is chosen.
+    '''
+
+    # note: only takes the full ranges, but does not check for individual overlap of blocks
+    # use connected components and hasAlignmentOverlap
     ninput, noutput, ndiscarded = 0, 0, 0    
+
+    last_contig = None
+
     for block in Blat.iterator_query_overlap( psls, options.threshold_merge_distance ):
+
+        # commented code is for base-level filtering, which is very slow
+        # disabled for now
+        # if block[0].mQueryId != last_contig:
+        #     last_contig = block[0].mQueryId
+        #     E.info( "processing %s" % last_contig )
+
         l = len(block)
         ninput += l
         if l > 1: 
             ndiscarded += l
-            continue
-        yield block[0]
-        noutput += l
+            # components = Blat.getComponents( block, by_query = True )
+            # for component in components:
+            #     m = [ block[x] for x in component ]
+            #     m.sort( key = lambda x: -x.mNMatches )
+            #     ndiscarded += len(m) - 1
+            #     yield m[0]
+            #     noutput += 1
+        else:
+            yield block[0]
+            noutput += 1
 
     E.info( "iterator_filter_overlapping_query: ninput=%i, noutput=%i, ndiscarded=%i" % (ninput, noutput,ndiscarded) )
 
@@ -671,9 +695,9 @@ def iterator_filter_overlapping_target( psls, options ):
         ninput += l
         if l > 1: 
             ndiscarded += l
-            continue
-        yield block[0]
-        noutput += l
+        else:
+            yield block[0]
+            noutput += 1
 
     E.info( "iterator_filter_overlapping_target: ninput=%i, noutput=%i, ndiscarded=%i" % (ninput, noutput,ndiscarded) )
 

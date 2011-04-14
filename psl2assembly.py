@@ -78,54 +78,10 @@ import Blat
 import IndexedFasta
 import alignlib
 import Mali
-import Components
 import Stats
 import Genomics
 
-def buildAlignments( sbjct_start, matches ):
-    """building a genome to query alignment for all matches
-    The genome alignment is shifted so that it starts at 0 with 0
-    being sbjct_start.
-    """
 
-    for match in matches:
-        map_genome2query = match.getMapTarget2Query()
-        map_genome2query.moveAlignment( -sbjct_start, 0 ) 
-        match.mMapGenome2Query = map_genome2query 
-
-def getComponents( matches, max_distance = 0, min_overlap = 0):
-    """return overlapping matches.
-    
-    max_distance: allow reads to be joined if they are # residues apart. 
-       Adjacent reads are 1 residue apart, overlapping reads are 0 residues
-       apart.
-    min_overlap: require at least # residues to be overlapping
-    """
-
-    components = Components.IComponents()
-
-    for x in range(0, len(matches)):
-        components.add( x, x)
-
-    if min_overlap > 0 and max_distance > 0:
-        raise ValueError( "both min_overlap (%i) and max_distance (%i) > 0" % (min_overlap, max_distance) )
-
-    if min_overlap > 0:
-        f = lambda x,y: alignlib.getAlignmentOverlap( \
-            matches[x].mMapGenome2Query, 
-            matches[y].mMapGenome2Query, 
-            alignlib.RR ) >= min_overlap
-    else:
-        f = lambda x,y: alignlib.getAlignmentShortestDistance( \
-                matches[x].mMapGenome2Query, 
-                matches[y].mMapGenome2Query, 
-                alignlib.RR ) <= max_distance
-
-    for x in range(len(matches)):
-        for y in range(0, x):
-            if f(x,y): components.add( x, y )
-
-    return components.getComponents()
 
 class Processor:
 
@@ -168,12 +124,12 @@ class Processor:
             was_exon = False
 
 
-            assert lgenome >= match.mMapGenome2Query.getRowTo(), "alignment for match %s is out of bounds (%i > %i)" % \
-                (str(match), match.mMapGenome2Query.getRowTo(), lgenome ) 
+            assert lgenome >= match.mMapTarget2Query.getRowTo(), "alignment for match %s is out of bounds (%i > %i)" % \
+                (str(match), match.mMapTarget2Query.getRowTo(), lgenome ) 
 
             # collapse the alignment
-            for x in range(match.mMapGenome2Query.getRowFrom(), match.mMapGenome2Query.getRowTo() ):
-                if match.mMapGenome2Query.mapRowToCol( x ) >= 0:            
+            for x in range(match.mMapTarget2Query.getRowFrom(), match.mMapTarget2Query.getRowTo() ):
+                if match.mMapTarget2Query.mapRowToCol( x ) >= 0:            
                     is_exon[ x ] += 1
                     if not was_exon: is_terminal[x] += 1
                     was_exon = True
@@ -182,7 +138,7 @@ class Processor:
                     if was_exon: is_terminal[x-1] += 1
                     was_exon = False
                     
-            is_terminal[match.mMapGenome2Query.getRowTo()-1] += 1
+            is_terminal[match.mMapTarget2Query.getRowTo()-1] += 1
 
         return is_exon, is_intron, is_terminal
 
@@ -262,23 +218,23 @@ class Builder(Processor):
             
             if self.options.loglevel >= 4:
 
-                a = str(alignlib.AlignmentFormatExplicit( match.mMapGenome2Query,
+                a = str(alignlib.AlignmentFormatExplicit( match.mMapTarget2Query,
                                                           alignlib.makeSequence( genome ),
                                                           alignlib.makeSequence( query ) ))
 
-                # self.options.stdlog.write( str( alignlib.AlignmentFormatExplicit( match.mMapGenome2Query, 
+                # self.options.stdlog.write( str( alignlib.AlignmentFormatExplicit( match.mMapTarget2Query, 
 #                                                                                  alignlib.makeSequence( genome ),
 #                                                                                  alignlib.makeSequence( query ) ) ) + "\n" )
             
             if map_genome2transcript:
                 alignlib.combineAlignment( mapped, 
                                            map_genome2transcript,
-                                           match.mMapGenome2Query,
+                                           match.mMapTarget2Query,
                                            alignlib.RR )
                                             
                 mali.add( mapped )
             else:
-                mali.add( match.mMapGenome2Query )
+                mali.add( match.mMapTarget2Query )
             
             seqs.append( query )
 
@@ -398,8 +354,8 @@ class BuilderTranscribedLocus(Builder):
                 self.options.stdlog.flush()
 
             # collapse the alignment
-            for x in range(match.mMapGenome2Query.getRowFrom(), match.mMapGenome2Query.getRowTo() ):
-                if match.mMapGenome2Query.mapRowToCol( x ) >= 0:            
+            for x in range(match.mMapTarget2Query.getRowFrom(), match.mMapTarget2Query.getRowTo() ):
+                if match.mMapTarget2Query.mapRowToCol( x ) >= 0:            
                     residues.add( x )
         
         residues = list( residues )
@@ -711,8 +667,8 @@ class BuilderCoverage(Builder):
             
             # collapse the alignment
             # offset = match.mSbjctFrom - sbjct_start
-            for x in range(match.mMapGenome2Query.getRowFrom(), match.mMapGenome2Query.getRowTo() ):
-                if match.mMapGenome2Query.mapRowToCol( x ) >= 0:            
+            for x in range(match.mMapTarget2Query.getRowFrom(), match.mMapTarget2Query.getRowTo() ):
+                if match.mMapTarget2Query.mapRowToCol( x ) >= 0:            
                     residues[x] += 1
 
         ncovered = len(residues)
@@ -774,8 +730,8 @@ class BuilderSbjctCoverage(Builder):
             
             # collapse the alignment
             # offset = match.mSbjctFrom - sbjct_start
-            for x in range(match.mMapGenome2Query.getRowFrom(), match.mMapGenome2Query.getRowTo() ):
-                if match.mMapGenome2Query.mapRowToCol( x ) >= 0:            
+            for x in range(match.mMapTarget2Query.getRowFrom(), match.mMapTarget2Query.getRowTo() ):
+                if match.mMapTarget2Query.mapRowToCol( x ) >= 0:            
                     residues[x] += 1
 
         self.mOutFile.write( "%s\t%s\t%i\t%i\t%i\t%i\t%i\t%s\n" % (self.mOutputId, sbjct_id, sbjct_start, sbjct_end, 
@@ -1274,9 +1230,9 @@ class FilterIntrons(Filter):
                         pp1 = pos1 + offset
                         pp2 = pos2 + offset
                         if pp1 >= 0 and pp2 >= 0 and \
-                                match.mMapGenome2Query.mapRowToCol( pp1 ) >= 0 and \
-                                match.mMapGenome2Query.mapRowToCol( pp2 ) >= 0 and \
-                                match.mMapGenome2Query.mapRowToCol( pp2 ) - match.mMapGenome2Query.mapRowToCol( pp1 ) == 1:
+                                match.mMapTarget2Query.mapRowToCol( pp1 ) >= 0 and \
+                                match.mMapTarget2Query.mapRowToCol( pp2 ) >= 0 and \
+                                match.mMapTarget2Query.mapRowToCol( pp2 ) - match.mMapTarget2Query.mapRowToCol( pp1 ) == 1:
                             is_confirmed = True
                             break
                     if is_confirmed:
@@ -1329,8 +1285,8 @@ class FilterExonExtenders(Filter):
         for match_without_introns in matches_without_introns:
             for match_with_introns in matches_with_introns:
                 d = alignlib.getAlignmentShortestDistance( \
-                    match_without_introns.mMapGenome2Query, 
-                    match_with_introns.mMapGenome2Query, 
+                    match_without_introns.mMapTarget2Query, 
+                    match_with_introns.mMapTarget2Query, 
                     alignlib.RR )
 
                 if d > 0: continue
@@ -1349,7 +1305,7 @@ class FilterExonExtenders(Filter):
                                             0 )
 
                     d = alignlib.getAlignmentShortestDistance( \
-                        match_without_introns.mMapGenome2Query, 
+                        match_without_introns.mMapTarget2Query, 
                         intron_map,
                         alignlib.RR )
 
@@ -1357,7 +1313,7 @@ class FilterExonExtenders(Filter):
                     intron_sequence = self.mGenomeFasta.getSequence( sbjct_id, "+", intron_start, intron_end )
                     intron_type, prime5, prime3 = Genomics.GetIntronType( intron_sequence, both_strands = True )
                     
-                    overlap = alignlib.getAlignmentOverlap( match_without_introns.mMapGenome2Query, 
+                    overlap = alignlib.getAlignmentOverlap( match_without_introns.mMapTarget2Query, 
                                                             intron_map,
                                                             alignlib.RR )
 
@@ -1567,8 +1523,8 @@ class FilterDuplicates(Filter):
 
                 # make sure they overlap
                 overlap = alignlib.getAlignmentOverlap( \
-                    mx.mMapGenome2Query, 
-                    my.mMapGenome2Query, 
+                    mx.mMapTarget2Query, 
+                    my.mMapTarget2Query, 
                     alignlib.RR )
 
                 if overlap < self.mMinAlignmentOverlap: continue
@@ -1811,7 +1767,7 @@ if __name__ == '__main__':
             options.stdlog.flush()
 
         # calculate overlapping components
-        buildAlignments( sbjct_start, matches )
+        addAlignments( matches, shift = -sbjct_start, by_query = False )
 
         if options.loglevel >= 2:
             options.stdlog.write( "## region: %s:%i..%i: built alignments for %i matches\n" % \
@@ -1826,9 +1782,9 @@ if __name__ == '__main__':
             options.stdlog.flush()
             components = ( range(0,len(matches), ), )
         else:
-            components = getComponents( matches, 
-                                        max_distance = options.threshold_merge_distance,
-                                        min_overlap = options.threshold_merge_overlap )
+            components = Blat.getComponents( matches, 
+                                            max_distance = options.threshold_merge_distance,
+                                            min_overlap = options.threshold_merge_overlap )
             
             if options.loglevel >= 2:
                 options.stdlog.write( "## region: %s:%i..%i: computed %i components\n" % \
@@ -1864,9 +1820,9 @@ if __name__ == '__main__':
                     options.stdlog.flush()
                     components = ( range(0,len(matches), ), )
                 else:
-                    components = getComponents( matches, 
-                                                max_distance = options.threshold_merge_distance,
-                                                min_overlap = options.threshold_merge_overlap )
+                    components = Blat.getComponents( matches, 
+                                                     max_distance = options.threshold_merge_distance,
+                                                     min_overlap = options.threshold_merge_overlap )
 
         if len(components) > 1:
             if options.staggered_alignments == "none":

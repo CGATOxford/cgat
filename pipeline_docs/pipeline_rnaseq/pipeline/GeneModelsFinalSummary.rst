@@ -1,6 +1,6 @@
-=================================
-Contents of the ab-initio geneset
-=================================
+====================
+Summary of gene sets
+====================
 
 This page summarizes information about the various genesets built by the
 RNASeq pipeline. 
@@ -36,7 +36,7 @@ Genes and transcripts
 
 .. report:: Genemodels.GenesetSummary
    :render: table
-   :tracks: abinitio,novel,reference,refcoding
+   :tracks: @geneset_summary@
    :slices: genes,transcripts,single_exon_transcripts,contigs,strands
    :force:
 
@@ -44,7 +44,7 @@ Genes and transcripts
 
 .. report:: Genemodels.GenesetSummary
    :render: interleaved-bar-plot
-   :tracks: abinitio,novel,reference,refcoding
+   :tracks: @geneset_summary@
    :slices: genes,transcripts,single_exon_transcripts
    
    Number of genes/transcripyts
@@ -76,7 +76,7 @@ Exon size summary
  
 .. report:: Genemodels.GenesetSummary
    :render: table
-   :tracks: abinitio,novel,reference,refcoding
+   :tracks: @geneset_summary@
    :slices: exon_size_nval,exon_size_mean,exon_size_median,exon_size_min,exon_size_max
    :force:
 
@@ -84,7 +84,7 @@ Exon size summary
 
 .. report:: Genemodels.GenesetSummary
    :render: interleaved-bar-plot
-   :tracks: abinitio,novel,reference,refcoding
+   :tracks: @geneset_summary@
    :slices: exon_size_mean,exon_size_median
    
    Mean/median exon size
@@ -92,7 +92,7 @@ Exon size summary
 .. report:: Genemodels.GenesetSummary
    :render: table
    :slices: exon_count_mean,exon_count_median,exon_count_min,exon_count_max
-   :tracks: abinitio,novel,reference,refcoding
+   :tracks: @geneset_summary@
    :force:
 
    Summary of gene sets - exons
@@ -100,7 +100,7 @@ Exon size summary
 .. report:: Genemodels.GenesetSummary
    :render: interleaved-bar-plot
    :slices: exon_count_mean,exon_count_median
-   :tracks: abinitio,novel,reference,refcoding
+   :tracks: @geneset_summary@
 
    Mean/median exon counts
 
@@ -124,7 +124,7 @@ Intron size summary
 .. report:: Genemodels.GenesetSummary
    :render: table
    :slices: intron_size_nval,intron_size_mean,intron_size_median,intron_size_min,intron_size_max
-   :tracks: abinitio,novel,reference,refcoding
+   :tracks: @geneset_summary@
    :force:
 
    Summary of gene sets - introns

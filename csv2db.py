@@ -285,7 +285,6 @@ def run( options, args ):
 
     rows = []
     for row in reader:
-
         try:
             rows.append( CSV.ConvertDictionary( row , map=options.map ))
         except TypeError, msg:
@@ -316,7 +315,6 @@ def run( options, args ):
                                                       existing_tables = existing_tables )
 
     E.info("read %i rows for type guessing" % len(rows) )
-
     def row_iter( rows, reader):
         for row in rows: 
             yield quoteRow( row, take, map_column2type, 
@@ -360,6 +358,14 @@ def run( options, args ):
         
         os.remove( filename )
         
+        # there is no way to .insert NULL values into sqlite. The only solution is
+        # to update all colums.
+        for column in take:
+            executewait( dbhandle, 
+                         "UPDATE %s SET %s = NULL WHERE %s = 'None'" % (options.tablename, column, column),
+                         error, 
+                         options.retry)
+
     elif options.insert_many:
         data = []
         for d in row_iter( rows, reader ):

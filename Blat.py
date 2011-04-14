@@ -36,6 +36,7 @@ Code
 import copy, string, collections
 
 import alignlib
+import Components
 import Experiment as E
 
 class Error(Exception):
@@ -767,3 +768,73 @@ FIELDS = ("matches",
           "blockSizes",
           "qStarts",
           "tStarts" )
+
+
+def addAlignments( matches, shift = 0, by_query = False ):
+    """building a genome to query alignment for all matches
+
+    The genome alignment is shifted by *shift*.
+    """
+
+    if by_query:
+        for match in matches:
+            if not hasattr( match, "mMapQuery2Target" ):
+                map_query2target = match.getMapQuery2Target()
+                if shift: map_query2target.moveAlignment( shift, 0 ) 
+                match.mMapQuery2Target = map_query2target
+    else:
+        for match in matches:
+            if not hasattr( match, "mMapTarget2Query" ):
+                map_target2query = match.getMapTarget2Query()
+                if shift: map_target2query.moveAlignment( shift, 0 ) 
+                match.mMapTarget2Query = map_target2query 
+        
+
+
+def getComponents( matches, max_distance = 0, min_overlap = 0, by_query = False ):
+    """return overlapping matches.
+    
+    max_distance: allow reads to be joined if they are # residues apart. 
+       Adjacent reads are 1 residue apart, overlapping reads are 0 residues
+       apart.
+    min_overlap: require at least # residues to be overlapping
+    """
+
+    addAlignments( matches, by_query = by_query )
+
+    components = Components.IComponents()
+
+    for x in range(0, len(matches)):
+        components.add( x, x)
+
+    if min_overlap > 0 and max_distance > 0:
+        raise ValueError( "both min_overlap (%i) and max_distance (%i) > 0" % (min_overlap, max_distance) )
+
+    if by_query:
+        if min_overlap > 0:
+            f = lambda x,y: alignlib.getAlignmentOverlap( \
+                matches[x].mMapQuery2Target, 
+                matches[y].mMapQuery2Target, 
+                alignlib.RR ) >= min_overlap
+        else:
+            f = lambda x,y: alignlib.getAlignmentShortestDistance( \
+                    matches[x].mMapQuery2Target, 
+                    matches[y].mMapQuery2Target, 
+                    alignlib.RR ) <= max_distance
+    else:
+        if min_overlap > 0:
+            f = lambda x,y: alignlib.getAlignmentOverlap( \
+                matches[x].mMapTarget2Query, 
+                matches[y].mMapTarget2Query, 
+                alignlib.RR ) >= min_overlap
+        else:
+            f = lambda x,y: alignlib.getAlignmentShortestDistance( \
+                    matches[x].mMapTarget2Query, 
+                    matches[y].mMapTarget2Query, 
+                    alignlib.RR ) <= max_distance
+
+    for x in range(len(matches)):
+        for y in range(0, x):
+            if f(x,y): components.add( x, y )
+
+    return components.getComponents()

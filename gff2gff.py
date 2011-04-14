@@ -59,9 +59,9 @@ import sys, string, re, optparse
 
 
 import Experiment as E
-import GFF, GTF
+import IOTools
+import GFF, GTF, AGP
 import Genomics
-import AGP
 import IndexedFasta
 import Intervals
 import collections
@@ -147,15 +147,31 @@ def combineGFF( gffs, options, merge = True ):
 def cropGFFUnique( gffs, options ):
     """crop intervals in gff file.
 
-    only unique regions are kept. This method ignores any features.
+    only unique regions are kept. This method ignores the feature field.
+
+    If options.ignore_strand is set, strand information for cropping
+    is ignored.
     """
 
     # read regions to crop with and convert intervals to intersectors
     E.info( "reading gff for cropping: started." )
     gffs = list(gffs)
     if len(gffs) == 0: return
-    gffs.sort( key = lambda x: (x.contig, x.strand, x.start ) )
+
     outf = options.stdout
+
+    def _cmp_without_strand( this, last):
+        return this.contig != last.contig
+
+    def _cmp_with_strand( this, last):
+        return this.contig != last.contig or this.strand != last.strand
+
+    if options.ignore_strand:
+        gffs.sort( key = lambda x: (x.contig, x.start ) )
+        comp = _cmp_without_strand
+    else:
+        gffs.sort( key = lambda x: (x.contig, x.strand, x.start ) )
+        comp = _cmp_with_strand
 
     last = gffs[0]
     c = E.Counter()
@@ -163,9 +179,7 @@ def cropGFFUnique( gffs, options ):
     c.input = len(gffs)
 
     for this in gffs[1:]:
-        if ( this.contig != last.contig or
-             this.strand != last.strand or 
-             last.end <= this.start):
+        if comp( this, last) or last.end <= this.start:
             # no overlap
             if last.start < last.end: 
                 c.output += 1
@@ -214,7 +228,7 @@ def cropGFF( gffs, options ):
     # read regions to crop with and convert intervals to intersectors
     E.info( "reading gff for cropping: started." )
 
-    other_gffs = GFF.iterator( open( options.crop, "r") )
+    other_gffs = GFF.iterator( IOTools.openFile( options.crop, "r") )
     cropper = GFF.readAsIntervals( other_gffs )
     ntotal = 0
     for contig in cropper.keys():
@@ -276,6 +290,9 @@ if __name__ == "__main__":
 
     parser.add_option( "--forward-strand", dest="forward_strand", 
                       help="convert to forward strand.", action="store_true"  )
+
+    parser.add_option( "--ignore-strand", dest="ignore_strand", 
+                      help="ignore strand information.", action="store_true"  )
 
     parser.add_option( "--is-gtf", dest="is_gtf", action="store_true",
                        help="input will be treated as gtf [default=%default]." ) 
@@ -344,6 +361,7 @@ a,b=minimum,maximum number of features.""" )
         combine_groups=False,
         crop = None,
         crop_unique = False,
+        ignore_strand = False,
         filter_range = None,
         join_features = None,
         merge_features = None,
@@ -355,7 +373,7 @@ a,b=minimum,maximum number of features.""" )
     (options, args) = E.Start( parser )
 
     if options.input_filename_contigs:
-        contigs = Genomics.ReadContigSizes( open( options.input_filename_contigs, "r") )
+        contigs = Genomics.ReadContigSizes( IOTools.openFile( options.input_filename_contigs, "r") )
 
     if options.genome_file:
         genome_fasta = IndexedFasta.IndexedFasta( options.genome_file )
@@ -367,7 +385,7 @@ a,b=minimum,maximum number of features.""" )
 
     if options.input_filename_agp:
         agp = AGP.AGP()
-        agp.readFromFile( open( options.input_filename_agp, "r" ) )
+        agp.readFromFile( IOTools.openFile( options.input_filename_agp, "r" ) )
     else:
         agp = None
         

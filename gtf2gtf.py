@@ -89,7 +89,7 @@ if __name__ == '__main__':
                       help="merge overlapping genes if their exons overlap. This ignores the strand [default=%default]."  )
 
     parser.add_option( "--sort", dest="sort", type="choice",
-                       choices=("gene", "transcript", "position", "contig+gene", "position+gene" ),
+                       choices=("gene", "transcript", "position", "contig+gene", "position+gene", "gene+position" ),
                        help="sort input [default=%default]."  )
 
     parser.add_option("-u", "--with-utr", dest="with_utr", action="store_true",
@@ -127,8 +127,9 @@ if __name__ == '__main__':
                        help="convert exons to introns for a gene. Introns are labelled with the feature 'intron'." )
 
     parser.add_option("-f", "--filter", dest="filter", type="choice",
-                      choices=("gene", "transcript","longest-gene"),
-                      help="filter by gene-id or transcript-id. If `longest-gene` is chosen, the longest gene is chosen case of overlapping genes [default=%default]."  )
+                      choices=("gene", "transcript","longest-gene" ),
+                      help="filter by gene-id or transcript-id. If `longest-gene` is chosen, "
+                           " the longest gene is kept case of overlapping genes [default=%default]."  )
 
     parser.add_option("-r", "--rename", dest="rename", type="choice",
                       choices=("gene", "transcript","longest-gene"),
@@ -285,6 +286,8 @@ if __name__ == '__main__':
         entries = list(GTF.iterator(options.stdin))
         if options.sort == "gene":
             entries.sort( key = lambda x: (x.gene_id, x.transcript_id, x.contig, x.start) )
+        elif options.sort == "gene":
+            entries.sort( key = lambda x: (x.gene_id, x.contig, x.start) )
         elif options.sort == "contig+gene":
             entries.sort( key = lambda x: (x.contig,x.gene_id,x.transcript_id,x.start) )
         elif options.sort == "transcript":
@@ -610,6 +613,14 @@ if __name__ == '__main__':
                     output_ranges.append( (last, start) )
                     last = end
 
+                if options.intron_border:
+                    b = options.intron_border
+                    output_ranges = [ (x[0]+b, x[1]-b ) for x in output_ranges ]
+
+                if options.intron_min_length:
+                    l = options.intron_min_length
+                    output_ranges = [ x for x in output_ranges if x[1]-x[0] > l ]
+            
                 for start, end in output_ranges:
                     
                     entry = GTF.Entry()

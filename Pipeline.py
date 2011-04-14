@@ -66,14 +66,16 @@ CONFIG = {}
 def configToDictionary( config ):
 
     p = {}
-
     for section in config.sections():
         for key,value in config.items( section ):
             v = IOTools.convertValue( value )
             p["%s_%s" % (section,key)] = v
             if section == "general":
                 p["%s" % (key)] = v
-
+               
+    for key, value in config.defaults().iteritems():
+        p["%s" % (key)] =  IOTools.convertValue( value )
+        
     return p
 
 def getParameters( filenames = ["pipeline.ini",] ):
@@ -96,6 +98,7 @@ def getParameters( filenames = ["pipeline.ini",] ):
 
     This function also updates the module-wide parameter map.
     
+    The section [DEFAULT] is equivalent to [general].
     '''
 
     global CONFIG
@@ -212,7 +215,7 @@ def critical( message):
 def asList( param ):
     '''return a param as a list'''
     if type(param) not in (types.ListType, types.TupleType):
-        return [param,]
+        return [x.strip() for x in param.split(",")]
     else: return param
 
 def flatten(l, ltypes=(list, tuple)):
@@ -246,7 +249,7 @@ def toTable( outfile ):
     The table name is quoted.
     '''
     assert outfile.endswith( ".load" ) 
-    name = outfile[:-len(".load")]
+    name = os.path.basename( outfile[:-len(".load")] )
     return quote( name )
 
 def load( infile, outfile, options = "" ):
@@ -292,6 +295,11 @@ def getCallerLocals(decorators=0):
     f = sys._getframe(2+decorators)
     args = inspect.getargvalues(f)
     return args[3]
+
+def getCaller(decorators=0):
+    frm = inspect.stack()[2+decorators]
+    mod = inspect.getmodule(frm[0])
+    return mod
 
 def execute( statement, **kwargs ):
     '''execute a statement locally.'''
@@ -805,6 +813,33 @@ def peekParameters( workingdir, pipeline ):
             exec( line )
 
     return dump
+
+def run_report( clean = True):
+    '''run sphinxreport.'''
+
+    dirname, basename = os.path.split( getCaller().__file__ )
+    docdir = os.path.join( dirname, "pipeline_docs", snip( basename, ".py" ) )
+
+    to_cluster = True
+    
+    job_options= "-pe dedicated %i -R y" % PARAMS["report_threads"]
+
+    if clean: clean = """rm -rf report _cache _static;"""
+    else: clean = ""
+
+    statement = '''
+    %(clean)s
+    sphinxreport-build 
+           --num-jobs=%(report_threads)s
+           sphinx-build 
+                    -b html 
+                    -d %(report_doctrees)s
+                    -c . 
+           %(docdir)s %(report_html)s
+    > report.log
+    '''
+
+    run()
 
 if __name__ == "__main__":
 

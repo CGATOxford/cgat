@@ -82,6 +82,7 @@ class Sample(object):
     '''
 
     attributes = ( "experiment", )
+    representation = "file"
 
     def __init__(self, filename = None ):
         collections.namedtuple.__init__(self)
@@ -131,11 +132,11 @@ class Sample(object):
         return [ x for x in self.attributes if self.data[x] != None ]
         
     def __str__(self ):
+        return self.__repr__()
+
+    def __repr__(self):
         return self.asFile()
 
-    def __repr__(self ):
-        return self.asFile()
-    
     def __eq__(self, other):
         return str(other) == str(self)
     
@@ -154,6 +155,19 @@ class Sample(object):
             object.__getattribute__(self, "data" )[key] = val
         else:
             object.__setattr__( self, key, val)
+
+    @classmethod
+    def setDefault( cls, representation = None ):
+        '''set default representation for tracks to *representation*.
+        If *represenation* is None, the representation will be set to
+        the library default (asFile()).
+        '''
+        if representation == None or representation == "asFile":
+            cls.__repr__ = cls.asFile
+        elif representation == "asTable":
+            cls.__repr__ = cls.asTable
+        elif representation == "asR":
+            cls.__repr__ = cls.asR
 
 class Sample3(Sample):
     '''a sample/track.
@@ -187,14 +201,21 @@ class Aggregate:
         else:
             # aggregate all
             self.aggregates = []
-
-        self.track2groups = collections.defaultdict( list )
+            
+        self.track2groups = {}
         for track in tracks:
             key = track.asAggregate( *self.aggregates )
+            if key not in self.track2groups:
+                self.track2groups[key] = []
             self.track2groups[key].append( track )
 
-    def getTracks( self, key ):
-        return self.track2groups[key]
+    def getTracks( self, pattern = None ):
+        '''return all tracks within this aggregate.'''
+        r = sum([x for x in self.track2groups.values()], [] )
+        if pattern:
+            return [ pattern % x for x in r ]
+        else:
+            return r
 
     def __str__(self):
         x = []
@@ -203,7 +224,7 @@ class Aggregate:
         return "\n".join(x)
 
     def __getitem__(self, key):
-        return self.getTracks( key )
+        return self.track2groups[key]
     
     def __iter__(self):
         return self.track2groups.keys().__iter__()
@@ -213,7 +234,7 @@ class Aggregate:
 
     def keys(self):
         return self.track2groups.keys()
-
+    
     def iteritems( self ):
         return self.track2groups.iteritems()
 
@@ -225,12 +246,25 @@ class Tracks:
         self.factory = factory
         self.tracks = []
 
-    def loadFromDirectory( self, files, pattern ):
-        '''load tracks from a list of files, applying pattern.'''
+    def loadFromDirectory( self, files, pattern, exclude = None ):
+        '''load tracks from a list of files, applying pattern.
+
+        If set, exclude files matching patterns in *exclude*.
+        '''
         tracks = []
         rx = re.compile(pattern)
+        
+        if exclude: to_exclude = [ re.compile(x) for x in exclude]
 
         for f in files:
+            if exclude:
+                skip = False
+                for x in to_exclude:
+                    if x.search( f ): 
+                        skip = True
+                        break
+                if skip: continue
+
             tracks.append( self.factory( filename = rx.search( f ).groups()[0] ) )
 
         self.tracks = tracks
@@ -242,10 +276,27 @@ class Tracks:
     def __len__(self):
         return len(self.tracks)
 
-    def __add__(self, other ):
+    def __iadd__(self, other ):
         assert self.factory == other.factory
         self.tracks.extend( other.tracks )
         return self
+
+    def __add__(self, other ):
+        assert self.factory == other.factory
+        n = copy.deepcopy( self )
+        n.tracks.extend( other.tracks )
+        return n
+
+    def __contains__(self, key ):
+        # do parsing (i.e. filenames versus tablenames?)
+        return key in self.tracks
+
+    def getTracks( self, pattern = None ):
+        '''return all tracks in set. '''
+        if pattern:
+            return [ pattern % x for x in self.tracks ]
+        else:
+            return self.tracks
 
 def getSamplesInTrack( track,tracks ):
     '''return all tracks in *tracks* that constitute *track*.'''

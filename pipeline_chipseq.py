@@ -39,10 +39,15 @@ performs the following tasks:
    * describe de-novo motifs
    * find motifs within intervals
 
-Configuration
-=============
+Usage
+=====
 
-The pipeline looks for a configuration file in several places:
+See :ref:`PipelineSettingUp` and :ref:`PipelineRunning` on general information how to use CGAT pipelines.
+
+Configuration
+-------------
+
+The pipeline requires a configured :file:`pipeline.ini` file. The pipeline looks for a configuration file in several places:
 
    1. The default configuration in the :term:`code directory`.
    2. A shared configuration file :file:`../pipeline.ini`.
@@ -62,20 +67,19 @@ the file. In order to get a local configuration file in the current directory, t
 The following sections and parameters probably should be changed from the default 
 values:
 
-Dependencies
-============
+.. todo::
+   describe important parameters
 
-The pipeline requires the information from the following pipelines:
+The sphinxreport report requires a :file:`conf.py` and :file:`sphinxreport.ini` file 
+(see :ref:`PipelineDocumenation`). To start with, use the files supplied with the
+:ref:`Example` data.
 
-:doc:`pipeline_annotations`
-   set the configuration variable :py:data:`annotations_database` and 
-   :py:data:`annotations_dir`.
 
 Input
-=====
+-----
 
 Reads
------
+++++++
 
 Input are :file:`_export.txt.gz`-formatted files from Illumina. The files should be
 labeled in the following way::
@@ -95,7 +99,7 @@ Note that neither ``sample``, ``condition`` or ``replicate`` should contain
 to delineate tasks.
 
 Optional inputs
----------------
++++++++++++++++
 
 Reference motifs
 ++++++++++++++++
@@ -106,23 +110,56 @@ example Jaspar download. The motifs are build by running MEME on the file.
 Reference motifs should end in the suffix ".motif.fasta", for example,
 :file:`rxrvdr.motif.fasta`.
 
-Output
-======
+Requirements
+------------
+
+The pipeline requires the information from the following pipelines:
+
+:doc:`pipeline_annotations`
+   set the configuration variable :py:data:`annotations_database` and 
+   :py:data:`annotations_dir`.
+
+On top of the default CGAT setup, the pipeline requires the following software to be in the 
+path:
+
++--------------------+-------------------+------------------------------------------------+
+|*Program*           |*Version*          |*Purpose*                                       |
++--------------------+-------------------+------------------------------------------------+
+|bowtie_             |>=0.12.7           |read mapping                                    |
++--------------------+-------------------+------------------------------------------------+
+
+Pipline Output
+==============
 
 The results of the computation are all stored in an sqlite relational
-database file.
+database :file:`csvdb`.
 
-Usage
-=====
+Example
+=======
 
-Type::
+Example data is available at http://www.cgat.org/~andreas/sample_data/pipeline_chipseq.tgz.
+To run the example, simply unpack and untar::
 
-   python <script_name>.py --help
+   wget http://www.cgat.org/~andreas/sample_data/pipeline_chipseq.tgz
+   tar -xvzf pipeline_chipseq.tgz
+   cd pipeline_chipseq
+   python <srcdir>/pipeline_chipseq.py make full
 
-for command line help.
+.. note:: 
+   For the pipeline to run, install the :doc:`pipeline_annotations` as well.
 
-Targets
--------
+Glossary
+========
+
+.. glossary::
+
+   bowtie
+      bowtie_ - a read mapper
+
+.. _bowtie: http://bowtie-bio.sourceforge.net/index.shtml
+
+Code
+====
 
 """
 import sys, tempfile, optparse, shutil, itertools, csv, math, random, re, glob, os, shutil, collections
@@ -175,7 +212,9 @@ PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],
 ## Helper functions mapping tracks to conditions, etc
 ###################################################################
 # load all tracks - exclude input/control tracks
-TRACKS = PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
+Sample = PipelineTracks.Sample3
+
+TRACKS = PipelineTracks.Tracks( Sample ).loadFromDirectory( 
     [ x for x in glob.glob( "*_export.txt.gz" ) if PARAMS["tracks_control"] not in x ],
       "(\S+)_export.txt.gz" )
 
@@ -208,7 +247,6 @@ def getUnsubtracted( track ):
     if n.condition.endswith( PARAMS["tracks_subtract"] ):
         n.condition = n.condition[:-len(PARAMS["tracks_subtract"])]
     return n
-    
 
 ###################################################################
 ###################################################################
@@ -233,11 +271,11 @@ TISSUES = PipelineTracks.Aggregate( TRACKS, labels = ("tissue",) )
 # compound targets : all experiments
 TRACKS_MASTER = EXPERIMENTS.keys() + CONDITIONS.keys()
 
-# compound targets : correlation between tracks
-TRACKS_CORRELATION = TRACKS_MASTER + list(TRACKS)
-
 # tracks for subtraction of unstim condition
 TOSUBTRACT = [ x for x in EXPERIMENTS if not x.condition == PARAMS["tracks_unstimulated"] ]
+
+# compound targets : correlation between tracks
+TRACKS_CORRELATION = TRACKS_MASTER + list(TRACKS) + [ getSubtracted( x ) for x in TOSUBTRACT ]
 
 # print "EXP=", EXPERIMENTS
 # print "COND=", CONDITIONS
@@ -336,7 +374,7 @@ def normalizeBAMPerReplicate( infiles, outfile ):
 ############################################################
 ############################################################
 @follows( normalizeBAMPerReplicate )
-@files( [( [ "%s.norm.bam" % y.asFile() for y in EXPERIMENTS.getTracks(x)], 
+@files( [( [ "%s.norm.bam" % y.asFile() for y in EXPERIMENTS[x]], 
            "%s.readcorrelations.gz" % x.asFile()) 
          for x in EXPERIMENTS ] )
 def makeReadCorrelation( infiles, outfile ):
@@ -465,7 +503,7 @@ else:
 ############################################################
 ############################################################
 @follows( exportIntervalsAsBed )
-@files( [( [ "%s.bed" % y.asFile() for y in EXPERIMENTS.getTracks(x)], 
+@files( [( [ "%s.bed" % y.asFile() for y in EXPERIMENTS[x]], 
            "%s.bed" % x.asFile()) 
          for x in EXPERIMENTS ] )
 def combineExperiment( infiles, outfile ):
@@ -480,7 +518,7 @@ def combineExperiment( infiles, outfile ):
 ############################################################
 ############################################################
 @follows( exportIntervalsAsBed )    
-@files( [( [ "%s.bed" % y.asFile() for y in CONDITIONS.getTracks(x)], 
+@files( [( [ "%s.bed" % y.asFile() for y in CONDITIONS[x]], 
            "%s.bed" % x.asFile()) 
          for x in CONDITIONS ] )
 def combineCondition( infiles, outfile ):
@@ -494,7 +532,7 @@ def combineCondition( infiles, outfile ):
 ############################################################
 ############################################################
 @follows( exportIntervalsAsBed )    
-@files( [( [ "%s.bed" % y.asFile() for y in TISSUES.getTracks(x)], 
+@files( [( [ "%s.bed" % y.asFile() for y in TISSUES[x]], 
            "%s.bed" % x.asFile()) 
          for x in TISSUES ] )
 def combineTissue( infiles, outfile ):
@@ -555,12 +593,12 @@ def loadCombinedIntervals( infile, outfile ):
 
     samfiles, offsets = [], []
 
-    track = PipelineTracks.Sample( filename = P.snip( infile, ".bed") )
+    track = Sample( filename = P.snip( infile, ".bed") )
 
     # get replicates / aggregated tracks associated with track
     # remove subtraction as not relevant for tag counting
     unsubtracted_track = getUnsubtracted ( track )
-    replicates = PipelineTracks.Aggregate( TRACKS, track = unsubtracted_track ).getTracks( unsubtracted_track )
+    replicates = PipelineTracks.getSamplesInTrack( unsubtracted_track, TRACKS )
 
     assert len(replicates) > 0
     
@@ -855,7 +893,7 @@ if 0:
 ## targets to do with the analysis of replicates
 ############################################################
 @follows( buildIntervals )
-@files( [ ([ "%s.bed" % y.asFile() for y in EXPERIMENTS.getTracks( x )], 
+@files( [ ([ "%s.bed" % y.asFile() for y in EXPERIMENTS[x]], 
            "%s.reproducibility" % x.asFile()) for x in EXPERIMENTS ] )
 def makeReproducibility( infiles, outfile ):
     '''compute overlap between intervals.
@@ -1035,7 +1073,8 @@ def runMEME( infile, outfile ):
     data = cc.fetchall()
     cc.close()
 
-    cutoff = len(data) // 10
+    cutoff = int( len(data) * PARAMS["meme_proportion"] ) + 1
+    
     # maximum size of data set (in characters)
     maxsize = int(PARAMS["meme_max_size"])
 
@@ -1141,7 +1180,7 @@ def writeSequencesForIntervals( track, filename,
     cc.close()
 
     if proportion:
-        cutoff = int(len(data) * proportion)
+        cutoff = int(len(data) * proportion) + 1
     else:
         cutoff = len(data)
         
@@ -1247,13 +1286,13 @@ def runGLAM2( infile, outfile ):
                                        full = False,
                                        halfwidth = int(PARAMS["meme_halfwidth"]),
                                        maxsize = int(PARAMS["meme_max_size"]),
-                                       proportion = 0.1 )
+                                       proportion = PARAMS["meme_proportion"] )
 
     min_sequences = int(nseq / 10.0)
     statement = '''
     %(execglam2)s -2 -O %(tmpdir)s %(glam2_options)s -z %(min_sequences)i n %(tmpfasta)s > %(outfile)s.log
     '''
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run()
 
     # copy over results
     try:
@@ -1459,7 +1498,7 @@ def runBioProspector( infiles, outfile ):
                                        tmpfasta,
                                        full = True,
                                        masker = "dust",
-                                       proportion = 0.10 )
+                                       proportion = PARAMS["bioprospector_proportion"] )
 
     statement = '''
     BioProspector -i %(tmpfasta)s %(bioprospector_options)s -o %(outfile)s > %(outfile)s.log
@@ -2157,6 +2196,20 @@ def full():
     '''run the full pipeline.'''
     pass
 
+@follows( mkdir( "report" ) )
+def build_report():
+    '''build report from scratch.'''
+
+    E.info( "starting documentation build process from scratch" )
+    P.run_report( clean = True )
+
+@follows( mkdir( "report" ) )
+def update_report():
+    '''update report.'''
+
+    E.info( "updating documentation" )
+    P.run_report( clean = False )
+
 if __name__== "__main__":
 
     # print( "# tracks found: %s" % TRACKS_ALL )
@@ -2164,10 +2217,11 @@ if __name__== "__main__":
     # print( "# tracks by condition: %s" % TRACKS_CONDITIONS )
     # print( "# tracks by tissue: %s" % TRACKS_TISSUES )
 
+    # fails for config command
     # check compatibility
-    assert PARAMS["genome"] == PARAMS_ANNOTATIONS["genome"] 
+    # assert PARAMS["genome"] == PARAMS_ANNOTATIONS["genome"] 
     # sanity checks
-    assert len(TRACKS_ALL) > 0
+    # assert len(TRACKS_ALL) > 0
 
     sys.exit( P.main(sys.argv) )
 

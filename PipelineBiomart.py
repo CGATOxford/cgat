@@ -1,8 +1,9 @@
 '''utility tasks for importing data from biomart.
 '''
 
-from rpy import r as R
-import rpy
+from rpy2.robjects import r as R
+import rpy2.robjects as ro
+import rpy2.robjects.numpy2ri
 
 def importFromBiomart( outfile, columns, 
                        biomart = "ensembl", 
@@ -53,7 +54,11 @@ def biomart_iterator( columns,
     mart = R.useMart(biomart=biomart, dataset= dataset )
     result = R.getBM( attributes=columns, mart=mart )
     
-    for data in zip( *[ result[x] for x in columns] ):
+    # result is a dataframe.
+    # rx returns a dataframe.
+    # rx()[0] returns a vector
+    for data in zip( *[ result.rx(x)[0] for x in columns] ):
         yield dict( zip(columns, data) )
         
 
+        

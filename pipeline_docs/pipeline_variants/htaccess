@@ -1,0 +1,4 @@
+AuthName "MouseStrains"  
+AuthType Basic                                                                                                                                                                                                                               
+AuthUserFile /home/andreas/.htpasswd                                                                                                                                                                                                         
+require valid-user

@@ -73,7 +73,7 @@ def createGO( infile, outfile ):
                      --host=%(go_host)s 
                      --user=anonymous 
                      --database=%(go_database)s 
-                     --port=5306 > %(outfile)s.log
+                     --port=%(go_port)i > %(outfile)s.log
         '''
 
     P.run()
@@ -94,17 +94,19 @@ def createGOSlim( infile, outfile ):
 
     
     statement = '''
-        /net/cpp-group/server/lib/perl5/5.10.0/bin/map2slim -outmap go2goslim.map goslim_goa.obo gene_ontology.obo
+        map2slim -outmap %(outfile)s.map goslim_goa.obo gene_ontology.obo
     '''
     P.run()
 
     statement = '''
-        python %(scriptsdir)s/GO.py \
-                --go2goslim \
-                --filename-ontology=gene_ontology.obo \
-                --slims=go2goslim.map \
-                --log=%(outfile)s.log \
-        < %(infile)s > %(outfile)s
+        zcat < %(infile)s
+        | python %(scriptsdir)s/GO.py 
+                --go2goslim 
+                --filename-ontology=gene_ontology.obo 
+                --slims=%(outfile)s.map 
+                --log=%(outfile)s.log 
+        | gzip
+        > %(outfile)s
         '''
     P.run()
 

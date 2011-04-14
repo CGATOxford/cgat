@@ -171,7 +171,9 @@ def main( argv = None ):
             nm[read.opt("NM")] += 1
         except KeyError:
             pass
-
+        
+        # duplicate analysis - simply count per start position
+        # ignoring sequence and strand
         if read.rname == last_contig and read.pos == last_pos:
             count += 1
             nduplicates += 1
@@ -211,20 +213,25 @@ def main( argv = None ):
         outs.write( "unique\t%i\t%5.2f\tno_rna\n" % (nfiltered - nduplicates,
                                                      100.0*(nfiltered - nduplicates)/nfiltered))
 
+    # count number of reads in file
     nreads = nmapped
+    if len(nh_all) > 1:
+        for x in xrange( 2, max(nh_all.keys() ) + 1 ): nreads -= (nh_all[x] / x) * (x-1)
+
     outs.write( "reads_total\t%i\t%5.2f\treads_total\n" % (nreads, 100.0 ) )
     nreads_mapped = nreads - flags_counts[4]
     outs.write( "reads_mapped\t%i\t%5.2f\treads_total\n" % (nreads_mapped, 100.0 * nreads_mapped / nreads ) )
 
     if len(nh_all) > 1:
-        for x in xrange( 2, max(nh_all.keys() ) + 1 ): nreads -= (nh_all[x] / x) * (x-1)
         outs.write( "reads_unique\t%i\t%5.2f\treads_mapped\n" % (nh_all[1], 100.0 * nh_all[1] / nreads_mapped ) )
 
     nreads_norna = nfiltered
+    if len(nh) > 1:
+        for x in xrange( 2, max(nh.keys() ) + 1 ): nreads_norna -= (nh[x] / x) * (x-1)
+
     outs.write( "reads_norna\t%i\t%5.2f\treads_mapped\n" % (nreads_norna, 100.0 * nreads_norna / nreads_mapped ) )
 
     if len(nh) > 1:
-        for x in xrange( 2, max(nh.keys() ) + 1 ): nreads_norna -= (nh[x] / x) * (x-1)
         outs.write( "reads_norna_unique\t%i\t%5.2f\treads_norna\n" % (nh[1], 100.0 * nh[1] / nreads_norna ) )
 
     pysam_in.close()

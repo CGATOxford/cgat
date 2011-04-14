@@ -62,7 +62,7 @@ def updateVariants( variants, lcontig, strand, phased = True ):
         reference = bytes(variant.reference)
 
         # fix 1-ness of variants
-        pos -= 1
+        # pos -= 1
 
         if len(genotype) == 1:
             variantseqs = list(Genomics.decodeGenotype( genotype ) )
@@ -353,7 +353,7 @@ def buildAlleles( sequence, variants, reference_start = 0, phased = True):
                  sequence[rel_start].upper(),
                  sequence[rel_start+1:rel_start+10],
                  reference,
-                 feature_start, feauture_end,
+                 feature_start, feature_end,
                  var_start, var_end,
                  rel_start, rel_end,
                  pruned_start, pruned_end,
