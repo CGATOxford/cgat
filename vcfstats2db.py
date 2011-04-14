@@ -68,7 +68,7 @@ if __name__ == '__main__':
     options.filenames = args
 
     if len(options.filenames) < 1:
-        print USAGE, "no vcf-stats files specified/found."
+        options.stdout.write("# Error: no vcf-stats files specified/found.")
         sys.exit(1)
 
     E.info( "Parsing %i file(s)" % len(options.filenames) )
@@ -84,18 +84,18 @@ if __name__ == '__main__':
             lines = []
 
         if len(lines) == 0:
-            print USAGE, "Empty vcf-stats file found: $(filename)s"
+            options.stdout.write("# Error: empty vcf-stats file found: $(filename)s")
             sys.exit(1)
         else:
             E.info( "File %i contains %i lines" % (len(options.filenames),len(lines)) )
             vcf_stats = dict(track=trackname)
-            for line in lines:
-                if line.find("..") > 0: 
+            for i, line in enumerate(lines):
+                if line.find("..") > 0 and i < 17: 
                     fields = line.split("..")
-                    key = fields[0].strip().replace(" ","_").replace("/","_").replace(">","-")
-                    val = fields[1].strip()
-                    if key != "1":
-                         vcf_stats[key] = val 
+                    key = fields[0].strip().replace(" ","_").replace("/","_").replace(">","")
+                    val = fields[1].strip().replace(" ","").replace("\(.+\)","")
+                    val = re.sub('\(.+\)','',val)
+                    vcf_stats[key] = val 
             
             # Write header (for first file only)
             sep=""

@@ -30,18 +30,16 @@ readqc pipeline
 :Date: |today|
 :Tags: Python
 
-The exome pipeline imports unmapped reads from one or more
-fastq and aligns them to the genome, then filters to the regions of interest and calls variants
-in those regions:
+The exome pipeline imports unmapped reads from one or more 
+fastq or sra files and aligns them to the genome, then filters calls variants (SNVs and indels) 
+and filters them by both depth/rate and regions of interest.
 
-   1. align to genome using gapped alignment (BWA, Stampy)
-   2. filter to target regions (BEDTools)
-   3. Call SNVs (SAMTools, SNVMix)
-   4. Call indels (SAMTools)
-   5. Filter variants using Ensembl variation / 1000 genomes data
-   6. Annotate functional impact of remaining variants
-
-For further details see http://www.bioinformatics.bbsrc.ac.uk/projects/exome/
+   1. Align to genome using gapped alignment (BWA)
+   2. Calculate alignment and coverage statistics (BAMStats)
+   3. Call SNVs & indels (SAMtools)
+   4. Filter variants (SAMtools / BEDTools)
+   5. Calculate variant statistics (vcf-tools)
+   6. Produce report (SphinxReport)
 
 Usage
 =====
@@ -110,18 +108,12 @@ path:
 Pipeline output
 ===============
 
-The major output is a set of categorised, prioritised variant calls with functional annotations.
+The major output is a single VCF file and an HTML quality control report.
 
 Example
 =======
 
-Example data is available at http://www.cgat.org/~andreas/sample_data/rnaseq.tgz.
-To run the example, simply unpack and untar::
-
-   wget http://www.cgat.org/~andreas/sample_data/pipeline_rnaseq.tgz
-   tar -xvzf pipeline_rnaseq.tgz
-   cd pipeline_rnaseq
-   python <srcdir>/pipeline_readqc.py make full
+ToDo: make exome sequencing example
 
 
 Code
@@ -175,7 +167,7 @@ PARAMS = P.PARAMS
 #########################################################################
 #########################################################################
 #########################################################################
-@merge( PARAMS["roi_bed"], "roi.load" )
+@files( PARAMS["roi_bed"], "roi.load" )
 def loadROI( infiles, outfile ):
     '''Import regions of interest bed file into SQLite.'''
 
@@ -326,14 +318,14 @@ def loadCoverageStats( infiles, outfile ):
     filenames = " ".join(infiles)
     tablename = P.toTable( outfile )
     E.info( "loading coverage stats..." )
-    statement = '''cat %(filenames)s | sed -e /Track/D
-            | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --allow-empty
-              --header=%(header)s
-              --index=track
-              --index=feature
-              --table=%(tablename)s 
-            > %(outfile)s; '''
+    statement = '''cat %(filenames)s | sed -e /Track/D |  sed 's/[ \t]*$//' | sed 's/,//' | sed -e 's/[ \\t]\+/\\t/g' > covstats.txt;
+                   cat covstats.txt  | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+                       --allow-empty
+                       --header=%(header)s
+                       --index=track
+                       --index=feature
+                       --table=%(tablename)s 
+                   > %(outfile)s; '''
     P.run()
 
 #########################################################################
@@ -351,20 +343,16 @@ def loadCoverageStats( infiles, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@transform( mapReads,
-            regex( r"(\S+)/bam/(\S+).bam"),
-            r"\1/variants/\2.vcf")
+@follows( mkdir( "variants" ) )
+@merge( mapReads, r"variants/all.vcf")
 def callVariantsSAMtools(infiles, outfile):
     '''Perform SNV and indel called from gapped alignment using SAMtools '''
     to_cluster = USECLUSTER
     statement = []
-    outfolder = infiles[:infiles.find("/")]
-    try: os.mkdir( '''%(outfolder)s/variants''' % locals() )
-    except OSError: pass
-    track = P.snip( os.path.basename(infiles), ".bam" )
-    statement.append('''samtools mpileup -ugf %%(genome_dir)s/%%(genome)s.fa %(infiles)s | bcftools view -bvcg - > %(outfolder)s/variants/%(track)s.bcf; ''' % locals() )
-    statement.append('''bcftools view %(outfolder)s/variants/%(track)s.bcf | vcfutils.pl varFilter -d 10 -D 100 > %(outfile)s; ''' % locals() )
-    statement.append('''vcf-stats %(outfile)s > %(outfile)s.stats;''' % locals() )
+    filenames = " ".join(infiles)
+    statement.append('''samtools mpileup -ugf %%(genome_dir)s/%%(genome)s.fa %(filenames)s | bcftools view -bvcg - > variants/all.bcf; ''' % locals() )
+    statement.append('''bcftools view variants/all.bcf | vcfutils.pl varFilter %%(variant_filter)s > %(outfile)s; ''' % locals() )
+    statement.append('''vcf-stats %(outfile)s > variants/all.vcfstats;''' % locals() )
     statement = " ".join( statement )
     #print statement
     P.run()
@@ -373,16 +361,13 @@ def callVariantsSAMtools(infiles, outfile):
 #########################################################################
 #########################################################################
 @transform( callVariantsSAMtools,
-            regex( r"(\S+)/variants/(\S+).vcf"),
-            r"\1/roi_variants/\2.vcf")
+            regex( r"variants/(\S+).vcf"),
+            r"variants/\1.roi.vcf")
 def filterVariantsROI(infiles, outfile):
     '''Filter variant calls in vcf format to regions of interest from a bed file'''
     to_cluster = USECLUSTER
-    outfolder = infiles[:infiles.find("/")]
-    try: os.mkdir( '''%(outfolder)s/roi_variants''' % locals() )
-    except OSError: pass
-    statement  = '''intersectBed -u -a %(infiles)s -b %%(roi_bed)s > %(outfile)s; ''' % locals()
-    statement += '''(cat %(infiles)s | grep ^#; cat %(outfile)s;) > %(outfile)s;''' % locals()
+    statement  = '''intersectBed -u -a %(infiles)s -b %%(roi_bed)s > %(outfile)s.tmp; ''' % locals()
+    statement += '''(cat %(infiles)s | grep ^#; cat %(outfile)s.tmp;) > %(outfile)s; rm %(outfile)s.tmp;''' % locals()
     #print statement
     P.run()
 
@@ -390,8 +375,8 @@ def filterVariantsROI(infiles, outfile):
 #########################################################################
 #########################################################################
 @transform( filterVariantsROI,
-            regex( r"(\S+)/roi_variants/(\S+).vcf"),
-            r"\1/roi_variants/\2.vcfstats")
+            regex( r"variants/(\S+).roi.vcf"),
+            r"variants/\1.roi.vcfstats")
 def buildVCFstats(infiles, outfile):
     '''Filter variant calls in vcf format to regions of interest from a bed file'''
     to_cluster = USECLUSTER
@@ -402,16 +387,15 @@ def buildVCFstats(infiles, outfile):
 #########################################################################
 #########################################################################
 #########################################################################
-@merge( (buildVCFstats), "variant_stats.load" )
-def loadVariantStats( infiles, outfile ):
+@merge( buildVCFstats, "vcf_stats.load" )
+def loadVCFStats( infiles, outfile ):
     '''Import variant statistics into SQLite'''
     scriptsdir = PARAMS["general_scriptsdir"]
-    filenames = " ".join(infiles)
+    #filenames = " ".join(infiles)
     tablename = P.toTable( outfile )
-    E.info( "loading coverage stats..." )
-    statement = '''python %(scriptsdir)s/vcfstats2db.py %(filenames)s | 
-                   grep -v ^# > varstats.txt;
-                   cat varstats.txt | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+    E.info( "Loading vcf stats..." )
+    statement = '''python %(scriptsdir)s/vcfstats2db.py %(infiles)s | 
+                   grep -v ^# | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
                        --allow-empty
                        --index=track
                        --table=%(tablename)s 
@@ -430,7 +414,7 @@ def loadVariantStats( infiles, outfile ):
           callVariantsSAMtools,
           filterVariantsROI,
           buildVCFstats,
-          loadVariantStats )
+          loadVCFStats )
 def full(): pass
 
 
@@ -438,23 +422,22 @@ def full(): pass
 def build_report():
     '''build report from scratch.'''
 
-    E.info( "starting documentation build process from scratch" )
+    E.info( "Starting documentation build process from scratch" )
     dirname, basename = os.path.split( os.path.abspath( __file__ ) )
     docdir = os.path.join( dirname, "pipeline_docs", P.snip( basename, ".py" ) )
 
     # requires libtk, which is not present on the nodes
     to_cluster = True
     job_options= "-pe dedicated %i -R y" % PARAMS["report_threads"]
-    statement = '''
-    rm -rf report _cache _static;
-    sphinxreport-build 
-           --num-jobs=%(report_threads)s
-           sphinx-build 
-                    -b html 
-                    -d %(report_doctrees)s
-                    -c . 
-           %(docdir)s %(report_html)s
-    > report.log '''
+    statement = '''rm -rf report _cache _static;
+                   sphinxreport-build 
+                       --num-jobs=%(report_threads)s
+                   sphinx-build 
+                       -b html 
+                       -d %(report_doctrees)s
+                       -c . 
+                   %(docdir)s %(report_html)s
+                   > report.log '''
     P.run()
 
 if __name__== "__main__":

@@ -4,8 +4,8 @@ from SphinxReport.Tracker import *
 from SphinxReport.odict import OrderedDict as odict
 from exomeReport import *
 
-class MappingSummary( SingleTableTrackerRows ):
-    table = "bam_stats"
+class VariantSummary( SingleTableTrackerRows ):
+    table = "vcf_stats"
 #class AlignmentSummary( SingleTableTrackerRows ):
 #    table = "alignment_stats"
 

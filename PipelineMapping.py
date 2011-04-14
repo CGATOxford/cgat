@@ -69,7 +69,7 @@ class Mapper( object ):
 
         Mapping qualities are changed to solexa format.
         '''
-        tmpdir_fastq = "tmp" #P.getTempDir()
+        tmpdir_fastq = P.getTempDir()
         #print outfile
 
         # create temporary directory again for nodes
@@ -131,7 +131,7 @@ class Mapper( object ):
 
     def cleanup( self, outfile ):
         '''clean up.'''
-        statement = ""#'''rm -rf %s;''' % (self.tmpdir_fastq)
+        statement = '''rm -rf %s;''' % (self.tmpdir_fastq)
         
         return statement
 
