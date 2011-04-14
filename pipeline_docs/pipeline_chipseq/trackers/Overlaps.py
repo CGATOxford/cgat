@@ -2,16 +2,17 @@ import os, sys, re, types, itertools
 import Stats
 import IndexedGenome
 import PipelineTracks
-import ChipseqReport
 
 from SphinxReport.Tracker import *
+from ChipseqReport import *
+
 
 ##################################################################################
 ##################################################################################
 ##################################################################################
 ## 
 ##################################################################################
-class OverlapsBase( ChipseqReport.DefaultTracker ):
+class OverlapsBase( DefaultTracker ):
     """Overlap between sets.
 
     This tracker returns the overlap between a track and 
@@ -126,7 +127,7 @@ for a, aa in _overlap_analysis.items():
 ##################################################################################
 ## 
 ##################################################################################
-class OverlapVersusPeakval( ChipseqReport.DefaultTracker ):
+class OverlapVersusPeakval( DefaultTracker ):
     """Overlap between experiments
     """
     tablename = "reproducibility"
@@ -137,7 +138,7 @@ class OverlapVersusPeakval( ChipseqReport.DefaultTracker ):
         return odict( zip(("recall", "reproducibility"), zip( *data)))
 
     
-class OverlapROC( ChipseqReport.DefaultTracker ):
+class OverlapROC( DefaultTracker ):
     """Overlap between experiments. 
 
     This tracker computes ROC curves examining various 
@@ -160,7 +161,7 @@ class OverlapROC( ChipseqReport.DefaultTracker ):
 
         for field in self.mFields:
             data = []
-            for replicate in ChipseqReport.EXPERIMENTS.getTracks( track ):
+            for replicate in EXPERIMENTS.getTracks( track ):
                 statement = "SELECT contig, start, end,%(field)s FROM %(replicate)s_intervals" % locals()
                 data.append( self.get( statement) )
 

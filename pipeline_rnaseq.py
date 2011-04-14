@@ -522,7 +522,7 @@ def writePrunedGTF( infile, outfile ):
 #########################################################################
 #########################################################################
 @merge( os.path.join( PARAMS["annotations_dir"], 
-                      PARAMS_ANNOTATIONS["interface_geneset_gtf"]),
+                      PARAMS_ANNOTATIONS["interface_geneset_all_gtf"]),
         "reference.gtf.gz" )
 def buildReferenceGeneSet( infile, outfile ):
     '''sanitize transcripts file for cufflinks analysis.
@@ -758,26 +758,38 @@ def buildTerminalExons( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@transform( buildGeneRegions, suffix( ".gff.gz"), "_introns.gtf.gz" )
+@merge( os.path.join(PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_geneset_flat_gtf"]),
+        "introns.gtf.gz" )
 def buildIntronGeneModels(infile, outfile ):
-    '''build intron-transcipts.
+    '''build protein-coding intron-transcipts.
 
     Intron-transcripts are the reverse complement of transcripts.
 
-    10 bp are truncated on either end of an intron.
+    Only protein coding genes are taken.
 
-    Introns are filtered by a minimum length (100).
+    10 bp are truncated on either end of an intron and need
+    to have a minimum length of 100.
+
+    Introns from nested genes might overlap, but all exons
+    are removed.
     '''
 
     to_cluster = True
     
+    filename_exons = os.path.join( PARAMS["annotations_dir"],
+                                   PARAMS_ANNOTATIONS["interface_geneset_exons_gtf"] )
+
     statement = '''gunzip
         < %(infile)s 
-	| %(scriptsdir)s/gff_sort gene 
+        | awk '$2 == "protein_coding"'
+	| python %(scriptsdir)s/gtf2gtf.py --sort=gene 
 	| python %(scriptsdir)s/gtf2gtf.py 
                --exons2introns 
                --intron-min-length=100 
                --intron-border=10 
+               --log=%(outfile)s.log
+        | python %(scriptsdir)s/gff2gff.py
+               --crop=%(filename_exons)s
                --log=%(outfile)s.log
 	| python %(scriptsdir)s/gtf2gtf.py 
               --set-transcript-to-gene 
@@ -2621,6 +2633,57 @@ def buildGeneLevelReadCounts( infiles, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
+@transform(buildGeneLevelReadCounts,
+           suffix(".tsv.gz"),
+           ".load" )
+def loadGeneLevelReadCounts( infile, outfile ):
+    P.load( infile, outfile, options="--index=gene_id" )
+
+#########################################################################
+#########################################################################
+#########################################################################
+@follows( buildUnionExons, mkdir( "intron_counts.dir" ) )
+@transform( buildBAMs, 
+            regex(r"(\S+).accepted.bam"), 
+            add_inputs( buildIntronGeneModels ),
+            r"intron_counts.dir/\1.intron_counts.tsv.gz" )
+def buildIntronLevelReadCounts( infiles, outfile ):
+    '''compute coverage of exons with reads.
+    '''
+
+    infile, exons = infiles
+
+    to_cluster = USECLUSTER
+
+    statement = '''
+    zcat %(exons)s 
+    | python %(scriptsdir)s/gtf2table.py 
+          --reporter=genes
+          --bam-file=%(infile)s 
+          --counter=length
+          --prefix="introns_"
+          --counter=read-counts 
+          --prefix=""
+          --counter=read-coverage
+          --prefix=coverage_
+    | gzip
+    > %(outfile)s
+    '''
+    
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform(buildIntronLevelReadCounts,
+           suffix(".tsv.gz"),
+           ".load" )
+def loadIntronLevelReadCounts( infile, outfile ):
+    P.load( infile, outfile, options="--index=gene_id" )
+
+#########################################################################
+#########################################################################
+#########################################################################
 @follows( mkdir("transcript_counts.dir") )
 @transform( buildBAMs, 
             regex(r"(\S+).accepted.bam"), 
@@ -2659,11 +2722,14 @@ def buildTranscriptLevelReadCounts( infiles, outfile):
     
     P.run()
 
+#########################################################################
+#########################################################################
+#########################################################################
 @transform(buildTranscriptLevelReadCounts,
            suffix(".tsv.gz"),
            ".load" )
 def loadTranscriptLevelReadCounts( infile, outfile ):
-    P.load( infile, outfile )
+    P.load( infile, outfile, options="--index=transcript_id" )
 
 #########################################################################
 #########################################################################

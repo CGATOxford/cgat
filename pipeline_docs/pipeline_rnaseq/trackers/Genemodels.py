@@ -10,10 +10,11 @@ cuffcompare results.
 
 from RnaseqReport import *
 
-class TrackerGenemodels( TrackerSQL ):
+class TrackerGenemodels( RnaseqTracker ):
     mPattern = "_gene_expression"
 
     def getTracks( self, subset = None ):
+        print "getTracks"
         return self.getValues( "SELECT DISTINCT track FROM %s" % self.name )
 
 class GeneModelsBenchmark( TrackerGenemodels ):
@@ -37,7 +38,7 @@ class GeneModelsBenchmark( TrackerGenemodels ):
                       FROM %(name)s WHERE track = '%(track)s' AND contig = '%(slice)s'
                """ % self.members(locals()))
 
-class GeneModelsCodes( TrackerSQL ):
+class GeneModelsCodes( RnaseqTracker ):
     pattern = "(.*)_cuffcompare_tracking"
     as_tables = True
 
@@ -47,7 +48,7 @@ class GeneModelsCodes( TrackerSQL ):
     def __call__(self, track, slice = None ):
         return self.getValue( """SELECT COUNT(*) FROM %(track)s WHERE code = '%(slice)s'""" )
 
-class GeneModelsSharedLoci( TrackerSQL ):
+class GeneModelsSharedLoci( RnaseqTracker ):
     '''number of times a locus appears in experiments.'''
     mPattern = "_cuffcompare_loci"
     mAsTables = True
@@ -55,7 +56,7 @@ class GeneModelsSharedLoci( TrackerSQL ):
     def __call__(self, track, slice = None ):
         return self.getAll( "SELECT nexperiments, count(*) FROM %(track)s group by nexperiments" )
 
-class GeneModelsSharedTransfrags( TrackerSQL ):
+class GeneModelsSharedTransfrags( RnaseqTracker ):
     '''number of times a transfrag appears in experiments.'''
     mPattern = "_cuffcompare_tracking"
     mAsTables = True
@@ -66,7 +67,7 @@ class GeneModelsSharedTransfrags( TrackerSQL ):
     def __call__(self, track, slice = None ): 
         return self.getAll( "SELECT nexperiments, count(*) FROM %(track)s WHERE code = '%(slice)s' group by nexperiments" )
 
-class ExpressionByClass( TrackerSQL ):
+class ExpressionByClass( RnaseqTracker ):
     '''number of times a transfrag appears in experiments.'''
     mPattern = "_cuffcompare_tracking"
     mAsTables = False
@@ -83,7 +84,7 @@ class ExpressionByClass( TrackerSQL ):
                                       GROUP BY a.transfrag_id""" % locals() )
         return odict( ( ("fpkm", vals), ) )
 
-class TransfragCorrelation( TrackerSQL ):
+class TransfragCorrelation( RnaseqTracker ):
     '''return correlation table 
     '''
     mPattern = "_reproducibility"
@@ -100,7 +101,7 @@ class TransfragCorrelation( TrackerSQL ):
                                WHERE code = '%(slice)s'""" )
         return data
 
-class TransfragReproducibility2( TrackerSQL ):
+class TransfragReproducibility2( RnaseqTracker ):
     '''return proportion of transfrags present in a pair of replicates.
     '''
 
@@ -117,7 +118,7 @@ class TransfragReproducibility2( TrackerSQL ):
                                WHERE code = '%(slice)s'""" )
         return data
 
-class TransfragReproducibility( TrackerSQL ):
+class TransfragReproducibility( RnaseqTracker ):
     '''return proportion of transfrags present in a pair of replicates.
     '''
 
@@ -134,13 +135,13 @@ class TransfragReproducibility( TrackerSQL ):
                                WHERE code = '%(slice)s'""" )
         return data
 
-class GenesetSummary( SingleTableTrackerRows ):
+class GenesetSummary( RnaseqTracker, SingleTableTrackerRows ):
     '''summary properties of genesets.'''
     table = "geneset_stats"
     column = "track"
 
 
-class GenesetMappability( TrackerSQL ):
+class GenesetMappability( RnaseqTracker ):
     '''return average mappability for all transcripts.'''
     mPattern = "_mappability"
 

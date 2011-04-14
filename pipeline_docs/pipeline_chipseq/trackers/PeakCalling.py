@@ -4,20 +4,19 @@ import numpy, scipy.stats
 import numpy.ma
 import Stats
 import Histogram
-import ChipseqReport
-
 
 from SphinxReport.Tracker import *
+from ChipseqReport import *
 
-class MacsSummary( TrackerSQL ):
-    mPattern = "macs_summary$"
+class MacsSummary( DefaultTracker ):
+    pattern = "(macs_summary)"
 
     def getTracks( self, subset = None ):
         return self.getValues( "SELECT track FROM macs_summary ORDER BY track" )
     
     def __call__(self, track, slice = None ):
 
-        resultsdir = os.path.join( exportdir, "MACS" )
+        resultsdir = os.path.join( EXPORTDIR, "MACS" )
         
         fields = (
             "tag_control_total", "tag_control_unique", 
@@ -34,10 +33,10 @@ class MacsSummary( TrackerSQL ):
             result["link"] = "`pdf <%(resultsdir)s/%(track)s_model.pdf>`_" % locals()
         return result
 
-class MacsDiagnostics(TrackerSQL):
+class MacsDiagnostics(ChipseqTracker):
     """Closest distance of transcript models to gene models in the reference set."""
 
-    mPattern = "_macsdiag"
+    pattern = "(.*)_macsdiag"
 
     def __call__(self, track, slice = None ):
 

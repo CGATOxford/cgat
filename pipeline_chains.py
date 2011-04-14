@@ -22,6 +22,10 @@
 #################################################################################
 """
 
+===============
+Chains pipeline
+===============
+
 :Author: Andreas Heger
 :Release: $Id: pipeline_chains.py 2900 2010-04-13 14:38:00Z andreas $
 :Date: |today|

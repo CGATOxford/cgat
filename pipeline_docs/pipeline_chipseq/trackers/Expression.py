@@ -571,7 +571,7 @@ class ExpressionDifferencesSummary( ExpressionTracker ):
         result["upregulated"] = self.getValue("SELECT COUNT(DISTINCT e.gene_id) FROM %(track)s AS a, probeset2transcript AS e WHERE a.cluster_id = e.cluster_id AND %(cutoff)s AND fold > 1 AND source = '%(slice)s'" % locals() )
         result["downregulated"] = self.getValue("SELECT COUNT(DISTINCT e.gene_id) FROM %(track)s AS a, probeset2transcript AS e WHERE a.cluster_id = e.cluster_id AND %(cutoff)s AND fold < 1 AND source = '%(slice)s'" % locals() )
         if self.mWithResultsDir:
-            resultdir = os.path.join( exportdir, "SAM" )
+            resultdir = os.path.join( EXPORTDIR, "SAM" )
             if os.path.exists( resultdir ): 
                 result["pdf"] = "`pdf <%(resultdir)s/%(foreground)s.sam.expdiffsam.pdf>`_" % locals()
         return result

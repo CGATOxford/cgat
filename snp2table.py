@@ -191,13 +191,13 @@ class BaseAnnotatorSNP( BaseAnnotator ):
         "chromosome", 
         "position", 
         "reference_base", 
-        "genotype" )
-
-    mAdditionalHeader = (
+        "genotype",
         "consensus_quality",
         "snp_quality",
         "rms_mapping_quality",
-        "coverage",
+        "coverage" )
+
+    mAdditionalHeader = (
         "read_bases",
         "base_qualities" )
 
@@ -206,7 +206,7 @@ class BaseAnnotatorSNP( BaseAnnotator ):
     
     def __str__(self ):
         # truncate the last two columns to make the snp output even length
-        return "\t".join( map(str, self.mSNP)[:4] )
+        return "\t".join( map(str, self.mSNP)[:len(self.mHeader)] )
 
     def update( self, snp ):
         '''update with snp.'''
@@ -757,12 +757,19 @@ def main( argv = None ):
                       help="filename with exon information (gff formatted file)  [default=%default]."  )
     parser.add_option("-j", "--filename-junctions", dest="filename_junctions", type="string",
                       help="filename with junction information (filename with exon junctions)  [default=%default]."  )
+    parser.add_option("-i", "--input-format", dest="input_format", type="choice",
+                      choices = ("pileup", "vcf" ),
+                      help="input format [default=%default]."  )
+    parser.add_option( "--vcf-sample", dest="vcf_sample", type="string",
+                      help="sample id in vcf file to analyse [default=%default]."  )
 
     parser.set_defaults(
         genome_file = None,
         filename_annotations = None,
         filename_exons = None,
         filename_junctions = None,
+        input_format = "pileup",
+        vcf_sample = None,
         )
 
     ## add common options (-h/--help, ...) and parse command line 
@@ -779,6 +786,14 @@ def main( argv = None ):
         junctions = readJunctions( options.filename_junctions )
     else:
         junctions = None
+
+    # setup iterator
+    if options.input_format == "pileup":
+        iterator = pysam.Pileup.iterate(sys.stdin)
+    elif options.input_format == "vcf":
+        if not options.vcf_sample:
+            raise ValueError( "vcf format requires sample id (--vcf-sample) to be set" )
+        iterator = pysam.Pileup.iterate_from_vcf( sys.stdin, options.vcf_sample )
     
     modules = []
     modules.append( BaseAnnotatorSNP() )
@@ -792,7 +807,7 @@ def main( argv = None ):
                         
     options.stdout.write( "\t".join( [x.getHeader() for x in modules]) + "\n" )
 
-    for snp in pysam.Pileup.iterate(sys.stdin):
+    for snp in iterator:
         ninput += 1
 
         # translate chromosome according to fasta

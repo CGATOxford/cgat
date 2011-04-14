@@ -7,7 +7,16 @@ import Histogram
 import sqlalchemy
 
 from SphinxReport.Tracker import *
+from SphinxReport.Utils import PARAMS as P
 from SphinxReport.odict import OrderedDict as odict
+
+###################################################################
+###################################################################
+## parameterization
+
+EXPORTDIR=P['chipseq_exportdir']
+DATADIR=P['chipseq_datadir']
+DATABASE=P['chipseq_backend']
 
 ###################################################################
 # cf. pipeline_chipseq.py
@@ -18,8 +27,8 @@ import PipelineTracks
 Sample = PipelineTracks.Sample3
 
 TRACKS = PipelineTracks.Tracks( Sample ).loadFromDirectory( 
-    [ x for x in glob.glob( "*_export.txt.gz" ) if "input" not in x ],
-      "(\S+)_export.txt.gz" )
+    [ x for x in glob.glob( "%s/*_export.txt.gz" % DATADIR) if "input" not in x ],
+      "%s/(\S+)_export.txt.gz" % DATADIR )
 
 Sample.setDefault( "asTable" )
 
@@ -77,7 +86,7 @@ def selectTracks( all_tracks, subset ):
 
     for key, tracks in MAP_TRACKS.iteritems():
         if key in subset: return tracks
-
+        
     # user specified tracks
     tracks = subset
 
@@ -97,19 +106,35 @@ def linkToUCSC( contig, start, end ):
           % locals()
     return link
 
-class DefaultTracker( TrackerSQL ):
+###########################################################################
+###########################################################################
+###########################################################################
+## Trackers
+###########################################################################
+class ChipseqTracker( TrackerSQL ):
     '''Define convenience tracks for plots'''
+    def __init__(self, *args, **kwargs ):
+        TrackerSQL.__init__(self, *args, backend = DATABASE, **kwargs )
 
     def getTracks( self, subset = None):
+        if subset:
+            for key, tracks in MAP_TRACKS.iteritems():
+                if key in subset: return tracks
 
-        all_tracks = TrackerSQL.getTracks( self )
-        return selectTracks( all_tracks, subset )
-    
-class FoldChangeTracker( DefaultTracker ):
+        return TrackerSQL.getTracks( self )
+
+class DefaultTracker( ChipseqTracker ):
+    '''Define convenience tracks for plots'''
+    # def __init__(self, *args, **kwargs ):
+    #     ChipseqTracker.__init__(self, *args, **kwargs)
+
+class FoldChangeTracker( TrackerSQL ):
     '''the fold change tracker ignores unstimulated tracks.'''
+    def __init__(self, *args, **kwargs ):
+        TrackerSQL.__init__(self, *args, backend = DATABASE, **kwargs )
     
     def getTracks( self, subset = None ):
-        tracks = DefaultTracker.getTracks(self, subset )
+        tracks = TrackerSQL.getTracks( self , subset = subset )
         return [ x for x in tracks if TAG_UNSTIM not in x ]
 
 ##################################################################################
@@ -369,7 +394,7 @@ class IntervalListPeakval( IntervalList ):
 ##################################################################################
 ## 
 ##################################################################################
-class IntervalListFoldChange( IntervalList, FoldChangeTracker ):
+class IntervalListFoldChange( FoldChangeTracker, IntervalList ):
     '''list of intervals.'''
 
     mColumnsVariable= ( "fg_mean", "bg_mean", "fold_mean", "fg_max", "bg_max", "fold_max" )
@@ -403,16 +428,13 @@ class IntervalListFoldChange( IntervalList, FoldChangeTracker ):
 ##################################################################################
 ## correlations
 ##################################################################################
-class Correlations( DefaultTracker ):
+class Correlations( ChipseqTracker ):
     """Correlation between all sets.
     """
 
     pattern = "(.*)_intervals$"
     mSkipColumns = ("id", "contig", "start", "end" )
     
-    def __init__(self, *args, **kwargs ): 
-        TrackerSQL.__init__(self, *args, **kwargs)
-
     def __call__(self, track, slice = None ):
         table = "%s_correlation" % self.mField
         data = self.getValues( "SELECT %s FROM %s AS e ORDER BY id" % (track, table))
@@ -451,11 +473,8 @@ class FoldChangeCounts( FoldChangeTracker ):
     """Correlation between all sets.
     """
 
-    mPattern = "_readcounts$"
+    pattern = "(.*)_readcounts$"
     mMinFoldChange = 2.0
-
-    def __init__(self, *args, **kwargs ): 
-        TrackerSQL.__init__(self, *args, **kwargs)
 
     def __call__(self, track, slice = None ):
         data = []

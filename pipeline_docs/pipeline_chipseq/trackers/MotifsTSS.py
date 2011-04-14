@@ -6,7 +6,7 @@ import Stats
 import Histogram
 
 from SphinxReport.Tracker import *
-import ChipseqReport
+from ChipseqReport import *
 
 import Motifs
 import TSS

@@ -160,6 +160,37 @@ def buildGeneRegions( infile, outfile, only_proteincoding = False ):
 ############################################################
 ############################################################
 ############################################################
+def buildFlatGeneSet( infile, outfile ):
+    '''build a flattened gene set.
+
+    All transcripts in a gene are merged into a single transcript. 
+
+    *infile* is an ENSEMBL gtf file.
+    '''
+
+    to_cluster = True
+
+    # sort by contig+gene, as in refseq gene sets, genes on
+    # chr_random might contain the same identifier as on chr
+    # and hence merging will fail.
+    # --permit-duplicates is set so that these cases will be
+    # assigned new merged gene ids.
+    statement = """gunzip 
+            < %(infile)s 
+            | awk '$3 == "exon"' 
+            | python %(scriptsdir)s/gtf2gtf.py --sort=contig+gene
+            | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s 
+            | python %(scriptsdir)s/gtf2gtf.py --merge-exons --permit-duplicates --log=%(outfile)s.log 
+            | python %(scriptsdir)s/gtf2gtf.py --set-transcript-to-gene --log=%(outfile)s.log 
+            | python %(scriptsdir)s/gtf2gtf.py --sort=position+gene
+            | gzip
+            > %(outfile)s
+        """
+    P.run()
+
+############################################################
+############################################################
+############################################################
 def buildProteinCodingGenes( infile, outfile ):
     '''build a collection of exons from the protein-coding
     section of the ENSEMBL gene set. The exons include both CDS
@@ -414,8 +445,6 @@ def buildExons( infile, outfile ):
     '''build a collection of transcripts from the ENSEMBL gene set.
 
     Only the exon portion is kept.
-
-    Removes any transcripts with very long (> 3Mb) introns.
     '''
 
     to_cluster = True

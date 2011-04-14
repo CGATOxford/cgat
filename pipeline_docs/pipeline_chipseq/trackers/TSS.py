@@ -4,18 +4,18 @@ import numpy
 import numpy.ma
 import Stats
 import Histogram
-import ChipseqReport
 import Annotations
 
 
 from SphinxReport.Tracker import *
+from ChipseqReport import *
 
 ##################################################################################
 ##################################################################################
 ##################################################################################
 ## Looking at distance
 ##################################################################################
-class TSSClosest(Annotations.AnnotationSlicer, ChipseqReport.DefaultTracker):
+class TSSClosest(Annotations.AnnotationSlicer, DefaultTracker):
     """for each interval, return the distance to the closest TSS."""
 
     mXLabel = "distance / bases"
@@ -37,7 +37,7 @@ class TSSClosest(Annotations.AnnotationSlicer, ChipseqReport.DefaultTracker):
 
         return odict( ((self.mColumn, data),) )
 
-class TSSDistanceVersusPeakVal(Annotations.AnnotationSlicer, ChipseqReport.DefaultTracker):
+class TSSDistanceVersusPeakVal(Annotations.AnnotationSlicer, DefaultTracker):
     """for each interval, return peakval and the distance to the closest TSS."""
     mXLabel = "distance / bases"
     mPattern = "_tss$"
@@ -71,7 +71,7 @@ class TSSClosestDownstream(TSSClosest):
     mColumn = "d.dist3"
     mWhere = "d.dist3 > 0"
 
-class TSSOverlap(Annotations.AnnotationSlicer, ChipseqReport.DefaultTracker):
+class TSSOverlap(Annotations.AnnotationSlicer, DefaultTracker):
     '''number of TSS that an interval overlaps.'''
     mPattern = "_tss$"
     mAnnotations = "annotations"
@@ -93,14 +93,14 @@ class TSSOverlap(Annotations.AnnotationSlicer, ChipseqReport.DefaultTracker):
         return odict( zip( map(str, bins[:-1]), hist) )
 
 
-class TSSDistances( ChipseqReport.DefaultTracker ):
+class TSSDistances( DefaultTracker ):
     mPattern = "_annotations$"
     
     def getSlices( self, subset = None ):
         return ["5", "3" ]
 
     def getResultsDir( self, track ):
-        return os.path.join( exportdir, "annotator_distance", "%s-tss.gtf.annodist" % track )
+        return os.path.join( EXPORTDIR, "annotator_distance", "%s-tss.gtf.annodist" % track )
 
     def __call__(self, track, slice = None ):
         
@@ -125,14 +125,14 @@ class TSSDistances( ChipseqReport.DefaultTracker ):
 class IntergenicDistances( TSSDistances ):
 
     def getResultsDir( self, track ):
-        return os.path.join( exportdir, "annotator_distance", "%s-intergenic.annodist" % track )
+        return os.path.join( EXPORTDIR, "annotator_distance", "%s-intergenic.annodist" % track )
 
 class IntronicDistances( TSSDistances ):
 
     def getResultsDir( self, track ):
-        return os.path.join( exportdir, "annotator_distance", "%s-intronic.annodist" % track )
+        return os.path.join( EXPORTDIR, "annotator_distance", "%s-intronic.annodist" % track )
 
 class GenicDistances( TSSDistances ):
 
     def getResultsDir( self, track ):
-        return os.path.join( exportdir, "annotator_distance", "%s-genic.annodist" % track )
+        return os.path.join( EXPORTDIR, "annotator_distance", "%s-genic.annodist" % track )

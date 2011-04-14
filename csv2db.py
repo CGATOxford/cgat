@@ -358,6 +358,14 @@ def run( options, args ):
         
         os.remove( filename )
         
+        # there is no way to .insert NULL values into sqlite. The only solution is
+        # to update all colums.
+        for column in take:
+            executewait( dbhandle, 
+                         "UPDATE %s SET %s = NULL WHERE %s = 'None'" % (options.tablename, column, column),
+                         error, 
+                         options.retry)
+
     elif options.insert_many:
         data = []
         for d in row_iter( rows, reader ):

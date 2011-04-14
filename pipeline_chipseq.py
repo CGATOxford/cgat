@@ -247,7 +247,6 @@ def getUnsubtracted( track ):
     if n.condition.endswith( PARAMS["tracks_subtract"] ):
         n.condition = n.condition[:-len(PARAMS["tracks_subtract"])]
     return n
-    
 
 ###################################################################
 ###################################################################
@@ -272,11 +271,11 @@ TISSUES = PipelineTracks.Aggregate( TRACKS, labels = ("tissue",) )
 # compound targets : all experiments
 TRACKS_MASTER = EXPERIMENTS.keys() + CONDITIONS.keys()
 
-# compound targets : correlation between tracks
-TRACKS_CORRELATION = TRACKS_MASTER + list(TRACKS)
-
 # tracks for subtraction of unstim condition
 TOSUBTRACT = [ x for x in EXPERIMENTS if not x.condition == PARAMS["tracks_unstimulated"] ]
+
+# compound targets : correlation between tracks
+TRACKS_CORRELATION = TRACKS_MASTER + list(TRACKS) + [ getSubtracted( x ) for x in TOSUBTRACT ]
 
 # print "EXP=", EXPERIMENTS
 # print "COND=", CONDITIONS

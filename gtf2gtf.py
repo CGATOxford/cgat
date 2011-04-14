@@ -127,8 +127,9 @@ if __name__ == '__main__':
                        help="convert exons to introns for a gene. Introns are labelled with the feature 'intron'." )
 
     parser.add_option("-f", "--filter", dest="filter", type="choice",
-                      choices=("gene", "transcript","longest-gene"),
-                      help="filter by gene-id or transcript-id. If `longest-gene` is chosen, the longest gene is chosen case of overlapping genes [default=%default]."  )
+                      choices=("gene", "transcript","longest-gene" ),
+                      help="filter by gene-id or transcript-id. If `longest-gene` is chosen, "
+                           " the longest gene is kept case of overlapping genes [default=%default]."  )
 
     parser.add_option("-r", "--rename", dest="rename", type="choice",
                       choices=("gene", "transcript","longest-gene"),

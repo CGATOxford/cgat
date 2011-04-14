@@ -1,20 +1,21 @@
 import os, sys, re, types, itertools, glob
 
 from SphinxReport.Tracker import *
+from SphinxReport.Utils import PARAMS as P
 from SphinxReport.odict import OrderedDict as odict
 
 # get from config file
 UCSC_DATABASE="hg19"
-EXPORTDIR="export"
+
 REFERENCE="refcoding"
 
 ###################################################################
 ###################################################################
-###################################################################
-##
-###################################################################
-if os.path.exists("conf.py"): 
-    execfile("conf.py")
+## parameterization
+
+EXPORTDIR=P['rnaseq_exportdir']
+DATADIR=P['rnaseq_datadir']
+DATABASE=P['rnaseq_backend']
 
 ###################################################################
 # cf. pipeline_rnaseq.py
@@ -23,11 +24,11 @@ if os.path.exists("conf.py"):
 import PipelineTracks
 
 TRACKS = PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
-    glob.glob( "%s/*.sra" % datadir), "%s/(\S+).sra" % datadir) +\
+    glob.glob( "%s/*.sra" % DATADIR), "%s/(\S+).sra" % DATADIR) +\
     PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
-    glob.glob( "%s/*.fastq.gz" % datadir), "%s/(\S+).fastq.gz" % datadir ) +\
+    glob.glob( "%s/*.fastq.gz" % DATADIR), "%s/(\S+).fastq.gz" % DATADIR ) +\
     PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
-    glob.glob( "%s/*.fastq.1.gz" % datadir), "%s/(\S+).fastq.1.gz" % datadir ) +\
+    glob.glob( "%s/*.fastq.1.gz" % DATADIR), "%s/(\S+).fastq.1.gz" % DATADIR ) +\
     PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
     glob.glob( "*.csfasta.gz" ), "(\S+).csfasta.gz" )
 
@@ -42,8 +43,8 @@ class GenesetTrack( PipelineTracks.Sample ):
     attributes = ("geneset",)
 
 GENESET_TRACKS = PipelineTracks.Tracks( GenesetTrack ).loadFromDirectory( 
-    glob.glob( "%s/*.cuffdiff" % datadir ), 
-    "%s/(\S+).cuffdiff" % datadir )
+    glob.glob( "%s/*.cuffdiff" % DATADIR ), 
+    "%s/(\S+).cuffdiff" % DATADIR )
 
 CUFFDIFF_LEVELS= ("gene", "isoform", "cds", "tss")
 
@@ -86,64 +87,8 @@ def linkToUCSC( contig, start, end ):
     return link
 
 ###########################################################################
-class DefaultTracker( TrackerSQL ):
+class RnaseqTracker( TrackerSQL ):
     '''Define convenience tracks for plots'''
-
-    def getTracks( self, subset = None):
-        return selectTracks( self.tracks, subset )
-
-class SingleTableTrackerRows( TrackerSQL ):
-    '''Tracker to interrogate a single table.
-
-    Rows are unique in *field*.
-    '''
-    exclude_columns = ()
-    table = None
-    fields = ("track",)
-
-    @property
-    def tracks( self ):
-        d = self.get( "SELECT DISTINCT %s FROM %s" % (",".join(self.fields), self.table ))
-        if len(self.fields) == 1:
-            return tuple( [x[0] for x in d ] )
-        else:
-            return tuple( [tuple(x) for x in d ] )
-
-    @property
-    def slices( self ):
-        columns = self.getColumns( self.table )
-        return [ x for x in columns if x not in self.exclude_columns and x not in self.fields ]
-
-    def __call__(self, track, slice = None ):
-        if len(self.fields) == 1: track = (track,)
-        wheres = " AND ".join([ "%s = '%s'" % (x,y) for x,y in zip( self.fields, track ) ] )
-        return self.getValue( "SELECT %(slice)s FROM %(table)s WHERE %(wheres)s" )
-
-class SingleTableTrackerColumns( TrackerSQL ):
-    exclude_columns = ("track,")
-    table = None
-    column = None
-
-    @property
-    def tracks(self):
-        columns = self.getColumns( self.table )
-        return [ x for x in columns if x not in self.exclude_columns and x != self.column ]
-
-    def __call__(self, track, slice = None ):
-        data = self.getAll( "SELECT %(column)s, %(track)s FROM %(table)s" )
-        return data
-
-class SingleTableTrackerHistogram( TrackerSQL ):
-    exclude_columns = ("track,")
-    table = None
-    column = None
-
-    @property
-    def tracks(self):
-        columns = self.getColumns( self.table )
-        return [ x for x in columns if x not in self.exclude_columns and x != self.column ]
-
-    def __call__(self, track, slice = None ):
-        data = self.getAll( "SELECT %(column)s, %(track)s FROM %(table)s" )
-        return data
-
+    def __init__(self, *args, **kwargs ):
+        TrackerSQL.__init__(self, *args, backend = DATABASE, **kwargs )
+    

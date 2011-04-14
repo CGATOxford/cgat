@@ -4,17 +4,18 @@ import numpy, scipy.stats
 import numpy.ma
 import Stats
 import Histogram
-import ChipseqReport
+
+from ChipseqReport import *
 
 from SphinxReport.Tracker import *
 
 class TrackerReadStats( Tracker ):
 
     def getFilename( self, track ):
-        return os.path.join( datadir, track) + ".readstats"
+        return os.path.join( DATADIR, track) + ".readstats"
 
     def getTracks( self, subset = None ):
-        tracks = [ os.path.basename(x)[:-len(".readstats")] for x in glob.glob( os.path.join(datadir,"*.readstats") ) ]
+        tracks = [ os.path.basename(x)[:-len(".readstats")] for x in glob.glob( os.path.join(DATADIR,"*.readstats") ) ]
         return tracks
 
 class MappingDuplicates( TrackerReadStats ):

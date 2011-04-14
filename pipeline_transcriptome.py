@@ -371,7 +371,7 @@ def buildMergedTracks( infiles, outfile ):
 @files( ( os.path.join( PARAMS["ancestral_repeats_dir"],
                         PARAMS_ANCESTRAL_REPEATS["interface_alignment_psl"]),
           os.path.join( PARAMS["annotations_dir"],
-                       PARAMS_ANNOTATIONS["interface_genes_gtf"])), 
+                       PARAMS_ANNOTATIONS["interface_geneset_flat_gtf"])), 
         "alignment_filtered.psl.gz" )
 def buildFilteredAlignment( infiles, outfile ):
     '''build a genomic alignment without exons from the reference gene set.
@@ -522,7 +522,7 @@ def loadOverrun( infile, outfile ):
 @transform( TRACKS_WITH_CONTROLS.getTracks( "%s.gtf.gz" ),
             suffix(".gtf.gz"), 
             add_inputs( os.path.join( PARAMS["annotations_dir"],
-                                      PARAMS_ANNOTATIONS["interface_genes_gtf"])), 
+                                      PARAMS_ANNOTATIONS["interface_geneset_flat_gtf"])), 
             ".distances")
 def makeDistances( infiles, outfile ):
     '''compute intron overrun.'''

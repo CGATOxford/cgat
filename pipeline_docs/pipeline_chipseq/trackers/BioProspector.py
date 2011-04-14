@@ -1,14 +1,12 @@
-from SphinxReport.Tracker import *
-
-import ChipseqReport
+from ChipseqReport import *
 import glob
 
-class BioProspectorMotifs( ChipseqReport.DefaultTracker ):
+class BioProspectorMotifs( ChipseqTracker ):
     mPattern = "_bioprospector$"
     
     def __call__(self, track, slice = None ):
 
-        resultsdir = os.path.join( exportdir, "bioprospector" )
+        resultsdir = os.path.join( EXPORTDIR, "bioprospector" )
 
         if not os.path.exists( resultsdir ): return []
 

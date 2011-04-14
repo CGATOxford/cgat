@@ -87,18 +87,22 @@ annotation_gff.gz
    A :term:`gff` formatted file annotating the genome with respect to the geneset.
    Annotations are non-overlapping.
 
-geneset.gtf.gz
-   A full gene set.
+geneset_all.gtf.gz
+   The full gene set after reconciling with assembly. Chromosomes names are
+   renamed to be consistent with the assembly.
 
-cds.gtf.gz
+geneset_cds.gtf.gz
    A :term:`gtf` formatted file with only the CDS parts of transcripts.
+   This set will naturally include only coding transcripts.
 
-exons.gtf.gz
+geneset_exons.gtf.gz
    A :term:`gtf` formatted file with only the exon parts of transcripts.
+   This set includes both coding and non-coding transcripts. Coding 
+   transcripts span both the UTR and the CDS.
 
-genes.gtf.gz
-   A :term:`gtf` formatted file of gene models. In gene models, all overlapping transcripts
-   have been merged.
+geneset_flat.gtf.gz
+   A :term:`gtf` formatted flattened gene models. All overlapping transcripts
+   have been merged. This set includes both coding and non-coding transcripts.
 
 peptides.fasta
    A :term:`fasta` formatted file of peptide sequences of coding transcripts.
@@ -131,6 +135,9 @@ go.tsv.gz
 
 goslim.tsv.gz
    A list of :term:`GOSlim` assignments for each gene.
+
+territories.gff.gz
+   A :term:`gff` formatted file of non-overlapping gene territories.
 
 Example
 =======
@@ -232,7 +239,7 @@ def loadGenomeInformation( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-@files( PARAMS["ensembl_filename_gtf"], PARAMS['interface_geneset_gtf'] )
+@files( PARAMS["ensembl_filename_gtf"], PARAMS['interface_geneset_all_gtf'] )
 def buildGeneSet( infile, outfile ):
     '''build a gene set - reconciles chromosome names.
     '''
@@ -265,15 +272,15 @@ def buildGeneRegions( infile, outfile ):
 ############################################################
 ############################################################
 @follows( buildGeneRegions )
-@files( PARAMS["ensembl_filename_gtf"], PARAMS['interface_genes_gtf'] )
-def buildGenes( infile, outfile ):
-    '''build a collection of exons from the protein-coding
-    section of the ENSEMBL gene set. The exons include both CDS
-    and UTR.
+@files( PARAMS["ensembl_filename_gtf"], PARAMS['interface_geneset_flat_gtf'] )
+def buildFlatGeneSet( infile, outfile ):
+    '''build a flattened gene set.
 
-    The set is filtered in the same way as in :meth:`buildGeneRegions`.
+    All transcripts in a gene are merged into a single transcript. 
+
+    *infile* is an ENSEMBL gtf file.
     '''
-    PGeneset.buildProteinCodingGenes( infile, outfile )
+    PGeneset.buildFlatGeneSet( infile, outfile )
 
 ############################################################
 ############################################################
@@ -286,7 +293,7 @@ def loadGeneInformation( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-@files( buildGenes, "gene_stats.load" )
+@files( buildFlatGeneSet, "gene_stats.load" )
 def loadGeneStats( infile, outfile ):
     '''load the transcript set.'''
 
@@ -296,7 +303,7 @@ def loadGeneStats( infile, outfile ):
 ############################################################
 ############################################################
 @files( PARAMS["ensembl_filename_gtf"], 
-        PARAMS["interface_cds_gtf"] )
+        PARAMS["interface_geneset_cds_gtf"] )
 def buildCDSTranscripts( infile, outfile ):
     '''build a collection of transcripts from the protein-coding
     section of the ENSEMBL gene set.
@@ -309,7 +316,7 @@ def buildCDSTranscripts( infile, outfile ):
 ############################################################
 ############################################################
 @files( PARAMS["ensembl_filename_gtf"], 
-        PARAMS["interface_exons_gtf"] )
+        PARAMS["interface_geneset_exons_gtf"] )
 def buildExonTranscripts( infile, outfile ):
     '''build a collection of transcripts from the protein-coding
     section of the ENSEMBL gene set.
@@ -412,6 +419,29 @@ def buildSelenoList( infile, outfile ):
     outf.write("\n".join( [x[0] for x in cc.execute( statement) ] ) + "\n" )
     outf.close()
 
+
+############################################################
+############################################################
+############################################################
+@merge( buildFlatGeneSet, PARAMS["interface_territories_gff"] )
+def buildGeneTerritories( infile, outfile ):
+    '''build gene territories.'''
+
+    to_cluster=True
+    
+    statement = '''
+    gunzip < %(infile)s
+    | python %(scriptsdir)s/gtf2gtf.py --sort=position
+    | python %(scriptsdir)s/gtf2gff.py 
+          --genome-file=%(genome_dir)s/%(genome)s 
+          --log=%(outfile)s.log
+          --radius=%(geneset_territories_radius)s
+          --method=territories
+    | python %(scriptsdir)s/gtf2gtf.py --filter=longest-gene --log=%(outfile)s.log 
+    | gzip
+    > %(outfile)s '''
+    
+    P.run()
 
 ############################################################
 ############################################################
@@ -710,7 +740,7 @@ def loadGOAssignments( infile, outfile ):
 @merge( (importRepeatsFromUCSC, 
          importRNAAnnotationFromUCSC,
          PARAMS["ensembl_filename_gtf"],
-         buildGenes,
+         buildFlatGeneSet,
          createGO,
          ),
         PARAMS["interface_genomic_context_bed"] )
@@ -729,7 +759,7 @@ def buildGenomicContext( infiles, outfile ):
 
     to_cluster = True
 
-    repeats_gff, rna_gff, annotations_gtf, genes_gff, go_tsv = infiles
+    repeats_gff, rna_gff, annotations_gtf, geneset_flat_gff, go_tsv = infiles
 
     tmpfile = P.getTempFilename( "." )
     tmpfiles = [ "%s_%i" % (tmpfile, x) for x in range( 5 ) ]
@@ -785,7 +815,7 @@ def buildGenomicContext( infiles, outfile ):
     patterns = "-e %s" % ( "-e ".join( goids ) )
     
     statement = ''' 
-    zcat %(genes_gff)s
+    zcat %(geneset_flat_gff)s
     | python %(scriptsdir)s/gtf2gtf.py 
         --apply=<(zcat %(go_tsv)s |grep %(patterns)s | cut -f 2 | sort | uniq)
         --filter=gene
@@ -848,6 +878,7 @@ def genome():
     pass
 
 @follows( buildGeneSet,
+          buildGeneTerritories,
           loadCDSTranscripts,
           loadTranscriptInformation,
           loadGeneStats,

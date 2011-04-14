@@ -5,7 +5,7 @@ from SphinxReport.odict import OrderedDict as odict
 
 from RnaseqReport import *
 
-class TrackerExpressionGeneset( TrackerSQL ):
+class TrackerExpressionGeneset( RnaseqTracker ):
     min_fpkm = 1
     @property
     def tracks( self ):
@@ -17,11 +17,11 @@ class TrackerExpressionGeneset( TrackerSQL ):
 
     slices = [ x.asTable() for x in EXPERIMENTS ]
 
-class TrackerExpressionAbInitio( TrackerSQL ):
-    mPattern = "_genes$"
+class TrackerExpressionAbInitio( RnaseqTracker ):
+    pattern = "(.*)_genes$"
 
-class TrackerExpressionReference( TrackerSQL ):
-    mPattern = "_ref_genes$"
+class TrackerExpressionReference( RnaseqTracker ):
+    pattern = "(.*)_ref_genes$"
     
 class ExpressionFPKM( TrackerExpressionGeneset ):
     def __call__(self, track, slice = None ):
@@ -38,7 +38,6 @@ class ExpressionNormalizedFPKM( TrackerExpressionGeneset ):
         max_fpkm = float(self.getValue( '''SELECT max(%(slice)s_fpkm) FROM %(track)s'''))
         statement = '''SELECT CAST( %(slice)s_fpkm AS FLOAT) / %(max_fpkm)f FROM %(track)s WHERE %(slice)s_fpkm > %(min_fpkm)f'''
         data = self.getValues( statement )
-        d = float(len(data))
         return odict( (("percent of max(fpkm)", data),) )
 
 class ExpressionFPKMConfidence( TrackerExpressionGeneset ):

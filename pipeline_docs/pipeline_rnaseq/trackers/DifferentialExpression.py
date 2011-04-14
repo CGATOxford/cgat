@@ -1,6 +1,7 @@
 import os, sys, re, types, itertools
 
 from SphinxReport.Tracker import *
+from SphinxReport.Utils import PARAMS as P
 from SphinxReport.odict import OrderedDict as odict
 
 from RnaseqReport import *
@@ -14,7 +15,7 @@ class TrackerDESeqFit( Tracker ):
     slices = [ x.asFile() for x in GENESET_TRACKS ]
 
     def __call__(self, track, slice = None ):
-        edir = exportdir
+        edir = EXPORTDIR
         level = "gene"
         geneset = slice
         method = self.method
@@ -34,11 +35,11 @@ class TrackerDESeqFit( Tracker ):
 ##############################################################
 ##############################################################
 ##############################################################
-class TrackerDESummaryDESeq( SingleTableTrackerRows ):
+class TrackerDESummaryDESeq( RnaseqTracker, SingleTableTrackerRows ):
     table = "deseq_stats"
     fields = ("level", "geneset", "track1", "track2" )
 
-class TrackerDESummaryCuffdiff( SingleTableTrackerRows ):
+class TrackerDESummaryCuffdiff( RnaseqTracker, SingleTableTrackerRows ):
     table = "cuffdiff_stats"
     fields = ("level", "geneset", "track1", "track2" )
 
@@ -50,7 +51,7 @@ class TrackerDESummaryPlots( Tracker ):
     tracks = [ x.asFile() for x in GENESET_TRACKS ]
 
     def __call__(self, track, slice = None ):
-        edir = exportdir
+        edir = EXPORTDIR
         geneset = track
         method = self.method
 
@@ -93,7 +94,7 @@ class TrackerDifferentialExpression( Tracker ):
 
     def __call__(self, track, slice = None ):
 
-        edir, method = exportdir, self.method
+        edir, method = EXPORTDIR, self.method
         rst_text = []
         
         geneset = track

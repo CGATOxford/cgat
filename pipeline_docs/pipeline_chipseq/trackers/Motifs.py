@@ -8,7 +8,7 @@ import xml.etree.ElementTree
 
 
 from SphinxReport.Tracker import *
-import ChipseqReport
+from ChipseqReport import *
 import Glam2
 
 ##################################################################################
@@ -28,6 +28,10 @@ def computeMastCurve( evalues ):
         raise ValueError( "no data" )
 
     mi, ma = math.floor(min(evalues)), math.ceil(max(evalues))
+
+    if mi == ma:
+        raise ValueError( "not enough data" )
+        
     hist, bin_edges = numpy.histogram(evalues, bins = numpy.arange( mi, ma, 1.0) )
     with_motifs = numpy.cumsum( hist )
     explained = numpy.array( with_motifs )
@@ -78,9 +82,9 @@ def getFDR( samples, control, num_bins = 1000 ):
     fdrs = []
     m = 0
     for s, p, fp in zip( bin_edges[:-1], hist_samples, hist_control):
-        if p == 0: continue
-        fdr = min(1.0, correction * float(fp) / p)
-        m = max( m, fdr )
+        if p != 0: 
+            fdr = min(1.0, correction * float(fp) / p)
+            m = max( m, fdr )
         fdrs.append( m )
 
     return bin_edges[:-1][::-1], fdrs[::-1]
@@ -130,12 +134,12 @@ def getGlamScoreCutoff( scores, controls, fdr = 0.1 ):
 ##################################################################################
 ## Base class for mast analysis
 ##################################################################################
-class Mast( ChipseqReport.DefaultTracker ):
+class Mast( DefaultTracker ):
     mPattern = "_mast$"
 
     def getSlices( self, subset = None ):
         if subset: return subset
-        return ChipseqReport.MOTIFS
+        return MOTIFS
 
 ##################################################################################
 ##################################################################################
@@ -153,6 +157,7 @@ class MastFDR( Mast ):
         bin_edges, fdrs = getFDR( evalues, control_evalues )
         if bin_edges == None: return odict()
         bin_edges = [-x for x in bin_edges ]
+        print len(bin_edges), len(fdrs)
 
         return odict( (("score", bin_edges),
                        ("fdr", fdrs)))
@@ -182,8 +187,12 @@ class MastSummary( Mast ):
         data.append( ("nmast", self.getValue( "SELECT COUNT(*) FROM %(track)s_mast WHERE motif = '%(slice)s'" % locals() )) )
 
         evalues = self.getValues( "SELECT evalue FROM %(track)s_mast WHERE motif = '%(slice)s'" % locals() )
-        if len(evalues) == 0: return odict()
-        bin_edges, with_motifs, explained = computeMastCurve( evalues )
+        if len(evalues) <= 1: return odict()
+
+        try:
+            bin_edges, with_motifs, explained = computeMastCurve( evalues )
+        except ValueError, msg:
+            return odict( ( ("msg", msg),) )
 
         am = numpy.argmax( explained )
         evalue = bin_edges[am]
@@ -380,7 +389,10 @@ class MastCurve( Mast ):
         evalues = self.getValues( "SELECT evalue FROM %(track)s_mast WHERE motif = '%(slice)s'" % locals() )
 
         if len(evalues) == 0: return odict()
-        bin_edges, with_motifs, explained = computeMastCurve( evalues )
+        try:
+            bin_edges, with_motifs, explained = computeMastCurve( evalues )
+        except ValueError, msg:
+            return odict()
 
         data = odict()
         data["with_motifs"] = odict( (("evalue", bin_edges),("with_motifs", with_motifs)) )
@@ -408,7 +420,10 @@ class MastROC( Mast ):
 
         if len(evalues) == 0: return odict()
         
-        bin_edges, with_motifs, explained = computeMastCurve( evalues )
+        try:
+            bin_edges, with_motifs, explained = computeMastCurve( evalues )
+        except ValueError, msg:
+            return odict()
 
         # determine the e-value cutoff as the maximum of "explained"
         cutoff = bin_edges[numpy.argmax( explained )]
@@ -534,7 +549,10 @@ class MastPeakValWithMotifEvalue( Mast ):
 
         if len(evalues) == 0: return odict()
         
-        bin_edges, with_motifs, explained = computeMastCurve( evalues )
+        try:
+            bin_edges, with_motifs, explained = computeMastCurve( evalues )
+        except ValueError, msg:
+            return odict()
 
         # determine the e-value cutoff as the maximum of "explained"
         cutoff = bin_edges[numpy.argmax( explained )]
@@ -550,12 +568,12 @@ class MastPeakValWithMotifEvalue( Mast ):
         
         return odict( zip( ("peakval", "proportion with motif", "recall" ), zip( *result ) ) )
     
-class MemeRuns( ChipseqReport.DefaultTracker ):
+class MemeRuns( DefaultTracker ):
     mPattern = "_mast$"
     
     def __call__(self, track, slice = None ):
         
-        resultsdir = os.path.join( exportdir, "meme", "%s.meme" % track )
+        resultsdir = os.path.join( EXPORTDIR, "meme", "%s.meme" % track )
         if not os.path.exists( resultsdir ): return []
 
         data = []
@@ -576,12 +594,12 @@ class MemeRuns( ChipseqReport.DefaultTracker ):
 
         return odict(data)
 
-class MemeResults( ChipseqReport.DefaultTracker ):
+class MemeResults( DefaultTracker ):
     mPattern = "_mast$"
     
     def __call__(self, track, slice = None ):
         
-        resultsdir = os.path.join( exportdir, "meme", "%s.meme" % track )
+        resultsdir = os.path.join( EXPORTDIR, "meme", "%s.meme" % track )
 
         if not os.path.exists( resultsdir ): return []
 
@@ -605,7 +623,7 @@ class MemeResults( ChipseqReport.DefaultTracker ):
 
         return result
 
-class TomTomResults( ChipseqReport.DefaultTracker ):
+class TomTomResults( DefaultTracker ):
     mPattern = "_tomtom$"
     
     def __call__(self, track, slice = None ):
@@ -623,7 +641,7 @@ class TomTomResults( ChipseqReport.DefaultTracker ):
             result[str(x)] = odict( zip( headers, y ))
         return result
 
-class AnnotationsMatrix( ChipseqReport.DefaultTracker ):
+class AnnotationsMatrix( DefaultTracker ):
 
     
     def getSlices( self, subset = None ):
@@ -694,7 +712,7 @@ class AnnotationsPeakVal( AnnotationsMatrix ):
 
         return statement
 
-class AnnotationsPeakValData( ChipseqReport.DefaultTracker ):
+class AnnotationsPeakValData( DefaultTracker ):
     '''return peakval for intervals falling into various regions.'''
     
     def getSlices( self, subset = None ):
@@ -721,12 +739,12 @@ class AnnotationsPeakValData( ChipseqReport.DefaultTracker ):
 ##################################################################################
 ## Base class for glam analysis
 ##################################################################################
-class Glam( ChipseqReport.DefaultTracker ):
+class Glam( DefaultTracker ):
     mPattern = "_glam$"
 
     def getSlices( self, subset = None ):
         if subset: return subset
-        return ChipseqReport.MOTIFS
+        return MOTIFS
 
 class GlamScores( Glam ):
     """return arrays of glam2scan scores
@@ -837,13 +855,13 @@ class GlamSummary( Glam ):
 ##################################################################################
 ## Glam 2 results
 ##################################################################################
-class Glam2Results( ChipseqReport.DefaultTracker ):
+class Glam2Results( DefaultTracker ):
     '''return a table with information about the glam2 results.'''
     mPattern = "_glam$"
     
     def __call__(self, track, slice = None ):
 
-        resultsdir = os.path.join( exportdir, "%s.glam2" % track )
+        resultsdir = os.path.join( EXPORTDIR, "%s.glam2" % track )
         if not os.path.exists( resultsdir ): return None
 
         data = []

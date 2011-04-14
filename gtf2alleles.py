@@ -142,28 +142,46 @@ class VariantGetterPileup(VariantGetter):
         for line in self.tabix.fetch( contig, start, end ):
             data = line[:-1].split()
             contig, pos, reference, genotype = data[:4]
-            variants.append( Variants.Variant._make( (int(pos), reference, genotype) ) )
+            # fix 1-ness
+            pos = int(pos) - 1
+            variants.append( Variants.Variant._make( pos, reference, genotype) )
         return variants
     
 class VariantGetterVCF( VariantGetter ):
     '''retrieve variants from tabix indexed vcf file.'''
     
-    def __init__(self, filename, column ):
+    def __init__(self, filename, sample ):
         self.tabix = pysam.Tabixfile( filename )
-        self.column = column
+        self.sample = sample
+        self.parser = pysam.asVCF( filename )
 
     def __call__(self, contig, start, end ):
         
-        for line in self.tabix.fetch( contig, start, end ):
-            data = line[:-1].split()
-            ref, alt, genotype_info = data[3], data[4], data[self.column]
+        variants = []
+        s = self.sample
+        for data in self.tabix.fetch( contig, start, end, parser = self.parser ):
+            if s not in data: continue
+            v = data[s]
+            contig, pos, reference = data["chrom"], data["pos"], data["ref"]
+            bases = [reference] + data["alt"]
+            if max([len(x) for x in data["alt"]] ) > 1:
+                E.warn( "insertions not implemented yet at %s:%i" % (contig,pos) )
+                continue
+            if len( reference ) > 1:
+                E.warn( "deletions not implemented yet at %s:%i" % (contig,pos) )
+                continue
 
-            if genotype_info == ".": continue
+            # get genotypes
+            genotypes = v["GT"]
+            if len(genotypes) > 1:
+                raise ValueError( "only single genotype per position, %s" % (str(data)))
+            genotypes = genotypes[0]
 
-            # skip variants not present
-            genotypes = genotype_info.split(":")[0].split("/")
-
-            print ref, alt, genotypes
+            # convert to genotype
+            genotype = "".join([ bases[int(x)] for x in genotypes if x != "/" ])
+            variants.append( Variants.Variant._make( (int(pos), reference, Genomics.encodeGenotype(genotype) ) ))
+            
+        return variants
 
 def collectExonIntronSequences( transcripts, fasta ):
     '''collect all the wild type sequences for exons and introns
@@ -793,8 +811,8 @@ def main( argv = None ):
                       help="filename with variants in VCF format. Should be indexed by tabix  [default=%default]."  )
     parser.add_option( "--filename-pileup", dest="filename_pileup", type="string",
                       help="filename with variants in samtools pileup format. Should be indexed by tabix  [default=%default]."  )
-    parser.add_option( "--column-vcf", dest="column_vcf", type="string",
-                      help="column for species of interest in vcf formatted file [1-based]  [default=%default]."  )
+    parser.add_option( "--vcf-sample", dest="vcf_sample", type="string",
+                      help="sample id for species of interest in vcf formatted file [default=%default]."  )
     parser.add_option("-s", "--filename-seleno", dest="filename_seleno", type="string",
                       help="filename of a list of transcript ids that are selenoproteins [default=%default]."  )
     parser.add_option("-m", "--module", dest="modules", type="choice", action="append",
@@ -819,7 +837,7 @@ def main( argv = None ):
             output = [],
             with_knockouts = False,
             filename_vcf = None,
-            vcf_column = 10,
+            vcf_sample = None,
             )
 
     ## add common options (-h/--help, ...) and parse command line 
@@ -847,7 +865,7 @@ def main( argv = None ):
     elif options.filename_pileup:
         variant_getter = VariantGetterPileup( options.filename_pileup )
     elif options.filename_vcf:
-        variant_getter = VariantGetterVCF( options.filename_vcf, options.vcf_column - 1 )
+        variant_getter = VariantGetterVCF( options.filename_vcf, options.vcf_sample )
     else:
         raise ValueError("please specify a source of variants." )
 

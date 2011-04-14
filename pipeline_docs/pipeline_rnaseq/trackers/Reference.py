@@ -15,7 +15,7 @@ import math
 ## Trackers that access reference statistics
 ##################################################################################
 
-class ReferenceData(TrackerSQL):
+class ReferenceData(RnaseqTracker):
     """Base class f or Trackers accessing reference table."""
     pattern = "(.*)_transcript_counts$" 
     reference = "refcoding"

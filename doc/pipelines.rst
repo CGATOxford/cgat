@@ -192,6 +192,7 @@ configuration file with default values for pipeline parameters (e.g., :file:`pip
 
    scripts/pipeline_annotations.rst   
    scripts/pipeline_ancestral_repeats.rst
+   scripts/pipeline_variants.rst
    scripts/pipeline_chipseq.rst
    scripts/pipeline_rnaseq.rst
    scripts/pipeline_transcriptome.rst

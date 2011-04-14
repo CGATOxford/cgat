@@ -264,7 +264,7 @@ elif "maf_dir" in PARAMS:
         P.run()
 
     @follows( buildSizes )
-    @merge( "%s/*.maf.gz" % PARAMS["maf_dir"], PARAMS["interface_alignment+psl"] )
+    @merge( "%s/*.maf.gz" % PARAMS["maf_dir"], PARAMS["interface_alignment_psl"] )
     def buildGenomeAlignmentUCSCTools(infiles, outfile):
         '''build pairwise genomic aligment from maf files.'''
     
