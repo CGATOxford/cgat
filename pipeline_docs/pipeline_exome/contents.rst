@@ -12,10 +12,5 @@ Contents:
 
    pipeline.rst
 
-====================
- Indices and tables
-====================
-
-* :ref:`search`
 
 

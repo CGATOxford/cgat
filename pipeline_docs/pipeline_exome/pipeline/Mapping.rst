@@ -23,13 +23,12 @@ BAM files for each :term:`track`.
    :render: table
    :slices: total,mapped,reverse,duplicates
 
-   Mapping summary
+   Mapping Summary
 
 .. report:: Mapping.MappingSummary
    :render: interleaved-bar-plot
    :slices: total,mapped,reverse,duplicates
 
-   Mapping summary
 
 
 

@@ -2,7 +2,7 @@
    sphinx-quickstart on Mon Mar 23 15:27:57 2009.
 
 =============================
-RNASeq annotation pipeline
+Exome pipeline
 =============================
 
 Contents:
@@ -13,13 +13,7 @@ Contents:
    pipeline/Mapping.rst
    pipeline/Coverage.rst
    pipeline/Variants.rst
-   python/Trackers.rst
  
 .. errorlist::
   
-Indices and tables
-==================
-
-* :ref:`search`
-
 

@@ -254,8 +254,8 @@ class bwa( Mapper ):
             infiles = ",".join( [ x[0] for x in infiles ] )
             track = P.snip( os.path.basename( infiles ), ".fastq" )
             statement.append('''
-            bwa aln %%(bwa_aln_options)s %%(bwa_index_dir)s/%%(genome)s %(infiles)s > %(tmpdir_bwa)s/%(track)s.sai; 
-            bwa samse %%(bwa_index_dir)s/%%(genome)s %(tmpdir_bwa)s/%(track)s.sai %(infiles)s > %(tmpdir_bwa)s/%(track)s.sam;
+            bwa aln %%(bwa_aln_options)s %%(bwa_index_dir)s/%%(genome)s %(infiles)s > %(tmpdir_bwa)s/%(track)s.sai 2>%(outfile)s.bwa.stderr; 
+            bwa samse %%(bwa_index_dir)s/%%(genome)s %(tmpdir_bwa)s/%(track)s.sai %(infiles)s > %(tmpdir_bwa)s/%(track)s.sam 2>%(outfile)s.bwa.stderr;
             ''' % locals() )
 
         elif nfiles == 2:
@@ -266,9 +266,9 @@ class bwa( Mapper ):
             track2 = P.snip( os.path.basename( infiles2 ), ".fastq" )
 
             statement.append('''
-            bwa aln %%(bwa_aln_options)s %%(bwa_index_dir)s/%%(genome)s %(infiles1)s > %(tmpdir_bwa)s/%(track1)s.sai;
-            bwa aln %%(bwa_aln_options)s %%(bwa_index_dir)s/%%(genome)s %(infiles2)s > %(tmpdir_bwa)s/%(track2)s.sai;  
-            bwa sampe %%(bwa_sampe_options)s %%(bwa_index_dir)s/%%(genome)s %(tmpdir_bwa)s/%(track1)s.sai %(tmpdir_bwa)s/%(track2)s.sai %(infiles1)s %(infiles2)s > %(tmpdir_bwa)s/%(track)s.sam;
+            bwa aln %%(bwa_aln_options)s %%(bwa_index_dir)s/%%(genome)s %(infiles1)s > %(tmpdir_bwa)s/%(track1)s.sai 2>>%(outfile)s.bwa.stderr; checkpoint;
+            bwa aln %%(bwa_aln_options)s %%(bwa_index_dir)s/%%(genome)s %(infiles2)s > %(tmpdir_bwa)s/%(track2)s.sai 2>>%(outfile)s.bwa.stderr; checkpoint;
+            bwa sampe %%(bwa_sampe_options)s %%(bwa_index_dir)s/%%(genome)s %(tmpdir_bwa)s/%(track1)s.sai %(tmpdir_bwa)s/%(track2)s.sai %(infiles1)s %(infiles2)s > %(tmpdir_bwa)s/%(track)s.sam 2>>%(outfile)s.bwa.stderr;
             ''' % locals() )
         else:
             raise ValueError( "unexpected number read files to map: %i " % nfiles )
@@ -284,7 +284,7 @@ class bwa( Mapper ):
         tmpdir_bwa = self.tmpdir_bwa
 
         statement = '''
-            samtools view -buS %(tmpdir_bwa)s/%(track)s.sam | samtools sort -o - - | samtools rmdup - %(outfile)s; 
+            samtools view -buS %(tmpdir_bwa)s/%(track)s.sam | samtools sort -o - - | samtools rmdup - %(outfile)s 2>>%(outfile)s.bwa.stderr; 
             samtools index %(outfile)s;''' % locals()
 
         return statement
