@@ -16,11 +16,15 @@ class CoverageSummary( ExomeTracker ):
 
 class CoveragePlot( ExomeTracker ):
 
+    @property
+    def tracks( self ):
+        d = self.get( "SELECT DISTINCT track FROM coverage_stats")
+        return tuple( [x[0] for x in d ] )
+
     def __call__(self, track, slice = None ):
-        statement = '''SELECT TRACK, cov_mean FROM coverage_stats;'''
+        statement = '''SELECT cov_mean FROM coverage_stats where track='%(track)s';'''
         return self.getAll( statement )
 
-class CoveragePlot2( ExomeTracker, SingleTableHistogram ):
+class CoveragePlot2( ExomeTracker, SingleTableTrackerRows ):
     table = "coverage_stats"
-    columns = "cov_mean"
-    group_by = "track"
+    exclude_columns = "feature"

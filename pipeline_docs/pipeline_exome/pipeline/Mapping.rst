@@ -29,6 +29,7 @@ BAM files for each :term:`track`.
    :render: interleaved-bar-plot
    :slices: total,mapped,reverse,duplicates
 
+   Mapping Summary
 
 
 

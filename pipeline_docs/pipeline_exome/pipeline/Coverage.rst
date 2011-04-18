@@ -17,15 +17,8 @@ The following table present an overview of the sequencing depth acheived for eac
 .. report:: Coverage.CoveragePlot
    :render: line-plot
    :transform: histogram
-   :tf-range: 0,100,1
-   :tracks: coverage_stats
+   :tf-range: 0,500,20
    :slices: cov_mean
 
    Coverage Summary
 
-.. report:: Coverage.CoveragePlot2
-   :render: line-plot
-   :as-lines:
-   :yrange: 0,
-
-   Coverage Summary

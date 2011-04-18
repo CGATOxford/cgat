@@ -170,7 +170,6 @@ PARAMS = P.PARAMS
 @files( PARAMS["roi_bed"], "roi.load" )
 def loadROI( infiles, outfile ):
     '''Import regions of interest bed file into SQLite.'''
-
     scriptsdir = PARAMS["general_scriptsdir"]
     header = "chr,start,stop,feature"
     tablename = P.toTable( outfile )
@@ -183,6 +182,48 @@ def loadROI( infiles, outfile ):
               --table=%(tablename)s 
             > %(outfile)s  '''      
     P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+#@files( PARAMS["roi_genes"], "genes.load" )
+#def loadGenes infiles, outfile ):
+#    '''Import genes mapping to regions of interest bed file into SQLite.'''
+
+#    scriptsdir = PARAMS["general_scriptsdir"]
+#    header = "gene_id,gene_symbol,feature,feature_type"
+#    tablename = P.toTable( outfile )
+#    E.info( "loading genes" )
+#    statement = '''cat %(infiles)s
+#            | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+#              --allow-empty
+#              --header=%(header)s
+#              --index=feature
+#              --index=gene_symbol
+#              --table=%(tablename)s 
+#            > %(outfile)s  '''      
+#    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+#@files( PARAMS["samples"], "samples.load" )
+#def loadSamples infiles, outfile ):
+#    '''Import sample information into SQLite.'''
+#
+#    scriptsdir = PARAMS["general_scriptsdir"]
+#    header = "track,replicate,sample,sample_type,phenotype"
+#    tablename = P.toTable( outfile )
+#    E.info( "loading samples" )
+#    statement = '''cat %(infiles)s
+#            | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+#              --allow-empty
+#              --header=%(header)s
+#              --index=track
+#              --index=phenotype
+#              --table=%(tablename)s 
+#            > %(outfile)s  '''      
+#    P.run()
 
 #########################################################################
 #########################################################################
@@ -343,40 +384,75 @@ def loadCoverageStats( infiles, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@follows( mkdir( "variants" ) )
-@merge( mapReads, r"variants/all.vcf")
+#@follows( mkdir( "variants" ) )
+#@merge( mapReads, r"variants/all.vcf")
+#def callVariantsGroup(infiles, outfile):
+#    '''Perform SNV and indel called from gapped alignment using SAMtools '''
+ #   to_cluster = USECLUSTER
+ #   statement = []
+ #   filenames = " ".join(infiles)
+ #   statement.append('''samtools mpileup -ugf %%(genome_dir)s/%%(genome)s.fa %(filenames)s | bcftools view -bvcg - > variants/all.bcf; ''' % locals() )
+ #   statement.append('''bcftools view variants/all.bcf | vcfutils.pl varFilter %%(variant_filter)s > %(outfile)s; ''' % locals() )
+ #   statement.append('''vcf-stats %(outfile)s > variants/all.vcfstats;''' % locals() )
+ #   statement = " ".join( statement )
+ #   #print statement
+ #   P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( mapReads, 
+            regex(r"(\S+)/bam/(\S+).bam"), 
+            r"\1/variants/\2.vcf.gz" )
 def callVariantsSAMtools(infiles, outfile):
-    '''Perform SNV and indel called from gapped alignment using SAMtools '''
+    '''Perform SNV and indel calling separately for each bam using SAMtools. '''
     to_cluster = USECLUSTER
+    track = P.snip( os.path.basename(infiles), ".bam")
+    try: os.mkdir( '''%(track)s/variants''' % locals() )
+    except OSError: pass
     statement = []
-    filenames = " ".join(infiles)
-    statement.append('''samtools mpileup -ugf %%(genome_dir)s/%%(genome)s.fa %(filenames)s | bcftools view -bvcg - > variants/all.bcf; ''' % locals() )
-    statement.append('''bcftools view variants/all.bcf | vcfutils.pl varFilter %%(variant_filter)s > %(outfile)s; ''' % locals() )
-    statement.append('''vcf-stats %(outfile)s > variants/all.vcfstats;''' % locals() )
+    statement.append('''samtools mpileup -ugf %%(genome_dir)s/%%(genome)s.fa %(infiles)s | bcftools view -bvcg - > %(track)s/variants/%(track)s.bcf 2>>%(track)s/variants/samtools.log;''' % locals())
+    statement.append('''bcftools view %(track)s/variants/%(track)s.bcf | vcfutils.pl varFilter %%(variant_filter)s | bgzip -c > %(outfile)s 2>>%(track)s/variants/samtools.log;  ''' % locals())
+    statement.append('''tabix -p vcf %(outfile)s; 2>>%(track)s/variants/samtools.log; ''' % locals())
+    statement.append('''vcf-stats %(outfile)s > %(track)s/variants/%(track)s.vcfstats 2>>%(track)s/variants/samtools.log;''' % locals())
     statement = " ".join( statement )
-    #print statement
     P.run()
 
 #########################################################################
 #########################################################################
 #########################################################################
-@transform( callVariantsSAMtools,
+@follows( mkdir("variants"))
+@merge( callVariantsSAMtools, "variants/all.vcf")
+def mergeVCFs(infiles, outfile):
+    '''Merge multiple VCF files using VCF-tools. '''
+    filenames = " ".join( infiles )
+    statement = '''vcf-merge %(filenames)s > variants/all.vcf 2>>variants/vcfmerge.log; ''' % locals()
+    statement += '''bgzip -c variants/all.vcf > variants/all.vcf.gz 2>>variants/vcfmerge.log; ''' % locals()
+    statement += '''tabix -p vcf variants/all.vcf.gz; 2>>variants/vcfmerge.log; ''' % locals()
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( mergeVCFs,
             regex( r"variants/(\S+).vcf"),
             r"variants/\1.roi.vcf")
 def filterVariantsROI(infiles, outfile):
     '''Filter variant calls in vcf format to regions of interest from a bed file'''
     to_cluster = USECLUSTER
-    statement  = '''intersectBed -u -a %(infiles)s -b %%(roi_bed)s > %(outfile)s.tmp; ''' % locals()
-    statement += '''(cat %(infiles)s | grep ^#; cat %(outfile)s.tmp;) > %(outfile)s; rm %(outfile)s.tmp;''' % locals()
+    statement  = '''intersectBed -u -a %(infiles)s -b %%(roi_bed)s > %(outfile)s.tmp 2>>variants/roi.log; ''' % locals()
+    statement += '''(cat %(infiles)s | grep ^#; cat %(outfile)s.tmp;) > %(outfile)s 2>>variants/roi.log; rm %(outfile)s.tmp;''' % locals()
+    statement += '''bgzip -c %(outfile)s > %(outfile)s.gz 2>>variants/roi.log; ''' % locals()
+    statement += '''tabix -p vcf %(outfile)s.gz; 2>>variants/roi.log; ''' % locals()
     #print statement
     P.run()
 
 #########################################################################
 #########################################################################
 #########################################################################
-@transform( filterVariantsROI,
-            regex( r"variants/(\S+).roi.vcf"),
-            r"variants/\1.roi.vcfstats")
+@transform( "variants/*.vcf.gz",
+            regex( r"variants/(\S+).vcf.gz"),
+            r"variants/\1.vcfstats")
 def buildVCFstats(infiles, outfile):
     '''Filter variant calls in vcf format to regions of interest from a bed file'''
     to_cluster = USECLUSTER
@@ -391,15 +467,14 @@ def buildVCFstats(infiles, outfile):
 def loadVCFStats( infiles, outfile ):
     '''Import variant statistics into SQLite'''
     scriptsdir = PARAMS["general_scriptsdir"]
-    #filenames = " ".join(infiles)
+    filenames = " ".join(infiles)
     tablename = P.toTable( outfile )
     E.info( "Loading vcf stats..." )
-    statement = '''python %(scriptsdir)s/vcfstats2db.py %(infiles)s | 
-                   grep -v ^# | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-                       --allow-empty
-                       --index=track
-                       --table=%(tablename)s 
-                   > %(outfile)s '''
+    statement = '''python %(scriptsdir)s/vcfstats2db.py %(filenames)s >> %(outfile)s; '''
+    statement += '''cat vcfstats.txt | python %(scriptsdir)s/csv2db.py %(csv2db_options)s --allow-empty --index=track --table=vcf_stats >> %(outfile)s; '''
+    statement += '''cat sharedstats.txt | python %(scriptsdir)s/csv2db.py %(csv2db_options)s --allow-empty --index=track --table=vcf_shared_stats >> %(outfile)s; '''
+    statement += '''cat indelstats.txt | python %(scriptsdir)s/csv2db.py %(csv2db_options)s --allow-empty --index=track --table=indel_stats >> %(outfile)s; '''
+    statement += '''cat snpstats.txt | python %(scriptsdir)s/csv2db.py %(csv2db_options)s --allow-empty --index=track --table=snp_stats >> %(outfile)s; '''
     P.run()
 
 #########################################################################
@@ -412,6 +487,7 @@ def loadVCFStats( infiles, outfile ):
           buildCoverageStats,
           loadCoverageStats,
           callVariantsSAMtools,
+          mergeVCFs,
           filterVariantsROI,
           buildVCFstats,
           loadVCFStats )
@@ -423,8 +499,8 @@ def build_report():
     '''build report from scratch.'''
 
     E.info( "Starting documentation build process from scratch" )
-    dirname, basename = os.path.split( os.path.abspath( __file__ ) )
-    docdir = os.path.join( dirname, "pipeline_docs", P.snip( basename, ".py" ) )
+    dirname, basenme = os.path.split( os.path.abspath( __file__ ) )
+    docdir = os.path.join( dirname, "pipeline_docs", P.snip( basenme, ".py" ) )
 
     # requires libtk, which is not present on the nodes
     to_cluster = True
