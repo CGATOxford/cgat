@@ -101,7 +101,7 @@ def createGOSlim( infile, outfile ):
         zcat < %(infile)s
         | python %(scriptsdir)s/GO.py 
                 --go2goslim 
-                --filename-ontology=gene_ontology.obo 
+                --filename-ontology=go_ontology.obo 
                 --slims=%(outfile)s.map 
                 --log=%(outfile)s.log 
         | gzip
