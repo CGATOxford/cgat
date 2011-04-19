@@ -89,7 +89,7 @@ def createGOSlim( infile, outfile ):
     statement = '''wget %(go_url_goslim)s --output-document=goslim.obo'''
     P.run()
 
-    statement = '''wget %(go_url_ontology)s --output=go_ontology.obo'''
+    statement = '''wget %(go_url_ontology)s --output-document=go_ontology.obo'''
     P.run()
     
     statement = '''
