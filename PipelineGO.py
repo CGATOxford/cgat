@@ -86,15 +86,14 @@ def createGO( infile, outfile ):
 def createGOSlim( infile, outfile ):
     '''get GO assignments from ENSEMBL'''
     
-    statement = '''wget %(go_url_goslim)s'''
+    statement = '''wget %(go_url_goslim)s --output-document=goslim.obo'''
     P.run()
 
-    statement = '''wget %(go_url_ontology)s'''
+    statement = '''wget %(go_url_ontology)s --output=go_ontology.obo'''
     P.run()
-
     
     statement = '''
-        map2slim -outmap %(outfile)s.map goslim_goa.obo gene_ontology.obo
+        map2slim -outmap %(outfile)s.map goslim.obo go_ontology.obo
     '''
     P.run()
 
