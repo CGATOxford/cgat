@@ -10,9 +10,6 @@ class VariantSummary( ExomeTracker, SingleTableTrackerRows ):
 class SnpSummary( ExomeTracker, SingleTableTrackerRows ):
     table = "snp_stats"
 
-class IndelSummary( ExomeTracker, SingleTableTrackerRows ):
-    table = "indel_stats"
-
 class IndelSummary( ExomeTracker ):
 
     @property

@@ -28,6 +28,12 @@ The following table presents an overview of the variants detected within the tar
 
    Indel Summary
 
+.. report:: VarStats.IndelSummary
+   :render: bar-plot
+   :slices: indel_length, indel_count
+
+   Indel Summary
+
 .. report:: VarStats.SharedSummary
    :render: table
    :slices: no_samples, var_count
