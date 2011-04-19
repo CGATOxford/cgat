@@ -86,15 +86,14 @@ def createGO( infile, outfile ):
 def createGOSlim( infile, outfile ):
     '''get GO assignments from ENSEMBL'''
     
-    statement = '''wget %(go_url_goslim)s'''
+    statement = '''wget %(go_url_goslim)s --output-document=goslim.obo'''
     P.run()
 
-    statement = '''wget %(go_url_ontology)s'''
+    statement = '''wget %(go_url_ontology)s --output-document=go_ontology.obo'''
     P.run()
-
     
     statement = '''
-        map2slim -outmap %(outfile)s.map goslim_goa.obo gene_ontology.obo
+        map2slim -outmap %(outfile)s.map goslim.obo go_ontology.obo
     '''
     P.run()
 
@@ -102,7 +101,7 @@ def createGOSlim( infile, outfile ):
         zcat < %(infile)s
         | python %(scriptsdir)s/GO.py 
                 --go2goslim 
-                --filename-ontology=gene_ontology.obo 
+                --filename-ontology=go_ontology.obo 
                 --slims=%(outfile)s.map 
                 --log=%(outfile)s.log 
         | gzip
