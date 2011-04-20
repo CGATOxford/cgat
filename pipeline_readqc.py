@@ -22,7 +22,7 @@
 #################################################################################
 """
 ====================
-readqc pipeline
+ReadQc pipeline
 ====================
 
 :Author: David Sims
@@ -101,12 +101,12 @@ The major output is a set of HTML pages and plots reporting on the quality of th
 Example
 =======
 
-Example data is available at http://www.cgat.org/~andreas/sample_data/fastqc.tgz.
+Example data is available at http://www.cgat.org/~andreas/sample_data/pipeline_readqc.tgz.
 To run the example, simply unpack and untar::
 
-   wget http://www.cgat.org/~andreas/sample_data/pipeline_fastqc.tgz
-   tar -xvzf pipeline_fastqc.tgz
-   cd pipeline_fastqc
+   wget http://www.cgat.org/~andreas/sample_data/pipeline_readqc.tgz
+   tar -xvzf pipeline_readqc.tgz
+   cd pipeline_readqc
    python <srcdir>/pipeline_readqc.py make full
 
 
