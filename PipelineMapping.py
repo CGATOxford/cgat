@@ -224,13 +224,16 @@ class fastqFilter( Mapper ):
 class fastqc( Mapper ):
     
     def mapper( self, infiles, outfile ):
-        '''build mapping statement on infiles.'''
+        '''build mapping statement on infiles.
+        
+        The output is created in exportdir
+        '''
         
         statement = []
         for f in infiles:
             for i, x in enumerate(f):
                 track = P.snip( os.path.basename( x ), ".fastq" )
-                statement.append( '''fastqc --outdir=fastqc %(x)s > fastqc/%(track)s.log;''' % locals() )
+                statement.append( '''fastqc --outdir=%%(exportdir)s/fastqc %(x)s >& %(outfile)s;''' % locals() )
         return " ".join( statement )
 
 

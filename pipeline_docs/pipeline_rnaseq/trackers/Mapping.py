@@ -3,10 +3,13 @@ import os, sys, re, types, itertools
 from SphinxReport.Tracker import *
 from RnaseqReport import *
 
+class MappingSummary( RnaseqTracker, SingleTableTrackerRows ):
+    table = "view_mapping"
+
 class TophatSummary( RnaseqTracker, SingleTableTrackerRows ):
     table = "tophat_stats"
 
-class MappingSummary( RnaseqTracker, SingleTableTrackerRows ):
+class BamSummary( RnaseqTracker, SingleTableTrackerRows ):
     table = "bam_stats"
 
 class AlignmentSummary( RnaseqTracker, SingleTableTrackerRows ):

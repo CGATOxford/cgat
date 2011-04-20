@@ -425,12 +425,15 @@ def buildSelenoList( infile, outfile ):
 ############################################################
 @merge( buildFlatGeneSet, PARAMS["interface_territories_gff"] )
 def buildGeneTerritories( infile, outfile ):
-    '''build gene territories.'''
+    '''build gene territories from protein coding genes.'''
 
     to_cluster=True
     
     statement = '''
     gunzip < %(infile)s
+    | awk '$2 == "protein_coding"'
+    | python %(scriptsdir)s/gtf2gtf.py --sort=gene
+    | python %(scriptsdir)s/gtf2gtf.py --merge-transcripts --with-utr
     | python %(scriptsdir)s/gtf2gtf.py --sort=position
     | python %(scriptsdir)s/gtf2gff.py 
           --genome-file=%(genome_dir)s/%(genome)s 

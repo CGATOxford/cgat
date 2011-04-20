@@ -22,7 +22,7 @@
 #################################################################################
 """
 ====================
-readqc pipeline
+ReadQc pipeline
 ====================
 
 :Author: David Sims
@@ -101,12 +101,12 @@ The major output is a set of HTML pages and plots reporting on the quality of th
 Example
 =======
 
-Example data is available at http://www.cgat.org/~andreas/sample_data/rnaseq.tgz.
+Example data is available at http://www.cgat.org/~andreas/sample_data/pipeline_readqc.tgz.
 To run the example, simply unpack and untar::
 
-   wget http://www.cgat.org/~andreas/sample_data/pipeline_rnaseq.tgz
-   tar -xvzf pipeline_rnaseq.tgz
-   cd pipeline_rnaseq
+   wget http://www.cgat.org/~andreas/sample_data/pipeline_readqc.tgz
+   tar -xvzf pipeline_readqc.tgz
+   cd pipeline_readqc
    python <srcdir>/pipeline_readqc.py make full
 
 
@@ -142,51 +142,28 @@ USECLUSTER = True
 ###################################################
 
 # load options from the config file
-#import Pipeline as P
-#P.getParameters( 
-#    ["%s.ini" % __file__[:-len(".py")],
-#     "../pipeline.ini",
-#     "pipeline.ini" ] )
-#PARAMS = P.PARAMS
-
-
-
-###################################################################
-###################################################################
-## Helper functions mapping tracks to conditions, etc
-###################################################################
-
-
-# collect sra nd fastq.gz tracks
-#TRACKS = PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
-#    glob.glob( "*.sra" ), "(\S+).sra" ) +\
-#    PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
-#    glob.glob( "*.fastq.gz" ), "(\S+).fastq.gz" ) +\
-#    PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
-#    glob.glob( "*.fastq.1.gz" ), "(\S+).fastq.1.gz" )
-
-#ALL = PipelineTracks.Sample3()
-#EXPERIMENTS = PipelineTracks.Aggregate( TRACKS, labels = ("condition", "tissue" ) )
-#CONDITIONS = PipelineTracks.Aggregate( TRACKS, labels = ("condition", ) )
-#TISSUES = PipelineTracks.Aggregate( TRACKS, labels = ("tissue", ) )
-
+import Pipeline as P
+P.getParameters( 
+    ["%s.ini" % __file__[:-len(".py")],
+     "../pipeline.ini",
+     "pipeline.ini" ] )
+PARAMS = P.PARAMS
 
 #########################################################################
 #########################################################################
 #########################################################################
-@follows(mkdir("fastqc"))
+@follows(mkdir(PARAMS["exportdir"]), mkdir(os.path.join(PARAMS["exportdir"], "fastqc")) )
 @transform( ("*.fastq.1.gz", 
               "*.fastq.gz",
               "*.sra"),
               regex( r"(\S+).(fastq.1.gz|fastq.gz|sra)"),
-              r"fastqc/\1_fastqc")
+              r"\1.fastqc")
 def runFastqc(infiles, outfile):
         '''convert sra files to fastq and check mapping qualities are in solexa format. 
            Perform quality control checks on reads from .fastq files.'''
         to_cluster = USECLUSTER
         m = PipelineMapping.fastqc()
         statement = m.build((infiles,), outfile) 
-        print statement
         P.run()
 
 #########################################################################
@@ -203,7 +180,6 @@ def filterFastq(infiles, outfile):
         to_cluster = USECLUSTER
         m = PipelineMapping.fastqFilter()
         statement = m.build((infiles,), outfile) 
-        print statement
         P.run()
 
 #########################################################################
@@ -236,6 +212,19 @@ def loadFilterStats( infiles, outfile ):
           filterFastq )
 def full(): pass
 
+@follows( mkdir( "report" ) )
+def build_report():
+    '''build report from scratch.'''
+
+    E.info( "starting documentation build process from scratch" )
+    P.run_report( clean = True )
+
+@follows( mkdir( "report" ) )
+def update_report():
+    '''update report.'''
+
+    E.info( "updating documentation" )
+    P.run_report( clean = False )
 
 if __name__== "__main__":
     sys.exit( P.main(sys.argv) )
