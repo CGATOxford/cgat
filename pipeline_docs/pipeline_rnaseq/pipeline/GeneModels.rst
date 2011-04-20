@@ -17,6 +17,7 @@ gene sets.
    GeneModelsFinalSummary.rst
    GeneModelsFinalMappability.rst
    ReferenceCoverage.rst
+   TranscriptModelling.rst
 
 Intermediate results
 ====================

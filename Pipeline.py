@@ -820,7 +820,8 @@ def run_report( clean = True):
     dirname, basename = os.path.split( getCaller().__file__ )
     docdir = os.path.join( dirname, "pipeline_docs", snip( basename, ".py" ) )
 
-    to_cluster = True
+    # Currently, the R renderer needs an X11 connection.
+    to_cluster = False
     
     job_options= "-pe dedicated %i -R y" % PARAMS["report_threads"]
 
@@ -836,7 +837,7 @@ def run_report( clean = True):
                     -d %(report_doctrees)s
                     -c . 
            %(docdir)s %(report_html)s
-    > report.log
+    >& report.log
     '''
 
     run()

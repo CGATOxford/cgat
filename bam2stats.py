@@ -34,7 +34,8 @@ Purpose
 
 .. todo::
    
-   describe purpose of the script.
+   paired-read libraries need to be treated correctly. Currently
+   the second read is ignored to avoid over-counting.
 
 Usage
 -----
@@ -66,6 +67,10 @@ import IOTools
 import pysam
 import GFF
 
+import pyximport
+pyximport.install(build_in_temp=False)
+import _bam2stats
+
 FLAGS = {
     1: 'paired',
     2: 'proper_pair',
@@ -96,11 +101,13 @@ def main( argv = None ):
                               " into account indels, so it is an approximate count only [%default]" )
     parser.add_option( "-f", "--remove-rna", dest="remove_rna", action="store_true",
                        help = "remove rna reads for duplicate and other counts [%default]" )
+#    parser.add_option( "-p", "--ignore-pairs", dest="ignore_pairs", action="store_true",
+#                       help = "if set, pairs will be counted individually. The default is to count a pair as one [%default]" )
                        
     parser.set_defaults(
-        output_duplicates = False,
         filename_rna = None,
-        remove_rna = False
+        remove_rna = False,
+        ignore_pairs = False,
         )
 
     ## add common options (-h/--help, ...) and parse command line 
@@ -113,105 +120,35 @@ def main( argv = None ):
 
     pysam_in = pysam.Samfile( "-", "rb" )
 
-    if options.output_duplicates:
-        outs_dupl = open( outfile + ".duplicates", "w" )
-        outs_dupl.write( "contig\tpos\tcounts\n" )
-        outs_hist = open( outfile + ".histogram", "w" )
-        outs_hist.write( "duplicates\tcounts\tcumul\tfreq\tcumul_freq\n" )
-    else:
-        outs_dupl = False
-        outs_hist = False
+    c, flags_counts, nh, nh_all, nm, nm_all = _bam2stats.count( pysam_in, options.remove_rna, rna )
 
-    last_contig, last_pos = None, None
-    ninput, nduplicates = 0, 0
-
-    duplicates = collections.defaultdict( int )
-    counts = collections.defaultdict( int )
-    count = 0
-
-    # count nh, nm tags
-    nh, nm = collections.defaultdict( int ), collections.defaultdict( int )
-    nh_all, nm_all = collections.defaultdict( int ), collections.defaultdict( int )
-    flags_counts = collections.defaultdict( int )
-    flags = sorted(FLAGS.keys())
-    nrna, nfiltered = 0, 0
-
-    contig, remove_rna = None, options.remove_rna
-
-    for read in pysam_in:
-
-        ninput += 1
-
-        f = read.flag
-        for x in flags:
-            if f & x: flags_counts[x] += 1
-
-        try:
-            nh_all[read.opt("NH")] += 1
-            nm_all[read.opt("NM")] += 1
-        except KeyError:
-            # ignore missing tags
-            pass
-
-        # skip unmapped reads
-        if read.is_unmapped: continue
-
-        if read.rname != last_contig:
-            contig = pysam_in.getrname( read.rname )
-
-        # note: does not take into account gaps within reads
-        if rna and rna.contains( contig, read.pos, read.pos + read.qlen ):
-            nrna += 1
-            if remove_rna: continue
-        
-        nfiltered += 1
-
-        try:
-            nh[read.opt("NH")] += 1
-            nm[read.opt("NM")] += 1
-        except KeyError:
-            pass
-        
-        # duplicate analysis - simply count per start position
-        # ignoring sequence and strand
-        if read.rname == last_contig and read.pos == last_pos:
-            count += 1
-            nduplicates += 1
-            continue
-
-        if count > 1:
-            counts[count] += 1
-            if outs_dupl:
-                outs_dupl.write("%s\t%i\t%i\n" % (last_contig, last_pos, count) )
-
-        count = 1
-        last_contig, last_pos = read.rname, read.pos
+    flags = sorted(flags_counts.keys())
 
     outs = options.stdout
     outs.write( "category\tcounts\tpercent\tof\n" )
-    outs.write( "total\t%i\t%5.2f\ttotal\n" % (ninput, 100.0 ) )
-    if ninput == 0: 
+    outs.write( "total\t%i\t%5.2f\ttotal\n" % (c.input, 100.0 ) )
+    if c.input == 0: 
         E.warn( "no input - skipped" )
         E.Stop()
         return
 
-    nmapped = ninput - flags_counts[4]
-    outs.write( "mapped\t%i\t%5.2f\ttotal\n" % (nmapped, 100.0 * nmapped / ninput ) )
+    nmapped = c.input - flags_counts["unmapped"]
+    outs.write( "mapped\t%i\t%5.2f\ttotal\n" % (nmapped, 100.0 * nmapped / c.input ) )
     if nmapped == 0: 
         E.warn( "no mapped reads - skipped" )
         E.Stop()
         return
 
-    for x in flags:
-        outs.write( "%s\t%i\t%5.2f\tmapped\n" % ( FLAGS[x], flags_counts[x], 100.0 * flags_counts[x] / ninput ) )
+    for flag, counts in flags_counts.iteritems():
+        outs.write( "%s\t%i\t%5.2f\tmapped\n" % ( flag, counts, 100.0 * counts / c.input ) )
 
-    outs.write( "rna\t%i\t%5.2f\tmapped\n" % (nrna, 100.0 * nrna / nmapped ) )
-    outs.write( "no_rna\t%i\t%5.2f\tmapped\n" % (nfiltered, 100.0 * nfiltered / nmapped ) )
+    outs.write( "rna\t%i\t%5.2f\tmapped\n" % (c.rna, 100.0 * c.rna / nmapped ) )
+    outs.write( "no_rna\t%i\t%5.2f\tmapped\n" % (c.filtered, 100.0 * c.filtered / nmapped ) )
 
-    if nfiltered > 0:
-        outs.write( "duplicates\t%i\t%5.2f\tno_rna\n" % (nduplicates, 100.0* nduplicates / nfiltered))
-        outs.write( "unique\t%i\t%5.2f\tno_rna\n" % (nfiltered - nduplicates,
-                                                     100.0*(nfiltered - nduplicates)/nfiltered))
+    if c.filtered > 0:
+        outs.write( "duplicates\t%i\t%5.2f\tno_rna\n" % (c.duplicates, 100.0* c.duplicates / c.filtered))
+        outs.write( "unique\t%i\t%5.2f\tno_rna\n" % (c.filtered - c.duplicates,
+                                                     100.0*(c.filtered - c.duplicates)/c.filtered))
 
     # count number of reads in file
     nreads = nmapped
@@ -219,13 +156,13 @@ def main( argv = None ):
         for x in xrange( 2, max(nh_all.keys() ) + 1 ): nreads -= (nh_all[x] / x) * (x-1)
 
     outs.write( "reads_total\t%i\t%5.2f\treads_total\n" % (nreads, 100.0 ) )
-    nreads_mapped = nreads - flags_counts[4]
+    nreads_mapped = nreads - flags_counts["unmapped"]
     outs.write( "reads_mapped\t%i\t%5.2f\treads_total\n" % (nreads_mapped, 100.0 * nreads_mapped / nreads ) )
 
     if len(nh_all) > 1:
         outs.write( "reads_unique\t%i\t%5.2f\treads_mapped\n" % (nh_all[1], 100.0 * nh_all[1] / nreads_mapped ) )
 
-    nreads_norna = nfiltered
+    nreads_norna = c.filtered
     if len(nh) > 1:
         for x in xrange( 2, max(nh.keys() ) + 1 ): nreads_norna -= (nh[x] / x) * (x-1)
 
@@ -235,19 +172,6 @@ def main( argv = None ):
         outs.write( "reads_norna_unique\t%i\t%5.2f\treads_norna\n" % (nh[1], 100.0 * nh[1] / nreads_norna ) )
 
     pysam_in.close()
-
-    if outs_dupl:
-        keys = counts.keys()
-        # count per position (not the same as nduplicates, which is # of reads)
-        c = 0
-        total = sum( counts.values() )
-        for k in sorted(keys):
-            c += counts[k]
-            outs_hist.write("%i\t%i\t%i\t%f\t%f\n" % (k, counts[k], c, 
-                                                      100.0 * counts[k] / total,
-                                                      100.0 * c / total) )
-        outs_dupl.close()
-        outs_hist.close()
 
     if len(nm) > 0:
         outfile = E.openOutputFile( "nm", "w" )

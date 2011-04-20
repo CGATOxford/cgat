@@ -56,6 +56,7 @@ Code
 
 '''
 import os, sys, string, re, optparse, math, time, tempfile, subprocess, types, bisect, array, collections
+import itertools
 import GFF, GTF, Bed, IOTools
 import Experiment as E
 import IndexedFasta
@@ -162,7 +163,7 @@ class Counter:
     so beware ENSEMBL that stores frameshifts as mini-exons.
     """
 
-    mHeader = [ "contig", "strand" ]
+    header = [ "contig", "strand" ]
 
     mMinIntronSize = 10
 
@@ -170,12 +171,16 @@ class Counter:
         self.mFasta = fasta
         self.mSection = section
         self.mOptions = options
-
+        
         if prefix:
-            self.mHeader = tuple(["%s%s" % (prefix, x) for x in self.mHeader ])
+            self.header = tuple(["%s%s" % (prefix, x) for x in self.header ])
+
+        # if true, entry is skipped
+        self.skip = False
 
     def __call__(self, gffs):
         self.mGFFs = gffs
+        self.skip = False
         self.count()
 
     def __str__(self):
@@ -183,9 +188,9 @@ class Counter:
 
     def getHeader(self):
         if self.mSection:
-            return "\t".join( ["%s_%s" % (self.mSection, x) for x in self.mHeader] )
+            return "\t".join( ["%s_%s" % (self.mSection, x) for x in self.header] )
         else:
-            return "\t".join( self.mHeader )
+            return "\t".join( self.header )
 
     def count(self):
         self.contig = self.getContig()
@@ -243,7 +248,7 @@ class CounterIntronsExons(Counter):
     """count number of introns and exons.
     """
 
-    mHeader = ( "ntranscripts", "nexons", "nintrons", )
+    header = ( "ntranscripts", "nexons", "nintrons", )
     def __init__(self, *args, **kwargs):
         Counter.__init__(self, *args, **kwargs )
 
@@ -258,7 +263,7 @@ class CounterIntronsExons(Counter):
 
 class CounterPosition(Counter):
     """output the position of the transcript."""
-    mHeader = ( "contig", "strand", "start", "end" )
+    header = ( "contig", "strand", "start", "end" )
 
     def __init__(self, *args, **kwargs ):
         Counter.__init__(self, *args, **kwargs )
@@ -280,7 +285,7 @@ class CounterPosition(Counter):
 
 ##----------------------------------------------------------------
 class CounterLengths(Counter):
-    mHeader = Stats.Summary().getHeaders()
+    header = Stats.Summary().getHeaders()
 
     def __init__(self, *args, **kwargs ):
         Counter.__init__(self, *args, **kwargs )
@@ -300,7 +305,7 @@ class CounterSpliceSites(Counter):
                      ( "U12-AT/AC", "AT", "AC") )
 
     mNames = [x[0] for x in mIntronTypes ] + ["unknown"]
-    mHeader = ["%s" % x for x in mNames ]
+    header = ["%s" % x for x in mNames ]
 
     mCheckBothStrands = True
 
@@ -346,7 +351,7 @@ class CounterSpliceSites(Counter):
 
 ##-----------------------------------------------------------------------------------
 class CounterCompositionNucleotides(Counter):
-    mHeader = SequenceProperties.SequencePropertiesNA().getHeaders() 
+    header = SequenceProperties.SequencePropertiesNA().getHeaders() 
 
     def __init__(self, *args, **kwargs ):
         Counter.__init__(self, *args, **kwargs )
@@ -367,7 +372,7 @@ class CounterOverlap(Counter):
     Nover1 and nover2 count "exons".
     """
 
-    mHeaderTemplate = ( "nover1", "nover2", "nover", "pover1", "pover2" )
+    headerTemplate = ( "nover1", "nover2", "nover", "pover1", "pover2" )
 
     ## do not save value for intervals
     mWithValues = False
@@ -381,13 +386,13 @@ class CounterOverlap(Counter):
         Counter.__init__(self, *args, **kwargs )
 
         if feature and source:
-            self.mHeader = [ "%s:%s:%s" % (x, source, feature) for x in self.mHeaderTemplate ]
+            self.header = [ "%s:%s:%s" % (x, source, feature) for x in self.headerTemplate ]
         elif feature:
-            self.mHeader = [ "%s:%s" % (x, feature) for x in self.mHeaderTemplate ]
+            self.header = [ "%s:%s" % (x, feature) for x in self.headerTemplate ]
         elif source:
-            self.mHeader = [ "%s:%s" % (x, source) for x in self.mHeaderTemplate ]
+            self.header = [ "%s:%s" % (x, source) for x in self.headerTemplate ]
         else:
-            self.mHeader = self.mHeaderTemplate
+            self.header = self.headerTemplate
 
         e = readIntervalsFromGFF( filename_gff, source, feature, 
                                   self.mWithValues, self.mWithRecords, 
@@ -466,7 +471,7 @@ class CounterOverlapTranscripts(CounterOverlap):
     Nover1 and nover2 now count "transcripts".
     """
 
-    mHeaderTemplate = ( "ngenes", "ntranscripts", "nexons", "nbases", "pover1", "pover2" )
+    headerTemplate = ( "ngenes", "ntranscripts", "nexons", "nbases", "pover1", "pover2" )
 
     ## save value for intervals
     mWithValues = False
@@ -537,7 +542,7 @@ class CounterCoverage(CounterOverlap):
     The values are output in 5' to 3' order for each base.
     """
 
-    mHeaderTemplate = ["cov_%s" % x for x in Stats.Summary().getHeaders()+ ("covered", "values",) ]
+    headerTemplate = ["cov_%s" % x for x in Stats.Summary().getHeaders()+ ("covered", "values",) ]
 
     ## do not save value for intervals
     mWithValues = False
@@ -626,7 +631,7 @@ class Classifier(Counter):
                   to any feature).
     """
 
-    mHeader = [ "is_known", "is_unknown", "is_ambiguous", "is_pc", "is_pseudo", "is_npc", "is_utr", "is_intronic", "is_assoc", "is_intergenic" ] 
+    header = [ "is_known", "is_unknown", "is_ambiguous", "is_pc", "is_pseudo", "is_npc", "is_utr", "is_intronic", "is_assoc", "is_intergenic" ] 
 
     # features to use for classification
     features = ( "CDS", "UTR", "UTR3", "UTR5", "exon", "intronic", "intergenic", "flank", "3flank", "5flank", "telomeric" )
@@ -768,7 +773,7 @@ class ClassifierChIPSeq(Classifier):
        none of the above
     """
 
-    mHeader = [ "is_cds", "is_utr", "is_upstream", "is_downstream", "is_intronic", "is_intergenic", "is_flank", "is_ambiguous" ]
+    header = [ "is_cds", "is_utr", "is_upstream", "is_downstream", "is_intronic", "is_intergenic", "is_flank", "is_ambiguous" ]
 
     # sources to use for classification
     sources = ("", ) # "protein_coding", "pseudogene", )
@@ -893,7 +898,7 @@ class ClassifierRNASeq(Classifier):
 
     """
 
-    mHeader = [ "is_cds", "is_utr", "is_upstream", "is_downstream", "is_intronic", "is_intergenic", "is_flank", "is_ambiguous" ]
+    header = [ "is_cds", "is_utr", "is_upstream", "is_downstream", "is_intronic", "is_intergenic", "is_flank", "is_ambiguous" ]
 
     # sources to use for classification
     sources = ("", ) # "protein_coding", "pseudogene", )
@@ -982,7 +987,7 @@ class CounterOverrun(Counter):
     specially.
     """
 
-    mHeader = ( "nover_exonic", "nover_intronic", "nover_external", "length" )
+    header = ( "nover_exonic", "nover_intronic", "nover_external", "length" )
 
     ## Do not save value for intervals
     mWithValues = False
@@ -1093,7 +1098,7 @@ class CounterDistance(Counter):
     is set to 0.
     """
 
-    mHeaderTemplate = ( "distance", "id", "dist5", "strand5", "id5", "dist3", "strand3", "id3" )
+    headerTemplate = ( "distance", "id", "dist5", "strand5", "id5", "dist3", "strand3", "id3" )
 
     ## do not save value for intervals
     mWithValues = False
@@ -1108,13 +1113,13 @@ class CounterDistance(Counter):
         Counter.__init__(self, *args, **kwargs )
 
         if feature and source:
-            self.mHeader = [ "%s:%s:%s" % (x, source, feature) for x in self.mHeaderTemplate ]
+            self.header = [ "%s:%s:%s" % (x, source, feature) for x in self.headerTemplate ]
         elif feature:
-            self.mHeader = [ "%s:%s" % (x, feature) for x in self.mHeaderTemplate ]
+            self.header = [ "%s:%s" % (x, feature) for x in self.headerTemplate ]
         elif source:
-            self.mHeader = [ "%s:%s" % (x, source) for x in self.mHeaderTemplate ]
+            self.header = [ "%s:%s" % (x, source) for x in self.headerTemplate ]
         else:
-            self.mHeader = self.mHeaderTemplate
+            self.header = self.headerTemplate
 
         e = self.readIntervals( filename_gff, source, feature )
 
@@ -1254,7 +1259,7 @@ class CounterDistanceGenes(CounterDistance):
     TODO: check if all is correct.
     """
 
-    mHeaderTemplate = ( "closest_id", "closest_dist", "closest_strand", "id5", "dist5", "strand5", "id3", "dist3", "strand3", "min5", "min3", "amin5", "amin3" )
+    headerTemplate = ( "closest_id", "closest_dist", "closest_strand", "id5", "dist5", "strand5", "id3", "dist3", "strand3", "min5", "min3", "amin5", "amin3" )
 
     ## do not save value for intervals
     mWithValues = False
@@ -1368,7 +1373,7 @@ class CounterDistanceTranscriptionStartSites(CounterDistance):
     """
 
 
-    mHeaderTemplate = ( "closest_id", "closest_dist", "closest_strand", "id5", "dist5", "id3", "dist3", "is_overlap" )
+    headerTemplate = ( "closest_id", "closest_dist", "closest_strand", "id5", "dist5", "id3", "dist3", "is_overlap" )
 
     ## do not save value for intervals
     mWithValues = False
@@ -1459,7 +1464,7 @@ class CounterSpliceSiteComparison(CounterOverlap):
     """compare splice sites to reference
     """
 
-    mHeaderTemplate = [ "splice_%s" % x for x in ( "total", "found", "missed", "perfect", "partial", "incomplete", "exon_skipping" ) ]
+    headerTemplate = [ "splice_%s" % x for x in ( "total", "found", "missed", "perfect", "partial", "incomplete", "exon_skipping" ) ]
 
     def __init__(self, *args, **kwargs):
         CounterOverlap.__init__(self, *args, **kwargs )
@@ -1519,7 +1524,7 @@ class CounterProximity(CounterOverlap):
     may overlap the range in question.
     """
 
-    mHeaderTemplate = Stats.Summary().getHeaders() + ( "length", "lengths", "values", ) 
+    headerTemplate = Stats.Summary().getHeaders() + ( "length", "lengths", "values", ) 
 
     ## save value for intervals
     mWithValues = True
@@ -1652,7 +1657,7 @@ class CounterNeighbours(CounterProximity):
     may overlap the range in question.
     """
 
-    mHeaderTemplate = ( "ids", "dists" ) 
+    headerTemplate = ( "ids", "dists" ) 
 
     ## save value for intervals
     mWithValues = False
@@ -1702,7 +1707,7 @@ class CounterTerritories(CounterOverlap):
     "0": no match: the transcript overlaps no territory
     """
 
-    mHeaderTemplate = ("status", "nterritories", "territories", )
+    headerTemplate = ("status", "nterritories", "territories", )
 
     ## save pointer for intervals
     mWithRecords = True
@@ -1749,7 +1754,7 @@ class CounterTerritories(CounterOverlap):
 ##-----------------------------------------------------------------------------------
 class CounterQuality(Counter):
 
-    mHeader = (Stats.Summary().getHeaders() + ("values",) )
+    header = (Stats.Summary().getHeaders() + ("values",) )
     
     # discard segments with size > mMaxLength in order
     # to avoid out-of-memory
@@ -1790,10 +1795,13 @@ class CounterReadCoverage(Counter):
     Requires bam files to compute that coverage. Multiple bam
     files can be supplied, these will be summed up.
 
+    Counts are separated into sense, antisense and any sense.
     '''
     
-    mHeader = ("length", "pcovered",) + Stats.Summary().getHeaders()
-    
+    header = ("length",) +\
+        tuple( [ "%s_%s" % (x,y) for x,y in itertools.product( ("sense", "antisense", "anysense"),
+                                                               ( ("pcovered",) + Stats.Summary().getHeaders() )) ] )
+               
     # discard segments with size > mMaxLength in order
     # to avoid out-of-memory
     mMaxLength = 100000
@@ -1807,9 +1815,20 @@ class CounterReadCoverage(Counter):
         segments = self.getSegments()
 
         length = sum( [x[1] - x[0] for x in segments ] )
-        counts = numpy.zeros( length )
+        counts_sense = numpy.zeros( length )
+        counts_antisense = numpy.zeros( length )
         nreads = 0
         contig = self.getContig()
+        if self.getStrand() == "+":
+            is_reverse = False
+        else:
+            is_reverse = True
+
+        def __add( counts, positions, offset ):
+            for p in positions:
+                pos = p - offset
+                if 0 <= pos < length: counts[ pos ] += 1
+            
 
         l = 0
         for start, end in segments:
@@ -1821,21 +1840,35 @@ class CounterReadCoverage(Counter):
                     positions = read.positions
                     if not positions: continue
                     nreads += 1
-                    for p in positions:
-                        pos = p - offset
-                        if 0 <= pos < length: counts[ pos ] += 1
+                    if is_reverse == read.is_reverse:
+                        __add( counts_sense, positions, offset )
+                    else:
+                        __add( counts_antisense, positions, offset )
+
             l += end - start
 
-        self.mTotalLength = length
-        counts = counts[ counts > 0]
-        self.mResult = counts
-        self.mCovered = len(counts)
+        self.length = length
+
+        counts_anysense = counts_sense + counts_antisense
+
+        counts_sense = counts_sense[ counts_sense > 0]
+        counts_antisense = counts_antisense[ counts_antisense > 0]
+        counts_anysense = counts_anysense[ counts_antisense > 0]
+
+        self.counts_sense = counts_sense
+        self.counts_antisense = counts_antisense
+        self.counts_anysense = counts_anysense
 
     def __str__(self):
-        s = Stats.Summary( self.mResult, mode = "int" )
-        return "\t".join( (str(self.mTotalLength),
-                           "%5.2f" % (100.0 * self.mCovered / self.mTotalLength),
-                           str(s),))
+
+        r = [ "%i" % self.length ]
+        
+        for direction, counts in zip ( ("sense", "antisense", "anysense"),
+                                       (self.counts_sense, self.counts_antisense, self.counts_anysense) ):
+            r.append( "%5.2f" % (100.0 * len(counts) / self.length) )
+            r.append( str( Stats.Summary( counts, mode = "int" ) ) )
+
+        return "\t".join( r )
 
 ##-----------------------------------------------------------------------------------
 class CounterReadCounts(Counter):
@@ -1846,9 +1879,12 @@ class CounterReadCounts(Counter):
 
     Both unique and non-unique counts are collected. Uniqueness
     is simply checked through alignment start position.
+
+    Counts are separated into sense, antisense and any sense.
     '''
     
-    mHeader = ( "all_counts", "unique_counts",)
+    header = ( [ "%s_%s" % (x,y) for x,y in itertools.product( ( "sense", "antisense", "anysense"),
+                                                                ( "unique_counts", "all_counts") ) ] )
     
     def __init__(self, bamfiles, *args, **kwargs ):
         Counter.__init__(self, *args, **kwargs )
@@ -1859,23 +1895,242 @@ class CounterReadCounts(Counter):
         segments = self.getSegments()
         contig = self.getContig()
 
-        nunique_counts, nnonunique_counts = 0, 0
+        nsense_unique_counts, nsense_all_counts = 0, 0
+        nantisense_unique_counts, nantisense_all_counts = 0, 0
+        nanysense_unique_counts, nanysense_all_counts = 0, 0
+
+        if self.getStrand() == "+":
+            is_reverse = False
+        else:
+            is_reverse = True
 
         for start, end in segments:
             for samfile in self.mBamFiles:
-                last_pos = None
+                last_any_pos = None
+                last_sense_pos = None
+                last_anti_pos = None
                 for read in samfile.fetch( contig, start, end ):
                     if not read.overlap( start, end ): continue
-                    nnonunique_counts += 1
-                    if last_pos != read.pos:
-                        last_pos = read.pos
-                        nunique_counts += 1
                     
-        self.mUniqueCounts = nunique_counts
-        self.mNonUniqueCounts = nnonunique_counts
+                    nanysense_all_counts += 1
+                    if last_any_pos != read.pos:
+                        last_any_pos = read.pos
+                        nanysense_unique_counts += 1
+                        
+                    if is_reverse == read.is_reverse:
+                        nsense_all_counts += 1
+                        if last_sense_pos != read.pos:
+                            last_sense_pos = read.pos
+                            nsense_unique_counts += 1
+                    else:
+                        nantisense_all_counts += 1
+                        if last_anti_pos != read.pos:
+                            last_anti_pos = read.pos
+                            nantisense_unique_counts += 1
+
+
+        self.result = (nsense_unique_counts,
+                       nsense_all_counts,
+                       nantisense_unique_counts,
+                       nantisense_all_counts,
+                       nanysense_unique_counts,
+                       nanysense_all_counts )
+    def __str__(self):
+        return "\t".join( map(str, (self.result)))
+
+##-----------------------------------------------------------------------------------
+class CounterReadExtension(Counter):
+    '''compute read distribution from 3' to 5' end.
+
+    Requires bam files to compute that coverage. Multiple bam
+    files can be supplied, these will be summed up.
+
+    Counts are separated into sense, antisense and any sense.
+
+    This method requires a gff-file describing each gene's territory
+    to avoid miscounting reads from genes in close proximity.
+
+    Returns the coverage distribution in the territory, the median
+    distance and the cumulative distribution every 1kb starting
+    from the gene's end.
+    '''
+
+    # look at 50kb either way
+    max_territory_size = 30000
+
+    # distance increment
+    increment = 200
+
+    def __init__(self, bamfiles, filename_gff, *args, **kwargs ):
+        Counter.__init__(self, *args, **kwargs )
+
+        self.labels = ("upstream", "downstream", "firstexon", "lastexon" )
+        self.directions =  ("sense", "antisense", "anysense" )
+
+        self.header = \
+            tuple( 
+            [ "%s_%s" % (x,y) for x,y in itertools.product( self.labels, ("length", "start", "end")) ] +\
+                [ "%s_%s" % (x,y) for x,y in itertools.product(             
+                        [ "%s_%s" % (xx, yy) for xx, yy in itertools.product(self.labels, self.directions)],
+                        ("pcovered", ) + Stats.Summary().getHeaders() ) ] )
+
+            
+        self.outfiles = IOTools.FilePool( options.output_filename_pattern % "readextension_%s" )
+
+        # -1 is the terminal exon
+        for x,y in itertools.product( self.labels[:2], self.directions):
+            self.outfiles.write( "%s_%s" % (x,y), 
+                                 "%s\n" % "\t".join( 
+                    ("gene_id", "length", "-1" ) + tuple(map(str, range( 0, 
+                                                                         self.max_territory_size, 
+                                                                         self.increment ) ) ) ) )
+
+        if not bamfiles: raise ValueError("supply --bam-file options for readcoverage")
+        self.mBamFiles = bamfiles
+
+        self.territories = {}
+
+        if not filename_gff: raise ValueError( "supply --gff-file with territories" )
+
+        for gtf in GTF.iterator( IOTools.openFile( filename_gff ) ):
+            if gtf.gene_id in self.territories:
+                raise ValueError( "need territories - multiple entries for gene %s" % gtf.gene_id)
+            
+            self.territories[gtf.gene_id] = (gtf.contig, gtf.start, gtf.end)
+            
+    def count(self):
+
+        segments = self.getSegments()
+        start, end = segments[0][0], segments[-1][1]
+        exon_start, exon_end = segments[0][1], segments[-1][0]
+        gene_id = self.mGFFs[0].gene_id
+        self.gene_id = gene_id
+        contig = self.getContig()
+        if self.getStrand() == "+":
+            is_reverse = False
+        else:
+            is_reverse = True
+
+        try:
+            territory_contig, territory_start, territory_end = self.territories[gene_id]
+        except KeyError:
+            self.skip = True
+            return
+
+        # sanity check - is gene within territory?
+        assert start >= territory_start
+        assert end <= territory_end
+        assert contig == territory_contig
+
+        # truncate territory
+        territory_start = max( territory_start, start - self.max_territory_size )
+        territory_end = min( territory_end, end + self.max_territory_size )
+
+        #############################################
+        # the following needs to be decluttered.
+        # these are pairs of upstream/downstream
+        regions = [ (territory_start, start),
+                    (end, territory_end),
+                    (start, exon_start),
+                    (exon_end, end ) ]
+        
+        counts = []
+
+        for start, end in regions:
+            counts.append( [numpy.zeros( end-start, numpy.int ),
+                            numpy.zeros( end-start, numpy.int )] )
+
+        def __add( counts, positions, offset ):
+            l = len(counts)
+            for p in positions:
+                pos = p - offset
+                if 0 <= pos < l: counts[ pos ] += 1
+
+        def _update( counts, start, end ):
+            counts_sense, counts_antisense = counts
+            
+            for samfile in self.mBamFiles:
+                for read in samfile.fetch( contig, start, end ):
+                    # only count positions actually overlapping
+                    positions = read.positions
+                    if not positions: continue
+                    if is_reverse == read.is_reverse:
+                        __add( counts_sense, positions, start )
+                    else:
+                        __add( counts_antisense, positions, start )
+
+        for region, cc in zip( regions, counts):
+            start, end = region
+            _update( cc, start, end )
+
+        # invert "upstream" counts so that they are counting from TSS
+        for x in xrange( 0, len(regions), 2):
+            for y in range( len(counts[x]) ):
+                counts[x][y] = counts[x][y][::-1]
+
+        # switch upstream (x) /downstream (x+1)
+        if is_reverse:
+            for x in xrange( 0, len(regions), 2):
+                counts[x], counts[x+1] = counts[x+1], counts[x]
+                regions[x], regions[x+1] = regions[x+1], regions[x]
+
+        # add anysense_counts
+        for x in range(len(counts)):
+            counts[x] = counts[x] + [ counts[x][0] + counts[x][1] ]
+            
+        self.counts = counts
+        self.regions = regions
 
     def __str__(self):
-        return "\t".join( map(str, (self.mNonUniqueCounts, self.mUniqueCounts ) ) )
+
+        if self.skip: return "\t".join( ["na"] * self.Headers)
+
+        r = []
+
+        for label, region in zip( self.labels, self.regions):
+            start, end = region
+            length = end - start
+            r.append( "%i" % length )
+            r.append( "%i" % start )
+            r.append( "%i" % end )
+
+        # max number of distances, +1 for exon
+        max_d = len(range(0,self.max_territory_size, self.increment) ) + 1
+
+        # compute distributions for UTR regions 
+        assert len(self.counts) == 4
+        for label, region, counts, exon_counts in zip( self.labels[:2], self.regions[:2], self.counts[:2], self.counts[:2] ):
+            start, end = region
+            length = end - start
+            # output distributions (only for UTR counts)
+            for direction, cc, ec in zip( self.directions, counts, exon_counts ):
+                if len(ec) == 0: d = [0]
+                else: d = [ec.max()]
+                for x in range(0, length, self.increment ):
+                    d.append( cc[x:min( length, x+self.increment)].max() )
+                d.extend( [""] * (max_d - len(d)) )
+                self.outfiles.write( "%s_%s" % (label, direction),
+                                     "%s\t%i\t%s\n" % (self.gene_id,
+                                                       length, 
+                                                       "\t".join( map(str, d ) ) ) ) 
+
+        # output coverage stats
+        for label, region, counts in zip( self.labels, self.regions, self.counts ):
+            start, end = region
+            length = end - start
+
+            # output stats
+            for direction, c in zip( self.directions, counts ):
+                # compress
+                c = c[c > 0]
+                # pcovered
+                if length == 0: r.append( "na" )
+                else: r.append( "%5.2f" % (100.0 * len(c) / length) )
+
+                # coverage stats
+                r.append( str( Stats.Summary( c, mode = "int" ) ) )
+
+        return "\t".join( r )
 
 ##-----------------------------------------------------------------------------------
 class CounterBigwigCounts(Counter):
@@ -1884,7 +2139,7 @@ class CounterBigwigCounts(Counter):
     Requires a bigwig files to compute.
     '''
     
-    mHeader = ("length", "pcovered",) + Stats.Summary().getHeaders()
+    header = ("length", "pcovered",) + Stats.Summary().getHeaders()
     
     # discard segments with size > mMaxLength in order
     # to avoid out-of-memory
@@ -1969,6 +2224,7 @@ if __name__ == '__main__':
                                "classifier", "classifier-chipseq",
                                "overlap-transcripts",
                                "read-coverage", 
+                               "read-extension", 
                                "read-counts",
                                "bigwig-counts",
                                'neighbours',
@@ -2003,7 +2259,7 @@ if __name__ == '__main__':
         prefixes = []
         )
 
-    (options, args) = E.Start( parser )
+    (options, args) = E.Start( parser, add_output_options = True)
 
     if options.prefixes:
         if len(options.prefixes) != len(options.counters):
@@ -2042,6 +2298,8 @@ if __name__ == '__main__':
     if not options.gff_sources: options.gff_sources.append( None )
     if not options.gff_features: options.gff_features.append( None )
 
+    cc = E.Counter()
+
     for n, c in enumerate(options.counters):
         if options.prefixes:
             prefix = options.prefixes[n]
@@ -2064,6 +2322,10 @@ if __name__ == '__main__':
         elif c == "read-coverage":
             counters.append( CounterReadCoverage( bam_files,
                                                   options = options, prefix = prefix ) )
+        elif c == "read-extension":
+            counters.append( CounterReadExtension( bam_files,
+                                                   filename_gff = options.filename_gff,
+                                                   options = options, prefix = prefix ) )
         elif c == "read-counts":
             counters.append( CounterReadCounts( bam_files,
                                                 options = options, prefix = prefix ) )
@@ -2151,10 +2413,20 @@ if __name__ == '__main__':
             header + [ x.getHeader() for x in counters] ) + "\n" )
 
     for gffs in iterator( GTF.iterator(options.stdin) ):
+        cc.input += 1
         for counter in counters: counter(gffs)
+
+        skip = len( [x for x in counters if x.skip] ) == len(counters)
+        if skip:
+            cc.skipped += 1
+            continue
+
         options.stdout.write( "\t".join( \
                 fheader(gffs) +\
                 ffields(gffs) +\
                 [str( counter ) for counter in counters] ) + "\n" )
+        
+        cc.output += 1
 
+    E.info("%s" %str(cc))
     E.Stop()

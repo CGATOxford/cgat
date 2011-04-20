@@ -1,6 +1,40 @@
+.. _Mapping:
+
 =======
 Mapping
 =======
+
+Overview
+========
+
++---------------------------------------+--------------------------------------------------+
+|*Column*                               |*Contents*                                        |
++---------------------------------------+--------------------------------------------------+
+|reads_in                               |Number of reads submitted                         |
++---------------------------------------+--------------------------------------------------+
+|reads_out                              |Number of reads removed by tophat                 |
++---------------------------------------+--------------------------------------------------+
+|reads_mapped                           |Number of reads mapped (after filtering)          |
++---------------------------------------+--------------------------------------------------+
+|reads_norna                            |Number of reads not mapping to repetitive RNA     |
++---------------------------------------+--------------------------------------------------+
+|reads_norna_unique_alignments          |Number of reads with unique alignments            |
++---------------------------------------+--------------------------------------------------+
+
+.. report:: Mapping.MappingSummary
+   :render: table
+   :slices: reads_in,reads_out,reads_mapped,reads_norna,reads_norna_unique_alignments
+
+   Mapping Results
+
+.. report:: Mapping.MappingSummary
+   :render: interleaved-bar-plot
+   :slices: reads_in,reads_out,reads_mapped,reads_norna,reads_norna_unique_alignments
+
+   Mapping Results
+
+Detailed results
+================
 
 This section reports results from the mapping stage. It reports summary statistics from various
 :term:`bam` formatted files that the pipeline creates:
@@ -26,10 +60,10 @@ This section reports results from the mapping stage. It reports summary statisti
    :term:`read` and :term:`alignment` counts be the same.
 
 Mapping results
-===============
+---------------
 
 Tophat results
---------------
+++++++++++++++
 
 Mapping reads with tophat_ across splice-junctions is the first step in the RNASeq 
 analysis pipeline. The following table present an overview of tophat results for 
@@ -46,7 +80,7 @@ each :term:`track`.
    of input and mapped reads will be the same. Only the latter is shown.
 
 Filtering
----------
++++++++++
 
 The RNASeq pipeline offers two filtering options:
 
@@ -85,19 +119,19 @@ The RNASeq pipeline offers two filtering options:
    Filtering summary
 
 Alignments
-----------
+++++++++++
 
 The following table present an overview of the alignments in the 
 BAM files for each :term:`track`.
 
-.. report:: Mapping.MappingSummary
+.. report:: Mapping.BamSummary
    :render: table
    :tracks: r(.accepted)
    :slices: mapped,reverse,rna,duplicates
 
    Mapping summary
 
-.. report:: Mapping.MappingSummary
+.. report:: Mapping.BamSummary
    :render: interleaved-bar-plot
    :tracks: r(.accepted)
    :slices: mapped,reverse,rna,duplicates
@@ -113,20 +147,18 @@ BAM files for each :term:`track`.
    Number of alignments per number of mismatches in alignment.
 
 Reads
------
-.. todo::
-   alignment and read tables identical
++++++
 
 The following table 
 
-.. report:: Mapping.MappingSummary
+.. report:: Mapping.BamSummary
    :render: table
    :tracks: r(.accepted)
    :slices: reads_mapped,reads_norna,reads_norna_unique_alignments
 
    Mapping summary
 
-.. report:: Mapping.MappingSummary
+.. report:: Mapping.BamSummary
    :render: interleaved-bar-plot
    :tracks: r(.accepted)
    :slices: reads_mapped,reads_norna,reads_norna_unique_alignments
@@ -142,7 +174,7 @@ The following table
    Number of reads per number of alignments (hits) per read.
 
 Alignment statistics
-====================
+--------------------
 
 The following table present an overview of the alignments in the 
 BAM files for each :term:`track`. See the 
@@ -188,7 +220,7 @@ for a definition of the field contents.
 
 
 Context results
-===============
+---------------
 
 The following table lists the genomic context that reads map to. Counts are in terms of alignments.
 Note that some of these contexts can be overlapping, thus some alignments might be counted several
@@ -202,7 +234,7 @@ alignments spanning several contexts might be dropped.
    Number of alignments that align in a certain genomic context
 
 Ribosomal expression
---------------------
+++++++++++++++++++++
 
 Ribosomal RNA is one of the most abundant transcripts in a cell and dominates RNASeq samples
 until it is removed. The following plots and tables examine the number of alignments to
@@ -229,10 +261,17 @@ repetitive RNA. Repetetive RNA annotation is taken from the UCSC repeatmasker tr
    the UCSC repeatmasker track
 
 Protein coding expression
--------------------------
++++++++++++++++++++++++++
 
 The following plots list the number of alignments to protein coding and (protein coding) 
 pseudogene exons. The annotations are taken from the ENSEMBL gene set.
+
+.. report:: Mapping.MappingContext
+   :tracks: r(.accepted)
+   :render: table
+   :slices: mapped,protein_coding,pseudogene
+
+   Number of alignments that align to protein coding genes or pseudo genes.
 
 .. report:: Mapping.MappingContext
    :tracks: r(.accepted)

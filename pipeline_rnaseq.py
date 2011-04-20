@@ -457,7 +457,27 @@ CONDITIONS = PipelineTracks.Aggregate( TRACKS, labels = ("condition", ) )
 TISSUES = PipelineTracks.Aggregate( TRACKS, labels = ("tissue", ) )
 
 ###################################################################
-## genesets build - needs to be defined statically.
+###################################################################
+###################################################################
+def connect():
+    '''connect to database.
+
+    This method also attaches to helper databases.
+    '''
+
+    dbh = sqlite3.connect( PARAMS["database"] )
+    statement = '''ATTACH DATABASE '%s' as annotations''' % (PARAMS["annotations_database"])
+    cc = dbh.cursor()
+    cc.execute( statement )
+    cc.close()
+
+    return dbh
+
+###################################################################
+##################################################################
+##################################################################
+## genesets build - defined statically here, but could be parsed
+## from configuration options
 GENESETS = ("novel", "abinitio", "reference", "refcoding", "lincrna" )
 
 # reference gene set for QC purposes
@@ -705,7 +725,10 @@ def buildLincRNAGeneSet( infile, outfile ):
             "%s.gtf.gz" % REFERENCE )
 def buildCodingGeneSet( infile, outfile ):
     '''build a new gene set with only protein coding 
-    transcripts.'''
+    transcripts.
+
+    This set includes UTR and CDS.
+    '''
     
     to_cluster = True
     statement = '''
@@ -2684,6 +2707,82 @@ def loadIntronLevelReadCounts( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
+@follows( buildUnionExons, mkdir( "extension_counts.dir" ) )
+@transform( buildBAMs, 
+            regex(r"(\S+).accepted.bam"), 
+            r"extension_counts.dir/\1.extension_counts.tsv.gz" )
+def buildGeneLevelReadExtension( infile, outfile ):
+    '''compute extension of cds. 
+
+    Known UTRs are counted as well.
+    '''
+
+    to_cluster = USECLUSTER
+
+    cds = os.path.join( PARAMS["annotations_dir"],
+                        PARAMS_ANNOTATIONS["interface_geneset_cds_gtf"] )
+
+    
+    territories = os.path.join( PARAMS["annotations_dir"],
+                                PARAMS_ANNOTATIONS["interface_territories_gff"] )
+
+    statement = '''
+    zcat %(cds)s 
+    | python %(scriptsdir)s/gtf2table.py 
+          --reporter=genes
+          --bam-file=%(infile)s 
+          --counter=read-extension
+          --output-filename-pattern=%(outfile)s.%%s.tsv.gz
+          --filename-gff=%(territories)s
+    | gzip
+    > %(outfile)s
+    '''
+    
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@follows( mkdir( os.path.join( PARAMS["exportdir"], "utr_extension" ) ) )
+@transform( buildGeneLevelReadExtension,
+            suffix(".tsv.gz"),
+            ".plot" )
+def plotGeneLevelReadExtension( infile, outfile ):
+    '''plot reads extending beyond last exon.'''
+
+    infiles = glob.glob( infile + ".*.tsv.gz" )
+
+    outdir = os.path.join( PARAMS["exportdir"], "utr_extension" )
+    
+    # for heatmap.2
+    R('''suppressMessages(library( gplots ))''')
+    R('''suppressMessages(library(RColorBrewer))''')
+
+    for filename in infiles:
+
+        E.info("processing %s" % filename)
+
+        parts = os.path.basename(filename).split( "." )
+        fn = ".".join( (parts[0], parts[4], "png") )
+        outfilename = os.path.join( outdir, fn )
+
+        R('''r = read.table( gzfile( "%(filename)s"), header=TRUE, fill=TRUE, row.names=1)''' % locals() )
+        # take only those with a 'complete' territory
+        R('''d = r[-which( apply( r,1,function(x)any(is.na(x)))),]''')
+        # remove length column
+        R('''d = d[-1]''')
+        # remove those which are completely empty
+        R('''d = d[-which( apply(d,1,function(x)all(x==0))),]''')
+        # log-transform
+        R('''l = log10(d+1) ''')
+        # plot
+        R.png( outfilename, height=2000 )
+        R('''heatmap.2( data.matrix(l), trace="none", Rowv=order(l), Colv=NA, col=brewer.pal(9,"Greens"), dendrogram="none", labRow="none" )''' )
+        R['dev.off']()
+
+#########################################################################
+#########################################################################
+#########################################################################
 @follows( mkdir("transcript_counts.dir") )
 @transform( buildBAMs, 
             regex(r"(\S+).accepted.bam"), 
@@ -2977,6 +3076,8 @@ def mapping(): pass
           buildFullGeneSet,
           buildLincRNAGeneSet,
           buildNovelGeneSet,
+          loadGeneLevelReadCounts,
+          loadIntronLevelReadCounts,
           loadGeneInformation,
           loadGeneSetStats,
           loadGeneSetGeneInformation,
@@ -3000,6 +3101,50 @@ def expression(): pass
 def full(): pass
 
 def export(): pass
+
+###################################################################
+@merge( mapping,  "view_mapping.load" )
+def createViewMapping( infile, outfile ):
+    '''create view in database for alignment stats.
+
+    This view aggregates all information on a per-track basis.
+
+    The table is built from the following tracks:
+    
+    tophat_stats: .genome
+    mapping_stats: .accepted
+    bam_stats: .accepted
+    context_stats: .accepted
+    alignment_stats: .accepted
+    '''
+
+    tablename = P.toTable( outfile )
+    # can not create views across multiple database, so use table
+    view_type = "TABLE"
+    
+    dbhandle = connect()
+    Database.executewait( dbhandle, "DROP %(view_type)s IF EXISTS %(tablename)s" % locals() )
+
+    statement = '''
+    CREATE %(view_type)s %(tablename)s AS
+    SELECT SUBSTR( b.track, 1, LENGTH(b.track) - LENGTH( '.accepted')) AS track, *
+    FROM bam_stats AS b,
+          mapping_stats AS m,
+          context_stats AS c,          
+          alignment_stats AS a,
+          tophat_stats AS t
+    WHERE b.track LIKE "%%.accepted" 
+      AND b.track = m.track
+      AND b.track = c.track
+      AND b.track = a.track
+      AND SUBSTR( b.track, 1, LENGTH(b.track) - LENGTH( '.accepted')) || '.genome' = t.track
+    '''
+
+    Database.executewait( dbhandle, statement % locals() )
+
+@follows( createViewMapping )
+def views():
+    pass
 
 @follows( mkdir( "report" ) )
 def build_report():
