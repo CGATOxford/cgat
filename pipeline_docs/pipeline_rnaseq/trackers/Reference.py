@@ -144,6 +144,7 @@ class UTRExtension( Tracker ):
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 .. figure:: %(edir)s/%(method)s/%(track)s.readextension_%(region)s_%(direction)s.png
+   :height: 300
 
 ''' % locals()
 

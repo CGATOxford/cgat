@@ -102,10 +102,13 @@ class Sample(object):
         return R_SEPARATOR.join( map( to_aggregate, self.data.values() ) )
 
     def split( self, s, sep ):
-        d = map( from_aggregate, s.split(sep) )
-        assert len(d) == len(self.attributes)
-        self.data = collections.OrderedDict( zip( self.attributes, d ))
-        
+        if len(self.attributes) == 1:
+            self.data = collections.OrderedDict( ((self.attributes,s),) )
+        else:
+            d = map( from_aggregate, s.split(sep) )
+            assert len(d) == len(self.attributes)
+            self.data = collections.OrderedDict( zip( self.attributes, d ))
+
     def fromFile( self, fn ):
         self.split( fn, FILE_SEPARATOR )
 
