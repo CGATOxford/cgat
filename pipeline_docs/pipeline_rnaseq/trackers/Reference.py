@@ -1,6 +1,7 @@
 import os, sys, re, types, itertools, math
 
 from RnaseqReport import *
+from SphinxReport.ResultBlock import ResultBlock, ResultBlocks
 
 ##################################################################################
 ##################################################################################
@@ -131,21 +132,24 @@ class IntronicExonicReadDepth(RnaseqTracker):
 ##############################################################
 class UTRExtension( Tracker ):
     tracks = [ x.asFile() for x in TRACKS ]
-    slices = [ "%s.%s" % x for x in itertools.product( ("downstream", "upstream"), ("sense", "antisense", "anysense" ) ) ]
 
     def __call__(self, track, slice = None ):
         edir = EXPORTDIR
         method = "utr_extension"
-        
-        region, direction = slice.split( "." )
 
-        rst_text = '''
-%(track)s %(region)s %(direction)s 
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        blocks = ResultBlocks()
 
-.. figure:: %(edir)s/%(method)s/%(track)s.readextension_%(region)s_%(direction)s.png
-   :height: 300
+        block = \
+'''
+.. figure:: %(edir)s/%(method)s/%(track)s.readextension_%(region)s_%(direction)s.png 
+   :height: 300 
+'''
+        # append spaces for file extension
+        block = "\n".join( [ x + " " * 40 for x in block.split("\n") ] )
 
-''' % locals()
-
-        return odict( (("text", rst_text),) )
+        for region, direction in itertools.product( ("downstream", "upstream"),
+                                                    ("sense", "antisense", "anysense" )):
+            blocks.append( ResultBlock( text = block % locals(),
+                                        title = "%(track)s %(region)s %(direction)s" % locals() ) )
+            
+        return odict( (("rst", "\n".join(Utils.layoutBlocks( blocks, layout="columns-3" ))),))
