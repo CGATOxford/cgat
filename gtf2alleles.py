@@ -1,4 +1,3 @@
-
 ################################################################################
 #
 #   MRC FGU Computational Genomics Group
@@ -153,13 +152,25 @@ class VariantGetterVCF( VariantGetter ):
     def __init__(self, filename, sample ):
         self.tabix = pysam.Tabixfile( filename )
         self.sample = sample
-        self.parser = pysam.asVCF( filename )
-
+        self.parser = pysam.asVCF()
+        self.vcffile = pysam.VCF.VCFFile()
+        self.vcffile.parse( IOTools.openFile( filename ) )
+        
     def __call__(self, contig, start, end ):
         
         variants = []
         s = self.sample
-        for data in self.tabix.fetch( contig, start, end, parser = self.parser ):
+
+        try:
+            iter = self.tabix.fetch( contig, start, end, parser = self.parser )
+        except ValueError:
+            # contigs not in variants, ignore
+            return variants
+
+        for dd in iter:
+            
+            data = self.vcffile.parse_data( "\t".join(list(dd)[:-1] ) )
+ 
             if s not in data: continue
             v = data[s]
             contig, pos, reference = data["chrom"], data["pos"], data["ref"]
@@ -178,7 +189,9 @@ class VariantGetterVCF( VariantGetter ):
             genotypes = genotypes[0]
 
             # convert to genotype
-            genotype = "".join([ bases[int(x)] for x in genotypes if x != "/" ])
+            if genotypes == ["."]: genotype = reference
+            else: genotype = "".join([ bases[int(x)] for x in genotypes if x != "/" ])
+
             variants.append( Variants.Variant._make( (int(pos), reference, Genomics.encodeGenotype(genotype) ) ))
             
         return variants
@@ -455,7 +468,7 @@ def buildAlleles( transcript,
         # map between the new cds sequence and the reference
         # sequence
         map_cds2reference = alignlib.makeAlignmentBlocks()
-        
+
         ###################################################
         # process first exon
         exon = transcript[0]
@@ -472,6 +485,7 @@ def buildAlleles( transcript,
         exon_key = (exon.start, exon.end)
         exon_sequence = exons[exon_key] 
         exon_seq = "".join(exon_sequence) 
+        
         cds.append(exon_seq)
         _addCds2Reference( map_cds2reference, 
                            lcds,
@@ -505,7 +519,7 @@ def buildAlleles( transcript,
                 ", offsets=%i,%i," % (start_offset, end_offset), \
                 ", offset at start=",_getOffset( exon.start, offsets), \
                 ", offset at end=",_getOffset( exon.end, offsets)
-
+            
 
         for exon in transcript[1:]:
 
@@ -516,7 +530,6 @@ def buildAlleles( transcript,
             exon_key = (exon.start, exon.end)
             exon_sequence = exons[exon_key]
             start_offset, end_offset = _getEndOffsets( exon_sequence )
-
             intron_key = (last_end, exon.start)
             
             if last_end == exon.start:
@@ -525,6 +538,7 @@ def buildAlleles( transcript,
                 intron_key = None
             else:
                 intron_sequence = introns[intron_key] 
+
             intron_seq = "".join( intron_sequence )
 
             ###################################################
@@ -947,7 +961,7 @@ def main( argv = None ):
 
         # collect coordinate offsets and remove conflicting variants
         variants, removed_variants, offsets = Variants.buildOffsets( variants, contig = contig ) 
-        
+
         if len(removed_variants) > 0:
             E.warn("removed %i conflicting variants" % len(removed_variants) )
             for v in removed_variants:
@@ -982,6 +996,7 @@ def main( argv = None ):
         
         else:
             variant_exons, variant_introns = None, None
+
 
         for transcript in transcripts:
 

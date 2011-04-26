@@ -960,7 +960,8 @@ def mapReadsWithTophat( infiles, outfile ):
           add_inputs( buildCodingGeneSet ), 
           r"\1.accepted.bam" )
 def buildBAMs( infiles, outfile):
-
+    '''reconcile genomic and transcriptome matches.
+    '''
     genome, transcriptome, reffile = infiles[0][0], infiles[1][0], infiles[0][1]
     outfile_mismapped = P.snip(outfile, ".accepted.bam") + ".mismapped.bam"
 
@@ -1025,6 +1026,34 @@ def buildAlignmentStats( infile, outfile ):
     
     P.run()
 
+############################################################
+############################################################
+############################################################
+@follows( mkdir( os.path.join( PARAMS["exportdir"], "bamstats" ) ) )
+@transform( (buildMismappedBAMs, mapReadsWithTophat, buildBAMs ), 
+            suffix(".bam" ), ".bam.report")
+def buildBAMReports( infile, outfile ):
+    '''build alignment stats using bamstats
+
+    '''
+    to_cluster = USECLUSTER
+
+    # requires a large amount of memory to run.
+    # only use high-mem machines
+    job_options = "-l mem_free=32G"
+
+    # xvfb-run  -f ~/.Xauthority -a 
+    track = P.snip( infile, ".bam" )
+
+    # bamstats can not accept a directory as output, hence cd to exportdir
+    statement = '''
+    cd %(exportdir)s/bamstats;
+    bamstats -i ../../%(infile)s -v html -o %(track)s.html 
+             --qualities --mapped --lengths --distances --starts
+    >& ../../%(outfile)s
+    '''
+
+    P.run()
 
 ############################################################
 ############################################################
@@ -2665,7 +2694,7 @@ def loadGeneLevelReadCounts( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@follows( buildUnionExons, mkdir( "intron_counts.dir" ) )
+@follows( mkdir( "intron_counts.dir" ) )
 @transform( buildBAMs, 
             regex(r"(\S+).accepted.bam"), 
             add_inputs( buildIntronGeneModels ),
@@ -2707,7 +2736,7 @@ def loadIntronLevelReadCounts( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@follows( buildUnionExons, mkdir( "extension_counts.dir" ) )
+@follows( mkdir( "extension_counts.dir" ) )
 @transform( buildBAMs, 
             regex(r"(\S+).accepted.bam"), 
             r"extension_counts.dir/\1.extension_counts.tsv.gz" )
@@ -2721,10 +2750,12 @@ def buildGeneLevelReadExtension( infile, outfile ):
 
     cds = os.path.join( PARAMS["annotations_dir"],
                         PARAMS_ANNOTATIONS["interface_geneset_cds_gtf"] )
-
     
     territories = os.path.join( PARAMS["annotations_dir"],
                                 PARAMS_ANNOTATIONS["interface_territories_gff"] )
+
+    utrs = os.path.join( PARAMS["annotations_dir"],
+                         PARAMS_ANNOTATIONS["interface_annotation_gff"] )
 
     statement = '''
     zcat %(cds)s 
@@ -2734,11 +2765,17 @@ def buildGeneLevelReadExtension( infile, outfile ):
           --counter=read-extension
           --output-filename-pattern=%(outfile)s.%%s.tsv.gz
           --filename-gff=%(territories)s
+          --filename-gff=%(utrs)s
     | gzip
     > %(outfile)s
     '''
     
     P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+def buildUTR(): pass
 
 #########################################################################
 #########################################################################
@@ -2754,30 +2791,58 @@ def plotGeneLevelReadExtension( infile, outfile ):
 
     outdir = os.path.join( PARAMS["exportdir"], "utr_extension" )
     
-    # for heatmap.2
-    R('''suppressMessages(library( gplots ))''')
     R('''suppressMessages(library(RColorBrewer))''')
+
+    # the bin size , see gtf2table - can be cleaned from column names
+    binsize = 200
 
     for filename in infiles:
 
         E.info("processing %s" % filename)
 
         parts = os.path.basename(filename).split( "." )
-        fn = ".".join( (parts[0], parts[4], "png") )
-        outfilename = os.path.join( outdir, fn )
 
         R('''r = read.table( gzfile( "%(filename)s"), header=TRUE, fill=TRUE, row.names=1)''' % locals() )
         # take only those with a 'complete' territory
         R('''d = r[-which( apply( r,1,function(x)any(is.na(x)))),]''')
-        # remove length column
-        R('''d = d[-1]''')
-        # remove those which are completely empty
-        R('''d = d[-which( apply(d,1,function(x)all(x==0))),]''')
-        # log-transform
-        R('''l = log10(d+1) ''')
-        # plot
-        R.png( outfilename, height=2000 )
-        R('''heatmap.2( data.matrix(l), trace="none", Rowv=order(l), Colv=NA, col=brewer.pal(9,"Greens"), dendrogram="none", labRow="none" )''' )
+        # save UTR
+        R('''utrs = d$utr''' )
+        # remove length and utr column
+        R('''d = d[-c(1,2)]''')
+        # remove those which are completely empty, logtransform data
+        R('''lraw = log10( d[-which( apply(d,1,function(x)all(x==0))),] + 1 )''')
+        R('''utrs = utrs[-which( apply(d,1,function(x)all(x==0)))]''' )
+        R('''lscaled = t(scale(t(lraw), center=FALSE, scale=apply(lraw,1,max) ))''' )
+
+        R('''myplot = function( reads, utrs, ... ) {
+           oreads = t(data.matrix( reads )[order(utrs), ] )
+           outrs = utrs[order(utrs)]
+           image( 1:nrow(oreads), 1:ncol(oreads), oreads ,
+                  xlab = "", ylab = "",
+                  col=brewer.pal(9,"Greens"),
+                  axes=FALSE)
+           # axis(BELOW<-1, at=1:nrow(oreads), labels=rownames(oreads), cex.axis=0.7)
+           par(new=TRUE)
+           plot( outrs, 1:length(outrs), yaxs="i", xaxs="i", 
+                 ylab="genes", xlab="len(utr) / bp", 
+                 type="S", 
+                 xlim=c(0,nrow(oreads)*%(binsize)i))
+        }''' % locals())
+
+
+        fn = ".".join( (parts[0], parts[4], "raw", "png") )
+        outfilename = os.path.join( outdir, fn )
+
+        R.png( outfilename, height=2000, width=1000 )
+        R('''myplot( lraw, utrs )''' )
+        R['dev.off']()
+
+        # plot scaled data
+        fn = ".".join( (parts[0], parts[4], "scaled", "png") )
+        outfilename = os.path.join( outdir, fn )
+
+        R.png( outfilename, height=2000, width=1000 )
+        R('''myplot( lscaled, utrs )''' )
         R['dev.off']()
 
 #########################################################################

@@ -394,7 +394,10 @@ class CounterOverlap(Counter):
         else:
             self.header = self.headerTemplate
 
-        e = readIntervalsFromGFF( filename_gff, source, feature, 
+        if len(filename_gff) != 1:
+            raise ValueError("expected only one gff file" )
+
+        e = readIntervalsFromGFF( filename_gff[0], source, feature, 
                                   self.mWithValues, self.mWithRecords, 
                                   self.mFasta, 
                                   format = self.mOptions.filename_format )
@@ -652,14 +655,17 @@ class Classifier(Counter):
 
         Counter.__init__(self, *args, **kwargs )
 
-        E.info( "loading data from %s" % (filename_gff) )
+        if len(filename_gff) != 1:
+            raise ValueError("expected only one gff file" )
+
+        E.info( "loading data from %s" % (filename_gff[0]) )
             
         gffs = []
-        infile = IOTools.openFile( filename_gff, "r")     
+        infile = IOTools.openFile( filename_gff[0], "r")     
         for g in GTF.iterator(infile):
             gffs.append( g )
 
-        E.info( "loaded data from %s" % (filename_gff) )
+        E.info( "loaded data from %s" % (filename_gff[0]) )
 
         self.mCounters = {}
         self.mKeys = []
@@ -999,9 +1005,12 @@ class CounterOverrun(Counter):
 
         Counter.__init__(self, *args, **kwargs )
 
+        if len(filename_gff) != 1:
+            raise ValueError("expected only one gff file" )
+
         source, feature = None, "CDS"
         
-        e = readIntervalsFromGFF( filename_gff, 
+        e = readIntervalsFromGFF( filename_gff[0], 
                                   source,
                                   feature, 
                                   with_values = self.mWithValues, 
@@ -1121,7 +1130,10 @@ class CounterDistance(Counter):
         else:
             self.header = self.headerTemplate
 
-        e = self.readIntervals( filename_gff, source, feature )
+        if len(filename_gff) != 1:
+            raise ValueError("expected only one gff file" )
+
+        e = self.readIntervals( filename_gff[0], source, feature )
 
         # collect start and end points and points of intersection
         self.startPoints, self.startValues = {}, {}
@@ -1950,6 +1962,8 @@ class CounterReadExtension(Counter):
     This method requires a gff-file describing each gene's territory
     to avoid miscounting reads from genes in close proximity.
 
+
+
     Returns the coverage distribution in the territory, the median
     distance and the cumulative distribution every 1kb starting
     from the gene's end.
@@ -1964,7 +1978,10 @@ class CounterReadExtension(Counter):
     def __init__(self, bamfiles, filename_gff, *args, **kwargs ):
         Counter.__init__(self, *args, **kwargs )
 
-        self.labels = ("upstream", "downstream", "firstexon", "lastexon" )
+        if len(filename_gff) != 2:
+            raise ValueError("expected two gff files: territories and UTRs" )
+
+        self.labels = ("upstream", "downstream", "firstexon", "lastexon", "utr5", "utr3" )
         self.directions =  ("sense", "antisense", "anysense" )
 
         self.header = \
@@ -1981,28 +1998,34 @@ class CounterReadExtension(Counter):
         for x,y in itertools.product( self.labels[:2], self.directions):
             self.outfiles.write( "%s_%s" % (x,y), 
                                  "%s\n" % "\t".join( 
-                    ("gene_id", "length", "-1" ) + tuple(map(str, range( 0, 
-                                                                         self.max_territory_size, 
-                                                                         self.increment ) ) ) ) )
+                    ("gene_id", "length", "utr", "exon" ) + tuple(map(str, range( 0, 
+                                                                                  self.max_territory_size, 
+                                                                                  self.increment ) ) ) ) )
 
         if not bamfiles: raise ValueError("supply --bam-file options for readcoverage")
         self.mBamFiles = bamfiles
 
+        filename_territories_gff, filename_utrs_gff = filename_gff
+
+        # read territories
         self.territories = {}
-
-        if not filename_gff: raise ValueError( "supply --gff-file with territories" )
-
-        for gtf in GTF.iterator( IOTools.openFile( filename_gff ) ):
+        for gtf in GTF.iterator( IOTools.openFile( filename_territories_gff ) ):
             if gtf.gene_id in self.territories:
                 raise ValueError( "need territories - multiple entries for gene %s" % gtf.gene_id)
             
             self.territories[gtf.gene_id] = (gtf.contig, gtf.start, gtf.end)
             
-    def count(self):
+        # read known UTRs
+        self.UTRs = collections.defaultdict( list )
+        for gtf in GTF.iterator( IOTools.openFile( filename_utrs_gff ) ):
+            if gtf.feature in ("UTR5", "UTR3", "UTR"):
+                self.UTRs[gtf.gene_id].append( (gtf.contig, gtf.start, gtf.end) )
 
+    def count(self):
+        
         segments = self.getSegments()
-        start, end = segments[0][0], segments[-1][1]
-        exon_start, exon_end = segments[0][1], segments[-1][0]
+        first_exon_start, last_exon_end = segments[0][0], segments[-1][1]
+        first_exon_end, last_exon_start = segments[0][1], segments[-1][0]
         gene_id = self.mGFFs[0].gene_id
         self.gene_id = gene_id
         contig = self.getContig()
@@ -2018,25 +2041,51 @@ class CounterReadExtension(Counter):
             return
 
         # sanity check - is gene within territory?
-        assert start >= territory_start
-        assert end <= territory_end
+        assert first_exon_start >= territory_start
+        assert last_exon_end <= territory_end
         assert contig == territory_contig
 
         # truncate territory
-        territory_start = max( territory_start, start - self.max_territory_size )
-        territory_end = min( territory_end, end + self.max_territory_size )
+        territory_start = max( territory_start, first_exon_start - self.max_territory_size )
+        territory_end = min( territory_end, last_exon_end + self.max_territory_size )
+
+        # get UTRs - reorient them as upstream/downstream
+        utrs = [None, None]
+        if gene_id in self.UTRs:
+            for utr_contig, utr_start, utr_end in self.UTRs[gene_id]:
+                assert utr_contig == contig
+                if utr_start == last_exon_end:
+                    # downstream
+                    utrs[1] = (utr_start, utr_end)
+                elif utr_end == first_exon_start:
+                    # upstream
+                    utrs[0] = (utr_start, utr_end)
+                else:
+                    # ignore - "internal" UTRs
+                    pass
+#                    raise ValueError( "UTR mismatch for %s:%i-%i: utrs=%s" % \
+#                                          (gene_id, 
+#                                           first_exon_start, last_exon_end,
+#                                           str(self.UTRs[gene_id]) ) )
 
         #############################################
-        # the following needs to be decluttered.
-        # these are pairs of upstream/downstream
-        regions = [ (territory_start, start),
-                    (end, territory_end),
-                    (start, exon_start),
-                    (exon_end, end ) ]
+        # these are pairs of before/after on
+        # positive strand coordinates - will be re-oriented
+        # later as downstream/upstream
+        regions = [ (territory_start, first_exon_start),
+                    (last_exon_end, territory_end),
+                    (first_exon_start, first_exon_end),
+                    (last_exon_start, last_exon_end ) ] + utrs
         
         counts = []
 
-        for start, end in regions:
+        for region in regions:
+            if region:
+                start, end = region
+            else:
+                # create dummy counts vector
+                start, end = 0, 1
+            
             counts.append( [numpy.zeros( end-start, numpy.int ),
                             numpy.zeros( end-start, numpy.int )] )
 
@@ -2060,8 +2109,9 @@ class CounterReadExtension(Counter):
                         __add( counts_antisense, positions, start )
 
         for region, cc in zip( regions, counts):
-            start, end = region
-            _update( cc, start, end )
+            if region:
+                start, end = region
+                _update( cc, start, end )
 
         # invert "upstream" counts so that they are counting from TSS
         for x in xrange( 0, len(regions), 2):
@@ -2088,20 +2138,34 @@ class CounterReadExtension(Counter):
         r = []
 
         for label, region in zip( self.labels, self.regions):
-            start, end = region
-            length = end - start
-            r.append( "%i" % length )
-            r.append( "%i" % start )
-            r.append( "%i" % end )
+            if region:
+                start, end = region
+                length = end - start
+                r.append( "%i" % length )
+                r.append( "%i" % start )
+                r.append( "%i" % end )
+            else:
+                r.extend( ["na"] * 3 )
 
         # max number of distances, +1 for exon
         max_d = len(range(0,self.max_territory_size, self.increment) ) + 1
 
-        # compute distributions for UTR regions 
-        assert len(self.counts) == 4
-        for label, region, counts, exon_counts in zip( self.labels[:2], self.regions[:2], self.counts[:2], self.counts[:2] ):
+        # compute distributions for regions 
+        for label, region, counts, exon_counts, utr_region in \
+                zip( self.labels[:2], 
+                     self.regions[:2], 
+                     self.counts[:2], 
+                     self.counts[2:4],
+                     self.regions[4:6],
+                     ):
             start, end = region
             length = end - start
+            if utr_region:
+                utr_start, utr_end = utr_region
+                utr_extension = str(utr_end - utr_start)
+            else:
+                utr_extension = ""
+
             # output distributions (only for UTR counts)
             for direction, cc, ec in zip( self.directions, counts, exon_counts ):
                 if len(ec) == 0: d = [0]
@@ -2110,12 +2174,17 @@ class CounterReadExtension(Counter):
                     d.append( cc[x:min( length, x+self.increment)].max() )
                 d.extend( [""] * (max_d - len(d)) )
                 self.outfiles.write( "%s_%s" % (label, direction),
-                                     "%s\t%i\t%s\n" % (self.gene_id,
-                                                       length, 
-                                                       "\t".join( map(str, d ) ) ) ) 
+                                     "%s\t%i\t%s\t%s\n" % (self.gene_id,
+                                                           length, 
+                                                           utr_extension,
+                                                           "\t".join( map(str, d ) ) ) ) 
 
         # output coverage stats
         for label, region, counts in zip( self.labels, self.regions, self.counts ):
+            if not region:
+                r.extend( ["na"] * (1+len(Stats.Summary().getHeaders()) ) )
+                continue
+
             start, end = region
             length = end - start
 
@@ -2198,8 +2267,8 @@ if __name__ == '__main__':
     parser.add_option("-i", "--bigwig-file", dest="bigwig_file", type="string",
                       help="filename with bigwig information [default=%default]."  )
 
-    parser.add_option("-f", "--filename-gff", dest="filename_gff", type="string",
-                      help="filename with extra gff file (for counter: overlap) [default=%default]."  )
+    parser.add_option("-f", "--filename-gff", dest="filename_gff", type="string", action="append",
+                      help="filename with extra gff files. The order is important [default=%default]."  )
 
     parser.add_option( "--filename-format", dest="filename_format", type="choice",
                        choices=("bed", "gff", "gtf" ),
@@ -2249,7 +2318,7 @@ if __name__ == '__main__':
         with_values = True,
         sections = [],
         counters = [],
-        filename_gff = None,
+        filename_gff = [],
         filename_format = "gtf",
         gff_features = [],
         gff_sources = [],
@@ -2297,6 +2366,8 @@ if __name__ == '__main__':
 
     if not options.gff_sources: options.gff_sources.append( None )
     if not options.gff_features: options.gff_features.append( None )
+
+        
 
     cc = E.Counter()
 
@@ -2392,6 +2463,11 @@ if __name__ == '__main__':
             counters.append( ClassifierChIPSeq( filename_gff = options.filename_gff,
                                                 fasta = fasta,
                                                 options = options, prefix = prefix) )
+
+        elif c == "classifier-rnaseq":
+            counters.append( ClassifierRNASeq( filename_gff = options.filename_gff,
+                                               fasta = fasta,
+                                               options = options, prefix = prefix) )
 
     if options.reporter == "genes":
         iterator = GTF.flat_gene_iterator

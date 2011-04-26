@@ -58,6 +58,7 @@ def filter( Samfile genome_samfile,
     cdef int tid
     cdef int transript_tid
     cdef long val
+    cdef bint skip = 0
 
     # setup list of contigs to remove:
     if remove_contigs:
@@ -109,10 +110,13 @@ def filter( Samfile genome_samfile,
 
         # optionally remove reads matched to certain contigs
         if nremove_contig_tids:
+            skip = 0
             for x from 0 <= x < nremove_contig_tids:
                 if remove_contig_tids[x] == read.tid:
                     nremoved_contigs += 1
-                    continue
+                    skip = 1
+                    break
+            if skip: continue
 
         # get transcripts that read matches to
         try:
