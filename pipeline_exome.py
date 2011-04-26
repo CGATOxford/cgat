@@ -234,11 +234,16 @@ def mapReads(infiles, outfile):
 #########################################################################
 @transform( mapReads,
             regex( r"(\S+)/bam/(\S+).bam"),
-            r"\1/bam/\1.dedup.bam")
+            r"\1/bam/\2.dedup.bam")
 def dedup(infiles, outfile):
         '''Remove duplicate alignments from BAM files.'''
         to_cluster = USECLUSTER
-        statement = '''samtools rmdup %(infiles)s %(outfile)s; ''' % locals()
+        track = P.snip( outfile, ".bam" )
+        dedup_method = PARAMS["dedup_method"]
+        if dedup_method == 'samtools':
+            statement = '''samtools rmdup %(infiles)s %(outfile)s; ''' % locals()    
+        elif dedup_method == 'picard':
+            statement = '''MarkDuplicates INPUT=%(infiles)s  ASSUME_SORTED=true OUTPUT=%(outfile)s METRICS_FILE=%(track)s.dupstats VALIDATION_STRINGENCY=SILENT; ''' % locals()
         statement += '''samtools index %(outfile)s; ''' % locals()
         #print statement
         P.run()
@@ -246,15 +251,136 @@ def dedup(infiles, outfile):
 #########################################################################
 #########################################################################
 #########################################################################
+@merge( dedup, "picard_duplicate_stats.load" )
+def loadPicardDuplicateStats( infiles, outfile ):
+    '''Merge Picard duplicate stats into single table and load into SQLite.'''
+
+    tablename = P.toTable( outfile )
+
+    outf = P.getTempFile()
+
+    first = True
+    for f in infiles:
+        track = P.snip( os.path.basename(f), ".dedup.bam" )
+        statfile = P.snip(f, ".dedup.bam" )  + ".dupstats"
+        if not os.path.exists( statfile ): 
+            E.warn( "File %s missing" % f )
+            continue
+        lines = [ x for x in open( f, "r").readlines() if not x.startswith("#") and x.strip() ]
+        if first: outf.write( "%s\t%s" % ("track", lines[0] ) )
+        first = False
+        outf.write( "%s\t%s" % (track,lines[1] ))
+
+        
+    outf.close()
+    tmpfilename = outf.name
+
+    statement = '''cat %(tmpfilename)s
+                | python %(scriptsdir)s/csv2db.py
+                      --index=track
+                      --table=%(tablename)s 
+                > %(outfile)s
+               '''
+    P.run()
+
+    os.unlink( tmpfilename )
+
+#########################################################################
+#########################################################################
+#########################################################################
 @transform( (mapReads,dedup), 
             regex( r"(\S+)/bam/(\S+).bam"),
-            r"\1/bam/\2" )
-def buildPicardStats( infile, outfile ):
-    '''Gather BAM file statistics using Picard '''
+            r"\1/bam/\2.alignstats" )
+def buildPicardAlignStats( infile, outfile ):
+    '''Gather BAM file alignment statistics using Picard '''
     to_cluster = USECLUSTER
     track = P.snip( os.path.basename(infiles), ".bam" )
-    statement = '''CollectMultipleMetrics INPUT=%(infile)s REFERENCE_SEQUENCE=%%(bwa_index_dir)s/%%(genome)s.fa ASSUME_SORTED=true OUTPUT=%(outfile)s VALIDATION_STRINGENCY=SILENT ''' % locals()
+    statement = '''CollectAlignmentSummaryMetrics INPUT=%(infile)s REFERENCE_SEQUENCE=%%(bwa_index_dir)s/%%(genome)s.fa ASSUME_SORTED=true OUTPUT=%(outfile)s VALIDATION_STRINGENCY=SILENT ''' % locals()
     P.run()
+
+############################################################
+############################################################
+############################################################
+@merge( buildPicardAlignStats, "picard_align_stats.load" )
+def loadPicardAlignStats( infiles, outfile ):
+    '''Merge Picard alignment stats into single table and load into SQLite.'''
+
+    tablename = P.toTable( outfile )
+
+    outf = P.getTempFile()
+
+    first = True
+    for f in infiles:
+        track = P.snip( os.path.basename(f), ".alignstats" )
+        if not os.path.exists( f ): 
+            E.warn( "File %s missing" % f )
+            continue
+        lines = [ x for x in open( f, "r").readlines() if not x.startswith("#") and x.strip() ]
+        if first: outf.write( "%s\t%s" % ("track", lines[0] ) )
+        first = False
+        for i in range(1, len(lines)):
+            outf.write( "%s\t%s" % (track,lines[i] ))
+
+        
+    outf.close()
+    tmpfilename = outf.name
+
+    statement = '''cat %(tmpfilename)s
+                | python %(scriptsdir)s/csv2db.py
+                      --index=track
+                      --table=%(tablename)s 
+                > %(outfile)s
+               '''
+    P.run()
+
+    os.unlink( tmpfilename )
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( (mapReads,dedup), 
+            regex( r"(\S+)/bam/(\S+).bam"),
+            r"\1/bam/\2.isizestats" )
+def buildPicardIsertSizeStats( infile, outfile ):
+    '''Gather BAM file insert size statistics using Picard '''
+    to_cluster = USECLUSTER
+    track = P.snip( os.path.basename(infiles), ".bam" )
+    statement = '''CollectInsertSizeMetrics INPUT=%(infile)s REFERENCE_SEQUENCE=%%(bwa_index_dir)s/%%(genome)s.fa ASSUME_SORTED=true OUTPUT=%(outfile)s HISTOGRAM_FILE=%(outfile)s.pdf VALIDATION_STRINGENCY=SILENT ''' % locals()
+    P.run()
+
+############################################################
+############################################################
+############################################################
+@merge( buildPicardIsertSizeStats, "picard_isize_stats.load" )
+def loadPicardInsertSizeStats( infiles, outfile ):
+    '''Merge Picard insert size stats into single table and load into SQLite.'''
+
+    tablename = P.toTable( outfile )
+    outf = P.getTempFile()
+
+    first = True
+    for f in infiles:
+        track = P.snip( os.path.basename(f), ".isizestats" )
+        if not os.path.exists( f ): 
+            E.warn( "File %s missing" % f )
+            continue
+        lines = [ x for x in open( f, "r").readlines() if not x.startswith("#") and x.strip() ]
+        if first: outf.write( "%s\t%s" % ("track", lines[0] ) )
+        first = False
+        outf.write( "%s\t%s" % (track,lines[1] ))
+        
+    outf.close()
+    tmpfilename = outf.name
+
+    statement = '''cat %(tmpfilename)s
+                | python %(scriptsdir)s/csv2db.py
+                      --index=track
+                      --table=%(tablename)s 
+                > %(outfile)s
+               '''
+    P.run()
+
+    os.unlink( tmpfilename )
 
 #########################################################################
 #########################################################################
@@ -350,18 +476,6 @@ def loadCoverageStats( infiles, outfile ):
                        --table=%(tablename)s 
                    > %(outfile)s; '''
     P.run()
-
-#########################################################################
-#########################################################################
-#########################################################################
-#@transform((mapReads, filterBamROI),
-#              regex( r"(\S+)/bam/(\S+).bam"),
-#              r"\1/bam/\2.cov.bedtools")
-#def coverageStatsBedtools(infiles, outfile):
-#        '''Generate coverage statistics for regions of interest from a bed file using bedtools'''
-#        to_cluster = USECLUSTER
-#        statement = '''coverageBed -abam %(infiles)s -b %%(roi_bed)s -hist > %(outfile)s;''' % locals()
-#        P.run()
 
 #########################################################################
 #########################################################################
