@@ -151,22 +151,6 @@ PARAMS = P.PARAMS
 #########################################################################
 #########################################################################
 #########################################################################
-# collect sra nd fastq.gz tracks
-#TRACKS = PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
-#    glob.glob( "*.sra" ), "(\S+).sra" ) +\
-#    PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
-#    glob.glob( "*.fastq.gz" ), "(\S+).fastq.gz" ) +\
-#    PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
-#    glob.glob( "*.fastq.1.gz" ), "(\S+).fastq.1.gz" )
-
-#ALL = PipelineTracks.Sample3()
-#EXPERIMENTS = PipelineTracks.Aggregate( TRACKS, labels = ("condition", "tissue" ) )
-#CONDITIONS = PipelineTracks.Aggregate( TRACKS, labels = ("condition", ) )
-#TISSUES = PipelineTracks.Aggregate( TRACKS, labels = ("tissue", ) )
-
-#########################################################################
-#########################################################################
-#########################################################################
 @files( PARAMS["roi_bed"], "roi.load" )
 def loadROI( infiles, outfile ):
     '''Import regions of interest bed file into SQLite.'''
@@ -248,22 +232,34 @@ def mapReads(infiles, outfile):
 #########################################################################
 #########################################################################
 #########################################################################
-#@transform( mapReads,
-#              regex( r"(\S+)/bam/(\S+).bam"),
-#              r"\1/bam/\1.roi.bam")
-#def filterBamROI(infiles, outfile):
-#        '''Filter alignments in BAM format to regions of interest from a bed file.
-#           Todo: use multiple BAM files'''
-#        to_cluster = USECLUSTER
-#        statement = '''intersectBed -u -abam %(infiles)s -b %%(roi_bed)s > %(outfile)s; ''' % locals()
-#        statement += '''samtools index %(outfile)s; ''' % locals()
-#        #print statement
-#        P.run()
+@transform( mapReads,
+            regex( r"(\S+)/bam/(\S+).bam"),
+            r"\1/bam/\1.dedup.bam")
+def dedup(infiles, outfile):
+        '''Remove duplicate alignments from BAM files.'''
+        to_cluster = USECLUSTER
+        statement = '''samtools rmdup %(infiles)s %(outfile)s; ''' % locals()
+        statement += '''samtools index %(outfile)s; ''' % locals()
+        #print statement
+        P.run()
 
 #########################################################################
 #########################################################################
 #########################################################################
-@transform( mapReads, 
+@transform( (mapReads,dedup), 
+            regex( r"(\S+)/bam/(\S+).bam"),
+            r"\1/bam/\2" )
+def buildPicardStats( infile, outfile ):
+    '''Gather BAM file statistics using Picard '''
+    to_cluster = USECLUSTER
+    track = P.snip( os.path.basename(infiles), ".bam" )
+    statement = '''CollectMultipleMetrics INPUT=%(infile)s REFERENCE_SEQUENCE=%%(bwa_index_dir)s/%%(genome)s.fa ASSUME_SORTED=true OUTPUT=%(outfile)s VALIDATION_STRINGENCY=SILENT ''' % locals()
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( (mapReads, dedup), 
             regex(r"(\S+)/bam/(\S+).bam"),
             r"\1/bam/\2.readstats" )
 def buildBAMStats( infile, outfile ):
@@ -317,20 +313,6 @@ def loadBAMStats( infiles, outfile ):
                       --allow-empty
                 >> %(outfile)s """
         P.run()
-
-#########################################################################
-#########################################################################
-#########################################################################
-#@transform( mapReads, 
-#            regex( r"(\S+)/bam/(\S+).bam",
-#            r"\1/bam/\2.picardstats" )
-#def PicardBAMStats( infile, outfile ):
-#    '''Gather BAM file statistics using Picard '''
-#    to_cluster = USECLUSTER
-#    scriptsdir = PARAMS["general_scriptsdir"]
-#    statement = '''python %(scriptsdir)s/bam2stats.py --force 
-#                   --output-filename-pattern=%(outfile)s.%%s < %(infile)s > %(outfile)s'''
-#    P.run()
 
 #########################################################################
 #########################################################################
@@ -482,6 +464,8 @@ def loadVCFStats( infiles, outfile ):
 #########################################################################
 @follows( loadROI,
           mapReads,
+          dedup,
+          buildPicardStats,
           buildBAMStats,
           loadBAMStats,
           buildCoverageStats,
