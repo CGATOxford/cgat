@@ -170,44 +170,40 @@ def loadROI( infiles, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-#@files( PARAMS["roi_genes"], "genes.load" )
-#def loadGenes infiles, outfile ):
-#    '''Import genes mapping to regions of interest bed file into SQLite.'''
+@files( PARAMS["roi_to_gene"], "roi2gene.load" )
+def loadROI2Gene( infiles, outfile ):
+    '''Import genes mapping to regions of interest bed file into SQLite.'''
 
-#    scriptsdir = PARAMS["general_scriptsdir"]
-#    header = "gene_id,gene_symbol,feature,feature_type"
-#    tablename = P.toTable( outfile )
-#    E.info( "loading genes" )
-#    statement = '''cat %(infiles)s
-#            | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-#              --allow-empty
-#              --header=%(header)s
-#              --index=feature
-#              --index=gene_symbol
-#              --table=%(tablename)s 
-#            > %(outfile)s  '''      
-#    P.run()
+    scriptsdir = PARAMS["general_scriptsdir"]
+    tablename = P.toTable( outfile )
+    E.info( "loading roi to gene mapping" )
+    statement = '''cat %(infiles)s
+            | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+              --allow-empty
+              --index=feature
+              --index=gene_symbol
+              --table=%(tablename)s 
+            > %(outfile)s  '''      
+    P.run()
 
 #########################################################################
 #########################################################################
 #########################################################################
-#@files( PARAMS["samples"], "samples.load" )
-#def loadSamples infiles, outfile ):
-#    '''Import sample information into SQLite.'''
-#
-#    scriptsdir = PARAMS["general_scriptsdir"]
-#    header = "track,replicate,sample,sample_type,phenotype"
-#    tablename = P.toTable( outfile )
-#    E.info( "loading samples" )
-#    statement = '''cat %(infiles)s
-#            | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-#              --allow-empty
-#              --header=%(header)s
-#              --index=track
-#              --index=phenotype
-#              --table=%(tablename)s 
-#            > %(outfile)s  '''      
-#    P.run()
+@files( PARAMS["samples"], "samples.load" )
+def loadSamples( infiles, outfile ):
+    '''Import sample information into SQLite.'''
+
+    scriptsdir = PARAMS["general_scriptsdir"]
+    tablename = P.toTable( outfile )
+    E.info( "loading samples" )
+    statement = '''cat %(infiles)s
+            | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+              --allow-empty
+              --index=track
+              --index=category
+              --table=%(tablename)s 
+            > %(outfile)s  '''      
+    P.run()
 
 #########################################################################
 #########################################################################
@@ -257,16 +253,16 @@ def loadPicardDuplicateStats( infiles, outfile ):
 
     tablename = P.toTable( outfile )
 
-    outf = P.getTempFile()
+    outf = open('dupstats.txt','w')
 
     first = True
     for f in infiles:
         track = P.snip( os.path.basename(f), ".dedup.bam" )
-        statfile = P.snip(f, ".dedup.bam" )  + ".dupstats"
+        statfile = P.snip(f, ".bam" )  + ".dupstats"
         if not os.path.exists( statfile ): 
-            E.warn( "File %s missing" % f )
+            E.warn( "File %s missing" % statfile )
             continue
-        lines = [ x for x in open( f, "r").readlines() if not x.startswith("#") and x.strip() ]
+        lines = [ x for x in open( statfile, "r").readlines() if not x.startswith("#") and x.strip() ]
         if first: outf.write( "%s\t%s" % ("track", lines[0] ) )
         first = False
         outf.write( "%s\t%s" % (track,lines[1] ))
@@ -283,18 +279,16 @@ def loadPicardDuplicateStats( infiles, outfile ):
                '''
     P.run()
 
-    os.unlink( tmpfilename )
-
 #########################################################################
 #########################################################################
 #########################################################################
-@transform( (mapReads,dedup), 
+@transform( dedup, 
             regex( r"(\S+)/bam/(\S+).bam"),
             r"\1/bam/\2.alignstats" )
 def buildPicardAlignStats( infile, outfile ):
     '''Gather BAM file alignment statistics using Picard '''
     to_cluster = USECLUSTER
-    track = P.snip( os.path.basename(infiles), ".bam" )
+    track = P.snip( os.path.basename(infile), ".bam" )
     statement = '''CollectAlignmentSummaryMetrics INPUT=%(infile)s REFERENCE_SEQUENCE=%%(bwa_index_dir)s/%%(genome)s.fa ASSUME_SORTED=true OUTPUT=%(outfile)s VALIDATION_STRINGENCY=SILENT ''' % locals()
     P.run()
 
@@ -311,7 +305,7 @@ def loadPicardAlignStats( infiles, outfile ):
 
     first = True
     for f in infiles:
-        track = P.snip( os.path.basename(f), ".alignstats" )
+        track = P.snip( os.path.basename(f), ".dedup.alignstats" )
         if not os.path.exists( f ): 
             E.warn( "File %s missing" % f )
             continue
@@ -338,20 +332,20 @@ def loadPicardAlignStats( infiles, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@transform( (mapReads,dedup), 
+@transform( dedup, 
             regex( r"(\S+)/bam/(\S+).bam"),
             r"\1/bam/\2.isizestats" )
-def buildPicardIsertSizeStats( infile, outfile ):
+def buildPicardInsertSizeStats( infile, outfile ):
     '''Gather BAM file insert size statistics using Picard '''
     to_cluster = USECLUSTER
-    track = P.snip( os.path.basename(infiles), ".bam" )
+    track = P.snip( os.path.basename(infile), ".bam" )
     statement = '''CollectInsertSizeMetrics INPUT=%(infile)s REFERENCE_SEQUENCE=%%(bwa_index_dir)s/%%(genome)s.fa ASSUME_SORTED=true OUTPUT=%(outfile)s HISTOGRAM_FILE=%(outfile)s.pdf VALIDATION_STRINGENCY=SILENT ''' % locals()
     P.run()
 
 ############################################################
 ############################################################
 ############################################################
-@merge( buildPicardIsertSizeStats, "picard_isize_stats.load" )
+@merge( buildPicardInsertSizeStats, "picard_isize_stats.load" )
 def loadPicardInsertSizeStats( infiles, outfile ):
     '''Merge Picard insert size stats into single table and load into SQLite.'''
 
@@ -360,7 +354,7 @@ def loadPicardInsertSizeStats( infiles, outfile ):
 
     first = True
     for f in infiles:
-        track = P.snip( os.path.basename(f), ".isizestats" )
+        track = P.snip( os.path.basename(f), ".dedup.isizestats" )
         if not os.path.exists( f ): 
             E.warn( "File %s missing" % f )
             continue
@@ -385,7 +379,7 @@ def loadPicardInsertSizeStats( infiles, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@transform( (mapReads, dedup), 
+@transform( dedup, 
             regex(r"(\S+)/bam/(\S+).bam"),
             r"\1/bam/\2.readstats" )
 def buildBAMStats( infile, outfile ):
@@ -404,7 +398,7 @@ def loadBAMStats( infiles, outfile ):
     '''Import bam statistics into SQLite'''
 
     scriptsdir = PARAMS["general_scriptsdir"]
-    header = ",".join( [P.snip( os.path.basename(x), ".readstats") for x in infiles] )
+    header = ",".join( [P.snip( os.path.basename(x), ".dedup.readstats") for x in infiles] )
     filenames = " ".join( [ "<( cut -f 1,2 < %s)" % x for x in infiles ] )
     tablename = P.toTable( outfile )
     E.info( "loading bam stats - summary" )
@@ -417,39 +411,40 @@ def loadBAMStats( infiles, outfile ):
                 | perl -p -e "s/unique/unique_alignments/"
                 | python %(scriptsdir)s/table2table.py --transpose
                 | python %(scriptsdir)s/csv2db.py
+                      --allow-empty
                       --index=track
                       --table=%(tablename)s 
                 > %(outfile)s"""
     P.run()
 
-    for suffix in ("nm", "nh"):
-        E.info( "loading bam stats - %s" % suffix )
-        filenames = " ".join( [ "%s.%s" % (x, suffix) for x in infiles ] )
-        tname = "%s_%s" % (tablename, suffix)
-        
-        statement = """python %(scriptsdir)s/combine_tables.py
-                      --header=%(header)s
-                      --skip-titles
-                      --missing=0
-                      --ignore-empty
-                   %(filenames)s
-                | perl -p -e "s/bin/%(suffix)s/"
-                | python %(scriptsdir)s/csv2db.py
-                      --table=%(tname)s 
-                      --allow-empty
-                >> %(outfile)s """
-        P.run()
+#    for suffix in ("nm", "nh"):
+#        E.info( "loading bam stats - %s" % suffix )
+#        filenames = " ".join( [ "%s.%s" % (x, suffix) for x in infiles ] )
+#        tname = "%s_%s" % (tablename, suffix)
+#        
+#        statement = """python %(scriptsdir)s/combine_tables.py
+#                      --header=%(header)s
+#                      --skip-titles
+#                      --missing=0
+#                      --ignore-empty
+#                   %(filenames)s
+#                | perl -p -e "s/bin/%(suffix)s/"
+#                | python %(scriptsdir)s/csv2db.py
+#                      --table=%(tname)s 
+#                      --allow-empty
+#                >> %(outfile)s """
+#        P.run()
 
 #########################################################################
 #########################################################################
 #########################################################################
-@transform( mapReads,
+@transform( dedup,
             regex( r"(\S+)/bam/(\S+).bam"),
             r"\1/bam/\2.cov.bamstats" )
 def buildCoverageStats(infiles, outfile):
     '''Generate coverage statistics for regions of interest from a bed file using BAMStats'''
     to_cluster = USECLUSTER
-    filename = P.snip( os.path.basename(outfile), ".cov.bamstats")
+    filename = P.snip( os.path.basename(infiles), ".dedup.bam")
     statement = '''bamstats -i %(infiles)s -o %(outfile)s.tmp -f %%(roi_bed)s; ''' % locals()
     statement += '''awk '{if (NR==1) print "Track\t" $0; else print "%(filename)s\t" $0}' %(outfile)s.tmp > %(outfile)s; 
                         rm %(outfile)s.tmp; ''' % locals()
@@ -497,13 +492,13 @@ def loadCoverageStats( infiles, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@transform( mapReads, 
-            regex(r"(\S+)/bam/(\S+).bam"), 
+@transform( dedup, 
+            regex(r"(\S+)/bam/(\S+).dedup.bam"), 
             r"\1/variants/\2.vcf.gz" )
 def callVariantsSAMtools(infiles, outfile):
     '''Perform SNV and indel calling separately for each bam using SAMtools. '''
     to_cluster = USECLUSTER
-    track = P.snip( os.path.basename(infiles), ".bam")
+    track = P.snip( os.path.basename(infiles), ".dedup.bam")
     try: os.mkdir( '''%(track)s/variants''' % locals() )
     except OSError: pass
     statement = []
@@ -518,35 +513,37 @@ def callVariantsSAMtools(infiles, outfile):
 #########################################################################
 #########################################################################
 @follows( mkdir("variants"))
-@merge( callVariantsSAMtools, "variants/all.vcf")
+@merge( callVariantsSAMtools, "variants/variants.vcf.gz")
 def mergeVCFs(infiles, outfile):
     '''Merge multiple VCF files using VCF-tools. '''
     filenames = " ".join( infiles )
-    statement = '''vcf-merge %(filenames)s > variants/all.vcf 2>>variants/vcfmerge.log; ''' % locals()
-    statement += '''bgzip -c variants/all.vcf > variants/all.vcf.gz 2>>variants/vcfmerge.log; ''' % locals()
-    statement += '''tabix -p vcf variants/all.vcf.gz; 2>>variants/vcfmerge.log; ''' % locals()
+    statement = '''vcf-merge %(filenames)s > variants/variants.vcf 2>>variants/vcfmerge.log; ''' % locals()
+    statement += '''bgzip -c variants/variants.vcf > variants/variants.vcf.gz 2>>variants/vcfmerge.log; ''' % locals()
+    statement += '''tabix -p vcf variants/variants.vcf.gz; 2>>variants/vcfmerge.log; ''' % locals()
     P.run()
 
 #########################################################################
 #########################################################################
 #########################################################################
 @transform( mergeVCFs,
-            regex( r"variants/(\S+).vcf"),
-            r"variants/\1.roi.vcf")
+            regex( r"variants/(\S+).vcf.gz"),
+            r"variants/\1.roi.vcf.gz")
 def filterVariantsROI(infiles, outfile):
     '''Filter variant calls in vcf format to regions of interest from a bed file'''
     to_cluster = USECLUSTER
-    statement  = '''intersectBed -u -a %(infiles)s -b %%(roi_bed)s > %(outfile)s.tmp 2>>variants/roi.log; ''' % locals()
-    statement += '''(cat %(infiles)s | grep ^#; cat %(outfile)s.tmp;) > %(outfile)s 2>>variants/roi.log; rm %(outfile)s.tmp;''' % locals()
-    statement += '''bgzip -c %(outfile)s > %(outfile)s.gz 2>>variants/roi.log; ''' % locals()
-    statement += '''tabix -p vcf %(outfile)s.gz; 2>>variants/roi.log; ''' % locals()
+    track = P.snip( os.path.basename(infiles), ".vcf.gz")
+    infile = P.snip( infiles, ".gz")
+    statement  = '''zcat %(infiles)s | intersectBed -u -a stdin -b %%(roi_bed)s > variants/%(track)s.roi.tmp 2>>variants/roi.log; ''' % locals()
+    statement += '''(zcat %(infiles)s | grep ^#; cat variants/%(track)s.roi.tmp;) > variants/%(track)s.roi.vcf 2>>variants/roi.log; rm variants/%(track)s.roi.tmp;''' % locals()
+    statement += '''bgzip -c variants/%(track)s.roi.vcf > %(outfile)s 2>>variants/roi.log; ''' % locals()
+    statement += '''tabix -p vcf %(outfile)s; 2>>variants/roi.log; ''' % locals()
     #print statement
     P.run()
 
 #########################################################################
 #########################################################################
 #########################################################################
-@transform( "variants/*.vcf.gz",
+@transform( (mergeVCFs,filterVariantsROI),
             regex( r"variants/(\S+).vcf.gz"),
             r"variants/\1.vcfstats")
 def buildVCFstats(infiles, outfile):
@@ -577,9 +574,15 @@ def loadVCFStats( infiles, outfile ):
 #########################################################################
 #########################################################################
 @follows( loadROI,
+          loadROI2Gene,
+          loadSamples,
           mapReads,
           dedup,
-          buildPicardStats,
+          loadPicardDuplicateStats,
+          buildPicardAlignStats,
+          loadPicardAlignStats,
+          buildPicardInsertSizeStats,
+          loadPicardInsertSizeStats,
           buildBAMStats,
           loadBAMStats,
           buildCoverageStats,
