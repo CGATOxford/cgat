@@ -396,7 +396,7 @@ class CounterOverlap(Counter):
 
         if len(filename_gff) != 1:
             raise ValueError("expected only one gff file" )
-
+        
         e = readIntervalsFromGFF( filename_gff[0], source, feature, 
                                   self.mWithValues, self.mWithRecords, 
                                   self.mFasta, 
@@ -673,7 +673,7 @@ class Classifier(Counter):
             for feature in self.features:
                 key = "%s:%s" % (source, feature )
                 self.mKeys.append( key )
-                self.mCounters[key] = CounterOverlap( gffs, 
+                self.mCounters[key] = CounterOverlap( [gffs], 
                                                       source = source, 
                                                       feature = feature, 
                                                       fasta = self.mFasta,
