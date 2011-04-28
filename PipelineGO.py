@@ -197,7 +197,7 @@ def loadGO( infile, outfile, tablename ):
 
     statement = '''
     python %(toolsdir)s/cat_tables.py %(indir)s/*.overall |\
-    csv2db.py %(csv2db_options)s \
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
               --allow-empty \
               --index=category \
               --index=goid \
@@ -264,7 +264,7 @@ def loadGOs( infiles, outfile, tablename ):
     print tempf2.name
 
     statement = '''
-    csv2db.py %(csv2db_options)s 
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
               --allow-empty 
               --index=category 
               --index=track,geneset,annotationset

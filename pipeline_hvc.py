@@ -68,7 +68,7 @@ def importSegments( infile, outfile ):
 
     statement = '''
     python %(scriptsdir)s/gtf2tab.py < %(infile)s |\
-    csv2db.py %(csv2db_options)s \
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
               --index=gene_id \
               --table=%(tablename)s \
     > %(outfile)s
@@ -85,7 +85,7 @@ def importIdentifiers( infile, outfile):
     grep ">" %(infile)s |\
     sed "s/>//; s/ .*//;" |\
     awk 'BEGIN {printf("gene_id\\n");} {print;}' |\
-    csv2db.py %(csv2db_options)s \
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
               --index=gene_id \
               --table=%(tablename)s \
     > %(outfile)s
@@ -131,7 +131,7 @@ def importAssignments( infiles, outfile):
     tmpfilename = outf.name
     
     statement = '''
-    csv2db.py %(csv2db_options)s \
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
               --index=gene_id \
               --table=%(tablename)s \
     < %(tmpfilename)s > %(outfile)s
@@ -252,7 +252,7 @@ def importOverlap( infile, outfile ):
     tablename = outfile[:-len(".import")]
     
     statement = '''
-    csv2db.py %(csv2db_options)s \
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
               --table=%(tablename)s \
     < %(infile)s > %(outfile)s
     '''

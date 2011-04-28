@@ -345,16 +345,26 @@ def run( options, args ):
                 options.stdlog.flush()
 
         os.close( outfile )
-        
+
         statement = "sqlite3 -header -csv -separator '\t' %s '.import %s %s'" % (options.database, filename, options.tablename)
 
-        retcode = subprocess.call( statement,
-                                   shell = True,
-                                   cwd = os.getcwd(),
-                                   close_fds = True)
+        # infinite loop possible
+        while 1:
+            retcode = subprocess.call( statement,
+                                       shell = True,
+                                       cwd = os.getcwd(),
+                                       close_fds = True)
         
-        if retcode != 0:
-            raise IOError("import error using statement: %s" % statement)
+            if retcode != 0:
+                E.warn("import error using statement: %s" % statement)
+
+                if not options.retry:
+                    raise ValueError( "import error using statement: %s" % statement )
+            
+                time.sleep(5)
+                continue
+
+            break
         
         os.remove( filename )
         

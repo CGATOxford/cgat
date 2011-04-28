@@ -649,7 +649,7 @@ def loadCombinedIntervals( infile, outfile ):
     tablename = "%s_intervals" % track.asTable()
     
     statement = '''
-    csv2db.py %(csv2db_options)s
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --index=interval_id 
               --table=%(tablename)s
     < %(tmpfilename)s 
@@ -830,7 +830,7 @@ def loadOverlap( infile, outfile ):
     tablename = "overlap"
 
     statement = '''
-    csv2db.py %(csv2db_options)s 
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
               --index=set1 
               --index=set2 
               --table=%(tablename)s 
@@ -878,7 +878,7 @@ if 0:
         tablename = "ucsc_overlap"
 
         statement = '''
-        csv2db.py %(csv2db_options)s \
+       python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
                   --index=set1 \
                   --index=set2 \
                   --table=%(tablename)s \
@@ -1366,7 +1366,7 @@ if PARAMS["tomtom_master_motif"] != "":
         tablename = P.toTable( outfile )
 
         statement = '''
-        csv2db.py %(csv2db_options)s 
+       python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
                   --allow-empty 
                   --table=%(tablename)s 
         < %(tmpname)s 
@@ -1563,7 +1563,7 @@ def loadBioProspector( infile, outfile ):
     tmpfilename = tmpfile.name
 
     statement = '''
-    csv2db.py %(csv2db_options)s \
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
     --allow-empty \
     -b sqlite \
     --index=id \
@@ -1716,7 +1716,7 @@ def loadMAST( infile, outfile ):
     tmpfilename = tmpfile.name
 
     statement = '''
-    csv2db.py %(csv2db_options)s \
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
               -b sqlite \
               --index=id \
               --index=motif \
@@ -1855,7 +1855,7 @@ def loadGLAM2SCAN( infile, outfile ):
     tmpfilename = tmpfile.name
 
     statement = '''
-    csv2db.py %(csv2db_options)s \
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
               -b sqlite \
               --index=id \
               --index=motif \

@@ -108,13 +108,64 @@ def GetMapColumn2Type( rows, ignore_empty = False, get_max_values = False ):
     else:
         return map_column2type, ignored
 
+##-----------------------------------------------------------
+class CommentStripper:
+    """iterator class for stripping comments from file.
+    """
+    
+    def __init__(self, infile ):
+        self.infile = infile
+
+    def __iter__(self):
+        return self
+    
+    def next(self):
+        while 1:
+            line = self.infile.next()
+            if not line:
+                raise StopIteration
+            if line[0] != "#":
+                return line
+
+class DictReader( csv.DictReader ):
+    """like csv.DictReader, but skip comments (lines starting with "#").
+    """
+
+    def __init__(self, infile, *args, **kwargs ):
+        csv.DictReader.__init__( self,
+                                 CommentStripper( infile ),
+                                 *args, **kwargs )
+
+
+class DictReaderLarge:
+    """drop-in for csv.DictReader - handles very large fields
+    
+    Warning - minimal implementation - does not handle dialects
+    """
+
+    def __init__(self, infile, fieldnames, *args, **kwargs ):
+        self.mFile = infile
+        self.mFieldNames = fieldnames
+        self.mNFields = len(fieldnames)
+
+    def __iter__(self): 
+        return self
+    
+    def next(self):
+        
+        line = self.mFile.next()
+        if not line: raise StopIteration
+        data = line[:-1].split("\t")
+        assert len(data) == self.mNFields
+        return dict( zip( self.mFieldNames, data ) )
+
 ######################################################################################
 def ReadTable( lines,
                as_rows = True,
                with_header = True,
                ignore_incomplete = False,
                dialect = "excel-tab",
-               dictreader = csv.reader ):
+               dictreader = csv.DictReader ):
     """read a table from infile
 
     returns table as rows or as columns.
@@ -255,53 +306,3 @@ def getConvertedTable( table, columns, function = float,
         
     return new_table
 
-##-----------------------------------------------------------
-class CommentStripper:
-    """iterator class for stripping comments from file.
-    """
-    
-    def __init__(self, file ):
-        self.mFile = file
-
-    def __iter__(self):
-        return self
-    
-    def next(self):
-        while 1:
-            line = self.mFile.readline()
-            if not line:
-                raise StopIteration
-            if line[0] != "#":
-                return line
-
-class DictReader( csv.DictReader ):
-    """like csv.DictReader, but skip comments (lines starting with "#").
-    """
-
-    def __init__(self, infile, *args, **kwargs ):
-        csv.DictReader.__init__( self,
-                                 CommentStripper( infile ),
-                                 *args, **kwargs )
-
-
-class DictReaderLarge:
-    """drop-in for csv.DictReader - handles very large fields
-    
-    Warning - minimal implementation - does not handle dialects
-    """
-
-    def __init__(self, infile, fieldnames, *args, **kwargs ):
-        self.mFile = infile
-        self.mFieldNames = fieldnames
-        self.mNFields = len(fieldnames)
-
-    def __iter__(self): 
-        return self
-    
-    def next(self):
-        
-        line = self.mFile.next()
-        if not line: raise StopIteration
-        data = line[:-1].split("\t")
-        assert len(data) == self.mNFields
-        return dict( zip( self.mFieldNames, data ) )

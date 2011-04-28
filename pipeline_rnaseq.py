@@ -400,7 +400,7 @@ from ruffus import *
 
 import Experiment as E
 import logging as L
-import Database
+import Database, CSV
 
 import sys, os, re, shutil, itertools, math, glob, time, gzip, collections, random
 
@@ -409,9 +409,11 @@ import GTF, IOTools, IndexedFasta
 import Tophat
 from rpy2.robjects import r as R
 import rpy2.robjects as ro
+import rpy2.robjects.vectors as rovectors
 
 import PipelineGeneset
 import PipelineMapping
+import PipelineRnaseq
 import Stats
 
 # levels of cuffdiff analysis
@@ -2762,6 +2764,7 @@ def buildGeneLevelReadExtension( infile, outfile ):
     | python %(scriptsdir)s/gtf2table.py 
           --reporter=genes
           --bam-file=%(infile)s 
+          --counter=position
           --counter=read-extension
           --output-filename-pattern=%(outfile)s.%%s.tsv.gz
           --filename-gff=%(territories)s
@@ -2771,11 +2774,6 @@ def buildGeneLevelReadExtension( infile, outfile ):
     '''
     
     P.run()
-
-#########################################################################
-#########################################################################
-#########################################################################
-def buildUTR(): pass
 
 #########################################################################
 #########################################################################
@@ -2792,9 +2790,12 @@ def plotGeneLevelReadExtension( infile, outfile ):
     outdir = os.path.join( PARAMS["exportdir"], "utr_extension" )
     
     R('''suppressMessages(library(RColorBrewer))''')
+    R('''suppressMessages(library(MASS))''')
+    R('''suppressMessages(library(HiddenMarkov))''')
 
     # the bin size , see gtf2table - can be cleaned from column names
     binsize = 200
+    territory_size = 30000
 
     for filename in infiles:
 
@@ -2802,18 +2803,29 @@ def plotGeneLevelReadExtension( infile, outfile ):
 
         parts = os.path.basename(filename).split( "." )
 
-        R('''r = read.table( gzfile( "%(filename)s"), header=TRUE, fill=TRUE, row.names=1)''' % locals() )
+        data = R('''data = read.table( gzfile( "%(filename)s"), header=TRUE, fill=TRUE, row.names=1)''' % locals() )
+
+        ##########################################
+        ##########################################
+        ##########################################
+        ## estimation
+        ##########################################
         # take only those with a 'complete' territory
-        R('''d = r[-which( apply( r,1,function(x)any(is.na(x)))),]''')
+        R('''d = data[-which( apply( data,1,function(x)any(is.na(x)))),]''')
         # save UTR
         R('''utrs = d$utr''' )
         # remove length and utr column
         R('''d = d[-c(1,2)]''')
-        # remove those which are completely empty, logtransform data
+        # remove those which are completely empty, logtransform or scale data and export
         R('''lraw = log10( d[-which( apply(d,1,function(x)all(x==0))),] + 1 )''')
-        R('''utrs = utrs[-which( apply(d,1,function(x)all(x==0)))]''' )
-        R('''lscaled = t(scale(t(lraw), center=FALSE, scale=apply(lraw,1,max) ))''' )
 
+        utrs = R('''utrs = utrs[-which( apply(d,1,function(x)all(x==0)))]''' )
+        scaled = R('''lscaled = t(scale(t(lraw), center=FALSE, scale=apply(lraw,1,max) ))''' )
+        exons = R('''lraw[,1]''')
+
+        #######################################################
+        #######################################################
+        #######################################################
         R('''myplot = function( reads, utrs, ... ) {
            oreads = t(data.matrix( reads )[order(utrs), ] )
            outrs = utrs[order(utrs)]
@@ -2844,6 +2856,18 @@ def plotGeneLevelReadExtension( infile, outfile ):
         R.png( outfilename, height=2000, width=1000 )
         R('''myplot( lscaled, utrs )''' )
         R['dev.off']()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@follows( mkdir( os.path.join( PARAMS["exportdir"], "utr_extension" ) ) )
+@transform( buildGeneLevelReadExtension,
+            suffix(".tsv.gz"),
+            ".utr.gz" )
+def buildUTRExtension( infile, outfile ):
+    '''build new utrs.'''
+
+    PipelineRnaseq.buildUTRExtensions( infile, outfile )
 
 #########################################################################
 #########################################################################
