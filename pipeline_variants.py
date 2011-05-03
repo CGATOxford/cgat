@@ -378,7 +378,7 @@ if "refseq_filename_gtf" in PARAMS:
             outf.close()
 
             statement = '''cat < %(tmpfilename1)s
-            | csv2db.py %(csv2db_options)s 
+            |python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
                --index=gene_id 
                --index=transcript_id 
                --index=refseq_transcript_id 
@@ -396,7 +396,7 @@ if "refseq_filename_gtf" in PARAMS:
             | perl -p -i -e "s/\.\d+//g"
             | awk 'BEGIN {printf("ccds_id\\tsrc_db\\tttranscript_id\\tprotein_id\\n")} 
                    /^ccds/ {next} {print}'
-            | csv2db.py %(csv2db_options)s 
+            |python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
                --index=ccds_id 
                --index=transcript_id 
                --index=protein_id 
@@ -468,7 +468,7 @@ if "refseq_filename_gtf" in PARAMS:
         #     | perl -p -i -e "s/\.\d+//g"
         #     | awk 'BEGIN {printf("ccds_id\\tsrc_db\\tttranscript_id\\tprotein_id\\n")} 
         #            /^ccds/ {next} {print}'
-        #     | csv2db.py %(csv2db_options)s 
+        #     |python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
         #        --index=ccds_id 
         #        --index=transcript_id 
         #        --index=protein_id 
@@ -513,7 +513,7 @@ def importPseudogenes( infile, outfile ):
     statement = '''
     zcat %(tmpfile)s.gz
     | perl -p -i -e "s/Parent Protein/protein_id/; s/Chromosome/contig/; s/Start Coordinate/start/; s/Stop Coordiante/end/"
-    | csv2db.py %(csv2db_options)s 
+    |python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
                      --table=%(tablename)s
                      --index=protein_id
     > %(outfile)s
@@ -639,7 +639,7 @@ def importMGI( infile, outfile ):
             | %(scriptsdir)s/hsort 1
             | uniq
             | awk '{ for (x=2; x<=NF; x++) { if ($x != "") { print; break;} } }'
-            | csv2db.py %(csv2db_options)s 
+            |python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
                      --table=%(tablename)s
                      --index=marker_id
                      --index=allele_id
@@ -800,7 +800,7 @@ def loadEnsembl2Uniprot( infile, outfile ):
            s/UniProt\/SwissProt ID/swissprot_id/;       
            s/UniProt\/SwissProt Accession/swissprot_acc/;
            s/UniProt\/TrEMBL Accession/trembl_acc/"
-    | csv2db.py %(csv2db_options)s \
+    |python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
         --index=gene_id \
         --index=transcript_id \
         --index=trembl_acc \
@@ -939,7 +939,7 @@ def loadAnnotations( infile, outfile ):
 
     statement = '''gunzip 
     < %(infile)s
-    | csv2db.py %(csv2db_options)s 
+    |python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
               --quick
               --map=gene_id:str 
               --index=gene_id 
@@ -988,7 +988,7 @@ def loadAnnotationsSummary( infile, outfile ):
 
     statement = '''cat
     < %(infile)s
-    | csv2db.py %(csv2db_options)s 
+    |python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
               --index=code
               --table=%(tablename)s
     > %(outfile)s
@@ -1039,7 +1039,7 @@ def loadEffects( infile, outfile ):
     root = infile[:-len(".effects.gz")]
 
     statement = '''
-    csv2db.py %(csv2db_options)s \
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
               --from-zipped \
               --index=transcript_id \
               --table=%(root)s_effects \
@@ -1052,7 +1052,7 @@ def loadEffects( infile, outfile ):
         statement = '''
         gunzip 
         < %(infile)s.%(suffix)s.gz
-        | csv2db.py %(csv2db_options)s 
+        |python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
         --allow-empty
         --index=transcript_id 
         --table=%(root)s_effects_%(suffix)s 
@@ -1103,7 +1103,7 @@ def loadAlleles( infile, outfile ):
     statement = '''gunzip
     < %(infile)s.table.gz
     | perl -p -e "s/False/0/g; s/True/1/g;"
-    | csv2db.py %(csv2db_options)s 
+    |python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
               --index=gene_id 
               --index=transcript_id 
               --ignore-column=cds
@@ -1898,7 +1898,7 @@ def loadPolyphenMap( infile, outfile ):
 
     table = P.toTable( outfile )
     statement = '''
-    csv2db.py %(csv2db_options)s
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --index=snp_id 
               --index=track,transcript_id
               --index=contig,pos
@@ -1923,7 +1923,7 @@ def loadPolyphen( infile, outfile ):
     gunzip 
     < %(infile)s
     | perl -p -e "s/o_acc/protein_id/; s/ +//g; s/^#//;"
-    | csv2db.py %(csv2db_options)s
+    |python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --index=snp_id 
               --index=protein_id
               --table=%(table)s 
@@ -2086,7 +2086,7 @@ def loadPolyphenAnalysis( infile, outfile ):
 
     statement = '''
     cat < %(infile)s
-    | csv2db.py %(csv2db_options)s
+    |python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --index=gene_id 
               --map=code:str
               --table=%(table)s 
@@ -2188,7 +2188,7 @@ def loadPolyphenAnalysis( infile, outfile ):
 #     statement = '''
 #     perl -p -e "s/snpId/snp_id/; s/seqId/protein_id/; s/HMM /hmm/g;"
 #     < %(infile)s
-#     | csv2db.py %(csv2db_options)s
+#     |python %(scriptsdir)s/csv2db.py %(csv2db_options)s
 #               --index=snp_id
 #               --index=protein_id
 #               --table=%(table)s
@@ -2550,7 +2550,7 @@ def loadGATOnQTLs( infile, outfile ):
 
     statement = '''
     cat < %(infile)s
-    | csv2db.py %(csv2db_options)s
+    |python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --index=track
               --index=annotation
               --table=%(table)s
@@ -2565,7 +2565,7 @@ def loadGATOnQTLs( infile, outfile ):
         table = os.path.splitext( basename )[0]
         statement = '''
         cat < %(stat_file)s
-        | csv2db.py %(csv2db_options)s
+        |python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --index=track
               --index=contig
               --table=%(table)s
@@ -2787,7 +2787,7 @@ def loadGeneListAnalysis( infile, outfile ):
 
     statement = '''
     cat < %(infile)s
-    | csv2db.py %(csv2db_options)s
+    |python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --table=%(table)s
               --index=gene_list
               --index=pvalue

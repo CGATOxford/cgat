@@ -499,7 +499,7 @@ def genericImportAnnotator( infiles, outfile, table, workspace, slice, subset, f
     tmpfilename2 = tmpfile.name
         
     statement = '''
-    csv2db.py %(csv2db_options)s \
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
             --table=%(table)s 
     < %(tmpfilename2)s > %(outfile)s'''
 
@@ -536,7 +536,7 @@ def importAnnotator( infiles, outfile, regex_id, table,
                 --regex-id="%(regex_id)s" 
                 %(infile)s 
         | %(transform)s
-        | csv2db.py %(csv2db_options)s 
+        |python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
                 --table=%(table)s 
         > %(outfile)s
     '''

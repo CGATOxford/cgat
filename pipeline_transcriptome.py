@@ -307,7 +307,7 @@ def loadRepeatInformation( infiles, outfile ):
         | python %(scriptsdir)s/gff2bed.py -v 0 
         | coverageBed -a stdin -b %(tmpfilename)s
         | awk 'BEGIN { printf("contig\\tstart\\tend\\tnover_entries\\tnover_bases\\tlength\\tpover\\n" );} {print;}'
-        | csv2db.py %(csv2db_options)s 
+        |python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
               --table=%(table)s 
         > %(outfile)s
     '''
@@ -427,7 +427,7 @@ def loadGTF( infile, outfile ):
     statement = '''gunzip
         < %(infile)s
         | python %(scriptsdir)s/gtf2tab.py 
-        | csv2db.py %(csv2db_options)s 
+        |python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
               --index=gene_id 
               --map=gene_id:str 
               --index=transcript_id 
@@ -596,7 +596,7 @@ def loadSegments( infile, outfile ):
               "_genes.distances", "_genes.sizes", "_genes.overlaps" ):
         y = re.sub("\.", "_", x)
         statement = '''
-        csv2db.py %(csv2db_options)s 
+       python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
               --index=gene_id 
               --map=gene_id:str 
               --table=%(table)s%(y)s 
@@ -698,7 +698,7 @@ def loadDifference( infile, outfile ):
         cat < %(infile)s 
 	| python %(toolsdir)s/csv_cut.py --large --remove cov_values 
     	| grep -v "\\bna\\b" 
-        | csv2db.py --allow-empty 
+        |python %(scriptsdir)s/csv2db.py --allow-empty 
                %(csv2db_options)s 
               --index=gene_id 
               --map=gene_id:str
@@ -710,7 +710,7 @@ def loadDifference( infile, outfile ):
     i = infile + ".genes_ovl"
     if os.path.exists( i ):
         statement = '''
-        csv2db.py --allow-empty 
+       python %(scriptsdir)s/csv2db.py --allow-empty 
                %(csv2db_options)s 
                --map=gene_id1:str 
                --map=gene_id2:str 
@@ -726,7 +726,7 @@ def loadDifference( infile, outfile ):
     i = infile + "_genes.genes_ovl"
     if os.path.exists( i ):
         statement = '''
-        csv2db.py --allow-empty 
+       python %(scriptsdir)s/csv2db.py --allow-empty 
                %(csv2db_options)s 
                --map=gene_id1:str 
                --map=gene_id2:str 
@@ -817,7 +817,7 @@ def loadOverlap( infile, outfile ):
     statement = '''
 	grep -v "\\bna\\b" 
         < %(infile)s 
-        | csv2db.py %(csv2db_options)s
+        |python %(scriptsdir)s/csv2db.py %(csv2db_options)s
              --map set1:str 
              --map set2:str 
              --index=set1 
@@ -1167,7 +1167,7 @@ def loadRates( infile, outfile ):
     | csort -k:qName: -k:aligned:rn 
     | perl -p -e "s/qName/gene_id/" 
     | awk '{if (l==$10) {next;} l = $10; print; }' 
-    | csv2db.py %(csv2db_options)s --map gene_id:str --table=%(track)s --index=gene_id --allow-empty
+    |python %(scriptsdir)s/csv2db.py %(csv2db_options)s --map gene_id:str --table=%(track)s --index=gene_id --allow-empty
     > %(outfile)s
     '''
 
@@ -1211,7 +1211,7 @@ def loadRepeatsRates( infile, outfile ):
     < %(infile)s 
     | awk '$4 > 0'
     | python %(toolsdir)s/csv_cut.py --remove exons_lengths exons_values
-    | csv2db.py %(csv2db_options)s 
+    |python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
               --index=gene_id 
               --map=gene_id:str 
               --table=%(table)s 

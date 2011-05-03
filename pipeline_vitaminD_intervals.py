@@ -341,7 +341,7 @@ def importCombinedIntervals( infile, outfile ):
 
     tmpfilename = tmpfile.name
     statement = '''
-    csv2db.py %(csv2db_options)s \
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
               --index=interval_id \
               --table=%(track)s_intervals \
     < %(tmpfilename)s > %(outfile)s
@@ -483,7 +483,7 @@ def importMACSSummary( infile, outfile ):
     table = outfile[:-len(".import")]
 
     statement = '''
-    csv2db.py %(csv2db_options)s \
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
               --index=track \
               --table=%(table)s \
     < %(infile)s > %(outfile)s
@@ -581,7 +581,7 @@ def importMACS( infile, outfile, suffix = ".norm.bam" ):
     tmpfilename = outtemp.name
 
     statement = '''
-    csv2db.py %(csv2db_options)s \
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
               --index=interval_id \
               --table=%(tablename)s \
     < %(tmpfilename)s > %(outfile)s
@@ -596,7 +596,7 @@ def importMACS( infile, outfile, suffix = ".norm.bam" ):
 
         statement = '''
         sed "s/FC range.*/fc\\tnpeaks\\tp90\\tp80\\tp70\\tp60\\tp50\\tp40\\tp30\\tp20/" < %(filename_diag)s |\
-        csv2db.py %(csv2db_options)s \
+       python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
                   --map=fc:str \
                   --table=%(tablename)s \
         > %(outfile)s

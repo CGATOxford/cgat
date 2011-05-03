@@ -192,7 +192,7 @@ def importUCSCEncodeTracks( infile, outfile ):
     
     statement = '''
     mysql --user=genome --host=genome-mysql.cse.ucsc.edu -A -B -e "SELECT * FROM %(tablename)s" %(ucsc_database)s |\
-    csv2db.py %(csv2db_options)s \
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
               --table=%(tablename)s \
     >> %(outfile)s
 
@@ -294,7 +294,7 @@ def importRegionsOfInterest( infile, outfile ):
     table = outfile[:-len(".import")]
 
     statement = '''
-    csv2db.py %(csv2db_options)s \
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
                --dialect=excel \
                --index=class \
                --index=roi_id \
@@ -361,7 +361,7 @@ def importSNPs( infile, outfile ):
     
     tmpfilename = tmpf.name
     statement = '''
-    csv2db.py %(csv2db_options)s \
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
                --index=roi_id \
                --map=roi_id:str \
                --table=%(table)s \
@@ -459,7 +459,7 @@ def importGWAS( infile, outfile ):
     
     tmpfilename = tmpf.name
     statement = '''
-    csv2db.py %(csv2db_options)s \
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
                --index=roi_id \
                --index=class \
                --map=roi_id:str \
@@ -597,7 +597,7 @@ def importMergedGWAS( infile, outfile ):
     
     tmpfilename = tmpf.name
     statement = '''
-    csv2db.py %(csv2db_options)s \
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
                --index=roi_id \
                --index=class \
                --map=roi_id:str \
@@ -681,7 +681,7 @@ def importRegionsOfInterestGenes( infile, outfile ):
 
     tmpfilename = tmpf.name
     statement = '''
-    csv2db.py %(csv2db_options)s 
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
                --allow-empty
                --index=roi_id 
                --map=roi_id:str 
@@ -706,7 +706,7 @@ def importSNPsOfInterest( infile, outfile ):
     table = outfile[:-len(".import")]
 
     statement = '''
-    csv2db.py %(csv2db_options)s \
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
                --dialect=excel \
                --index=snp \
                --map=snp:str \
@@ -782,7 +782,7 @@ def importReferenceIntervals( infile, outfile ):
     tmpfile.close()
 
     statement = '''
-    csv2db.py %(csv2db_options)s \
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
               --index=interval_id \
               --table=%(track)s_intervals \
     < %(tmpfilename)s > %(outfile)s
@@ -893,7 +893,7 @@ if PARAMS["method"] == "intervals":
         tmpfile.close()
 
         statement = '''
-        csv2db.py %(csv2db_options)s \
+       python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
                   --index=interval_id \
                   --table=%(track)s_intervals \
         < %(tmpfilename)s > %(outfile)s
@@ -2125,7 +2125,7 @@ def importTranscripts( infile, outfile ):
     statement = '''
     gunzip < %(infile)s |\
     python %(scriptsdir)s/gtf2tab.py |\
-    csv2db.py %(csv2db_options)s \
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
               --index=interval_id \
               --index=transcript_id \
               --index=gene_id \
@@ -2323,7 +2323,7 @@ def importAffymetrixAnnotation( infile, outfile):
     statement = '''
     gunzip < %(infile)s |\
     sed "s/probeset_id/probeset/" |\
-    csv2db.py %(csv2db_options)s \
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
               --dialect=excel \
               --index=probeset \
               --index=mrna_id \
@@ -2471,7 +2471,7 @@ def importProbeset2Transcript( infile, outfile):
     table = outfile[:-len("_table.import")] 
 
     statement = '''
-    csv2db.py %(csv2db_options)s \
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
               --index=probeset \
               --index=cluster_id \
               --index=transcript_id \
@@ -2546,7 +2546,7 @@ def importProbesetLocations( infile, outfile ):
 
     statement = '''
     python %(scriptsdir)s/gtf2tab.py < %(infile)s |\
-    csv2db.py %(csv2db_options)s \
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
               --index=id \
               --index=probeset \
               --table=%(tablename)s \
@@ -2635,7 +2635,7 @@ def importExpressionTracks( infile, outfile):
     table = outfile[:-len("_data.import")] + "_levels"
 
     statement = '''
-    csv2db.py %(csv2db_options)s \
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
               --index=cluster_id \
               --table=%(table)s \
     < %(infile)s > %(outfile)s
@@ -2765,7 +2765,7 @@ def importExpressionCorrelation( infile, outfile):
     table = outfile[:-len(".import")] 
 
     statement = '''
-    csv2db.py %(csv2db_options)s \
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
               --index=track \
               --table=%(table)s \
     < %(infile)s > %(outfile)s
@@ -2784,7 +2784,7 @@ def importExpressionProbesets( infile, outfile):
     table = outfile[:-len("_table.import")]
 
     statement = '''
-    csv2db.py %(csv2db_options)s \
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
               --index=cluster_id \
               --index=mrna_id \
               --index=genesymbol \
@@ -2805,7 +2805,7 @@ def importExpressionMap( infile, outfile):
     table = outfile[:-len(".import")]
 
     statement = '''
-    csv2db.py %(csv2db_options)s \
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
               --table=%(table)s \
     < %(infile)s > %(outfile)s
     '''
@@ -2850,7 +2850,7 @@ def importIntervalProbesetAssociations( infile, outfile):
     tablename = outfile[:-len(".import")]
 
     statement = '''
-    csv2db.py %(csv2db_options)s \
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
               --index=id \
               --index=probeset \
               --table=%(tablename)s \
@@ -2971,7 +2971,7 @@ def importOverlap( infile, outfile ):
     tablename = "overlap"
 
     statement = '''
-    csv2db.py %(csv2db_options)s 
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
               --index=set1 
               --index=set2 
               --table=%(tablename)s 
@@ -3026,7 +3026,7 @@ def importUCSCOverlap( infile, outfile ):
     tablename = "ucsc_overlap"
 
     statement = '''
-    csv2db.py %(csv2db_options)s \
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
               --index=set1 \
               --index=set2 \
               --table=%(tablename)s \
@@ -3123,7 +3123,7 @@ if REPLICATES:
         tablename = outfile[:-len(".import")] 
 
         statement = '''
-        csv2db.py %(csv2db_options)s \
+       python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
                   --table=%(tablename)s \
         < %(infile)s > %(outfile)s
         '''
@@ -3237,7 +3237,7 @@ def importCorrelation( infile, outfile ):
     tablename = outfile[:-len(".import")] 
 
     statement = '''
-    csv2db.py %(csv2db_options)s \
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
               --index=id \
               --map=default:float \
               --table=%(tablename)s \
@@ -3592,7 +3592,7 @@ if PARAMS["motifs_tomtom_master_motif"] != "":
         tablename = outfile[:-len(".import")]
 
         statement = '''
-        csv2db.py %(csv2db_options)s \
+       python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
                   --allow-empty \
                   --table=%(tablename)s \
         < %(tmpname)s > %(outfile)s
@@ -3781,7 +3781,7 @@ def importBioProspector( infile, outfile ):
     tmpfilename = tmpfile.name
 
     statement = '''
-    csv2db.py %(csv2db_options)s \
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
     --allow-empty \
     -b sqlite \
     --index=id \
@@ -3992,7 +3992,7 @@ def importNubiscan( infile, outfile ):
     tmpfilename = tmpfile.name
 
     statement = '''
-    csv2db.py %(csv2db_options)s \
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
     --allow-empty \
     -b sqlite \
     --index=id \
@@ -4094,7 +4094,7 @@ def importMAST( infile, outfile ):
     tmpfilename = tmpfile.name
 
     statement = '''
-    csv2db.py %(csv2db_options)s \
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
               -b sqlite \
               --index=id \
               --index=motif \
@@ -4234,7 +4234,7 @@ def importGLAM2SCAN( infile, outfile ):
     tmpfilename = tmpfile.name
 
     statement = '''
-    csv2db.py %(csv2db_options)s \
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
               -b sqlite \
               --index=id \
               --index=motif \
@@ -4284,7 +4284,7 @@ def straightImport( infile, outfile, options = "" ):
     tablename = outfile[:-len(".import")]
 
     statement = '''
-    csv2db.py %(csv2db_options)s \
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
               --index=gene_id \
               %(options)s \
               --table=%(tablename)s \
@@ -4532,7 +4532,7 @@ def importExpressionDifferences( infile, outfile ):
     tablename = "%s_vs_%s_%s" % (track,control,method)
         
     statement = '''
-    csv2db.py %(csv2db_options)s \
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
               --allow-empty \
               --index=cluster_id \
               --table=%(tablename)s \
@@ -4692,7 +4692,7 @@ def importIntervalCounts( infile, outfile ):
     tablename = outfile[:-len(".import")]
 
     statement = '''
-    csv2db.py %(csv2db_options)s \
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
               --index=gene_id \
               --table=%(tablename)s \
     < %(infile)s > %(outfile)s
@@ -5519,7 +5519,7 @@ def importTSSIntervalDistance( infile, outfile):
     tablename = outfile[:-len(".import")]
 
     statement = '''
-    csv2db.py %(csv2db_options)s \
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
               --index=transcript_id \
               --table=%(tablename)s \
     < %(infile)s > %(outfile)s
@@ -5567,7 +5567,7 @@ def importTSSIntervalAssociations( infile, outfile):
     tablename = outfile[:-len(".import")]
 
     statement = '''
-    csv2db.py %(csv2db_options)s \
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
               --index=id \
               --index=transcript_id \
               --table=%(tablename)s \
@@ -5656,7 +5656,7 @@ def importExpressionWang( infile, outfile ):
     tablename = outfile[:-len(".import")]
 
     statement = '''
-    csv2db.py %(csv2db_options)s \
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
               --index=probeset \
               --index=genesymbol \
               --table=%(tablename)s \
@@ -5749,7 +5749,7 @@ def importExpressionKovalenko( infile, outfile ):
     tablename = outfile[:-len(".import")]
 
     statement = '''
-    csv2db.py %(csv2db_options)s \
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
               --index=probeset \
               --index=gene_id \
               --table=%(tablename)s \
@@ -5815,7 +5815,7 @@ def importOverlapRegionsOfInterestEnsembl( infile, outfile ):
     tablename = outfile[:-len(".import")]
 
     statement = '''
-        csv2db.py %(csv2db_options)s \
+       python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
             --allow-empty \
             --index=interval_id \
             --index=roi_id \
@@ -5844,7 +5844,7 @@ def importGWASEnsembl( infile, outfile ):
     tablename = outfile[:-len(".import")]
 
     statement = '''
-        csv2db.py %(csv2db_options)s \
+       python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
             --allow-empty \
             --index=interval_id \
             --index=roi_id \
@@ -5877,7 +5877,7 @@ def importOverlapRegions( infiles, outfile ):
             --log=%(outfile)s \
             %(infile)s %(bedfile)s |\
         sed "s/name1/interval_id/; s/name2/roi_id/" |\
-        csv2db.py %(csv2db_options)s \
+       python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
             --allow-empty \
             --index=interval_id \
             --index=roi_id \
@@ -5970,7 +5970,7 @@ def importSNPCoverage( infile, outfile ):
     
     statement = '''
     sed "s/chromosome/contig/" < %(infile)s |\
-    csv2db.py %(csv2db_options)s \ 
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \ 
               --allow-empty \
               --index=snp \
               --index=genesymbol \

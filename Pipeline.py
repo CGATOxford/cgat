@@ -265,7 +265,7 @@ def load( infile, outfile, options = "" ):
     else: cat = "cat"
 
     statement = '''%(cat)s %(infile)s
-    | csv2db.py %(csv2db_options)s 
+    |python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
               %(options)s 
               --table=%(tablename)s 
     > %(outfile)s

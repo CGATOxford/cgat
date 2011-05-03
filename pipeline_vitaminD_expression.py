@@ -385,7 +385,7 @@ def importGO( infile, outfile, suffix ):
 
     statement = '''
     python %(toolsdir)s/cat_tables.py %(indir)s/*.overall |\
-    csv2db.py %(csv2db_options)s \
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
               --allow-empty \
               --index=category \
               --index=goid \

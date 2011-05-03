@@ -132,7 +132,7 @@ class IntronicExonicReadDepth(RnaseqTracker):
 ##############################################################
 class UTRExtension( Tracker ):
     tracks = [ x.asFile() for x in TRACKS ]
-
+    slices = ( "raw", "scaled" )
     def __call__(self, track, slice = None ):
         edir = EXPORTDIR
         method = "utr_extension"
@@ -141,15 +141,15 @@ class UTRExtension( Tracker ):
 
         block = \
 '''
-.. figure:: %(edir)s/%(method)s/%(track)s.readextension_%(region)s_%(direction)s.png 
+.. figure:: %(edir)s/%(method)s/%(track)s.readextension_%(region)s_%(direction)s_%(slice)s.png 
    :height: 300 
 '''
         # append spaces for file extension
-        block = "\n".join( [ x + " " * 40 for x in block.split("\n") ] )
+        block = "\n".join( [ x + " " * 200 for x in block.split("\n") ] )
 
         for region, direction in itertools.product( ("downstream", "upstream"),
                                                     ("sense", "antisense", "anysense" )):
             blocks.append( ResultBlock( text = block % locals(),
                                         title = "%(track)s %(region)s %(direction)s" % locals() ) )
             
-        return odict( (("rst", "\n".join(Utils.layoutBlocks( blocks, layout="columns-3" ))),))
+        return odict( (("%s counts" % slice, "\n".join(Utils.layoutBlocks( blocks, layout="columns-3" ))),))

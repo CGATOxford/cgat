@@ -729,7 +729,7 @@ def loadGOAssignments( infile, outfile ):
 
     statement = '''
     zcat < %(infile)s
-    | csv2db.py %(csv2db_options)s
+    |python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --table=%(table)s
               --index=gene_id
               --index=go_id

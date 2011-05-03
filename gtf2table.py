@@ -396,7 +396,7 @@ class CounterOverlap(Counter):
 
         if len(filename_gff) != 1:
             raise ValueError("expected only one gff file" )
-
+        
         e = readIntervalsFromGFF( filename_gff[0], source, feature, 
                                   self.mWithValues, self.mWithRecords, 
                                   self.mFasta, 
@@ -673,7 +673,7 @@ class Classifier(Counter):
             for feature in self.features:
                 key = "%s:%s" % (source, feature )
                 self.mKeys.append( key )
-                self.mCounters[key] = CounterOverlap( gffs, 
+                self.mCounters[key] = CounterOverlap( [gffs], 
                                                       source = source, 
                                                       feature = feature, 
                                                       fasta = self.mFasta,
@@ -2027,9 +2027,10 @@ class CounterReadExtension(Counter):
         first_exon_start, last_exon_end = segments[0][0], segments[-1][1]
         first_exon_end, last_exon_start = segments[0][1], segments[-1][0]
         gene_id = self.mGFFs[0].gene_id
+        self.strand = self.getStrand()
         self.gene_id = gene_id
         contig = self.getContig()
-        if self.getStrand() == "+":
+        if self.strand == "+":
             is_reverse = False
         else:
             is_reverse = True
@@ -2133,7 +2134,7 @@ class CounterReadExtension(Counter):
 
     def __str__(self):
 
-        if self.skip: return "\t".join( ["na"] * self.Headers)
+        if self.skip: return "\t".join( ["na"] * len(self.header))
 
         r = []
 

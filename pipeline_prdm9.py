@@ -285,7 +285,7 @@ def importMaliStats( infile, outfile ):
     
     table = P.toTable( outfile ) + "_info" 
     statement = '''
-    csv2db.py %(csv2db_options)s
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --index=read_id 
               --table=%(table)s 
     < %(infile)s.info
@@ -393,7 +393,7 @@ def importColumnStats( infile, outfile ):
     
     table = P.toTable( outfile ) 
     statement = '''
-    csv2db.py %(csv2db_options)s
+   python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --index=column 
               --table=%(table)s 
     < %(infile)s

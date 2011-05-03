@@ -352,7 +352,7 @@ def loadPolyphenWeights( infile, outfile ):
     statement = '''
     cat < %(infile)s 
     | python %(scriptsdir)s/csv_cut.py snpid counts weight 
-    | csv2db.py %(csv2db_options)s
+    |python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --index=snp_id 
               --table=%(table)s 
     > %(outfile)s
@@ -375,7 +375,7 @@ def loadPolyphen( infile, outfile ):
     < %(infile)s
     | perl -p -e "s/o_acc/protein_id/; s/ +//g"
     | cut -f 1-55
-    | csv2db.py %(csv2db_options)s
+    |python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --index=snp_id 
               --index=protein_id
               --table=%(table)s 
