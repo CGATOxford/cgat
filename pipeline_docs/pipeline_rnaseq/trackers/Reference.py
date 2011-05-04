@@ -130,18 +130,20 @@ class IntronicExonicReadDepth(RnaseqTracker):
 ##############################################################
 ##############################################################
 ##############################################################
-class UTRExtension( Tracker ):
+class UTRReadDensityInPlace( Tracker ):
     tracks = [ x.asFile() for x in TRACKS ]
-    slices = ( "raw", "scaled" )
+    slices = ( "raw", "scaled", "fit" )
     def __call__(self, track, slice = None ):
         edir = EXPORTDIR
         method = "utr_extension"
 
         blocks = ResultBlocks()
 
+        filepath = "%(edir)s/%(method)s/%(track)s.readextension_%(region)s_%(direction)s.%(slice)s.png"
+
         block = \
 '''
-.. figure:: %(edir)s/%(method)s/%(track)s.readextension_%(region)s_%(direction)s_%(slice)s.png 
+.. figure:: %(filename)s
    :height: 300 
 '''
         # append spaces for file extension
@@ -149,7 +151,61 @@ class UTRExtension( Tracker ):
 
         for region, direction in itertools.product( ("downstream", "upstream"),
                                                     ("sense", "antisense", "anysense" )):
-            blocks.append( ResultBlock( text = block % locals(),
-                                        title = "%(track)s %(region)s %(direction)s" % locals() ) )
             
-        return odict( (("%s counts" % slice, "\n".join(Utils.layoutBlocks( blocks, layout="columns-3" ))),))
+            filename = filepath % locals()
+
+            if os.path.exists( filename ):
+                blocks.append( ResultBlock( text = block % locals(),
+                                            title = "%(track)s %(region)s %(direction)s" % locals() ) )
+            # else:
+            #     blocks.append( ResultBlock( "",
+            #                                 title = "%(track)s %(region)s %(direction)s" % locals() ) )
+
+        return odict( (("rst", "\n".join(Utils.layoutBlocks( blocks, layout="columns-3" ))),))
+
+
+class UTRReadDensityTable( Tracker ):
+    tracks = [ x.asFile() for x in TRACKS ]
+    slices = ( "raw", "scaled", "fit" )
+    def __call__(self, track, slice = None ):
+        edir = EXPORTDIR
+        method = "utr_extension"
+
+        filepath = "%(edir)s/%(method)s/%(track)s.readextension_%(region)s_%(direction)s.%(slice)s.png"
+
+        toc_text = []
+        link_text = []
+
+        for region, direction in itertools.product( ("downstream", "upstream"),
+                                                    ("sense", "antisense", "anysense" )):
+        
+            filename = filepath % locals()
+            if not os.path.exists(filename): continue
+
+            linktext = "%(track)s-%(region)s-%(direction)s-%(slice)s" % locals()
+
+            toc_text.append( "* %(linktext)s_" % locals()) 
+            link_text.append( ".. _%(linktext)s: %(filename)s" % locals() )
+
+        toc_text = "\n".join(toc_text)
+        link_text =  "\n".join(link_text)
+
+        rst_text = '''
+%(toc_text)s
+
+%(link_text)s
+''' % locals()
+
+        return odict( (("text", rst_text),) )
+
+class UTRExtension( RnaseqTracker ):
+    
+    pattern = "(.*)_extension_counts_utr$" 
+    slices = ( "5utr", "3utr" )
+
+    def __call__(self, track, slice = None ):
+        return self.getAll( '''SELECT old_%(slice)s_length AS known,
+                                      new_%(slice)s_length AS predicted
+                                      FROM %(track)s_extension_counts_utr
+                                      WHERE new_%(slice)s_length IS NOT NULL''' )
+    
