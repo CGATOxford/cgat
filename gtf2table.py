@@ -369,7 +369,7 @@ class CounterCompositionNucleotides(Counter):
 class CounterOverlap(Counter):
     """count overlap with segments in another file.
 
-    Nover1 and nover2 count "exons".
+    nover1 and nover2 count "exons".
     """
 
     headerTemplate = ( "nover1", "nover2", "nover", "pover1", "pover2" )
@@ -443,7 +443,6 @@ class CounterOverlap(Counter):
                                                  self.mMinIntronSize )
 
         if n and len(intervals):
-
             self.mNOverlap = Intervals.calculateOverlap( segments, intervals )
 
             self.mPOverlap1 = 100.0 * self.mNOverlap / sum( [ end - start for start, end in segments] ) 
@@ -617,6 +616,7 @@ class Classifier(Counter):
     created with gff2gtf.py.
 
     A transcript is classified as (threshold = self.mThresholdMinCoverage)
+
     known:     overlaps exons of a gene
     unknown:   overlaps any other region but exons
     ambiguous: can't say
@@ -634,7 +634,9 @@ class Classifier(Counter):
                   to any feature).
     """
 
-    header = [ "is_known", "is_unknown", "is_ambiguous", "is_pc", "is_pseudo", "is_npc", "is_utr", "is_intronic", "is_assoc", "is_intergenic" ] 
+    header = [ "is_known", "is_unknown", "is_ambiguous", 
+               "is_pc", "is_pseudo", "is_npc", "is_utr", 
+               "is_intronic", "is_assoc", "is_intergenic" ] 
 
     # features to use for classification
     features = ( "CDS", "UTR", "UTR3", "UTR5", "exon", "intronic", "intergenic", "flank", "3flank", "5flank", "telomeric" )
@@ -1969,11 +1971,15 @@ class CounterReadExtension(Counter):
     from the gene's end.
     '''
 
-    # look at 50kb either way
-    max_territory_size = 30000
+    # look at 15kb either way
+    max_territory_size = 15000
 
     # distance increment
-    increment = 200
+    increment = 100
+
+    # minimum mapping quality
+    # ignore those with 0 quality
+    min_quality = 1
 
     def __init__(self, bamfiles, filename_gff, *args, **kwargs ):
         Counter.__init__(self, *args, **kwargs )
@@ -2050,6 +2056,8 @@ class CounterReadExtension(Counter):
         territory_start = max( territory_start, first_exon_start - self.max_territory_size )
         territory_end = min( territory_end, last_exon_end + self.max_territory_size )
 
+        min_quality = self.min_quality
+
         # get UTRs - reorient them as upstream/downstream
         utrs = [None, None]
         if gene_id in self.UTRs:
@@ -2101,6 +2109,8 @@ class CounterReadExtension(Counter):
             
             for samfile in self.mBamFiles:
                 for read in samfile.fetch( contig, start, end ):
+                    # ignore low quality mapped reads
+                    if read.mapq < min_quality: continue
                     # only count positions actually overlapping
                     positions = read.positions
                     if not positions: continue

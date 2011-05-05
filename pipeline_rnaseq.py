@@ -2784,78 +2784,7 @@ def buildGeneLevelReadExtension( infile, outfile ):
             ".plot" )
 def plotGeneLevelReadExtension( infile, outfile ):
     '''plot reads extending beyond last exon.'''
-
-    infiles = glob.glob( infile + ".*.tsv.gz" )
-
-    outdir = os.path.join( PARAMS["exportdir"], "utr_extension" )
-    
-    R('''suppressMessages(library(RColorBrewer))''')
-    R('''suppressMessages(library(MASS))''')
-    R('''suppressMessages(library(HiddenMarkov))''')
-
-    # the bin size , see gtf2table - can be cleaned from column names
-    binsize = 200
-    territory_size = 30000
-
-    for filename in infiles:
-
-        E.info("processing %s" % filename)
-
-        parts = os.path.basename(filename).split( "." )
-
-        data = R('''data = read.table( gzfile( "%(filename)s"), header=TRUE, fill=TRUE, row.names=1)''' % locals() )
-
-        ##########################################
-        ##########################################
-        ##########################################
-        ## estimation
-        ##########################################
-        # take only those with a 'complete' territory
-        R('''d = data[-which( apply( data,1,function(x)any(is.na(x)))),]''')
-        # save UTR
-        R('''utrs = d$utr''' )
-        # remove length and utr column
-        R('''d = d[-c(1,2)]''')
-        # remove those which are completely empty, logtransform or scale data and export
-        R('''lraw = log10( d[-which( apply(d,1,function(x)all(x==0))),] + 1 )''')
-
-        utrs = R('''utrs = utrs[-which( apply(d,1,function(x)all(x==0)))]''' )
-        scaled = R('''lscaled = t(scale(t(lraw), center=FALSE, scale=apply(lraw,1,max) ))''' )
-        exons = R('''lraw[,1]''')
-
-        #######################################################
-        #######################################################
-        #######################################################
-        R('''myplot = function( reads, utrs, ... ) {
-           oreads = t(data.matrix( reads )[order(utrs), ] )
-           outrs = utrs[order(utrs)]
-           image( 1:nrow(oreads), 1:ncol(oreads), oreads ,
-                  xlab = "", ylab = "",
-                  col=brewer.pal(9,"Greens"),
-                  axes=FALSE)
-           # axis(BELOW<-1, at=1:nrow(oreads), labels=rownames(oreads), cex.axis=0.7)
-           par(new=TRUE)
-           plot( outrs, 1:length(outrs), yaxs="i", xaxs="i", 
-                 ylab="genes", xlab="len(utr) / bp", 
-                 type="S", 
-                 xlim=c(0,nrow(oreads)*%(binsize)i))
-        }''' % locals())
-
-
-        fn = ".".join( (parts[0], parts[4], "raw", "png") )
-        outfilename = os.path.join( outdir, fn )
-
-        R.png( outfilename, height=2000, width=1000 )
-        R('''myplot( lraw, utrs )''' )
-        R['dev.off']()
-
-        # plot scaled data
-        fn = ".".join( (parts[0], parts[4], "scaled", "png") )
-        outfilename = os.path.join( outdir, fn )
-
-        R.png( outfilename, height=2000, width=1000 )
-        R('''myplot( lscaled, utrs )''' )
-        R['dev.off']()
+    PipelineRnaseq.plotGeneLevelReadExtension( infile, outfile )
 
 #########################################################################
 #########################################################################
@@ -2866,8 +2795,61 @@ def plotGeneLevelReadExtension( infile, outfile ):
             ".utr.gz" )
 def buildUTRExtension( infile, outfile ):
     '''build new utrs.'''
-
     PipelineRnaseq.buildUTRExtensions( infile, outfile )
+
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( buildUTRExtension,
+            suffix(".utr.gz"),
+            "_utr.load" )
+def loadUTRExtension( infile, outfile ):
+    P.load( infile, outfile, "--index=gene_id" )
+
+#########################################################################
+#########################################################################
+#########################################################################
+@merge( buildUTRExtension, "utrs.bed.gz" )
+def buildUTRs( infiles, outfile ):
+    '''build new utrs by merging estimated UTR extensions
+    from all data sets.
+    '''
+    
+    infiles = " " .join(infiles)
+
+    to_cluster = USECLUSTER
+
+    statement = '''
+    zcat %(infiles)s 
+    | python %(scriptsdir)s/csv_cut.py contig max_5utr_start max_5utr_end gene_id max_5utr_length strand 
+    | awk -v FS='\\t' '$1 != "contig" && $2 != ""' 
+    | mergeBed -nms -s 
+    > %(outfile)s.5
+    '''
+    
+    P.run()
+
+    statement = '''
+    zcat %(infiles)s 
+    | python %(scriptsdir)s/csv_cut.py contig max_3utr_start max_3utr_end gene_id max_3utr_length strand 
+    | awk -v FS='\\t' '$1 != "contig" && $2 != ""' 
+    | mergeBed -nms -s 
+    > %(outfile)s.3
+    '''
+    
+    P.run()
+
+    statement = '''
+    cat %(outfile)s.5 %(outfile)s.3
+    | sort -k 1,1 -k2,2n 
+    | gzip 
+    > %(outfile)s'''
+    
+    P.run()
+
+    os.unlink( "%s.5" % outfile )
+    os.unlink( "%s.3" % outfile )
 
 #########################################################################
 #########################################################################

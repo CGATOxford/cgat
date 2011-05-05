@@ -190,6 +190,13 @@ class Entry:
         self.gene_id = other.gene_id
         self.transcript_id = other.transcript_id
         self.attributes = copy.copy(other.asDict())
+        # from gff - remove gene_id and transcript_id from attributes
+        try:
+            del self.attributes["gene_id"]
+            del self.attributes["transcript_id"]
+        except KeyError:
+            pass
+
         return self
 
     def asDict( self ):
