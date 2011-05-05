@@ -11,6 +11,7 @@ Contents:
    :maxdepth: 2
 
    pipeline/Mapping.rst
+   pipeline/InsertSize.rst
    pipeline/Coverage.rst
    pipeline/Variants.rst
  

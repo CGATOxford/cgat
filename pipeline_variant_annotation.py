@@ -150,6 +150,7 @@ import PipelineDatabase as PDatabase
 import scipy.stats
 import Stats
 import pysam
+import gzip
 
 # only update R if called as pipeline
 # otherwise - failure with sphinx
@@ -173,12 +174,6 @@ P.getParameters(
 PARAMS = P.PARAMS
 PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],
                                        "pipeline_annotations.py" )
-
-###################################################################
-###################################################################
-## Helper functions mapping tracks to conditions, etc
-###################################################################
-import PipelineTracks
 
 ## need to be refactored
 
@@ -236,21 +231,6 @@ def connect():
     cc.close()
 
     return dbh
-
-# @transform( buildPileups, suffix(".pileup.gz"), ".pileup.stats")
-# def countPileups( infile, outfile ):
-#     '''get some basic counts from the pileup files.'''
-
-#     to_cluster = True
-
-#     statement = '''gunzip < %(infile)s
-#     | python %(scriptsdir)s/snp2counts.py
-#             --genome-file=genome 
-#             --module=contig-counts
-#     > %(outfile)s
-#     '''
-
-#     P.run()
 
 ###################################################################
 ###################################################################
@@ -461,20 +441,6 @@ if "refseq_filename_gtf" in PARAMS:
             if not os.path.exists( outfile ):
                 P.run()
 
-        # table = "ensembl2refseq"            
-
-        # # use UCSC mapping
-        # statement = '''gunzip < %(infile_map)s
-        #     | perl -p -i -e "s/\.\d+//g"
-        #     | awk 'BEGIN {printf("ccds_id\\tsrc_db\\tttranscript_id\\tprotein_id\\n")} 
-        #            /^ccds/ {next} {print}'
-        #     |python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
-        #        --index=ccds_id 
-        #        --index=transcript_id 
-        #        --index=protein_id 
-        #        --table=%(table)s
-        #     > %(outfile_load)s'''
-        # P.run()
 
 @files( "%s.fasta" % PARAMS["genome"], "%s.fa" % PARAMS["genome"])
 def indexGenome( infile, outfile ):
@@ -520,223 +486,6 @@ def importPseudogenes( infile, outfile ):
     '''
 
     P.run()
-
-######################################################################
-######################################################################
-######################################################################
-@files( ((None, "mgi.import"),))
-def importMGI( infile, outfile ):
-    '''create via BIOMART'''
-
-    filename = "mgi_biomart.tsv" 
-
-    if False:
-        R.library("biomaRt")
-
-        columns = {
-
-            "marker_symbol_107" : "marker_symbol", 
-            "marker_name_107" : "marker_name",
-            "mgi_allele_id_att" : "allele_id",
-            "allele_symbol_101" : "allele_symbol", 
-            "allele_name_101" : "allele_name", 
-            "allele_type_101" : "allele_type", 
-            "phenotype_id_106_att" : "phenotype_id",
-            "ensembl_gene_id_103" : "gene_id" }
-
-        keys = columns.keys()
-
-        mgi = R.useMart(biomart="biomart", dataset="markers")
-        result = R.getBM( attributes=keys, mart=mgi )
-
-        outf = open( filename, "w" )
-        outf.write( "\t".join( [columns[x] for x in keys ] ) + "\n" )
-
-        for data in zip( *[ result[x] for x in keys] ):
-            outf.write( "\t".join( map(str, data) ) + "\n" )
-
-        outf.close()
-
-    if not os.path.exists( filename ):
-        
-        # associations need to be downloaded individually
-
-        R.library("biomaRt")
-
-        columns = {
-            "mgi_marker_id_att" : "marker_id", 
-            "marker_name_107" : "marker_name",
-            "mgi_allele_id_att" : "allele_id",
-            "allele_symbol_101" : "allele_symbol", 
-            "allele_name_101" : "allele_name", 
-            "allele_type_101" : "allele_type", 
-            "phenotype_id_106_att" : "phenotype_id",
-            "ensembl_gene_id_103" : "gene_id" }
-
-        def downloadData( filename, columns ):
-            '''download data via biomart into filename.
-               translate column headers.'''
-
-            if os.path.exists( filename): return
-
-            E.info( "downloading data for %s" % filename )
-
-            keys = columns.keys()
-
-            mgi = R.useMart(biomart="biomart", dataset="markers")
-            result = R.getBM( attributes=keys, 
-                              mart=mgi )
-
-            if len(result.rx(keys[0])) == 0:
-                raise ValueError("no data for %s: using keys=%s" % (filename, keys) )
-
-            outf = open( filename, "w" )
-            outf.write( "\t".join( [columns[x] for x in keys ] ) + "\n" )
-            
-            for data in zip( *[ result.rx(x) for x in keys] ):
-                outf.write( "\t".join( map(str, data) ) + "\n" )
-
-            outf.close()
-
-        downloadData( "mgi_marker2allele.tsv",
-                      { "mgi_marker_id_att" : "marker_id", 
-                        "mgi_allele_id_att" : "allele_id" } )
-
-        downloadData( "mgi_allele2phenotype.tsv",
-                      { "mgi_allele_id_att" : "allele_id",
-                        "phenotype_id_106_att" : "phenotype_id" } )
-
-        downloadData( "mgi_marker2gene.tsv",
-                      { "mgi_marker_id_att" : "marker_id", 
-                        "ensembl_gene_id_103" : "gene_id" } )
-
-        downloadData( "mgi_markers.tsv",
-                      { "mgi_marker_id_att" : "marker_id", 
-                        "marker_symbol_107" : "symbol",
-                        "marker_name_107" : "name",         
-                        "marker_type_107": "type",         
-                        } )
-
-        downloadData( "mgi_alleles.tsv",
-                      { "mgi_allele_id_att" : "allele_id",
-                        "allele_symbol_101" : "symbol",
-                        "allele_name_101" : "name",
-                        "allele_type_101" : "type"
-                        } )
-
-        downloadData( "mgi_phenotypes.tsv",
-                      { "phenotype_id_106_att" : "phenotype_id" ,
-                        "term_106": "term" } )
-
-        for filename in glob.glob("mgi_*.tsv"):
-            tablename = filename[:-len(".tsv")]
-            E.info( "loading %s" % tablename )
-
-            # remove duplicate rows
-            # remove rows where only the first field is set
-            statement = '''
-            perl -p -e "s/\\s+\\n/\\n/" < %(filename)s
-            | %(scriptsdir)s/hsort 1
-            | uniq
-            | awk '{ for (x=2; x<=NF; x++) { if ($x != "") { print; break;} } }'
-            |python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
-                     --table=%(tablename)s
-                     --index=marker_id
-                     --index=allele_id
-                     --index=gene_id
-                     --map=allele_name:str
-                     --map=symbol:str
-                     --index=phenotype_id
-           >> %(outfile)s
-           '''
-
-            P.run()
-
-        
-@merge( None, "gene2omim.load")
-def loadGene2Omim( infile, outfile ):
-    '''download gene id - OMIM associations via BIOMART.
-
-    Missing numerical entries are set to 0 (from -2147483648). 
-    '''
-
-    tablename = P.toTable( outfile )
-
-    columns = {
-        "ensembl_gene_id" : "gene_id",
-        "mim_gene_accession" : "mim_gene_id",
-        "mim_morbid_accession" : "mim_morbid_id",
-        "mim_morbid_description" : "mim_morbid_description",
-        }
-
-    data = PBiomart.biomart_iterator( columns.keys()
-                                      , biomart = "ensembl"
-                                      , dataset = "hsapiens_gene_ensembl" )
-
-    def transform_data( data ):
-        for result in data:
-            for x in ("mim_gene_accession", "mim_morbid_accession"):
-                result[x] = ("", result[x])[result[x] >= 0]
-            result["mim_morbid_description"] = result["mim_morbid_description"].strip()
-            yield result
-
-    PDatabase.importFromIterator( outfile
-                                  , tablename
-                                  , transform_data(data)
-                                  , columns = columns 
-                                  , indices = ("gene_id", ) )
-
-@merge( None, "orthologs.load" )
-def loadHumanOrthologs( infile, outfile ):
-    '''download human2mouse orthologs
-    '''
-
-    tablename = P.toTable( outfile )
-
-    if "orthology_species" in PARAMS:
-        # we are within human, create a set of default 1:1 orthologs
-        species = PARAMS["orthology_species"]
-        columns = {
-            "ensembl_gene_id" : "hs_gene_id",
-            "%s_ensembl_gene" % species : "gene_id",
-            "%s_orthology_type" % species : "orthology_type",
-            "%s_homolog_ds" % species : "ds",
-            }
-
-        data = PBiomart.biomart_iterator( columns.keys()
-                                          , biomart = "ensembl"
-                                          , dataset = "hsapiens_gene_ensembl" )
-
-        PDatabase.importFromIterator( outfile
-                                      , tablename
-                                      , data
-                                      , columns = columns 
-                                      , indices = ("hs_gene_id", "gene_id", ) )
-        
-    else:
-        # we are within human, create a set of default 1:1 orthologs
-        columns = {
-            "ensembl_gene_id" : "hs_gene_id",
-            "gene_id": "gene_id",
-            "orthology_type" : "orthology_type",
-            "ds" : "ds",
-            }
-        
-        dbh = connect()
-
-        statement = '''CREATE TABLE %(tablename)s AS 
-                       SELECT gene_id AS hs_gene_id,
-                              gene_id AS gene_id,
-                              "ortholog_one2one" AS orthology_type,
-                              0 AS ds 
-                       FROM annotations.gene_info'''
-
-        Database.executewait( dbh, "DROP TABLE IF EXISTS %(tablename)s" % locals() )
-        Database.executewait( dbh, statement % locals() )
-        Database.executewait( dbh, "CREATE INDEX %(tablename)s_index1 ON %(tablename)s (hs_gene_id)" % locals() )
-        Database.executewait( dbh, "CREATE INDEX %(tablename)s_index2 ON %(tablename)s (hs_gene_id)" % locals() )
-        
-    P.touch( outfile )
     
 ###################################################################
 ###################################################################
@@ -755,13 +504,9 @@ def buildSelenoList( infile, outfile ):
 
     dbhandle = connect()
     cc = dbhandle.cursor()
-    statement = '''
-    SELECT DISTINCT transcript_id
-    FROM annotations.transcript_info as t,
-         annotations.protein_stats as p
-    WHERE p.protein_id = t.protein_id AND
-         p.nU > 0
-    '''
+    statement = '''SELECT DISTINCT transcript_id
+                   FROM annotations.transcript_info as t, annotations.protein_stats as p
+                   WHERE p.protein_id = t.protein_id AND p.nU > 0 '''
     outf = open(outfile, "w" )
     outf.write("transcript_id\n")
     outf.write("\n".join( [x[0] for x in cc.execute( statement) ] ) + "\n" )
@@ -778,8 +523,7 @@ def buildSelenoList( infile, outfile ):
 ###################################################################
 @files( ( (PARAMS["ensembl_ensembl2uniprot"], "ensembl2uniprot.load" ), ) )
 def loadEnsembl2Uniprot( infile, outfile ):
-    '''load mapping from ENSEMBL transcripts ids to
-    uniprot ids.
+    '''load mapping from ENSEMBL transcripts ids to uniprot ids.
 
     This method expects an BioMart output file with the following 
     five columns: 
@@ -889,8 +633,7 @@ def buildGeneAnnotations( infile, outfile ):
 ###################################################################
 @files( buildGeneAnnotations, "annotations_genes.counts" )
 def makeGeneCounts( infile, outfile ):
-    """coun gene exon statistics.
-    """
+    """count gene exon statistics."""
     
     statement = """
     cat < %(infile)s |\
@@ -1003,12 +746,8 @@ def buildEffects( infile, outfile, sample ):
     """annotate snps with gene set."""
 
     to_cluster = True
-    
     seleno = "seleno.list"
-
-    transcripts = os.path.join( PARAMS["annotations_dir"],
-                                PARAMS_ANNOTATIONS["interface_geneset_cds_gtf" ] )
-
+    transcripts = os.path.join( PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_geneset_cds_gtf" ] )
 
     statement = """
     gunzip 
@@ -1119,6 +858,7 @@ def mergeEffects( infile, outfile ):
                            --ignore-column=seq_aa
                        >> %(outfile)s'''
         P.run()
+
 
 ###################################################################
 ###################################################################
@@ -2914,7 +2654,7 @@ def loadGeneListAnalysis( infile, outfile ):
 def prepare():
     pass
 
-@follows( buildEffects, loadEffects, mergeEffects, summarizeEffectsPerGene )
+@follows( buildEffects, loadEffects, summarizeEffectsPerGene )
 def consequences(): pass
 
 @follows( buildAlleles, loadAlleles,

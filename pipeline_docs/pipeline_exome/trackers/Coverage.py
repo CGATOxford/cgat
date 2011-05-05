@@ -25,6 +25,4 @@ class CoveragePlot( ExomeTracker ):
         statement = '''SELECT cov_mean FROM coverage_stats where track='%(track)s';'''
         return self.getAll( statement )
 
-class CoveragePlot2( ExomeTracker, SingleTableTrackerRows ):
-    table = "coverage_stats"
-    exclude_columns = "feature"
+

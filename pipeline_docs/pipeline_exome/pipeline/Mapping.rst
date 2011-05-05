@@ -28,8 +28,20 @@ BAM files for each :term:`track`.
 .. report:: Mapping.MappingSummary
    :render: interleaved-bar-plot
    :slices: total,mapped,reverse,duplicates
+   :width:  1200
 
    Mapping Summary
 
+.. report:: Mapping.PicardAlign
+   :render: table
+   :tracks: picard_align_stats
+   :slices: Total_read_pairs,Aligned_pairs,Strand_balance,Duplicates
 
+   Picard Alignment Statistics
 
+.. report:: Mapping.PicardAlignPlot
+   :render: interleaved-bar-plot
+   :slices: Total_read_pairs
+   :width:  1000
+
+   Picard Alignment Statistics
