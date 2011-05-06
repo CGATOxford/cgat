@@ -257,8 +257,9 @@ def getUnsubtracted( track ):
     '''return "unsubtracted" condition for a track
     '''
     n = track.clone()
-    if n.condition.endswith( PARAMS["tracks_subtract"] ):
-        n.condition = n.condition[:-len(PARAMS["tracks_subtract"])]
+    if PARAMS["tracks_subtract"]:
+        if n.condition.endswith( PARAMS["tracks_subtract"] ):
+            n.condition = n.condition[:-len(PARAMS["tracks_subtract"])]
     return n
 
 ###################################################################

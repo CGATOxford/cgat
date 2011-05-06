@@ -1036,7 +1036,7 @@ phylogeny.trees: ../analysis.dir/analysis-hook ../results.dir/results-hook
 					`grep -v "#" < ../analysis.dir/trees_$${section}_$${analysis}_$${type}.tree` >> $@; \
 				cat ../analysis.dir/trees_$${section}_ks_median.tree \
 				    ../analysis.dir/trees_$${section}_$${analysis}_$${type}.tree |\
-				python $(DIR_SCRIPTS_TOOLS)plot_tree.py \
+				python $(DIR_SCRIPTS_TOOLS)tree2svg.py \
 					--filename-map=$(PARAM_ANALYSIS_DUPLICATIONS_TRANSLATION) \
 					--font-style-tips=italic \
 					--annotations=value \
@@ -1059,7 +1059,7 @@ phylogeny.trees: ../analysis.dir/analysis-hook ../results.dir/results-hook
 					>> $@; \
 				cat ../results.dir/ks_mean.tree \
 				    ../results.dir/$${analysis}_$${type}.tree |\
-				python $(DIR_SCRIPTS_TOOLS)plot_tree.py \
+				python $(DIR_SCRIPTS_TOOLS)tree2svg.py \
 					--filename-map=$(PARAM_ANALYSIS_DUPLICATIONS_TRANSLATION) \
 					--font-style-tips=italic \
 					--annotations=value \

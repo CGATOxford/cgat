@@ -53,10 +53,10 @@ class BamReport( RnaseqTracker ):
         
         filenames = sorted( [x.asFile() for x in TRACKS ] )
         
-        
         for fn in filenames:
-            toc_text.append( "* %(fn)s_" % locals()) 
-            link_text.append( ".. _%(fn)s: %(edir)s/bamstats/%(fn)s.%(slice)s.html" % locals() )
+            link = "%(slice)s_%(fn)s" % locals() 
+            toc_text.append( "* %(link)s_" % locals() )
+            link_text.append( ".. _%(link)s: %(edir)s/bamstats/%(fn)s.%(slice)s.html" % locals() )
             
         toc_text = "\n".join(toc_text)
         link_text =  "\n".join(link_text)
