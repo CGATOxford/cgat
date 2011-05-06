@@ -143,18 +143,19 @@ class VariantGetterPileup(VariantGetter):
             contig, pos, reference, genotype = data[:4]
             # fix 1-ness
             pos = int(pos) - 1
-            variants.append( Variants.Variant._make( pos, reference, genotype) )
+            variants.append( Variants.Variant._make( (pos, reference, genotype) ) )
         return variants
     
 class VariantGetterVCF( VariantGetter ):
     '''retrieve variants from tabix indexed vcf file.'''
     
     def __init__(self, filename, sample ):
-        self.tabix = pysam.Tabixfile( filename )
         self.sample = sample
-        self.parser = pysam.asVCF()
-        self.vcffile = pysam.VCF.VCFFile()
-        self.vcffile.parse( IOTools.openFile( filename ) )
+        self.vcf = pysam.VCF()
+        self.vcf.connect( filename )
+
+        if sample not in self.vcf.getsamples():
+            raise KeyErorr( "sample %s not vcf file" )
         
     def __call__(self, contig, start, end ):
         
@@ -162,38 +163,16 @@ class VariantGetterVCF( VariantGetter ):
         s = self.sample
 
         try:
-            iter = self.tabix.fetch( contig, start, end, parser = self.parser )
+            iter = self.vcf.fetch( contig, start, end )
         except ValueError:
             # contigs not in variants, ignore
             return variants
 
-        for dd in iter:
-            
-            data = self.vcffile.parse_data( "\t".join(list(dd)[:-1] ) )
- 
-            if s not in data: continue
-            v = data[s]
-            contig, pos, reference = data["chrom"], data["pos"], data["ref"]
-            bases = [reference] + data["alt"]
-            if max([len(x) for x in data["alt"]] ) > 1:
-                E.warn( "insertions not implemented yet at %s:%i" % (contig,pos) )
-                continue
-            if len( reference ) > 1:
-                E.warn( "deletions not implemented yet at %s:%i" % (contig,pos) )
-                continue
+        for row in iter:
+            result = pysam.Pileup.vcf2pileup( row, s )
+            if not result: continue
+            variants.append( Variants.Variant._make( (result.pos, result.reference_base, result.genotype) ))
 
-            # get genotypes
-            genotypes = v["GT"]
-            if len(genotypes) > 1:
-                raise ValueError( "only single genotype per position, %s" % (str(data)))
-            genotypes = genotypes[0]
-
-            # convert to genotype
-            if genotypes == ["."]: genotype = reference
-            else: genotype = "".join([ bases[int(x)] for x in genotypes if x != "/" ])
-
-            variants.append( Variants.Variant._make( (int(pos), reference, Genomics.encodeGenotype(genotype) ) ))
-            
         return variants
 
 def collectExonIntronSequences( transcripts, fasta ):

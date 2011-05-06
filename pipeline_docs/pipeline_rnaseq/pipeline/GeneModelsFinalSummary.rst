@@ -7,11 +7,14 @@ RNASeq pipeline.
 
 The gene sets of interest are
 
-   * abinitio: the ab-initio gene set after removing unique transfrags.
-   * novel: novel transcripts - transcripts not overlapping with any of the coding transcripts
-            in the :term:`refcoding` gene set.
-   * reference: the reference gene set.
-   * recoding: the coding portion of the reference gene set
+   * abinitio: the complete ab-initio gene set after removing unique transfrags.
+   * lincrna: non-coding transcripts derived from merging the known lincRNA
+           transcripts with those derived from the experiment.
+   * novel: novel transcripts - transcripts not overlapping any of the coding or non-coding transcripts
+           in the :term:`reference` gene set. 
+   * refnoncoding: lincRNA and other non-coding transcripts obtained from the the :term:`reference` gene set.
+   * refcoding: protein coding transcripts of the the :term:`reference` gene set.
+   * reference: the :term:`reference` gene set.
 
 Genes and transcripts
 =====================
@@ -48,6 +51,34 @@ Genes and transcripts
    :slices: genes,transcripts,single_exon_transcripts
    
    Number of genes/transcripyts
+
+Transcript classes
+==================
+
+Transcript classes
+------------------
+
+.. report:: Genemodels.TranscriptClassCountsSummaryByClass
+   :render: interleaved-bar-plot
+   :layout: column-3
+   :width: 300
+   :tracks: @geneset_summary@
+
+   Classes of transcripts
+
+Protein coding classes
+----------------------
+
+The following plot lists the various classes of transcripts overlapping protein coding genes.
+
+.. report:: Genemodels.TranscriptClassCounts
+   :render: interleaved-bar-plot
+   :slices: protein_coding
+   :layout: column-3
+   :width: 300
+   :tracks: @geneset_summary@
+
+   Overlap with protein coding transcripts
 
 Exon size summary
 =================

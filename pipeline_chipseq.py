@@ -81,18 +81,18 @@ Input
 Reads
 ++++++
 
-Input are :file:`_export.txt.gz`-formatted files from Illumina. The files should be
+Input are :file:`.export.txt.gz`-formatted files from Illumina. The files should be
 labeled in the following way::
 
-   sample-condition-replicate_export.txt.gz
+   sample-condition-replicate.export.txt.gz
 
 For example::
 
-   GM00855-D3-R1_export.txt.gz
-   GM00855-D3-R2_export.gz
-   GM00855-input-R1_export.gz
-   GM00855-unstim-R1_export.txt.gz
-   GM00855-unstim-R2_export.txt.gz
+   GM00855-D3-R1.export.txt.gz
+   GM00855-D3-R2.export.gz
+   GM00855-input-R1.export.gz
+   GM00855-unstim-R1.export.txt.gz
+   GM00855-unstim-R2.export.txt.gz
 
 Note that neither ``sample``, ``condition`` or ``replicate`` should contain 
 ``_`` (underscore) and ``.`` (dot) characters as these are used by the pipeline
@@ -188,6 +188,7 @@ import pipeline_vitaminD_annotator as PAnnotator
 import pipeline_vitaminD_motifs as PMotifs
 import PipelineGeneset as PGeneset
 import PipelineTracks
+import PipelineMapping
 
 ###################################################
 ###################################################
@@ -215,8 +216,20 @@ PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],
 Sample = PipelineTracks.Sample3
 
 TRACKS = PipelineTracks.Tracks( Sample ).loadFromDirectory( 
-    [ x for x in glob.glob( "*_export.txt.gz" ) if PARAMS["tracks_control"] not in x ],
-      "(\S+)_export.txt.gz" )
+    [ x for x in glob.glob( "*.export.txt.gz" ) if PARAMS["tracks_control"] not in x ],
+      "(\S+).export.txt.gz" ) +\
+      PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
+          [ x for x in glob.glob( "*.sra" ) if PARAMS["tracks_control"] not in x ], 
+          "(\S+).sra" ) +\
+          PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
+              [x for x in glob.glob( "*.fastq.gz" ) if PARAMS["tracks_control"] not in x], 
+              "(\S+).fastq.gz" ) +\
+              PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
+                  [x for x in glob.glob( "*.fastq.1.gz" ) if PARAMS["tracks_control"] not in x], 
+                  "(\S+).fastq.1.gz" ) +\
+                  PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
+                      [ x for x in glob.glob( "*.csfasta.gz" ) if PARAMS["track_control"] not in x], 
+                        "(\S+).csfasta.gz" )
 
 def getControl( track ):
     '''return appropriate control for a track
@@ -301,38 +314,23 @@ if PARAMS["mapping_mapper"] == "bowtie":
     ############################################################
     ############################################################
     ############################################################
-    @transform( "*_export.txt.gz", 
-                regex("(\S+)_export.txt.gz"), 
+    @transform( ("*.fastq.1.gz", 
+                 "*.fastq.gz",
+                 "*.sra",
+                 "*.csfasta.gz" ),
+                regex( r"(\S+).(export.txt.gz|fastq.1.gz|fastq.gz|sra|csfasta.gz)"), 
                 r"\1.bam" )
     def buildBAM( infile, outfile ):
         '''re-map eland formatted reads with bowtie
         '''
         to_cluster = True
 
-        # require 4Gb of free memory
-        # job_options = "-l mem_free=4000M"
-
-        tmpfilename = P.getTempFilename()
-
-        prefix = outfile[:-len(".bam")]
-
-        statement = '''
-        gunzip < %(infile)s |\
-        awk '$11 != "QC" || $10 ~ /(\d+):(\d+):(\d+)/ \
-             { if ($1 != "") { readname=sprintf( "%%s_%%s:%%s:%%s:%%s:%%s", $1,$2,$3,$4,$5,$6);}
-              else { readname=sprintf( "%%s:%%s:%%s:%%s:%%s", $1,$3,$4,$5,$6); }
-              printf("@%%s\\n%%s\\n+\\n%%s\\n",readname,$9,$10);}' |\
-        bowtie --sam %(bowtie_options)s %(bowtie_index)s - 2>%(outfile)s.log |\
-        samtools import %(genome)s - %(tmpfilename)s >& %(outfile)s.log;
-        samtools sort %(tmpfilename)s %(prefix)s;
-        samtools index %(outfile)s;
-        rm -f %(tmpfilename)s
-        '''
-
+        job_options= "-pe dedicated %i -R y" % PARAMS["bowtie_threads"]
+        m = PipelineMapping.Bowtie()
+        reffile = PARAMS["samtools_genome"]
+        statement = m.build( (infile,), outfile ) 
         P.run()
 
-        if os.path.exists( tmpfilename ):
-            os.unlink( tmpfilename )
 else:
     raise ValueError("unknown mapper %s" % PARAMS["mapping_mapper"] )
 
@@ -389,7 +387,7 @@ def makeReadCorrelation( infiles, outfile ):
     statement = '''
     python %(scriptsdir)s/bam_correlation.py 
            --log=%(outfile)s.log 
-           --genome=%(genome)s 
+           --genome=%(genome_dir)s/%(genome)s 
            %(infiles)s 
     | gzip > %(outfile)s
     ''' 
@@ -702,7 +700,7 @@ def exportBigwig( infile, outfile ):
     to_cluster = True
 
     statement = '''python %(scriptsdir)s/bam2wiggle.py \
-                --genome-file=%(genome)s \
+                --genome-file=%(genome_dir)s/%(genome)s \
                 --output-format=bigwig \
                 --output-filename=%(outfile)s \
                 %(infile)s \
@@ -1893,7 +1891,7 @@ def annotateIntervals( infile, outfile ):
 		--counter=length 
 		--log=%(outfile)s.log 
 		--filename-gff=%(annotation_file)s 
-		--genome-file=%(genome)s
+		--genome-file=%(genome_dir)s/%(genome)s
     > %(outfile)s"""
     
     P.run()
@@ -1920,7 +1918,7 @@ def annotateTSS( infile, outfile ):
 		--log=%(outfile)s.log 
 		--filename-gff=%(annotation_file)s 
                 --filename-format="bed" 
-		--genome-file=%(genome)s
+		--genome-file=%(genome_dir)s/%(genome)s
 	> %(outfile)s"""
 
     P.run()
@@ -1946,7 +1944,7 @@ def annotateRepeats( infile, outfile ):
 		--counter=overlap \
 		--log=%(outfile)s.log \
 		--filename-gff=%(annotation_file)s \
-		--genome-file=%(genome)s
+		--genome-file=%(genome_dir)s/%(genome)s
 	> %(outfile)s"""
 
     P.run()

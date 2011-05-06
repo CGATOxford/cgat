@@ -447,11 +447,11 @@ import PipelineTracks
 TRACKS = PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
     glob.glob( "*.sra" ), "(\S+).sra" ) +\
     PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
-    glob.glob( "*.fastq.gz" ), "(\S+).fastq.gz" ) +\
-    PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
-    glob.glob( "*.fastq.1.gz" ), "(\S+).fastq.1.gz" ) +\
-    PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
-    glob.glob( "*.csfasta.gz" ), "(\S+).csfasta.gz" )
+        glob.glob( "*.fastq.gz" ), "(\S+).fastq.gz" ) +\
+        PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
+            glob.glob( "*.fastq.1.gz" ), "(\S+).fastq.1.gz" ) +\
+            PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
+                glob.glob( "*.csfasta.gz" ), "(\S+).csfasta.gz" )
 
 ALL = PipelineTracks.Sample3()
 EXPERIMENTS = PipelineTracks.Aggregate( TRACKS, labels = ("condition", "tissue" ) )
@@ -708,14 +708,14 @@ def buildReferenceGeneSet( infile, outfile ):
 #########################################################################
 @transform( buildReferenceGeneSet, 
             suffix("reference.gtf.gz"),
-            "lincrna.gtf.gz" )
-def buildLincRNAGeneSet( infile, outfile ):
+            "refnoncoding.gtf.gz" )
+def buildNoncodingGeneSet( infile, outfile ):
     '''build a new gene set with only protein coding 
     transcripts.'''
     
     to_cluster = True
     statement = '''
-    zcat %(infile)s | awk '$2 == "lincRNA"' | gzip > %(outfile)s
+    zcat %(infile)s | awk '$2 == "lincRNA" || $2 == "processed_transcript"' | gzip > %(outfile)s
     '''
     P.run()
 
@@ -1339,7 +1339,7 @@ def loadContextStats( infiles, outfile ):
     
     cc = Database.executewait( dbhandle, '''ALTER TABLE %(tablename)s ADD COLUMN mapped INTEGER''' % locals())
     statement = '''UPDATE %(tablename)s SET mapped = 
-                                       (SELECT b.mapped FROM bam_stats AS b 
+                                       (SELECT CASE b.mapped FROM bam_stats AS b 
                                             WHERE %(tablename)s.track = b.track)''' % locals()
 
     cc = Database.executewait( dbhandle, statement )
@@ -1391,7 +1391,7 @@ def buildGeneModels(infile, outfile):
             suffix(".gtf.gz"),
             add_inputs( buildCodingGeneSet ),
             ".class.tsv.gz" )
-def classifyTranscripts( infiles, outfile ):
+def oldClassifyTranscripts( infiles, outfile ):
     '''classify transcripts against a reference gene set.
     '''
     
@@ -1799,11 +1799,7 @@ def buildFullGeneSet( infiles, outfile ):
     
     see also: http://seqanswers.com/forums/showthread.php?t=3967
     
-    Transfrags not overlapping previously known annotations are kept
-    in order retain novel lincRNA.
-    
-    Will also build removed.gtf.gz, but not part of split to avoid
-    downstream processing.
+    Will also build removed.gtf.gz of removed transcripts.
     '''
     abinitio_gtf, reference_gtf = infiles
     keep_gtf = outfile
@@ -1839,82 +1835,141 @@ def buildFullGeneSet( infiles, outfile ):
 
     E.info("%s" % str(c))
 
+
 #########################################################################
 #########################################################################
 #########################################################################
-@files( ( ( (buildAbinitioGeneSet, buildCodingGeneSet),
-            "novel.gtf.gz" ) ,) )
+@merge( (buildAbinitioGeneSet, buildReferenceGeneSet),
+        "novel.gtf.gz" )
 def buildNovelGeneSet( infiles, outfile ):
-    '''builds a gene set by merging the ab-initio gene set and
+    '''build a gene set of novel genes by merging the ab-initio gene set and
     the reference gene set.
     
-    Ab-initio transcripts overlapping protein coding transcripts in the reference
-    gene set are removed (requires the source ``protein_coding`` to be set in the
-    reference gtf file). 
-    
-    The removal is aggressive and works by gene_id - as soon as one transcript of a 
+    Ab-initio transcripts are removed based on features in the reference gene set.
+    Removal is aggressive  - as soon as one transcript of a 
     gene/locus overlaps, all transcripts of that gene/locus are gone.
 
-    Transcripts overlapping on the same strand are merged.
+    The resultant set contains a number of novel transcripts. However, these
+    transcripts will still overlap some known genomic features like pseudogenes.
 
+    Novel genes are often expressed at low level and thus the resultant transcript
+    models are fragmentory. To avoid some double counting in downstream analyses, 
+    transcripts overlapping on the same strand are merged.
     '''
-    abinitio_gtf, reference_gtf = infiles
+
+    abinitio_gtf, reference_gtf= infiles
     
-    E.info( "reading index" )
+    E.info( "indexing geneset for filtering" )
 
-    index = GTF.readAndIndex( 
-        GTF.iterator_filtered( GTF.iterator( IOTools.openFile( reference_gtf) ),
-                               source = "protein_coding" ) )
-    E.info( "indexed genes on %i contigs" % len(index))
+    sections = ("protein_coding", "lincRNA", "processed_transcript")
 
-    total_genes, remove_genes = set(), set()
+    indices = {}
+    for section in sections:
+        indices[section] = GTF.readAndIndex( 
+            GTF.iterator_filtered( GTF.iterator( IOTools.openFile( reference_gtf) ),
+                                   source = section ) ) 
+        
+    E.info( "build indices for %i feature sets" % len(indices))
+
+    total_genes, remove_genes = set(), collections.defaultdict( set )
     inf = GTF.iterator( IOTools.openFile( abinitio_gtf ) )
     for gtf in inf:
         total_genes.add( gtf.gene_id )
-        if index.contains( gtf.contig, gtf.start, gtf.end):
-            remove_genes.add( gtf.gene_id )
-    
+        for section in sections:
+            if indices[section].contains( gtf.contig, gtf.start, gtf.end):
+                remove_genes[gtf.gene_id].add( section )
+
     E.info( "removing %i out of %i genes" % (len(remove_genes), len(total_genes)) )
 
-    tmpfile = P.getTempFile( "." )
-    inf = GTF.iterator( IOTools.openFile( abinitio_gtf ) )
+    PipelineRnaseq.filterAndMergeGTF( abinitio_gtf, outfile, remove_genes )
 
-    for gtf in inf:
-        if gtf.gene_id in remove_genes:
-            continue
+#########################################################################
+#########################################################################
+#########################################################################
+@merge( (buildAbinitioGeneSet, buildReferenceGeneSet), "lincrna.gtf.gz" )
+def buildLincRNAGeneSet( infiles, outfile ):
+    '''build lincRNA gene set. 
+    
+    The lincRNA gene set contains all known lincRNA transcripts from
+    the reference gene set plus all transcripts in the novel set that
+    do not overlap at any protein coding or lincRNA transcripts 
+    (exons+introns) in the reference gene set.
+
+    lincRNA genes are often expressed at low level and thus the resultant transcript
+    models are fragmentory. To avoid some double counting in downstream analyses, 
+    transcripts overlapping on the same strand are merged.
+    
+    '''
+    
+    infile_abinitio, reference_gtf = infiles
+
+    E.info( "indexing geneset for filtering" )
+
+    sections = ("protein_coding", "lincRNA" )
+
+    indices = {}
+    for section in sections:
+        indices[section] = GTF.readAndIndex( 
+            GTF.iterator_filtered( GTF.merged_gene_iterator( GTF.iterator( IOTools.openFile( reference_gtf) )),
+                                   source = section ) )
         
-        tmpfile.write( "%s\n" % str(gtf))
+    E.info( "build indices for %i feature sets" % len(indices))
 
-    tmpfile.close()
-    tmpfilename = tmpfile.name
+    total_genes, remove_genes = set(), collections.defaultdict( set )
+    inf = GTF.iterator( IOTools.openFile( infile_abinitio ) )
+    for gtf in inf:
+        total_genes.add( gtf.gene_id )
+        for section in sections:
+            if indices[section].contains( gtf.contig, gtf.start, gtf.end):
+                remove_genes[gtf.gene_id].add( section )
 
-    # close-by exons need to be merged, otherwise 
-    # cuffdiff fails for those on "." strand
+    E.info( "removing %i out of %i genes" % (len(remove_genes), len(total_genes)) )
 
-    statement = '''
-    %(scriptsdir)s/gff_sort pos < %(tmpfilename)s
-    | python %(scriptsdir)s/gtf2gtf.py
-        --unset-genes="NONC%%06i"
-        --log=%(outfile)s.log
-    | python %(scriptsdir)s/gtf2gtf.py
-        --merge-genes
-        --log=%(outfile)s.log
-    | python %(scriptsdir)s/gtf2gtf.py
-        --merge-exons
-        --merge-exons-distance=5
-        --log=%(outfile)s.log
-    | python %(scriptsdir)s/gtf2gtf.py
-        --renumber-genes="NONC%%06i"
-        --log=%(outfile)s.log
-    | python %(scriptsdir)s/gtf2gtf.py
-        --renumber-transcripts="NONC%%06i"
-        --log=%(outfile)s.log
-    | %(scriptsdir)s/gff_sort genepos 
-    | gzip > %(outfile)s
+    PipelineRnaseq.filterAndMergeGTF( infile_abinitio, outfile, remove_genes )
+
+    # add the known lincRNA gene set.
+    statement = '''zcat %(reference_gtf)s
+    | awk '$2 == "lincRNA"' 
+    | gzip 
+    >> %(outfile)s
     '''
     P.run()
 
-    os.unlink( tmpfilename )
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( (buildGeneModels, 
+             buildAbinitioGeneSet, 
+             buildFullGeneSet, 
+             buildLincRNAGeneSet,
+             buildNovelGeneSet), 
+            suffix(".gtf.gz"), 
+            add_inputs( buildReferenceGeneSet ),
+            ".class.tsv.gz" )
+def classifyTranscripts( infiles, outfile ):
+    '''classify transcripts.'''
+    to_cluster = USECLUSTER
+    
+    infile, reference = infiles
+
+    statement = '''
+    zcat %(infile)s
+    | python %(scriptsdir)s/gtf2table.py
+           --counter=classifier-rnaseq 
+           --reporter=transcripts
+           --filename-gff=%(reference)s
+           --log=%(outfile)s.log
+    | gzip
+    > %(outfile)s
+    '''
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( classifyTranscripts, suffix(".tsv.gz"), ".load" )
+def loadClassification( infile, outfile ):
+    P.load( infile, outfile, options = "--index=match_gene_id --index=match_transcript_id --index=source" )
 
 #########################################################################
 #########################################################################
@@ -1926,6 +1981,7 @@ def buildNovelGeneSet( infiles, outfile ):
          buildFullGeneSet,
          buildReferenceGeneSet,
          buildCodingGeneSet,
+         buildNoncodingGeneSet,
          buildLincRNAGeneSet,
          buildNovelGeneSet),
         "geneset_stats.tsv" )
@@ -1970,6 +2026,7 @@ def loadGeneSetStats( infile, outfile ):
         buildCodingGeneSet,
         buildAbinitioGeneSet,
         buildFullGeneSet,
+        buildNoncodingGeneSet,
         buildLincRNAGeneSet,
         buildNovelGeneSet),
             suffix(".gtf.gz"),
@@ -2195,6 +2252,7 @@ def loadReproducibility( infile, outfile ):
              buildReferenceGeneSet,
              buildCodingGeneSet,
              buildLincRNAGeneSet,
+             buildNoncodingGeneSet,
              buildNovelGeneSet),
             suffix(".gtf.gz"),
             "_geneinfo.load" )
@@ -2208,6 +2266,7 @@ def loadGeneSetGeneInformation( infile, outfile ):
              buildReferenceGeneSet,
              buildCodingGeneSet,
              buildLincRNAGeneSet,
+             buildNoncodingGeneSet,
              buildNovelGeneSet),
             suffix(".gtf.gz"),
             "_transcript2gene.load" )
@@ -2220,6 +2279,7 @@ def loadGeneInformation( infile, outfile ):
 @transform( (buildFullGeneSet, 
              buildReferenceGeneSet,
              buildCodingGeneSet,
+             buildNoncodingGeneSet,
              buildLincRNAGeneSet,
              buildNovelGeneSet),
             suffix(".gtf.gz"),
@@ -2233,6 +2293,7 @@ def loadGeneSetTranscriptInformation( infile, outfile ):
 @transform( (buildFullGeneSet, 
              buildReferenceGeneSet,
              buildCodingGeneSet,
+             buildNoncodingGeneSet,
              buildLincRNAGeneSet,
              buildNovelGeneSet),
             suffix(".gtf.gz"),
@@ -2588,6 +2649,7 @@ def buildFPKMGeneLevelTagCounts( infiles, outfile ):
              buildCodingGeneSet,
              buildNovelGeneSet,
              buildLincRNAGeneSet,
+             buildNoncodingGeneSet,
              buildFullGeneSet),
             suffix(".gtf.gz"),
             ".union.bed.gz" )
@@ -3131,6 +3193,7 @@ def loadDESeqStats( infile, outfile ):
 #########################################################################
 #########################################################################
 @follows( buildBAMs,
+          buildBAMReports,
           loadTophatStats,
           loadBAMStats,
           loadAlignmentStats,
@@ -3146,7 +3209,9 @@ def mapping(): pass
           buildCodingGeneSet,
           buildFullGeneSet,
           buildLincRNAGeneSet,
+          buildNoncodingGeneSet,
           buildNovelGeneSet,
+          loadClassification,
           loadGeneLevelReadCounts,
           loadIntronLevelReadCounts,
           loadGeneInformation,

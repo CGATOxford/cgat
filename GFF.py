@@ -36,7 +36,7 @@ Currently GFF and GTF is handled separately. Should be merged.
 
 """
 
-import string, sys, re, types
+import string, sys, re, types, collections
 import fastgtf
 import IndexedGenome
 
@@ -278,35 +278,36 @@ def SortPerContig( gff ):
 
     return map_contig2start
 
-def readAsIntervals( gff_iterator, with_values = False, with_records = False ):
+def readAsIntervals( gff_iterator, with_values = False, with_records = False,
+                     use_strand = False ):
     """read tuples of (start, end) from a GFF file.
 
     If with_values is True, a value is added to the tuples.
     If with_records is True, the record is added to the tuples.
     with_values and with_records are exclusive.
     
-    Ignores strand and everything but the coordinates.
+    If use_strand is True, intervals will be grouped by contig and strand.
+    The default is to group by contig only.
 
     Returns a dictionary of intervals by contig.
     """
 
     assert not (with_values and with_records), "both with_values and with_records are true."
-    intervals = {}
+    intervals = collections.defaultdict(list)
+    if use_strand:
+        keyf = lambda x: (x.contig, x.strand)
+    else:
+        keyf = lambda x: x.contig
+
     if with_values:
         for gff in gff_iterator:
-            contig, start, end = gff.contig, gff.start, gff.end
-            if contig not in intervals: intervals[contig] = []
-            intervals[contig].append( (start,end,gff.score) )
+            intervals[keyf(gff)].append( (gff.start,gff.end,gff.score) )
     elif with_records:
         for gff in gff_iterator:
-            contig, start, end = gff.contig, gff.start, gff.end
-            if contig not in intervals: intervals[contig] = []
-            intervals[contig].append( (start,end,gff) )
+            intervals[keyf(gff)].append( (gff.start,gff.end,gff) )
     else:
         for gff in gff_iterator:
-            contig, start, end = gff.contig, gff.start, gff.end
-            if contig not in intervals: intervals[contig] = []
-            intervals[contig].append( (start,end) )
+            intervals[keyf(gff)].append( (gff.start,gff.end) )
     return intervals
 
 def iterator( infile ):

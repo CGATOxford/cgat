@@ -820,7 +820,8 @@ def run_report( clean = True):
     dirname, basename = os.path.split( getCaller().__file__ )
     docdir = os.path.join( dirname, "pipeline_docs", snip( basename, ".py" ) )
 
-    # Currently, the R renderer needs an X11 connection.
+    # Requires an X11 connection to cluster nodes
+    # A solution is to run xvfb on the nodes.
     to_cluster = False
     
     job_options= "-pe dedicated %i -R y" % PARAMS["report_threads"]

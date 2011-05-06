@@ -18,17 +18,17 @@ class TranscriptCoverage(ReferenceData):
     """Coverage of reference transcripts."""
     mXLabel = "overlap / %"
     def __call__(self, track, slice = None ):
-        data = self.getValues( """SELECT coverage_pcovered FROM %(track)s_transcript_counts WHERE coverage_nval > 0""" )
+        data = self.getValues( """SELECT coverage_sense_pcovered FROM %(track)s_transcript_counts WHERE coverage_sense_nval > 0""" )
         return odict( (("covered", data ) ,) )
 
 class GeneCoverage(ReferenceData):
     '''Coverage of reference genes - max transcript coverage per gene.'''
     mXLabel = "number of transcripts"
     def __call__(self, track, slice = None ):
-        data = self.getValues( """SELECT max(c.coverage_pcovered) FROM 
+        data = self.getValues( """SELECT max(c.coverage_sense_pcovered) FROM 
                                             %(track)s_transcript_counts as c,
                                             %(reference)s_transcript2gene as i
-                                         WHERE c.coverage_nval > 0
+                                         WHERE c.coverage_sense_nval > 0
                                    AND i.transcript_id = c.transcript_id 
                                    GROUP BY i.gene_id """ )
         return odict( (("covered", data ) ,) )
@@ -43,12 +43,12 @@ class CoverageVsLengthByReadDepth(ReferenceData):
     def __call__(self, track, slice = None):
         reference = self.reference
         statement = """SELECT AVG(exons_sum) AS ref_length,
-                                MIN(c.coverage_pcovered) AS coverage, 
-                                AVG(c.coverage_mean) AS read_depth
+                                MIN(c.coverage_sense_pcovered) AS coverage, 
+                                AVG(c.coverage_sense_mean) AS read_depth
                         FROM %(track)s_transcript_counts AS c,
                                 %(reference)s_transcript2gene as i
                         WHERE i.transcript_id = c.transcript_id AND 
-                                c.coverage_nval > 0
+                                c.coverage_sense_nval > 0
                         GROUP BY i.gene_id"""
 
         data = [ (math.log(x[0]), x[1], math.log(x[2]) ) for x in self.get( statement % locals() ) ]
@@ -67,7 +67,7 @@ class MeanVsMaxReadDepth( ReferenceData ):
 
     def __call__(self, track, slice = None ):
         reference = self.reference
-        statement = "SELECT coverage_mean, coverage_max, exons_sum FROM %(track)s_transcript_counts" % locals()
+        statement = "SELECT coverage_sense_mean, coverage_sense_max, exons_sum FROM %(track)s_transcript_counts" % locals()
         data = [ (x[0], x[1], math.log( x[2]) ) for x in self.get( statement) if x[2] > 0 ]
         return odict( zip( ("mean coverage", "max coverage", "length" ), zip(*data) ) )
 
@@ -80,7 +80,7 @@ class MeanVsMedianReadDepth( ReferenceData ):
 
     def __call__(self, track, slice = None ):
         reference = self.reference
-        statement = "SELECT coverage_mean, coverage_median, exons_sum FROM %(track)s_transcript_counts" % locals()
+        statement = "SELECT coverage_sense_mean, coverage_sense_median, exons_sum FROM %(track)s_transcript_counts" % locals()
         data = [ (x[0], x[1], math.log( x[2]) ) for x in self.get( statement) if x[2] > 0 ]
         return odict( zip( ("mean coverage", "median coverage", "length" ), zip(*data) ) )
 

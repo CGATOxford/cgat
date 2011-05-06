@@ -173,6 +173,16 @@ The following table
 
    Number of reads per number of alignments (hits) per read.
 
+Bamstats
+++++++++
+
+The following list presents links to the results of the :term:`bamstats` tool.
+
+.. report:: Mapping.BamReport
+   :render: user
+
+   bamstats results
+
 Alignment statistics
 --------------------
 
