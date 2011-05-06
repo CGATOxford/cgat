@@ -2094,6 +2094,8 @@ def main( argv = None ):
                       help="filename with exon information (gtf formatted file)  [default=%default]."  )
     parser.add_option("-s", "--filename-seleno", dest="filename_seleno", type="string",
                       help="filename of a list of transcript ids that are selenoproteins [default=%default]."  )
+    parser.add_option("-c", "--filename-vcf", dest="filename_vcf", type="string",
+                      help="vcf file to parse [default=%default]."  )
     parser.add_option("-m", "--module", dest="modules", type="choice", action="append",
                       choices=("gene-counts", "transcript-effects", "contig-counts"),
                       help="modules to apply [default=%default]."  )
@@ -2107,6 +2109,7 @@ def main( argv = None ):
         genome_file = None,
         filename_exons = None,
         filename_seleno = None,
+        filename_vcf = None,
         modules = [],
         input_format = "pileup",
         vcf_sample = None,
@@ -2130,11 +2133,14 @@ def main( argv = None ):
 
     # setup iterator
     if options.input_format == "pileup":
-        iterator = pysam.Pileup.iterate(sys.stdin)
+        iterator = pysam.Pileup.iterate( options.stdin)
     elif options.input_format == "vcf":
         if not options.vcf_sample:
             raise ValueError( "vcf format requires sample id (--vcf-sample) to be set" )
-        iterator = pysam.Pileup.iterate_from_vcf( sys.stdin, options.vcf_sample )
+        if not options.filename_vcf:
+            raise ValueError( "reading from vcf requires vcf filename (--filename-vcf) to be set)" )
+
+        iterator = pysam.Pileup.iterate_from_vcf(options.filename_vcf, options.vcf_sample )
 
     ################################
     modules = []

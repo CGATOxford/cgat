@@ -529,7 +529,8 @@ def readAsIntervals( gff_iterator,
                      with_records = False,
                      merge_genes = False,
                      with_gene_id = False,
-                     with_transcript_id = False ):
+                     with_transcript_id = False,
+                     use_strand = False ):
     """read tuples of (start, end) from a GTF file.
 
     If with_values is True, a value is added to the tuples.
@@ -539,42 +540,40 @@ def readAsIntervals( gff_iterator,
     
     Ignores strand and everything but the coordinates.
 
+    If use_strand is True, intervals will be grouped by contig and strand.
+    The default is to group by contig only.
+
     Returns a dictionary of intervals by contig.
     """
 
     assert not (with_values and with_records), "both with_values and with_records are true."
-    intervals = {}
+    intervals = collections.defaultdict( list )
 
     if merge_genes:
         it = merged_gene_iterator( gff_iterator )
     else:
         it = gff_iterator
         
+    if use_strand:
+        keyf = lambda x: (x.contig, x.strand)
+    else:
+        keyf = lambda x: x.contig
+
     if with_values:
         for gff in it:
-            contig, start, end = gff.contig, gff.start, gff.end
-            if contig not in intervals: intervals[contig] = []
-            intervals[contig].append( (start,end,gff.score) )
+            intervals[keyf(gff)].append( (gff.start,gff.end,gff.score) )
     elif with_records:
         for gff in it:
-            contig, start, end = gff.contig, gff.start, gff.end
-            if contig not in intervals: intervals[contig] = []
-            intervals[contig].append( (start,end,gff) )
+            intervals[keyf(gff)].append( (gff.start,gff.end,gff) )
     elif with_gene_id:
         for gff in it:
-            contig, start, end = gff.contig, gff.start, gff.end
-            if contig not in intervals: intervals[contig] = []
-            intervals[contig].append( (start,end,gff.gene_id) )
+            intervals[keyf(gff)].append( (gff.start,gff.end,gff.gene_id) )
     elif with_transcript_id:
         for gff in it:
-            contig, start, end = gff.contig, gff.start, gff.end
-            if contig not in intervals: intervals[contig] = []
-            intervals[contig].append( (start,end,gff.transcript_id) )
+            intervals[keyf(gff)].append( (gff.start,gff.end,gff.transcript_id) )
     else:
         for gff in gff_iterator:
-            contig, start, end = gff.contig, gff.start, gff.end
-            if contig not in intervals: intervals[contig] = []
-            intervals[contig].append( (start,end) )
+            intervals[keyf(gff)].append( (gff.start,gff.end) )
         
     return intervals
 

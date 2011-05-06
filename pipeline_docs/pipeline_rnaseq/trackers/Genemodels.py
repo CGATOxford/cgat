@@ -144,7 +144,35 @@ class GenesetSummary( RnaseqTracker, SingleTableTrackerRows ):
 class GenesetMappability( RnaseqTracker ):
     '''return average mappability for all transcripts.'''
     mPattern = "_mappability"
-
     def __call__( self, track, slice = None ):
         return odict( (('mean', self.getValues( '''SELECT mean FROM %(track)s_mappability''' )), ))
 
+
+class TranscriptClassCounts( RnaseqTracker ):
+    '''return number of transcripts within each class.'''
+    pattern = "(.*)_class"
+    
+    def getSlices( self, subset = None ):
+        '''slice by contig'''
+        return self.getValues( "SELECT DISTINCT source FROM agg_agg_agg_class" )
+
+    def __call__( self, track, slice = None ):
+        return self.getDict( '''SELECT class || '-' || CASE WHEN sense THEN 'sense' ELSE 'antisense' END, 
+                                       COUNT(*) FROM %(track)s_class 
+                                       WHERE source = '%(slice)s' 
+                                       GROUP BY class, sense''' )
+
+class TranscriptClassCountsSummaryBySource( RnaseqTracker ):
+    '''return number of transcripts within each class.'''
+    pattern = "(.*)_class"
+    
+    def __call__( self, track, slice = None ):
+        return self.getDict( '''SELECT source, COUNT(*) FROM %(track)s_class GROUP BY source''')
+
+class TranscriptClassCountsSummaryByClass( RnaseqTracker ):
+    '''return number of transcripts within each class.'''
+    pattern = "(.*)_class"
+    
+    def __call__( self, track, slice = None ):
+        return self.getDict( '''SELECT class, COUNT(*) FROM %(track)s_class GROUP BY class''')
+    

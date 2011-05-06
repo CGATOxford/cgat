@@ -499,4 +499,63 @@ def plotGeneLevelReadExtension( infile, outfile ):
         R.png( outfilename, height=2000, width=1000 )
         R('''myplot( lscaled, utrs )''' )
         R['dev.off']()
-    
+
+#############################################################################    
+#############################################################################    
+#############################################################################    
+def filterAndMergeGTF( infile, outfile, remove_genes ):
+    '''filter gtf file infile with gene ids in remove_genes
+    and write to outfile.
+
+    The resultant gene models are merged by overlap.
+    '''
+
+    # write summary table
+    outf = IOTools.openFile( outfile + ".removed.tsv.gz", "w" )
+    outf.write("gene_id\tnoverlap\tsection\n" )
+    for gene_id, r in remove_genes.iteritems():
+        outf.write( "%s\t%i\t%s\n" % (gene_id, 
+                                      len(r),
+                                      ",".join(r) ) )
+        
+    outf.close()
+
+    # filter gtf file
+    tmpfile = P.getTempFile( "." )
+    inf = GTF.iterator( IOTools.openFile( infile ) )
+
+    for gtf in inf:
+        if gtf.gene_id in remove_genes: continue
+        tmpfile.write( "%s\n" % str(gtf))
+
+
+    tmpfile.close()
+    tmpfilename = tmpfile.name
+
+    # close-by exons need to be merged, otherwise 
+    # cuffdiff fails for those on "." strand
+
+    statement = '''
+    %(scriptsdir)s/gff_sort pos < %(tmpfilename)s
+    | python %(scriptsdir)s/gtf2gtf.py
+        --unset-genes="NONC%%06i"
+        --log=%(outfile)s.log
+    | python %(scriptsdir)s/gtf2gtf.py
+        --merge-genes
+        --log=%(outfile)s.log
+    | python %(scriptsdir)s/gtf2gtf.py
+        --merge-exons
+        --merge-exons-distance=5
+        --log=%(outfile)s.log
+    | python %(scriptsdir)s/gtf2gtf.py
+        --renumber-genes="NONC%%06i"
+        --log=%(outfile)s.log
+    | python %(scriptsdir)s/gtf2gtf.py
+        --renumber-transcripts="NONC%%06i"
+        --log=%(outfile)s.log
+    | %(scriptsdir)s/gff_sort genepos 
+    | gzip > %(outfile)s
+    '''
+    P.run()
+
+    os.unlink( tmpfilename )

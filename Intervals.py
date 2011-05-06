@@ -350,7 +350,6 @@ def joined_iterator( intervals1, intervals2 ):
         else:
             mto = min( xto, yto )
             mfrom = max( xfrom, yfrom )
-            overlap = mto - mfrom
 
             yield (mfrom, mto)
 
@@ -378,6 +377,11 @@ def intersect( intervals1, intervals2 ):
         if overlap: result.append( (start, end) )
 
     return result
+
+#----------------------------------------------------------------
+def getLength( intervals ):
+    '''retrun sum of intervals.'''
+    return sum([x[1]-x[0] for x in intervals])
 
 #----------------------------------------------------------------
 def truncate( intervals1, intervals2 ):

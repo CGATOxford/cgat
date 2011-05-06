@@ -81,7 +81,8 @@ def readIntervalsFromGFF( filename_gff,
                           with_records = False, 
                           fasta = None, 
                           merge_genes = False,
-                          format = "gtf" ):
+                          format = "gtf",
+                          use_strand = False ):
     """read intervals from a file or list.
     """
 
@@ -116,16 +117,19 @@ def readIntervalsFromGFF( filename_gff,
             e = GTF.readAsIntervals( gff_iterator, 
                                      with_values = with_values, 
                                      with_records = with_records,
-                                     merge_genes = merge_genes )
+                                     merge_genes = merge_genes,
+                                     use_strand = use_strand )
         elif format == "gff":
             e = GFF.readAsIntervals( gff_iterator, 
                                      with_values = with_values, 
-                                     with_records = with_records )
+                                     with_records = with_records,
+                                     use_strand = use_strand )
 
         if infile: infile.close()
 
     elif format == "bed":
         if merge_genes: raise ValueError("can not merge genes from bed format" )
+        if use_strand: raise NotImplementedError( "stranded comparison not implemented for bed format")
         iterator = Bed.iterator( IOTools.openFile(filename_gff, "r") )
         e = collections.defaultdict( list )
         if with_values:
@@ -149,11 +153,18 @@ def readIntervalsFromGFF( filename_gff,
 
     # translate names of contigs
     if fasta:
-        for contig in e.keys():
-            if  contig in fasta:
-                x = e[contig]
-                del e[contig]
-                e[fasta.getToken(contig)] = x
+        if use_strand:
+            for contig,strand in e.keys():
+                if  contig in fasta:
+                    x = e[contig]
+                    del e[contig,strand]
+                    e[fasta.getToken(contig),strand] = x
+        else:
+            for contig in e.keys():
+                if  contig in fasta:
+                    x = e[contig]
+                    del e[contig]
+                    e[fasta.getToken(contig)] = x
 
     return e
 
@@ -178,6 +189,9 @@ class Counter:
         # if true, entry is skipped
         self.skip = False
 
+        # counter 
+        self.counter = E.Counter()
+
     def __call__(self, gffs):
         self.mGFFs = gffs
         self.skip = False
@@ -201,6 +215,9 @@ class Counter:
 
     def getStrand(self):
         return self.mGFFs[0].strand
+
+    def getGeneId( self ):
+        return self.mGFFs[0].gene_id
     
     def getSequence(self, segments):
         """get sequence from a set of segments."""
@@ -382,6 +399,8 @@ class CounterOverlap(Counter):
 
     mIsGTF = False
 
+    mUseStrand = False
+
     def __init__(self, filename_gff, source, feature, *args, **kwargs):
         Counter.__init__(self, *args, **kwargs )
 
@@ -400,19 +419,20 @@ class CounterOverlap(Counter):
         e = readIntervalsFromGFF( filename_gff[0], source, feature, 
                                   self.mWithValues, self.mWithRecords, 
                                   self.mFasta, 
-                                  format = self.mOptions.filename_format )
+                                  format = self.mOptions.filename_format,
+                                  use_strand = self.mUseStrand )
 
         # convert intervals to intersectors
-        for contig in e.keys():
+        for key in e.keys():
             intersector = bx.intervals.intersection.Intersecter()
             if self.mWithValues or self.mWithRecords:
-                for start, end, value in e[contig]:
+                for start, end, value in e[key]:
                     intersector.add_interval( bx.intervals.Interval(start,end,value=value) )
             else:
-                for start, end in e[contig]:
+                for start, end in e[key]:
                     intersector.add_interval( bx.intervals.Interval(start,end) )
 
-            e[contig] = intersector
+            e[key] = intersector
 
         self.mIntersectors = e
 
@@ -444,6 +464,86 @@ class CounterOverlap(Counter):
 
         if n and len(intervals):
             self.mNOverlap = Intervals.calculateOverlap( segments, intervals )
+
+            self.mPOverlap1 = 100.0 * self.mNOverlap / sum( [ end - start for start, end in segments] ) 
+            self.mPOverlap2 = 100.0 * self.mNOverlap / sum( [ end - start for start, end in intervals ] )
+
+            self.mONOverlap = "%i" % self.mNOverlap
+            self.mOPOverlap1 = "%5.2f" % self.mPOverlap1
+            self.mOPOverlap2 = "%5.2f" % self.mPOverlap2
+        else:
+            self.mONOverlap = 0
+            self.mOPOverlap1 = 0
+            self.mOPOverlap2 = 0
+            self.mPOverlap1 = 0
+            self.mPOverlap2 = 0
+            self.mNOverlap = 0
+
+    def __str__(self):
+        return "\t".join( map(str, (self.mNOverlap1, 
+                                    self.mNOverlap2, 
+                                    self.mONOverlap, 
+                                    self.mOPOverlap1,
+                                    self.mOPOverlap2 ) ) )
+
+##-----------------------------------------------------------------------------------
+class CounterOverlapStranded(CounterOverlap):
+    """count overlap with segments in another file.
+
+    nover1 and nover2 count "exons".
+
+    The overlap is stranded. 
+
+    Negative values of overlap correspond antisense overlap with a feature.
+
+    If there is both sense and antisense overlap, a warning is raised.
+    """
+
+    mUseStrand = True
+
+    def __init__(self, *args, **kwargs ):
+        CounterOverlap.__init__(self, *args, **kwargs )
+
+    def count(self):
+
+        # collect overlapping segments
+        segments = self.getSegments()
+        contig, strand = self.getContig(), self.getStrand()
+        if self.mFasta: contig = self.mFasta.getToken( contig)
+            
+        def count( contig, strand ):
+            n, intervals = 0, []
+            if (contig,strand) in self.mIntersectors:
+                for start, end in segments:
+                    r = self.mIntersectors[contig,strand].find( start, end )
+                    intervals.extend( [ (x.start, x.end) for x in r ] )
+                    if r: n += 1
+            return n, intervals
+
+        sense = count( contig, strand )
+        if strand == "+": strand = "-"
+        else: strand = "+"
+        antisense = count( contig, strand )
+
+        if sense[0] and antisense[0]:
+            E.warn( "%s overlapping both sense and antisense features" % self.getGeneId())
+            self.counter.mixed_sense += 1
+
+        is_sense = sense[0] > 0
+
+        if  is_sense: n, intervals = sense
+        else: n, intervals = antisense
+            
+        self.mNOverlap1 = n
+        intervals = list(set(intervals))
+        self.mNOverlap2 = len(intervals)
+
+        intervals = Intervals.combineAtDistance( intervals,
+                                                 self.mMinIntronSize )
+
+        if n and len(intervals):
+            self.mNOverlap = Intervals.calculateOverlap( segments, intervals )
+            if not is_sense: self.mNOverlap = -self.mNOverlap
 
             self.mPOverlap1 = 100.0 * self.mNOverlap / sum( [ end - start for start, end in segments] ) 
             self.mPOverlap2 = 100.0 * self.mNOverlap / sum( [ end - start for start, end in intervals ] )
@@ -653,6 +753,9 @@ class Classifier(Counter):
     # some coverage of a transcript to assign it to a class
     mThresholdSomeCoverage = 10
 
+    # do not use strand
+    mUseStrand = False
+
     def __init__(self, filename_gff, *args, **kwargs ):
 
         Counter.__init__(self, *args, **kwargs )
@@ -671,15 +774,21 @@ class Classifier(Counter):
 
         self.mCounters = {}
         self.mKeys = []
+
+        if self.mUseStrand:
+            counter = CounterOverlapStranded
+        else:
+            counter = CounterOverlap
+
         for source in self.sources:             
             for feature in self.features:
                 key = "%s:%s" % (source, feature )
                 self.mKeys.append( key )
-                self.mCounters[key] = CounterOverlap( [gffs], 
-                                                      source = source, 
-                                                      feature = feature, 
-                                                      fasta = self.mFasta,
-                                                      options = self.mOptions )
+                self.mCounters[key] = counter( [gffs], 
+                                               source = source, 
+                                               feature = feature, 
+                                               fasta = self.mFasta,
+                                               options = self.mOptions )
                 
     def count(self):
         
@@ -687,16 +796,16 @@ class Classifier(Counter):
             self.mCounters[key](self.mGFFs)
 
         def s_min( *args ):
-            return sum( [ self.mCounters[x].mPOverlap1 for x in args ] ) >= self.mThresholdMinCoverage
+            return sum( [ abs(self.mCounters[x].mPOverlap1) for x in args ] ) >= self.mThresholdMinCoverage
 
         def s_excl( *args ):
-            return sum( [ self.mCounters[x].mPOverlap1 for x in args ] ) < (100 - self.mThresholdMinCoverage)
+            return sum( [ abs(self.mCounters[x].mPOverlap1) for x in args ] ) < (100 - self.mThresholdMinCoverage)
 
         def s_full( *args ):
-            return sum( [ self.mCounters[x].mPOverlap1 for x in args ] ) >= self.mThresholdFullCoverage
+            return sum( [ abs(self.mCounters[x].mPOverlap1) for x in args ] ) >= self.mThresholdFullCoverage
 
         def s_some( *args ):
-            return sum( [ self.mCounters[x].mPOverlap1 for x in args ] ) >= self.mThresholdSomeCoverage
+            return sum( [ abs(self.mCounters[x].mPOverlap1) for x in args ] ) >= self.mThresholdSomeCoverage
 
         # classify wether it is know or unknown
         self.mIsKnown = s_min( ":exon", ":CDS", ":UTR", ":UTR3", ":UTR5" ) 
@@ -801,16 +910,16 @@ class ClassifierChIPSeq(Classifier):
             self.mCounters[key](self.mGFFs)
 
         def s_min( *args ):
-            return sum( [ self.mCounters[x].mPOverlap1 for x in args ] ) >= self.mThresholdMinCoverage
+            return sum( [ abs(self.mCounters[x].mPOverlap1) for x in args ] ) >= self.mThresholdMinCoverage
 
         def s_excl( *args ):
-            return sum( [ self.mCounters[x].mPOverlap1 for x in args ] ) < (100 - self.mThresholdMinCoverage)
+            return sum( [ abs(self.mCounters[x].mPOverlap1) for x in args ] ) < (100 - self.mThresholdMinCoverage)
 
         def s_full( *args ):
-            return sum( [ self.mCounters[x].mPOverlap1 for x in args ] ) >= self.mThresholdFullCoverage
+            return sum( [ abs(self.mCounters[x].mPOverlap1) for x in args ] ) >= self.mThresholdFullCoverage
 
         def s_some( *args ):
-            return sum( [ self.mCounters[x].mPOverlap1 for x in args ] ) >= self.mThresholdSomeCoverage
+            return sum( [ abs(self.mCounters[x].mPOverlap1) for x in args ] ) >= self.mThresholdSomeCoverage
 
         self.mIsCDS, self.mIsUTR, self.mIsIntergenic = False, False, False
         self.mIsUpStream, self.mIsDownStream, self.mIsIntronic = False, False, False
@@ -855,128 +964,232 @@ class ClassifierChIPSeq(Classifier):
 
 
 ##-----------------------------------------------------------------------------------
-class ClassifierRNASeq(Classifier):
-    """classify RNASeq intervals based on a reference annotation.
+class ClassifierRNASeq(Counter):
+    """classify RNASeq transcripts based on a reference annotation.
 
-    This assumes the input is a genome annotation derived from an ENSEMBL gtf file
-    created with gtf2gff.py.
-    
-    A transcript is classified as (threshold = self.mThresholdMinCoverage)
+    Transcripts are classified by checking overlap with all known
+    transcripts.
 
-    known:     overlaps exons of a known gene
-    novel:     overlaps any other region but exons
-    ambiguous: can't say
+    If multiple transcripts overlap, select the one that is best matching.
 
-    The main classes are subclassed further:
+    +--------------------+------------------------------------------------------------+
+    |*Labels*            |*Contents*                                                  |
+    +--------------------+------------------------------------------------------------+
+    |complete            |Intron structure match - all exons are present, though first|
+    |                    |and last exon might be different.                           |
+    +--------------------+------------------------------------------------------------+
+    |extended-fragment   |At least one intron boundary shared. ``predicted``          |
+    |                    |transcript extends ``known`` transcript, but at the same is |
+    |                    |incomplete.                                                 |
+    +--------------------+------------------------------------------------------------+
+    |extension           |At least one intron boundary shared. ``predicted``          |
+    |                    |transcript extends ``known`` transcript.                    |
+    |                    |                                                            |
+    +--------------------+------------------------------------------------------------+
+    |fragment            |At least one intron boundary shared. ``predicted``          |
+    |                    |transcript is shorter than ``known`` transcript.            |
+    |                    |                                                            |
+    +--------------------+------------------------------------------------------------+
+    |alternative         |At least one intron boundary shared. ``predicted``          |
+    |                    |transcript has additional/missing exons/introns.            |
+    |                    |                                                            |
+    +--------------------+------------------------------------------------------------+
+    |unknown             |``predicted`` and ``known`` transcript overlap, but do not  |
+    |                    |fall in any of the above categories.                        |
+    |                    |                                                            |
+    +--------------------+------------------------------------------------------------+
 
-    The classification for known exons depends on the annotation in the gff file.
-    Theses are:
+    Furthermore, ``predicted`` transcripts that do not overlap the exons of a ``known`` 
+    transcript, but only introns, are classed as ``intronic``. All other transcripts
+    that overlap neither introns nor exons of a ``known`` transcript are labeled ``novel``.
 
-    pc:        protein coding
-    utr:       is a utr transcript (not overlapping the coding part of a gene)
-    pseudo:    pseudogene
-    npc:       non of the above
+    If the ``known`` transcript is protein coding, the ``predicted`` transcript is further 
+    checked if it overlaps with the ``known`` UTR only. These transcripts are labelled ``utr5``
+    and ``utr3``.
 
-    Novel transcripts are classified as:
+    Additionaly, the strandedness of the overlap is recorded as well (senes and antisense).
 
-    intronic-sense:          intronic transcripts of expressed genes that are
-                             within the same orientation.
-
-    intronic-antisense:      intronic transcripts of expressed genes in anti-sense direction.
-    
-    intronic-unprocessed:    intronic transcripts of expressed genes with orientation unknown
- 
-    intronic-novel:          intronic transcripts of genes that are not expressed.
-    
-    associated-runon:        possible polymerase run-off. These are transcripts within
-                             a certain number of bases from the 3' end of a gene within
-                             the same direction.
-                             
-    associated-downstream:   possible polymerase run-off. These are transcripts within
-                             a certain number of bases from the 3' end of a gene within
-                             the opposite or unknown direction.
-
-    associated-upstream:     transcripts within upstream regions of genes.
-
-    Expression is determined by read-counts of the whole gene. Taking flanking exons
-    does not work as these might be belong to an isoform that is not expressed.
-
-    The area for runon is determined by fitting an exponential decay function 
-    to regions within 50 kb downstream of the terminal exon of a gene. 
+    To decide, which transcript is the closest match, the resultant class are sorted as above 
+    in a priority list, where sense orientation has higher priority than anti-sense orientation.
+    For example, a ``predicted`` transcript will be rather labeled as ``sense intronic`` rather
+    than ``antisense fragment``.
 
     """
 
-    header = [ "is_cds", "is_utr", "is_upstream", "is_downstream", "is_intronic", "is_intergenic", "is_flank", "is_ambiguous" ]
+    header = [ "noverlap_transcripts", 
+               "noverlap_genes",
+               "match_transcript_id", "match_gene_id", "source", "class", "sense" ]
 
-    # sources to use for classification
-    sources = ("", ) # "protein_coding", "pseudogene", )
+    # number of residues that are permitted for negligible overlap
+    tolerance = 10
 
-    # minimum coverage of a transcript to assign it to a class
-    mThresholdMinCoverage = 95
+    # priority of classifications to select best match
+    priority = ( ( True, "complete", ),
+                 ( True, "fragment", ),
+                 ( True, "extended-fragment", ),
+                 ( True, "extension", ),
+                 ( True, "alternative", ),
+                 ( True, "unknown", ),
+                 ( True, "intronic", ),
+                 ( True, "utr5", ),
+                 ( True, "utr3", ),
+                 ( False, "complete", ),
+                 ( False, "fragment", ),
+                 ( False, "extended-fragment", ),
+                 ( False, "extension", ),
+                 ( False, "alternative", ),
+                 ( False, "unknown", ),
+                 ( False, "intronic", ),
+                 ( False, "utr5", ),
+                 ( False, "utr3", ),
+                 ( None, "novel" ) )
 
-    # full coverage of a transcript to assign it to a class
-    mThresholdFullCoverage = 99
+    def __init__(self, filename_gff, *args, **kwargs ):
 
-    # some coverage of a transcript to assign it to a class
-    mThresholdSomeCoverage = 10
+        Counter.__init__(self, *args, **kwargs )
+
+        if len(filename_gff) != 1:
+            raise ValueError("expected only one gff file" )
+
+        E.info( "loading data from %s" % (filename_gff[0]) )
+
+        map_transcript2gene = {}
+        transcripts = {}
+        transcript_intervals = IndexedGenome.IndexedGenome()
+
+        f = IOTools.openFile( filename_gff[0]) 
+
+        for t in GTF.transcript_iterator(GTF.iterator( f )):
+            t.sort( key = lambda x: x.start )
+            transcript_id, gene_id = t[0].transcript_id, t[0].gene_id
+            map_transcript2gene[transcript_id] = gene_id
+            transcripts[transcript_id] = t
+            transcript_intervals.add( t[0].contig, t[0].start, t[-1].end, transcript_id )
+
+        f.close()
+
+        E.info( "loaded data from %s" % (filename_gff[0]) )
+
+        self.transcripts = transcripts
+        self.transcript_intervals = transcript_intervals
+        self.map_transcript2gene = map_transcript2gene
+        self.map_gene2transcripts = dict( [ (y,x) for x,y in map_transcript2gene.iteritems() ] )
+
+        self.mapClass2Priority = dict( [(y,x) for x,y in enumerate(self.priority) ] )
+
+    def classify( self, exons, transcript_id ):
+
+        introns = Intervals.complement( exons )
+        strand = self.getStrand()
+        lexons = Intervals.getLength( exons )
+
+        start, end = exons[0][0], exons[-1][1]
+
+        gtfs = self.transcripts[transcript_id]
+        transcript_strand = gtfs[0].strand
+        transcript_exons = [ (x.start, x.end) for x in gtfs if x.feature == "exon" ]
+        transcript_start, transcript_end = transcript_exons[0][0], transcript_exons[-1][1]
+        transcript_lexons = Intervals.getLength( transcript_exons )
+        transcript_cds = [ (x.start, x.end) for x in gtfs if x.feature == "CDS" ]
+        transcript_lcds = Intervals.getLength( transcript_cds )
+        transcript_introns = Intervals.complement( transcript_exons )
+        transcript_lintrons = Intervals.getLength( transcript_introns )
+
+        tolerance = self.tolerance
+
+        # check if transcrip purely intronic
+        overlap_exons = Intervals.calculateOverlap( exons, transcript_exons )
+
+        if overlap_exons == 0: is_intronic = True
+        else: is_intronic = False
+        sense = strand == transcript_strand
+
+        cls = "unclassified"
+
+        if is_intronic:
+            cls = "intronic"
+        else:
+            # count (exactly) shared introns
+            shared_introns = [ x for x in introns if x in transcript_introns ]
+
+            # count shared boundaries
+            boundaries = sorted([ (x[0] - tolerance, x[0] + tolerance) for x in introns ] + 
+                                [ (x[1] - tolerance, x[1] + tolerance) for x in introns ])
+            transcript_boundaries = sorted([ (x[0], x[0] + 1) for x in transcript_introns ] + 
+                                           [ (x[1], x[1] + 1) for x in transcript_introns ])
+            shared_boundaries = Intervals.intersect( boundaries, transcript_boundaries )
+
+            # if there are no introns, matched_structure will be True
+            if len(exons) == 1:
+                matched_structure = approx_structure = True
+            else:
+                matched_structure = len(shared_introns) == len(introns)
+                approx_structure = len(shared_boundaries) > 0
+            
+            if matched_structure and abs(overlap_exons - transcript_lexons) < tolerance:
+                cls = "complete"
+            elif approx_structure and abs(overlap_exons - transcript_lexons) < tolerance:
+                cls = "complete"
+            elif approx_structure and (start < transcript_start or end > transcript_end):
+                if  lexons < transcript_lexons:
+                    cls = "extended-fragment"
+                else:
+                    cls = "extension"
+            elif approx_structure and lexons < transcript_lexons:
+                cls = "fragment"
+            elif approx_structure:
+                cls = "alternative"
+            else:
+                cls = "unknown"
+        
+        # intersect with CDS
+        if len(transcript_cds) > 0:
+            overlap_cds = Intervals.calculateOverlap( transcript_cds, exons )                
+            if overlap_cds < tolerance:
+                utrs = Intervals.truncate( transcript_exons, transcript_cds )
+                cds_start,cds_end = transcript_cds[0][0], transcript_cds[-1][1]
+                utr5 = [ x for x in utrs if x[1] < cds_start ]
+                utr3 = [ x for x in utrs if x[0] > cds_end ]
+                if strand == "-": utr5, utr3= utr3, utr5
+                
+                overlap_utr5 = Intervals.calculateOverlap( utr5, exons )
+                overlap_utr3 = Intervals.calculateOverlap( utr3, exons )
+                if overlap_utr5 >= lexons - tolerance:
+                    cls = "utr5"
+                elif overlap_utr3 >= lexons - tolerance:
+                    cls = "utr3"
+            
+        return cls, sense
 
     def count(self):
+
+        contig = self.getContig()
+        segments = self.getSegments()
+        introns = self.getIntrons()
+
+        overlaps = list(self.transcript_intervals.get( contig, segments[0][0], segments[-1][1] ))
         
-        for key in self.mKeys:
-            self.mCounters[key](self.mGFFs)
+        noverlap_transcripts = len(overlaps)
+        noverlap_genes = len( set( [self.map_transcript2gene[transcript_id] for start,end,transcript_id in overlaps] ) )
 
-        def s_min( *args ):
-            return sum( [ self.mCounters[x].mPOverlap1 for x in args ] ) >= self.mThresholdMinCoverage
-
-        def s_excl( *args ):
-            return sum( [ self.mCounters[x].mPOverlap1 for x in args ] ) < (100 - self.mThresholdMinCoverage)
-
-        def s_full( *args ):
-            return sum( [ self.mCounters[x].mPOverlap1 for x in args ] ) >= self.mThresholdFullCoverage
-
-        def s_some( *args ):
-            return sum( [ self.mCounters[x].mPOverlap1 for x in args ] ) >= self.mThresholdSomeCoverage
-
-        self.mIsCDS, self.mIsUTR, self.mIsIntergenic = False, False, False
-        self.mIsUpStream, self.mIsDownStream, self.mIsIntronic = False, False, False
-        self.mIsFlank, self.mIsAmbiguous = False, False
-
-        self.mIsCDS = s_full( ":CDS" )        
-        self.mIsUTR = s_full( ":UTR", ":UTR3", ":UTR5" ) 
-        self.mIsIntergenic = s_full( ":intergenic", ":telomeric" )
-
-        if not(self.mIsCDS or self.mIsUTR or self.mIsIntergenic):
-            self.mIsUpStream = s_some( ":5flank", ":UTR5" )
-            if not self.mIsUpStream: 
-                self.mIsDownStream = s_some( ":3flank", ":UTR3" )
-                if not self.mIsDownStream:
-                    self.mIsIntronic = s_some( ":intronic" )
-                    if not self.mIsIntronic:
-                        self.mIsFlank = s_some( ":flank" )
-
-        self.mIsAmbiguous = not( self.mIsUTR or \
-                                     self.mIsIntergenic or self.mIsIntronic or self.mIsCDS or \
-                                     self.mIsUpStream or self.mIsDownStream or self.mIsFlank)
+        results = []
+        
+        if len(overlaps) == 0:
+            results.append( (self.mapClass2Priority[(None,"novel")], 
+                             ( 0, 0, "", "", "novel", "novel", 1) ) )
+        else:
+            for start, end, transcript_id in overlaps:
+                cls, sense = self.classify(segments, transcript_id) 
+                source = self.transcripts[transcript_id][0].source
+                gene_id = self.map_transcript2gene[transcript_id]
+                results.append( (self.mapClass2Priority[(sense,cls)], 
+                                 ( noverlap_transcripts, noverlap_genes, transcript_id, gene_id, source, cls, int(sense) ) ) )
+        
+        results.sort()
+        self.result = results[0][1]
 
     def __str__(self):
-
-        def to( v ):
-            if v: return "1" 
-            else: return "0"
-
-        h = [ to(x) for x in (self.mIsCDS, 
-                              self.mIsUTR, 
-                              self.mIsUpStream,
-                              self.mIsDownStream,
-                              self.mIsIntronic,
-                              self.mIsIntergenic,
-                              self.mIsFlank,
-                              self.mIsAmbiguous,
-                              ) ]
-
-        for key in self.mKeys:
-            h.append( str(self.mCounters[key]) )
-        return "\t".join( h )
+        return "\t".join( map(str, self.result) )
 
 ##-----------------------------------------------------------------------------------
 class CounterOverrun(Counter):
@@ -2300,8 +2513,12 @@ if __name__ == '__main__':
                       help="select range on which counters will operate [default=%default]."  )
 
     parser.add_option("-c", "--counter", dest="counters", type="choice", action="append",
-                      choices=("length", "splice", "composition-na", "overlap", 
-                               "classifier", "classifier-chipseq",
+                      choices=("length", "splice", "composition-na", 
+                               "overlap", 
+                               "classifier", 
+                               "classifier-chipseq",
+                               "classifier-rnaseq",
+                               "overlap-stranded",
                                "overlap-transcripts",
                                "read-coverage", 
                                "read-extension", 
@@ -2427,7 +2644,9 @@ if __name__ == '__main__':
                                                                 section = section,
                                                                 options = options, prefix = prefix ) )
 
-        elif c in ( "overlap", "overlap-transcripts", 
+        elif c in ( "overlap", 
+                    "overlap-stranded",
+                    "overlap-transcripts", 
                     "proximity", "proximity-exclusive", "proximity-lengthmatched",
                     "neighbours",
                     "territories", 
@@ -2435,6 +2654,8 @@ if __name__ == '__main__':
                     "coverage" ):
             if c == "overlap":
                 template = CounterOverlap
+            if c == "overlap-stranded":
+                template = CounterOverlapStranded
             elif c == "overlap-transcripts":
                 template = CounterOverlapTranscripts
             elif c == "proximity":
@@ -2516,4 +2737,6 @@ if __name__ == '__main__':
         cc.output += 1
 
     E.info("%s" %str(cc))
+    for counter in counters:
+        E.info( "%s\t%s" % (repr(counter), str(counter.counter) ) )
     E.Stop()

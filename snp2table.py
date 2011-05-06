@@ -757,6 +757,8 @@ def main( argv = None ):
                       help="filename with exon information (gff formatted file)  [default=%default]."  )
     parser.add_option("-j", "--filename-junctions", dest="filename_junctions", type="string",
                       help="filename with junction information (filename with exon junctions)  [default=%default]."  )
+    parser.add_option("-c", "--filename-vcf", dest="filename_vcf", type="string",
+                      help="vcf file to parse [default=%default]."  )
     parser.add_option("-i", "--input-format", dest="input_format", type="choice",
                       choices = ("pileup", "vcf" ),
                       help="input format [default=%default]."  )
@@ -770,6 +772,7 @@ def main( argv = None ):
         filename_junctions = None,
         input_format = "pileup",
         vcf_sample = None,
+        filename_vcf = None,
         )
 
     ## add common options (-h/--help, ...) and parse command line 
@@ -793,8 +796,12 @@ def main( argv = None ):
     elif options.input_format == "vcf":
         if not options.vcf_sample:
             raise ValueError( "vcf format requires sample id (--vcf-sample) to be set" )
-        iterator = pysam.Pileup.iterate_from_vcf( sys.stdin, options.vcf_sample )
+        if not options.filename_vcf:
+            raise ValueError( "reading from vcf requires vcf filename (--filename-vcf) to be set)" )
+
+        iterator = pysam.Pileup.iterate_from_vcf(options.filename_vcf, options.vcf_sample )
     
+
     modules = []
     modules.append( BaseAnnotatorSNP() )
 

@@ -52,6 +52,17 @@ Genes and transcripts
    
    Number of genes/transcripyts
 
+
+Classification
+==============
+
+Transcripts are compared to a reference gene set. The following plot lists the various
+classes.
+
+
+
+
+
 Exon size summary
 =================
 

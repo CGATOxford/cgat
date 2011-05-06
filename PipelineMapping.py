@@ -88,7 +88,17 @@ class Mapper( object ):
         fastqfiles = []
         for infile in infiles:
 
-            if infile.endswith( ".sra"):
+            if infile.endswith( ".export.txt.gz"):
+                # single end illumina export
+                track = P.snip( os.path.basename( infile ), ".export.txt.gz" )
+                statement.append( """gunzip < %(infile)s 
+                     | awk '$11 != "QC" || $10 ~ /(\d+):(\d+):(\d+)/ \
+                        { if ($1 != "") { readname=sprintf( "%%s_%%s:%%s:%%s:%%s:%%s", $1,$2,$3,$4,$5,$6);}
+                        else { readname=sprintf( "%%s:%%s:%%s:%%s:%%s", $1,$3,$4,$5,$6); }
+                       printf("@%%s\\n%%s\\n+\\n%%s\\n",readname,$9,$10);}'
+                     > %(tmpdir_fastq)s/%(track)s.fastq""" % locals() )
+                
+            elif infile.endswith( ".sra"):
                 track = P.snip( infile, ".sra" )
 
                 # sneak preview to determine if paired end or single end
@@ -368,6 +378,100 @@ class Tophat( Mapper ):
             ''' % locals()
 
         return statement
+
+class Bowtie( Mapper ):
+    '''map with bowtie against genome.'''
+
+    def mapper( self, infiles, outfile ):
+        '''build mapping statement on infiles.
+
+        .. note:: a filter on bamfiles removes any /1 and /2
+            markers from reads. The reason is that these
+            markers are removed for paired-end data, but
+            not for single-end data and will cause
+            problems using read name lookup.
+        '''
+
+        num_files = [ len( x ) for x in infiles ]
+        
+        if max(num_files) != min(num_files):
+            raise ValueError("mixing single and paired-ended data not possible." )
+
+        nfiles = max(num_files)
+
+        # transpose files
+        infiles = zip( *infiles )
+
+        # add options specific to data type
+        data_options = []
+        if self.datatype == "solid":
+            data_options.append( "--quals --integer-quals --color" )
+#            data_options.append( "-f -C" )
+            if nfiles == 2:
+                # single end,
+                # second file will colors (unpaired data)
+                data_options.append( "--quals %s" % ",".join( infiles[1] ) )
+                nfiles -= 1
+            elif nfiles == 4:
+                data_options.append( "-Q1 %s -Q2 %s" % (",".join(infiles[2], infiles[3])) )
+                nfiles -= 2
+            else:
+                raise ValueError( "unexpected number of files" )
+            index_file = "%(bowtie_index_dir)s/%(genome)s_cs"
+        else:
+            index_file = "%(bowtie_index_dir)s/%(genome)s"
+
+        data_options = " ".join( data_options )
+
+        data_options = " ".join( data_options )
+        tmpdir_fastq = self.tmpdir_fastq
+
+        if nfiles == 1:
+            infiles = ",".join( infiles[0])
+            statement = '''
+                bowtie --quiet --sam
+                       --threads %%(bowtie_threads)i
+                       %(data_options)s
+                       %%(bowtie_options)s
+                       %(index_file)s
+                       %(infiles)s
+                       2>%(outfile)s.log
+               | awk -v OFS="\\t" '{sub(/\/[12]$/,"",$1);print}'
+               | samtools import %%(reffile)s - %(tmpdir_fastq)s/out.bam 1>&2 2>> %(outfile)s.log;
+            ''' % locals()
+
+        elif nfiles == 2:
+            infiles1 = ",".join( infiles[0] )
+            infiles2 = ",".join( infiles[1] )
+
+            statement = '''
+                bowtie --quiet --sam
+                       --threads %%(bowtie_threads)i
+                       %(data_options)s
+                       %%(bowtie_options)s
+                       %(index_prefix)s
+                       -1 %(infiles1)s -2 %(infiles2)s 
+                       2>%(outfile)s.log
+               | samtools import %%(reffile)s - %(tmpdir_fastq)s/out.bam 1>&2 2>> %(outfile)s.log;
+            ''' % locals()            
+        else:
+            raise ValueError( "unexpected number reads to map: %i " % nfiles )
+
+        return statement
+
+    def postprocess( self, infiles, outfile ):
+        '''collect output data and postprocess.'''
+        
+        track = P.snip( outfile, ".bam" )
+        tmpdir_fastq = self.tmpdir_fastq
+
+        statement = '''
+             samtools sort %(tmpdir_fastq)s/out.bam %(track)s;
+             samtools index %(outfile)s;
+             ''' % locals()
+
+        return statement
+
 
 class BowtieTranscripts( Mapper ):
     '''map with bowtie against transcripts.'''

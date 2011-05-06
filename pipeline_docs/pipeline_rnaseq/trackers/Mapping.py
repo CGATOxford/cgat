@@ -36,4 +36,36 @@ class AlignmentQualityByCycle( RnaseqTracker, SingleTableTrackerHistogram ):
 class AlignmentQualityDistribution( RnaseqTracker, SingleTableTrackerHistogram ):
     table = "alignment_stats_quality_distribution_metrics"
     column = "quality"
+
+##############################################################
+##############################################################
+##############################################################
+class BamReport( RnaseqTracker ):
+    tracks = [ "all" ]
+
+    slices = ("genome", "accepted", "mismapped" )
+
+    def __call__(self, track, slice = None ):
+        edir = EXPORTDIR
+
+        toc_text = []
+        link_text = []
+        
+        filenames = sorted( [x.asFile() for x in TRACKS ] )
+        
+        
+        for fn in filenames:
+            toc_text.append( "* %(fn)s_" % locals()) 
+            link_text.append( ".. _%(fn)s: %(edir)s/bamstats/%(fn)s.%(slice)s.html" % locals() )
+            
+        toc_text = "\n".join(toc_text)
+        link_text =  "\n".join(link_text)
+
+        rst_text = '''
+%(toc_text)s
+
+%(link_text)s
+''' % locals()
+
+        return odict( (("text", rst_text),) )
     

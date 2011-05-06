@@ -62,11 +62,11 @@ def count( Samfile samfile,
         flag = read._delegate.core.flag
 
         # is paired and read2
-        if flag & 1 and flag & 128:
+        #if flag & 1 and flag & 128:
             # ignore second reads to avoid double counting pairs
             # this needs to be done properly by counting in
             # pairs
-            continue
+        #    continue
 
         ninput += 1
 

@@ -154,13 +154,15 @@ class SubstitutionMatrixNucleotides( VariantsTracker ):
     '''
     mPattern = "_annotations_summary$"
 
-    def getSlices( self, subset = None):
-        #if subset == "all": return ["all"]
-        #else: return ["A","B","C","D", "G","I","M","N","P","R","S","U","V","X"]
-        if subset == None:
-            return []
-        else:
-            return subset
+    slices = ("all", "coding", "noncoding" )
+
+    # def getSlices( self, subset = None):
+    #     #if subset == "all": return ["all"]
+    #     #else: return ["A","B","C","D", "G","I","M","N","P","R","S","U","V","X"]
+    #     if subset == None:
+    #         return []
+    #     else:
+    #         return subset
 
     def __call__(self, track, slice=None):
 
@@ -197,13 +199,7 @@ class TransitionTransversionRatios( VariantsTracker ):
     '''
     mPattern = "_annotations_summary$"
 
-    def getSlices( self, subset = None):
-        #if subset == "all": return ["all"]
-        #else: return ["A","B","C","D", "G","I","M","N","P","R","S","U","V","X"]
-        if subset == None:
-            return []
-        else:
-            return subset
+    slices = ("all", "coding", "noncoding" )
 
     def __call__(self, track, slice=None):
 

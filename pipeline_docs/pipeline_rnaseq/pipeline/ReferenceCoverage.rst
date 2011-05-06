@@ -2,8 +2,7 @@
 Reference gene set
 ===================
 
-This section looks at the reference gene set
-and the reads.
+This section looks at the reference gene set and the reads.
 
 Coverage
 ========
@@ -12,7 +11,8 @@ Gene coverage
 --------------
 
 The following plots examine the :term:`model coverage` of transcripts and genes
-in the reference gene set by reads. 
+in the reference gene set by reads. Note that only coverage of sense reads is
+reported.
 
 .. report:: Reference.TranscriptCoverage
    :render: line-plot

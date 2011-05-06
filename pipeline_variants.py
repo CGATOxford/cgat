@@ -194,15 +194,14 @@ class TracksVCF (PipelineTracks.Tracks ):
     def load( self, filename, exclude = None ):
         '''load tracks from a vcf file.'''
         tracks = []
-        v = pysam.VCF.VCFFile()
+        v = pysam.VCF()
         v.setversion( 40 )
-
+        
         if not os.path.exists( filename):
             self.tracks = tracks
             return self
+        v.connect( filename )
 
-        infile = IOTools.openFile( filename )
-        vcfstream = v.parse( infile )
         if exclude: to_exclude = [ re.compile(x) for x in exclude]
         
         for sample in v.getsamples():
@@ -915,10 +914,10 @@ def buildAnnotations( infile, outfile, sample ):
     bases = "annotations_bases"
 
     statement = """
-    gunzip < %(infile)s
-    | python %(scriptsdir)s/snp2table.py 
+    python %(scriptsdir)s/snp2table.py 
         --input-format=vcf
         --vcf-sample=%(sample)s
+        --filename-vcf=%(infile)s
         --genome-file=%(genome_dir)s/%(genome)s 
         --filename-annotations=%(bases)s 
         --log=%(outfile)s.log 
@@ -1011,14 +1010,13 @@ def buildEffects( infile, outfile, sample ):
 
 
     statement = """
-    gunzip 
-    < %(infile)s 
-    | python %(scriptsdir)s/snp2counts.py 
+    python %(scriptsdir)s/snp2counts.py 
         --genome-file=%(genome_dir)s/%(genome)s
         --input-format=vcf
         --vcf-sample=%(sample)s
         --module=transcript-effects 
         --filename-seleno=%(seleno)s 
+        --filename-vcf=%(infile)s
         --filename-exons=%(transcripts)s 
         --output-filename-pattern=%(outfile)s.%%s.gz
         --log=%(outfile)s.log 
@@ -1781,7 +1779,6 @@ def buildPolyphenInput( infiles, outfile ):
 
         table = P.toTable( infile ) 
         track = table[:-len("_effects")]
-        print statement % locals()
         cc.execute(statement % locals())
 
         counts = E.Counter()
