@@ -285,7 +285,7 @@ TISSUES = PipelineTracks.Aggregate( TRACKS, labels = ("tissue",) )
 TRACKS_MASTER = EXPERIMENTS.keys() + CONDITIONS.keys()
 
 # tracks for subtraction of unstim condition
-if "tracks_subtract" in PARAMS:
+if "tracks_subtract" in PARAMS and PARAMS["tracks_subtract"]:
     TOSUBTRACT = [ x for x in EXPERIMENTS if not x.condition == PARAMS["tracks_unstimulated"] ]
 else:
     TOSUBTRACT = []
