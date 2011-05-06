@@ -418,6 +418,11 @@ def makeReadCorrelationTable( infiles, outfile ):
             except ValueError:
                 continue
             
+            # require at least two data points
+            if len(data) < 2:
+                break
+
+            # only take position with minimum number of reads
             for x in range(len(data)):
                 if data[x] < correlation_cutoff: break
             else:
@@ -425,6 +430,8 @@ def makeReadCorrelationTable( infiles, outfile ):
 
     for infile in infiles:
         mat = numpy.array( [ x for x in selector( gzip.open(infile, "r") )] )
+        if len(mat) == 0: continue
+
         corr = numpy.corrcoef(mat[:,0], mat[:,1])
         outf.write( "%s\t%i\t%i\t%f\n" % (
             infile,
@@ -729,7 +736,7 @@ def exportMotifSequences( infile, outfile ):
 
     dbhandle = sqlite3.connect( PARAMS["database"] )
 
-    fasta = IndexedFasta.IndexedFasta( PARAMS["genome"] )
+    fasta = IndexedFasta.IndexedFasta( os.path.join( PARAMS["genome_dir"], PARAMS["genome"] ) )
 
     cc = dbhandle.cursor()
     statement = "SELECT interval_id, contig, start, end FROM %s_intervals" % P.quote( track )
@@ -765,7 +772,7 @@ def exportMotifControlSequences( infile, outfile ):
 
     dbhandle = sqlite3.connect( PARAMS["database"] )
 
-    fasta = IndexedFasta.IndexedFasta( PARAMS["genome"] )
+    fasta = IndexedFasta.IndexedFasta( os.path.join( PARAMS["genome_dir"], PARAMS["genome"] ) )
 
     table = "%s_intervals" % (P.quote( track ) )
     cc = dbhandle.cursor()
@@ -906,6 +913,10 @@ def makeReproducibility( infiles, outfile ):
 
     dbhandle = sqlite3.connect( PARAMS["database"] )
 
+    if len(infiles) < 2:
+        P.touch(outfile)
+        return
+
     data = []
     for replicate in infiles:
         cc = dbhandle.cursor()
@@ -973,7 +984,7 @@ def makeReproducibility( infiles, outfile ):
 def loadReproducibility( infile, outfile ):
     '''load Reproducibility results
     '''
-    P.load( infile, outfile )
+    P.load( infile, outfile, options="--allow-empty" )
 
 @follows( loadReproducibility )
 def reproducibility(): pass
@@ -1065,7 +1076,7 @@ def runMEME( infile, outfile ):
     target_path = os.path.join( os.path.abspath(PARAMS["exportdir"]), "meme", outfile )
 
     dbhandle = sqlite3.connect( PARAMS["database"] )
-    fasta = IndexedFasta.IndexedFasta( PARAMS["genome"] )
+    fasta = IndexedFasta.IndexedFasta( os.path.join( PARAMS["genome_dir"], PARAMS["genome"] ) )
 
     track = P.snip(infile, ".fasta")
 
@@ -1082,7 +1093,7 @@ def runMEME( infile, outfile ):
 
     L.info( "runMeme: %s: using at most %i sequences for pattern finding" % (track, cutoff) )
 
-    fasta = IndexedFasta.IndexedFasta( PARAMS["genome"] )
+    fasta = IndexedFasta.IndexedFasta( os.path.join( PARAMS["genome_dir"], PARAMS["genome"] ) )
 
     tmpdir = tempfile.mkdtemp( dir = "." )
     tmpfasta =  os.path.join( tmpdir, "in.fa")
@@ -1160,7 +1171,7 @@ def writeSequencesForIntervals( track, filename,
 
     dbhandle = sqlite3.connect( PARAMS["database"] )
 
-    fasta = IndexedFasta.IndexedFasta( PARAMS["genome"] )
+    fasta = IndexedFasta.IndexedFasta( os.path.join( PARAMS["genome_dir"], PARAMS["genome"] ) )
 
     cc = dbhandle.cursor()
         
@@ -1189,7 +1200,7 @@ def writeSequencesForIntervals( track, filename,
         L.info( "writeSequencesForIntervals %s: using at most %i sequences for pattern finding" % (track, cutoff) )
     L.info( "writeSequencesForIntervals %s: masker=%s" % (track,masker))
 
-    fasta = IndexedFasta.IndexedFasta( PARAMS["genome"] )
+    fasta = IndexedFasta.IndexedFasta( os.path.join( PARAMS["genome_dir"], PARAMS["genome"]) )
     masker_object = Masker.MaskerDustMasker()
 
     sequences = []
