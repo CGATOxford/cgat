@@ -25,7 +25,7 @@
 Variant annotation pipeline
 ===========================
 
-:Author: Andreas Heger
+:Author: Andreas Heger & David Sims
 :Release: $Id$
 :Date: |today|
 :Tags: Python
@@ -33,7 +33,8 @@ Variant annotation pipeline
 The Variants pipeline attempts to annotate variants in
 a :term:`vcf` formatted file. It computes
  
-   1. the effects of SNPs on transcripts and genes
+   1. The effects of SNPs on transcripts and genes
+   2. The effects of indels on transcripts and genes
 
 This pipeline works on a single genome.
 
@@ -150,7 +151,6 @@ import PipelineDatabase as PDatabase
 import scipy.stats
 import Stats
 import pysam
-import gzip
 
 # only update R if called as pipeline
 # otherwise - failure with sphinx
@@ -166,16 +166,10 @@ import rpy2.robjects.numpy2ri
 
 # load options from the config file
 import Pipeline as P
-P.getParameters( 
-    ["%s.ini" % __file__[:-len(".py")],
-     "../pipeline.ini",
-     "pipeline.ini" ] )
+P.getParameters( ["%s.ini" % __file__[:-len(".py")], "../pipeline.ini", "pipeline.ini" ] )
 
 PARAMS = P.PARAMS
-PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],
-                                       "pipeline_annotations.py" )
-
-## need to be refactored
+PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"], "pipeline_annotations.py" )
 
 SEPARATOR = "|"
 
@@ -219,10 +213,8 @@ TRACKS = TracksVCF( PipelineTracks.Sample ).load( "variants.vcf.gz" )
 ###################################################################
 ###################################################################
 def connect():
-    '''connect to database.
-
-    This method also attaches to helper databases.
-    '''
+    '''connect to the database.
+    This method also attaches to the annotation database.'''
 
     dbh = sqlite3.connect( PARAMS["database"] )
     statement = '''ATTACH DATABASE '%s' as annotations''' % (PARAMS["annotations_database"])
@@ -486,18 +478,10 @@ def importPseudogenes( infile, outfile ):
     '''
 
     P.run()
-    
-###################################################################
-###################################################################
-###################################################################
-## MAIN PIPELINE
-###################################################################
-###################################################################
-###################################################################
 
-############################################################
-############################################################
-############################################################
+###################################################################
+###################################################################
+###################################################################
 @merge( None, "seleno.list")
 def buildSelenoList( infile, outfile ):
     '''export a list of seleno cysteine transcripts.'''
@@ -511,12 +495,6 @@ def buildSelenoList( infile, outfile ):
     outf.write("transcript_id\n")
     outf.write("\n".join( [x[0] for x in cc.execute( statement) ] ) + "\n" )
     outf.close()
-
-###################################################################
-###################################################################
-###################################################################
-## Targets for prepare
-###################################################################
 
 ###################################################################
 ###################################################################
@@ -645,6 +623,15 @@ def makeGeneCounts( infile, outfile ):
     """ 
     P.run()
 
+
+###################################################################
+###################################################################
+###################################################################
+## MAIN PIPELINE
+###################################################################
+###################################################################
+###################################################################
+
 ###################################################################
 ###################################################################
 ###################################################################
@@ -676,7 +663,7 @@ def buildAnnotations( infile, outfile, sample ):
             suffix('.annotations.gz'), 
             '_annotations.load' )
 def loadAnnotations( infile, outfile ):
-    '''load annotations'''
+    '''load variant annotations into database'''
 
     tablename = P.toTable( outfile )
 
