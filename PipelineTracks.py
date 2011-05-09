@@ -175,11 +175,12 @@ class Sample(object):
 class Sample3(Sample):
     '''a sample/track.
     '''
-    attributes = ( "tissue", "condition", "replicate")
+    attributes = ( "tissue", "condition", "replicate" )
 
 class Aggregate:
     
-    def __init__(self, tracks, 
+    def __init__(self, 
+                 tracks, 
                  track = None,
                  labels = None,
                  ):
@@ -207,6 +208,7 @@ class Aggregate:
             
         self.track2groups = {}
         for track in tracks:
+        
             key = track.asAggregate( *self.aggregates )
             if key not in self.track2groups:
                 self.track2groups[key] = []
@@ -301,6 +303,6 @@ class Tracks:
         else:
             return self.tracks
 
-def getSamplesInTrack( track,tracks ):
+def getSamplesInTrack( track, tracks ):
     '''return all tracks in *tracks* that constitute *track*.'''
     return Aggregate( tracks, track = track )[track]

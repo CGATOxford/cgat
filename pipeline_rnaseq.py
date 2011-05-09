@@ -1339,7 +1339,7 @@ def loadContextStats( infiles, outfile ):
     
     cc = Database.executewait( dbhandle, '''ALTER TABLE %(tablename)s ADD COLUMN mapped INTEGER''' % locals())
     statement = '''UPDATE %(tablename)s SET mapped = 
-                                       (SELECT CASE b.mapped FROM bam_stats AS b 
+                                       (SELECT b.mapped FROM bam_stats AS b 
                                             WHERE %(tablename)s.track = b.track)''' % locals()
 
     cc = Database.executewait( dbhandle, statement )
