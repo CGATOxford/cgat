@@ -1064,7 +1064,7 @@ def loadEffects( infile, outfile ):
 ###################################################################
 ###################################################################
 @merge(  buildEffects, "effects.load" )
-def mergeEffects( infile, outfile ):
+def mergeEffects( infiles, outfile ):
     '''load transcript effects into single table.'''
 
     tablename = P.toTable( outfile )
@@ -1084,15 +1084,15 @@ def mergeEffects( infile, outfile ):
     tmpfilename = outf.name
 
     statement = '''cat tmpfilename |
-                   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
-                       --index=transcript_id \
-                       --table=%(tablename)s \
+                   python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
+                       --index=transcript_id 
+                       --table=%(tablename)s 
                    > %(outfile)s'''
     P.run()
 
     for suffix in ("cds", "intron", "splicing", "translation"):
 
-        outf = open('effects'+suffix+'.txt','w')
+        outf = open('effects_'+suffix+'.txt','w')
         first = True
         for f in infiles:
             track = P.snip( os.path.basename(f), ".effects.gz" )
