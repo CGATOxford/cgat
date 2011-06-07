@@ -2,9 +2,6 @@
 Gene set summary
 =================
 
-Overview
-========
-
 The following table lists the number of genes, transcripts and proteins
 in the gene set.
 
@@ -13,4 +10,5 @@ in the gene set.
    :groupby: track
 
    Table with the number of genes, transcripts and proteins
-   in the gene set.   
+   in the gene set.
+

@@ -66,8 +66,7 @@ def getPeakShift( infile ):
 ############################################################
 ############################################################
 def getMappedReads( infile ):
-    '''return number of reads mapped.
-    '''
+    '''return number of reads mapped. '''
     for lines in open(infile,"r"):
         data = lines[:-1].split("\t")
         if data[1].startswith( "without duplicates"):
@@ -90,7 +89,6 @@ def getMinimumMappedReads( infiles ):
 ############################################################
 ############################################################
 ############################################################
-##
 ############################################################
 def buildNormalizedBAM( infiles, outfile, normalize = True ):
     '''build a normalized BAM file.
@@ -292,8 +290,7 @@ def exportPeaksAsBed( infile, outfile ):
 ############################################################
 ############################################################
 def mergeBedFiles( infiles, outfile ):
-    '''generic method for merging bed files.
-    '''
+    '''generic method for merging bed files. '''
 
     if len(infiles) < 2:
         raise ValueError( "expected at least two files to merge into %s" % outfile )
@@ -471,7 +468,9 @@ def loadMACS( infile, outfile, bamfile ):
     bamfile.
     '''
 
-    track = infile[:-len(".macs")]    
+    #track = infile[:-len(".macs")]    
+    track = P.snip( os.path.basename(infile), ".macs" )
+    folder = os.path.dirname(infile)
     infilename = infile + "_peaks.xls"
     filename_diag = infile + "_diag.xls"
     filename_r = infile + "_model.r"
@@ -487,7 +486,7 @@ def loadMACS( infile, outfile, bamfile ):
 
     samfiles = [ pysam.Samfile( bamfile, "rb" ) ]
     offsets = [ shift / 2 ]
-    outtemp = P.getTempFile()
+    outtemp = open(infile + '.tmp', 'w') #P.getTempFile()
 
     outtemp.write( "\t".join( ( \
                 "interval_id", 
@@ -584,9 +583,7 @@ def loadMACS( infile, outfile, bamfile ):
             # ignore "file exists" exception
             pass
 
-        statement = '''
-        R --vanilla < %(track)s.macs_model.r > %(outfile)s
-        '''
+        statement = '''R --vanilla < %(folder)s/%(track)s.macs_model.r > %(outfile)s '''
         
         P.run()
 

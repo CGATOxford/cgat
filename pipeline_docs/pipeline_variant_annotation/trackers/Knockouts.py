@@ -16,8 +16,9 @@ class TranscriptsTruncatedStopsMin( TrackerEffects ):
         field_where = p + "nalleles"
 
         statement = '''SELECT COUNT(*)
-        FROM %(track)s_effects WHERE %(field_where)s > 0 AND %(field_select)s >= %(min_truncated)i''' % \
-            self.members(locals())
+                       FROM %(track)s_effects 
+                       WHERE %(field_where)s > 0 
+                       AND %(field_select)s >= %(min_truncated)i''' % self.members(locals())
         
         return odict((("transcripts with stops", self.getValue( statement )),))
 
@@ -34,7 +35,9 @@ class TranscriptsTruncatedStopsMax( TrackerEffects ):
         field_where = p + "nalleles"
 
         statement = '''SELECT COUNT(*)
-        FROM %(track)s_effects WHERE %(field_where)s > 0 AND %(field_select)s >= %(min_truncated)i''' %\
+                       FROM %(track)s_effects 
+                       WHERE %(field_where)s > 0 
+                       AND %(field_select)s >= %(min_truncated)i''' %\
             self.members(locals())
         
         return odict((("transcripts with stops", self.getValue( statement )),))
@@ -48,10 +51,8 @@ class GenesTruncatedStops( TrackerEffects ):
     def __call__(self, track, slice = None ):
 
         p = self.getPrefix(slice)
-        statement = '''
-                 SELECT MIN(%(field)s) AS m
-                 FROM
-                 %(track)s_effects AS e,
+        statement = '''SELECT MIN(%(field)s) AS m
+                 FROM %(track)s_effects AS e,
                  annotations.transcript_info AS i
                  WHERE i.transcript_id = e.transcript_id
                  GROUP BY i.gene_id

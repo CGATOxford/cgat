@@ -7,17 +7,14 @@ from SphinxReport.Tracker import *
 from SphinxReport.Utils import PARAMS as P
 from SphinxReport.odict import OrderedDict as odict
 
-SNP_CODES = ("E", "O")
-
 ###################################################################
 ###################################################################
 ## parameterization
-
 EXPORTDIR=P['variants_exportdir']
 DATADIR=P['variants_datadir']
 DATABASE=P['variants_backend']
-
 ANNOTATIONS_DB=P['annotations_database']
+SNP_CODES = ("E", "O")
 
 ###########################################################################
 class VariantsTracker( TrackerSQL ):

@@ -17,7 +17,6 @@ class TrackerEffects( VariantsTracker ):
         return prefix
     
     def getSlices(self, subset = None ):
-
         if subset == None:
             return []            
         elif "separate" in subset:
@@ -381,8 +380,7 @@ class VariantsCDSEffectCodesPerPosition( VariantsTracker ):
         return r
 
 class VariantsCDSVariantCodes( TrackerVariants ):
-    '''type of cds variants according variant code.
-    '''
+    '''type of cds variants according variant code.'''
     column = "variant_code"
     
     def process(self,data):

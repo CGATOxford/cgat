@@ -17,7 +17,7 @@ use FileHandle;
 my $host   = '';
 my $user   = '';
 my $pass   = '';
-my $port   = 3306;
+my $port   = 5306;
 my $dbname = '';
 my @chromosomes;
 my @repeattypes;

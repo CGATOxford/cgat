@@ -166,17 +166,16 @@ import Pipeline as P
 P.getParameters( ["%s.ini" % __file__[:-len(".py")], "../pipeline.ini", "pipeline.ini" ] )
 
 PARAMS = P.PARAMS
-PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"], "pipeline_annotations.py" )
+PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],
+                                       "pipeline_annotations.py" )
 
-
+SEPARATOR = "|"
 
 ###################################################################
 ###################################################################
 ###################################################################
 ## Helper functions mapping tracks to conditions, etc
 import PipelineTracks
-
-SEPARATOR = "|"
 
 class TracksVCF (PipelineTracks.Tracks ):
     def load( self, filename, exclude = None ):
@@ -228,25 +227,21 @@ def connect():
 ## Annotations
 ###################################################################
 ###################################################################
-@follows( buildBaseAnnotations, buildExonAnnotations)
 @files( [ ("variants.vcf.gz", "%s.annotations.gz" % x, x ) for x in TRACKS ] )
 def buildAnnotations( infile, outfile, sample ):
     """annotate snps with gene set."""
 
     to_cluster = True
-    
     bases = "annotations_bases"
 
-    statement = """
-    gunzip < %(infile)s
-    | python %(scriptsdir)s/snp2table.py 
-        --input-format=vcf
-        --vcf-sample=%(sample)s
-        --genome-file=%(genome_dir)s/%(genome)s 
-        --filename-annotations=%(bases)s 
-        --log=%(outfile)s.log 
-    | gzip > %(outfile)s
-    """ 
+    statement = """python %(scriptsdir)s/snp2table.py 
+                       --input-format=vcf
+                       --filename-vcf=%(infile)s
+                       --vcf-sample=%(sample)s
+                       --genome-file=%(genome_dir)s/%(genome)s 
+                       --filename-annotations=%(bases)s 
+                       --log=%(outfile)s.log 
+                   | gzip > %(outfile)s """ 
     P.run()
 
 ###################################################################
@@ -260,8 +255,7 @@ def loadAnnotations( infile, outfile ):
 
     tablename = P.toTable( outfile )
 
-    statement = '''gunzip 
-    < %(infile)s
+    statement = '''gunzip < %(infile)s
     |python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
               --quick
               --map=gene_id:str 
@@ -276,7 +270,7 @@ def loadAnnotations( infile, outfile ):
 ###################################################################
 ###################################################################
 @merge( buildAnnotations, 'annotations.load' )
-def mergeAnnotations( infile, outfile ):
+def mergeAnnotations( infiles, outfile ):
     '''load variant annotations into single database table'''
 
     tablename = P.toTable( outfile )
@@ -293,9 +287,8 @@ def mergeAnnotations( infile, outfile ):
         for i in range(1, len(lines)):
             outf.write( "%s\t%s" % (track,lines[i] ))
     outf.close()
-    tmpfilename = outf.name
 
-    statement = '''cat tmpfilename |
+    statement = '''cat anno.txt |
                    python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
                        --table=%(tablename)s 
                    > %(outfile)s'''
@@ -360,29 +353,23 @@ def buildEffects( infile, outfile, sample ):
     seleno = "seleno.list"
     transcripts = os.path.join( PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_geneset_cds_gtf" ] )
 
-    statement = """
-    gunzip 
-    < %(infile)s 
-    | python %(scriptsdir)s/snp2counts.py 
-        --genome-file=%(genome_dir)s/%(genome)s
-        --input-format=vcf
-        --vcf-sample=%(sample)s
-        --module=transcript-effects 
-        --filename-seleno=%(seleno)s 
-        --filename-exons=%(transcripts)s 
-        --output-filename-pattern=%(outfile)s.%%s.gz
-        --log=%(outfile)s.log 
-    | gzip 
-    > %(outfile)s
-    """ 
+    statement = """python %(scriptsdir)s/snp2counts.py 
+                       --genome-file=%(genome_dir)s/%(genome)s
+                       --filename-vcf=%(infile)s
+                       --input-format=vcf
+                       --vcf-sample=%(sample)s
+                       --module=transcript-effects 
+                       --filename-seleno=%(seleno)s 
+                       --filename-exons=%(transcripts)s 
+                       --output-filename-pattern=%(outfile)s.%%s.gz
+                       --log=%(outfile)s.log 
+                   | gzip > %(outfile)s """ 
     P.run()
 
 ###################################################################
 ###################################################################
 ###################################################################
-@transform(  buildEffects, 
-             suffix(".effects.gz"), 
-             "_effects.load" )
+@transform(  buildEffects, suffix(".effects.gz"), "_effects.load" )
 def loadEffects( infile, outfile ):
     '''load transcript effects into tables.'''
 
@@ -400,9 +387,8 @@ def loadEffects( infile, outfile ):
     for suffix in ("cds", "intron", "splicing", "translation"):
         
         statement = '''
-        gunzip 
-        < %(infile)s.%(suffix)s.gz
-        |python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
+        gunzip < %(infile)s.%(suffix)s.gz
+        | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
         --allow-empty
         --index=transcript_id 
         --table=%(root)s_effects_%(suffix)s 
@@ -416,11 +402,11 @@ def loadEffects( infile, outfile ):
 ###################################################################
 ###################################################################
 @merge(  buildEffects, "effects.load" )
-def mergeEffects( infile, outfile ):
+def mergeEffects( infiles, outfile ):
     '''load transcript effects into single table.'''
 
     tablename = P.toTable( outfile )
-    outf = open('effect.txt','w')
+    outf = open('effects.txt','w')
     first = True
     for f in infiles:
         track = P.snip( os.path.basename(f), ".effects.gz" )
@@ -433,22 +419,22 @@ def mergeEffects( infile, outfile ):
         for i in range(1, len(lines)):
             outf.write( "%s\t%s" % (track,lines[i] ))
     outf.close()
-    tmpfilename = outf.name
 
-    statement = '''cat tmpfilename |
+    statement = '''cat effect.txt |
                    python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
                        --index=transcript_id \
                        --table=%(tablename)s \
                    > %(outfile)s'''
     P.run()
 
-    for suffix in ("cds", "intron", "splicing", "translation"):
-
-        outf = open('effects'+suffix+'.txt','w')
+    for suffix in ("cds", "intron", "splicing", "translation", "genes"):
+     
+        outf = open('effects.'+suffix+'.txt','w')
         first = True
         for f in infiles:
             track = P.snip( os.path.basename(f), ".effects.gz" )
-            statfile = P.snip(f, ".gz" )  + suffix + ".gz"
+            statfile =f + "."  + suffix + ".gz"
+            print(statfile)
             if not os.path.exists( statfile ): 
                 E.warn( "File %s missing" % statfile )
                 continue
@@ -460,7 +446,7 @@ def mergeEffects( infile, outfile ):
         outf.close()
         tmpfilename = outf.name
         
-        statement = '''cat tmpfilename |
+        statement = '''cat %(tmpfilename)s |
                        python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
                            --allow-empty
                            --index=transcript_id 
@@ -473,9 +459,7 @@ def mergeEffects( infile, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-@transform(loadEffects, 
-           suffix("_effects.load"),
-           "_effects_genes.load" )
+@transform(loadEffects, suffix("_effects.load"), "_effects_genes.load" )
 def summarizeEffectsPerGene( infile, outfile ):
     '''summarize effects on a per-gene level.'''
     
@@ -503,6 +487,45 @@ def summarizeEffectsPerGene( infile, outfile ):
          %(track)s_effects AS e
     WHERE i.transcript_id = e.transcript_id
     GROUP BY i.gene_id
+    ''' % locals()
+    
+    Database.executewait( dbhandle, "DROP TABLE IF EXISTS %(tablename)s" % locals() )
+    Database.executewait( dbhandle, statement )
+    Database.executewait( dbhandle, "CREATE INDEX %(tablename)s_gene_id ON %(tablename)s (gene_id)" % locals())
+    dbhandle.commit()
+
+    P.touch(outfile)
+
+###################################################################
+###################################################################
+###################################################################
+@merge(mergeEffects, "effects_genes.load" )
+def mergeEffectsPerGene( infile, outfile ):
+    '''summarize effects on a per-gene level.'''
+    
+    tablename = outfile[:-len(".load")]
+
+    dbhandle = connect()
+
+    statement = '''
+    CREATE TABLE %(tablename)s AS
+    SELECT DISTINCT 
+           track,
+           gene_id, 
+           COUNT(*) AS ntranscripts,
+           MIN(e.nalleles) AS min_nalleles,
+           MAX(e.nalleles) AS max_nalleles,
+           MIN(e.stop_min) AS min_stop_min,
+           MAX(e.stop_min) AS max_stop_min,
+           MIN(e.stop_max) AS min_stop_max,
+           MAX(e.stop_max) AS max_stop_max,
+           SUM( CASE WHEN stop_min > 0 AND cds_len - stop_min * 3 < last_exon_start THEN 1  
+                     ELSE 0 END) AS nmd_knockout,
+           SUM( CASE WHEN stop_max > 0 AND cds_len - stop_max * 3 < last_exon_start THEN 1  
+                     ELSE 0 END) AS nmd_affected
+    FROM annotations.transcript_info as i, effects AS e
+    WHERE i.transcript_id = e.transcript_id
+    GROUP BY i.gene_id, track
     ''' % locals()
     
     Database.executewait( dbhandle, "DROP TABLE IF EXISTS %(tablename)s" % locals() )
@@ -559,10 +582,6 @@ def buildPolyphenInput( infiles, outfile ):
     cc = dbhandle.cursor()
 
     infiles.sort()
-
-    # uniprot mapping:
-    #map_transcript2id = dict( 
-    #cc.execute( "SELECT transcript_id, trembl_acc FROM ensembl2uniprot WHERE trembl_acc IS NOT NULL").fetchall() )
 
     # ensembl mapping
     map_transcript2id = dict(

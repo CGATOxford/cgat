@@ -917,7 +917,7 @@ def ontologies():
     '''create and load ontologies'''
     pass
 
-@follows( geneset, fasta, promotors, genome, repeats, ontologies )
+@follows( geneset, fasta, promotors, genome, ontologies )
 def full():
     '''build all targets.'''
     pass
