@@ -80,6 +80,9 @@ class Mapper( object ):
 
         Mapping qualities are changed to solexa format.
         '''
+
+        assert len(infiles) > 0, "no input files for mapping"
+
         tmpdir_fastq = P.getTempDir()
         #print outfile
 
@@ -93,11 +96,13 @@ class Mapper( object ):
                 track = P.snip( os.path.basename( infile ), ".export.txt.gz" )
                 statement.append( """gunzip < %(infile)s 
                      | awk '$11 != "QC" || $10 ~ /(\d+):(\d+):(\d+)/ \
-                        { if ($1 != "") { readname=sprintf( "%%s_%%s:%%s:%%s:%%s:%%s", $1,$2,$3,$4,$5,$6);}
-                        else { readname=sprintf( "%%s:%%s:%%s:%%s:%%s", $1,$3,$4,$5,$6); }
-                       printf("@%%s\\n%%s\\n+\\n%%s\\n",readname,$9,$10);}'
+                        { if ($1 != "") 
+                             { readname=sprintf( "%%%%s_%%%%s:%%%%s:%%%%s:%%%%s:%%%%s", $1,$2,$3,$4,$5,$6);}
+                        else { readname=sprintf( "%%%%s:%%%%s:%%%%s:%%%%s:%%%%s", $1,$3,$4,$5,$6); }
+                       printf("@%%%%s\\n%%%%s\\n+\\n%%%%s\\n",readname,$9,$10);}'
                      > %(tmpdir_fastq)s/%(track)s.fastq""" % locals() )
-                
+                fastqfiles.append( ("%s/%s.fastq" % (tmpdir_fastq, track),) )
+
             elif infile.endswith( ".sra"):
                 track = P.snip( infile, ".sra" )
 
@@ -150,7 +155,10 @@ class Mapper( object ):
             else:
                 raise NotImplementedError( "unknown file format %s" % infile )
 
+        
         self.tmpdir_fastq = tmpdir_fastq
+
+        assert len(fastqfiles) > 0, "no fastq files for mapping"
 
         return "; ".join( statement) + ";", fastqfiles
 

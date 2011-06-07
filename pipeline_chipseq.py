@@ -94,6 +94,9 @@ For example::
    GM00855-unstim-R1.export.txt.gz
    GM00855-unstim-R2.export.txt.gz
 
+Alternatively, :term:`fastq` formatted files can be used, simply replace the ``.export.txt.gz``
+with ``.fastq.gz`` in the above example.
+
 Note that neither ``sample``, ``condition`` or ``replicate`` should contain 
 ``_`` (underscore) and ``.`` (dot) characters as these are used by the pipeline
 to delineate tasks.
@@ -311,14 +314,13 @@ TRACKS_CORRELATION = TRACKS_MASTER + list(TRACKS) + [ getSubtracted( x ) for x i
 ###################################################################
 ###################################################################
 ###################################################################
-## Version 1: import from given bed files
-###################################################################
 if PARAMS["mapping_mapper"] == "bowtie":
     
     ############################################################
     ############################################################
     ############################################################
-    @transform( ("*.fastq.1.gz", 
+    @transform( ("*.export.txt.gz",
+                 "*.fastq.1.gz", 
                  "*.fastq.gz",
                  "*.sra",
                  "*.csfasta.gz" ),
