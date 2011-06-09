@@ -14,7 +14,6 @@ def importFromBiomart( outfile, columns,
     *columns* is a dictionary mapping biomart columns to columns
     in the output tables. *biomart* and *dataset* denote the 
     database and dataset to get the data from.
-
     '''
 
     R.library("biomaRt")

@@ -69,3 +69,32 @@ class BamReport( RnaseqTracker ):
 
         return odict( (("text", rst_text),) )
     
+
+##############################################################
+##############################################################
+##############################################################
+class FastQCReport( RnaseqTracker ):
+    tracks = [ "all" ]
+
+    def __call__(self, track, slice = None ):
+        edir = EXPORTDIR
+
+        toc_text = []
+        link_text = []
+        
+        filenames = sorted( [x.asFile() for x in TRACKS ] )
+        
+        for fn in filenames:
+            toc_text.append( "* %(fn)s_" % locals()) 
+            link_text.append( ".. _%(fn)s: %(edir)s/fastqc/%(fn)s.genome_fastqc/fastqc_report.html" % locals() )
+            
+        toc_text = "\n".join(toc_text)
+        link_text =  "\n".join(link_text)
+
+        rst_text = '''
+%(toc_text)s
+
+%(link_text)s
+''' % locals()
+
+        return odict( (("text", rst_text),) )

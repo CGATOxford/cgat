@@ -84,6 +84,17 @@ Residual ECDF plot
    
    Fitting overview
 
+Volcano plots
+=============
+
+.. report:: DifferentialExpression.VolcanoPlotDESeq
+   :render: scatter-rainbow-plot
+   :groupby: track
+   :layout: column-3
+   :width: 300
+
+   Volcano plots (log fold change against -log10 pvalue) 
+   for all pairwise comparisons
 
 DESeq Glossary
 ==============

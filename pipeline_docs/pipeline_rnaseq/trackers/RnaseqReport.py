@@ -82,7 +82,7 @@ def linkToUCSC( contig, start, end ):
     '''build URL for UCSC.'''
 
     ucsc_database = UCSC_DATABASE
-    link = "`%(contig)s:%(start)i..%(end)i <http://genome.ucsc.edu/cgi-bin/hgTracks?db=%(ucsc_database)s&position=%(contig)s:%(start)i..%(end)i>`_" \
+    link = "`%(contig)s:%(start)i-%(end)i <http://genome.ucsc.edu/cgi-bin/hgTracks?db=%(ucsc_database)s&position=%(contig)s:%(start)i..%(end)i>`_" \
         % locals()
     return link
 

@@ -104,6 +104,12 @@ geneset_flat.gtf.gz
    A :term:`gtf` formatted flattened gene models. All overlapping transcripts
    have been merged. This set includes both coding and non-coding transcripts.
 
+pseudogenes.gtf.gz
+   A :term:`gtf` formatted file with pseudogenes. Pseudogenes are either taken from
+   the ENSEMBL annotation or processed transcripts with similarity to protein coding
+   sequence. As some protein coding genes contain processed transcripts without an ORF,
+   Pseudogenes might overlap with protein coding transcripts.
+
 peptides.fasta
    A :term:`fasta` formatted file of peptide sequences of coding transcripts.
 
@@ -167,6 +173,8 @@ import MySQLdb
 
 import IndexedFasta, IOTools, GFF
 import PipelineGeneset as PGeneset
+import PipelineBiomart as PBiomart
+import PipelineDatabase as PDatabase
 import PipelineGO
 
 ###################################################
@@ -348,10 +356,36 @@ def loadCDSStats( infile, outfile ):
 ############################################################
 @files( PARAMS["ensembl_filename_gtf"], "transcript_info.load" )
 def loadTranscriptInformation( infile, outfile ):
-    '''load the transcript set.'''
-    PGeneset.loadTranscriptInformation( infile, 
-                                        outfile,
-                                        only_proteincoding = PARAMS["ensembl_only_proteincoding"] )
+    '''load transcript information.'''
+    
+#    PGeneset.loadTranscriptInformation( infile, 
+#                                        outfile,
+#                                       only_proteincoding = PARAMS["ensembl_only_proteincoding"] )
+
+    tablename = P.toTable( outfile )
+
+    columns = {
+        "ensembl_gene_id" : "gene_id",
+        "ensembl_transcript_id" : "transcript_id",
+        "ensembl_peptide_id" : "protein_id",
+        "gene_biotype" : "gene_biotype",
+        "transcript_biotype" : "transcript_biotype",
+        "source" : "source",
+        "status" : "gene_status",
+        "transcript_status" : "transcript_status",
+        "external_gene_id" : "gene_name",
+        "external_transcript_id" : "transcript_name",
+        }
+
+    data = PBiomart.biomart_iterator( columns.keys()
+                                      , biomart = "ensembl"
+                                      , dataset = "hsapiens_gene_ensembl" )
+
+    PDatabase.importFromIterator( outfile
+                                  , tablename
+                                  , data
+                                  , columns = columns 
+                                  , indices = ("gene_id", "transcript_id", "protein_id", "gene_name", "transcript_name") )
 
 ###################################################################
 ###################################################################
@@ -397,6 +431,16 @@ def loadProteinStats( infile, outfile ):
     '''load the transcript set.'''
 
     PGeneset.loadProteinStats( infile, outfile )
+
+############################################################
+############################################################
+############################################################
+@files( (buildGeneSet,
+         buildPeptideFasta),
+         "pseudogenes.gtf.gz" )
+def buildPseudogenes( infile, outfile ):
+    '''build set of pseudogenes.'''
+    PGeneset.buildPseudogenes( infile, outfile )
 
 ############################################################
 ############################################################
@@ -581,7 +625,6 @@ def importRNAAnnotationFromUCSC( infile, outfile ):
     repclasses="','".join(PARAMS["ucsc_rnatypes"].split(",") )
     dbhandle = connectToUCSC()
     getRepeatsFromUCSC( dbhandle, repclasses, outfile )
-
 
 ############################################################
 ############################################################

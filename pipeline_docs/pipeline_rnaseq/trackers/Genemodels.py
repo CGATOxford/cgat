@@ -3,11 +3,6 @@ import os, sys, re, types, itertools
 from SphinxReport.Tracker import *
 from SphinxReport.odict import OrderedDict as odict
 
-'''
-cuffcompare results.
-
-'''
-
 from RnaseqReport import *
 
 class TrackerGenemodels( RnaseqTracker ):
@@ -46,7 +41,7 @@ class GeneModelsCodes( RnaseqTracker ):
         return tuple("=cjeiopruxs.*")
 
     def __call__(self, track, slice = None ):
-        return self.getValue( """SELECT COUNT(*) FROM %(track)s WHERE code = '%(slice)s'""" )
+        return self.getValue( """SELECT COUNT(*) AS ntransfrags FROM %(track)s WHERE code = '%(slice)s'""" )
 
 class GeneModelsSharedLoci( RnaseqTracker ):
     '''number of times a locus appears in experiments.'''
@@ -54,7 +49,7 @@ class GeneModelsSharedLoci( RnaseqTracker ):
     mAsTables = True
     
     def __call__(self, track, slice = None ):
-        return self.getAll( "SELECT nexperiments, count(*) FROM %(track)s group by nexperiments" )
+        return self.getDict( "SELECT nexperiments, count(*) AS nloci FROM %(track)s group by nexperiments" )
 
 class GeneModelsSharedTransfrags( RnaseqTracker ):
     '''number of times a transfrag appears in experiments.'''
@@ -65,7 +60,8 @@ class GeneModelsSharedTransfrags( RnaseqTracker ):
         return tuple("=cjeiopruxs.*")
     
     def __call__(self, track, slice = None ): 
-        return self.getAll( "SELECT nexperiments, count(*) FROM %(track)s WHERE code = '%(slice)s' group by nexperiments" )
+        data = self.getDict( "SELECT nexperiments, count(*) AS ntransfrags FROM %(track)s WHERE code = '%(slice)s' group by nexperiments" )
+        return data
 
 class ExpressionByClass( RnaseqTracker ):
     '''number of times a transfrag appears in experiments.'''
@@ -140,7 +136,6 @@ class GenesetSummary( RnaseqTracker, SingleTableTrackerRows ):
     table = "geneset_stats"
     column = "track"
 
-
 class GenesetMappability( RnaseqTracker ):
     '''return average mappability for all transcripts.'''
     mPattern = "_mappability"
@@ -157,8 +152,9 @@ class TranscriptClassCounts( RnaseqTracker ):
         return self.getValues( "SELECT DISTINCT source FROM agg_agg_agg_class" )
 
     def __call__( self, track, slice = None ):
-        return self.getDict( '''SELECT class || '-' || CASE WHEN sense THEN 'sense' ELSE 'antisense' END, 
-                                       COUNT(*) FROM %(track)s_class 
+        return self.getDict( '''SELECT class || '-' || CASE WHEN sense = 's' THEN 'sense' WHEN sense = 'a' THEN 'antisense' ELSE 'anysense' END, 
+                                       COUNT(*) AS ntranscripts
+                                       FROM %(track)s_class 
                                        WHERE source = '%(slice)s' 
                                        GROUP BY class, sense''' )
 
@@ -167,12 +163,18 @@ class TranscriptClassCountsSummaryBySource( RnaseqTracker ):
     pattern = "(.*)_class"
     
     def __call__( self, track, slice = None ):
-        return self.getDict( '''SELECT source, COUNT(*) FROM %(track)s_class GROUP BY source''')
+        return self.getDict( '''SELECT source, COUNT(*) AS ntranscripts FROM %(track)s_class GROUP BY source''')
 
 class TranscriptClassCountsSummaryByClass( RnaseqTracker ):
     '''return number of transcripts within each class.'''
     pattern = "(.*)_class"
     
     def __call__( self, track, slice = None ):
-        return self.getDict( '''SELECT class, COUNT(*) FROM %(track)s_class GROUP BY class''')
+        return self.getDict( '''SELECT class, COUNT(*) AS ntranscripts FROM %(track)s_class GROUP BY class''')
     
+class BuildSummary( RnaseqTracker ):
+    '''summary of gene set construction.'''
+    pattern = "(.*)_build_summary"
+    
+    def __call__( self, track, slice = None ):
+        return self.getAll( '''SELECT category, transcripts FROM %(track)s_build_summary''')

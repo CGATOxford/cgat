@@ -577,15 +577,20 @@ def readAsIntervals( gff_iterator,
         
     return intervals
 
-def readAndIndex( iterator ):
+def readAndIndex( iterator, with_value = True ):
     '''read from gtf stream and index.
 
     returns an :class:`IndexedGenome.IndexedGenome`
     '''
 
-    index = IndexedGenome.IndexedGenome()
-    for gtf in iterator:
-        index.add( gtf.contig, gtf.start, gtf.end, gtf )
+    if with_value:
+        index = IndexedGenome.IndexedGenome()
+        for gtf in iterator:
+            index.add( gtf.contig, gtf.start, gtf.end, gtf )
+    else:
+        index = IndexedGenome.Simple()
+        for gtf in iterator:
+            index.add( gtf.contig, gtf.start, gtf.end )
 
     return index
 

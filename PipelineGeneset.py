@@ -6,6 +6,7 @@ as input.
 
 import sys, re, os, tempfile, collections, shutil, gzip, sqlite3
 
+import IOTools
 import Pipeline as P
 import Experiment as E
 import GTF
@@ -486,12 +487,31 @@ def buildCDS( infile, outfile ):
 ############################################################
 ############################################################
 def loadTranscripts( infile, outfile ):
-    '''load the transcript set.'''
+    '''load the transcript set into the database.
+    '''
     table = outfile[:-len(".load")]
     
     statement = '''
     gunzip < %(infile)s 
     | python %(scriptsdir)s/gtf2tab.py
+    | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
+              --index=transcript_id 
+              --index=gene_id 
+              --table=%(table)s 
+    > %(outfile)s'''
+    P.run()
+
+############################################################
+############################################################
+############################################################
+def loadTranscript2Gene( infile, outfile ):
+    '''build and load a map of transcript to gene from gtf file
+    '''
+    table = outfile[:-len(".load")]
+    
+    statement = '''
+    gunzip < %(infile)s
+    | python %(scriptsdir)s/gtf2tab.py --map -v 0
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
               --index=transcript_id 
               --index=gene_id 
@@ -634,3 +654,101 @@ def compareGeneSets( infiles, outfile ):
     '''
     P.run()
 
+
+############################################################
+############################################################
+############################################################
+def buildPseudogenes( infiles, outfile ):
+    '''annotate genomic regions with reference gene set.
+
+    *infile* is an ENSEMBL gtf file.
+
+    This task selects all pseudogenic transcripts in a single file.
+
+    Pseudogenes are:
+    
+    * gene_type or transcript_type contains the phrase "pseudo"
+
+    * feature 'processed_transcript' with similarity to protein coding genes.
+
+    Pseudogenic transcripts can overlap with protein coding transcripts.
+    '''
+
+    infile_gtf, infile_peptides_fasta = infiles
+
+    tmpfile1 = P.getTempFilename( ".")
+
+    statement = '''
+    zcat %(infile_gtf)s 
+    | awk '$2 ~ /processed/'
+    | python %(scriptsdir)s/gff2fasta.py 
+            --is-gtf
+            --genome-file=%(genome_dir)s/%(genome)s
+            --log=%(outfile)s.log
+    > %(tmpfile1)s
+    '''
+
+    P.run()
+
+    statement = '''
+    cat %(tmpfile1)s 
+    | %(cmd-farm)s --split-at-regex=\"^>(\S+)\" --chunksize=100 --log=%(outfile)s.log
+    "exonerate --target %%STDIN%%
+              --query %(infile_peptides_fasta)s
+              --model protein2dna 
+              --bestn 1 
+              --score 200
+              --ryo \\"%%qi\\\\t%%ti\\\\t%%s\\\\n\\" 
+              --showalignment no --showsugar no --showcigar no --showvulgar no
+    " 
+    | grep -v -e "exonerate" -e "Hostname"
+    | gzip > %(outfile)s.links.gz
+    '''
+
+    P.run()
+
+    os.unlink( tmpfile1 )
+
+    inf = IOTools.openFile( "%s.links.gz" % outfile )
+    best_matches = {}
+    for line in inf:
+        peptide_id, transcript_id, score = line[:-1].split("\t")
+        score = int(score)
+        if transcript_id in best_matches and best_matches[transcript_id][0] > score:
+            continue
+        best_matches[ transcript_id ] = (score, peptide_id )
+        
+    inf.close()
+
+    E.info( "found %i best links" % len(best_matches) )
+    new_pseudos = set(best_matches.keys())
+    
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    cc = dbhandle.cursor()
+    known_pseudos = set([ x[0] for x in cc.execute("""SELECT DISTINCT transcript_id 
+                              FROM transcript_info 
+                               WHERE transcript_biotype like '%pseudo%' OR
+                                     gene_biotype like '%pseudo%' """ ) ])
+
+    E.info( "pseudo processed=%i, known pseudos=%i, intersection=%i" % (
+            ( len(new_pseudos), len(known_pseudos), len( new_pseudos.intersection( known_pseudos) ) ) ) )
+    
+    all_pseudos = new_pseudos.union( known_pseudos )
+
+    c = E.Counter()
+
+    outf = IOTools.openFile( outfile, "w" )
+    inf = GTF.iterator( IOTools.openFile( infile_gtf ) )
+    for gtf in inf:
+        c.input += 1
+        if gtf.transcript_id not in all_pseudos:
+            continue
+        c.output += 1
+        outf.write( "%s\n" % gtf )
+    outf.close()
+        
+    E.info( "exons: %s" % str(c))
+    
+
+
+    

@@ -1,4 +1,4 @@
-import os, sys, re, types, itertools
+import os, sys, re, types, itertools, math
 
 from SphinxReport.Tracker import *
 from SphinxReport.Utils import PARAMS as P
@@ -19,6 +19,11 @@ class TrackerDESeqFit( Tracker ):
         level = "gene"
         geneset = slice
         method = self.method
+
+        filename = "%(edir)s/%(method)s/%(geneset)s_%(method)s_%(level)s_fit_%(track)s.png" % locals()
+
+        # fitting information will not exist if there are no replicates
+        if not os.path.exists( filename ): return None
 
         rst_text = '''
 %(level)s %(track)s %(geneset)s
@@ -121,4 +126,101 @@ class TrackerDEPairwiseCuffdiff( TrackerDifferentialExpression ):
     method = "cuffdiff"
     levels = CUFFDIFF_LEVELS
 
-                       
+
+#############################################################
+#############################################################
+#############################################################
+##
+#############################################################
+class DifferentialExpressionComparison( RnaseqTracker ):
+
+    tracks = list( itertools.combinations( ("deseq", "cuffdiff"), 2 ))
+    slices = [ x.asFile() for x in GENESET_TRACKS ]
+
+class DifferentialExpressionOverlap( DifferentialExpressionComparison ):
+
+    def __call__(self, track, slice = None ):
+        
+        pair1, pair2 = track
+        
+        a = self.get('''SELECT test_id, track1, track2 FROM %(slice)s_%(pair1)s_gene_diff WHERE significant''')
+        b = self.get('''SELECT test_id, track1, track2 FROM %(slice)s_%(pair2)s_gene_diff WHERE significant''')
+
+        a = set(map(str,a))
+        b = set(map(str,b))
+        
+        return odict( ( (pair1, len(a)),
+                        (pair2, len(b)),
+                        ("shared", len(a.intersection(b)) ) ) )
+        
+
+class DifferentialExpressionCorrelationPValue( DifferentialExpressionComparison ):
+    '''fold change estimates per gene set.'''        
+    def __call__(self, track, slice = None ):
+        
+        pair1, pair2 = track
+
+        data = self.getAll( '''
+                   SELECT a.pvalue as %(pair1)s, b.pvalue as %(pair2)s
+                          FROM %(slice)s_%(pair1)s_gene_diff AS a, 
+                               %(slice)s_%(pair2)s_gene_diff AS b 
+                   WHERE a.test_id = b.test_id AND a.track1 = b.track1 AND a.track2 = b.track2
+                         AND ABS( a.lfold ) != 10
+                         AND ABS( b.lfold ) != 10
+                         AND a.pvalue IS NOT NULL
+                         AND b.pvalue IS NOT NULL
+                         ''' )
+
+        for k in data.keys():
+            data[k] = [ math.log10( x + 0.0000001 ) for x in data[k]  ]
+
+        return data
+
+class DifferentialExpressionCorrelationFoldChange( DifferentialExpressionComparison ):
+    '''fold change estimates per gene set.'''
+    def __call__(self, track, slice = None ):
+        
+        pair1, pair2 = track
+
+        data = self.getAll( '''
+                   SELECT a.lfold as %(pair1)s, b.lfold as %(pair2)s
+                          FROM %(slice)s_%(pair1)s_gene_diff AS a, 
+                               %(slice)s_%(pair2)s_gene_diff AS b 
+                   WHERE a.test_id = b.test_id AND a.track1 = b.track1 AND a.track2 = b.track2
+                         AND ABS( a.lfold ) != 10
+                         AND ABS( b.lfold ) != 10''' )
+
+
+        return data
+
+
+#############################################################
+#############################################################
+#############################################################
+##
+#############################################################
+class VolcanoTracker( RnaseqTracker ):
+    '''insert volcano plots.'''
+    tracks = [ x.asFile() for x in GENESET_TRACKS ]
+    
+    def __call__(self, track, slice = None ):
+
+        data = self.getAll( """SELECT lfold,
+                                    pvalue, 
+                                    CASE WHEN value1 < value2 THEN value2 ELSE value1 END AS max_fpkm 
+                                    FROM %(track)s_%(method)s_%(slice)s_diff 
+                                    WHERE pvalue IS NOT NULL AND 
+                                          lfold IS NOT NULL AND 
+                                          max_fpkm > 0""" )
+        if data:
+            data["pvalue"] = [ -math.log10( x + 0.00001 ) for x in data["pvalue"] ]
+            data["max_fpkm"] = [ math.log10( x + 0.00001 ) for x in data["max_fpkm"] ]
+        return data
+                   
+class VolcanoPlotCuffdiff( VolcanoTracker ):
+    method = "cuffdiff"
+    slices = CUFFDIFF_LEVELS
+
+class VolcanoPlotDESeq( VolcanoTracker ):
+    method = "deseq"
+    slices = ("gene",)

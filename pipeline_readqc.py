@@ -155,8 +155,9 @@ PARAMS = P.PARAMS
 @follows(mkdir(PARAMS["exportdir"]), mkdir(os.path.join(PARAMS["exportdir"], "fastqc")) )
 @transform( ("*.fastq.1.gz", 
               "*.fastq.gz",
-              "*.sra"),
-              regex( r"(\S+).(fastq.1.gz|fastq.gz|sra)"),
+              "*.sra",
+	      "*.csfasta.gz" ),
+              regex( r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz)"),
               r"\1.fastqc")
 def runFastqc(infiles, outfile):
         '''convert sra files to fastq and check mapping qualities are in solexa format. 
@@ -172,8 +173,9 @@ def runFastqc(infiles, outfile):
 @follows(mkdir("filtered_fastq"))
 @transform( ("*.fastq.1.gz", 
               "*.fastq.gz",
-              "*.sra"),
-              regex( r"(\S+).(fastq.1.gz|fastq.gz|sra)"),
+              "*.sra",
+	      "*.csfasta.gz" ),
+              regex( r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz)"),
               r"filtered_fastq/\1_filt.\2")
 def filterFastq(infiles, outfile):
         '''Filter FASTQ files to remove duplicates, low quality reads and artifacts using the FASTX Toolkit.'''
@@ -205,6 +207,12 @@ def loadFilterStats( infiles, outfile ):
     '''
             
     P.run()
+
+@follows() 
+def publish():
+    '''publish files.'''
+    P.publish_report( prefix = "readqc_" )
+
 #########################################################################
 #########################################################################
 #########################################################################

@@ -9,3 +9,5 @@ This section summarizes pairwise differentially expressed genes.
 
    DESeqResults.rst
    CufflinksResults.rst
+   DifferentialExpressionComparison.rst
+

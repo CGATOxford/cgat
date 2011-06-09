@@ -76,17 +76,22 @@ def main():
                        help="output attributes as separate columns [default=%default]." )
     parser.add_option( "-i", "--invert", dest="invert", action = "store_true",
                        help="convert tab-separated table back to gtf [default=%default]." ) 
+    parser.add_option( "-m", "--map", dest="map", action = "store_true",
+                       help="output a map mapping transcripts to genes [default=%default]." ) 
+
 
     parser.set_defaults(
         only_attributes = False,
         full = False,
         invert = False,
+        map = False,
         )
 
 
     (options,args) = E.Start( parser )
 
     if options.full:
+
         # output full table with column for each attribute
         attributes = set()
         data = []
@@ -143,6 +148,7 @@ def main():
                 options.stdout.write("\n")
                 
     elif options.invert:
+
         gtf = GTF.Entry()
         header = None
         for line in options.stdin:
@@ -172,6 +178,15 @@ def main():
             # output gtf entry in gtf format
             options.stdout.write( "%s\n" % str(gtf) )
 
+    elif options.map:
+        
+        transcript2gene = {}
+        for gtf in GTF.iterator( options.stdin ):
+            transcript2gene[gtf.transcript_id] = gtf.gene_id
+            
+        options.stdout.write("transcript_id\tgene_id\n" )
+        for x,y in transcript2gene.iteritems():
+            options.stdout.write("%s\t%s\n" % (x,y) )
     else:
         header = ( "contig","source","feature","start","end","score","strand","frame","gene_id","transcript_id","attributes"  )
         options.stdout.write("\t".join( header ) + "\n" )

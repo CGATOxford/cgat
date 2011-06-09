@@ -317,6 +317,8 @@ path:
 |picard              |>=1.38             |bam/sam files. The .jar files need to be in your|
 |                    |                   | CLASSPATH environment variable.                |
 +--------------------+-------------------+------------------------------------------------+
+|bamstats_           |>=1.22             |from CGR, Liverpool                             |
++--------------------+-------------------+------------------------------------------------+
 
 Pipeline output
 ===============
@@ -385,10 +387,12 @@ Glossary
    bowtie
       bowtie_ - a read mapper
 
+
    
 .. _cufflinks: http://cufflinks.cbcb.umd.edu/index.html
 .. _tophat: http://tophat.cbcb.umd.edu/
 .. _bowtie: http://bowtie-bio.sourceforge.net/index.shtml
+.. _bamstats: http://www.agf.liv.ac.uk/454/sabkea/samStats_13-01-2011
 
 Code
 ====
@@ -405,7 +409,7 @@ import Database, CSV
 import sys, os, re, shutil, itertools, math, glob, time, gzip, collections, random
 
 import numpy, sqlite3
-import GTF, IOTools, IndexedFasta
+import GFF, GTF, IOTools, IndexedFasta
 import Tophat
 from rpy2.robjects import r as R
 import rpy2.robjects as ro
@@ -480,7 +484,7 @@ def connect():
 ##################################################################
 ## genesets build - defined statically here, but could be parsed
 ## from configuration options
-GENESETS = ("novel", "abinitio", "reference", "refcoding", "lincrna" )
+GENESETS = ("novel", "abinitio", "reference", "refcoding", "refnoncoding", "lincrna" )
 
 # reference gene set for QC purposes
 REFERENCE= "refcoding"
@@ -726,8 +730,12 @@ def buildNoncodingGeneSet( infile, outfile ):
             suffix("reference.gtf.gz"),
             "%s.gtf.gz" % REFERENCE )
 def buildCodingGeneSet( infile, outfile ):
-    '''build a new gene set with only protein coding 
+    '''build a gene set with only protein coding 
     transcripts.
+
+    Genes are selected via their gene biotype in the GTF file.
+    Note that this set will contain all transcripts of protein
+    coding genes, including processed transcripts.
 
     This set includes UTR and CDS.
     '''
@@ -737,6 +745,36 @@ def buildCodingGeneSet( infile, outfile ):
     zcat %(infile)s | awk '$2 == "protein_coding"' | gzip > %(outfile)s
     '''
     P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( buildReferenceGeneSet, 
+            suffix("reference.gtf.gz"),
+            "refcodingtranscripts.gtf.gz" )
+def buildCodingTranscriptSet( infile, outfile ):
+    '''build a gene set with only protein coding 
+    transcripts.
+
+    Protein coding transcripts are selected via the ensembl
+    transcript biotype
+    '''
+
+    dbh = connect()
+
+    statement = '''SELECT DISTINCT transcript_id FROM transcript_info WHERE transcript_biotype = 'protein_coding' '''
+    cc = dbh.cursor()
+    transcript_ids = set( [x[0] for x in cc.execute(statement)] )
+    
+    inf = IOTools.openFile( infile )
+    outf = IOTools.openFile( outfile, 'w')
+    
+    for g in GTF.iterator( inf ):
+        if g.transcript_id in transcript_ids:
+            outf.write( str(g) + "\n" )
+    
+    outf.close()
+    inf.close()
 
 @transform( buildCodingGeneSet, 
             suffix( "%s.gtf.gz" % REFERENCE ),
@@ -901,8 +939,9 @@ def buildReferenceTranscriptome( infile, outfile ):
 @transform( ("*.fastq.1.gz", 
              "*.fastq.gz",
              "*.sra",
-             "*.csfasta.gz" ),
-            regex( r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz)"), 
+             "*.csfasta.gz",
+             "*.csfasta.F3.gz" ),
+            regex( r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz|csfasta.F3.gz)"), 
             add_inputs( buildReferenceTranscriptome ), 
             r"\1.trans.bam" )
 def mapReadsWithBowtieAgainstTranscriptome( infiles, outfile ):
@@ -937,8 +976,10 @@ def mapReadsWithBowtieAgainstTranscriptome( infiles, outfile ):
 @transform( ("*.fastq.1.gz", 
              "*.fastq.gz",
              "*.sra",
-             "*.csfasta.gz"),
-            regex( r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz)"), 
+             "*.csfasta.gz",
+             "*.csfasta.F3.gz",
+             ),
+            regex( r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz|csfasta.F3.gz)"), 
             add_inputs( buildJunctions), 
             r"\1.genome.bam" )
 def mapReadsWithTophat( infiles, outfile ):
@@ -952,6 +993,19 @@ def mapReadsWithTophat( infiles, outfile ):
     infile, reffile = infiles
     tophat_options = PARAMS["tophat_options"] + " --raw-juncs <( gunzip < %(reffile)s ) " % locals()
     statement = m.build( (infile,), outfile ) 
+    P.run()
+
+############################################################
+############################################################
+############################################################
+
+@follows( mkdir( os.path.join( PARAMS["exportdir"], "fastqc" ) ) )
+@transform( mapReadsWithTophat, suffix( ".bam"), ".fastqc" )
+def buildFastQCReport( infile, outfile ):
+    '''run fastqc on aligned reads.'''
+    
+    to_cluster = USECLUSTER
+    statement = '''fastqc --outdir=%(exportdir)s/fastqc %(infile)s >& %(outfile)s''' 
     P.run()
 
 ############################################################
@@ -978,6 +1032,9 @@ def buildBAMs( infiles, outfile):
     if "tophat_remove_contigs" in PARAMS and PARAMS["tophat_remove_contigs"]:
         options.append( "--remove-contigs=%s" % PARAMS["tophat_remove_contigs"] )
         
+    # if "tophat_protocol" in PARAMS and "stranded" in PARAMS["tophat_protocal"]:
+    #     options.append( "--set-strand" )
+
     options = " ".join(options)
 
     statement = '''
@@ -1231,6 +1288,28 @@ def buildBAMStats( infile, outfile ):
 
     P.run()
 
+############################################################
+############################################################
+############################################################
+@transform( (mapReadsWithBowtieAgainstTranscriptome,),
+            suffix(".bam"),
+            ".readstats" )
+def buildTranscriptBAMStats( infile, outfile ):
+    '''count number of reads mapped, duplicates, etc.
+    '''
+
+    to_cluster = USECLUSTER
+    
+    statement = '''python
+    %(scriptsdir)s/bam2stats.py
+         --force
+         --output-filename-pattern=%(outfile)s.%%s
+    < %(infile)s
+    > %(outfile)s
+    '''
+
+    P.run()
+
 #########################################################################
 #########################################################################
 #########################################################################
@@ -1350,13 +1429,13 @@ def loadContextStats( infiles, outfile ):
 #########################################################################
 @transform( buildBAMs, suffix(".accepted.bam"), r"\1.gtf.gz")
 def buildGeneModels(infile, outfile):
-    '''build transcript models - run cufflinks on each region seperately
+    '''build transcript models for each track separately.
     '''
 
     to_cluster = USECLUSTER    
     job_options= "-pe dedicated %i -R y" % PARAMS["cufflinks_threads"]
 
-    track = os.path.basename( outfile[:-len(".gtf")] )
+    track = os.path.basename( P.snip( outfile, ".gtf.gz" ) )
 
     tmpfilename = P.getTempFilename( "." )
 
@@ -1372,6 +1451,7 @@ def buildGeneModels(infile, outfile):
     cufflinks --label %(track)s           
               --reference %(cufflinks_genome_dir)s/%(genome)s.fa
               --num-threads %(cufflinks_threads)i
+             --library-type %(tophat_library_type)s
               %(cufflinks_options)s
               %(infile)s 
     >& %(outfile)s.log;
@@ -1453,6 +1533,7 @@ def estimateExpressionLevelsInReference(infiles, outfile):
               --GTF=<(gunzip < %(gtffile)s)
               --reference %(cufflinks_genome_dir)s/%(genome)s.fa
               --num-threads=%(cufflinks_threads)i
+             --library-type %(tophat_library_type)s
               %(cufflinks_options)s
               %(bamfile)s 
     >& %(outfile)s.log;
@@ -1839,7 +1920,8 @@ def buildFullGeneSet( infiles, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@merge( (buildAbinitioGeneSet, buildReferenceGeneSet),
+@merge( (buildAbinitioGeneSet, buildReferenceGeneSet,
+         os.path.join(PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_repeats_gff"] )),
         "novel.gtf.gz" )
 def buildNovelGeneSet( infiles, outfile ):
     '''build a gene set of novel genes by merging the ab-initio gene set and
@@ -1849,15 +1931,14 @@ def buildNovelGeneSet( infiles, outfile ):
     Removal is aggressive  - as soon as one transcript of a 
     gene/locus overlaps, all transcripts of that gene/locus are gone.
 
+    Transcripts that lie exclusively in repetetive sequence are removed, too.
+
     The resultant set contains a number of novel transcripts. However, these
     transcripts will still overlap some known genomic features like pseudogenes.
 
-    Novel genes are often expressed at low level and thus the resultant transcript
-    models are fragmentory. To avoid some double counting in downstream analyses, 
-    transcripts overlapping on the same strand are merged.
     '''
 
-    abinitio_gtf, reference_gtf= infiles
+    abinitio_gtf, reference_gtf, repeats_gff = infiles
     
     E.info( "indexing geneset for filtering" )
 
@@ -1867,9 +1948,15 @@ def buildNovelGeneSet( infiles, outfile ):
     for section in sections:
         indices[section] = GTF.readAndIndex( 
             GTF.iterator_filtered( GTF.iterator( IOTools.openFile( reference_gtf) ),
-                                   source = section ) ) 
+                                   source = section ),
+            with_value = False ) 
         
-    E.info( "build indices for %i feature sets" % len(indices))
+    E.info( "build indices for %i features" % len(indices))
+
+    repeats = GFF.readAndIndex( GFF.iterator( IOTools.openFile( repeats_gff) ),
+                                with_value = False )
+
+    E.info( "build index for repeats" )
 
     total_genes, remove_genes = set(), collections.defaultdict( set )
     inf = GTF.iterator( IOTools.openFile( abinitio_gtf ) )
@@ -1879,53 +1966,92 @@ def buildNovelGeneSet( infiles, outfile ):
             if indices[section].contains( gtf.contig, gtf.start, gtf.end):
                 remove_genes[gtf.gene_id].add( section )
 
+        for r in repeats.get( gtf.contig, gtf.start, gtf.end ):
+            if r[0] <= gtf.start and r[1] >= gtf.end:
+                remove_genes[gtf.gene_id].add( "repeat" )
+                break
+
     E.info( "removing %i out of %i genes" % (len(remove_genes), len(total_genes)) )
 
-    PipelineRnaseq.filterAndMergeGTF( abinitio_gtf, outfile, remove_genes )
+    PipelineRnaseq.filterAndMergeGTF( abinitio_gtf, outfile, remove_genes, merge = True )
 
 #########################################################################
 #########################################################################
 #########################################################################
-@merge( (buildAbinitioGeneSet, buildReferenceGeneSet), "lincrna.gtf.gz" )
+@merge( (buildAbinitioGeneSet, buildReferenceGeneSet,
+         os.path.join(PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_repeats_gff"]),
+         os.path.join(PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_pseudogenes_gtf"] ),
+         ), "lincrna.gtf.gz" )
 def buildLincRNAGeneSet( infiles, outfile ):
     '''build lincRNA gene set. 
     
     The lincRNA gene set contains all known lincRNA transcripts from
     the reference gene set plus all transcripts in the novel set that
-    do not overlap at any protein coding or lincRNA transcripts 
+    do not overlap at any protein coding, processed or pseudogene transcripts 
     (exons+introns) in the reference gene set.
+
+    Transcripts that lie exclusively in repetetive sequence are removed, too.
 
     lincRNA genes are often expressed at low level and thus the resultant transcript
     models are fragmentory. To avoid some double counting in downstream analyses, 
     transcripts overlapping on the same strand are merged.
     
+    Transcripts need to have a length of at least 200 bp.
+
     '''
     
-    infile_abinitio, reference_gtf = infiles
+    infile_abinitio, reference_gtf, repeats_gff, pseudogenes_gtf = infiles
 
     E.info( "indexing geneset for filtering" )
 
-    sections = ("protein_coding", "lincRNA" )
+    sections = ("protein_coding", 
+                "lincRNA", 
+                "processed_transcript" )
 
     indices = {}
     for section in sections:
         indices[section] = GTF.readAndIndex( 
             GTF.iterator_filtered( GTF.merged_gene_iterator( GTF.iterator( IOTools.openFile( reference_gtf) )),
-                                   source = section ) )
+                                   source = section ),
+            with_value = False )
         
-    E.info( "build indices for %i feature sets" % len(indices))
+    E.info( "built indices for %i features" % len(indices))
+
+    indices["repeats"] = GFF.readAndIndex( GFF.iterator( IOTools.openFile( repeats_gff) ), with_value = False )
+    
+    E.info( "added index for repeats" )
+
+    indices["pseudogenes"] = GTF.readAndIndex( GTF.iterator( IOTools.openFile( pseudogenes_gtf) ), with_value = False )
+
+    E.info( "added index for pseudogenes" )
 
     total_genes, remove_genes = set(), collections.defaultdict( set )
     inf = GTF.iterator( IOTools.openFile( infile_abinitio ) )
-    for gtf in inf:
-        total_genes.add( gtf.gene_id )
-        for section in sections:
-            if indices[section].contains( gtf.contig, gtf.start, gtf.end):
-                remove_genes[gtf.gene_id].add( section )
 
+    E.info( "collecting genes to remove" )
+
+    min_length = int(PARAMS["lincrna_min_length"])
+
+    for gtfs in GTF.transcript_iterator( inf ):
+        gene_id = gtfs[0].gene_id 
+        total_genes.add( gene_id )
+
+        l = sum( [ x.end - x.start for x in gtfs ] )
+
+        if l < min_length:
+            remove_genes[gene_id].add( "length" )
+            continue
+
+        for section in sections:
+            for gtf in gtfs:
+                if indices[section].contains( gtf.contig, gtf.start, gtf.end):
+                    remove_genes[gene_id].add( section )
+        
     E.info( "removing %i out of %i genes" % (len(remove_genes), len(total_genes)) )
 
-    PipelineRnaseq.filterAndMergeGTF( infile_abinitio, outfile, remove_genes )
+    PipelineRnaseq.filterAndMergeGTF( infile_abinitio, outfile, remove_genes, merge = True )
+
+    E.info( "adding known lincRNA set" )
 
     # add the known lincRNA gene set.
     statement = '''zcat %(reference_gtf)s
@@ -1934,6 +2060,28 @@ def buildLincRNAGeneSet( infiles, outfile ):
     >> %(outfile)s
     '''
     P.run()
+
+    # sort
+    statement = '''
+    mv %(outfile)s %(outfile)s.tmp;
+    checkpoint;
+    zcat %(outfile)s.tmp
+    | python %(scriptsdir)s/gtf2gtf.py --sort=contig+gene --log=%(outfile)s.log
+    | gzip > %(outfile)s;
+    checkpoint;
+    rm -f %(outfile)s.tmp
+    '''
+
+    P.run()
+
+@transform( (buildLincRNAGeneSet,
+             buildNovelGeneSet), 
+            suffix(".gtf.gz"), 
+            "_build_summary.load" )
+def loadGeneSetsBuildInformation( infile, outfile ):
+    '''load results from gene set filtering into database.'''
+    infile += ".summary.tsv.gz" 
+    P.load( infile, outfile )
 
 #########################################################################
 #########################################################################
@@ -1969,7 +2117,7 @@ def classifyTranscripts( infiles, outfile ):
 #########################################################################
 @transform( classifyTranscripts, suffix(".tsv.gz"), ".load" )
 def loadClassification( infile, outfile ):
-    P.load( infile, outfile, options = "--index=match_gene_id --index=match_transcript_id --index=source" )
+    P.load( infile, outfile, options = "--index=transcript_id --index=match_gene_id --index=match_transcript_id --index=source" )
 
 #########################################################################
 #########################################################################
@@ -2271,17 +2419,19 @@ def loadGeneSetGeneInformation( infile, outfile ):
             suffix(".gtf.gz"),
             "_transcript2gene.load" )
 def loadGeneInformation( infile, outfile ):
-    PipelineGeneset.loadTranscripts( infile, outfile )
+    PipelineGeneset.loadTranscript2Gene( infile, outfile )
 
 #########################################################################
 #########################################################################
 #########################################################################
-@transform( (buildFullGeneSet, 
-             buildReferenceGeneSet,
-             buildCodingGeneSet,
-             buildNoncodingGeneSet,
-             buildLincRNAGeneSet,
-             buildNovelGeneSet),
+@transform( (
+        buildGeneModels,
+        buildFullGeneSet, 
+        buildReferenceGeneSet,
+        buildCodingGeneSet,
+        buildNoncodingGeneSet,
+        buildLincRNAGeneSet,
+        buildNovelGeneSet),
             suffix(".gtf.gz"),
             "_transcriptinfo.load" )
 def loadGeneSetTranscriptInformation( infile, outfile ):
@@ -2323,6 +2473,8 @@ def runCuffdiff( infile, outfile ):
 
     statement = '''date > %(outfile)s; hostname >> %(outfile)s;
     cuffdiff --output-dir %(outdir)s
+             --library-type %(tophat_library_type)s
+             %(cuffdiff_options)s
              --verbose
              --reference-seq %(cufflinks_genome_dir)s/%(genome)s.fa
              --num-threads %(cuffdiff_threads)i
@@ -2345,11 +2497,12 @@ def loadCuffdiff( infile, outfile ):
     '''load results from differential expression analysis and produce
     summary plots.
 
-    Note: converts to log2 fold change.
+    Note: converts from ln(fold change) to log2 fold change.
    
-    The cuffdiff output is parsed. Pairwise comparisons
-    in which one gene is not expressed (fpkm < fpkm_silent)
-    are set to status 'NOCALL'
+    The cuffdiff output is parsed. 
+
+    Pairwise comparisons in which one gene is not expressed (fpkm < fpkm_silent)
+    are set to status 'NOCALL'. These transcripts might nevertheless be significant.
     '''
 
     prefix = P.toTable( outfile )
@@ -2371,10 +2524,13 @@ def loadCuffdiff( infile, outfile ):
         
         tablename = prefix + "_" + level + "_diff"
 
+        # max/minimum fold change seems to be (-)1.79769e+308
+        # awk can't handle that and returns inf - substitute with 10
+        # ln to log2: multiply by log2(e)
         statement = '''cat %(indir)s/%(fn)s
         | perl -p -e "s/sample_/track/g; s/value_/value/g; s/yes$/1/; s/no$/0/; s/ln\\(fold_change\\)/lfold/; s/p_value/pvalue/"
         | awk -v OFS='\\t' '/test_id/ {print;next;} 
-                              { $9 = $9 / log(2); 
+                              { $9 = $9 * 1.44269504089; 
                                 if( $6 == "OK" && ($7 < %(cuffdiff_fpkm_expressed)f || $8 < %(cuffdiff_fpkm_expressed)f )) { $6 = "NOCALL"; };
                                 print; } '
         | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
@@ -2475,7 +2631,9 @@ def buildExpressionStats( tables, method, outfile ):
                                  FROM %(tablename_diff)s, 
                                  %(geneset)s_geneinfo as i 
                                  WHERE i.gene_id = test_id AND significant'''% locals() ).fetchall()
-            if len(data):
+
+            # require at least 10 datapoints - otherwise smooth scatter fails
+            if len(data) > 10:
                 data = zip(*data)
 
                 pngfile = "%(outdir)s/%(geneset)s_%(method)s_%(level)s_pvalue_vs_length.png" % locals()
@@ -2540,7 +2698,7 @@ def buildCuffdiffPlots( infile, outfile ):
                         """ % locals()
             
             data = zip( *cc.execute( statement ))
-
+            
             pngfile = "%(outdir)s/%(geneset)s_%(method)s_%(level)s_%(track1)s_vs_%(track2)s_significance.png" % locals()
             R.png( pngfile )
             if len(data) == 0:
@@ -2652,8 +2810,8 @@ def buildFPKMGeneLevelTagCounts( infiles, outfile ):
              buildNoncodingGeneSet,
              buildFullGeneSet),
             suffix(".gtf.gz"),
-            ".union.bed.gz" )
-def buildUnionExons( infile, outfile ):
+            ".unionintersection.bed.gz" )
+def buildUnionIntersectionExons( infile, outfile ):
     '''build union/intersection genes according to Bullard et al. (2010) BMC Bioinformatics.
 
     Builds a single-segment bed file.
@@ -2663,6 +2821,39 @@ def buildUnionExons( infile, outfile ):
     statement = '''
     gunzip < %(infile)s
     | python %(scriptsdir)s/gtf2gtf.py --intersect-transcripts --with-utr --log=%(outfile)s.log
+    | python %(scriptsdir)s/gff2gff.py --is-gtf --crop-unique  --log=%(outfile)s.log
+    | python %(scriptsdir)s/gff2bed.py --is-gtf --log=%(outfile)s.log
+    | sort -k1,1 -k2,2n
+    | gzip 
+    > %(outfile)s
+    '''
+    
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( (buildReferenceGeneSet, 
+             buildCodingGeneSet,
+             buildNovelGeneSet,
+             buildLincRNAGeneSet,
+             buildNoncodingGeneSet,
+             buildFullGeneSet),
+            suffix(".gtf.gz"),
+            ".union.bed.gz" )
+def buildUnionExons( infile, outfile ):
+    '''build union genes.
+
+    Exons across all transcripts of a gene are merged.
+    They are then intersected between genes to remove any overlap.
+
+    Builds a single-segment bed file.    
+    '''
+
+    to_cluster = USECLUSTER
+    statement = '''
+    gunzip < %(infile)s
+    | python %(scriptsdir)s/gtf2gtf.py --merge-exons --log=%(outfile)s.log
     | python %(scriptsdir)s/gff2gff.py --is-gtf --crop-unique  --log=%(outfile)s.log
     | python %(scriptsdir)s/gff2bed.py --is-gtf --log=%(outfile)s.log
     | sort -k1,1 -k2,2n
@@ -2857,8 +3048,7 @@ def plotGeneLevelReadExtension( infile, outfile ):
             ".utr.gz" )
 def buildUTRExtension( infile, outfile ):
     '''build new utrs.'''
-    PipelineRnaseq.buildUTRExtensions( infile, outfile )
-
+    PipelineRnaseq.buildUTRExtension( infile, outfile )
 
 #########################################################################
 #########################################################################
@@ -3126,8 +3316,11 @@ def runDESeq( infile, outfile ):
             names = list(R['res'].names)
             m = dict( [ (x,x) for x in names ])
             m.update( dict(
-                    pval = "pvalue", baseMeanA = "value1", baseMeanB = "value2",
-                    id = "test_id", log2FoldChange = "lfold") )
+                    pval = "pvalue", 
+                    baseMeanA = "value1", 
+                    baseMeanB = "value2",
+                    id = "test_id", 
+                    log2FoldChange = "lfold") )
             
             header = [ m[x] for x in names ] 
             outf.write( "track1\ttrack2\t%s\tstatus\tsignificant\n" % "\t".join(header))
@@ -3140,12 +3333,18 @@ def runDESeq( infile, outfile ):
         for data in zip( *R['res']) :
             d = rtype._make( data )
             outf.write( "%s\t%s\t" % (track1,track2))
+            # set significant flag
             if d.padj <= fdr: signif = 1
             else: signif = 0
+
+            # set lfold change to 0 if both are not expressed
+            if d.baseMeanA == 0.0 and d.baseMeanB == 0.0:
+                d = d._replace( foldChange = 0, log2FoldChange = 0 )
+
             if isna( d.pval ): status = "OK"
             else: status = "FAIL"
 
-            outf.write( "\t".join( map(str, data) ))
+            outf.write( "\t".join( map(str, d) ))
             outf.write("\t%s\t%s\n" % (status, str(signif)))
             
     outf.close()
@@ -3160,6 +3359,10 @@ def loadDESeq( infile, outfile ):
     '''load differential expression results.
     '''
     # add gene level follow convention "<level>_diff"
+    
+    # if one expression value is 0, the log fc is inf or -inf.
+    # substitute with 10
+
     tablename = P.snip( outfile, ".load") + "_gene_diff" 
     statement = '''cat %(infile)s
             | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
@@ -3192,8 +3395,56 @@ def loadDESeqStats( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
+## targets related to exporting results of the pipeline
+#########################################################################
+@follows( mkdir( os.path.join( PARAMS["exportdir"], "roi" ) ) )
+@transform( (loadCuffdiff, loadDESeq),
+            regex(r"(.*).load"),
+            r"%s/roi/differentially_expressed_\1" % (PARAMS["exportdir"]) )
+def buildGeneSetsOfInterest( infile, outfile ):
+    '''export gene sets of interest
+
+    * differentially expressed genes
+
+    Regions of interest are exported as :term:`bed` formatted files.
+    '''
+    
+    dbh = connect()
+    
+    table = P.toTable( infile ) + "_gene_diff"
+    track = table[:table.index('_')]
+
+    statement = '''SELECT test_id, track1, track2, info.contig, info.start, info.end, info.strand, lfold
+                          FROM %(table)s, 
+                               %(track)s_geneinfo AS info
+                          WHERE 
+                               significant AND
+                               info.gene_id = test_id
+                 ''' % locals()
+
+    cc = dbh.cursor()
+    data = cc.execute( statement % locals() )
+
+    outfiles = IOTools.FilePool( outfile + "_%s.bed.gz" )
+
+    for test_id, track1, track2, contig, start, end, strand, lfold in data:
+        try: 
+            lfold = float(lfold)
+        except TypeError:
+            lfold = 0
+
+        key = "%s_vs_%s" % (track1, track2)
+        outfiles.write( key, "%s\t%i\t%i\t%s\t%5.2f\t%s\n" % \
+                        (contig, start, end, test_id, lfold, strand))
+
+    outfiles.close()
+
+#########################################################################
+#########################################################################
+#########################################################################
 @follows( buildBAMs,
           buildBAMReports,
+          buildFastQCReport,
           loadTophatStats,
           loadBAMStats,
           loadAlignmentStats,
@@ -3211,6 +3462,7 @@ def mapping(): pass
           buildLincRNAGeneSet,
           buildNoncodingGeneSet,
           buildNovelGeneSet,
+          loadGeneSetsBuildInformation,
           loadClassification,
           loadGeneLevelReadCounts,
           loadIntronLevelReadCounts,
@@ -3224,6 +3476,11 @@ def mapping(): pass
           )
 def genesets(): pass
 
+@follows( buildUTRs, 
+          plotGeneLevelReadExtension,
+          loadUTRExtension)
+def utrs(): pass
+
 @follows( loadCuffdiff,
           loadDESeq,
           buildCuffdiffPlots,
@@ -3231,13 +3488,20 @@ def genesets(): pass
           loadDESeqStats )
 def expression(): pass
 
-@follows( mapping,
-          genesets,
-          expression)
-def full(): pass
-
+@follows( buildGeneSetsOfInterest )
 def export(): pass
 
+@follows( mapping,
+          genesets,
+          expression,
+          utrs,
+          export)
+def full(): pass
+
+###################################################################
+###################################################################
+###################################################################
+## export targets
 ###################################################################
 @merge( mapping,  "view_mapping.load" )
 def createViewMapping( infile, outfile ):
@@ -3278,23 +3542,74 @@ def createViewMapping( infile, outfile ):
 
     Database.executewait( dbhandle, statement % locals() )
 
+###################################################################
+###################################################################
+###################################################################
 @follows( createViewMapping )
 def views():
     pass
 
-@follows( mkdir( "report" ) )
+###################################################################
+###################################################################
+###################################################################
+@follows( views, mkdir( "report" ) )
 def build_report():
     '''build report from scratch.'''
 
     E.info( "starting documentation build process from scratch" )
     P.run_report( clean = True )
 
-@follows( mkdir( "report" ) )
+###################################################################
+###################################################################
+###################################################################
+@follows( views, mkdir( "report" ) )
 def update_report():
     '''update report.'''
 
     E.info( "updating documentation" )
     P.run_report( clean = False )
+
+###################################################################
+###################################################################
+###################################################################
+@follows( mkdir( "%s/bamfiles" % PARAMS["web_dir"]), 
+          mkdir("%s/genesets" % PARAMS["web_dir"]),
+          mkdir("%s/classification" % PARAMS["web_dir"]),
+          mkdir("%s/differential_expression" % PARAMS["web_dir"]),
+          update_report,
+          )
+def publish():
+    '''publish files.'''
+    # publish web pages
+    P.publish_report( prefix = "rnaseq_" )
+
+    # publish additional data
+    web_dir = PARAMS["web_dir"]
+    project_id = P.getProjectId()
+
+    # directory, files
+    exportfiles = {
+        "bamfiles" : glob.glob( "*.accepted.bam" ) + glob.glob( "*.accepted.bam.bai" ),
+        "genesets": [ "lincrna.gtf.gz", "abinitio.gtf.gz" ],
+        "classification": glob.glob("*.class.tsv.gz") ,
+        "differential_expression" : glob.glob( "*.cuffdiff.dir" ),
+        }
+    
+    bams = []
+
+    for targetdir, filenames in exportfiles.iteritems():
+        for src in filenames:
+            dest = "%s/%s/%s" % (web_dir, targetdir, src)
+            if dest.endswith( ".bam"): bams.append( dest )
+            dest = os.path.abspath( dest )
+            if not os.path.exists( dest ):
+                os.symlink( os.path.abspath(src), dest )
+    
+    # output ucsc links
+    for bam in bams: 
+        filename = os.path.basename( bam )
+        track = P.snip( filename, ".bam" )
+        print """track type=bam name="%(track)s" bigDataUrl=http://www.cgat.org/downloads/%(project_id)s/bamfiles/%(filename)s""" % locals()
 
 if __name__== "__main__":
     sys.exit( P.main(sys.argv) )

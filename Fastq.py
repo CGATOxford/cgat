@@ -80,7 +80,8 @@ class Record:
     def fromPhred( self, quals, format ):
         '''set qualities from a list of phred-scores.'''
         self.format = format
-        assert len(quals) == len(self.seq)
+        # -1 for color space fastq file
+        assert len(quals) == len(self.seq) or len(quals) == len(self.seq) - 1
         if self.format == "sanger":
             self.quals = "".join( [ chr(33 + x) for x in quals ] )
         elif self.format == "solexa":
@@ -89,6 +90,8 @@ class Record:
             self.quals = "".join( [ chr(64 + x) for x in q ] )
         elif self.format == "phred64":
             self.quals = "".join( [ chr(64 + x) for x in quals ] )
+        elif self.format == "integer":
+            self.quals = " ".join( map( str, quals ) )
 
 def iterate( infile ):
     '''iterate over contents of fastq file.'''

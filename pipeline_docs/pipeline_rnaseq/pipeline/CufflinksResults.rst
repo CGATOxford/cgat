@@ -59,11 +59,28 @@ level. Differences called significant are red, all others are black.
    
    Differential expression results
 
-
 Cuffdiff Summary
 =================
+
+The following plots show p-value versus length. Without length normalization,
+longer genes are more likely to be called differentially expressed.
 
 .. report:: DifferentialExpression.TrackerDESummaryPlotsCuffdiff
    :render: user
    
    Summary of differential expression analysis
+
+Volcano plots
+=============
+
+.. report:: DifferentialExpression.VolcanoPlotCuffdiff
+   :render: scatter-rainbow-plot
+   :groupby: track
+   :layout: column-3
+   :width: 300
+
+   Volcano plots (log fold change against -log10 pvalue) 
+   for all pairwise comparisons
+
+
+ 
