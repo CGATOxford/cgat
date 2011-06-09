@@ -103,7 +103,7 @@ def main( argv = None ):
                        help = "remove rna reads for duplicate and other counts [%default]" )
     parser.add_option( "-i", "--input-reads", dest="input_reads", type="int",
                        help = "the number of reads - if given, used to provide percentages [%default]" )
-    parser.add_option( "--force", dest="force", type="int",
+    parser.add_option( "--force-output", dest="force_output", type="int",
                        help = "output nh/nm stats even if there is only a single count [%default]" )
 
 #    parser.add_option( "-p", "--ignore-pairs", dest="ignore_pairs", action="store_true",
@@ -114,7 +114,7 @@ def main( argv = None ):
         remove_rna = False,
         ignore_pairs = False,
         input_reads = 0,
-        force = False,
+        force_output = False,
         )
 
     ## add common options (-h/--help, ...) and parse command line 
@@ -207,13 +207,13 @@ def main( argv = None ):
 
     pysam_in.close()
 
-    if options.force or len(nm) > 0:
+    if options.force_output or len(nm) > 0:
         outfile = E.openOutputFile( "nm", "w" )
         outfile.write( "NM\talignments\n" )
         for x in xrange( 0, max( nm.keys() ) + 1 ): outfile.write("%i\t%i\n" % (x, nm[x]))
         outfile.close()
 
-    if options.force or len(nh) > 1:
+    if options.force_output or len(nh) > 1:
         # need to remove double counting
         # one read matching to 2 positions is only 2
         outfile = E.openOutputFile( "nh", "w")
