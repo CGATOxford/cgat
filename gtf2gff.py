@@ -463,9 +463,9 @@ def annotatePromoters( iterator, fasta, options ):
             mi, ma = min( [x.start for x in transcript ] ), max( [x.end for x in transcript ] )
             transcript_ids.append( transcript[0].transcript_id )
             if is_negative_strand:
-                promotors.append( (ma, min(lcontig, ma + options.promotor)) )
+                promotors.append( (min( ma-options.promotor, ma), min(lcontig, ma + options.promotor)) )
             else:
-                promotors.append( (max(0,mi - options.promotor), mi) )
+                promotors.append( (max(0,mi - options.promotor), max(options.promotor,mi)) )
 
         if options.merge_promotors:
             # merge the promotors (and rename - as sort order might have changed)
