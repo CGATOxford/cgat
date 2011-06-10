@@ -200,44 +200,6 @@ class Mapper( object ):
         return statement
 
 
-class fastqFilter( Mapper ):
-    
-    def mapper( self, infiles, outfile ):
-        '''build mapping statement on infiles.'''
-
-        num_files = [ len( x ) for x in infiles ]
-        
-        if max(num_files) != min(num_files):
-            raise ValueError("mixing single and paired-ended data not possible." )
-
-        nfiles = max(num_files)
-
-        tmpdir_fastq = self.tmpdir_fastq
-        
-        statement = []
-        for f in infiles:
-            if nfiles == 1:
-                track = P.snip( os.path.basename( f[0] ), ".fastq" )
-                statement.append('''fastx_collapser -v -i %(f[0])s -o %(tmpdir_fastq)s/%(track)s.rmdup.fastq > filtered_fastq/%(track)s_filter_stats.txt; ''' % locals() )
-                statement.append('''fastq_quality_filter -q 20 -p 95 -i %(tmpdir_fastq)s/%(track)s.rmdup.fastq -o %(tmpdir_fastq)s/%(track)s.rmdup.qf.fastq >> filtered_fastq/%(track)s_filter_stats.txt; ''' % locals() )
-                statement.append('''fastx_artifacts_filter -v -z -i %(tmpdir_fastq)s/%(track)s.rmdup.qf.fastq -o filtered_fastq/%(track)s_filt.fastq >> filtered_fastq/%(track)s_filter_stats.txt; ''' % locals() )
-
-            elif nfiles == 2:
-                track = P.snip( os.path.basename( f[0] ), ".1.fastq" )
-                read1 = f[0]
-                read2 = f[1]
-                statement.append('''python /ifs/apps/bio/galaxy-dist/tools/fastq/fastq_paired_end_joiner.py %(read1)s illumina %(read2)s illumina %(tmpdir_fastq)s/%(track)s.merged.fastq; ''' % locals() )
-                statement.append('''fastx_collapser -v -i %(tmpdir_fastq)s/%(track)s.merged.fastq -o %(tmpdir_fastq)s/%(track)s.merged.rmdup.fastq > filtered_fastq/%(track)s_filter_stats.txt; ''' % locals() )
-                statement.append('''fastq_quality_filter -q 20 -p 95 -i %(tmpdir_fastq)s/%(track)s.merged.rmdup.fastq -o %(tmpdir_fastq)s/%(track)s.merged.rmdup.qf.fastq >> filtered_fastq/%(track)s_filter_stats.txt; ''' % locals() )
-                statement.append('''fastx_artifacts_filter -v -z -i %(tmpdir_fastq)s/%(track)s.merged.rmdup.qf.fastq -o %(tmpdir_fastq)s/%(track)s.merged.rmdup.qf.af.fastq >> filtered_fastq/%(track)s_filter_stats.txt; ''' % locals() )
-                statement.append('''python /ifs/apps/bio/galaxy-dist/tools/fastq/fastq_paired_end_splitter.py %(tmpdir_fastq)s/%(track)s.merged.rmdup.qf.af.fastq illumina %(tmpdir_fastq)s/%(track)s_filt.1.fastq %(tmpdir_fastq)s/%(track)s_filt.2.fastq ; ''' % locals() )
-                statement.append('''gzip -c %(tmpdir_fastq)s/%(track)s_filt.1.fastq > filtered_fastq/%(track)s_filt.fastq.1.gz;''' % locals() )
-                statement.append('''gzip -c %(tmpdir_fastq)s/%(track)s_filt.2.fastq > filtered_fastq/%(track)s_filt.fastq.2.gz;''' % locals() )
-            else:
-                raise ValueError( "unexpected number read files to map: %i " % nfiles )
-        return " ".join( statement )
-
-
 
 class fastqc( Mapper ):
     

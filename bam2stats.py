@@ -124,6 +124,7 @@ def main( argv = None ):
 
     flags = sorted(flags_counts.keys())
 
+    # total alignments in bam file
     outs = options.stdout
     outs.write( "category\tcounts\tpercent\tof\n" )
     outs.write( "total\t%i\t%5.2f\ttotal\n" % (c.input, 100.0 ) )
@@ -132,6 +133,7 @@ def main( argv = None ):
         E.Stop()
         return
 
+    # total unmapped alignments
     nmapped = c.input - flags_counts["unmapped"]
     outs.write( "mapped\t%i\t%5.2f\ttotal\n" % (nmapped, 100.0 * nmapped / c.input ) )
     if nmapped == 0: 
@@ -139,47 +141,54 @@ def main( argv = None ):
         E.Stop()
         return
 
+    # Counts for each flag (see above for flags)
     for flag, counts in flags_counts.iteritems():
         outs.write( "%s\t%i\t%5.2f\tmapped\n" % ( flag, counts, 100.0 * counts / c.input ) )
 
-    outs.write( "rna\t%i\t%5.2f\tmapped\n" % (c.rna, 100.0 * c.rna / nmapped ) )
-    outs.write( "no_rna\t%i\t%5.2f\tmapped\n" % (c.filtered, 100.0 * c.filtered / nmapped ) )
+    # Counts for filtering out repetitive rna (RNA-seq data only) and mapping duplicates
+    if options.filename_rna:
+        outs.write( "rna\t%i\t%5.2f\tmapped\n" % (c.rna, 100.0 * c.rna / nmapped ) )
+        outs.write( "no_rna\t%i\t%5.2f\tmapped\n" % (c.filtered, 100.0 * c.filtered / nmapped ) )
 
-    if c.filtered > 0:
-        outs.write( "duplicates\t%i\t%5.2f\tno_rna\n" % (c.duplicates, 100.0* c.duplicates / c.filtered))
-        outs.write( "unique\t%i\t%5.2f\tno_rna\n" % (c.filtered - c.duplicates,
-                                                     100.0*(c.filtered - c.duplicates)/c.filtered))
+        if c.filtered > 0:
+            outs.write( "duplicates\t%i\t%5.2f\tno_rna\n" % (c.duplicates, 100.0* c.duplicates / c.filtered))
+            outs.write( "unique\t%i\t%5.2f\tno_rna\n" % (c.filtered - c.duplicates, 100.0*(c.filtered - c.duplicates)/c.filtered))
+    else:
+        outs.write( "bam2stats_duplicates\t%i\t%5.2f\tmapped\n" % (c.duplicates, 100.0* c.duplicates / nmapped))
+        #outs.write( "unique\t%i\t%5.2f\tno_rna\n" % (c.filtered - c.duplicates, 100.0*(c.filtered - c.duplicates)/c.filtered))
 
     # count number of reads in file
-    nreads = nmapped
+    nreads = c.input
     if len(nh_all) > 1:
         for x in xrange( 2, max(nh_all.keys() ) + 1 ): nreads -= (nh_all[x] / x) * (x-1)
-
     outs.write( "reads_total\t%i\t%5.2f\treads_total\n" % (nreads, 100.0 ) )
     nreads_mapped = nreads - flags_counts["unmapped"]
     outs.write( "reads_mapped\t%i\t%5.2f\treads_total\n" % (nreads_mapped, 100.0 * nreads_mapped / nreads ) )
 
+    # Uniquely mapped reads
     if len(nh_all) > 1:
         outs.write( "reads_unique\t%i\t%5.2f\treads_mapped\n" % (nh_all[1], 100.0 * nh_all[1] / nreads_mapped ) )
 
-    nreads_norna = c.filtered
-    if len(nh) > 1:
-        for x in xrange( 2, max(nh.keys() ) + 1 ): nreads_norna -= (nh[x] / x) * (x-1)
-
-    outs.write( "reads_norna\t%i\t%5.2f\treads_mapped\n" % (nreads_norna, 100.0 * nreads_norna / nreads_mapped ) )
-
-    if len(nh) > 1:
-        outs.write( "reads_norna_unique\t%i\t%5.2f\treads_norna\n" % (nh[1], 100.0 * nh[1] / nreads_norna ) )
+    # Reads not mapping to repetitive RNA 
+    if options.filename_rna:
+        nreads_norna = c.filtered
+        if len(nh) > 1:
+             for x in xrange( 2, max(nh.keys() ) + 1 ): nreads_norna -= (nh[x] / x) * (x-1)
+        outs.write( "reads_norna\t%i\t%5.2f\treads_mapped\n" % (nreads_norna, 100.0 * nreads_norna / nreads_mapped ) )
+        if len(nh) > 1:
+            outs.write( "reads_norna_unique\t%i\t%5.2f\treads_norna\n" % (nh[1], 100.0 * nh[1] / nreads_norna ) )
 
     pysam_in.close()
 
+    # Output number of mismatches per alignment (nm) table
     if len(nm) > 0:
         outfile = E.openOutputFile( "nm", "w" )
         outfile.write( "NM\talignments\n" )
         for x in xrange( 0, max( nm.keys() ) + 1 ): outfile.write("%i\t%i\n" % (x, nm[x]))
         outfile.close()
 
-    if len(nh) > 1:
+    # Output number of reads with multiple genome mapping locations (nh) table
+    if len(nh) > 0:
         # need to remove double counting
         # one read matching to 2 positions is only 2
         outfile = E.openOutputFile( "nh", "w")

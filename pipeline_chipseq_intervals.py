@@ -548,14 +548,10 @@ def loadMACS( infile, outfile, bamfile ):
     tablename = "%s_intervals" % track
     tmpfilename = outtemp.name
 
-    statement = '''
-   python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
-              --index=interval_id 
-              --table=%(tablename)s 
-    < %(tmpfilename)s 
-    > %(outfile)s
-    '''
-
+    statement = '''python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
+                       --index=interval_id 
+                       --table=%(tablename)s 
+                   < %(tmpfilename)s > %(outfile)s'''
     P.run()
 
     # load diagnostic data
@@ -587,9 +583,7 @@ def loadMACS( infile, outfile, bamfile ):
         
         P.run()
 
-        shutil.copyfile(
-            "%s.macs_model.pdf" % track,
-            os.path.join( target_path, "%s_model.pdf" % track) )
+        shutil.copyfile("%s.macs_model.pdf" % track, os.path.join( target_path, "%s_model.pdf" % track) )
         
     os.unlink( tmpfilename )
 

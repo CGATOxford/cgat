@@ -173,8 +173,7 @@ class Sample(object):
             cls.__repr__ = cls.asR
 
 class Sample3(Sample):
-    '''a sample/track.
-    '''
+    '''a sample/track. '''
     attributes = ( "tissue", "condition", "replicate" )
 
 class Aggregate:

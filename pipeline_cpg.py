@@ -159,11 +159,8 @@ USECLUSTER = True
 ###################################################
 import Pipeline as P
 P.getParameters(  ["%s.ini" % __file__[:-len(".py")],  "../pipeline.ini", "pipeline.ini" ] )
-
 PARAMS = P.PARAMS
-
 PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],"pipeline_annotations.py" )
-
 
 ###################################################################
 ###################################################################
@@ -197,26 +194,6 @@ def getControl( track ):
     n.condition = PARAMS["tracks_control"]
     return n
 
-def getUnstimulated( track ):
-    '''return unstimulated condition for a track'''
-    n = track.clone()
-    n.condition = PARAMS["tracks_unstimulated"]
-    return n
-
-def getSubtracted( track ):
-    '''return "subtracted" condition for a track'''
-    n = track.clone()
-    n.condition += PARAMS["tracks_subtract"]
-    return n
-
-def getUnsubtracted( track ):
-    '''return "unsubtracted" condition for a track '''
-    n = track.clone()
-    if PARAMS["tracks_subtract"]:
-        if n.condition.endswith( PARAMS["tracks_subtract"] ):
-            n.condition = n.condition[:-len(PARAMS["tracks_subtract"])]
-    return n
-
 ###################################################################
 ###################################################################
 ###################################################################
@@ -236,18 +213,11 @@ EXPERIMENTS = PipelineTracks.Aggregate( TRACKS, labels = ("condition", "tissue")
 CONDITIONS = PipelineTracks.Aggregate( TRACKS, labels = ("condition",) )
 # aggregate per tissue
 TISSUES = PipelineTracks.Aggregate( TRACKS, labels = ("tissue",) )
-
 # compound targets : all experiments
 TRACKS_MASTER = EXPERIMENTS.keys() + CONDITIONS.keys()
 
-# tracks for subtraction of unstim condition
-if "tracks_subtract" in PARAMS and PARAMS["tracks_subtract"]:
-    TOSUBTRACT = [ x for x in EXPERIMENTS if not x.condition == PARAMS["tracks_unstimulated"] ]
-else:
-    TOSUBTRACT = []
-
 # compound targets : correlation between tracks
-TRACKS_CORRELATION = TRACKS_MASTER + list(TRACKS) + [ getSubtracted( x ) for x in TOSUBTRACT ]
+TRACKS_CORRELATION = TRACKS_MASTER + list(TRACKS)
 
 # print "EXP=", EXPERIMENTS
 # print "COND=", CONDITIONS
@@ -458,7 +428,6 @@ def runMACS( infiles, outfile ):
                           --diag
                           %(macs_options)s 
                    >& %(outfile)s''' 
-
     P.run() 
     
 ############################################################
@@ -521,19 +490,8 @@ def combineTissue( infiles, outfile ):
     PIntervals.intersectBedFiles( infiles, outfile )
 
 ############################################################
-@follows( combineExperiment, combineCondition )
-@files( [ ( ("%s.bed" % x.asFile(), 
-             "%s.bed" % getUnstimulated(x).asFile()),
-            "%s.bed" % getSubtracted(x).asFile() ) for x in TOSUBTRACT ] )
-def subtractUnstim( infiles, outfile ):
-    '''remove the unstimulated data sets from the individual tracks. '''
-    infile, subtract = infiles
-    PIntervals.subtractBedFiles( infile, subtract, outfile )
-
-############################################################
 @transform( (combineExperiment,
-             combineCondition, 
-             subtractUnstim),
+             combineCondition),
             suffix(".bed"),
             "_bed.load" )
 def loadCombinedIntervals( infile, outfile ):
@@ -805,7 +763,7 @@ def annotateRepeats( infile, outfile ):
 @transform( annotateRepeats, suffix(".repeats"), "_repeats.load" )
 def loadRepeats( infile, outfile ):
     '''load interval annotations: repeats'''
-    P.load( infile, outfile, "--index=gene_id" )
+    P.load( infile, outfile, "--index=gene_id --allow-empty" )
 
 
 ############################################################
@@ -930,8 +888,7 @@ def export():
 
 @follows( mapReads,
           buildIntervals, 
-          annotation,
-          export )
+          annotation )
 def full():
     '''run the full pipeline.'''
     pass
