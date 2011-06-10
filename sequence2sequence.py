@@ -108,6 +108,9 @@ reverse-complement
 shuffle
    shuffle each sequence
 
+sample
+   select a certain proportion of sequences
+
 Parameters are given to the option parameters in a comma-separated list in the order
 that the edit operations are called upon.
 
@@ -133,7 +136,7 @@ Code
 ----
 
 '''
-import os, sys, string, re, optparse, math, time, tempfile, subprocess
+import os, sys, string, re, optparse, math, time, tempfile, subprocess, random
 import Experiment as E
 import IOTools
 import Genomics
@@ -188,6 +191,7 @@ if __name__ == '__main__':
                                "upper", 
                                "lower",
                                "reverse-complement",
+                               "sample",
                                "shuffle"),
                       help="method to apply to sequences."  )
     
@@ -199,6 +203,9 @@ if __name__ == '__main__':
 
     parser.add_option("-e", "--exclude", dest="exclude", type="string",
                       help="exclude sequences with ids matching pattern [default = %default]." )
+
+    parser.add_option( "--sample-proportion", dest="sample_proportion", type="float",
+                      help="sample proportion [default = %default]." )
 
     parser.add_option("-n", "--include", dest="include", type="string",
                       help="include sequences with ids matching pattern [default = %default]." )
@@ -224,6 +231,7 @@ if __name__ == '__main__':
         ignore_errors = False,
         exclude = None,
         include = None,
+        sample_proportion = None,
         )
 
     (options, args) = E.Start( parser )
@@ -264,6 +272,13 @@ if __name__ == '__main__':
 
     ninput, noutput, nerrors, nskipped = 0, 0, 0, 0
     
+    if "sample" in options.methods:
+        if not options.sample_proportion:
+            raise ValueError("specify a sample proportion" )
+        sample_proportion = options.sample_proportion
+    else:
+        sample_proportion = None
+
     while 1:
         try:
             cur_record = iterator.next()
@@ -277,7 +292,6 @@ if __name__ == '__main__':
         sequence = re.sub( " ", "", cur_record.sequence)
         l = len(sequence)
 
-
         if rx_include and not rx_include.search( cur_record.title ):
             nskipped += 1
             continue
@@ -285,6 +299,10 @@ if __name__ == '__main__':
         if rx_exclude and rx_exclude.search( cur_record.title ):
             nskipped += 1
             continue
+
+        if sample_proportion:
+            if random.random() > sample_proportion:
+                continue
 
         for method in options.methods:
 

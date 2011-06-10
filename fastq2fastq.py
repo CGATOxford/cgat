@@ -85,10 +85,14 @@ def main( argv = None ):
     parser.add_option( "--sample", dest="sample", type="float",
                        help="sample a proportion of reads [default=%default]."  )
 
+    parser.add_option( "--trim3", dest="trim3", type="int",
+                       help="trim # bases from 3' end [default=%default]."  )
+
     parser.set_defaults(
         change_format = None,
         guess_format = None,
         sample = None,
+        trim3 = None,
         )
 
     ## add common options (-h/--help, ...) and parse command line 
@@ -112,6 +116,14 @@ def main( argv = None ):
             if random.random() <= sample_threshold:
                 c.output += 1
                 options.stdout.write( "%s\n" % record )
+
+    elif options.trim3:
+        trim3 = options.trim3
+        for record in Fastq.iterate( options.stdin ):
+            c.input += 1
+            record.trim( trim3 )
+            options.stdout.write( "%s\n" % record )
+            c.output += 1
 
     ## write footer and output benchmark information.
     E.info( "%s" % str(c) )

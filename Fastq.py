@@ -65,6 +65,10 @@ class Record:
             if mi >= m1 and ma < m2: r.append( format )
         return r
 
+    def trim( self, trim3, trim5 = 0 ):
+        self.seq = self.seq[trim5:-trim3]
+        self.quals = self.quals[trim5:-trim3]
+
     def toPhred( self ):
         '''return qualities as a list of phred-scores.'''
         assert self.format != None, "format needs to be set for conversion"

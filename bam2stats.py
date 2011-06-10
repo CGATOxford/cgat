@@ -168,17 +168,14 @@ def main( argv = None ):
     if len(nh_all) > 1:
         for x in xrange( 2, max(nh_all.keys() ) + 1 ): nreads_mapped -= (nh_all[x] / x) * (x-1)
 
+    nreads_missing = 0
     if options.input_reads:
         nreads_total = options.input_reads
         # unmapped reads in bam file?
         if nreads_unmapped: 
-            if nreads_unmapped != nreads_total - nreads_mapped:
-                if nreads_unmapped + nmapped == c.input:
-                    nreads_mapped = nmapped
-                    E.warn( "mismatch in read counts - assuming that mapped number of reads = number of alignments" )
-                else:
-                    raise ValueError( "mismatch in read counts - NH flag set incorrectly or input-reads wrong?" )
-        else: nreads_unmapped = nreads_total - nreads_mapped
+            nreads_missing = nreads_total - nreads_unmapped - nreads_mapped
+        else: 
+            nreads_unmapped = nreads_total - nreads_mapped
 
     elif nreads_unmapped:
         # if unmapped reads are in bam file, take those
@@ -191,6 +188,7 @@ def main( argv = None ):
     outs.write( "reads_total\t%i\t%5.2f\treads_total\n" % (nreads_total, 100.0 ) )
     outs.write( "reads_mapped\t%i\t%5.2f\treads_total\n" % (nreads_mapped, 100.0 * nreads_mapped / nreads_total ) )
     outs.write( "reads_unmapped\t%i\t%5.2f\treads_total\n" % (nreads_unmapped, 100.0 * nreads_unmapped / nreads_total ) )
+    outs.write( "reads_missing\t%i\t%5.2f\treads_total\n" % (nreads_missing, 100.0 * nreads_missing / nreads_total ) )
 
     if len(nh_all) > 1:
         outs.write( "reads_unique\t%i\t%5.2f\treads_mapped\n" % (nh_all[1], 100.0 * nh_all[1] / nreads_mapped ) )

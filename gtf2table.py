@@ -2110,7 +2110,7 @@ class CounterReadCoverage(Counter):
     
     header = ("length",) +\
         tuple( [ "%s_%s" % (x,y) for x,y in itertools.product( ("sense", "antisense", "anysense"),
-                                                               ( ("pcovered",) + Stats.Summary().getHeaders() )) ] )
+                                                               ( ("pcovered", "nreads", ) + Stats.Summary().getHeaders() )) ] )
                
     # discard segments with size > mMaxLength in order
     # to avoid out-of-memory
@@ -2127,7 +2127,7 @@ class CounterReadCoverage(Counter):
         length = sum( [x[1] - x[0] for x in segments ] )
         counts_sense = numpy.zeros( length )
         counts_antisense = numpy.zeros( length )
-        nreads = 0
+        reads_sense, reads_antisense = set(), set()
         contig = self.getContig()
         if self.getStrand() == "+":
             is_reverse = False
@@ -2149,15 +2149,19 @@ class CounterReadCoverage(Counter):
                     # only count positions actually overlapping
                     positions = read.positions
                     if not positions: continue
-                    nreads += 1
                     if is_reverse == read.is_reverse:
                         __add( counts_sense, positions, offset )
+                        reads_sense.add( read.qname )
                     else:
                         __add( counts_antisense, positions, offset )
+                        reads_antisense.add( read.qname )
 
             l += end - start
 
         self.length = length
+        self.nreads_sense = len(reads_sense)
+        self.nreads_antisense = len(reads_antisense)
+        self.nreads_anysense = self.nreads_sense + self.nreads_antisense
 
         counts_anysense = counts_sense + counts_antisense
 
@@ -2168,14 +2172,16 @@ class CounterReadCoverage(Counter):
         self.counts_sense = counts_sense
         self.counts_antisense = counts_antisense
         self.counts_anysense = counts_anysense
-
+        
     def __str__(self):
 
         r = [ "%i" % self.length ]
         
-        for direction, counts in zip ( ("sense", "antisense", "anysense"),
-                                       (self.counts_sense, self.counts_antisense, self.counts_anysense) ):
+        for direction, counts, nreads in zip ( ("sense", "antisense", "anysense"),
+                                               (self.counts_sense, self.counts_antisense, self.counts_anysense),
+                                               (self.nreads_sense, self.nreads_antisense, self.nreads_anysense) ):
             r.append( "%5.2f" % (100.0 * len(counts) / self.length) )
+            r.append( "%i" % (nreads) )
             r.append( str( Stats.Summary( counts, mode = "int" ) ) )
 
         return "\t".join( r )
