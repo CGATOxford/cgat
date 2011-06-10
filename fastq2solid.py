@@ -21,8 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-fastq2fastq.py - manipulate fastq files
-=============================================
+fastq2solid.py - convert fastq to solid
+=======================================
 
 :Author: Andreas Heger
 :Release: $Id$
@@ -32,9 +32,8 @@ fastq2fastq.py - manipulate fastq files
 Purpose
 -------
 
-.. todo::
-   
-   describe purpose of the script.
+Converts a fastq-formatted file to two solid
+output files (.csfasta and .qual)
 
 Usage
 -----
@@ -60,6 +59,7 @@ Code
 import os, sys, re, optparse, math, random
 
 import Experiment as E
+import IOTools
 import Fastq
 
 def main( argv = None ):
@@ -75,24 +75,20 @@ def main( argv = None ):
                                     usage = globals()["__doc__"] )
 
     parser.add_option("-f", "--change-format", dest="change_format", type="choice",
-                      choices = ('sanger', 'solexa', 'phred64', 'integer' ),
+                      choices = ('sanger', 'solexa', 'phred64', 'integer'  ),
                       help="guess quality score format and set quality scores to format [default=%default]."  )
 
     parser.add_option( "--guess-format", dest="guess_format", type="choice",
                       choices = ('sanger', 'solexa', 'phred64', 'integer' ),
                       help="quality score format to assume if ambiguous [default=%default]."  )
 
-    parser.add_option( "--sample", dest="sample", type="float",
-                       help="sample a proportion of reads [default=%default]."  )
-
-    parser.add_option( "--trim3", dest="trim3", type="int",
-                       help="trim # bases from 3' end [default=%default]."  )
+    parser.add_option( "--pattern", dest="pattern", type="string",
+                       help="filename prefix [default=%default]."  )
 
     parser.set_defaults(
         change_format = None,
         guess_format = None,
-        sample = None,
-        trim3 = None,
+        pattern = "%s.gz"
         )
 
     ## add common options (-h/--help, ...) and parse command line 
@@ -100,30 +96,24 @@ def main( argv = None ):
 
     c = E.Counter()
 
+    outfile_seq = IOTools.openFile( options.pattern % "csfasta", "w" )
+    outfile_qual = IOTools.openFile( options.pattern % "qual", "w" )
+    
     if options.change_format:
-        for record in Fastq.iterate_convert( options.stdin, 
-                                             format = options.change_format,
-                                             guess = options.guess_format ):
-            c.input += 1
-            options.stdout.write( "%s\n" % record )
-            c.output += 1
+        iter = Fastq.iterate_convert( options.stdin, 
+                                         format = options.change_format,
+                                         guess = options.guess_format )
+    else:
+        iter = Fastq.iterate( options.stdin )
 
-    elif options.sample:
-        sample_threshold = min( 1.0, options.sample)
-        
-        for record in Fastq.iterate( options.stdin ):
-            c.input += 1
-            if random.random() <= sample_threshold:
-                c.output += 1
-                options.stdout.write( "%s\n" % record )
+    for record in iter:
+        c.input += 1
+        outfile_seq.write(">%s\n%s\n" % (record.identifier, record.seq ))
+        outfile_qual.write(">%s\n%s\n" % (record.identifier, record.quals ))
+        c.output += 1
 
-    elif options.trim3:
-        trim3 = options.trim3
-        for record in Fastq.iterate( options.stdin ):
-            c.input += 1
-            record.trim( trim3 )
-            options.stdout.write( "%s\n" % record )
-            c.output += 1
+    outfile_seq.close()
+    outfile_qual.close()
 
     ## write footer and output benchmark information.
     E.info( "%s" % str(c) )

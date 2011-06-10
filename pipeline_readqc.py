@@ -155,8 +155,9 @@ PARAMS = P.PARAMS
 @follows(mkdir(PARAMS["exportdir"]), mkdir(os.path.join(PARAMS["exportdir"], "fastqc")) )
 @transform( ("*.fastq.1.gz", 
               "*.fastq.gz",
-              "*.sra"),
-              regex( r"(\S+).(fastq.1.gz|fastq.gz|sra)"),
+              "*.sra",
+	      "*.csfasta.gz" ),
+              regex( r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz)"),
               r"\1.fastqc")
 def runFastqc(infiles, outfile):
         '''convert sra files to fastq and check mapping qualities are in solexa format. 
@@ -166,45 +167,6 @@ def runFastqc(infiles, outfile):
         statement = m.build((infiles,), outfile) 
         P.run()
 
-#########################################################################
-#########################################################################
-#########################################################################
-@follows(mkdir("filtered_fastq"))
-@transform( ("*.fastq.1.gz", 
-              "*.fastq.gz",
-              "*.sra"),
-              regex( r"(\S+).(fastq.1.gz|fastq.gz|sra)"),
-              r"filtered_fastq/\1_filt.\2")
-def filterFastq(infiles, outfile):
-        '''Filter FASTQ files to remove duplicates, low quality reads and artifacts using the FASTX Toolkit.'''
-        to_cluster = USECLUSTER
-        m = PipelineMapping.fastqFilter()
-        statement = m.build((infiles,), outfile) 
-        P.run()
-
-#########################################################################
-#########################################################################
-#########################################################################
-@merge( filterFastq, suffix(".txt"), "fastq_filter_stats.load" )
-def loadFilterStats( infiles, outfile ):
-    '''import fastq filter statistics.'''
-
-    scriptsdir = PARAMS["general_scriptsdir"]
-    header = "track,feature,feature_length,cov_mean,cov_median,cov_sd,cov_q1,cov_q3,cov_2_5,cov_97_5,cov_min,cov_max"
-    filenames = " ".join(infiles)
-    tablename = P.toTable( outfile )
-    E.info( "loading coverage stats" )
-    statement = '''cat %(filenames)s | sed -e /Track/D
-            | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --allow-empty
-              --header=%(header)s
-              --index=track
-              --index=feature
-              --table=%(tablename)s 
-            > %(outfile)s
-    '''
-            
-    P.run()
 
 #########################################################################
 #########################################################################

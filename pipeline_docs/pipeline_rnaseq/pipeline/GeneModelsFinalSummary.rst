@@ -63,6 +63,15 @@ Transcript classes
    :layout: column-3
    :width: 300
    :tracks: @geneset_summary@
+   :transform: select
+   :tf-fields: ntranscripts
+
+   Classes of transcripts
+
+.. report:: Genemodels.TranscriptClassCountsSummaryByClass
+   :render: table
+   :transform: select
+   :tf-fields: ntranscripts
 
    Classes of transcripts
 
@@ -77,6 +86,16 @@ The following plot lists the various classes of transcripts overlapping protein 
    :layout: column-3
    :width: 300
    :tracks: @geneset_summary@
+   :transform: select
+   :tf-fields: ntranscripts
+
+   Overlap with protein coding transcripts
+
+.. report:: Genemodels.TranscriptClassCounts
+   :render: table
+   :slices: protein_coding
+   :transform: select
+   :tf-fields: ntranscripts
 
    Overlap with protein coding transcripts
 

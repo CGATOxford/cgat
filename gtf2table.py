@@ -1001,7 +1001,8 @@ class ClassifierRNASeq(Counter):
 
     Furthermore, ``predicted`` transcripts that do not overlap the exons of a ``known`` 
     transcript, but only introns, are classed as ``intronic``. All other transcripts
-    that overlap neither introns nor exons of a ``known`` transcript are labeled ``novel``.
+    that overlap neither introns nor exons of a ``known`` transcript are labeled 
+    ``intergenic``.
 
     If the ``known`` transcript is protein coding, the ``predicted`` transcript is further 
     checked if it overlaps with the ``known`` UTR only. These transcripts are labelled ``utr5``
@@ -1023,26 +1024,45 @@ class ClassifierRNASeq(Counter):
     # number of residues that are permitted for negligible overlap
     tolerance = 10
 
+    # size of flanking region
+    flank = 5000
+
     # priority of classifications to select best match
-    priority = ( ( True, "complete", ),
-                 ( True, "fragment", ),
-                 ( True, "extended-fragment", ),
-                 ( True, "extension", ),
-                 ( True, "alternative", ),
-                 ( True, "unknown", ),
-                 ( True, "intronic", ),
-                 ( True, "utr5", ),
-                 ( True, "utr3", ),
-                 ( False, "complete", ),
-                 ( False, "fragment", ),
-                 ( False, "extended-fragment", ),
-                 ( False, "extension", ),
-                 ( False, "alternative", ),
-                 ( False, "unknown", ),
-                 ( False, "intronic", ),
-                 ( False, "utr5", ),
-                 ( False, "utr3", ),
-                 ( None, "novel" ) )
+    priority = ( ( 's', "complete", ),
+                 ( 's', "fragment", ),
+                 ( 's', "extended-fragment", ),
+                 ( 's', "extension", ),
+                 ( 's', "alternative", ),
+                 ( 's', "unknown", ),
+                 ( 's', "intronic", ),
+                 ( 's', "utr5", ),
+                 ( 's', "utr3", ),
+                 ( 's', "flank5", ),
+                 ( 's', "flank3", ),
+                 ( 'n', "complete", ),
+                 ( 'n', "fragment", ),
+                 ( 'n', "extended-fragment", ),
+                 ( 'n', "extension", ),
+                 ( 'n', "alternative", ),
+                 ( 'n', "unknown", ),
+                 ( 'n', "intronic", ),
+                 ( 'n', "utr5", ),
+                 ( 'n', "utr3", ),
+                 ( 'n', "flank5", ),
+                 ( 'n', "flank3", ),
+                 ( 'a', "complete", ),
+                 ( 'a', "fragment", ),
+                 ( 'a', "extended-fragment", ),
+                 ( 'a', "extension", ),
+                 ( 'a', "alternative", ),
+                 ( 'a', "unknown", ),
+                 ( 'a', "intronic", ),
+                 ( 'a', "utr5", ),
+                 ( 'a', "utr3", ),
+                 ( 'a', "flank5", ),
+                 ( 'a', "flank3", ),
+                 ( 'n', "flank", ),
+                 ( 'n', "intergenic" ) )
 
     def __init__(self, filename_gff, *args, **kwargs ):
 
@@ -1055,7 +1075,7 @@ class ClassifierRNASeq(Counter):
 
         map_transcript2gene = {}
         transcripts = {}
-        transcript_intervals = IndexedGenome.IndexedGenome()
+        transcript_intervals = IndexedGenome.Quicksect()
 
         f = IOTools.openFile( filename_gff[0]) 
 
@@ -1077,7 +1097,60 @@ class ClassifierRNASeq(Counter):
 
         self.mapClass2Priority = dict( [(y,x) for x,y in enumerate(self.priority) ] )
 
-    def classify( self, exons, transcript_id ):
+    def get_sense( self, strand, transcript_strand):
+        '''encode sense as (s)ense, (a)ntisense and (n)ot available'''
+        
+        if strand == "." or transcript_strand == ".": sense = "n"
+        elif strand == transcript_strand: sense = "s"
+        else: sense = "a"
+        return sense
+
+
+    def classify_nonoverlap( self, exons ):
+        '''classify_nonoverlapping transcripts.'''
+        
+        contig = self.getContig()
+        strand = self.getStrand()
+        start, end = exons[0][0], exons[-1][1]
+
+        # get closest gene upstream and downstream
+        before = self.transcript_intervals.before( contig, start, end, num_intervals = 1, max_dist = self.flank )
+        after = self.transcript_intervals.after( contig, start, end, num_intervals = 1, max_dist = self.flank )
+
+        # convert to id, distance, is_before
+        associated = []
+        if before:
+            d = before[0]
+            associated.append( (d[2], start - d[1], True ) )
+            
+        if after:
+            d = after[0]
+            associated.append( (d[2], d[0] - end, False ) )
+                
+        results = []
+
+        for transcript_id, distance, is_before in associated:
+            transcript_strand = self.transcripts[transcript_id][0].strand
+            sense = self.get_sense( strand, transcript_strand )
+
+            if transcript_strand == "+":
+                if is_before: cls = "flank3"            
+                else: cls = "flank5"
+            elif transcript_strand == "-":
+                if is_before: cls = "flank5"
+                else: cls = "flank3"
+            else:
+                cls= "flank"
+                
+            results.append( (cls, sense, transcript_id ) )
+
+        if len(results) == 0:
+            results.append( ("intergenic", "n", "" ) )
+
+        return results
+
+    def classify_overlap( self, exons, transcript_id ):
+        '''classify overlapping transcripts.'''
 
         introns = Intervals.complement( exons )
         strand = self.getStrand()
@@ -1102,7 +1175,11 @@ class ClassifierRNASeq(Counter):
 
         if overlap_exons == 0: is_intronic = True
         else: is_intronic = False
-        sense = strand == transcript_strand
+
+        # determine sense-ness
+        # if no strand is given, set to sense 
+        if strand == "." or transcript_strand == ".": sense = True
+        else: sense = strand == transcript_strand
 
         cls = "unclassified"
 
@@ -1120,7 +1197,7 @@ class ClassifierRNASeq(Counter):
             shared_boundaries = Intervals.intersect( boundaries, transcript_boundaries )
 
             # if there are no introns, matched_structure will be True
-            if len(exons) == 1:
+            if len(exons) == 1 and len(transcript_exons) == 1:
                 matched_structure = approx_structure = True
             else:
                 matched_structure = len(shared_introns) == len(introns)
@@ -1159,7 +1236,7 @@ class ClassifierRNASeq(Counter):
                 elif overlap_utr3 >= lexons - tolerance:
                     cls = "utr3"
             
-        return cls, sense
+        return cls, self.get_sense( strand, transcript_strand )
 
     def count(self):
 
@@ -1175,15 +1252,21 @@ class ClassifierRNASeq(Counter):
         results = []
         
         if len(overlaps) == 0:
-            results.append( (self.mapClass2Priority[(None,"novel")], 
-                             ( 0, 0, "", "", "novel", "novel", 1) ) )
+            for cls, sense, transcript_id in self.classify_nonoverlap( segments ):
+                if transcript_id != "":
+                    source = self.transcripts[transcript_id][0].source
+                    gene_id = self.map_transcript2gene[transcript_id]
+                else:
+                    source, gene_id = "", ""
+                results.append( (self.mapClass2Priority[(sense,cls)], 
+                                 ( 0, 0, transcript_id, gene_id, source, cls, sense ) ) )
         else:
             for start, end, transcript_id in overlaps:
-                cls, sense = self.classify(segments, transcript_id) 
+                cls, sense = self.classify_overlap(segments, transcript_id) 
                 source = self.transcripts[transcript_id][0].source
                 gene_id = self.map_transcript2gene[transcript_id]
                 results.append( (self.mapClass2Priority[(sense,cls)], 
-                                 ( noverlap_transcripts, noverlap_genes, transcript_id, gene_id, source, cls, int(sense) ) ) )
+                                 ( noverlap_transcripts, noverlap_genes, transcript_id, gene_id, source, cls, sense ) ) )
         
         results.sort()
         self.result = results[0][1]
@@ -2027,7 +2110,7 @@ class CounterReadCoverage(Counter):
     
     header = ("length",) +\
         tuple( [ "%s_%s" % (x,y) for x,y in itertools.product( ("sense", "antisense", "anysense"),
-                                                               ( ("pcovered",) + Stats.Summary().getHeaders() )) ] )
+                                                               ( ("pcovered", "nreads", ) + Stats.Summary().getHeaders() )) ] )
                
     # discard segments with size > mMaxLength in order
     # to avoid out-of-memory
@@ -2044,7 +2127,7 @@ class CounterReadCoverage(Counter):
         length = sum( [x[1] - x[0] for x in segments ] )
         counts_sense = numpy.zeros( length )
         counts_antisense = numpy.zeros( length )
-        nreads = 0
+        reads_sense, reads_antisense = set(), set()
         contig = self.getContig()
         if self.getStrand() == "+":
             is_reverse = False
@@ -2066,15 +2149,19 @@ class CounterReadCoverage(Counter):
                     # only count positions actually overlapping
                     positions = read.positions
                     if not positions: continue
-                    nreads += 1
                     if is_reverse == read.is_reverse:
                         __add( counts_sense, positions, offset )
+                        reads_sense.add( read.qname )
                     else:
                         __add( counts_antisense, positions, offset )
+                        reads_antisense.add( read.qname )
 
             l += end - start
 
         self.length = length
+        self.nreads_sense = len(reads_sense)
+        self.nreads_antisense = len(reads_antisense)
+        self.nreads_anysense = self.nreads_sense + self.nreads_antisense
 
         counts_anysense = counts_sense + counts_antisense
 
@@ -2085,14 +2172,16 @@ class CounterReadCoverage(Counter):
         self.counts_sense = counts_sense
         self.counts_antisense = counts_antisense
         self.counts_anysense = counts_anysense
-
+        
     def __str__(self):
 
         r = [ "%i" % self.length ]
         
-        for direction, counts in zip ( ("sense", "antisense", "anysense"),
-                                       (self.counts_sense, self.counts_antisense, self.counts_anysense) ):
+        for direction, counts, nreads in zip ( ("sense", "antisense", "anysense"),
+                                               (self.counts_sense, self.counts_antisense, self.counts_anysense),
+                                               (self.nreads_sense, self.nreads_antisense, self.nreads_anysense) ):
             r.append( "%5.2f" % (100.0 * len(counts) / self.length) )
+            r.append( "%i" % (nreads) )
             r.append( str( Stats.Summary( counts, mode = "int" ) ) )
 
         return "\t".join( r )

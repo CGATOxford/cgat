@@ -34,6 +34,7 @@ Code
 
 '''
 import ncl
+from bx.intervals.intersection import Intersecter, Interval
 
 class IndexedGenome:
     '''Genome with indexed intervals.
@@ -83,3 +84,47 @@ class Simple( IndexedGenome ):
         if contig not in self.mIndex: 
             self.mIndex[contig] = self.index_factory()
         self.mIndex[contig].add( start,end )
+
+
+class Quicksect( IndexedGenome ):
+    '''index intervals using quicksect. 
+    
+    Permits finding closest interval in case there is 
+    no overlap.
+    '''
+    index_factory = Intersecter
+    
+    def __init__(self, *args, **kwargs ):
+        IndexedGenome.__init__(self, *args, **kwargs )
+
+    def add( self, contig, start, end, value ):
+        
+        if contig not in self.mIndex: 
+            self.mIndex[contig] = self.index_factory()
+        self.mIndex[contig].add_interval( Interval( start,end, value ) )
+        
+    def get(self, contig, start, end ):
+        '''return intervals overlapping with key.'''
+        if contig not in self.mIndex: 
+            raise KeyError("contig %s not in index" % contig )
+        
+        return [(x.start, x.end, x.value) for x in self.mIndex[contig].find( start, end ) ]
+    
+    def before( self, contig, start, end, num_intervals = 1, max_dist = 2500 ):
+        '''get closest interval before *start*.''' 
+        if contig not in self.mIndex: 
+            raise KeyError("contig %s not in index" % contig )
+        return [(x.start, x.end, x.value) for x in self.mIndex[contig].before_interval( Interval( start,end), 
+                                                                                        num_intervals = 1,
+                                                                                        max_dist = max_dist ) ]
+
+
+    def after( self, contig, start, end, num_intervals = 1, max_dist = 2500 ):
+        '''get closest interval after *end*.''' 
+        if contig not in self.mIndex: 
+            raise KeyError("contig %s not in index" % contig )
+        return [(x.start, x.end, x.value) for x in self.mIndex[contig].after_interval( Interval( start,end), 
+                                                                                       num_intervals = 1,
+                                                                                       max_dist = max_dist ) ]
+
+

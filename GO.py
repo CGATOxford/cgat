@@ -1112,7 +1112,7 @@ def outputResults( outfile, pairs, go2info,
         outfile.write("\n")
 
 
-def getSamples( gene2go, genes, background, options ):
+def getSamples( gene2go, genes, background, options, test_ontology ):
 
     sample_size = options.sample
     # List of all minimum probabilities in simulation
@@ -1167,7 +1167,7 @@ def getSamples( gene2go, genes, background, options ):
     samples = {}
 
     if options.output_filename_pattern:
-        filename = options.output_filename_pattern % { 'go': ontology, 'section': "samples" }
+        filename = options.output_filename_pattern % { 'go': test_ontology, 'section': "samples" }
         E.info( "sampling results go to %s" % filename )
         outfile = IOTools.openFile( filename, "w", create_dir = True )
     else:
@@ -1217,7 +1217,7 @@ def getSamples( gene2go, genes, background, options ):
 
     return samples, simulation_min_pvalues
 
-def computeFDRs( go_results, options ):
+def computeFDRs( go_results, options, test_ontology ):
 
     pairs = go_results.mResults.items()
 
@@ -1227,6 +1227,8 @@ def computeFDRs( go_results, options ):
 
     observed_min_pvalues = [ min(x[1].mProbabilityOverRepresentation,
                                  x[1].mProbabilityUnderRepresentation) for x in pairs ]
+
+    fdrs = {}
 
     if options.qvalue_method == "storey":
 
@@ -1244,7 +1246,7 @@ def computeFDRs( go_results, options ):
         ## for each GO-category:
         ##      get maximum and minimum counts in x samples -> calculate minimum/maximum significance
         ##      get average and stdev counts in x samples -> calculate z-scores for test set
-        samples, simulation_min_pvalues = getSamples( gene2go, genes, background, options )
+        samples, simulation_min_pvalues = getSamples( gene2go, genes, background, options, test_ontology )
 
         # compute P-values from sampling
         observed_min_pvalues.sort()
@@ -1604,7 +1606,7 @@ if __name__ == "__main__":
         #############################################################
         ## calculate fdr for each hypothesis
         if options.fdr:
-            fdrs, samples  = computeFDRs( go_results, options )
+            fdrs, samples  = computeFDRs( go_results, options, test_ontology )
         else:
             fdrs, samples = {}, None
 

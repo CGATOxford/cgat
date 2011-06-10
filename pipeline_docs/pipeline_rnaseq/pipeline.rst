@@ -17,6 +17,9 @@ Contents:
    pipeline/GeneModels.rst
    pipeline/GeneExpression.rst
    pipeline/DifferentialGeneExpression.rst
+   pipeline/CodingTranscription.rst
+   pipeline/NoncodingTranscription.rst
+   pipeline/Export.rst
    python/Trackers.rst
  
 .. errorlist::

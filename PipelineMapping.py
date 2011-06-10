@@ -70,6 +70,10 @@ class Mapper( object ):
     
     datatype = "fastq"
 
+    # set to True if you want to preserve colour space files.
+    # By default, they are converted to fastq.
+    preserve_colourspace = False
+
     def __init__(self):
         pass
 
@@ -117,6 +121,7 @@ class Mapper( object ):
                 statement.append( "fastq-dump --outdir %(tmpdir_fastq)s %(infile)s" % locals() )
                 
             elif infile.endswith( ".fastq.gz" ):
+
                 track = P.snip( os.path.basename( infile ), ".fastq.gz" )
                 statement.append(  """gunzip < %(infile)s 
                                       | python %%(scriptsdir)s/fastq2fastq.py --change-format=sanger --guess-format=phred64 --log=%(outfile)s.log
@@ -124,17 +129,50 @@ class Mapper( object ):
                 fastqfiles.append( ("%s/%s.fastq" % (tmpdir_fastq, track),) )
 
             elif infile.endswith( ".csfasta.gz" ):
-                track = P.snip( os.path.basename( infile ), ".csfasta.gz" )
-                quality = P.snip( infile, ".csfasta.gz" ) + ".qual.gz"
-                if not os.path.exists( quality ):
-                    raise ValueRerror( "no quality file for %s" % infile )
-                statement.append(  """gunzip < %(infile)s 
-                                      > %(tmpdir_fastq)s/%(track)s.csfasta""" % locals() )
-                statement.append(  """gunzip < %(quality)s 
-                                      > %(tmpdir_fastq)s/%(track)s.qual""" % locals() )
-                fastqfiles.append( ("%s/%s.csfasta" % (tmpdir_fastq, track),
-                                    "%s/%s.qual" % (tmpdir_fastq, track) ) )
-                self.datatype = "solid"
+                # single end SOLiD data
+                if self.preserve_colourspace:
+                    track = P.snip( os.path.basename( infile ), ".csfasta.gz" )
+                    quality = P.snip( infile, ".csfasta.gz" ) + ".qual.gz"
+                    if not os.path.exists( quality ):
+                        raise ValueError( "no quality file for %s" % infile )
+                    statement.append(  """gunzip < %(infile)s 
+                                          > %(tmpdir_fastq)s/%(track)s.csfasta""" % locals() )
+                    statement.append(  """gunzip < %(quality)s 
+                                          > %(tmpdir_fastq)s/%(track)s.qual""" % locals() )
+                    fastqfiles.append( ("%s/%s.csfasta" % (tmpdir_fastq, track),
+                                        "%s/%s.qual" % (tmpdir_fastq, track) ) )
+                    self.datatype = "solid"
+                else:
+                    track = P.snip( os.path.basename( infile ), ".csfasta.gz" )
+                    quality = P.snip( infile, ".csfasta.gz" ) + ".qual.gz"
+
+                    statement.append( """solid2fastq <(gunzip < %(infile)s) <(gunzip < %(quality)s)
+                                      > %(tmpdir_fastq)s/%(track)s.fastq""" % locals() )
+                    fastqfiles.append( ("%s/%s.fastq" % (tmpdir_fastq, track),) )
+
+            elif infile.endswith( ".csfasta.F3.gz" ):
+                # paired end SOLiD data
+                if self.preserve_colourspace:
+                    track = P.snip( os.path.basename( infile ), ".csfasta.F3.gz" )
+                    bn = P.snip( infile, ".csfasta.F3.gz" )
+                    # order is important - mirrors tophat reads followed by quals
+                    f = []
+                    for suffix in ("csfasta.F3", "csfasta.F5", "qual.F3", "qual.F5" ):
+                        fn = "%(bn)s.%(suffix)s" % locals()
+                        if not os.path.exists( fn + ".gz"): raise ValueError( "expected file %s.gz missing" % fn )
+                        statement.append( """gunzip < %(fn)s.gz
+                                          > %(tmpdir_fastq)s/%(track)s.%(suffix)s""" % locals() )
+                        f.append( "%(tmpdir_fastq)s/%(track)s.%(suffix)s" % locals() )
+                    fastqfiles.append( f )
+                    self.datatype = "solid"
+                else:
+                    track = P.snip( os.path.basename( infile ), ".csfasta.gz" )
+                    quality = P.snip( infile, ".csfasta.gz" ) + ".qual.gz"
+
+                    statement.append( """solid2fastq <(gunzip < %(infile)s) <(gunzip < %(quality)s)
+                                      > %(tmpdir_fastq)s/%(track)s.fastq""" % locals() )
+                    fastqfiles.append( ("%s/%s.fastq" % (tmpdir_fastq, track),) )
+                
 
             elif infile.endswith( ".fastq.1.gz" ):
 
@@ -274,6 +312,9 @@ class bwa( Mapper ):
 
 
 class Tophat( Mapper ):
+
+    # tophat can map colour space files directly
+    preserve_colourspace = True
     
     def mapper( self, infiles, outfile ):
         '''build mapping statement on infiles.
@@ -304,6 +345,7 @@ class Tophat( Mapper ):
             statement = '''
             tophat --output-dir %(tmpdir_tophat)s
                    --num-threads %%(tophat_threads)i
+                   --library-type %%(tophat_library_type)s
                    %(data_options)s
                    %%(tophat_options)s
                    %(index_file)s
@@ -321,12 +363,36 @@ class Tophat( Mapper ):
             tophat --output-dir %(tmpdir_tophat)s
                    --mate-inner-dist %%(tophat_mate_inner_dist)i
                    --num-threads %%(tophat_threads)i
+                   --library-type %%(tophat_library_type)s
                    %(data_options)s
                    %%(tophat_options)s
                    %(index_file)s
                    %(infiles1)s %(infiles2)s 
                    >> %(outfile)s.log 2>&1 ;
             ''' % locals()
+        elif nfiles == 4:
+            # this section works both for paired-ended fastq files
+            # in color space mapping (separate quality file)
+            # reads1 reads2 qual1 qual2
+            infiles1 = ",".join( [ x[0] for x in infiles ] )
+            infiles2 = ",".join( [ x[1] for x in infiles ] )
+            infiles3 = ",".join( [ x[2] for x in infiles ] )
+            infiles4 = ",".join( [ x[3] for x in infiles ] )
+
+            statement = '''
+            tophat --output-dir %(tmpdir_tophat)s
+                   --mate-inner-dist %%(tophat_mate_inner_dist)i
+                   --num-threads %%(tophat_threads)i
+                   --library-type %%(tophat_library_type)s
+                   %(data_options)s
+                   %%(tophat_options)s
+                   %(index_file)s
+                   %(infiles1)s %(infiles2)s 
+                   %(infiles3)s %(infiles4)s 
+                   >> %(outfile)s.log 2>&1 ;
+            ''' % locals()
+
+
         else:
             raise ValueError( "unexpected number reads to map: %i " % nfiles )
 
@@ -351,6 +417,9 @@ class Tophat( Mapper ):
 
 class Bowtie( Mapper ):
     '''map with bowtie against genome.'''
+
+    # bowtie can map colour space files directly
+    preserve_colourspace = True
 
     def mapper( self, infiles, outfile ):
         '''build mapping statement on infiles.
@@ -445,6 +514,9 @@ class Bowtie( Mapper ):
 
 class BowtieTranscripts( Mapper ):
     '''map with bowtie against transcripts.'''
+
+    # bowtie can map colour space files directly
+    preserve_colourspace = True
 
     def mapper( self, infiles, outfile ):
         '''build mapping statement on infiles.

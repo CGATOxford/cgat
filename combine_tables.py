@@ -175,7 +175,7 @@ if __name__ == '__main__':
     else:
         titles = []
     
-    for filename in options.filenames:
+    for nindex, filename in enumerate(options.filenames):
 
         prefix = os.path.basename( filename )
 
@@ -184,7 +184,10 @@ if __name__ == '__main__':
         else:
             lines = []
 
-        if len(lines) == 0 and options.ignore_empty: continue
+        # skip (or not skip) empty tables
+        if len(lines) == 0 and options.ignore_empty:
+            del options.headers[nindex]
+            continue
 
         table = {}
         sizes = {}

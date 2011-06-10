@@ -18,7 +18,9 @@ class TranscriptCoverage(ReferenceData):
     """Coverage of reference transcripts."""
     mXLabel = "overlap / %"
     def __call__(self, track, slice = None ):
-        data = self.getValues( """SELECT coverage_sense_pcovered FROM %(track)s_transcript_counts WHERE coverage_sense_nval > 0""" )
+        data = self.getValues( """SELECT coverage_sense_pcovered 
+                                         FROM %(track)s_transcript_counts 
+                                         WHERE coverage_sense_nval > 0""" )
         return odict( (("covered", data ) ,) )
 
 class GeneCoverage(ReferenceData):
@@ -30,7 +32,7 @@ class GeneCoverage(ReferenceData):
                                             %(reference)s_transcript2gene as i
                                          WHERE c.coverage_sense_nval > 0
                                    AND i.transcript_id = c.transcript_id 
-                                   GROUP BY i.gene_id """ )
+                                   GROUP BY i.gene_id""" )
         return odict( (("covered", data ) ,) )
 
 class CoverageVsLengthByReadDepth(ReferenceData):
@@ -83,8 +85,6 @@ class MeanVsMedianReadDepth( ReferenceData ):
         statement = "SELECT coverage_sense_mean, coverage_sense_median, exons_sum FROM %(track)s_transcript_counts" % locals()
         data = [ (x[0], x[1], math.log( x[2]) ) for x in self.get( statement) if x[2] > 0 ]
         return odict( zip( ("mean coverage", "median coverage", "length" ), zip(*data) ) )
-
-
 
 ##=================================================================
 ## Directionality

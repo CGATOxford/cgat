@@ -108,6 +108,7 @@ def main( argv = None ):
         filename_mismapped = None,
         remove_contigs = None,
         force = False,
+        unique = False,
         )
 
     ## add common options (-h/--help, ...) and parse command line 

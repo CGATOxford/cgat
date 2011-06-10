@@ -252,6 +252,11 @@ def toTable( outfile ):
     name = os.path.basename( outfile[:-len(".load")] )
     return quote( name )
 
+def getProjectId():
+    '''cgat specific method: get the (obfuscated) project id.'''
+    target = os.readlink( "../sftp/web" )
+    return os.path.basename( target )
+
 def load( infile, outfile, options = "" ):
     '''straight import from tab separated table.
 
@@ -364,6 +369,8 @@ def buildStatement( **kwargs ):
         statement = kwargs.get("statement") % dict( PARAMS.items() + kwargs.items() )
     except KeyError, msg:
         raise KeyError( "Error when creating command: could not find %s in dictionaries" % msg)
+    except ValueError, msg:
+        raise ValueError( "Error when creating command: %s, statement = %s" % (msg, kwargs.get("statement") ) )
 
     # add bash as prefix to allow advanced shell syntax like 'wc -l <( gunzip < x.gz)'
     # executable option to call() does not work. Note that there will be an extra
@@ -441,6 +448,9 @@ def run( **kwargs ):
 
     if not kwargs: kwargs = getCallerLocals()
 
+    # compile options
+    options = dict(PARAMS.items() + kwargs.items())
+
     # run multiple jobs
     if kwargs.get( "statements" ):
 
@@ -449,7 +459,7 @@ def run( **kwargs ):
             kwargs["statement"] = statement
             statement_list.append(buildStatement( **kwargs))
             
-        if kwargs.get( "dryrun", False ): return
+        if options.get( "dryrun", False ): return
 
         # get session for process - only one is permitted
         pid = os.getpid()
@@ -466,10 +476,10 @@ def run( **kwargs ):
         jt.jobEnvironment = { 'BASH_ENV' : '~/.bashrc' }
         jt.args = []
         jt.nativeSpecification = "-q %s -p %i -N %s %s" % \
-            (kwargs.get("job_queue", global_options.cluster_queue ),
-             kwargs.get("job_priority", global_options.cluster_priority ),
-             os.path.basename(kwargs.get("outfile", "ruffus" )),
-             kwargs.get("job_options", global_options.cluster_options))
+            (options.get("job_queue", global_options.cluster_queue ),
+             options.get("job_priority", global_options.cluster_priority ),
+             os.path.basename(options.get("outfile", "ruffus" )),
+             options.get("job_options", global_options.cluster_options))
         
         # keep stdout and stderr separate
         jt.joinFiles=False
@@ -519,11 +529,11 @@ def run( **kwargs ):
         session.deleteJobTemplate(jt)
 
     # run a single parallel job
-    elif (kwargs.get( "job_queue" ) or kwargs.get( "to_cluster" )) and not global_options.without_cluster:
+    elif (options.get( "job_queue" ) or options.get( "to_cluster" )) and not global_options.without_cluster:
 
         statement = buildStatement( **kwargs )
 
-        if kwargs.get( "dryrun", False ): return
+        if options.get( "dryrun", False ): return
 
         tmpfile = tempfile.NamedTemporaryFile( dir = os.getcwd() , delete = False )
         tmpfile.write( "#!/bin/bash\n" ) #  -l -O expand_aliases\n" )
@@ -551,10 +561,10 @@ def run( **kwargs ):
         jt.jobEnvironment = { 'BASH_ENV' : '~/.bashrc' }
         jt.args = []
         jt.nativeSpecification = "-q %s -p %i -N %s %s" % \
-            (kwargs.get("job_queue", global_options.cluster_queue ),
-             kwargs.get("job_priority", global_options.cluster_priority ),
-             os.path.basename(kwargs.get("outfile", "ruffus" )),
-             kwargs.get("job_options", global_options.cluster_options))
+            (options.get("job_queue", global_options.cluster_queue ),
+             options.get("job_priority", global_options.cluster_priority ),
+             os.path.basename(options.get("outfile", "ruffus" )),
+             options.get("job_options", global_options.cluster_options))
         
         # keep stdout and stderr separate
         jt.joinFiles=False
@@ -564,7 +574,7 @@ def run( **kwargs ):
 
         if "job_array" in kwargs and kwargs["job_array"] != None:
             # run an array job
-            start, end, increment = kwargs.get("job_array" )
+            start, end, increment = options.get("job_array" )
             L.debug("starting an array job: %i-%i,%i" % (start, end, increment ))
             # sge works with 1-based, closed intervals
             jobids = session.runBulkJobs( jt, start+1, end, increment )
@@ -595,7 +605,7 @@ def run( **kwargs ):
     else:
         statement = buildStatement( **kwargs )
 
-        if kwargs.get( "dryrun", False ): return
+        if options.get( "dryrun", False ): return
  
         if "<(" in statement:
             if "'" in statement: raise ValueError( "advanced bash syntax combined with single quotes" )
@@ -842,6 +852,74 @@ def run_report( clean = True):
     '''
 
     run()
+
+def publish_report( prefix = "", patterns = []):
+    '''publish report into web directory.
+
+    Links export directory into web directory.
+
+    Copies html pages and fudges links to the pages in the
+    export directory.
+
+    If *prefix* is given, the directories will start with prefix.
+
+    *patterns* is an optional list of two-element tuples (<pattern>, replacement_string).
+    Each substitutions will be applied on each file ending in .html.
+
+    .. note::
+       This function is CGAT specific.
+
+    '''
+
+    web_dir = PARAMS["web_dir"]
+    project_id = getProjectId()
+
+    src_export = os.path.abspath( "export" )
+    dest_report = prefix + "report"
+    dest_export = prefix + "export"
+
+    def _link( src, dest ):
+        '''create links. 
+
+        Only link to existing targets.
+        '''
+        dest = os.path.abspath( os.path.join( PARAMS["web_dir"], dest ) )
+        if os.path.exists( dest ):
+            os.remove(dest)
+        if os.path.exists( src ):
+            os.symlink( os.path.abspath(src), dest )
+
+    def _copy( src, dest ):
+        dest = os.path.abspath( os.path.join( PARAMS["web_dir"], dest ) )
+        if os.path.exists( dest ): shutil.rmtree( dest )
+        shutil.copytree( os.path.abspath(src), dest ) 
+
+    # publish export dir via symlinking
+    _link( src_export, dest_export )
+
+    # publish web pages by copying
+    _copy( os.path.abspath("report/html"), dest_report ) 
+
+    # substitute links to export
+    _patterns = [ (re.compile( src_export ), 
+                  "http://www.cgat.org/downloads/%(project_id)s/%(dest_export)s" % locals() ), 
+                 ]
+    
+    _patterns.extend( patterns )
+    
+    for root, dirs, files in os.walk(os.path.join( web_dir, dest_report)):
+        for f in files:
+            fn = os.path.join( root, f )
+            if fn.endswith(".html" ):
+                with open( fn ) as inf:
+                    data = inf.read()
+                for rx, repl in _patterns:
+                    data = rx.sub( repl, data )
+                outf = open( fn, "w" )
+                outf.write( data )
+                outf.close()
+
+    E.info( "report has been published at http://www.cgat.org/downloads/%(project_id)s/%(dest_report)s" % locals())
 
 if __name__ == "__main__":
 

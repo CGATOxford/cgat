@@ -72,7 +72,9 @@ try:
 except IOError:
     pass
 
-def buildUTRExtensions( infile, outfile ):
+Utr = collections.namedtuple( "Utr", "old new max status" )
+
+def buildUTRExtension( infile, outfile ):
     '''build new utrs by building and fitting an HMM 
     to reads upstream and downstream of known genes.
 
@@ -147,7 +149,6 @@ def buildUTRExtensions( infile, outfile ):
     # or better set as options in .ini file
     binsize = 100
     territory_size = 15000
-
             
     # read gene coordinates
     geneinfos = {}
@@ -209,9 +210,9 @@ def buildUTRExtensions( infile, outfile ):
         for x in xrange( len( utrs ) ):
             utr, exon = utrs[x], exons[x]
 
-            # only consider genes with expression coverage of 10 or more.
+            # only consider genes with expression coverage
             # note: expression level is logscaled here, 10^1 = 10
-            if exon < 1: continue
+            if exon < 0.1: continue
             
             # first row is column names, so x + 1
             values = list(scaled.rx(x+1, True))
@@ -224,7 +225,7 @@ def buildUTRExtensions( infile, outfile ):
             transitions[0][1] += 1
             transitions[1][1] += nonutr_bins
             
-            outside_utr.extend( values[utr_bins:] )
+            outside_utr.extend( [x for x in values[utr_bins:] if x <= 0.5] )
 
             # ignore exon and zero counts
             within_utr.extend( [ x for x in values[1:utr_bins] if x > 0.1 ] )
@@ -293,6 +294,7 @@ def buildUTRExtensions( infile, outfile ):
         # build hmm
         # state 1 = UTR
         # state 2 = notUTR
+        # state 3 = other transcript
         p = R('''betaparams = list( shape1=c(fit_within_utr$estimate['shape1'],
                                          fit_outside_utr$estimate['shape1'],
                                          fit_otherTranscript$estimate['shape1']),
@@ -313,21 +315,30 @@ def buildUTRExtensions( infile, outfile ):
         nseqs = len(utrs)
 
         counter = E.Counter()
-        for x in xrange(len(utrs)):
-            if x % 100 == 0: 
-                E.debug( "processing gene %i/%i" % (x,len(utrs)))
 
+        for idx in xrange(len(utrs)):
+
+            gene_id = genes[idx]
+            
+            old_utr = utrs[idx]                
+
+            if idx % 100 == 0: 
+                E.debug( "processing gene %i/%i" % (idx,len(utrs)))
+                
             counter.input += 1
 
             # do not predict if terminal exon not expressed
-            if exons[x] < 1: 
+            if exons[idx] < 1: 
                 counter.skipped_notexpressed += 1
-                continue                
+                new_utrs[gene_id] = Utr._make( (old_utr, None, None, "notexpressed" ) )
+                continue
 
-            R('''obs = data[%i,][-c(1,2)]''' % (x+1) )
+            R('''obs = data[%i,][-c(1,2)]''' % (idx+1) )
             # remove na
             obs = R('''obs = obs[!is.na(obs)]''' )
-            if len(obs) <= 1 or max(obs) == 0: continue
+            if len(obs) <= 1 or max(obs) == 0: 
+                new_utrs[gene_id] = Utr._make( (old_utr, None, None, "no observations" ) )
+                continue
             
             # normalize
             R('''obs = obs / max(obs)''')
@@ -336,29 +347,30 @@ def buildUTRExtensions( infile, outfile ):
             R('''obs[obs==1] = obs[obs==1] - 0.001 ''')
             R('''hmm$x = obs''')
 
+            states = None
             try:
                 states = list(R('''states = Viterbi( hmm )'''))
             except ri.RRuntimeError, msg:
                 counter.skipped_error += 1
+                new_utrs[gene_id] = Utr._make( (old_utr, None, None, "fail" ) )
                 continue
+
+            max_utr = binsize * (len(states) -1)
 
             # subtract 1 for last exon
             try:
                 new_utr = binsize * (states.index(2) - 1)
+                new_utrs[gene_id] = Utr._make( (old_utr, new_utr, max_utr, "ok" ) )
+                counter.success += 1
             except ValueError:
-                new_utr = binsize * (len( states ) - 1)
+                new_utrs[gene_id] = Utr._make( (old_utr, max_utr, max_utr, "max" ) )
+                counter.maxutr += 1
             
-            counter.success += 1
-            gene_id = genes[x]
-            old_utr = utrs[x]
-            max_utr = binsize * (len(states) -1)
-            new_utrs[gene_id] = (old_utr, new_utr, max_utr )
-
     E.info( "fitting: %s" % str(counter))
     
     outf = IOTools.openFile( outfile, "w" )
     
-    outf.write( "\t".join( ["gene_id", "contig", "strand",]+
+    outf.write( "\t".join( ["gene_id", "contig", "strand", "status5", "status3" ]+
                            [ "%s_%s_%s" % (x,y,z) for x,y,z in itertools.product( \
                     ("old", "new", "max"),
                     ("5utr", "3utr"),
@@ -390,19 +402,24 @@ def buildUTRExtensions( infile, outfile ):
         return start5, end5, start3, end3
 
     for gene_id in all_genes:
+        
         contig, strand, start, end = geneinfos[gene_id]
+
         outf.write( "%s\t%s\t%s" % (gene_id, contig, strand) )
 
         if gene_id in upstream_utrs: upstream = upstream_utrs[gene_id]
-        else: upstream = (None,None,None)
+        else: upstream = Utr._make( (None,None,None,"missing") )
         if gene_id in downstream_utrs: downstream = downstream_utrs[gene_id]
-        else: downstream = (None,None,None)
+        else: downstream = Utr._make( (None,None,None,"missing") )
 
         if strand == "-": upstream, downstream = downstream, upstream
 
+        # output prediction status
+        outf.write( "\t%s\t%s" % (upstream.status, downstream.status) )
+
         # build upstream/downstream coordinates
-        old_coordinates = _buildCoords( upstream[0], downstream[0], start, end ) 
-        new_coordinates = _buildCoords( upstream[1], downstream[1], start, end ) 
+        old_coordinates = _buildCoords( upstream.old, downstream.old, start, end ) 
+        new_coordinates = _buildCoords( upstream.new, downstream.new, start, end ) 
 
         # reconciled = take maximum extension of UTR
         max_coordinates = []
@@ -435,7 +452,7 @@ def plotGeneLevelReadExtension( infile, outfile ):
     R('''suppressMessages(library(RColorBrewer))''')
     R('''suppressMessages(library(MASS))''')
     R('''suppressMessages(library(HiddenMarkov))''')
-
+    
     # the bin size , see gtf2table - could be cleaned from column names
     binsize = 100
     territory_size = 15000
@@ -503,59 +520,85 @@ def plotGeneLevelReadExtension( infile, outfile ):
 #############################################################################    
 #############################################################################    
 #############################################################################    
-def filterAndMergeGTF( infile, outfile, remove_genes ):
+def filterAndMergeGTF( infile, outfile, remove_genes, merge = False ):
     '''filter gtf file infile with gene ids in remove_genes
     and write to outfile.
 
-    The resultant gene models are merged by overlap.
+    If *merge* is set, the resultant transcript models are merged by overlap.
+
+    A summary file "<outfile>.summary" contains the number of transcripts that failed 
+    various filters.
+
+    A file "<outfile>.removed.tsv.gz" contains the filters that a transcript failed.
     '''
+
+    counter = E.Counter()
 
     # write summary table
     outf = IOTools.openFile( outfile + ".removed.tsv.gz", "w" )
     outf.write("gene_id\tnoverlap\tsection\n" )
     for gene_id, r in remove_genes.iteritems():
+        for s in r: counter[s] += 1
         outf.write( "%s\t%i\t%s\n" % (gene_id, 
                                       len(r),
                                       ",".join(r) ) )
-        
     outf.close()
 
     # filter gtf file
     tmpfile = P.getTempFile( "." )
     inf = GTF.iterator( IOTools.openFile( infile ) )
 
-    for gtf in inf:
-        if gtf.gene_id in remove_genes: continue
-        tmpfile.write( "%s\n" % str(gtf))
+    genes_input, genes_output = set(), set()
 
+    for gtf in inf:
+        genes_input.add( gtf.gene_id)
+        if gtf.gene_id in remove_genes: continue
+        genes_output.add( gtf.gene_id)
+        tmpfile.write( "%s\n" % str(gtf))
 
     tmpfile.close()
     tmpfilename = tmpfile.name
 
-    # close-by exons need to be merged, otherwise 
-    # cuffdiff fails for those on "." strand
+    outf = IOTools.openFile( outfile + ".summary.tsv.gz", "w" )
+    outf.write("category\ttranscripts\n" )
+    for x,y in counter.iteritems(): outf.write( "%s\t%i\n" % (x,y) )
+    outf.write( "input\t%i\n" % len(genes_input))
+    outf.write( "output\t%i\n" % len(genes_output))
+    outf.write( "removed\t%i\n" % (len(genes_input) - len(genes_output)) )
 
-    statement = '''
-    %(scriptsdir)s/gff_sort pos < %(tmpfilename)s
-    | python %(scriptsdir)s/gtf2gtf.py
-        --unset-genes="NONC%%06i"
-        --log=%(outfile)s.log
-    | python %(scriptsdir)s/gtf2gtf.py
-        --merge-genes
-        --log=%(outfile)s.log
-    | python %(scriptsdir)s/gtf2gtf.py
-        --merge-exons
-        --merge-exons-distance=5
-        --log=%(outfile)s.log
-    | python %(scriptsdir)s/gtf2gtf.py
-        --renumber-genes="NONC%%06i"
-        --log=%(outfile)s.log
-    | python %(scriptsdir)s/gtf2gtf.py
-        --renumber-transcripts="NONC%%06i"
-        --log=%(outfile)s.log
-    | %(scriptsdir)s/gff_sort genepos 
-    | gzip > %(outfile)s
-    '''
+    outf.close()
+
+    # close-by exons need to be merged, otherwise 
+     # cuffdiff fails for those on "." strand
+
+    if merge:
+        statement = '''
+        %(scriptsdir)s/gff_sort pos < %(tmpfilename)s
+        | python %(scriptsdir)s/gtf2gtf.py
+            --unset-genes="NONC%%06i"
+            --log=%(outfile)s.log
+        | python %(scriptsdir)s/gtf2gtf.py
+            --merge-genes
+            --log=%(outfile)s.log
+        | python %(scriptsdir)s/gtf2gtf.py
+            --merge-exons
+            --merge-exons-distance=5
+            --log=%(outfile)s.log
+        | python %(scriptsdir)s/gtf2gtf.py
+            --renumber-genes="NONC%%06i"
+            --log=%(outfile)s.log
+        | python %(scriptsdir)s/gtf2gtf.py
+            --renumber-transcripts="NONC%%06i"
+            --log=%(outfile)s.log
+        | %(scriptsdir)s/gff_sort genepos 
+        | gzip > %(outfile)s
+        '''
+    else:
+        statement = '''
+        %(scriptsdir)s/gff_sort pos < %(tmpfilename)s
+        | gzip > %(outfile)s
+        '''
+
     P.run()
 
     os.unlink( tmpfilename )

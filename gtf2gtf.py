@@ -546,9 +546,11 @@ if __name__ == '__main__':
                     ndiscarded += 1
 
         elif options.filter in ("gene", "transcript"):
-            if options.filename_filter:
 
+            if options.filename_filter:
+                
                 ids, nerrors = IOTools.ReadList( open(options.filename_filter, "r") )
+                E.info( "read %i ids" % len(ids))
 
                 ids = set(ids)
                 by_gene = options.filter == "gene"
@@ -688,10 +690,10 @@ if __name__ == '__main__':
                 else:
                     ranges = GTF.asRanges( g, "CDS" )
                 r.append( ranges )
-                
+
             result = r[0]
-            for r in r[1:]:
-                result = Intervals.intersect( result, r )
+            for x in r[1:]:
+                result = Intervals.intersect( result, x )
             
             entry = GTF.Entry()
             entry.copy( gffs[0][0] )

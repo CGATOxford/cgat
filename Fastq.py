@@ -65,6 +65,10 @@ class Record:
             if mi >= m1 and ma < m2: r.append( format )
         return r
 
+    def trim( self, trim3, trim5 = 0 ):
+        self.seq = self.seq[trim5:-trim3]
+        self.quals = self.quals[trim5:-trim3]
+
     def toPhred( self ):
         '''return qualities as a list of phred-scores.'''
         assert self.format != None, "format needs to be set for conversion"
@@ -80,7 +84,8 @@ class Record:
     def fromPhred( self, quals, format ):
         '''set qualities from a list of phred-scores.'''
         self.format = format
-        assert len(quals) == len(self.seq)
+        # -1 for color space fastq file
+        assert len(quals) == len(self.seq) or len(quals) == len(self.seq) - 1
         if self.format == "sanger":
             self.quals = "".join( [ chr(33 + x) for x in quals ] )
         elif self.format == "solexa":
@@ -89,6 +94,8 @@ class Record:
             self.quals = "".join( [ chr(64 + x) for x in q ] )
         elif self.format == "phred64":
             self.quals = "".join( [ chr(64 + x) for x in quals ] )
+        elif self.format == "integer":
+            self.quals = " ".join( map( str, quals ) )
 
 def iterate( infile ):
     '''iterate over contents of fastq file.'''
