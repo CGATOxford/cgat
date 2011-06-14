@@ -111,6 +111,33 @@ def getParameters( filenames = ["pipeline.ini",] ):
 
     return PARAMS
 
+def substituteParameters( **kwargs ):
+    '''return a local PARAMS dictionary.
+
+    Options in **kwargs substitute default
+    values in PARAMS.
+
+    Finally, task specific configuration values 
+    are inserted.
+    '''
+
+    # build parameter dictionary
+    # note the order of addition to make sure that kwargs takes precedence
+    local_params = dict(PARAMS.items() + kwargs.items())
+
+    if "outfile" in local_params:
+        # replace specific parameters with task (outfile) specific parameters
+        outfile = local_params["outfile"]
+        for k in local_params.keys():
+            if k.startswith(outfile):
+                p = k[len(outfile)+1:]
+                if p not in local_params:
+                    raise KeyError( "task specific parameter '%s' does not exist for '%s' " % (p,k))
+                local_params[p] = local_params[k]
+
+    return local_params
+
+
 def checkFiles( filenames ):
     """check for the presence/absence of files"""
     
@@ -357,16 +384,19 @@ _exec_suffix = "; detect_pipe_error"
 def buildStatement( **kwargs ):
     '''build statement from kwargs.
 
-    Options in PARAMS are added, but kwargs takes precedence.
+    Options in PARAMS are added, but kwargs take precedence.
+    
+    If outfile is in kwargs, 
     '''
 
     if "statement" not in kwargs:
         raise ValueError("'statement' not defined")
 
-    # the actual statement
+    local_params = substituteParameters( **kwargs )
+
+    # build the statement
     try:
-        # note the order of addition to make sure that kwargs takes precedence
-        statement = kwargs.get("statement") % dict( PARAMS.items() + kwargs.items() )
+        statement = kwargs.get("statement") % local_params
     except KeyError, msg:
         raise KeyError( "Error when creating command: could not find %s in dictionaries" % msg)
     except ValueError, msg:

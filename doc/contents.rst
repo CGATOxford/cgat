@@ -54,6 +54,7 @@ Pipelines
 
    pipelines.rst
    setup.rst
+   BuildingPipelines.rst
 
 Indices and tables
 ==================

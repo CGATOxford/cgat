@@ -930,6 +930,7 @@ def genome():
           loadGeneStats,
           loadGeneInformation,
           buildExonTranscripts,
+          buildPseudogenes,
           buildSelenoList)
 def geneset():
     '''import information on geneset.'''

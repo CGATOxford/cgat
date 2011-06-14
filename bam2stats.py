@@ -61,7 +61,6 @@ Code
 '''
 
 import os, sys, re, optparse, collections
-
 import Experiment as E
 import IOTools
 import pysam
@@ -103,7 +102,7 @@ def main( argv = None ):
                        help = "remove rna reads for duplicate and other counts [%default]" )
     parser.add_option( "-i", "--input-reads", dest="input_reads", type="int",
                        help = "the number of reads - if given, used to provide percentages [%default]" )
-    parser.add_option( "--force-output", dest="force_output", type="int",
+    parser.add_option( "--force-output", dest="force_output", action="store_true",
                        help = "output nh/nm stats even if there is only a single count [%default]" )
 
 #    parser.add_option( "-p", "--ignore-pairs", dest="ignore_pairs", action="store_true",
@@ -193,6 +192,7 @@ def main( argv = None ):
     if len(nh_all) > 1:
         outs.write( "reads_unique\t%i\t%5.2f\treads_mapped\n" % (nh_all[1], 100.0 * nh_all[1] / nreads_mapped ) )
 
+    # look at various filtering options
     if options.filename_rna:
         nreads_norna = c.filtered
         if len(nh) > 1:
@@ -208,7 +208,10 @@ def main( argv = None ):
     if options.force_output or len(nm) > 0:
         outfile = E.openOutputFile( "nm", "w" )
         outfile.write( "NM\talignments\n" )
-        for x in xrange( 0, max( nm.keys() ) + 1 ): outfile.write("%i\t%i\n" % (x, nm[x]))
+        if len(nm) > 0:
+            for x in xrange( 0, max( nm.keys() ) + 1 ): outfile.write("%i\t%i\n" % (x, nm[x]))
+        else:
+            outfile.write( "0\t%i\n" % (c.filtered) )
         outfile.close()
 
     if options.force_output or len(nh) > 1:
@@ -216,8 +219,12 @@ def main( argv = None ):
         # one read matching to 2 positions is only 2
         outfile = E.openOutputFile( "nh", "w")
         outfile.write( "NH\treads\n" )
-        for x in xrange( 1, max( nh.keys() ) + 1 ): 
-            outfile.write("%i\t%i\n" % (x, nh[x] / x))
+        if len(nh) > 0:
+            for x in xrange( 1, max( nh.keys() ) + 1 ): 
+                outfile.write("%i\t%i\n" % (x, nh[x] / x))
+        else:
+            # assume all are unique if NH flag set
+            outfile.write( "1\t%i\n" % (c.filtered) )
         outfile.close()
 
     ## write footer and output benchmark information.

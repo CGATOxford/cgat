@@ -31,6 +31,10 @@ data_dir = os.path.abspath('..')
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.todo', 'sphinx.ext.coverage', 'sphinx.ext.pngmath', 'sphinx.ext.ifconfig',
               'SphinxReport.only_directives', 'SphinxReport.report_directive', 'sphinx.ext.inheritance_diagram' ]
 
+# autoclass configuration - use both class and __init__ method to
+# document methods.
+autoclass_content="both"
+
 # include todos
 todo_include_todos = True
 
