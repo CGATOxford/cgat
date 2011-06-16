@@ -339,6 +339,62 @@ class SequencePropertiesNA(SequenceProperties):
 
         return fields
 
+#######################################################################
+class SequencePropertiesCpg(SequenceProperties):
+    
+    def __init__(self, reference_usage = [] ):
+        
+        SequenceProperties.__init__(self)
+
+        self.mCountsCG = 0
+        self.mCountsGC = 0
+        
+    def addProperties( self, other ):
+        SequenceProperties.addProperties( self, other )
+
+        self.mCountsGC += other.mCountsGC
+        self.mCountsCG += other.mCountsCG
+
+    def loadSequence( self, sequence ):
+        
+        """load sequence properties from a sequence."""
+        SequenceProperties.loadSequence( self, sequence )        
+
+        for i in xrange(0, len(sequence), 1):
+            dinuc = sequence.upper()[i:i+1]
+            print dinuc
+
+            if dinuc =='GC':
+                self.mCountsGC += 1
+            elif dinuc == 'CG':
+                self.mCountsCG += 1
+               
+    def getFields(self):
+
+        fields = SequenceProperties.getFields(self)
+        fields.append( "%i" % self.mCountsGC )
+        fields.append( "%i" % self.mCountsCG )        
+
+        t = float(self.mCountsGC + self.mCountsCG)
+        if t == 0:
+            fields.append( "na" )
+            fields.append( "na" )
+        else:
+            fields.append( "%f" % (float(self.mCountsGC) / self.mLength ))
+            fields.append( "%f" % (float(self.mCountsCG) / self.mLength ))
+        
+        return fields
+
+    def getHeaders( self ):
+
+        fields = SequenceProperties.getHeaders(self)
+        fields.append("nGC")
+        fields.append("nCG")        
+        fields.append("pGC")
+        fields.append("pCG")        
+
+        return fields
+
 ###########################################################################
 class SequencePropertiesDegeneracy (SequenceProperties):
     """count degeneracy.

@@ -137,15 +137,10 @@ import pysam
 import numpy
 import gzip
 import Masker
-#import Glam2Scan
 import fileinput
-#import Motifs
 import gff2annotator
-#import Bioprospector
 
 import pipeline_chipseq_intervals as PIntervals
-#import pipeline_vitaminD_annotator as PAnnotator
-#import pipeline_vitaminD_motifs as PMotifs
 import PipelineGeneset as PGeneset
 import PipelineTracks
 import PipelineMapping
@@ -193,14 +188,6 @@ def getControl( track ):
     n = track.clone()
     n.condition = PARAMS["tracks_control"]
     return n
-
-###################################################################
-###################################################################
-###################################################################
-# if conf.py exists: execute to change the above assignmentsn
-if os.path.exists("conf.py"):
-    L.info( "reading additional configuration from conf.py" )
-    execfile("conf.py")
 
 ###################################################################
 ###################################################################
@@ -405,7 +392,7 @@ def loadBAMStats( infiles, outfile ):
 ############################################################
 ############################################################
 ############################################################
-## BUILD INTERVALS
+## BUILD INTERVALS USING CONTROL SAMPLE
 @follows( dedup )
 @files( [ (("%s/bam/%s.dedup.bam" % (x, x.asFile()), "%s/bam/%s.dedup.bam" % (getControl(x), getControl(x).asFile())), 
            "%s/macs/%s.macs" % (x, x.asFile()) ) for x in TRACKS ] )
@@ -454,6 +441,58 @@ def loadMACSSummary( infile, outfile ):
 ############################################################
 @transform( loadMACS, regex(r"(\S+)/macs/(\S+).macs.load"), r"\1/macs/\2.bed" )
 def exportIntervalsAsBed( infile, outfile ):
+    PIntervals.exportMacsAsBed( infile, outfile )
+
+############################################################
+############################################################
+############################################################
+## BUILD INTERVALS WITHOUT CONTROL SAMPLE
+@follows( dedup )
+@files( [ ("%s/bam/%s.dedup.bam" % (x, x.asFile()), 
+           "%s/macs/%s.solo.macs" % (x, x.asFile()) ) for x in TRACKS ] )
+def runMACSsolo( infile, outfile ):
+    '''Run MACS for peak detection.'''
+
+    to_cluster = True
+
+    track = P.snip( os.path.basename(infile), ".dedup.bam" )
+    try: os.mkdir( track )
+    except OSError: pass
+    try: os.mkdir( '''%(track)s/macs''' % locals() )
+    except OSError: pass
+
+    statement = '''macs14 -t %(infile)s 
+                          --name=%(outfile)s
+                          --format=BAM
+                          --diag
+                          %(macs_options)s 
+                   >& %(outfile)s''' 
+    P.run() 
+    
+############################################################
+@transform( runMACSsolo,
+            regex(r"(\S+)/macs/(\S+).solo.macs"),
+            inputs( (r"\1/macs/\2.solo.macs", r"\1/bam/\2.bam")), 
+            r"\1/macs/\2.solo.macs.load" )
+def loadMACSsolo( infiles, outfile ):
+    infile, bamfile = infiles
+    PIntervals.loadMACS( infile, outfile, bamfile )
+    
+############################################################
+@merge( runMACSsolo, "macs_solo.summary" )
+def summarizeMACSsolo( infiles, outfile ):
+    '''run MACS for peak detection.'''
+    PIntervals.summarizeMACSsolo( infiles, outfile )
+
+############################################################
+@transform( summarizeMACSsolo, suffix(".summary"), "_summary.load" )
+def loadMACSsoloSummary( infile, outfile ):
+    '''load macs summary.'''
+    PIntervals.loadMACSSummary( infile, outfile )
+
+############################################################
+@transform( loadMACSsolo, regex(r"(\S+)/macs/(\S+).macs.load"), r"\1/macs/\2.bed" )
+def exportIntervalsAsBedsolo( infile, outfile ):
     PIntervals.exportMacsAsBed( infile, outfile )
 
 ############################################################
@@ -676,9 +715,7 @@ def loadCorrelation( infile, outfile ):
 ############################################################
 ############################################################
 ## ANNOTATE INTERVALS
-@follows( exportIntervalsAsBed )
-@files( [ ("%s/macs/%s.bed" % (x, x.asFile()), 
-           "%s/macs/%s.annotations" % (x, x.asFile()) ) for x in TRACKS ] )
+@transform( (exportIntervalsAsBed,exportIntervalsAsBedsolo), suffix(".bed"), ".annotations" )
 def annotateIntervals( infile, outfile ):
     '''classify chipseq intervals according to their location 
     with respect to the gene set.
@@ -710,9 +747,7 @@ def loadAnnotations( infile, outfile ):
     P.load( infile, outfile, "--index=gene_id" )
 
 ############################################################
-@follows( exportIntervalsAsBed )
-@files( [ ("%s/macs/%s.bed" % (x, x.asFile()), 
-           "%s/macs/%s.tss" % (x, x.asFile()) ) for x in TRACKS ] )
+@transform( (exportIntervalsAsBed,exportIntervalsAsBedsolo), suffix(".bed"), ".tss" )
 def annotateTSS( infile, outfile ):
     '''compute distance to TSS'''
 
@@ -739,9 +774,7 @@ def loadTSS( infile, outfile ):
     P.load( infile, outfile, "--index=gene_id --index=closest_id --index=id5 --index=id3" )
 
 ############################################################
-@follows( exportIntervalsAsBed )
-@files( [ ("%s/macs/%s.bed" % (x, x.asFile()), 
-           "%s/macs/%s.repeats" % (x, x.asFile()) ) for x in TRACKS ] )
+@transform( (exportIntervalsAsBed,exportIntervalsAsBedsolo), suffix(".bed"), ".repeats" )
 def annotateRepeats( infile, outfile ):
     '''count the overlap between intervals and repeats.'''
 
@@ -765,6 +798,24 @@ def loadRepeats( infile, outfile ):
     '''load interval annotations: repeats'''
     P.load( infile, outfile, "--index=gene_id --allow-empty" )
 
+############################################################
+@transform( (exportIntervalsAsBed,exportIntervalsAsBedsolo), suffix(".bed"), ".composition" )
+def annotateComposition( infile, outfile ):
+    '''Establish the nucleotide composition of intervals'''
+
+    to_cluster = True
+
+    annotation_file = os.path.join( PARAMS["annotations_dir"],PARAMS_ANNOTATIONS["interface_repeats_gff"] )
+
+    statement = """cat < %(infile)s 
+                   | python %(scriptsdir)s/bed2gff.py --as-gtf 
+                   | python %(scriptsdir)s/gtf2table.py 
+                      	 --counter=overlap
+                      	 --log=%(outfile)s.log
+                         --filename-gff=%(annotation_file)s
+                         --genome-file=%(genome_dir)s/%(genome)s
+                   > %(outfile)s"""
+    P.run()
 
 ############################################################
 ############################################################
@@ -788,6 +839,20 @@ def exportBigwig( infile, outfile ):
     P.run()
 
 ############################################################
+
+@transform( "*/macs/*.macs_model.pdf", regex( r"(\S+)/macs/(\S+)(.macs_model.pdf)"), r"%s/MACS/\2.macs_model.pdf" % PARAMS["exportdir"])
+def exportMacsModel( infile, outfile ):
+    '''copy MACS model files to export directory.'''
+    try: os.mkdir( PARAMS["exportdir"] )
+    except OSError: pass
+    try: os.mkdir( '''%s/MACS''' % PARAMS["exportdir"] )
+    except OSError: pass
+    to_cluster = False
+    statement = '''cp -p %(infile)s %(outfile)s'''
+    P.run()
+
+############################################################
+
 @files_re(exportBigwig,combine("(.*).bigwig"), "bigwig.view")
 def viewBigwig( infiles, outfile ):
 
@@ -861,6 +926,10 @@ def mapReads():
 
 @follows( runMACS, loadMACS, summarizeMACS, loadMACSSummary, exportIntervalsAsBed )
 def buildIntervals():
+    pass
+
+@follows( runMACSsolo, loadMACSsolo, summarizeMACSsolo, loadMACSsoloSummary, exportIntervalsAsBedsolo )
+def buildIntervalsNoControl():
     pass
 
 @follows( loadCombinedIntervals, 
