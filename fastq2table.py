@@ -21,8 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-rnaseq_bam_vs_bed.py - count context that reads map to
-======================================================
+fastq2table.py - compute stats on fastq files
+=============================================
 
 :Author: Andreas Heger
 :Release: $Id$
@@ -32,21 +32,15 @@ rnaseq_bam_vs_bed.py - count context that reads map to
 Purpose
 -------
 
-This script takes as input a :term:`BAM` file from an RNASeq experiment 
-and a :term:`bed` formatted file.
-
-It counts the number of alignments overlapping between the :term:`bam`
-file and the :term:`bed` file. Annotations in the :term:`bed` file can
-be overlapping - they are counted independently per name.
-
-This scripts requires bedtools to be installed.
+This script iterates over a fastq file and outputs
+read statistits for each read.
 
 Usage
 -----
 
 Example::
 
-   python script_template.py in.bam in.bed.gz
+   python script_template.py --help
 
 Type::
 
@@ -57,16 +51,16 @@ for command line help.
 Documentation
 -------------
 
-
 Code
 ----
 
 '''
 
-import os, sys, re, optparse, time, subprocess, tempfile, collections
+import os, sys, re, optparse, math, random
 
 import Experiment as E
-import IOTools
+import Stats
+import Fastq
 
 def main( argv = None ):
     """script main.
@@ -80,56 +74,52 @@ def main( argv = None ):
     parser = optparse.OptionParser( version = "%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
                                     usage = globals()["__doc__"] )
 
-    parser.add_option( "-m", "--min-overlap", dest="min_overlap", type="float",
-                       help = "minimum overlap [%default]" )
+    parser.add_option( "--guess-format", dest="guess_format", type="choice",
+                      choices = ('sanger', 'solexa', 'phred64', 'integer' ),
+                      help="quality score format to assume if ambiguous [default=%default]."  )
+
+    parser.add_option("-f", "--change-format", dest="change_format", type="choice",
+                      choices = ('sanger', 'solexa', 'phred64', 'integer' ),
+                      help="guess quality score format and set quality scores to format [default=%default]."  )
 
     parser.set_defaults(
-        min_overlap = 0.5,
+        change_format = None,
+        guess_format = None,
+        min_quality = 10,
         )
 
     ## add common options (-h/--help, ...) and parse command line 
     (options, args) = E.Start( parser, argv = argv )
 
-    if len(args) != 2:
-        raise ValueError( "please supply a bam and a bed file." )
+    c = E.Counter()
     
-    bamfile, bedfile = args
-    
-    E.info( "intersecting the two files" )
+    if options.change_format:
+        iterator = Fastq.iterate_convert( options.stdin, 
+                                          format = options.change_format,
+                                          guess = options.guess_format )
+    else:
+        iterator = Fastq.iterate_guess( options.stdin )
 
-    tmpfile = tempfile.NamedTemporaryFile( delete=False )
-    tmpfile.close()
-    tmpfilename = tmpfile.name
-    min_overlap = options.min_overlap
-    
-    statement = """intersectBed -abam %(bamfile)s -b %(bedfile)s -bed -wo -f %(min_overlap)f | groupBy -i stdin -g 4 -c 10 -o collapse > %(tmpfilename)s""" % locals()
+    options.stdout.write( "read\tnfailed\tnN\t%s\n" % ("\t".join(Stats.Summary().getHeaders()) ) )
 
-    E.info( "running %s" % statement )
-    E.run( statement )
+    min_quality = options.min_quality
 
-    infile = open( tmpfilename, "r")
-    counts_per_alignment = collections.defaultdict(int)
+    for record in iterator:
+        c.input += 1
+        quals = record.toPhred()
+        nfailed = len( [x for x in quals if x < min_quality ] )
+        nns = record.seq.count("N") + record.seq.count(".")
+        options.stdout.write( "%s\t%i\t%i\t%s\n" % (record.identifier,
+                                                    nfailed,
+                                                    nns,
+                                                    str(Stats.Summary(quals))
+                                                    ) )
+        c.output += 1
 
-    E.info( "counting" )
-
-    for line in infile:
-        if not line.strip(): continue
-
-        read, annotations = line[:-1].split("\t")
-        annotations = annotations.split(",")[:-1]
-        for anno in annotations:
-            counts_per_alignment[anno] += 1
-    infile.close()
-
-    options.stdout.write( "category\talignments\n" )
-    for key, counts  in counts_per_alignment.iteritems():
-        options.stdout.write( "%s\t%i\n" % (key, counts) )
-
-    os.unlink( tmpfilename )
 
     ## write footer and output benchmark information.
+    E.info( "%s" % str(c) )
     E.Stop()
 
 if __name__ == "__main__":
     sys.exit( main( sys.argv) )
-

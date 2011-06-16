@@ -22,7 +22,7 @@
 #################################################################################
 """
 ===========================
-Pipeline template
+Pipeline @template@
 ===========================
 
 :Author: Andreas Heger
@@ -78,13 +78,13 @@ The major output is in the database file :file:`csvdb`.
 Example
 =======
 
-Example data is available at http://www.cgat.org/~andreas/sample_data/pipeline_template.tgz.
+Example data is available at http://www.cgat.org/~andreas/sample_data/pipeline_@template@.tgz.
 To run the example, simply unpack and untar::
 
-   wget http://www.cgat.org/~andreas/sample_data/pipeline_template.tgz
-   tar -xvzf pipeline_template.tgz
-   cd pipeline_template
-   python <srcdir>/pipeline_template.py make full
+   wget http://www.cgat.org/~andreas/sample_data/pipeline_@template@.tgz
+   tar -xvzf pipeline_@template@.tgz
+   cd pipeline_@template@
+   python <srcdir>/pipeline_@template@.py make full
 
 .. note:: 
    For the pipeline to run, install the :doc:`pipeline_annotations` as well.
@@ -131,6 +131,11 @@ PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],
 ###################################################################
 import PipelineTracks
 
+# define some tracks if needed
+TRACKS = PipelineTracks.Tracks( PipelineTracks.Sample ).loadFromDirectory( 
+    glob.glob("*.ini" ), "(\S+).ini" )
+
+
 ###################################################################
 ###################################################################
 ###################################################################
@@ -155,6 +160,32 @@ def connect():
 ###################################################################
 ## worker tasks
 ###################################################################
+@transform( ["%s.ini" % x.asFile() for x in TRACKS], suffix( ".ini"), ".counts")
+def dummyTask( infile, outfile ):
+    '''a dummy task - counts number of words in ini files'''
+
+    # can run on cluster
+    to_cluster = True
+
+    # the statement
+    statement = '''awk 'BEGIN { printf("word\\tfreq\\n"); } 
+                        {for (i = 1; i <= NF; i++) freq[$i]++}
+                        END { for (word in freq) printf "%%s\\t%%d\\n", word, freq[word] }'
+                < %(infile)s > %(outfile)s'''
+    P.run()
+
+@transform( dummyTask, suffix(".counts"), "_counts.load" )
+def loadDummyTask( infile, outfile ):
+    '''load results of word counting into database.'''
+    P.load( infile, outfile, "--index=word" )
+
+###################################################################
+###################################################################
+###################################################################
+## primary targets
+###################################################################
+@follows( loadDummyTask )
+def full(): pass
 
 ###################################################################
 ###################################################################

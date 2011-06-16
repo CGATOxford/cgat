@@ -177,6 +177,8 @@ if __name__ == '__main__':
     
     for nindex, filename in enumerate(options.filenames):
 
+        E.info( "processing %s (%i/%i)" % (filename, nindex+1, len(options.filenames) ))
+
         prefix = os.path.basename( filename )
 
         if os.path.exists(filename):
@@ -186,6 +188,7 @@ if __name__ == '__main__':
 
         # skip (or not skip) empty tables
         if len(lines) == 0 and options.ignore_empty:
+            E.warn( "%s is empty - skipped" % filename )
             del options.headers[nindex]
             continue
 

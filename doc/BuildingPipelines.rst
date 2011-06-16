@@ -9,6 +9,61 @@ variety of useful functions for pipeline construction.
 See the script :file:`pipeline_template.py` in the :term:`source directory`
 as a starting point for pipelines.
 
+.. _PipelineOrganization:
+
+Overview
+========
+
+Pipelines generally have a similar structure. Pipelines are implemented 
+as a pipeline script in the :term:`source directory` called :file:`pipeline_<somename>.py`
+and a file :file:`pipeline_<somename>.ini` with default configuration values.
+
+Pipeline input
+--------------
+
+Pipelines are executed within a dedicated :term:`working directory`. They usually require 
+the following files within this directory:
+
+   * a pipeline configuration file :file:`pipeline.ini`
+   * input data files, usually linked in from a data repository
+
+Other files that might be used in a pipeline are:
+
+   * external data files such as genomes that a referred to by they their full path name.
+   * sphinxreport.ini and conf.py for automated reports.
+
+The pipelines will work from the input files in the :term:`working directory`, usually identified by their
+suffix. For example, a ChIP-Seq pipeline might look for any ``*.fastq.gz`` files in the directory, 
+run QC on these, map the reads to a genome sequence, call peaks, do motif analyses, etc.
+
+Pipeline output 
+----------------
+
+The pipeline will create files and database tables in the :term:`working directory`. 
+When building a pipeline, you can choose any 
+file/directory layout that suits your needs. Some prefer flat hierarchies with many files, while 
+others prefer deep directories.
+
+Two directories have a special function and can be used for exporting pipeline results (see PipelinePublishing_):
+
+The :file:`export` directory contains all files that will be referred to directly in the report 
+or that later should be published by the pipeline. For example, pdf documents created by the peak caller
+or logo images created by a motif tool should go there. 
+
+The directory :file:`report` will contain the automatically generated report.
+
+Guidelines
+==========
+
+To preserve disk space, please always work use compressed files as much as possible.
+Most data files compress very well, for example fastq files often compress by a factor of 80% or more: 
+a 10Gb file will use just 2Gb. 
+
+Working with compressed files is straight-forward using unix pipes and the commands ``gzip``, ``gunzip`` or ``zcat``.
+
+If you require random access to a file, load the file into the database and index it
+appropriately. Genomic interval files can be indexed with tabix to allow random access.
+
 .. _PipelineCommands:
 
 Running commands within tasks
@@ -141,6 +196,11 @@ aborted runs to be cleaned up manually.
 Tracks
 ======
 
+A pipeline typically processes the data streams from several experimental
+data sources. These data streams are usually processed separately (processing,
+quality control) and as aggregates. The module :mod:`PipelineTracks` helps
+implementing this.
+
 .. _PipelineDatabases:
 
 Databases
@@ -207,13 +267,30 @@ The following example illustrates how to use the connection::
 Reports
 =======
 
-build_report
-update_report
-sphinxreport.ini
-conf.py
+The :meth:`Pipeline.run_report` method builds or updates reports using SphinxReport_. Usually, a pipeline
+will simply contain the following::
 
-Including other pipelines
+    @follows( mkdir( "report" ) )
+    def build_report():
+	'''build report from scratch.'''
 
+	E.info( "starting report build process from scratch" )
+	P.run_report( clean = True )
+
+    @follows( mkdir( "report" ) )
+    def update_report():
+	'''update report.'''
+
+	E.info( "updating report" )
+	P.run_report( clean = False )
+
+This will add the two tasks ``build_report`` and ``update_report`` to the pipeline. The former completely rebuilds
+a report, while the latter only updates changed pages. The report will be in the directory :file:`report`. 
+
+Note that report building requries two files in the :term:`working directory`:
+
+   * :file:`sphinxreport.ini` - configuration values for Sphinxreport.
+   * :file:`conf.py` - configuration values for sphinx.
 
 .. _ConfigurationValues:
 
@@ -256,8 +333,8 @@ Configuration values from another pipeline can be added in a separate namespace:
    PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],
    		                                 "pipeline_annotations.py" )
 
-The statement above will load the parameters from a `pipeline_annotations`_ project
-in :file:`annotations_dir`.
+The statement above will load the parameters from a :mod:`pipeline_annotations` pipeline with
+:term:`working directory` ``annotations_dir``.
 
 Using configuration values
 --------------------------
@@ -316,8 +393,64 @@ but pipeline authors need to explicitely code for track specific parameters.
 Documentation
 =============
 
-Modular pipelines
-=================
+Up-to-date and accurate documentation is crucial for writing portable and maintainable 
+pipelines. To document your pipelines write documentation as you would for a module.
+See :file:`pipeline_template.py` and other pipelines for an example. 
 
-Exporting data
-==============
+To add your pipeline documentation to this document, add it to the file :file:`pipelines.rst`
+in the documentation directory.
+
+Using other pipelines
+=====================
+
+You can use the output of other pipelines within your own pipelines. :mod:`pipeline_annotations`
+is an example - it provides often used annotation data sets for an analysis. How to load another
+pipelines parameters, connect to its database and write a modular report have been discussed above. 
+
+If you write a pipeline that is likely to be used by others, it is best to provide an interface.
+For example, the :mod:`pipeline_annotations` pipeline has an interface section that list all the
+files that are produced by the pipeline. Other pipelines can refer to the interface section without
+having to be aware of the actual file names::
+
+    filename_cds = os.path.join( PARAMS["annotations_dir"],
+             	            PARAMS_ANNOTATIONS["interface_geneset_cds_gtf"] )
+
+Running other pipelines within your pipeline *should* be possible as well - provided they are within
+their own separate :term:`working directory`.
+
+.. _PipelinePublishing:
+
+Publishing data
+===============
+
+To publish data and a report, use the :meth:`Pipeline.publish_report` method, such as in the 
+following task::
+
+   @follows( update_report )
+   def publish_report():
+       '''publish report.'''
+
+       E.info( "publishing report" )
+       P.publish_report()
+
+On publishing a report, the report (in the directory :file:`report`, specified by ``report_dir``) 
+will get copied to the directory specified in the configuration value ``web_dir``. Also, all files
+in the :file:`export` directory will get copied over and links pointing to such files will be 
+automatically corrected.
+
+The report will then be available at ``http://www.cgat.org/downloads/%(project_id)s/report`` where
+project_id is the unique identifier given to each project. It is looked up automatically, but the
+automatic look-up requires that the pipeline is executed within the :file:`/ifs/proj` directory.
+
+If the option *prefix* is given to publish_report, all output directories will be output
+prefixed by *prefix*. This is very useful if there is more than one report per project.
+
+See :meth:`Pipeline.publish_report` for more options.
+
+Checking requisites
+===================
+
+TODO
+
+
+

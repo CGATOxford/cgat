@@ -63,6 +63,8 @@ PARAMS= {
 
 CONFIG = {}
 
+PROJECT_ROOT = '/ifs/projects'
+
 def configToDictionary( config ):
 
     p = {}
@@ -281,7 +283,14 @@ def toTable( outfile ):
 
 def getProjectId():
     '''cgat specific method: get the (obfuscated) project id.'''
-    target = os.readlink( "../sftp/web" )
+    curdir = os.path.abspath(os.getcwd())
+    if not curdir.startswith( PROJECT_ROOT ):
+        raise ValueError( "method getProjectId no called within %s" % PROJECT_ROOT )
+    prefixes = len(PROJECT_ROOT.split("/"))
+    f = os.path.join( curdir.split( "/" )[:prefixes+1] + ("sftf", "web") )
+    if not os.path.exists(f):
+        raise OSError( "web directory at '%s' does not exist" % f )
+    target = os.readlink( f )
     return os.path.basename( target )
 
 def load( infile, outfile, options = "" ):
@@ -883,7 +892,7 @@ def run_report( clean = True):
 
     run()
 
-def publish_report( prefix = "", patterns = []):
+def publish_report( prefix = "", patterns = [], project_id = None):
     '''publish report into web directory.
 
     Links export directory into web directory.
@@ -896,13 +905,17 @@ def publish_report( prefix = "", patterns = []):
     *patterns* is an optional list of two-element tuples (<pattern>, replacement_string).
     Each substitutions will be applied on each file ending in .html.
 
+    If *project_id* is not given, it will be looked up. This requires
+    that this method is called within a subdirectory of PROJECT_ROOT.
+
     .. note::
        This function is CGAT specific.
 
     '''
 
     web_dir = PARAMS["web_dir"]
-    project_id = getProjectId()
+    if projec_id == None:
+        project_id = getProjectId()
 
     src_export = os.path.abspath( "export" )
     dest_report = prefix + "report"

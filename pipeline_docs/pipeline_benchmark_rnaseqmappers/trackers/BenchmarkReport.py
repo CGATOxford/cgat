@@ -1,8 +1,10 @@
-import os, sys, re, types, itertools, glob
+import os, sys, re, types, itertools, glob, collections
 
 from SphinxReport.Tracker import *
 from SphinxReport.Utils import PARAMS as P
 from SphinxReport.odict import OrderedDict as odict
+
+import numpy
 
 # get from config file
 UCSC_DATABASE="hg19"
@@ -81,3 +83,55 @@ class CoverageTotalsRegions( CoverageTotals, CoverageTrackerRegions ): pass
 class CoverageCountsExons( CoverageCounts, CoverageTrackerExons ): pass
 class CoverageCountsRegions( CoverageCounts, CoverageTrackerRegions ): pass
 
+###########################################################################
+###########################################################################
+###########################################################################
+
+class ExonValidationSummary( BenchmarkTracker, SingleTableTrackerRows ):
+    table = "exon_validation"
+
+###########################################################################
+###########################################################################
+###########################################################################
+class ReadCorrespondenceTracker( BenchmarkTracker ):
+    tracks = ['data_bfast',
+              'data_bowtie',
+              'data_bwa',
+              'data_shrimp',
+              'data_tophat',
+              'data_trim3x5_bfast',
+              'data_trim3x5_bowtie',
+              'data_trim3x5_bwa',
+              'data_trim3x5_shrimp',
+              'data_trim3x5_tophat',
+              'strictdata_bowtie',
+              'strictdata_tophat' ]
+
+    table = "read_correspondence"
+    limit = 100000
+
+class QCFailedBasesInMappedReads( ReadCorrespondenceTracker ):
+
+    def __call__(self, track):
+        statement = '''SELECT nfailed FROM %(table)s WHERE %(track)s_nh > 0 LIMIT %(limit)i'''
+        return odict( ((track, self.getValues( statement )),) )
+
+class QCFailedVersusMappedLocations( ReadCorrespondenceTracker ):
+    '''returns a matrix: the number hits versus QCfailed bases.'''
+    max_failed = 60
+    max_nh = 10
+    def __call__(self, track):
+        statement = '''SELECT nfailed, %(track)s_nh FROM %(table)s LIMIT %(limit)i'''
+        
+        matrix = numpy.zeros( (self.max_failed, self.max_nh ))
+        for nfailed, nh in self.get(statement): 
+            try:
+                matrix[nfailed,nh] += 1
+            except IndexError: pass
+        results = odict()
+        for x in range(0,self.max_failed):
+            r = odict()
+            for y in range(0,self.max_nh): r[str(y)] = matrix[x,y]
+            results[str(x)] = r
+            
+        return results
