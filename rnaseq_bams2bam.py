@@ -58,8 +58,8 @@ Documentation
 The script needs to look-up reads via their names. It thus builds
 an index of reads mapping 
 
-This script requires the NM attributes to be set.
-
+This script requires the NM attributes to be set. If it is not 
+set, you will need to set a policy.
 
 Code
 ----
@@ -94,6 +94,9 @@ def main( argv = None ):
     parser.add_option( "-m", "--filename-mismapped", dest="filename_mismapped", type="string",
                        help = "output bam file for mismapped reads [%default]" )
 
+    parser.add_option( "-i", "--ignore-mismatches", dest="ignore_mismatches", action="store_true",
+                       help = "ignore the NM filed, matches to transcriptome always take precedence [%default]" )
+
     parser.add_option( "-c", "--remove-contigs", dest="remove_contigs", type="string",
                        help = "','-separated list of contigs to remove [%default]" )
 
@@ -109,6 +112,7 @@ def main( argv = None ):
         remove_contigs = None,
         force = False,
         unique = False,
+        ignore_mismatches = False,
         )
 
     ## add common options (-h/--help, ...) and parse command line 
@@ -153,7 +157,8 @@ def main( argv = None ):
                                  output_samfile, output_mismapped,
                                  transcripts,
                                  unique = options.unique,
-                                 remove_contigs = options.remove_contigs )
+                                 remove_contigs = options.remove_contigs,
+                                 ignore_mismatches = options.ignore_mismatches )
     
     options.stdout.write( "category\tcounts\n%s\n" % c.asTable() )
 
