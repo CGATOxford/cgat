@@ -21,6 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 """
+snp2map.py - build maf formatted multiple genomic alignments from SNPs
+======================================================================
 
 :Author: Andreas Heger
 :Release: $Id: snp2maf.py 2875 2010-03-27 17:42:04Z andreas $

@@ -11,10 +11,10 @@ def filter( Samfile genome_samfile,
             Samfile output_mismapped,
             transcripts,
             unique = False,
-            remove_contigs = None ):
+            remove_contigs = None,
+            colour_mismatches = False,
+            ignore_mismatches = False ):
     '''
-    This method uses the flag NM.
-
     To conserve memory, the tid and NM flag from *transcripts_samfile*
     are packed into memory. As a consequence, this method requires 
     max(NM) < 256 (2^8) and max(tid) < 16777216 (2^24)
@@ -27,6 +27,13 @@ def filter( Samfile genome_samfile,
     all alignments of a particuluar read and the NH flag will *NOT* be
     updated.
 
+    If *colour_mismatches* is set, the ``CM`` tag will be used
+    to count differences. By default, the ``NM`` tag is used.
+    The tag that is used needs to present in both *transcripts_samfile*
+    and *genome_samfile*.
+
+    If *ignore_mismatches* is set, the number of mismatches is ignore.
+
     '''
     cdef int ninput = 0
     cdef int nunmapped_genome = 0
@@ -36,9 +43,11 @@ def filter( Samfile genome_samfile,
     cdef int nnotfound = 0
     cdef int nlocation_ok = 0
     cdef int nnonunique = 0
+    cdef int ntested = 0
     cdef int nremoved_contigs = 0
 
     cdef bint c_unique = unique
+    cdef bint c_test_mismatches = not ignore_mismatches
     cdef int * remove_contig_tids 
     cdef int nremove_contig_tids = 0
     cdef AlignedRead read
@@ -60,6 +69,18 @@ def filter( Samfile genome_samfile,
     cdef long val
     cdef bint skip = 0
 
+    cdef int32_t read_mismatches = 0
+
+    # decide which tag to use
+    cdef char * nm_tag = 'NM' 
+    cdef char * cm_tag = 'CM'
+    cdef char * tag
+
+    if colour_mismatches:
+        tag = cm_tag
+    else:
+        tag = nm_tag
+
     # setup list of contigs to remove:
     if remove_contigs:
         nremove_contig_tids = len(remove_contigs)
@@ -78,7 +99,7 @@ def filter( Samfile genome_samfile,
             if b.core.flag & 4: continue
             qname = bam1_qname( b )
             tid = b.core.tid
-            v = bam_aux_get(b, 'NM')
+            v = bam_aux_get(b, tag)
             nm = <int32_t>bam_aux2i(v)
             index[qname].append( (tid << 8) | nm )
 
@@ -134,15 +155,17 @@ def filter( Samfile genome_samfile,
         # according to transcripts
         location_ok = False
         mapped = False
-        read_mismatches = read.opt("NM")
+
+        if c_test_mismatches:
+            read_mismatches = read.opt(tag)
 
         for val in matches:
             transcript_tid = val >> 8
-            nm = val & 255
-
             # ignore reads that are mapped to transcripts with
             # more mismatches than the genomic location
-            if nm > read_mismatches: continue
+            if c_test_mismatches:
+                nm = val & 255
+                if nm > read_mismatches: continue
 
             mapped = True
 
@@ -150,18 +173,20 @@ def filter( Samfile genome_samfile,
             transcript_id = transcripts_samfile._getrname( transcript_tid )
             gtfs = transcripts[transcript_id]
             t_contig, t_start, t_end = gtfs[0].contig, gtfs[0].start, gtfs[-1].end
-            
+
             # does read map to genomic transcript location?
             if g_contig == t_contig and t_start <= read.pos <= t_end:
                 location_ok = True
                 break
-
+            
         if location_ok:
+            ntested += 1
             nlocation_ok += 1
             noutput += 1
             output_samfile.write( read )
 
         elif mapped:
+            ntested += 1
             nmismapped += 1
             if output_mismapped:
                 output_mismapped.write( read )
@@ -181,6 +206,7 @@ def filter( Samfile genome_samfile,
     c.unmapped_transcript = nunmapped_transcript
     c.notfound = nnotfound
     c.location_ok = nlocation_ok 
+    c.location_tested = ntested
 
     if nremove_contig_tids:
         free( remove_contig_tids )

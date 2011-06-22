@@ -524,7 +524,8 @@ def loadMACS( infile, outfile, bamfile ):
             else:
                 raise ValueError( "could not parse line %s" % line )
             
-            pvalue, qvalue, summit, fold = float(pvalue), float(qvalue), int(summit), float(fold)
+            # qvalue is in percent, divide by 100.
+            pvalue, qvalue, summit, fold = float(pvalue), float(qvalue) / 100, int(summit), float(fold)
 
             if qvalue > max_qvalue or pvalue < min_pvalue or fold < min_fold: 
                 counter.skipped += 1

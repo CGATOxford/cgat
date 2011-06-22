@@ -21,8 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-bed2annotator.py - 
-======================================================
+bed2annotator.py - convert bed to annotator format
+==================================================
 
 :Author: Andreas Heger
 :Release: $Id$
@@ -32,9 +32,17 @@ bed2annotator.py -
 Purpose
 -------
 
-.. todo::
-   
-   describe purpose of the script.
+This script converts a bed file into annotator compatible regions. Depending on the option --section
+this script will create:
+
+   segments
+      a segments file
+
+   annotations
+      a file with annotations. Each bed track is a separate annotation.
+
+   workspace
+      a file with a workspace
 
 Usage
 -----
@@ -63,26 +71,10 @@ import Bed
 import IndexedFasta
 import IOTools
 
-USAGE="""python %s [OPTIONS] < stdin > stdout
-
-convert a bed file into annotator compatible regions. Depending on the option --section
-this script will create:
-
-   segments
-      a segments file
-
-   annotations
-      a file with annotations. Each bed track is a separate annotation.
-
-   workspace
-      a file with a workspace
-
-""" % sys.argv[0]
-
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: bed2annotator.py 2885 2010-04-07 08:46:50Z andreas $", usage = globals()["__doc__"])
-
+    parser = optparse.OptionParser( version = "%prog version: $Id: bed2annotator.py 2885 2010-04-07 08:46:50Z andreas $", 
+                                    usage = globals()["__doc__"])
         
     parser.add_option( "-g", "--genome-file", dest="genome_file", type="string",
                        help="filename with genome."  )

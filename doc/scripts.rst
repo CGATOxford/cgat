@@ -52,7 +52,6 @@ Genomics
    scripts/psl2table.rst
    scripts/maq2assembly.rst
    scripts/maq2blat.rst
-   scripts/maq2gff.rst
    scripts/windows2gff.rst
    scripts/analyze_readpositions.rst
    scripts/combine_gff.rst
@@ -519,11 +518,4 @@ This section contains obsolete or incomplete scripts.
    scripts/mali_plain2aln.rst
    scripts/mali_remove_gaps.rst
 
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
 

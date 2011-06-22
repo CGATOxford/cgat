@@ -1,40 +1,29 @@
+==========================
+Correlation of read depths
+==========================
 
-=======================
-Correlation read depths
-=======================
+Exons
+=====
 
-.. Exons
-.. =====
+.. report:: BenchmarkReport.CoverageCorrelationExons
+   :render: matrix-plot
+   :transform: pearson,select
+   :tf-fields: coefficient
+   :transform-matrix: correspondence-analysis
+   :force:
+   :zrange: 0.8,1
+   :colorbar-format: %6.4f
 
-.. .. report:: BenchmarkReport.CoverageCountsExons
-..    :render: scatter-plot
-..    :transform: combine
-..    :tf-fields: nreads
-..    :groupby: slice
+   Correlation coefficients: number of reads aligned
+   to genes between different methods
 
-..    Correlation of sense counts in exons
+.. report:: BenchmarkReport.CoverageCorrelationExons
+   :render: matrix
+   :transform: pearson,select
+   :logscale: xy
+   :tf-fields: coefficient
+   :force:
+   :format: %6.4f
 
-.. .. report:: BenchmarkReport.CoverageCountsExons
-..    :render: table
-..    :transform: combine,correlation
-..    :tf-fields: nreads
-
-..    Correlation of sense counts in exons
-
-.. Genes
-.. =====
-
-.. .. report:: BenchmarkReport.CoverageCountsRegions
-..    :render: scatter-plot
-..    :transform: combine
-..    :tf-fields: nreads
-..    :groupby: slice
-
-..    Correlation of sense counts in genes
-
-.. .. report:: BenchmarkReport.CoverageCountsRegions
-..    :render: table
-..    :transform: combine,correlation
-..    :tf-fields: nreads
-
-..    Correlation of sense counts in genes
+   Correlation coefficients: number of reads aligned
+   to genes between different methods

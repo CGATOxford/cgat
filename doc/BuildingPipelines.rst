@@ -2,12 +2,20 @@
 Building CGAT pipelines
 =======================
 
+The best way to build a pipeline is to start from an example. There are several 
+pipelines available, see CGATPipelines_. To start a new project, use 
+:file:`pipeline_quickstart.py`::
+
+   python <srcdir>pipeline_quickstart.py --name=test
+
+This will create a new directory called ``test`` in the current directory.
+
+Another source of information is the script :file:`pipeline_template.py` in 
+the :term:`source directory`.
+
 This section describes how CGAT pipelines can be constructed using the
 :mod:`Pipeline` module. The Pipeline.py module contains a
 variety of useful functions for pipeline construction.
-
-See the script :file:`pipeline_template.py` in the :term:`source directory`
-as a starting point for pipelines.
 
 .. _PipelineOrganization:
 

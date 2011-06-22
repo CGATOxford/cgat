@@ -21,20 +21,21 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-maq2psl.py - 
-======================================================
+maq2psl.py - wonvert the output of maqview to psl format
+========================================================
 
 :Author: Andreas Heger
-:Release: $Id$
+:Release: $Id: maq2psl.py 2781 2009-09-10 11:33:14Z andreas $
 :Date: |today|
 :Tags: Python
 
 Purpose
 -------
 
-.. todo::
-   
-   describe purpose of the script.
+Convert the output of maqview to psl format.
+
+Note: the script assumes that the coordinates and the matches are sorted
+correctly. Careful, as "seg1" < "seg10" < "seg9".
 
 Usage
 -----
@@ -57,16 +58,6 @@ Code
 
 '''
 import sys, string, re, optparse
-
-USAGE="""python %s [OPTIONS] < input.view > output.fasta
-
-Convert the output of maqview to psl format.
-
-Note: the script assumes that the coordinates and the matches are sorted
-correctly. Careful, as "seg1" < "seg10" < "seg9".
-
-Version: $Id: maq2psl.py 2781 2009-09-10 11:33:14Z andreas $
-""" % sys.argv[0]
 
 import Experiment
 import IndexedFasta
@@ -163,7 +154,8 @@ def matchby_sequence( iter1, iter2, matchfun1, matchfun2 = None ):
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: maq2psl.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = optparse.OptionParser( version = "%prog version: $Id: maq2psl.py 2781 2009-09-10 11:33:14Z andreas $",
+                                    usage = globals()["__doc__"] )
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genome."  )

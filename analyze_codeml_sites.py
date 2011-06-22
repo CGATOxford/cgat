@@ -21,8 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-analyze_codeml_sites.py - 
-======================================================
+analyze_codeml_sites.py - analyze results from site-specific codeml run
+=======================================================================
 
 :Author: Andreas Heger
 :Release: $Id$
@@ -32,9 +32,13 @@ analyze_codeml_sites.py -
 Purpose
 -------
 
-.. todo::
-   
-   describe purpose of the script.
+The input is either:
+
+   * filenames with a set of files of related codeml runs
+
+summary-numbers:
+
+jalview: annotation file for Jalview
 
 Usage
 -----
@@ -57,18 +61,6 @@ Code
 
 '''
 import os, sys, string, re, optparse, time
-
-USAGE="""analyze results from site-specific codeml run.
-
-The input is either:
-
-   * filenames with a set of files of related codeml runs
-
-summary-numbers:
-
-jalview: annotation file for Jalview
-
-"""
 
 import Genomics
 import Experiment

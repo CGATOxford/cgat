@@ -21,8 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-psl2wiggle_stats.py - 
-======================================================
+psl2wiggle_stats.py - intersect psl and wiggle files to compute stats
+=====================================================================
 
 :Author: Andreas Heger
 :Release: $Id$
@@ -56,10 +56,6 @@ Code
 ----
 
 '''
-USAGE="""python psl2assembly.py [OPTIONS] > output
-
-Assemble psl matches overlapping on sbjct.
-"""
 
 import sys, re, string, optparse, time, os, glob
 

@@ -129,7 +129,9 @@ def main( argv = None ):
                 nh = len(l)
                 for read in l:
                     if not read.is_unmapped:
-                        read.tags = read.tags + [('NH', nh)]
+                        t = dict( read.tags )
+                        t['NH'] = nh
+                        read.tags = list(t.iteritems())
                     yield read
         it = set_nh( it )
 

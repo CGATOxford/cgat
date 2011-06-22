@@ -3,14 +3,54 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to the CGAT script collection
+=====================================
+Welcome to the CGAT code collection
 =====================================
 
-This document contains documentation for scripts and libraries written
-for/by CGAT. 
+This document brings together the various pipelines and scripts
+written before and during CGAT.
 
 .. note::
-   The documentation is currently under construction.
+   The documentation is under construction.
+
+.. _CGATPipelines:
+
+Pipelines
+=========
+
+CGAT has written a few :term:`production pipelines`. These pipelines perform
+basic tasks, are fairly generic and might be of wider interest. Below is a 
+complete list:
+ 
+.. toctree::
+   :maxdepth: 1	
+
+   scripts/pipeline_annotations.rst   
+   scripts/pipeline_ancestral_repeats.rst
+   scripts/pipeline_chains.rst
+   scripts/pipeline_chipseq.rst
+   scripts/pipeline_liftover.rst
+   scripts/pipeline_readqc.rst
+   scripts/pipeline_rnaseq.rst
+   scripts/pipeline_transcriptome.rst
+   scripts/pipeline_variants.rst
+
+Help on installing, using and building pipelines is below:
+
+.. toctree::
+   :maxdepth: 2
+
+   setup.rst
+   pipelines.rst
+   BuildingPipelines.rst
+   PipelinesBackground.rst   
+   MakePipelines.rst   
+
+Scripts and modules
+===================
+
+The pipelines make use of a large number of scripts, tools and modules. Most
+of these are written in python. The tools are grouped by topic:
 
 .. toctree::
    :maxdepth: 2
@@ -18,43 +58,12 @@ for/by CGAT.
    scripts.rst
    modules.rst
 
-Installation
-============
-
-TODO
-
 Disclaimer
 ==========
 
-This collection of scripts is the result of 10 years working in various 
+The collection of scripts and tools is the outcome of 10 years working in various 
 fields in bioinformatics. It contains both the good, the bad and the ugly. 
 Use at your own risk.
-
-Other projects
-==============
-
-There are a couple of separate libraries that
-have python bindings and are used by the 
-script collection.
-
-These are:
-
-   * alignlib_: a C++ library for sequence alignment with python bindings
-   * ncl_: an implementation of nested containment lists
-   * fastgtf_: a fast parser for :term:`GTF` formatted files
-   * SphinxReport: a report generator based on Sphinx
-   * pysam: python interface for SAM/BAM-files
-   * Components: library for computing connected components quickly
-
-Pipelines
-=========
-
-.. toctree::
-   :maxdepth: 2
-
-   pipelines.rst
-   setup.rst
-   BuildingPipelines.rst
 
 Indices and tables
 ==================

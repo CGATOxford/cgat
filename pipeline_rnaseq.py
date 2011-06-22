@@ -1032,9 +1032,6 @@ def buildBAMs( infiles, outfile):
     if "tophat_remove_contigs" in PARAMS and PARAMS["tophat_remove_contigs"]:
         options.append( "--remove-contigs=%s" % PARAMS["tophat_remove_contigs"] )
         
-    # if "tophat_protocol" in PARAMS and "stranded" in PARAMS["tophat_protocal"]:
-    #     options.append( "--set-strand" )
-
     options = " ".join(options)
 
     statement = '''
@@ -1076,7 +1073,7 @@ def buildAlignmentStats( infile, outfile ):
     # naturally - the bam files should be sorted.
     statement = '''
     java -Xmx2g net.sf.picard.analysis.CollectMultipleMetrics
-            I=<(samtools view -h %(infile)s | perl -p -e "if (/^\\@HD/) { s/\\bSO:\S+/\\bSO:coordinate/}" ) 
+            I=<(samtools view -h %(infile)s | awk '$11 != "*"')
             O=%(outfile)s 
             R=%(cufflinks_genome_dir)s/%(genome)s.fa
             ASSUME_SORTED=true

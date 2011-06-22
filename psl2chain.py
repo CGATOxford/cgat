@@ -21,6 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 """
+psl2chain.py - convert psl formatted file to a chain formatted file
+===================================================================
 
 :Author: Andreas Heger
 :Release: $Id: psl2chain.py 2901 2010-04-13 14:38:07Z andreas $

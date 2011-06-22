@@ -287,7 +287,8 @@ def getProjectId():
     if not curdir.startswith( PROJECT_ROOT ):
         raise ValueError( "method getProjectId no called within %s" % PROJECT_ROOT )
     prefixes = len(PROJECT_ROOT.split("/"))
-    f = os.path.join( curdir.split( "/" )[:prefixes+1] + ("sftf", "web") )
+    rootdir = "/" + os.path.join( *(curdir.split( "/" )[:prefixes+1]) )
+    f = os.path.join( rootdir, "sftp", "web" )
     if not os.path.exists(f):
         raise OSError( "web directory at '%s' does not exist" % f )
     target = os.readlink( f )
@@ -913,8 +914,11 @@ def publish_report( prefix = "", patterns = [], project_id = None):
 
     '''
 
+    if not prefix:
+        prefix = PARAMS.get( "report_prefix", "" )
+
     web_dir = PARAMS["web_dir"]
-    if projec_id == None:
+    if project_id == None:
         project_id = getProjectId()
 
     src_export = os.path.abspath( "export" )
