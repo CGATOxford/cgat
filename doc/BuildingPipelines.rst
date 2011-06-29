@@ -405,8 +405,19 @@ Up-to-date and accurate documentation is crucial for writing portable and mainta
 pipelines. To document your pipelines write documentation as you would for a module.
 See :file:`pipeline_template.py` and other pipelines for an example. 
 
-To add your pipeline documentation to this document, add it to the file :file:`pipelines.rst`
-in the documentation directory.
+To rebuild all documentation, enter the :file:`doc` directory in the :term:`source directory` and
+type::
+
+   cd doc
+   python collect.py
+
+This will collect all new scripts to the documentation.
+
+Next, edit the file :file:`contents.rst` and add your pipeline to the table of pipelines. Finally, type::
+
+   make html
+
+to rebuild the documentation.
 
 Using other pipelines
 =====================

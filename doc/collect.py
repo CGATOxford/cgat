@@ -15,31 +15,43 @@ TEMPLATE_RST='''
 
 import sys, glob, re, os
 
-dirs = (os.path.abspath(".."), )
+import Experiment as E
 
+if __name__ == "__main__":
 
+    E.Start()
 
-ncreated, nskipped = 0, 0
-for dir in dirs:
+    dirs = (os.path.abspath(".."), )
 
-    files = glob.glob( os.path.join( os.path.abspath( dir ), "*.py") )
+    ncreated, nskipped = 0, 0
+    for dir in dirs:
 
-    for filename in files:
-        name = os.path.basename( filename )[:-3]
-        if name[0].isupper(): 
-            dest = "modules"
-        else:
-            dest = "scripts"
+        files = glob.glob( os.path.join( os.path.abspath( dir ), "*.py") )
 
-        filename = os.path.join( os.path.abspath(dest), "%s.rst" % name )
-        if os.path.exists( filename ):
-            nskipped += 1
-            continue
+        for filename in files:
+            dirname, name = os.path.split( filename )
+            prefix = name[:-3]
 
-        outfile = open( filename, "w" )
-        outfile.write( TEMPLATE_RST % locals() )
-        outfile.close()
-        
-        ncreated += 1
+            if os.path.exists( os.path.join( dirname, "_%s.pyx" % prefix )):
+                E.warn( "ignoring pyximport file _%s.pyx" % prefix )
+                continue
 
-print "ncreated=", ncreated, "nskipped=", nskipped
+            if prefix[0].isupper(): 
+                dest = "modules"
+            else:
+                dest = "scripts"
+
+            filename = os.path.join( os.path.abspath(dest), "%s.rst" % prefix )
+            if os.path.exists( filename ):
+                nskipped += 1
+                continue
+
+            outfile = open( filename, "w" )
+            outfile.write( TEMPLATE_RST % locals() )
+            outfile.close()
+
+            ncreated += 1
+
+    E.info( "ncreated=%i, nskipped=%i" % (ncreated, nskipped ) )
+    
+    E.Stop()
