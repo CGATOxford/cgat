@@ -31,9 +31,9 @@ P.getParameters(
 
 PARAMS = P.PARAMS
 
-if os.path.exists("conf.py"):
-    E.info( "reading additional configuration from conf.py" )
-    execfile("conf.py")
+if os.path.exists("pipeline_conf.py"):
+    E.info( "reading additional configuration from pipeline_conf.py" )
+    execfile("pipeline_conf.py")
 
 ############################################################
 ############################################################

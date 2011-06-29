@@ -315,6 +315,34 @@ def load( infile, outfile, options = "" ):
 
     run()
 
+
+def mergeAndLoad( infiles, outfile, suffix ):
+    '''load categorical tables (two columns) into a database.
+
+    The tables are merged and entered row-wise.
+    '''
+    header = ",".join( [ quote( snip( x, suffix)) for x in infiles] )
+    if suffix.endswith(".gz"):
+        filenames = " ".join( [ "<( zcat %s | cut -f 1,2 )" % x for x in infiles ] )
+    else:
+        filenames = " ".join( [ "<( cat %s | cut -f 1,2 )" % x for x in infiles ] )
+
+    tablename = toTable( outfile )
+
+    statement = """python %(scriptsdir)s/combine_tables.py
+                      --headers=%(header)s
+                      --missing=0
+                      --ignore-empty
+                   %(filenames)s
+                | perl -p -e "s/bin/track/" 
+                | python %(scriptsdir)s/table2table.py --transpose
+                | python %(scriptsdir)s/csv2db.py
+                      --index=track
+                      --table=%(tablename)s 
+                > %(outfile)s
+            """
+    run()
+
 def snip( filename, extension = None):
     '''return prefix of filename.
 

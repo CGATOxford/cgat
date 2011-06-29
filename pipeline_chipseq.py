@@ -269,9 +269,9 @@ def getUnsubtracted( track ):
 ###################################################################
 ###################################################################
 # if conf.py exists: execute to change the above assignmentsn
-if os.path.exists("conf.py"):
-    L.info( "reading additional configuration from conf.py" )
-    execfile("conf.py")
+if os.path.exists("pipeline_conf.py"):
+    L.info( "reading additional configuration from pipeline_conf.py" )
+    execfile("pipeline_conf.py")
 
 ###################################################################
 ###################################################################
