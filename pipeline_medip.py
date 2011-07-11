@@ -209,8 +209,6 @@ def loadPicardDuplicateStats( infiles, outfile ):
         if first: outf.write( "%s\t%s" % ("track", lines[0] ) )
         first = False
         outf.write( "%s\t%s" % (track,lines[1] ))
-
-        
     outf.close()
     tmpfilename = outf.name
 
@@ -257,8 +255,6 @@ def loadPicardAlignStats( infiles, outfile ):
         first = False
         for i in range(1, len(lines)):
             outf.write( "%s\t%s" % (track,lines[i] ))
-
-        
     outf.close()
     tmpfilename = outf.name
 
@@ -305,7 +301,6 @@ def loadPicardInsertSizeStats( infiles, outfile ):
         if first: outf.write( "%s\t%s" % ("track", lines[0] ) )
         first = False
         outf.write( "%s\t%s" % (track,lines[1] ))
-        
     outf.close()
     tmpfilename = outf.name
 
@@ -378,7 +373,281 @@ def loadBAMStats( infiles, outfile ):
                 >> %(outfile)s """
         P.run()
 
+#########################################################################
+#########################################################################
+#########################################################################
+#@files(r"%s/%s.fa.fai" % (PARAMS("genome_dir"), PARAMS("genome")), "%(genome)s_tiling.bed")
+def buildTiledGenomeBed( infile, outfile ):
+    '''Build bed file segmenting entire genome using window x and shift y'''
 
+    statement = '''python %(scriptsdir)s/genome_bed.py
+                      -g %(genome_dir)s/%(genome)s.fa.fai
+                      -w %%(deseq_window)s
+                      -s %%(deseq_shift)s
+                      -o %(outfile)s '''
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@follows(buildTiledGenomeBed)
+@transform( dedup, regex(r"(\S+)/bam/(\S+).bam"), r"\1/bam/\2.counts.bed.gz" )
+def buildTiledReadCounts( infiles, outfile ):
+    '''compute coverage of genome with reads.'''
+
+    infile, genome_bed = infiles
+
+    to_cluster = USECLUSTER
+
+    # note: needs to set flags appropriately for
+    # single-end/paired-end data sets
+    # set filter options
+    # for example, only properly paired reads
+    paired = False
+    if paired:
+        flag_filter = "-f 0x2"
+    else:
+        flag_filter = ""
+
+    # note: the -split option only concerns the stream in A - multiple
+    # segments in B are not split. Hence counting has to proceed via
+    # single exons - this can lead to double counting if exon counts
+    # are later aggregated.
+
+    statement = '''samtools view -b %(flag_filter)s -q %(deseq_min_mapping_quality)s %(infile)s
+                   | coverageBed -abam stdin -b %(genome_bed)s -split
+                   | sort -k1,1 -k2,2n
+                   | gzip
+                   > %(outfile)s '''
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@collate(buildTiledReadCounts,
+         regex(r"(\S+)/bam/(\S+).counts.bed.gz"),  
+         r"deseq/\2.counts.tsv.gz")
+def aggregateTiledReadCounts( infiles, outfile ):
+    '''aggregate tag counts for each window.
+
+    coverageBed adds the following four columns:
+
+    1) The number of features in A that overlapped (by at least one base pair) the B interval.
+    2) The number of bases in B that had non-zero coverage from features in A.
+    3) The length of the entry in B.
+    4) The fraction of bases in B that had non-zero coverage from features in A.
+
+    For bed6: use column 7
+    For bed12: use column 13
+
+    This method uses the maximum number of reads
+    found in any exon as the tag count.
+    '''
+    
+    to_cluster = USECLUSTER
+
+    # aggregate not necessary for bed12 files, but kept in
+    src = " ".join( [ "<( zcat %s | sort -k4,4 | groupBy -i stdin -g 4 -c 7 -o max | sort -k1,1)" % x for x in infiles ] )
+
+    tmpfile = P.getTempFilename( "." )
+    
+    statement = '''paste %(src)s > %(tmpfile)s'''
+    P.run()
+
+    tracks = [P.snip(x, ".counts.bed.gz" ) for x in infiles ]
+    #tracks = [re.match( "exon_counts.dir/(\S+)_vs.*", x).groups()[0] for x in tracks ]
+
+    outf = IOTools.openFile( outfile, "w")
+    outf.write( "gene_id\t%s\n" % "\t".join( tracks ) )
+    
+    for line in open( tmpfile, "r" ):
+        data = line[:-1].split("\t")
+        genes = list(set([ data[x] for x in range(0,len(data), 2 ) ]))
+        values = [ data[x] for x in range(1,len(data), 2 ) ]
+        assert len(genes) == 1, "paste command failed, wrong number of genes per line"
+        outf.write( "%s\t%s\n" % (genes[0], "\t".join(map(str, values) ) ) )
+    
+    outf.close()
+
+    os.unlink( tmpfile )
+
+#########################################################################
+#########################################################################
+#########################################################################
+@follows( mkdir( os.path.join( PARAMS["exportdir"], "deseq" ) ) )
+@transform( buildTiledReadCounts, suffix(".genome.tsv.gz"), ".deseq")
+def runDESeq( infile, outfile ):
+    '''estimate differential expression using DESeq.
+
+    The final output is a table. It is slightly edited such that
+    it contains a similar output and similar fdr compared to cuffdiff.
+
+    Plots are:
+
+    <geneset>_<method>_<level>_<track1>_vs_<track2>_significance.png
+        fold change against expression level
+    '''
+    
+    to_cluster = USECLUSTER
+
+    outdir = os.path.join( PARAMS["exportdir"], "deseq" )
+
+    geneset, method = outfile.split(".")
+    level = "gene"
+
+
+    # load data 
+    R('''suppressMessages(library('DESeq'))''')
+    R( '''counts_table <- read.delim( '%s', header = TRUE, row.names = 1, stringsAsFactors = TRUE )''' % infile )
+
+    # get conditions to test
+    # note that tracks in R use a '.' as separator
+    tracks = R('''colnames(counts_table)''')
+    map_track2column = dict( [ (y,x) for x,y in enumerate( tracks ) ] )
+    
+    sample2condition = [None] * len(tracks)
+    conditions = []
+    no_replicates = False
+    for group, replicates in EXPERIMENTS.iteritems():
+        if len(replicates) == 1:
+            E.warn( "only one replicate in %s - replicates will be ignored in ALL data sets for variance estimation" )
+            no_replicates = True
+
+        for r in replicates:
+            sample2condition[map_track2column[r.asR()]] = group.asR()
+        conditions.append( group )
+
+    ro.globalenv['conds'] = ro.StrVector(sample2condition)
+
+    def build_filename2( **kwargs ):
+        return "%(outdir)s/%(geneset)s_%(method)s_%(level)s_%(track1)s_vs_%(track2)s_%(section)s.png" % kwargs
+    def build_filename1( **kwargs ):
+        return "%(outdir)s/%(geneset)s_%(method)s_%(level)s_%(section)s_%(track)s.png" % kwargs
+    def build_filename0( **kwargs ):
+        return "%(outdir)s/%(geneset)s_%(method)s_%(level)s_%(section)s.png" % kwargs
+
+    # this analysis follows the 'Analysing RNA-Seq data with the "DESeq" package'
+    # tutorial 
+    R('''cds <-newCountDataSet( counts_table, conds) ''')
+    R('''cds <- estimateSizeFactors( cds )''')
+
+    if no_replicates:
+        R('''cds <- estimateVarianceFunctions( cds, method="blind" )''')
+    else:
+        R('''cds <- estimateVarianceFunctions( cds )''')
+
+    L.info("creating diagnostic plots" ) 
+    size_factors = R('''sizeFactors( cds )''')
+    R.png( build_filename0( section = "scvplot", **locals() ) )
+    R('''scvPlot( cds, ylim = c(0,3))''')
+    R['dev.off']()
+
+    R('''vsd <- getVarianceStabilizedData( cds )''' )
+    R('''dists <- dist( t( vsd ) )''')
+    R.png( build_filename0( section = "heatmap", **locals() ) )
+    R('''heatmap( as.matrix( dists ), symm=TRUE )''' )
+    R['dev.off']()
+
+    for track in conditions:
+        condition = track.asR()
+        R.png( build_filename1( section = "fit", **locals() ) )
+        R('''diagForT <- varianceFitDiagnostics( cds, "%s" )''' % condition )
+        if not no_replicates:
+            R('''smoothScatter( log10(diagForT$baseMean), log10(diagForT$baseVar) )''')
+            R('''lines( log10(fittedBaseVar) ~ log10(baseMean), diagForT[ order(diagForT$baseMean), ], col="red" )''')
+            R['dev.off']()
+            R.png( build_filename1( section = "residuals", **locals() ) )
+            R('''residualsEcdfPlot( cds, "%s" )''' % condition )
+            R['dev.off']()
+
+    L.info("calling differential expression")
+
+    outf = IOTools.openFile( outfile, "w" )
+    names = None
+    fdr = PARAMS["cuffdiff_fdr"]
+    isna = R["is.na"]
+
+    for track1, track2 in itertools.combinations( conditions, 2 ):
+        R('''res <- nbinomTest( cds, '%s', '%s' )''' % (track1.asR(),track2.asR()))
+
+        R.png( build_filename2( section = "significance", **locals() ) )
+        R('''plot( res$baseMean, res$log2FoldChange, log="x", pch=20, cex=.1,
+                   col = ifelse( res$padj < %(cuffdiff_fdr)s, "red", "black" ) )''' % PARAMS )
+        R['dev.off']()
+        if not names:
+            names = list(R['res'].names)
+            m = dict( [ (x,x) for x in names ])
+            m.update( dict(
+                    pval = "pvalue", 
+                    baseMeanA = "value1", 
+                    baseMeanB = "value2",
+                    id = "test_id", 
+                    log2FoldChange = "lfold") )
+            
+            header = [ m[x] for x in names ] 
+            outf.write( "track1\ttrack2\t%s\tstatus\tsignificant\n" % "\t".join(header))
+        else:
+            if names != list(R['res'].names):
+                raise ValueError( "different column headers in DESeq output: %s vs %s" % (names, list(R['res'].names)))
+
+        rtype = collections.namedtuple( "rtype", names )
+        
+        for data in zip( *R['res']) :
+            d = rtype._make( data )
+            outf.write( "%s\t%s\t" % (track1,track2))
+            # set significant flag
+            if d.padj <= fdr: signif = 1
+            else: signif = 0
+
+            # set lfold change to 0 if both are not expressed
+            if d.baseMeanA == 0.0 and d.baseMeanB == 0.0:
+                d = d._replace( foldChange = 0, log2FoldChange = 0 )
+
+            if isna( d.pval ): status = "OK"
+            else: status = "FAIL"
+
+            outf.write( "\t".join( map(str, d) ))
+            outf.write("\t%s\t%s\n" % (status, str(signif)))
+            
+    outf.close()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( runDESeq, suffix(".deseq"), "_deseq.load" )
+def loadDESeq( infile, outfile ):
+    '''load differential expression results.'''
+    # add gene level follow convention "<level>_diff"
+    
+    # if one expression value is 0, the log fc is inf or -inf.
+    # substitute with 10
+
+    tablename = P.snip( outfile, ".load") + "_gene_diff" 
+    statement = '''cat %(infile)s
+            | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+              --allow-empty
+              --index=track1
+              --index=track2
+              --index=test_id
+              --table=%(tablename)s 
+            > %(outfile)s
+    '''
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@merge( loadDESeq, "deseq_stats.tsv" )
+def buildDESeqStats( infiles, outfile ):
+    tablenames = [P.toTable( x ) for x in infiles ] 
+    buildExpressionStats( tablenames, "deseq", outfile )
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( buildDESeqStats, suffix(".tsv"), ".load" )
+def loadDESeqStats( infile, outfile ):
+    P.load( infile, outfile )
 
 #########################################################################
 #########################################################################

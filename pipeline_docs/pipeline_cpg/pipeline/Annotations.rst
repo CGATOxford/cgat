@@ -11,6 +11,8 @@ are usually much longer than the expected binding site, the overlap for most
 classes is only required to be partial. The classes are:
 
 +---------------+---------------------------------------------------------------------------------+
+|Term           | Definition                                                                      |
++---------------+---------------------------------------------------------------------------------+
 |cds            |mostly part of a CDS. These are intervals within a protein-coding exon           |
 +---------------+---------------------------------------------------------------------------------+
 |utr            |mostly part of UTR. These are intervals within the UTR of a gene                 |
@@ -28,7 +30,7 @@ classes is only required to be partial. The classes are:
 +---------------+---------------------------------------------------------------------------------+
 |intronic       |not any of the above and partly intronic. Note that these could also include     |
 |               |promotors of short alternative transcripts that skip one or more of the first    |
-|               |exons.                                                                          |
+|               |exons.                                                                           |
 +---------------+---------------------------------------------------------------------------------+
 |ambiguous      |none of the above                                                                |
 +---------------+---------------------------------------------------------------------------------+

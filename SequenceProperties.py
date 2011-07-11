@@ -340,6 +340,134 @@ class SequencePropertiesNA(SequenceProperties):
         return fields
 
 #######################################################################
+class SequencePropertiesDinuc(SequenceProperties):
+    
+    def __init__(self, reference_usage = [] ):
+        
+        SequenceProperties.__init__(self)
+
+        self.mCountsAA = 0
+        self.mCountsAC = 0
+        self.mCountsAG = 0
+        self.mCountsAT = 0
+        self.mCountsCA = 0
+        self.mCountsCC = 0
+        self.mCountsCG = 0
+        self.mCountsCT = 0
+        self.mCountsGA = 0
+        self.mCountsGC = 0
+        self.mCountsGG = 0
+        self.mCountsGT = 0
+        self.mCountsTA = 0
+        self.mCountsTC = 0
+        self.mCountsTG = 0
+        self.mCountsTT = 0
+        
+    def addProperties( self, other ):
+        SequenceProperties.addProperties( self, other )
+
+        self.mCountsAA += other.mCountsAA
+        self.mCountsAC += other.mCountsAC
+        self.mCountsAG += other.mCountsAG
+        self.mCountsAT += other.mCountsAT
+        self.mCountsCA += other.mCountsCA
+        self.mCountsCC += other.mCountsCC
+        self.mCountsCG += other.mCountsCG
+        self.mCountsCT += other.mCountsCT
+        self.mCountsGA += other.mCountsGA
+        self.mCountsGC += other.mCountsGC
+        self.mCountsGG += other.mCountsGG
+        self.mCountsGT += other.mCountsGT
+        self.mCountsTA += other.mCountsTA
+        self.mCountsTC += other.mCountsTC
+        self.mCountsTG += other.mCountsTG
+        self.mCountsTT += other.mCountsTT
+
+    def loadSequence( self, sequence ):
+        
+        """load sequence properties from a sequence."""
+        SequenceProperties.loadSequence( self, sequence )        
+
+        for i in xrange(0, len(sequence)-1, 1):
+            dinuc = sequence.upper()[i]+ sequence.upper()[i+1]
+            #print dinuc
+
+            if dinuc =='AA':
+                self.mCountsAA += 1
+            elif dinuc == 'AC':
+                self.mCountsAC += 1
+            elif dinuc == 'AG':
+                self.mCountsAG += 1
+            elif dinuc == 'AT':
+                self.mCountsAT += 1
+            elif dinuc == 'CA':
+                self.mCountsCA += 1
+            elif dinuc == 'CC':
+                self.mCountsCC += 1
+            elif dinuc == 'CG':
+                self.mCountsCG += 1
+            elif dinuc == 'CT':
+                self.mCountsCT += 1
+            elif dinuc == 'GA':
+                self.mCountsGA += 1
+            elif dinuc == 'GC':
+                self.mCountsGC += 1
+            elif dinuc == 'GG':
+                self.mCountsGG += 1
+            elif dinuc == 'GT':
+                self.mCountsGT += 1
+            elif dinuc == 'TA':
+                self.mCountsTA += 1
+            elif dinuc == 'TC':
+                self.mCountsTC += 1
+            elif dinuc == 'TG':
+                self.mCountsTG += 1
+            elif dinuc == 'TT':
+                self.mCountsTT += 1 
+               
+    def getFields(self):
+
+        fields = SequenceProperties.getFields(self) 
+        fields.append( "%i" % self.mCountsAA )
+        fields.append( "%i" % self.mCountsAC )
+        fields.append( "%i" % self.mCountsAG )
+        fields.append( "%i" % self.mCountsAT )
+        fields.append( "%i" % self.mCountsCA )
+        fields.append( "%i" % self.mCountsCC )
+        fields.append( "%i" % self.mCountsCG )
+        fields.append( "%i" % self.mCountsCT )
+        fields.append( "%i" % self.mCountsGA )
+        fields.append( "%i" % self.mCountsGC )
+        fields.append( "%i" % self.mCountsGG )
+        fields.append( "%i" % self.mCountsGT )
+        fields.append( "%i" % self.mCountsTA )
+        fields.append( "%i" % self.mCountsTC )
+        fields.append( "%i" % self.mCountsTG )
+        fields.append( "%i" % self.mCountsTT )      
+
+    def getHeaders( self ):
+
+        fields = SequenceProperties.getHeaders(self)
+        fields.append("nAA")
+        fields.append("nAC")
+        fields.append("nAG")
+        fields.append("nAT")
+        fields.append("nCA")
+        fields.append("nCC")
+        fields.append("nCG")
+        fields.append("nCT")
+        fields.append("nGA")
+        fields.append("nGC")
+        fields.append("nGG")
+        fields.append("nGT")
+        fields.append("nTA")
+        fields.append("nTC")
+        fields.append("nTG")
+        fields.append("nTT")
+
+        return fields
+
+#######################################################################
 class SequencePropertiesCpg(SequenceProperties):
     
     def __init__(self, reference_usage = [] ):
@@ -347,51 +475,59 @@ class SequencePropertiesCpg(SequenceProperties):
         SequenceProperties.__init__(self)
 
         self.mCountsCG = 0
-        self.mCountsGC = 0
+        self.mCountsC = 0
+        self.mCountsG = 0
         
     def addProperties( self, other ):
         SequenceProperties.addProperties( self, other )
 
-        self.mCountsGC += other.mCountsGC
         self.mCountsCG += other.mCountsCG
+        self.mCountsC += other.mCountsC
+        self.mCountsG += other.mCountsG
 
     def loadSequence( self, sequence ):
         
         """load sequence properties from a sequence."""
         SequenceProperties.loadSequence( self, sequence )        
 
-        for i in xrange(0, len(sequence), 1):
-            dinuc = sequence.upper()[i:i+1]
-            print dinuc
+        # Dinucleotide counts
+        for i in xrange(0, len(sequence)-1, 1):
+            dinuc = sequence.upper()[i]+ sequence.upper()[i+1]
+            #print dinuc
 
-            if dinuc =='GC':
-                self.mCountsGC += 1
-            elif dinuc == 'CG':
+            if dinuc == 'CG':
                 self.mCountsCG += 1
+
+        # Single nucleotide counts
+        for i in xrange(0, len(sequence), 1):
+            nuc = sequence.upper()[i]
+            if nuc == 'C':
+                self.mCountsC += 1
+            elif nuc =='G':
+                self.mCountsG += 1
                
     def getFields(self):
 
         fields = SequenceProperties.getFields(self)
-        fields.append( "%i" % self.mCountsGC )
         fields.append( "%i" % self.mCountsCG )        
 
-        t = float(self.mCountsGC + self.mCountsCG)
+        t = float(self.mCountsCG)
         if t == 0:
             fields.append( "na" )
-            fields.append( "na" )
         else:
-            fields.append( "%f" % (float(self.mCountsGC) / self.mLength ))
-            fields.append( "%f" % (float(self.mCountsCG) / self.mLength ))
+            fields.append( "%f" % (float(self.mCountsCG) / (self.mLength/2) ))
+            fields.append( "%f" % (float(self.mCountsCG) / (self.mLength/16) ))
+            fields.append( "%f" % (float(self.mCountsCG) / ((self.mCountsC*self.mCountsG)/self.mLength) ))
         
         return fields
 
     def getHeaders( self ):
 
         fields = SequenceProperties.getHeaders(self)
-        fields.append("nGC")
-        fields.append("nCG")        
-        fields.append("pGC")
-        fields.append("pCG")        
+        fields.append("nCpG")        
+        fields.append("pCpG")      
+        fields.append("CpG_ObsExp1")
+        fields.append("CpG_ObsExp2")
 
         return fields
 

@@ -33,3 +33,10 @@ Genomic Annotation
 Binding intervals were annotated with respect to the latest Ensembl genome annotation for the appropriate species.
 
 
+Genomic Association
+===================
+
+Binding intervals from different samples, relevant ChIP-seq datasets and CpG island prediction algorithms were 
+compared using the Genomic Association Tester (GAT). http://wwwfgu.anat.ox.ac.uk/~andreas/documentation/gat/contents.html.
+
+

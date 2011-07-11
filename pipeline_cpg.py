@@ -183,6 +183,24 @@ TRACKS = PipelineTracks.Tracks( Sample ).loadFromDirectory(
 for X in TRACKS:
     print "TRACK=", X, "\n"
 
+TRACKS_CONTROL = PipelineTracks.Tracks( Sample ).loadFromDirectory( 
+    [ x for x in glob.glob( "*.export.txt.gz" ) if PARAMS["tracks_control"] in x ],
+      "(\S+).export.txt.gz" ) +\
+      PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
+          [ x for x in glob.glob( "*.sra" ) if PARAMS["tracks_control"] in x ], 
+          "(\S+).sra" ) +\
+          PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
+              [x for x in glob.glob( "*.fastq.gz" ) if PARAMS["tracks_control"] in x], 
+              "(\S+).fastq.gz" ) +\
+              PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
+                  [x for x in glob.glob( "*.fastq.1.gz" ) if PARAMS["tracks_control"] in x], 
+                  "(\S+).fastq.1.gz" ) +\
+                  PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
+                      [ x for x in glob.glob( "*.csfasta.gz" ) if PARAMS["track_control"] in x], 
+                        "(\S+).csfasta.gz" )
+for X in TRACKS_CONTROL:
+    print "TRACK_CONTROL=", X, "\n"
+
 def getControl( track ):
     '''return appropriate control for a track'''
     n = track.clone()
@@ -498,217 +516,159 @@ def exportIntervalsAsBedsolo( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-## COMBINE INTERVALS
-@follows( exportIntervalsAsBed )
-@files( [( [ "%s.bed" % y.asFile() for y in EXPERIMENTS[x]], 
-           "%s.bed" % x.asFile()) 
-         for x in EXPERIMENTS ] )
-def combineExperiment( infiles, outfile ):
-    '''combine replicates between experiments.
-    The replicates are combined using intersection.'''
-    PIntervals.intersectBedFiles( infiles, outfile )
+## Merge nearby intervals
+@transform( exportIntervalsAsBed, regex(r"(\S+)/macs/(\S+).bed"), r"\1/macs/\2.merged.bed")
+def mergeIntervals(infile, outfile):
+    '''Merge intervals less than n bases apart in each dataset'''
 
-############################################################
-@follows( exportIntervalsAsBed )    
-@files( [( [ "%s.bed" % y.asFile() for y in CONDITIONS[x]], 
-           "%s.bed" % x.asFile()) 
-         for x in CONDITIONS ] )
-def combineCondition( infiles, outfile ):
-    '''combine conditions between cell lines. 
-    The conditions are merged via intersection.'''
-    PIntervals.intersectBedFiles( infiles, outfile )
-
-############################################################
-@follows( exportIntervalsAsBed )    
-@files( [( [ "%s.bed" % y.asFile() for y in TISSUES[x]], 
-           "%s.bed" % x.asFile()) 
-         for x in TISSUES ] )
-def combineTissue( infiles, outfile ):
-    '''combine conditions between cell lines. 
-    The conditions are merged via intersection. '''
-    PIntervals.intersectBedFiles( infiles, outfile )
-
-############################################################
-@transform( (combineExperiment,
-             combineCondition),
-            suffix(".bed"),
-            "_bed.load" )
-def loadCombinedIntervals( infile, outfile ):
-    '''load combined intervals.
-
-    Also, re-evaluate the intervals by counting reads within
-    the interval. In contrast to the initial pipeline, the
-    genome is not binned. In particular, the meaning of the
-    columns in the table changes to:
-
-    nProbes: number of reads in interval
-    PeakCenter: position with maximum number of reads in interval
-    AvgVal: average coverage within interval
-
-    If *replicates* is true, only replicates will be considered
-    for the counting. Otherwise the counts aggregate both replicates
-    and conditions.
-    '''
-
-    tmpfile = tempfile.NamedTemporaryFile(delete=False)
-
-    headers = ("AvgVal","DisttoStart","GeneList","Length","PeakCenter","PeakVal","Position","interval_id","nCpGs","nGenes","nPeaks","nProbes","nPromoters", "contig","start","end" )
-
-    tmpfile.write( "\t".join(headers) + "\n" )
-
-    avgval,contig,disttostart,end,genelist,length,peakcenter,peakval,position,start,interval_id,ncpgs,ngenes,npeaks,nprobes,npromoters = \
-        0,"",0,0,"",0,0,0,0,0,0,0,0,0,0,0,
-
-    samfiles, offsets = [], []
-
-    track = Sample( filename = P.snip( infile, ".bed") )
-
-    # get replicates / aggregated tracks associated with track
-    # remove subtraction as not relevant for tag counting
-    unsubtracted_track = getUnsubtracted ( track )
-    replicates = PipelineTracks.getSamplesInTrack( unsubtracted_track, TRACKS )
-
-    assert len(replicates) > 0
-    
-    # setup files
-    for t in replicates:
-        fn = "%s.norm.bam" % t.asFile()
-        assert os.path.exists( fn ), "could not find bamfile %s for track %s" % ( fn, str(t))
-        samfiles.append( pysam.Samfile( fn,  "rb" ) )
-        fn = "%s.macs" % t.asFile()
-        if os.path.exists( fn ):
-            offsets.append( PIntervals.getPeakShift( fn ) )
-
-    mlength = int(PARAMS["calling_merge_min_interval_length"])
-
-    c = E.Counter()
-    # count tags
-    for line in open(infile, "r"):
-        c.input += 1
-        contig, start, end, interval_id = line[:-1].split()[:4]
-
-        start, end = int(start), int(end)
-
-        # remove very short intervals
-        if end-start < mlength: 
-            c.skipped_length += 1
-            continue
-
-        npeaks, peakcenter, length, avgval, peakval, nprobes = \
-            PIntervals.countPeaks( contig, start, end, samfiles, offsets )
-
-        # nreads can be 0 if the intervals overlap only slightly
-        # and due to the binning, no reads are actually in the overlap region.
-        # However, most of these intervals should be small and have already be deleted via 
-        # the merge_min_interval_length cutoff.
-        # do not output intervals without reads.
-        if nprobes == 0:
-            c.skipped_reads += 1
-            
-        c.output += 1
-        tmpfile.write( "\t".join( map( str, (avgval,disttostart,genelist,length,
-                                             peakcenter,peakval,position,interval_id,
-                                             ncpgs,ngenes,npeaks,nprobes,npromoters, 
-                                             contig,start,end) )) + "\n" )
- 
-    tmpfile.close()
-
-    tmpfilename = tmpfile.name
-    tablename = "%s_intervals" % track.asTable()
-    
-    statement = '''
-   python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --index=interval_id 
-              --table=%(tablename)s
-    < %(tmpfilename)s 
-    > %(outfile)s
-    '''
-
-    P.run()
-    os.unlink( tmpfile.name )
-
-    L.info( "%s\n" % str(c) )
-
-############################################################
-@merge( exportIntervalsAsBed, "merged.bed" )
-def buildMergedIntervals( infiles, outfile ):
-    '''combine all experiments.
-    The replicates are combined using a merge.'''
-    PIntervals.mergeBedFiles( infiles, outfile )
-
-############################################################
-@merge( (exportIntervalsAsBed, 
-         combineExperiment, 
-         combineCondition,),
-        "intervals.overlap" )
-def buildOverlap( infiles, outfile ):
-    '''compute overlap between intervals.'''
-
-    if os.path.exists(outfile): 
-        # note: update does not work due to quoting
-        os.rename( outfile, outfile + ".orig" )
-        options = "--update=%s.orig" % outfile
-    else:
-        options = ""
-
-    infiles = " ".join( infiles )
-
-    # note: need to quote track names
-    statement = '''
-        python %(scriptsdir)s/diff_bed.py %(options)s %(infiles)s 
-        | awk -v OFS="\\t" '!/^#/ { gsub( /-/,"_", $1); gsub(/-/,"_",$2); } {print}'
-        > %(outfile)s
-        '''
+    d = PARAMS["intervals_merge_dist"]
+    statement = '''mergeBed -d %(d)s -i %(infile)s > %(outfile)s;'''
     P.run()
 
 ############################################################
-@transform( buildOverlap, suffix(".overlap"), "_overlap.load" )
-def loadOverlap( infile, outfile ):
-    '''load overlap results. '''
-
-    tablename = "overlap"
-
-    statement = '''python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
-                       --index=set1 
-                       --index=set2 
-                       --table=%(tablename)s 
-                   < %(infile)s > %(outfile)s '''
+@transform( mergeIntervals, regex(r"(\S+)/macs/(\S+).merged.bed"), r"\1/macs/\2.merged.load")
+def loadMergedIntervals(infile, outfile):
+    '''Load merged intervals into database '''
+    track = P.snip( os.path.basename( infile ), ".merged.bed" )
+    header = "contig,start,stop"
+    statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
+                      --table=%(track)s_merged_intervals
+                      --header=%(header)s
+                   > %(outfile)s '''
     P.run()
 
 ############################################################
 ############################################################
 ############################################################
-## PEAK CORRELATION
-@follows( exportIntervalsAsBed )
-@files_re( ["%s.bed" % x.asFile() for x in TRACKS_CORRELATION],
-           combine("(.*).bed"),
-           "peakval.correlation" )
-def makePeakvalCorrelation( infiles, outfile ):
-    '''compute correlation of interval properties between sets for field peakval.  '''
-    PIntervals.makeIntervalCorrelation( infiles, outfile, "peakval", "merged.bed" )
+## Compare intervals
+@transform( exportIntervalsAsBed, regex(r"(\S+)/macs/(\S+).bed"), r"\1/macs/\2.unique.bed")
+def uniqueIntervals(infile, outfile):
+    '''identify unique intervals for each dataset'''
 
-@follows( exportIntervalsAsBed )
-@files_re( ["%s.bed" % x.asFile() for x in TRACKS_CORRELATION],
-           combine("(.*).bed"),
-           "avgval.correlation" )
-def makeAvgvalCorrelation( infiles, outfile ):
-    '''compute correlation of interval properties between sets for field Avgval. '''
-    PIntervals.makeIntervalCorrelation( infiles, outfile, "avgval", "merged.bed" )
+    tmpfile = P.getTempFilename(".")
+    statement = '''mergeBed -i %(infile)s > %(outfile)s;'''
+    P.run()
+    in_track = P.snip( os.path.basename( infile ), ".bed")
+    for track in TRACKS:
+       if (str(track) <> in_track):
+           statement = '''mergeBed -i %(track)s/macs/%(track)s.bed | intersectBed -a %(outfile)s -b stdin -v > %(tmpfile)s; mv %(tmpfile)s %(outfile)s ''' 
+           P.run()
+    os.unlink( tmpfile )
 
-@follows( exportIntervalsAsBed )
-@files_re( ["%s.bed" % x.asFile() for x in TRACKS_CORRELATION],
-           combine("(.*).bed"),
-           "length.correlation" )
-def makeLengthCorrelation( infiles, outfile ):
-    '''compute correlation of interval properties between sets for field length.  '''
-    PIntervals.makeIntervalCorrelation( infiles, outfile, "length", "merged.bed" )
+############################################################
+@transform( uniqueIntervals, regex(r"(\S+)/macs/(\S+).unique.bed"), r"\1/macs/\2.unique.load")
+def loadUniqueIntervals(infile, outfile):
+    '''Load unique intervals into database '''
+    track = P.snip( os.path.basename( infile ), ".unique.bed" )
+    header = "contig,start,stop"
+    statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
+                      --table=%(track)s_unique_intervals
+                      --header=%(header)s
+                   > %(outfile)s '''
+    P.run()
 
-@transform( ( makePeakvalCorrelation, makeAvgvalCorrelation, makeLengthCorrelation ),
-            suffix(".correlation"),
-            "_correlation.load")
-def loadCorrelation( infile, outfile ):
-    '''load correlation data.'''
-    P.load( infile, outfile, "--index=id --map=default:float --map=id:int" )
+############################################################
+@transform( uniqueIntervals, regex(r"(\S+)/macs/(\S+).unique.bed"), r"\1/macs/\2.unique.coverage")
+def analyseUniqueIntervals(infile, outfile):
+    '''Analyse coverage of unique intervals in other datasets'''
+    track = P.snip( os.path.basename( infile ), ".unique.bed" )
+    header = "contig,start,stop"
+
+    tmpfile = P.getTempFilename(".")
+    statement = '''cat %(infile)s | sort -k1 -k2 > %(outfile)s;'''
+    P.run()
+    in_track = P.snip( os.path.basename( infile ), ".bed")
+    for track in TRACKS:
+       if (str(track) != in_track):
+           header = header + "," + str(track)
+           statement = '''coverageBed -abam %(track)s/bam/%(track)s.dedup.bam -b %(infile)s | sort -k1 -k2 | cut -f 4 | paste %(outfile)s - > %(tmpfile)s; mv %(tmpfile)s %(outfile)s'''
+           P.run()
+
+    # Load into database
+    statement = '''cat %(outfile)s | python %(scriptsdir)s/csv2db.py
+                      --table=%(track)s_unique_coverage
+                      --header=%(header)s
+                   > %(outfile)s.load '''
+    P.run()
+    os.unlink( tmpfile )
+
+############################################################
+@transform( exportIntervalsAsBed, regex(r"(\S+)/macs/(\S+).bed"), r"\1/macs/\2.shared.bed")
+def sharedIntervals(infile, outfile):
+    '''identify shared intervals between datasets'''
+
+    tmpfile = P.getTempFilename(".")
+    statement = '''mergeBed -i %(infile)s > %(outfile)s;'''
+    P.run()
+    in_track = P.snip( os.path.basename( infile ), ".bed")
+    for track in TRACKS:
+       if (str(track) != in_track):
+           statement = '''mergeBed -i %(track)s/macs/%(track)s.bed | intersectBed -a %(outfile)s -b stdin -u > %(tmpfile)s; mv %(tmpfile)s %(outfile)s; ''' 
+           P.run()
+    os.unlink( tmpfile )
+
+############################################################
+@transform( sharedIntervals, regex(r"(\S+)/macs/(\S+).shared.bed"), r"\1/macs/\2.shared.load")
+def loadSharedIntervals(infile, outfile):
+    '''Load shared intervals into database '''
+    track = P.snip( os.path.basename( infile ), ".shared.bed" )
+    header = "contig,start,stop"
+    statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
+                      --table=%(track)s_shared_intervals
+                      --header=%(header)s
+                   > %(outfile)s '''
+    P.run()
+
+############################################################
+############################################################
+############################################################
+## Assess background (non-peak) binding
+@follows( exportIntervalsAsBed )
+@files( [ (("%s/bam/%s.dedup.bam" % (x, x.asFile()), "%s/macs/%s.bed" % (x, x.asFile())), "%s/macs/%s.bg" % (x, x.asFile()) ) for x in TRACKS ] )
+def getBackground(infiles, outfile):
+    '''Count the number of reads in the bamfile used for MACS that do not overlap an interval'''
+    bam, bed = infiles
+    statement = '''intersectBed -abam %(bam)s -b %(bed)s -v -bed | wc -l > %(outfile)s; '''
+    statement += '''intersectBed -abam %(bam)s -b %(bed)s -u -bed | wc -l >> %(outfile)s;'''
+    statement += '''sed -i '{N;s/\n/\t/g}' %(outfile)s; '''
+    P.run()
+
+############################################################
+@transform( getBackground, regex(r"(\S+)/macs/(\S+).bg"), r"\1/macs/\2.bg.load")
+def loadBackground(infile, outfile):
+    '''load background into database'''
+    track = P.snip( os.path.basename( infile ), ".bg" )
+    header = "out_peaks,in_peaks"
+    statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
+                        --table=%(track)s_background
+                        --header=%(header)s
+                   > %(outfile)s '''
+    P.run()
+
+############################################################
+def addBackground( infile, outfile):
+    '''Add random reads to Chipseq input file to increase background '''
+
+    # Identify sample to add reads to (lowest background)
+
+    # Calculate number of reads to add (increase to highest background level)
+
+    # Generate random reads and add to bam
+    statement = '''java -jar -Xmx2048m SimSeq.jar 
+                       -1 50 -2 50 \
+                       --error  /ifs/apps/bio/simseq-72ce499/examples/hiseq_mito_default_bwa_mapping_mq10_1.txt \
+                       --error2 /ifs/apps/bio/simseq-72ce499/examples/hiseq_mito_default_bwa_mapping_mq10_2.txt \
+                       --insert_size 250 \
+                       --insert_stdev 30 \
+                       --read_number 10000 \
+                       --read_prefix simseq_ \
+                       --reference %(samtools_genome)s \
+                       --duplicate_probability 0.0 \
+                       --out simseq.sam; '''
+    statement += '''samtools view -bS -t %(samtools_genome)s.fai -o simseq.bam simseq.sam; 
+                    samtools sort out.bam out.srt`
+                    samtools index out.sorted.bam`'''
+    P.run()
 
 
 ############################################################
@@ -763,7 +723,6 @@ def annotateTSS( infile, outfile ):
 		                   --log=%(outfile)s.log 
                        --filename-gff=%(annotation_file)s 
                        --filename-format="bed" 
-                       --genome-file=%(genome_dir)s/%(genome)s
                    > %(outfile)s"""
     P.run()
 
@@ -805,16 +764,70 @@ def annotateComposition( infile, outfile ):
 
     to_cluster = True
 
-    annotation_file = os.path.join( PARAMS["annotations_dir"],PARAMS_ANNOTATIONS["interface_repeats_gff"] )
+    outtemp1 = P.getTempFile()
+    tmpfilename1 = outtemp1.name
+    outtemp2 = P.getTempFile()
+    tmpfilename2 = outtemp2.name
 
-    statement = """cat < %(infile)s 
+    track= P.snip( os.path.basename(infile), ".bed")
+
+    statement = """cat %(infile)s 
                    | python %(scriptsdir)s/bed2gff.py --as-gtf 
                    | python %(scriptsdir)s/gtf2table.py 
-                      	 --counter=overlap
-                      	 --log=%(outfile)s.log
-                         --filename-gff=%(annotation_file)s
+                      	 --counter=composition-na
+                      	 --log=%(outfile)s
                          --genome-file=%(genome_dir)s/%(genome)s
-                   > %(outfile)s"""
+                   > %(tmpfilename1)s; """
+    statement += """cat %(infile)s 
+                   | python %(scriptsdir)s/bed2gff.py --as-gtf 
+                   | python %(scriptsdir)s/gtf2table.py 
+                      	 --counter=composition-cpg
+                      	 --log=%(outfile)s
+                         --genome-file=%(genome_dir)s/%(genome)s
+                   > %(tmpfilename2)s; """
+    statement += """python ~/src/combine_tables.py %(tmpfilename1)s %(tmpfilename2)s 
+                    | python ~/src/csv2db.py 
+                         --table=%(track)s_composition 
+                         --index=gene_id
+                   >> %(outfile)s"""
+    P.run()
+
+############################################################
+@transform( (exportIntervalsAsBed), suffix(".bed"), ".control.composition" )
+def controlComposition( infile, outfile ):
+    '''Establish the nucleotide composition of control intervals'''
+
+    to_cluster = True
+
+    outtemp1 = P.getTempFile()
+    tmpfilename1 = outtemp1.name
+    outtemp2 = P.getTempFile()
+    tmpfilename2 = outtemp2.name
+
+    track= P.snip( os.path.basename(infile), ".bed")
+    dirname= os.path.dirname(infile)
+
+    statement = """slopBed -i %(infile)s -g %(samtools_genome)s.fai -l 10000 -r -10000 > %(dirname)s/%(track)s.control.bed; """
+
+    statement += """cat %(dirname)s/%(track)s.control.bed
+                   | python %(scriptsdir)s/bed2gff.py --as-gtf 
+                   | python %(scriptsdir)s/gtf2table.py 
+                      	 --counter=composition-na
+                      	 --log=%(outfile)s
+                         --genome-file=%(genome_dir)s/%(genome)s
+                   > %(tmpfilename1)s; """
+    statement += """cat %(dirname)s/%(track)s.control.bed
+                   | python %(scriptsdir)s/bed2gff.py --as-gtf 
+                   | python %(scriptsdir)s/gtf2table.py 
+                      	 --counter=composition-cpg
+                      	 --log=%(outfile)s
+                         --genome-file=%(genome_dir)s/%(genome)s
+                   > %(tmpfilename2)s; """
+    statement += """python ~/src/combine_tables.py %(tmpfilename1)s %(tmpfilename2)s 
+                    | python ~/src/csv2db.py 
+                         --table=%(track)s_control_composition 
+                         --index=gene_id
+                   >> %(outfile)s"""
     P.run()
 
 ############################################################
@@ -896,6 +909,10 @@ def viewIntervals( infiles, outfiles ):
                     bed.start = 0
                 outs.write(str(bed) + "\n")
 
+                if bed.start <= 0: 
+                    bed.start = 0
+                outs.write(str(bed) + "\n")
+
     outs.close()
     basename, filename = os.path.split( outfile_bed )
 
@@ -917,6 +934,27 @@ def viewIntervals( infiles, outfiles ):
 ############################################################
 ############################################################
 ############################################################
+## Compare bed files using GAT
+@merge( "gat/*.bed", "gat/gat.tsv" )
+def runGAT(infiles, outfile):
+    '''Run genome association tester on bed files '''
+    segfiles = " ".join( [ "--segment-file=%s" % x for x in infiles ] )
+    annofiles = " ".join( [ "--annotation-file=%s" % x for x in infiles ] )
+    statement = """gatrun.py %(segfiles)s %(annofiles)s --workspace=gat/%(genome)s.bed.gz --num-samples=1000 > %(outfile)s"""
+    P.run()
+
+############################################################
+@transform( runGAT, regex(r"gat/*.tsv"), "*.load" )
+def loadGAT(infile, outfile):
+    '''Load genome association tester results into database '''
+    statement = """cat %(infile)s | grep -v "^#" | python %(scriptsdir)s/csv2db.py 
+                         --table=gat_results 
+                    > %(outfile)s"""
+    P.run()
+
+############################################################
+############################################################
+############################################################
 ## Pipeline organisation
 @follows( buildBAM, dedup, loadPicardDuplicateStats, buildPicardAlignStats, loadPicardAlignStats, 
           buildBAMStats, loadBAMStats)
@@ -932,20 +970,10 @@ def buildIntervals():
 def buildIntervalsNoControl():
     pass
 
-@follows( loadCombinedIntervals, 
-          buildMergedIntervals, )
-def combineIntervals():
-    pass
-
-@follows( loadCorrelation, 
-          loadOverlap,)
-def correlation():
-    '''run the correlation targets.'''
-    pass
-
 @follows( annotateIntervals, loadAnnotations, 
           annotateTSS, loadTSS, 
-          annotateRepeats, loadRepeats )
+          annotateRepeats, loadRepeats,
+          annotateComposition, controlComposition )
 def annotation():
     '''run the annotation targets.'''
     pass

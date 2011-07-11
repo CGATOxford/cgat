@@ -16,6 +16,10 @@ Contents:
    pipeline/TSS.rst
    pipeline/Repeats.rst
    pipeline/IntervalsCDS.rst
+   pipeline/cpg.rst
+   pipeline/gat.rst
+   pipeline/background.rst
+   pipeline/interval_comparison.rst
 
 .. errorlist::
   
