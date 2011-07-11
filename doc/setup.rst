@@ -1,14 +1,27 @@
 .. _CGATSetup:
 
-==========
-CGAT setup
-==========
+=========================
+Installing CGAT pipelines
+=========================
 
 The CGAT pipelines, scripts and libraries make several assumptions about
-the computing environment.
+the computing environment. This section describes how to install the code
+and set up your computing environment.
 
-Computing environment
-=====================
+Downloading and installing the source code
+==========================================
+
+To obtain the latest code, check it out from the public mercurial_ repository at::
+
+   hg clone http://www.cgat.org/hg/cgat/ src
+
+Once checked-out, you can get the latest changes via pulling and updating::
+
+   hg pull 
+   hg update
+
+Setting up the computing environment
+====================================
 
 The pipelines assume that Sun Grid Engine has been installed. Other queueing systems
 might work, but expect to be disappointed. The pipeline is started on a 
@@ -27,15 +40,15 @@ the same path both from the submit and the :term:`execution host`.
 Software requirements
 =====================
 
-On top of pipeline specific bioinformatics software, CGAT pipelines usually
-make use of the following software:
+On top of pipeline specific bioinformatics software, CGAT pipelines make use of the 
+following software:
 
 +----------------------+-------------------+------------------------------------------+
 |*Program*             |*Version*          |*Purpose*                                 |
 +----------------------+-------------------+------------------------------------------+
 |bowtie_               |>=0.12.7           |read mapping                              |
 +----------------------+-------------------+------------------------------------------+
-|tophat_               |>=1.2.0            |read mapping                              |
+|tophat_               |>=1.3.0            |read mapping                              |
 +----------------------+-------------------+------------------------------------------+
 |cufflinks_            |>=0.9.3            |transcription levels                      |
 +----------------------+-------------------+------------------------------------------+
@@ -54,6 +67,9 @@ make use of the following software:
 |                      |                   |                                          |
 +----------------------+-------------------+------------------------------------------+
 
+What exactly is required will depend on the particular pipeline. The pipeline assumes
+that the executables are in the users :envvar:`PATH` and that the rest of the environment
+has been set up for each tool.
 
 Python libraries
 ----------------
@@ -67,15 +83,16 @@ CGAT requires the following in-house python libraries to be installed:
 +--------------------+-------------------+----------------------------------------+
 |*Library*           |*Version*          |*Purpose*                               |
 +--------------------+-------------------+----------------------------------------+
-|pysam_              |0.4.1              |python fronted for samtools             |
+|pysam_              |0.5.0              |python bindings for samtools            |
 +--------------------+-------------------+----------------------------------------+
 |NCL_                |0.1                |nested containment lists                |
 +--------------------+-------------------+----------------------------------------+
 |fastgtf_            |0.1                |fast gtf parsing                        |
 +--------------------+-------------------+----------------------------------------+
-|alignlib_           |0.4.3              |alignment tools                         |
+|alignlib_           |0.4.4              |C++ sequence alignment library with     |
+|                    |                   |python bindings.                        |
 +--------------------+-------------------+----------------------------------------+
-|Components	     |0.1	         |connected components computation        |
+|Components          |0.1                |connected components computation        |
 +--------------------+-------------------+----------------------------------------+
 |sphinxreport_       |latest             |report generator                        |
 +--------------------+-------------------+----------------------------------------+
@@ -111,3 +128,4 @@ might not be complete):
 .. _cufflinks: http://cufflinks.cbcb.umd.edu/index.html
 .. _tophat: http://tophat.cbcb.umd.edu/
 .. _bowtie: http://bowtie-bio.sourceforge.net/index.shtml
+.. _mercurial: http://mercurial.selenic.com

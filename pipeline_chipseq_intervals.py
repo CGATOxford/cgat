@@ -31,6 +31,10 @@ P.getParameters(
 
 PARAMS = P.PARAMS
 
+if os.path.exists("pipeline_conf.py"):
+    E.info( "reading additional configuration from pipeline_conf.py" )
+    execfile("pipeline_conf.py")
+
 ############################################################
 ############################################################
 ############################################################
@@ -40,6 +44,7 @@ def getPeakShift( infile ):
     '''get peak shift for filename infile (.macs output file).
 
     returns None if no shift found'''
+pipeline_chipseq_intervals.py.orig
 
     shift = None
     with open(infile, "r") as ins:
@@ -576,7 +581,8 @@ def loadMACS( infile, outfile, bamfile ):
             else:
                 raise ValueError( "could not parse line %s" % line )
             
-            pvalue, qvalue, summit, fold = float(pvalue), float(qvalue), int(summit), float(fold)
+            # qvalue is in percent, divide by 100.
+            pvalue, qvalue, summit, fold = float(pvalue), float(qvalue) / 100, int(summit), float(fold)
 
             if qvalue > max_qvalue or pvalue < min_pvalue or fold < min_fold: 
                 counter.skipped += 1

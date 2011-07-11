@@ -131,9 +131,6 @@ PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],
 ###################################################################
 import PipelineTracks
 
-# define some tracks if needed
-TRACKS = None
-
 ###################################################################
 ###################################################################
 ###################################################################
@@ -156,6 +153,12 @@ def connect():
 ###################################################################
 ###################################################################
 ###################################################################
+## worker tasks
+###################################################################
+
+###################################################################
+###################################################################
+###################################################################
 ## primary targets
 ###################################################################
 
@@ -163,15 +166,22 @@ def connect():
 def build_report():
     '''build report from scratch.'''
 
-    E.info( "starting documentation build process from scratch" )
+    E.info( "starting report build process from scratch" )
     P.run_report( clean = True )
 
 @follows( mkdir( "report" ) )
 def update_report():
     '''update report.'''
 
-    E.info( "updating documentation" )
+    E.info( "updating report" )
     P.run_report( clean = False )
+
+@follows( update_report )
+def publish_report():
+    '''publish report.'''
+
+    E.info( "publishing report" )
+    P.publish_report()
 
 if __name__== "__main__":
 

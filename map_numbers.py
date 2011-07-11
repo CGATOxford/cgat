@@ -21,8 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-map_numbers.py - 
-======================================================
+map_numbers.py - map numbers to RGB values
+==========================================
 
 :Author: Andreas Heger
 :Release: $Id$
@@ -32,9 +32,7 @@ map_numbers.py -
 Purpose
 -------
 
-.. todo::
-   
-   describe purpose of the script.
+Reads numbers from stdin and maps to random RGB values.
 
 Usage
 -----

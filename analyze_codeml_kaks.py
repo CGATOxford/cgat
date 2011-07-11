@@ -21,8 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-analyze_codeml_kaks.py - 
-======================================================
+analyze_codeml_kaks.py - analyze results from codeml kaks run
+=============================================================
 
 :Author: Andreas Heger
 :Release: $Id$
@@ -32,9 +32,6 @@ analyze_codeml_kaks.py -
 Purpose
 -------
 
-.. todo::
-   
-   describe purpose of the script.
 
 Usage
 -----
@@ -59,10 +56,6 @@ Code
 import os, sys, string, re, tempfile, subprocess, optparse
 
 from types import *
-
-USAGE="""analyze results from codeml kaks run.
-
-"""
 
 import Genomics
 import Experiment

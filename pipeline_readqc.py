@@ -167,6 +167,14 @@ def runFastqc(infiles, outfile):
         statement = m.build((infiles,), outfile) 
         P.run()
 
+<<<<<<< local
+=======
+
+@follows() 
+def publish():
+    '''publish files.'''
+    P.publish_report( prefix = "readqc_" )
+>>>>>>> other
 
 #########################################################################
 #########################################################################

@@ -24,6 +24,11 @@
 Experiment.py - record keeping of experiments
 =============================================
 
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
 Module for record keeping of experiments. This module
 is imported by most CGAT scripts. It provides convenience
 methods for

@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-rnaseq_countreads.py - count context that reads map to
+rnaseq_bam_vs_bed.py - count context that reads map to
 ======================================================
 
 :Author: Andreas Heger

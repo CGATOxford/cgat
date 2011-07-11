@@ -21,6 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 """
+map2psql.py - convert maf formatted file to a psl formatted file
+================================================================
 
 :Author: Andreas Heger
 :Release: $Id: maf2psl.py 2879 2010-04-06 14:44:34Z andreas $

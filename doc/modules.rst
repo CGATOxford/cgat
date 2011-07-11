@@ -116,6 +116,9 @@ Tools
    :maxdepth: 1
 
    modules/Experiment.rst
+   modules/Pipeline.rst
+   modules/PipelineTracks.rst
+   modules/PipelineMapping.rst
    modules/CSV.rst
    modules/IOTools.rst
    modules/Iterators.rst
@@ -164,11 +167,4 @@ Obsolete
    modules/Alignlib.rst   
    modules/SuffixArray.rst
 
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
 

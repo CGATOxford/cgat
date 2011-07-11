@@ -21,8 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-psl2fasta.py - 
-======================================================
+psl2fasta.py - output alignment pairs from psl formatted alignments
+===================================================================
 
 :Author: Andreas Heger
 :Release: $Id$
@@ -32,9 +32,9 @@ psl2fasta.py -
 Purpose
 -------
 
-.. todo::
-   
-   describe purpose of the script.
+analyze sequence pairs from a psl formatted table.
+
+The sequences are assumed to be nucleotide sequences.
 
 Usage
 -----
@@ -57,12 +57,6 @@ Code
 
 '''
 import os, sys, string, re, tempfile, subprocess, optparse, math
-
-USAGE = \
-"""analyze sequence pairs from a psl formatted table.
-
-The sequences are assumed to be nucleotide sequences.
-"""
 
 import Experiment
 import IndexedFasta, Blat, Genomics

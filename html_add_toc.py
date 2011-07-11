@@ -21,8 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-html_add_toc.py - 
-======================================================
+html_add_toc.py - insert table of contents in html document
+===========================================================
 
 :Author: Andreas Heger
 :Release: $Id$
@@ -32,9 +32,10 @@ html_add_toc.py -
 Purpose
 -------
 
-.. todo::
-   
-   describe purpose of the script.
+Read an html document on stdin and add a table of contents
+based on section headings in the document.
+
+This document uses the ``<h1></h1>``, ``<h2></h2>``, ... html tags.
 
 Usage
 -----

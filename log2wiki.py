@@ -21,8 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-log2wiki.py - 
-======================================================
+log2wiki.py - convert a log file into a wiki page
+=================================================
 
 :Author: Andreas Heger
 :Release: $Id$
@@ -57,14 +57,11 @@ Code
 
 '''
 import os, sys, string, re, optparse
-
-"""convert a log file into a wiki file with sections etc."""
-
-parser = optparse.OptionParser( version = "%prog version: $Id: log2wiki.py 2782 2009-09-10 11:40:29Z andreas $")
-
 import Experiment
 
 if __name__ == "__main__":
+
+    parser = optparse.OptionParser( version = "%prog version: $Id: log2wiki.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option("-s", "--start", dest="start", type="string",
                       help="start of section." )

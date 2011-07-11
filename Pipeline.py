@@ -63,6 +63,8 @@ PARAMS= {
 
 CONFIG = {}
 
+PROJECT_ROOT = '/ifs/projects'
+
 def configToDictionary( config ):
 
     p = {}
@@ -110,6 +112,33 @@ def getParameters( filenames = ["pipeline.ini",] ):
     PARAMS.update( p )
 
     return PARAMS
+
+def substituteParameters( **kwargs ):
+    '''return a local PARAMS dictionary.
+
+    Options in **kwargs substitute default
+    values in PARAMS.
+
+    Finally, task specific configuration values 
+    are inserted.
+    '''
+
+    # build parameter dictionary
+    # note the order of addition to make sure that kwargs takes precedence
+    local_params = dict(PARAMS.items() + kwargs.items())
+
+    if "outfile" in local_params:
+        # replace specific parameters with task (outfile) specific parameters
+        outfile = local_params["outfile"]
+        for k in local_params.keys():
+            if k.startswith(outfile):
+                p = k[len(outfile)+1:]
+                if p not in local_params:
+                    raise KeyError( "task specific parameter '%s' does not exist for '%s' " % (p,k))
+                local_params[p] = local_params[k]
+
+    return local_params
+
 
 def checkFiles( filenames ):
     """check for the presence/absence of files"""
@@ -254,7 +283,15 @@ def toTable( outfile ):
 
 def getProjectId():
     '''cgat specific method: get the (obfuscated) project id.'''
-    target = os.readlink( "../sftp/web" )
+    curdir = os.path.abspath(os.getcwd())
+    if not curdir.startswith( PROJECT_ROOT ):
+        raise ValueError( "method getProjectId no called within %s" % PROJECT_ROOT )
+    prefixes = len(PROJECT_ROOT.split("/"))
+    rootdir = "/" + os.path.join( *(curdir.split( "/" )[:prefixes+1]) )
+    f = os.path.join( rootdir, "sftp", "web" )
+    if not os.path.exists(f):
+        raise OSError( "web directory at '%s' does not exist" % f )
+    target = os.readlink( f )
     return os.path.basename( target )
 
 def load( infile, outfile, options = "" ):
@@ -276,6 +313,34 @@ def load( infile, outfile, options = "" ):
     > %(outfile)s
     '''
 
+    run()
+
+
+def mergeAndLoad( infiles, outfile, suffix ):
+    '''load categorical tables (two columns) into a database.
+
+    The tables are merged and entered row-wise.
+    '''
+    header = ",".join( [ quote( snip( x, suffix)) for x in infiles] )
+    if suffix.endswith(".gz"):
+        filenames = " ".join( [ "<( zcat %s | cut -f 1,2 )" % x for x in infiles ] )
+    else:
+        filenames = " ".join( [ "<( cat %s | cut -f 1,2 )" % x for x in infiles ] )
+
+    tablename = toTable( outfile )
+
+    statement = """python %(scriptsdir)s/combine_tables.py
+                      --headers=%(header)s
+                      --missing=0
+                      --ignore-empty
+                   %(filenames)s
+                | perl -p -e "s/bin/track/" 
+                | python %(scriptsdir)s/table2table.py --transpose
+                | python %(scriptsdir)s/csv2db.py
+                      --index=track
+                      --table=%(tablename)s 
+                > %(outfile)s
+            """
     run()
 
 def snip( filename, extension = None):
@@ -357,16 +422,19 @@ _exec_suffix = "; detect_pipe_error"
 def buildStatement( **kwargs ):
     '''build statement from kwargs.
 
-    Options in PARAMS are added, but kwargs takes precedence.
+    Options in PARAMS are added, but kwargs take precedence.
+    
+    If outfile is in kwargs, 
     '''
 
     if "statement" not in kwargs:
         raise ValueError("'statement' not defined")
 
-    # the actual statement
+    local_params = substituteParameters( **kwargs )
+
+    # build the statement
     try:
-        # note the order of addition to make sure that kwargs takes precedence
-        statement = kwargs.get("statement") % dict( PARAMS.items() + kwargs.items() )
+        statement = kwargs.get("statement") % local_params
     except KeyError, msg:
         raise KeyError( "Error when creating command: could not find %s in dictionaries" % msg)
     except ValueError, msg:
@@ -853,7 +921,7 @@ def run_report( clean = True):
 
     run()
 
-def publish_report( prefix = "", patterns = []):
+def publish_report( prefix = "", patterns = [], project_id = None):
     '''publish report into web directory.
 
     Links export directory into web directory.
@@ -866,13 +934,20 @@ def publish_report( prefix = "", patterns = []):
     *patterns* is an optional list of two-element tuples (<pattern>, replacement_string).
     Each substitutions will be applied on each file ending in .html.
 
+    If *project_id* is not given, it will be looked up. This requires
+    that this method is called within a subdirectory of PROJECT_ROOT.
+
     .. note::
        This function is CGAT specific.
 
     '''
 
+    if not prefix:
+        prefix = PARAMS.get( "report_prefix", "" )
+
     web_dir = PARAMS["web_dir"]
-    project_id = getProjectId()
+    if project_id == None:
+        project_id = getProjectId()
 
     src_export = os.path.abspath( "export" )
     dest_report = prefix + "report"

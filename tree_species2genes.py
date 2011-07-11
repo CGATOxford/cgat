@@ -21,8 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-tree_species2genes.py - 
-======================================================
+tree_species2genes.py - collapse leaves with the same species.
+==============================================================
 
 :Author: Andreas Heger
 :Release: $Id$
@@ -32,9 +32,8 @@ tree_species2genes.py -
 Purpose
 -------
 
-.. todo::
-   
-   describe purpose of the script.
+-p, --pattern-species=          regex pattern to extract species from identifier
+-g, --genes=                    filename with list of genes per species
 
 Usage
 -----
@@ -60,19 +59,6 @@ import os, sys, string, re, getopt, tempfile, time, popen2
 
 from Bio.Nexus import Nexus
 from Bio.Nexus.Nodes import Node
-
-USAGE="""python %s [OPTIONS] < tree.in > tree.out
-
-Version: $Id: tree_species2genes.py 2782 2009-09-10 11:40:29Z andreas $
-
-collapse leafs with the same species.
-
-Options:
--h, --help                      print this message.
--v, --verbose=                  loglevel.
--p, --pattern-species=          regex pattern to extract species from identifier
--g, --genes=                    filename with list of genes per species
-""" % sys.argv[0]
 
 import Experiment
 import BlastAlignments

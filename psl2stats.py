@@ -21,8 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-psl2stats.py - 
-======================================================
+psl2stats.py - output genomic coverage from psl formatted alignments
+====================================================================
 
 :Author: Andreas Heger
 :Release: $Id$
@@ -58,10 +58,6 @@ Code
 '''
 import os, sys, string, re, tempfile, subprocess, optparse, math
 
-USAGE = \
-"""compute query/target coverage
-
-"""
 
 import Experiment
 import Blat

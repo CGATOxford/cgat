@@ -21,6 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 """
+snp2counts.py - count number SNPs in geneset
+============================================
 
 :Author: Andreas Heger
 :Release: $Id: snp2counts.py 2872 2010-03-03 10:21:13Z andreas $
@@ -38,8 +40,9 @@ The windows are given in gtf format.
 .. note::
    The script will be able to count snps in disjoint segments
    using the gene_id field in gtf format. It will not check 
-   if these segments are non-overlapping. In case of a gene
-   set, make sure to first flatten the gene set by combining
+   if these segments are non-overlapping. 
+
+   In case of a gene set, make sure to first flatten the gene set by combining
    all transcript/exons per gene.
 
 Usage

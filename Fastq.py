@@ -115,10 +115,46 @@ def iterate( infile ):
         
         yield Record( line1[1:-1], line2[:-1], line4[:-1])
 
-def iterate_convert( infile, format, max_tries = 10000, guess = None ):
+
+def iterate_guess( infile, max_tries = 10000):
     '''iterate over contents of fastq file.
 
     guess quality format.
+    '''
+    
+    quals = set( RANGES.keys() )
+    cache = []
+    myiter = iterate(infile)
+    for c, record in enumerate(myiter):
+        quals.intersection_update( set(record.guessFormat()) )
+        if len(quals) == 0:
+            raise ValueError( "could not guess format - ranges incompatible." )
+        if len(quals) == 1:
+            break
+        cache.append( record )
+
+        if c > max_tries: 
+            break
+
+    if len(quals) == 1:
+        ref_format = list(quals)[0]
+    elif guess in quals:
+        ref_format = guess
+    else:
+        raise ValueError( "could not guess format - should be one of %s." % str(quals) )
+            
+    for r in cache:
+        r.format = ref_format
+        yield r
+
+    for r in myiter:
+        r.format = ref_format
+        yield r
+
+def iterate_convert( infile, format, max_tries = 10000, guess = None ):
+    '''iterate over contents of fastq file.
+
+    guess quality format and set it to new format.
     '''
     
     quals = set( RANGES.keys() )

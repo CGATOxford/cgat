@@ -462,6 +462,8 @@ def annotatePromoters( iterator, fasta, options ):
             ntranscripts += 1
             mi, ma = min( [x.start for x in transcript ] ), max( [x.end for x in transcript ] )
             transcript_ids.append( transcript[0].transcript_id )
+            # if tss is directly at start/end of contig, the tss will be within an exon.
+            # otherwise, it is outside an exon.
             if is_negative_strand:
                 promotors.append( (min( ma-options.promotor, ma), min(lcontig, ma + options.promotor)) )
             else:

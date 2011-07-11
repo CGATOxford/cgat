@@ -55,7 +55,12 @@ for command line help.
 Documentation
 -------------
 
---set-nh: set the nh flag
+--set-nh: set the NH flag. Some tools (bowtie, bwa) do not set the NH flag. 
+   If set, this option will set the NH flag (for mapped reads).
+   This option requires the bam/sam file to be sorted by read name.
+
+--unset-unmapped_mapq: some tools set the mapping quality of unmapped reads. This
+   causes a violation in the Picard tools.
 
 Code
 ----
@@ -84,11 +89,15 @@ def main( argv = None ):
     parser.add_option( "--set-nh", dest="set_nh", action="store_true",
                        help = "sets the NH flag. The file needs to be sorted by readname [%default]" )
 
+    parser.add_option( "--unset-unmapped-mapq", dest="unset_unmapped_mapq", action="store_true",
+                       help = "sets the mapping quality of unmapped to 0 [%default]" )
+
     parser.add_option( "--sam", dest="output_sam", action="store_true",
                        help = "output in sam format [%default]" )
 
     parser.set_defaults(
         set_nh = False,
+        unset_unmapped_mapq = False,
         output_sam = False,
         )
 
@@ -101,14 +110,33 @@ def main( argv = None ):
     else:
         pysam_out = pysam.Samfile( "-", "wb", template = pysam_in )
 
+
+    # set up the modifying iterators
+    it = pysam_in
+
+    if options.unset_unmapped_mapq:
+        def unset_unmapped_mapq( i ):
+            for read in i:
+                if read.is_unmapped:
+                    read.mapq = 0
+                yield read
+        it = unset_unmapped_mapq( it )
+
     if options.set_nh:
-        for key, reads in itertools.groupby( pysam_in, lambda x: x.qname ):
-            l = list(reads)
-            nh = len(l)
-            for read in l:
-                if not read.is_unmapped:
-                    read.tags = read.tags + [('NH', nh)]
-                pysam_out.write( read )
+        def set_nh( i ):
+            for key, reads in itertools.groupby( i, lambda x: x.qname ):
+                l = list(reads)
+                nh = len(l)
+                for read in l:
+                    if not read.is_unmapped:
+                        t = dict( read.tags )
+                        t['NH'] = nh
+                        read.tags = list(t.iteritems())
+                    yield read
+        it = set_nh( it )
+
+    # read and output
+    for read in it: pysam_out.write( read )
 
     pysam_in.close()
     pysam_out.close()

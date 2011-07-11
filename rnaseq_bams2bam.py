@@ -58,8 +58,8 @@ Documentation
 The script needs to look-up reads via their names. It thus builds
 an index of reads mapping 
 
-This script requires the NM attributes to be set.
-
+This script requires the NM attributes to be set. If it is not 
+set, you will need to set a policy.
 
 Code
 ----
@@ -94,6 +94,12 @@ def main( argv = None ):
     parser.add_option( "-m", "--filename-mismapped", dest="filename_mismapped", type="string",
                        help = "output bam file for mismapped reads [%default]" )
 
+    parser.add_option( "-o", "--colour", dest="colour_mismatches", action="store_true",
+                       help = "mismatches will use colour differences (CM tag) [%default]" )
+
+    parser.add_option( "-i", "--ignore-mismatches", dest="ignore_mismatches", action="store_true",
+                       help = "ignore mismatches [%default]" )
+
     parser.add_option( "-c", "--remove-contigs", dest="remove_contigs", type="string",
                        help = "','-separated list of contigs to remove [%default]" )
 
@@ -109,6 +115,8 @@ def main( argv = None ):
         remove_contigs = None,
         force = False,
         unique = False,
+        colour_mismatches = False,
+        ignore_mismatches = False,
         )
 
     ## add common options (-h/--help, ...) and parse command line 
@@ -129,6 +137,7 @@ def main( argv = None ):
 
     transcripts = {}
     for gtf in GTF.transcript_iterator( GTF.iterator( IOTools.openFile(options.filename_gtf) )):
+        gtf.sort( key = lambda x: x.start )
         transcripts[gtf[0].transcript_id] = gtf
 
     E.info( "read %i transcripts from geneset" % len(transcripts) )
@@ -153,7 +162,9 @@ def main( argv = None ):
                                  output_samfile, output_mismapped,
                                  transcripts,
                                  unique = options.unique,
-                                 remove_contigs = options.remove_contigs )
+                                 remove_contigs = options.remove_contigs,
+                                 colour_mismatches = options.colour_mismatches,
+                                 ignore_mismatches = options.ignore_mismatches )
     
     options.stdout.write( "category\tcounts\n%s\n" % c.asTable() )
 

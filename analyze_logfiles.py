@@ -21,8 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-analyze_logfiles.py - 
-======================================================
+analyze_logfiles.py - create summary from logfiles
+==================================================
 
 :Author: Andreas Heger
 :Release: $Id$
@@ -32,9 +32,11 @@ analyze_logfiles.py -
 Purpose
 -------
 
-.. todo::
-   
-   describe purpose of the script.
+This scripts are collection of logfiles and collates
+summary information.
+
+This script uses the ``# job finished`` tag that
+is added by scripts using the module :mod:`Experiment`.
 
 Usage
 -----
@@ -59,9 +61,6 @@ Code
 import os, sys, string, re, tempfile, subprocess, optparse, gzip, glob
 
 from types import *
-
-USAGE="""analyze runtime from various logfiles.
-"""
 
 import Experiment, IOTools
 

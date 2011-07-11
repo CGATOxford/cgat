@@ -24,7 +24,7 @@
 SVGdraw.py - 
 ======================================================
 
-:Author: Andreas Heger
+:Author: ???
 :Release: $Id$
 :Date: |today|
 :Tags: Python

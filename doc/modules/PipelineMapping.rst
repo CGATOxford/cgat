@@ -1,8 +1,5 @@
 
-
-
-
-.. automodule:: maq2gff
+.. automodule:: PipelineMapping
    :members:
    :inherited-members:
    :show-inheritance:
