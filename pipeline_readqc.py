@@ -39,6 +39,10 @@ fastq and performs basic quality control steps:
 
 For further details see http://www.bioinformatics.bbsrc.ac.uk/projects/fastqc/
 
+The pipeline can also be used to pre-process reads. Implemented tasks are:
+
+   * :meth:`removeContaminants` - remove contaminants from read set
+
 Usage
 =====
 
@@ -46,6 +50,27 @@ See :ref:`PipelineSettingUp` and :ref:`PipelineRunning` on general information h
 
 Configuration
 -------------
+
+No general configuration required.
+
+Removing contaminants
+---------------------
+
+Use the task :meth:`removeContaminants` to remove contaminants from read
+sets.
+
+Contaminant sequences are listed in the file :file:`contaminants.fasta`. 
+If not given, a file with standard Illumina adapators will be created 
+to remove adaptor contamination.
+
+The task will create output files called :file:`nocontaminants-<infile>`.
+
+The pipeline can then be re-run in order to add stats on the contaminant-removed
+files.
+
+.. note::
+
+   Colour space filtering has not been implemented yet.
 
 Input
 -----
@@ -73,8 +98,6 @@ fastq.1.gz, fastq2.2.gz
 
    Quality scores need to be of the same scale for all input files. Thus it might be
    difficult to mix different formats.
-
-
 
 Requirements
 ------------
@@ -124,7 +147,7 @@ import logging as L
 import Database
 import sys, os, re, shutil, itertools, math, glob, time, gzip, collections, random
 import numpy, sqlite3
-import GTF, IOTools, IndexedFasta
+import GTF, IOTools, IndexedFasta, FastaIterator
 import Tophat
 import rpy2.robjects as ro
 import PipelineGeneset
@@ -156,17 +179,78 @@ PARAMS = P.PARAMS
 @transform( ("*.fastq.1.gz", 
               "*.fastq.gz",
               "*.sra",
-	      "*.csfasta.gz" ),
+	      "*.csfasta.gz"),
               regex( r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz)"),
               r"\1.fastqc")
 def runFastqc(infiles, outfile):
-        '''convert sra files to fastq and check mapping qualities are in solexa format. 
-           Perform quality control checks on reads from .fastq files.'''
-        to_cluster = USECLUSTER
-        m = PipelineMapping.fastqc()
-        statement = m.build((infiles,), outfile) 
-        P.run()
+    '''convert sra files to fastq and check mapping qualities are in solexa format. 
+    Perform quality control checks on reads from .fastq files.'''
+    to_cluster = USECLUSTER
+    m = PipelineMapping.fastqc()
+    statement = m.build((infiles,), outfile) 
+    P.run()
 
+#########################################################################
+#########################################################################
+#########################################################################
+## adapter trimming
+#########################################################################
+# see http://intron.ccam.uchc.edu/groups/tgcore/wiki/013c0/Solexa_Library_Primer_Sequences.html
+ILLUMINA_ADAPTORS = { "Genomic/ChIPSeq-Adapters1-1" : "GATCGGAAGAGCTCGTATGCCGTCTTCTGCTTG",
+		      "Genomic/ChIPSeq-Adapters1-2" : "ACACTCTTTCCCTACACGACGCTCTTCCGATCT",
+		      "Genomic/ChIPSeq-PCR-1" : "AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCT",
+		      "Genomic/ChIPSeq-PCR-2" : "CAAGCAGAAGACGGCATACGAGCTCTTCCGATCT",
+		      "Genomic/ChIPSeq-Adapters1-Genomic" : "ACACTCTTTCCCTACACGACGCTCTTCCGATCT",
+		      "Paired-End-Adapters-1" : "GATCGGAAGAGCGGTTCAGCAGGAATGCCGAG",
+		      "Paired-End-Adapters-2" : "ACACTCTTTCCCTACACGACGCTCTTCCGATCT",
+		      "Paired-End-PCR-1" : "AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCT",
+		      "Paired-End-PCR-2" : "CAAGCAGAAGACGGCATACGAGATCGGTCTCGGCATTCCTGCTGAACCGCTCTTCCGATCT",
+		      "Paired-End-Sequencing-1" : "ACACTCTTTCCCTACACGACGCTCTTCCGATCT",
+		      "Paired-End-Sequencing-2" : "CGGTCTCGGCATTCCTGCTGAACCGCTCTTCCGATCT" }
+
+
+@merge( None, "contaminants.fasta" )
+def outputContaminants( infile, outfile ):
+    '''output file with contaminants.'''
+    outf = IOTools.openFile( outfile, "w")
+    for key, value in ILLUMINA_ADAPTORS.iteritems():
+        outf.write(">%s\n%s\n" % (key, value) )
+    outf.close()
+
+@transform( ("*.fastq.gz",
+             "*.fastq.1.gz",
+             "*.fastq.2.gz"),
+	    regex( r"(?!nocontaminants)(\S+).(fastq.1.gz|fastq.gz|fastq.2.gz|csfasta.gz)"),
+	    add_inputs(outputContaminants),
+	    r"nocontaminants.\1.\2")
+def removeContaminants( infiles, outfile ):
+    '''remove adaptor contamination from fastq files.
+
+    
+    This method uses cutadapt.
+    '''
+    
+    infile, contaminant_file = infiles
+
+    adaptors = []
+    for entry in FastaIterator.FastaIterator( IOTools.openFile( contaminant_file ) ):
+        adaptors.append( "-a %s" % entry.sequence )
+        
+    adaptors= " ".join(adaptors)
+    to_cluster = USECLUSTER
+
+    statement = '''
+    cutadapt 
+    --discard
+    %(adaptors)s
+    --overlap=%(contamination_min_overlap_length)i
+    --format=fastq
+    %(contamination_options)s
+    <( zcat < %(infile)s )
+    2> %(outfile)s.log
+    | gzip > %(outfile)s
+    '''
+    P.run()
 
 @follows() 
 def publish():

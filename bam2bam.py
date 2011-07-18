@@ -123,10 +123,10 @@ def main( argv = None ):
     # reading bam from stdin does not work with only "r" tag
     pysam_in = pysam.Samfile( "-", "rb" )
 
-    # if options.output_sam:
-    #     pysam_out = pysam.Samfile( "-", "wh", template = pysam_in )
-    # else:
-    #     pysam_out = pysam.Samfile( "-", "wb", template = pysam_in )
+    if options.output_sam:
+        pysam_out = pysam.Samfile( "-", "wh", template = pysam_in )
+    else:
+        pysam_out = pysam.Samfile( "-", "wb", template = pysam_in )
 
     if options.filter:
         if "NM" in options.filter:
@@ -155,8 +155,7 @@ def main( argv = None ):
 
     else:
         # set up the modifying iterators
-        for x in pysam_in.fetch( until_eof = True ):
-            print str(x)
+        it = pysam_in.fetch( until_eof = True )
 
         if options.unset_unmapped_mapq:
             def unset_unmapped_mapq( i ):
@@ -166,7 +165,7 @@ def main( argv = None ):
                     yield read
             it = unset_unmapped_mapq( it )
 
-        if options.set_nh:
+        if options.set_nh and False:
             def set_nh( i ):
 
                 for key, reads in itertools.groupby( i, lambda x: x.qname ):
@@ -179,6 +178,9 @@ def main( argv = None ):
                             read.tags = list(t.iteritems())
                         yield read
             it = set_nh( it )
+
+        if options.set_nh:
+            it = _bam2bam.SetNH( it )
 
         # read and output
         for read in it: 

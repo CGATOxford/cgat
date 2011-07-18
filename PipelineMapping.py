@@ -601,6 +601,7 @@ class BowtieTranscripts( Mapper ):
             infiles = ",".join( infiles[0])
             statement = '''
                 bowtie --quiet --sam
+                       --un /dev/null
                        --threads %%(bowtie_threads)i
                        %(data_options)s
                        %%(bowtie_options)s
@@ -618,6 +619,7 @@ class BowtieTranscripts( Mapper ):
             statement = '''
                 bowtie --quiet --sam
                        --threads %%(bowtie_threads)i
+                       --un /dev/null
                        %(data_options)s
                        %%(bowtie_options)s
                        %(index_prefix)s
@@ -638,6 +640,30 @@ class BowtieTranscripts( Mapper ):
 
         statement = '''
              samtools sort %(tmpdir_fastq)s/out.bam %(track)s;
+             samtools index %(outfile)s;
+             ''' % locals()
+
+        return statement
+
+class BowtieJunctions( BowtieTranscripts ):
+    '''map with bowtie against junctions.
+
+    In post-processing, reads are mapped from junction coordinates
+    to genomic coordinates.
+    '''
+
+    def postprocess( self, infiles, outfile ):
+        '''collect output data and postprocess.'''
+        
+        track = P.snip( outfile, ".bam" )
+        tmpdir_fastq = self.tmpdir_fastq
+
+        statement = '''
+             cat %(tmpdir_fastq)s/out.bam
+             | python %%(scriptsdir)s/bam2bam.py --set-nh --log=%(outfile)s.log
+             | python %%(scriptsdir)s/rnaseq_junction_bam2bam.py --contig-sizes=%%(contigsfile)s --log=%(outfile)s.log
+             | samtools sort - %(track)s;
+             checkpoint;
              samtools index %(outfile)s;
              ''' % locals()
 

@@ -39,6 +39,10 @@ using a mapper permitting splicing (e.g. tophat). The second bam file
 will write a new bam file that removes reads from :term:`bamG` that 
 map to regions that are conflicting with those in :term:`bamT`.
 
+.. note:: 
+   Note that if junctions are supplied, the resultant bam files will not
+   be sorted by position.
+
 Usage
 -----
 
@@ -94,6 +98,15 @@ def main( argv = None ):
     parser.add_option( "-m", "--filename-mismapped", dest="filename_mismapped", type="string",
                        help = "output bam file for mismapped reads [%default]" )
 
+    parser.add_option( "-j", "--filename-junctions", dest="filename_junctions", type="string",
+                       help = "bam file with reads mapped across junctions [%default]" )
+
+    parser.add_option( "-t", "--filename-transcriptome", dest="filename_transcriptome", type="string",
+                       help = "bam file with reads mapped against transcripts [%default]" )
+
+    parser.add_option( "-s", "--filename-stats", dest="filename_stats", type="string",
+                       help = "filename to output stats to [%default]" )
+
     parser.add_option( "-o", "--colour", dest="colour_mismatches", action="store_true",
                        help = "mismatches will use colour differences (CM tag) [%default]" )
 
@@ -109,45 +122,57 @@ def main( argv = None ):
     parser.add_option( "-u", "--unique", dest="unique", action = "store_true",
                        help = "remove reads not matching uniquely [%default]" )
 
+    parser.add_option( "--sam", dest="output_sam", action="store_true",
+                       help = "output in sam format [%default]" )
+
     parser.set_defaults(
         filename_gtf = None,
         filename_mismapped = None,
+        filename_junctions = None,
+        filename_transcriptome = None,
         remove_contigs = None,
         force = False,
         unique = False,
         colour_mismatches = False,
         ignore_mismatches = False,
+        output_sam = False,
+        filename_table = None,
         )
 
     ## add common options (-h/--help, ...) and parse command line 
     (options, args) = E.Start( parser, argv = argv )
 
-    if len(args) != 3:
-        raise ValueError( "please supply three bam files" )
-    
-    bamfile_transcripts, bamfile_genome, bamfile_output = args
+    if len(args) != 1:
+        raise ValueError( "please supply one bam files" )
+
+    bamfile_genome = args[0]
+    genome_samfile = pysam.Samfile( bamfile_genome, "rb" )
 
     if options.remove_contigs:
         options.remove_contigs = options.remove_contigs.split(",")
 
-    if options.filename_gtf == None:
-        raise ValueError( "please supply a file with the gene set." )
-
-    E.info( "indexing geneset" )
-
     transcripts = {}
-    for gtf in GTF.transcript_iterator( GTF.iterator( IOTools.openFile(options.filename_gtf) )):
-        gtf.sort( key = lambda x: x.start )
-        transcripts[gtf[0].transcript_id] = gtf
+    if options.filename_gtf:
+        E.info( "indexing geneset" )
+        for gtf in GTF.transcript_iterator( GTF.iterator( IOTools.openFile(options.filename_gtf) )):
+            gtf.sort( key = lambda x: x.start )
+            transcripts[gtf[0].transcript_id] = gtf
 
-    E.info( "read %i transcripts from geneset" % len(transcripts) )
+        E.info( "read %i transcripts from geneset" % len(transcripts) )
 
-    transcripts_samfile = pysam.Samfile( bamfile_transcripts, "rb" )
-    genome_samfile = pysam.Samfile( bamfile_genome, "rb" )
+    if options.filename_transcriptome:
+        transcripts_samfile = pysam.Samfile( options.filename_transcriptome, 
+                                             "rb" )
+    else:
+        transcripts_samfile = None
 
     if not options.force and os.path.exists( bamfile_output ):
         raise IOError( "output file %s already exists" % bamfile_output )
-    output_samfile = pysam.Samfile( bamfile_output, "wb", template = genome_samfile )
+
+    if options.output_sam:
+        output_samfile = pysam.Samfile( "-", "wh", template = genome_samfile )
+    else:
+        output_samfile = pysam.Samfile( "-", "wb", template = genome_samfile )
 
     if options.filename_mismapped:
         if not options.force and os.path.exists( options.filename_mismapped ):
@@ -158,15 +183,29 @@ def main( argv = None ):
     else:
         output_mismapped = None
 
-    c = _rnaseq_bams2bam.filter( genome_samfile, transcripts_samfile,
-                                 output_samfile, output_mismapped,
+    if options.filename_junctions:
+        junctions_samfile = pysam.Samfile( options.filename_junctions, 
+                                           "rb" )
+    else:
+        junctions_samfile = None
+
+    c = _rnaseq_bams2bam.filter( genome_samfile, 
+                                 output_samfile, 
+                                 output_mismapped,
+                                 transcripts_samfile,
+                                 junctions_samfile,
                                  transcripts,
                                  unique = options.unique,
                                  remove_contigs = options.remove_contigs,
                                  colour_mismatches = options.colour_mismatches,
-                                 ignore_mismatches = options.ignore_mismatches )
-    
-    options.stdout.write( "category\tcounts\n%s\n" % c.asTable() )
+                                 ignore_mismatches = options.ignore_mismatches,
+                                 ignore_transcripts = transcripts_samfile == None,
+                                 ignore_junctions = junctions_samfile == None)
+
+    if options.filename_stats:
+        outf = IOTools.openFile( options.filename_stats, "w" )
+        outf.write( "category\tcounts\n%s\n" % c.asTable() )
+        outf.close()
 
     transcripts_samfile.close()
     genome_samfile.close()

@@ -18,22 +18,21 @@ class TranscriptCoverage(ReferenceData):
     """Coverage of reference transcripts."""
     mXLabel = "overlap / %"
     def __call__(self, track, slice = None ):
-        data = self.getValues( """SELECT coverage_sense_pcovered 
+        return self.getValues( """SELECT coverage_sense_pcovered 
                                          FROM %(track)s_transcript_counts 
                                          WHERE coverage_sense_nval > 0""" )
-        return odict( (("covered", data ) ,) )
+        return data
 
 class GeneCoverage(ReferenceData):
     '''Coverage of reference genes - max transcript coverage per gene.'''
     mXLabel = "number of transcripts"
     def __call__(self, track, slice = None ):
-        data = self.getValues( """SELECT max(c.coverage_sense_pcovered) FROM 
+        return self.getValues( """SELECT max(c.coverage_sense_pcovered) FROM 
                                             %(track)s_transcript_counts as c,
                                             %(reference)s_transcript2gene as i
                                          WHERE c.coverage_sense_nval > 0
                                    AND i.transcript_id = c.transcript_id 
                                    GROUP BY i.gene_id""" )
-        return odict( (("covered", data ) ,) )
 
 class CoverageVsLengthByReadDepth(ReferenceData):
     """plot the absolute coverage of a known gene versus its length.
@@ -105,7 +104,6 @@ class ReadDirectionality(RnaseqTracker):
                     """SELECT CAST( (antisense_unique_counts + 1) AS FLOAT) / (sense_unique_counts + 1)  
                       FROM %(track)s_%(slice)s_counts """ )
         return odict( ( ( "direction", data) ,) )
-
 
 class IntronicExonicReadDepth(RnaseqTracker):
     '''return the maximum read depth in introns

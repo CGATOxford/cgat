@@ -5,6 +5,9 @@ import Experiment as E
 
 cdef class SetNH:
 
+    cdef iter
+    cdef stack
+
     def __cinit__(self, iter ):
         self.iter = itertools.groupby( iter, lambda x: x.qname )
         self.stack = []
@@ -16,16 +19,18 @@ cdef class SetNH:
         """python version of next().
         """
         
-        if self.stack:
-            return self.stack.pop(0)
-        else:
-            key, self.stack = self.iter.next()
-            nh = len(self.stack)
-            for read in self.stack:
-                if not read.is_unmapped:
-                    t = dict( read.tags )
-                    t['NH'] = nh
-                    read.tags = list(t.iteritems())
+        while 1:
+            if self.stack:
+                return self.stack.pop(0)
+            else:
+                key, x = self.iter.next()
+                self.stack = list(x)
+                nh = len(self.stack)
+                for read in self.stack:
+                    if not read.is_unmapped:
+                        t = dict( read.tags )
+                        t['NH'] = nh
+                        read.tags = list(t.iteritems())
 
 def filter_bam( Samfile input_samfile,
                 Samfile output_samfile,

@@ -21,8 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-gtf2exons.py - 
-======================================================
+gtf2exons.py - convert gtf to exons file format
+===============================================
 
 :Author: Andreas Heger
 :Release: $Id$
@@ -32,9 +32,11 @@ gtf2exons.py -
 Purpose
 -------
 
-.. todo::
-   
-   describe purpose of the script.
+convert a gtf formatted file to exons format used
+by gpipe.
+
+The gtf file should contain only the query token as
+its last option.
 
 Usage
 -----
@@ -58,14 +60,6 @@ Code
 '''
 import sys, string, re, optparse
 
-USAGE="""python %s [OPTIONS] < gtf.in > exons.out
-
-convert a gtf formatted file to exons format.
-
-The gtf file should contain only the query token as
-its last option.
-"""
-
 import Experiment
 import Exons
 import IndexedFasta
@@ -73,10 +67,6 @@ import IndexedFasta
 if __name__ == "__main__":
 
     parser = optparse.OptionParser( version = "%prog version: $Id: gtf2exons.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
-
-    parser.add_option("-m", "--method", dest="method",
-                      help="method to apply.", type="choice",
-                      choices = ("remove-stop",))
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genomic data (indexed)." )
@@ -91,7 +81,6 @@ if __name__ == "__main__":
                       help="""regular expression to extract id from id column, e.g. 'transcript_id "(\S+)"'.""" )
 
     parser.set_defaults(
-        method = None,
         coordinate_format = "zero-forward",
         forward_coordinates = False,
         genome_file = None,
@@ -117,7 +106,7 @@ if __name__ == "__main__":
                                       converter = converter,
                                       do_invert = True,
                                       format = "gtf",
-                                      gtg_extract_id = extract_id )
+                                      gtf_extract_id = extract_id )
 
     ntranscripts, nexons, nerrors = 0, 0, 0
     for id, ee in exons.items():

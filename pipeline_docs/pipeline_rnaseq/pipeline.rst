@@ -15,6 +15,7 @@ Contents:
    pipeline/Methods.rst
    pipeline/Mapping.rst
    pipeline/GeneModels.rst
+   pipeline/Validation.rst
    pipeline/GeneExpression.rst
    pipeline/DifferentialGeneExpression.rst
    pipeline/CodingTranscription.rst

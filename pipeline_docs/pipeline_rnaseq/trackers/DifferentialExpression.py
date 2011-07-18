@@ -209,7 +209,7 @@ class VolcanoTracker( RnaseqTracker ):
                                     pvalue, 
                                     CASE WHEN value1 < value2 THEN value2 ELSE value1 END AS max_fpkm 
                                     FROM %(track)s_%(method)s_%(slice)s_diff 
-                                    WHERE pvalue IS NOT NULL AND 
+                                    WHERE pvalue IS NOT NULL AND pvalue != 'nan' AND 
                                           lfold IS NOT NULL AND 
                                           max_fpkm > 0""" )
         if data:

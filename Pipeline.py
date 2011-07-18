@@ -113,6 +113,19 @@ def getParameters( filenames = ["pipeline.ini",] ):
 
     return PARAMS
 
+def loadParameters( filenames  ):
+    '''load parameters from a tuple of filenames.
+    
+    Parameters are processed in the same way as
+    getParameters, but the global parameter dictionary
+    is not updated.
+    '''
+    config = ConfigParser.ConfigParser()
+    config.read( filenames )
+
+    p = configToDictionary( config )
+    return p
+
 def substituteParameters( **kwargs ):
     '''return a local PARAMS dictionary.
 
@@ -514,18 +527,18 @@ def run( **kwargs ):
           still works.
     """
 
-    if not kwargs: kwargs = getCallerLocals()
-
-    # compile options
-    options = dict(PARAMS.items() + kwargs.items())
+    # combine options using correct preference
+    options = dict(PARAMS.items())
+    options.update( getCallerLocals().items() )
+    options.update( kwargs.items() )
 
     # run multiple jobs
-    if kwargs.get( "statements" ):
+    if options.get( "statements" ):
 
         statement_list = []
-        for statement in kwargs.get("statements"): 
-            kwargs["statement"] = statement
-            statement_list.append(buildStatement( **kwargs))
+        for statement in options.get("statements"): 
+            options["statement"] = statement
+            statement_list.append(buildStatement( **options))
             
         if options.get( "dryrun", False ): return
 
@@ -599,7 +612,7 @@ def run( **kwargs ):
     # run a single parallel job
     elif (options.get( "job_queue" ) or options.get( "to_cluster" )) and not global_options.without_cluster:
 
-        statement = buildStatement( **kwargs )
+        statement = buildStatement( **options )
 
         if options.get( "dryrun", False ): return
 
@@ -640,7 +653,7 @@ def run( **kwargs ):
         jt.outputPath=":"+ stdout_path
         jt.errorPath=":" + stderr_path
 
-        if "job_array" in kwargs and kwargs["job_array"] != None:
+        if "job_array" in options and options["job_array"] != None:
             # run an array job
             start, end, increment = options.get("job_array" )
             L.debug("starting an array job: %i-%i,%i" % (start, end, increment ))
@@ -661,7 +674,7 @@ def run( **kwargs ):
 
         stdout, stderr = getStdoutStderr( stdout_path, stderr_path )
 
-        if "job_array" not in kwargs:
+        if "job_array" not in options:
             if retval and retval.exitStatus != 0:
                 raise PipelineError( "Child was terminated by signal %i: \nThe stderr was: \n%s\n%s\n" % \
                                          (retval.exitStatus, 
@@ -671,7 +684,7 @@ def run( **kwargs ):
         os.unlink( job_path )
 
     else:
-        statement = buildStatement( **kwargs )
+        statement = buildStatement( **options )
 
         if options.get( "dryrun", False ): return
  

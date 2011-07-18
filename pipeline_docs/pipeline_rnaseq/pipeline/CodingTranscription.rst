@@ -12,7 +12,6 @@ Note that a transcript might fail several filters.
 
 .. report:: Genemodels.BuildSummary
    :render: table
-   :tracks: refcoding
    
    Number of transcripts failing a certain filter.
 

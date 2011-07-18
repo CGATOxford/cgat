@@ -748,7 +748,6 @@ def buildPseudogenes( infiles, outfile ):
     outf.close()
         
     E.info( "exons: %s" % str(c))
-    
 
 
     

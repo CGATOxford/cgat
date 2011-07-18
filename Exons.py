@@ -83,6 +83,9 @@ class Exon:
 
         if extract_id:
             self.mQueryToken = extract_id.search( self.mQueryToken).groups()[0]
+        
+        if self.frame == ".": self.frame = 0
+            
         (self.mRank, self.frame,
          self.mPeptideFrom, self.mPeptideTo,
          self.mGenomeFrom, self.mGenomeTo ) = map( int,\
@@ -493,17 +496,13 @@ def ReadExonBoundaries( file,
     for line in file:
         if line[0] == "#": continue
         if line[0] == "": continue
-        
         e = Exon()
 
-        try:
-            e.Read(line,
-                   contig_sizes = contig_sizes,
-                   format = format,
-                   converter = converter,
-                   extract_id = gtf_extract_id )
-        except ValueError:
-            continue
+        e.Read(line,
+               contig_sizes = contig_sizes,
+               format = format,
+               converter = converter,
+               extract_id = gtf_extract_id )
         
         l = e
         if filter and not e.mQueryToken in filter: continue

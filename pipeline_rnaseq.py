@@ -113,13 +113,10 @@ splice-junctions. If they are prioritized, I do not know.
 
 Transcripts are built individually for each :term:`track`. This seems to be the most rigorous way
 as there might be conflicting transcripts between replicates and merging the sets might confuse transcript
-reconstruction. Also, it is important to detect these conflicting transcripts between replicates
-in order to get an idea of the variability of the data. However, if there are only few reads, 
-there might be a case for building transcript models using reads from all replicates of an experiment. 
-However, there is no reason to merge reads between experiments.
+reconstruction. Also, conflicting transcripts between replicates give an idea of the variability of the data. 
+However, if there are only few reads,  there might be a case for building transcript models using reads 
+from all replicates of an experiment. However, there is no reason to merge reads between experiments.
 
-See `figure 4 <http://www.nature.com/nbt/journal/v28/n5/full/nbt.1621.html>`_ from the cufflinks paper
-to get an idea about the reliability of transcript construction with varying sequencing depth.
 
 LncRNA
 --------
@@ -241,6 +238,25 @@ Methods differ in their ability to measure transcription on all levels.
 Overprediction of differential expression for low-level expressed transcripts with :term:`cuffdiff`
 is a `known problem <http://seqanswers.com/forums/showthread.php?t=6283&highlight=fpkm>`_.
 
+Estimating coverage
+-------------------
+
+An important question in RNASeq analysis is if the sequencing has been done to sufficient depth.
+The questions split into two parts:
+
+   * What is the minimum abundant transcript that should be detectable with the number of reads
+     mapped? See for example `PMID: 20565853 <http://www.ncbi.nlm.nih.gov/pubmed/20565853>`
+
+   * What is the minimum expression change between two conditions that can be reliably inferred?
+     See for examples `PMID: 21498551 <http://www.ncbi.nlm.nih.gov/pubmed/21498551?dopt=Abstract>`
+
+These questions are difficult to answer due to the complexity of RNASeq data: Genes have multiple
+transcripts, transcript/gene expression varies by orders of magnitude and a large fraction of
+reads might stem from repetetive RNA.
+
+See `figure 4 <http://www.nature.com/nbt/journal/v28/n5/full/nbt.1621.html>`_ from the cufflinks paper
+to get an idea about the reliability of transcript construction with varying sequencing depth.
+
 Usage
 =====
 
@@ -302,11 +318,11 @@ path:
 +--------------------+-------------------+------------------------------------------------+
 |bowtie_             |>=0.12.7           |read mapping                                    |
 +--------------------+-------------------+------------------------------------------------+
-|tophat_             |>=1.2.0            |read mapping                                    |
+|tophat_             |>=1.3.1            |read mapping                                    |
 +--------------------+-------------------+------------------------------------------------+
-|cufflinks_          |>=0.9.3            |transcription levels                            |
+|cufflinks_          |>=1.0.3            |transcription levels                            |
 +--------------------+-------------------+------------------------------------------------+
-|samtools            |>=0.1.12           |bam/sam files                                   |
+|samtools            |>=0.1.16           |bam/sam files                                   |
 +--------------------+-------------------+------------------------------------------------+
 |bedtools            |                   |working with intervals                          |
 +--------------------+-------------------+------------------------------------------------+
@@ -314,7 +330,7 @@ path:
 +--------------------+-------------------+------------------------------------------------+
 |sra-tools           |                   |extracting reads from .sra files                |
 +--------------------+-------------------+------------------------------------------------+
-|picard              |>=1.38             |bam/sam files. The .jar files need to be in your|
+|picard              |>=1.42             |bam/sam files. The .jar files need to be in your|
 |                    |                   | CLASSPATH environment variable.                |
 +--------------------+-------------------+------------------------------------------------+
 |bamstats_           |>=1.22             |from CGR, Liverpool                             |
@@ -414,6 +430,7 @@ import Tophat
 from rpy2.robjects import r as R
 import rpy2.robjects as ro
 import rpy2.robjects.vectors as rovectors
+from rpy2.rinterface import RRuntimeError
 
 import PipelineGeneset
 import PipelineMapping
@@ -714,7 +731,7 @@ def buildReferenceGeneSet( infile, outfile ):
             suffix("reference.gtf.gz"),
             "refnoncoding.gtf.gz" )
 def buildNoncodingGeneSet( infile, outfile ):
-    '''build a new gene set with only protein coding 
+    '''build a new gene set without protein coding 
     transcripts.'''
     
     to_cluster = True
@@ -874,17 +891,27 @@ def buildJunctions( infile, outfile ):
     file, as parsing the latter often fails. See:
 
     http://seqanswers.com/forums/showthread.php?t=7563
+
     '''
     
     outf = IOTools.openFile( outfile, "w" )
     for gffs in GTF.transcript_iterator( GTF.iterator( IOTools.openFile( infile, "r" ) )):
         
+        gffs.sort( key = lambda x: x.start )
         end = gffs[0].end
         for gff in gffs[1:]:
-            outf.write( "%s\t%i\t%i\t%s\n" % (gff.contig, end, gff.start, gff.strand ) )
+            # subtract one: these are not open/closed coordinates but the 0-based coordinates
+            # of first and last residue that are to be kept (i.e., within the exon).
+            outf.write( "%s\t%i\t%i\t%s\n" % (gff.contig, end - 1, gff.start, gff.strand ) )
             end = gff.end
                         
     outf.close()
+
+    # make unique
+    statement = '''mv %(outfile)s %(outfile)s.tmp; 
+                   gunzip < %(outfile)s.tmp | sort | uniq | gzip > %(outfile)s;
+                   rm -f %(outfile)s.tmp; '''
+    P.run()
 
 #########################################################################
 #########################################################################
@@ -895,12 +922,15 @@ def buildReferenceTranscriptome( infile, outfile ):
 
     The reference transcriptome contains all known 
     protein coding transcripts.
+
+    The sequences include both UTR and CDS.
     '''
 
     to_cluster = USECLUSTER
 
     statement = '''
     zcat %(infile)s
+    | awk '$3 == "exon"'
     | python %(scriptsdir)s/gff2fasta.py
         --is-gtf
         --genome=%(genome_dir)s/%(genome)s
@@ -964,9 +994,10 @@ def mapReadsWithBowtieAgainstTranscriptome( infiles, outfile ):
     m = PipelineMapping.BowtieTranscripts()
     infile, reffile = infiles
     prefix = P.snip( reffile, ".fa" )
-    bowtie_options = "-v 2 --best --strata -a"
+    bowtie_options = "%s --best --strata -a" % PARAMS["bowtie_options"] 
     statement = m.build( (infile,), outfile ) 
     P.run()
+
 
 #########################################################################
 #########################################################################
@@ -991,10 +1022,141 @@ def mapReadsWithTophat( infiles, outfile ):
     to_cluster = USECLUSTER
     m = PipelineMapping.Tophat()
     infile, reffile = infiles
-    tophat_options = PARAMS["tophat_options"] + " --raw-juncs <( gunzip < %(reffile)s ) " % locals()
+    tophat_options = PARAMS["tophat_options"] + " --raw-juncs <( zcat %(reffile)s) " % locals()
     statement = m.build( (infile,), outfile ) 
     P.run()
 
+#########################################################################
+#########################################################################
+#########################################################################
+##
+#########################################################################
+@merge( (mapReadsWithTophat, buildJunctions), "junctions.fa" )
+def buildJunctionsDB( infiles, outfile ):
+    '''build a database of all junctions.'''
+
+    to_cluster = USECLUSTER
+    outfile_junctions = outfile + ".junctions.bed.gz"
+    min_anchor_length = 3
+    read_length = 50
+
+    tmpfile = P.getTempFile( "." )
+
+    for infile in infiles:
+        if infile.endswith(".bam"):
+            junctions_file = P.snip( infile, ".bam" ) + ".junctions.bed.gz"
+            columns = (0,1,2,5)
+        else:
+            junctions_file = infile
+            columns = (0,1,2,3)
+
+        if not os.path.exists( junctions_file ):
+            E.warn( "can't find junctions file '%s'" % junctions_file )
+            continue
+
+        inf = IOTools.openFile( junctions_file )
+        for line in inf:
+            if line.startswith("#"): continue
+            if line.startswith("track"): continue
+            data = line[:-1].split("\t")
+            try:
+                tmpfile.write( "\t".join( [data[x] for x in columns] ) + "\n" )
+            except IndexError:
+                raise IndexError( "parsing error in line %s" % line)
+
+    tmpfile.close()
+    tmpfilename = tmpfile.name
+    
+    statement = '''
+    sort %(tmpfilename)s | gzip > %(outfile_junctions)s
+    '''
+
+    P.run()
+
+    os.unlink( tmpfilename )
+
+    E.info( "building junctions database" )
+    statement = '''
+    juncs_db %(min_anchor_length)i %(read_length)i 
+              <( zcat %(outfile_junctions)s )
+              /dev/null /dev/null 
+              %(bowtie_index_dir)s/%(genome)s.fa
+              > %(outfile)s
+              2> %(outfile)s.log
+    '''
+    P.run()
+    
+    E.info( "indexing junctions database" )
+
+    prefix = P.snip( outfile, ".fa" )
+
+    # build raw index
+    statement = '''
+    bowtie-build -f %(outfile)s %(prefix)s >> %(outfile)s.log 2>&1
+    '''
+
+    P.run()
+
+    # build color space index
+    statement = '''
+    bowtie-build -C -f %(outfile)s %(prefix)s_cs >> %(outfile)s.log 2>&1
+    '''
+
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+##
+#########################################################################
+if "tophat_add_separate_junctions" in PARAMS and PARAMS["tophat_add_separate_junctions"]:
+    @transform( ("*.fastq.1.gz", 
+                 "*.fastq.gz",
+                 "*.sra",
+                 "*.csfasta.gz",
+                 "*.csfasta.F3.gz" ),
+                regex( r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz|csfasta.F3.gz)"), 
+                add_inputs( buildJunctionsDB, 
+                            os.path.join(PARAMS["annotations_dir"],
+                                         PARAMS_ANNOTATIONS["interface_contigs"])), 
+                r"\1.junc.bam" )
+    def mapReadsWithBowtieAgainstJunctions( infiles, outfile ):
+        '''map reads from short read archive sequence using bowtie against
+        junctions.
+        '''
+
+        # Mapping will permit up to one mismatches. This is sufficient
+        # as the downstream filter in rnaseq_bams2bam requires the
+        # number of mismatches less than the genomic number of mismatches.
+        # Change this, if the number of permitted mismatches for the genome
+        # increases.
+
+        # Output all valid matches in the best stratum. This will 
+        # inflate the file sizes due to matches to alternative transcripts
+        # but otherwise matches to paralogs will be missed (and such
+        # reads would be filtered out).
+        job_options= "-pe dedicated %i -R y" % PARAMS["bowtie_threads"]
+        to_cluster = USECLUSTER
+        m = PipelineMapping.BowtieJunctions()
+        infile, reffile, contigsfile = infiles
+        prefix = P.snip( reffile, ".fa" )
+        bowtie_options = "%s --best --strata -a" % PARAMS["bowtie_options"] 
+        statement = m.build( (infile,), outfile ) 
+        P.run()
+else:
+    @transform( ("*.fastq.1.gz", 
+                 "*.fastq.gz",
+                 "*.sra",
+                 "*.csfasta.gz",
+                 "*.csfasta.F3.gz" ),
+                regex( r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz|csfasta.F3.gz)"), 
+                add_inputs( buildJunctionsDB, 
+                            os.path.join(PARAMS["annotations_dir"],
+                                         PARAMS_ANNOTATIONS["interface_contigs"])), 
+                r"\1.junc.bam" )
+    def mapReadsWithBowtieAgainstJunctions( infiles, outfile ):
+        P.touch(outfile)
+        
 ############################################################
 ############################################################
 ############################################################
@@ -1011,14 +1173,17 @@ def buildFastQCReport( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-@collate( (mapReadsWithTophat, mapReadsWithBowtieAgainstTranscriptome),
+@collate( (mapReadsWithTophat, 
+           mapReadsWithBowtieAgainstTranscriptome, 
+           mapReadsWithBowtieAgainstJunctions),
           regex(r"(.+)\..*.bam"),  
           add_inputs( buildCodingGeneSet ), 
           r"\1.accepted.bam" )
 def buildBAMs( infiles, outfile):
     '''reconcile genomic and transcriptome matches.
     '''
-    genome, transcriptome, reffile = infiles[0][0], infiles[1][0], infiles[0][1]
+    genome, transcriptome, junctions, reffile = infiles[0][0], infiles[2][0], infiles[1][0], infiles[0][1]
+
     outfile_mismapped = P.snip(outfile, ".accepted.bam") + ".mismapped.bam"
 
     assert genome.endswith( ".genome.bam" )
@@ -1031,21 +1196,38 @@ def buildBAMs( infiles, outfile):
 
     if "tophat_remove_contigs" in PARAMS and PARAMS["tophat_remove_contigs"]:
         options.append( "--remove-contigs=%s" % PARAMS["tophat_remove_contigs"] )
-        
+
+    if "tophat_remove_mismapped" in PARAMS and PARAMS["tophat_remove_mismapped"]:
+        options.append( "--filename-transcriptome=%(transcriptome)s" % locals() )
+
+    if "tophat_add_separate_junctions" in PARAMS and PARAMS["tophat_add_separate_junctions"]:
+        options.append( "--filename-junctions=%(junctions)s" % locals() )
+
     options = " ".join(options)
 
+    tmpfile = P.getTempFilename()
+
+    prefix = P.snip( outfile, ".bam")
+
+    if os.path.exists( "%(outfile)s.log" % locals() ):
+        os.remove( "%(outfile)s.log" % locals() )
+        
     statement = '''
     python %(scriptsdir)s/rnaseq_bams2bam.py 
        --force
        --filename-gtf=%(reffile)s
        --filename-mismapped=%(outfile_mismapped)s
+       --log=%(outfile)s.log
+       --filename-stats=%(outfile)s.tsv
        %(options)s
-       %(transcriptome)s %(genome)s %(outfile)s
-    > %(outfile)s.log;
+       %(genome)s
+    | samtools sort - %(prefix)s 2>&1 >> %(outfile)s.log;
+    checkpoint;
+    samtools index %(outfile_mismapped)s 2>&1 >> %(outfile)s.log;
     checkpoint;
     samtools index %(outfile)s 2>&1 >> %(outfile)s.log;
-    samtools index %(outfile_mismapped)s 2>&1 >> %(outfile)s.log;
     '''
+
     P.run()
 
 ############################################################
@@ -1073,7 +1255,7 @@ def buildAlignmentStats( infile, outfile ):
     # naturally - the bam files should be sorted.
     statement = '''
     java -Xmx2g net.sf.picard.analysis.CollectMultipleMetrics
-            I=<(samtools view -h %(infile)s | awk '$11 != "*"')
+            I=%(infile)s
             O=%(outfile)s 
             R=%(cufflinks_genome_dir)s/%(genome)s.fa
             ASSUME_SORTED=true
@@ -1217,8 +1399,12 @@ def buildTophatStats( infiles, outfile ):
 
         fn = os.path.join( indir, "segment_juncs.log" )
         lines = open( fn ).readlines()
-        segment_juncs_version =  _select( lines, "segment_juncs (.*)$" )
-        possible_splices = int( _select( lines, "Reported (\d+) total possible splices") )
+        if len(lines) > 0:
+            segment_juncs_version =  _select( lines, "segment_juncs (.*)$" )
+            possible_splices = int( _select( lines, "Reported (\d+) total possible splices") )
+        else:
+            segment_juncs_version = "na"
+            possible_splices = ""
 
         outf.write( "\t".join( map(str, (track,
                                          reads_in, reads_removed, reads_out, 
@@ -1446,18 +1632,21 @@ def buildGeneModels(infile, outfile):
     statement = '''mkdir %(tmpfilename)s; 
     cd %(tmpfilename)s; 
     cufflinks --label %(track)s           
-              --reference %(cufflinks_genome_dir)s/%(genome)s.fa
               --num-threads %(cufflinks_threads)i
-             --library-type %(tophat_library_type)s
+              --library-type %(tophat_library_type)s
+              --frag-bias-correct %(cufflinks_genome_dir)s/%(genome)s.fa
+              --multi-read-correct
               %(cufflinks_options)s
               %(infile)s 
     >& %(outfile)s.log;
     perl -p -e "s/\\0/./g" < transcripts.gtf | gzip > %(outfile)s;
-    mv genes.expr %(outfile)s.genes.expr;
-    mv transcripts.expr %(outfile)s.transcripts.expr
     '''
 
     P.run()
+
+    # version 0.9.3
+    #mv genes.expr %(outfile)s.genes.expr;
+    #mv transcripts.expr %(outfile)s.transcripts.expr
 
     shutil.rmtree( tmpfilename )
 
@@ -1528,7 +1717,6 @@ def estimateExpressionLevelsInReference(infiles, outfile):
     cd %(tmpfilename)s; 
     cufflinks --label %(track)s      
               --GTF=<(gunzip < %(gtffile)s)
-              --reference %(cufflinks_genome_dir)s/%(genome)s.fa
               --num-threads=%(cufflinks_threads)i
              --library-type %(tophat_library_type)s
               %(cufflinks_options)s
@@ -2083,7 +2271,9 @@ def loadGeneSetsBuildInformation( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@transform( (buildGeneModels, 
+@transform( (buildCodingGeneSet,
+             buildNoncodingGeneSet,
+             buildGeneModels, 
              buildAbinitioGeneSet, 
              buildFullGeneSet, 
              buildLincRNAGeneSet,
@@ -2343,7 +2533,10 @@ def buildReproducibility( infile, outfile ):
         r = R('''r = lm( %(a)s ~ %(b)s, data)''' % locals() )
         R.png( "%(outdir)s/%(outfile)s.pair.%(rep1)s_vs_%(rep2)s.png" % locals())
         R('''plot(data$%(a)s, data$%(b)s, pch='.', xlim=c(0,%(lim)i), ylim=c(0,%(lim)i),)''' % locals() )
-        R('''abline(r)''')
+
+        try: R('''abline(r)''')
+        except RRuntimeError: pass
+
         R('''dev.off()''')
 
 #########################################################################
@@ -2473,7 +2666,6 @@ def runCuffdiff( infile, outfile ):
              --library-type %(tophat_library_type)s
              %(cuffdiff_options)s
              --verbose
-             --reference-seq %(cufflinks_genome_dir)s/%(genome)s.fa
              --num-threads %(cuffdiff_threads)i
              --labels %(labels)s
              --FDR %(cuffdiff_fdr)f
@@ -2796,6 +2988,68 @@ def buildFPKMGeneLevelTagCounts( infiles, outfile ):
     for gene_id in gene_ids:
         outf.write( "%s\t%s\n" % ( gene_id, "\t".join( [str(int(x[gene_id])) for x in results ] ) ) )
     outf.close()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@merge( os.path.join( PARAMS["annotations_dir"], 
+                      PARAMS_ANNOTATIONS["interface_geneset_all_gtf"]),
+        "coding_exons.gtf.gz" )
+def buildCodingExons( infile, outfile ):
+    '''compile set of protein coding exons.
+
+    This set is used for splice-site validation
+    '''
+
+    to_cluster = True
+    statement = '''
+    zcat %(infile)s 
+    | awk '$2 == "protein_coding" && $3 == "CDS"'
+    | perl -p -e "s/CDS/exon/" 
+    | python %(scriptsdir)s/gtf2gtf.py --merge-exons --log=%(outfile)s.log 
+    | gzip 
+    > %(outfile)s
+    '''
+    P.run()
+
+###################################################################
+###################################################################
+###################################################################
+@transform( buildBAMs,
+            suffix(".bam"),
+            add_inputs( buildCodingExons ),
+            ".exon.validation.tsv.gz" )
+def buildExonValidation( infiles, outfile ):
+    '''count number of reads mapped, duplicates, etc.
+    '''
+
+    to_cluster = USECLUSTER
+    infile, exons = infiles
+    statement = '''cat %(infile)s
+    | python %(scriptsdir)s/rnaseq_bam_vs_exons.py
+         --filename-exons=%(exons)s
+         --force
+         --log=%(outfile)s.log
+         --output-filename-pattern="%(outfile)s.%%s.gz"
+    | gzip
+    > %(outfile)s
+    '''
+
+    P.run()
+
+
+############################################################
+############################################################
+############################################################
+@merge( buildExonValidation, "exon_validation.load" )
+def loadExonValidation( infiles, outfile ):
+    '''merge alignment stats into single tables.'''
+    suffix = suffix = ".exon.validation.tsv.gz" 
+    P.mergeAndLoad( infiles, outfile, suffix = suffix )
+    for infile in infiles:
+        track = P.snip( infile, suffix )
+        o = "%s_overrun.load" % track 
+        P.load( infile + ".overrun.gz", o )
 
 #########################################################################
 #########################################################################
@@ -3338,8 +3592,8 @@ def runDESeq( infile, outfile ):
             if d.baseMeanA == 0.0 and d.baseMeanB == 0.0:
                 d = d._replace( foldChange = 0, log2FoldChange = 0 )
 
-            if isna( d.pval ): status = "OK"
-            else: status = "FAIL"
+            if isna( d.pval )[0]: status = "FAIL"
+            else: status = "OK"
 
             outf.write( "\t".join( map(str, d) ))
             outf.write("\t%s\t%s\n" % (status, str(signif)))
@@ -3436,6 +3690,8 @@ def buildGeneSetsOfInterest( infile, outfile ):
 
     outfiles.close()
 
+    P.touch( outfile )
+
 #########################################################################
 #########################################################################
 #########################################################################
@@ -3488,10 +3744,14 @@ def expression(): pass
 @follows( buildGeneSetsOfInterest )
 def export(): pass
 
+@follows( loadExonValidation )
+def validate(): pass
+
 @follows( mapping,
           genesets,
           expression,
           utrs,
+          validate,
           export)
 def full(): pass
 

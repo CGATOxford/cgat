@@ -41,6 +41,8 @@ with read depth or :term:`depth coverage` of the reference gene model.
 
 .. report:: Reference.CoverageVsLengthByReadDepth
    :render: scatter-rainbow-plot
+   :layout: column-3
+   :width: 300
 
    Plot the absolute coverage of known gene set versus its length.
    Dots are colored by read depth.
@@ -54,6 +56,7 @@ genes.
 .. report:: Reference.MeanVsMaxReadDepth
    :render: scatter-rainbow-plot
    :layout: grid
+   :width: 300
 
    Maxmimum read depth versus mean read depth of :term:`reference` genes. 
    Dots are coloured by the log(length) of a :term:`reference` gene.
@@ -63,6 +66,7 @@ In contrast, mean and median are usually well correlated:
 .. report:: Reference.MeanVsMedianReadDepth
    :render: scatter-rainbow-plot
    :layout: grid
+   :width: 300
 
    Maxmimum read depth versus median read depth of :term:`reference` genes. 
    Dots are coloured by the log(length) of a :term:`reference` gene.
@@ -81,6 +85,8 @@ Libraries without strand information should have a peak at about 1.0.
    :tf-range: ,,0.1
    :groupby: slice
    :as-lines:
+   :layout: column-3
+   :width: 300
 
    Directionality of reads within transcript models.
 
