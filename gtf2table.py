@@ -2167,7 +2167,7 @@ class CounterReadCoverage(Counter):
 
         counts_sense = counts_sense[ counts_sense > 0]
         counts_antisense = counts_antisense[ counts_antisense > 0]
-        counts_anysense = counts_anysense[ counts_antisense > 0]
+        counts_anysense = counts_anysense[ counts_anysense > 0]
 
         self.counts_sense = counts_sense
         self.counts_antisense = counts_antisense

@@ -7,12 +7,22 @@ This section looks at the reference gene set and the reads.
 Coverage
 ========
 
-Gene coverage
---------------
+Transcript coverage
+--------------------
 
-The following plots examine the :term:`model coverage` of transcripts and genes
-in the reference gene set by reads. Note that only coverage of sense reads is
-reported.
+The following plots examine the :term:`model coverage` of transcripts
+in the reference gene set by reads. Coverage is computed for each
+transcript separately. Reads will contribute coverage to multiple
+transcripts if the read overlaps several transcripts.
+
+Only sense reads are reported. For protocols that do not
+preserve strand only half the reads will be used to calculate coverage.
+
+.. report:: Reference.TranscriptCoverage
+   :render: table
+   :transform: stats
+
+   Percent :term:`model coverage` of transcripts in the reference gene set.
 
 .. report:: Reference.TranscriptCoverage
    :render: line-plot
@@ -21,12 +31,30 @@ reported.
    :tf-bins: arange(0,101,1.0)
    :as-lines:
 
+   Percent :term:`model coverage` of transcripts in the reference gene set.
+
+Gene coverage
+--------------------
+
+The following plots examine the :term:`model coverage` of genes
+in the reference gene set by reads. Coverage is computed for each
+transcript separately. Reads will contribute coverage to multiple
+transcripts if the read overlaps several transcripts. The coverage 
+per gene is the maximum coverage of a transcript.
+
+Only sense reads are reported. For protocols that do not
+preserve strand only half the reads will be used to calculate coverage.
+
+.. report:: Reference.GeneCoverage
+   :render: table
+   :transform: stats
+
    Percent :term:`model coverage` of genes in the reference gene set.
 
 .. report:: Reference.GeneCoverage
    :render: line-plot
    :transform: histogram
-   :tf-aggregate: normalized-total,cumulative
+   :tf-aggregate: normalized-total
    :tf-bins: arange(0,101,1.0)
    :as-lines:
 

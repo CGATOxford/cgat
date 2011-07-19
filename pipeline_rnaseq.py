@@ -1026,6 +1026,7 @@ def mapReadsWithTophat( infiles, outfile ):
     statement = m.build( (infile,), outfile ) 
     P.run()
 
+
 #########################################################################
 #########################################################################
 #########################################################################
@@ -1066,7 +1067,7 @@ def buildJunctionsDB( infiles, outfile ):
 
     tmpfile.close()
     tmpfilename = tmpfile.name
-    
+
     statement = '''
     sort %(tmpfilename)s | gzip > %(outfile_junctions)s
     '''
@@ -1085,7 +1086,7 @@ def buildJunctionsDB( infiles, outfile ):
               2> %(outfile)s.log
     '''
     P.run()
-    
+
     E.info( "indexing junctions database" )
 
     prefix = P.snip( outfile, ".fa" )
@@ -1104,12 +1105,13 @@ def buildJunctionsDB( infiles, outfile ):
 
     P.run()
 
+
+if "tophat_add_separate_junctions" in PARAMS and PARAMS["tophat_add_separate_junctions"]:
 #########################################################################
 #########################################################################
 #########################################################################
 ##
 #########################################################################
-if "tophat_add_separate_junctions" in PARAMS and PARAMS["tophat_add_separate_junctions"]:
     @transform( ("*.fastq.1.gz", 
                  "*.fastq.gz",
                  "*.sra",
@@ -1150,9 +1152,6 @@ else:
                  "*.csfasta.gz",
                  "*.csfasta.F3.gz" ),
                 regex( r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz|csfasta.F3.gz)"), 
-                add_inputs( buildJunctionsDB, 
-                            os.path.join(PARAMS["annotations_dir"],
-                                         PARAMS_ANNOTATIONS["interface_contigs"])), 
                 r"\1.junc.bam" )
     def mapReadsWithBowtieAgainstJunctions( infiles, outfile ):
         P.touch(outfile)
@@ -1426,7 +1425,7 @@ def loadTophatStats( infile, outfile ):
 def loadMappingStats( infiles, outfile ):
 
     header = ",".join( [P.snip( x, ".bam") for x in infiles] )
-    filenames = " ".join( [ "%s.log" % x for x in infiles ] )
+    filenames = " ".join( [ "%s.tsv" % x for x in infiles ] )
     tablename = P.toTable( outfile )
 
     statement = """python %(scriptsdir)s/combine_tables.py
@@ -1784,7 +1783,8 @@ def runCuffCompare( infiles, outfile, reffile ):
         checkpoint;
         perl -p -e "s/\\0/./g" < %(outfile)s.combined.gtf | gzip > %(outfile)s.combined.gtf.gz;
         checkpoint;
-        rm -f $(outfile)s.combined.gtf;
+        rm -f %(outfile)s.combined.gtf;
+        checkpoint;
         gzip -f %(outfile)s.{tracking,loci};
         '''
 
@@ -1804,8 +1804,6 @@ def runCuffCompare( infiles, outfile, reffile ):
             E.warn("caught exception - trying again" )
 
     shutil.rmtree( tmpdir )
-
-
 
 #########################################################################
 #########################################################################

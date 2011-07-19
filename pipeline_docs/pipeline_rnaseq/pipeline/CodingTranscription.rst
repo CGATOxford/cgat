@@ -58,7 +58,7 @@ according to :term:`cufflinks`.
 
    The ten highest expressed transcripts.
 
-Transcript classificication
+Transcript classification
 ===========================
 
 The following table lists the number of transcripts with respect to their genomic context.

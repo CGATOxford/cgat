@@ -917,11 +917,19 @@ def run_report( clean = True):
     
     job_options= "-pe dedicated %i -R y" % PARAMS["report_threads"]
 
+    # use a fake X display in order to avoid windows popping up
+    # from R plots.
+    xvfb_command = which("xvfb-run" )
+
+    # permit multiple servers using -a option
+    if xvfb_command: xvfb_command+= " -a "
+
     if clean: clean = """rm -rf report _cache _static;"""
     else: clean = ""
 
     statement = '''
     %(clean)s
+    %(xvfb_command)s
     sphinxreport-build 
            --num-jobs=%(report_threads)s
            sphinx-build 

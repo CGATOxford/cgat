@@ -32,7 +32,19 @@ rebuild_extenstions.py - rebuild all cython extensions
 Purpose
 -------
 
-rebuilds all cython extensions in the current directory.
+This script rebuilds all cython extensions in the source directory.
+
+Some scripts in the repository make use of ``pyximport`` to compile
+associated cython scripts with embedded C code. Theses scripts are
+automatically re-compiled if the script has changed, but this process
+can fail if:
+
+   * the script is executed on a machine without a C-compiler
+   * some underlying libraries have changed.
+
+Thus, it is safer to rebuild all scripts on a machine with a C compiler
+before running a script in production on a cluster, where not all nodes
+might be fully configured for compilation.
 
 Usage
 -----
@@ -43,7 +55,7 @@ Example::
 
 Type::
 
-   python script_template.py --help
+   python rebuild_extensions.py --help
 
 for command line help.
 

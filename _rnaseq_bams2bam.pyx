@@ -89,11 +89,12 @@ def filter( Samfile genome_samfile,
     else:
         tag = nm_tag
 
+    # set with junctions that are ignored
+    skip_junctions = set()
+
     # build list of junctions
     if c_test_junctions:
         E.info( "building junction read index" )
-        # set with junctions that are ignored
-        skip_junctions = set()
 
         def _gen2(): return array.array('B') 
         junctions_index = collections.defaultdict( _gen2 )
@@ -176,7 +177,6 @@ def filter( Samfile genome_samfile,
                     break
             if skip: continue
 
-
         if c_test_junctions:
             if read.qname in junctions_index:
                 # can compress index before, depends on
@@ -251,6 +251,19 @@ def filter( Samfile genome_samfile,
         E.info("adding junctions")
         junctions_samfile.reset()
         for read in junctions_samfile:
+
+            # optionally remove reads matched to certain contigs
+            if nremove_contig_tids:
+                skip = 0
+                for x from 0 <= x < nremove_contig_tids:
+                    if remove_contig_tids[x] == read.tid:
+                        nremoved_contigs += 1
+                        skip = 1
+                    break
+                if skip: 
+                    nskipped_junctions += 1
+                    continue
+
             if read.qname in skip_junctions:
                 nskipped_junctions += 1
             else:

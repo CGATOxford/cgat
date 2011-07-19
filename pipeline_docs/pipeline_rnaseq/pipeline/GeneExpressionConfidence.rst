@@ -15,6 +15,7 @@ for expressed genes, isoforms, etc are shown
    :logscale: x
    :groupby: track
    :layout: column-2
+   :width: 300
 
    Distribution of FPKM values
 
@@ -33,7 +34,6 @@ Correlation between FPKM and confidence intervals
    :logscale: xy
    :groupby: track
    :layout: column-2
-   :xrange: 0,
-   :yrange: 0,
+   :width: 300
 
    FPKM confidence values against FPKM.
