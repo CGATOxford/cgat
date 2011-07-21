@@ -601,7 +601,6 @@ class BowtieTranscripts( Mapper ):
             infiles = ",".join( infiles[0])
             statement = '''
                 bowtie --quiet --sam
-                       --un /dev/null
                        --threads %%(bowtie_threads)i
                        %(data_options)s
                        %%(bowtie_options)s
@@ -619,7 +618,6 @@ class BowtieTranscripts( Mapper ):
             statement = '''
                 bowtie --quiet --sam
                        --threads %%(bowtie_threads)i
-                       --un /dev/null
                        %(data_options)s
                        %%(bowtie_options)s
                        %(index_prefix)s
