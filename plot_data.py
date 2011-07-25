@@ -181,7 +181,7 @@ if __name__ == "__main__":
                       help="dump data for debug purposes."  )
     parser.add_option("-c", "--columns", dest="columns", type="string",
                       help="columns to use for plotting [default=%Default].")
-    parser.add_option( "--color", dest="color", type="int",
+    parser.add_option( "--color", "--colour", dest="color", type="int",
                       help="column with field to use for coloring [default=%Default].")
     parser.add_option("--transpose", dest="transpose", action="store_true",
                       help="transpose values (swop x and y axis).")
@@ -360,7 +360,6 @@ if __name__ == "__main__":
                     lines.append (pylab.scatter( xvals, yvals, options.point_size, c = colors, **plot_kwargs ))
                 else:
                     # lines.append ( pylab.scatter( xvals, yvals, c = colors ) ) # , vmin=min(colors),vmax=max(colors), facetted=False))
-
                     lines.append( pylab.scatter( xvals, yvals, c = colors, vmin=min(colors),vmax=max(colors), **plot_kwargs ) )
             else:
                 if options.error_bars:
