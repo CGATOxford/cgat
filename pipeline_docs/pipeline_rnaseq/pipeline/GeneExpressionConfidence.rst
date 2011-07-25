@@ -1,3 +1,5 @@
+.. _FPKM confidence intervals:
+
 =========================
 FPKM confidence intervals
 =========================

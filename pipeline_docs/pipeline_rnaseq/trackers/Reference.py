@@ -3,6 +3,8 @@ import os, sys, re, types, itertools, math
 from RnaseqReport import *
 from SphinxReport.ResultBlock import ResultBlock, ResultBlocks
 
+import Stats
+
 ##################################################################################
 ##################################################################################
 ##################################################################################
@@ -34,27 +36,58 @@ class GeneCoverage(ReferenceData):
                                    AND i.transcript_id = c.transcript_id 
                                    GROUP BY i.gene_id""" )
 
+######################################################################
+######################################################################
+######################################################################
 class CoverageVsLengthByReadDepth(ReferenceData):
     """plot the absolute coverage of a known gene versus its length.
     Dots are colored by read depth.
     """
 
-    mXLabel = "log(length)"
-
     def __call__(self, track, slice = None):
-        reference = self.reference
-        statement = """SELECT AVG(exons_sum) AS ref_length,
-                                MIN(c.coverage_sense_pcovered) AS coverage, 
-                                AVG(c.coverage_sense_mean) AS read_depth
-                        FROM %(track)s_transcript_counts AS c,
-                                %(reference)s_transcript2gene as i
-                        WHERE i.transcript_id = c.transcript_id AND 
-                                c.coverage_sense_nval > 0
-                        GROUP BY i.gene_id"""
 
-        data = [ (math.log(x[0]), x[1], math.log(x[2]) ) for x in self.get( statement % locals() ) ]
-        r = odict( zip( ("log(length)", "log(coverage)", "log(read_depth)"), zip(*data)))
-        return odict( zip( ("log(length)", "log(coverage)", "log(read_depth)"), zip(*data)))
+        statement = """SELECT   f.%(track)s_fpkm,
+                                c.coverage_anysense_pcovered AS coverage, 
+                                i.sum
+                        FROM %(track)s_transcript_counts AS c,
+                                %(reference)s_cuffdiff_isoform_levels AS f,
+                                %(reference)s_transcriptinfo AS i
+                        WHERE i.transcript_id = c.transcript_id AND 
+                              f.tracking_id = c.transcript_id AND 
+                              f.%(track)s_fpkm > 0
+                    """
+
+        data = [ (math.log(x[0],10), x[1], math.log(x[2],10) ) for x in self.get( statement ) ]
+        r = odict( zip( ("log(fpkm)", "coverage", "log(length)"), zip(*data)))
+        return r 
+    
+######################################################################
+######################################################################
+######################################################################
+class CoverageVsFPKM(ReferenceData):
+    '''return 
+
+    similar to ROC curves.
+    '''
+
+    pattern = "(.*)_cuffcompare_fpkm$" 
+    slices = ( 50, 60, 70, 80, 90 )
+    
+    def __call__(self, track, slice ):
+
+        data = self.get( """SELECT 
+                             f.%(track)s_fpkm,
+                             c.coverage_anysense_pcovered >= %(slice)s
+                       FROM %(track)s_transcript_counts as c, 
+                            %(reference)s_cuffdiff_isoform_levels as f 
+                       WHERE f.tracking_id = c.transcript_id AND 
+                             f.%(track)s_fpkm > 0 
+                             ORDER BY %(track)s_fpkm DESC""")
+    
+        r = Stats.getPerformance( data, increasing = False)
+
+        return odict( (( "fpkm", [x.value for x in r]),
+                       ( "proportion of full-length transcripts",  [x.tpr for x in r]) ) )
 
 ##=================================================================
 ## Coverage

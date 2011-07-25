@@ -120,7 +120,7 @@ class TranscriptStatus( Status ):
         '''
 
         complete = self.getValue( """SELECT COUNT(*) FROM %(track)s_class WHERE class = 'complete'""" )
-        fragments = self.getValue( """SELECT COUNT(*) FROM %(track)s_class WHERE class = 'fragment'""" )
+        fragments = self.getValue( """SELECT COUNT(*) FROM %(track)s_class WHERE class like '%%fragment%%' """ )
 
         value = float(complete) / (complete + fragments )
 
@@ -166,13 +166,13 @@ class ExpressionStatus( Status ):
 
     pattern = "(.*)_transcript_counts"
 
-    tablename = "refcoding_cuffdiff_isoform_levels"
+    tablename = "refcoding_cuffdiff_gene_levels"
 
     # minimum expression level for transcripts to be 
     # considered expressed
     min_fpkm = 1.0
 
-    tracks = [x.asTable for x in EXPERIMENTS]
+    tracks = [x.asTable() for x in EXPERIMENTS]
 
     def testErrorBars( self, track ):
         '''test error bars of expression level measurements.
@@ -200,4 +200,38 @@ class ExpressionStatus( Status ):
         else: status= "FAIL"
         
         return status, "%5.2f%%" % (100.0 * value)
+
+class ExpressionStatusNoncoding( ExpressionStatus ):
+    tablename = "refnoncoding_cuffdiff_gene_levels"
+
+class DifferentialExpressionStatus( Status ):
+    pattern = "(.*)_cuffdiff_gene_diff"
+    
+    def testTests( self, track ):
+        '''test if tests for differential expression are successful.
+
+        Unsuccessful test have status NO_CALL or FAIL, meaning that the
+        test failed or the expression levels of at least one gene was very
+        low. If that is the case, some statistical tests become very unreliable.
+
+        PASS: <= 10% of tests failed.
+        WARN: <= 50% of tests failed
+        FAIL: > 50% of tests failed
+
+        '''
+
+        failed = self.getValue('''SELECT COUNT(*) FROM %(track)s_cuffdiff_gene_diff WHERE status = 'FAIL' OR status = 'NO_TEST' ''')
+        tested = self.getValue( '''SELECT COUNT(*) FROM %(track)s_cuffdiff_gene_diff''')
+        
+        value = float(failed) / tested
+        
+        if value <= 0.1: status= "PASS"
+        elif value <= 0.5 : status= "WARNING"
+        else: status= "FAIL"
+        
+        return status, "%5.2f%%" % (100.0 * value)
+        
+
+        
+
 
