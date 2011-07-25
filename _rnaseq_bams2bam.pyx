@@ -250,6 +250,13 @@ def filter( Samfile genome_samfile,
     if c_test_junctions:
         E.info("adding junctions")
         junctions_samfile.reset()
+
+        # rebuild contig map for junctions:
+        if remove_contigs:
+            remove_contig_tids = <int*>malloc( sizeof(int) * nremove_contig_tids )
+            for x, rname in enumerate( remove_contigs):
+                remove_contig_tids[x] = junctions_samfile.gettid( rname )
+        
         for read in junctions_samfile:
 
             # optionally remove reads matched to certain contigs
