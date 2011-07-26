@@ -70,8 +70,10 @@ class CoverageVsFPKM(ReferenceData):
     similar to ROC curves.
     '''
 
-    pattern = "(.*)_cuffcompare_fpkm$" 
     slices = ( 50, 60, 70, 80, 90 )
+
+    def getTracks( self ):
+        return self.getValues( "SELECT * FROM %(reference)s_cuffdiff" )
     
     def __call__(self, track, slice ):
 

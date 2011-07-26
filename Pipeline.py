@@ -29,7 +29,11 @@ Pipeline.py - Tools for ruffus pipelines
 :Date: |today|
 :Tags: Python
 
-Code
+The :mod:`Pipeline` module contains various utility functions
+for interfacing CGAT ruffus pipelines with databases and the 
+cluster.
+
+API
 ----
 
 '''

@@ -1897,6 +1897,28 @@ def loadTranscriptComparison( infile, outfile ):
     tmpfile2 = P.getTempFilename()
     tmpfile3 = P.getTempFilename()
 
+    outf = open( tmpfile, "w") 
+    outf.write( "track\n" )
+    outf.write( "\n".join( tracks ) + "\n" )
+    outf.close()
+
+    #########################################################
+    ## load tracks
+    #########################################################
+    tablename = P.toTable(outfile) + "_tracks"
+
+    statement = '''cat %(tmpfile)s
+    | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+              --allow-empty
+              --index=track
+              --table=%(tablename)s 
+    > %(outfile)s
+    '''
+
+    P.run()
+
+    L.info( "loaded %s" % tablename )
+
     #########################################################
     ## load benchmarking data
     #########################################################
@@ -2064,7 +2086,7 @@ def loadTranscriptComparison( infile, outfile ):
 
     os.unlink( tmpfile )
     os.unlink( tmpfile2 )
-
+    os.unlink( tmpfile3 )
 
 #########################################################################
 #########################################################################
@@ -2769,6 +2791,7 @@ def loadCuffdiff( infile, outfile ):
         return
 
     to_cluster = False
+    dbhandle = sqlite3.connect( PARAMS["database"] )
     
     # ignore promoters and splicing - no fold change column, but  sqrt(JS)
     for fn, level in ( ("cds_exp.diff", "cds"),
@@ -2781,7 +2804,6 @@ def loadCuffdiff( infile, outfile ):
         tablename = prefix + "_" + level + "_diff"
 
         # max/minimum fold change seems to be (-)1.79769e+308
-        # awk can't handle that and returns inf - substitute with 10
         # ln to log2: multiply by log2(e)
         statement = '''cat %(indir)s/%(fn)s
         | perl -p -e "s/sample_/track/g; s/value_/value/g; s/yes$/1/; s/no$/0/; s/ln\\(fold_change\\)/lfold/; s/p_value/pvalue/"
@@ -2795,7 +2817,7 @@ def loadCuffdiff( infile, outfile ):
               --index=track2
               --index=test_id
               --table=%(tablename)s 
-         >> %(outfile)s
+         >> %(outfile)s.log
          '''
         
         P.run()
@@ -2812,11 +2834,24 @@ def loadCuffdiff( infile, outfile ):
               --allow-empty
               --index=tracking_id
               --table=%(tablename)s 
-         >> %(outfile)s
+         >> %(outfile)s.log
          '''
         
         P.run()
 
+    ## build convenience table with tracks
+    tablename = prefix + "_isoform_levels"
+    tracks = Database.getColumnNames( dbhandle, tablename )
+    tracks = [ x[:-len("_FPKM")] for x in tracks if x.endswith("_FPKM") ]
+    
+    tmpfile = P.getTempFile()
+    tmpfile.write( "track\n" )
+    tmpfile.write("\n".join(tracks) + "\n" )
+    tmpfile.close()
+    
+    statement = P.load( tmpfile.name, outfile )
+    os.unlink( tmpfile.name )
+    
 #########################################################################
 #########################################################################
 #########################################################################
@@ -3265,7 +3300,7 @@ def buildGeneLevelReadCounts( infiles, outfile ):
            "gene_counts.dir/%s.gene_counts.tsv.gz" % x.asFile()) 
          for x in EXPERIMENTS ] +\
             [ ( ( ["%s.accepted.bam" % y.asFile() for y in TRACKS], buildCodingGeneSet),
-                "transcript_counts.dir/%s.transcript_counts.tsv.gz" % ALL.asFile()) ] )
+                "gene_counts.dir/%s.gene_counts.tsv.gz" % ALL.asFile()) ] )
 def buildAggregateGeneLevelReadCounts( infiles, outfile):
     '''count reads falling into transcripts of protein coding 
        gene models.
