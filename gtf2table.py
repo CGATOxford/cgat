@@ -1258,8 +1258,13 @@ class ClassifierRNASeq(Counter):
         segments = self.getSegments()
         introns = self.getIntrons()
 
-        overlaps = list(self.transcript_intervals.get( contig, segments[0][0], segments[-1][1] ))
-        
+        try:
+            overlaps = list(self.transcript_intervals.get( contig, segments[0][0], segments[-1][1] ))
+        except KeyError, msg:
+            E.warn( "failed lookup of interval %s:%i-%i: '%s'" % (contig, segments[0][0], segments[-1][1], msg) )
+            self.skip = True
+            return
+
         noverlap_transcripts = len(overlaps)
         noverlap_genes = len( set( [self.map_transcript2gene[transcript_id] for start,end,transcript_id in overlaps] ) )
 
