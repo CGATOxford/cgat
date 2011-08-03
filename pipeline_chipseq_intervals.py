@@ -90,8 +90,222 @@ def getMinimumMappedReads( infiles ):
 ############################################################
 ############################################################
 ############################################################
-##
+def getExonLocations(filename):
+    '''return a list of exon locations as (contig,start,end) tuples 
+    from a file contain a one ensembl gene ID per line
+    '''
+    fh = open(filename,"r")
+    ensembl_ids = []
+    for line in fh:
+        ensembl_ids.append(line.strip())
+    fh.close()
+
+    dbhandle = sqlite3.connect(PARAMS["annotations_database"])
+    cc = dbhandle.cursor()
+
+    gene_ids = []
+    n_ids = 0
+    for ID in ensembl_ids:
+        gene_ids.append('gene_id="%s"' % ID)
+        n_ids += 1
+
+    statement = "select contig,start,end from geneset_cds_gtf where "+" OR ".join(gene_ids)
+    
+    cc.execute( statement)
+
+    region_list = []
+    n_regions = 0
+    for result in cc:
+        contig, start, end = result
+        region_list.append( (contig,int(start),int(end)) )
+        n_regions +=1
+
+    cc.close()
+
+    E.info("Retrieved exon locations for %i genes. Got %i regions" % (n_ids,n_regions) )
+
+    return(region_list)
+
 ############################################################
+############################################################
+############################################################
+def getBedLocations(filename):
+    '''return a list of regions as (contig,start,end) tuples
+    from a bed file'''
+    fh = open(filename,"r")
+    region_list = []
+    n_regions = 0
+
+    for line in fh:
+        if line.strip() != "" and line[0] !="#":
+            fields = line.split("\t")
+            contig, start, end = fields[0], int(fields[1]), int(fields[2])
+            region_list.append((contig,start,end))
+            n_regions +=1
+
+    fh.close()
+
+    #E.info("Read in %i regions from %s" % ( n_regions, filename) )
+    return (region_list)
+
+############################################################
+############################################################
+############################################################
+def buildQuicksectMask(bed_file):
+    '''return Quicksect object containing the regions specified
+       takes a bed file listing the regions to mask 
+    '''
+    mask = IndexedGenome.Quicksect()
+
+    region_list = getBedLocations(bed_file)
+    n_regions = 0
+    for region in region_list:
+        contig, start, end = region
+        #it is neccessary to extend the region to make an accurate mask
+        mask.add(contig,(start-1),(end+1),1)
+        n_regions += 1
+
+    E.info("Built Quicksect mask for %i regions" % n_regions)
+
+    return(mask)
+
+############################################################
+############################################################
+############################################################
+def buildBAMforPeakCalling( infiles, outfile, dedup, mask):
+    ''' Make a BAM file suitable for peak calling.
+        Infiles are merged and unmapped reads removed. If specificied
+        duplicate reads are removed. If a mask is specified, reads falling within
+        the mask are filtered out. The mask is a quicksect object containing
+        the regions from which reads are to be excluded.
+    '''
+    #open the infiles, if more than one merge and sort first using samtools.
+
+    samfiles = []
+    num_reads = 0
+    nfiles = 0
+
+    if len(infiles) > 1 and isinstance(infiles,str)==0:
+
+        merge = True
+        tmpfilename = P.getTempFilename()
+        statement = '''
+        samtools merge %s %s 
+        ''' % (tmpfilename, infiles.join(" "))
+        P.run()
+        pysam_in = pysam.Samfile(tmpfilename,"rb")
+        pysam_in.sort()
+
+    else:
+        merge = False
+        pysam_in = pysam.Samfile(infiles,"rb")
+
+    pysam_out = pysam.Samfile( outfile, "wb", template = pysam_in )
+
+    #make a simple counter object to pass through the generators
+    class read_counter:
+        def __init__(self):
+            self.n_in, self.n_out, self.unmapped, self.duplicate, self.filtered = 0, 0, 0, 0, 0
+    counts = read_counter() 
+
+    ## build the generator
+    it = pysam_in
+
+    # discard unmapped reads
+    def drop_unmapped(i,c):
+        for read in i:
+            c.n_in += 1
+            if read.is_unmapped:
+                c.unmapped += 1 
+                continue
+            else:
+                yield read
+
+    it = drop_unmapped(it,counts)
+
+    # discard duplicate reads if requested
+    if dedup:
+        def check_for_dup(i,c):
+
+            last_contig, last_start = None, None
+            for read in i:
+                if read.rname == last_contig and read.pos == last_start:
+                    c.duplicate += 1
+                    continue
+                else:
+                    last_contig, last_start = read.rname, read.pos
+                    yield read
+
+        it = check_for_dup( it, counts )
+
+    # filter reads if requested
+    if mask:
+        def filter_reads(i,c,mask):
+
+            for read in i:
+                contig = pysam_in.getrname(read.tid)
+                if mask.contains(contig,read.pos,read.pos):
+                    counts.filtered += 1
+                    continue
+                else:
+                    yield read
+
+        it = filter_reads( it,counts,mask )
+
+    # call the built generator and write out emmitted reads
+    for read in it:
+        counts.n_out += 1
+        pysam_out.write(read)
+
+    pysam_out.close()
+    pysam.index( outfile )
+
+    #E.info("Screened %i reads, output %i reads - %5.2f%% from %s" %\
+    #      (counts.n_in, counts.n_out, 100.0*counts.n_out/counts.n_in, "+".join(infiles)) )
+    #E.info("No. unmapped reads %i, no. duplicates: %i,  no.filtered: %i" %\
+    #      (counts.unmapped, counts.duplicate, counts.filtered) ) 
+
+    if merge == True:
+        os.unlink( tmpfilename )
+
+############################################################
+############################################################
+############################################################
+def buildSimpleNormalizedBAM( infiles, outfile, nreads ):
+    '''normalize a bam file to given number of counts
+       by random sampling
+    '''
+    infile,countfile = infiles
+
+    pysam_in = pysam.Samfile (infile,"rb")
+    
+    fh = open(countfile,"r")
+    readcount = int(fh.read())
+    fh.close()
+    
+    threshold = float(nreads) / float(readcount)
+
+    pysam_out = pysam.Samfile( outfile, "wb", template = pysam_in )
+
+    # iterate over mapped reads thinning by the threshold
+    ninput, noutput = 0,0
+    for read in pysam_in.fetch():
+         ninput += 1
+         if random.random() <= threshold:
+             pysam_out.write( read )
+             noutput += 1
+
+    pysam_in.close()
+    pysam_out.close()
+    pysam.index( outfile )
+
+    E.info( "buildNormalizedBam: %i input, %i output (%5.2f%%), should be %i" % (ninput, noutput, 100.0*noutput/ninput, nreads ))
+
+############################################################                                                        
+############################################################                                                        
+############################################################                                                        
+####### Depreciate this function? ##########################
+############################################################                                                        
 def buildNormalizedBAM( infiles, outfile, normalize = True ):
     '''build a normalized BAM file.
 
@@ -158,7 +372,8 @@ def buildNormalizedBAM( infiles, outfile, normalize = True ):
 
     pysam.index( outfile )
 
-    P.info( "buildNormalizedBam: %i input, %i output (%5.2f%%), should be %i" % (ninput, noutput, 100.0*noutput/ninput, min_reads ))
+    E.info( "buildNormalizedBam: %i input, %i output (%5.2f%%), should be %i" % (ninput, noutput, 100.0*noutput/ninput, min_reads ))
+
 
 ############################################################
 ############################################################
