@@ -1,6 +1,6 @@
 from csamtools cimport *
 
-import collections, array, struct
+import collections, array, struct, sys
 import Experiment as E
 
 
@@ -11,6 +11,7 @@ def filter( Samfile genome_samfile,
             Samfile transcripts_samfile,
             Samfile junctions_samfile,
             transcripts,
+            regions = None,
             unique = False,
             remove_contigs = None,
             colour_mismatches = False,
@@ -36,6 +37,8 @@ def filter( Samfile genome_samfile,
 
     If *ignore_mismatches* is set, the number of mismatches is ignored.
 
+    If *regions* is given, alignments overlapping regions will be removed.
+
     '''
     cdef int ninput = 0
     cdef int nunmapped_genome = 0
@@ -50,17 +53,18 @@ def filter( Samfile genome_samfile,
     cdef int nremoved_junctions = 0
     cdef int nskipped_junctions = 0
     cdef int nadded_junctions = 0
+    cdef int nremoved_regions = 0
 
     cdef bint c_unique = unique
     cdef bint c_test_mismatches = not ignore_mismatches
     cdef bint c_test_junctions = not ignore_junctions
     cdef bint c_test_transcripts = not ignore_transcripts
+    cdef bint c_test_regions = regions
     cdef int * remove_contig_tids 
     cdef int nremove_contig_tids = 0
     cdef AlignedRead read
     cdef AlignedRead match
-
-
+    
     # build index
     # this method will start indexing from the current file position
     # if you decide
@@ -177,6 +181,20 @@ def filter( Samfile genome_samfile,
                     break
             if skip: continue
 
+        g_contig = genome_samfile.getrname( read.tid )
+                
+        # optionally remove reads mapped to certain regions
+        if c_test_regions:
+            intervals = regions.get( g_contig, read.pos, read.aend )
+            skip = 0
+            for start, end, value in intervals:
+                if read.overlap( start, end ):
+                    nremoved_regions += 1
+                    skip = 1
+                    break
+
+            if skip: continue
+
         if c_test_junctions:
             if read.qname in junctions_index:
                 # can compress index before, depends on
@@ -204,7 +222,6 @@ def filter( Samfile genome_samfile,
                 matches = None
                 
             if matches:
-                g_contig = genome_samfile.getrname( read.tid )
 
                 if c_test_mismatches:
                     read_mismatches = read.opt(tag)
@@ -288,6 +305,7 @@ def filter( Samfile genome_samfile,
     c.removed_mismapped = nmismapped
     c.removed_contigs = nremoved_contigs
     c.removed_junctions = nremoved_junctions
+    c.removed_regions = nremoved_regions
     c.skipped_junction_reads = len(skip_junctions)
     c.skipped_junctions = nskipped_junctions
     c.added_junctions = nadded_junctions

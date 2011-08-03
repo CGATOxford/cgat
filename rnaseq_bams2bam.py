@@ -73,8 +73,9 @@ Code
 import os, sys, re, optparse, time
 
 import Experiment as E
-import GTF, IOTools
+import GTF, IOTools, Bed
 import pysam
+import IndexedGenome
 
 import pyximport
 pyximport.install(build_in_temp=False)
@@ -93,13 +94,16 @@ def main( argv = None ):
                                     usage = globals()["__doc__"] )
 
     parser.add_option( "-g", "--filename-gtf", dest="filename_gtf", type="string",
-                       help = "filename with gene models [%default]" )
+                       help = "filename with gene models in gtf format [%default]" )
 
     parser.add_option( "-m", "--filename-mismapped", dest="filename_mismapped", type="string",
                        help = "output bam file for mismapped reads [%default]" )
 
     parser.add_option( "-j", "--filename-junctions", dest="filename_junctions", type="string",
                        help = "bam file with reads mapped across junctions [%default]" )
+
+    parser.add_option( "-r", "--filename-regions", dest="filename_regions", type="string",
+                       help = "filename with regions to remove in bed format [%default]" )
 
     parser.add_option( "-t", "--filename-transcriptome", dest="filename_transcriptome", type="string",
                        help = "bam file with reads mapped against transcripts [%default]" )
@@ -143,7 +147,7 @@ def main( argv = None ):
     (options, args) = E.Start( parser, argv = argv )
 
     if len(args) != 1:
-        raise ValueError( "please supply one bam files" )
+        raise ValueError( "please supply one bam file" )
 
     bamfile_genome = args[0]
     genome_samfile = pysam.Samfile( bamfile_genome, "rb" )
@@ -159,6 +163,14 @@ def main( argv = None ):
             transcripts[gtf[0].transcript_id] = gtf
 
         E.info( "read %i transcripts from geneset" % len(transcripts) )
+
+    regions_to_remove = None
+    if options.filename_regions:
+        E.info( "indexing regions" )
+        regions_to_remove = IndexedGenome.Simple()
+        for bed in Bed.iterator( IOTools.openFile( options.filename_regions )):
+            regions_to_remove.add( bed.contig, bed.start, bed.end )
+        E.info( "read %i regions" % len(regions) )
 
     if options.filename_transcriptome:
         transcripts_samfile = pysam.Samfile( options.filename_transcriptome, 
@@ -195,6 +207,7 @@ def main( argv = None ):
                                  transcripts_samfile,
                                  junctions_samfile,
                                  transcripts,
+                                 regions = regions_to_remove,
                                  unique = options.unique,
                                  remove_contigs = options.remove_contigs,
                                  colour_mismatches = options.colour_mismatches,

@@ -27,7 +27,6 @@ class TranscriptCoverage(ReferenceData):
 
 class GeneCoverage(ReferenceData):
     '''Coverage of reference genes - max transcript coverage per gene.'''
-    mXLabel = "number of transcripts"
     def __call__(self, track, slice = None ):
         return self.getValues( """SELECT max(c.coverage_sense_pcovered) FROM 
                                             %(track)s_transcript_counts as c,
@@ -43,6 +42,9 @@ class CoverageVsLengthByReadDepth(ReferenceData):
     """plot the absolute coverage of a known gene versus its length.
     Dots are colored by read depth.
     """
+
+    def getTracks( self ):
+        return self.getValues( "SELECT * FROM %(reference)s_cuffdiff" )
 
     def __call__(self, track, slice = None):
 
@@ -65,7 +67,8 @@ class CoverageVsLengthByReadDepth(ReferenceData):
 ######################################################################
 ######################################################################
 class CoverageVsFPKM(ReferenceData):
-    '''return 
+    '''return proportion of full length transcripts with varying 
+    expression level (FPKM).
 
     similar to ROC curves.
     '''

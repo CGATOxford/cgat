@@ -258,6 +258,10 @@ def error( message ):
 def critical( message):
     E.critical( message )
 
+def isEmpty( filename ):
+    '''return true if filename is empty.'''
+    return os.stat(filename)[6]==0
+
 def asList( param ):
     '''return a param as a list'''
     if type(param) not in (types.ListType, types.TupleType):

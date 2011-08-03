@@ -1501,7 +1501,9 @@ def runBioProspector( infiles, outfile ):
 
     Bioprospector is run on only the top 10% of peaks.
     '''
-    to_cluster = True
+
+    # bioprospector currently not working on the nodes
+    to_cluster = False
 
     # only use new nodes, as /bin/csh is not installed
     # on the old ones.

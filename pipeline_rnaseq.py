@@ -564,7 +564,7 @@ def writePrunedGTF( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-def mergeAndFilterGTF( infile, outfile ):
+def mergeAndFilterGTF( infile, outfile, logfile ):
     '''sanitize transcripts file for cufflinks analysis.
 
     Merge exons separated by small introns (< 5bp).
@@ -584,19 +584,55 @@ def mergeAndFilterGTF( infile, outfile ):
 
     outf = gzip.open( outfile, "w" )
 
-    E.info( "filtering by contig and removing long introns" )
-
+    E.info( "filtering by contig and removing long introns" )    
     contigs = set(IndexedFasta.IndexedFasta( os.path.join( PARAMS["genome_dir"], PARAMS["genome"]) ).getContigs())
+
+    if "geneset_remove_contigs" in PARAMS:
+        rx_contigs = re.compile( PARAMS["geneset_remove_contigs"] )
+        E.info( "removing contigs %s" % PARAMS["geneset_remove_contigs"] )
+    else:
+        rx_contigs = None
+
+    if "geneset_remove_repetetive_rna" in PARAMS:
+        rna_file = os.path.join( PARAMS["annotations_dir"],
+                                 PARAMS_ANNOTATIONS["interface_rna_gff"] )
+        rna_index = GFF.readAndIndex( GFF.iterator( IOTools.openFile( rna_file, "r" ) ) )
+        E.info( "removing ribosomal RNA in %s" % rna_file )
+    else:
+        rna_index = None
     
     gene_ids = {}
+
+    logf = IOTools.openFile( logfile, "w" )
+    logf.write( "gene_id\ttranscript_id\treason\n" )
+
     for all_exons in GTF.transcript_iterator( GTF.iterator( IOTools.openFile( infile )) ):
 
-        c.info += 1
-
-        if all_exons[0].contig not in contigs:
+        c.input += 1
+        
+        e = all_exons[0]
+        # filtering 
+        if e.contig not in contigs:
             c.missing_contig += 1
+            logf.write( "\t".join( (e.gene_id, e.transcript_id, "missing_contig" )) + "\n" )
             continue
 
+        if rx_contigs and rx_contigs.search(e.contig):
+            c.remove_contig += 1
+            logf.write( "\t".join( (e.gene_id, e.transcript_id, "remove_contig" )) + "\n" )
+            continue
+
+        if rna_index and all_exons[0].source != 'protein_coding':
+            found = False
+            for exon in all_exons:
+                if rna_index.contains( e.contig, e.start, e.end ):
+                    found = True
+                    break
+            if found:
+                logf.write( "\t".join( (e.gene_id, e.transcript_id, "overlap_rna" )) + "\n" )
+                c.overlap_rna += 1
+                continue
+                
         is_ok = True
 
         # keep exons and cds separate by grouping by feature
@@ -630,7 +666,7 @@ def mergeAndFilterGTF( infile, outfile ):
             if not is_ok: break
 
         if not is_ok: 
-            L.info( "removing transcript %s" % all_exons[0].transcript_id )
+            logf.write( "\t".join( (e.gene_id, e.transcript_id, "bad_transcript" )) + "\n" )
             c.skipped += 1
             continue
 
@@ -656,12 +692,16 @@ def mergeAndFilterGTF( infile, outfile ):
                       PARAMS_ANNOTATIONS["interface_geneset_all_gtf"]),
         "reference.gtf.gz" )
 def buildReferenceGeneSet( infile, outfile ):
-    '''sanitize transcripts file for cufflinks analysis.
+    '''sanitize ENSEMBL transcripts file for cufflinks analysis.
 
     Merge exons separated by small introns (< 5bp).
 
     Removes unwanted contigs according to configuration
     value ``geneset_remove_contigs``.
+
+    Removes transcripts overlapping ribosomal genes if 
+    ``geneset_remove_repetitive_rna`` is set. Protein
+    coding transcripts are not removed.
 
     Transcript will be ignored that
        * have very long introns (max_intron_size) (otherwise, cufflinks complains)
@@ -682,8 +722,8 @@ def buildReferenceGeneSet( infile, outfile ):
     tmpfilename2 = P.getTempFilename( "." )
     tmpfilename3 = P.getTempFilename( "." )
 
-    gene_ids = mergeAndFilterGTF( infile, tmpfilename )
-
+    gene_ids = mergeAndFilterGTF( infile, tmpfilename, "%s.removed.gz" % outfile )
+    
     #################################################
     E.info( "adding tss_id and p_id" )
 
@@ -743,7 +783,8 @@ def buildReferenceGeneSet( infile, outfile ):
         
     outf.close()
 
-    writePrunedGTF( tmpfilename3, outfile )
+    # sort gtf file
+    PipelineGeneset.sortGTF( tmpfilename3, outfile )
 
     os.unlink( tmpfilename )
     # make sure tmpfilename2 is NEVER empty
@@ -777,7 +818,7 @@ def buildReferenceGeneSetWithCDS( infile , outfile ):
     '''build a new gene set without protein coding 
     transcripts.'''
     
-    mergeAndFilterGTF( infile, outfile )    
+    mergeAndFilterGTF( infile, outfile, "%s.removed.gz" % outfile )
 
 #########################################################################
 #########################################################################
@@ -1238,6 +1279,12 @@ def buildBAMs( infiles, outfile):
 
     if "tophat_remove_contigs" in PARAMS and PARAMS["tophat_remove_contigs"]:
         options.append( "--remove-contigs=%s" % PARAMS["tophat_remove_contigs"] )
+
+    if "tophat_remove_rna" in PARAMS and PARAMS["tophat_remove_rna"]:
+        options.append( "--filename-regions=<( zcat %s | grep 'repetetive_rna' )" %\
+                            (os.path.join( 
+                    PARAMS["annotations_dir"], 
+                    PARAMS_ANNOTATIONS["interface_genomic_context_bed"]) ) )
 
     if "tophat_remove_mismapped" in PARAMS and PARAMS["tophat_remove_mismapped"]:
         options.append( "--filename-transcriptome=%(transcriptome)s" % locals() )
@@ -2229,6 +2276,7 @@ def buildNovelGeneSet( infiles, outfile ):
 @merge( (buildAbinitioGeneSet, buildReferenceGeneSet,
          os.path.join(PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_repeats_gff"]),
          os.path.join(PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_pseudogenes_gtf"] ),
+         os.path.join(PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_numts_gtf"] ),
          ), "lincrna.gtf.gz" )
 def buildLincRNAGeneSet( infiles, outfile ):
     '''build lincRNA gene set. 
@@ -2248,16 +2296,16 @@ def buildLincRNAGeneSet( infiles, outfile ):
 
     '''
     
-    infile_abinitio, reference_gtf, repeats_gff, pseudogenes_gtf = infiles
+    infile_abinitio, reference_gtf, repeats_gff, pseudogenes_gtf, numts_gtf = infiles
 
     E.info( "indexing geneset for filtering" )
 
-    sections = ("protein_coding", 
-                "lincRNA", 
-                "processed_transcript" )
+    input_sections = ("protein_coding", 
+                      "lincRNA", 
+                      "processed_transcript" )
 
     indices = {}
-    for section in sections:
+    for section in input_sections:
         indices[section] = GTF.readAndIndex( 
             GTF.iterator_filtered( GTF.merged_gene_iterator( GTF.iterator( IOTools.openFile( reference_gtf) )),
                                    source = section ),
@@ -2272,6 +2320,12 @@ def buildLincRNAGeneSet( infiles, outfile ):
     indices["pseudogenes"] = GTF.readAndIndex( GTF.iterator( IOTools.openFile( pseudogenes_gtf) ), with_value = False )
 
     E.info( "added index for pseudogenes" )
+
+    indices["numts"] = GTF.readAndIndex( GTF.iterator( IOTools.openFile( numts_gtf) ), with_value = False )
+
+    E.info( "added index for numts" )
+
+    sections = indices.keys()
 
     total_genes, remove_genes = set(), collections.defaultdict( set )
     inf = GTF.iterator( IOTools.openFile( infile_abinitio ) )
@@ -2322,6 +2376,50 @@ def buildLincRNAGeneSet( infiles, outfile ):
 
     P.run()
 
+#########################################################################
+#########################################################################
+#########################################################################
+@merge( (buildLincRNAGeneSet, buildReferenceTranscriptome ), "lincrna.pseudos.tsv" )
+def annotateLincRNA( infiles, outfile ):
+    '''align lincRNA against reference transcriptome
+    in order to spot pseudogenes.
+    '''
+    
+    linc_fasta, reference_fasta = infiles
+
+    format = ("qi", "qS", "qab", "qae", 
+              "ti", "tS", "tab", "tae", 
+              "s",
+              "pi", 
+              "C")
+    
+    format = "\\\\t".join( ["%%%s" % x for x in format] )
+
+    statement = '''
+    zcat %(linc_fasta)s
+    | python %(scriptsdir)s/gff2fasta.py 
+              --is-gtf 
+              --genome=%(genome_dir)s/%(genome)s 
+              --log=%(outfile)s.log
+    | %(cmd-farm)s --split-at-regex=\"^>(\S+)\" --chunksize=400 --log=%(outfile)s.log
+    "exonerate --target %%STDIN%%
+              --query %(reference_fasta)s
+              --model affine:local
+              --score %(lincrna_min_exonerate_score)i
+              --showalignment no --showsugar no --showcigar no 
+              --showvulgar no
+              --bestn 5
+              --ryo \\"%(format)s\\n\\" 
+    " 
+    | grep -v -e "exonerate" -e "Hostname"
+    | gzip > %(outfile)s.links.gz
+    '''
+
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
 @transform( (buildLincRNAGeneSet,
              buildNovelGeneSet), 
             suffix(".gtf.gz"), 
@@ -3262,6 +3360,49 @@ def buildExonLevelReadCounts( infiles, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
+@collate(buildExonLevelReadCounts,
+         regex(r"exon_counts.dir/(.+)_vs_(.+)\.bed.gz"),  
+         r"\2.exon_counts.load")
+def loadExonLevelReadCounts( infiles, outfile ):
+    '''load exon level read counts.
+    '''
+    
+    to_cluster = USECLUSTER
+
+    # aggregate not necessary for bed12 files, but kept in
+    src = " ".join( [ "<( zcat %s | cut -f 4,7 )" % x for x in infiles] )
+
+    tmpfile = P.getTempFilename( "." )
+    tmpfile2 = P.getTempFilename( "." )
+    
+    statement = '''paste %(src)s 
+                > %(tmpfile)s'''
+    
+    P.run()
+
+    tracks = [P.snip(x, ".bed.gz" ) for x in infiles ]
+    tracks = [re.match( "exon_counts.dir/(\S+)_vs.*", x).groups()[0] for x in tracks ]
+
+    outf = IOTools.openFile( tmpfile2, "w")
+    outf.write( "gene_id\t%s\n" % "\t".join( tracks ) )
+    
+    for line in open( tmpfile, "r" ):
+        data = line[:-1].split("\t")
+        genes = list(set([ data[x] for x in range(0,len(data), 2 ) ]))
+        values = [ data[x] for x in range(1,len(data), 2 ) ]
+        assert len(genes) == 1, "paste command failed, wrong number of genes per line"
+        outf.write( "%s\t%s\n" % (genes[0], "\t".join(map(str, values) ) ) )
+    
+    outf.close()
+
+    P.load( tmpfile2, outfile )
+
+    os.unlink( tmpfile )
+    os.unlink( tmpfile2 )
+
+#########################################################################
+#########################################################################
+#########################################################################
 @follows( buildUnionExons, mkdir( "gene_counts.dir" ) )
 @transform( buildBAMs, 
             regex(r"(\S+).accepted.bam"), 
@@ -3653,6 +3794,15 @@ def aggregateExonLevelReadCounts( infiles, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
+@transform( ( aggregateExonLevelReadCounts),
+            suffix(".tsv.gz"),
+            ".load" )
+def loadAggregateExonLevelReadCounts( infile, outfile ):
+    P.load( infile, outfile, options="--index=gene_id" )
+
+#########################################################################
+#########################################################################
+#########################################################################
 @follows( mkdir( os.path.join( PARAMS["exportdir"], "deseq" ) ) )
 @transform( aggregateExonLevelReadCounts,
             suffix(".exon_counts.tsv.gz"),
@@ -3919,6 +4069,8 @@ def mapping(): pass
           loadReproducibility,
           loadTranscriptsMappability,
           loadTranscriptLevelReadCounts,
+          loadGeneLevelReadCounts,
+          loadExonLevelReadCounts,
           )
 def genesets(): pass
 
