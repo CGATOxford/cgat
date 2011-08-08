@@ -1,6 +1,6 @@
-=============================
-CpG Island Pipeline
-=============================
+===================
+CAPseq Pipeline
+===================
 
 Contents:
 
@@ -8,19 +8,23 @@ Contents:
    :maxdepth: 2
 
    pipeline/Methods.rst
+   pipeline/predicted_cgis.rst
    pipeline/Mapping.rst
-   pipeline/PeakCalling.rst
-   pipeline/Intervals.rst
-   pipeline/IntervalLists.rst
-   pipeline/Annotations.rst
-   pipeline/TSS.rst
-   pipeline/Repeats.rst
-   pipeline/IntervalsCDS.rst
-   pipeline/cpg.rst
-   pipeline/gat.rst
-   pipeline/background.rst
-   pipeline/interval_comparison.rst
-
+   pipeline/macs.rst
+   pipeline/macs_intervals.rst
+   pipeline/macs_annotations.rst
+   pipeline/macs_parameter_correlation.rst
+   pipeline/macs_interval_comparison.rst
+   pipeline/macs_unique_intervals.rst
+   pipeline/macs_shared_intervals.rst
+   pipeline/macs_tss_intervals.rst
+   pipeline/IntervalsByLength.rst
+   pipeline/IntervalsByAvgVal.rst
+   pipeline/IntervalsByPeakVal.rst
+   pipeline/IntervalsByFoldChange.rst
+   pipeline/IntervalsByCDSOverlap.rst
+   pipeline/sicer.rst
+   pipeline/zinba.rst
 .. errorlist::
   
 

@@ -44,7 +44,6 @@ def getPeakShift( infile ):
     '''get peak shift for filename infile (.macs output file).
 
     returns None if no shift found'''
-pipeline_chipseq_intervals.py.orig
 
     shift = None
     with open(infile, "r") as ins:
@@ -242,7 +241,7 @@ def exportMacsAsBed( infile, outfile ):
     track = track[:-len("_macs")]
 
     cc = dbhandle.cursor()
-    statement = "SELECT contig, start, end, interval_id, peakval FROM %s_intervals ORDER by contig, start" % track
+    statement = "SELECT contig, start, end, interval_id, peakval FROM %s_macs_intervals ORDER by contig, start" % track
     cc.execute( statement )
 
     outs = open( outfile, "w")
@@ -604,11 +603,12 @@ def loadMACS( infile, outfile, bamfile ):
             counter.output += 1
     outtemp.close()
 
-    tablename = "%s_intervals" % track
+    tablename = "%s_macs_intervals" % track
     tmpfilename = outtemp.name
 
     statement = '''python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
                        --index=interval_id 
+                       --index=contig,start
                        --table=%(tablename)s 
                    < %(tmpfilename)s > %(outfile)s'''
     P.run()
