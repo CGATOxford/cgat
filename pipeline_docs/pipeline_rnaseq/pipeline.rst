@@ -13,8 +13,10 @@ Contents:
    :maxdepth: 2
 
    pipeline/Methods.rst
+   pipeline/Status.rst
    pipeline/Mapping.rst
    pipeline/GeneModels.rst
+   pipeline/Validation.rst
    pipeline/GeneExpression.rst
    pipeline/DifferentialGeneExpression.rst
    pipeline/CodingTranscription.rst

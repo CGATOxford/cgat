@@ -384,10 +384,13 @@ class FilePool:
 
         self.mFiles = {}
         self.mOutputPattern = output_pattern
-        if output_pattern and output_pattern.endswith( ".gz" ):
-            self.open = gzip.open
-        else:
-            self.open = open
+
+        self.open = open
+
+        if output_pattern:
+            _, ext = os.path.splitext( output_pattern )
+            if ext.lower() in (".gz", ".z"):
+                self.open = gzip.open
 
         self.mCounts = collections.defaultdict(int)
         self.mHeader = header
@@ -662,7 +665,7 @@ def openFile( filename, mode = "r", create_dir = False ):
         if dirname and not os.path.exists( dirname ):
             os.makedirs( dirname )
             
-    if ext.lower() in (".gz", ):
+    if ext.lower() in (".gz", ".z"):
         return gzip.open( filename, mode )
     else:
         return open( filename, mode )

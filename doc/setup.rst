@@ -20,6 +20,14 @@ Once checked-out, you can get the latest changes via pulling and updating::
    hg pull 
    hg update
 
+Some scripts contain cython code that needs to be recompiled if the
+script or the pysam_ installation has changed. To rebuild all scripts,
+for example after updating the repository, type::
+
+   python src/rebuild_extensions.py
+
+Recompilation requires a C compiler to be installed. 
+
 Setting up the computing environment
 ====================================
 

@@ -2,6 +2,8 @@
 Transcripts models
 ==================
 
+.. _Classification of transcript models:
+
 Classification of transcript models
 ====================================
 

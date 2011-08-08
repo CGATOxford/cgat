@@ -181,16 +181,26 @@ class CuffCompareResult:
               "loci", "loci_multi_exon" ]
     
 def parseTranscriptComparison( infile ):
-    '''read cufflinks output in infile stream.
+    '''read cufflinks 1.0.3 output in infile stream.
 
     returns a two-level dictionary mapping with levels track and contig.
     '''
 
+    
+    firstline = infile.readline()
+    result = collections.defaultdict( dict )
+    tracks = []
+
     def __blocker( infile ):
+        # 'Summary for dataset'
+        # comes after 'Genomic sequence'.
+
         blocks = {}
         contig, block = None, []
+        # whether to yield
         y = False
         for line in infile:
+
             if line.startswith("#> Genomic sequence"):
                 if block: blocks[contig] = block
                 if y:
@@ -202,26 +212,32 @@ def parseTranscriptComparison( infile ):
                 block = []
                 continue
             elif line.startswith( "#= Summary for dataset:" ):
+                if block: blocks[contig] = block
+                if y:
+                    yield dataset, blocks
+                    blocks = {}
+                    y = False
+
                 dataset = re.match("#= Summary for dataset: (\S+)", line).groups()[0]
                 contig = "all"
                 block = []
+                
                 y = True
                 continue
-                
+
             block.append( line )
 
         blocks[contig] = block
         yield dataset, blocks
-    
-    result = collections.defaultdict( dict )
-    tracks = []
+
     for track, blocks in __blocker( infile ):
+        print track
         tracks.append( track )
         for contig, block in blocks.iteritems():
             r = CuffCompareResult()
             r.fromLines( block )
             result[track][contig] = r
-
+                
     return tracks, result
 
 Locus = collections.namedtuple( "Locus", "locus_id contig strand start end transcript_ids transcripts" )
@@ -250,13 +266,18 @@ def iterate_tracking( infile ):
             if c == "-": 
                 transcripts.append( None )
             else: 
-                (gene_id, transcript_id, fmi, fpkm, conf_lo, conf_hi, cov, length )= c.split("|")
-                (fpkm, conf_lo, conf_hi, cov) = map(float, (fpkm, conf_lo, conf_hi, cov))
-                if length == "-": length = 0
-                (fmi, length) = map( int, (fmi, length) )
+                # there can be multiple transcripts
+                for cc in c.split( "," ):
+                    try:
+                        (gene_id, transcript_id, fmi, fpkm, conf_lo, conf_hi, cov, length )= cc.split("|")
+                    except ValueError:
+                        raise ValueError( "parsing error for field '%s'" % cc )
+                    (fpkm, conf_lo, conf_hi, cov) = map(float, (fpkm, conf_lo, conf_hi, cov))
+                    if length == "-": length = 0
+                    (fmi, length) = map( int, (fmi, length) )
 
-                transcripts.append( TranscriptInfo._make( 
-                        ( gene_id, transcript_id, fmi, fpkm, conf_lo, conf_hi, cov, length )) )
+                    transcripts.append( TranscriptInfo._make( 
+                            ( gene_id, transcript_id, fmi, fpkm, conf_lo, conf_hi, cov, length )) )
                 
         yield Tracking._make( (transfrag_id, locus_id, ref_gene_id, ref_transcript_id, code, transcripts ) )
 

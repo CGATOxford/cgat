@@ -6,6 +6,9 @@ from RnaseqReport import *
 class MappingSummary( RnaseqTracker, SingleTableTrackerRows ):
     table = "view_mapping"
 
+class TophatSummary( RnaseqTracker, SingleTableTrackerRows ):
+    table = "tophat_stats"
+
 class BamSummary( RnaseqTracker, SingleTableTrackerRows ):
     table = "bam_stats"
 
@@ -27,6 +30,12 @@ class AlignmentQualityByCycle( RnaseqTracker, SingleTableTrackerHistogram ):
 class AlignmentQualityDistribution( RnaseqTracker, SingleTableTrackerHistogram ):
     table = "alignment_stats_quality_distribution_metrics"
     column = "quality"
+
+class MappingContext( RnaseqTracker, SingleTableTrackerRows ):
+    table = "context_stats"
+
+class FilteringSummary( RnaseqTracker, SingleTableTrackerRows ):
+    table = "mapping_stats"
 
 ##############################################################
 ##############################################################

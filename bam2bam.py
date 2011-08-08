@@ -32,8 +32,7 @@ bam2bam.py - modify bam files
 Purpose
 -------
 
-This script modifies bam files by going through the whole
-file.
+This script modifies bam files by going through the whole file.
 
 .. note::
    You need to redirect logging information to a file or turn it off
@@ -62,6 +61,10 @@ Documentation
 --unset-unmapped_mapq: some tools set the mapping quality of unmapped reads. This
    causes a violation in the Picard tools.
 
+--remove-better: remove alignments that are worse than alignments in the :term:`bam`
+   formatted file ``--filter-bam``. 
+  
+
 Code
 ----
 
@@ -73,6 +76,10 @@ import Experiment as E
 import IOTools
 import pysam
 import GFF
+
+import pyximport
+pyximport.install(build_in_temp=False)
+import _bam2bam
 
 def main( argv = None ):
     """script main.
@@ -92,54 +99,95 @@ def main( argv = None ):
     parser.add_option( "--unset-unmapped-mapq", dest="unset_unmapped_mapq", action="store_true",
                        help = "sets the mapping quality of unmapped to 0 [%default]" )
 
+    parser.add_option( "--reference-bam", dest="reference_bam", type="string",
+                       help = "bam-file to filter with [%default]" )
+
+    parser.add_option( "--filter", dest="filter", action="append", type="choice",
+                       choices=('NM', 'CM', 'mapped', 'unique' ),
+                       help = "flag to use to determine better match [%default]" )
+    
     parser.add_option( "--sam", dest="output_sam", action="store_true",
                        help = "output in sam format [%default]" )
 
     parser.set_defaults(
+        filter = [],
         set_nh = False,
         unset_unmapped_mapq = False,
         output_sam = False,
+        reference_bam = None,
         )
 
     ## add common options (-h/--help, ...) and parse command line 
     (options, args) = E.Start( parser, argv = argv )
 
-    pysam_in = pysam.Samfile( "-" )
+    # reading bam from stdin does not work with only "r" tag
+    pysam_in = pysam.Samfile( "-", "rb" )
+
     if options.output_sam:
         pysam_out = pysam.Samfile( "-", "wh", template = pysam_in )
     else:
         pysam_out = pysam.Samfile( "-", "wb", template = pysam_in )
 
+    if options.filter:
+        if "NM" in options.filter:
+            remove_mismatches = True
+            colour_mismatches = False
+        elif "CM" in options.filter:
+            remove_mismatches = True
+            colour_mismatches = True
 
-    # set up the modifying iterators
-    it = pysam_in
+        if remove_mismatches:
+            if not options.reference_bam:
+                raise ValueError( "requiring reference bam file for removing by mismatches")
 
-    if options.unset_unmapped_mapq:
-        def unset_unmapped_mapq( i ):
-            for read in i:
-                if read.is_unmapped:
-                    read.mapq = 0
-                yield read
-        it = unset_unmapped_mapq( it )
+            pysam_ref = pysam.Samfile( options.reference_bam, "rb" )
+        else:
+            pysam_ref = None
 
-    if options.set_nh:
-        def set_nh( i ):
-            for key, reads in itertools.groupby( i, lambda x: x.qname ):
-                l = list(reads)
-                nh = len(l)
-                for read in l:
-                    if not read.is_unmapped:
-                        t = dict( read.tags )
-                        t['NH'] = nh
-                        read.tags = list(t.iteritems())
+        c = _bam2bam.filter_bam( pysam_in, pysam_out, pysam_ref,
+                                 remove_nonunique = "unique" in options.filter,
+                                 remove_contigs = None,
+                                 remove_unmapped = "mapped" in options.filter,
+                                 remove_mismatches = remove_mismatches,
+                                 colour_mismatches = colour_mismatches )
+        
+        options.stdlog.write( "category\tcounts\n%s\n" % c.asTable() )
+
+    else:
+        # set up the modifying iterators
+        it = pysam_in.fetch( until_eof = True )
+
+        if options.unset_unmapped_mapq:
+            def unset_unmapped_mapq( i ):
+                for read in i:
+                    if read.is_unmapped:
+                        read.mapq = 0
                     yield read
-        it = set_nh( it )
+            it = unset_unmapped_mapq( it )
 
-    # read and output
-    for read in it: pysam_out.write( read )
+        if options.set_nh and False:
+            def set_nh( i ):
 
-    pysam_in.close()
-    pysam_out.close()
+                for key, reads in itertools.groupby( i, lambda x: x.qname ):
+                    l = list(reads)
+                    nh = len(l)
+                    for read in l:
+                        if not read.is_unmapped:
+                            t = dict( read.tags )
+                            t['NH'] = nh
+                            read.tags = list(t.iteritems())
+                        yield read
+            it = set_nh( it )
+
+        if options.set_nh:
+            it = _bam2bam.SetNH( it )
+
+        # read and output
+        for read in it: 
+            pysam_out.write( read )
+
+        pysam_in.close()
+        pysam_out.close()
 
     ## write footer and output benchmark information.
     E.Stop()

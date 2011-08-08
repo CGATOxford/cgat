@@ -31,8 +31,8 @@ Benchmark: RNASeq-Mapping
 :Tags: Python
 
 This pipeline takes one or more fastq formatted file from an RNASeq experiment
-and applies various mappers on it. The focus is here on sensitivity
-versus specificity. The pipeline will not
+and rus various mappers on it. The focus is here on sensitivity versus specificity. 
+The pipeline will not
 
    * rigorously time the tools 
    * do an exhaustive parameter search
@@ -49,39 +49,34 @@ Overview
 Mapping
 -------
 
-The pipeline aligns reads to a genome using a variety of mappers
+The pipeline aligns reads to a genome using a variety of mappers. Currently implemented are:
 
    * tophat
    * shrimp
    * bfast
    * bwa
    * bowtie
+   * novoalignCS
 
 Mappers are configured to only report "best" matches', usually defined as those
-with a minimum number of mismatches. Up to ten matches can be reported per read.
-If there are more than ten matches for a read, the read is designated to be unmapped.
+with a minimum number of mismatches. 
 
-Tuning mappers depends on the input set, notably the length and quality of reads. 
-
-For most mappers, the variables to tune are:
-
-   * read trimming
-   * the seed length
-   * the number of mismatches in the seed
-   * the number of mismatches in the full alignment
+Mappers can be tuned in the configuration file. By default, no tuning takes place.
 
 Validation
 ----------
 
-Unless reads have come from a simulated data set, validation will be difficult as there
-is no gold standard. Instead, the methods have to be compared against each other and with
-respect to a reference gene set.
+Validation with simulated data is straight-forward as the origin of a read is known.
+Validation of real data needs to use indirect proxies to assess mapping quality.
+Here, we use known protein coding genes as reference points on the genome. The expectation
+is that a good mapper will predominantly map to protein coding exons.
 
-Validation without a gold standard
-++++++++++++++++++++++++++++++++++
+This section provides a list of the criteria that can be used for validation
 
-In the absence of a gold standard, a number of indirect criteria can be used to decide
-which mapper is best. Some simple criteria are:
+Number of mapped reads
+++++++++++++++++++++++
+
+The number of mapped reads is a simple measure of the sensitivity of a mapper.
 
    * Number of reads mapped: More mapped reads is better as it increases coverage.
    
@@ -89,12 +84,19 @@ which mapper is best. Some simple criteria are:
       is better.
 
 These criteria are confounded. For example, if a mapper tolerates more mismatches,
-the number of mapped reads will increase (specificity) while the number of uniquely 
-mapped reads  might drop.
+the number of mapped reads will increase while the number of uniquely 
+mapped reads might drop.
 
-Comparison between mappers
-++++++++++++++++++++++++++
+See table :file:`view_mapping`.
 
+Spliced reads
++++++++++++++
+
+For a splicing mapper, the more reads that are spliced and mapped, the better.
+Splicing can also be used to measure selectivity. Both ends of a spliced read
+should overlap with exons.
+
+See table :file:`exon_validation`.
 
 Using strandedness
 ++++++++++++++++++
@@ -103,13 +105,31 @@ If the library is stranded, sense matches in protein coding transcripts should
 vastly outnumber antisense matches. A measure of specificity is thus the number
 of antisense reads in protein coding exons.
 
+See tables :file:`<track>_exon_coverage` and :file:`<track>_region_coverage`.
+
 Using exon boundaries
 +++++++++++++++++++++
 
 For transcript assembly, exon boundaries should be delineated as accurately as possible.
-Also, spliced reads are essential to chain reads together.
 
+See tables :file:`<track>_overrun``.
 
+Identifying mismapped reads
++++++++++++++++++++++++++++
+
+By mapping reads against both the genome and the transcriptome and reconciling the locations,
+mismapped reads can be identified as those that map to a transcript, but map to the genome in
+a location that is not annotated as that particular transcript.
+
+See table :file:`transcriptome_validation`.
+
+Comparison between mappers
+++++++++++++++++++++++++++
+
+Consistency between mappers can also be used to gauge the effect of read quality onto
+mapping.
+
+See table :file:`read_correspondence`.
 
 Configuration
 =============
@@ -117,7 +137,7 @@ Configuration
 Input
 =====
 
-The pipeline expects one or more ``fastq.gz`` files in the
+The pipeline expects one or more ``.fastq.gz`` files in the
 working directory.
 
 Optional inputs
@@ -136,17 +156,12 @@ from ruffus import *
 
 import Experiment as E
 import logging as L
-import Database, CSV
+import Database
 
 import sys, os, re, shutil, itertools, math, glob, time
 
 import numpy, sqlite3
-import GTF, IOTools
-import Tophat
-from rpy2.robjects import r as R
-import rpy2.robjects as ro
-
-import Stats
+import IOTools
 
 ###################################################
 ###################################################
@@ -237,11 +252,14 @@ def buildCodingRegions( infile, outfile ):
 ###################################################################
 ## Pipeline start
 ###################################################################
-@transform( "data*.fastq.gz", 
-            suffix(".fastq.gz" ),
+@transform( "bfast_*.ini", 
+            suffix( ".ini" ),
+            add_inputs( "data.fastq.gz" ),
             ".bfast.sam.gz" )
-def mapReadsWithBFAST( infile, outfile ):
+def mapReadsWithBFAST( infiles, outfile ):
     '''map reads with bfast'''
+
+    inifile, infile = infiles
 
     to_cluster = True
     job_options= "-pe dedicated %i -R y -l mem_free=16G" % PARAMS["bfast_threads"] 
@@ -288,11 +306,14 @@ def mapReadsWithBFAST( infile, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-@transform( "data*.fastq.gz", 
-            suffix(".fastq.gz" ),
+@transform( "shrimp_*.ini", 
+            suffix( ".ini" ),
+            add_inputs( "data.fastq.gz" ),
             ".shrimp.sam.gz" )
-def mapReadsWithShrimp( infile, outfile ):
+def mapReadsWithShrimp( infiles, outfile ):
     '''map reads with shrimp'''
+
+    inifile, infile = infiles
 
     to_cluster = USECLUSTER
     job_options= "-pe dedicated %i -R y -l mem_free=64G" % PARAMS["shrimp_threads"] 
@@ -313,11 +334,14 @@ def mapReadsWithShrimp( infile, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-@transform( "data*.fastq.gz", 
-            suffix(".fastq.gz" ),
+@transform( "novoalign_*.ini", 
+            suffix( ".ini" ),
+            add_inputs( "data.fastq.gz" ),
             ".novoalign.sam.gz" )
-def mapReadsWithNovoalign( infile, outfile ):
+def mapReadsWithNovoalign( infiles, outfile ):
     '''map reads with shrimp'''
+
+    inifile, infile = infiles
 
     to_cluster = USECLUSTER
     job_options= "-pe dedicated %i -R y -l mem_free=64G" % PARAMS["novoalign_threads"] 
@@ -340,11 +364,14 @@ def mapReadsWithNovoalign( infile, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-@transform( "data*.bwafastq.gz", 
-            suffix(".bwafastq.gz" ),
-            ".bwa.sam.gz" )
-def mapReadsWithBWA( infile, outfile ):
+@transform( "bwa_*.ini", 
+            suffix( ".ini" ),
+            add_inputs( "data.bwafastq.gz" ),
+            ".sam.gz" )
+def mapReadsWithBWA( infiles, outfile ):
     '''map reads with shrimp'''
+
+    inifile, infile = infiles
 
     to_cluster = USECLUSTER
     job_options= "-pe dedicated %i -R y -l mem_free=64G" % PARAMS["bwa_threads"] 
@@ -366,13 +393,17 @@ def mapReadsWithBWA( infile, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-@transform( "*.fastq.gz", 
-            suffix(".fastq.gz" ),
-            ".tophat.bam" )
-def mapReadsWithTophat( infile, outfile ):
+@transform( "tophat_*.ini", 
+            suffix( ".ini" ),
+            add_inputs( "data.fastq.gz" ),
+            ".bam" )
+def mapReadsWithTophat( infiles, outfile ):
     '''map reads with tophat
 
     '''
+    inifile, infile = infiles
+
+    local_params = P.loadParameters( inifile )
 
     to_cluster = USECLUSTER
     job_options= "-pe dedicated %i -R y -l mem_free=16G" % PARAMS["tophat_threads"] 
@@ -411,18 +442,22 @@ def mapReadsWithTophat( infile, outfile ):
     rm -f %(tmpfile)s.csfasta %(tmpfile)s.qual
     '''
 
-    P.run()
+    # use local parameters to overwrite default ones.
+    P.run( **local_params )
 
     os.unlink( tmpfile )
 
 ###################################################################
 ###################################################################
 ###################################################################
-@transform( ("data*.fastq.gz", "strictdata.fastq.gz", "permissive.fastq.gz"),
-            suffix(".fastq.gz" ),
+@transform( "bowtie_*.ini", 
+            suffix( ".ini" ),
+            add_inputs( "data.fastq.gz" ),
             ".bowtie.sam.gz" )
-def mapReadsWithBowtie( infile, outfile ):
+def mapReadsWithBowtie( infiles, outfile ):
     '''map reads with bowtie'''
+
+    inifile, infile = infiles
 
     to_cluster = USECLUSTER
     job_options= "-pe dedicated %i -R y -l mem_free=16G" % PARAMS["bowtie_threads"] 
@@ -448,17 +483,14 @@ def mapReadsWithBowtie( infile, outfile ):
 
     P.run()
 
-###################################################################
-###################################################################
-###################################################################
-@transform( (mapReadsWithBowtie, 
-             mapReadsWithShrimp,
-             mapReadsWithNovoalign,
-             mapReadsWithBFAST,
-             mapReadsWithBWA ),
-            suffix(".sam.gz"),
-            add_inputs( os.path.join(PARAMS["annotations_dir"],
-                                     PARAMS_ANNOTATIONS["interface_contigs"] ) ),
+@transform(  (mapReadsWithBowtie,
+              mapReadsWithShrimp,
+              mapReadsWithNovoalign,
+              mapReadsWithBFAST,
+              mapReadsWithBWA ),
+             suffix(".sam.gz"),
+             add_inputs( os.path.join(PARAMS["annotations_dir"],
+                                      PARAMS_ANNOTATIONS["interface_contigs"] ) ),
             ".bam" )
 def buildBAMs( infiles, outfile ):
     '''build BAM files.'''
@@ -512,12 +544,15 @@ def buildReferenceTranscriptome( infile, outfile ):
 
     The reference transcriptome contains all known 
     protein coding transcripts.
+
+    The sequences include both UTR and CDS.
     '''
 
     to_cluster = USECLUSTER
 
     statement = '''
     zcat %(infile)s
+    | awk '$3 == "exon"'
     | python %(scriptsdir)s/gff2fasta.py
         --is-gtf
         --genome=%(genome_dir)s/%(genome)s
@@ -551,7 +586,7 @@ def buildReferenceTranscriptome( infile, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-@transform( ("data*.fastq.gz" ),
+@transform( ("*.fastq.gz" ),
             suffix(".fastq.gz" ),
             add_inputs( buildReferenceTranscriptome, 
                         os.path.join(PARAMS["annotations_dir"],
@@ -587,8 +622,10 @@ def mapReadsWithBowtieAgainstTranscriptome( infiles, outfile ):
     bowtie -q
            --sam 
            -C
+           --un /dev/null
            --threads %(bowtie_threads)s
-           -v 2 --best --strata -a
+           %(transcriptome_options)s 
+           --best --strata -a
            %(prefix)s_cs
            %(tmpfile)s
     | python %(scriptsdir)s/bam2bam.py --sam --set-nh --log=%(outfile)s.log
@@ -658,6 +695,9 @@ def checkMappedReadsAgainstTranscriptome( infiles, outfile):
     '''
     P.run()
 
+###################################################################
+###################################################################
+###################################################################
 @merge( checkMappedReadsAgainstTranscriptome, "transcriptome_validation.load" )
 def loadTranscriptomeValidation( infiles, outfile ):
     '''load transcriptome validation data into database.'''
@@ -681,6 +721,247 @@ def loadTranscriptomeValidation( infiles, outfile ):
     '''
 
     P.run()
+
+###################################################################
+###################################################################
+###################################################################
+@transform( (mapping), 
+            suffix(".bam"),
+            ".mapped_reads.gz" )
+def buildListOfMappedReadsGenome( infile, outfile ):
+    '''compile list of reads mapped to transcripts.'''
+    to_cluster = USECLUSTER
+
+    statement = '''
+    samtools view %(infile)s 
+    | awk '$3 != "*"'
+    | cut -f 1
+    | sort | uniq -c
+    | awk 'BEGIN { printf("read\\tcounts\\n"); }
+           { printf("%%s\\t%%i\\n", $2, $1); }'
+    | gzip
+    > %(outfile)s
+    '''
+    P.run()
+
+
+@merge( "refcoding.junctions.gz", "junctions.fa" )
+def buildJunctionsDB( infiles, outfile ):
+    '''build a database of all junctions.'''
+
+    to_cluster = USECLUSTER
+    outfile_junctions = outfile + ".junctions.bed.gz"
+    min_anchor_length = 3
+    read_length = 50
+    infiles = (infiles, )
+
+    tmpfile = P.getTempFile( "." )
+
+    for infile in infiles:
+        if infile.endswith(".bam"):
+            junctions_file = P.snip( infile, ".bam" ) + ".junctions.bed.gz"
+            columns = (0,1,2,5)
+        else:
+            junctions_file = infile
+            columns = (0,1,2,3)
+
+        if not os.path.exists( junctions_file ):
+            E.warn( "can't find junctions file '%s'" % junctions_file )
+            continue
+
+        inf = IOTools.openFile( junctions_file )
+        for line in inf:
+            if line.startswith("#"): continue
+            if line.startswith("track"): continue
+            data = line[:-1].split("\t")
+            try:
+                tmpfile.write( "\t".join( [data[x] for x in columns] ) + "\n" )
+            except IndexError:
+                raise IndexError( "parsing error in line %s" % line)
+
+    tmpfile.close()
+    tmpfilename = tmpfile.name
+    
+    statement = '''
+    sort %(tmpfilename)s | gzip > %(outfile_junctions)s
+    '''
+
+    P.run()
+
+    os.unlink( tmpfilename )
+
+    E.info( "building junctions database" )
+    statement = '''
+    juncs_db %(min_anchor_length)i %(read_length)i 
+              <( zcat %(outfile_junctions)s )
+              /dev/null /dev/null 
+              %(bowtie_genome_dir)s/%(genome)s.fa
+              > %(outfile)s
+              2> %(outfile)s.log
+    '''
+    P.run()
+    
+    E.info( "indexing junctions database" )
+
+    prefix = P.snip( outfile, ".fa" )
+
+    # build raw index
+    statement = '''
+    bowtie-build -f %(outfile)s %(prefix)s >> %(outfile)s.log 2>&1
+    '''
+
+    P.run()
+
+    # build color space index
+    statement = '''
+    bowtie-build -C -f %(outfile)s %(prefix)s_cs >> %(outfile)s.log 2>&1
+    '''
+
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+##
+#########################################################################
+@transform( ("*.fastq.gz" ),
+            suffix(".fastq.gz" ),
+            add_inputs( buildJunctionsDB, 
+                        os.path.join(PARAMS["annotations_dir"],
+                                     PARAMS_ANNOTATIONS["interface_contigs"] ) ),
+            r"\1.junc.bam" )
+def mapReadsWithBowtieAgainstJunctions( infiles, outfile ):
+    '''map reads from short read archive sequence using bowtie against
+    splice junctions.
+
+    The reads are converted to genomic coordinates.
+    '''
+
+    job_options= "-pe dedicated %i -R y -l mem_free=16G" % PARAMS["bowtie_threads"] 
+
+    tmpfile = P.getTempFilename()
+
+    infile, reffile, contigs = infiles
+    track = P.snip( outfile, ".bam" )
+    prefix = P.snip( reffile, ".fa" )
+
+    to_cluster = USECLUSTER
+    statement = '''
+    gunzip < %(infile)s > %(tmpfile)s;
+    checkpoint;
+    bowtie -q
+           --sam 
+           -C
+           --un /dev/null
+           --threads %(bowtie_threads)s
+           %(transcriptome_options)s 
+           --best --strata -a
+           %(prefix)s_cs
+           %(tmpfile)s
+    | python %(scriptsdir)s/bam2bam.py --set-nh --log=%(outfile)s.log
+    | python %(scriptsdir)s/rnaseq_junction_bam2bam.py --contig-sizes=%(contigs)s --log=%(outfile)s.log
+    | samtools sort - %(track)s;
+    checkpoint;
+    samtools index %(outfile)s
+    checkpoint;
+    rm -f %(tmpfile)s
+    '''
+    
+    P.run()
+    
+    os.unlink( tmpfile )
+
+###################################################################
+###################################################################
+###################################################################
+@transform( (mapReadsWithBowtieAgainstTranscriptome, mapReadsWithBowtieAgainstJunctions),
+            suffix(".bam"),
+            ".mapped_reads.gz" )
+def buildListOfMappedReadsTranscriptome( infile, outfile ):
+    '''compile list of reads mapped to transcripts.'''
+    to_cluster = USECLUSTER
+
+    statement = '''
+    samtools view %(infile)s 
+    | awk '$3 != "*"'
+    | cut -f 1
+    | sort | uniq -c
+    | awk 'BEGIN { printf("read\\tcounts\\n"); }
+           { printf("%%s\\t%%i\\n", $2, $1); }'
+    | gzip
+    > %(outfile)s
+    '''
+    P.run()
+
+
+###################################################################
+###################################################################
+###################################################################
+@transform( buildListOfMappedReadsGenome, 
+            suffix(".mapped_reads.gz"),
+            add_inputs( buildListOfMappedReadsTranscriptome ),
+            ".missed_transcriptome.gz" )
+def buildMissedTranscriptomeReads( infiles, outfile): 
+    '''compile list of reads mapped to transcriptome that fail to match
+    to the genome.
+    '''
+    genomefile, juncfile, transfile = infiles
+    to_cluster = USECLUSTER
+
+    statement = '''
+    perl %(scriptsdir)s/set_rest.pl <( zcat %(genomefile)s ) <( zcat %(transfile)s ) 
+    | gzip
+    > %(outfile)s
+    '''
+    P.run()
+
+###################################################################
+###################################################################
+###################################################################
+@transform( buildListOfMappedReadsGenome, 
+            suffix(".mapped_reads.gz"),
+            add_inputs( buildListOfMappedReadsTranscriptome ),
+            ".missed_junctions.gz" )
+def buildMissedJunctionsReads( infiles, outfile): 
+    '''compile list of reads mapped to junctions.
+    '''
+    genomefile, juncfile, transffile = infiles
+    to_cluster = USECLUSTER
+
+    statement = '''
+    perl %(scriptsdir)s/set_rest.pl <( zcat %(genomefile)s ) <( zcat %(juncfile)s ) 
+    | gzip
+    > %(outfile)s
+    '''
+    P.run()
+
+###################################################################
+###################################################################
+###################################################################
+@merge( (buildMissedTranscriptomeReads, buildMissedJunctionsReads), "missed_reads.load" )
+def loadMissedReadCounts( infiles, outfile ):
+    '''load summary table of numbers of missed reads.'''
+    
+    def _getlines( inf ):
+        return len(IOTools.openFile(inf).readlines()) - 1
+    
+    tmpfile = P.getTempFile()
+
+    infiles = sorted(infiles)
+    
+    tmpfile.write( "track\tmapped_genome\tmissed_junctions\tmissed_transcriptome\n" )
+
+    for x in range(0, len(infiles), 2 ):
+        junctions, transcriptome= infiles[x], infiles[x+1]
+        track = P.snip( junctions, ".missed_junctions.gz" )
+        mapped_genome = _getlines( track + ".mapped_reads.gz" )
+        tmpfile.write( "%s\t%i\t%i\t%i\n" % (track, 
+                                             mapped_genome,
+                                             _getlines( junctions),
+                                             _getlines( transcriptome) ) )
+    tmpfile.close()
+    P.load( tmpfile.name, outfile )
+    os.unlink( tmpfile.name )
 
 ###################################################################
 ###################################################################
@@ -711,17 +992,20 @@ def countReads( infile, outfile ):
 @follows( countReads )
 @transform( mapping,
             suffix(".bam"),
+            add_inputs( "data.nreads"),
             ".readstats" )
-def buildBAMStats( infile, outfile ):
+def buildBAMStats( infiles, outfile ):
     '''count number of reads mapped, duplicates, etc.
     '''
     to_cluster = USECLUSTER
+
+    infile, readsfile = infiles
 
     def __getReads( fn ):
         return int(open(fn).readlines()[0])
 
     track = infile[:infile.index(".")]
-    nreads = __getReads( track + ".nreads" )
+    nreads = __getReads( readsfile )
 
     statement = '''python
     %(scriptsdir)s/bam2stats.py
@@ -1075,7 +1359,9 @@ def loadAlignmentStats( infiles, outfile ):
           loadAlignmentStats,
           loadTranscriptomeValidation,
           loadExonValidation,
-          loadReadCorrespondence )
+          loadReadCorrespondence,
+          buildMissedJunctionsReads,
+          buildMissedTranscriptomeReads )
 def validate(): pass
 
 @follows( validate )

@@ -49,6 +49,10 @@ class DefaultOptions:
     stdlog = sys.stdout
     stdout = sys.stdout
     stderr = sys.stderr
+    stdin = sys.stdin
+    loglevel = 2
+    timeit_file = None
+    
 
 global_starting_time = time.time()
 global_options = DefaultOptions()
@@ -103,6 +107,7 @@ def GetFooter():
 def Start( parser = None,
            argv = sys.argv,
            quiet = False,
+           no_parsing = False,
            add_csv_options = False,
            add_mysql_options = False,
            add_psql_options = False,
@@ -227,7 +232,8 @@ def Start( parser = None,
                              password = "",
                              database = "" )
 
-    (global_options, global_args) = parser.parse_args( argv[1:] )
+    if not no_parsing:
+        (global_options, global_args) = parser.parse_args( argv[1:] )
 
     if add_pipe_options:
         if global_options.stdout != sys.stdout: 

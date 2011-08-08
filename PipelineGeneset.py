@@ -9,7 +9,7 @@ import sys, re, os, tempfile, collections, shutil, gzip, sqlite3
 import IOTools
 import Pipeline as P
 import Experiment as E
-import GTF
+import GTF, GFF
 
 try:
     PARAMS = P.getParameters()
@@ -748,7 +748,125 @@ def buildPseudogenes( infiles, outfile ):
     outf.close()
         
     E.info( "exons: %s" % str(c))
+
+
+
+def buildNUMTs( infile, outfile ):
+    '''build annotation with nuclear mitochondrial sequences.
+
+    map mitochondrial chromosome against genome using
+    exonerate
+    '''
+
+    tmpfile_mito = P.getTempFilename( ".")
     
+    statement = '''
+    python %(scriptsdir)s/index_fasta.py 
+           --extract=%(numts_mitochrom)s
+           --log=%(outfile)s.log
+           %(genome_dir)s/%(genome)s
+    > %(tmpfile_mito)s
+    '''
 
+    P.run()
+    
+    if P.isEmpty( tmpfile_mito ):
+        E.warn( "no mitochondrial genome found." )
+        P.touch( outfile )
+        return
 
+    format = ("qi", "qS", "qab", "qae", 
+              "ti", "tS", "tab", "tae", 
+              "s",
+              "pi", 
+              "C")
+    
+    format = "\\\\t".join( ["%%%s" % x for x in format] )
+
+    # collect all results
+    min_score = 100
+
+    statement = '''
+    cat %(genome_dir)s/%(genome)s.fasta
+    | %(cmd-farm)s --split-at-regex=\"^>(\S+)\" --chunksize=1 --log=%(outfile)s.log
+    "exonerate --target %%STDIN%%
+              --query %(tmpfile_mito)s
+              --model affine:local
+              --score %(min_score)i
+              --showalignment no --showsugar no --showcigar no 
+              --showvulgar no
+              --ryo \\"%(format)s\\n\\" 
+    " 
+    | grep -v -e "exonerate" -e "Hostname"
+    | gzip > %(outfile)s.links.gz
+    '''
+
+    P.run()
+
+    # convert to gtf
+    inf = IOTools.openFile( "%s.links.gz" % outfile )
+    outf = IOTools.openFile( outfile, "w" )
+
+    min_score = PARAMS["numts_score"]
+    
+    c = E.Counter()
+
+    for line in inf:
+        (query_contig, query_strand, query_start, query_end,
+         target_contig, target_strand, target_start, target_end,
+         score, pid, alignment ) = line[:-1].split("\t")
+
+        c.input += 1
+        score = int(score)
+        if score < min_score: 
+            c.skipped += 1
+            continue
+
+        if target_strand == "-":
+            target_start, target_end = target_end, target_start
+
+        gff = GTF.Entry()
+        gff.contig = target_contig
+        gff.start, gff.end = int( target_start), int(target_end)
+        assert gff.start < gff.end
+
+        gff.strand = target_strand
+        gff.score = int(score)
+        gff.feature = "numts"
+        gff.gene_id = "%s:%s-%s" % (query_contig,query_start,query_end)
+        gff.transcript_id = "%s:%s-%s" % (query_contig,query_start,query_end)
+        outf.write("%s\n" % str(gff))
+        c.output += 1
+        
+    inf.close()
+    outf.close()
+
+    E.info("filtering numts: %s" % str(c))
+    
+def sortGTF( infile, outfile,order = "contig+gene" ):
+    '''sort a gtf file - the sorting is performed on the cluster.
+
+    Ssee gtf2gtf.py for valid options for order.
+    '''
+    to_cluster = True
+
+    cmds = []
+
+    if infile.endswith(".gz"):
+        uncompress = "zcat"
+    else:
+        # wastefull
+        uncompress = "cat"
+        
+    if outfile.endswith(".gz"):
+        compress = "gzip"
+    else:
+        compress = "cat"
+
+    # remove \0 bytes within gtf file
+    statement = '''%(uncompress)s %(infile)s 
+    | python %(scriptsdir)s/gtf2gtf.py --sort=%(order)s --log=%(outfile)s.log
+    | %(compress)s > %(outfile)s'''
+
+    P.run()
     

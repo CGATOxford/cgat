@@ -195,9 +195,8 @@ def main( argv = None ):
     values.append( (true_positives, predicted, data[1]) )
 
     if true_positives == 0:
-        raise "# no true positives!"
-    
-    
+        raise ValueError("# no true positives!")
+        
     if options.positives == None:
         if options.false_negatives:
             positives = float(predicted)
@@ -222,7 +221,7 @@ def main( argv = None ):
             true_negatives = 0
         else:
             true_negatives = 0
-            false_negatives = positives - predicted
+            false_negatives = positives - true_positives
             false_positives = predicted - true_positives
 
         tpr = float(true_positives) / predicted

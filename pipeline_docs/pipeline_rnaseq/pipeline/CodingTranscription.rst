@@ -12,7 +12,6 @@ Note that a transcript might fail several filters.
 
 .. report:: Genemodels.BuildSummary
    :render: table
-   :tracks: refcoding
    
    Number of transcripts failing a certain filter.
 
@@ -59,7 +58,7 @@ according to :term:`cufflinks`.
 
    The ten highest expressed transcripts.
 
-Transcript classificication
+Transcript classification
 ===========================
 
 The following table lists the number of transcripts with respect to their genomic context.

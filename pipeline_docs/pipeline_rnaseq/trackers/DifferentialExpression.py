@@ -169,6 +169,7 @@ class DifferentialExpressionCorrelationPValue( DifferentialExpressionComparison 
                          AND ABS( b.lfold ) != 10
                          AND a.pvalue IS NOT NULL
                          AND b.pvalue IS NOT NULL
+                         AND a.status == 'OK' and b.status == 'OK'
                          ''' )
 
         for k in data.keys():
@@ -209,7 +210,7 @@ class VolcanoTracker( RnaseqTracker ):
                                     pvalue, 
                                     CASE WHEN value1 < value2 THEN value2 ELSE value1 END AS max_fpkm 
                                     FROM %(track)s_%(method)s_%(slice)s_diff 
-                                    WHERE pvalue IS NOT NULL AND 
+                                    WHERE pvalue IS NOT NULL AND pvalue != 'nan' AND 
                                           lfold IS NOT NULL AND 
                                           max_fpkm > 0""" )
         if data:
@@ -224,3 +225,28 @@ class VolcanoPlotCuffdiff( VolcanoTracker ):
 class VolcanoPlotDESeq( VolcanoTracker ):
     method = "deseq"
     slices = ("gene",)
+
+#############################################################
+#############################################################
+#############################################################
+##
+#############################################################
+class ExonCounts( RnaseqTracker ):
+    '''get unnormalized read counts in the exons for a gene.
+    
+    The gene name is given as the slice.'''
+
+    pattern = "(.*)_exon_counts"
+
+    def __call__(self, track, options = None ):
+        
+        if not options: raise ValueError( 'tracker requires gene_id' )
+
+        data = self.getAll('''SELECT gene_id, * FROM 
+                       %(track)s_exon_counts
+                       WHERE gene_id = '%(options)s' ''' )
+        
+        if data: del data["gene_id"]
+        return data
+
+    

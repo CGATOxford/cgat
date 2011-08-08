@@ -1002,6 +1002,10 @@ class ClassifierRNASeq(Counter):
     |                    |transcript extends ``known`` transcript.                    |
     |                    |                                                            |
     +--------------------+------------------------------------------------------------+
+    |exon-fragment       |Transcript overlap a single exon of a multi-exonic          |
+    |                    |transcript.                                                 |
+    |                    |                                                            |
+    +--------------------+------------------------------------------------------------+
     |fragment            |At least one intron boundary shared. ``predicted``          |
     |                    |transcript is shorter than ``known`` transcript.            |
     |                    |                                                            |
@@ -1045,6 +1049,7 @@ class ClassifierRNASeq(Counter):
 
     # priority of classifications to select best match
     priority = ( ( 's', "complete", ),
+                 ( 's', "exon-fragment", ),
                  ( 's', "fragment", ),
                  ( 's', "extended-fragment", ),
                  ( 's', "extension", ),
@@ -1057,6 +1062,7 @@ class ClassifierRNASeq(Counter):
                  ( 's', "flank3", ),
                  ( 'n', "complete", ),
                  ( 'n', "fragment", ),
+                 ( 'n', "exon-fragment", ),
                  ( 'n', "extended-fragment", ),
                  ( 'n', "extension", ),
                  ( 'n', "alternative", ),
@@ -1067,6 +1073,7 @@ class ClassifierRNASeq(Counter):
                  ( 'n', "flank5", ),
                  ( 'n', "flank3", ),
                  ( 'a', "complete", ),
+                 ( 'a', "exon-fragment", ),
                  ( 'a', "fragment", ),
                  ( 'a', "extended-fragment", ),
                  ( 'a', "extension", ),
@@ -1179,14 +1186,12 @@ class ClassifierRNASeq(Counter):
         transcript_exons = [ (x.start, x.end) for x in gtfs if x.feature == "exon" ]
         transcript_start, transcript_end = transcript_exons[0][0], transcript_exons[-1][1]
         transcript_lexons = Intervals.getLength( transcript_exons )
-        transcript_cds = [ (x.start, x.end) for x in gtfs if x.feature == "CDS" ]
-        transcript_lcds = Intervals.getLength( transcript_cds )
         transcript_introns = Intervals.complement( transcript_exons )
         transcript_lintrons = Intervals.getLength( transcript_introns )
 
         tolerance = self.tolerance
 
-        # check if transcrip purely intronic
+        # check if transcript purely intronic
         overlap_exons = Intervals.calculateOverlap( exons, transcript_exons )
 
         if overlap_exons == 0: is_intronic = True
@@ -1215,36 +1220,45 @@ class ClassifierRNASeq(Counter):
             # if there are no introns, matched_structure will be True
             if len(exons) == 1 and len(transcript_exons) == 1:
                 matched_structure = approx_structure = True
+            elif len(exons) == 1:
+                matched_structure = False
+                approx_structure = True
             else:
                 matched_structure = len(shared_introns) == len(introns)
                 approx_structure = len(shared_boundaries) > 0
             
             if matched_structure and abs(overlap_exons - transcript_lexons) < tolerance:
                 cls = "complete"
-            elif approx_structure and abs(overlap_exons - transcript_lexons) < tolerance:
+            elif approx_structure and len(exons) > 1 and abs(overlap_exons - transcript_lexons) < tolerance:
                 cls = "complete"
             elif approx_structure and (start < transcript_start or end > transcript_end):
-                if  lexons < transcript_lexons:
+                if lexons < transcript_lexons:
                     cls = "extended-fragment"
                 else:
                     cls = "extension"
             elif approx_structure and lexons < transcript_lexons:
-                cls = "fragment"
+                if len(exons) == 1 and len(transcript_exons) > 1:
+                    cls = "exon-fragment"
+                else:
+                    cls = "fragment"
             elif approx_structure:
                 cls = "alternative"
             else:
                 cls = "unknown"
-        
+
+        transcript_cds = [ (x.start, x.end) for x in gtfs if x.feature == "CDS" ]
+        transcript_lcds = Intervals.getLength( transcript_cds )
         # intersect with CDS
         if len(transcript_cds) > 0:
             overlap_cds = Intervals.calculateOverlap( transcript_cds, exons )                
+
+            # if no overlap with CDS, check for UTR ovelap
             if overlap_cds < tolerance:
                 utrs = Intervals.truncate( transcript_exons, transcript_cds )
                 cds_start,cds_end = transcript_cds[0][0], transcript_cds[-1][1]
-                utr5 = [ x for x in utrs if x[1] < cds_start ]
-                utr3 = [ x for x in utrs if x[0] > cds_end ]
+                utr5 = [ x for x in utrs if x[1] <= cds_start ]
+                utr3 = [ x for x in utrs if x[0] >= cds_end ]
                 if strand == "-": utr5, utr3= utr3, utr5
-                
                 overlap_utr5 = Intervals.calculateOverlap( utr5, exons )
                 overlap_utr3 = Intervals.calculateOverlap( utr3, exons )
                 if overlap_utr5 >= lexons - tolerance:
@@ -1260,8 +1274,13 @@ class ClassifierRNASeq(Counter):
         segments = self.getSegments()
         introns = self.getIntrons()
 
-        overlaps = list(self.transcript_intervals.get( contig, segments[0][0], segments[-1][1] ))
-        
+        try:
+            overlaps = list(self.transcript_intervals.get( contig, segments[0][0], segments[-1][1] ))
+        except KeyError, msg:
+            E.warn( "failed lookup of interval %s:%i-%i: '%s'" % (contig, segments[0][0], segments[-1][1], msg) )
+            self.skip = True
+            return
+
         noverlap_transcripts = len(overlaps)
         noverlap_genes = len( set( [self.map_transcript2gene[transcript_id] for start,end,transcript_id in overlaps] ) )
 
@@ -2183,7 +2202,7 @@ class CounterReadCoverage(Counter):
 
         counts_sense = counts_sense[ counts_sense > 0]
         counts_antisense = counts_antisense[ counts_antisense > 0]
-        counts_anysense = counts_anysense[ counts_antisense > 0]
+        counts_anysense = counts_anysense[ counts_anysense > 0]
 
         self.counts_sense = counts_sense
         self.counts_antisense = counts_antisense

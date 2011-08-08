@@ -440,10 +440,19 @@ def loadProteinStats( infile, outfile ):
 ############################################################
 @files( (buildGeneSet,
          buildPeptideFasta),
-         "pseudogenes.gtf.gz" )
+        PARAMS["interface_pseudogenes_gtf"] )
 def buildPseudogenes( infile, outfile ):
     '''build set of pseudogenes.'''
     PGeneset.buildPseudogenes( infile, outfile )
+
+############################################################
+############################################################
+############################################################
+@files( (None,),
+        PARAMS["interface_numts_gtf"] )
+def buildNUMTs( infile, outfile ):
+    '''build list of NUMTs.'''
+    PGeneset.buildNUMTs( infile, outfile )
 
 ############################################################
 ############################################################
@@ -595,7 +604,7 @@ def getRepeatsFromUCSC( dbhandle, repclasses, outfile ):
     tmpfile = P.getTempFile(".")
     
     for table in tables:
-        E.info( "loading repeats from %s" % table )
+
         cc = dbhandle.cursor()
         sql = """SELECT genoName, 'repeat', 'exon', genoStart+1, genoEnd, strand, '.', '.', 
                       CONCAT('class \\"', repClass, '\\"; family \\"', repFamily, '\\";')
@@ -948,6 +957,7 @@ def genome():
           loadGeneInformation,
           buildExonTranscripts,
           buildPseudogenes,
+          buildNUMTs,
           buildSelenoList)
 def geneset():
     '''import information on geneset.'''

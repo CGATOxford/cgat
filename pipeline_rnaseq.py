@@ -113,13 +113,10 @@ splice-junctions. If they are prioritized, I do not know.
 
 Transcripts are built individually for each :term:`track`. This seems to be the most rigorous way
 as there might be conflicting transcripts between replicates and merging the sets might confuse transcript
-reconstruction. Also, it is important to detect these conflicting transcripts between replicates
-in order to get an idea of the variability of the data. However, if there are only few reads, 
-there might be a case for building transcript models using reads from all replicates of an experiment. 
-However, there is no reason to merge reads between experiments.
+reconstruction. Also, conflicting transcripts between replicates give an idea of the variability of the data. 
+However, if there are only few reads,  there might be a case for building transcript models using reads 
+from all replicates of an experiment. However, there is no reason to merge reads between experiments.
 
-See `figure 4 <http://www.nature.com/nbt/journal/v28/n5/full/nbt.1621.html>`_ from the cufflinks paper
-to get an idea about the reliability of transcript construction with varying sequencing depth.
 
 LncRNA
 --------
@@ -241,6 +238,25 @@ Methods differ in their ability to measure transcription on all levels.
 Overprediction of differential expression for low-level expressed transcripts with :term:`cuffdiff`
 is a `known problem <http://seqanswers.com/forums/showthread.php?t=6283&highlight=fpkm>`_.
 
+Estimating coverage
+-------------------
+
+An important question in RNASeq analysis is if the sequencing has been done to sufficient depth.
+The questions split into two parts:
+
+   * What is the minimum abundant transcript that should be detectable with the number of reads
+     mapped? See for example `PMID: 20565853 <http://www.ncbi.nlm.nih.gov/pubmed/20565853>`
+
+   * What is the minimum expression change between two conditions that can be reliably inferred?
+     See for examples `PMID: 21498551 <http://www.ncbi.nlm.nih.gov/pubmed/21498551?dopt=Abstract>`
+
+These questions are difficult to answer due to the complexity of RNASeq data: Genes have multiple
+transcripts, transcript/gene expression varies by orders of magnitude and a large fraction of
+reads might stem from repetetive RNA.
+
+See `figure 4 <http://www.nature.com/nbt/journal/v28/n5/full/nbt.1621.html>`_ from the cufflinks paper
+to get an idea about the reliability of transcript construction with varying sequencing depth.
+
 Usage
 =====
 
@@ -302,11 +318,11 @@ path:
 +--------------------+-------------------+------------------------------------------------+
 |bowtie_             |>=0.12.7           |read mapping                                    |
 +--------------------+-------------------+------------------------------------------------+
-|tophat_             |>=1.2.0            |read mapping                                    |
+|tophat_             |>=1.3.1            |read mapping                                    |
 +--------------------+-------------------+------------------------------------------------+
-|cufflinks_          |>=0.9.3            |transcription levels                            |
+|cufflinks_          |>=1.0.3            |transcription levels                            |
 +--------------------+-------------------+------------------------------------------------+
-|samtools            |>=0.1.12           |bam/sam files                                   |
+|samtools            |>=0.1.16           |bam/sam files                                   |
 +--------------------+-------------------+------------------------------------------------+
 |bedtools            |                   |working with intervals                          |
 +--------------------+-------------------+------------------------------------------------+
@@ -314,7 +330,7 @@ path:
 +--------------------+-------------------+------------------------------------------------+
 |sra-tools           |                   |extracting reads from .sra files                |
 +--------------------+-------------------+------------------------------------------------+
-|picard              |>=1.38             |bam/sam files. The .jar files need to be in your|
+|picard              |>=1.42             |bam/sam files. The .jar files need to be in your|
 |                    |                   | CLASSPATH environment variable.                |
 +--------------------+-------------------+------------------------------------------------+
 |bamstats_           |>=1.22             |from CGR, Liverpool                             |
@@ -414,6 +430,7 @@ import Tophat
 from rpy2.robjects import r as R
 import rpy2.robjects as ro
 import rpy2.robjects.vectors as rovectors
+from rpy2.rinterface import RRuntimeError
 
 import PipelineGeneset
 import PipelineMapping
@@ -547,49 +564,75 @@ def writePrunedGTF( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@merge( os.path.join( PARAMS["annotations_dir"], 
-                      PARAMS_ANNOTATIONS["interface_geneset_all_gtf"]),
-        "reference.gtf.gz" )
-def buildReferenceGeneSet( infile, outfile ):
+def mergeAndFilterGTF( infile, outfile, logfile ):
     '''sanitize transcripts file for cufflinks analysis.
 
-    Merge exons separated by small introns.
+    Merge exons separated by small introns (< 5bp).
 
     Transcript will be ignored that
        * have very long introns (max_intron_size) (otherwise, cufflinks complains)
        * are located on contigs to be ignored (usually: chrM, _random, ...)
-       
-    The result is run through cuffdiff in order to add the p_id and tss_id tags
-    required by cuffdiff. 
 
-    This will only keep sources of the type 'exon'. It will also remove
-    any transcripts not in the reference genome.
+    This method preserves all features in a gtf file (exon, CDS, ...).
 
-    Cuffdiff requires overlapping genes to have different tss_id tags.
+    returns a dictionary of all gene_ids that have been kept.
     '''
+
     max_intron_size =  PARAMS["max_intron_size"]
 
     c = E.Counter()
 
-    tmpfilename = P.getTempFilename( "." )
-    tmpfilename2 = P.getTempFilename( "." )
-    tmpfilename3 = P.getTempFilename( "." )
+    outf = gzip.open( outfile, "w" )
 
-    tmpf = gzip.open( tmpfilename, "w" )
-
-    E.info( "filtering by contig and removing long introns" )
-
+    E.info( "filtering by contig and removing long introns" )    
     contigs = set(IndexedFasta.IndexedFasta( os.path.join( PARAMS["genome_dir"], PARAMS["genome"]) ).getContigs())
+
+    if "geneset_remove_contigs" in PARAMS:
+        rx_contigs = re.compile( PARAMS["geneset_remove_contigs"] )
+        E.info( "removing contigs %s" % PARAMS["geneset_remove_contigs"] )
+    else:
+        rx_contigs = None
+
+    if "geneset_remove_repetetive_rna" in PARAMS:
+        rna_file = os.path.join( PARAMS["annotations_dir"],
+                                 PARAMS_ANNOTATIONS["interface_rna_gff"] )
+        rna_index = GFF.readAndIndex( GFF.iterator( IOTools.openFile( rna_file, "r" ) ) )
+        E.info( "removing ribosomal RNA in %s" % rna_file )
+    else:
+        rna_index = None
     
     gene_ids = {}
+
+    logf = IOTools.openFile( logfile, "w" )
+    logf.write( "gene_id\ttranscript_id\treason\n" )
+
     for all_exons in GTF.transcript_iterator( GTF.iterator( IOTools.openFile( infile )) ):
 
-        c.info += 1
-
-        if all_exons[0].contig not in contigs:
+        c.input += 1
+        
+        e = all_exons[0]
+        # filtering 
+        if e.contig not in contigs:
             c.missing_contig += 1
+            logf.write( "\t".join( (e.gene_id, e.transcript_id, "missing_contig" )) + "\n" )
             continue
 
+        if rx_contigs and rx_contigs.search(e.contig):
+            c.remove_contig += 1
+            logf.write( "\t".join( (e.gene_id, e.transcript_id, "remove_contig" )) + "\n" )
+            continue
+
+        if rna_index and all_exons[0].source != 'protein_coding':
+            found = False
+            for exon in all_exons:
+                if rna_index.contains( e.contig, e.start, e.end ):
+                    found = True
+                    break
+            if found:
+                logf.write( "\t".join( (e.gene_id, e.transcript_id, "overlap_rna" )) + "\n" )
+                c.overlap_rna += 1
+                continue
+                
         is_ok = True
 
         # keep exons and cds separate by grouping by feature
@@ -623,23 +666,64 @@ def buildReferenceGeneSet( infile, outfile ):
             if not is_ok: break
 
         if not is_ok: 
-            L.info( "removing transcript %s" % all_exons[0].transcript_id )
+            logf.write( "\t".join( (e.gene_id, e.transcript_id, "bad_transcript" )) + "\n" )
             c.skipped += 1
             continue
 
         new_exons.sort( key = lambda x: x.start )
 
         for e in new_exons:
-            # add chr prefix 
-            tmpf.write( "%s\n" % str(e) )
+            outf.write( "%s\n" % str(e) )
             c.exons += 1
 
         c.output += 1
 
+
+    outf.close()
+
     L.info( "%s" % str(c) )
+    
+    return gene_ids
 
-    tmpf.close()
+#########################################################################
+#########################################################################
+#########################################################################
+@merge( os.path.join( PARAMS["annotations_dir"], 
+                      PARAMS_ANNOTATIONS["interface_geneset_all_gtf"]),
+        "reference.gtf.gz" )
+def buildReferenceGeneSet( infile, outfile ):
+    '''sanitize ENSEMBL transcripts file for cufflinks analysis.
 
+    Merge exons separated by small introns (< 5bp).
+
+    Removes unwanted contigs according to configuration
+    value ``geneset_remove_contigs``.
+
+    Removes transcripts overlapping ribosomal genes if 
+    ``geneset_remove_repetitive_rna`` is set. Protein
+    coding transcripts are not removed.
+
+    Transcript will be ignored that
+       * have very long introns (max_intron_size) (otherwise, cufflinks complains)
+       * are located on contigs to be ignored (usually: chrM, _random, ...)
+       
+    The result is run through cuffdiff in order to add the p_id and tss_id tags
+    required by cuffdiff. 
+
+    This will only keep sources of the type 'exon'. It will also remove
+    any transcripts not in the reference genome.
+
+    Cuffdiff requires overlapping genes to have different tss_id tags.
+
+    This gene is the source for most other gene sets in the pipeline.
+    '''
+
+    tmpfilename = P.getTempFilename( "." )
+    tmpfilename2 = P.getTempFilename( "." )
+    tmpfilename3 = P.getTempFilename( "." )
+
+    gene_ids = mergeAndFilterGTF( infile, tmpfilename, "%s.removed.gz" % outfile )
+    
     #################################################
     E.info( "adding tss_id and p_id" )
 
@@ -699,7 +783,8 @@ def buildReferenceGeneSet( infile, outfile ):
         
     outf.close()
 
-    writePrunedGTF( tmpfilename3, outfile )
+    # sort gtf file
+    PipelineGeneset.sortGTF( tmpfilename3, outfile )
 
     os.unlink( tmpfilename )
     # make sure tmpfilename2 is NEVER empty
@@ -714,7 +799,7 @@ def buildReferenceGeneSet( infile, outfile ):
             suffix("reference.gtf.gz"),
             "refnoncoding.gtf.gz" )
 def buildNoncodingGeneSet( infile, outfile ):
-    '''build a new gene set with only protein coding 
+    '''build a new gene set without protein coding 
     transcripts.'''
     
     to_cluster = True
@@ -722,6 +807,18 @@ def buildNoncodingGeneSet( infile, outfile ):
     zcat %(infile)s | awk '$2 == "lincRNA" || $2 == "processed_transcript"' | gzip > %(outfile)s
     '''
     P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@merge( os.path.join( PARAMS["annotations_dir"], 
+                      PARAMS_ANNOTATIONS["interface_geneset_all_gtf"]),
+        "reference_with_cds.gtf.gz" )
+def buildReferenceGeneSetWithCDS( infile , outfile ):
+    '''build a new gene set without protein coding 
+    transcripts.'''
+    
+    mergeAndFilterGTF( infile, outfile, "%s.removed.gz" % outfile )
 
 #########################################################################
 #########################################################################
@@ -753,8 +850,7 @@ def buildCodingGeneSet( infile, outfile ):
             suffix("reference.gtf.gz"),
             "refcodingtranscripts.gtf.gz" )
 def buildCodingTranscriptSet( infile, outfile ):
-    '''build a gene set with only protein coding 
-    transcripts.
+    '''build a gene set with only protein coding transcripts.
 
     Protein coding transcripts are selected via the ensembl
     transcript biotype
@@ -776,6 +872,10 @@ def buildCodingTranscriptSet( infile, outfile ):
     outf.close()
     inf.close()
 
+
+#########################################################################
+#########################################################################
+#########################################################################
 @transform( buildCodingGeneSet, 
             suffix( "%s.gtf.gz" % REFERENCE ),
             "%s.gff.gz" % REFERENCE )
@@ -874,17 +974,27 @@ def buildJunctions( infile, outfile ):
     file, as parsing the latter often fails. See:
 
     http://seqanswers.com/forums/showthread.php?t=7563
+
     '''
     
     outf = IOTools.openFile( outfile, "w" )
     for gffs in GTF.transcript_iterator( GTF.iterator( IOTools.openFile( infile, "r" ) )):
         
+        gffs.sort( key = lambda x: x.start )
         end = gffs[0].end
         for gff in gffs[1:]:
-            outf.write( "%s\t%i\t%i\t%s\n" % (gff.contig, end, gff.start, gff.strand ) )
+            # subtract one: these are not open/closed coordinates but the 0-based coordinates
+            # of first and last residue that are to be kept (i.e., within the exon).
+            outf.write( "%s\t%i\t%i\t%s\n" % (gff.contig, end - 1, gff.start, gff.strand ) )
             end = gff.end
                         
     outf.close()
+
+    # make unique
+    statement = '''mv %(outfile)s %(outfile)s.tmp; 
+                   gunzip < %(outfile)s.tmp | sort | uniq | gzip > %(outfile)s;
+                   rm -f %(outfile)s.tmp; '''
+    P.run()
 
 #########################################################################
 #########################################################################
@@ -895,12 +1005,16 @@ def buildReferenceTranscriptome( infile, outfile ):
 
     The reference transcriptome contains all known 
     protein coding transcripts.
+
+    The sequences include both UTR and CDS.
+
     '''
 
     to_cluster = USECLUSTER
 
     statement = '''
     zcat %(infile)s
+    | awk '$3 == "exon"'
     | python %(scriptsdir)s/gff2fasta.py
         --is-gtf
         --genome=%(genome_dir)s/%(genome)s
@@ -964,9 +1078,10 @@ def mapReadsWithBowtieAgainstTranscriptome( infiles, outfile ):
     m = PipelineMapping.BowtieTranscripts()
     infile, reffile = infiles
     prefix = P.snip( reffile, ".fa" )
-    bowtie_options = "-v 2 --best --strata -a"
+    bowtie_options = "%s --best --strata -a" % PARAMS["bowtie_options"] 
     statement = m.build( (infile,), outfile ) 
     P.run()
+
 
 #########################################################################
 #########################################################################
@@ -991,10 +1106,140 @@ def mapReadsWithTophat( infiles, outfile ):
     to_cluster = USECLUSTER
     m = PipelineMapping.Tophat()
     infile, reffile = infiles
-    tophat_options = PARAMS["tophat_options"] + " --raw-juncs <( gunzip < %(reffile)s ) " % locals()
+    tophat_options = PARAMS["tophat_options"] + " --raw-juncs <( zcat %(reffile)s) " % locals()
     statement = m.build( (infile,), outfile ) 
     P.run()
 
+
+#########################################################################
+#########################################################################
+#########################################################################
+##
+#########################################################################
+@merge( (mapReadsWithTophat, buildJunctions), "junctions.fa" )
+def buildJunctionsDB( infiles, outfile ):
+    '''build a database of all junctions.'''
+
+    to_cluster = USECLUSTER
+    outfile_junctions = outfile + ".junctions.bed.gz"
+    min_anchor_length = 3
+    read_length = 50
+
+    tmpfile = P.getTempFile( "." )
+
+    for infile in infiles:
+        if infile.endswith(".bam"):
+            junctions_file = P.snip( infile, ".bam" ) + ".junctions.bed.gz"
+            columns = (0,1,2,5)
+        else:
+            junctions_file = infile
+            columns = (0,1,2,3)
+
+        if not os.path.exists( junctions_file ):
+            E.warn( "can't find junctions file '%s'" % junctions_file )
+            continue
+
+        inf = IOTools.openFile( junctions_file )
+        for line in inf:
+            if line.startswith("#"): continue
+            if line.startswith("track"): continue
+            data = line[:-1].split("\t")
+            try:
+                tmpfile.write( "\t".join( [data[x] for x in columns] ) + "\n" )
+            except IndexError:
+                raise IndexError( "parsing error in line %s" % line)
+
+    tmpfile.close()
+    tmpfilename = tmpfile.name
+
+    statement = '''
+    sort %(tmpfilename)s | gzip > %(outfile_junctions)s
+    '''
+
+    P.run()
+
+    os.unlink( tmpfilename )
+
+    E.info( "building junctions database" )
+    statement = '''
+    juncs_db %(min_anchor_length)i %(read_length)i 
+              <( zcat %(outfile_junctions)s )
+              /dev/null /dev/null 
+              %(bowtie_index_dir)s/%(genome)s.fa
+              > %(outfile)s
+              2> %(outfile)s.log
+    '''
+    P.run()
+
+    E.info( "indexing junctions database" )
+
+    prefix = P.snip( outfile, ".fa" )
+
+    # build raw index
+    statement = '''
+    bowtie-build -f %(outfile)s %(prefix)s >> %(outfile)s.log 2>&1
+    '''
+
+    P.run()
+
+    # build color space index
+    statement = '''
+    bowtie-build -C -f %(outfile)s %(prefix)s_cs >> %(outfile)s.log 2>&1
+    '''
+
+    P.run()
+
+
+if "tophat_add_separate_junctions" in PARAMS and PARAMS["tophat_add_separate_junctions"]:
+#########################################################################
+#########################################################################
+#########################################################################
+##
+#########################################################################
+    @transform( ("*.fastq.1.gz", 
+                 "*.fastq.gz",
+                 "*.sra",
+                 "*.csfasta.gz",
+                 "*.csfasta.F3.gz" ),
+                regex( r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz|csfasta.F3.gz)"), 
+                add_inputs( buildJunctionsDB, 
+                            os.path.join(PARAMS["annotations_dir"],
+                                         PARAMS_ANNOTATIONS["interface_contigs"])), 
+                r"\1.junc.bam" )
+    def mapReadsWithBowtieAgainstJunctions( infiles, outfile ):
+        '''map reads from short read archive sequence using bowtie against
+        junctions.
+        '''
+
+        # Mapping will permit up to one mismatches. This is sufficient
+        # as the downstream filter in rnaseq_bams2bam requires the
+        # number of mismatches less than the genomic number of mismatches.
+        # Change this, if the number of permitted mismatches for the genome
+        # increases.
+
+        # Output all valid matches in the best stratum. This will 
+        # inflate the file sizes due to matches to alternative transcripts
+        # but otherwise matches to paralogs will be missed (and such
+        # reads would be filtered out).
+        job_options= "-pe dedicated %i -R y" % PARAMS["bowtie_threads"]
+        to_cluster = USECLUSTER
+        m = PipelineMapping.BowtieJunctions()
+        infile, reffile, contigsfile = infiles
+        prefix = P.snip( reffile, ".fa" )
+        bowtie_options = "%s --best --strata -a" % PARAMS["bowtie_options"] 
+        statement = m.build( (infile,), outfile ) 
+        P.run()
+else:
+    @transform( ("*.fastq.1.gz", 
+                 "*.fastq.gz",
+                 "*.sra",
+                 "*.csfasta.gz",
+                 "*.csfasta.F3.gz" ),
+                regex( r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz|csfasta.F3.gz)"), 
+                r"\1.junc.bam" )
+    def mapReadsWithBowtieAgainstJunctions( infiles, outfile ):
+        P.touch(outfile)
+        
 ############################################################
 ############################################################
 ############################################################
@@ -1011,14 +1256,17 @@ def buildFastQCReport( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-@collate( (mapReadsWithTophat, mapReadsWithBowtieAgainstTranscriptome),
+@collate( (mapReadsWithTophat, 
+           mapReadsWithBowtieAgainstTranscriptome, 
+           mapReadsWithBowtieAgainstJunctions),
           regex(r"(.+)\..*.bam"),  
           add_inputs( buildCodingGeneSet ), 
           r"\1.accepted.bam" )
 def buildBAMs( infiles, outfile):
     '''reconcile genomic and transcriptome matches.
     '''
-    genome, transcriptome, reffile = infiles[0][0], infiles[1][0], infiles[0][1]
+    genome, transcriptome, junctions, reffile = infiles[0][0], infiles[2][0], infiles[1][0], infiles[0][1]
+
     outfile_mismapped = P.snip(outfile, ".accepted.bam") + ".mismapped.bam"
 
     assert genome.endswith( ".genome.bam" )
@@ -1031,21 +1279,44 @@ def buildBAMs( infiles, outfile):
 
     if "tophat_remove_contigs" in PARAMS and PARAMS["tophat_remove_contigs"]:
         options.append( "--remove-contigs=%s" % PARAMS["tophat_remove_contigs"] )
-        
+
+    if "tophat_remove_rna" in PARAMS and PARAMS["tophat_remove_rna"]:
+        options.append( "--filename-regions=<( zcat %s | grep 'repetetive_rna' )" %\
+                            (os.path.join( 
+                    PARAMS["annotations_dir"], 
+                    PARAMS_ANNOTATIONS["interface_genomic_context_bed"]) ) )
+
+    if "tophat_remove_mismapped" in PARAMS and PARAMS["tophat_remove_mismapped"]:
+        options.append( "--filename-transcriptome=%(transcriptome)s" % locals() )
+
+    if "tophat_add_separate_junctions" in PARAMS and PARAMS["tophat_add_separate_junctions"]:
+        options.append( "--filename-junctions=%(junctions)s" % locals() )
+
     options = " ".join(options)
 
+    tmpfile = P.getTempFilename()
+
+    prefix = P.snip( outfile, ".bam")
+
+    if os.path.exists( "%(outfile)s.log" % locals() ):
+        os.remove( "%(outfile)s.log" % locals() )
+        
     statement = '''
     python %(scriptsdir)s/rnaseq_bams2bam.py 
        --force
        --filename-gtf=%(reffile)s
        --filename-mismapped=%(outfile_mismapped)s
+       --log=%(outfile)s.log
+       --filename-stats=%(outfile)s.tsv
        %(options)s
-       %(transcriptome)s %(genome)s %(outfile)s
-    > %(outfile)s.log;
+       %(genome)s
+    | samtools sort - %(prefix)s 2>&1 >> %(outfile)s.log;
+    checkpoint;
+    samtools index %(outfile_mismapped)s 2>&1 >> %(outfile)s.log;
     checkpoint;
     samtools index %(outfile)s 2>&1 >> %(outfile)s.log;
-    samtools index %(outfile_mismapped)s 2>&1 >> %(outfile)s.log;
     '''
+
     P.run()
 
 ############################################################
@@ -1073,7 +1344,7 @@ def buildAlignmentStats( infile, outfile ):
     # naturally - the bam files should be sorted.
     statement = '''
     java -Xmx2g net.sf.picard.analysis.CollectMultipleMetrics
-            I=<(samtools view -h %(infile)s | awk '$11 != "*"')
+            I=%(infile)s
             O=%(outfile)s 
             R=%(cufflinks_genome_dir)s/%(genome)s.fa
             ASSUME_SORTED=true
@@ -1217,8 +1488,12 @@ def buildTophatStats( infiles, outfile ):
 
         fn = os.path.join( indir, "segment_juncs.log" )
         lines = open( fn ).readlines()
-        segment_juncs_version =  _select( lines, "segment_juncs (.*)$" )
-        possible_splices = int( _select( lines, "Reported (\d+) total possible splices") )
+        if len(lines) > 0:
+            segment_juncs_version =  _select( lines, "segment_juncs (.*)$" )
+            possible_splices = int( _select( lines, "Reported (\d+) total possible splices") )
+        else:
+            segment_juncs_version = "na"
+            possible_splices = ""
 
         outf.write( "\t".join( map(str, (track,
                                          reads_in, reads_removed, reads_out, 
@@ -1240,7 +1515,7 @@ def loadTophatStats( infile, outfile ):
 def loadMappingStats( infiles, outfile ):
 
     header = ",".join( [P.snip( x, ".bam") for x in infiles] )
-    filenames = " ".join( [ "%s.log" % x for x in infiles ] )
+    filenames = " ".join( [ "%s.tsv" % x for x in infiles ] )
     tablename = P.toTable( outfile )
 
     statement = """python %(scriptsdir)s/combine_tables.py
@@ -1446,18 +1721,21 @@ def buildGeneModels(infile, outfile):
     statement = '''mkdir %(tmpfilename)s; 
     cd %(tmpfilename)s; 
     cufflinks --label %(track)s           
-              --reference %(cufflinks_genome_dir)s/%(genome)s.fa
               --num-threads %(cufflinks_threads)i
-             --library-type %(tophat_library_type)s
+              --library-type %(tophat_library_type)s
+              --frag-bias-correct %(cufflinks_genome_dir)s/%(genome)s.fa
+              --multi-read-correct
               %(cufflinks_options)s
               %(infile)s 
     >& %(outfile)s.log;
     perl -p -e "s/\\0/./g" < transcripts.gtf | gzip > %(outfile)s;
-    mv genes.expr %(outfile)s.genes.expr;
-    mv transcripts.expr %(outfile)s.transcripts.expr
     '''
 
     P.run()
+
+    # version 0.9.3
+    #mv genes.expr %(outfile)s.genes.expr;
+    #mv transcripts.expr %(outfile)s.transcripts.expr
 
     shutil.rmtree( tmpfilename )
 
@@ -1528,7 +1806,6 @@ def estimateExpressionLevelsInReference(infiles, outfile):
     cd %(tmpfilename)s; 
     cufflinks --label %(track)s      
               --GTF=<(gunzip < %(gtffile)s)
-              --reference %(cufflinks_genome_dir)s/%(genome)s.fa
               --num-threads=%(cufflinks_threads)i
              --library-type %(tophat_library_type)s
               %(cufflinks_options)s
@@ -1596,7 +1873,8 @@ def runCuffCompare( infiles, outfile, reffile ):
         checkpoint;
         perl -p -e "s/\\0/./g" < %(outfile)s.combined.gtf | gzip > %(outfile)s.combined.gtf.gz;
         checkpoint;
-        rm -f $(outfile)s.combined.gtf;
+        rm -f %(outfile)s.combined.gtf;
+        checkpoint;
         gzip -f %(outfile)s.{tracking,loci};
         '''
 
@@ -1616,8 +1894,6 @@ def runCuffCompare( infiles, outfile, reffile ):
             E.warn("caught exception - trying again" )
 
     shutil.rmtree( tmpdir )
-
-
 
 #########################################################################
 #########################################################################
@@ -1667,6 +1943,28 @@ def loadTranscriptComparison( infile, outfile ):
     tmpfile = P.getTempFilename()
     tmpfile2 = P.getTempFilename()
     tmpfile3 = P.getTempFilename()
+
+    outf = open( tmpfile, "w") 
+    outf.write( "track\n" )
+    outf.write( "\n".join( tracks ) + "\n" )
+    outf.close()
+
+    #########################################################
+    ## load tracks
+    #########################################################
+    tablename = P.toTable(outfile) + "_tracks"
+
+    statement = '''cat %(tmpfile)s
+    | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+              --allow-empty
+              --index=track
+              --table=%(tablename)s 
+    > %(outfile)s
+    '''
+
+    P.run()
+
+    L.info( "loaded %s" % tablename )
 
     #########################################################
     ## load benchmarking data
@@ -1835,7 +2133,7 @@ def loadTranscriptComparison( infile, outfile ):
 
     os.unlink( tmpfile )
     os.unlink( tmpfile2 )
-
+    os.unlink( tmpfile3 )
 
 #########################################################################
 #########################################################################
@@ -1978,6 +2276,7 @@ def buildNovelGeneSet( infiles, outfile ):
 @merge( (buildAbinitioGeneSet, buildReferenceGeneSet,
          os.path.join(PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_repeats_gff"]),
          os.path.join(PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_pseudogenes_gtf"] ),
+         os.path.join(PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_numts_gtf"] ),
          ), "lincrna.gtf.gz" )
 def buildLincRNAGeneSet( infiles, outfile ):
     '''build lincRNA gene set. 
@@ -1997,16 +2296,16 @@ def buildLincRNAGeneSet( infiles, outfile ):
 
     '''
     
-    infile_abinitio, reference_gtf, repeats_gff, pseudogenes_gtf = infiles
+    infile_abinitio, reference_gtf, repeats_gff, pseudogenes_gtf, numts_gtf = infiles
 
     E.info( "indexing geneset for filtering" )
 
-    sections = ("protein_coding", 
-                "lincRNA", 
-                "processed_transcript" )
+    input_sections = ("protein_coding", 
+                      "lincRNA", 
+                      "processed_transcript" )
 
     indices = {}
-    for section in sections:
+    for section in input_sections:
         indices[section] = GTF.readAndIndex( 
             GTF.iterator_filtered( GTF.merged_gene_iterator( GTF.iterator( IOTools.openFile( reference_gtf) )),
                                    source = section ),
@@ -2021,6 +2320,12 @@ def buildLincRNAGeneSet( infiles, outfile ):
     indices["pseudogenes"] = GTF.readAndIndex( GTF.iterator( IOTools.openFile( pseudogenes_gtf) ), with_value = False )
 
     E.info( "added index for pseudogenes" )
+
+    indices["numts"] = GTF.readAndIndex( GTF.iterator( IOTools.openFile( numts_gtf) ), with_value = False )
+
+    E.info( "added index for numts" )
+
+    sections = indices.keys()
 
     total_genes, remove_genes = set(), collections.defaultdict( set )
     inf = GTF.iterator( IOTools.openFile( infile_abinitio ) )
@@ -2071,6 +2376,50 @@ def buildLincRNAGeneSet( infiles, outfile ):
 
     P.run()
 
+#########################################################################
+#########################################################################
+#########################################################################
+@merge( (buildLincRNAGeneSet, buildReferenceTranscriptome ), "lincrna.pseudos.tsv" )
+def annotateLincRNA( infiles, outfile ):
+    '''align lincRNA against reference transcriptome
+    in order to spot pseudogenes.
+    '''
+    
+    linc_fasta, reference_fasta = infiles
+
+    format = ("qi", "qS", "qab", "qae", 
+              "ti", "tS", "tab", "tae", 
+              "s",
+              "pi", 
+              "C")
+    
+    format = "\\\\t".join( ["%%%s" % x for x in format] )
+
+    statement = '''
+    zcat %(linc_fasta)s
+    | python %(scriptsdir)s/gff2fasta.py 
+              --is-gtf 
+              --genome=%(genome_dir)s/%(genome)s 
+              --log=%(outfile)s.log
+    | %(cmd-farm)s --split-at-regex=\"^>(\S+)\" --chunksize=400 --log=%(outfile)s.log
+    "exonerate --target %%STDIN%%
+              --query %(reference_fasta)s
+              --model affine:local
+              --score %(lincrna_min_exonerate_score)i
+              --showalignment no --showsugar no --showcigar no 
+              --showvulgar no
+              --bestn 5
+              --ryo \\"%(format)s\\n\\" 
+    " 
+    | grep -v -e "exonerate" -e "Hostname"
+    | gzip > %(outfile)s.links.gz
+    '''
+
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
 @transform( (buildLincRNAGeneSet,
              buildNovelGeneSet), 
             suffix(".gtf.gz"), 
@@ -2083,16 +2432,19 @@ def loadGeneSetsBuildInformation( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@transform( (buildGeneModels, 
+@transform( (buildCodingGeneSet,
+             buildNoncodingGeneSet,
+             buildGeneModels, 
              buildAbinitioGeneSet, 
              buildFullGeneSet, 
              buildLincRNAGeneSet,
-             buildNovelGeneSet), 
+             buildNovelGeneSet),
             suffix(".gtf.gz"), 
-            add_inputs( buildReferenceGeneSet ),
+            add_inputs( buildReferenceGeneSetWithCDS ),
             ".class.tsv.gz" )
 def classifyTranscripts( infiles, outfile ):
-    '''classify transcripts.'''
+    '''classify transcripts.
+    '''
     to_cluster = USECLUSTER
     
     infile, reference = infiles
@@ -2109,10 +2461,36 @@ def classifyTranscripts( infiles, outfile ):
     '''
     P.run()
 
+
+## need to change pipeline logic to avoid this duplication
+@transform( (compareTranscriptsPerExperiment,
+             compareTranscriptsBetweenExperiments ), 
+            suffix(".cuffcompare"), 
+            add_inputs( buildReferenceGeneSetWithCDS ),
+            ".class.tsv.gz" )
+def classifyTranscripts2( infiles, outfile ):
+    '''classify transcripts.
+    '''
+    to_cluster = USECLUSTER
+    
+    infile, reference = infiles
+
+    statement = '''
+    zcat %(infile)s.combined.gtf.gz
+    | python %(scriptsdir)s/gtf2table.py
+           --counter=classifier-rnaseq 
+           --reporter=transcripts
+           --filename-gff=%(reference)s
+           --log=%(outfile)s.log
+    | gzip
+    > %(outfile)s
+    '''
+    P.run()
+
 #########################################################################
 #########################################################################
 #########################################################################
-@transform( classifyTranscripts, suffix(".tsv.gz"), ".load" )
+@transform( (classifyTranscripts, classifyTranscripts2), suffix(".tsv.gz"), ".load" )
 def loadClassification( infile, outfile ):
     P.load( infile, outfile, options = "--index=transcript_id --index=match_gene_id --index=match_transcript_id --index=source" )
 
@@ -2263,7 +2641,6 @@ def buildReproducibility( infile, outfile ):
     replicates = PipelineTracks.getSamplesInTrack( track, TRACKS )
 
     dbhandle = sqlite3.connect( PARAMS["database"] )
-    cc = dbhandle.cursor()    
 
     tablename = "%s_cuffcompare_fpkm" % track.asTable()
     tablename2 = "%s_cuffcompare_tracking" % track.asTable()
@@ -2281,7 +2658,7 @@ def buildReproducibility( infile, outfile ):
         track1, track2 = rep1.asTable(), rep2.asTable()
 
         def _write( statement, code ):
-            data = cc.execute( statement ).fetchall()
+            data = Database.executewait( dbhandle, statement ).fetchall()
             if len(data) == 0: return
             both_null = len( [ x for x in data if x[0] == 0 and x[1] == 0 ] )
             one_null = len( [ x for x in data if x[0] == 0 or x[1] == 0 ] )
@@ -2343,7 +2720,10 @@ def buildReproducibility( infile, outfile ):
         r = R('''r = lm( %(a)s ~ %(b)s, data)''' % locals() )
         R.png( "%(outdir)s/%(outfile)s.pair.%(rep1)s_vs_%(rep2)s.png" % locals())
         R('''plot(data$%(a)s, data$%(b)s, pch='.', xlim=c(0,%(lim)i), ylim=c(0,%(lim)i),)''' % locals() )
-        R('''abline(r)''')
+
+        try: R('''abline(r)''')
+        except RRuntimeError: pass
+
         R('''dev.off()''')
 
 #########################################################################
@@ -2473,7 +2853,6 @@ def runCuffdiff( infile, outfile ):
              --library-type %(tophat_library_type)s
              %(cuffdiff_options)s
              --verbose
-             --reference-seq %(cufflinks_genome_dir)s/%(genome)s.fa
              --num-threads %(cuffdiff_threads)i
              --labels %(labels)s
              --FDR %(cuffdiff_fdr)f
@@ -2510,6 +2889,7 @@ def loadCuffdiff( infile, outfile ):
         return
 
     to_cluster = False
+    dbhandle = sqlite3.connect( PARAMS["database"] )
     
     # ignore promoters and splicing - no fold change column, but  sqrt(JS)
     for fn, level in ( ("cds_exp.diff", "cds"),
@@ -2522,7 +2902,6 @@ def loadCuffdiff( infile, outfile ):
         tablename = prefix + "_" + level + "_diff"
 
         # max/minimum fold change seems to be (-)1.79769e+308
-        # awk can't handle that and returns inf - substitute with 10
         # ln to log2: multiply by log2(e)
         statement = '''cat %(indir)s/%(fn)s
         | perl -p -e "s/sample_/track/g; s/value_/value/g; s/yes$/1/; s/no$/0/; s/ln\\(fold_change\\)/lfold/; s/p_value/pvalue/"
@@ -2536,7 +2915,7 @@ def loadCuffdiff( infile, outfile ):
               --index=track2
               --index=test_id
               --table=%(tablename)s 
-         >> %(outfile)s
+         >> %(outfile)s.log
          '''
         
         P.run()
@@ -2553,11 +2932,24 @@ def loadCuffdiff( infile, outfile ):
               --allow-empty
               --index=tracking_id
               --table=%(tablename)s 
-         >> %(outfile)s
+         >> %(outfile)s.log
          '''
         
         P.run()
 
+    ## build convenience table with tracks
+    tablename = prefix + "_isoform_levels"
+    tracks = Database.getColumnNames( dbhandle, tablename )
+    tracks = [ x[:-len("_FPKM")] for x in tracks if x.endswith("_FPKM") ]
+    
+    tmpfile = P.getTempFile()
+    tmpfile.write( "track\n" )
+    tmpfile.write("\n".join(tracks) + "\n" )
+    tmpfile.close()
+    
+    statement = P.load( tmpfile.name, outfile )
+    os.unlink( tmpfile.name )
+    
 #########################################################################
 #########################################################################
 #########################################################################
@@ -2570,7 +2962,6 @@ def buildExpressionStats( tables, method, outfile ):
     '''
 
     dbhandle = sqlite3.connect( PARAMS["database"] )
-    cc = dbhandle.cursor()    
 
     def togeneset( tablename ):
         return re.match("([^_]+)_", tablename ).groups()[0]
@@ -2598,16 +2989,20 @@ def buildExpressionStats( tables, method, outfile ):
             def toDict( vals, l = 2 ):
                 return collections.defaultdict( int, [ (tuple( x[:l]), x[l]) for x in vals ] )
             
-            tested = toDict( cc.execute( """SELECT track1, track2, COUNT(*) FROM %(tablename_diff)s 
+            tested = toDict( Database.executewait( dbhandle,
+                                               """SELECT track1, track2, COUNT(*) FROM %(tablename_diff)s 
                                     GROUP BY track1,track2""" % locals() ).fetchall() )
-            status = toDict( cc.execute( """SELECT track1, track2, status, COUNT(*) FROM %(tablename_diff)s 
+            status = toDict( Database.executewait( dbhandle,
+                                                   """SELECT track1, track2, status, COUNT(*) FROM %(tablename_diff)s 
                                     GROUP BY track1,track2,status""" % locals() ).fetchall(), 3 )
-            signif = toDict( cc.execute( """SELECT track1, track2, COUNT(*) FROM %(tablename_diff)s 
+            signif = toDict( Database.executewait( dbhandle,
+                                                   """SELECT track1, track2, COUNT(*) FROM %(tablename_diff)s 
                                     WHERE significant
                                     GROUP BY track1,track2""" % locals() ).fetchall() )
-            fold2 = toDict( cc.execute( """SELECT track1, track2, COUNT(*) FROM %(tablename_diff)s 
+            fold2 = toDict( Database.executewait( dbhandle,
+                    """SELECT track1, track2, COUNT(*) FROM %(tablename_diff)s 
                                     WHERE (lfold >= 1 or lfold <= -1) AND significant
-                                    GROUP BY track1,track2,significant""" % locals() ).fetchall())
+                                    GROUP BY track1,track2,significant""" % locals() ).fetchall() )
             
             for track1, track2 in itertools.combinations( EXPERIMENTS, 2 ):
                 outf.write( "\t".join(map(str, (
@@ -2624,7 +3019,8 @@ def buildExpressionStats( tables, method, outfile ):
             ###########################################
             ###########################################
             # plot length versus P-Value
-            data = cc.execute('''SELECT i.sum, pvalue 
+            data = Database.executewait( dbhandle, 
+                                         '''SELECT i.sum, pvalue 
                                  FROM %(tablename_diff)s, 
                                  %(geneset)s_geneinfo as i 
                                  WHERE i.gene_id = test_id AND significant'''% locals() ).fetchall()
@@ -2669,7 +3065,6 @@ def buildCuffdiffPlots( infile, outfile ):
     outdir = os.path.join( PARAMS["exportdir"], "cuffdiff" )
     
     dbhandle = sqlite3.connect( PARAMS["database"] )
-    cc = dbhandle.cursor()    
     
     prefix = P.snip( infile, ".load" )
 
@@ -2694,7 +3089,7 @@ def buildCuffdiffPlots( infile, outfile ):
                               value2 > 0 
                         """ % locals()
             
-            data = zip( *cc.execute( statement ))
+            data = zip( *Database.executewait( dbhandle, statement ))
             
             pngfile = "%(outdir)s/%(geneset)s_%(method)s_%(level)s_%(track1)s_vs_%(track2)s_significance.png" % locals()
             R.png( pngfile )
@@ -2781,12 +3176,11 @@ def buildFPKMGeneLevelTagCounts( infiles, outfile ):
     # normalize
     results = []
     dbhandle = sqlite3.connect( PARAMS["database"] )
-    cc = dbhandle.cursor()    
 
     for track in tracks:
         table = "%s_ref_gene_expression" % P.quote(track)
         statement = "SELECT gene_id, FPKM / %(scale)f FROM %(table)s" % locals()
-        results.append( dict( cc.execute( statement ).fetchall() ) )
+        results.append( dict( Database.executewait( dbhandle, statement ).fetchall() ) )
     
     outf = IOTools.openFile( outfile, "w" )
     gene_ids = set()
@@ -2796,6 +3190,68 @@ def buildFPKMGeneLevelTagCounts( infiles, outfile ):
     for gene_id in gene_ids:
         outf.write( "%s\t%s\n" % ( gene_id, "\t".join( [str(int(x[gene_id])) for x in results ] ) ) )
     outf.close()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@merge( os.path.join( PARAMS["annotations_dir"], 
+                      PARAMS_ANNOTATIONS["interface_geneset_all_gtf"]),
+        "coding_exons.gtf.gz" )
+def buildCodingExons( infile, outfile ):
+    '''compile set of protein coding exons.
+
+    This set is used for splice-site validation
+    '''
+
+    to_cluster = True
+    statement = '''
+    zcat %(infile)s 
+    | awk '$2 == "protein_coding" && $3 == "CDS"'
+    | perl -p -e "s/CDS/exon/" 
+    | python %(scriptsdir)s/gtf2gtf.py --merge-exons --log=%(outfile)s.log 
+    | gzip 
+    > %(outfile)s
+    '''
+    P.run()
+
+###################################################################
+###################################################################
+###################################################################
+@transform( buildBAMs,
+            suffix(".bam"),
+            add_inputs( buildCodingExons ),
+            ".exon.validation.tsv.gz" )
+def buildExonValidation( infiles, outfile ):
+    '''count number of reads mapped, duplicates, etc.
+    '''
+
+    to_cluster = USECLUSTER
+    infile, exons = infiles
+    statement = '''cat %(infile)s
+    | python %(scriptsdir)s/rnaseq_bam_vs_exons.py
+         --filename-exons=%(exons)s
+         --force
+         --log=%(outfile)s.log
+         --output-filename-pattern="%(outfile)s.%%s.gz"
+    | gzip
+    > %(outfile)s
+    '''
+
+    P.run()
+
+
+############################################################
+############################################################
+############################################################
+@merge( buildExonValidation, "exon_validation.load" )
+def loadExonValidation( infiles, outfile ):
+    '''merge alignment stats into single tables.'''
+    suffix = suffix = ".exon.validation.tsv.gz" 
+    P.mergeAndLoad( infiles, outfile, suffix = suffix )
+    for infile in infiles:
+        track = P.snip( infile, suffix )
+        o = "%s_overrun.load" % track 
+        P.load( infile + ".overrun.gz", o )
 
 #########################################################################
 #########################################################################
@@ -2904,6 +3360,49 @@ def buildExonLevelReadCounts( infiles, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
+@collate(buildExonLevelReadCounts,
+         regex(r"exon_counts.dir/(.+)_vs_(.+)\.bed.gz"),  
+         r"\2.exon_counts.load")
+def loadExonLevelReadCounts( infiles, outfile ):
+    '''load exon level read counts.
+    '''
+    
+    to_cluster = USECLUSTER
+
+    # aggregate not necessary for bed12 files, but kept in
+    src = " ".join( [ "<( zcat %s | cut -f 4,7 )" % x for x in infiles] )
+
+    tmpfile = P.getTempFilename( "." )
+    tmpfile2 = P.getTempFilename( "." )
+    
+    statement = '''paste %(src)s 
+                > %(tmpfile)s'''
+    
+    P.run()
+
+    tracks = [P.snip(x, ".bed.gz" ) for x in infiles ]
+    tracks = [re.match( "exon_counts.dir/(\S+)_vs.*", x).groups()[0] for x in tracks ]
+
+    outf = IOTools.openFile( tmpfile2, "w")
+    outf.write( "gene_id\t%s\n" % "\t".join( tracks ) )
+    
+    for line in open( tmpfile, "r" ):
+        data = line[:-1].split("\t")
+        genes = list(set([ data[x] for x in range(0,len(data), 2 ) ]))
+        values = [ data[x] for x in range(1,len(data), 2 ) ]
+        assert len(genes) == 1, "paste command failed, wrong number of genes per line"
+        outf.write( "%s\t%s\n" % (genes[0], "\t".join(map(str, values) ) ) )
+    
+    outf.close()
+
+    P.load( tmpfile2, outfile )
+
+    os.unlink( tmpfile )
+    os.unlink( tmpfile2 )
+
+#########################################################################
+#########################################################################
+#########################################################################
 @follows( buildUnionExons, mkdir( "gene_counts.dir" ) )
 @transform( buildBAMs, 
             regex(r"(\S+).accepted.bam"), 
@@ -2937,7 +3436,50 @@ def buildGeneLevelReadCounts( infiles, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@transform(buildGeneLevelReadCounts,
+@follows( mkdir("gene_counts.dir"), buildGeneModels )
+@files( [( ([ "%s.accepted.bam" % y.asFile() for y in EXPERIMENTS[x]], buildCodingGeneSet), 
+           "gene_counts.dir/%s.gene_counts.tsv.gz" % x.asFile()) 
+         for x in EXPERIMENTS ] +\
+            [ ( ( ["%s.accepted.bam" % y.asFile() for y in TRACKS], buildCodingGeneSet),
+                "gene_counts.dir/%s.gene_counts.tsv.gz" % ALL.asFile()) ] )
+def buildAggregateGeneLevelReadCounts( infiles, outfile):
+    '''count reads falling into transcripts of protein coding 
+       gene models.
+
+    .. note::
+       In paired-end data sets each mate will be counted. Thus
+       the actual read counts are approximately twice the fragment
+       counts.
+       
+    '''
+    bamfiles, geneset = infiles
+    
+    to_cluster = USECLUSTER
+
+    bamfiles = ",".join(bamfiles)
+
+    statement = '''
+    zcat %(geneset)s 
+    | python %(scriptsdir)s/gtf2table.py 
+          --reporter=genes
+          --bam-file=%(bamfiles)s 
+          --counter=length
+          --prefix="exons_"
+          --counter=read-counts 
+          --prefix=""
+          --counter=read-coverage
+          --prefix=coverage_
+    | gzip
+    > %(outfile)s
+    '''
+    
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( ( buildGeneLevelReadCounts,
+              buildAggregateGeneLevelReadCounts),
            suffix(".tsv.gz"),
            ".load" )
 def loadGeneLevelReadCounts( infile, outfile ):
@@ -3009,8 +3551,14 @@ def buildGeneLevelReadExtension( infile, outfile ):
     utrs = os.path.join( PARAMS["annotations_dir"],
                          PARAMS_ANNOTATIONS["interface_annotation_gff"] )
 
+    if "geneset_remove_contigs" in PARAMS:
+        remove_contigs = '''| awk '$1 !~ /%s/' ''' % PARAMS["geneset_remove_contigs"] 
+    else:
+        remove_contigs = ""
+
     statement = '''
     zcat %(cds)s 
+    %(remove_contigs)s
     | python %(scriptsdir)s/gtf2table.py 
           --reporter=genes
           --bam-file=%(infile)s 
@@ -3116,9 +3664,7 @@ def buildTranscriptLevelReadCounts( infiles, outfile):
        In paired-end data sets each mate will be counted. Thus
        the actual read counts are approximately twice the fragment
        counts.
-
-    These data are used to check if duplicate reads
-    are correlated with expression level.
+       
     '''
     infile, geneset = infiles
     
@@ -3144,7 +3690,50 @@ def buildTranscriptLevelReadCounts( infiles, outfile):
 #########################################################################
 #########################################################################
 #########################################################################
-@transform(buildTranscriptLevelReadCounts,
+@follows( mkdir("transcript_counts.dir"), buildGeneModels )
+@files( [( ([ "%s.accepted.bam" % y.asFile() for y in EXPERIMENTS[x]], buildCodingGeneSet), 
+           "transcript_counts.dir/%s.transcript_counts.tsv.gz" % x.asFile()) 
+         for x in EXPERIMENTS ] +\
+            [ ( ( ["%s.accepted.bam" % y.asFile() for y in TRACKS], buildCodingGeneSet),
+                "transcript_counts.dir/%s.transcript_counts.tsv.gz" % ALL.asFile()) ] )
+def buildAggregateTranscriptLevelReadCounts( infiles, outfile):
+    '''count reads falling into transcripts of protein coding 
+       gene models.
+
+    .. note::
+       In paired-end data sets each mate will be counted. Thus
+       the actual read counts are approximately twice the fragment
+       counts.
+       
+    '''
+    bamfiles, geneset = infiles
+    
+    to_cluster = USECLUSTER
+
+    bamfiles = ",".join(bamfiles)
+
+    statement = '''
+    zcat %(geneset)s 
+    | python %(scriptsdir)s/gtf2table.py 
+          --reporter=transcripts
+          --bam-file=%(bamfiles)s 
+          --counter=length
+          --prefix="exons_"
+          --counter=read-counts 
+          --prefix=""
+          --counter=read-coverage
+          --prefix=coverage_
+    | gzip
+    > %(outfile)s
+    '''
+    
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( (buildTranscriptLevelReadCounts,
+             buildAggregateTranscriptLevelReadCounts),
            suffix(".tsv.gz"),
            ".load" )
 def loadTranscriptLevelReadCounts( infile, outfile ):
@@ -3201,6 +3790,15 @@ def aggregateExonLevelReadCounts( infiles, outfile ):
     outf.close()
 
     os.unlink( tmpfile )
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( ( aggregateExonLevelReadCounts),
+            suffix(".tsv.gz"),
+            ".load" )
+def loadAggregateExonLevelReadCounts( infile, outfile ):
+    P.load( infile, outfile, options="--index=gene_id" )
 
 #########################################################################
 #########################################################################
@@ -3338,8 +3936,8 @@ def runDESeq( infile, outfile ):
             if d.baseMeanA == 0.0 and d.baseMeanB == 0.0:
                 d = d._replace( foldChange = 0, log2FoldChange = 0 )
 
-            if isna( d.pval ): status = "OK"
-            else: status = "FAIL"
+            if isna( d.pval )[0]: status = "FAIL"
+            else: status = "OK"
 
             outf.write( "\t".join( map(str, d) ))
             outf.write("\t%s\t%s\n" % (status, str(signif)))
@@ -3419,8 +4017,7 @@ def buildGeneSetsOfInterest( infile, outfile ):
                                info.gene_id = test_id
                  ''' % locals()
 
-    cc = dbh.cursor()
-    data = cc.execute( statement % locals() )
+    data = Database.executewait( dbh, statement % locals() )
 
     outfiles = IOTools.FilePool( outfile + "_%s.bed.gz" )
 
@@ -3435,6 +4032,8 @@ def buildGeneSetsOfInterest( infile, outfile ):
                         (contig, start, end, test_id, lfold, strand))
 
     outfiles.close()
+
+    P.touch( outfile )
 
 #########################################################################
 #########################################################################
@@ -3470,6 +4069,8 @@ def mapping(): pass
           loadReproducibility,
           loadTranscriptsMappability,
           loadTranscriptLevelReadCounts,
+          loadGeneLevelReadCounts,
+          loadExonLevelReadCounts,
           )
 def genesets(): pass
 
@@ -3488,10 +4089,14 @@ def expression(): pass
 @follows( buildGeneSetsOfInterest )
 def export(): pass
 
+@follows( loadExonValidation )
+def validate(): pass
+
 @follows( mapping,
           genesets,
           expression,
           utrs,
+          validate,
           export)
 def full(): pass
 

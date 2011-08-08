@@ -1,3 +1,5 @@
+.. _Cuffdiff results:
+
 =================
 Cuffdiff results
 =================

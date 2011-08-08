@@ -604,3 +604,27 @@ class BowtieTranscripts( Mapper ):
              ''' % locals()
 
         return statement
+
+class BowtieJunctions( BowtieTranscripts ):
+    '''map with bowtie against junctions.
+
+    In post-processing, reads are mapped from junction coordinates
+    to genomic coordinates.
+    '''
+
+    def postprocess( self, infiles, outfile ):
+        '''collect output data and postprocess.'''
+        
+        track = P.snip( outfile, ".bam" )
+        tmpdir_fastq = self.tmpdir_fastq
+
+        statement = '''
+             cat %(tmpdir_fastq)s/out.bam
+             | python %%(scriptsdir)s/bam2bam.py --set-nh --log=%(outfile)s.log
+             | python %%(scriptsdir)s/rnaseq_junction_bam2bam.py --contig-sizes=%%(contigsfile)s --log=%(outfile)s.log
+             | samtools sort - %(track)s;
+             checkpoint;
+             samtools index %(outfile)s;
+             ''' % locals()
+
+        return statement

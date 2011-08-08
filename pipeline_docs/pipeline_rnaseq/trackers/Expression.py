@@ -48,7 +48,8 @@ class ExpressionFPKMConfidence( TrackerExpressionGeneset ):
         c = "%s_FPKM" % slice
         table = track + "_levels"
         if c not in self.getColumns( table ): return None
-        statement = '''SELECT (%(slice)s_conf_hi - %(slice)s_conf_lo ) / %(slice)s_fpkm 
+        # divide by two to get relative error
+        statement = '''SELECT (%(slice)s_conf_hi - %(slice)s_conf_lo ) / %(slice)s_fpkm / 2
                        FROM %(table)s WHERE %(slice)s_fpkm > %(min_fpkm)f'''
         data = self.getValues( statement )
         return odict( (("relative_error", data ),) )

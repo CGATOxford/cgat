@@ -45,7 +45,7 @@ my $param_check_alive    = $opts{'l'} || "";
 my $param_node_template = $opts{'t'} || "node%i";
 my $param_use_map = $opts{'m'} || "";
 my $param_pattern = $opts{'a'} || "";
-my $param_pattern_input = $opts{'b'} || "^>(\S+)";
+my $param_pattern_input = $opts{'b'} || "\S+";
 my $param_dry_run = $opts{'d'} || 0;
 
 my $iteration = 0;
@@ -82,7 +82,7 @@ if ($param_use_fasta_header)
 	if (/^>/) 
 	{
 	    close(OUT);
-	    my ($id) = /$param_pattern_input/;
+	    my ($id) = /^>($param_pattern_input)/;
 	    my $filename = $param_pattern;
 	    $filename =~ s/%s/$id/g;
 	    open(OUT, ">>$filename") or die "Could not open $filename\n";

@@ -65,9 +65,14 @@ class Result(object):
         '''
         for x,y in take:
             if y:
-                self._data[x] = r_result[y]
+                self._data[x] = r_result.rx(y)[0][0]
             else:
-                self._data[x] = r_result[x]
+                self._data[x] = r_result.rx(x)[0][0]
+
+            # if y:
+            #     self._data[x] = r_result[y]
+            # else:
+            #     self._data[x] = r_result[x]
 
         return self
     def __getattr__(self, key):
@@ -1019,6 +1024,8 @@ def computeROC( values ):
     '''return a roc curve for *values*. Values
     is a sorted list of (value, bool) pairs.
 
+    Deprecated - use getPerformance instead
+
     returns a list of (FPR,TPR) tuples.
     '''
     roc = []
@@ -1162,6 +1169,8 @@ def getSensitivityRecall( values ):
     '''return sensitivity/selectivity.
 
     Values is a sorted list of (value, bool) pairs.
+
+    Deprecated - use getPerformance instead
     '''
 
     npositives = 0.0
@@ -1177,6 +1186,126 @@ def getSensitivityRecall( values ):
         l = value
     if l:
         result.append( (l, npositives / npredicted, npredicted/total ) )
+
+    return result
+
+###################################################################
+###################################################################
+###################################################################
+## 
+###################################################################
+ROCResult = collections.namedtuple( "ROCResult", 
+                                    "value pred tp fp tn fn tpr fpr tnr fnr rtpr rfnr" ) 
+
+def getPerformance( values, 
+                    skip_redundant = True,
+                    false_negatives = False,
+                    bin_by_value = True,
+                    monotonous = False,
+                    multiple = False,
+                    increasing = True,
+                    total_positives = None,
+                    total_false_negatives = None,
+                    ):
+    '''compute performance estimates for a list of ``(score, flag)``
+    tuples in *values*.
+
+    Values is a sorted list of (value, bool) pairs.    
+
+    If the option *false-negative* is set, the input is +/- or 1/0 for a 
+    true positive or false negative, respectively.
+
+    TP: true positives
+    FP: false positives
+    TPR: true positive rate  = true_positives /  predicted
+    P: predicted
+    FPR: false positive rate = false positives  / predicted
+    value: value
+
+
+    '''
+
+    true_positives = 0
+    predicted = 0
+
+    last_value = None
+    
+    binned_values = []
+
+    for value, flag in values:
+        if not bin_by_value:
+            if last_value != value:
+                binned_values.append( (true_positives, predicted, value) )
+        else:
+            if last_value != None and last_value != value:
+                binned_values.append( (true_positives, predicted, last_value) )
+
+        predicted += 1
+
+        if flag: true_positives += 1
+
+        last_value = value
+
+    binned_values.append( (true_positives, predicted, last_value) )
+    binned_values.append( (true_positives, predicted, value) )
+
+    if true_positives == 0:
+        raise ValueError("# no true positives!")
+        
+    if total_positives == None:
+        if total_false_negatives:
+            positives = float(predicted)
+        else:
+            positives = float(true_positives)
+    else:
+        positives = float(total_positives)
+
+    last_positives = None
+    last_tpr = None
+    result = []
+
+    for true_positives, predicted, value in binned_values:
+
+        if (predicted == 0):
+            predicted = 1
+
+        if total_false_negatives:
+            false_negatives = predicted - true_positives
+            false_positives = 0
+            true_negatives = 0
+        else:
+            true_negatives = 0
+            false_negatives = positives - true_positives
+            false_positives = predicted - true_positives
+
+        tpr = float(true_positives) / predicted
+        fpr = float(false_positives) / (true_positives + false_negatives )
+        fnr = float(false_negatives) / positives
+        tnr = 0
+
+        # relative rates 
+        rfpr = float(false_positives) / predicted
+        rfnr = float(false_negatives) / predicted
+
+        if monotonous and last_tpr and last_tpr < tpr:
+            continue
+
+        if skip_redundant and true_positives == last_positives:
+            continue
+        
+        if (predicted > 0):
+            result.append( ROCResult._make( 
+                    (value,
+                     predicted,
+                     true_positives,
+                     false_positives,
+                     true_negatives,
+                     false_negatives,
+                     tpr, fpr, tnr, fnr,
+                     rfpr, rfnr ) ) )
+
+        last_positives = true_positives
+        last_tpr = tpr
 
     return result
 

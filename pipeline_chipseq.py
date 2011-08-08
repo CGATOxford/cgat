@@ -209,7 +209,6 @@ PARAMS = P.PARAMS
 PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],
                                        "pipeline_annotations.py" )
 
-
 ###################################################################
 ###################################################################
 ###################################################################
@@ -346,6 +345,7 @@ else:
 ## process reads
 ###################################################################
 
+
 ############################################################
 ############################################################
 ############################################################
@@ -359,26 +359,110 @@ def buildBAMStats( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-@transform( buildBAMStats,
-            regex(r"(.*).readstats"),
-            inputs( (r"\1.bam", r"\1.readstats") ),
-            r"\1.norm.bam" )
-def normalizeBAMPerReplicate( infiles, outfile ):
-    '''build a normalized BAM file such that all
+
+# Make a mask for filtering reads if required
+if PARAMS["calling_filter_exons"] or PARAMS["calling_filter_regions"]:
+    @files(input == None, "regions.mask")
+    def makeMask(infile,outfile):
+        regions_to_filter = []
+        if PARAMS["calling_filter_exons"]:
+            regions_to_filter += PIntervals.getExonLocations(PARAMS["calling_filter_exons"]) 
+        if PARAMS["calling_filter_regions"]:
+            regions_to_filter += PIntervals.getBedLocations(PARAMS["calling_filter_regions"])
+        fh = open(outfile,"w")
+        for r in regions_to_filter:
+            fh.write("\t".join([r[0],str(r[1]),str(r[2])]))
+            fh.write("\n")
+        fh.close()
+else:
+    def makeMask():
+        pass
+
+@follows(makeMask)
+@transform(buildBAM,suffix(".bam"), ".prep.bam")
+def prepBAMforPeakCalling(infiles, outfile):
+    '''Prepare BAM files for peak calling.
+        - unmapped reads are removed.
+        - if the option "calling_deduplicate" is true duplicate reads are simplistically removed (using samtools rmdup may be superior)
+        - reads may be filtered by exon or location 
+        -- to remove reads by exon, the option "calling_filter_exons" should specify a file containing a list of ensembl gene identifiers (one per line)
+        -- to remove reads by location, the option "calling_filter_regions" should specify a bed file''
+        The resulting bam file has a .prep.bam extension. Merging infiles is currently untested and the methods only consider single end reads.
+    '''
+    if PARAMS["calling_filter_exons"] or PARAMS["calling_filter_regions"]:
+        mask = PIntervals.buildQuicksectMask("regions.mask")
+    else:
+        mask = None
+
+    PIntervals.buildBAMforPeakCalling(infiles,outfile,PARAMS["calling_deduplicate"],mask)
+    
+
+############################################################
+############################################################
+############################################################
+if PARAMS["calling_normalize"]==True:
+    ''' Normalise the number of reads in a set of prepared bam files.
+
+    The minimum number of reads in a prepared bam file is calculated and this
+    number of reads is used as a threshold to randomly sample from each bam file 
+    in order to create a set of bam files with near identical numbers of reads.
+  
+    This may result in considerable data loss. 
+
+    Per experimental contrast normalisation could be preferable.
+   
+    Potentially usefull if using a peak caller that does not correct for tag
+    count between experimental and input samples.
+    '''
+    # First count the number of reads in each bam
+    @transform(prepBAMforPeakCalling,suffix("prep.bam"),"prep.count")
+    def countReadsInBAM(infile,outfile):
+        to_cluster = True
+        statement= ''' samtools idxstats %s | awk '{s+=$3} END {print s}' > %s ''' % ( infile,outfile )
+        P.run()
+
+    # Get the lowest number of reads
+    @merge(countReadsInBAM,"minreads")
+    def minReads(infiles,outfile):
+        counts = []
+        countfiles = glob.glob("*.prep.count")
+        for cf in countfiles:
+            fh = open(cf,"r")
+            counts.append(int(fh.read()))
+            fh.close()
+        fh = open(outfile,"w")
+        fh.write(str(min(counts)))
+        fh.close
+
+    # Make normalised files
+    @follows(minReads)
+    @transform("*.prep.bam",regex(r"(.*).prep.bam"),
+                            inputs( (r"\1.prep.bam",r"\1.prep.count") ), r"\1.norm.bam")
+    def normalizeBAMfile( infiles, outfile ):
+        '''build a normalized BAM file such that all
     files have approximately the same number of 
     reads.
-
-    Duplicated reads are removed at the same time.
-    '''
-    PIntervals.buildNormalizedBAM( (infiles,), 
+  '''   
+        fh = open("minreads")
+        minreads = int(fh.read())
+        fh.close
+        PIntervals.buildSimpleNormalizedBAM( infiles, 
                                    outfile,
-                                   PARAMS["calling_normalize"])
+                                   minreads)
+    bam_affix=".norm"
+
+else:
+    bam_affix=".prep"
+    @follows( prepBAMforPeakCalling )
+    def normalizeBAMfile():
+        pass
+
 
 ############################################################
 ############################################################
 ############################################################
-@follows( normalizeBAMPerReplicate )
-@files( [( [ "%s.norm.bam" % y.asFile() for y in EXPERIMENTS[x]], 
+@follows( normalizeBAMfile )
+@files( [( [ "%s%s.bam" % (y.asFile(),bam_affix) for y in EXPERIMENTS[x]], 
            "%s.readcorrelations.gz" % x.asFile()) 
          for x in EXPERIMENTS ] )
 def makeReadCorrelation( infiles, outfile ):
@@ -449,9 +533,9 @@ if PARAMS["calling_caller"] == "macs":
     ############################################################
     ############################################################
     ############################################################
-    @follows( normalizeBAMPerReplicate )
-    @files( [ (("%s.norm.bam" % x.asFile(), 
-                "%s.norm.bam" % getControl(x).asFile()), 
+    @follows( normalizeBAMfile )
+    @files( [ (("%s%s.bam" % (x.asFile(),bam_affix), 
+                "%s%s.bam" % (getControl(x).asFile(),bam_affix)), 
                "%s.macs" % x.asFile() ) for x in TRACKS ] )
     def runMACS( infiles, outfile ):
         '''run MACS for peak detection.'''
@@ -475,7 +559,7 @@ if PARAMS["calling_caller"] == "macs":
     ############################################################
     @transform( runMACS,
                 regex(r"(.*).macs"),
-                inputs( (r"\1.macs", r"\1.norm.bam") ),
+                inputs( (r"\1.macs", r"\1%s.bam" % bam_affix ) ),
                 r"\1_macs.load" )
     def loadMACS( infiles, outfile ):
         infile, bamfile = infiles
@@ -573,7 +657,7 @@ def subtractUnstim( infiles, outfile ):
 @transform( (combineExperiment,
              combineCondition, 
              subtractUnstim, 
-             normalizeBAMPerReplicate),
+             normalizeBAMfile),
             suffix(".bed"),
             "_bed.load" )
 def loadCombinedIntervals( infile, outfile ):
@@ -615,7 +699,7 @@ def loadCombinedIntervals( infile, outfile ):
     
     # setup files
     for t in replicates:
-        fn = "%s.norm.bam" % t.asFile()
+        fn = "%s%s.bam" % (t.asFile(),bam_affix)
         assert os.path.exists( fn ), "could not find bamfile %s for track %s" % ( fn, str(t))
         samfiles.append( pysam.Samfile( fn,  "rb" ) )
         fn = "%s.macs" % t.asFile()
@@ -703,7 +787,7 @@ def buildIntervals():
 ############################################################
 ############################################################
 ############################################################
-@files_re( (buildBAM, normalizeBAMPerReplicate),
+@files_re( (buildBAM, normalizeBAMfile),
            "(.*).bam",
            "%s/\1.bigwig" % PARAMS["exportdir"])
 def exportBigwig( infile, outfile ):
@@ -1501,7 +1585,9 @@ def runBioProspector( infiles, outfile ):
 
     Bioprospector is run on only the top 10% of peaks.
     '''
-    to_cluster = True
+
+    # bioprospector currently not working on the nodes
+    to_cluster = False
 
     # only use new nodes, as /bin/csh is not installed
     # on the old ones.
@@ -2006,13 +2092,13 @@ def buildIntervalCounts( infile, outfile ):
     # collect foreground and background bam files
     fg_replicates = PipelineTracks.Aggregate( TRACKS, track = track )[track]
     for replicate in fg_replicates:
-        samfiles_fg.append( replicate.asFile() + ".norm.bam" )
+        samfiles_fg.append( replicate.asFile() + "%s.bam" % bam_affix )
 
     unstim = getUnstimulated( track )
     bg_replicates = PipelineTracks.Aggregate( TRACKS, track = unstim )[unstim]
 
     for replicate in bg_replicates:
-        samfiles_bg.append( replicate.asFile() + ".norm.bam" )
+        samfiles_bg.append( replicate.asFile() + "%s.bam" % bam_affix )
 
     samfiles_fg = ",".join(samfiles_fg)
     samfiles_bg = ",".join(samfiles_bg)
