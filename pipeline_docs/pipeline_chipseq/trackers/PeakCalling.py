@@ -16,7 +16,7 @@ class MacsSummary( DefaultTracker ):
     
     def __call__(self, track, slice = None ):
 
-        resultsdir = os.path.join( EXPORTDIR, "MACS" )
+        resultsdir = os.path.abspath( os.path.join( EXPORTDIR, "MACS" ) )
         
         fields = (
             "tag_control_total", "tag_control_unique", 

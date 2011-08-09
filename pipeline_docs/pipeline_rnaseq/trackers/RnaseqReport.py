@@ -6,6 +6,9 @@ from SphinxReport.odict import OrderedDict as odict
 
 # get from config file
 UCSC_DATABASE="hg19"
+ENSEMBL_DATABASE="Homo_sapiens"
+RX_ENSEMBL_GENE = re.compile("ENSG")
+RX_ENSEMBL_TRANSCRIPT = re.compile("ENST")
 
 REFERENCE="refcoding"
 
@@ -78,12 +81,26 @@ def splitLocus( locus ):
         
     return contig, int(start), int(end)
 
+###########################################################################
 def linkToUCSC( contig, start, end ):
     '''build URL for UCSC.'''
 
     ucsc_database = UCSC_DATABASE
     link = "`%(contig)s:%(start)i-%(end)i <http://genome.ucsc.edu/cgi-bin/hgTracks?db=%(ucsc_database)s&position=%(contig)s:%(start)i..%(end)i>`_" \
         % locals()
+    return link
+
+###########################################################################
+def linkToEnsembl( id ):
+    ensembl_database = ENSEMBL_DATABASE
+    if RX_ENSEMBL_GENE.match( id ):
+        link = "`%(id)s <http://www.ensembl.org/%(ensembl_database)s/Gene/Summary?g=%(id)s>`_" \
+                % locals()
+    elif RX_ENSEMBL_TRANSCRIPT.match( id ):
+        link = "`%(id)s <http://www.ensembl.org/%(ensembl_database)s/Transcript/Summary?t=%(id)s>`_" \
+                % locals()
+    else:
+        link = id
     return link
 
 ###########################################################################

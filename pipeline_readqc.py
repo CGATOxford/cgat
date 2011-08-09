@@ -255,7 +255,7 @@ def removeContaminants( infiles, outfile ):
 @follows() 
 def publish():
     '''publish files.'''
-    P.publish_report( prefix = "readqc_" )
+    P.publish_report( prefix = PARAMS["publish_prefix"] )
 
 #########################################################################
 #########################################################################

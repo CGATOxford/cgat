@@ -697,12 +697,35 @@ def loadMACS( infile, outfile, bamfile ):
         outs.close()
         return
 
+    # create plot
+    if os.path.exists( filename_r ):
+
+        target_path = os.path.join( os.getcwd(), "export", "MACS" )
+        try:
+            os.makedirs( target_path )
+        except OSError: 
+            # ignore "file exists" exception
+            pass
+
+        statement = '''
+        R --vanilla < %(track)s.macs_model.r > %(outfile)s
+        '''
+        
+        P.run()
+
+        shutil.copyfile(
+            "%s.macs_model.pdf" % track,
+            os.path.join( target_path, "%s_model.pdf" % track) )
+        
     shift = getPeakShift( infile )
     assert shift != None, "could not determine peak shift from MACS file %s" % infile
+
+    E.info( "%s: found peak shift of %i" % (track, shift ))
 
     samfiles = [ pysam.Samfile( bamfile, "rb" ) ]
     offsets = [ shift / 2 ]
     outtemp = P.getTempFile()
+    tmpfilename = outtemp.name
 
     outtemp.write( "\t".join( ( \
                 "interval_id", 
@@ -762,11 +785,15 @@ def loadMACS( infile, outfile, bamfile ):
             counter.output += 1
     outtemp.close()
 
+    E.info( "%s filtering: %s" % (track, str(counter)))
+    if counter.output == 0:
+        E.warn( "%s: no peaks found" % track )
+
     tablename = "%s_intervals" % track
-    tmpfilename = outtemp.name
 
     statement = '''
    python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
+              --allow-empty
               --index=interval_id 
               --table=%(tablename)s 
     < %(tmpfilename)s 
@@ -790,29 +817,8 @@ def loadMACS( infile, outfile, bamfile ):
 
         P.run()
 
-    # create plot
-    if os.path.exists( filename_r ):
 
-        target_path = os.path.join( os.getcwd(), "export", "MACS" )
-        try:
-            os.makedirs( target_path )
-        except OSError: 
-            # ignore "file exists" exception
-            pass
-
-        statement = '''
-        R --vanilla < %(track)s.macs_model.r > %(outfile)s
-        '''
-        
-        P.run()
-
-        shutil.copyfile(
-            "%s.macs_model.pdf" % track,
-            os.path.join( target_path, "%s_model.pdf" % track) )
-        
     os.unlink( tmpfilename )
-
-    E.info("%s: %s" % (track, str(counter))) 
 
 ############################################################
 ############################################################

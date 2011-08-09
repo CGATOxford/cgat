@@ -138,15 +138,19 @@ def main( argv = None ):
         E.Stop()
         return
 
-    nmapped = c.input - flags_counts["unmapped"]
+    nunmapped = flags_counts["unmapped"]
+    nmapped = c.input - nunmapped
     outs.write( "mapped\t%i\t%5.2f\ttotal\n" % (nmapped, 100.0 * nmapped / c.input ) )
+    outs.write( "unmapped\t%i\t%5.2f\ttotal\n" % ( nunmapped, 100.0 * nunmapped / c.input ) )
+
     if nmapped == 0: 
         E.warn( "no mapped reads - skipped" )
         E.Stop()
         return
 
     for flag, counts in flags_counts.iteritems():
-        outs.write( "%s\t%i\t%5.2f\tmapped\n" % ( flag, counts, 100.0 * counts / c.input ) )
+        if flag == "unmapped": continue
+        outs.write( "%s\t%i\t%5.2f\tmapped\n" % ( flag, counts, 100.0 * counts / nmapped ) )
 
     if options.filename_rna:
         outs.write( "rna\t%i\t%5.2f\tmapped\n" % (c.rna, 100.0 * c.rna / nmapped ) )

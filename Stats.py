@@ -82,6 +82,7 @@ class Result(object):
         return getattr( self._data, key )
     def keys(self): return self._data.keys()
     def values(self): return self._data.values()
+    def __len__(self): return self._data.__len__()
     def __str__(self):
         return str(self._data)
     def __contains__(self,key):
@@ -965,7 +966,7 @@ class CorrelationTest:
             "%i" % self.mNObservations,
             self.mMethod,
             self.mAlternative ) )
-    
+
     @classmethod
     def getHeaders(cls):
         return ("coeff", "pvalue", "significance", "observations", "method", "alternative" )

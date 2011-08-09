@@ -966,7 +966,7 @@ def buildIntronGeneModels(infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@transform( buildCodingGeneSet, suffix(".gtf.gz"), ".junctions.gz")
+@transform( buildCodingGeneSet, suffix(".gtf.gz"), ".junctions")
 def buildJunctions( infile, outfile ):
     '''build file with splice junctions from gtf file.
     
@@ -992,7 +992,7 @@ def buildJunctions( infile, outfile ):
 
     # make unique
     statement = '''mv %(outfile)s %(outfile)s.tmp; 
-                   gunzip < %(outfile)s.tmp | sort | uniq | gzip > %(outfile)s;
+                   gunzip < %(outfile)s.tmp | sort | uniq > %(outfile)s;
                    rm -f %(outfile)s.tmp; '''
     P.run()
 
@@ -1103,10 +1103,16 @@ def mapReadsWithTophat( infiles, outfile ):
     A list with known splice junctions is supplied.
     '''
     job_options= "-pe dedicated %i -R y" % PARAMS["tophat_threads"]
+    
+    if "--butterfly-search" in PARAMS["tophat_options"]:
+        # for butterfly search - require insane amount of
+        # RAM.
+        job_options += " -l mem_free=50G"
+
     to_cluster = USECLUSTER
     m = PipelineMapping.Tophat()
     infile, reffile = infiles
-    tophat_options = PARAMS["tophat_options"] + " --raw-juncs <( zcat %(reffile)s) " % locals()
+    tophat_options = PARAMS["tophat_options"] + " --raw-juncs %(reffile)s " % locals()
     statement = m.build( (infile,), outfile ) 
     P.run()
 
@@ -1188,7 +1194,6 @@ def buildJunctionsDB( infiles, outfile ):
     '''
 
     P.run()
-
 
 if "tophat_add_separate_junctions" in PARAMS and PARAMS["tophat_add_separate_junctions"]:
 #########################################################################
@@ -1621,6 +1626,7 @@ def loadBAMStats( infiles, outfile ):
                    %(filenames)s
                 | perl -p -e "s/bin/%(suffix)s/"
                 | python %(scriptsdir)s/csv2db.py
+                      --allow-empty
                       --table=%(tname)s 
                 >> %(outfile)s
                 """
@@ -2906,7 +2912,7 @@ def loadCuffdiff( infile, outfile ):
         statement = '''cat %(indir)s/%(fn)s
         | perl -p -e "s/sample_/track/g; s/value_/value/g; s/yes$/1/; s/no$/0/; s/ln\\(fold_change\\)/lfold/; s/p_value/pvalue/"
         | awk -v OFS='\\t' '/test_id/ {print;next;} 
-                              { $9 = $9 * 1.44269504089; 
+                              { $10 = $10 * 1.44269504089; 
                                 if( $6 == "OK" && ($7 < %(cuffdiff_fpkm_expressed)f || $8 < %(cuffdiff_fpkm_expressed)f )) { $6 = "NOCALL"; };
                                 print; } '
         | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
@@ -4183,7 +4189,7 @@ def update_report():
 def publish():
     '''publish files.'''
     # publish web pages
-    P.publish_report( prefix = "rnaseq_" )
+    P.publish_report()
 
     # publish additional data
     web_dir = PARAMS["web_dir"]

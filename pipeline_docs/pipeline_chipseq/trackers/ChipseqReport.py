@@ -26,9 +26,16 @@ import PipelineTracks
 
 Sample = PipelineTracks.Sample3
 
-TRACKS = PipelineTracks.Tracks( Sample ).loadFromDirectory( 
-    [ x for x in glob.glob( "%s/*_export.txt.gz" % DATADIR) if "input" not in x ],
-      "%s/(\S+)_export.txt.gz" % DATADIR )
+suffixes = ["export.txt.gz",
+            "sra",
+            "fastq.gz",
+            "cfastq.1.gz",
+            "csfasta.gz" ]
+
+TRACKS = sum( itertools.chain( [ PipelineTracks.Tracks( Sample ).loadFromDirectory( 
+        [ x for x in glob.glob( "%s/*.%s" % (DATADIR,suffix) )if "input" not in x ],
+        "%s/(\S+).%s" % (DATADIR, suffix) ) for suffix in suffixes ] ), 
+              PipelineTracks.Tracks( Sample ) )
 
 Sample.setDefault( "asTable" )
 
@@ -45,9 +52,10 @@ TISSUES = PipelineTracks.Aggregate( TRACKS, labels = ("tissue", ) )
 TAG_UNSTIM = "unstim"
 UCSC_GENOME = "hg19"
 
-MOTIFS = ( "rxrvdr",
-           "GM00855-D3",
-           "GM00861-D3" )
+if "motifs_plot" in P and P["motifs_plot"]:
+    MOTIFS = [x.strip() for x in P["motifs_plot"].split(",")]
+else:
+    MOTIFS = None
 
 ###########################################################################
 ## shorthand

@@ -37,6 +37,7 @@ class MappingSummary( TrackerReadStats ):
 
         for x,y in data[1:]:
             y = re.sub( "\(.*\)", "", y)
+            y = re.sub( "^+\s\d+\s", "", y)
             result[y] = int(x)
 
         return result

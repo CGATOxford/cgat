@@ -135,11 +135,12 @@ def getGlamScoreCutoff( scores, controls, fdr = 0.1 ):
 ## Base class for mast analysis
 ##################################################################################
 class Mast( DefaultTracker ):
-    mPattern = "_mast$"
+    pattern = "(.*)_mast$"
 
     def getSlices( self, subset = None ):
         if subset: return subset
-        return MOTIFS
+        if MOTIFS: return MOTIFS
+        return self.getValues( "SELECT DISTINCT motif FROM motif_info" )
 
 ##################################################################################
 ##################################################################################
@@ -181,6 +182,7 @@ class MastSummary( Mast ):
     mFDR = 0.1
 
     def __call__(self, track, slice = None):
+
         data = []
         nintervals = self.getValue( "SELECT COUNT(*) FROM %(track)s_intervals" % locals() )
         data.append( ("nintervals", nintervals ) )
@@ -193,6 +195,9 @@ class MastSummary( Mast ):
             bin_edges, with_motifs, explained = computeMastCurve( evalues )
         except ValueError, msg:
             return odict( ( ("msg", msg),) )
+        
+        if len(explained) == 0:
+            return odict((("msg", "no data"), ) )
 
         am = numpy.argmax( explained )
         evalue = bin_edges[am]
@@ -569,12 +574,13 @@ class MastPeakValWithMotifEvalue( Mast ):
         return odict( zip( ("peakval", "proportion with motif", "recall" ), zip( *result ) ) )
     
 class MemeRuns( DefaultTracker ):
-    mPattern = "_mast$"
+    
+    tracks = list(EXPERIMENTS)
     
     def __call__(self, track, slice = None ):
         
-        resultsdir = os.path.join( EXPORTDIR, "meme", "%s.meme" % track )
-        if not os.path.exists( resultsdir ): return []
+        resultsdir = os.path.abspath( os.path.join( EXPORTDIR, "meme", "%s.meme" % track.asFile() ) )
+        if not os.path.exists( resultsdir ): return None
 
         data = []
 
@@ -595,11 +601,12 @@ class MemeRuns( DefaultTracker ):
         return odict(data)
 
 class MemeResults( DefaultTracker ):
-    mPattern = "_mast$"
+
+    tracks = list(EXPERIMENTS)
     
     def __call__(self, track, slice = None ):
         
-        resultsdir = os.path.join( EXPORTDIR, "meme", "%s.meme" % track )
+        resultsdir = os.path.abspath( os.path.join( EXPORTDIR, "meme", "%s.meme" % track.asFile() ) )
 
         if not os.path.exists( resultsdir ): return []
 

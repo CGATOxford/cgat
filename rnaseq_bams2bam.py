@@ -170,7 +170,7 @@ def main( argv = None ):
         regions_to_remove = IndexedGenome.Simple()
         for bed in Bed.iterator( IOTools.openFile( options.filename_regions )):
             regions_to_remove.add( bed.contig, bed.start, bed.end )
-        E.info( "read %i regions" % len(regions) )
+        E.info( "read %i regions" % len(regions_to_remove) )
 
     if options.filename_transcriptome:
         transcripts_samfile = pysam.Samfile( options.filename_transcriptome, 

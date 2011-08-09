@@ -174,7 +174,9 @@ if __name__ == '__main__':
         titles=["count"]
     else:
         titles = []
-    
+
+    headers_to_delete = []
+
     for nindex, filename in enumerate(options.filenames):
 
         E.info( "processing %s (%i/%i)" % (filename, nindex+1, len(options.filenames) ))
@@ -189,7 +191,7 @@ if __name__ == '__main__':
         # skip (or not skip) empty tables
         if len(lines) == 0 and options.ignore_empty:
             E.warn( "%s is empty - skipped" % filename )
-            del options.headers[nindex]
+            headers_to_delete.append( nindex )
             continue
 
         table = {}
@@ -242,6 +244,10 @@ if __name__ == '__main__':
         if max_size == 0: max_size = ncolumns
 
         tables.append( (max_size, table) )
+
+    # delete in reverse order
+    for nindex in headers_to_delete[::-1]:
+        del options.headers[nindex]
 
     if len(tables) == len(titles) - 1:
         

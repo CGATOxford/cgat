@@ -465,7 +465,7 @@ def annotatePromoters( iterator, fasta, options ):
             # if tss is directly at start/end of contig, the tss will be within an exon.
             # otherwise, it is outside an exon.
             if is_negative_strand:
-                promotors.append( (min( ma-options.promotor, lcontig), min(lcontig, ma + options.promotor)) )
+                promotors.append( (min( lcontig-options.promotor, lcontig), min(lcontig, ma + options.promotor)) )
             else:
                 promotors.append( (max(0,mi - options.promotor), max(options.promotor,mi)) )
 

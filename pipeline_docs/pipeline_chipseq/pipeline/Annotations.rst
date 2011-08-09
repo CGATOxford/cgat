@@ -39,22 +39,18 @@ Overview
 
 .. report:: Annotations.AllAnnotations
    :render: matrix
-   :slices: all  
 
    Table with all annotations
 
 .. report:: Annotations.AllAnnotations
    :render: stacked-bar-plot
-   :slices: all  
    :transform-matrix: normalized-row-total
-   :tracks: master
 
    Table with all annotations
 
 .. report:: Annotations.AnnotationsBases
    :render: matrix
    :transform-matrix: normalized-row-max
-   :slices: all
 
    Bases overlapping annotations.
 

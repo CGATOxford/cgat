@@ -353,8 +353,66 @@ else:
             suffix(".bam"),
             ".readstats" )
 def buildBAMStats( infile, outfile ):
-    '''count number of reads mapped, duplicates, ....'''
-    PIntervals.buildBAMStats( infile, outfile )
+    '''count number of reads mapped, duplicates, etc.
+    '''
+
+    to_cluster = True
+
+    statement = '''python
+    %(scriptsdir)s/bam2stats.py
+         --force
+         --output-filename-pattern=%(outfile)s.%%s
+    < %(infile)s
+    > %(outfile)s
+    '''
+
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@merge( buildBAMStats, "bam_stats.load" )
+def loadBAMStats( infiles, outfile ):
+    '''import bam statisticis.'''
+
+    header = ",".join( [P.snip( x, ".readstats") for x in infiles] )
+    filenames = " ".join( [ "<( cut -f 1,2 < %s)" % x for x in infiles ] )
+    tablename = P.toTable( outfile )
+    E.info( "loading bam stats - summary" )
+    statement = """python %(scriptsdir)s/combine_tables.py
+                      --headers=%(header)s
+                      --missing=0
+                      --ignore-empty
+                   %(filenames)s
+                | perl -p -e "s/bin/track/"
+                | perl -p -e "s/unique/unique_alignments/"
+                | python %(scriptsdir)s/table2table.py --transpose
+                | python %(scriptsdir)s/csv2db.py
+                      --index=track
+                      --table=%(tablename)s 
+                > %(outfile)s
+            """
+    P.run()
+
+    for suffix in ("nm", "nh"):
+        E.info( "loading bam stats - %s" % suffix )
+        filenames = " ".join( [ "%s.%s" % (x, suffix) for x in infiles ] )
+        tname = "%s_%s" % (tablename, suffix)
+        
+        statement = """python %(scriptsdir)s/combine_tables.py
+                      --header=%(header)s
+                      --skip-titles
+                      --missing=0
+                      --ignore-empty
+                   %(filenames)s
+                | perl -p -e "s/bin/%(suffix)s/"
+                | python %(scriptsdir)s/csv2db.py
+                      --allow-empty
+                      --table=%(tname)s 
+                >> %(outfile)s
+                """
+    
+        P.run()
 
 ############################################################
 ############################################################
@@ -378,7 +436,7 @@ else:
     def makeMask():
         pass
 
-@follows(makeMask)
+@follows(makeMask )
 @transform(buildBAM,suffix(".bam"), ".prep.bam")
 def prepBAMforPeakCalling(infiles, outfile):
     '''Prepare BAM files for peak calling.
@@ -447,8 +505,8 @@ if PARAMS["calling_normalize"]==True:
         minreads = int(fh.read())
         fh.close
         PIntervals.buildSimpleNormalizedBAM( infiles, 
-                                   outfile,
-                                   minreads)
+                                             outfile,
+                                             minreads)
     bam_affix=".norm"
 
 else:
@@ -737,6 +795,10 @@ def loadCombinedIntervals( infile, outfile ):
                                              peakcenter,peakval,position,interval_id,
                                              ncpgs,ngenes,npeaks,nprobes,npromoters, 
                                              contig,start,end) )) + "\n" )
+
+    if c.output == 0:
+        E.warn( "%s - no aggregate intervals" )
+        
  
     tmpfile.close()
 
@@ -744,7 +806,8 @@ def loadCombinedIntervals( infile, outfile ):
     tablename = "%s_intervals" % track.asTable()
     
     statement = '''
-   python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+    python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+              --allow-empty
               --index=interval_id 
               --table=%(tablename)s
     < %(tmpfilename)s 
@@ -1011,8 +1074,18 @@ def makeReproducibility( infiles, outfile ):
         cc.execute( statement )
         data.append( cc.fetchall() )
 
-    ma = int(max( [ x[3] for x in itertools.chain( *data ) ] ) + 1)
-
+    if len(data) == 0:
+        E.warn( "no data for %s" % outfile )
+        P.touch( outfile )
+        return
+    
+    try:
+        ma = int(max( [ x[3] for x in itertools.chain( *data ) ] ) + 1)
+    except ValueError:
+        E.warn( "no data for %s" % outfile )
+        P.touch( outfile )
+        return
+    
     nexons1, nexons2, nexons_overlapping = [0] * ma, [0] * ma, [0] * ma
     nbases1, nbases2, nbases_overlapping = [0] * ma, [0] * ma, [0] * ma
 
@@ -1211,22 +1284,26 @@ def runMEME( infile, outfile ):
 
     outs.close()
 
-    statement = '''
-    meme %(tmpfasta)s -dna -revcomp -mod %(meme_model)s -nmotifs %(meme_nmotifs)s -oc %(tmpdir)s -maxsize %(maxsize)s %(meme_options)s > %(outfile)s.log
-    '''
-    P.run()
+    if nseq == 0:
+        E.warn( "%s: no sequences - meme skipped" % infile )
+        P.touch( outfile )
+    else:
+        statement = '''
+        meme %(tmpfasta)s -dna -revcomp -mod %(meme_model)s -nmotifs %(meme_nmotifs)s -oc %(tmpdir)s -maxsize %(maxsize)s %(meme_options)s > %(outfile)s.log
+        '''
+        P.run()
 
-    # copy over results
-    try:
-        os.makedirs( os.path.dirname( target_path ) )
-    except OSError: 
-        # ignore "file exists" exception
-        pass
+        # copy over results
+        try:
+            os.makedirs( os.path.dirname( target_path ) )
+        except OSError: 
+            # ignore "file exists" exception
+            pass
 
-    if os.path.exists( target_path ): shutil.rmtree( target_path )
-    shutil.move( tmpdir, target_path )
+        if os.path.exists( target_path ): shutil.rmtree( target_path )
+        shutil.move( tmpdir, target_path )
 
-    shutil.copyfile( os.path.join(target_path, "meme.txt"), outfile)
+        shutil.copyfile( os.path.join(target_path, "meme.txt"), outfile)
 
 ############################################################
 ############################################################
@@ -1519,6 +1596,26 @@ else:
 
         PMotifs.filterMotifsFromMEME( infile, outfile, ["1"] )
 
+@follows( buildReferenceMotifs, filterMotifs )
+@merge( glob.glob("*.motif"), "motif_info.load" )
+def loadMotifInformation( infiles, outfile ):
+    '''load information about motifs into database.'''
+    
+    outf = P.getTempFile()
+
+    outf.write("motif\n" )
+
+    for infile in infiles:
+        if IOTools.isEmpty( infile ): continue
+        motif = P.snip( infile, ".motif" )
+        outf.write( "%s\n" % motif )
+
+    outf.close()
+
+    P.load( outf.name, outfile )
+    
+    os.unlink( outf.name )
+
 ############################################################
 ############################################################
 ############################################################
@@ -1542,6 +1639,11 @@ def runMAST( infiles, outfile ):
 
     controlfile, dbfile, motiffiles  = infiles
     controlfile = dbfile[:-len(".fasta")] + ".controlfasta"
+
+    if IOTools.isEmpty( dbfile ):
+        P.touch( outfile )
+        return
+
     if not os.path.exists( controlfile ):
         raise P.PipelineError( "control file %s for %s does not exist" % (controlfile, dbfile))
 
@@ -1601,10 +1703,14 @@ def runBioProspector( infiles, outfile ):
                                        masker = "dust",
                                        proportion = PARAMS["bioprospector_proportion"] )
 
-    statement = '''
+    if nseq == 0:
+        E.warn( "%s: no sequences - bioprospector skipped" % track )
+        P.touch( outfile )
+    else:
+        statement = '''
     BioProspector -i %(tmpfasta)s %(bioprospector_options)s -o %(outfile)s > %(outfile)s.log
     '''
-    P.run()
+        P.run()
 
     os.unlink( tmpfasta )
 
@@ -1817,13 +1923,14 @@ def loadMAST( infile, outfile ):
     tmpfilename = tmpfile.name
 
     statement = '''
-   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
-              -b sqlite \
-              --index=id \
-              --index=motif \
-              --index=id,motif \
-              --table=%(tablename)s \
-              --map=base_qualities:text \
+    python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
+              -b sqlite 
+              --index=id 
+              --index=motif 
+              --index=id,motif 
+              --table=%(tablename)s 
+              --allow-empty
+              --map=base_qualities:text 
     < %(tmpfilename)s > %(outfile)s
     '''
 
@@ -2057,21 +2164,21 @@ def annotateRepeats( infile, outfile ):
 def loadAnnotations( infile, outfile ):
     '''load interval annotations: genome architecture
     '''
-    P.load( infile, outfile, "--index=gene_id" )
+    P.load( infile, outfile, "--index=gene_id --allow-empty" )
 
 ############################################################
 @transform( annotateTSS, suffix( ".tss"), "_tss.load" )
 def loadTSS( infile, outfile ):
     '''load interval annotations: distance to transcription start sites
     '''
-    P.load( infile, outfile, "--index=gene_id --index=closest_id --index=id5 --index=id3" )
+    P.load( infile, outfile, "--index=gene_id --index=closest_id --index=id5 --index=id3 --allow-empty" )
 
 ############################################################
 @transform( annotateRepeats, suffix(".repeats"), "_repeats.load" )
 def loadRepeats( infile, outfile ):
     '''load interval annotations: repeats
     '''
-    P.load( infile, outfile, "--index=gene_id" )
+    P.load( infile, outfile, "--index=gene_id --allow-empty" )
 
 ############################################################
 ############################################################
@@ -2243,7 +2350,8 @@ def viewIntervals( infiles, outfiles ):
 ##
 ############################################################
 
-@follows( buildIntervals, makeReadCorrelationTable )
+@follows( buildIntervals, makeReadCorrelationTable,
+          loadBAMStats)
 def intervals():
     '''compute binding intervals.'''
     pass
@@ -2265,6 +2373,7 @@ def discover_motifs():
 
 @follows( filterMotifs,
           exportMotifControlSequences,
+          loadMotifInformation,
           runMAST, loadMAST )
 #          runGLAM2SCAN, loadGLAM2SCAN )
 def detect_motifs():
@@ -2310,6 +2419,49 @@ def update_report():
 
     E.info( "updating documentation" )
     P.run_report( clean = False )
+
+###################################################################
+###################################################################
+###################################################################
+@follows( mkdir( "%s/bamfiles" % PARAMS["web_dir"]), 
+          mkdir("%s/genesets" % PARAMS["web_dir"]),
+          mkdir("%s/classification" % PARAMS["web_dir"]),
+          mkdir("%s/differential_expression" % PARAMS["web_dir"]),
+          update_report,
+          )
+def publish():
+    '''publish files.'''
+    # publish web pages
+
+    P.publish_report()
+
+    # publish additional data
+    web_dir = PARAMS["web_dir"]
+    project_id = P.getProjectId()
+
+    # directory, files
+    exportfiles = {
+        "bamfiles" : glob.glob( "*.bam" ) + glob.glob( "*.bam.bai" ),
+        # "genesets": [ "lincrna.gtf.gz", "abinitio.gtf.gz" ],
+        # "classification": glob.glob("*.class.tsv.gz") ,
+        #"differential_expression" : glob.glob( "*.cuffdiff.dir" ),
+        }
+    
+    bams = []
+
+    for targetdir, filenames in exportfiles.iteritems():
+        for src in filenames:
+            dest = "%s/%s/%s" % (web_dir, targetdir, src)
+            if dest.endswith( ".bam"): bams.append( dest )
+            dest = os.path.abspath( dest )
+            if not os.path.exists( dest ):
+                os.symlink( os.path.abspath(src), dest )
+    
+    # output ucsc links
+    for bam in bams: 
+        filename = os.path.basename( bam )
+        track = P.snip( filename, ".bam" )
+        print """track type=bam name="%(track)s" bigDataUrl=http://www.cgat.org/downloads/%(project_id)s/bamfiles/%(filename)s""" % locals()
 
 if __name__== "__main__":
 

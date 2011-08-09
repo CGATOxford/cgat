@@ -303,7 +303,9 @@ def toTable( outfile ):
     return quote( name )
 
 def getProjectId():
-    '''cgat specific method: get the (obfuscated) project id.'''
+    '''cgat specific method: get the (obfuscated) project id
+    based on the current working directory.
+    '''
     curdir = os.path.abspath(os.getcwd())
     if not curdir.startswith( PROJECT_ROOT ):
         raise ValueError( "method getProjectId no called within %s" % PROJECT_ROOT )
@@ -314,6 +316,16 @@ def getProjectId():
         raise OSError( "web directory at '%s' does not exist" % f )
     target = os.readlink( f )
     return os.path.basename( target )
+
+def getProjectName():
+    '''cgat specific method: get the name of the project 
+    based on the current working directory.'''
+
+    curdir = os.path.abspath(os.getcwd())
+    if not curdir.startswith( PROJECT_ROOT ):
+        raise ValueError( "method getProjectName no called within %s" % PROJECT_ROOT )
+    prefixes = len(PROJECT_ROOT.split("/"))
+    return curdir.split( "/" )[prefixes]
 
 def load( infile, outfile, options = "" ):
     '''straight import from tab separated table.
