@@ -449,7 +449,8 @@ def buildBAMStats( infile, outfile ):
 ############################################################
 ############################################################
 def exportMacsAsBed( infile, outfile ):
-    '''export sequences for all intervals.'''
+    '''export macs peaks as bed files.
+    '''
 
     dbhandle = sqlite3.connect( PARAMS["database"] )
 
@@ -461,10 +462,12 @@ def exportMacsAsBed( infile, outfile ):
     statement = "SELECT contig, start, end, interval_id, peakval FROM %s_intervals ORDER by contig, start" % track
     cc.execute( statement )
 
-    outs = open( outfile, "w")
+    outs = IOTools.openFile( outfile, "w")
 
     for result in cc:
         contig, start, end, interval_id,peakval = result
+        # peakval is truncated at a 1000 as this is the maximum permitted
+        # score in a bed file.
         peakval = int(min(peakval,1000))
         outs.write( "%s\t%i\t%i\t%s\t%i\n" % (contig, start, end, str(interval_id), peakval) )
 
@@ -475,7 +478,7 @@ def exportMacsAsBed( infile, outfile ):
 ############################################################
 ############################################################
 def exportPeaksAsBed( infile, outfile ):
-    '''export sequences for all peaks.'''
+    '''export peaks as bed files.'''
 
     dbhandle = sqlite3.connect( PARAMS["database"] )
 
@@ -493,10 +496,12 @@ def exportPeaksAsBed( infile, outfile ):
                           interval_id, peakval FROM %(track)s_intervals ORDER by contig, start''' % locals()
     cc.execute( statement )
 
-    outs = open( outfile, "w")
+    outs = IOTools.openFile( outfile, "w")
 
     for result in cc:
         contig, start, end, interval_id,peakval = result
+        # peakval is truncated at a 1000 as this is the maximum permitted
+        # score in a bed file.
         peakval = int(min(peakval,1000))
         outs.write( "%s\t%i\t%i\t%s\t%i\n" % (contig, start, end, str(interval_id), peakval) )
 
@@ -664,7 +669,7 @@ def loadMACSSummary( infile, outfile ):
     table = outfile[:-len(".load")]
 
     statement = '''
-   python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+    python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --index=track 
               --table=%(table)s
     < %(infile)s 
@@ -684,6 +689,8 @@ def loadMACS( infile, outfile, bamfile ):
 
     Does re-counting of peakcenter, peakval, ... using
     bamfile.
+
+    creates <outfile>.tsv.gz with status information.
     '''
 
     track = infile[:-len(".macs")]    
@@ -765,8 +772,14 @@ def loadMACS( infile, outfile, bamfile ):
             # qvalue is in percent, divide by 100.
             pvalue, qvalue, summit, fold = float(pvalue), float(qvalue) / 100, int(summit), float(fold)
 
-            if qvalue > max_qvalue or pvalue < min_pvalue or fold < min_fold: 
-                counter.skipped += 1
+            if qvalue > max_qvalue:
+                counter.removed_qvalue += 1
+                continue
+            elif pvalue < min_pvalue:
+                counter.removed_pvalue += 1
+                continue
+            elif fold < min_fold:
+                counter.removed_fold += 1
                 continue
 
             # these are 1-based coordinates
@@ -783,16 +796,24 @@ def loadMACS( infile, outfile, bamfile ):
                             ntags) ) ) + "\n" )
             id += 1                        
             counter.output += 1
+
     outtemp.close()
+
+    # output flitering summary
+    outf = IOTools.openFile( "%s.tsv.gz" % outfile, "w" )
+    outf.write( "category\tcounts\n" )
+    outf.write( "%s\n" % counter.asTable() )
+    outf.close()
 
     E.info( "%s filtering: %s" % (track, str(counter)))
     if counter.output == 0:
         E.warn( "%s: no peaks found" % track )
 
+    # load data into table
     tablename = "%s_intervals" % track
 
     statement = '''
-   python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
+    python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
               --allow-empty
               --index=interval_id 
               --table=%(tablename)s 
@@ -809,7 +830,7 @@ def loadMACS( infile, outfile, bamfile ):
 
         statement = '''
         sed "s/FC range.*/fc\\tnpeaks\\tp90\\tp80\\tp70\\tp60\\tp50\\tp40\\tp30\\tp20/" < %(filename_diag)s |\
-       python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
+        python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
                   --map=fc:str \
                   --table=%(tablename)s \
         > %(outfile)s

@@ -612,6 +612,14 @@ if PARAMS["calling_caller"] == "macs":
 
         P.run() 
         
+        # compress macs bed files and index with tabix
+        for suffix in ('peaks', 'summits'):
+            statement = '''
+            bgzip -f %(outfile)s_peaks.bed; 
+            tabix -f -p bed %(outfile)s_peaks.bed.gz
+            '''
+            P.run()
+
     ############################################################
     ############################################################
     ############################################################
