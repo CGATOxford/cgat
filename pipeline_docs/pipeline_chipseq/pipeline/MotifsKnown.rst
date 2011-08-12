@@ -1,42 +1,36 @@
-Presence of canonical motifs
-============================
+==================
+Presence of motifs
+==================
 
 MAST is used to look for the presence of canonical motifs in the dataset.
 Canonical motifs are known beforehand.
 
 Summary
--------
+=======
+
+The following plots show the percent of peaks that are explained by
+the presence of a motif. The percentage of peaks explained is
+estimated using MAST-curves (:pmid:`19160518`).
 
 .. report:: Motifs.MastSummary
-   :render: table
-   :force: 
+   :render: interleaved-bar-plot
+   :transform: filter
+   :tf-fields: MC-explained / %
+   :layout: column-3
+   :width: 200
 
-   Number of intervals with MAST matches.
+   Percentage of peaks explained by motifs.
 
 Location of motifs within intervals
------------------------------------
+===================================
 
-Absolute distance
-+++++++++++++++++
-.. report:: Motifs.MastMotifLocation
-   :render: line-plot
-   :transform: histogram
-   :as-lines:
-   :tf-aggregate: normalized-total,cumulative
-   :layout: column-3
-   :width: 300
+Motifs should be located centrally within predicted binding intervals.
 
-   Location of motifs within intervals. If several
-   motifs are within an interval, the midpoint
-   of all motifs is used. The x-axis shows the
-   distance of the motif to the peak.
+The following plots show distance of motifs within intervals from the
+middle of an interval.
 
-Relative distance
-+++++++++++++++++
-
-The following plots show the relative location of motifs within
-intervals. These should follow a sigmoidal
-curve with the turning point at 0.
+A strong motif displays a sigmoidal curve, while a weak/unspecific
+motif creates a diagonal.
 
 .. report:: Motifs.MastMotifLocationMiddle
    :render: line-plot
@@ -44,19 +38,20 @@ curve with the turning point at 0.
    :as-lines:
    :tf-aggregate: normalized-total,cumulative
    :layout: column-3
-   :width: 300
+   :width: 200
 
    Location of motifs within intervals. If several
    motifs are within an interval, the midpoint
    of all motifs is used. The x-axis shows the
-   distance of the motif to the middle of the 
+   distance of the motif to the middle of the
    interval.
 
 Control intervals
 +++++++++++++++++
 
 The following plots show the relative location of motifs within
-*control* intervals. These plots should show a straight line.
+*control* intervals, random genomic locations of the same size. 
+These plots should all show a straight line.
 
 .. report:: Motifs.MastControlLocationMiddle
    :render: line-plot
@@ -64,7 +59,7 @@ The following plots show the relative location of motifs within
    :as-lines:
    :tf-aggregate: normalized-total,cumulative
    :layout: column-3
-   :width: 300
+   :width: 200
 
    Location of motifs within *control* intervals.
    If several motifs are within an interval, the midpoint
@@ -72,20 +67,32 @@ The following plots show the relative location of motifs within
    distance of the motif to the peak.
 
 Motifs and peak strength
-------------------------
+========================
+
+The following plot shows the proportion of peaks of a certain height
+that contain a motif. For each combination of track and motif there
+are two lines:
+   * proportion with motif: proportion of peaks of height equal or
+     greater than X that contain a motif. This usually starts at 100%
+     for high peaks (high values of X) but then drops off to the
+     number of peaks that contain a motif.
+
+   * recall: proportion of peaks of height equal or greater than
+     X. This is a reverse cumulative distribution starting at low
+     values for high X and then increasing to 100% as X decreases.
 
 .. report:: Motifs.MastPeakValWithMotif
    :render: line-plot
    :groupby: slice
    :as-lines:
    :layout: column-3
-   :width: 300
-  
+   :width: 200
+
    Proportion of intervals with a certain peakvalue or higher
    that contain a motif.
 
 Motifs and interval locations
------------------------------
+=============================
 
 .. report:: Motifs.AnnotationsMotifs
    :render: matrix-plot
@@ -104,7 +111,7 @@ Motifs and interval locations
    together with the binding strength (:term:`peakval`)
 
 Number of motifs per interval
------------------------------
+=============================
 
 The following table shows stats on the number of motifs per interval.
 
@@ -124,77 +131,27 @@ for each motif and dataset.
 
    Number of motifs per interval
 
-MAST Evalue curves
-------------------
 
-In order to assess the validity of a match and motif,
-same-sized segments on either side of each interval was submitted
-to MAST. 
+Distance from peak
+++++++++++++++++++
 
-.. report:: Motifs.MastEvalues                                                                                                                                                                                                               
-   :render: line-plot                                                                                                                                                                                                                        
-   :transform: histogram                                                                                                                                                                                                                     
-   :tf-aggregate: normalized-total,cumulative                                                                                                                                                                                                
-   :logscale: x                                                                                                                                                                                                                              
-   :groupby: track                                                                                                                                                                                                                           
-   :as-lines:                                                                                                                                                                                                                                
-   :layout: column-5
-   :width: 200                                                                                                                                                                                                                         
-                                                                                                                                                                                                                                             
-   Cumulative distribution of Evalues in intervals 
-   and in control regions.
+The following plots show distance of motifs within intervals from the
+interval peak, the position with the largest number of reads.
 
-MAST FDR curves
----------------
+A strong motif displays a sigmoidal curve, while a weak/unspecific
+motif creates a diagonal.
 
-The following plots fdr values against evalues. The
-fdr has been calibrated using the control intervals.
-
-.. report:: Motifs.MastFDR
+.. report:: Motifs.MastMotifLocation
    :render: line-plot
-   :logscale: x
-   :yrange: 0,1.1
-   :groupby: track
+   :transform: histogram
    :as-lines:
-   :layout: column-4
-   :width: 300
-
-   Fdr values against evalues.
-
-MAST curves
------------
-
-.. report:: Motifs.MastCurve                                                                                                                                                                                                               
-   :render: line-plot                                                                                                                                                                                                              
-   :as-lines:
+   :tf-aggregate: normalized-total,cumulative
    :layout: column-3
-   :width: 300
-   :yrange: 0,
-                                                                                                                                                                                                                                          
-   MAST curves
+   :width: 200
 
-ROC curves
-----------
+   Location of motifs within intervals. If several
+   motifs are within an interval, the midpoint
+   of all motifs is used. The x-axis shows the
+   distance of the motif to the peak.
 
-The ROC curves test several :term:`interval` features for 
-their ability to enrich for intervals that contain a motif.
 
-The table below lists the area-under-the-curve (AUC). Higher values
-are better values. Values of around 0.5 indicate no predictive value, and
-less than 0.5 indicate bad predictors.
-
-.. report:: Motifs.MastAUC                                                                                                                                                                                                                   
-   :render: matrix
-   :format: %5.2f 
-
-   Table with AUC values.
-
-And here are the ROC curves:
-
-.. report:: Motifs.MastROC
-   :render: line-plot
-   :as-lines:
-   :layout: column-3
-   :width: 300
-
-   ROC curves for MAST motifs and interval selection.

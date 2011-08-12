@@ -125,6 +125,9 @@ contigs.tsv
 tss.bed.gz
    A :term:`bed` formatted file with transcription start sites.
 
+tts.bed.gz
+   A :term:`bed` formatted file with transcription termination sites.
+
 promotors.bed.gs
    A :term:`bed` formatted file with promotor regions (fixed witdth segments upstream of 
    transcription start sites).
@@ -536,6 +539,20 @@ def buildTSSRegions( infile, outfile ):
         > %(outfile)s
     """
 
+    P.run()
+
+############################################################
+############################################################
+############################################################
+@merge( buildCDSTranscripts, PARAMS["interface_tts_bed"] )
+def buildTTSRegions( infile, outfile ):
+    '''annotate transcription termination sites from reference gene set. '''
+    statement = """gunzip < %(infile)s 
+                   | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
+                   | python %(scriptsdir)s/gtf2gff.py --method=tts --promotor=1 --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
+                   | python %(scriptsdir)s/gff2bed.py --is-gtf --name=transcript_id --log=%(outfile)s.log 
+                   | gzip
+                   > %(outfile)s"""
     P.run()
 
 ############################################################
@@ -971,7 +988,7 @@ def ontologies():
     '''create and load ontologies'''
     pass
 
-@follows( geneset, fasta, promotors, genome, repeats, ontologies )
+@follows( geneset, fasta, promotors, genome, ontologies )
 def full():
     '''build all targets.'''
     pass

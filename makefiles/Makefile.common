@@ -52,6 +52,9 @@ PARAM_PRIORITY?=-10
 ## queue to use
 PARAM_QUEUE?=medium_jobs.q
 
+PARAM_QUEUE_SERVER?=server_jobs.q
+PARAM_QUEUE_LOCAL?=local_jobs.q
+
 ## number of jobs to submit to the queue in parallel
 PARAM_NUM_JOBS?=100
 
@@ -172,7 +175,7 @@ CMD_SERVER_SUBMIT?=qrsh \
 	-now n \
 	-v BASH_ENV=~/.bashrc \
 	-p $(PARAM_PRIORITY) \
-	-q server_jobs.q \
+	-q $(PARAM_QUEUE_SERVER) \
 	-N $(PARAM_PROJECT_NAME)_`echo $@ | tr -d :` 
 
 #########################################################################
@@ -183,7 +186,7 @@ CMD_LOCAL_SUBMIT?=qrsh \
 	-now n \
 	-v BASH_ENV=~/.bashrc \
 	-p $(PARAM_PRIORITY) \
-	-q local_jobs.q \
+	-q $(PARAM_QUEUE_LOCAL) \
 	-N $(PARAM_PROJECT_NAME)_`echo $@ | tr -d :` 
 
 

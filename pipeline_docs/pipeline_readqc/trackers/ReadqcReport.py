@@ -11,6 +11,7 @@ from SphinxReport.odict import OrderedDict as odict
 EXPORTDIR=P['readqc_exportdir']
 DATADIR=P['readqc_datadir']
 DATABASE=P['readqc_backend']
+PE=P['readqc_pe']
 
 ###################################################################
 # cf. pipeline_rnaseq.py
@@ -48,8 +49,16 @@ class TrackerFastQC( ReadqcTracker ):
         filenames = sorted( [x.asFile() for x in TRACKS ] )
         
         for fn in filenames:
-            toc_text.append( "* %(fn)s_" % locals()) 
-            link_text.append( ".. _%(fn)s: %(edir)s/fastqc/%(fn)s_fastqc/fastqc_report.html" % locals() )
+            if PE=="True":
+                fn1 = fn + ".1"
+                fn2 = fn + ".2"
+                toc_text.append( "* %(fn1)s_" % locals()) 
+                toc_text.append( "* %(fn2)s_" % locals()) 
+                link_text.append( ".. _%(fn1)s: %(edir)s/fastqc/%(fn1)s_fastqc/fastqc_report.html" % locals() )
+                link_text.append( ".. _%(fn2)s: %(edir)s/fastqc/%(fn2)s_fastqc/fastqc_report.html" % locals() )
+            else:
+                toc_text.append( "* %(fn)s_" % locals()) 
+                link_text.append( ".. _%(fn)s: %(edir)s/fastqc/%(fn)s_fastqc/fastqc_report.html" % locals() )
             
         toc_text = "\n".join(toc_text)
         link_text =  "\n".join(link_text)

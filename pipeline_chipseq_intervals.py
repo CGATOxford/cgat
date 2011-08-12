@@ -66,8 +66,7 @@ def getPeakShift( infile ):
 ############################################################
 ############################################################
 def getMappedReads( infile ):
-    '''return number of reads mapped.
-    '''
+    '''return number of reads mapped. '''
     for lines in open(infile,"r"):
         data = lines[:-1].split("\t")
         if data[1].startswith( "without duplicates"):
@@ -512,8 +511,7 @@ def exportPeaksAsBed( infile, outfile ):
 ############################################################
 ############################################################
 def mergeBedFiles( infiles, outfile ):
-    '''generic method for merging bed files.
-    '''
+    '''generic method for merging bed files. '''
 
     if len(infiles) < 2:
         raise ValueError( "expected at least two files to merge into %s" % outfile )
@@ -602,9 +600,9 @@ def summarizeMACS( infiles, outfile ):
         if x: return x.groups() 
 
     map_targets = [
-        ("unique tags in treatment: (\d+)", "tag_treatment_unique",()),
+        ("tags after filtering in treatment: (\d+)", "tag_treatment_filtered",()),
         ("total tags in treatment: (\d+)", "tag_treatment_total",()),
-        ("unique tags in control: (\d+)", "tag_control_unique",()),
+        ("tags after filtering in control: (\d+)", "tag_control_filtered",()),
         ("total tags in control: (\d+)", "tag_control_total",()),
         ("#2 number of paired peaks: (\d+)", "paired_peaks",()),
         ("#2   min_tags: (\d+)","min_tags", ()),
@@ -641,7 +639,70 @@ def summarizeMACS( infiles, outfile ):
                         results[x].append( s.groups()[0] )
                         break
                 
-        row = [ infile[:-len(".macs")] ]
+        row = [ P.snip( os.path.basename(infile), ".macs" ) ]
+        for key in keys:
+            val = results[key]
+            if len(val) == 0: v = "na"
+            else: 
+                c = len(mapper_header[key])
+                if c >= 1: assert len(val) == c, "key=%s, expected=%i, got=%i, val=%s, c=%s" %\
+                   (key,
+                    len(val),
+                    c,
+                    str(val), mapper_header[key])
+                v = "\t".join( val )
+            row.append(v)
+        outs.write("\t".join(row) + "\n" )
+
+    outs.close()
+
+############################################################
+############################################################
+############################################################
+def summarizeMACSsolo( infiles, outfile ):
+    '''run MACS for peak detection.'''
+    def __get( line, stmt ):
+        x = line.search(stmt )
+        if x: return x.groups() 
+
+    map_targets = [
+        ("total tags in treatment: (\d+)", "tag_treatment_total",()),
+        ("#2 number of paired peaks: (\d+)", "paired_peaks",()),
+        ("#2   min_tags: (\d+)","min_tags", ()),
+        ("#2   d: (\d+)", "shift", ()),
+        ("#2   scan_window: (\d+)", "scan_window", ()),
+        ("#3 Total number of candidates: (\d+)", "ncandidates",("positive",) ),
+        ("#3 Finally, (\d+) peaks are called!",  "called", ("positive",) ) ]
+
+    mapper, mapper_header = {}, {}
+    for x,y,z in map_targets: 
+        mapper[y] = re.compile( x )
+        mapper_header[y] = z
+
+    keys = [ x[1] for x in map_targets ]
+
+    outs = open(outfile,"w")
+
+    headers = []
+    for k in keys:
+        if mapper_header[k]:
+            headers.extend( ["%s_%s" % (k,x) for x in mapper_header[k] ])
+        else:
+            headers.append( k )
+    outs.write("track\t%s" % "\t".join(headers) + "\n" )
+
+    for infile in infiles:
+        results = collections.defaultdict(list)
+        with open( infile ) as f:
+            for line in f:
+                if "diag:" in line: break
+                for x,y in mapper.items():
+                    s = y.search( line )
+                    if s: 
+                        results[x].append( s.groups()[0] )
+                        break
+
+        row = [ P.snip( os.path.basename(infile), ".macs" ) ]
         for key in keys:
             val = results[key]
             if len(val) == 0: v = "na"
@@ -661,50 +722,56 @@ def summarizeMACS( infiles, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-##
 ###################################################################
 def loadMACSSummary( infile, outfile ):
     '''load regions of interest.'''
     
-    table = outfile[:-len(".load")]
-
-    statement = '''
-    python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --index=track 
-              --table=%(table)s
-    < %(infile)s 
-    > %(outfile)s
-    '''
-
+    table = P.snip( os.path.basename(outfile), ".load" )
+    statement = '''python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+                      --index=track 
+                      --table=%(table)s
+                   < %(infile)s > %(outfile)s'''
     P.run()
 
 ############################################################
 ############################################################
 ############################################################
-def loadMACS( infile, outfile, bamfile ):
-    '''load MACS results.
+def loadMACS( infile, outfile, bamfile, tablename = None ):
+    '''load MACS results in *tablename*
 
-    Loads only positive peaks. It filters peaks by p-value,
-    q-value and fold change and loads the diagnostic data.
+    This method loads only positive peaks. It filters peaks by p-value,
+    q-value and fold change and loads the diagnostic data and
+    re-calculates peakcenter, peakval, ... using the supplied bamfile.
 
-    Does re-counting of peakcenter, peakval, ... using
-    bamfile.
+    If *tablename* is not given, it will be :file:`<track>_intervals`
+    where track is derived from ``infile`` and assumed to end
+    in :file:`.macs`.
 
-    creates <outfile>.tsv.gz with status information.
+    This method creates two optional additional files:
+
+    * if the file :file:`<track>_diag.xls` is present, load MACS 
+    diagnostic data into the table :file:`<track>_macsdiag`.
+    
+    * if the file :file:`<track>_model.r` is present, call R to
+    create a MACS peak-shift plot and save it as :file:`<track>_model.pdf`
+    in the :file:`export/MACS` directory.
+
+    This method creates :file:`<outfile>.tsv.gz` with the results
+    of the filtering.
     '''
 
-    track = infile[:-len(".macs")]    
-    infilename = infile + "_peaks.xls"
+    track = P.snip( os.path.basename(infile), ".macs" )
+    folder = os.path.dirname(infile)
+    infilename = infile + "_peaks.xls.gz"
     filename_diag = infile + "_diag.xls"
     filename_r = infile + "_model.r"
     
     if not os.path.exists(infilename):
         E.warn("could not find %s" % infilename )
-        outs = open(outfile,"w")
-        outs.close()
+        P.touch( outfile )
         return
 
-    # create plot
+    # create plot by calling R
     if os.path.exists( filename_r ):
 
         target_path = os.path.join( os.getcwd(), "export", "MACS" )
@@ -724,6 +791,7 @@ def loadMACS( infile, outfile, bamfile ):
             "%s.macs_model.pdf" % track,
             os.path.join( target_path, "%s_model.pdf" % track) )
         
+    # filter peaks
     shift = getPeakShift( infile )
     assert shift != None, "could not determine peak shift from MACS file %s" % infile
 
@@ -731,6 +799,7 @@ def loadMACS( infile, outfile, bamfile ):
 
     samfiles = [ pysam.Samfile( bamfile, "rb" ) ]
     offsets = [ shift / 2 ]
+
     outtemp = P.getTempFile()
     tmpfilename = outtemp.name
 
@@ -739,7 +808,8 @@ def loadMACS( infile, outfile, bamfile ):
                 "contig", "start", "end",
                 "npeaks", "peakcenter", 
                 "length", 
-                "avgval", "peakval",
+                "avgval", 
+                "peakval",
                 "nprobes",
                 "pvalue", "fold", "qvalue",
                 "macs_summit", "macs_nprobes",
@@ -753,7 +823,7 @@ def loadMACS( infile, outfile, bamfile ):
     min_fold = float(PARAMS["macs_min_fold"])
     
     counter = E.Counter()
-    with open( infilename, "r" ) as ins:
+    with IOTools.openFile( infilename, "r" ) as ins:
         for line in ins:
             if line.startswith("#"): continue
             if line.startswith( "chr\tstart"): continue
@@ -761,11 +831,12 @@ def loadMACS( infile, outfile, bamfile ):
             if line.startswith("\n"): continue
             counter.input += 1
             data = line[:-1].split("\t")
+
             if len(data) == 9:
                 contig,start,end,length,summit,ntags,pvalue,fold,qvalue = data
             elif len(data) == 8:
                 contig,start,end,length,summit,ntags,pvalue,fold = data
-                qvalue = 1.0
+                qvalue = 0.0
             else:
                 raise ValueError( "could not parse line %s" % line )
             
@@ -810,12 +881,14 @@ def loadMACS( infile, outfile, bamfile ):
         E.warn( "%s: no peaks found" % track )
 
     # load data into table
-    tablename = "%s_intervals" % track
+    if tablename == None:
+        tablename = "%s_intervals" % track
 
     statement = '''
     python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
               --allow-empty
               --index=interval_id 
+              --index=contig,start
               --table=%(tablename)s 
     < %(tmpfilename)s 
     > %(outfile)s
@@ -829,10 +902,11 @@ def loadMACS( infile, outfile, bamfile ):
         tablename = "%s_macsdiag" % track
 
         statement = '''
-        sed "s/FC range.*/fc\\tnpeaks\\tp90\\tp80\\tp70\\tp60\\tp50\\tp40\\tp30\\tp20/" < %(filename_diag)s |\
-        python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
-                  --map=fc:str \
-                  --table=%(tablename)s \
+        cat %(filename_diag)s 
+        | sed "s/FC range.*/fc\\tnpeaks\\tp90\\tp80\\tp70\\tp60\\tp50\\tp40\\tp30\\tp20/" 
+        | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
+                  --map=fc:str 
+                  --table=%(tablename)s 
         > %(outfile)s
         '''
 
@@ -855,13 +929,34 @@ def runMACS( infile, outfile, controlfile = None ):
     else: control = ""
         
     statement = '''
-    macs -t %(infile)s %(control)s \
-    --diag \
-    --name=%(outfile)s \
-    --format=%(format)s \
-    %(macs_options)s >& %(outfile)s''' 
+    macs -t %(infile)s %(control)s 
+    --diag 
+    --name=%(outfile)s 
+    --format=BAM
+    --format=%(format)s 
+    %(macs_options)s 
+    >& %(outfile)s
+    ''' 
     
     P.run() 
+    
+    # compress macs bed files and index with tabix
+    for suffix in ('peaks', 'summits'):
+        statement = '''
+        bgzip -f %(outfile)s_%(suffix)s.bed; 
+        tabix -f -p bed %(outfile)s_%(suffix)s.bed.gz
+        '''
+        P.run()
+        
+    for suffix in ('peaks.xls', 'negative_peaks.xls'):
+        statement = '''grep -v "^$" 
+                       < %(outfile)s_%(suffix)s 
+                       | bgzip > %(outfile)s_%(suffix)s.gz;
+                       tabix -f -p bed %(outfile)s_%(suffix)s.gz;
+                       checkpoint;
+                       rm -f %(outfile)s_%(suffix)s
+                    '''
+        P.run()
 
 ############################################################
 ############################################################
@@ -962,7 +1057,7 @@ def makeIntervalCorrelation( infiles, outfile, field, reference ):
             ix.add( contig, start, end, peakval )        
         idx.append( ix )
         tracks.append( track )
-    outs = open( outfile, "w" )
+    outs = IOTools.openFile( outfile, "w" )
     outs.write( "contig\tstart\tend\tid\t" + "\t".join( tracks ) + "\n" )
 
     for bed in Bed.iterator( infile = open( reference, "r") ):

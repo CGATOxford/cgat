@@ -183,6 +183,15 @@ def which( filename ):
             return f
     return None
 
+def clone( infile, outfile ):
+    '''create a clone of ``infile`` named ``outfile``
+    by creating a soft-link.
+    '''
+    try:
+        os.symlink( infile, outfile )
+    except OSError:
+        pass
+    
 def touch( filename, times = None ):
     '''update/create a sentinel file.'''
     fhandle = file(filename, 'a')

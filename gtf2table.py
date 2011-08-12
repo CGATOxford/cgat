@@ -383,6 +383,22 @@ class CounterCompositionNucleotides(Counter):
         return str(self.mResult)
 
 ##-----------------------------------------------------------------------------------
+class CounterCompositionCpG(Counter):
+    header = SequenceProperties.SequencePropertiesCpg().getHeaders() 
+
+    def __init__(self, *args, **kwargs ):
+        Counter.__init__(self, *args, **kwargs )
+
+    def count(self):
+        ee = self.getSegments()
+        s = self.getSequence( ee )
+        self.mResult = SequenceProperties.SequencePropertiesCpg()
+        self.mResult.loadSequence( s )
+
+    def __str__(self):
+        return str(self.mResult)
+
+##-----------------------------------------------------------------------------------
 class CounterOverlap(Counter):
     """count overlap with segments in another file.
 
@@ -2583,7 +2599,7 @@ class CounterBigwigCounts(Counter):
 
 
 ##------------------------------------------------------------
-if __name__ == '__main__':
+def main( argv = None ):
 
     parser = optparse.OptionParser( version = "%prog version: $Id: gtf2table.py 2888 2010-04-07 08:48:36Z andreas $", usage = globals()["__doc__"])
 
@@ -2621,7 +2637,7 @@ if __name__ == '__main__':
                       help="select range on which counters will operate [default=%default]."  )
 
     parser.add_option("-c", "--counter", dest="counters", type="choice", action="append",
-                      choices=("length", "splice", "composition-na", 
+                      choices=("length", "splice", "composition-na", "composition-cpg", 
                                "overlap", 
                                "classifier", 
                                "classifier-chipseq",
@@ -2664,7 +2680,9 @@ if __name__ == '__main__':
         prefixes = []
         )
 
-    (options, args) = E.Start( parser, add_output_options = True)
+    if not argv: argv = sys.argv
+
+    (options, args) = E.Start( parser, add_output_options = True, argv = argv)
 
     if options.prefixes:
         if len(options.prefixes) != len(options.counters):
@@ -2749,6 +2767,11 @@ if __name__ == '__main__':
         elif c == "composition-na":
             for section in options.sections:
                 counters.append( CounterCompositionNucleotides( fasta=fasta,
+                                                                section = section,
+                                                                options = options, prefix = prefix ) )
+        elif c == "composition-cpg":
+            for section in options.sections:
+                counters.append( CounterCompositionCpG( fasta=fasta,
                                                                 section = section,
                                                                 options = options, prefix = prefix ) )
 
@@ -2848,3 +2871,6 @@ if __name__ == '__main__':
     for counter in counters:
         E.info( "%s\t%s" % (repr(counter), str(counter.counter) ) )
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )

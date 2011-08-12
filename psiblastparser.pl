@@ -32,7 +32,7 @@
 #
 # added option to use zero based coordinates and open/closed intervals
 $|=1;
-$[=1;
+# $[=1; deprecated
 
 # use strict;
 # global variables for the parser :
@@ -429,8 +429,8 @@ sub compressali {
     local(@ali1)=@_;
     local($ali1,$n,$sign,$i);
     $ali1='';
-    $_=$ali1[$[]; $n=$_; ($sign)=/^([+-])/;
-    $i=$[; 
+    $_=$ali1[0]; $n=$_; ($sign)=/^([+-])/;
+    $i=0; 
     while($i<$#ali1) {
 	while($ali1[$i+1]=~/[$sign]/ || $ali1[$i+1] eq '+0') { $i++; $n+=$ali1[$i]; }
 	$n=~s/[\-\+]//g; $ali1.=$sign.$n; 

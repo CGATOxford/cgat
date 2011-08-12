@@ -1060,6 +1060,63 @@ def loadEffects( infile, outfile ):
         '''
         P.run()
 
+###################################################################
+###################################################################
+###################################################################
+@merge(  buildEffects, "effects.load" )
+def mergeEffects( infiles, outfile ):
+    '''load transcript effects into single table.'''
+
+    tablename = P.toTable( outfile )
+    outf = open('effect.txt','w')
+    first = True
+    for f in infiles:
+        track = P.snip( os.path.basename(f), ".effects.gz" )
+        if not os.path.exists( f ): 
+            E.warn( "File %s missing" % f )
+            continue
+        lines = [ x for x in gzip.open( f, "r").readlines() ]
+        if first: outf.write( "%s\t%s" % ("track", lines[0] ) )
+        first = False
+        for i in range(1, len(lines)):
+            outf.write( "%s\t%s" % (track,lines[i] ))
+    outf.close()
+    tmpfilename = outf.name
+
+    statement = '''cat tmpfilename |
+                   python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
+                       --index=transcript_id 
+                       --table=%(tablename)s 
+                   > %(outfile)s'''
+    P.run()
+
+    for suffix in ("cds", "intron", "splicing", "translation"):
+
+        outf = open('effects_'+suffix+'.txt','w')
+        first = True
+        for f in infiles:
+            track = P.snip( os.path.basename(f), ".effects.gz" )
+            statfile = P.snip(f, ".gz" )  + suffix + ".gz"
+            if not os.path.exists( statfile ): 
+                E.warn( "File %s missing" % statfile )
+                continue
+            lines = [ x for x in gzip.open( statfile, "r").readlines() ]
+            if first: outf.write( "%s\t%s" % ("track", lines[0] ) )
+            first = False
+            for i in range(1, len(lines)):
+                outf.write( "%s\t%s" % (track,lines[i] ))
+        outf.close()
+        tmpfilename = outf.name
+        
+        statement = '''cat tmpfilename |
+                       python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
+                           --allow-empty
+                           --index=transcript_id 
+                           --table=%(tablename)s_%(suffix)s 
+                           --ignore-column=seq_na
+                           --ignore-column=seq_aa
+                       >> %(outfile)s'''
+        P.run()
 
 ###################################################################
 ###################################################################
@@ -2854,7 +2911,7 @@ def loadGeneListAnalysis( infile, outfile ):
 def prepare():
     pass
 
-@follows( buildEffects, loadEffects, summarizeEffectsPerGene )
+@follows( buildEffects, loadEffects, mergeEffects, summarizeEffectsPerGene )
 def consequences(): pass
 
 @follows( buildAlleles, loadAlleles,

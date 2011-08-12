@@ -169,21 +169,19 @@ import sys, tempfile, optparse, shutil, itertools, csv, math, random, re, glob, 
 
 import Experiment as E
 import logging as L
+import Database
 from ruffus import *
 import csv
 import sqlite3
 import IndexedFasta, IndexedGenome, FastaIterator, Genomics
 import IOTools
 import MAST, GTF, GFF, Bed
-import cStringIO
 import pysam
 import numpy
 import gzip
 import Masker
 import Glam2Scan
-import fileinput
 import Motifs
-import gff2annotator
 import Bioprospector
 
 import pipeline_chipseq_intervals as PIntervals
@@ -303,6 +301,22 @@ TRACKS_CORRELATION = TRACKS_MASTER + list(TRACKS) + [ getSubtracted( x ) for x i
 # print "MASTER=", TRACKS_MASTER
 # print "CORRELATION=", TRACKS_CORRELATION
 
+###################################################################
+###################################################################
+###################################################################
+def connect():
+    '''connect to database.
+
+    This method also attaches to helper databases.
+    '''
+
+    dbh = sqlite3.connect( PARAMS["database"] )
+    statement = '''ATTACH DATABASE '%s' as annotations''' % (PARAMS["annotations_database"])
+    cc = dbh.cursor()
+    cc.execute( statement )
+    cc.close()
+
+    return dbh
 
 ###################################################################
 ###################################################################
@@ -313,6 +327,9 @@ TRACKS_CORRELATION = TRACKS_MASTER + list(TRACKS) + [ getSubtracted( x ) for x i
 ###################################################################
 ###################################################################
 ###################################################################
+## Mapping
+###################################################################
+
 if PARAMS["mapping_mapper"] == "bowtie":
     
     ############################################################
@@ -342,86 +359,18 @@ else:
 ###################################################################
 ###################################################################
 ###################################################################
-## process reads
+## Read procesing
 ###################################################################
 
 
 ############################################################
 ############################################################
 ############################################################
-@transform( buildBAM,
-            suffix(".bam"),
-            ".readstats" )
-def buildBAMStats( infile, outfile ):
-    '''count number of reads mapped, duplicates, etc.
+@files(input == None, "regions.mask")
+def makeMask(infile,outfile):
+    '''Make a mask for filtering reads if required.
     '''
-
-    to_cluster = True
-
-    statement = '''python
-    %(scriptsdir)s/bam2stats.py
-         --force
-         --output-filename-pattern=%(outfile)s.%%s
-    < %(infile)s
-    > %(outfile)s
-    '''
-
-    P.run()
-
-#########################################################################
-#########################################################################
-#########################################################################
-@merge( buildBAMStats, "bam_stats.load" )
-def loadBAMStats( infiles, outfile ):
-    '''import bam statisticis.'''
-
-    header = ",".join( [P.snip( x, ".readstats") for x in infiles] )
-    filenames = " ".join( [ "<( cut -f 1,2 < %s)" % x for x in infiles ] )
-    tablename = P.toTable( outfile )
-    E.info( "loading bam stats - summary" )
-    statement = """python %(scriptsdir)s/combine_tables.py
-                      --headers=%(header)s
-                      --missing=0
-                      --ignore-empty
-                   %(filenames)s
-                | perl -p -e "s/bin/track/"
-                | perl -p -e "s/unique/unique_alignments/"
-                | python %(scriptsdir)s/table2table.py --transpose
-                | python %(scriptsdir)s/csv2db.py
-                      --index=track
-                      --table=%(tablename)s 
-                > %(outfile)s
-            """
-    P.run()
-
-    for suffix in ("nm", "nh"):
-        E.info( "loading bam stats - %s" % suffix )
-        filenames = " ".join( [ "%s.%s" % (x, suffix) for x in infiles ] )
-        tname = "%s_%s" % (tablename, suffix)
-        
-        statement = """python %(scriptsdir)s/combine_tables.py
-                      --header=%(header)s
-                      --skip-titles
-                      --missing=0
-                      --ignore-empty
-                   %(filenames)s
-                | perl -p -e "s/bin/%(suffix)s/"
-                | python %(scriptsdir)s/csv2db.py
-                      --allow-empty
-                      --table=%(tname)s 
-                >> %(outfile)s
-                """
-    
-        P.run()
-
-############################################################
-############################################################
-############################################################
-
-# Make a mask for filtering reads if required
-if PARAMS["calling_filter_exons"] or PARAMS["calling_filter_regions"]:
-    @files(input == None, "regions.mask")
-    def makeMask(infile,outfile):
+    if PARAMS["calling_filter_exons"] or PARAMS["calling_filter_regions"]:
         regions_to_filter = []
         if PARAMS["calling_filter_exons"]:
             regions_to_filter += PIntervals.getExonLocations(PARAMS["calling_filter_exons"]) 
@@ -432,34 +381,44 @@ if PARAMS["calling_filter_exons"] or PARAMS["calling_filter_regions"]:
             fh.write("\t".join([r[0],str(r[1]),str(r[2])]))
             fh.write("\n")
         fh.close()
-else:
-    def makeMask():
-        pass
+    else:
+        P.touch(outfile)
 
-@follows(makeMask )
-@transform(buildBAM,suffix(".bam"), ".prep.bam")
-def prepBAMforPeakCalling(infiles, outfile):
+############################################################
+############################################################
+############################################################
+@transform( buildBAM, suffix(".bam"), add_inputs( makeMask), ".prep.bam")
+def prepBAMForPeakCalling(infiles, outfile):
     '''Prepare BAM files for peak calling.
+
         - unmapped reads are removed.
-        - if the option "calling_deduplicate" is true duplicate reads are simplistically removed (using samtools rmdup may be superior)
+
+        - if the option "calling_deduplicate" is true duplicate reads are simplistically removed 
+            (using samtools rmdup may be superior)
+
         - reads may be filtered by exon or location 
-        -- to remove reads by exon, the option "calling_filter_exons" should specify a file containing a list of ensembl gene identifiers (one per line)
-        -- to remove reads by location, the option "calling_filter_regions" should specify a bed file''
-        The resulting bam file has a .prep.bam extension. Merging infiles is currently untested and the methods only consider single end reads.
+
+           - to remove reads by exon, the option "calling_filter_exons" should specify a file containing 
+             a list of ensembl gene identifiers (one per line)
+           - to remove reads by location, the option "calling_filter_regions" should specify a bed file''
+        
+        The resulting bam file has a .prep.bam extension. Merging infiles is currently untested and the 
+        methods only consider single end reads.
     '''
+    bam_file, mask_file = infiles
+
     if PARAMS["calling_filter_exons"] or PARAMS["calling_filter_regions"]:
-        mask = PIntervals.buildQuicksectMask("regions.mask")
+        mask = PIntervals.buildQuicksectMask(mask_file)
     else:
         mask = None
 
-    PIntervals.buildBAMforPeakCalling(infiles,outfile,PARAMS["calling_deduplicate"],mask)
-    
+    PIntervals.buildBAMforPeakCalling(bam_file,outfile,PARAMS["calling_deduplicate"],mask)
 
 ############################################################
 ############################################################
 ############################################################
 if PARAMS["calling_normalize"]==True:
-    ''' Normalise the number of reads in a set of prepared bam files.
+    '''Normalise the number of reads in a set of prepared bam files.
 
     The minimum number of reads in a prepared bam file is calculated and this
     number of reads is used as a threshold to randomly sample from each bam file 
@@ -473,10 +432,10 @@ if PARAMS["calling_normalize"]==True:
     count between experimental and input samples.
     '''
     # First count the number of reads in each bam
-    @transform(prepBAMforPeakCalling,suffix("prep.bam"),"prep.count")
+    @transform(prepBAMForPeakCalling,suffix("prep.bam"),"prep.count")
     def countReadsInBAM(infile,outfile):
         to_cluster = True
-        statement= ''' samtools idxstats %s | awk '{s+=$3} END {print s}' > %s ''' % ( infile,outfile )
+        statement= '''samtools idxstats %s | awk '{s+=$3} END {print s}' > %s ''' % ( infile,outfile )
         P.run()
 
     # Get the lowest number of reads
@@ -494,9 +453,11 @@ if PARAMS["calling_normalize"]==True:
 
     # Make normalised files
     @follows(minReads)
-    @transform("*.prep.bam",regex(r"(.*).prep.bam"),
-                            inputs( (r"\1.prep.bam",r"\1.prep.count") ), r"\1.norm.bam")
-    def normalizeBAMfile( infiles, outfile ):
+    @transform(prepBAMForPeakCalling,
+               regex(r"(.*).prep.bam"),
+               inputs( (r"\1.prep.bam",r"\1.prep.count") ), 
+               r"\1.call.bam")
+    def normalizeBAM( infiles, outfile ):
         '''build a normalized BAM file such that all
     files have approximately the same number of 
     reads.
@@ -507,25 +468,28 @@ if PARAMS["calling_normalize"]==True:
         PIntervals.buildSimpleNormalizedBAM( infiles, 
                                              outfile,
                                              minreads)
-    bam_affix=".norm"
-
 else:
-    bam_affix=".prep"
-    @follows( prepBAMforPeakCalling )
-    def normalizeBAMfile():
-        pass
+    @transform(prepBAMForPeakCalling,
+               suffix(".prep.bam"),
+               ".call.bam")
+    def normalizeBAM( infile, outfile):
+        P.clone( infile, outfile )
+        P.clone( infile + ".bai", outfile + ".bai" )
 
-
 ############################################################
 ############################################################
 ############################################################
-@follows( normalizeBAMfile )
-@files( [( [ "%s%s.bam" % (y.asFile(),bam_affix) for y in EXPERIMENTS[x]], 
+@follows( normalizeBAM )
+@files( [( [ "%s.call.bam" % (y.asFile()) for y in EXPERIMENTS[x]], 
            "%s.readcorrelations.gz" % x.asFile()) 
          for x in EXPERIMENTS ] )
 def makeReadCorrelation( infiles, outfile ):
     '''compute correlation between reads.
     '''
+
+    # deactivated - solve memory problems first
+    P.touch( outfile )
+    return
 
     to_cluster = True
     # job_options = "-l mem_free=8000M"
@@ -586,46 +550,103 @@ def makeReadCorrelationTable( infiles, outfile ):
         
     outf.close()
 
+############################################################
+############################################################
+############################################################
+@transform( (buildBAM, 
+             prepBAMForPeakCalling, 
+             normalizeBAM),
+            suffix(".bam"),
+            ".readstats" )
+def buildBAMStats( infile, outfile ):
+    '''count number of reads mapped, duplicates, etc.
+    '''
+
+    to_cluster = True
+
+    statement = '''python
+    %(scriptsdir)s/bam2stats.py
+         --force
+         --output-filename-pattern=%(outfile)s.%%s
+    < %(infile)s
+    > %(outfile)s
+    '''
+
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@merge( buildBAMStats, "bam_stats.load" )
+def loadBAMStats( infiles, outfile ):
+    '''import bam statistics.'''
+
+    header = ",".join( [P.snip( x, ".readstats") for x in infiles] )
+    filenames = " ".join( [ "<( cut -f 1,2 < %s)" % x for x in infiles ] )
+    tablename = P.toTable( outfile )
+    E.info( "loading bam stats - summary" )
+    statement = """python %(scriptsdir)s/combine_tables.py
+                      --headers=%(header)s
+                      --missing=0
+                      --ignore-empty
+                   %(filenames)s
+                | perl -p -e "s/bin/track/"
+                | perl -p -e "s/unique/unique_alignments/"
+                | python %(scriptsdir)s/table2table.py --transpose
+                | python %(scriptsdir)s/csv2db.py
+                      --index=track
+                      --table=%(tablename)s 
+                > %(outfile)s
+            """
+    P.run()
+
+    for suffix in ("nm", "nh"):
+        E.info( "loading bam stats - %s" % suffix )
+        filenames = " ".join( [ "%s.%s" % (x, suffix) for x in infiles ] )
+        tname = "%s_%s" % (tablename, suffix)
+        
+        statement = """python %(scriptsdir)s/combine_tables.py
+                      --header=%(header)s
+                      --skip-titles
+                      --missing=0
+                      --ignore-empty
+                   %(filenames)s
+                | perl -p -e "s/bin/%(suffix)s/"
+                | python %(scriptsdir)s/csv2db.py
+                      --allow-empty
+                      --table=%(tname)s 
+                >> %(outfile)s
+                """
+    
+        P.run()
+
+####################################################################
+####################################################################
+####################################################################
+## Peak calling
+####################################################################
+
 if PARAMS["calling_caller"] == "macs":
 
     ############################################################
     ############################################################
     ############################################################
-    @follows( normalizeBAMfile )
-    @files( [ (("%s%s.bam" % (x.asFile(),bam_affix), 
-                "%s%s.bam" % (getControl(x).asFile(),bam_affix)), 
+    @follows( normalizeBAM )
+    @files( [ (("%s.call.bam" % (x.asFile()), 
+                "%s.call.bam" % (getControl(x).asFile())), 
                "%s.macs" % x.asFile() ) for x in TRACKS ] )
     def runMACS( infiles, outfile ):
         '''run MACS for peak detection.'''
         infile, controlfile = infiles
 
-        to_cluster = True
-
-        statement = '''
-            macs14 -t %(infile)s 
-                   -c %(controlfile)s
-                   --name=%(outfile)s
-                   --format=BAM
-                   --diag
-                   %(macs_options)s 
-            >& %(outfile)s''' 
-
-        P.run() 
-        
-        # compress macs bed files and index with tabix
-        for suffix in ('peaks', 'summits'):
-            statement = '''
-            bgzip -f %(outfile)s_peaks.bed; 
-            tabix -f -p bed %(outfile)s_peaks.bed.gz
-            '''
-            P.run()
+        PIntervals.runMACS( infile, outfile, controlfile)
 
     ############################################################
     ############################################################
     ############################################################
     @transform( runMACS,
                 regex(r"(.*).macs"),
-                inputs( (r"\1.macs", r"\1%s.bam" % bam_affix ) ),
+                inputs( (r"\1.macs", r"\1.call.bam") ),
                 r"\1_macs.load" )
     def loadMACS( infiles, outfile ):
         infile, bamfile = infiles
@@ -723,7 +744,7 @@ def subtractUnstim( infiles, outfile ):
 @transform( (combineExperiment,
              combineCondition, 
              subtractUnstim, 
-             normalizeBAMfile),
+             normalizeBAM),
             suffix(".bed"),
             "_bed.load" )
 def loadCombinedIntervals( infile, outfile ):
@@ -765,7 +786,7 @@ def loadCombinedIntervals( infile, outfile ):
     
     # setup files
     for t in replicates:
-        fn = "%s%s.bam" % (t.asFile(),bam_affix)
+        fn = "%s.call.bam" % (t.asFile())
         assert os.path.exists( fn ), "could not find bamfile %s for track %s" % ( fn, str(t))
         samfiles.append( pysam.Samfile( fn,  "rb" ) )
         fn = "%s.macs" % t.asFile()
@@ -858,7 +879,7 @@ def buildIntervals():
 ############################################################
 ############################################################
 ############################################################
-@files_re( (buildBAM, normalizeBAMfile),
+@files_re( (buildBAM, normalizeBAM),
            "(.*).bam",
            "%s/\1.bigwig" % PARAMS["exportdir"])
 def exportBigwig( infile, outfile ):
@@ -891,7 +912,7 @@ def exportMotifSequences( infile, outfile ):
     
     track = P.snip( infile, ".bed" )
 
-    dbhandle = sqlite3.connect( PARAMS["database"] )
+    dbhandle = connect()
 
     fasta = IndexedFasta.IndexedFasta( os.path.join( PARAMS["genome_dir"], PARAMS["genome"] ) )
 
@@ -927,7 +948,7 @@ def exportMotifControlSequences( infile, outfile ):
     
     track = P.snip( infile, ".bed")
 
-    dbhandle = sqlite3.connect( PARAMS["database"] )
+    dbhandle = connect()
 
     fasta = IndexedFasta.IndexedFasta( os.path.join( PARAMS["genome_dir"], PARAMS["genome"] ) )
 
@@ -1068,7 +1089,7 @@ def makeReproducibility( infiles, outfile ):
     not more than one intervals in one set overlapping one in the other set.
     '''
 
-    dbhandle = sqlite3.connect( PARAMS["database"] )
+    dbhandle = connect()
 
     if len(infiles) < 2:
         P.touch(outfile)
@@ -1242,7 +1263,7 @@ def runMEME( infile, outfile ):
 
     target_path = os.path.join( os.path.abspath(PARAMS["exportdir"]), "meme", outfile )
 
-    dbhandle = sqlite3.connect( PARAMS["database"] )
+    dbhandle = connect()
     fasta = IndexedFasta.IndexedFasta( os.path.join( PARAMS["genome_dir"], PARAMS["genome"] ) )
 
     track = P.snip(infile, ".fasta")
@@ -1340,7 +1361,7 @@ def writeSequencesForIntervals( track, filename,
     (sorted by peakval).
     '''
 
-    dbhandle = sqlite3.connect( PARAMS["database"] )
+    dbhandle = connect()
 
     fasta = IndexedFasta.IndexedFasta( os.path.join( PARAMS["genome_dir"], PARAMS["genome"] ) )
 
@@ -2207,13 +2228,13 @@ def buildIntervalCounts( infile, outfile ):
     # collect foreground and background bam files
     fg_replicates = PipelineTracks.Aggregate( TRACKS, track = track )[track]
     for replicate in fg_replicates:
-        samfiles_fg.append( replicate.asFile() + "%s.bam" % bam_affix )
+        samfiles_fg.append( replicate.asFile() + "%s.call.bam" )
 
     unstim = getUnstimulated( track )
     bg_replicates = PipelineTracks.Aggregate( TRACKS, track = unstim )[unstim]
 
     for replicate in bg_replicates:
-        samfiles_bg.append( replicate.asFile() + "%s.bam" % bam_affix )
+        samfiles_bg.append( replicate.asFile() + "%s.call.bam" )
 
     samfiles_fg = ",".join(samfiles_fg)
     samfiles_bg = ",".join(samfiles_bg)
@@ -2414,14 +2435,60 @@ def full():
     '''run the full pipeline.'''
     pass
 
-@follows( mkdir( "report" ) )
+###################################################################
+###################################################################
+###################################################################
+## export targets
+###################################################################
+@merge( intervals,  "view_mapping.load" )
+def createViewMapping( infile, outfile ):
+    '''create view in database for alignment stats.
+
+    This view aggregates all information on a per-track basis.
+
+    The table is built from the following tracks:
+    
+    bam_stats: .call
+    '''
+
+    tablename = P.toTable( outfile )
+
+    # can not create views across multiple database, so use table
+    view_type = "TABLE"
+    
+    dbhandle = connect()
+    Database.executewait( dbhandle, "DROP %(view_type)s IF EXISTS %(tablename)s" % locals() )
+
+    statement = '''
+    CREATE %(view_type)s %(tablename)s AS
+    SELECT SUBSTR( b.track, 1, LENGTH(b.track) - LENGTH( '.call')) AS track, *
+    FROM bam_stats AS b
+    WHERE b.track LIKE "%%.call" 
+    ''' % locals()
+
+    Database.executewait( dbhandle, statement )
+
+###################################################################
+###################################################################
+###################################################################
+@follows( createViewMapping )
+def views():
+    pass
+
+###################################################################
+###################################################################
+###################################################################
+@follows( views, mkdir( "report" ) )
 def build_report():
     '''build report from scratch.'''
 
     E.info( "starting documentation build process from scratch" )
     P.run_report( clean = True )
 
-@follows( mkdir( "report" ) )
+###################################################################
+###################################################################
+###################################################################
+@follows( views, mkdir( "report" ) )
 def update_report():
     '''update report.'''
 

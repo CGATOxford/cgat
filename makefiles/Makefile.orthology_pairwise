@@ -176,6 +176,7 @@ step1.prepare: step1.queries.fasta
 		-p $(PARAM_PROJECT_NAME)_blast_all_vs_new \
 		-d step1.all_vs_new.dir \
 		-o $(DIR_ROOT) \
+		-i ../../data/Makefile.inc \
 		PARAM_BLASTP_NUMJOBS=$(PARAM_STEP1_NUMJOBS) \
 		PARAM_BLASTP_CHUNKSIZE=$(PARAM_STEP1_CHUNKSIZE) \
 		PARAM_BLASTP_NUMFIELDS="$(PARAM_STEP1_BLASTP_NUMFIELDS)" \
@@ -188,6 +189,7 @@ step1.prepare: step1.queries.fasta
 	@python $(DIR_SCRIPTS_GENEPREDICTION)setup.py -f -m blast \
 		-p $(PARAM_PROJECT_NAME)_blast_new_vs_all \
 		-d step1.new_vs_all.dir \
+		-i ../../data/Makefile.inc \
 		-o $(DIR_ROOT) \
 		PARAM_BLASTP_NUMJOBS=$(PARAM_STEP1_NUMJOBS) \
 		PARAM_BLASTP_CHUNKSIZE=$(PARAM_STEP1_CHUNKSIZE) \
@@ -253,6 +255,7 @@ step1.prepare: step1.queries.fasta
 		-d step1.dir \
 		-p $(PARAM_PROJECT_NAME)_blast \
 		-o $(DIR_ROOT) \
+		--include=../../data/Makefile.inc \
 		PARAM_BLASTP_NUMJOBS=$(PARAM_STEP1_NUMJOBS) \
 		PARAM_BLASTP_CHUNKSIZE=$(PARAM_STEP1_CHUNKSIZE) \
 		PARAM_BLASTP_OPTIONS="$(PARAM_STEP1_BLASTP_OPTIONS)" \

@@ -21,8 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-gff2predictions.py - 
-======================================================
+gff2predictions.py - convert a gff or exons file to gpipe predictions
+=====================================================================
 
 :Author: Andreas Heger
 :Release: $Id$
@@ -72,6 +72,7 @@ import Genomics
 import Exons
 import IndexedFasta
 import GFF
+import IOTools
 
 from predict_genes import PredictorExonerate
 
@@ -166,7 +167,7 @@ if __name__ == "__main__":
     nfound, nnotfound, nidentical, nmismatch, naligned, nunaligned = 0,0,0,0,0,0
     
     if options.filename_peptides:
-        peptide_sequences = Genomics.ReadPeptideSequences( open( options.filename_peptides, "r"))
+        peptide_sequences = Genomics.ReadPeptideSequences( IOTools.openFile( options.filename_peptides, "r"))
         predictor = PredictorExonerate()
         predictor.mLogLevel = 0
     else:
@@ -177,7 +178,7 @@ if __name__ == "__main__":
 
     predictions = {}
     if options.predictions_file:
-        parser = PredictionParser.iterator_predictions( open( options.predictions_file, "r") )
+        parser = PredictionParser.iterator_predictions( IOTools.openFile( options.predictions_file, "r") )
         for p in parser:
             predictions[p.mPredictionId] = p
         
@@ -242,19 +243,22 @@ if __name__ == "__main__":
                 ninput += 1
 
                 if options.loglevel >= 2:
-                    options.stdlog.write("# processing entry %s:%s on %s:%s: %i/%i.\n" % (entry.mPredictionId, 
-                                                                                          entry.mQueryToken, 
-                                                                                          entry.mSbjctToken,
-                                                                                          entry.mSbjctStrand,
-                                                                                          ninput, len(results) ))
+                    options.stdlog.write("# processing entry %s:%s on %s:%s %i/%i.\n" % (entry.mPredictionId, 
+                                                                                         entry.mQueryToken, 
+                                                                                         entry.mSbjctToken,
+                                                                                         entry.mSbjctStrand,
+                                                                                         ninput, len(results) ))
                     options.stdlog.flush()
                 
                 try:
                     lgenome = fasta.getLength( entry.mSbjctToken )
                     # added 3 residues - was a problem at split codons just before the stop.
                     # See for example the chicken sequence ENSGALP00000002741
-                    genomic_sequence = fasta.getSequence( entry.mSbjctToken, entry.mSbjctStrand,
-                                                          entry.mSbjctGenomeFrom, min(entry.mSbjctGenomeTo + 3, lgenome))
+                    genomic_sequence = fasta.getSequence( entry.mSbjctToken, 
+                                                          entry.mSbjctStrand,
+                                                          entry.mSbjctGenomeFrom, 
+                                                          min(entry.mSbjctGenomeTo + 3, lgenome))
+                                                              
                 except KeyError:
                     if options.loglevel >= 1:
                         options.stdlog.write( "# did not find entry for %s on %s.\n" % (entry.mPredictionId, entry.mSbjctToken) )

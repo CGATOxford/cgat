@@ -192,6 +192,14 @@ if __name__ == '__main__':
                 sep="\t"
             vcf_file.write("\n")
 
+
+            # Check all indel lengths are covered
+            r = range(-20,20,1)
+            for i in r:
+                if indel_stats.has_key(str(i)):
+                    continue
+                else:
+                    indel_stats[i]="0"
             for k in indel_stats.iterkeys():
                 indel_file.write("%s\t%s\t%s\n" % (trackname,k,indel_stats[k]))
  

@@ -1782,27 +1782,28 @@ match   mis-    rep.    N's     Q gap   Q gap   T gap   T gap   strand  Q       
 
         return matches
 
-
 class PredictionParserExons (PredictionParser):
     """Parse output from exons file.
     
-Input looks like this:
+    Input looks like this::
 
-CG9926-RA       chr3R   -1      0       1       0       696     9776126 9776819
-CG9927-RA       chr3R   -1      0       1       0       398     9771125 9771523
-CG9927-RA       chr3R   -1      1       2       398     1026    9770442 9771067
-CG9928-RA       chr2L   -1      0       1       0       321     13131417        13131735
-CG9929-RA       chr3R   -1      0       1       0       117     9769026 9769143
-CG9929-RA       chr3R   -1      0       2       117     347     9768742 9768972
-CG9929-RA       chr3R   -1      1       3       347     942     9768091 9768683
-CG9930-RA       chr3R   -1      0       1       0       880     9699040 9699920
-CG9930-RA       chr3R   -1      2       2       880     1038    9694339 9694497
-CG9930-RA       chr3R   -1      0       3       1038    1575    9693241 9693775
+       CG9926-RA       chr3R   -1      0       1       0       696     9776126 9776819
+       CG9927-RA       chr3R   -1      0       1       0       398     9771125 9771523
+       CG9927-RA       chr3R   -1      1       2       398     1026    9770442 9771067
+       CG9928-RA       chr2L   -1      0       1       0       321     13131417        13131735
+       CG9929-RA       chr3R   -1      0       1       0       117     9769026 9769143
+       CG9929-RA       chr3R   -1      0       2       117     347     9768742 9768972
+       CG9929-RA       chr3R   -1      1       3       347     942     9768091 9768683
+       CG9930-RA       chr3R   -1      0       1       0       880     9699040 9699920
+       CG9930-RA       chr3R   -1      2       2       880     1038    9694339 9694497
+       CG9930-RA       chr3R   -1      0       3       1038    1575    9693241 9693775
 
-Note: negative strand coordinates are given as positive strand coordinates, but are still increasing.
-Coordinates are zero-based in open/closed notation.
+    Negative strand exons are given as positive strand coordinates, but are still sorted
+    in increasing order.
 
-The score is set to the length of the transcript.
+    Coordinates are zero-based in open/closed notation.
+
+    The score is set to the length of the transcript.
     """
     
     def __init__(self, contig_sizes = {}):

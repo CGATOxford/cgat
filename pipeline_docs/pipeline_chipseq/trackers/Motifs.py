@@ -39,6 +39,8 @@ def computeMastCurve( evalues ):
     for x, evalue in enumerate(bin_edges[:-1]):
         explained[x] -= evalue
         
+    explained[ explained < 0 ] = 0
+
     return bin_edges[:-1], with_motifs, explained
 
 ##################################################################################

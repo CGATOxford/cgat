@@ -465,7 +465,7 @@ def annotatePromoters( iterator, fasta, options ):
             # if tss is directly at start/end of contig, the tss will be within an exon.
             # otherwise, it is outside an exon.
             if is_negative_strand:
-                promotors.append( (min( lcontig-options.promotor, lcontig), min(lcontig, ma + options.promotor)) )
+                promotors.append( (min( lcontig-options.promotor, ma), min(lcontig, ma + options.promotor)) )
             else:
                 promotors.append( (max(0,mi - options.promotor), max(options.promotor,mi)) )
 
@@ -489,6 +489,56 @@ def annotatePromoters( iterator, fasta, options ):
     if options.loglevel >= 1:
         options.stdlog.write( "# ngenes=%i, ntranscripts=%i, npromotors=%i\n" % (ngenes, ntranscripts, npromotors) )
 
+def annotateTTS( iterator, fasta, options ):
+    """annotate termination sites within iterator.
+
+    Only protein_coding genes are annotated.
+    """
+
+    gene_iterator = GTF.gene_iterator( iterator )
+
+    ngenes, ntranscripts, npromotors = 0, 0, 0
+
+    for gene in gene_iterator:
+        ngenes += 1
+        is_negative_strand = Genomics.IsNegativeStrand( gene[0][0].strand )
+        lcontig = fasta.getLength( gene[0][0].contig )
+        tts = []
+        transcript_ids = []
+        for transcript in gene:
+
+            ntranscripts += 1
+            mi, ma = min( [x.start for x in transcript ] ), max( [x.end for x in transcript ] )
+            transcript_ids.append( transcript[0].transcript_id )
+            # if tts is directly at start/end of contig, the tss will be within an exon.
+            # otherwise, it is outside an exon.
+            if is_negative_strand:
+                #tss.append( (min( lcontig-options.promotor, ma), min(lcontig, ma + options.promotor)) )
+                tts.append( (max(0, mi-options.promotor), max(options.promotor,mi)) )
+            else:
+                #tss.append( (max(0,mi - options.promotor), max(options.promotor,mi)) )
+                tts.append( (min(ma,lcontig-options.promotor), min(lcontig,ma + options.promotor)) )
+
+        if options.merge_promotors:
+            # merge the promotors (and rename - as sort order might have changed)
+            tts = Intervals.combine( tts )
+            transcript_ids = ["%i" % (x+1) for x in range(len(tts) )]
+            
+        gtf = GTF.Entry()
+        gtf.fromGFF( gene[0][0], gene[0][0].gene_id, gene[0][0].gene_id )
+        gtf.source = "tts"
+
+        x = 0
+        for start, end in tts:
+            gtf.start, gtf.end = start, end
+            gtf.transcript_id = transcript_ids[x]
+            options.stdout.write( "%s\n" % str(gtf) )
+            npromotors += 1
+            x += 1
+
+    if options.loglevel >= 1:
+        options.stdlog.write( "# ngenes=%i, ntranscripts=%i, ntss=%i\n" % (ngenes, ntranscripts, npromotors) )
+
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
@@ -505,7 +555,7 @@ if __name__ == '__main__':
                       help="restrict input by source [default=%default]."  )
 
     parser.add_option("-m", "--method", dest="method", type="choice",
-                      choices=("full", "genome", "territories", "exons", "promotors", ),
+                      choices=("full", "genome", "territories", "exons", "promotors", "tts", ),
                       help="method for defining segments [default=%default]."  )
 
     parser.add_option("-r", "--radius", dest="radius", type="int",
@@ -546,9 +596,8 @@ if __name__ == '__main__':
     if options.restrict_source:
         iterator = GTF.iterator_filtered( GTF.iterator(options.stdin), 
                                           source = options.restrict_source )
-    elif options.method == "promotors":
-        iterator = GTF.iterator_filtered( GTF.iterator(options.stdin), 
-                                          source = "protein_coding" )
+    elif options.method == "promotors" or options.method == "tts":
+        iterator = GTF.iterator_filtered( GTF.iterator(options.stdin), source = "protein_coding" )
     else:
         iterator = GTF.iterator(options.stdin)
 
@@ -560,5 +609,8 @@ if __name__ == '__main__':
         segmentor = annotateExons( iterator, fasta, options )
     elif options.method == "promotors":
         segmentor = annotatePromoters( iterator, fasta, options )
+    elif options.method == "tts":
+        segmentor = annotateTTS( iterator, fasta, options )
 
     E.Stop()
+

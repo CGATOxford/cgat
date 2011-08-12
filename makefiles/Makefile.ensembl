@@ -28,9 +28,8 @@
 # Import data from ensembl dumps into OPTIC tables.
 #
 # Input:
-#	reference.exons
-# 	reference_peptides.fasta
-#	peptides2genes
+#	reference_peptides.fasta.gz - ENSEMBL pep.all.fa.gz file
+#       reference.gtf.gz            - ENSEMBL gtf.gz file
 #
 # Optional input:
 #	reference.predictions: if this file exists, the predictions within it are substituted
@@ -143,6 +142,41 @@ all: contig_sizes contig_sizes.load \
 #########################################################################
 #########################################################################
 #########################################################################
+# build reference.exons file from ensembl geneset
+# This step translates ENSEMBL chromosome ids to UCSC ids
+#########################################################################
+reference.exons: reference.gtf.gz
+	$(PRELOG)
+	@zcat reference.gtf.gz |\
+	awk '$$2 == "protein_coding" && $$3 == "CDS"' |\
+	python $(DIR_SCRIPTS)gff2gff.py \
+		--sanitize=genome \
+		--genome-file=$(PARAM_GENOME_FILE) \
+		--skip-missing |\
+	python $(DIR_SCRIPTS)gtf2exons.py \
+		--extract-id='protein_id \"(\S*)\";' \
+		--log=$@.log \
+		--forward-coordinates \
+	        --genome-file=$(PARAM_GENOME_FILE) \
+	> $@
+	$(EPILOG)
+
+#########################################################################
+#########################################################################
+#########################################################################
+# build peptides2genes file from ensembl geneset
+#########################################################################
+peptides2genes: reference.gtf.gz
+	$(PRELOG)
+	@zcat reference.gtf.gz |\
+	awk '$$2 == "protein_coding" && $$3 == "CDS"' |\
+	python $(DIR_SCRIPTS)gtf2tab.py --map=peptide2gene --log=$@.log \
+	> $@
+	$(EPILOG)	
+
+#########################################################################
+#########################################################################
+#########################################################################
 queries.load: reference.exons peptides2genes
 	$(PRELOG)
 	@$(PSQL_CONNECTION) "DELETE FROM $(PARAM_TABLE_NAME_QUERIES);" > /dev/null
@@ -172,7 +206,7 @@ queries.load: reference.exons peptides2genes
 #########################################################################
 ## build predictions from reference.exons
 #########################################################################
-predictions.load: reference.exons reference_peptides.fasta
+predictions.load: reference.exons reference.pep.fa.gz
 	$(PRELOG)
 	@$(PSQL_CONNECTION) "DELETE FROM $(PARAM_TABLE_NAME_PREDICTIONS);" > /dev/null
 	@cat $< $(PSEUDOGENES_EXONS) |\
@@ -180,7 +214,7 @@ predictions.load: reference.exons reference_peptides.fasta
 	python $(DIR_SCRIPTS_GENEPREDICTION)gff2predictions.py \
 		--format="exons" \
 		--genome-file=$(PARAM_GENOME_FILE) \
-		--filename-peptides=reference_peptides.fasta \
+		--filename-peptides=reference.pep.fa.gz \
 		--remove-unaligned \
 		$(PARAM_REALIGNMENT) \
 		$(OPTIONS_PREDICTIONS_FILE) \
@@ -456,13 +490,13 @@ peptides.fasta: predictions.load genes.load transcripts.load
 ## Check translated peptides
 ## The identifier pattern is modified to ignore the quality information.
 ##############################################################################
-predictions.check: predictions.load genes.load transcripts.load peptides.fasta reference_peptides.fasta
+predictions.check: predictions.load genes.load transcripts.load peptides.fasta reference.pep.fa.gz
 	$(PRELOG)
 	@python $(DIR_SCRIPTS_GENEPREDICTION)diff_fasta.py \
 		--output=missed --output=seqdiff \
 		--pattern1="(\S+)" \
 		--pattern2="[^$(PARAM_SEPARATOR)]+[$(PARAM_SEPARATOR)]([^$(PARAM_SEPARATOR)]+)[$(PARAM_SEPARATOR)]" \
-		reference_peptides.fasta \
+		reference.pep.fa.gz \
 		peptides.fasta \
 	> $@
 	@rm -f $@_tmp

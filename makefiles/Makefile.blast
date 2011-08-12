@@ -42,7 +42,10 @@ PARAM_BLASTP_CHUNKSIZE?=100
 PARAM_BLASTP_FORMAT?=protein
 
 ## command to execute 
-PARAM_BLASTP_COMMAND?=blastall -p blastp
+PARAM_BLASTP_COMMAND?=legacy_blast.pl blastall -p blastp
+
+## Note: previously formatdb
+PARAM_FORMAT_COMMAND=makeblastdb
 
 ## blastp options
 PARAM_BLASTP_OPTIONS?=-e 1e-5 -v 5000 -b 5000 -F F 
@@ -77,9 +80,9 @@ BLAST_TARGETS=$(BLAST_QUERIES:%.fasta=%.blast.gz)
 BLAST_FINAL_TARGET=blast.links.gz
 
 ifeq ($(PARAM_BLASTP_FORMAT), protein)
-FORMATDB_FORMAT=-p T
+FORMATDB_FORMAT=-dbtype prot
 else
-FORMATDB_FORMAT=-p F
+FORMATDB_FORMAT=-dbtype nucl
 endif
 
 nop:
@@ -101,9 +104,6 @@ blast.prepare: $(UPDATE_HOOK)
 	/^SHELL/ {if (keep) {print;}} \
 	/^INPUT_/ {if (keep) {print;}} \
 	/^DIR_/ {if (keep) {print;}}' | sort $(TOLOG)
-	@echo "#################`date`#############################" $(TOLOG)
-	@echo "blast     : `which blastall`	`blastall - | grep '^blastall'`" $(TOLOG)
-	@echo "#################`date`#############################" $(TOLOG)
 	$(CMD_LOG) "creating working direcotry blast.dir"
 	@rm -rf blast.dir
 	@$(MAKE) blast.dir
@@ -116,8 +116,8 @@ blast.prepare: $(UPDATE_HOOK)
 		perl $(DIR_SCRIPTS_GENEPREDICTION)split_fasta.pl -p blast.dir/query_ -s .fasta $(PARAM_BLASTP_CHUNKSIZE) < queries.fasta  >> $@; \
 	fi
 	$(CMD_LOG) "preparing search database"
-	@if [[ ! -e sbjcts.phr && ! -e sbjcts.nhn && ! -e sbjcts.pal ]]; then \
-		formatdb -i sbjcts.fasta -n sbjcts $(FORMATDB_FORMAT); \
+	@if [[ ! -e sbjcts.fasta.phr && ! -e sbjcts.fasta.nhn && ! -e sbjcts.fasta.pal ]]; then \
+		$(PARAM_FORMAT_COMMAND) -in sbjcts.fasta -title sbjcts $(FORMATDB_FORMAT); \
 	fi
 	$(CMD_LOG) "running `grep -c ">" queries.fasta` queries against `grep -c ">" sbjcts.fasta` sbjcts."
 	@touch $@
@@ -145,7 +145,7 @@ blast.finish: blast.run $(BLAST_FINAL_TARGET)
 %.blast.gz: %.fasta
 	$(PRELOG)
 	@$(CMD_REMOTE_SUBMIT) \
-	'$(CMD_BENCHMARK) --log=$*.log "$(CMD_BLASTP) -i $< -d ../sbjcts | $(CMD_PARSE_BLAST)" | gzip > $@' \
+	'$(CMD_BENCHMARK) --log=$*.log "$(CMD_BLASTP) -i $< -d ../sbjcts.fasta | $(CMD_PARSE_BLAST)" | gzip > $@' \
 	< /dev/null > /dev/null
 	$(EPILOG)
 

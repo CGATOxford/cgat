@@ -19,7 +19,8 @@ class IndelSummary( ExomeTracker ):
 
     def __call__(self, track, slice = None ):
         statement = '''SELECT indel_length, indel_count FROM indel_stats where track='%(track)s'  order by indel_length;'''
-        return self.getAll( statement )
+        data = self.getAll( statement )
+        return data
 
 class SharedSummary( ExomeTracker ):
 

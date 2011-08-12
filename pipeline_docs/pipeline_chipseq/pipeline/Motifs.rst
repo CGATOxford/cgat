@@ -5,8 +5,9 @@ Motif results
 .. toctree::
    :maxdepth: 2
 
+   MotifsAbInitio.rst   
    MotifsKnown.rst
-   MotifsAbInitio.rst
+   MotifsMASTCurves.rst
    MotifsCorrelations.rst
 
 

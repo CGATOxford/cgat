@@ -31,9 +31,8 @@ Distribution of peak scores
 Average values
 --------------
 
-The following plot shows the average interval value for each set.
-The average value is the average number of reads falling into the
-bins that constitute an interval.
+The following plot shows the distribution of the
+average read coverage within intervals.
 
 .. report:: ChipseqReport.IntervalAverageValues
    :render: line-plot
@@ -42,16 +41,13 @@ bins that constitute an interval.
    :tf-aggregate: normalized-total,reverse-cumulative
    :as-lines:
 
-   Distribution of the average number of reads
-   matching to bins within an interval.
+   Distribution of the average read depth within intervals.
 
 Values at peak
 --------------
 
-The following plot shows the maximum (peak) interval value for each set.
-The peak value is the maximum number of reads falling into the
-bins that constitute an interval. The peak is the position with the maximum
-number of reads.
+The following plot shows the distribution of the maximum (peak) 
+read coverage within intervals.
 
 .. report:: ChipseqReport.IntervalPeakValues
    :render: line-plot
@@ -60,9 +56,7 @@ number of reads.
    :tf-aggregate: normalized-total,reverse-cumulative
    :as-lines:
 
-   Distribution of the number of reads at the peak within an interval.
-   The distribution list the proportion of intervals of a certain peak
-   value or more.
+   Distribution of the maximum read depth within intervals.
 
 Distribution of interval size
 =============================

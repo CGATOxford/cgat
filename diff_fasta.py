@@ -64,6 +64,7 @@ import os, sys, string, re, getopt, optparse
 import Genomics
 import alignlib
 import Experiment
+import IOTools
 
 def MapIdentifiers( seqs, pattern):
 
@@ -103,8 +104,8 @@ if __name__ == "__main__":
     if len(args) != 2:
         raise ValueError( "two files needed to compare." )
 
-    seqs1 = Genomics.ReadPeptideSequences( open(args[0], "r") )
-    seqs2 = Genomics.ReadPeptideSequences( open(args[1], "r") )    
+    seqs1 = Genomics.ReadPeptideSequences( IOTools.openFile(args[0], "r") )
+    seqs2 = Genomics.ReadPeptideSequences( IOTools.openFile(args[1], "r") )    
 
     if not seqs1: raise ValueError( "first file %s is empty." % (args[0] ) )
     if not seqs2: raise ValueError( "second file %s is empty." % (args[1] ) )

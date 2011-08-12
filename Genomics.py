@@ -814,6 +814,7 @@ Wobble = {
     "X" : "WWW",        # X can be stop codon or masked sequence.
     "Y" : "TAW",
     "*" : "NNN",
+    "?" : "WWW",        # ? can be stop codon or masked sequence.
     "-" : "---",
     }
 

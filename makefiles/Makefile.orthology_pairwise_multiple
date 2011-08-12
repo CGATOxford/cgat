@@ -122,6 +122,7 @@ prepare: create-schema create-tables
 			    -f \
 			    -m orthology_pairwise \
 			    -p orthology_$${genomes[$$x]}-$${genomes[$$y]} \
+			    --include=../data/Makefile.inc \
 			    -d $(CURDIR)/$${target_dir} \
 			    -o $(DIR_ROOT) \
 			    PARAM_GENOME1=$${genome1} \

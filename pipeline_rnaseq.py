@@ -117,7 +117,6 @@ reconstruction. Also, conflicting transcripts between replicates give an idea of
 However, if there are only few reads,  there might be a case for building transcript models using reads 
 from all replicates of an experiment. However, there is no reason to merge reads between experiments.
 
-
 LncRNA
 --------
 

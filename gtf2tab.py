@@ -76,15 +76,17 @@ def main():
                        help="output attributes as separate columns [default=%default]." )
     parser.add_option( "-i", "--invert", dest="invert", action = "store_true",
                        help="convert tab-separated table back to gtf [default=%default]." ) 
-    parser.add_option( "-m", "--map", dest="map", action = "store_true",
+    parser.add_option( "-m", "--map", dest="map", type="choice",
+                       choices=("transcript2gene", "peptide2gene", "peptide2transcript"),
                        help="output a map mapping transcripts to genes [default=%default]." ) 
+
 
 
     parser.set_defaults(
         only_attributes = False,
         full = False,
         invert = False,
-        map = False,
+        map = None,
         )
 
 
@@ -180,12 +182,27 @@ def main():
 
     elif options.map:
         
-        transcript2gene = {}
-        for gtf in GTF.iterator( options.stdin ):
-            transcript2gene[gtf.transcript_id] = gtf.gene_id
+        if options.map == "transcript2gene":
+            fr = lambda x: x.transcript_id
+            to = lambda x: x.gene_id
+            options.stdout.write("transcript_id\tgene_id\n" )            
+        elif options.map == "peptide2gene":
+            fr = lambda x: x.protein_id
+            to = lambda x: x.gene_id
+            options.stdout.write("peptide_id\tgene_id\n" )            
+        elif options.map == "peptide2transcript":
+            fr = lambda x: x.protein_id
+            to = lambda x: x.transcript_id
+            options.stdout.write("peptide_id\ttranscript_id\n" )            
             
-        options.stdout.write("transcript_id\tgene_id\n" )
-        for x,y in transcript2gene.iteritems():
+        map_fr2to = {}
+        for gtf in GTF.iterator( options.stdin ):
+            try:
+                map_fr2to[fr(gtf)] = to(gtf)
+            except AttributeError:
+                pass
+
+        for x,y in sorted(map_fr2to.iteritems()):
             options.stdout.write("%s\t%s\n" % (x,y) )
     else:
         header = ( "contig","source","feature","start","end","score","strand","frame","gene_id","transcript_id","attributes"  )
