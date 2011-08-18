@@ -459,7 +459,9 @@ if __name__ == "__main__":
 
     if options.filename_peptides:
         infile = open(options.filename_peptides, "r") 
+        E.info("reading from %s" % options.filename_peptides)
     else:
+        E.info("reading from stdin")
         infile = sys.stdin
 
     if options.filename_map:
