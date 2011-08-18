@@ -91,6 +91,9 @@ def readAndTransposeTable( infile, options ):
     for r in range(0, len(rows)):
         for c in range( 0, len(rows[r]) ):
             new_rows[c][r] = rows[r][c]
+
+    if options.set_transpose_field:
+        new_rows[0][0] = options.set_transpose_field
  
     for row in new_rows:
         options.stdout.write( "\t".join( row ) + "\n")
@@ -271,6 +274,9 @@ if __name__ == "__main__":
     parser.add_option("--transpose", dest="transpose", action="store_true",
                       help="transpose table."  )
 
+    parser.add_option("--set-transpose-field", dest="set_transpose_field", type="string",
+                      help="set first field (row 1 and col 1) to this value [%default]."  )
+
     parser.add_option("--transpose-format", dest="transpose_format", type="choice",
                       choices=("default", "separated", ),
                       help="input format of un-transposed table"  )
@@ -321,6 +327,7 @@ if __name__ == "__main__":
         parameters = "",
         columns = "all",
         transpose = False,
+        set_transpose_field = None,
         transpose_format = "default",
         group = False,
         group_column = 0,

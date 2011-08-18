@@ -63,7 +63,7 @@ import BlastAlignments
 import alignlib
 import Genomics
 import Exons
-import Bio.Fasta
+import FastaIterator
 
 class Map:
     def __init__(self):
@@ -313,8 +313,7 @@ if __name__ == '__main__':
             
             infile = open(options.filename_filter, "r")
 
-            parser = Bio.Fasta.RecordParser()
-            iterator = Bio.Fasta.Iterator( infile, parser)
+            iterator = FastaIterator.FastaIterator( infile )
 
             while 1:
                 cur_record = iterator.next()
