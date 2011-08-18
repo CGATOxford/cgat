@@ -40,7 +40,7 @@ from types import *
 """Wrapper for NJTree
 """
 
-import Experiment
+import Experiment as E
 import Mali
 import IOTools
 import TreeTools
@@ -315,10 +315,12 @@ if __name__ == "__main__":
         filename_tree = None,
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if options.filename_map:
         map_species2sp = IOTools.ReadMap( open(options.filename_map, "r"))
+
+    E.debug( "species map: %s" % str(map_species2sp) )
 
     identifier_parser = IdentifierParserGPipe( map_species2sp = map_species2sp )
 
@@ -358,4 +360,4 @@ if __name__ == "__main__":
         if result.mErr:
             options.stderr.write( str(result.mErr) + "\n" )
 
-    Experiment.Stop()
+    E.Stop()

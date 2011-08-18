@@ -750,17 +750,33 @@ class CodeML:
 
         ## read version information
         if lines[0].startswith( "CODONML"):
-            try:
-                result.mVersion, result.mModel = re.search("CODONML \(in (.+)\)\s+\S+\s+Model:\s+(\S.+)", lines[0].strip()).groups()
+            x = re.search("CODONML \(in (.+)\)\s+\S+\s+Model:\s+(\S.+)", lines[0].strip())
+            if x:
+                result.mVersion, result.mModel = x.groups()
+                del lines[0]                    
+
+            else:
+                # paml version 4.4c
+                x = re.search("CODONML \(in (.+)\)\s+input", lines[0].strip())
+                if x:
+                    result.mVersion = x.groups()[0]
+                    del lines[0]                    
+                    try:
+                        result.mModel = re.search("Model: (.*)$", lines[0].strip()).groups()[0]
+                    except AttributeError:
+                        raise ParsingError( "pattern error", lines[0] )
+                else:
+                    raise ParsingError( "pattern error", lines[0] )
                 del lines[0]
-            except AttributeError:
-                raise ParsingError( "pattern error", lines[0] )
+
             # read codon information
             try:
-                result.mFrequencies = re.match("Codon frequencies: (\S+)", lines[0]).groups()[0]
+                result.mFrequencies = re.match("Codon frequenc.*: (\S+)", lines[0]).groups()[0]
                 del lines[0]
             except AttributeError:
                 pass
+
+
         
             # read sequence info
             try:
@@ -778,12 +794,13 @@ class CodeML:
         else:
             raise ParsingError( "unknown PAML program", lines[0] )
 
-        if result.mVersion not in ("paml 3.14b, May 2005", 
-                                   "paml 3.15, November 2005", 
-                                   "paml version 4, June 2007",
-                                   "paml version 4.4c, August 2010",
-                                   ):
-            raise "unknown paml version %s" % result.mVersion
+        known_versions = ("paml 3.14b, May 2005", 
+                          "paml 3.15, November 2005", 
+                          "paml version 4, June 2007",
+                          "paml version 4.4c, August 2010" )
+        
+        if result.mVersion not in known_versions:
+            raise ValueError("unknown paml version '%s'" % result.mVersion)
 
 ##         if result.mModel not in ("free dN/dS Ratios for branches", "One dN/dS ratio", "several dN/dS ratios for branches"):
 ##             raise "parsing for model '%s' not implemented" % result.mModel

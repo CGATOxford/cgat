@@ -183,7 +183,8 @@ class MaskerBias (Masker):
 class MaskerSeg (Masker):
 
     mLogLevel = 0
-    mCommand = "seg %(infile)s 12 2.2 2.5 -x"
+    # mCommand = "seg %(infile)s 12 2.2 2.5 -x"
+    mCommand = "segmasker -in %(infile)s -window 12 -locut 2.2 -hicut 2.5 -outfmt fasta"
     mHasPeptideMasking = True
 
 class MaskerDustMasker( Masker ):

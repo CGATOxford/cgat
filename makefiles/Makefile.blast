@@ -52,7 +52,7 @@ PARAM_BLASTP_OPTIONS?=-e 1e-5 -v 5000 -b 5000 -F F
 ## options to the parser
 PARAM_BLASTP_PARSING?=--ends --table --len --noheader --log --zero
 ## number of fields in tabular output
-PARAM_BLASTP_NUMFIELDS?=13
+PARAM_BLASTP_NUMFIELDS?=14
 
 ## whether or not to compress the final output
 PARAM_BLASTP_COMPRESS?=

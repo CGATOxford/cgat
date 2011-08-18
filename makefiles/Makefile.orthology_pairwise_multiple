@@ -214,7 +214,7 @@ blast.show-unfinished:
 		if [[ -d $${dir}/step1.dir/blast.dir ]]; then \
 		echo "processing $${dir}"; \
 		for file in $${dir}/step1.dir/blast.dir/query_*.log; do \
-			tail -n 1 $${file} | grep -q "finished at"; \
+			tail -n 1 $${file} | grep -q "finished"; \
 			if [[ $$? == 1 ]] ; then \
 				echo "unfinished: $${file}"; \
 			fi \
@@ -252,7 +252,7 @@ trees.show-unfinished:
 		if [[ -d $${dir}/step3.dir/step1.dir ]]; then \
 		echo "processing $${dir}"; \
 		for file in $${dir}/step3.dir/step1.dir/cluster*.tree; do \
-			tail -n 1 $${file} | grep -q "finished at"; \
+			tail -n 1 $${file} | grep -q "finished"; \
 			if [[ $$? == 1 ]] ; then \
 				echo "unfinished: $${file}"; \
 			fi \
@@ -268,7 +268,7 @@ trees.remove-unfinished:
 		    $(CMD_MSG2) "processing $${dir}"; \
 		    for file in $${dir}/step3.dir/step1.dir/cluster_*.tree ; do \
 			    do_reset=0; \
-			    tail -n 1 $${file} | grep -q "finished at"; \
+			    tail -n 1 $${file} | grep -q "finished"; \
 			    if [[ $$? == 1 ]] ; then \
 				    $(CMD_LOG2) "$${dir}: removing unfinished: $${file}"; \
 				    rm -f $${file}; \
@@ -333,6 +333,60 @@ trees.check:
 	@touch $@
 	$(EPILOG)
 
+#############################################################################################
+## progress report on kaks
+kaks.show-progress:
+	@echo "# kaks progress at `date`" >> kaks.progress
+	@printf "# NFIN\tNTOT\tPFIN\tCAT\n" >> kaks.progress
+	@for dir in pair_*; do \
+		total="`find $${dir} -name "step6*.chunk" | wc -l`"; \
+		finished="`grep "finished" $${dir}/step6.dir/*.log | wc -l`"; \
+		if [[ $$total -gt 0 ]]; then \
+			printf "%i\t%i\t%i%%\t%s\n" $${finished} $${total} $$(( 100 * $${finished} / $${total} )) $${dir} >> kaks.progress; \
+		fi; \
+	done
+	@total="`find -name "step6*.chunk" | wc -l`"; \
+	finished="`find -regex ".*step6.dir/.*.log" -exec grep "finished" {} \; | wc -l`"; \
+	if [[ $$total -gt 0 ]]; then \
+		printf "%i\t%i\t%i%%\tall\n" $${finished} $${total} $$(( 100 * $${finished} / $${total} )) >> kaks.progress; \
+	fi
+	@cat kaks.progress	
+
+kaks.show-unfinished:
+	@for dir in pair_*; do \
+		if [[ -d $${dir}/step6.dir ]]; then \
+		echo "processing $${dir}"; \
+		for file in $${dir}/step6.dir/step6*.log; do \
+			tail -n 1 $${file} | grep -q "finished"; \
+			if [[ $$? == 1 ]] ; then \
+				echo "unfinished: $${file}"; \
+			fi \
+		done; \
+		fi; \
+	done
+
+#############################################################################################
+kaks.remove-unfinished:
+	$(PRELOG)
+	@for dir in pair_*; do \
+		if [[ -d $${dir}/step6.dir ]]; then \
+		    $(CMD_MSG2) "processing $${dir}"; \
+		    do_reset=0; \
+		    for file in $${dir}/step6.dir/step6*.log; do \
+			    tail -n 1 $${file} | grep -q "job finished"; \
+			    if [[ $$? == 1 ]] ; then \
+				    $(CMD_LOG2) "$${dir}: removing unfinished: $${file}"; \
+				    rm -f $${file}; \
+				    do_reset=1; \
+			    fi \
+		    done; \
+		    if [[ $${do_reset} == 1 ]]; then \
+			    $(CMD_LOG2) "$${dir}: resetting step6.run."; \
+			    rm -f $${dir}/step6.run; \
+		    fi; \
+		fi; \
+	done
+	$(EPILOG)
 
 #############################################################################################
 #############################################################################################

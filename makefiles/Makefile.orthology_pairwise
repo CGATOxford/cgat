@@ -626,6 +626,7 @@ step3.prepare: step2
 		-d step3.dir \
 		-p $(PARAM_PROJECT_NAME)_orthology \
 		-o $(DIR_ROOT) \
+		--include=../../data/Makefile.inc \
 		PARAM_GENOME1=$(PARAM_GENOME1) \
 		PARAM_GENOME2=$(PARAM_GENOME2) \
 		PARAM_STEP1_NUMJOBS=$(PARAM_STEP3_NUMJOBS) \
@@ -839,10 +840,13 @@ step6.orthologs: step3
 
 peptides2cds%: peptides%.fasta cds%.fasta
 	$(PRELOG)
-	@$(CMD_REMOTE_SUBMIT) $(CMD_BENCHMARK) \
+	$(CMD_REMOTE_SUBMIT) \
 	python $(DIR_SCRIPTS_GENEPREDICTION)peptides2cds.py \
 		$(PYTHON_OPTIONS) \
-	 	--cds=cds$*.fasta < peptides$*.fasta > $@
+	 	--cds=cds$*.fasta \
+		--verbose=2 \
+		--log=$@.log \
+	< peptides$*.fasta > $@
 	$(EPILOG)
 
 ## get pairwise blast alignments for all orthologs
@@ -886,13 +890,15 @@ step6.run: step6.prepare
 step6.run-hook: $(STEP6_TARGETS)
 
 step6%.kaks: step6%.chunk
-	@$(CMD_REMOTE_SUBMIT) $(CMD_BENCHMARK) \
-	seq_pairs_kaks \
-	--cdna_sequences step6$*.chunk \
-	--err_log $@.err \
-	--aligned \
-	--temp_directory /tmp/$@_$$$$ \
-	< /dev/null > $@ 
+	@$(CMD_REMOTE_SUBMIT) \
+	"python $(DIR_SCRIPTS)mali2kaks.py \
+		$(PYTHON_OPTIONS) \
+		--pairwise \
+		--remove-stops \
+		--iteration=pairwise \
+		--method=paml \
+		--log=$@.log \
+	< step6$*.chunk > $@"
 
 ######################################################################
 ## merge with old results in step6.kaks.old, if they are present
@@ -914,7 +920,8 @@ step6.finish: step6.run step6.kaks
 
 step6.kaks: step6.run
 	$(PRELOG)
-	@find step6.dir/ -name "step6_*.kaks" -exec cat {} \; > $@ 
+	@find step6.dir/ -name "step6_*.kaks" -exec cat {} \; |\
+	awk '/^seq1/ {if(!f) {print; f=1;} next;} {print;}' > $@ 
 	$(EPILOG)
 
 # make graph symmetric and only take best ks transcript pairs
@@ -979,15 +986,15 @@ step7.run: step7.prepare step7.pairs
 
 step7.pairs: step6.pairs.gz 
 	$(PRELOG)
-	@gunzip < $< |\
-	grep -v "#" |\
-	$(CMD_REMOTE_SUBMIT) \
+	@$(CMD_REMOTE_SUBMIT) \
+	"gunzip < $< |\
+	grep -v '#' |\
 	python $(DIR_SCRIPTS_GENEPREDICTION)analyze_pairs.py \
 	$(PYTHON_OPTIONS) \
 	--fields="aligned,identical,transitions,transversions,jc69,t92" \
 	--filter="all,codon3,d4" |\
 	perl -p -e "s/ \S+ \S+//g" \
-	> $@
+	> $@"
 	$(EPILOG)
 
 step7.clean:
@@ -1044,6 +1051,7 @@ step9.prepare: step6 step9.links
 		-d step9.dir \
 		-p $(PARAM_PROJECT_NAME)_orthology \
 		-o $(DIR_ROOT) \
+		--include=../../data/Makefile.inc \
 		PARAM_GENOME1=$(PARAM_GENOME1) \
 		PARAM_GENOME2=$(PARAM_GENOME2) \
 		PARAM_STEP1_NUMJOBS=$(PARAM_STEP9_NUMJOBS) \

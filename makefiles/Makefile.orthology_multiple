@@ -438,7 +438,8 @@ best_predictions2queries:
 	$(PRELOG)
 	@rm -f $@
 	@for x in $(PARAM_SRC_SCHEMAS); do \
-		psql -h db andreas -c "SELECT $(EXPORT_PREDICTION_ID), query_token \
+		psql -h $(PARAM_PSQL_HOST) $(PARAM_PSQL_DATABASE) \
+			-c "SELECT $(EXPORT_PREDICTION_ID), query_token \
 		FROM $$x.overview WHERE is_best_prediction = True" -t -A -F"	">> $@; \
 	done
 	$(EPILOG)
@@ -448,7 +449,7 @@ all_predictions2queries:
 	$(PRELOG)
 	@rm -f $@
 	@-for x in $(PARAM_SRC_SCHEMAS); do \
-		psql -h db andreas -c \
+		psql -h $(PARAM_PSQL_HOST) $(PARAM_PSQL_DATABASE) \
 		"SELECT $(EXPORT_PREDICTION_ID), 'dmel_vs_dmel' || '|' || query_token \
 		FROM $$x.predictions" -t -A -F"	">> $@; \
 	done
@@ -514,7 +515,7 @@ LOGSUMMARY_HR1?=@echo "\#=======================================================
 LOGSUMMARY_HR2?=@echo "\#----------------------------------------------------------------------------------------------" $(TO_LOGSUMMARY)
 LOGSUMMARY_HR2v?=echo "\#----------------------------------------------------------------------------------------------" $(TO_LOGSUMMARY)
 
-%.summary: %.orgs_per_cluster %_genes.components %.components %.stats_missed_queries
+%.summary: %.orgs_per_cluster %_genes.components %.components %.stats_missed_queries predictions2genes
 	$(PRELOG)
 	@rm -f $@
 	$(CMD_LOGSUMMARY) "Summary report for $*"

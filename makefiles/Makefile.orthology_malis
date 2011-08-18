@@ -176,7 +176,7 @@ $(DATA_TARGETS):
 
 data.run-hook: $(DATA_TARGETS)
 
-data.finish: data.run data.qc data.bs
+data.finish: data.run # data.qc data.bs
 
 .PHONY: data.run-hook data.run-subhook $(DATA_TARGETS)
 
