@@ -147,7 +147,6 @@ def main( argv = None ):
         skip_redundant = True,
         monotonous = False,
         bin = False,
-        raw = False,
         multiple = False,
         bin_by_score = True )
 
