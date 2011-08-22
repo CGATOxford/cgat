@@ -10,6 +10,18 @@ Peak calling results
 
 .. report:: PeakCalling.MacsSummary
    :render: table
+   :force:
+
+   Summary of MACS results
+
+Filtering
+=========
+
+.. report:: PeakCalling.MacsFiltering
+   :render: table
+   :force:
+
+   Table showing the number of peaks called at a given FDR
 
 Diagnostics
 ===========

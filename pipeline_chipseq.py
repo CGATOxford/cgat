@@ -215,22 +215,18 @@ PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],
 # load all tracks - exclude input/control tracks
 Sample = PipelineTracks.Sample3
 
-TRACKS = PipelineTracks.Tracks( Sample ).loadFromDirectory( 
-    [ x for x in glob.glob( "*.export.txt.gz" ) if PARAMS["tracks_control"] not in x ],
-      "(\S+).export.txt.gz" ) +\
-      PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
-          [ x for x in glob.glob( "*.sra" ) if PARAMS["tracks_control"] not in x ], 
-          "(\S+).sra" ) +\
-          PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
-              [x for x in glob.glob( "*.fastq.gz" ) if PARAMS["tracks_control"] not in x], 
-              "(\S+).fastq.gz" ) +\
-              PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
-                  [x for x in glob.glob( "*.fastq.1.gz" ) if PARAMS["tracks_control"] not in x], 
-                  "(\S+).fastq.1.gz" ) +\
-                  PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
-                      [ x for x in glob.glob( "*.csfasta.gz" ) if PARAMS["track_control"] not in x], 
-                        "(\S+).csfasta.gz" )
+suffixes = ["export.txt.gz",
+            "sra",
+            "fastq.gz",
+            "cfastq.1.gz",
+            "csfasta.gz" ]
 
+TRACKS = sum( itertools.chain( [ PipelineTracks.Tracks( Sample ).loadFromDirectory( 
+        [ x for x in glob.glob( "*.%s" % s ) if PARAMS["tracks_control"] not in x ],
+        "(\S+).%s" % s ) for s in suffixes ] ), 
+              PipelineTracks.Tracks( Sample ) )
+
+###################################################################
 def getControl( track ):
     '''return appropriate control for a track
     '''
@@ -287,7 +283,9 @@ TRACKS_MASTER = EXPERIMENTS.keys() + CONDITIONS.keys()
 
 # tracks for subtraction of unstim condition
 if "tracks_subtract" in PARAMS and PARAMS["tracks_subtract"]:
-    TOSUBTRACT = [ x for x in EXPERIMENTS if not x.condition == PARAMS["tracks_unstimulated"] ]
+    TOSUBTRACT = [ x for x in EXPERIMENTS \
+                       if not x.condition == PARAMS["tracks_unstimulated"] and \
+                       getUnstimulated( x ) in EXPERIMENTS ]
 else:
     TOSUBTRACT = []
 
@@ -327,6 +325,42 @@ def connect():
 ###################################################################
 ###################################################################
 ###################################################################
+## load number of reads
+###################################################################
+@transform( ("*.export.txt.gz",
+             "*.fastq.1.gz", 
+             "*.fastq.gz",
+             "*.sra",
+             "*.csfasta.gz" ),
+            regex( r"(\S+).(export.txt.gz|fastq.1.gz|fastq.gz|sra|csfasta.gz)"), 
+            r"\1.nreads" )
+def countReads( infile, outfile ):
+    '''count number of reads in input files.'''
+    to_cluster = True
+    m = PipelineMapping.Counter()
+    statement = m.build( (infile,), outfile ) 
+    P.run()
+
+@merge(countReads, "reads_summary.load" )
+def loadReadCounts( infiles, outfile ):
+    '''load read counts into database.'''
+
+    outf = P.getTempFile()
+    outf.write( "track\ttotal_reads\n")
+    for infile in infiles:
+        track = P.snip(infile, ".nreads")
+        lines = IOTools.openFile( infile ).readlines()
+        nreads = int( lines[0][:-1].split("\t")[1])
+        outf.write( "%s\t%i\n" % (track,nreads))
+    outf.close()
+        
+    P.load( outf.name, outfile )
+    
+    os.unlink(outf.name)
+    
+###################################################################
+###################################################################
+###################################################################
 ## Mapping
 ###################################################################
 
@@ -341,7 +375,7 @@ if PARAMS["mapping_mapper"] == "bowtie":
                  "*.sra",
                  "*.csfasta.gz" ),
                 regex( r"(\S+).(export.txt.gz|fastq.1.gz|fastq.gz|sra|csfasta.gz)"), 
-                r"\1.bam" )
+                r"\1.genome.bam" )
     def buildBAM( infile, outfile ):
         '''re-map eland formatted reads with bowtie
         '''
@@ -353,6 +387,28 @@ if PARAMS["mapping_mapper"] == "bowtie":
         statement = m.build( (infile,), outfile ) 
         P.run()
 
+elif PARAMS["mapping_mapper"] == "bwa":
+    
+    ############################################################
+    ############################################################
+    ############################################################
+    @transform( ("*.export.txt.gz",
+                 "*.fastq.1.gz", 
+                 "*.fastq.gz",
+                 "*.sra",
+                 "*.csfasta.gz" ),
+                regex( r"(\S+).(export.txt.gz|fastq.1.gz|fastq.gz|sra|csfasta.gz)"), 
+                r"\1.genome.bam" )
+    def buildBAM( infile, outfile ):
+        '''re-map eland formatted reads with bowtie
+        '''
+        to_cluster = True
+
+        job_options= "-pe dedicated %i -R y" % PARAMS["bwa_threads"]
+        m = PipelineMapping.BWA()
+        statement = m.build( (infile,), outfile ) 
+        P.run()
+
 else:
     raise ValueError("unknown mapper %s" % PARAMS["mapping_mapper"] )
 
@@ -361,7 +417,6 @@ else:
 ###################################################################
 ## Read procesing
 ###################################################################
-
 
 ############################################################
 ############################################################
@@ -385,9 +440,9 @@ def makeMask(infile,outfile):
         P.touch(outfile)
 
 ############################################################
+############o################################################
 ############################################################
-############################################################
-@transform( buildBAM, suffix(".bam"), add_inputs( makeMask), ".prep.bam")
+@transform( buildBAM, suffix(".genome.bam"), add_inputs( makeMask), ".prep.bam")
 def prepBAMForPeakCalling(infiles, outfile):
     '''Prepare BAM files for peak calling.
 
@@ -657,9 +712,13 @@ if PARAMS["calling_caller"] == "macs":
     ############################################################
     @merge( runMACS, "macs.summary" )
     def summarizeMACS( infiles, outfile ):
-        '''run MACS for peak detection.'''
-
+        '''summarize MACS results.''' 
         PIntervals.summarizeMACS( infiles, outfile )
+
+    @merge( runMACS, "macs_fdr.summary" )
+    def summarizeMACSFDR( infiles, outfile ):
+        '''summarize MACS results.''' 
+        PIntervals.summarizeMACSFDR( infiles, outfile )
 
     ############################################################
     ############################################################
@@ -669,14 +728,95 @@ if PARAMS["calling_caller"] == "macs":
                 "_summary.load" )
     def loadMACSSummary( infile, outfile ):
         '''load macs summary.'''
-        PIntervals.loadMACSSummary( infile, outfile )
+        P.load( infile, outfile, "--index=track" )
 
     ############################################################
     ############################################################
     ############################################################
+    @transform( summarizeMACSFDR,
+                suffix("_fdr.summary"),
+                "_fdr.load" )
+    def loadMACSSummaryFDR( infile, outfile ):
+        '''load macs summary.'''
+        P.load( infile, outfile, "--index=track", transpose="fdr" )
+
+    ############################################################
+    ############################################################
+    ############################################################
+    @follows( loadMACSSummary, loadMACSSummaryFDR )
     @transform( loadMACS, suffix("_macs.load"), ".bed" )
     def exportIntervalsAsBed( infile, outfile ):
         PIntervals.exportMacsAsBed( infile, outfile )
+
+elif PARAMS["calling_caller"] == "zinba":
+
+    ############################################################
+    ############################################################
+    ############################################################
+    @follows( normalizeBAM )
+    @files( [ (("%s.call.bam" % (x.asFile()), 
+                "%s.call.bam" % (getControl(x).asFile())), 
+               "%s.zinba" % x.asFile() ) for x in TRACKS ] )
+    def runZinba( infiles, outfile ):
+        '''run MACS for peak detection.'''
+        infile, controlfile = infiles
+
+        to_cluster = True
+        
+        job_options= "-pe dedicated %i -R y" % PARAMS["zinba_threads"]
+
+        mappability_dir = os.path.join( PARAMS["zinba_mappability_dir"], 
+                                 PARAMS["genome"],
+                                 "%i" % PARAMS["zinba_read_length"],
+                                 "%i" % PARAMS["zinba_alignability_threshold"],
+                                 "%i" % PARAMS["zinba_fragment_size"])
+
+        if not os.path.exists( mappability_dir ):
+            raise OSError("mappability not found, expected to be at %s" % mappability_dir )
+
+        bit_file = os.path.join( PARAMS["zinba_index_dir"], 
+                                 PARAMS["genome"] ) + ".2bit"
+        if not os.path.exists( bit_file):
+            raise OSError("2bit file not found, expected to be at %s" % bit_file )
+
+        options = []
+        if controlfile:
+            options.append( "--control-filename=%(controlfile)s" % locals() )
+            
+        options = " ".join(options)
+            
+        statement = '''
+        python %(scriptsdir)s/WrapperZinba.py
+               --input-format=bam
+               --fdr-threshold=%(zinba_fdr_threshold)f
+               --fragment-size=%(zinba_fragment_size)s
+               --threads=%(zinba_threads)i
+               --bit-file=%(bit_file)s
+               --mappability-dir=%(mappability_dir)s
+               %(options)s
+        %(infile)s %(outfile)s
+        >& %(outfile)s.log
+        '''
+        
+        P.run()
+
+    ############################################################
+    ############################################################
+    ############################################################
+    @transform( runZinba,
+                regex(r"(.*).zinba"),
+                inputs( (r"\1.zinba", r"\1.call.bam") ),
+                r"\1_zinba.load" )
+    def loadZinba( infiles, outfile ):
+        infile, bamfile = infiles
+        PIntervals.loadZinba( infile, outfile, bamfile )
+    
+    ############################################################
+    ############################################################
+    ############################################################
+    @transform( loadZinba, suffix("_macs.load"), ".bed" )
+    def exportIntervalsAsBed( infile, outfile ):
+        PIntervals.exportZinbaAsBed( infile, outfile )
 
 else:
     raise ValueError("unknown peak caller %s" % PARAMS["calling_caller"] )
@@ -731,7 +871,7 @@ def combineTissue( infiles, outfile ):
 @files( [ ( ("%s.bed" % x.asFile(), 
              "%s.bed" % getUnstimulated(x).asFile()),
             "%s.bed" % getSubtracted(x).asFile() ) for x in TOSUBTRACT ] )
-def subtractUnstim( infiles, outfile ):
+def subtractUnstimulated( infiles, outfile ):
     '''remove the unstimulated data sets from the individual tracks. 
     '''
 
@@ -743,7 +883,7 @@ def subtractUnstim( infiles, outfile ):
 ############################################################
 @transform( (combineExperiment,
              combineCondition, 
-             subtractUnstim, 
+             subtractUnstimulated, 
              normalizeBAM),
             suffix(".bed"),
             "_bed.load" )
@@ -865,8 +1005,7 @@ def buildMergedIntervals( infiles, outfile ):
 ## master target for this section
 ############################################################
 @follows( loadCombinedIntervals, 
-          buildMergedIntervals,
-          loadMACSSummary )
+          buildMergedIntervals )
 def buildIntervals():
     pass
 
@@ -1625,8 +1764,10 @@ else:
 
         PMotifs.filterMotifsFromMEME( infile, outfile, ["1"] )
 
-@follows( buildReferenceMotifs, filterMotifs )
-@merge( glob.glob("*.motif"), "motif_info.load" )
+############################################################
+############################################################
+############################################################
+@merge( (buildReferenceMotifs, filterMotifs), "motif_info.load" )
 def loadMotifInformation( infiles, outfile ):
     '''load information about motifs into database.'''
     
@@ -2215,7 +2356,7 @@ def loadRepeats( infile, outfile ):
 ## count coverage within intervals for each track against
 ## the unstimulated tracks
 ############################################################
-@follows( subtractUnstim )
+@follows( subtractUnstimulated )
 @files( [ ("%s.bed" % x.asFile(), "%s.readcounts" % x.asFile() ) for x in TOSUBTRACT ] )
 def buildIntervalCounts( infile, outfile ):
     '''count read density in bed files comparing stimulated versus
@@ -2228,13 +2369,16 @@ def buildIntervalCounts( infile, outfile ):
     # collect foreground and background bam files
     fg_replicates = PipelineTracks.Aggregate( TRACKS, track = track )[track]
     for replicate in fg_replicates:
-        samfiles_fg.append( replicate.asFile() + "%s.call.bam" )
+        samfiles_fg.append( "%s.call.bam" % replicate.asFile() )
 
     unstim = getUnstimulated( track )
     bg_replicates = PipelineTracks.Aggregate( TRACKS, track = unstim )[unstim]
 
     for replicate in bg_replicates:
-        samfiles_bg.append( replicate.asFile() + "%s.call.bam" )
+        samfiles_bg.append( "%s.call.bam" % replicate.asFile())
+        
+    samfiles_fg = [ x for x in samfiles_fg if os.path.exists( x ) ]
+    samfiles_bg = [ x for x in samfiles_bg if os.path.exists( x ) ]
 
     samfiles_fg = ",".join(samfiles_fg)
     samfiles_bg = ",".join(samfiles_bg)
@@ -2249,35 +2393,45 @@ def buildIntervalCounts( infile, outfile ):
     cat < %(infile)s 
     | python %(scriptsdir)s/bed2gff.py --as-gtf 
     | python %(scriptsdir)s/gtf2table.py 
-		--counter=read-coverage 
-		--log=%(outfile)s.log 
-		--bam-file=%(samfiles_fg)s 
+                --counter=read-coverage 
+                --log=%(outfile)s.log 
+                --bam-file=%(samfiles_fg)s 
     > %(tmpfile1)s"""
-
     P.run()
 
-    statement = """
-    cat < %(infile)s 
-    | python %(scriptsdir)s/bed2gff.py --as-gtf 
-    | python %(scriptsdir)s/gtf2table.py 
-		--counter=read-coverage 
-		--log=%(outfile)s.log 
-		--bam-file=%(samfiles_bg)s 
-    > %(tmpfile2)s"""
+    if samfiles_bg:
+        statement = """
+        cat < %(infile)s 
+        | python %(scriptsdir)s/bed2gff.py --as-gtf 
+        | python %(scriptsdir)s/gtf2table.py 
+                    --counter=read-coverage 
+                    --log=%(outfile)s.log 
+                    --bam-file=%(samfiles_bg)s 
+        > %(tmpfile2)s"""
+        P.run()
 
-    P.run()
+        statement = '''
+        python %(toolsdir)s/combine_tables.py 
+               --add-file-prefix 
+               --regex-filename="[.](\S+)$" 
+        %(tmpfile1)s %(tmpfile2)s > %(outfile)s
+        '''
 
-    statement = '''
-    python %(toolsdir)s/combine_tables.py 
-           --add-file-prefix 
-           --regex-filename="[.](\S+)$" 
-    %(tmpfile1)s %(tmpfile2)s > %(outfile)s
-    '''
+        P.run()
 
-    P.run()
+        os.unlink( tmpfile2 )
+        
+    else:
+        statement = '''
+        python %(toolsdir)s/combine_tables.py 
+               --add-file-prefix 
+               --regex-filename="[.](\S+)$" 
+        %(tmpfile1)s > %(outfile)s
+        '''
+
+        P.run()
+
     os.unlink( tmpfile1 )
-    os.unlink( tmpfile2 )
-
 
 ############################################################
 @transform( buildIntervalCounts, 
@@ -2379,7 +2533,8 @@ def viewIntervals( infiles, outfiles ):
 ##
 ############################################################
 
-@follows( buildIntervals, makeReadCorrelationTable,
+@follows( buildIntervals, 
+          makeReadCorrelationTable,
           loadBAMStats)
 def intervals():
     '''compute binding intervals.'''
@@ -2461,9 +2616,9 @@ def createViewMapping( infile, outfile ):
 
     statement = '''
     CREATE %(view_type)s %(tablename)s AS
-    SELECT SUBSTR( b.track, 1, LENGTH(b.track) - LENGTH( '.call')) AS track, *
+    SELECT SUBSTR( b.track, 1, LENGTH(b.track) - LENGTH( '.genome')) AS track, *
     FROM bam_stats AS b
-    WHERE b.track LIKE "%%.call" 
+    WHERE b.track LIKE "%%.genome" 
     ''' % locals()
 
     Database.executewait( dbhandle, statement )
@@ -2499,7 +2654,7 @@ def update_report():
 ###################################################################
 ###################################################################
 @follows( mkdir( "%s/bamfiles" % PARAMS["web_dir"]), 
-          mkdir("%s/genesets" % PARAMS["web_dir"]),
+          mkdir("%s/intervals" % PARAMS["web_dir"]),
           mkdir("%s/classification" % PARAMS["web_dir"]),
           mkdir("%s/differential_expression" % PARAMS["web_dir"]),
           update_report,
@@ -2518,6 +2673,7 @@ def publish():
     exportfiles = {
         "bamfiles" : glob.glob( "*.bam" ) + glob.glob( "*.bam.bai" ),
         # "genesets": [ "lincrna.gtf.gz", "abinitio.gtf.gz" ],
+        "intervals" : glob.glob("*.bed"),
         # "classification": glob.glob("*.class.tsv.gz") ,
         #"differential_expression" : glob.glob( "*.cuffdiff.dir" ),
         }

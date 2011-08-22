@@ -12,23 +12,22 @@ The following table summarizes the number of reads input, mapped and filtered.
 +---------------------------------------+--------------------------------------------------+
 |*Column*                               |*Contents*                                        |
 +---------------------------------------+--------------------------------------------------+
-|mapped                                 |Number of reads mapped                            |
+|reads_total                            |Total number of reads                             |
++---------------------------------------+--------------------------------------------------+
+|reads_mapped                           |Number of reads mapped                            |
 +---------------------------------------+--------------------------------------------------+
 |duplicates                             |Number of duplicate alignments                    |
-+---------------------------------------+--------------------------------------------------+
-|reverse                                |Number of reads mapping to reverse strand         |
-|                                       |                                                  |
 +---------------------------------------+--------------------------------------------------+
 
 .. report:: Mapping.MappingSummary
    :render: table
-   :slices: mapped,duplicates,reverse
+   :slices: reads_total,reads_mapped,duplicates
 
    Mapping Results
 
 .. report:: Mapping.MappingSummary
    :render: interleaved-bar-plot
-   :slices: mapped,duplicates,reverse
+   :slices: reads_total,reads_mapped,duplicates
 
    Mapping Results
 

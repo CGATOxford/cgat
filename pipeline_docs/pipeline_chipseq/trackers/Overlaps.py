@@ -30,7 +30,7 @@ class OverlapsBase( DefaultTracker ):
     """
     tablename = None
     column   = None
-    mPattern = "_intervals$"
+    pattern = "(.*)_intervals$"
 
     def getSlices( self, subset = None ):
         if subset != None:
@@ -39,10 +39,10 @@ class OverlapsBase( DefaultTracker ):
             return []
 
     def __call__(self, track, slice = None ):
+
         tablename = self.tablename 
         if self.column == None: raise NotImplementedError( "column not set in derived class." )
         column = self.column
-
         
         if slice == None:
             result = odict( self.get( "SELECT set2, %(column)s1 FROM %(tablename)s WHERE set1 = '%(track)s'" % locals() ) +\
@@ -131,7 +131,7 @@ class OverlapVersusPeakval( DefaultTracker ):
     """Overlap between experiments
     """
     tablename = "reproducibility"
-    mPattern = "_reproducibility$"
+    pattern = "(.*)_reproducibility$"
 
     def __call__(self, track, slice = None ):
         data = self.get("SELECT pexons_union, pexons_ovl FROM %(track)s_%(tablename)s" % locals())
@@ -147,7 +147,7 @@ class OverlapROC( DefaultTracker ):
     True positives are those intervals which reproducible, i.e.,
     appear in all biological replicates.
     """
-    mPattern = "_reproducibility$"
+    pattern = "(.*)_reproducibility$"
     mFields = ("peakval", "avgval", "length")
     mXLabel = "FPR"
     mYLabel = "TPR"

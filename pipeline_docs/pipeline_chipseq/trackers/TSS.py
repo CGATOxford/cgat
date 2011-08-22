@@ -89,9 +89,10 @@ class TSSOverlap(Annotations.AnnotationSlicer, DefaultTracker):
             data = self.getValues( """SELECT %(column)s FROM %(track)s_%(table)s AS d, %(track)s_%(annotations)s as a 
                                       WHERE d.gene_id = a.gene_id AND a.is_%(slice)s AND %(where)s""" % locals() )
 
+        if len(data) == 0: return None
+
         hist, bins = numpy.histogram( data, bins=numpy.arange(0, max(data) + 1, 1) )
         return odict( zip( map(str, bins[:-1]), hist) )
-
 
 class TSSDistances( DefaultTracker ):
     mPattern = "_annotations$"

@@ -1,0 +1,9 @@
+syntax: glob
+
+_static/*
+_build/*
+_cache/*
+htaccess
+csvdb
+conf.py
+*[#]*

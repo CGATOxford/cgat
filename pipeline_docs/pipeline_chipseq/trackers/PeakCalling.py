@@ -19,18 +19,21 @@ class MacsSummary( DefaultTracker ):
         resultsdir = os.path.abspath( os.path.join( EXPORTDIR, "MACS" ) )
         
         fields = (
-            "tag_control_total", "tag_control_unique", 
+            "called_positive", "called_negative",
+            "scan_window", "shift",
             "tag_treatment_total", "tag_treatment_unique", 
+            "tag_control_total", "tag_control_unique", 
             "ncandidates_positive", "ncandidates_negative", 
-            "called_positive", "called_negative", "min_tags",
-            "paired_peaks", "scan_window", "shift" )
+            "min_tags",
+            "paired_peaks", )
 
         f = ",".join(fields)
         data = self.getFirstRow( '''SELECT %(f)s FROM macs_summary WHERE track="%(track)s"''' % locals())
         result = odict( zip( fields,data) )
 
         if os.path.exists( resultsdir ):
-            result["link"] = "`pdf <%(resultsdir)s/%(track)s_model.pdf>`_" % locals()
+            result["peakshape"] = "`pdf <%(resultsdir)s/%(track)s_model.pdf>`_" % locals()
+
         return result
 
 class MacsDiagnostics(ChipseqTracker):
@@ -50,3 +53,7 @@ class MacsDiagnostics(ChipseqTracker):
             result[fc]["proportion of peaks"] = map( float, (p20,p30,p40,p50,p60,p70,p80,p90) ) 
             
         return result
+
+class MacsFiltering(ChipseqTracker, SingleTableTrackerColumns ):
+    column = "fdr"
+    table = "macs_fdr"

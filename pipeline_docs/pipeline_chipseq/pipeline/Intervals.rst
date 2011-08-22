@@ -8,7 +8,7 @@ Number of intervals in each set
 The following table presents the number of intervals and 
 the average interval width per set:
 
-.. report:: ChipseqReport.IntervalsSummary
+.. report:: Intervals.IntervalsSummary
    :render: table
 
    Number of intervals and lengths of intervals in
@@ -17,7 +17,7 @@ the average interval width per set:
 The following figure shows the number of intervals and
 average interval width per set:
 
-.. report:: ChipseqReport.IntervalsSummary
+.. report:: Intervals.IntervalsSummary
    :render: interleaved-bar-plot
    :transform: filter
    :tf-fields: nintervals,<length>
@@ -34,7 +34,7 @@ Average values
 The following plot shows the distribution of the
 average read coverage within intervals.
 
-.. report:: ChipseqReport.IntervalAverageValues
+.. report:: Intervals.IntervalAverageValues
    :render: line-plot
    :transform: histogram
    :tf-range: 0,50
@@ -49,7 +49,7 @@ Values at peak
 The following plot shows the distribution of the maximum (peak) 
 read coverage within intervals.
 
-.. report:: ChipseqReport.IntervalPeakValues
+.. report:: Intervals.IntervalPeakValues
    :render: line-plot
    :transform: histogram
    :tf-range: 0,100
@@ -63,7 +63,7 @@ Distribution of interval size
 
 The following plot shows the distribution of interval size for each set.
 
-.. report:: ChipseqReport.IntervalLengths
+.. report:: Intervals.IntervalLengths
    :render: line-plot
    :transform: histogram
    :logscale: x
@@ -80,7 +80,7 @@ an interval for each set, i.e. is it on the sides or the middle
 of an interval. Note that this counting does not take into account
 strandedness.
 
-.. report:: ChipseqReport.PeakLocation
+.. report:: Intervals.PeakLocation
    :render: line-plot
    :transform: histogram
    :tf-aggregate: normalized-total
@@ -94,7 +94,7 @@ an interval for each set, i.e. is it on the sides or the middle
 of an interval. Note that this counting does not take into account
 strandedness.
 
-.. report:: ChipseqReport.PeakDistance
+.. report:: Intervals.PeakDistance
    :render: line-plot
    :transform: histogram
    :logscale: x
@@ -109,7 +109,7 @@ Correlation of interval size and peak score
 The following table tests if there is a correlation 
 between interval size and average value within each set.
 
-.. report:: ChipseqReport.IntervalLengthVsAverageValue
+.. report:: Intervals.IntervalLengthVsAverageValue
    :render: table
    :transform: correlation
  
@@ -119,7 +119,7 @@ between interval size and average value within each set.
 The following table tests if there is a correlation 
 between interval size and the peak value within each set.
 
-.. report:: ChipseqReport.IntervalLengthVsPeakValue
+.. report:: Intervals.IntervalLengthVsPeakValue
    :render: table
    :transform: correlation
  

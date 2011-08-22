@@ -633,7 +633,7 @@ class MemeResults( DefaultTracker ):
         return result
 
 class TomTomResults( DefaultTracker ):
-    mPattern = "_tomtom$"
+    pattern = "(.*)_tomtom$"
     
     def __call__(self, track, slice = None ):
 

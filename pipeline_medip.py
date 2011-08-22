@@ -30,16 +30,42 @@ MeDIP pipeline
 :Date: |today|
 :Tags: Python
 
-The exome pipeline imports unmapped reads from one or more 
-fastq or sra files and aligns them to the genome, then filters calls variants (SNVs and indels) 
-and filters them by both depth/rate and regions of interest.
-
    1. Align to genome using gapped alignment (BWA)
    2. Calculate alignment and coverage statistics (BAMStats)
    3. Identify differentially methylated regions (DMRs)
    4. Filter DMRs
    5. Calculate DMR statistics
    6. Produce report (SphinxReport)
+
+Methods
+=======
+
+Read processing
+---------------
+
+For medip-seq analysis, the following filtering steps are typically applied to the mapped data:
+
+   1. removing duplicate reads
+   2. removing reads with a mapping quality of less than 10
+
+Medip analysis
+--------------
+
+The medip analysis makes use of the MEDIPS R package by `Chavez et al. <http://medips.molgen.mpg.de/>`_ 
+(see :pmid:`PMID: 20802089`).
+
+Briefly, the data is processed in the following way:
+
+1. Quality control
+   1. Saturation analysis
+   2. Computing CpG coverage
+   3. Computing CpG enrichment
+   
+2. Normalization
+   1. Output data normalized by total read depth (rpm - reads per million)
+   2. Output normalized relative methylation scores (rms)
+   3. Output normalized absolute methylation scores (ams)
+
 
 Usage
 =====
@@ -75,8 +101,6 @@ fastq.1.gz, fastq2.2.gz
 
    Quality scores need to be of the same scale for all input files. Thus it might be
    difficult to mix different formats.
-
-
 
 Requirements
 ------------
@@ -123,7 +147,6 @@ Code
 
 # load modules
 from ruffus import *
-from rpy2.robjects import r as R
 
 import Experiment as E
 import logging as L
@@ -131,13 +154,14 @@ import Database
 import sys, os, re, shutil, itertools, math, glob, time, gzip, collections, random
 import numpy, sqlite3
 import GTF, IOTools, IndexedFasta
-import Tophat
-import rpy2.robjects as ro
 import PipelineGeneset
 import PipelineMapping
 import Stats
 import PipelineTracks
 import Pipeline as P
+
+from rpy2.robjects import r as R
+import rpy2.robjects as ro
 
 USECLUSTER = True
 
@@ -145,8 +169,85 @@ USECLUSTER = True
 #########################################################################
 #########################################################################
 # load options from the config file
-P.getParameters( ["%s.ini" % __file__[:-len(".py")], "../medip.ini", "medip.ini" ] )
+P.getParameters( ["%s.ini" % __file__[:-len(".py")], 
+                  "../pipeline.ini", 
+                  "pipeline.ini" ] )
+
 PARAMS = P.PARAMS
+
+PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],
+                                       "pipeline_annotations.py" )
+
+###################################################################
+###################################################################
+###################################################################
+## Helper functions mapping tracks to conditions, etc
+###################################################################
+# load all tracks - exclude input/control tracks
+Sample = PipelineTracks.Sample3
+
+suffixes = ["export.txt.gz",
+            "sra",
+            "fastq.gz",
+            "cfastq.1.gz",
+            "csfasta.gz" ]
+
+TRACKS = sum( itertools.chain( [ PipelineTracks.Tracks( Sample ).loadFromDirectory( 
+        [ x for x in glob.glob( "*.%s" % s ) if PARAMS["tracks_control"] not in x ],
+        "(\S+).%s" % s ) for s in suffixes ] ), 
+              PipelineTracks.Tracks( Sample ) )
+
+###################################################################
+###################################################################
+###################################################################
+# if conf.py exists: execute to change the above assignmentsn
+if os.path.exists("pipeline_conf.py"):
+    L.info( "reading additional configuration from pipeline_conf.py" )
+    execfile("pipeline_conf.py")
+
+###################################################################
+###################################################################
+###################################################################
+# define aggregates
+###################################################################
+# aggregate per experiment
+EXPERIMENTS = PipelineTracks.Aggregate( TRACKS, labels = ("condition", "tissue") )
+# aggregate per condition
+CONDITIONS = PipelineTracks.Aggregate( TRACKS, labels = ("condition",) )
+# aggregate per tissue
+TISSUES = PipelineTracks.Aggregate( TRACKS, labels = ("tissue",) )
+
+###################################################################
+###################################################################
+###################################################################
+def connect():
+    '''connect to database.
+
+    This method also attaches to helper databases.
+    '''
+
+    dbh = sqlite3.connect( PARAMS["database"] )
+    statement = '''ATTACH DATABASE '%s' as annotations''' % (PARAMS["annotations_database"])
+    cc = dbh.cursor()
+    cc.execute( statement )
+    cc.close()
+
+    return dbh
+
+###################################################################
+###################################################################
+###################################################################
+## TRIM READS
+@follows(mkdir("trim"))
+@transform( "*.gz", regex( r"(\S+).gz"), r"trim/\1.gz" )
+def trimReads( infile, outfile ):
+    '''trim reads with FastX'''
+    to_cluster = True
+    first_base = PARAMS["trim_first_base"]
+    last_base = PARAMS["trim_last_base"]
+
+    statement = """zcat %(infile)s | fastx_trimmer -f %(first_base)s -l %(last_base)s -z -o %(outfile)s """
+    P.run()
 
 #########################################################################
 #########################################################################
@@ -155,7 +256,22 @@ PARAMS = P.PARAMS
              "*.fastq.gz",
              "*.sra"),
              regex( r"(\S+).(fastq.1.gz|fastq.gz|sra)"),
-             r"\1/bam/\1.bam")
+             r"\1.dir")
+def makeTrackDirectories( infile, outfile ):
+    '''make track directories.'''
+    os.mkdir( outfile )
+    os.mkdir( os.path.join( outfile, "bam" ) )
+
+#########################################################################
+#########################################################################
+#########################################################################
+## Map reads to genome using BWA
+@follows( makeTrackDirectories )
+@transform( ("*.fastq.1.gz", 
+             "*.fastq.gz",
+             "*.sra"),
+             regex( r"(\S+).(fastq.1.gz|fastq.gz|sra)"),
+             r"\1.dir/bam/\1.bam")
 def mapReads(infiles, outfile):
     '''Map reads to the genome using BWA '''
     to_cluster = USECLUSTER
@@ -164,7 +280,8 @@ def mapReads(infiles, outfile):
     except OSError: pass
     try: os.mkdir( '''%(track)s/bam''' % locals() )
     except OSError: pass
-    m = PipelineMapping.bwa()
+    job_options= "-pe dedicated %i -R y" % PARAMS["bwa_threads"]
+    m = PipelineMapping.BWA()
     statement = m.build((infiles,), outfile) 
     P.run()
 
@@ -179,16 +296,71 @@ def dedup(infiles, outfile):
         to_cluster = USECLUSTER
         track = P.snip( outfile, ".bam" )
         dedup_method = PARAMS["dedup_method"]
+
         if dedup_method == 'samtools':
             statement = '''samtools rmdup %(infiles)s %(outfile)s; ''' % locals()    
         elif dedup_method == 'picard':
-            statement = '''MarkDuplicates INPUT=%(infiles)s  ASSUME_SORTED=true OUTPUT=%(outfile)s METRICS_FILE=%(track)s.dupstats VALIDATION_STRINGENCY=SILENT; ''' % locals()
+            statement = '''MarkDuplicates INPUT=%(infiles)s  ASSUME_SORTED=true OUTPUT=%(outfile)s METRICS_FILE=%(track)s.dupstats REMOVE_DUPLICATES=TRUE VALIDATION_STRINGENCY=SILENT; ''' % locals()
         statement += '''samtools index %(outfile)s; ''' % locals()
-        #print statement
         P.run()
 
 #########################################################################
 #########################################################################
+#########################################################################
+@transform( "*/bam/*R1.bam",
+            regex( r"(\S+)/bam/(\S+).bam"),
+            r"\1/bam/\2.prep.bam")
+def prepareBAMs( infile, outfile ):
+    '''filter bam files for medip-seq analysis.
+
+    Optional steps include:
+
+    * deduplication - remove duplicate reads
+    * quality score filtering - remove reads below a certain quality score.
+
+    '''
+    to_cluster = USECLUSTER
+    track = P.snip( outfile, ".bam" )
+
+    tmpdir = P.getTempFilename()
+    
+    current_file = infile
+
+    nfiles = 0
+    statement = [ "mkdir %(tmpdir)s" ]
+
+    if "filtering_quality" in PARAMS and PARAMS["filtering_quality"] > 0:
+        next_file = "%(tmpdir)s/bam_%(nfiles)i.bam" % locals()
+        statement.append( '''samtools view -q %(filtering_quality)i -b %(current_file)s 2>> %(outfile)s.log > %(next_file)s ''' )
+        nfiles += 1
+
+    if "filtering_dedup" in PARAMS and PARAMS["filtering_dedup"]:
+        # Picard's MarkDuplicates requries an explicit bam file.
+        next_file = "%(tmpdir)s/bam_%(nfiles)i.bam" % locals()
+
+        dedup_method = PARAMS["filtering_dedup_method"]
+        
+        if dedup_method == 'samtools':
+            statement.append( '''samtools rmdup - - ''' )
+
+        elif dedup_method == 'picard':
+            statement.append('''MarkDuplicates INPUT=%(current_file)s
+                                               OUTPUT=%(next_file)s
+                                               ASSUME_SORTED=true 
+                                               METRICS_FILE=%(track)s.dupstats 
+                                               REMOVE_DUPLICATES=TRUE 
+                                               VALIDATION_STRINGENCY=SILENT
+                                               2>> %(outfile)s.log ''' )
+        nfiles += 1
+
+    statement.append( "mv %(next_file)s %(outfile)s" )
+    statement.append( "rm -rf %(tmpdir)s" )
+    statement.append( "samtools index %(outfile)s" )
+
+    statement = " ; ".join( statement )
+
+    P.run()
+
 #########################################################################
 @merge( dedup, "picard_duplicate_stats.load" )
 def loadPicardDuplicateStats( infiles, outfile ):
@@ -221,8 +393,6 @@ def loadPicardDuplicateStats( infiles, outfile ):
     P.run()
 
 #########################################################################
-#########################################################################
-#########################################################################
 @transform( dedup, 
             regex( r"(\S+)/bam/(\S+).bam"),
             r"\1/bam/\2.alignstats" )
@@ -233,8 +403,6 @@ def buildPicardAlignStats( infile, outfile ):
     statement = '''CollectAlignmentSummaryMetrics INPUT=%(infile)s REFERENCE_SEQUENCE=%%(bwa_index_dir)s/%%(genome)s.fa ASSUME_SORTED=true OUTPUT=%(outfile)s VALIDATION_STRINGENCY=SILENT ''' % locals()
     P.run()
 
-############################################################
-############################################################
 ############################################################
 @merge( buildPicardAlignStats, "picard_align_stats.load" )
 def loadPicardAlignStats( infiles, outfile ):
@@ -269,8 +437,6 @@ def loadPicardAlignStats( infiles, outfile ):
     os.unlink( tmpfilename )
 
 #########################################################################
-#########################################################################
-#########################################################################
 @transform( dedup, 
             regex( r"(\S+)/bam/(\S+).bam"),
             r"\1/bam/\2.isizestats" )
@@ -281,8 +447,6 @@ def buildPicardInsertSizeStats( infile, outfile ):
     statement = '''CollectInsertSizeMetrics INPUT=%(infile)s REFERENCE_SEQUENCE=%%(bwa_index_dir)s/%%(genome)s.fa ASSUME_SORTED=true OUTPUT=%(outfile)s HISTOGRAM_FILE=%(outfile)s.pdf VALIDATION_STRINGENCY=SILENT ''' % locals()
     P.run()
 
-############################################################
-############################################################
 ############################################################
 @merge( buildPicardInsertSizeStats, "picard_isize_stats.load" )
 def loadPicardInsertSizeStats( infiles, outfile ):
@@ -315,7 +479,47 @@ def loadPicardInsertSizeStats( infiles, outfile ):
     os.unlink( tmpfilename )
 
 #########################################################################
-#########################################################################
+@transform( dedup, 
+            regex( r"(\S+)/bam/(\S+).bam"),
+            r"\1/bam/\2.gcstats" )
+def buildPicardGCStats( infile, outfile ):
+    '''Gather BAM file GC bias stats using Picard '''
+    to_cluster = USECLUSTER
+    track = P.snip( os.path.basename(infile), ".bam" )
+    statement = '''CollectGcBiasMetrics INPUT=%(infile)s REFERENCE_SEQUENCE=%%(bwa_index_dir)s/%%(genome)s.fa 
+                   ASSUME_SORTED=true OUTPUT=%(outfile)s CHART_OUTPUT=%(outfile)s.pdf SUMMARY_OUTPUT=%(outfile)s.summary VALIDATION_STRINGENCY=SILENT ''' % locals()
+    P.run()
+
+############################################################
+@merge( buildPicardGCStats, "picard_gcbias_stats.load" )
+def loadPicardGCStats( infiles, outfile ):
+    '''Merge Picard insert size stats into single table and load into SQLite.'''
+
+    tablename = P.toTable( outfile )
+    outf = P.getTempFile()
+
+    first = True
+    for f in infiles:
+        track = P.snip( os.path.basename(f), ".dedup.gcstats" )
+        if not os.path.exists( f ): 
+            E.warn( "File %s missing" % f )
+            continue
+        lines = [ x for x in open( f, "r").readlines() if not x.startswith("#") and x.strip() ]
+        if first: outf.write( "%s\t%s" % ("track", lines[0] ) )
+        first = False
+        outf.write( "%s\t%s" % (track,lines[1] ))
+    outf.close()
+    tmpfilename = outf.name
+
+    statement = '''cat %(tmpfilename)s
+                   | python %(scriptsdir)s/csv2db.py
+                      --index=track
+                      --table=%(tablename)s 
+                   > %(outfile)s '''
+    P.run()
+
+    os.unlink( tmpfilename )
+
 #########################################################################
 @transform( dedup, 
             regex(r"(\S+)/bam/(\S+).bam"),
@@ -328,8 +532,6 @@ def buildBAMStats( infile, outfile ):
                    --output-filename-pattern=%(outfile)s.%%s < %(infile)s > %(outfile)s'''
     P.run()
 
-#########################################################################
-#########################################################################
 #########################################################################
 @merge( buildBAMStats, "bam_stats.load" )
 def loadBAMStats( infiles, outfile ):
@@ -376,89 +578,84 @@ def loadBAMStats( infiles, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-#@files(r"%s/%s.fa.fai" % (PARAMS("genome_dir"), PARAMS("genome")), "%(genome)s_tiling.bed")
-def buildTiledGenomeBed( infile, outfile ):
+## Run DESeq to identify differentially methylated regions
+@files(PARAMS["samtools_genome"]+".fai", PARAMS["deseq_genome_tiling_file"])
+def buildGenomeTilingBed( infile, outfile ):
     '''Build bed file segmenting entire genome using window x and shift y'''
 
+    deseq_window = PARAMS["deseq_window"]
+    deseq_shift = PARAMS["deseq_shift"]
+
     statement = '''python %(scriptsdir)s/genome_bed.py
-                      -g %(genome_dir)s/%(genome)s.fa.fai
+                      -g %(infile)s
                       -w %%(deseq_window)s
                       -s %%(deseq_shift)s
                       -o %(outfile)s '''
     P.run()
 
 #########################################################################
-#########################################################################
-#########################################################################
-@follows(buildTiledGenomeBed)
-@transform( dedup, regex(r"(\S+)/bam/(\S+).bam"), r"\1/bam/\2.counts.bed.gz" )
-def buildTiledReadCounts( infiles, outfile ):
+@follows(buildGenomeTilingBed)
+@transform( dedup, regex(r"(\S+)/bam/(\S+).dedup.bam"), r"\1/bam/\2.counts.bed.gz" )
+def buildTiledReadCounts( infile, outfile ):
     '''compute coverage of genome with reads.'''
 
-    infile, genome_bed = infiles
-
     to_cluster = USECLUSTER
+
+    genome_bed = PARAMS["deseq_genome_tiling_file"]
+    deseq_min_mapping_quality = PARAMS["deseq_min_mapping_quality"]
 
     # note: needs to set flags appropriately for
     # single-end/paired-end data sets
     # set filter options
     # for example, only properly paired reads
-    paired = False
+    paired = True
     if paired:
         flag_filter = "-f 0x2"
     else:
         flag_filter = ""
 
-    # note: the -split option only concerns the stream in A - multiple
-    # segments in B are not split. Hence counting has to proceed via
-    # single exons - this can lead to double counting if exon counts
-    # are later aggregated.
-
     statement = '''samtools view -b %(flag_filter)s -q %(deseq_min_mapping_quality)s %(infile)s
-                   | coverageBed -abam stdin -b %(genome_bed)s -split
+                   | coverageBed -abam stdin -b %(genome_bed)s 
                    | sort -k1,1 -k2,2n
-                   | gzip
-                   > %(outfile)s '''
+                   | gzip > %(outfile)s '''
     P.run()
 
 #########################################################################
-#########################################################################
-#########################################################################
-@collate(buildTiledReadCounts,
-         regex(r"(\S+)/bam/(\S+).counts.bed.gz"),  
-         r"deseq/\2.counts.tsv.gz")
+@follows( mkdir( "deseq" ) )
+@collate(buildTiledReadCounts, regex(r"(\S+)/bam/(\S+).counts.bed.gz"), r"deseq/all.counts.tsv")
 def aggregateTiledReadCounts( infiles, outfile ):
     '''aggregate tag counts for each window.
 
-    coverageBed adds the following four columns:
+    coverageBed outputs the following columns:
+    1) Contig
+    2) Start
+    3) Stop
+    4) Name
+    5) The number of features in A that overlapped (by at least one base pair) the B interval.
+    6) The number of bases in B that had non-zero coverage from features in A.
+    7) The length of the entry in B.
+    8) The fraction of bases in B that had non-zero coverage from features in A.
 
-    1) The number of features in A that overlapped (by at least one base pair) the B interval.
-    2) The number of bases in B that had non-zero coverage from features in A.
-    3) The length of the entry in B.
-    4) The fraction of bases in B that had non-zero coverage from features in A.
-
+    For bed: use column 5
     For bed6: use column 7
     For bed12: use column 13
 
     This method uses the maximum number of reads
-    found in any exon as the tag count.
+    found in any interval as the tag count.
     '''
     
     to_cluster = USECLUSTER
 
     # aggregate not necessary for bed12 files, but kept in
-    src = " ".join( [ "<( zcat %s | sort -k4,4 | groupBy -i stdin -g 4 -c 7 -o max | sort -k1,1)" % x for x in infiles ] )
-
-    tmpfile = P.getTempFilename( "." )
-    
+    src = " ".join( [ "<( zcat %s | cut -f 4,5 )" % x for x in infiles] )
+    tmpfile = "deseq/agg.txt"
     statement = '''paste %(src)s > %(tmpfile)s'''
     P.run()
 
-    tracks = [P.snip(x, ".counts.bed.gz" ) for x in infiles ]
-    #tracks = [re.match( "exon_counts.dir/(\S+)_vs.*", x).groups()[0] for x in tracks ]
+    tracks = [P.snip(os.path.basename(x), ".counts.bed.gz" ) for x in infiles ]
 
     outf = IOTools.openFile( outfile, "w")
-    outf.write( "gene_id\t%s\n" % "\t".join( tracks ) )
+    outf.write( "interval\t%s\n" % "\t".join( tracks ) )
     
     for line in open( tmpfile, "r" ):
         data = line[:-1].split("\t")
@@ -469,150 +666,148 @@ def aggregateTiledReadCounts( infiles, outfile ):
     
     outf.close()
 
-    os.unlink( tmpfile )
-
 #########################################################################
-#########################################################################
-#########################################################################
-@follows( mkdir( os.path.join( PARAMS["exportdir"], "deseq" ) ) )
-@transform( buildTiledReadCounts, suffix(".genome.tsv.gz"), ".deseq")
-def runDESeq( infile, outfile ):
+@follows(aggregateTiledReadCounts)
+@files( [ (("deseq/all.counts.tsv", x), "deseq/"+P.snip(os.path.basename(x),".tsv")+".deseq") for x in P.asList(PARAMS["deseq_comparisons"]) ] )
+def runDESeq( infiles, outfile ):
     '''estimate differential expression using DESeq.
 
     The final output is a table. It is slightly edited such that
     it contains a similar output and similar fdr compared to cuffdiff.
-
-    Plots are:
-
-    <geneset>_<method>_<level>_<track1>_vs_<track2>_significance.png
-        fold change against expression level
     '''
-    
+
+    infile, comp = infiles
     to_cluster = USECLUSTER
+    outdir = "deseq"
+    deseq_fdr = PARAMS["deseq_fdr"]
 
-    outdir = os.path.join( PARAMS["exportdir"], "deseq" )
-
-    geneset, method = outfile.split(".")
-    level = "gene"
-
-
-    # load data 
+    # load library 
     R('''suppressMessages(library('DESeq'))''')
-    R( '''counts_table <- read.delim( '%s', header = TRUE, row.names = 1, stringsAsFactors = TRUE )''' % infile )
 
-    # get conditions to test
-    # note that tracks in R use a '.' as separator
-    tracks = R('''colnames(counts_table)''')
-    map_track2column = dict( [ (y,x) for x,y in enumerate( tracks ) ] )
-    
-    sample2condition = [None] * len(tracks)
-    conditions = []
+    # load count data
+    R( '''counts_table <- read.delim( '%(infile)s', header = TRUE, row.names = 1, stringsAsFactors = TRUE )''' % locals() )
+    counts = R('''dim(counts_table)[1]''')
+    print "Total windows: "+counts
+
+    # Remove windows with no data
+    R( '''max_counts <- apply(counts_table,1,max)''' )
+    R( '''counts_table_trimmed <- counts_table[max_counts>0,]''')
+    no_counts = R('''sum(max_counts == 0)''')
+    print "Empty windows: "+no_counts
+
+    # Load comparisons from file
+    comp_name = P.snip( os.path.basename(comp), ".tsv")
+    R('''pheno <- read.delim( '%(comp)s', header = TRUE, stringsAsFactors = TRUE )''' % locals() )
+
+    # Make sample names R-like
+    R('''pheno[,1] <- gsub('-', '.', pheno[,1])''')
+
+    # Ensure pheno rows match count columns 
+    R('''pheno2 <- pheno[match(colnames(counts_table),pheno[,1]),,drop=FALSE]''' ) 
+    p = R('''pheno2''')
+    print p
+
+    # Subset data & set conditions
+    R('''includedSamples <- pheno2$include == '1' ''')
+    R('''countsTable <- counts_table[ , includedSamples ]''')
+    R('''conds <- pheno2$group[ includedSamples ]''')
+
+    # Test if replicates exist
+    min_reps = R('''min(table(conds)) ''')
     no_replicates = False
-    for group, replicates in EXPERIMENTS.iteritems():
-        if len(replicates) == 1:
-            E.warn( "only one replicate in %s - replicates will be ignored in ALL data sets for variance estimation" )
-            no_replicates = True
+    if min_reps < 2:
+        no_replicates = True
 
-        for r in replicates:
-            sample2condition[map_track2column[r.asR()]] = group.asR()
-        conditions.append( group )
+    ######## Run DESeq
+    # Create Count data object
+    R('''cds <-newCountDataSet( countsTable, conds) ''')
 
-    ro.globalenv['conds'] = ro.StrVector(sample2condition)
-
-    def build_filename2( **kwargs ):
-        return "%(outdir)s/%(geneset)s_%(method)s_%(level)s_%(track1)s_vs_%(track2)s_%(section)s.png" % kwargs
-    def build_filename1( **kwargs ):
-        return "%(outdir)s/%(geneset)s_%(method)s_%(level)s_%(section)s_%(track)s.png" % kwargs
-    def build_filename0( **kwargs ):
-        return "%(outdir)s/%(geneset)s_%(method)s_%(level)s_%(section)s.png" % kwargs
-
-    # this analysis follows the 'Analysing RNA-Seq data with the "DESeq" package'
-    # tutorial 
-    R('''cds <-newCountDataSet( counts_table, conds) ''')
+    # Estimate size factors
     R('''cds <- estimateSizeFactors( cds )''')
 
+    # Estimate variance
     if no_replicates:
         R('''cds <- estimateVarianceFunctions( cds, method="blind" )''')
     else:
         R('''cds <- estimateVarianceFunctions( cds )''')
 
-    L.info("creating diagnostic plots" ) 
+    # Plot scvplot
     size_factors = R('''sizeFactors( cds )''')
-    R.png( build_filename0( section = "scvplot", **locals() ) )
+    R.png( '''%(outdir)s/%(comp_name)s_scvplot.png''' % locals() )
     R('''scvPlot( cds, ylim = c(0,3))''')
     R['dev.off']()
 
+    # Generate heatmap of variance stabilised data
     R('''vsd <- getVarianceStabilizedData( cds )''' )
     R('''dists <- dist( t( vsd ) )''')
-    R.png( build_filename0( section = "heatmap", **locals() ) )
+    R.png( '''%(outdir)s/%(comp_name)s_heatmap.png''' % locals() )
     R('''heatmap( as.matrix( dists ), symm=TRUE )''' )
     R['dev.off']()
 
-    for track in conditions:
-        condition = track.asR()
-        R.png( build_filename1( section = "fit", **locals() ) )
-        R('''diagForT <- varianceFitDiagnostics( cds, "%s" )''' % condition )
+    conditions = R('''levels(conds)''')
+    for condition in conditions:
         if not no_replicates:
+            R.png( '''%(outdir)s/%(comp_name)s_%(condition)s_fit.png''' % locals() )
+            R('''diagForT <- varianceFitDiagnostics( cds, "%s" )''' % condition )
             R('''smoothScatter( log10(diagForT$baseMean), log10(diagForT$baseVar) )''')
             R('''lines( log10(fittedBaseVar) ~ log10(baseMean), diagForT[ order(diagForT$baseMean), ], col="red" )''')
             R['dev.off']()
-            R.png( build_filename1( section = "residuals", **locals() ) )
+            R.png( '''%(outdir)s/%(comp_name)s_%(condition)s_residuals.png''' % locals()  )
             R('''residualsEcdfPlot( cds, "%s" )''' % condition )
             R['dev.off']()
 
+    # Differential expression
     L.info("calling differential expression")
+    R('''res <- nbinomTest( cds, '%s', '%s' )''' % (conditions[0],conditions[1]))
+
+    # Plot significance
+    R.png( '''%(outdir)s/%(comp_name)s_significance.png''' % locals() )
+    R('''plot( res$baseMean, res$log2FoldChange, log="x", pch=20, cex=.1, col = ifelse( res$padj < %(deseq_fdr)s, "red", "black" ) )''' % locals() )
+    R['dev.off']()
 
     outf = IOTools.openFile( outfile, "w" )
-    names = None
-    fdr = PARAMS["cuffdiff_fdr"]
     isna = R["is.na"]
 
-    for track1, track2 in itertools.combinations( conditions, 2 ):
-        R('''res <- nbinomTest( cds, '%s', '%s' )''' % (track1.asR(),track2.asR()))
-
-        R.png( build_filename2( section = "significance", **locals() ) )
-        R('''plot( res$baseMean, res$log2FoldChange, log="x", pch=20, cex=.1,
-                   col = ifelse( res$padj < %(cuffdiff_fdr)s, "red", "black" ) )''' % PARAMS )
-        R['dev.off']()
-        if not names:
-            names = list(R['res'].names)
-            m = dict( [ (x,x) for x in names ])
-            m.update( dict(
-                    pval = "pvalue", 
-                    baseMeanA = "value1", 
-                    baseMeanB = "value2",
-                    id = "test_id", 
-                    log2FoldChange = "lfold") )
-            
-            header = [ m[x] for x in names ] 
-            outf.write( "track1\ttrack2\t%s\tstatus\tsignificant\n" % "\t".join(header))
-        else:
-            if names != list(R['res'].names):
-                raise ValueError( "different column headers in DESeq output: %s vs %s" % (names, list(R['res'].names)))
-
-        rtype = collections.namedtuple( "rtype", names )
+    L.info("Generating output")
+    # Get column names from output and edit
+    names = None
+    if not names:
+        names = list(R['res'].names)
+        m = dict( [ (x,x) for x in names ])
+        m.update( dict(
+                pval = "pvalue", 
+                baseMeanA = "value1", 
+                baseMeanB = "value2",
+                id = "test_id", 
+                log2FoldChange = "lfold") )
         
-        for data in zip( *R['res']) :
-            d = rtype._make( data )
-            outf.write( "%s\t%s\t" % (track1,track2))
-            # set significant flag
-            if d.padj <= fdr: signif = 1
-            else: signif = 0
+        header = [ m[x] for x in names ] 
+        outf.write( "Group1\tGroup2\t%s\tstatus\tsignificant\n" % "\t".join(header))
+    else:
+        if names != list(R['res'].names):
+            raise ValueError( "different column headers in DESeq output: %s vs %s" % (names, list(R['res'].names)))
 
-            # set lfold change to 0 if both are not expressed
-            if d.baseMeanA == 0.0 and d.baseMeanB == 0.0:
-                d = d._replace( foldChange = 0, log2FoldChange = 0 )
+    # Parse results and parse to file
+    rtype = collections.namedtuple( "rtype", names )
+    for data in zip( *R['res']) :
+        d = rtype._make( data )
+        outf.write( "%s\t%s\t" % (conditions[0],conditions[1]))
+        # set significant flag
+        if d.padj <= deseq_fdr: signif = 1
+        else: signif = 0
 
-            if isna( d.pval ): status = "OK"
-            else: status = "FAIL"
+        # set lfold change to 0 if both are not expressed
+        if d.baseMeanA == 0.0 and d.baseMeanB == 0.0:
+            d = d._replace( foldChange = 0, log2FoldChange = 0 )
 
-            outf.write( "\t".join( map(str, d) ))
-            outf.write("\t%s\t%s\n" % (status, str(signif)))
+        if isna( d.pval ): status = "OK"
+        else: status = "FAIL"
+
+        outf.write( "\t".join( map(str, d) ))
+        outf.write("\t%s\t%s\n" % (status, str(signif)))
             
     outf.close()
 
-#########################################################################
-#########################################################################
 #########################################################################
 @transform( runDESeq, suffix(".deseq"), "_deseq.load" )
 def loadDESeq( infile, outfile ):
@@ -624,26 +819,21 @@ def loadDESeq( infile, outfile ):
 
     tablename = P.snip( outfile, ".load") + "_gene_diff" 
     statement = '''cat %(infile)s
-            | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --allow-empty
-              --index=track1
-              --index=track2
-              --index=test_id
-              --table=%(tablename)s 
-            > %(outfile)s
-    '''
+                   | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+                       --allow-empty
+                       --index=group1
+                       --index=group2
+                       --index=test_id
+                       --table=%(tablename)s 
+                   > %(outfile)s '''
     P.run()
 
-#########################################################################
-#########################################################################
 #########################################################################
 @merge( loadDESeq, "deseq_stats.tsv" )
 def buildDESeqStats( infiles, outfile ):
     tablenames = [P.toTable( x ) for x in infiles ] 
     buildExpressionStats( tablenames, "deseq", outfile )
 
-#########################################################################
-#########################################################################
 #########################################################################
 @transform( buildDESeqStats, suffix(".tsv"), ".load" )
 def loadDESeqStats( infile, outfile ):
@@ -661,9 +851,17 @@ def loadDESeqStats( infile, outfile ):
           loadPicardInsertSizeStats,
           buildBAMStats,
           loadBAMStats )
-def full(): pass
+def mapreads(): pass
 
+@follows( buildTiledReadCounts,
+          aggregateTiledReadCounts,
+          runDESeq,
+          loadDESeq,
+          buildDESeqStats,
+          loadDESeqStats )
+def callDMRs(): pass
 
+##########################################################################
 @follows( mkdir( "report" ) )
 def build_report():
     '''build report from scratch.'''

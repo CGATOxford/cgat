@@ -11,7 +11,7 @@ import Pipeline as P
 import csv
 import IndexedFasta, IndexedGenome, FastaIterator, Genomics
 import IOTools
-import MAST, GTF, GFF, Bed
+import GTF, GFF, Bed, MACS
 # import Stats
 
 import pysam
@@ -594,7 +594,12 @@ def subtractBedFiles( infile, subtractfile, outfile ):
 ############################################################
 ############################################################
 def summarizeMACS( infiles, outfile ):
-    '''run MACS for peak detection.'''
+    '''run MACS for peak detection.
+
+    This script parses the MACS logfile to extract 
+    peak calling parameters and results.
+    '''
+
     def __get( line, stmt ):
         x = line.search(stmt )
         if x: return x.groups() 
@@ -659,6 +664,33 @@ def summarizeMACS( infiles, outfile ):
 ############################################################
 ############################################################
 ############################################################
+def summarizeMACSFDR( infiles, outfile ):
+    '''compile table with peaks that would remain after filtering
+    by fdr.
+    '''
+    
+    fdr_thresholds = numpy.arange( 0, 1.05, 0.05 )
+
+    outf = IOTools.openFile( outfile, "w")
+    outf.write( "track\t%s\n" % "\t".join( map(str, fdr_thresholds) ) )
+
+    for infile in infiles:
+        called = []
+        track = P.snip( os.path.basename(infile), ".macs" )
+        infilename = infile + "_peaks.xls.gz"
+        inf = IOTools.openFile( infilename )
+        peaks = list( MACS.iteratePeaks(inf) )
+        
+        for threshold in fdr_thresholds:
+            called.append( len( [ x for x in peaks if x.fdr <= threshold ] ) )
+            
+        outf.write( "%s\t%s\n" % (track, "\t".join( map(str, called ) ) ) )
+
+    outf.close()
+
+############################################################
+############################################################
+############################################################
 def summarizeMACSsolo( infiles, outfile ):
     '''run MACS for peak detection.'''
     def __get( line, stmt ):
@@ -718,20 +750,6 @@ def summarizeMACSsolo( infiles, outfile ):
         outs.write("\t".join(row) + "\n" )
 
     outs.close()
-
-###################################################################
-###################################################################
-###################################################################
-###################################################################
-def loadMACSSummary( infile, outfile ):
-    '''load regions of interest.'''
-    
-    table = P.snip( os.path.basename(outfile), ".load" )
-    statement = '''python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-                      --index=track 
-                      --table=%(table)s
-                   < %(infile)s > %(outfile)s'''
-    P.run()
 
 ############################################################
 ############################################################
@@ -824,53 +842,35 @@ def loadMACS( infile, outfile, bamfile, tablename = None ):
     
     counter = E.Counter()
     with IOTools.openFile( infilename, "r" ) as ins:
-        for line in ins:
-            if line.startswith("#"): continue
-            if line.startswith( "chr\tstart"): continue
-            # skip empty lines
-            if line.startswith("\n"): continue
-            counter.input += 1
-            data = line[:-1].split("\t")
+        for peak in MACS.iteratePeaks( ins ):
 
-            if len(data) == 9:
-                contig,start,end,length,summit,ntags,pvalue,fold,qvalue = data
-            elif len(data) == 8:
-                contig,start,end,length,summit,ntags,pvalue,fold = data
-                qvalue = 0.0
-            else:
-                raise ValueError( "could not parse line %s" % line )
-            
-            # qvalue is in percent, divide by 100.
-            pvalue, qvalue, summit, fold = float(pvalue), float(qvalue) / 100, int(summit), float(fold)
-
-            if qvalue > max_qvalue:
+            if peak.fdr > max_qvalue:
                 counter.removed_qvalue += 1
                 continue
-            elif pvalue < min_pvalue:
+            elif peak.pvalue < min_pvalue:
                 counter.removed_pvalue += 1
                 continue
-            elif fold < min_fold:
+            elif peak.fold < min_fold:
                 counter.removed_fold += 1
                 continue
 
-            # these are 1-based coordinates
-            start, end = int(start)-1, int(end)
-            assert start < end
-            # macs can have negative start coordinates
-            start = max(start, 0)
-            npeaks, peakcenter, length, avgval, peakval, nreads = countPeaks( contig, start, end, samfiles, offsets )
+            assert peak.start < peak.end
+
+            npeaks, peakcenter, length, avgval, peakval, nreads = countPeaks( peak.contig, peak.start, peak.end, 
+                                                                              samfiles, offsets )
 
             outtemp.write ( "\t".join( map(str, ( \
-                            id, contig, start, end, npeaks, peakcenter, length, avgval, peakval, nreads,
-                            pvalue, fold, qvalue,
-                            start + summit - 1, 
-                            ntags) ) ) + "\n" )
+                            id, peak.contig, peak.start, peak.end, 
+                            npeaks, peakcenter, length, avgval, peakval, nreads,
+                            peak.pvalue, peak.fold, peak.fdr,
+                            peak.start + peak.summit - 1, 
+                            peak.tags) ) ) + "\n" )
             id += 1                        
             counter.output += 1
 
     outtemp.close()
 
-    # output flitering summary
+    # output filtering summary
     outf = IOTools.openFile( "%s.tsv.gz" % outfile, "w" )
     outf.write( "category\tcounts\n" )
     outf.write( "%s\n" % counter.asTable() )
@@ -925,15 +925,16 @@ def runMACS( infile, outfile, controlfile = None ):
     '''
     to_cluster = True
 
-    if controlfile: control = "-c %s" % controlfile
+    if controlfile: control = "--control=%s" % controlfile
     else: control = ""
         
     statement = '''
-    macs -t %(infile)s %(control)s 
+    macs14 
+    -t %(infile)s 
+    %(control)s 
     --diag 
     --name=%(outfile)s 
     --format=BAM
-    --format=%(format)s 
     %(macs_options)s 
     >& %(outfile)s
     ''' 

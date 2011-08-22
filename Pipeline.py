@@ -336,27 +336,36 @@ def getProjectName():
     prefixes = len(PROJECT_ROOT.split("/"))
     return curdir.split( "/" )[prefixes]
 
-def load( infile, outfile, options = "" ):
+def load( infile, outfile, options = "", transpose = None ):
     '''straight import from tab separated table.
 
     The table name is given by outfile without the
     ".load" suffix.
+
+    If *transpose* is set, the table will be transposed before loading.
+    The first column in the first row will be set to the string
+    within transpose.
     '''
 
     tablename = toTable( outfile )
 
-    if infile.endswith(".gz"): cat = "zcat"
-    else: cat = "cat"
+    statement = []
+    if infile.endswith(".gz"): statement.append( "zcat %(infile)s" )
+    else: statement.append( "cat %(infile)s" )
 
-    statement = '''%(cat)s %(infile)s
-    |python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
+    if transpose:
+        statement.append( "python %(scriptsdir)s/table2table.py --transpose --set-transpose-field=%(transpose)s" )
+
+    statement.append('''
+    python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
               %(options)s 
               --table=%(tablename)s 
     > %(outfile)s
-    '''
+    ''')
+
+    statement = " | ".join( statement)
 
     run()
-
 
 def mergeAndLoad( infiles, outfile, suffix ):
     '''load categorical tables (two columns) into a database.
@@ -561,6 +570,23 @@ def run( **kwargs ):
     options.update( getCallerLocals().items() )
     options.update( kwargs.items() )
 
+    def setupJob( session ):
+
+        jt = session.createJobTemplate()
+        jt.workingDirectory = os.getcwd()
+        jt.jobEnvironment = { 'BASH_ENV' : '~/.bashrc' }
+        jt.args = []
+        jt.nativeSpecification = "-V -q %s -p %i -N %s %s" % \
+            (options.get("job_queue", global_options.cluster_queue ),
+             options.get("job_priority", global_options.cluster_priority ),
+             os.path.basename(options.get("outfile", "ruffus" )),
+             options.get("job_options", global_options.cluster_options))
+
+        # keep stdout and stderr separate
+        jt.joinFiles=False
+
+        return jt
+    
     # run multiple jobs
     if options.get( "statements" ):
 
@@ -580,23 +606,12 @@ def run( **kwargs ):
             global_sessions[pid].initialize()
 
         session = global_sessions[pid]
-
-        jt = session.createJobTemplate()
-        jt.workingDirectory = os.getcwd()
-        jt.jobEnvironment = { 'BASH_ENV' : '~/.bashrc' }
-        jt.args = []
-        jt.nativeSpecification = "-q %s -p %i -N %s %s" % \
-            (options.get("job_queue", global_options.cluster_queue ),
-             options.get("job_priority", global_options.cluster_priority ),
-             os.path.basename(options.get("outfile", "ruffus" )),
-             options.get("job_options", global_options.cluster_options))
         
-        # keep stdout and stderr separate
-        jt.joinFiles=False
-
+        jt = setupJob( session )
+        
         jobids, filenames = [], []
         for statement in statement_list:
-            # create job scrip
+            # create job script
             tmpfile = tempfile.NamedTemporaryFile( dir = os.getcwd() , delete = False )
             tmpfile.write( "#!/bin/bash\n" ) #  -l -O expand_aliases\n" )
             tmpfile.write( expandStatement(statement) + "\n" )
@@ -606,6 +621,7 @@ def run( **kwargs ):
             job_path = os.path.abspath( tmpfile.name )
             stdout_path = job_path + ".stdout" 
             stderr_path = job_path + ".stderr" 
+
             jt.remoteCommand = job_path
             jt.outputPath=":"+ stdout_path
             jt.errorPath=":" + stderr_path
@@ -665,19 +681,9 @@ def run( **kwargs ):
 
         session = global_sessions[pid]
 
-        jt = session.createJobTemplate()
-        jt.workingDirectory = os.getcwd()
+        jt = setupJob( session )
+
         jt.remoteCommand = job_path
-        jt.jobEnvironment = { 'BASH_ENV' : '~/.bashrc' }
-        jt.args = []
-        jt.nativeSpecification = "-q %s -p %i -N %s %s" % \
-            (options.get("job_queue", global_options.cluster_queue ),
-             options.get("job_priority", global_options.cluster_priority ),
-             os.path.basename(options.get("outfile", "ruffus" )),
-             options.get("job_options", global_options.cluster_options))
-        
-        # keep stdout and stderr separate
-        jt.joinFiles=False
         # later: allow redirection of stdout and stderr to files; can even be across hosts?
         jt.outputPath=":"+ stdout_path
         jt.errorPath=":" + stderr_path
