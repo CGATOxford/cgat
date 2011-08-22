@@ -7,3 +7,6 @@ htaccess
 csvdb
 conf.py
 *[#]*
+*.c
+*.pyxbldc
+*.orig
