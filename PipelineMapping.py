@@ -174,7 +174,8 @@ class Mapper( object ):
 
             elif infile.endswith( ".fastq.1.gz" ):
 
-                infile2 = "%s.fastq.2.gz" % track
+                bn = P.snip( infile, ".fastq.1.gz" )
+                infile2 = "%s.fastq.2.gz" % bn
                 if not os.path.exists( infile2 ):
                     raise ValueError("can not find paired ended file '%s' for '%s'" % (infile2, infile))
                 statement.append( """gunzip < %(infile)s 
@@ -324,21 +325,24 @@ class BWA( Mapper ):
         '''collect output data and postprocess.'''
         
         track = P.snip( os.path.basename(outfile), ".bam" )
+        outf = P.snip( outfile, ".bam" )
         tmpdir_bwa = self.tmpdir_bwa
         
         statement = '''
-            samtools view -buS %(tmpdir_bwa)s/%(track)s.sam | samtools sort - %(track)s 2>>%(outfile)s.bwa.log; 
+            samtools view -buS %(tmpdir_bwa)s/%(track)s.sam | samtools sort - %(outfile)s 2>>%(outfile)s.bwa.log; 
             samtools index %(outfile)s;''' % locals()
 
         return statement
 
-class Stampy( Mapper ):
+class Stampy( BWA ):
     '''map reads against genome using STAMPY.
 
     Note: not fully implemented yet.
     '''
     def mapper( self, infiles, outfile ):
         '''build mapping statement on infiles.'''
+        
+        raise NotImplementedError()
 
         num_files = [ len( x ) for x in infiles ]
         
@@ -381,19 +385,6 @@ class Stampy( Mapper ):
 
         return " ".join( statement )
     
-    def postprocess( self, infiles, outfile ):
-        '''collect output data and postprocess.'''
-        
-        track = P.snip( os.path.basename(outfile), ".bam" )
-        tmpdir_bwa = self.tmpdir_bwa
-
-        statement = '''
-            samtools view -buS %(tmpdir_bwa)s/%(track)s.sam | samtools sort - %(track)s/bam/%(track)s 2>>%(outfile)s.bwa.log; 
-            samtools index %(outfile)s;''' % locals()
-
-        return statement
-
-
 class Tophat( Mapper ):
 
     # tophat can map colour space files directly
