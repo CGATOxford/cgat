@@ -69,6 +69,9 @@ CONFIG = {}
 
 PROJECT_ROOT = '/ifs/projects'
 
+# local temporary directory to use
+TMPDIR = '/scratch'
+
 def configToDictionary( config ):
 
     p = {}
@@ -200,24 +203,24 @@ def touch( filename, times = None ):
     finally:
         fhandle.close()
     
-def getTempFilename( dir = None ):
+def getTempFilename( dir = TMPDIR ):
     '''get a temporary filename.
 
     The caller needs to delete it.
     '''
-    tmpfile = tempfile.NamedTemporaryFile(dir=dir,delete=False)
+    tmpfile = tempfile.NamedTemporaryFile(dir=dir,delete=False, prefix = "ctmp" )
     tmpfile.close()
     return tmpfile.name
 
-def getTempFile( dir = None ):
+def getTempFile( dir = TMPDIR ):
     '''get a temporary file.
 
     The caller needs to delete it.
     '''
-    return tempfile.NamedTemporaryFile(dir=dir,delete=False)
+    return tempfile.NamedTemporaryFile(dir=dir, delete=False, prefix = "ctmp" )
 
-def getTempDir( dir = None ):
-    return tempfile.mkdtemp( dir=dir )
+def getTempDir( dir = TMPDIR ):
+    return tempfile.mkdtemp( dir=dir, prefix = "ctmp" )
 
 def checkExecutables( filenames ):
     """check for the presence/absence of executables in the path"""
