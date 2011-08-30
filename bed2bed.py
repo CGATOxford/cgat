@@ -27,6 +27,12 @@ The script currently implements the following methods:
 
 2. block: build blocked bed file (bed12 format) from individual blocks.
 
+3. sanitize: remove all empty intervals and intervals on unknown contigs. 
+   Intervals extending beyond a contig a truncated.
+   
+4. filter-genome: remove all intervals on unknown contigs or extending beyond 
+   contigs.
+
 Usage
 -----
 
@@ -64,21 +70,24 @@ import GFF, GTF
 import IndexedFasta, IOTools
 import Bed
 
-def merge( iterator, max_distance = 0, by_name = False ):
+def merge( iterator, max_distance = 0, by_name = False, min_intervals = 1 ):
     """iterator for merging adjacent bed entries.
 
     *max_distance* > 0 permits merging of intervals that are
     not directly adjacent.
 
     If *by_name = True*, only entries with the same name are merged.
+    
+    The score gives the number of intervals that have been merged.
     """
 
     def iterate_chunks( iterator ):
         last = iterator.next()
+        max_end = last.end
         to_join = [last]
 
         for bed in iterator:
-            d = bed.start - last.end
+            d = bed.start - max_end
             if bed.contig == last.contig:
                 assert bed.start >= last.start, "input file should be sorted by contig and position: d=%i:\n%s\n%s\n" % (d, last, bed)
             
@@ -87,25 +96,31 @@ def merge( iterator, max_distance = 0, by_name = False ):
                     (by_name and last.name != bed.name) :
                 yield to_join
                 to_join = []
+                max_end = 0
 
             last = bed
+            max_end = max( last.end, max_end )
             to_join.append( bed )
 
         if to_join: yield to_join
         raise StopIteration
 
-    ninput, noutput = 0, 0
+    ninput, noutput, nskipped_min_intervals = 0, 0, 0
 
     for to_join in iterate_chunks(iterator):
 
         ninput += 1
+        if len(to_join) < min_intervals: 
+            nskipped_min_intervals += 1
+            continue
+
         a = to_join[0]
         a.end = to_join[-1].end
+        a.score = len(to_join)
         yield a
         noutput += 1
 
-    E.info( "ninput=%i, noutput=%i" % (ninput, noutput) )
-
+    E.info( "ninput=%i, noutput=%i, nskipped_min_intervals=%i" % (ninput, noutput, nskipped_min_intervals) )
 
 def filterGenome( iterator, contigs ):
     """remove bed intervals that are outside of contigs.
@@ -129,7 +144,39 @@ def filterGenome( iterator, contigs ):
     E.info( "ninput=%i, noutput=%i, nskipped_contig=%i, nskipped_range=%i" % \
                 (ninput, noutput, nskipped_contig, nskipped_range) )
 
+def sanitizeGenome( iterator, contigs ):
+    """truncate bed intervals that extend beyond contigs.
 
+    removes empty intervals (start == end).
+
+    throws an error if start > end.
+    """
+    
+    ninput, noutput = 0, 0
+    ntruncated_contig, nskipped_contig, nskipped_empty = 0, 0, 0
+
+    for bed in iterator:
+        ninput += 1
+        if bed.contig not in contigs: 
+            nskipped_contig += 1
+            continue
+        if bed.end >= contigs[bed.contig]:
+            bed.end = contigs[bed.contig]
+            ntruncated_contig += 1
+        if bed.start < 0:
+            bed.start = 0
+            ntruncated_contig += 1
+        if bed.start == bed.end:
+            nskipped_empty += 1
+            continue
+        elif bed.start > bed.end:
+            raise ValueError( "invalid interval: start > end for %s" % str(bed))
+
+        noutput += 1
+        yield bed
+
+    E.info( "ninput=%i, noutput=%i, nskipped_contig=%i, ntruncated=%i, nskipped_empty=%i" % \
+                (ninput, noutput, nskipped_contig, ntruncated_contig, nskipped_empty) )
 
 def main( argv = sys.argv ):
 
@@ -137,7 +184,7 @@ def main( argv = sys.argv ):
                                     usage = globals()["__doc__"] )
 
     parser.add_option( "-m", "--method", dest="methods", type="choice", action="append",
-                       choices=("merge", "filter-genome", "bins", "block" ),
+                       choices=("merge", "filter-genome", "bins", "block", "sanitize-genome" ),
                        help="method to apply [default=%default]"  )
 
     parser.add_option( "--num-bins", dest="num_bins", type="int",
@@ -153,6 +200,9 @@ def main( argv = sys.argv ):
     parser.add_option( "--merge-distance", dest="merge_distance", type="int",
                       help="distance in bases over which to merge that are not directly adjacent [default=%default]"  )
 
+    parser.add_option( "--merge-min-intervals", dest="merge_min_intervals", type="int",
+                      help="only output merged intervals that are build from at least x intervals [default=%default]"  )
+
     parser.add_option( "--merge-by-name", dest="merge_by_name", action="store_true",
                       help="only merge intervals with the same name [default=%default]"  )
 
@@ -163,6 +213,7 @@ def main( argv = sys.argv ):
                          merge_distance = 0,
                          binning_method = "equal-bases",
                          num_bins = 5,
+                         merge_min_intervals = 1,
                          bin_edges = None,
                          test = None )
     
@@ -177,9 +228,12 @@ def main( argv = sys.argv ):
     for method in options.methods:
         if method ==  "filter-genome":
             processor = filterGenome( processor, contigs )
+        elif method ==  "sanitize-genome":
+            processor = sanitizeGenome( processor, contigs )
         elif method == "merge":
             processor = merge( processor, options.merge_distance,
-                               by_name = options.merge_by_name )
+                               by_name = options.merge_by_name,
+                               min_intervals = options.merge_min_intervals )
         elif method == "bins":
             if options.bin_edges: bin_edges = map(float, options.bin_edges.split(","))
             else: bin_edges = None

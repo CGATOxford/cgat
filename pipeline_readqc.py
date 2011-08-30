@@ -325,7 +325,7 @@ def loadFilteringSummary( infile, outfile ):
 @follows() 
 def publish():
     '''publish files.'''
-    P.publish_report( prefix = PARAMS["publish_prefix"] )
+    P.publish_report()
 
 #########################################################################
 #########################################################################

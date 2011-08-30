@@ -126,7 +126,7 @@ def main( argv = None ):
 
     pysam_in = pysam.Samfile( "-", "rb" )
 
-    c, flags_counts, nh, nh_all, nm, nm_all = _bam2stats.count( pysam_in, options.remove_rna, rna )
+    c, flags_counts, nh, nh_all, nm, nm_all, mapq, mapq_all = _bam2stats.count( pysam_in, options.remove_rna, rna )
 
     flags = sorted(flags_counts.keys())
 
@@ -230,6 +230,14 @@ def main( argv = None ):
             # assume all are unique if NH flag set
             outfile.write( "1\t%i\n" % (c.filtered) )
         outfile.close()
+
+    if options.force_output or len(mapq_all) > 1:
+        outfile = E.openOutputFile( "mapq", "w")
+        outfile.write( "mapq\tall_reads\tfiltered_reads\n" )
+        for x in xrange( 0, max( mapq_all.keys() ) + 1 ):       
+            outfile.write("%i\t%i\t%i\n" % (x, mapq_all[x], mapq[x]))
+        outfile.close()
+        
 
     ## write footer and output benchmark information.
     E.Stop()

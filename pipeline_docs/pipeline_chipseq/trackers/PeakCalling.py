@@ -21,8 +21,8 @@ class MacsSummary( DefaultTracker ):
         fields = (
             "called_positive", "called_negative",
             "scan_window", "shift",
-            "tag_treatment_total", "tag_treatment_unique", 
-            "tag_control_total", "tag_control_unique", 
+            "tag_treatment_total", "tag_treatment_filtered", 
+            "tag_control_total", "tag_control_filtered", 
             "ncandidates_positive", "ncandidates_negative", 
             "min_tags",
             "paired_peaks", )

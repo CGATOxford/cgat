@@ -16,6 +16,7 @@ Contents:
    :maxdepth: 2
 
    pipeline/Methods.rst
+   pipeline/Status.rst
    pipeline/Mapping.rst
    pipeline/PeakCalling.rst
    pipeline/Reproducibility.rst

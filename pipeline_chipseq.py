@@ -761,7 +761,7 @@ elif PARAMS["calling_caller"] == "zinba":
         '''run MACS for peak detection.'''
         infile, controlfile = infiles
 
-        to_cluster = True
+        # to_cluster = False
         
         job_options= "-pe dedicated %i -R y" % PARAMS["zinba_threads"]
 
@@ -1008,6 +1008,80 @@ def buildMergedIntervals( infiles, outfile ):
           buildMergedIntervals )
 def buildIntervals():
     pass
+
+def getBamPeakPairParams():
+    '''retrieves filenames for all vs. all comparsion (bed vs bam)'''
+
+    bamfiles = glob.glob("*.bam")
+    peakfiles = glob.glob("*.bed")
+    
+    for bam in bamfiles:
+        for peak in peakfiles:
+            result = "%s_vs_%s.coverage.gz" % (P.snip(bam,".bam"), 
+                                               P.snip(peak, ".bed"))
+            yield (bam,peak), result
+
+###################################################################
+###################################################################
+###################################################################
+@follows( buildIntervals )
+@files( [ ( ("%s.prep.bam" % x, "%s.bed" % y), 
+            "%s_vs_%s.coverage.gz" % (x,y)) for (x,y) in itertools.product( TRACKS, repeat = 2 ) ] )
+def peakCoverage(infile, outfile):
+    '''uses coverageBed to count the total number of reads under peaks'''
+
+    tracks = infile
+    to_cluster = True
+    statement = '''coverageBed -abam %s -b %s | gzip > %%(outfile)s '''  % (infile[0], infile[1]) 
+    P.run()                  
+
+###################################################################
+###################################################################
+###################################################################
+@merge( peakCoverage, "reads_under_peaks.tsv")
+def buildReadCoverageTable(infiles, outfile):
+    '''Counts reads from .coverage files and writes out a matrix of the results from all .bed vs. all .bam files'''
+    
+    out = open(outfile, "w")
+
+    bams = []
+    beds = []
+    data = {}
+
+    for coverageFile in infiles:
+        name = P.snip(coverageFile, ".coverage.gz")
+        name = name.split("_")
+        bam = name[0]
+        bed = name[2] 
+        value = 0
+        for line in (IOTools.openFile(coverageFile).readlines()):
+            value += int(line.split("\t")[5])
+        
+        if bam not in bams:
+            bams.append(bam)
+        if bed not in beds:
+            beds.append(bed)
+        
+        data[(bam, bed)] = value
+
+    table = numpy.empty((len(beds), len(bams)), dtype=numpy.int )
+    for i in range(len(beds)):
+        for j in range(len(bams)):
+            table[i][j] = data[bams[j], beds[i]]    
+
+    table = zip(beds, table)
+        
+    out.write ("track" + "\t" + "\t".join(bams) + "\n")
+    for i in range(len(beds)):
+        out.write(table[i][0] + "\t" + "\t".join((map(str, table[i][1]))) + "\n")
+    
+###################################################################
+###################################################################
+###################################################################
+@transform( buildReadCoverageTable, suffix(".tsv"), ".load")
+def loadReadCoverageTable( infile, outfile ):
+    '''load read coverage table.'''
+    P.load( infile, outfile )
 
 ###################################################################
 ###################################################################

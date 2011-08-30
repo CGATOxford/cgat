@@ -1341,21 +1341,9 @@ def buildAlignmentStats( infile, outfile ):
 
     Note that picards counts reads but they are in fact alignments.
     '''
-    to_cluster = USECLUSTER
-    
-    # replace the SO field from tophat/samtools with coordinate to indicate
-    # that the file is sorted by coordinate.
-    # naturally - the bam files should be sorted.
-    statement = '''
-    java -Xmx2g net.sf.picard.analysis.CollectMultipleMetrics
-            I=%(infile)s
-            O=%(outfile)s 
-            R=%(cufflinks_genome_dir)s/%(genome)s.fa
-            ASSUME_SORTED=true
-    >& %(outfile)s
-    '''
-    
-    P.run()
+    PipelineMappingQC.buildPicardAlignmentStats( infile, outfile,
+                                                 os.path.join( PARAMS["cufflinks_genome_dir"],
+                                                               PARAMS["genome"] + ".fa" ) ) )
 
 ############################################################
 ############################################################
@@ -1393,59 +1381,7 @@ def buildBAMReports( infile, outfile ):
 def loadAlignmentStats( infiles, outfile ):
     '''merge alignment stats into single tables.'''
 
-    tablename = P.toTable( outfile )
-
-
-    outf = P.getTempFile()
-
-    first = True
-    for f in infiles:
-        track = P.snip( f, ".bam.stats" )
-        fn = f + ".alignment_summary_metrics" 
-        if not os.path.exists( fn ): 
-            E.warn( "file %s missing" % fn )
-            continue
-        lines = [ x for x in open( fn, "r").readlines() if not x.startswith("#") and x.strip() ]
-        if first: outf.write( "%s\t%s" % ("track", lines[0] ) )
-        first = False
-        outf.write( "%s\t%s" % (track,lines[1] ))
-        
-    outf.close()
-    tmpfilename = outf.name
-
-    statement = '''cat %(tmpfilename)s
-                | python %(scriptsdir)s/csv2db.py
-                      --index=track
-                      --table=%(tablename)s 
-                > %(outfile)s
-               '''
-    P.run()
-
-    for suffix, column in ( ("quality_by_cycle_metrics", "cycle"),
-                            ("quality_distribution_metrics", "quality") ):
-
-        # some files might be missing - bugs in Picard
-        xfiles = [ x for x in infiles if os.path.exists( "%s.%s" % (x, suffix) ) ]
-
-        header = ",".join( [P.snip( x, ".bam.stats") for x in xfiles] )        
-        filenames = " ".join( [ "%s.%s" % (x, suffix) for x in xfiles ] )
-
-        tname = "%s_%s" % (tablename, suffix)
-        
-        statement = """python %(scriptsdir)s/combine_tables.py
-                      --missing=0
-                   %(filenames)s
-                | python %(scriptsdir)s/csv2db.py
-                      --header=%(column)s,%(header)s
-                      --replace-header
-                      --index=track
-                      --table=%(tname)s 
-                >> %(outfile)s
-                """
-    
-        P.run()
-
-    os.unlink( tmpfilename )
+    PipelineMappingQC.loadPicardAlignmentStats( infiles, outfile )
 
 ############################################################
 ############################################################

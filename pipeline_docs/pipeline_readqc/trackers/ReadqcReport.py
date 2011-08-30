@@ -45,6 +45,7 @@ class TrackerFastQC( ReadqcTracker ):
     tracks = [ "all" ]
 
     def __call__(self, track, slice = None ):
+
         edir = EXPORTDIR
 
         toc_text = []
@@ -98,6 +99,7 @@ class FastQCDetails( ReadqcTracker ):
               "sequence_length_distribution" )
 
     def __call__(self, track, slice = None ):
+
         filenames = sorted( [x.asFile() for x in TRACKS ] )
 
         blocks = ResultBlocks()
@@ -109,11 +111,20 @@ class FastQCDetails( ReadqcTracker ):
    :height: 300 
 '''
 
-        for fn in filenames:
+        def _add( fn ):
             image = os.path.abspath(os.path.join( EXPORTDIR, "fastqc", "%s_fastqc" % fn, "Images", "%s.png" % slice ))
+            if not os.path.exists( image ): return
 
             blocks.append( ResultBlock( text = block % locals(),
                                         title = fn ) )
             
+        for fn in filenames:
+
+            if PE=="True":
+                _add( fn + ".1" )
+                _add( fn + ".2" )
+            else:
+                _add( fn )
+
         return odict( (("rst", "\n".join( Utils.layoutBlocks( blocks, layout = "columns-2"))),))
 

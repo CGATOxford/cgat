@@ -108,6 +108,12 @@ if __name__ == '__main__':
     parser.add_option( "--regex-filename", dest="regex_filename", type="string",
                       help="pattern to apply to filename to build prefix [default=%default]" )
 
+    parser.add_option( "--regex-start", dest="regex_start", type="string",
+                      help="regular expression to start collecting table in a file [default=%default]" )
+
+    parser.add_option( "--regex-end", dest="regex_end", type="string",
+                      help="regular expression to end collecting table in a file [default=%default]" )
+
     parser.set_defaults(
         titles = True,
         skip_titles = False,
@@ -119,6 +125,8 @@ if __name__ == '__main__':
         sort_keys = False,
         merge = False,
         ignore_empty = True,
+        regex_start = None,
+        regex_end = None,
         add_file_prefix = False,
         regex_filename = "(.*)"
         )
@@ -162,7 +170,7 @@ if __name__ == '__main__':
         sys.exit(0)
         
     if options.headers and options.headers[0] != "auto" and \
-       len(options.headers) != len(options.filenames):
+            len(options.headers) != len(options.filenames):
         raise ValueError("number of provided headers (%i) is not equal to number filenames (%i)." %\
                              (len(options.headers), len(options.filenames)) )
 
@@ -184,9 +192,30 @@ if __name__ == '__main__':
         prefix = os.path.basename( filename )
 
         if os.path.exists(filename):
-            lines = [ x for x in IOTools.openFile(filename, "r").readlines() if not x.startswith("#") and x.strip()]
-        else:
+            lines = IOTools.openFile(filename, "r").readlines()
+        else: 
             lines = []
+
+        # extract table by regular expression
+        if options.regex_start:
+            rx = re.compile(options.regex_start)
+            for n, line in enumerate(lines):
+                if rx.search(line): 
+                    E.info("reading table from line %i/%i" % (n,len(lines)))
+                    lines = lines[n:]
+                    break
+            else:
+                E.info("start regex not found - no table")
+                lines = []
+
+        if options.regex_end:
+            rx = re.compile(options.regex_end)
+            for n, line in enumerate(lines):
+                if rx.search(line): break
+            lines = lines[:n]
+
+        # remove comments and empty lines
+        lines = [ x for x in lines if not x.startswith("#") and x.strip()]
 
         # skip (or not skip) empty tables
         if len(lines) == 0 and options.ignore_empty:
@@ -246,8 +275,9 @@ if __name__ == '__main__':
         tables.append( (max_size, table) )
 
     # delete in reverse order
-    for nindex in headers_to_delete[::-1]:
-        del options.headers[nindex]
+    if options.headers:
+        for nindex in headers_to_delete[::-1]:
+            del options.headers[nindex]
 
     if len(tables) == len(titles) - 1:
         
@@ -334,7 +364,6 @@ if __name__ == '__main__':
             sys.stdout.write("\n")
 
     else:
-
 
         # for multi-column table, just write
         if options.titles:

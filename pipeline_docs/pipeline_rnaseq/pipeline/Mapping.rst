@@ -71,7 +71,6 @@ There are various alignment files created in the mapping process:
    counts. A single :term:`read` might map to several genomic positions and give rise
    to several alignments. Only if the pipeline employs unique-ness filtering will 
    :term:`read` and :term:`alignment` counts be the same.
-( ('bins', directives.unchanged) )
 
 
 

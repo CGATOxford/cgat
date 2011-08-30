@@ -33,7 +33,7 @@ Sample = PipelineTracks.Sample3
 suffixes = ["export.txt.gz",
             "sra",
             "fastq.gz",
-            "cfastq.1.gz",
+            "fastq.1.gz",
             "csfasta.gz" ]
 
 TRACKS = sum( itertools.chain( [ PipelineTracks.Tracks( Sample ).loadFromDirectory( 

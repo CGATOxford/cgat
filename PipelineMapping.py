@@ -329,7 +329,7 @@ class BWA( Mapper ):
         tmpdir_bwa = self.tmpdir_bwa
         
         statement = '''
-            samtools view -buS %(tmpdir_bwa)s/%(track)s.sam | samtools sort - %(outfile)s 2>>%(outfile)s.bwa.log; 
+            samtools view -buS %(tmpdir_bwa)s/%(track)s.sam | samtools sort - %(outf)s 2>>%(outfile)s.bwa.log; 
             samtools index %(outfile)s;''' % locals()
 
         return statement

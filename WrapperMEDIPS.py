@@ -40,6 +40,7 @@ previously in Bioconductor::
    source("http://bioconductor.org/biocLite.R")
    biocLite("BSgenome.Hsapiens.UCSC.hg19")
 
+
 Usage
 -----
 
@@ -51,9 +52,11 @@ Code
 
 '''
 
-import os, sys, re, optparse, tempfile, shutil, subprocess
+import os, sys, re, optparse, tempfile, shutil, subprocess, tempfile
 
 import Experiment as E
+import IOTools
+import IndexedFasta
 
 ## for zinba
 from rpy2.robjects import r as R
@@ -61,40 +64,70 @@ import rpy2.robjects as ro
 import rpy2.robjects.vectors as rovectors
 from rpy2.rinterface import RRuntimeError
 
+
 def bamToMEDIPS( infile, outfile ):
     '''convert bam to medips format
 
     contig, start, end, strand
 
     Start is 1-based.
-    .'''
+    '''
 
     statement = '''bamToBed -i %(infile)s | awk '{printf("%%s\\t%%i\\t%%i\\t%%s\\n", $1,$2+1,$3,$6)}' > %(outfile)s''' % locals()
 
     E.debug( "executing statement '%s'" % statement )
 
-    retcode = subprocess.call(  statement,
-                                cwd = os.getcwd(), 
-                                shell = True )
-    if retcode < 0:
-        raise OSError( "Child was terminated by signal %i: \n%s\n" % (-retcode, statement ))
+    E.run( statement )
+
+    return outfile
+
+def bedToMEDIPS( infile, outfile ):
+    '''convert bam to medips format
+
+    contig, start, end, strand
+
+    Start is 1-based.
+    '''
+
+    if infile.endswith( ".gz" ): cat = "zcat"
+    else: cat = "cat"
+
+    statement = '''%(cat)s %(infile)s | awk '{printf("%%s\\t%%i\\t%%i\\t%%s\\n", $1,$2+1,$3,$6)}' > %(outfile)s''' % locals()
+
+    E.run( statement )
 
     return outfile
 
 def compress( infile ):
     '''gzip infile'''
 
-    statement = "gzip %(infile)s" % locals() 
+    statement = "gzip -f %(infile)s" % locals() 
 
     E.debug( "executing statement '%s'" % statement )
 
-    retcode = subprocess.call(  statement,
-                                cwd = os.getcwd(), 
-                                shell = True )
-    if retcode < 0:
-        raise OSError( "Child was terminated by signal %i: \n%s\n" % (-retcode, statement ))
+    return E.run( statement )
 
-    return outfile
+def bigwig( infile, contig_sizes ):
+    '''convert infile to bigwig file'''
+
+    if infile.endswith( ".wig"):
+        outfile = infile[:-4] + ".bigwig"
+    else:
+        outfile = infile + ".bigwig"
+        
+    tmp, filename_sizes = tempfile.mkstemp() 
+
+    os.write( tmp, "\n".join( [ "\t".join(map(str,x)) for x in contig_sizes.iteritems() ] ) )
+    os.close( tmp )
+
+    statement = "wigToBigWig -clip %(infile)s %(filename_sizes)s %(outfile)s " % locals() 
+
+    E.debug( "executing statement '%s'" % statement )
+
+    if E.run( statement ):
+        os.unlink( infile )
+
+    os.unlink( filename_sizes )
 
 def main( argv = None ):
     """script main.
@@ -112,8 +145,11 @@ def main( argv = None ):
                       choices = ("bed", "bam"),
                       help="input file format [default=%default]."  )
     
-    parser.add_option("-g", "--genome", dest="genome", type="string",
+    parser.add_option("-u", "--ucsc-genome", dest="ucsc_genome", type="string",
                       help="UCSC genome identifier [default=%default]."  )
+
+    parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
+                      help="filename with genome [default=%default]."  )
 
     parser.add_option("-e", "--extension", dest="extension", type="int",
                       help="extension size [default=%default]."  )
@@ -127,15 +163,24 @@ def main( argv = None ):
     parser.add_option("-s", "--saturation-iterations", dest="saturation_iterations", type="int",
                       help = "iterations for saturation analysis [default=%default]."  )
     
+    parser.add_option( "-t", "--toolset", dest="toolset", type="choice", action="append",
+                       choices = ("saturation", "coverage", "rms", "rpm", "all"),
+                       help = "actions to perform [default=%default]." )
+    
+    parser.add_option( "-w", "--bigwig", dest="bigwig", action = "store_true",
+                       help = "store wig files as bigwig files - requires a genome file [default=%default]" )
+
     parser.set_defaults(
         input_format = "bam",
-        genome = "hg19",
+        ucsc_genome = "hg19",
+        genome_file = None,
         extension = 400,
         bin_size = 50,
         saturation_iterations = 10,
         fragment_length = 700,
+        toolset = [],
+        bigwig = False,
         )
-
 
     ## add common options (-h/--help, ...) and parse command line 
     (options, args) = E.Start( parser, argv = argv, add_output_options = True )
@@ -143,61 +188,138 @@ def main( argv = None ):
     if len(args) != 1:
         raise ValueError("please specify a filename with sample data")
 
+    if options.bigwig and not options.genome_file:
+        raise ValueError("please provide a genome file when outputting bigwig")
+
+    if options.genome_file:
+        fasta = IndexedFasta.IndexedFasta( options.genome_file )
+        contig_sizes = fasta.getContigSizes()
+        
     filename_sample = args[0]
+
+    if len(options.toolset) == 0: options.toolset = ["all"]
+
+    do_all = "all" in options.toolset
     
     # load MEDIPS
     R.library( 'MEDIPS' )
-    genome_file = 'BSgenome.Hsapiens.UCSC.%s' % options.genome 
+    genome_file = 'BSgenome.Hsapiens.UCSC.%s' % options.ucsc_genome 
     R.library( genome_file )
-
-    #tmpdir = tempfile.mkdtemp( )
-    tmpdir = "/tmp/tmps6hP4h"
+    
+    tmpdir = tempfile.mkdtemp( )
 
     E.debug( "temporary files are in %s" % tmpdir )
 
-    if options.input_format == "bam" and 0:
-        E.info( "converting bam files to bed" )
-        filename_sample = bamToMEDIPS( filename_sample, os.path.join( tmpdir, "sample.bed" ) )
+    bin_size = options.bin_size
+    extension = options.extension
+    fragment_length = options.fragment_length
+    saturation_iterations = options.saturation_iterations
+
+    if options.input_format == "bam":
+        E.info( "converting bam files" )
+        filename_sample = bamToMEDIPS( filename_sample, os.path.join( tmpdir, "sample.medips" ) )
+    elif options.input_format == "bed":
+        E.info( "converting bed files" )
+        filename_sample = bedToMEDIPS( filename_sample, os.path.join( tmpdir, "sample.medips" ) )
 
     E.info( "loading data" )
     R('''CONTROL.SET = MEDIPS.readAlignedSequences(
                        BSgenome = "%(genome_file)s", 
                        file = "%(filename_sample)s" ) ''' % locals() )
+    slotnames = ( ( "extend", "extend", "%i"),
+                  ( "distFunction", "distance_function", "%s"),
+                  ( "slope", "slope", "%f"),
+                  ( "fragmentLength", "fragment_length", "%i" ),
+                  ( "bin_size", "bin_size", "%i"),
+                  ( "seq_pattern", "pattern", "%s" ),
+                  ( "number_regions", "nregions", "%i"),
+                  ( "number_pattern", "npatterns", "%i" ),
+                  ( "cali_chr", "calibration_contig", "%s"),
+                  ( "genome_name", "genome", "%s") )
+
 
     E.info( "computing genome vector" )
-    R('''CONTROL.SET = MEDIPS.genomeVector(data = CONTROL.SET, bin_size = 50, extend=400 )''')
-    
-    if options.saturation_analysis:
-        E.info( "saturation analysis" )
-        R('''sr.control = MEDIPS.saturationAnalysis(data = CONTROL.SET, bin_size = 50, extend = 400, no_iterations = 10, no_random_iterations = 1)''')
-
-        R.png( Experiment.getOutputFile( "calibration.png" ) )
-        R('''MEDIPS.plotSaturation(sr.control)''')
+    R('''CONTROL.SET = MEDIPS.genomeVector(data = CONTROL.SET, 
+                       bin_size = %(bin_size)i, 
+                       extend=%(extension)i )''' % locals())
 
     E.info( "computing CpG positions" )
     R('''CONTROL.SET = MEDIPS.getPositions(data = CONTROL.SET, pattern = "CG")''' )
 
-    if options.coverage_analysis:
-        E.info( "CpG coverage analysis" )
-        R('''cr.control = MEDIPS.coverageAnalysis(data = CONTROL.SET, extend = 400, no_iterations = 10)''')
-        R.png( Experiment.getOutputFile( "cpg_coverage.png" ) )
-        MEDIPS.plotCoverage(cr.control)
-        R('''er.control = MEDIPS.CpGenrich(data = CONTROL.SET)''')
-
     E.info( "compute coupling vector" )
-    R('''CONTROL.SET = MEDIPS.couplingVector(data = CONTROL.SET, fragmentLength = 700, func = "count")''')
+    R('''CONTROL.SET = MEDIPS.couplingVector(data = CONTROL.SET, 
+                       fragmentLength = %(fragment_length)i, 
+                       func = "count")''' % locals() )
     
-    E.info( "plotting calibration" )
-    R.png( Experiment.getOutputFile( "calibration.png" ) )
-    R('''MEDIPS.plotCalibrationPlot(data = CONTROL.SET, linearFit = T)''')
+    E.info( "compute calibration curve" )
+    R('''CONTROL.SET = MEDIPS.calibrationCurve(data = CONTROL.SET)''')
+
+    E.info( "normalizing" )
+    R('''CONTROL.SET = MEDIPS.normalize(data = CONTROL.SET)''')
+
+    outfile = IOTools.openFile( E.getOutputFile( "summary.tsv.gz" ), "w" )
+    outfile.write( "category\tvalue\n" )
+
+    if "saturation" in options.toolset or do_all:
+        E.info( "saturation analysis" )
+        R('''sr.control = MEDIPS.saturationAnalysis(data = CONTROL.SET, 
+                            bin_size = %(bin_size)i, 
+                            extend = %(extension)i, 
+                            no_iterations = %(saturation_iterations)i, 
+                            no_random_iterations = 1)''' % locals() )
+
+        R.png( E.getOutputFile( "saturation.png" ) )
+        R('''MEDIPS.plotSaturation(sr.control)''')
+        R('''dev.off()''')
+
+        R('''write.csv( sr.control$estimation, file ='%s' )'''% E.getOutputFile( "saturation_estimation.csv" ) )
+        outfile.write( "estimated_correlation\t%f\n" % R('''sr.control$maxEstCor''')[1] )
+        outfile.write( "true_correlation\t%f\n" % R('''sr.control$maxTruCor''')[1] )
+
+    if "coverage" in options.toolset or do_all:
+        E.info( "CpG coverage analysis" )
+        R('''cr.control = MEDIPS.coverageAnalysis(data = CONTROL.SET, 
+                                extend = %(extension)i, 
+                                no_iterations = 10)''' % locals())
+
+        R.png( E.getOutputFile( "cpg_coverage.png" ) )
+        R('''MEDIPS.plotCoverage(cr.control)''')
+        R('''dev.off()''')
+
+        R('''write.csv( cr.control$coveredPos, file ='%s' )'''% E.getOutputFile( "saturation_coveredpos.csv" ) )
+        R('''write.csv( cr.control$matrix, file ='%s' )'''% E.getOutputFile( "saturation_matrix.csv" ) )
+
+        # R('''er.control = MEDIPS.CpGenrich(data = CONTROL.SET)''')
+
+    if "calibration" in options.toolset or do_all:
+        E.info( "plotting calibration" )
+        R.png( E.getOutputFile( "calibration.png" ) )
+        R('''MEDIPS.plotCalibrationPlot(data = CONTROL.SET, linearFit = T, xrange=250)''')
+        R('''dev.off()''')
+
     
-    outputfile = Experiment.getOutputFile( "rpm.wig" )
-    R('''MEDIPS.exportWIG(file = %(outputfile)s, data = CONTROL.SET, raw = T, descr = "rpm")''' % locals())
-    compress( outputfile )
+    for slotname, label, pattern in slotnames:
+        value = tuple(R('''CONTROL.SET@%s''' % slotname ))
+        if len(value) == 0: continue
+        outfile.write( "%s\t%s\n" % (label, pattern % tuple(R('''CONTROL.SET@%s''' % slotname ))[0] ) )
+        
+    outfile.close()
+        
+    if "rpm" in options.toolset or do_all:
+        outputfile = E.getOutputFile( "rpm.wig" )
+        R('''MEDIPS.exportWIG(file = '%(outputfile)s', data = CONTROL.SET, raw = T, descr = "rpm")''' % locals())
+        if options.bigwig:
+            bigwig( outputfile, contig_sizes )
+        else:
+            compress( outputfile )
     
-    outputfile = Experiment.getOutputFile( "rms.wig" )
-    R('''MEDIPS.exportWIG(file = %(outputfile)s, data = CONTROL.SET, raw = F, descr = "rms")''' % locals())
-    compress( outputfile )
+    if "rms" in options.toolset or do_all:
+        outputfile = E.getOutputFile( "rms.wig" )
+        R('''MEDIPS.exportWIG(file = '%(outputfile)s', data = CONTROL.SET, raw = F, descr = "rms")''' % locals())
+        if options.bigwig:
+            bigwig( outputfile, contig_sizes )
+        else:
+            compress( outputfile )
 
     shutil.rmtree( tmpdir )
 
