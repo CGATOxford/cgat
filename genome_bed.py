@@ -97,16 +97,16 @@ def main( argv = None ):
     for line in faidx:
         contig, stop = line.split()[0:2]
         stop = int(stop)
-        ncontigs = ncontigs + 1
+        ncontigs += 1
         i=0
         while (i < stop):
             if stop >= i+options.window:
-                j=i+options.window-1
+                j=i+options.window
             else:
                 j=stop
             #bed.write( """%(contig)s\t%(i)i\t%(j)i\t%(contig)s:%(i)i..%(j)i\n""" % locals() )
             bed.write( """%(contig)s\t%(i)i\t%(j)i\n""" % locals() )
-            nwindows = nwindows + 1
+            nwindows += 1
             i = i+options.shift
         
     # close all files

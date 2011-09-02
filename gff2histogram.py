@@ -21,8 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-gff2histogram.py - compute histograms from intervals
-======================================================
+gff2histogram.py - compute histograms from intervals in gff or bed format
+=========================================================================
 
 :Author: Andreas Heger
 :Release: $Id$
@@ -33,7 +33,8 @@ Purpose
 -------
 
 This script computes distribution interval sizes, intersegmental distances
-and interval overlap from a list of intervals in :term:`gff` format.
+and interval overlap from a list of intervals in :term:`gff` or :term:`bed` 
+format.
 
 Usage
 -----
@@ -71,7 +72,7 @@ Version: $Id: gff2histogram.py 2781 2009-09-10 11:33:14Z andreas $
 """ % sys.argv[0]
 
 import Experiment as E
-import GFF, GTF
+import GFF, GTF, Bed
 import Histogram, Stats
 
 ##------------------------------------------------------------------------
@@ -95,6 +96,9 @@ if __name__ == "__main__":
                       help="entry for missing values [%default]." )
     parser.add_option("--dynamic-bins", dest="dynamic_bins", action="store_true",
                       help="each value constitutes its own bin." )
+    parser.add_option( "--format", dest="format", type="choice", 
+                       choices=( "gff", "gtf", "bed" ),
+                       help="input file format [%default].")
     parser.add_option( "--method", dest="methods", type="choice", action="append",
                        choices=( "all", "hist", "stats", "overlaps", "values" ),
                        help="methods to apply [%default].")
@@ -114,6 +118,7 @@ if __name__ == "__main__":
         output_filename_pattern="%s",
         methods = [],
         data = "all",
+        format = "gff",
         )
 
     (options, args) = E.Start( parser, add_output_options = True )
@@ -125,7 +130,12 @@ if __name__ == "__main__":
     if len(options.methods) == 0:
         raise ValueError( "please provide counting method using --method option" )
 
-    gffs = GFF.iterator( options.stdin )
+    if options.format == "gff":
+        gffs = GFF.iterator( options.stdin )
+    elif options.format == "gtf":
+        gffs = GFF.iterator( options.stdin )
+    elif options.format == "bed":
+        gffs = Bed.iterator( options.stdin )
 
     values_between = []
     values_within = []
@@ -173,7 +183,6 @@ if __name__ == "__main__":
                                         dynamic_bins = options.dynamic_bins,
                                         ignore_out_of_range = options.ignore_out_of_range )
 
-
         h_between = Histogram.Calculate( values_between,
                                          no_empty_bins = options.no_empty_bins,
                                          increment = options.bin_size,
@@ -195,7 +204,6 @@ if __name__ == "__main__":
 
         outfile.close()
 
-
     if "stats" in options.methods:
         outfile = E.openOutputFile( "stats" )
         outfile.write( "data\t%s\n" % Stats.Summary().getHeader() )
@@ -215,12 +223,10 @@ if __name__ == "__main__":
         outfile = E.openOutputFile( "overlaps" )
         outfile.write( "overlap\n%s\n" % "\n".join( map(str, values_overlaps) ) )
         outfile.close()
-        
 
-    if options.loglevel >= 1:
-        options.stdlog.write( "# ninput=%i, ndistance=%i, nsize=%i, noverlap=%i\n" % (ninput, 
-                                                                                      len(values_between),
-                                                                                      len(values_within),
-                                                                                      noverlaps) )
+    E.info( "ninput=%i, ndistance=%i, nsize=%i, noverlap=%i" % (ninput, 
+                                                                len(values_between),
+                                                                len(values_within),
+                                                                noverlaps) )
 
     E.Stop()

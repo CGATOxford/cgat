@@ -14,7 +14,8 @@ plots from the MeDIP-Seq pipeline.
    pipeline/Mapping.rst
    pipeline/InsertSize.rst
    pipeline/Medips.rst
- 
+   pipeline/DifferentialMethylation.rst
+
 .. errorlist::
   
 

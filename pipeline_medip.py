@@ -416,6 +416,7 @@ def loadPicardGCStats( infiles, outfile ):
 
     statement = '''cat %(tmpfilename)s
                    | python %(scriptsdir)s/csv2db.py
+                      %(csv2db_options)s
                       --index=track
                       --table=%(tablename)s 
                    > %(outfile)s '''
@@ -553,6 +554,54 @@ def buildFixedWidthTiles( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
+@transform( (buildFixedWidthTiles, buildVariableWidthTiles),
+            suffix(".bed.gz"),
+            ".stats")
+def buildTileStats( infile, outfile ):
+    '''compute tiling window size statistics from bed file.'''
+    statement = '''
+    zcat %(infile)s
+    | python %(scriptsdir)s/gff2histogram.py 
+                   --format=bed 
+                   --method=hist
+                   --method=stats
+                   --output-filename-pattern=%(outfile)s.%%s.tsv
+    > %(outfile)s
+    '''
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@merge( buildTileStats,
+        "tileinfo.load" )
+def loadTileStats( infiles, outfile ):
+    '''load tiling stats into database.'''
+    prefix = P.snip(outfile, ".load")
+
+    tempfile = P.getTempFilename( "." )
+    
+    files = " ".join( [ "%s.stats.tsv" % x for x in infiles ] )
+
+    tablename = P.snip( outfile, ".load" ) + "_stats" 
+
+    statement = """
+    python %(scriptsdir)s/combine_tables.py 
+           --cat=track 
+           --regex-filename="(.*).stats.stats.tsv" 
+           %(files)s
+    | python %(scriptsdir)s/csv2db.py 
+           %(csv2db_options)s
+           --index=track
+           --table=%(tablename)s 
+    > %(outfile)s"""
+    P.run()
+   
+    
+
+#########################################################################
+#########################################################################
+#########################################################################
 @transform( (buildVariableWidthTiles, buildFixedWidthTiles), 
             suffix(".bed.gz"), 
             ".bigbed")
@@ -620,6 +669,8 @@ def buildTiledReadCountsVariableWidth(infiles, outfile ):
 def buildTiledReadCountsFixedWidth(infiles, outfile ):
     '''build read counds for fixed width windows.'''
     buildTiledReadCounts( infiles, outfile )
+
+
 
 #########################################################################
 @follows( mkdir( "deseq" ) )

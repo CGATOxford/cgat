@@ -35,7 +35,7 @@ Purpose
 This script reads several tab-separated tables and joins them.
 
 .. note:: 
-   working with multiple columns per table and sorting is
+   Working with multiple columns per table and sorting is
    not implemented correctly and likely to fail.
 
 Usage
@@ -63,112 +63,69 @@ import sys, re, string, os, time, glob, optparse
 import IOTools
 import Experiment as E
 
-##---------------------------------------------------------------------------------------------------------        
-if __name__ == '__main__':
+def readTable( filename, options ):
+    '''read table and filter.'''
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: combine_tables.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
+    if os.path.exists(filename):
+        lines = IOTools.openFile(filename, "r").readlines()
+    else: 
+        lines = []
 
-    parser.add_option("-t", "--no-titles", dest="titles", action="store_false",
-                      help="no titles in input."  )
-
-    parser.add_option("-i", "--skip-titles", dest="skip_titles", action="store_true",
-                      help="skip output of titles."  )
-
-    parser.add_option("-m", "--missing", dest="missing_value", type="string",
-                      help="entry to use for missing values."  )
-
-    parser.add_option( "--headers", dest="headers", type="string",
-                      help="add headers for files."  )
-
-    parser.add_option( "-c", "--columns", dest="columns", type="string",
-                      help="columns to use for joining. Multiple columns can be specified as a comma-separated list [default=%default]."  )
-
-    parser.add_option( "-g", "--glob", dest="glob", type="string",
-                      help="wildcard expression for table names."  )
-
-    parser.add_option("-s", "--sort", dest="sort", type="string",
-                      help="sort by column titles alphabetical|numeric|list of columns." )
-
-    parser.add_option("-e", "--merge", dest="merge", action="store_true",
-                      help="simply merge tables without matching up rows. [default=%default]." )
-
-    parser.add_option( "--sort-keys", dest="sort_keys", type="choice",
-                      choices=("numeric", "alphabetic"),
-                      help="sort key columns by value." )
-
-    parser.add_option( "--keep-empty", dest="ignore_empty", action="store_false",
-                      help="keep empty tables. The default is to ignore them." )
-
-    parser.add_option( "--ignore-empty", dest="ignore_empty", action="store_true",
-                      help="ignore empty tables - this is the default [%default]." )
-
-    parser.add_option( "--add-file-prefix", dest="add_file_prefix", action="store_true",
-                      help="add file prefix to columns headers in multi-column tables [default=%default]" )
-
-    parser.add_option( "--regex-filename", dest="regex_filename", type="string",
-                      help="pattern to apply to filename to build prefix [default=%default]" )
-
-    parser.add_option( "--regex-start", dest="regex_start", type="string",
-                      help="regular expression to start collecting table in a file [default=%default]" )
-
-    parser.add_option( "--regex-end", dest="regex_end", type="string",
-                      help="regular expression to end collecting table in a file [default=%default]" )
-
-    parser.set_defaults(
-        titles = True,
-        skip_titles = False,
-        missing_value = "na",
-        headers = None,
-        sort = None,
-        glob = None,
-        columns = "1",
-        sort_keys = False,
-        merge = False,
-        ignore_empty = True,
-        regex_start = None,
-        regex_end = None,
-        add_file_prefix = False,
-        regex_filename = "(.*)"
-        )
-
-    (options, args) = E.Start( parser )
-
-    if options.headers: 
-        if "," in options.headers:
-            options.headers = options.headers.split(",")
+    # extract table by regular expression
+    if options.regex_start:
+        rx = re.compile(options.regex_start)
+        for n, line in enumerate(lines):
+            if rx.search(line): 
+                E.info("reading table from line %i/%i" % (n,len(lines)))
+                lines = lines[n:]
+                break
         else:
-            options.headers = re.split( "\s+", options.headers.strip() )
+            E.info("start regex not found - no table")
+            lines = []
 
-    if options.sort and options.sort not in ("numeric", "alphabetic"):
-        if "," in options.sort:
-            options.sort = options.sort.split( "," )
-        else:
-            options.sort = re.split("\s+", options.sort)
+    if options.regex_end:
+        rx = re.compile(options.regex_end)
+        for n, line in enumerate(lines):
+            if rx.search(line): break
+        lines = lines[:n]
 
-    if options.merge:
-        options.columns = []
+    # remove comments and empty lines
+    lines = [ x for x in lines if not x.startswith("#") and x.strip()]
+
+    return lines
+
+def concatenateTables( outfile, options, args ):
+    '''concatenate tables.'''
+
+    first = True
+
+    rx = re.compile( options.regex_filename )
+
+    if options.headers == None or options.headers == "auto":
+        headers = [rx.search(x).groups()[0] for x in options.filenames ]
     else:
-        options.columns = map(lambda x: int(x) - 1, options.columns.split(",") )
+        headers = options.headers
 
-    options.filenames = []
+    for nindex, filename in enumerate(options.filenames):
+
+        lines = readTable( filename, options )
     
-    if options.glob:
-        options.filenames += glob.glob( options.glob )
+        if len(lines) == 0: continue
         
-    options.filenames += args
+        if first:
+            titles = lines[0]
+            outfile.write( "%s\t%s" % (options.cat, titles ) )
+            first = False
+        else:
+            if titles != lines[0]:
+                raise ValueError("incompatible headers: %s != %s" % (str(titles), lines[0]) )
 
-    if len(options.filenames) < 1:
-        print USAGE, "no tables specified/found."
-        sys.exit(1)
+        for l in lines[1:]:
+            outfile.write( "%s\t%s" % (headers[nindex], l ) )
+            
+def joinTables( outfile, options, args ):
+    '''join tables.'''
 
-    E.info( "combining %i tables" % len(options.filenames) )
-
-    if len(options.filenames) == 1:
-        for line in open(options.filenames[0]):
-            options.stdout.write( line )
-        E.Stop()
-        sys.exit(0)
-        
     if options.headers and options.headers[0] != "auto" and \
             len(options.headers) != len(options.filenames):
         raise ValueError("number of provided headers (%i) is not equal to number filenames (%i)." %\
@@ -191,31 +148,7 @@ if __name__ == '__main__':
 
         prefix = os.path.basename( filename )
 
-        if os.path.exists(filename):
-            lines = IOTools.openFile(filename, "r").readlines()
-        else: 
-            lines = []
-
-        # extract table by regular expression
-        if options.regex_start:
-            rx = re.compile(options.regex_start)
-            for n, line in enumerate(lines):
-                if rx.search(line): 
-                    E.info("reading table from line %i/%i" % (n,len(lines)))
-                    lines = lines[n:]
-                    break
-            else:
-                E.info("start regex not found - no table")
-                lines = []
-
-        if options.regex_end:
-            rx = re.compile(options.regex_end)
-            for n, line in enumerate(lines):
-                if rx.search(line): break
-            lines = lines[:n]
-
-        # remove comments and empty lines
-        lines = [ x for x in lines if not x.startswith("#") and x.strip()]
+        lines = readTable( filename, options )
 
         # skip (or not skip) empty tables
         if len(lines) == 0 and options.ignore_empty:
@@ -298,7 +231,7 @@ if __name__ == '__main__':
                 titles = headers
             else:
             ## otherwise: print the headers out right away            
-                sys.stdout.write( string.join( headers, "\t" ) + "\n")
+                outfile.write( string.join( headers, "\t" ) + "\n")
 
         order = range(0, len(tables)+1)
 
@@ -335,8 +268,8 @@ if __name__ == '__main__':
             else:
                 order = range(0, len(titles) )
 
-            sys.stdout.write( "\t".join( map(lambda x: titles[order[x]], range(len(titles)))))
-            sys.stdout.write("\n")
+            outfile.write( "\t".join( map(lambda x: titles[order[x]], range(len(titles)))))
+            outfile.write("\n")
 
         if options.sort_keys:
             if options.sort_keys: 
@@ -347,45 +280,162 @@ if __name__ == '__main__':
 
         for key in sorted_keys:
 
-            sys.stdout.write( "%s" % key)
+            outfile.write( "%s" % key)
 
             for x in order[1:]:
                 max_size, table = tables[x-1]
                 c = 0
                 if table.has_key( key ):
-                    sys.stdout.write("\t")
-                    sys.stdout.write( string.join(table[key], "\t") )
+                    outfile.write("\t")
+                    outfile.write( string.join(table[key], "\t") )
                     c = len(table[key])
 
                 assert(max_size == 1)
 
-                sys.stdout.write( "\t%s" % options.missing_value * (max_size - c) )
+                outfile.write( "\t%s" % options.missing_value * (max_size - c) )
 
-            sys.stdout.write("\n")
+            outfile.write("\n")
 
     else:
 
         # for multi-column table, just write
         if options.titles:
-            sys.stdout.write( "\t".join( map(lambda x: titles[x], range(len(titles)))))
-            sys.stdout.write("\n")
+            outfile.write( "\t".join( map(lambda x: titles[x], range(len(titles)))))
+            outfile.write("\n")
 
         for key in sorted_keys:
             
-            sys.stdout.write( "%s" % key)
+            outfile.write( "%s" % key)
 
             for x in range(len(tables)):
             
                 max_size, table = tables[x]
                 c = 0
                 if table.has_key( key ):
-                    sys.stdout.write("\t")
-                    sys.stdout.write( "\t".join(table[key]) )
+                    outfile.write("\t")
+                    outfile.write( "\t".join(table[key]) )
                     c = len(table[key])
 
-                sys.stdout.write( "\t%s" % options.missing_value * (max_size - c) )
+                outfile.write( "\t%s" % options.missing_value * (max_size - c) )
 
-            sys.stdout.write("\n")
+            outfile.write("\n")
+
+##---------------------------------------------------------------------------------------------------------        
+if __name__ == '__main__':
+
+    parser = optparse.OptionParser( version = "%prog version: $Id: combine_tables.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
+
+    parser.add_option("-t", "--no-titles", dest="titles", action="store_false",
+                      help="no titles in input."  )
+
+    parser.add_option("-i", "--skip-titles", dest="skip_titles", action="store_true",
+                      help="skip output of titles."  )
+
+    parser.add_option("-m", "--missing", dest="missing_value", type="string",
+                      help="entry to use for missing values."  )
+
+    parser.add_option( "--headers", dest="headers", type="string",
+                      help="add headers for files."  )
+
+    parser.add_option( "-c", "--columns", dest="columns", type="string",
+                      help="columns to use for joining. Multiple columns can be specified as a comma-separated list [default=%default]."  )
+
+    parser.add_option( "-g", "--glob", dest="glob", type="string",
+                      help="wildcard expression for table names."  )
+
+    parser.add_option("-s", "--sort", dest="sort", type="string",
+                      help="sort by column titles alphabetical|numeric|list of columns." )
+
+    parser.add_option("-e", "--merge", dest="merge", action="store_true",
+                      help="simply merge tables without matching up rows. [default=%default]." )
+
+    parser.add_option("-a", "--cat", dest="cat", type="string",
+                      help="simply concatenate tables. Adds an additional column # with the filename "
+                           " [default=%default]." )
+
+    parser.add_option( "--sort-keys", dest="sort_keys", type="choice",
+                      choices=("numeric", "alphabetic"),
+                      help="sort key columns by value." )
+
+    parser.add_option( "--keep-empty", dest="ignore_empty", action="store_false",
+                      help="keep empty tables. The default is to ignore them." )
+
+    parser.add_option( "--ignore-empty", dest="ignore_empty", action="store_true",
+                      help="ignore empty tables - this is the default [%default]." )
+
+    parser.add_option( "--add-file-prefix", dest="add_file_prefix", action="store_true",
+                      help="add file prefix to columns headers in multi-column tables [default=%default]" )
+
+    parser.add_option( "--regex-filename", dest="regex_filename", type="string",
+                      help="pattern to apply to filename to build prefix [default=%default]" )
+
+    parser.add_option( "--regex-start", dest="regex_start", type="string",
+                      help="regular expression to start collecting table in a file [default=%default]" )
+
+    parser.add_option( "--regex-end", dest="regex_end", type="string",
+                      help="regular expression to end collecting table in a file [default=%default]" )
+
+    parser.set_defaults(
+        titles = True,
+        skip_titles = False,
+        missing_value = "na",
+        headers = None,
+        sort = None,
+        glob = None,
+        columns = "1",
+        sort_keys = False,
+        merge = False,
+        ignore_empty = True,
+        regex_start = None,
+        regex_end = None,
+        add_file_prefix = False,
+        cat = None,
+        regex_filename = "(.*)"
+        )
+
+    (options, args) = E.Start( parser )
+
+    if options.headers: 
+        if "," in options.headers:
+            options.headers = options.headers.split(",")
+        else:
+            options.headers = re.split( "\s+", options.headers.strip() )
+
+    if options.sort and options.sort not in ("numeric", "alphabetic"):
+        if "," in options.sort:
+            options.sort = options.sort.split( "," )
+        else:
+            options.sort = re.split("\s+", options.sort)
+
+    if options.merge:
+        options.columns = []
+    else:
+        options.columns = map(lambda x: int(x) - 1, options.columns.split(",") )
+
+    options.filenames = []
+    
+    if options.glob:
+        options.filenames += glob.glob( options.glob )
+        
+    options.filenames += args
+
+    if len(options.filenames) < 1:
+        print USAGE, "no tables specified/found."
+        sys.exit(1)
+
+    E.info( "combining %i tables" % len(options.filenames) )
+
+    if len(options.filenames) == 1:
+        for line in open(options.filenames[0]):
+            outfile.write( line )
+        E.Stop()
+        sys.exit(0)
+        
+    if options.cat:
+        concatenateTables( options.stdout, options, args )
+    else:
+        joinTables( options.stdout, options, args )
+
     
     E.Stop()
 
