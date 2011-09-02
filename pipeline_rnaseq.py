@@ -2202,10 +2202,11 @@ def buildNovelGeneSet( infiles, outfile ):
             if indices[section].contains( gtf.contig, gtf.start, gtf.end):
                 remove_genes[gtf.gene_id].add( section )
 
-        for r in repeats.get( gtf.contig, gtf.start, gtf.end ):
-            if r[0] <= gtf.start and r[1] >= gtf.end:
-                remove_genes[gtf.gene_id].add( "repeat" )
-                break
+        if gtf.contig in repeats:
+            for r in repeats.get( gtf.contig, gtf.start, gtf.end ):
+                if r[0] <= gtf.start and r[1] >= gtf.end:
+                    remove_genes[gtf.gene_id].add( "repeat" )
+                    break
 
     E.info( "removing %i out of %i genes" % (len(remove_genes), len(total_genes)) )
 

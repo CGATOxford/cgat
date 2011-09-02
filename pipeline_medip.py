@@ -825,6 +825,97 @@ def loadDESeq( infile, outfile ):
     P.load( infile, outfile, "--index=group1 --index=group2 --index=test_id --allow-empty" )
 
 #########################################################################
+#########################################################################
+#########################################################################
+def buildExpressionStats( tables, method, outfile ):
+    '''build expression summary statistics.
+    
+    Creates some diagnostic plots in
+
+    <exportdir>/<method> directory.
+    '''
+
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+
+    def togeneset( tablename ):
+        return re.match("([^_]+)_", tablename ).groups()[0]
+
+    keys_status = "OK", "NOTEST", "FAIL", "NOCALL"
+
+    outf = IOTools.openFile( outfile, "w" )
+    outf.write( "\t".join( ("geneset", "level", "track1", "track2", "tested",
+                            "\t".join( [ "status_%s" % x for x in keys_status ] ),
+                            "significant",
+                            "twofold" ) ) + "\n" )
+
+    all_tables = set(Database.getTables( dbhandle ))
+    outdir = os.path.join( PARAMS["exportdir"], method )
+
+    for level in CUFFDIFF_LEVELS:
+
+        for tablename in tables:
+
+            tablename_diff = "%s_%s_diff" % (tablename, level)
+            tablename_levels = "%s_%s_diff" % (tablename, level )
+            geneset = togeneset( tablename_diff )
+            if tablename_diff not in all_tables: continue
+
+            def toDict( vals, l = 2 ):
+                return collections.defaultdict( int, [ (tuple( x[:l]), x[l]) for x in vals ] )
+            
+            tested = toDict( Database.executewait( dbhandle,
+                                               """SELECT track1, track2, COUNT(*) FROM %(tablename_diff)s 
+                                    GROUP BY track1,track2""" % locals() ).fetchall() )
+            status = toDict( Database.executewait( dbhandle,
+                                                   """SELECT track1, track2, status, COUNT(*) FROM %(tablename_diff)s 
+                                    GROUP BY track1,track2,status""" % locals() ).fetchall(), 3 )
+            signif = toDict( Database.executewait( dbhandle,
+                                                   """SELECT track1, track2, COUNT(*) FROM %(tablename_diff)s 
+                                    WHERE significant
+                                    GROUP BY track1,track2""" % locals() ).fetchall() )
+            fold2 = toDict( Database.executewait( dbhandle,
+                    """SELECT track1, track2, COUNT(*) FROM %(tablename_diff)s 
+                                    WHERE (lfold >= 1 or lfold <= -1) AND significant
+                                    GROUP BY track1,track2,significant""" % locals() ).fetchall() )
+            
+            for track1, track2 in itertools.combinations( EXPERIMENTS, 2 ):
+                outf.write( "\t".join(map(str, (
+                                geneset,
+                                level,
+                                track1,
+                                track2,
+                                tested[(track1,track2)],
+                                "\t".join( [ str(status[(track1,track2,x)]) for x in keys_status]),
+                                signif[(track1,track2)],
+                                fold2[(track1,track2)] ) ) ) + "\n" )
+                
+            ###########################################
+            ###########################################
+            ###########################################
+            # plot length versus P-Value
+            data = Database.executewait( dbhandle, 
+                                         '''SELECT i.sum, pvalue 
+                                 FROM %(tablename_diff)s, 
+                                 %(geneset)s_geneinfo as i 
+                                 WHERE i.gene_id = test_id AND significant'''% locals() ).fetchall()
+
+            # require at least 10 datapoints - otherwise smooth scatter fails
+            if len(data) > 10:
+                data = zip(*data)
+
+                pngfile = "%(outdir)s/%(geneset)s_%(method)s_%(level)s_pvalue_vs_length.png" % locals()
+                R.png( pngfile )
+                R.smoothScatter( R.log10( ro.FloatVector(data[0]) ),
+                                 R.log10( ro.FloatVector(data[1]) ),
+                                 xlab = 'log10( length )',
+                                 ylab = 'log10( pvalue )',
+                                 log="x", pch=20, cex=.1 )
+
+                R['dev.off']()
+
+    outf.close()
+
+#########################################################################
 @merge( loadDESeq, "deseq_stats.tsv" )
 def buildDESeqStats( infiles, outfile ):
     tablenames = [P.toTable( x ) for x in infiles ] 
@@ -844,8 +935,7 @@ def loadDESeqStats( infile, outfile ):
           loadBAMStats )
 def mapping(): pass
 
-@follows( buildTiledReadCounts,
-          aggregateTiledReadCounts,
+@follows( aggregateTiledReadCounts,
           runDESeq,
           loadDESeq,
           buildDESeqStats,
