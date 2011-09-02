@@ -1343,7 +1343,7 @@ def buildAlignmentStats( infile, outfile ):
     '''
     PipelineMappingQC.buildPicardAlignmentStats( infile, outfile,
                                                  os.path.join( PARAMS["cufflinks_genome_dir"],
-                                                               PARAMS["genome"] + ".fa" ) ) )
+                                                               PARAMS["genome"] + ".fa" ) )
 
 ############################################################
 ############################################################
