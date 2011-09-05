@@ -2504,6 +2504,10 @@ def annotateTranscriptsMappability( infile, outfile ):
     # script will be farmed out
     to_cluster = False
 
+    if "geneset_mappability" not in PARAMS or not PARAMS["geneset_mappability"]:
+        P.touch(outfile)
+        return
+
     statement = """
     zcat < %(infile)s 
     | %(cmd-farm)s --split-at-column=1 --output-header --log=%(outfile)s.log --max-files=60 
@@ -2522,7 +2526,7 @@ def annotateTranscriptsMappability( infile, outfile ):
 def loadTranscriptsMappability( infile, outfile ):
     '''load interval annotations: genome architecture
     '''
-    P.load( infile, outfile, "--index=transcript_id" )
+    P.load( infile, outfile, "--index=transcript_id --allow-empty" )
 
 #########################################################################
 #########################################################################
