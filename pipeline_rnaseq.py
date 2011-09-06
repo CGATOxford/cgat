@@ -434,6 +434,7 @@ from rpy2.rinterface import RRuntimeError
 import PipelineGeneset
 import PipelineMapping
 import PipelineRnaseq
+import PipelineMappingQC
 import Stats
 
 # levels of cuffdiff analysis
@@ -2526,6 +2527,9 @@ def annotateTranscriptsMappability( infile, outfile ):
 def loadTranscriptsMappability( infile, outfile ):
     '''load interval annotations: genome architecture
     '''
+    if "geneset_mappability" not in PARAMS or not PARAMS["geneset_mappability"]:
+        P.touch(outfile)
+        return
     P.load( infile, outfile, "--index=transcript_id --allow-empty" )
 
 #########################################################################
@@ -3271,7 +3275,7 @@ def buildUnionExons( infile, outfile ):
 @follows( buildUnionExons, mkdir( "exon_counts.dir" ) )
 @files( [ ( ("%s.accepted.bam" % x.asFile(), "%s.union.bed.gz" % y ),
             ("exon_counts.dir/%s_vs_%s.bed.gz" % (x.asFile(),y ) ) )
-          for x,y in itertools.product( TRACKS, GENESETS) ] )
+          for x,y in itertools.product( TRACKS, GENESETS ) ] )
 def buildExonLevelReadCounts( infiles, outfile ):
     '''compute coverage of exons with reads.
     '''
