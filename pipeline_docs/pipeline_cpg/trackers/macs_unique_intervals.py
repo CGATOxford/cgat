@@ -63,7 +63,7 @@ class UniqueIntervalFoldChange( cpgTracker ):
         data = self.getValues( '''SELECT fold FROM %(track)s_unique_intervals u, %(track)s_macs_intervals i
                                   WHERE u.contig=i.contig
                                   AND u.start=i.start''' % locals() )
-        return { "Fold Change" : data }
+        return odict( [("Fold Change", data)] )
 
 ##################################################################################
 class UniqueIntervalTSS( cpgTracker ):

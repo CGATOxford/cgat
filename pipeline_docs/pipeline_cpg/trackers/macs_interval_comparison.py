@@ -9,6 +9,42 @@ from SphinxReport.Tracker import *
 from cpgReport import *
 
 ##################################################################################
+class ExternalIntervalLists( cpgTracker ):
+    """Summary stats of external interval lists used for comparison. """
+
+    mPattern = "external_interval_sets$"
+
+    def __call__(self, track, slice = None):
+        data = self.get( "SELECT bed, intervals FROM external_interval_sets" % locals() )
+        return odict( zip( ("Dataset", "Intervals" ), zip(*data)) )
+
+##################################################################################
+class IntervalOverlapFoldChange( cpgTracker ):
+    """Summary stats of intervals called by the peak finder. """
+
+    mPattern = "_foldchange_shared$"
+
+    def __call__(self, track, slice = None):
+        data1 = self.get( "SELECT track as comparison, threshold, intervals FROM %(track)s_foldchange_shared order by track, threshold asc" % locals() )
+        data2 = self.get( "SELECT '%(track)s' as comparison, threshold, intervals FROM %(track)s_foldchange order by threshold asc" % locals() )
+        
+        result = odict()
+
+        for d in data1:
+            result[d[0]] = {'threshold':(), 'intervals':()}
+        for d in data2:
+            result[d[0]] = {'threshold':(), 'intervals':()}
+
+        for d in data1:
+            result[d[0]]['threshold'] += (d[1],)
+            result[d[0]]['intervals'] += (d[2],)
+
+        for d in data2:
+            result[track]['threshold'] += (d[1],)
+            result[track]['intervals'] += (d[2],)
+        return result
+
+##################################################################################
 class UniqueIntervals( cpgTracker ):
     """Summary stats of intervals called by the peak finder. """
 
@@ -45,9 +81,13 @@ class OverlapCpG( cpgTracker ):
     mPattern = "_cgi$"
     # 
     def __call__(self, track, slice = None):
-        data = self.get( "SELECT track, overlap FROM %(track)s_cgi" % locals() )
+        data = self.get( """SELECT c.track, count(distinct i.interval_id) as A_intervals, e.intervals, c.overlap, 
+                            round(((c.overlap+0.0)/(count(i.interval_id)+0.0))*100,2) as perca, 
+                            round(((c.overlap+0.0)/(e.intervals+0.0))*100,2) as percb 
+                            FROM %(track)s_cgi c, external_interval_sets e, %(track)s_macs_intervals i 
+                            WHERE c.track=e.bed""" % locals() )
         
-        return odict( zip( ("Track", "Intervals" ), zip(*data)) )
+        return odict( zip( ("Track", "A Intervals", "B Intervals", "Overlap", "%A", "%B" ), zip(*data)) )
 
 ##################################################################################
 class OverlapChipseq( cpgTracker ):
@@ -56,9 +96,13 @@ class OverlapChipseq( cpgTracker ):
     mPattern = "_chipseq$"
     # 
     def __call__(self, track, slice = None):
-        data = self.get( "SELECT track, overlap FROM %(track)s_chipseq" % locals() )
+        data = self.get( """SELECT c.track, count(distinct i.interval_id) as A_intervals, e.intervals, c.overlap, 
+                            round(((c.overlap+0.0)/(count(i.interval_id)+0.0))*100,2) as perca, 
+                            round(((c.overlap+0.0)/(e.intervals+0.0))*100,2) as percb 
+                            FROM %(track)s_chipseq c, external_interval_sets e, %(track)s_macs_intervals i 
+                            WHERE c.track=e.bed""" % locals() )
         
-        return odict( zip( ("Track", "Intervals" ), zip(*data)) )
+        return odict( zip( ("Track", "A Intervals", "B Intervals", "Overlap", "%A", "%B" ), zip(*data)) )
 
 ##################################################################################
 class OverlapCAPseq( cpgTracker ):
@@ -67,9 +111,13 @@ class OverlapCAPseq( cpgTracker ):
     mPattern = "_capseq$"
     # 
     def __call__(self, track, slice = None):
-        data = self.get( "SELECT track, overlap FROM %(track)s_capseq" % locals() )
+        data = self.get( """SELECT c.track, count(distinct i.interval_id) as A_intervals, e.intervals, c.overlap, 
+                            round(((c.overlap+0.0)/(count(i.interval_id)+0.0))*100,2) as perca, 
+                            round(((c.overlap+0.0)/(e.intervals+0.0))*100,2) as percb 
+                            FROM %(track)s_capseq c, external_interval_sets e, %(track)s_macs_intervals i 
+                            WHERE c.track=e.bed""" % locals() )
         
-        return odict( zip( ("Track", "Intervals" ), zip(*data)) )
+        return odict( zip( ("Track", "A Intervals", "B Intervals", "Overlap", "%A", "%B" ), zip(*data)) )
 
 ##################################################################################
 class OverlapChromatinMarks( cpgTracker ):
@@ -78,9 +126,13 @@ class OverlapChromatinMarks( cpgTracker ):
     mPattern = "_chromatin$"
     # 
     def __call__(self, track, slice = None):
-        data = self.get( "SELECT track, overlap FROM %(track)s_chromatin" % locals() )
+        data = self.get( """SELECT c.track, count(distinct i.interval_id) as A_intervals, e.intervals, c.overlap, 
+                            round(((c.overlap+0.0)/(count(i.interval_id)+0.0))*100,2) as perca, 
+                            round(((c.overlap+0.0)/(e.intervals+0.0))*100,2) as percb 
+                            FROM %(track)s_chromatin c, external_interval_sets e, %(track)s_macs_intervals i 
+                            WHERE c.track=e.bed""" % locals() )
         
-        return odict( zip( ("Track", "Intervals" ), zip(*data)) )
+        return odict( zip( ("Track", "A Intervals", "B Intervals", "Overlap", "%A", "%B" ), zip(*data)) )
 
 ##################################################################################
 class gatResults( cpgTracker ):

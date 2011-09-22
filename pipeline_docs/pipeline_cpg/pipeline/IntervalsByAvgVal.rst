@@ -1,6 +1,6 @@
 ===================================
 MACS Intervals by Average Coverage
-====================================
+===================================
 
 This sections lists binding intervals of interest.
 

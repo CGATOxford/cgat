@@ -18,6 +18,9 @@ Contents:
    pipeline/macs_unique_intervals.rst
    pipeline/macs_shared_intervals.rst
    pipeline/macs_tss_intervals.rst
+   pipeline/macs_cgi_intervals.rst
+   pipeline/macs_long_intervals.rst
+   pipeline/macs_low_cpg_intervals.rst
    pipeline/IntervalsByLength.rst
    pipeline/IntervalsByAvgVal.rst
    pipeline/IntervalsByPeakVal.rst

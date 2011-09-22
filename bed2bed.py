@@ -129,6 +129,42 @@ def filterGenome( iterator, contigs ):
     E.info( "ninput=%i, noutput=%i, nskipped_contig=%i, nskipped_range=%i" % \
                 (ninput, noutput, nskipped_contig, nskipped_range) )
 
+def shiftIntervals( iterator, contigs, offset ):
+    """shift intervals by a certain offset and ensure size is maintaned even id contig end reached.
+    
+    contigs is a dictionary of contig sizes."""
+    
+    ninput, noutput = 0, 0
+    nskipped_contig, nskipped_range = 0, 0
+
+    for bed in iterator:
+        ninput += 1
+        if bed.contig not in contigs: 
+            nskipped_contig += 1
+            continue
+        if bed.end >= contigs[bed.contig]:
+            nskipped_range += 1
+            continue
+        noutput += 1
+
+        # add offset to each start and end, and adjust for contig length
+        l = bed.end - bed.start
+        newstart = bed.start + offset
+        newend = bed.end + offset
+        if newstart <0:
+            newstart = 0
+            newend = l
+        if newend > contigs[bed.contig]:
+            newstart = contigs[bed.contig] - l
+            newend = contigs[bed.contig]
+
+        bed.start = newstart
+        bed.end = newend
+
+        yield bed
+
+    E.info( "ninput=%i, noutput=%i, nskipped_contig=%i, nskipped_range=%i" % \
+                (ninput, noutput, nskipped_contig, nskipped_range) )
 
 
 def main( argv = sys.argv ):
@@ -137,7 +173,7 @@ def main( argv = sys.argv ):
                                     usage = globals()["__doc__"] )
 
     parser.add_option( "-m", "--method", dest="methods", type="choice", action="append",
-                       choices=("merge", "filter-genome", "bins", "block" ),
+                       choices=("merge", "filter-genome", "bins", "block", "shift" ),
                        help="method to apply [default=%default]"  )
 
     parser.add_option( "--num-bins", dest="num_bins", type="int",
@@ -156,6 +192,9 @@ def main( argv = sys.argv ):
     parser.add_option( "--merge-by-name", dest="merge_by_name", action="store_true",
                       help="only merge intervals with the same name [default=%default]"  )
 
+    parser.add_option( "--offset", dest="offset",  type="int",
+                      help="offset for shifting intervals [default=%default]"  )
+
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genome."  )
 
@@ -164,6 +203,7 @@ def main( argv = sys.argv ):
                          binning_method = "equal-bases",
                          num_bins = 5,
                          bin_edges = None,
+                         offset = 10000,
                          test = None )
     
     (options, args) = E.Start( parser, add_pipe_options = True )
@@ -191,6 +231,8 @@ def main( argv = sys.argv ):
             
         elif method == "block":
             processor = Bed.blocked_iterator( processor )
+        elif method == "shift":
+            processor = shiftIntervals( processor, contigs, offset=options.offset )
             
     noutput = 0
     for bed in processor:

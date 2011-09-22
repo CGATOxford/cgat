@@ -89,8 +89,6 @@ def getMinimumMappedReads( infiles ):
 ############################################################
 ############################################################
 ############################################################
-<<<<<<< local
-=======
 def getExonLocations(filename):
     '''return a list of exon locations as (contig,start,end) tuples 
     from a file contain a one ensembl gene ID per line
@@ -127,7 +125,6 @@ def getExonLocations(filename):
 
     return(region_list)
 
->>>>>>> other
 ############################################################
 ############################################################
 ############################################################

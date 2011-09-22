@@ -510,15 +510,12 @@ class SequencePropertiesCpg(SequenceProperties):
 
         fields = SequenceProperties.getFields(self)
         fields.append( "%i" % self.mCountsCG )        
-
-        t = float(self.mCountsCG)
-        if t == 0:
-            fields.append( "na" )
+        fields.append( "%f" % (float(self.mCountsCG) / (self.mLength/2) ))
+        fields.append( "%f" % (float(self.mCountsCG) / (self.mLength/16) ))
+        if (self.mCountsC*self.mCountsG)/self.mLength > 0:
+            fields.append( "%f" % ( float(self.mCountsCG) / ((self.mCountsC*self.mCountsG)/self.mLength) ) )
         else:
-            fields.append( "%f" % (float(self.mCountsCG) / (self.mLength/2) ))
-            fields.append( "%f" % (float(self.mCountsCG) / (self.mLength/16) ))
-            fields.append( "%f" % (float(self.mCountsCG) / ((self.mCountsC*self.mCountsG)/self.mLength) ))
-        
+            fields.append( "%f" % 0.0 )
         return fields
 
     def getHeaders( self ):
