@@ -11,7 +11,7 @@ import Pipeline as P
 import csv
 import IndexedFasta, IndexedGenome, FastaIterator, Genomics
 import IOTools
-import GTF, GFF, Bed, MACS
+import GTF, GFF, Bed, MACS, WrapperZinba
 # import Stats
 
 import pysam
@@ -40,7 +40,7 @@ if os.path.exists("pipeline_conf.py"):
 ############################################################
 ## 
 ############################################################
-def getPeakShift( infile ):
+def getPeakShiftFromMacs( infile ):
     '''get peak shift for filename infile (.macs output file).
 
     returns None if no shift found'''
@@ -58,6 +58,32 @@ def getPeakShift( infile ):
             if x: 
                 shift = int(x.groups()[0])
                 E.warn( "shift size was set automatically - see MACS logfiles" )
+                break
+            
+    return shift
+
+############################################################
+############################################################
+############################################################
+## 
+############################################################
+def getPeakShiftFromZinba( infile ):
+    '''get peak shift for filename infile (.zinba output file).
+
+    returns None if no shift found
+    '''
+
+    shift = None
+
+    # search for
+    # $offset
+    # [1] 125
+
+    with IOTools.openFile(infile, "r") as ins:
+        lines = ins.readlines()
+        for i, line in enumerate(lines):
+            if line.startswith("$offset"):
+                shift = int(lines[i+1].split()[1])
                 break
             
     return shift
@@ -447,18 +473,17 @@ def buildBAMStats( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-def exportMacsAsBed( infile, outfile ):
+def exportIntervalsAsBed( infile, outfile ):
     '''export macs peaks as bed files.
     '''
 
     dbhandle = sqlite3.connect( PARAMS["database"] )
-
-    track = P.toTable( infile )
-    assert track.endswith("_macs")
-    track = track[:-len("_macs")]
+    
+    track = P.snip( outfile, ".bed" )
+    tablename = "%s_intervals" % P.quote(track)
 
     cc = dbhandle.cursor()
-    statement = "SELECT contig, start, end, interval_id, peakval FROM %s_intervals ORDER by contig, start" % track
+    statement = "SELECT contig, start, end, interval_id, peakval FROM %s ORDER by contig, start" % tablename
     cc.execute( statement )
 
     outs = IOTools.openFile( outfile, "w")
@@ -810,7 +835,7 @@ def loadMACS( infile, outfile, bamfile, tablename = None ):
             os.path.join( target_path, "%s_model.pdf" % track) )
         
     # filter peaks
-    shift = getPeakShift( infile )
+    shift = getPeakShiftFromMacs( infile )
     assert shift != None, "could not determine peak shift from MACS file %s" % infile
 
     E.info( "%s: found peak shift of %i" % (track, shift ))
@@ -1034,6 +1059,121 @@ def countPeaks( contig, start, end, samfiles, offsets = None):
     peakcenter = start + peaks[npeaks//2] 
 
     return npeaks, peakcenter, length, avgval, peakval, nreads
+
+############################################################
+############################################################
+############################################################
+def loadZinba( infile, outfile, bamfile, tablename = None ):
+    '''load Zinba results in *tablename*
+
+    This method loads only positive peaks. It filters peaks by p-value,
+    q-value and fold change and loads the diagnostic data and
+    re-calculates peakcenter, peakval, ... using the supplied bamfile.
+
+    If *tablename* is not given, it will be :file:`<track>_intervals`
+    where track is derived from ``infile`` and assumed to end
+    in :file:`.zinba`.
+
+    If no peaks were predicted, an empty table is created.
+
+    This method creates :file:`<outfile>.tsv.gz` with the results
+    of the filtering.
+    '''
+
+    track = P.snip( os.path.basename(infile), ".zinba" )
+    folder = os.path.dirname(infile)
+
+    infilename = infile + ".peaks"
+
+    outtemp = P.getTempFile()
+    tmpfilename = outtemp.name
+
+    outtemp.write( "\t".join( ( \
+                "interval_id", 
+                "contig", "start", "end",
+                "npeaks", "peakcenter", 
+                "length", 
+                "avgval", 
+                "peakval",
+                "nprobes",
+                "pvalue", "fold", "qvalue",
+                "macs_summit", "macs_nprobes",
+                )) + "\n" )
+
+    counter = E.Counter()
+    
+    if not os.path.exists(infilename):
+        E.warn("could not find %s" % infilename )
+        
+    else:
+        # filter peaks
+        shift = getPeakShiftFromZinba( infile )
+        assert shift != None, "could not determine peak shift from Zinba file %s" % infile
+
+        E.info( "%s: found peak shift of %i" % (track, shift ))
+
+        samfiles = [ pysam.Samfile( bamfile, "rb" ) ]
+        offsets = [ shift / 2 ]
+
+        id = 0
+
+        ## get thresholds
+        max_qvalue = float(PARAMS["zinba_fdr_threshold"])
+
+
+        with IOTools.openFile( infilename, "r" ) as ins:
+            for peak in WrapperZinba.iteratePeaks( ins ):
+
+                if peak.fdr > max_qvalue:
+                    counter.removed_qvalue += 1
+                    continue
+
+                assert peak.refined_start < peak.refined_end
+
+                npeaks, peakcenter, length, avgval, peakval, nreads = countPeaks( peak.contig, 
+                                                                                  peak.refined_start, 
+                                                                                  peak.refined_end, 
+                                                                                  samfiles, 
+                                                                                  offsets )
+
+                outtemp.write ( "\t".join( map(str, ( \
+                                id, peak.contig, peak.refined_start, peak.refined_end, 
+                                npeaks, peakcenter, length, avgval, peakval, nreads,
+                                1.0 - peak.posterior, 1.0, peak.fdr,
+                                peak.refined_start + peak.summit - 1, 
+                                peak.height) ) ) + "\n" )
+                id += 1                        
+                counter.output += 1
+
+    outtemp.close()
+
+    # output filtering summary
+    outf = IOTools.openFile( "%s.tsv.gz" % outfile, "w" )
+    outf.write( "category\tcounts\n" )
+    outf.write( "%s\n" % counter.asTable() )
+    outf.close()
+
+    E.info( "%s filtering: %s" % (track, str(counter)))
+    if counter.output == 0:
+        E.warn( "%s: no peaks found" % track )
+
+    # load data into table
+    if tablename == None:
+        tablename = "%s_intervals" % track
+
+    statement = '''
+    python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
+              --allow-empty
+              --index=interval_id 
+              --index=contig,start
+              --table=%(tablename)s 
+    < %(tmpfilename)s 
+    > %(outfile)s
+    '''
+
+    P.run()
+
+    os.unlink( tmpfilename )
 
 ############################################################
 ############################################################

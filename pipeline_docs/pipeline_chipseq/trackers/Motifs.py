@@ -575,13 +575,23 @@ class MastPeakValWithMotifEvalue( Mast ):
         
         return odict( zip( ("peakval", "proportion with motif", "recall" ), zip( *result ) ) )
     
+class MemeInputSequenceComposition( DefaultTracker ):
+    '''distribution of sequence composition in sequences
+       submitted to motif searches.'''
+    pattern = "(.*)_motifseq_stats"
+    slices = ('nA','nAT','nC','nG','nGC','nN','nT','nUnk','pA','pAT','pC','pG','pGC','pN','pT')
+
+    def __call__(self, track, slice ):
+        return self.getValues( '''SELECT %(slice)s FROM %(track)s_motifseq_stats''' )
+    
 class MemeRuns( DefaultTracker ):
     
-    tracks = list(EXPERIMENTS)
+    def getTracks( self ):
+        return self.getValues( "SELECT DISTINCT motif FROM motif_info" ) 
     
     def __call__(self, track, slice = None ):
         
-        resultsdir = os.path.abspath( os.path.join( EXPORTDIR, "meme", "%s.meme" % track.asFile() ) )
+        resultsdir = os.path.abspath( os.path.join( EXPORTDIR, "meme", "%s.meme" % track ) )
         if not os.path.exists( resultsdir ): return None
 
         data = []

@@ -55,7 +55,7 @@ Code
 ----
 
 '''
- import os, sys, string, re, optparse, math, time, tempfile, subprocess, types, bisect, array, collections
+import os, sys, string, re, optparse, math, time, tempfile, subprocess, types, bisect, array, collections
 import itertools
 import GFF, GTF, Bed, IOTools
 import Experiment as E

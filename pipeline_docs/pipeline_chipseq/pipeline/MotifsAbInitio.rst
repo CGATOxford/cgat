@@ -25,6 +25,9 @@ The following table lists all the motifs found.
    the number of times it is found, its evalue
    and its information content.
 
+Comparison to known motifs
+==========================
+
 The following table lists the results of comparing the :term:`master motif`
 against all motifs in the ab-initio motif search.
 
@@ -35,3 +38,14 @@ against all motifs in the ab-initio motif search.
    the motifs returned by MEME.
 
 
+Sequence composition
+====================
+
+The following boxplot shows the distribution G+C content in the
+sequences used for motif discovery.
+
+.. report:: Motifs.MemeInputSequenceComposition
+   :render: box-plot
+   :slices: pGC
+
+   Distribution of G+C content in sequences used for motif discovery.

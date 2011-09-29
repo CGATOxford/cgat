@@ -9,7 +9,7 @@ import sys, re, os, tempfile, collections, shutil, gzip, sqlite3
 import IOTools
 import Pipeline as P
 import Experiment as E
-import GTF, GFF
+import GTF, GFF, IndexedFasta
 
 try:
     PARAMS = P.getParameters()
@@ -667,9 +667,11 @@ def buildPseudogenes( infiles, outfile ):
 
     Pseudogenes are:
     
-    * gene_type or transcript_type contains the phrase "pseudo"
+    * gene_type or transcript_type contains the phrase "pseudo". This taken from
+    the database.
 
-    * feature 'processed_transcript' with similarity to protein coding genes.
+    * feature 'processed_transcript' with similarity to protein coding genes. Similarity
+    is assessed by aligning with exonerate.
 
     Pseudogenic transcripts can overlap with protein coding transcripts.
     '''
@@ -689,6 +691,12 @@ def buildPseudogenes( infiles, outfile ):
     '''
 
     P.run()
+
+    if P.isEmpty( tmpfile1 ):
+        E.warn( "no pseudogenes found" )
+        os.unlink( tmpfile1 )
+        P.touch( outfile )
+        return
 
     statement = '''
     cat %(tmpfile1)s 
@@ -749,17 +757,26 @@ def buildPseudogenes( infiles, outfile ):
         
     E.info( "exons: %s" % str(c))
 
-
-
 def buildNUMTs( infile, outfile ):
     '''build annotation with nuclear mitochondrial sequences.
-
+    
     map mitochondrial chromosome against genome using
     exonerate
     '''
+    if not PARAMS["numts_mitochrom"]:
+        E.info( "skipping numts creation" )
+        P.touch(outfile)
+        return
+
+    fasta = IndexedFasta.IndexedFasta( os.path.join(PARAMS["genome_dir"], PARAMS["genome"]))
+
+    if PARAMS["numts_mitochrom"] not in fasta:
+        E.warn( "mitochondrial genome %s not found" % PARAMS["numts_mitochrom"] )
+        P.touch(outfile)
+        return
 
     tmpfile_mito = P.getTempFilename( ".")
-    
+
     statement = '''
     python %(scriptsdir)s/index_fasta.py 
            --extract=%(numts_mitochrom)s
@@ -771,7 +788,8 @@ def buildNUMTs( infile, outfile ):
     P.run()
     
     if P.isEmpty( tmpfile_mito ):
-        E.warn( "no mitochondrial genome found." )
+        E.warn( "mitochondrial genome empty." )
+        os.unlink( tmpfile_mito )
         P.touch( outfile )
         return
 

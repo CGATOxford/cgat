@@ -172,6 +172,9 @@ def joinTables( outfile, options, args ):
                 if options.add_file_prefix:
                     p = re.search( options.regex_filename, prefix).groups()[0]
                     titles.append( "%s_%s" % ( p, data[x] ) )
+                elif options.use_file_prefix:
+                    p = re.search( options.regex_filename, prefix).groups()[0]
+                    titles.append( "%s" % p )
                 else:
                     titles.append( data[x] )
                 
@@ -366,6 +369,9 @@ if __name__ == '__main__':
     parser.add_option( "--add-file-prefix", dest="add_file_prefix", action="store_true",
                       help="add file prefix to columns headers in multi-column tables [default=%default]" )
 
+    parser.add_option( "--use-file-prefix", dest="use_file_prefix", action="store_true",
+                      help="use file prefix as columns headers [default=%default]" )
+
     parser.add_option( "--regex-filename", dest="regex_filename", type="string",
                       help="pattern to apply to filename to build prefix [default=%default]" )
 
@@ -389,6 +395,7 @@ if __name__ == '__main__':
         regex_start = None,
         regex_end = None,
         add_file_prefix = False,
+        use_file_prefix = False,
         cat = None,
         regex_filename = "(.*)"
         )

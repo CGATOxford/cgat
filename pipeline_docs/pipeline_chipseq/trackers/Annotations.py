@@ -66,28 +66,28 @@ class Annotations(ChipseqReport.DefaultTracker, AnnotationSlicer):
     :attr:`mColumns`.
     """
     pattern = "(.*)_annotations$"
-    mTable = "annotations"
-    mSelect = None
-    mColumns = None
-    mWhere = "1"
+    table = "annotations"
+    select = None
+    columns = None
+    where = "1"
 
     def __call__(self, track, slice = None ):
 
-        where = self.mWhere
-        select = self.mSelect
-        table = self.mTable
+        where = self.where
+        select = self.select
+        table = self.table
 
         if slice == "all" or slice == None:
             data = self.getFirstRow( "%(select)s FROM %(track)s_%(table)s WHERE %(where)s" % locals() )
         else:
             data = self.getFirstRow( "%(select)s FROM %(track)s_%(table)s WHERE %(where)s AND is_%slices" % locals() )
       
-        return odict( zip(self.mColumns, data) )
+        return odict( zip(self.columns, data) )
 
 class AllAnnotations(Annotations):
     """Annotations of all transcript models."""
 
-    mColumns = [ "cds", 
+    columns = [ "cds", 
                  "utr", 
                  "upstream", 
                  "downstream", 
@@ -97,7 +97,7 @@ class AllAnnotations(Annotations):
                  "ambiguous", 
                  "unclassified" ]
 
-    mSelect = """SELECT 
+    select = """SELECT 
 			sum(is_cds) AS cds, 
                         sum(is_utr) AS utr, 
                         sum(is_upstream) AS upstream, 
@@ -111,8 +111,8 @@ class AllAnnotations(Annotations):
 
 class AnnotationsBases(Annotations):
     """Annotations as bases."""
-    mColumns = [ "total", "CDS", "UTRPromotor", "intronic", "intergenic" ]
-    mSelect = """SELECT 
+    columns = [ "total", "CDS", "UTRPromotor", "intronic", "intergenic" ]
+    select = """SELECT 
                  sum( exons_sum) AS total,
 		 sum( nover_CDS ) AS cds,
                  sum( nover_UTR + nover_UTR3 + nover_UTR5 + nover_flank + nover_5flank + nover_3flank) AS utr, 

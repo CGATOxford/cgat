@@ -37,7 +37,8 @@ API
 ----
 
 '''
-import os, sys, re, subprocess, optparse, stat, tempfile, time, random, inspect, types, glob, shutil, logging
+import os, sys, re, subprocess, optparse, stat, tempfile, time, random, inspect, types
+import logging, collections, shutil, glob
 import ConfigParser
 
 import drmaa
@@ -53,6 +54,9 @@ global_sessions = {}
 
 class PipelineError( Exception ): pass
 
+# possible to use defaultdict, but then statements will
+# fail on execution if a parameter does not exists, and not
+# while building the statement. Hence, use dict.
 PARAMS= { 
     'scriptsdir' : os.path.dirname( __file__ ),
     'toolsdir' : os.path.dirname( __file__ ),
@@ -63,7 +67,7 @@ PARAMS= {
 		--cluster-num-jobs=100 
 		--cluster-options="" """ % os.path.dirname( __file__ ),
     'cmd-sql' : """sqlite3 -header -csv -separator $'\\t' """,
-           }
+    }
 
 CONFIG = {}
 
@@ -279,6 +283,10 @@ def asList( param ):
     if type(param) not in (types.ListType, types.TupleType):
         return [x.strip() for x in param.split(",")]
     else: return param
+
+def asTuple( param ):
+    '''return a param as a list'''
+    return tuple(asList( param ))
 
 def flatten(l, ltypes=(list, tuple)):
     '''flatten a nested list/tuple.'''
@@ -880,7 +888,8 @@ def main( args = sys.argv ):
             raise
 
     elif options.pipeline_action == "dump":
-        print "dump = %s" % str(PARAMS)
+        # convert to normal dictionary (not defaultdict) for parsing purposes
+        print "dump = %s" % str(dict(PARAMS))
     elif options.pipeline_action == "config":
         if os.path.exists("pipeline.ini"):
             raise ValueError( "file `pipeline.ini` already exists" )

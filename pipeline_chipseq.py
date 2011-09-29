@@ -81,21 +81,21 @@ Input
 Reads
 ++++++
 
-Input are :file:`.export.txt.gz`-formatted files from Illumina. The files should be
-labeled in the following way::
+Input are :file:`.export.txt.gz`-formatted files from Illumina, :term:`fastq.gz` files,
+or :term:`csfasta.gz` files.
 
-   sample-condition-replicate.export.txt.gz
+
+The files should be labeled in the following way::
+
+   sample-condition-replicate.<suffix>.gz
 
 For example::
-
-   GM00855-D3-R1.export.txt.gz
-   GM00855-D3-R2.export.gz
-   GM00855-input-R1.export.gz
-   GM00855-unstim-R1.export.txt.gz
-   GM00855-unstim-R2.export.txt.gz
-
-Alternatively, :term:`fastq` formatted files can be used, simply replace the ``.export.txt.gz``
-with ``.fastq.gz`` in the above example.
+ 
+   GM00855-D3-R1.<suffix>.gz
+   GM00855-D3-R2.<suffix>.gz
+   GM00855-input-R1.<suffix>.gz
+   GM00855-unstim-R1.<suffix>.gz
+   GM00855-unstim-R2.<suffix>.gz
 
 Note that neither ``sample``, ``condition`` or ``replicate`` should contain 
 ``_`` (underscore) and ``.`` (dot) characters as these are used by the pipeline
@@ -103,6 +103,29 @@ to delineate tasks.
 
 Optional inputs
 +++++++++++++++
+
+Optinally, peaks can be supplied as :term:`bed` formatted files. These peak files
+will then be processed in the same way as peaks called within the pipeline. Use the
+option ``tracks_extra`` to declare any additional tracks.
+
+Additional peak files can be associated with one of the :term:`bam` files created
+by the pipeline. This permits counting the number of tags inside peaks, finding the
+peak summit, etc. In order to associated a peak file with a :term:`bam` formatted
+file, define a section in the pipeline.ini file. For example::
+
+
+   [mycalls.bed]
+   track=tissue-sample-agg
+
+will process the file ``mycalls.bed`` exactly the same way as the track ``tissue-sample-agg``.
+Replicates can be specified explicitely::
+
+   [mycalls.bed]
+   replicates=tissue1-sample1-R1,tissue1-sample1-R2
+
+will associate the file ``mycalls.bed`` with the replicates ``tissue1-sample1-R1`` 
+and ``tissue1-sample1-R2``. Note that globs don't work for this yet, all
+replicates have to be specified explicitely.
 
 Reference motifs
 ++++++++++++++++
@@ -184,9 +207,8 @@ import Glam2Scan
 import Motifs
 import Bioprospector
 
-import pipeline_chipseq_intervals as PIntervals
-import pipeline_vitaminD_annotator as PAnnotator
-import pipeline_vitaminD_motifs as PMotifs
+import PipelineChipseq as PipelineChipseq
+import PipelineMotifs as PipelineMotifs
 import PipelineGeneset as PGeneset
 import PipelineTracks
 import PipelineMapping
@@ -428,9 +450,9 @@ def makeMask(infile,outfile):
     if PARAMS["calling_filter_exons"] or PARAMS["calling_filter_regions"]:
         regions_to_filter = []
         if PARAMS["calling_filter_exons"]:
-            regions_to_filter += PIntervals.getExonLocations(PARAMS["calling_filter_exons"]) 
+            regions_to_filter += PipelineChipseq.getExonLocations(PARAMS["calling_filter_exons"]) 
         if PARAMS["calling_filter_regions"]:
-            regions_to_filter += PIntervals.getBedLocations(PARAMS["calling_filter_regions"])
+            regions_to_filter += PipelineChipseq.getBedLocations(PARAMS["calling_filter_regions"])
         fh = open(outfile,"w")
         for r in regions_to_filter:
             fh.write("\t".join([r[0],str(r[1]),str(r[2])]))
@@ -463,11 +485,11 @@ def prepBAMForPeakCalling(infiles, outfile):
     bam_file, mask_file = infiles
 
     if PARAMS["calling_filter_exons"] or PARAMS["calling_filter_regions"]:
-        mask = PIntervals.buildQuicksectMask(mask_file)
+        mask = PipelineChipseq.buildQuicksectMask(mask_file)
     else:
         mask = None
 
-    PIntervals.buildBAMforPeakCalling(bam_file,outfile,PARAMS["calling_deduplicate"],mask)
+    PipelineChipseq.buildBAMforPeakCalling(bam_file,outfile,PARAMS["calling_deduplicate"],mask)
 
 ############################################################
 ############################################################
@@ -520,7 +542,7 @@ if PARAMS["calling_normalize"]==True:
         fh = open("minreads")
         minreads = int(fh.read())
         fh.close
-        PIntervals.buildSimpleNormalizedBAM( infiles, 
+        PipelineChipseq.buildSimpleNormalizedBAM( infiles, 
                                              outfile,
                                              minreads)
 else:
@@ -694,7 +716,7 @@ if PARAMS["calling_caller"] == "macs":
         '''run MACS for peak detection.'''
         infile, controlfile = infiles
 
-        PIntervals.runMACS( infile, outfile, controlfile)
+        PipelineChipseq.runMACS( infile, outfile, controlfile)
 
     ############################################################
     ############################################################
@@ -705,7 +727,7 @@ if PARAMS["calling_caller"] == "macs":
                 r"\1_macs.load" )
     def loadMACS( infiles, outfile ):
         infile, bamfile = infiles
-        PIntervals.loadMACS( infile, outfile, bamfile )
+        PipelineChipseq.loadMACS( infile, outfile, bamfile )
         
     ############################################################
     ############################################################
@@ -713,12 +735,12 @@ if PARAMS["calling_caller"] == "macs":
     @merge( runMACS, "macs.summary" )
     def summarizeMACS( infiles, outfile ):
         '''summarize MACS results.''' 
-        PIntervals.summarizeMACS( infiles, outfile )
+        PipelineChipseq.summarizeMACS( infiles, outfile )
 
     @merge( runMACS, "macs_fdr.summary" )
     def summarizeMACSFDR( infiles, outfile ):
         '''summarize MACS results.''' 
-        PIntervals.summarizeMACSFDR( infiles, outfile )
+        PipelineChipseq.summarizeMACSFDR( infiles, outfile )
 
     ############################################################
     ############################################################
@@ -746,7 +768,7 @@ if PARAMS["calling_caller"] == "macs":
     @follows( loadMACSSummary, loadMACSSummaryFDR )
     @transform( loadMACS, suffix("_macs.load"), ".bed" )
     def exportIntervalsAsBed( infile, outfile ):
-        PIntervals.exportMacsAsBed( infile, outfile )
+        PipelineChipseq.exportIntervalsAsBed( infile, outfile )
 
 elif PARAMS["calling_caller"] == "zinba":
 
@@ -799,7 +821,7 @@ elif PARAMS["calling_caller"] == "zinba":
         '''
         
         P.run()
-
+        
     ############################################################
     ############################################################
     ############################################################
@@ -809,14 +831,14 @@ elif PARAMS["calling_caller"] == "zinba":
                 r"\1_zinba.load" )
     def loadZinba( infiles, outfile ):
         infile, bamfile = infiles
-        PIntervals.loadZinba( infile, outfile, bamfile )
+        PipelineChipseq.loadZinba( infile, outfile, bamfile )
     
     ############################################################
     ############################################################
     ############################################################
-    @transform( loadZinba, suffix("_macs.load"), ".bed" )
+    @transform( loadZinba, suffix("_zinba.load"), ".bed" )
     def exportIntervalsAsBed( infile, outfile ):
-        PIntervals.exportZinbaAsBed( infile, outfile )
+        PipelineChipseq.exportIntervalsAsBed( infile, outfile )
 
 else:
     raise ValueError("unknown peak caller %s" % PARAMS["calling_caller"] )
@@ -833,8 +855,7 @@ def combineExperiment( infiles, outfile ):
 
     The replicates are combined using intersection.
     '''
-
-    PIntervals.intersectBedFiles( infiles, outfile )
+    PipelineChipseq.intersectBedFiles( infiles, outfile )
 
 ############################################################
 ############################################################
@@ -848,7 +869,7 @@ def combineCondition( infiles, outfile ):
 
     The conditions are merged via intersection.
     '''
-    PIntervals.intersectBedFiles( infiles, outfile )
+    PipelineChipseq.intersectBedFiles( infiles, outfile )
 
 ############################################################
 ############################################################
@@ -862,7 +883,7 @@ def combineTissue( infiles, outfile ):
 
     The conditions are merged via intersection.
     '''
-    PIntervals.intersectBedFiles( infiles, outfile )
+    PipelineChipseq.intersectBedFiles( infiles, outfile )
 
 ############################################################
 ############################################################
@@ -876,19 +897,24 @@ def subtractUnstimulated( infiles, outfile ):
     '''
 
     infile, subtract = infiles
-    PIntervals.subtractBedFiles( infile, subtract, outfile )
+    PipelineChipseq.subtractBedFiles( infile, subtract, outfile )
 
 ############################################################
 ############################################################
 ############################################################
-@transform( (combineExperiment,
-             combineCondition, 
-             subtractUnstimulated, 
-             normalizeBAM),
+@follows(normalizeBAM)
+@transform( ( combineExperiment,
+              combineCondition, 
+              subtractUnstimulated ) +
+            P.asTuple(PARAMS["tracks_extra"]),
             suffix(".bed"),
             "_bed.load" )
-def loadCombinedIntervals( infile, outfile ):
-    '''load combined intervals.
+def loadIntervalsFromBed( infile, outfile ):
+    '''load intervals from :term:`bed` formatted files into database.
+    
+    These :term:`bed` formatted intervals are derived by 
+    merging/intersecting the various tracks or have been
+    placed explicitely into the directory.
 
     Also, re-evaluate the intervals by counting reads within
     the interval. In contrast to the initial pipeline, the
@@ -904,7 +930,7 @@ def loadCombinedIntervals( infile, outfile ):
     and conditions.
     '''
 
-    tmpfile = tempfile.NamedTemporaryFile(delete=False)
+    tmpfile = P.getTempFile()
 
     headers = ("AvgVal","DisttoStart","GeneList","Length","PeakCenter","PeakVal","Position","interval_id","nCpGs","nGenes","nPeaks","nProbes","nPromoters", "contig","start","end" )
 
@@ -916,14 +942,30 @@ def loadCombinedIntervals( infile, outfile ):
     samfiles, offsets = [], []
 
     track = Sample( filename = P.snip( infile, ".bed") )
+    associated_track = track
 
-    # get replicates / aggregated tracks associated with track
-    # remove subtraction as not relevant for tag counting
-    unsubtracted_track = getUnsubtracted ( track )
-    replicates = PipelineTracks.getSamplesInTrack( unsubtracted_track, TRACKS )
-
-    assert len(replicates) > 0
+    E.info( "loading data for track %s" % track )
     
+    # get associated bam files
+    if "%s_track" % track in PARAMS:
+        associated_track = PARAMS[ "%s_track" % track ]
+        E.info("using %s as associated track for %s" % (associated_track, track))
+        
+    if "%s_replicates" % track in PARAMS:
+        replicates = P.asList( PARAMS["%s_replicates" % replicates] )
+    else:
+        # get replicates / aggregated tracks associated with track
+        # remove subtraction as not relevant for tag counting
+        unsubtracted_track = getUnsubtracted ( associated_track )
+        
+        try:
+            replicates = PipelineTracks.getSamplesInTrack( unsubtracted_track, TRACKS )
+        except KeyError:
+            replicates = []
+
+    if len(replicates) == 0:
+        E.warn( "no replicates associated with track %s" % track )
+        
     # setup files
     for t in replicates:
         fn = "%s.call.bam" % (t.asFile())
@@ -931,11 +973,17 @@ def loadCombinedIntervals( infile, outfile ):
         samfiles.append( pysam.Samfile( fn,  "rb" ) )
         fn = "%s.macs" % t.asFile()
         if os.path.exists( fn ):
-            offsets.append( PIntervals.getPeakShift( fn ) )
+            if PARAMS["calling_caller"] == "macs":
+                offsets.append( PipelineChipseq.getPeakShiftFromMacs( fn ) )
+            elif PARAMS["calling_caller"] == "zinba":
+                offsets.append( PipelineChipseq.getPeakShiftFromZinba( fn ) )
+            else: 
+                raise ValueError("unknown peak caller %s" % PARAMS["calling_caller"] )
 
     mlength = int(PARAMS["calling_merge_min_interval_length"])
 
     c = E.Counter()
+
     # count tags
     for line in open(infile, "r"):
         c.input += 1
@@ -948,16 +996,25 @@ def loadCombinedIntervals( infile, outfile ):
             c.skipped_length += 1
             continue
 
-        npeaks, peakcenter, length, avgval, peakval, nprobes = \
-            PIntervals.countPeaks( contig, start, end, samfiles, offsets )
+        if replicates:
+            npeaks, peakcenter, length, avgval, peakval, nprobes = \
+                PipelineChipseq.countPeaks( contig, start, end, samfiles, offsets )
 
-        # nreads can be 0 if the intervals overlap only slightly
-        # and due to the binning, no reads are actually in the overlap region.
-        # However, most of these intervals should be small and have already be deleted via 
-        # the merge_min_interval_length cutoff.
-        # do not output intervals without reads.
-        if nprobes == 0:
-            c.skipped_reads += 1
+            # nreads can be 0 if the intervals overlap only slightly
+            # and due to the binning, no reads are actually in the overlap region.
+            # However, most of these intervals should be small and have already be deleted via 
+            # the merge_min_interval_length cutoff.
+            # do not output intervals without reads.
+            if nprobes == 0:
+                c.skipped_reads += 1
+
+        else:
+            npeaks, peakcenter, length, avgval, peakval, nprobes = ( 1, 
+                                                                     start + (end - start) // 2, 
+                                                                     end - start, 
+                                                                     1, 
+                                                                     1,
+                                                                     1 )
             
         c.output += 1
         tmpfile.write( "\t".join( map( str, (avgval,disttostart,genelist,length,
@@ -997,14 +1054,14 @@ def buildMergedIntervals( infiles, outfile ):
 
     The replicates are combined using a merge.
     '''
-    PIntervals.mergeBedFiles( infiles, outfile )
+    PipelineChipseq.mergeBedFiles( infiles, outfile )
 
 ############################################################
 ############################################################
 ############################################################
 ## master target for this section
 ############################################################
-@follows( loadCombinedIntervals, 
+@follows( loadIntervalsFromBed, 
           buildMergedIntervals )
 def buildIntervals():
     pass
@@ -1064,16 +1121,28 @@ def buildReadCoverageTable(infiles, outfile):
         
         data[(bam, bed)] = value
 
-    table = numpy.empty((len(beds), len(bams)), dtype=numpy.int )
-    for i in range(len(beds)):
-        for j in range(len(bams)):
-            table[i][j] = data[bams[j], beds[i]]    
+    table = numpy.empty((len(bams), len(beds)))
+    for i in range(len(bams)):
+        for j in range(len(beds)):
+            table[i][j] = data[bams[i], beds[j]]    
 
-    table = zip(beds, table)
+    table = zip(bams, table)
         
-    out.write ("track" + "\t" + "\t".join(bams) + "\n")
-    for i in range(len(beds)):
+    out.write ("track" + "\t" + "\t".join(beds) + "\n")
+    for i in range(len(bams)):
         out.write(table[i][0] + "\t" + "\t".join((map(str, table[i][1]))) + "\n")
+
+
+   # table = numpy.empty((len(beds), len(bams)), dtype=numpy.int )
+    #for i in range(len(beds)):
+     #   for j in range(len(bams)):
+      #      table[i][j] = data[bams[j], beds[i]]    
+
+   # table = zip(beds, table)
+        
+   # out.write ("track" + "\t" + "\t".join(bams) + "\n")
+   # for i in range(len(beds)):
+    #    out.write(table[i][0] + "\t" + "\t".join((map(str, table[i][1]))) + "\n")
     
 ###################################################################
 ###################################################################
@@ -1114,9 +1183,10 @@ def exportBigwig( infile, outfile ):
 ############################################################
 ############################################################
 # fix: does not work due to exportIntervalsAsBed
-# (loadCombinedIntervals, exportIntervalsAsBed ),
+# (loadIntervalsFromBed, exportIntervalsAsBed ),
 @follows( buildIntervals )
-@transform( [ "%s.bed" % x.asFile() for x in TRACKS_MASTER ],
+@transform( [ "%s.bed" % x.asFile() for x in TRACKS_MASTER ] +\
+                P.asList( PARAMS["tracks_extra"] ),
             suffix(".bed"),
             ".fasta" )
 def exportMotifSequences( infile, outfile ):
@@ -1148,10 +1218,11 @@ def exportMotifSequences( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-# (loadCombinedIntervals, exportIntervalsAsBed ),
+# (loadIntervalsFromBed, exportIntervalsAsBed ),
 # TODO: fix, causes a problem due to exportIntervalsAsBed
 @follows( buildIntervals )
-@transform( [ "%s.bed" % x.asFile() for x in TRACKS_MASTER],
+@transform( [ "%s.bed" % x.asFile() for x in TRACKS_MASTER] +\
+                P.asList( PARAMS["tracks_extra"] ),
             suffix(".bed"),
             ".controlfasta" )
 def exportMotifControlSequences( infile, outfile ):
@@ -1402,7 +1473,7 @@ def reproducibility(): pass
 def makePeakvalCorrelation( infiles, outfile ):
     '''compute correlation of interval properties between sets for field peakval.
     '''
-    PIntervals.makeIntervalCorrelation( infiles, outfile, "peakval", "merged.bed" )
+    PipelineChipseq.makeIntervalCorrelation( infiles, outfile, "peakval", "merged.bed" )
 
 @follows( buildIntervals )
 @files_re( ["%s.bed" % x.asFile() for x in TRACKS_CORRELATION],
@@ -1411,7 +1482,7 @@ def makePeakvalCorrelation( infiles, outfile ):
 def makeAvgvalCorrelation( infiles, outfile ):
     '''compute correlation of interval properties between sets for field peakval.
     '''
-    PIntervals.makeIntervalCorrelation( infiles, outfile, "avgval", "merged.bed" )
+    PipelineChipseq.makeIntervalCorrelation( infiles, outfile, "avgval", "merged.bed" )
 
 @follows( buildIntervals )
 @files_re( ["%s.bed" % x.asFile() for x in TRACKS_CORRELATION],
@@ -1420,7 +1491,7 @@ def makeAvgvalCorrelation( infiles, outfile ):
 def makeLengthCorrelation( infiles, outfile ):
     '''compute correlation of interval properties between sets for field peakval.
     '''
-    PIntervals.makeIntervalCorrelation( infiles, outfile, "length", "merged.bed" )
+    PipelineChipseq.makeIntervalCorrelation( infiles, outfile, "length", "merged.bed" )
 
 @transform( ( makePeakvalCorrelation, makeAvgvalCorrelation, makeLengthCorrelation ),
             suffix(".correlation"),
@@ -1486,9 +1557,10 @@ def runMEME( infile, outfile ):
     cc.execute( statement )
     data = cc.fetchall()
     cc.close()
-
-    cutoff = int( len(data) * PARAMS["meme_proportion"] ) + 1
     
+    cutoff = max( int( len(data) * PARAMS["meme_proportion"] ) + 1, int( PARAMS["meme_min_sequences"] ) )
+    E.info( "using %i out of %i peaks for motif detection" % (cutoff, len(data)))
+
     # maximum size of data set (in characters)
     maxsize = int(PARAMS["meme_max_size"])
 
@@ -1813,7 +1885,7 @@ if PARAMS["tomtom_master_motif"] != "":
 
         L.info( "%s: keeping %i motifs" % (infile, len(selected) ) )
 
-        PMotifs.filterMotifsFromMEME( infile_meme, outfile, selected )
+        PipelineMotifs.filterMotifsFromMEME( infile_meme, outfile, selected )
         
 else:
     ############################################################
@@ -1836,7 +1908,7 @@ else:
         '''take the top scoring motif from meme runs
         '''
 
-        PMotifs.filterMotifsFromMEME( infile, outfile, ["1"] )
+        PipelineMotifs.filterMotifsFromMEME( infile, outfile, ["1"] )
 
 ############################################################
 ############################################################
@@ -1859,6 +1931,31 @@ def loadMotifInformation( infiles, outfile ):
     P.load( outf.name, outfile )
     
     os.unlink( outf.name )
+
+############################################################
+############################################################
+############################################################
+@transform( exportMotifSequences,
+            suffix(".fasta"),
+            ".motifseq_stats.load" )
+def loadMotifSequenceComposition( infile, outfile ):
+    '''compute sequence composition of sequences used for ab-initio search.'''
+
+    to_cluster = True
+
+    tablename = P.toTable( outfile )
+
+    statement = '''
+    python %(scriptsdir)s/fasta2table.py 
+        --section=na
+        --log=%(outfile)s.log
+    < %(infile)s
+    | python %(scriptsdir)s/csv2db.py
+        %(csv2db_options)s
+        --table=%(tablename)s
+    > %(outfile)s'''
+    
+    P.run()
 
 ############################################################
 ############################################################
@@ -2554,7 +2651,7 @@ def viewBigwig( infiles, outfile ):
 ## export intervals
 ############################################################
 @follows ( mkdir( 'export' ))
-@merge( "run*.bed", ("export/intervals_%s.bed" % PARAMS["version"], "intervals.view") )
+@merge( "*.bed", ("export/intervals_%s.bed" % PARAMS["version"], "intervals.view") )
 def viewIntervals( infiles, outfiles ):
 
     outfile_bed, outfile_code = outfiles
@@ -2631,6 +2728,7 @@ def discover_motifs():
 
 @follows( filterMotifs,
           exportMotifControlSequences,
+          loadMotifSequenceComposition,
           loadMotifInformation,
           runMAST, loadMAST )
 #          runGLAM2SCAN, loadGLAM2SCAN )

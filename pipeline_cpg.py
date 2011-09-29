@@ -143,7 +143,7 @@ import sqlite3
 import Experiment as E
 import logging as L
 from ruffus import *
-import pipeline_chipseq_intervals as PIntervals
+import PipelineChipseq as PipelineChipseq
 import PipelineTracks
 import PipelineMapping
 
@@ -447,24 +447,24 @@ def runMACS( infiles, outfile ):
             r"\1/macs/\2.macs.load" )
 def loadMACS( infiles, outfile ):
     infile, bamfile = infiles
-    PIntervals.loadMACS( infile, outfile, bamfile )
+    PipelineChipseq.loadMACS( infile, outfile, bamfile )
     
 ############################################################
 @merge( runMACS, "macs.summary" )
 def summarizeMACS( infiles, outfile ):
     '''run MACS for peak detection.'''
-    PIntervals.summarizeMACS( infiles, outfile )
+    PipelineChipseq.summarizeMACS( infiles, outfile )
 
 ############################################################
 @transform( summarizeMACS, suffix(".summary"), "_summary.load" )
 def loadMACSSummary( infile, outfile ):
     '''load macs summary.'''
-    PIntervals.loadMACSSummary( infile, outfile )
+    PipelineChipseq.loadMACSSummary( infile, outfile )
 
 ############################################################
 @transform( loadMACS, regex(r"(\S+)/macs/(\S+).macs.load"), r"\1/macs/\2.bed" )
 def exportIntervalsAsBed( infile, outfile ):
-    PIntervals.exportMacsAsBed( infile, outfile )
+    PipelineChipseq.exportMacsAsBed( infile, outfile )
 
 ############################################################
 ############################################################
@@ -499,24 +499,24 @@ def runMACSsolo( infile, outfile ):
             r"\1/macs/\2.solo.macs.load" )
 def loadMACSsolo( infiles, outfile ):
     infile, bamfile = infiles
-    PIntervals.loadMACS( infile, outfile, bamfile )
+    PipelineChipseq.loadMACS( infile, outfile, bamfile )
     
 ############################################################
 @merge( runMACSsolo, "macs_solo.summary" )
 def summarizeMACSsolo( infiles, outfile ):
     '''run MACS for peak detection.'''
-    PIntervals.summarizeMACSsolo( infiles, outfile )
+    PipelineChipseq.summarizeMACSsolo( infiles, outfile )
 
 ############################################################
 @transform( summarizeMACSsolo, suffix(".summary"), "_summary.load" )
 def loadMACSsoloSummary( infile, outfile ):
     '''load macs summary.'''
-    PIntervals.loadMACSSummary( infile, outfile )
+    PipelineChipseq.loadMACSSummary( infile, outfile )
 
 ############################################################
 @transform( loadMACSsolo, regex(r"(\S+)/macs/(\S+).macs.load"), r"\1/macs/\2.bed" )
 def exportIntervalsAsBedsolo( infile, outfile ):
-    PIntervals.exportMacsAsBed( infile, outfile )
+    PipelineChipseq.exportMacsAsBed( infile, outfile )
 
 ############################################################
 ############################################################

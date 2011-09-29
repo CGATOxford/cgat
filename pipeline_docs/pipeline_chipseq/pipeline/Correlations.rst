@@ -7,15 +7,15 @@ peak heights between various tracks.
 
 .. report:: Intervals.CorrelationsPeakval
    :render: table
-   :transform: select,correlation
+   :transform: correlation
    :tf-fields: peakval
 
    Full table
 
 .. report:: Intervals.CorrelationsPeakval
    :render: matrix-plot
-   :transform: select,correlation,select
-   :tf-fields: peakval,coefficient
+   :transform: correlation,select
+   :tf-fields: coefficient
    :transform-matrix: correspondence-analysis
    :zrange: -1,1
 
@@ -23,16 +23,16 @@ peak heights between various tracks.
 
 .. report:: Intervals.CorrelationsPeakval
    :render: matrix-plot
-   :transform: select,correlation,select
+   :transform: correlation,select
    :transform-matrix: correspondence-analysis
-   :tf-fields: peakval,pvalue
+   :tf-fields: pvalue
 
    P-Value
 
-.. report:: Intervals.CorrelationsPeakval                                                                                                                                                                                                     
-   :render: scatter-plot                                                                                                                                                                                                                     
-   :transform: combine                                                                                                                                                                                                                       
-   :tf-fields: peakval                                                                                                                                                                                                                       
+.. report:: Intervals.CorrelationsPeakval
+   :render: scatter-plot
+   :transform: combine
+   :tf-fields: peakval
    :groupby: none
    :width: 200
    :layout: column-5

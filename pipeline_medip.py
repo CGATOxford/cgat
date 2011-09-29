@@ -563,6 +563,7 @@ def buildTileStats( infile, outfile ):
     zcat %(infile)s
     | python %(scriptsdir)s/gff2histogram.py 
                    --format=bed 
+                   --data=size
                    --method=hist
                    --method=stats
                    --output-filename-pattern=%(outfile)s.%%s.tsv
@@ -579,8 +580,6 @@ def loadTileStats( infiles, outfile ):
     '''load tiling stats into database.'''
     prefix = P.snip(outfile, ".load")
 
-    tempfile = P.getTempFilename( "." )
-    
     files = " ".join( [ "%s.stats.tsv" % x for x in infiles ] )
 
     tablename = P.snip( outfile, ".load" ) + "_stats" 
@@ -597,8 +596,24 @@ def loadTileStats( infiles, outfile ):
     > %(outfile)s"""
     P.run()
    
-    
+    files = " ".join( [ "%s.hist.tsv" % x for x in infiles ] )
 
+    tablename = P.snip( outfile, ".load" ) + "_hist" 
+    
+    statement = """
+    python %(scriptsdir)s/combine_tables.py 
+           --regex-filename="(.*).stats.hist.tsv" 
+           --sort-keys=numeric
+           --use-file-prefix
+           %(files)s
+    | python %(scriptsdir)s/csv2db.py 
+           %(csv2db_options)s
+           --index=track
+           --table=%(tablename)s 
+    >> %(outfile)s"""
+
+    P.run()
+    
 #########################################################################
 #########################################################################
 #########################################################################

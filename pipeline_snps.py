@@ -2530,6 +2530,61 @@ def exportVariantTable( infile, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
+@files(((PARAMS["filename_vcf"], "export/functional_variants.tsv.gz"),) )
+def exportFunctionalVariantTable( infile, outfile ):
+    '''output a table with functional variants.
+
+    ouputs all positions for which deleterious variants have been predicted.
+
+    Encodes positions as:
+       w wildtype (no prediction)
+       d damaging (both probably and possibly)
+       u unknown
+       b benign
+
+    positions are 1-based
+    '''
+
+    headers = []
+    ninput = 0
+    counts = E.Counter()
+
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    cc = dbhandle.cursor()
+
+    tracks = [ x[0] for x in cc.execute( "SELECT DISTINCT track FROM polyphen_map" ).fetchall()]
+    map_track2column = dict( [ (x[1], x[0]) for  x in enumerate(tracks) ] )
+
+    statement = '''
+    SELECT m.locus_id, m.track, m.contig, m.pos, v.prediction
+    FROM polyphen_HumVar as v, polyphen_map AS m
+    WHERE m.snp_id = v.snp_id
+    ORDER by m.locus_id
+    '''
+    ncolumns = len(tracks)
+
+    outf = IOTools.openFile( outfile, "w" )
+    outf.write("contig\tpos\t%s\n" % "\t".join( tracks ) )
+
+    for locus_id, data in itertools.groupby( cc.execute(statement), key = lambda x: x[0] ):
+        row = ["w"] * ncolumns
+        for x, track, contig, pos, prediction in data:
+            if prediction in 'probablydamaging' or 'possiblydamaging':
+                row[map_track2column[track]] = "d"
+            elif prediction_id == "unknown":
+                row[map_track2column[track]] = "u"
+            elif prediction_id == "benign":
+                row[map_track2column[track]] = "b"
+
+        outf.write( "\t".join( (contig, str(pos+1), "\t".join(row))) + "\n" )
+
+    outf.close()
+
+    E.info("%s" % str(counts))
+
+###################################################################
+###################################################################
+###################################################################
 @merge(summarizeAllelesPerGene, 
        ( "export/nmd_knockouts.tsv.gz",
          "export/nmd_knockouts_summary.tsv.gz",
