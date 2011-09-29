@@ -500,6 +500,8 @@ def connect():
 ##################################################################
 ## genesets build - defined statically here, but could be parsed
 ## from configuration options
+## Needs to done in turn to be able to turn off potentially empty gene sets
+## such as refnoncoding
 GENESETS = ("novel", "abinitio", "reference", "refcoding", "refnoncoding", "lincrna" )
 
 # reference gene set for QC purposes
@@ -586,19 +588,20 @@ def mergeAndFilterGTF( infile, outfile, logfile ):
     E.info( "filtering by contig and removing long introns" )    
     contigs = set(IndexedFasta.IndexedFasta( os.path.join( PARAMS["genome_dir"], PARAMS["genome"]) ).getContigs())
 
+    rx_contigs = None
     if "geneset_remove_contigs" in PARAMS:
         rx_contigs = re.compile( PARAMS["geneset_remove_contigs"] )
         E.info( "removing contigs %s" % PARAMS["geneset_remove_contigs"] )
-    else:
-        rx_contigs = None
 
+    rna_index = None
     if "geneset_remove_repetetive_rna" in PARAMS:
         rna_file = os.path.join( PARAMS["annotations_dir"],
                                  PARAMS_ANNOTATIONS["interface_rna_gff"] )
-        rna_index = GFF.readAndIndex( GFF.iterator( IOTools.openFile( rna_file, "r" ) ) )
-        E.info( "removing ribosomal RNA in %s" % rna_file )
-    else:
-        rna_index = None
+        if not os.path.exists( rna_file ):
+            E.warn( "file '%s' to remove repetetive rna does not exist" % rna_file )
+        else:
+            rna_index = GFF.readAndIndex( GFF.iterator( IOTools.openFile( rna_file, "r" ) ) )
+            E.info( "removing ribosomal RNA in %s" % rna_file )
     
     gene_ids = {}
 
@@ -977,6 +980,7 @@ def buildJunctions( infile, outfile ):
     '''
     
     outf = IOTools.openFile( outfile, "w" )
+    njunctions = 0
     for gffs in GTF.transcript_iterator( GTF.iterator( IOTools.openFile( infile, "r" ) )):
         
         gffs.sort( key = lambda x: x.start )
@@ -986,12 +990,20 @@ def buildJunctions( infile, outfile ):
             # of first and last residue that are to be kept (i.e., within the exon).
             outf.write( "%s\t%i\t%i\t%s\n" % (gff.contig, end - 1, gff.start, gff.strand ) )
             end = gff.end
-                        
+            njunctions += 1
+            
     outf.close()
+
+    if njunctions == 0:
+        E.warn( 'no junctions found in gene set' )
+        return
+    else:
+        E.info( 'found %i junctions before removing duplicates' % njunctions )
+
 
     # make unique
     statement = '''mv %(outfile)s %(outfile)s.tmp; 
-                   gunzip < %(outfile)s.tmp | sort | uniq > %(outfile)s;
+                   cat < %(outfile)s.tmp | sort | uniq > %(outfile)s;
                    rm -f %(outfile)s.tmp; '''
     P.run()
 
@@ -2526,6 +2538,10 @@ def annotateTranscriptsMappability( infile, outfile ):
 def loadTranscriptsMappability( infile, outfile ):
     '''load interval annotations: genome architecture
     '''
+    if "geneset_mappability" not in PARAMS or not PARAMS["geneset_mappability"]:
+        P.touch(outfile)
+        return
+
     P.load( infile, outfile, "--index=transcript_id --allow-empty" )
 
 #########################################################################
@@ -3271,7 +3287,7 @@ def buildUnionExons( infile, outfile ):
 @follows( buildUnionExons, mkdir( "exon_counts.dir" ) )
 @files( [ ( ("%s.accepted.bam" % x.asFile(), "%s.union.bed.gz" % y ),
             ("exon_counts.dir/%s_vs_%s.bed.gz" % (x.asFile(),y ) ) )
-          for x,y in itertools.product( TRACKS, GENESETS) ] )
+          for x,y in itertools.product( TRACKS, GENESETS ) ] )
 def buildExonLevelReadCounts( infiles, outfile ):
     '''compute coverage of exons with reads.
     '''
@@ -3775,7 +3791,6 @@ def runDESeq( infile, outfile ):
 
     geneset, method = outfile.split(".")
     level = "gene"
-
 
     # load data 
     R('''suppressMessages(library('DESeq'))''')
