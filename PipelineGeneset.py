@@ -511,7 +511,7 @@ def loadTranscript2Gene( infile, outfile ):
     
     statement = '''
     gunzip < %(infile)s
-    | python %(scriptsdir)s/gtf2tab.py --map -v 0
+    | python %(scriptsdir)s/gtf2tab.py --map transcript2gene -v 0
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
               --index=transcript_id 
               --index=gene_id 

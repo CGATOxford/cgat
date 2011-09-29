@@ -434,6 +434,7 @@ from rpy2.rinterface import RRuntimeError
 import PipelineGeneset
 import PipelineMapping
 import PipelineRnaseq
+import PipelineMappingQC
 import Stats
 
 # levels of cuffdiff analysis
@@ -1390,10 +1391,10 @@ def buildBAMReports( infile, outfile ):
 ############################################################
 ############################################################
 @merge( buildAlignmentStats, "alignment_stats.load" )
-def loadAlignmentStats( infiles, outfile ):
+def loadAlignmentStats( infiles, outfile, paired_end=PARAMS["paired_end"] ):
     '''merge alignment stats into single tables.'''
 
-    PipelineMappingQC.loadPicardAlignmentStats( infiles, outfile )
+    PipelineMappingQC.loadPicardAlignmentStats( infiles, outfile, paired_end )
 
 ############################################################
 ############################################################

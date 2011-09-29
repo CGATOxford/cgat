@@ -1,12 +1,3 @@
-
-
-
-
-
-
-
-
-
 ################################################################################
 #
 #   MRC FGU Computational Genomics Group
@@ -109,7 +100,7 @@ def buildPicardGCStats( infile, outfile, genome_file ):
 
     P.run()
 
-def loadPicardMetrics( infiles, outfile, suffix, pipeline_suffix = "alignstats" ):
+def loadPicardMetrics( infiles, outfile, suffix, pipeline_suffix = "stats" ):
     '''load picard metrics.'''
 
     tablename = P.toTable( outfile )
@@ -164,7 +155,7 @@ def loadPicardMetrics( infiles, outfile, suffix, pipeline_suffix = "alignstats" 
 
     os.unlink( tmpfilename )
 
-def loadPicardHistogram( infiles, outfile, suffix, column, pipeline_suffix = "alignstats" ):
+def loadPicardHistogram( infiles, outfile, suffix, column, pipeline_suffix = "stats" ):
     '''extract a histogram from a picard output file and load it into database.'''
 
     tablename = P.toTable( outfile )
@@ -192,17 +183,22 @@ def loadPicardHistogram( infiles, outfile, suffix, column, pipeline_suffix = "al
     
     P.run()
 
-def loadPicardAlignmentStats( infiles, outfile ):
+def loadPicardAlignmentStats( infiles, outfile, paired_end ):
     '''load all output from Picard's CollectMultipleMetrics
     into sql database.'''
 
     loadPicardMetrics( infiles, outfile, "alignment_summary_metrics" )
-    loadPicardMetrics( infiles, outfile, "insert_size_metrics" )
+    #this should only be done if we have paired end data....
+    if paired_end:
+        loadPicardMetrics( infiles, outfile, "insert_size_metrics" )
+        histograms = ( ("quality_by_cycle_metrics", "cycle"),
+                       ("quality_distribution_metrics", "quality"),
+                       ("insert_size_metrics", "insert_size" ) )
+    else:
+        histograms = ( ("quality_by_cycle_metrics", "cycle"),
+                       ("quality_distribution_metrics", "quality") )
 
-    for suffix, column in ( ("quality_by_cycle_metrics", "cycle"),
-                            ("quality_distribution_metrics", "quality"),
-                            ("insert_size_metrics", "insert_size" ) ):
-
+    for suffix, column in histograms:
         loadPicardHistogram( infiles, outfile, suffix, column )
 
 def loadPicardDuplicateStats( infiles, outfile ):
