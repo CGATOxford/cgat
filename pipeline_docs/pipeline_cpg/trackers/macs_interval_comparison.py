@@ -141,7 +141,7 @@ class gatResults( cpgTracker ):
     mPattern = "gat_results$"
 
     def __call__(self, track, slice = None):
-        data = self.get( "SELECT track, annotation, round(expected,0) as expected, observed, round(fold,1) as fold, pvalue FROM gat_results " )
+        data = self.get( "SELECT track, annotation, round(expected,0) as expected, observed, round(fold,1) as fold, pvalue FROM external_dataset_gat_results " )
         return odict( zip( ("Dataset1", "Dataset2", "Expected overlap", "Observed overlap", "Fold Enrichment", "P-value" ), zip(*data)) )
 
 

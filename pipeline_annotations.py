@@ -558,8 +558,8 @@ def buildTTSRegions( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-@follows( buildPromotorRegions, buildGeneRegions, buildTSSRegions )
-@files( [ ("%s.gtf.gz" % x, "%s.bed.gz" % x ) for x in ("ensembl", "promotors", "tss" ) ] )
+@follows( buildPromotorRegions, buildGeneRegions, buildTSSRegions, buildTTSRegions )
+@files( [ ("%s.gtf.gz" % x, "%s.bed.gz" % x ) for x in ("annotations", "promotors", "tss", "tts" ) ] )
 def exportRegionAsBed( infile, outfile ):
     '''export a reference gtf file as bed for computing overlap.'''
 

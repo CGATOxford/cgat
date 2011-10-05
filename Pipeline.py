@@ -423,7 +423,7 @@ _exec_prefix = '''detect_pipe_error_helper()
     {
     while [ "$#" != 0 ] ; do
         # there was an error in at least one program of the pipe
-        if [ "$1" != 0 ] ; then return 1 ; fi
+        if [ "$1" != 0 ] ; then set &>> script.debug; return 1 ; fi
         shift 1
     done
     return 0 

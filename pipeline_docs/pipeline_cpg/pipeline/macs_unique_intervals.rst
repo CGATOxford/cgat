@@ -152,18 +152,4 @@ The following plot shows the distribution of GC content for each set.
 
    Distribution of GC content
 
-Coverage of Unique Intervals in Different Datasets
---------------------------------------------------
-
-The following chart plots the distribution of interval coverage in datasets 
-where binding intervals were not detected.
-
-.. report:: macs_unique_intervals.UniqueIntervalCoverage
-   :render: line-plot
-   :transform: histogram
-   :groupby: all
-   :tf-range: 0,500,5
-   :as-lines:
-
-   Distribution of interval coverage
 

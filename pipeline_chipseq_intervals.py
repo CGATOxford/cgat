@@ -473,6 +473,30 @@ def exportMacsAsBed( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
+def exportMacsIntervalsAsBed( infile, outfile, foldchange ):
+    '''export sequences for all intervals.'''
+
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+
+    track = P.toTable(os.path.basename( infile ) )
+    assert track.endswith("_macs")
+    track = track[:-len("_macs")]
+
+    cc = dbhandle.cursor()
+    statement = "SELECT contig, start, end, interval_id, fold FROM %(track)s_macs_intervals where fold >= %(foldchange)s ORDER by contig, start" % locals()
+    cc.execute( statement )
+
+    outs = open( outfile, "w")
+
+    for result in cc:
+        contig, start, end, interval_id,fold = result
+        outs.write( "%s\t%i\t%i\t%s\t%d\n" % (contig, start, end, str(interval_id), fold) )
+    cc.close()
+    outs.close()
+
+############################################################
+############################################################
+############################################################
 def exportPeaksAsBed( infile, outfile ):
     '''export sequences for all peaks.'''
 
@@ -521,6 +545,49 @@ def mergeBedFiles( infiles, outfile ):
         ''' 
 
     P.run()
+
+############################################################
+############################################################
+############################################################
+def mergeIntervalsWithScores( infile, outfile, dist, method ):
+    '''merge adjacent intervals (within dist) and integrate scores (using method) from merged peaks.
+       Assume bed file sorted by position and score in column 5.
+       Methods: mean, max, length weighted mean'''
+
+    intervals = open( infile, "r")
+    merged = open( outfile, "w")
+
+    topline = intervals.readline()
+    last_contig, last_start, last_end, last_id, last_score = topline[:-1].split("\t")[:5]
+    last_start = int(last_start)
+    last_end = int(last_end)
+    last_score = int(last_score)
+    for line in intervals:
+        data = line[:-1].split("\t")
+        contig, start, end, interval_id, score = data[:5]
+        start = int(start)
+        end = int(end)
+        score = int(score)
+        if (contig == last_contig) and ((last_end+dist) >= start):
+            if method == "mean":
+                newscore = (score + last_score) / 2
+            elif method == "length_weighted_mean":
+                length1 = end - start
+                length2 = last_end - last_start
+                newscore = ((score*length1)+(last_score*length2))/(length1+length2)
+            elif method == "max":
+                newscore = max(last_score, score)
+            last_end=end
+            last_score=newscore
+        else:
+            merged.write("%(last_contig)s\t%(last_start)i\t%(last_end)i\t%(last_id)s\t%(last_score)s\n" % locals())
+            data = line[:-1].split("\t")
+            last_contig, last_start, last_end, last_id, last_score = data[:5]
+            last_start = int(last_start)
+            last_end = int(last_end)
+            last_score = int(last_score)
+    intervals.close()
+    merged.close()
 
 ############################################################
 ############################################################
@@ -858,7 +925,7 @@ def loadMACS( infile, outfile, bamfile ):
         
         P.run()
 
-        shutil.copyfile("%s.macs_model.pdf" % track, os.path.join( target_path, "%s_model.pdf" % track) )
+        #shutil.copyfile("%s.macs_model.pdf" % track, os.path.join( target_path, "%s_model.pdf" % track) )
         
     os.unlink( tmpfilename )
 

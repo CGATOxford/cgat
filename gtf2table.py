@@ -1514,6 +1514,8 @@ class CounterDistance(Counter):
         self.mDistance = "na"
         has5, has3 = False, False
 
+        self.mOverlaps = []
+
         try:
             self.mOverlaps = list(self.mIntervals.get(contig, start, end))
         except KeyError:

@@ -101,11 +101,15 @@ path:
 +--------------------+-------------------+------------------------------------------------+
 |bowtie              |>=0.12.7           |read mapping                                    |
 +--------------------+-------------------+------------------------------------------------+
-|MACS                |                   |peak finding                                    |
+|MACS                |14                 |peak finding                                    |
 +--------------------+-------------------+------------------------------------------------+
 |Picard              |>=1.4              |Dupliate removal, mapping stats                 |
 +--------------------+-------------------+------------------------------------------------+
 |BEDTools            |                   |interval comparison                             |
++--------------------+-------------------+------------------------------------------------+
+|Zinba               |                   |peak finding                                    |
++--------------------+-------------------+------------------------------------------------+
+|SICER               |                   |peak finding                                    |
 +--------------------+-------------------+------------------------------------------------+
 
 Pipline Output
@@ -131,14 +135,14 @@ Code
 import sys, tempfile, optparse, shutil, itertools, csv, math, random, re, glob, os, shutil, collections, gzip
 import sqlite3
 import pysam
-#import IndexedFasta, IndexedGenome, FastaIterator, Genomics
-#import IOTools
-#import MAST, GTF, GFF, Bed
-#import cStringIO
-#import numpy
-#import Masker
-#import fileinput
-#import gff2annotator
+import IndexedFasta, IndexedGenome, FastaIterator, Genomics
+import IOTools
+import MAST, GTF, GFF, Bed
+import cStringIO
+import numpy
+import Masker
+import fileinput
+import gff2annotator
 
 import Experiment as E
 import logging as L
@@ -228,10 +232,12 @@ TRACKS_MASTER = EXPERIMENTS.keys() + CONDITIONS.keys()
 # compound targets : correlation between tracks
 TRACKS_CORRELATION = TRACKS_MASTER + list(TRACKS)
 
+print "Expts=", EXPERIMENTS, "\n"
+
 ###################################################################
 ###################################################################
 ###################################################################
-## MAP READS
+## Section 1: MAP READS
 @transform( ("*.fastq.1.gz", 
              "*.fastq.gz",
              "*.sra",
@@ -251,6 +257,145 @@ def buildBAM( infile, outfile ):
     reffile = PARAMS["samtools_genome"]
     statement = m.build( (infile,), outfile ) 
     P.run()
+
+#########################################################################
+@transform( buildBAM, 
+            regex( r"(\S+)/bam/(\S+).bam"),
+            r"\1/bam/\2.alignstats" )
+def buildPicardAlignStats( infile, outfile ):
+    '''Gather BAM file alignment statistics using Picard '''
+    to_cluster = True
+    track = P.snip( os.path.basename(infile), ".bam" )
+    statement = '''CollectAlignmentSummaryMetrics INPUT=%(infile)s REFERENCE_SEQUENCE=%%(samtools_genome)s ASSUME_SORTED=true OUTPUT=%(outfile)s VALIDATION_STRINGENCY=SILENT ''' % locals()
+    P.run()
+
+############################################################
+@merge( buildPicardAlignStats, "picard_align_stats.load" )
+def loadPicardAlignStats( infiles, outfile ):
+    '''Merge Picard alignment stats into single table and load into SQLite.'''
+
+    tablename = P.toTable( outfile )
+    outf = P.getTempFile()
+
+    first = True
+    for f in infiles:
+        track = P.snip( os.path.basename(f), ".alignstats" )
+        if not os.path.exists( f ): 
+            E.warn( "File %s missing" % f )
+            continue
+        lines = [ x for x in open( f, "r").readlines() if not x.startswith("#") and x.strip() ]
+        if first: outf.write( "%s\t%s" % ("track", lines[0] ) )
+        first = False
+        for i in range(1, len(lines)):
+            outf.write( "%s\t%s" % (track,lines[i] ))
+
+    outf.close()
+    tmpfilename = outf.name
+
+    statement = '''cat %(tmpfilename)s
+                | python %(scriptsdir)s/csv2db.py
+                      --index=track
+                      --table=%(tablename)s 
+                > %(outfile)s
+               '''
+    P.run()
+    os.unlink( tmpfilename )
+
+#########################################################################
+@transform( buildBAM, 
+            regex( r"(\S+)/bam/(\S+).bam"),
+            r"\1/bam/\2.gcstats" )
+def buildPicardGCStats( infile, outfile ):
+    '''Gather BAM file GC bias stats using Picard '''
+    to_cluster = USECLUSTER
+    track = P.snip( os.path.basename(infile), ".bam" )
+    statement = '''CollectGcBiasMetrics INPUT=%(infile)s REFERENCE_SEQUENCE=%%(samtools_genome)s 
+                   OUTPUT=%(outfile)s CHART_OUTPUT=%(outfile)s.pdf SUMMARY_OUTPUT=%(outfile)s.summary VALIDATION_STRINGENCY=SILENT ''' % locals()
+    P.run()
+
+############################################################
+@merge( buildPicardGCStats, "picard_gcbias_stats.load" )
+def loadPicardGCStats( infiles, outfile ):
+    '''Merge Picard insert size stats into single table and load into SQLite.'''
+
+    tablename = P.toTable( outfile )
+    outf = P.getTempFile()
+
+    first = True
+    for f in infiles:
+        track = P.snip( os.path.basename(f), ".dedup.gcstats" )
+        if not os.path.exists( f ): 
+            E.warn( "File %s missing" % f )
+            continue
+        lines = [ x for x in open( f, "r").readlines() if not x.startswith("#") and x.strip() ]
+        if first: outf.write( "%s\t%s" % ("track", lines[0] ) )
+        first = False
+        outf.write( "%s\t%s" % (track,lines[1] ))
+    outf.close()
+    tmpfilename = outf.name
+
+    statement = '''cat %(tmpfilename)s
+                   | python %(scriptsdir)s/csv2db.py
+                      --index=track
+                      --table=%(tablename)s 
+                   > %(outfile)s '''
+    P.run()
+    os.unlink( tmpfilename )
+
+#########################################################################
+@transform( buildBAM, 
+            regex(r"(\S+)/bam/(\S+).bam"),
+            r"\1/bam/\2.readstats" )
+def buildBAMStats( infile, outfile ):
+    '''Count number of reads mapped, duplicates, etc. '''
+    to_cluster = USECLUSTER
+    scriptsdir = PARAMS["general_scriptsdir"]
+    statement = '''python %(scriptsdir)s/bam2stats.py --force 
+                   --output-filename-pattern=%(outfile)s.%%s < %(infile)s > %(outfile)s'''
+    P.run()
+
+#########################################################################
+@merge( buildBAMStats, "bam_stats.load" )
+def loadBAMStats( infiles, outfile ):
+    '''Import bam statistics into SQLite'''
+
+    scriptsdir = PARAMS["general_scriptsdir"]
+    header = ",".join( [P.snip( os.path.basename(x), ".readstats") for x in infiles] )
+    filenames = " ".join( [ "<( cut -f 1,2 < %s)" % x for x in infiles ] )
+    tablename = P.toTable( outfile )
+    E.info( "loading bam stats - summary" )
+    statement = """python %(scriptsdir)s/combine_tables.py
+                      --headers=%(header)s
+                      --missing=0
+                      --ignore-empty
+                   %(filenames)s
+                | perl -p -e "s/bin/track/"
+                | perl -p -e "s/unique/unique_alignments/"
+                | python %(scriptsdir)s/table2table.py --transpose
+                | python %(scriptsdir)s/csv2db.py
+                      --allow-empty
+                      --index=track
+                      --table=%(tablename)s 
+                > %(outfile)s"""
+    P.run()
+
+    for suffix in ("nm",):
+        E.info( "loading bam stats - %s" % suffix )
+        filenames = " ".join( [ "%s.%s" % (x, suffix) for x in infiles ] )
+        tname = "%s_%s" % (tablename, suffix)
+        
+        statement = """python %(scriptsdir)s/combine_tables.py
+                      --header=%(header)s
+                      --skip-titles
+                      --missing=0
+                      --ignore-empty
+                   %(filenames)s
+                | perl -p -e "s/bin/%(suffix)s/"
+                | python %(scriptsdir)s/csv2db.py
+                      --table=%(tname)s 
+                      --allow-empty
+                >> %(outfile)s """
+        P.run()
 
 #########################################################################
 @transform( buildBAM,
@@ -291,7 +436,6 @@ def loadPicardDuplicateStats( infiles, outfile ):
         first = False
         outf.write( "%s\t%s" % (track,lines[1] ))
 
-        
     outf.close()
     tmpfilename = outf.name
 
@@ -302,158 +446,25 @@ def loadPicardDuplicateStats( infiles, outfile ):
                 > %(outfile)s '''
     P.run()
 
-#########################################################################
-@transform( dedup, 
-            regex( r"(\S+)/bam/(\S+).bam"),
-            r"\1/bam/\2.alignstats" )
-def buildPicardAlignStats( infile, outfile ):
-    '''Gather BAM file alignment statistics using Picard '''
-    to_cluster = USECLUSTER
-    track = P.snip( os.path.basename(infile), ".bam" )
-    statement = '''CollectAlignmentSummaryMetrics INPUT=%(infile)s REFERENCE_SEQUENCE=%%(samtools_genome)s ASSUME_SORTED=true OUTPUT=%(outfile)s VALIDATION_STRINGENCY=SILENT ''' % locals()
+############################################################
+@transform( dedup,
+            regex( r"(\S+)/bam/(\S+).dedup.bam"),
+            r"\1/bam/\2.dedup.mapped.bam")
+def removeUnmapped(infile, outfile):
+    ''' Remove unmapped reads from BAM file'''
+    to_cluster = True
+    statement = '''samtools view -F 4 -bh %(infile)s > %(outfile)s; 
+                   samtools index %(outfile)s; ''' % locals()
     P.run()
 
 ############################################################
-@merge( buildPicardAlignStats, "picard_align_stats.load" )
-def loadPicardAlignStats( infiles, outfile ):
-    '''Merge Picard alignment stats into single table and load into SQLite.'''
-
-    tablename = P.toTable( outfile )
-    outf = P.getTempFile()
-
-    first = True
-    for f in infiles:
-        track = P.snip( os.path.basename(f), ".dedup.alignstats" )
-        if not os.path.exists( f ): 
-            E.warn( "File %s missing" % f )
-            continue
-        lines = [ x for x in open( f, "r").readlines() if not x.startswith("#") and x.strip() ]
-        if first: outf.write( "%s\t%s" % ("track", lines[0] ) )
-        first = False
-        for i in range(1, len(lines)):
-            outf.write( "%s\t%s" % (track,lines[i] ))
-
-        
-    outf.close()
-    tmpfilename = outf.name
-
-    statement = '''cat %(tmpfilename)s
-                | python %(scriptsdir)s/csv2db.py
-                      --index=track
-                      --table=%(tablename)s 
-                > %(outfile)s
-               '''
-    P.run()
-    os.unlink( tmpfilename )
-
-#########################################################################
-@transform( dedup, 
-            regex( r"(\S+)/bam/(\S+).bam"),
-            r"\1/bam/\2.gcstats" )
-def buildPicardGCStats( infile, outfile ):
-    '''Gather BAM file GC bias stats using Picard '''
-    to_cluster = USECLUSTER
-    track = P.snip( os.path.basename(infile), ".bam" )
-    statement = '''CollectGcBiasMetrics INPUT=%(infile)s REFERENCE_SEQUENCE=%%(bwa_index_dir)s/%%(genome)s.fa 
-                   ASSUME_SORTED=true OUTPUT=%(outfile)s CHART_OUTPUT=%(outfile)s.pdf SUMMARY_OUTPUT=%(outfile)s.summary VALIDATION_STRINGENCY=SILENT ''' % locals()
-    P.run()
-
-############################################################
-@merge( buildPicardGCStats, "picard_gcbias_stats.load" )
-def loadPicardGCStats( infiles, outfile ):
-    '''Merge Picard insert size stats into single table and load into SQLite.'''
-
-    tablename = P.toTable( outfile )
-    outf = P.getTempFile()
-
-    first = True
-    for f in infiles:
-        track = P.snip( os.path.basename(f), ".dedup.gcstats" )
-        if not os.path.exists( f ): 
-            E.warn( "File %s missing" % f )
-            continue
-        lines = [ x for x in open( f, "r").readlines() if not x.startswith("#") and x.strip() ]
-        if first: outf.write( "%s\t%s" % ("track", lines[0] ) )
-        first = False
-        outf.write( "%s\t%s" % (track,lines[1] ))
-    outf.close()
-    tmpfilename = outf.name
-
-    statement = '''cat %(tmpfilename)s
-                   | python %(scriptsdir)s/csv2db.py
-                      --index=track
-                      --table=%(tablename)s 
-                   > %(outfile)s '''
-    P.run()
-
-    os.unlink( tmpfilename )
-
-#########################################################################
-@transform( dedup, 
-            regex(r"(\S+)/bam/(\S+).bam"),
-            r"\1/bam/\2.readstats" )
-def buildBAMStats( infile, outfile ):
-    '''Count number of reads mapped, duplicates, etc. '''
-    to_cluster = USECLUSTER
-    scriptsdir = PARAMS["general_scriptsdir"]
-    statement = '''python %(scriptsdir)s/bam2stats.py --force 
-                   --output-filename-pattern=%(outfile)s.%%s < %(infile)s > %(outfile)s'''
-    P.run()
-
-#########################################################################
-@merge( buildBAMStats, "bam_stats.load" )
-def loadBAMStats( infiles, outfile ):
-    '''Import bam statistics into SQLite'''
-
-    scriptsdir = PARAMS["general_scriptsdir"]
-    header = ",".join( [P.snip( os.path.basename(x), ".dedup.readstats") for x in infiles] )
-    filenames = " ".join( [ "<( cut -f 1,2 < %s)" % x for x in infiles ] )
-    tablename = P.toTable( outfile )
-    E.info( "loading bam stats - summary" )
-    statement = """python %(scriptsdir)s/combine_tables.py
-                      --headers=%(header)s
-                      --missing=0
-                      --ignore-empty
-                   %(filenames)s
-                | perl -p -e "s/bin/track/"
-                | perl -p -e "s/unique/unique_alignments/"
-                | python %(scriptsdir)s/table2table.py --transpose
-                | python %(scriptsdir)s/csv2db.py
-                      --allow-empty
-                      --index=track
-                      --table=%(tablename)s 
-                > %(outfile)s"""
-    P.run()
-
-    for suffix in ("nm", "nh"):
-        E.info( "loading bam stats - %s" % suffix )
-        filenames = " ".join( [ "%s.%s" % (x, suffix) for x in infiles ] )
-        tname = "%s_%s" % (tablename, suffix)
-        
-        statement = """python %(scriptsdir)s/combine_tables.py
-                      --header=%(header)s
-                      --skip-titles
-                      --missing=0
-                      --ignore-empty
-                   %(filenames)s
-                | perl -p -e "s/bin/%(suffix)s/"
-                | python %(scriptsdir)s/csv2db.py
-                      --table=%(tname)s 
-                      --allow-empty
-                >> %(outfile)s """
-        P.run()
-
-############################################################
-############################################################
-############################################################
-## Downsample to match number of reads in cap and input
-@follows( dedup )
-@files( [ (("%s/bam/%s.dedup.bam" % (x, x.asFile()), "%s/bam/%s.dedup.bam" % (getControl(x), getControl(x).asFile())), 
+@follows( removeUnmapped )
+@files( [ (("%s/bam/%s.dedup.mapped.bam" % (x, x.asFile()), "%s/bam/%s.dedup.mapped.bam" % (getControl(x), getControl(x).asFile())), 
            "%s/bam/%s.norm.bam" % (x, x.asFile()) ) for x in TRACKS ] )
 def normaliseBAMs( infiles, outfile ):
-    '''Run MACS for peak detection.'''
+    '''Sample reads from larger of two BAM files so CAP and control samples have aprox same aligned read number.'''
     infile, controlfile = infiles
-    controlfilenorm = controlfile.replace(".dedup",".norm")
+    controlfilenorm = controlfile.replace(".dedup.mapped",".norm")
     to_cluster = True
 
     # Count reads in chip file
@@ -475,11 +486,11 @@ def normaliseBAMs( infiles, outfile ):
     # If chip > input then sample chip reads
     if chip_reads > input_reads:
         PIntervals.buildSimpleNormalizedBAM( (infile,countfile1), outfile, input_reads)
-        statement = '''cp %(controlfile)s %(controlfilenorm)s '''
+        statement = '''cp %(controlfile)s %(controlfilenorm)s; cp %(controlfile)s.bai %(controlfilenorm)s.bai; '''
         P.run()
     else:
         PIntervals.buildSimpleNormalizedBAM( (controlfile,countfile2), controlfilenorm, chip_reads)
-        statement = '''cp %(infile)s %(outfile)s '''
+        statement = '''cp %(infile)s %(outfile)s; cp %(infile)s.bai %(outfile)s.bai; '''
         P.run()
 
 ############################################################
@@ -490,7 +501,7 @@ def normaliseBAMs( infiles, outfile ):
 @files( [ (("%s/bam/%s.norm.bam" % (x, x.asFile()), "%s/bam/%s.norm.bam" % (getControl(x), getControl(x).asFile())), 
            "%s/macs/%s.macs" % (x, x.asFile()) ) for x in TRACKS ] )
 def runMACS( infiles, outfile ):
-    '''Run MACS for peak detection.'''
+    '''Run MACS for peak detection using control sample.'''
     infile, controlfile = infiles
     to_cluster = True
     track = P.snip( os.path.basename(infile), ".norm.bam" )
@@ -511,28 +522,31 @@ def runMACS( infiles, outfile ):
 ############################################################
 @transform( runMACS,
             regex(r"(\S+)/macs/(\S+).macs"),
-            inputs( (r"\1/macs/\2.macs", r"\1/bam/\2.bam")), 
+            inputs( (r"\1/macs/\2.macs", r"\1/bam/\2.norm.bam")), 
             r"\1/macs/\2.macs.load" )
 def loadMACS( infiles, outfile ):
+    '''Load MACS intervals into database and filter on fold change and p-value'''
     infile, bamfile = infiles
     PIntervals.loadMACS( infile, outfile, bamfile )
     
 ############################################################
 @merge( runMACS, "macs.summary" )
 def summarizeMACS( infiles, outfile ):
-    '''run MACS for peak detection.'''
+    '''Parse MACS summary statistics from log file'''
     PIntervals.summarizeMACS( infiles, outfile )
 
 ############################################################
 @transform( summarizeMACS, suffix(".summary"), "_summary.load" )
 def loadMACSSummary( infile, outfile ):
-    '''load macs summary.'''
+    '''load macs summary into database'''
     PIntervals.loadMACSSummary( infile, outfile )
 
 ############################################################
 @transform( loadMACS, regex(r"(\S+)/macs/(\S+).macs.load"), r"\1/macs/\2.bed" )
 def exportIntervalsAsBed( infile, outfile ):
-    PIntervals.exportMacsAsBed( infile, outfile )
+    '''Export MACS intervals from database as BED file and filter on fold change'''
+    fc = PARAMS["intervals_min_fc"]
+    PIntervals.exportMacsIntervalsAsBed( infile, outfile, fc )
 
 ############################################################
 ############################################################
@@ -583,7 +597,8 @@ def loadMACSsoloSummary( infile, outfile ):
 ############################################################
 @transform( loadMACSsolo, regex(r"(\S+)/macs/(\S+).macs.load"), r"\1/macs/\2.bed" )
 def exportIntervalsAsBedsolo( infile, outfile ):
-    PIntervals.exportMacsAsBed( infile, outfile )
+    fc = PARAMS["intervals_min_fc"]
+    PIntervals.exportMacsIntervalsAsBed( infile, outfile, fc )
 
 ############################################################
 ############################################################
@@ -810,16 +825,23 @@ def exportZinbaAsBed( infile, outfile ):
 ############################################################
 ############################################################
 ## Merge nearby intervals
-@transform( exportIntervalsAsBed, regex(r"(\S+)/macs/(\S+).bed"), r"\1/macs/\2.merged.bed")
+@transform( (exportIntervalsAsBed), regex(r"(\S+)/macs/(\S+).bed"), r"\1/macs/\2.merged.bed")
 def mergeIntervals(infile, outfile):
-    '''Merge intervals less than n bases apart in each dataset'''
+    '''Merge intervals less than n bases apart in each dataset and update foldchange scores'''
 
     d = PARAMS["intervals_merge_dist"]
-    statement = '''mergeBed -d %(d)s -i %(infile)s > %(outfile)s;'''
+    method = PARAMS["intervals_merge_method"]
+    PIntervals.mergeIntervalsWithScores( infile, outfile, d, method )
+
+############################################################
+@transform( mergeIntervals, regex(r"(\S+)/macs/(\S+).merged.bed"), r"\1/macs/\2.merged.cleaned.bed")
+def sanitiseIntervals(infile, outfile):
+    '''sanatise so that intervals do not exceed contig length'''
+    statement = '''cat %(infile)s | python %(scriptsdir)s/bed2bed.py --method=filter-genome --genome-file=%(genome_dir)s/%(genome)s -L %(outfile)s.log > %(outfile)s;'''
     P.run()
 
 ############################################################
-@transform( (mergeIntervals), regex(r"(\S+)/macs/(\S+).merged.bed"), r"\1/macs/\2.merged.bed.load" )
+@transform( (sanitiseIntervals), regex(r"(\S+)/macs/(\S+).merged.cleaned.bed"), r"\1/macs/\2.merged.cleaned.bed.load" )
 def loadMergedIntervals( infile, outfile ):
     '''load combined intervals.
 
@@ -839,18 +861,19 @@ def loadMergedIntervals( infile, outfile ):
 
     # Write header to output file
     tmpfile = tempfile.NamedTemporaryFile(delete=False)
-    headers = ( "contig","start","end","interval_id","nPeaks","PeakCenter","Length","AvgVal","PeakVal","nProbes" )
+    headers = ( "contig","start","end","interval_id","nPeaks","PeakCenter","Length","AvgVal","PeakVal","nProbes", "Fold" )
     tmpfile.write( "\t".join(headers) + "\n" )
     contig,start,end,interval_id,npeaks,peakcenter,length,avgval,peakval,nprobes = "",0,0,0,0,0,0,0,0,0
 
     # Get SAM file and Macs offset
     samfiles, offsets = [], []
-    track = P.snip( os.path.basename(infile), ".merged.bed")
+    track = P.snip( os.path.basename(infile), ".merged.cleaned.bed")
+    base_track = track.replace(".solo","")
 
-    fn = "%s/bam/%s.dedup.bam" % (track,track)
+    fn = "%s/bam/%s.norm.bam" % (base_track,track)
     assert os.path.exists( fn ), "could not find bamfile %s for track %s" % ( fn, track)
     samfiles.append( pysam.Samfile( fn,  "rb" ) )
-    fn = "%s/macs/%s.macs" % (track,track)
+    fn = "%s/macs/%s.macs" % (base_track,track)
     if os.path.exists( fn ):
         offsets.append( PIntervals.getPeakShift( fn ) )
 
@@ -858,7 +881,7 @@ def loadMergedIntervals( infile, outfile ):
     c = E.Counter()
     for line in open(infile, "r"):
         c.input += 1
-        contig, start, end = line[:-1].split()[:3]
+        contig, start, end, int_id, fc = line[:-1].split()[:5]
         start, end = int(start), int(end)
         interval_id = c.input
 
@@ -873,7 +896,7 @@ def loadMergedIntervals( infile, outfile ):
             c.skipped_reads += 1
             
         c.output += 1
-        tmpfile.write( "\t".join( map( str, (contig,start,end,interval_id,npeaks,peakcenter,length,avgval,peakval,nprobes) )) + "\n" )
+        tmpfile.write( "\t".join( map( str, (contig,start,end,int_id,npeaks,peakcenter,length,avgval,peakval,nprobes,fc) )) + "\n" )
  
     tmpfile.close()
 
@@ -893,11 +916,12 @@ def loadMergedIntervals( infile, outfile ):
 ############################################################
 ############################################################
 ## Assess background (non-peak) binding
-@follows( exportIntervalsAsBed )
-@files( [ (("%s/bam/%s.norm.bam" % (x, x.asFile()), "%s/macs/%s.merged.bed" % (x, x.asFile())), "%s/macs/%s.bg" % (x, x.asFile()) ) for x in TRACKS ] )
+@follows( sanitiseIntervals )
+@files( [ (("%s/bam/%s.norm.bam" % (x, x.asFile()), "%s/macs/%s.merged.cleaned.bed" % (x, x.asFile())), "%s/macs/%s.bg" % (x, x.asFile()) ) for x in TRACKS ] )
 def getBackground(infiles, outfile):
     '''Count the number of reads in the bamfile used for MACS that do not overlap an interval'''
     bam, bed = infiles
+    to_cluster = True
     statement = '''intersectBed -abam %(bam)s -b %(bed)s -v -bed | wc -l > %(outfile)s; '''
     statement += '''intersectBed -abam %(bam)s -b %(bed)s -u -bed | wc -l >> %(outfile)s;'''
     statement += '''sed -i '{N;s/\\n/\\t/g}' %(outfile)s; '''
@@ -919,7 +943,7 @@ def loadBackground(infile, outfile):
 ############################################################
 ############################################################
 ## Assess effect of altering fold change threshold
-@follows(exportIntervalsAsBed)
+@follows( exportIntervalsAsBed )
 @files( [ ("%s/macs/%s.bed" % (x, x.asFile()), "%s/macs/%s.foldchange" % (x, x.asFile()) ) for x in TRACKS ] )
 def thresholdFoldChange(infile, outfile):
     '''Assess interval overlap between conditions at different fold change thresholds '''
@@ -971,7 +995,7 @@ def loadFoldChangeThreshold(infile, outfile):
 def sharedIntervalsFoldChangeThreshold(infile, outfile):
     '''identify shared intervals between datasets at different foldchange thresholds'''
 
-    # Open foldchnage file and read
+    # Open foldchange file and read
     fc_file = open(infile, "r")
     foldchange = []
     for line in fc_file:
@@ -1015,16 +1039,18 @@ def loadSharedIntervalsFoldChangeThreshold(infile, outfile):
 ############################################################
 ############################################################
 ## Compare intervals
-@transform( mergeIntervals, regex(r"(\S+)/macs/(\S+).merged.bed"), r"\1/macs/\2.overlap")
+@transform( sanitiseIntervals, regex(r"(\S+)/macs/(\S+).merged.cleaned.bed"), r"\1/macs/\2.overlap")
 def pairwiseIntervals(infile, outfile):
     '''identify overlapping intervals for each pair of datasets'''
-    in_track = P.snip( os.path.basename( infile ), ".merged.bed")
+
+    to_cluster = True
+    in_track = P.snip( os.path.basename( infile ), ".merged.cleaned.bed")
     statement = '''echo "track" > %(outfile)s; echo "overlap" >> %(outfile)s;'''
     P.run()
 
     for track in TRACKS:
        if (str(track) <> in_track):
-           statement = '''echo %(track)s >> %(outfile)s; intersectBed -a %(infile)s -b %(track)s/macs/%(track)s.merged.bed -u | wc -l >> %(outfile)s; '''
+           statement = '''echo %(track)s >> %(outfile)s; intersectBed -a %(infile)s -b %(track)s/macs/%(track)s.merged.cleaned.bed -u | wc -l >> %(outfile)s; '''
            P.run()
     statement = '''sed -i '{N;s/\\n/\\t/}' %(outfile)s; '''
     P.run()
@@ -1041,18 +1067,19 @@ def loadPairwiseIntervals(infile, outfile):
     P.run()
 
 ############################################################
-@transform( mergeIntervals, regex(r"(\S+)/macs/(\S+).merged.bed"), r"\1/macs/\2.unique.bed")
+@transform( sanitiseIntervals, regex(r"(\S+)/macs/(\S+).merged.cleaned.bed"), r"\1/macs/\2.unique.bed")
 def uniqueIntervals(infile, outfile):
     '''identify unique intervals for each dataset'''
 
+    to_cluster = True
     tmpfile = P.getTempFile()
     tmpfilename = tmpfile.name
     statement = '''cat %(infile)s > %(outfile)s;'''
     P.run()
-    in_track = P.snip( os.path.basename( infile ),".merged.bed")
+    in_track = P.snip( os.path.basename( infile ),".merged.cleaned.bed")
     for track in TRACKS:
-       if str(track) <> in_track and str(track)[:-2] <> in_track[:-2]: 
-           statement = '''cat %(track)s/macs/%(track)s.merged.bed | intersectBed -a %(outfile)s -b stdin -v > %(tmpfilename)s; mv %(tmpfilename)s %(outfile)s ''' 
+       if str(track) <> in_track: 
+           statement = '''intersectBed -a %(outfile)s -b %(track)s/macs/%(track)s.merged.cleaned.bed -v > %(tmpfilename)s; mv %(tmpfilename)s %(outfile)s ''' 
            P.run()
 
 ############################################################
@@ -1060,11 +1087,12 @@ def uniqueIntervals(infile, outfile):
 def loadUniqueIntervals(infile, outfile):
     '''Load unique intervals into database '''
     track = P.snip( os.path.basename( infile ), ".unique.bed" )
-    header = "contig,start,stop"
+    header = "contig,start,stop,interval_id,fold"
     statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
                       --table=%(track)s_unique_intervals
                       --header=%(header)s
                       --index=contig,start
+                      --index=interval_id
                    > %(outfile)s '''
     P.run()
 
@@ -1095,18 +1123,19 @@ def analyseUniqueIntervals(infile, outfile):
     P.run()
 
 ############################################################
-@transform( mergeIntervals, regex(r"(\S+)/macs/(\S+).merged.bed"), r"\1/macs/\2.shared.bed")
+@transform( sanitiseIntervals, regex(r"(\S+)/macs/(\S+).merged.cleaned.bed"), r"\1/macs/\2.shared.bed")
 def sharedIntervals(infile, outfile):
     '''identify shared intervals between datasets'''
 
+    to_cluster = True
     tmpfile = P.getTempFile()
     tmpfilename = tmpfile.name
     statement = '''cat %(infile)s > %(outfile)s;'''
     P.run()
-    in_track = P.snip( os.path.basename( infile ), ".merged.bed")
+    in_track = P.snip( os.path.basename( infile ), ".merged.cleaned.bed")
     for track in TRACKS:
-       if str(track) != in_track and str(track)[:-2] <> in_track[:-2]:
-           statement = '''cat %(track)s/macs/%(track)s.merged.bed | intersectBed -a %(outfile)s -b stdin -u > %(tmpfilename)s; mv %(tmpfilename)s %(outfile)s; ''' 
+       if str(track) != in_track:
+           statement = '''intersectBed -a %(outfile)s -b %(track)s/macs/%(track)s.merged.cleaned.bed -u > %(tmpfilename)s; mv %(tmpfilename)s %(outfile)s; ''' 
            P.run()
 
 ############################################################
@@ -1114,9 +1143,50 @@ def sharedIntervals(infile, outfile):
 def loadSharedIntervals(infile, outfile):
     '''Load shared intervals into database '''
     track = P.snip( os.path.basename( infile ), ".shared.bed" )
-    header = "contig,start,stop"
+    header = "contig,start,stop,interval_id,fold"
     statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
                       --table=%(track)s_shared_intervals
+                      --header=%(header)s
+                      --index=contig,start
+                      --index=interval_id
+                   > %(outfile)s '''
+    P.run()
+
+############################################################
+@follows( sanitiseIntervals, mkdir("replicated_intervals") )
+@files( [( [ "%s/macs/%s.merged.cleaned.bed" % (y,y.asFile()) for y in EXPERIMENTS[x]], 
+           "replicated_intervals/%s.replicated.bed" % x.asFile()) 
+         for x in EXPERIMENTS ] )
+def replicatedIntervals( infiles, outfile ):
+    '''Combine replicates between experiments.
+    First all intervals are merged across replicates 
+    and then merged intervals that do not overlap an interval in all replicates are removed
+    '''
+
+    expt = P.snip( os.path.basename( outfile ), ".replicated.bed")
+    outdir = os.path.dirname( outfile )
+    tmpfile = P.getTempFile()
+    tmpfilename = tmpfile.name
+
+    # merge all files to get total set of intervals
+    in_list = " ".join(infiles)
+    statement = '''cat %(in_list)s | mergeBed -i stdin > %(outdir)s/%(expt)s.merged.bed; 
+                   cat %(outdir)s/%(expt)s.merged.bed > %(outfile)s;''' % locals()
+    P.run()
+
+    # Remove intervals that do not overlap intervals in all reps
+    for i in infiles:
+        statement = '''intersectBed -a %(outfile)s -b %(i)s -u > %(tmpfilename)s; mv %(tmpfilename)s %(outfile)s; ''' 
+        P.run()
+
+############################################################
+@transform( replicatedIntervals, regex(r"replicated_intervals/(\S+).replicated.bed"), r"replicated_intervals/\1.replicated.bed.load")
+def loadReplicatedIntervals(infile, outfile):
+    '''Load replicated intervals into database '''
+    expt = P.snip( os.path.basename( infile ), ".replicated.bed" ).replace("-","_").replace(".","_").replace("_agg","")
+    header = "contig,start,stop"
+    statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
+                      --table=%(expt)s_replicated_intervals
                       --header=%(header)s
                       --index=contig,start
                    > %(outfile)s '''
@@ -1126,7 +1196,7 @@ def loadSharedIntervals(infile, outfile):
 ############################################################
 ############################################################
 ## Compare intervals with external bed files
-@transform( mergeIntervals, regex(r"(\S+)/macs/(\S+).merged.bed"), r"\1/macs/\2.cgi.bed")
+@transform( mergeIntervals, regex(r"(\S+)/macs/(\S+).merged.bed"), r"\1/macs/\2.cgi_cap.bed")
 def getCGIIntervals(infile, outfile):
     '''identify intervals overlapping CGI for each datasets'''
 
@@ -1136,20 +1206,21 @@ def getCGIIntervals(infile, outfile):
     P.run()
 
 ############################################################
-@transform( getCGIIntervals, regex(r"(\S+)/macs/(\S+).cgi.bed"), r"\1/macs/\2.cgi.bed.load")
+@transform( getCGIIntervals, regex(r"(\S+)/macs/(\S+).cgi_cap.bed"), r"\1/macs/\2.cgi_cap.bed.load")
 def loadCGIIntervals(infile, outfile):
     '''Load intervals overlapping CGI into database '''
-    track = P.snip( os.path.basename( infile ), ".cgi.bed" ).replace(".","_").replace("-","_")
+    track = P.snip( os.path.basename( infile ), ".cgi_cap.bed" ).replace(".","_").replace("-","_")
     header = "contig,start,stop"
     statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
-                      --table=%(track)s_cgi_bed
+                      --table=%(track)s_cgi_cap_bed
                       --index=contig,start
                       --header=%(header)s
+                      --allow-empty
                    > %(outfile)s '''
     P.run()
 
 ############################################################
-@transform( mergeIntervals, regex(r"(\S+)/macs/(\S+).merged.bed"), r"\1/macs/\2.noncgi.bed")
+@transform( mergeIntervals, regex(r"(\S+)/macs/(\S+).merged.bed"), r"\1/macs/\2.cap_only.bed")
 def getNonCGIIntervals(infile, outfile):
     '''identify intervals not overlapping CGI for each datasets'''
 
@@ -1159,20 +1230,21 @@ def getNonCGIIntervals(infile, outfile):
     P.run()
 
 ############################################################
-@transform( getNonCGIIntervals, regex(r"(\S+)/macs/(\S+).noncgi.bed"), r"\1/macs/\2.noncgi.bed.load")
+@transform( getNonCGIIntervals, regex(r"(\S+)/macs/(\S+).cap_only.bed"), r"\1/macs/\2.cap_only.bed.load")
 def loadNonCGIIntervals(infile, outfile):
     '''Load intervals not overlapping CGI into database '''
-    track = P.snip( os.path.basename( infile ), ".noncgi.bed" ).replace(".","_").replace("-","_")
+    track = P.snip( os.path.basename( infile ), ".cap_only.bed" ).replace(".","_").replace("-","_")
     header = "contig,start,stop"
     statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
-                      --table=%(track)s_non_cgi_bed
+                      --table=%(track)s_cap_only_bed
                       --index=contig,start
                       --header=%(header)s
+                      --allow-empty
                    > %(outfile)s '''
     P.run()
 
 ############################################################
-@transform( mergeIntervals, regex(r"(\S+)/macs/(\S+).merged.bed"), r"\1/macs/\2.predcgi.bed")
+@transform( mergeIntervals, regex(r"(\S+)/macs/(\S+).merged.bed"), r"\1/macs/\2.cgi_only.bed")
 def getPredictedCGIIntervals(infile, outfile):
     '''identify predicted CGI intervals not overlapping CAPseq intervals for each dataset'''
 
@@ -1182,20 +1254,21 @@ def getPredictedCGIIntervals(infile, outfile):
     P.run()
 
 ############################################################
-@transform( getPredictedCGIIntervals, regex(r"(\S+)/macs/(\S+).predcgi.bed"), r"\1/macs/\2.predcgi.bed.load")
+@transform( getPredictedCGIIntervals, regex(r"(\S+)/macs/(\S+).cgi_only.bed"), r"\1/macs/\2.cgi_only.bed.load")
 def loadPredictedCGIIntervals(infile, outfile):
     '''Load predicted CGI intervals not overlapping CAP-seq intervals into database '''
-    track = P.snip( os.path.basename( infile ), ".predcgi.bed" ).replace(".","_").replace("-","_")
+    track = P.snip( os.path.basename( infile ), ".cgi_only.bed" ).replace(".","_").replace("-","_")
     header = "contig,start,stop,source"
     statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
-                      --table=%(track)s_pred_cgi_bed
+                      --table=%(track)s_cgi_only_bed
                       --index=contig,start
                       --header=%(header)s
+                      --allow-empty
                    > %(outfile)s '''
     P.run()
 
 ############################################################
-@transform( mergeIntervals, regex(r"(\S+)/macs/(\S+).merged.bed"), r"\1/macs/\2.cgi")
+@transform( mergeIntervals, regex(r"(\S+)/macs/(\S+).merged.bed"), r"\1/macs/\2.cgi_overlap")
 def getCGIOverlapCount(infile, outfile):
     '''identify intervals overlapping CGI for each datasets'''
 
@@ -1208,14 +1281,15 @@ def getCGIOverlapCount(infile, outfile):
     P.run()
 
 ############################################################
-@transform( getCGIOverlapCount, regex(r"(\S+)/macs/(\S+).cgi"), r"\1/macs/\2.cgi.load")
+@transform( getCGIOverlapCount, regex(r"(\S+)/macs/(\S+).cgi_overlap"), r"\1/macs/\2.cgi_overlap.load")
 def loadCGIOverlapCount(infile, outfile):
     '''Load intervals overlapping CGI into database '''
-    track = P.snip( os.path.basename( infile ), ".cgi" ).replace(".","_").replace("-","_")
+    track = P.snip( os.path.basename( infile ), ".cgi_overlap" ).replace(".","_").replace("-","_")
     header = "track,overlap"
     statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
                       --table=%(track)s_cgi
                       --header=%(header)s
+                      --allow-empty
                    > %(outfile)s '''
     P.run()
 
@@ -1225,12 +1299,16 @@ def getChipseqOverlap(infile, outfile):
     '''identify intervals overlapping chipseq intervals for each datasets'''
 
     chipseq = P.asList(PARAMS["bed_chipseq"])
-    for tf in chipseq:
-       dataset_name =  P.snip( os.path.basename( tf ), ".bed")
-       statement = '''echo %(dataset_name)s >> %(outfile)s; intersectBed -a %(infile)s -b %(tf)s -u | wc -l >> %(outfile)s; '''
-       P.run()
-    statement = '''sed -i '{N;s/\\n/\\t/}' %(outfile)s; '''
-    P.run()
+    if len(chipseq[0]) > 0:
+        for tf in chipseq:
+           dataset_name =  P.snip( os.path.basename( tf ), ".bed")
+           statement = '''echo %(dataset_name)s >> %(outfile)s; intersectBed -a %(infile)s -b %(tf)s -u | wc -l >> %(outfile)s; '''
+           P.run()
+        statement = '''sed -i '{N;s/\\n/\\t/}' %(outfile)s; '''
+        P.run()
+    else:
+        statement = '''touch %(outfile)s '''
+        P.run()
 
 ############################################################
 @transform( getChipseqOverlap, regex(r"(\S+)/macs/(\S+).chipseq"), r"\1/macs/\2.chipseq.load")
@@ -1241,6 +1319,7 @@ def loadChipseqIntervals(infile, outfile):
     statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
                       --table=%(track)s_chipseq
                       --header=%(header)s
+                      --allow-empty
                    > %(outfile)s '''
     P.run()
 
@@ -1250,12 +1329,16 @@ def getCapseqOverlap(infile, outfile):
     '''identify intervals overlapping capseq intervals for each datasets'''
 
     capseq = P.asList(PARAMS["bed_capseq"])
-    for x in capseq:
-       dataset_name =  P.snip( os.path.basename( x ), ".bed")
-       statement = '''echo %(dataset_name)s >> %(outfile)s; intersectBed -a %(infile)s -b %(x)s -u | wc -l >> %(outfile)s; '''
-       P.run()
-    statement = '''sed -i '{N;s/\\n/\\t/}' %(outfile)s; '''
-    P.run()
+    if len(capseq[0]) > 0:
+        for x in capseq:
+            dataset_name =  P.snip( os.path.basename( x ), ".bed")
+            statement = '''echo %(dataset_name)s >> %(outfile)s; intersectBed -a %(infile)s -b %(x)s -u | wc -l >> %(outfile)s; '''
+            P.run()
+        statement = '''sed -i '{N;s/\\n/\\t/}' %(outfile)s; '''
+        P.run()
+    else:
+        statement = '''touch %(outfile)s '''
+        P.run()
 
 ############################################################
 @transform( getCapseqOverlap, regex(r"(\S+)/macs/(\S+).capseq"), r"\1/macs/\2.capseq.load")
@@ -1266,6 +1349,7 @@ def loadCapseqIntervals(infile, outfile):
     statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
                       --table=%(track)s_capseq
                       --header=%(header)s
+                      --allow-empty
                    > %(outfile)s '''
     P.run()
 
@@ -1275,12 +1359,16 @@ def getChromatinMarkOverlap(infile, outfile):
     '''identify intervals overlapping chromatin mark intervals for each datasets'''
 
     chromatin = P.asList(PARAMS["bed_chromatin"])
-    for mark in chromatin:
-       dataset_name =  P.snip( os.path.basename( mark ), ".bed")
-       statement = '''echo %(dataset_name)s >> %(outfile)s; intersectBed -a %(infile)s -b %(mark)s -u | wc -l >> %(outfile)s; '''
-       P.run()
-    statement = '''sed -i '{N;s/\\n/\\t/}' %(outfile)s; '''
-    P.run()
+    if len(chromatin[0]) > 0:
+        for mark in chromatin:
+           dataset_name =  P.snip( os.path.basename( mark ), ".bed")
+           statement = '''echo %(dataset_name)s >> %(outfile)s; intersectBed -a %(infile)s -b %(mark)s -u | wc -l >> %(outfile)s; '''
+           P.run()
+        statement = '''sed -i '{N;s/\\n/\\t/}' %(outfile)s; '''
+        P.run()
+    else:
+        statement = '''touch %(outfile)s '''
+        P.run()
 
 ############################################################
 @transform( getChromatinMarkOverlap, regex(r"(\S+)/macs/(\S+).chromatin"), r"\1/macs/\2.chromatin.load")
@@ -1291,6 +1379,7 @@ def loadChromatinMarkIntervals(infile, outfile):
     statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
                       --table=%(track)s_chromatin
                       --header=%(header)s
+                      --allow-empty
                    > %(outfile)s '''
     P.run()
 
@@ -1305,9 +1394,10 @@ def getExternalBedStats(infiles, outfile):
     extBed = chromatin + capseq + chipseq + CGI
 
     for f in extBed:
-        track = P.snip( os.path.basename(f),".bed" )
-        statement = """echo '%(track)s' >> %(outfile)s; cat %(f)s | wc -l >> %(outfile)s; """
-        P.run()
+        if len(f) > 0:
+            track = P.snip( os.path.basename(f),".bed" )
+            statement = """echo '%(track)s' >> %(outfile)s; cat %(f)s | wc -l >> %(outfile)s; """
+            P.run()
     statement = '''sed -i '{N;s/\\n/\\t/}' %(outfile)s; '''
     P.run()
 
@@ -1351,7 +1441,7 @@ def runExternalDatasetGAT(infiles, outfile):
     CGI = P.asList(PARAMS["bed_cgi"])
     extBed = chromatin + capseq + chipseq + CGI
     annofiles = " ".join( [ "--annotation-file=%s" % x for x in extBed ] )
-    statement = """gatrun.py %(segfiles)s %(annofiles)s --workspace=gat/%(genome)s.bed.gz --num-samples=1000 > %(outfile)s"""
+    statement = """gatrun.py %(segfiles)s %(annofiles)s --workspace=gat/%(genome)s.bed.gz --num-samples=1000 --force > %(outfile)s"""
     P.run()
 
 ############################################################
@@ -1359,7 +1449,7 @@ def runExternalDatasetGAT(infiles, outfile):
 def loadExternalDatasetGAT(infile, outfile):
     '''Load genome association tester results into database '''
     statement = """cat %(infile)s | grep -v "^#" | python %(scriptsdir)s/csv2db.py 
-                         --table=external_dataset_gat_results 
+                         --table=external_dataset_gat_results gat/external_dataset_gat.tsv
                     > %(outfile)s"""
     P.run()
 
@@ -1418,7 +1508,7 @@ def loadZinbaIntervals(infile, outfile):
 ############################################################
 ############################################################
 ## ANNOTATE INTERVALS
-@transform( (exportIntervalsAsBed,exportIntervalsAsBedsolo), suffix(".bed"), ".annotations" )
+@transform( mergeIntervals, suffix(".merged.bed"), ".annotations" )
 def annotateIntervals( infile, outfile ):
     '''classify chipseq intervals according to their location 
     with respect to the gene set. '''
@@ -1443,13 +1533,13 @@ def annotateIntervals( infile, outfile ):
     P.run()
 
 ############################################################
-@transform( annotateIntervals, suffix(".annotations"), "_annotations.load" )
+@transform( annotateIntervals, suffix(".annotations"), ".annotations.load" )
 def loadAnnotations( infile, outfile ):
     '''load interval annotations: genome architecture '''
     P.load( infile, outfile, "--index=gene_id" )
 
 ############################################################
-@transform( (exportIntervalsAsBed,exportIntervalsAsBedsolo), suffix(".bed"), ".tss" )
+@transform( mergeIntervals, suffix(".merged.bed"), ".tss" )
 def annotateTSS( infile, outfile ):
     '''compute distance to TSS'''
 
@@ -1469,13 +1559,13 @@ def annotateTSS( infile, outfile ):
     P.run()
 
 ############################################################
-@transform( annotateTSS, suffix( ".tss"), "_tss.load" )
+@transform( annotateTSS, suffix( ".tss"), ".tss.load" )
 def loadTSS( infile, outfile ):
     '''load interval annotations: distance to transcription start sites '''
     P.load( infile, outfile, "--index=gene_id --index=closest_id --index=id5 --index=id3" )
 
 ############################################################
-@transform( (exportIntervalsAsBed,exportIntervalsAsBedsolo), suffix(".bed"), ".tts" )
+@transform( mergeIntervals, suffix(".merged.bed"), ".tts" )
 def annotateTTS( infile, outfile ):
     '''compute distance to TTS'''
 
@@ -1494,13 +1584,13 @@ def annotateTTS( infile, outfile ):
     P.run()
 
 ############################################################
-@transform( annotateTTS, suffix( ".tts"), "_tts.load" )
+@transform( annotateTTS, suffix( ".tts"), ".tts.load" )
 def loadTTS( infile, outfile ):
     '''load interval annotations: distance to transcription termination sites '''
     P.load( infile, outfile, "--index=gene_id --index=closest_id --index=id5 --index=id3" )
 
 ############################################################
-@transform( (exportIntervalsAsBed,exportIntervalsAsBedsolo), suffix(".bed"), ".repeats" )
+@transform( mergeIntervals, suffix(".merged.bed"), ".repeats" )
 def annotateRepeats( infile, outfile ):
     '''count the overlap between intervals and repeats.'''
 
@@ -1519,13 +1609,13 @@ def annotateRepeats( infile, outfile ):
     P.run()
 
 ############################################################
-@transform( annotateRepeats, suffix(".repeats"), "_repeats.load" )
+@transform( annotateRepeats, suffix(".repeats"), ".repeats.load" )
 def loadRepeats( infile, outfile ):
     '''load interval annotations: repeats'''
     P.load( infile, outfile, "--index=gene_id --allow-empty" )
 
 ############################################################
-@transform( (exportIntervalsAsBed,exportIntervalsAsBedsolo), suffix(".bed"), ".composition" )
+@transform( mergeIntervals, suffix(".merged.bed"), ".composition" )
 def annotateComposition( infile, outfile ):
     '''Establish the nucleotide composition of intervals'''
 
@@ -1542,12 +1632,12 @@ def annotateComposition( infile, outfile ):
     P.run()
 
 ############################################################
-@transform( (exportIntervalsAsBed), suffix(".bed"), ".control.composition" )
+@transform( (mergeIntervals), suffix(".merged.bed"), ".control.composition" )
 def annotateControlComposition( infile, outfile ):
     '''Establish the nucleotide composition of control intervals'''
 
     to_cluster = True
-    track= P.snip( os.path.basename(infile), ".bed")
+    track= P.snip( os.path.basename(infile), ".merged.bed")
     dirname= os.path.dirname(infile)
 
     statement = """cat %(infile)s | python %(scriptsdir)s/bed2bed.py -m shift -g %(genome_dir)s/%(genome)s --offset=-10000 -S %(dirname)s/%(track)s.control.bed;
@@ -1566,7 +1656,7 @@ def annotateControlComposition( infile, outfile ):
 def loadComposition( infile, outfile ):
     '''Load the nucleotide composition of intervals'''
 
-    track= P.snip( os.path.basename(infile), ".composition")
+    track= P.snip( os.path.basename(infile), ".composition").replace(".","_").replace("-","_")
 
     statement = """cat %(infile)s | python ~/src/csv2db.py 
                          --table=%(track)s_composition 
@@ -1611,6 +1701,7 @@ def annotateCGIComposition( infile, outfile ):
 
     to_cluster = True
 
+    # Give each row a unique identifier
     statement = """cat %(infile)s 
                    | awk '{print $1,$2,$3,$4NR}'
                    | python %(scriptsdir)s/bed2gff.py --as-gtf 
@@ -1641,6 +1732,7 @@ def annotatePredictedCGIs( infile, outfile ):
 
     annotation_file = os.path.join( PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_annotation_gff"] )
 
+    # Give each row a unique identifier
     statement = """cat %(infile)s 
                    | awk '{print $1,$2,$3,$4-NR}'
                    | python %(scriptsdir)s/bed2gff.py --as-gtf 
@@ -1656,7 +1748,7 @@ def annotatePredictedCGIs( infile, outfile ):
     P.run()
 
 ############################################################
-@transform( annotatePredictedCGIs, suffix(".annotations"), "_annotations.load" )
+@transform( annotatePredictedCGIs, suffix(".annotations"), ".annotations.load" )
 def loadCGIAnnotations( infile, outfile ):
     '''load CGI annotations: genome architecture '''
     P.load( infile, outfile, "--index=gene_id" )
@@ -1674,10 +1766,10 @@ def getTSSCGIOverlap( infiles, outfile ):
     outtemp1 = P.getTempFile()
     tmpfilename1 = outtemp1.name
 
-    statement = """zcat %(tss)s | slopBed -i stdin -g %(samtools_genome)s.fai -b %(tss_extend)s > %(tmpfilename1)s; """
-    statement += """echo "shared" >> %(outfile)s; intersectBed -a %(tmpfilename1)s -b %(cgi)s | wc -l >> %(outfile)s; """
-    statement += """echo "tss" >> %(outfile)s; intersectBed -a %(tmpfilename1)s -b %(cgi)s -v | wc -l >> %(outfile)s; """
-    statement += """echo "cgi" >> %(outfile)s; intersectBed -a %(cgi)s -b %(tmpfilename1)s -v | wc -l >> %(outfile)s; """
+    statement = """zcat %(tss)s | slopBed -i stdin -g %(samtools_genome)s.fai -b %(tss_extend)s > tss_extended.bed; """
+    statement += """echo "shared" >> %(outfile)s; intersectBed -a tss_extended.bed -b %(cgi)s | wc -l >> %(outfile)s; """
+    statement += """echo "tss" >> %(outfile)s; intersectBed -a tss_extended.bed -b %(cgi)s -v | wc -l >> %(outfile)s; """
+    statement += """echo "cgi" >> %(outfile)s; intersectBed -a %(cgi)s -b tss_extended.bed -v | wc -l >> %(outfile)s; """
     statement += '''sed -i '{N;s/\\n/\\t/g}' %(outfile)s; '''
     P.run()
 
@@ -1713,7 +1805,7 @@ def runGenomicFeaturesGAT(infiles, outfile):
     # Convert annotation file to bed
     statement = """zcat %(annofile)s | python %(scriptsdir)s/gff2bed.py --name='feature' --is-gtf -S gat/%(annotrack)s.bed; """
     P.run()
-    statement = """gatrun.py %(segfiles)s --annotation-file=gat/%(annotrack)s.bed --workspace=gat/%(genome)s.bed.gz --num-samples=1000 > %(outfile)s"""
+    statement = """gatrun.py %(segfiles)s --annotation-file=gat/%(annotrack)s.bed --workspace=gat/%(genome)s.bed.gz --num-samples=1000 --force > %(outfile)s"""
     P.run()
 
 ############################################################
@@ -1721,8 +1813,8 @@ def runGenomicFeaturesGAT(infiles, outfile):
 def loadGenomicFeaturesGAT(infile, outfile):
     '''Load genome association tester results into database '''
     statement = """cat %(infile)s | grep -v "^#" | python %(scriptsdir)s/csv2db.py 
-                         --table=gat_genomic_features_results 
-                    > %(outfile)s"""
+                       --table=gat_genomic_features_results 
+                   > %(outfile)s"""
     P.run()
 
 ############################################################
@@ -1782,14 +1874,17 @@ def exportMacsModel( infile, outfile ):
 @follows( buildBAM, 
           dedup, loadPicardDuplicateStats, 
           buildPicardAlignStats, loadPicardAlignStats,
-          buildPicardGCStats, loadPicardGCStats,
           buildBAMStats, loadBAMStats)
 def mapReads():
     '''Align reads to target genome.'''
     pass
 
-@follows( normaliseBAMs, 
-          runMACS, loadMACS, 
+@follows( removeUnmapped, normaliseBAMs )
+def NormaliseBAMFiles():
+    '''Normalise BAMS'''
+    pass
+
+@follows( runMACS, loadMACS, 
           summarizeMACS, loadMACSSummary, 
           exportIntervalsAsBed )
 def buildIntervalsMacs():
@@ -1815,11 +1910,6 @@ def buildIntervalsZinba():
     '''Find peaks using ZINBA using control sample'''
     pass
 
-@follows( getSicerOverlap, loadSicerIntervals )
-def compareCallers():
-    '''Compare intervals from different peak callers'''
-    pass
-
 @follows( mergeIntervals, loadMergedIntervals )
 def mergePeaks():
     '''Merge nearby intervals within a single track'''
@@ -1835,6 +1925,11 @@ def background():
           loadSharedIntervalsFoldChangeThreshold)
 def FoldChangeThreshold():
     '''Assess number of intervals above different fold chnage thresholds'''
+    pass
+
+@follows( getSicerOverlap, loadSicerIntervals )
+def compareCallers():
+    '''Compare intervals from different peak callers'''
     pass
 
 @follows( pairwiseIntervals, loadPairwiseIntervals, 
@@ -1877,6 +1972,7 @@ def export():
     pass
 
 @follows( mapReads,
+          NormaliseBAMFiles,
           buildIntervalsMacs,
           buildIntervalsMacsNoControl,
           mergePeaks,
@@ -1884,8 +1980,7 @@ def export():
           FoldChangeThreshold,
           comparePeaks,
           compareExternal,
-          annotation,
-          export )
+          annotation )
 def full():
     '''run the full pipeline.'''
     pass

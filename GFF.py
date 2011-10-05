@@ -37,7 +37,7 @@ Currently GFF and GTF is handled separately. Should be merged.
 """
 
 import string, sys, re, types, collections
-import fastgtf
+#import fastgtf
 import IndexedGenome
 
 class Entry:

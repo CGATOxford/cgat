@@ -39,9 +39,9 @@ from math import log
 # see http://en.wikipedia.org/wiki/FASTQ_format
 # ranges are conservative - they are open-ended
 RANGES = {
-    'sanger' : (33, 74) ,
+    'sanger' : (33, 75) ,
     'solexa' : (59, 105) ,
-    'phred64' : (64, 105) ,
+    'phred64' : (64, 106) ,
     }
 
 class Record:
