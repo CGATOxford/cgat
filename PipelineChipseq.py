@@ -11,7 +11,7 @@ import Pipeline as P
 import csv
 import IndexedFasta, IndexedGenome, FastaIterator, Genomics
 import IOTools
-import GTF, GFF, Bed, MACS, WrapperZinba
+import GTF, GFF, Bed, MACS, WrapperZinba, Bed
 # import Stats
 
 import pysam
@@ -88,6 +88,14 @@ def getPeakShiftFromZinba( infile ):
             
     return shift
 
+def getPeakShift( track ):
+    '''get peak shift for a track.'''
+
+    if os.path.exists( "%s.macs" % track ):
+        return getPeakShiftFromMacs( "%s.macs" % track )
+    elif os.path.exists( "%s.zinba" % track ):
+        return getPeakShiftFromZinba( "%s.zinba" % track )
+    
 ############################################################
 ############################################################
 ############################################################
@@ -116,7 +124,7 @@ def getMinimumMappedReads( infiles ):
 ############################################################
 ############################################################
 def getExonLocations(filename):
-    '''return a list of exon locations as (contig,start,end) tuples 
+    '''return a list of exon locations as Bed entries
     from a file contain a one ensembl gene ID per line
     '''
     fh = open(filename,"r")
@@ -141,8 +149,9 @@ def getExonLocations(filename):
     region_list = []
     n_regions = 0
     for result in cc:
-        contig, start, end = result
-        region_list.append( (contig,int(start),int(end)) )
+        b = Bed.Bed()
+        b.contig, b.start, b.end = result
+        region_list.append( b )
         n_regions +=1
 
     cc.close()
@@ -154,40 +163,16 @@ def getExonLocations(filename):
 ############################################################
 ############################################################
 ############################################################
-def getBedLocations(filename):
-    '''return a list of regions as (contig,start,end) tuples
-    from a bed file'''
-    fh = open(filename,"r")
-    region_list = []
-    n_regions = 0
-
-    for line in fh:
-        if line.strip() != "" and line[0] !="#":
-            fields = line.split("\t")
-            contig, start, end = fields[0], int(fields[1]), int(fields[2])
-            region_list.append((contig,start,end))
-            n_regions +=1
-
-    fh.close()
-
-    #E.info("Read in %i regions from %s" % ( n_regions, filename) )
-    return (region_list)
-
-############################################################
-############################################################
-############################################################
 def buildQuicksectMask(bed_file):
     '''return Quicksect object containing the regions specified
        takes a bed file listing the regions to mask 
     '''
     mask = IndexedGenome.Quicksect()
 
-    region_list = getBedLocations(bed_file)
     n_regions = 0
-    for region in region_list:
-        contig, start, end = region
+    for bed in Bed.iterator( IOTools.openFile( bed_file ) ):
         #it is neccessary to extend the region to make an accurate mask
-        mask.add(contig,(start-1),(end+1),1)
+        mask.add(bed.contig,(bed.start-1),(bed.end+1),1)
         n_regions += 1
 
     E.info("Built Quicksect mask for %i regions" % n_regions)
@@ -556,12 +541,16 @@ def mergeBedFiles( infiles, outfile ):
 ############################################################
 ############################################################
 def intersectBedFiles( infiles, outfile ):
-    '''generic method for merging bed files.
+    '''merge :term:`bed` formatted *infiles* by intersection
+    and write to *outfile*.
+
+    Only intervals that overlap in all files are retained.
+    Interval coordinates are given by the first file in *infiles*.
 
     Bed files are normalized (overlapping intervals within 
     a file are merged) before intersection. 
 
-    Intervals are renumbered.
+    Intervals are renumbered starting from 1.
     '''
 
     if len(infiles) == 1:
@@ -570,7 +559,7 @@ def intersectBedFiles( infiles, outfile ):
     elif len(infiles) == 2:
         
         statement = '''
-        intersectBed -a %s -b %s 
+        intersectBed -u -a %s -b %s 
         | cut -f 1,2,3,4,5 
         | awk 'BEGIN { OFS="\\t"; } {$4=++a; print;}'
         > %%(outfile)s 
@@ -588,7 +577,7 @@ def intersectBedFiles( infiles, outfile ):
         P.run()
         
         for fn in infiles[1:]:
-            statement = '''mergeBed -i %(fn)s | intersectBed -a %(tmpfile)s -b stdin > %(tmpfile)s.tmp; mv %(tmpfile)s.tmp %(tmpfile)s'''
+            statement = '''mergeBed -i %(fn)s | intersectBed -u -a %(tmpfile)s -b stdin > %(tmpfile)s.tmp; mv %(tmpfile)s.tmp %(tmpfile)s'''
             P.run()
 
         statement = '''cat %(tmpfile)s

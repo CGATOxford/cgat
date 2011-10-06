@@ -190,9 +190,9 @@ PARAMS = P.getParameters(
      "../pipeline.ini",
      "pipeline.ini" ] )
 
-if os.path.exists("conf.py"):
-    E.info( "reading additional configuration from conf.py" )
-    execfile("conf.py")
+if os.path.exists("pipeline_conf.py"):
+    E.info( "reading additional configuration from pipeline_conf.py" )
+    execfile("pipeline_conf.py")
 
 ############################################################
 ############################################################
@@ -992,6 +992,34 @@ def ontologies():
 def full():
     '''build all targets.'''
     pass
+
+###################################################################
+###################################################################
+###################################################################
+## primary targets
+###################################################################
+
+@follows( mkdir( "report" ) )
+def build_report():
+    '''build report from scratch.'''
+
+    E.info( "starting report build process from scratch" )
+    P.run_report( clean = True )
+
+@follows( mkdir( "report" ) )
+def update_report():
+    '''update report.'''
+
+    E.info( "updating report" )
+    P.run_report( clean = False )
+
+@follows( update_report )
+def publish_report():
+    '''publish report.'''
+
+    E.info( "publishing report" )
+    P.publish_report()
+
 
 if __name__== "__main__":
     sys.exit( P.main(sys.argv) )

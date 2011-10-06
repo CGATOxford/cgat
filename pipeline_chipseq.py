@@ -449,14 +449,18 @@ def makeMask(infile,outfile):
     '''
     if PARAMS["calling_filter_exons"] or PARAMS["calling_filter_regions"]:
         regions_to_filter = []
+
         if PARAMS["calling_filter_exons"]:
             regions_to_filter += PipelineChipseq.getExonLocations(PARAMS["calling_filter_exons"]) 
+
         if PARAMS["calling_filter_regions"]:
-            regions_to_filter += PipelineChipseq.getBedLocations(PARAMS["calling_filter_regions"])
-        fh = open(outfile,"w")
-        for r in regions_to_filter:
-            fh.write("\t".join([r[0],str(r[1]),str(r[2])]))
-            fh.write("\n")
+            regions_to_filter += Bed.iterator( IOTools.openFile( PARAMS["calling_filter_regions"]) )
+            
+        fh = IOTools.openFile(outfile,"w")
+
+        for bed in itertools.chain( regions_to_filter ):
+            fh.write( "%s\n" % "\t".join(map(str, (bed.contig, bed.start, bed.end))) )
+
         fh.close()
     else:
         P.touch(outfile)
@@ -1082,14 +1086,47 @@ def getBamPeakPairParams():
 ###################################################################
 ###################################################################
 @follows( buildIntervals )
+@files( [ ( ("%s.prep.bam" % x, "%s.bed" % x ), 
+            "%s.peakshape.tsv.gz" % x) for x in TRACKS ] )
+def buildPeakShapeTable( infiles, outfile ):
+    '''build a table with peak shape parameters.'''
+    
+    to_cluster = True
+
+    bamfile, bedfile = infiles
+    track = P.snip( bamfile, '.prep.bam' )
+    
+    # get peak shift
+    shift = PipelineChipseq.getPeakShift( track )
+    if shift == None:
+        raise ValueError("could not get peak shift for track %s" % track )
+
+    E.info( "applying shift %i for track %s" % (shift, track ) )
+
+    statement = '''python %(scriptsdir)s/bam2peakshape.py
+                      --window-size=%(calling_peakshape_window_size)i
+                      --bin-size=%(calling_peakshape_bin_size)i
+                      --output-filename-pattern="%(outfile)s.%%s"
+                      --shift=%(shift)i
+                      --sort=height,width
+                      %(bamfile)s %(bedfile)s
+                   > %(outfile)s
+                '''
+    P.run()
+
+###################################################################
+###################################################################
+###################################################################
+@follows( buildIntervals )
 @files( [ ( ("%s.prep.bam" % x, "%s.bed" % y), 
             "%s_vs_%s.coverage.gz" % (x,y)) for (x,y) in itertools.product( TRACKS, repeat = 2 ) ] )
-def peakCoverage(infile, outfile):
+def peakCoverage(infiles, outfile):
     '''uses coverageBed to count the total number of reads under peaks'''
 
     tracks = infile
     to_cluster = True
-    statement = '''coverageBed -abam %s -b %s | gzip > %%(outfile)s '''  % (infile[0], infile[1]) 
+    bamfile, bedfile = infiles
+    statement = '''coverageBed -abam %(bamfile)s -b %(bedfile)s | gzip > %(outfile)s ''' 
     P.run()                  
 
 ###################################################################
@@ -1910,10 +1947,15 @@ else:
 
         PipelineMotifs.filterMotifsFromMEME( infile, outfile, ["1"] )
 
+@follows( filterMotifs, buildReferenceMotifs )
+@transform( "*.motif", suffix(".motif"), ".motif")
+def collectMotifs( infile, outfile ):
+    '''dummy target - merge motifs.'''
+
 ############################################################
 ############################################################
 ############################################################
-@merge( (buildReferenceMotifs, filterMotifs), "motif_info.load" )
+@merge( (collectMotifs), "motif_info.load" )
 def loadMotifInformation( infiles, outfile ):
     '''load information about motifs into database.'''
     
@@ -1961,7 +2003,7 @@ def loadMotifSequenceComposition( infile, outfile ):
 ############################################################
 ############################################################
 # todo: fix, causes a problem: exportSequences and exportMASTControlSequences,
-@follows( buildReferenceMotifs, filterMotifs )
+@follows( collectMotifs )
 @files_re( (exportMotifSequences, exportMotifControlSequences),
            "(\S+).controlfasta",
            [ r"\1.controlfasta", r"\1.fasta",  glob.glob("*.motif")],
@@ -2288,7 +2330,7 @@ def loadMAST( infile, outfile ):
 #           [ r"\1.controlfasta", r"\1.fasta", glob.glob("*.glam2")],
 #           r"\1.glam2scan" )
 
-@follows( buildReferenceMotifs, runGLAM2 )
+@follows( collectMotifs )
 @files_re( (exportMotifSequences, exportMotifControlSequences),
            "(\S+).controlfasta",
            [ r"\1.controlfasta", r"\1.fasta",  glob.glob("*.glam2")],
@@ -2753,15 +2795,6 @@ def annotation():
     '''run the annotation targets.'''
     pass
 
-@follows( intervals, 
-          discover_motifs, 
-          detect_motifs,
-          correlation, 
-          annotation )
-def full():
-    '''run the full pipeline.'''
-    pass
-
 ###################################################################
 ###################################################################
 ###################################################################
@@ -2795,6 +2828,8 @@ def createViewMapping( infile, outfile ):
 
     Database.executewait( dbhandle, statement )
 
+    P.touch( outfile )
+
 ###################################################################
 ###################################################################
 ###################################################################
@@ -2805,7 +2840,20 @@ def views():
 ###################################################################
 ###################################################################
 ###################################################################
-@follows( views, mkdir( "report" ) )
+@follows( intervals, 
+          discover_motifs, 
+          detect_motifs,
+          correlation, 
+          annotation,
+          views)
+def full():
+    '''run the full pipeline.'''
+    pass
+
+###################################################################
+###################################################################
+###################################################################
+@follows( mkdir( "report" ) )
 def build_report():
     '''build report from scratch.'''
 
@@ -2815,7 +2863,7 @@ def build_report():
 ###################################################################
 ###################################################################
 ###################################################################
-@follows( views, mkdir( "report" ) )
+@follows( mkdir( "report" ) )
 def update_report():
     '''update report.'''
 

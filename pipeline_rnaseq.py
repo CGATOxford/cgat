@@ -1348,8 +1348,8 @@ def buildMismappedBAMs( infile, outfile ):
 ############################################################
 ############################################################
 @transform( (mapReadsWithTophat, buildBAMs, buildMismappedBAMs), 
-            suffix(".bam" ), ".bam.stats")
-def buildAlignmentStats( infile, outfile ):
+            suffix(".bam" ), ".picard_stats")
+def buildPicardStats( infile, outfile ):
     '''build alignment stats using picard.
 
     Note that picards counts reads but they are in fact alignments.
@@ -1377,11 +1377,19 @@ def buildBAMReports( infile, outfile ):
     # xvfb-run  -f ~/.Xauthority -a 
     track = P.snip( infile, ".bam" )
 
+    # use a fake X display in order to avoid problems with
+    # no X connection on the cluster
+    xvfb_command = P.which("xvfb-run" )
+
+    # permit multiple servers using -a option
+    if xvfb_command: xvfb_command+= " -a "
+
     # bamstats can not accept a directory as output, hence cd to exportdir
     statement = '''
     cd %(exportdir)s/bamstats;
-    bamstats -i ../../%(infile)s -v html -o %(track)s.html 
-             --qualities --mapped --lengths --distances --starts
+    %(xvfb_command)s
+    %(cmd-run)s bamstats -i ../../%(infile)s -v html -o %(track)s.html 
+                         --qualities --mapped --lengths --distances --starts
     >& ../../%(outfile)s
     '''
 
@@ -1390,8 +1398,8 @@ def buildBAMReports( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-@merge( buildAlignmentStats, "alignment_stats.load" )
-def loadAlignmentStats( infiles, outfile, paired_end=PARAMS["paired_end"] ):
+@merge( buildPicardStats, "picard_stats.load" )
+def loadPicardStats( infiles, outfile, paired_end=PARAMS["paired_end"] ):
     '''merge alignment stats into single tables.'''
 
     PipelineMappingQC.loadPicardAlignmentStats( infiles, outfile, paired_end )
@@ -4007,7 +4015,7 @@ def buildGeneSetsOfInterest( infile, outfile ):
           buildFastQCReport,
           loadTophatStats,
           loadBAMStats,
-          loadAlignmentStats,
+          loadPicardStats,
           loadContextStats,
           loadMappingStats,
           )
@@ -4056,14 +4064,6 @@ def export(): pass
 @follows( loadExonValidation )
 def validate(): pass
 
-@follows( mapping,
-          genesets,
-          expression,
-          utrs,
-          validate,
-          export)
-def full(): pass
-
 ###################################################################
 ###################################################################
 ###################################################################
@@ -4081,7 +4081,7 @@ def createViewMapping( infile, outfile ):
     mapping_stats: .accepted
     bam_stats: .accepted
     context_stats: .accepted
-    alignment_stats: .accepted
+    picard_stats: .accepted
     '''
 
     tablename = P.toTable( outfile )
@@ -4097,7 +4097,7 @@ def createViewMapping( infile, outfile ):
     FROM bam_stats AS b,
           mapping_stats AS m,
           context_stats AS c,          
-          alignment_stats AS a,
+          picard_stats_alignment_summary_metrics AS a,
           tophat_stats AS t
     WHERE b.track LIKE "%%.accepted" 
       AND b.track = m.track
@@ -4107,6 +4107,15 @@ def createViewMapping( infile, outfile ):
     '''
 
     Database.executewait( dbhandle, statement % locals() )
+
+    nrows = Database.executewait( dbhandle, "SELECT COUNT(*) FROM view_mapping" ).fetchone()[0]
+    
+    if nrows == 0:
+        raise ValueError( "empty view mapping, check statement = %s" % (statement % locals()) )
+
+    E.info( "created view_mapping with %i rows" % nrows )
+
+    P.touch( outfile )
 
 ###################################################################
 ###################################################################
@@ -4118,7 +4127,19 @@ def views():
 ###################################################################
 ###################################################################
 ###################################################################
-@follows( views, mkdir( "report" ) )
+@follows( mapping,
+          genesets,
+          expression,
+          utrs,
+          validate,
+          export,
+          views)
+def full(): pass
+
+###################################################################
+###################################################################
+###################################################################
+@follows( mkdir( "report" ) )
 def build_report():
     '''build report from scratch.'''
 
@@ -4128,7 +4149,7 @@ def build_report():
 ###################################################################
 ###################################################################
 ###################################################################
-@follows( views, mkdir( "report" ) )
+@follows( mkdir( "report" ) )
 def update_report():
     '''update report.'''
 

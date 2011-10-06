@@ -13,10 +13,7 @@ Contents:
    :maxdepth: 2
 
    pipeline/Methods.rst
-   pipeline/FastQC.rst
-   pipeline/BaseQuality.rst
-   pipeline/Filtering.rst
-   python/Trackers.rst
+   pipeline/Running.rst
  
 .. errorlist::
   

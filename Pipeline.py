@@ -67,6 +67,7 @@ PARAMS= {
 		--cluster-num-jobs=100 
 		--cluster-options="" """ % os.path.dirname( __file__ ),
     'cmd-sql' : """sqlite3 -header -csv -separator $'\\t' """,
+    'cmd-run' : """%s/run.py""" % os.path.dirname( __file__ ),
     }
 
 CONFIG = {}
@@ -656,7 +657,10 @@ def run( **kwargs ):
             stdout, stderr = getStdoutStderr( stdout_path, stderr_path )
 
             if retval.exitStatus != 0:
-                raise PipelineError( "Child was terminated by signal %i: \nThe stderr was: \n%s\n%s\n" % \
+                raise PipelineError( "---------------------------------------\n"
+                                     "Child was terminated by signal %i: \n"
+                                     "The stderr was: \n%s\n%s\n" 
+                                     "---------------------------------------\n" % \
                                          (retval.exitStatus, 
                                           "".join( stderr),
                                           statement ) )
@@ -722,7 +726,10 @@ def run( **kwargs ):
 
         if "job_array" not in options:
             if retval and retval.exitStatus != 0:
-                raise PipelineError( "Child was terminated by signal %i: \nThe stderr was: \n%s\n%s\n" % \
+                raise PipelineError( "---------------------------------------\n"
+                                     "Child was terminated by signal %i: \n"
+                                     "The stderr was: \n%s\n%s\n"
+                                     "-----------------------------------------" % \
                                          (retval.exitStatus, 
                                           "".join( stderr), statement))
             
@@ -749,8 +756,11 @@ def run( **kwargs ):
         stdout, stderr = process.communicate()
 
         if process.returncode != 0:
-            raise PipelineError( "Child was terminated by signal %i: \nThe stderr was: \n%s\n%s\n" % (-process.returncode, stderr, statement ))
-
+            raise PipelineError( "---------------------------------------\n"
+                                 "Child was terminated by signal %i: \n"
+                                 "The stderr was: \n%s\n%s\n"
+                                 "-----------------------------------------" % \
+                                     (-process.returncode, stderr, statement ))
 
 class MultiLineFormatter(logging.Formatter):
     '''logfile formatter: add identation for multi-line entries.'''
@@ -884,7 +894,8 @@ def main( args = sys.argv ):
                 os.unlink( filename )
 
         except ruffus_exceptions.RethrownJobError, value:
-            print "re-raising exception"
+            E.error("some tasks resulted in errors - error messages follow below" )
+            E.error( value )
             raise
 
     elif options.pipeline_action == "dump":
@@ -957,6 +968,8 @@ def run_report( clean = True):
 
     dirname, basename = os.path.split( getCaller().__file__ )
     docdir = os.path.join( dirname, "pipeline_docs", snip( basename, ".py" ) )
+    relpath = os.path.relpath( docdir )
+    trackerdir = os.path.join( docdir, "trackers" )
 
     # Requires an X11 connection to cluster nodes
     # A solution is to run xvfb on the nodes.
@@ -976,6 +989,7 @@ def run_report( clean = True):
 
     statement = '''
     %(clean)s
+    ( export SPHINX_DOCSDIR=%(docdir)s; 
     %(xvfb_command)s
     sphinxreport-build 
            --num-jobs=%(report_threads)s
@@ -984,7 +998,7 @@ def run_report( clean = True):
                     -d %(report_doctrees)s
                     -c . 
            %(docdir)s %(report_html)s
-    >& report.log
+    >& report.log)
     '''
 
     run()

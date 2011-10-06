@@ -100,7 +100,7 @@ def buildPicardGCStats( infile, outfile, genome_file ):
 
     P.run()
 
-def loadPicardMetrics( infiles, outfile, suffix, pipeline_suffix = "stats" ):
+def loadPicardMetrics( infiles, outfile, suffix, pipeline_suffix = ".picard_stats" ):
     '''load picard metrics.'''
 
     tablename = P.toTable( outfile )
@@ -113,7 +113,7 @@ def loadPicardMetrics( infiles, outfile, suffix, pipeline_suffix = "stats" ):
     first = True
 
     for filename in filenames:
-        track = P.snip( os.path.basename(filename), ".%s.%s" % (pipeline_suffix, suffix ) )
+        track = P.snip( os.path.basename(filename), "%s.%s" % (pipeline_suffix, suffix ) )
 
         if not os.path.exists( filename ): 
             E.warn( "File %s missing" % filename )
@@ -149,13 +149,14 @@ def loadPicardMetrics( infiles, outfile, suffix, pipeline_suffix = "stats" ):
                 | python %(scriptsdir)s/csv2db.py
                       --index=track
                       --table=%(tname)s 
+                      --allow-empty
                 > %(outfile)s
                '''
     P.run()
 
     os.unlink( tmpfilename )
 
-def loadPicardHistogram( infiles, outfile, suffix, column, pipeline_suffix = "stats" ):
+def loadPicardHistogram( infiles, outfile, suffix, column, pipeline_suffix = ".picard_stats" ):
     '''extract a histogram from a picard output file and load it into database.'''
 
     tablename = P.toTable( outfile )
@@ -165,8 +166,12 @@ def loadPicardHistogram( infiles, outfile, suffix, column, pipeline_suffix = "st
 
     # some files might be missing
     xfiles = [ x for x in infiles if os.path.exists( "%s.%s" % (x, suffix) ) ]
+
+    if len(xfiles) == 0: 
+        E.warn ( "no files for %s" % tname )
+        return
     
-    header = ",".join( [P.snip( os.path.basename(x), ".%s" % pipeline_suffix) for x in xfiles ] )        
+    header = ",".join( [P.snip( os.path.basename(x), pipeline_suffix) for x in xfiles ] )        
     filenames = " ".join( [ "%s.%s" % (x, suffix) for x in xfiles ] )
 
     statement = """python %(scriptsdir)s/combine_tables.py
@@ -188,15 +193,12 @@ def loadPicardAlignmentStats( infiles, outfile, paired_end ):
     into sql database.'''
 
     loadPicardMetrics( infiles, outfile, "alignment_summary_metrics" )
-    #this should only be done if we have paired end data....
-    if paired_end:
-        loadPicardMetrics( infiles, outfile, "insert_size_metrics" )
-        histograms = ( ("quality_by_cycle_metrics", "cycle"),
-                       ("quality_distribution_metrics", "quality"),
-                       ("insert_size_metrics", "insert_size" ) )
-    else:
-        histograms = ( ("quality_by_cycle_metrics", "cycle"),
-                       ("quality_distribution_metrics", "quality") )
+
+    # insert size metrics only available for paired-ended data
+    loadPicardMetrics( infiles, outfile, "insert_size_metrics" )
+    histograms = ( ("quality_by_cycle_metrics", "cycle"),
+                   ("quality_distribution_metrics", "quality"),
+                   ("insert_size_metrics", "insert_size" ) )
 
     for suffix, column in histograms:
         loadPicardHistogram( infiles, outfile, suffix, column )

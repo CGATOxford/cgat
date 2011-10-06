@@ -1515,6 +1515,8 @@ class CounterDistance(Counter):
         self.mDistance = "na"
         has5, has3 = False, False
 
+        self.mOverlaps = []
+
         try:
             self.mOverlaps = list(self.mIntervals.get(contig, start, end))
         except KeyError:
@@ -2334,7 +2336,6 @@ class CounterReadExtension(Counter):
                 [ "%s_%s" % (x,y) for x,y in itertools.product(             
                         [ "%s_%s" % (xx, yy) for xx, yy in itertools.product(self.labels, self.directions)],
                         ("pcovered", ) + Stats.Summary().getHeaders() ) ] )
-
             
         self.outfiles = IOTools.FilePool( self.options.output_filename_pattern % "readextension_%s" )
 

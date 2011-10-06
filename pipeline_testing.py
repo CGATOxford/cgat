@@ -183,11 +183,12 @@ def connect():
 
     return dbh
 
-###################################################################
-###################################################################
-###################################################################
-def runTest( infile, outfile ):
-    '''run a test.'''
+def splitTestName( outfile ):
+    '''split the test name into pipeline and data part.
+
+    The name of a test starts with the name of a pipeline followed by some description.
+    '''
+    
     pipeline_components = outfile.split("_")
 
     g = os.path.join( os.path.dirname( __file__ ),  "pipeline_*.py")
@@ -199,17 +200,36 @@ def runTest( infile, outfile ):
         p.append( pipeline_components[x] )
         if ("_".join(p) + ".py") in pipelines:
             pipeline_name = "_".join( p )
+            test_description = "_".join( pipeline_components[x+1:] )
             break
     else:
         raise ValueError("pipeline for test %s not found" % outfile )
 
+    return pipeline_name, test_description 
+
+###################################################################
+###################################################################
+###################################################################
+def runTest( infile, outfile, update = False ):
+    '''run a test.'''
+
+    test_name = P.snip(outfile, ".log")
+
+    pipeline_name, test_description = splitTestName( test_name )
+    
+    if not update:
+        E.info("building test directory" )
+        try:
+            shutil.rmtree( "%s.dir" % test_name )
+        except OSError: pass
+        os.mkdir( "%s.dir" % test_name )
+        statement = '''ln -s %(infile)s/* %(test_name)s.dir'''
+        P.run()
+    
     statement = '''
-        rm -rf %(outfile)s.dir;
-	mkdir %(outfile)s.dir;
-	ln -s %(infile)s/* %(outfile)s.dir;
-	(cd %(outfile)s.dir; python %(scriptsdir)s/%(pipeline_name)s.py 
+	    (cd %(test_name)s.dir; python %(scriptsdir)s/%(pipeline_name)s.py 
                       %(pipeline_options)s make full) >& %(outfile)s
-    ''' 
+        ''' 
     
     P.run()
 
@@ -218,7 +238,7 @@ def runTest( infile, outfile ):
 ###################################################################
 ## general tests
 ###################################################################
-@files( [ (os.path.join( PARAMS["data_dir"], x), x ) for x in
+@files( [ (os.path.join( PARAMS["data_dir"], x), x + ".log" ) for x in
              P.asList(PARAMS["prerequisites"]) ] )
 def prepareTests( infile, outfile ):
     '''run pre-requisite pipelines.'''
@@ -227,14 +247,54 @@ def prepareTests( infile, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-## general tests
+## run a test
 ###################################################################
 @follows( prepareTests )
-@files( [ (x, os.path.basename( x) ) for x in \
+@files( [ (x, os.path.basename(x) + ".log" ) for x in \
               glob.glob( os.path.join( PARAMS["data_dir"], "pipeline_*")) ] )
 def runTests( infile, outfile ):
-    '''run tests.'''
+    '''run a pipeline with test data.'''
     runTest( infile, outfile )
+
+###################################################################
+###################################################################
+###################################################################
+## update a test
+###################################################################
+@follows( prepareTests )
+@files( [ (x, os.path.basename(x) + ".log" ) for x in \
+              glob.glob( os.path.join( PARAMS["data_dir"], "pipeline_*")) ] )
+def updateTests( infile, outfile ):
+    '''run a pipeline with test data.'''
+    runTest( infile, outfile, update = True )
+
+###################################################################
+###################################################################
+###################################################################
+## build reports
+###################################################################
+@transform( runTests, suffix(".log"), ".report" )
+def runReports( infile, outfile ):
+    '''run a pipeline report.'''
+    
+    test_name = P.snip(outfile, ".report") 
+
+    pipeline_name, test_description = splitTestName( test_name )
+
+    statement = '''
+	(cd %(test_name)s.dir; python %(scriptsdir)s/%(pipeline_name)s.py 
+                      %(pipeline_options)s make build_report) >& %(outfile)s
+    ''' 
+    
+    P.run()
+
+###################################################################
+###################################################################
+###################################################################
+## primary targets
+###################################################################
+@follows( runTests, runReports )
+def full(): pass
 
 ###################################################################
 ###################################################################
