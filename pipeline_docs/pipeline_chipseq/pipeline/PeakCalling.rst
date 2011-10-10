@@ -49,14 +49,14 @@ Summary of reads under peaks
 
 The following tables show the number of reads for each track that fall under peaks in all tracks
 
-.. report:: readsUnderPeaks.ReadCountSummary
+.. report:: ReadsUnderPeaks.ReadCountSummary
    :render: matrix
    :transform-matrix: correspondence-analysis
 
    Total number of reads from each track that fall under peaks
 
 
-.. report:: readsUnderPeaks.NormalisedTable
+.. report:: ReadsUnderPeaks.NormalisedTable
    :render: table
 
    Table showing the normalized number of reads falling under peaks for each track

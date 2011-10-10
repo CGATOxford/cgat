@@ -2322,6 +2322,7 @@ class CounterReadExtension(Counter):
     min_quality = 1
 
     def __init__(self, bamfiles, filename_gff, *args, **kwargs ):
+
         Counter.__init__(self, *args, **kwargs )
 
         if len(filename_gff) != 2:
@@ -2752,7 +2753,8 @@ def main( argv = None ):
         elif c == "read-extension":
             counters.append( CounterReadExtension( bam_files,
                                                    filename_gff = options.filename_gff,
-                                                   options = options, prefix = prefix ) )
+                                                   options = options, 
+                                                   prefix = prefix ) )
         elif c == "read-counts":
             counters.append( CounterReadCounts( bam_files,
                                                 options = options, prefix = prefix ) )

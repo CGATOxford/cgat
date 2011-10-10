@@ -558,14 +558,16 @@ def intersectBedFiles( infiles, outfile ):
 
     elif len(infiles) == 2:
         
-        statement = '''
+        if P.isEmpty( infiles[0] ) or P.isEmpty( infiles[1] ):
+            P.touch( outfile )
+        else:
+            statement = '''
         intersectBed -u -a %s -b %s 
         | cut -f 1,2,3,4,5 
         | awk 'BEGIN { OFS="\\t"; } {$4=++a; print;}'
         > %%(outfile)s 
         ''' % (infiles[0], infiles[1])
-
-        P.run()
+            P.run()
         
     else:
 
@@ -573,10 +575,19 @@ def intersectBedFiles( infiles, outfile ):
 
         # need to merge incrementally
         fn = infiles[0]
+        if P.isEmpty( infiles[0] ): 
+            P.touch( outfile )
+            return
+            
         statement = '''mergeBed -i %(fn)s > %(tmpfile)s'''
         P.run()
         
         for fn in infiles[1:]:
+            if P.isEmpty( infiles[0] ): 
+                P.touch( outfile)
+                os.unlink( tmpfile )
+                return
+
             statement = '''mergeBed -i %(fn)s | intersectBed -u -a %(tmpfile)s -b stdin > %(tmpfile)s.tmp; mv %(tmpfile)s.tmp %(tmpfile)s'''
             P.run()
 
@@ -595,6 +606,14 @@ def subtractBedFiles( infile, subtractfile, outfile ):
     '''subtract intervals in *subtractfile* from *infile*
     and store in *outfile*.
     '''
+
+    if P.isEmpty( subtractfile ):
+        shutil.copyfile( infile, outfile )
+        return
+    elif P.isEmpty( infile ):
+        P.touch( outfile )
+        return
+
     statement = '''
         intersectBed -v -a %(infile)s -b %(subtractfile)s |\
         cut -f 1,2,3,4,5 |\

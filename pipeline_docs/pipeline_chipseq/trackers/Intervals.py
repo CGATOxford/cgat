@@ -1,5 +1,7 @@
 from ChipseqReport import *
 
+import IOTools
+
 class FoldChangeTracker( TrackerSQL ):
     '''the fold change tracker ignores unstimulated tracks.'''
     def __init__(self, *args, **kwargs ):
@@ -356,4 +358,38 @@ class FoldChangeCounts( FoldChangeTracker ):
 
         return odict(data)
 
+##################################################################################
+##################################################################################
+##################################################################################
+## peak shape
+##################################################################################
+class PeakShapeTracker( Tracker ):
+    '''return peakshape data.
 
+    Only 1000 rows are returned.
+    '''
+    
+    tracks = [ os.path.basename( x )[:-len(".peakshape.tsv.gz")] for x in glob.glob( os.path.join( DATADIR , "*.peakshape.tsv.gz" )) ]
+    slices = ["peak_height", "peak_width" ]
+    
+    def __call__(self, track, slice = None):
+        fn = os.path.join( DATADIR, "%(track)s.peakshape.tsv.gz.matrix_%(slice)s.gz" % locals() )
+        if not os.path.exists( fn ): 
+            return
+        
+        matrix, rownames, colnames = IOTools.readMatrix( IOTools.openFile( fn ))
+        nrows = len(rownames)
+        if nrows == 0: return
+
+        if nrows > 1000:
+            take = numpy.array( numpy.floor( numpy.arange( 0, nrows, nrows / 1000 ) ), dtype = int )
+            rownames = [ rownames[x] for x in take ]
+            matrix = matrix[ take ]
+            
+        return odict( (('matrix', matrix),
+                       ('rows', rownames),
+                       ('columns', colnames)) )
+        
+        
+
+        

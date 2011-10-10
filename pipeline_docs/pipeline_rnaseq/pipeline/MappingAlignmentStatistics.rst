@@ -35,20 +35,20 @@ BAM files for each :term:`track`. See the
 for a definition of the field contents.
 (note: PF=pass filter, reads that pass the vendor's filter criteria).
 
-.. report:: Mapping.AlignmentSummary
+.. report:: Mapping.PicardSummary
    :tracks: r(.accepted)
    :render: table
 
    Alignments summary
 
-.. report:: Mapping.AlignmentSummary
+.. report:: Mapping.PicardSummary
    :tracks: r(.accepted)
    :render: interleaved-bar-plot
    :slices: PCT_PF_READS_ALIGNED,STRAND_BALANCE
 
    Percentage quantities
 
-.. report:: Mapping.AlignmentSummary
+.. report:: Mapping.PicardSummary
    :tracks: r(.accepted)
    :render: interleaved-bar-plot
    :slices: PF_READS_ALIGNED,PF_HQ_ALIGNED_READS

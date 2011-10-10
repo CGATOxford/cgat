@@ -759,7 +759,7 @@ class AnnotationsPeakValData( DefaultTracker ):
 ## Base class for glam analysis
 ##################################################################################
 class Glam( DefaultTracker ):
-    mPattern = "_glam$"
+    pattern = "(.*)_glam$"
 
     def getSlices( self, subset = None ):
         if subset: return subset
@@ -866,7 +866,7 @@ class GlamSummary( Glam ):
         data.append( ("FDR-Score", score_cutoff ) )
         data.append( ("FDR-explained", nexplained) )
         data.append( ("FDR-explained / %", "%5.2f" % (100.0 * nexplained / nintervals )) )
-        
+
         return odict(data)
 
 ##################################################################################

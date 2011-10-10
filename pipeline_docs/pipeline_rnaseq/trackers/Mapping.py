@@ -12,8 +12,8 @@ class TophatSummary( RnaseqTracker, SingleTableTrackerRows ):
 class BamSummary( RnaseqTracker, SingleTableTrackerRows ):
     table = "bam_stats"
 
-class AlignmentSummary( RnaseqTracker, SingleTableTrackerRows ):
-    table = "alignment_stats"
+class PicardSummary( RnaseqTracker, SingleTableTrackerRows ):
+    table = "picard_stats_alignment_summary_metrics"
 
 class MappingFlagsMismatches( RnaseqTracker, SingleTableTrackerHistogram ):
     table = "bam_stats_nm"
@@ -24,11 +24,11 @@ class MappingFlagsHits( RnaseqTracker, SingleTableTrackerHistogram ):
     column = "nh"
 
 class AlignmentQualityByCycle( RnaseqTracker, SingleTableTrackerHistogram ):
-    table = "alignment_stats_quality_by_cycle_metrics"
+    table = "picard_stats_quality_by_cycle_histogram"
     column = "cycle"
 
 class AlignmentQualityDistribution( RnaseqTracker, SingleTableTrackerHistogram ):
-    table = "alignment_stats_quality_distribution_metrics"
+    table = "picard_stats_quality_distribution_histogram"
     column = "quality"
 
 class MappingContext( RnaseqTracker, SingleTableTrackerRows ):

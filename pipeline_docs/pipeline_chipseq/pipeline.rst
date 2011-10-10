@@ -21,6 +21,7 @@ Contents:
    pipeline/PeakCalling.rst
    pipeline/Reproducibility.rst
    pipeline/Intervals.rst
+   pipeline/Peaks.rst	
    pipeline/Binding.rst
    pipeline/IntervalLists.rst
    pipeline/Correlations.rst

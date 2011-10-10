@@ -276,7 +276,7 @@ def critical( message):
     E.critical( message )
 
 def isEmpty( filename ):
-    '''return true if filename is empty.'''
+    '''return true if file *filename* is empty.'''
     return os.stat(filename)[6]==0
 
 def asList( param ):

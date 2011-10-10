@@ -825,7 +825,8 @@ elif PARAMS["calling_caller"] == "zinba":
         '''
         
         P.run()
-        
+        P.touch( outfile )
+
     ############################################################
     ############################################################
     ############################################################
@@ -1107,8 +1108,10 @@ def buildPeakShapeTable( infiles, outfile ):
                       --window-size=%(calling_peakshape_window_size)i
                       --bin-size=%(calling_peakshape_bin_size)i
                       --output-filename-pattern="%(outfile)s.%%s"
+                      --force
                       --shift=%(shift)i
-                      --sort=height,width
+                      --sort=peak-height
+                      --sort=peak-width
                       %(bamfile)s %(bedfile)s
                    > %(outfile)s
                 '''
@@ -1123,7 +1126,6 @@ def buildPeakShapeTable( infiles, outfile ):
 def peakCoverage(infiles, outfile):
     '''uses coverageBed to count the total number of reads under peaks'''
 
-    tracks = infile
     to_cluster = True
     bamfile, bedfile = infiles
     statement = '''coverageBed -abam %(bamfile)s -b %(bedfile)s | gzip > %(outfile)s ''' 
@@ -2748,7 +2750,9 @@ def viewIntervals( infiles, outfiles ):
 
 @follows( buildIntervals, 
           makeReadCorrelationTable,
-          loadBAMStats)
+          loadBAMStats,
+          loadReadCoverageTable,
+          buildPeakShapeTable )
 def intervals():
     '''compute binding intervals.'''
     pass

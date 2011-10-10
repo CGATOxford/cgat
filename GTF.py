@@ -243,7 +243,9 @@ class Entry:
 def asRanges( gffs, feature = None ):
     """return ranges within a set of gffs.
 
-    Overlapping intervals are merged.
+    Overlapping intervals are merged. 
+
+    The returned intervals are sorted.
     """
 
     if type(feature) == types.StringType:
