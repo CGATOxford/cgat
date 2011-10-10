@@ -12,10 +12,10 @@ from cpgReport import *
 class cgiIntervals( cpgTracker ):
     """Summary stats of intervals called by the peak finder. """
 
-    mPattern = "_cgi_bed$"
+    mPattern = "_cgi_cap_bed$"
 
     def __call__(self, track, slice = None):
-        data = self.getFirstRow( "SELECT COUNT(*) as number, round(AVG(stop-start),0) as length FROM %(track)s_cgi_bed" % locals() )
+        data = self.getFirstRow( "SELECT COUNT(*) as number, round(AVG(stop-start),0) as length FROM %(track)s_cgi_cap_bed" % locals() )
         return odict( zip( ("CGI intervals", "mean_interval_length" ), data) )
 
 ##################################################################################
@@ -25,18 +25,18 @@ class cgiIntervalLengths( cpgTracker ):
     mPattern = "_cgi_bed$"
 
     def __call__(self, track, slice = None):
-        data = self.getValues( "SELECT (stop-start) FROM %(track)s_cgi_bed" % locals() )
+        data = self.getValues( "SELECT (stop-start) FROM %(track)s_cgi_cap_bed" % locals() )
         return { "length" : data }
 
 ##################################################################################
 class cgiIntervalPeakValues( cpgTracker ):
     """Distribution of maximum interval coverage (the number of reads at peak). """
 
-    mPattern = "_cgi_bed$"
+    mPattern = "_cgi_cap_bed$"
 
     def __call__(self, track, slice = None):
         track_base = track.replace("_non","").replace("_pred","")
-        data = self.getValues( '''SELECT i.peakval FROM %(track)s_cgi_bed u, %(track_base)s_macs_intervals i
+        data = self.getValues( '''SELECT i.peakval FROM %(track)s_cgi_cap_bed u, %(track_base)s_macs_intervals i
                                   WHERE u.contig=i.contig
                                   AND u.start=i.start''' % locals() )
         return { "peakval" : data }
@@ -71,11 +71,11 @@ class cgiIntervalFoldChange( cpgTracker ):
 class cgiIntervalTSS( cpgTracker ):
     """Distribution of distance to closest TSS """
 
-    mPattern = "_cgi_bed$"
+    mPattern = "_cgi_cap_bed$"
 
     def __call__(self, track, slice = None):
         track_base = track.replace("_non","").replace("_pred","")
-        data = self.getValues( '''SELECT closest_dist FROM %(track)s_cgi_bed u, 
+        data = self.getValues( '''SELECT closest_dist FROM %(track)s_cgi_cap_bed u, 
                                   %(track_base)s_macs_intervals i, %(track_base)s_tss t
                                   WHERE u.contig=i.contig
                                   AND u.start=i.start 

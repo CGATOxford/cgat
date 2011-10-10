@@ -81,10 +81,10 @@ class OverlapCpG( cpgTracker ):
     mPattern = "_cgi$"
     # 
     def __call__(self, track, slice = None):
-        data = self.get( """SELECT c.track, count(distinct i.interval_id) as A_intervals, e.intervals, c.overlap, 
+        data = self.get( """SELECT c.track, count(i.start) as A_intervals, e.intervals, c.overlap, 
                             round(((c.overlap+0.0)/(count(i.interval_id)+0.0))*100,2) as perca, 
                             round(((c.overlap+0.0)/(e.intervals+0.0))*100,2) as percb 
-                            FROM %(track)s_cgi c, external_interval_sets e, %(track)s_macs_intervals i 
+                            FROM %(track)s_cgi c, external_interval_sets e, %(track)s_replicated_intervals i 
                             WHERE c.track=e.bed""" % locals() )
         
         return odict( zip( ("Track", "A Intervals", "B Intervals", "Overlap", "%A", "%B" ), zip(*data)) )
@@ -96,10 +96,10 @@ class OverlapChipseq( cpgTracker ):
     mPattern = "_chipseq$"
     # 
     def __call__(self, track, slice = None):
-        data = self.get( """SELECT c.track, count(distinct i.interval_id) as A_intervals, e.intervals, c.overlap, 
+        data = self.get( """SELECT c.track, count(i.start) as A_intervals, e.intervals, c.overlap, 
                             round(((c.overlap+0.0)/(count(i.interval_id)+0.0))*100,2) as perca, 
                             round(((c.overlap+0.0)/(e.intervals+0.0))*100,2) as percb 
-                            FROM %(track)s_chipseq c, external_interval_sets e, %(track)s_macs_intervals i 
+                            FROM %(track)s_chipseq c, external_interval_sets e, %(track)s_replicated_intervals i 
                             WHERE c.track=e.bed""" % locals() )
         
         return odict( zip( ("Track", "A Intervals", "B Intervals", "Overlap", "%A", "%B" ), zip(*data)) )
@@ -111,10 +111,10 @@ class OverlapCAPseq( cpgTracker ):
     mPattern = "_capseq$"
     # 
     def __call__(self, track, slice = None):
-        data = self.get( """SELECT c.track, count(distinct i.interval_id) as A_intervals, e.intervals, c.overlap, 
+        data = self.get( """SELECT c.track, count(i.start) as A_intervals, e.intervals, c.overlap, 
                             round(((c.overlap+0.0)/(count(i.interval_id)+0.0))*100,2) as perca, 
                             round(((c.overlap+0.0)/(e.intervals+0.0))*100,2) as percb 
-                            FROM %(track)s_capseq c, external_interval_sets e, %(track)s_macs_intervals i 
+                            FROM %(track)s_capseq c, external_interval_sets e, %(track)s_replicated_intervals i 
                             WHERE c.track=e.bed""" % locals() )
         
         return odict( zip( ("Track", "A Intervals", "B Intervals", "Overlap", "%A", "%B" ), zip(*data)) )
@@ -126,10 +126,10 @@ class OverlapChromatinMarks( cpgTracker ):
     mPattern = "_chromatin$"
     # 
     def __call__(self, track, slice = None):
-        data = self.get( """SELECT c.track, count(distinct i.interval_id) as A_intervals, e.intervals, c.overlap, 
+        data = self.get( """SELECT c.track, count(i.start) as A_intervals, e.intervals, c.overlap, 
                             round(((c.overlap+0.0)/(count(i.interval_id)+0.0))*100,2) as perca, 
                             round(((c.overlap+0.0)/(e.intervals+0.0))*100,2) as percb 
-                            FROM %(track)s_chromatin c, external_interval_sets e, %(track)s_macs_intervals i 
+                            FROM %(track)s_chromatin c, external_interval_sets e, %(track)s_replicated_intervals i 
                             WHERE c.track=e.bed""" % locals() )
         
         return odict( zip( ("Track", "A Intervals", "B Intervals", "Overlap", "%A", "%B" ), zip(*data)) )

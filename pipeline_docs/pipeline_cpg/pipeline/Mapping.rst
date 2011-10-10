@@ -10,13 +10,13 @@ BAM files for each :term:`track`.
 
 .. report:: Mapping.MappingSummary
    :render: table
-   :slices: reads_total,reads_mapped,reverse,duplicate
+   :slices: reads_total,reads_mapped,reverse,duplicates,unique_alignments
 
    Bam2stats Mapping Statistics
 
 .. report:: Mapping.MappingSummary
    :render: interleaved-bar-plot
-   :slices: reads_total,reads_mapped,reverse,duplicate
+   :slices: reads_total,reads_mapped,reverse,duplicates,unique_alignments
 
    Bam2stats Mapping Statistics
 

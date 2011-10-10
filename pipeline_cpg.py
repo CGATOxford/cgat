@@ -1153,17 +1153,18 @@ def loadSharedIntervals(infile, outfile):
     P.run()
 
 ############################################################
+############################################################
+############################################################
+## Calculate replicated intervals
 @follows( sanitiseIntervals, mkdir("replicated_intervals") )
 @files( [( [ "%s/macs/%s.merged.cleaned.bed" % (y,y.asFile()) for y in EXPERIMENTS[x]], 
-           "replicated_intervals/%s.replicated.bed" % x.asFile()) 
-         for x in EXPERIMENTS ] )
+           "replicated_intervals/%s.replicated.bed" % str(x).replace("-agg","")) for x in EXPERIMENTS ] )
 def replicatedIntervals( infiles, outfile ):
     '''Combine replicates between experiments.
-    First all intervals are merged across replicates 
-    and then merged intervals that do not overlap an interval in all replicates are removed
-    '''
+       First all intervals are merged across replicates 
+       and then merged intervals that do not overlap an interval in all replicates are removed. '''
 
-    expt = P.snip( os.path.basename( outfile ), ".replicated.bed")
+    expt = P.snip( os.path.basename( outfile ), ".replicated.bed").replace("-agg","")
     outdir = os.path.dirname( outfile )
     tmpfile = P.getTempFile()
     tmpfilename = tmpfile.name
@@ -1183,7 +1184,7 @@ def replicatedIntervals( infiles, outfile ):
 @transform( replicatedIntervals, regex(r"replicated_intervals/(\S+).replicated.bed"), r"replicated_intervals/\1.replicated.bed.load")
 def loadReplicatedIntervals(infile, outfile):
     '''Load replicated intervals into database '''
-    expt = P.snip( os.path.basename( infile ), ".replicated.bed" ).replace("-","_").replace(".","_").replace("_agg","")
+    expt = P.snip( os.path.basename( infile ), ".replicated.bed" ).replace("-","_").replace(".","_")
     header = "contig,start,stop"
     statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
                       --table=%(expt)s_replicated_intervals
@@ -1195,8 +1196,8 @@ def loadReplicatedIntervals(infile, outfile):
 ############################################################
 ############################################################
 ############################################################
-## Compare intervals with external bed files
-@transform( mergeIntervals, regex(r"(\S+)/macs/(\S+).merged.bed"), r"\1/macs/\2.cgi_cap.bed")
+## Compare replicated intervals with external bed files
+@transform( replicatedIntervals, regex(r"replicated_intervals/(\S+).replicated.bed"), r"replicated_intervals/\1.cgi_cap.bed")
 def getCGIIntervals(infile, outfile):
     '''identify intervals overlapping CGI for each datasets'''
 
@@ -1206,7 +1207,7 @@ def getCGIIntervals(infile, outfile):
     P.run()
 
 ############################################################
-@transform( getCGIIntervals, regex(r"(\S+)/macs/(\S+).cgi_cap.bed"), r"\1/macs/\2.cgi_cap.bed.load")
+@transform( getCGIIntervals, regex(r"replicated_intervals/(\S+).cgi_cap.bed"), r"replicated_intervals/\1.cgi_cap.bed.load")
 def loadCGIIntervals(infile, outfile):
     '''Load intervals overlapping CGI into database '''
     track = P.snip( os.path.basename( infile ), ".cgi_cap.bed" ).replace(".","_").replace("-","_")
@@ -1220,7 +1221,7 @@ def loadCGIIntervals(infile, outfile):
     P.run()
 
 ############################################################
-@transform( mergeIntervals, regex(r"(\S+)/macs/(\S+).merged.bed"), r"\1/macs/\2.cap_only.bed")
+@transform( replicatedIntervals, regex(r"replicated_intervals/(\S+).replicated.bed"), r"replicated_intervals/\1.cap_only.bed")
 def getNonCGIIntervals(infile, outfile):
     '''identify intervals not overlapping CGI for each datasets'''
 
@@ -1230,7 +1231,7 @@ def getNonCGIIntervals(infile, outfile):
     P.run()
 
 ############################################################
-@transform( getNonCGIIntervals, regex(r"(\S+)/macs/(\S+).cap_only.bed"), r"\1/macs/\2.cap_only.bed.load")
+@transform( getNonCGIIntervals, regex(r"replicated_intervals/(\S+).cap_only.bed"), r"replicated_intervals/\1.cap_only.bed.load")
 def loadNonCGIIntervals(infile, outfile):
     '''Load intervals not overlapping CGI into database '''
     track = P.snip( os.path.basename( infile ), ".cap_only.bed" ).replace(".","_").replace("-","_")
@@ -1244,7 +1245,7 @@ def loadNonCGIIntervals(infile, outfile):
     P.run()
 
 ############################################################
-@transform( mergeIntervals, regex(r"(\S+)/macs/(\S+).merged.bed"), r"\1/macs/\2.cgi_only.bed")
+@transform( replicatedIntervals, regex(r"replicated_intervals/(\S+).replicated.bed"), r"replicated_intervals/\1.cgi_only.bed")
 def getPredictedCGIIntervals(infile, outfile):
     '''identify predicted CGI intervals not overlapping CAPseq intervals for each dataset'''
 
@@ -1254,7 +1255,7 @@ def getPredictedCGIIntervals(infile, outfile):
     P.run()
 
 ############################################################
-@transform( getPredictedCGIIntervals, regex(r"(\S+)/macs/(\S+).cgi_only.bed"), r"\1/macs/\2.cgi_only.bed.load")
+@transform( getPredictedCGIIntervals, regex(r"replicated_intervals/(\S+).cgi_only.bed"), r"replicated_intervals/\1.cgi_only.bed.load")
 def loadPredictedCGIIntervals(infile, outfile):
     '''Load predicted CGI intervals not overlapping CAP-seq intervals into database '''
     track = P.snip( os.path.basename( infile ), ".cgi_only.bed" ).replace(".","_").replace("-","_")
@@ -1268,7 +1269,7 @@ def loadPredictedCGIIntervals(infile, outfile):
     P.run()
 
 ############################################################
-@transform( mergeIntervals, regex(r"(\S+)/macs/(\S+).merged.bed"), r"\1/macs/\2.cgi_overlap")
+@transform( replicatedIntervals, regex(r"replicated_intervals/(\S+).replicated.bed"), r"replicated_intervals/\1.cgi_overlap")
 def getCGIOverlapCount(infile, outfile):
     '''identify intervals overlapping CGI for each datasets'''
 
@@ -1281,7 +1282,7 @@ def getCGIOverlapCount(infile, outfile):
     P.run()
 
 ############################################################
-@transform( getCGIOverlapCount, regex(r"(\S+)/macs/(\S+).cgi_overlap"), r"\1/macs/\2.cgi_overlap.load")
+@transform( getCGIOverlapCount, regex(r"replicated_intervals/(\S+).cgi_overlap"), r"replicated_intervals/\1.cgi_overlap.load")
 def loadCGIOverlapCount(infile, outfile):
     '''Load intervals overlapping CGI into database '''
     track = P.snip( os.path.basename( infile ), ".cgi_overlap" ).replace(".","_").replace("-","_")
@@ -1294,7 +1295,7 @@ def loadCGIOverlapCount(infile, outfile):
     P.run()
 
 ############################################################
-@transform( mergeIntervals, regex(r"(\S+)/macs/(\S+).merged.bed"), r"\1/macs/\2.chipseq")
+@transform( replicatedIntervals, regex(r"replicated_intervals/(\S+).replicated.bed"), r"replicated_intervals/\1.chipseq")
 def getChipseqOverlap(infile, outfile):
     '''identify intervals overlapping chipseq intervals for each datasets'''
 
@@ -1311,7 +1312,7 @@ def getChipseqOverlap(infile, outfile):
         P.run()
 
 ############################################################
-@transform( getChipseqOverlap, regex(r"(\S+)/macs/(\S+).chipseq"), r"\1/macs/\2.chipseq.load")
+@transform( getChipseqOverlap, regex(r"replicated_intervals/(\S+).chipseq"), r"replicated_intervals/\1.chipseq.load")
 def loadChipseqIntervals(infile, outfile):
     '''Load intervals overlapping chipseq into database '''
     track = P.snip( os.path.basename( infile ), ".chipseq" ).replace(".","_").replace("-","_")
@@ -1324,7 +1325,7 @@ def loadChipseqIntervals(infile, outfile):
     P.run()
 
 ############################################################
-@transform( mergeIntervals, regex(r"(\S+)/macs/(\S+).merged.bed"), r"\1/macs/\2.capseq")
+@transform( replicatedIntervals, regex(r"replicated_intervals/(\S+).replicated.bed"), r"replicated_intervals/\1.capseq")
 def getCapseqOverlap(infile, outfile):
     '''identify intervals overlapping capseq intervals for each datasets'''
 
@@ -1341,7 +1342,7 @@ def getCapseqOverlap(infile, outfile):
         P.run()
 
 ############################################################
-@transform( getCapseqOverlap, regex(r"(\S+)/macs/(\S+).capseq"), r"\1/macs/\2.capseq.load")
+@transform( getCapseqOverlap, regex(r"replicated_intervals/(\S+).capseq"), r"replicated_intervals/\1.capseq.load")
 def loadCapseqIntervals(infile, outfile):
     '''Load intervals overlapping capseq into database '''
     track = P.snip( os.path.basename( infile ), ".capseq" ).replace(".","_").replace("-","_")
@@ -1354,7 +1355,7 @@ def loadCapseqIntervals(infile, outfile):
     P.run()
 
 ############################################################
-@transform( mergeIntervals, regex(r"(\S+)/macs/(\S+).merged.bed"), r"\1/macs/\2.chromatin")
+@transform( replicatedIntervals, regex(r"replicated_intervals/(\S+).replicated.bed"), r"replicated_intervals/\1.chromatin")
 def getChromatinMarkOverlap(infile, outfile):
     '''identify intervals overlapping chromatin mark intervals for each datasets'''
 
@@ -1371,7 +1372,7 @@ def getChromatinMarkOverlap(infile, outfile):
         P.run()
 
 ############################################################
-@transform( getChromatinMarkOverlap, regex(r"(\S+)/macs/(\S+).chromatin"), r"\1/macs/\2.chromatin.load")
+@transform( getChromatinMarkOverlap, regex(r"replicated_intervals/(\S+).chromatin"), r"replicated_intervals/\1.chromatin.load")
 def loadChromatinMarkIntervals(infile, outfile):
     '''Load intervals overlapping chromatin marks into database '''
     track = P.snip( os.path.basename( infile ), ".chromatin" ).replace(".","_").replace("-","_")
@@ -1412,8 +1413,6 @@ def loadExternalBedStats(infile, outfile):
     P.run()
 
 ############################################################
-############################################################
-############################################################
 ## Compare bed files using GAT
 @files(PARAMS["samtools_genome"]+".fai", "gat/"+PARAMS["genome"]+".bed.gz")
 def buildGATWorkspace(infile, outfile ):
@@ -1424,12 +1423,14 @@ def buildGATWorkspace(infile, outfile ):
 ############################################################
 @follows( buildGATWorkspace )
 @follows( mkdir("gat") )
-@merge( mergeIntervals, "gat/external_dataset_gat.tsv" )
+@merge( replicatedIntervals, "gat/external_dataset_gat.tsv" )
 def runExternalDatasetGAT(infiles, outfile):
     '''Run genome association tester on bed files '''
+
+    to_cluster = True
     segfiles = ""
     for x in infiles:
-        track = P.snip(os.path.basename(x), ".merged.bed")
+        track = P.snip(os.path.basename(x), ".replicated.bed")
         statement = """cat %(x)s | awk 'OFS="\\t" {print $1,$2,$3,"%(track)s"}' > gat/%(track)s.bed; """
         P.run()
         segfiles += " --segment-file=gat/%s.bed " % track 
@@ -1441,7 +1442,7 @@ def runExternalDatasetGAT(infiles, outfile):
     CGI = P.asList(PARAMS["bed_cgi"])
     extBed = chromatin + capseq + chipseq + CGI
     annofiles = " ".join( [ "--annotation-file=%s" % x for x in extBed ] )
-    statement = """gatrun.py %(segfiles)s %(annofiles)s --workspace=gat/%(genome)s.bed.gz --num-samples=1000 --force > %(outfile)s"""
+    statement = """gatrun.py %(segfiles)s %(annofiles)s --workspace=gat/%(genome)s.bed.gz --num-samples=1000 --nbuckets=120000 --force > %(outfile)s"""
     P.run()
 
 ############################################################
@@ -1508,7 +1509,7 @@ def loadZinbaIntervals(infile, outfile):
 ############################################################
 ############################################################
 ## ANNOTATE INTERVALS
-@transform( mergeIntervals, suffix(".merged.bed"), ".annotations" )
+@transform( replicatedIntervals, suffix(".replicated.bed"), ".annotations" )
 def annotateIntervals( infile, outfile ):
     '''classify chipseq intervals according to their location 
     with respect to the gene set. '''
@@ -1539,7 +1540,7 @@ def loadAnnotations( infile, outfile ):
     P.load( infile, outfile, "--index=gene_id" )
 
 ############################################################
-@transform( mergeIntervals, suffix(".merged.bed"), ".tss" )
+@transform( replicatedIntervals, suffix(".replicated.bed"), ".tss" )
 def annotateTSS( infile, outfile ):
     '''compute distance to TSS'''
 
@@ -1565,7 +1566,7 @@ def loadTSS( infile, outfile ):
     P.load( infile, outfile, "--index=gene_id --index=closest_id --index=id5 --index=id3" )
 
 ############################################################
-@transform( mergeIntervals, suffix(".merged.bed"), ".tts" )
+@transform( replicatedIntervals, suffix(".replicated.bed"), ".tts" )
 def annotateTTS( infile, outfile ):
     '''compute distance to TTS'''
 
@@ -1590,7 +1591,7 @@ def loadTTS( infile, outfile ):
     P.load( infile, outfile, "--index=gene_id --index=closest_id --index=id5 --index=id3" )
 
 ############################################################
-@transform( mergeIntervals, suffix(".merged.bed"), ".repeats" )
+@transform( replicatedIntervals, suffix(".replicated.bed"), ".repeats" )
 def annotateRepeats( infile, outfile ):
     '''count the overlap between intervals and repeats.'''
 
@@ -1615,7 +1616,7 @@ def loadRepeats( infile, outfile ):
     P.load( infile, outfile, "--index=gene_id --allow-empty" )
 
 ############################################################
-@transform( mergeIntervals, suffix(".merged.bed"), ".composition" )
+@transform( replicatedIntervals, suffix(".replicated.bed"), ".composition" )
 def annotateComposition( infile, outfile ):
     '''Establish the nucleotide composition of intervals'''
 
@@ -1632,12 +1633,12 @@ def annotateComposition( infile, outfile ):
     P.run()
 
 ############################################################
-@transform( (mergeIntervals), suffix(".merged.bed"), ".control.composition" )
+@transform( replicatedIntervals, suffix(".replicated.bed"), ".control.composition" )
 def annotateControlComposition( infile, outfile ):
     '''Establish the nucleotide composition of control intervals'''
 
     to_cluster = True
-    track= P.snip( os.path.basename(infile), ".merged.bed")
+    track= P.snip( os.path.basename(infile), ".replicated.bed")
     dirname= os.path.dirname(infile)
 
     statement = """cat %(infile)s | python %(scriptsdir)s/bed2bed.py -m shift -g %(genome_dir)s/%(genome)s --offset=-10000 -S %(dirname)s/%(track)s.control.bed;
@@ -1790,12 +1791,14 @@ def loadTSSCGIOverlap(infile, outfile):
 ############################################################
 ## Compare intervals genomic features using GAT
 @follows(buildGATWorkspace)
-@merge( mergeIntervals, "gat/genomic_features_gat.tsv" )
+@merge( replicatedIntervals, "gat/genomic_features_gat.tsv" )
 def runGenomicFeaturesGAT(infiles, outfile):
     '''Run genome association tester on bed files '''
+
+    to_cluster = True
     segfiles = ""
     for x in infiles:
-        track = P.snip(os.path.basename(x), ".merged.bed")
+        track = P.snip(os.path.basename(x), ".replicated.bed")
         statement = """cat %(x)s | awk 'OFS="\\t" {print $1,$2,$3,"%(track)s"}' > gat/%(track)s.bed; """
         P.run()
         segfiles += " --segment-file=gat/%s.bed " % track 
@@ -1805,7 +1808,7 @@ def runGenomicFeaturesGAT(infiles, outfile):
     # Convert annotation file to bed
     statement = """zcat %(annofile)s | python %(scriptsdir)s/gff2bed.py --name='feature' --is-gtf -S gat/%(annotrack)s.bed; """
     P.run()
-    statement = """gatrun.py %(segfiles)s --annotation-file=gat/%(annotrack)s.bed --workspace=gat/%(genome)s.bed.gz --num-samples=1000 --force > %(outfile)s"""
+    statement = """gatrun.py %(segfiles)s --annotation-file=gat/%(annotrack)s.bed --workspace=gat/%(genome)s.bed.gz --num-samples=1000 --force --nbuckets=120000 > %(outfile)s"""
     P.run()
 
 ############################################################
@@ -1868,6 +1871,30 @@ def exportMacsModel( infile, outfile ):
     P.run()
 
 ############################################################
+@transform( annotateTSS, suffix(".tss"), r".cgi_genes")
+def exportCGIGeneLists( infile, outfile):
+    '''Export list of genes associated with replicated CAPseq intervals '''
+
+    max_gene_dist = PARAMS["intervals_max_gene_dist"]
+
+    # Connect to DB
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    track = P.snip( os.path.basename( infile ), ".tss" ).replace("-","_")
+
+    # Extract data from db
+    cc = dbhandle.cursor()
+    query = '''SELECT distinct id5, dist5 FROM %(track)s_tss where dist5 < %(max_gene_dist)s ORDER by id5;''' % locals()
+    cc.execute( query )
+
+    # Write to file
+    outs = open( outfile, "w")
+    for result in cc:
+        gene_id, distance = result
+        outs.write( "%s\t%i\n" % (gene_id, distance) )
+    cc.close()
+    outs.close()
+
+############################################################
 ############################################################
 ############################################################
 ## Pipeline organisation
@@ -1927,14 +1954,10 @@ def FoldChangeThreshold():
     '''Assess number of intervals above different fold chnage thresholds'''
     pass
 
-@follows( getSicerOverlap, loadSicerIntervals )
-def compareCallers():
-    '''Compare intervals from different peak callers'''
-    pass
-
 @follows( pairwiseIntervals, loadPairwiseIntervals, 
-          uniqueIntervals, loadUniqueIntervals, analyseUniqueIntervals, 
-          sharedIntervals, loadSharedIntervals)
+          uniqueIntervals, loadUniqueIntervals, 
+          sharedIntervals, loadSharedIntervals,
+          replicatedIntervals, loadReplicatedIntervals)
 def comparePeaks():
     '''Compare intervals across tracks'''
     pass
@@ -1952,6 +1975,11 @@ def compareExternal():
     '''Compare intervals external bed files'''
     pass
 
+@follows( getSicerOverlap, loadSicerIntervals )
+def compareCallers():
+    '''Compare intervals from different peak callers'''
+    pass
+
 @follows( annotateIntervals, loadAnnotations, 
           annotateTSS, loadTSS, 
           annotateTTS, loadTTS,
@@ -1966,7 +1994,7 @@ def annotation():
     '''Annotate interval location and composition'''
     pass
 
-@follows( exportBigwig, viewBigwig, exportMacsModel )
+@follows( exportBigwig, exportMacsModel )
 def export():
     '''export files'''
     pass
