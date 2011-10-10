@@ -31,7 +31,7 @@ LOG=log
 ## Directories
 
 ## Directory where gene prediction scripts can be found
-DIR_SCRIPTS?=/home/andreas/cgat/
+DIR_SCRIPTS?=/ifs/devel/cgat/
 ## deprecated, use DIR_SCRIPTS from now on
 DIR_SCRIPTS_GENEPREDICTION?=$(DIR_SCRIPTS)
 ## deprecated, use DIR_SCRIPTS from now on
