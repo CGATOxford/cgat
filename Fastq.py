@@ -39,9 +39,9 @@ from math import log
 # see http://en.wikipedia.org/wiki/FASTQ_format
 # ranges are conservative - they are open-ended
 RANGES = {
-    'sanger' : (33, 74) ,
-    'solexa' : (59, 105) ,
-    'phred64' : (64, 105) ,
+    'sanger' : (33, 75) ,
+    'solexa' : (59, 106) ,
+    'phred64' : (64, 106) ,
     }
 
 class Record:
@@ -162,6 +162,7 @@ def iterate_convert( infile, format, max_tries = 10000, guess = None ):
     myiter = iterate(infile)
     for c, record in enumerate(myiter):
         quals.intersection_update( set(record.guessFormat()) )
+
         if len(quals) == 0:
             raise ValueError( "could not guess format - ranges incompatible." )
         if len(quals) == 1:

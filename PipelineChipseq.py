@@ -46,7 +46,7 @@ def getPeakShiftFromMacs( infile ):
     returns None if no shift found'''
 
     shift = None
-    with open(infile, "r") as ins:
+    with IOTools.openFile(infile, "r") as ins:
         rx = re.compile("#2 predicted fragment length is (\d+) bps")
         r2 = re.compile("#2 Use (\d)+ as shiftsize, \d+ as fragment length" )
         for line in ins:
@@ -101,7 +101,7 @@ def getPeakShift( track ):
 ############################################################
 def getMappedReads( infile ):
     '''return number of reads mapped. '''
-    for lines in open(infile,"r"):
+    for lines in IOTools.openFile(infile,"r"):
         data = lines[:-1].split("\t")
         if data[1].startswith( "without duplicates"):
             return int(data[0])
@@ -127,7 +127,7 @@ def getExonLocations(filename):
     '''return a list of exon locations as Bed entries
     from a file contain a one ensembl gene ID per line
     '''
-    fh = open(filename,"r")
+    fh = IOTools.openFile(filename,"r")
     ensembl_ids = []
     for line in fh:
         ensembl_ids.append(line.strip())
@@ -289,7 +289,7 @@ def buildSimpleNormalizedBAM( infiles, outfile, nreads ):
 
     pysam_in = pysam.Samfile (infile,"rb")
     
-    fh = open(countfile,"r")
+    fh = IOTools.openFile(countfile,"r")
     readcount = int(fh.read())
     fh.close()
     
@@ -360,7 +360,7 @@ def buildNormalizedBAM( infiles, outfile, normalize = True ):
 
     pysam_out.close()
 
-    logs = open( outfile + ".log", "w")
+    logs = IOTools.openFile( outfile + ".log", "w")
     logs.write("# min_reads=%i, threshold= %5.2f\n" % \
                    (min_reads, threshold))
     logs.write("set\tcounts\tpercent\n")
@@ -395,7 +395,7 @@ def buildBAMStats( infile, outfile ):
 
     # no bedToBigBed
     # to_cluster = True
-    outs = open(outfile, "w" )
+    outs = IOTools.openFile(outfile, "w" )
     outs.write( "reads\tcategory\n" )
     for line in pysam.flagstat( infile ):
         data = line[:-1].split( " ")
@@ -403,10 +403,10 @@ def buildBAMStats( infile, outfile ):
 
     pysam_in = pysam.Samfile( infile, "rb" )
 
-    outs_dupl = open( outfile + ".duplicates", "w" )
+    outs_dupl = IOTools.openFile( outfile + ".duplicates", "w" )
     outs_dupl.write( "contig\tpos\tcounts\n" )
 
-    outs_hist = open( outfile + ".histogram", "w" )
+    outs_hist = IOTools.openFile( outfile + ".histogram", "w" )
     outs_hist.write( "duplicates\tcounts\tcumul\tfreq\tcumul_freq\n" )
 
     last_contig, last_pos = None, None
@@ -464,14 +464,20 @@ def exportIntervalsAsBed( infile, outfile ):
 
     dbhandle = sqlite3.connect( PARAMS["database"] )
     
-    track = P.snip( outfile, ".bed" )
+    if outfile.endswith( ".gz" ):
+        compress = True
+        track = P.snip( outfile, ".bed.gz" )
+    else:
+        compress = False
+        track = P.snip( outfile, ".bed" )
+
     tablename = "%s_intervals" % P.quote(track)
 
     cc = dbhandle.cursor()
     statement = "SELECT contig, start, end, interval_id, peakval FROM %s ORDER by contig, start" % tablename
     cc.execute( statement )
 
-    outs = IOTools.openFile( outfile, "w")
+    outs = IOTools.openFile( "%s.bed" % track, "w")
 
     for result in cc:
         contig, start, end, interval_id,peakval = result
@@ -482,6 +488,12 @@ def exportIntervalsAsBed( infile, outfile ):
 
     cc.close()
     outs.close()
+
+    if compress:
+        E.info( "compressing and indexing %s" % outfile )
+        use_cluster = True
+        statement = 'bgzip %(track)s.bed; tabix -p bed %(outfile)s'
+        P.run()
 
 ############################################################
 ############################################################
@@ -528,10 +540,11 @@ def mergeBedFiles( infiles, outfile ):
 
     infile = " ".join( infiles )
     statement = '''
-        cat %(infile)s |\
-        mergeBed -i stdin |\
-        cut -f 1-3 |\
-        awk '{printf("%%s\\t%%i\\n",$0, ++a); }'
+        zcat %(infile)s 
+        | mergeBed -i stdin 
+        | cut -f 1-3 
+        | awk '{printf("%%s\\t%%i\\n",$0, ++a); }'
+        | bgzip
         > %(outfile)s 
         ''' 
 
@@ -554,6 +567,7 @@ def intersectBedFiles( infiles, outfile ):
     '''
 
     if len(infiles) == 1:
+
         shutil.copyfile( infiles[0], outfile )
 
     elif len(infiles) == 2:
@@ -565,7 +579,7 @@ def intersectBedFiles( infiles, outfile ):
         intersectBed -u -a %s -b %s 
         | cut -f 1,2,3,4,5 
         | awk 'BEGIN { OFS="\\t"; } {$4=++a; print;}'
-        > %%(outfile)s 
+        | bgzip > %%(outfile)s 
         ''' % (infiles[0], infiles[1])
             P.run()
         
@@ -594,6 +608,7 @@ def intersectBedFiles( infiles, outfile ):
         statement = '''cat %(tmpfile)s
         | cut -f 1,2,3,4,5 
         | awk 'BEGIN { OFS="\\t"; } {$4=++a; print;}'
+        | bgzip
         > %(outfile)s '''
         P.run()
 
@@ -615,11 +630,11 @@ def subtractBedFiles( infile, subtractfile, outfile ):
         return
 
     statement = '''
-        intersectBed -v -a %(infile)s -b %(subtractfile)s |\
-        cut -f 1,2,3,4,5 |\
-        awk 'BEGIN { OFS="\\t"; } {$4=++a; print;}'
-        > %%(outfile)s 
-        ''' % locals()
+        intersectBed -v -a %(infile)s -b %(subtractfile)s 
+        | cut -f 1,2,3,4,5 
+        | awk 'BEGIN { OFS="\\t"; } {$4=++a; print;}'
+        | bgzip > %(outfile)s ; tabix -p bed %(outfile)s
+        ''' 
 
     P.run()
 
@@ -656,7 +671,7 @@ def summarizeMACS( infiles, outfile ):
 
     keys = [ x[1] for x in map_targets ]
 
-    outs = open(outfile,"w")
+    outs = IOTools.openFile(outfile,"w")
 
     headers = []
     for k in keys:
@@ -668,7 +683,7 @@ def summarizeMACS( infiles, outfile ):
 
     for infile in infiles:
         results = collections.defaultdict(list)
-        with open( infile ) as f:
+        with IOTools.openFile( infile ) as f:
             for line in f:
                 if "diag:" in line: break
                 for x,y in mapper.items():
@@ -746,7 +761,7 @@ def summarizeMACSsolo( infiles, outfile ):
 
     keys = [ x[1] for x in map_targets ]
 
-    outs = open(outfile,"w")
+    outs = IOTools.openFile(outfile,"w")
 
     headers = []
     for k in keys:
@@ -758,7 +773,7 @@ def summarizeMACSsolo( infiles, outfile ):
 
     for infile in infiles:
         results = collections.defaultdict(list)
-        with open( infile ) as f:
+        with IOTools.openFil( infile ) as f:
             for line in f:
                 if "diag:" in line: break
                 for x,y in mapper.items():
@@ -1071,6 +1086,52 @@ def countPeaks( contig, start, end, samfiles, offsets = None):
 ############################################################
 ############################################################
 ############################################################
+def runZinba( infile, outfile, controlfile ):
+    '''run Zinba for peak detection.'''
+
+    to_cluster = False
+
+    job_options= "-pe dedicated %i -R y" % PARAMS["zinba_threads"]
+
+    mappability_dir = os.path.join( PARAMS["zinba_mappability_dir"], 
+                             PARAMS["genome"],
+                             "%i" % PARAMS["zinba_read_length"],
+                             "%i" % PARAMS["zinba_alignability_threshold"],
+                             "%i" % PARAMS["zinba_fragment_size"])
+
+    if not os.path.exists( mappability_dir ):
+        raise OSError("mappability not found, expected to be at %s" % mappability_dir )
+
+    bit_file = os.path.join( PARAMS["zinba_index_dir"], 
+                             PARAMS["genome"] ) + ".2bit"
+    if not os.path.exists( bit_file):
+        raise OSError("2bit file not found, expected to be at %s" % bit_file )
+
+    options = []
+    if controlfile:
+        options.append( "--control-filename=%(controlfile)s" % locals() )
+
+    options = " ".join(options)
+
+    statement = '''
+    python %(scriptsdir)s/WrapperZinba.py
+           --input-format=bam
+           --fdr-threshold=%(zinba_fdr_threshold)f
+           --fragment-size=%(zinba_fragment_size)s
+           --threads=%(zinba_threads)i
+           --bit-file=%(bit_file)s
+           --mappability-dir=%(mappability_dir)s
+           %(options)s
+    %(infile)s %(outfile)s
+    >& %(outfile)s
+    '''
+
+    P.run()
+
+
+############################################################
+############################################################
+############################################################
 def loadZinba( infile, outfile, bamfile, tablename = None ):
     '''load Zinba results in *tablename*
 
@@ -1112,7 +1173,8 @@ def loadZinba( infile, outfile, bamfile, tablename = None ):
     
     if not os.path.exists(infilename):
         E.warn("could not find %s" % infilename )
-        
+    elif P.isEmpty( infile ):
+        E.warn("no data in %s" % filename )
     else:
         # filter peaks
         shift = getPeakShiftFromZinba( infile )
@@ -1196,7 +1258,7 @@ def makeIntervalCorrelation( infiles, outfile, field, reference ):
 
     tracks, idx = [], []
     for infile in infiles:
-        track = P.snip( infile, ".bed" )
+        track = P.snip( infile, ".bed.gz" )
         tablename = "%s_intervals" % P.quote( track )
         cc = dbhandle.cursor()
         statement = "SELECT contig, start, end, %(field)s FROM %(tablename)s" % locals()
@@ -1209,7 +1271,7 @@ def makeIntervalCorrelation( infiles, outfile, field, reference ):
     outs = IOTools.openFile( outfile, "w" )
     outs.write( "contig\tstart\tend\tid\t" + "\t".join( tracks ) + "\n" )
 
-    for bed in Bed.iterator( infile = open( reference, "r") ):
+    for bed in Bed.iterator( infile = IOTools.openFile( reference, "r") ):
         
         row = []
         for ix in idx:
@@ -1229,3 +1291,74 @@ def makeIntervalCorrelation( infiles, outfile, field, reference ):
 
     outs.close()
 
+
+############################################################
+############################################################
+############################################################
+def buildIntervalCounts( infile, outfile, track, fg_replicates, bg_replicates ):
+    '''count read density in bed files comparing stimulated versus unstimulated binding.
+    '''
+    samfiles_fg, samfiles_bg = [], []
+
+    # collect foreground and background bam files
+    for replicate in fg_replicates:
+        samfiles_fg.append( "%s.call.bam" % replicate.asFile() )
+
+    for replicate in bg_replicates:
+        samfiles_bg.append( "%s.call.bam" % replicate.asFile())
+        
+    samfiles_fg = [ x for x in samfiles_fg if os.path.exists( x ) ]
+    samfiles_bg = [ x for x in samfiles_bg if os.path.exists( x ) ]
+
+    samfiles_fg = ",".join(samfiles_fg)
+    samfiles_bg = ",".join(samfiles_bg)
+
+    tmpfile1 = P.getTempFilename( os.getcwd() ) + ".fg"
+    tmpfile2 = P.getTempFilename( os.getcwd() ) + ".bg"
+
+    # start counting
+    to_cluster = True
+
+    statement = """
+    zcat < %(infile)s 
+    | python %(scriptsdir)s/bed2gff.py --as-gtf 
+    | python %(scriptsdir)s/gtf2table.py 
+                --counter=read-coverage 
+                --log=%(outfile)s.log 
+                --bam-file=%(samfiles_fg)s 
+    > %(tmpfile1)s"""
+    P.run()
+
+    if samfiles_bg:
+        statement = """
+        zcat < %(infile)s 
+        | python %(scriptsdir)s/bed2gff.py --as-gtf 
+        | python %(scriptsdir)s/gtf2table.py 
+                    --counter=read-coverage 
+                    --log=%(outfile)s.log 
+                    --bam-file=%(samfiles_bg)s 
+        > %(tmpfile2)s"""
+        P.run()
+
+        statement = '''
+        python %(toolsdir)s/combine_tables.py 
+               --add-file-prefix 
+               --regex-filename="[.](\S+)$" 
+        %(tmpfile1)s %(tmpfile2)s > %(outfile)s
+        '''
+
+        P.run()
+
+        os.unlink( tmpfile2 )
+        
+    else:
+        statement = '''
+        python %(toolsdir)s/combine_tables.py 
+               --add-file-prefix 
+               --regex-filename="[.](\S+)$" 
+        %(tmpfile1)s > %(outfile)s
+        '''
+
+        P.run()
+
+    os.unlink( tmpfile1 )

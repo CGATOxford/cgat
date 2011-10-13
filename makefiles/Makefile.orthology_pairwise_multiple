@@ -249,9 +249,9 @@ blast.remove-unfinished:
 #############################################################################################
 trees.show-unfinished:
 	@for dir in pair_*; do \
-		if [[ -d $${dir}/step3.dir/step1.dir ]]; then \
+		if [[ -d $${dir}/step3.dir/data.dir ]]; then \
 		echo "processing $${dir}"; \
-		for file in $${dir}/step3.dir/step1.dir/cluster*.tree; do \
+		for file in $${dir}/step3.dir/data.dir/cluster.*.tree; do \
 			tail -n 1 $${file} | grep -q "finished"; \
 			if [[ $$? == 1 ]] ; then \
 				echo "unfinished: $${file}"; \
@@ -264,9 +264,9 @@ trees.show-unfinished:
 trees.remove-unfinished:
 	$(PRELOG)
 	@for dir in pair_*; do \
-		if [[ -d $${dir}/step3.dir/step1.dir ]]; then \
+		if [[ -d $${dir}/step3.dir/data.dir ]]; then \
 		    $(CMD_MSG2) "processing $${dir}"; \
-		    for file in $${dir}/step3.dir/step1.dir/cluster_*.tree ; do \
+		    for file in $${dir}/step3.dir/data.dir/cluster.*.tree ; do \
 			    do_reset=0; \
 			    tail -n 1 $${file} | grep -q "finished"; \
 			    if [[ $$? == 1 ]] ; then \
@@ -278,7 +278,7 @@ trees.remove-unfinished:
 		    if [[ $${do_reset} == 1 ]]; then \
 			    $(CMD_LOG2) "$${dir}: resetting step3.run."; \
 			    rm -f $${dir}/step3.run; \
-			    rm -f $${dir}/step3.dir/step1.run; \
+			    rm -f $${dir}/step3.dir/data.run; \
 		    fi; \
 		fi; \
 	done
@@ -291,10 +291,10 @@ trees.show-progress:
 	@printf "# NCHUNKS\tNSTART\tUNCHANGED\tNREJOINED\tDIRECTORY\n" >> trees.progress
 	@for dir in pair_*; do \
 		printf "%i\t%i\t%i\t%i\t%i\t%s\n" \
-					`find $${dir}/step3.dir/step1.dir/ -name "*.ks" | wc -l` \
-					`find $${dir}/step3.dir/step1.dir/ -name "*.tree" ! -empty | wc -l` \
-					`find $${dir}/step3.dir/step1.dir/ -name "*.unchanged" ! -empty | wc -l` \
-					`find $${dir}/step3.dir/step1.dir/ -name "*.rejoined" ! -empty | wc -l` \
+					`find $${dir}/step3.dir/data.dir/ -name "*.ks" | wc -l` \
+					`find $${dir}/step3.dir/data.dir/ -name "*.tree" ! -empty | wc -l` \
+					`find $${dir}/step3.dir/data.dir/ -name "*.unchanged" ! -empty | wc -l` \
+					`find $${dir}/step3.dir/data.dir/ -name "*.rejoined" ! -empty | wc -l` \
 					`if [ -e $${dir}/step3.dir/interpretation ]; then echo 1; else echo 0; fi` \
 					$${dir} \
 		>> trees.progress; \
@@ -311,9 +311,9 @@ trees.check:
 			echo "checking $${target_dir}" $(TOLOG); \
 			if [ -e $${target_dir}/step3.dir ]; then \
 				printf "jobs: total=%i rejoined=%i unchanged=%i\n" \
-					`find $${target_dir}/step3.dir/step1.dir/ -name "*.ks" | wc -l` \
-					`find $${target_dir}/step3.dir/step1.dir/ -name "*.rejoined" ! -empty | wc -l` \
-					`find $${target_dir}/step3.dir/step1.dir/ -name "*.unchanged" ! -empty | wc -l` $(TOLOG); \
+					`find $${target_dir}/step3.dir/data.dir/ -name "*.ks" | wc -l` \
+					`find $${target_dir}/step3.dir/data.dir/ -name "*.rejoined" ! -empty | wc -l` \
+					`find $${target_dir}/step3.dir/data.dir/ -name "*.unchanged" ! -empty | wc -l` $(TOLOG); \
 				if [ -e $${target_dir}/step3.dir/interpretation ]; then \
 					for file in ortho_1_to_1 ortho_1_to_m ortho_m_to_1 orphaned_tax1 orphaned_tax2; do \
 						if [ -e $${target_dir}/step3.dir/orthology_$${file} ]; then \

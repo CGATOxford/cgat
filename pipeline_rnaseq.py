@@ -4011,7 +4011,6 @@ def buildGeneSetsOfInterest( infile, outfile ):
 #########################################################################
 #########################################################################
 @follows( buildBAMs,
-          buildBAMReports,
           buildFastQCReport,
           loadTophatStats,
           loadBAMStats,

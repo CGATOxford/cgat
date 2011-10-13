@@ -76,7 +76,7 @@ class Counter:
 
     @E.cachedmethod
     def buildIndex( self, filename ):
-        return Bed.readAndIndex( open(filename, "r") )
+        return Bed.readAndIndex( IOTools.openFile(filename, "r") )
 
     def _count( self, filename, idx ):
         '''count filename against idx.'''
@@ -85,7 +85,7 @@ class Counter:
         genes = set()
 
         # iterate over exons
-        infile = open( filename, "r" )
+        infile = IOTools.openFile( filename, "r" )
         it = Bed.bed_iterator( infile )
 
         nexons, nexons_overlapping = 0, 0
@@ -159,7 +159,7 @@ class Counter:
 class CounterTracks(Counter):
 
     def __init__(self, filename ):
-        self.mIndices = Bed.readAndIndex( open(filename, "r"), 
+        self.mIndices = Bed.readAndIndex( IOTools.openFile(filename, "r"), 
                                           per_track = True )
         
         
@@ -259,7 +259,7 @@ def main( argv = None ):
         raise ValueError( "at least two arguments required" )
 
     if options.filename_update:
-        infile = open( options.filename_update, "r")
+        infile = IOTools.openFile( options.filename_update, "r")
         previous_results = {}
         for line in infile:
             if line.startswith("#"): continue

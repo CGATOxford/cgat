@@ -38,7 +38,7 @@ API
 
 '''
 import os, sys, re, subprocess, optparse, stat, tempfile, time, random, inspect, types
-import logging, collections, shutil, glob
+import logging, collections, shutil, glob, gzip
 import ConfigParser
 
 import drmaa
@@ -201,8 +201,18 @@ def clone( infile, outfile ):
         pass
     
 def touch( filename, times = None ):
-    '''update/create a sentinel file.'''
+    '''update/create a sentinel file.
+
+    Compressed files (ending in .gz) are created
+    as empty 'gzip' files, i.e., with a header.
+    '''
+    existed = os.path.exists(filename)
     fhandle = file(filename, 'a')
+
+    if filename.endswith (".gz") and not existed:
+        # this will automatically add a gzip header
+        fhandle = gzip.GzipFile( filename, fileobj = fhandle )
+        
     try:
         os.utime(filename, times)
     finally:
