@@ -510,10 +510,14 @@ class SequencePropertiesCpg(SequenceProperties):
 
         fields = SequenceProperties.getFields(self)
         fields.append( "%i" % self.mCountsCG )        
-        fields.append( "%f" % (float(self.mCountsCG) / (self.mLength/2) ))
-        fields.append( "%f" % (float(self.mCountsCG) / (self.mLength/16) ))
+        if self.mLength > 0:
+            fields.append( "%f" % (float(self.mCountsCG) / (float(self.mLength)/2.0) ))
+            fields.append( "%f" % (float(self.mCountsCG) / (float(self.mLength)/16.0) ))
+        else:
+            fields.append( "%f" % 0.0 )
+            fields.append( "%f" % 0.0 )
         if (self.mCountsC*self.mCountsG)/self.mLength > 0:
-            fields.append( "%f" % ( float(self.mCountsCG) / ((self.mCountsC*self.mCountsG)/self.mLength) ) )
+            fields.append( "%f" % ( float(self.mCountsCG) / ((float(self.mCountsC)*float(self.mCountsG))/float(self.mLength)) ) )
         else:
             fields.append( "%f" % 0.0 )
         return fields
