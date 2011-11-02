@@ -37,6 +37,8 @@ def count( Samfile samfile,
     # count nh, nm tags
     nh_filtered, nm_filtered = collections.defaultdict( int ), collections.defaultdict( int )
     nh_all, nm_all = collections.defaultdict( int ), collections.defaultdict( int )
+    mapq_filtered, mapq_all = collections.defaultdict( int ), collections.defaultdict( int )
+
     cdef int * flags_counts = <int*>calloc( len(FLAGS), sizeof(int) )
 
     # helper variables
@@ -89,6 +91,8 @@ def count( Samfile samfile,
         else:
             nm = -1
 
+        mapq_all[read.mapq] += 1
+
         # skip unmapped reads
         if read._delegate.core.flag & 4: continue
 
@@ -105,7 +109,8 @@ def count( Samfile samfile,
 
         if nh >= 0: nh_filtered[nh] += 1
         if nm >= 0: nm_filtered[nm] += 1
-        
+        mapq_filtered[read.mapq] += 1
+
         # duplicate analysis - simply count per start position
         # ignoring sequence and strand
         if read.tid == last_tid and read.pos == last_pos:
@@ -133,4 +138,4 @@ def count( Samfile samfile,
         t[FLAGS[f]] = flags_counts[x]
         f = f << 1
 
-    return c, t, nh_filtered, nh_all, nm_filtered, nm_all
+    return c, t, nh_filtered, nh_all, nm_filtered, nm_all, mapq_filtered, mapq_all

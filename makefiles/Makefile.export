@@ -307,6 +307,7 @@ export_clustering_cds.fasta:
 	$(EPILOG)
 
 ## export peptides for clustering
+## convert ? characters to X for easier downstream processing.
 export_clustering_peptides.fasta:
 	$(PRELOG)
 	@$(CONNECTION) \
@@ -315,7 +316,9 @@ export_clustering_peptides.fasta:
 	$(PARAM_TABLE_NAME_REDUNDANT) AS r \
 	WHERE $(EXPORT_CLUSTERING_WHERE) \
 	ORDER BY o.prediction_id " \
-	$(CONNECTION_OPTIONS) > $@
+	$(CONNECTION_OPTIONS) |\
+	perl -p -e "s/[?]/X/g" \
+	> $@
 	$(EPILOG)
 
 ## a list of non-redundant predictions 

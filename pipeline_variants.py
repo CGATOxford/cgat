@@ -997,6 +997,7 @@ def loadAnnotationsSummary( infile, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
+@follows( buildSelenoList )
 @files( [ ("variants.vcf.gz", "%s.effects.gz" % x, x ) for x in TRACKS ] )
 def buildEffects( infile, outfile, sample ):
     """annotate snps with gene set."""
@@ -1068,7 +1069,7 @@ def mergeEffects( infiles, outfile ):
     '''load transcript effects into single table.'''
 
     tablename = P.toTable( outfile )
-    outf = open('effect.txt','w')
+    outf = IOTools.openFile('effects.tsv.gz','w')
     first = True
     for f in infiles:
         track = P.snip( os.path.basename(f), ".effects.gz" )
@@ -1083,8 +1084,8 @@ def mergeEffects( infiles, outfile ):
     outf.close()
     tmpfilename = outf.name
 
-    statement = '''cat tmpfilename |
-                   python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
+    statement = '''zcat %(tmpfilename)s 
+                   | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
                        --index=transcript_id 
                        --table=%(tablename)s 
                    > %(outfile)s'''
@@ -1092,7 +1093,7 @@ def mergeEffects( infiles, outfile ):
 
     for suffix in ("cds", "intron", "splicing", "translation"):
 
-        outf = open('effects_'+suffix+'.txt','w')
+        outf = IOTools.openFile('effects_'+suffix+'.tsv.gz','w')
         first = True
         for f in infiles:
             track = P.snip( os.path.basename(f), ".effects.gz" )
@@ -1108,8 +1109,8 @@ def mergeEffects( infiles, outfile ):
         outf.close()
         tmpfilename = outf.name
         
-        statement = '''cat tmpfilename |
-                       python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
+        statement = '''zcat %(tmpfilename)s 
+                       | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
                            --allow-empty
                            --index=transcript_id 
                            --table=%(tablename)s_%(suffix)s 
@@ -2933,7 +2934,6 @@ def full(): pass
           runGATOnQTLs, 
           runGATOnQTLsSmall)
 def qtl(): pass
-
 
 @follows( buildGeneMatrixConsequences,
           buildGeneMatrixAlleles,

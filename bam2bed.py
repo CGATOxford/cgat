@@ -30,7 +30,9 @@
 Purpose
 -------
 
-Convert BAM into BED. Example for samtools-devel.
+Convert BAM into BED.
+
+
 
 Usage
 -----
@@ -49,6 +51,12 @@ Code
 import os, sys, re, optparse
 import pysam
 
+import Experiment as E
+
+import pyximport
+pyximport.install(build_in_temp=False)
+import _bam2bed
+
 def main( argv = None ):
     """script main.
 
@@ -64,47 +72,61 @@ def main( argv = None ):
     parser.add_option("-r", "--region", dest="region", type="string",
                       help="samtools region string [default=%default]."  )
 
+    parser.add_option("-m", "--merge-pairs", dest="merge_pairs", type="int",
+                      help="merge paired-ended reads into a single bed interval. Only merge if less than # bases apart [default=%default]."  )
+
     parser.set_defaults(
         region = None,
+        merge_pairs = None,
+        call_peaks = None,
         )
 
-    (options, args) = parser.parse_args( argv[1:] )
+    (options, args) = E.Start( parser, argv = argv )
 
     if len(args) != 1:
         raise ValueError( "no samfile specified - see --help for usage" )
     
     samfile = pysam.Samfile( args[0], "rb" )
 
-    if options.region != None:
-        it = samfile.fetch( options.region )
+    if options.merge_pairs != None:
+        counter = _bam2bed.merge_pairs( samfile, 
+                                        options.stdout,
+                                        max_insert_size = options.merge_pairs )
+
+        options.stdlog.write( "category\tcounts\n%s\n" % counter.asTable() )
+
     else:
-        it = samfile.fetch()
 
-    # more comfortable cigar parsing will
-    # come with the next pysam elease
-    BAM_CMATCH = 0
-    BAM_CDEL = 2
-    BAM_CREF_SKIP = 3
-    take = (BAM_CMATCH, BAM_CDEL, BAM_CREF_SKIP)
-    outfile = sys.stdout
-    
-    for read in it:
-        if read.is_unmapped: continue
+        if options.region != None:
+            it = samfile.fetch( region = options.region )
+        else:
+            it = samfile.fetch()
 
-        t = 0
-        for op, l in read.cigar:
-            if op in take: t += l
+        # more comfortable cigar parsing will
+        # come with the next pysam elease
+        BAM_CMATCH = 0
+        BAM_CDEL = 2
+        BAM_CREF_SKIP = 3
+        take = (BAM_CMATCH, BAM_CDEL, BAM_CREF_SKIP)
+        outfile = sys.stdout
 
-        start = read.pos
-        if read.is_reverse: strand = "-"
-        else: strand = "+"
-        outfile.write("%s\t%d\t%d\t%s\t%d\t%c\n" %\
-                      ( read.rname,
-                        read.pos,
-                        read.pos+t,
-                        read.qname,
-                        read.mapq,
-                        strand) )            
+        for read in it:
+            if read.is_unmapped: continue
+
+            t = 0
+            for op, l in read.cigar:
+                if op in take: t += l
+
+            start = read.pos
+            if read.is_reverse: strand = "-"
+            else: strand = "+"
+            outfile.write("%s\t%d\t%d\t%s\t%d\t%c\n" %\
+                          ( read.rname,
+                            read.pos,
+                            read.pos+t,
+                            read.qname,
+                            read.mapq,
+                            strand) )            
 
 if __name__ == "__main__":
     sys.exit( main( sys.argv) )

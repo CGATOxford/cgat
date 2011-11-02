@@ -186,7 +186,7 @@ def runFastqc(infiles, outfile):
     '''convert sra files to fastq and check mapping qualities are in solexa format. 
     Perform quality control checks on reads from .fastq files.'''
     to_cluster = USECLUSTER
-    m = PipelineMapping.fastqc()
+    m = PipelineMapping.FastQc()
     statement = m.build((infiles,), outfile) 
     P.run()
 
@@ -209,6 +209,9 @@ ILLUMINA_ADAPTORS = { "Genomic/ChIPSeq-Adapters1-1" : "GATCGGAAGAGCTCGTATGCCGTCT
 		      "Paired-End-Sequencing-2" : "CGGTCTCGGCATTCCTGCTGAACCGCTCTTCCGATCT" }
 
 
+#########################################################################
+#########################################################################
+#########################################################################
 @merge( None, "contaminants.fasta" )
 def outputContaminants( infile, outfile ):
     '''output file with contaminants.'''
@@ -217,10 +220,13 @@ def outputContaminants( infile, outfile ):
         outf.write(">%s\n%s\n" % (key, value) )
     outf.close()
 
-@transform( ("*.fastq.gz",
-             "*.fastq.1.gz",
-             "*.fastq.2.gz"),
-	    regex( r"(?!nocontaminants)(\S+).(fastq.1.gz|fastq.gz|fastq.2.gz|csfasta.gz)"),
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( [ x for x in \
+                  glob.glob("*.fastq.gz") + glob.glob("*.fastq.1.gz") + glob.glob("*.fastq.2.gz") \
+                  if not x.startswith("nocontaminants")],
+	    regex( r"(\S+).(fastq.1.gz|fastq.gz|fastq.2.gz|csfasta.gz)"),
 	    add_inputs(outputContaminants),
 	    r"nocontaminants.\1.\2")
 def removeContaminants( infiles, outfile ):
@@ -252,10 +258,74 @@ def removeContaminants( infiles, outfile ):
     '''
     P.run()
 
+#########################################################################
+#########################################################################
+#########################################################################
+@merge( removeContaminants, "filtering.summary.tsv.gz" )
+def summarizeFiltering( infiles, outfile ):
+    '''collect summary output from filtering stage.'''
+    tracks = {}
+    adapters = {}
+    def _chunker( inf ):
+        chunk = []
+        for line in inf:
+            if line.startswith("==="):
+                if chunk: yield chunk
+                chunk = []
+            chunk.append( line )
+            
+    for f in infiles:
+        track = f[len("nocontaminants."):]
+        track = re.sub( "[.].*", "", track )
+        results = {}
+        lines = IOTools.openFile( f + ".log" ).readlines()
+        del lines[0]
+        for x, line in enumerate(lines):
+            if not line.strip(): continue
+            if ":" in line:
+                if line.strip().startswith("Command"): continue
+                param, value = line[:-1].split(":")
+                param = re.sub( " ", "_", param.strip()).lower()
+                value = re.sub( "[a-zA-Z ].*", "", value.strip() )
+                results[param] = value
+            else:
+                break
+            
+        del lines[:x]
+        results["unchanged_reads"] = int(results["processed_reads"]) - int(results["trimmed_reads"])
+        headers = results.keys()
+        tracks[track] = results
+        
+        results = {}
+        for chunk in _chunker(lines):        
+            adapter = re.search("=== (.*) ===", chunk[0]).groups()[0]
+            length, removed = re.search( "Adapter '.*', length (\d+), was trimmed (\d+) times", chunk[2]).groups()
+                
+            results[adapter] = length, removed
+        
+        adapters[track] = results
+
+    outf = IOTools.openFile( outfile, "w" )
+    outf.write( "track\t%s\n" % "\t".join(headers))
+    
+    for track, results in tracks.iteritems():
+        outf.write("%s\t%s\n" % (track, "\t".join( str(results[x]) for x in headers ) ) )
+    outf.close()
+
+@transform( summarizeFiltering,
+            suffix(".summary.tsv.gz"),
+            "_summary.load")
+def loadFilteringSummary( infile, outfile ):
+    '''load filtering summary.'''
+    P.load(infile, outfile )
+
+#########################################################################
+#########################################################################
+#########################################################################
 @follows() 
 def publish():
     '''publish files.'''
-    P.publish_report( prefix = "readqc_" )
+    P.publish_report()
 
 #########################################################################
 #########################################################################

@@ -44,7 +44,9 @@ formatted files at the same time).
 The module currently is able to deal with:
 
    * tophat mapping against genome
-   * bowtie mapping against transcriptome
+   * bowtie mapping against transcriptome, genome and junctions
+   * bwa against genome
+   * stampy against genome
 
 It implements:
    * .sra: paired-end and single-end
@@ -93,11 +95,14 @@ class Mapper( object ):
         # create temporary directory again for nodes
         statement = [ "mkdir -p %s" % tmpdir_fastq ]
         fastqfiles = []
+
+        # get track by extension of outfile
+        track = os.path.splitext( os.path.basename( outfile ) )[0]
+
         for infile in infiles:
 
             if infile.endswith( ".export.txt.gz"):
                 # single end illumina export
-                track = P.snip( os.path.basename( infile ), ".export.txt.gz" )
                 statement.append( """gunzip < %(infile)s 
                      | awk '$11 != "QC" || $10 ~ /(\d+):(\d+):(\d+)/ \
                         { if ($1 != "") 
@@ -108,8 +113,6 @@ class Mapper( object ):
                 fastqfiles.append( ("%s/%s.fastq" % (tmpdir_fastq, track),) )
 
             elif infile.endswith( ".sra"):
-                track = P.snip( infile, ".sra" )
-
                 # sneak preview to determine if paired end or single end
                 outdir = P.getTempDir()
                 P.execute( "fastq-dump -X 1000 --outdir %(outdir)s %(infile)s" % locals() )
@@ -122,7 +125,6 @@ class Mapper( object ):
                 
             elif infile.endswith( ".fastq.gz" ):
 
-                track = P.snip( os.path.basename( infile ), ".fastq.gz" )
                 statement.append(  """gunzip < %(infile)s 
                                       | python %%(scriptsdir)s/fastq2fastq.py --change-format=sanger --guess-format=phred64 --log=%(outfile)s.log
                                       > %(tmpdir_fastq)s/%(track)s.fastq""" % locals() )
@@ -131,7 +133,6 @@ class Mapper( object ):
             elif infile.endswith( ".csfasta.gz" ):
                 # single end SOLiD data
                 if self.preserve_colourspace:
-                    track = P.snip( os.path.basename( infile ), ".csfasta.gz" )
                     quality = P.snip( infile, ".csfasta.gz" ) + ".qual.gz"
                     if not os.path.exists( quality ):
                         raise ValueError( "no quality file for %s" % infile )
@@ -143,7 +144,6 @@ class Mapper( object ):
                                         "%s/%s.qual" % (tmpdir_fastq, track) ) )
                     self.datatype = "solid"
                 else:
-                    track = P.snip( os.path.basename( infile ), ".csfasta.gz" )
                     quality = P.snip( infile, ".csfasta.gz" ) + ".qual.gz"
 
                     statement.append( """solid2fastq <(gunzip < %(infile)s) <(gunzip < %(quality)s)
@@ -153,7 +153,6 @@ class Mapper( object ):
             elif infile.endswith( ".csfasta.F3.gz" ):
                 # paired end SOLiD data
                 if self.preserve_colourspace:
-                    track = P.snip( os.path.basename( infile ), ".csfasta.F3.gz" )
                     bn = P.snip( infile, ".csfasta.F3.gz" )
                     # order is important - mirrors tophat reads followed by quals
                     f = []
@@ -166,7 +165,6 @@ class Mapper( object ):
                     fastqfiles.append( f )
                     self.datatype = "solid"
                 else:
-                    track = P.snip( os.path.basename( infile ), ".csfasta.gz" )
                     quality = P.snip( infile, ".csfasta.gz" ) + ".qual.gz"
 
                     statement.append( """solid2fastq <(gunzip < %(infile)s) <(gunzip < %(quality)s)
@@ -176,9 +174,8 @@ class Mapper( object ):
 
             elif infile.endswith( ".fastq.1.gz" ):
 
-                track = P.snip( os.path.basename( infile ), ".gz" )
-                track = P.snip( infile, ".fastq.1.gz" )
-                infile2 = "%s.fastq.2.gz" % track
+                bn = P.snip( infile, ".fastq.1.gz" )
+                infile2 = "%s.fastq.2.gz" % bn
                 if not os.path.exists( infile2 ):
                     raise ValueError("can not find paired ended file '%s' for '%s'" % (infile2, infile))
                 statement.append( """gunzip < %(infile)s 
@@ -211,8 +208,9 @@ class Mapper( object ):
 
     def cleanup( self, outfile ):
         '''clean up.'''
-        statement = '''rm -rf %s;''' % (self.tmpdir_fastq)
-        
+        #statement = '''rm -rf %s;''' % (self.tmpdir_fastq)
+        statement = ""
+
         return statement
 
     def build( self, infiles, outfile ):
@@ -239,8 +237,8 @@ class Mapper( object ):
 
 
 
-class fastqc( Mapper ):
-    
+class FastQc( Mapper ):
+    '''run fastqc to test read quality.'''
     def mapper( self, infiles, outfile ):
         '''build mapping statement on infiles.
         
@@ -254,9 +252,26 @@ class fastqc( Mapper ):
                 statement.append( '''fastqc --outdir=%%(exportdir)s/fastqc %(x)s >& %(outfile)s;''' % locals() )
         return " ".join( statement )
 
-
-class bwa( Mapper ):
+class Counter( Mapper ):
+    '''count number of reads in fastq files.'''
     
+    def mapper( self, infiles, outfile ):
+        '''count number of reads by counting number of lines
+        in fastq files.
+        '''
+        
+        statement = []
+        for f in infiles:
+            for i, x in enumerate(f):
+                statement.append( '''awk '{n+=1;} END {printf("nreads\\t%%%%i\\n",n/4);}' < %(x)s >& %(outfile)s;''' % locals() )
+        return " ".join( statement )
+
+class BWA( Mapper ):
+    '''run bwa to map reads against genome.
+
+    * colour space not implemented
+    '''
+
     def mapper( self, infiles, outfile ):
         '''build mapping statement on infiles.'''
 
@@ -274,9 +289,12 @@ class bwa( Mapper ):
         if nfiles == 1:
             infiles = ",".join( [ x[0] for x in infiles ] )
             track = P.snip( os.path.basename( infiles ), ".fastq" )
+            
             statement.append('''
-            bwa aln %%(bwa_aln_options)s %%(bwa_index_dir)s/%%(genome)s %(infiles)s > %(tmpdir_bwa)s/%(track)s.sai 2>%(outfile)s.bwa.stderr; 
-            bwa samse %%(bwa_index_dir)s/%%(genome)s %(tmpdir_bwa)s/%(track)s.sai %(infiles)s > %(tmpdir_bwa)s/%(track)s.sam 2>%(outfile)s.bwa.stderr;
+            bwa aln %%(bwa_aln_options)s -t %%(bwa_threads)i %%(bwa_index_dir)s/%%(genome)s %(infiles)s 
+            > %(tmpdir_bwa)s/%(track)s.sai 2>>%(outfile)s.bwa.log; 
+            bwa samse %%(bwa_index_dir)s/%%(genome)s %(tmpdir_bwa)s/%(track)s.sai %(infiles)s 
+            > %(tmpdir_bwa)s/%(track)s.sam 2>>%(outfile)s.bwa.log;
             ''' % locals() )
 
         elif nfiles == 2:
@@ -287,9 +305,14 @@ class bwa( Mapper ):
             track2 = P.snip( os.path.basename( infiles2 ), ".fastq" )
 
             statement.append('''
-            bwa aln %%(bwa_aln_options)s %%(bwa_index_dir)s/%%(genome)s %(infiles1)s > %(tmpdir_bwa)s/%(track1)s.sai 2>>%(outfile)s.bwa.stderr; checkpoint;
-            bwa aln %%(bwa_aln_options)s %%(bwa_index_dir)s/%%(genome)s %(infiles2)s > %(tmpdir_bwa)s/%(track2)s.sai 2>>%(outfile)s.bwa.stderr; checkpoint;
-            bwa sampe %%(bwa_sampe_options)s %%(bwa_index_dir)s/%%(genome)s %(tmpdir_bwa)s/%(track1)s.sai %(tmpdir_bwa)s/%(track2)s.sai %(infiles1)s %(infiles2)s > %(tmpdir_bwa)s/%(track)s.sam 2>>%(outfile)s.bwa.stderr;
+            bwa aln %%(bwa_aln_options)s -t %%(bwa_threads)i %%(bwa_index_dir)s/%%(genome)s %(infiles1)s 
+            > %(tmpdir_bwa)s/%(track1)s.sai 2>>%(outfile)s.bwa.log; checkpoint;
+            bwa aln %%(bwa_aln_options)s -t %%(bwa_threads)i %%(bwa_index_dir)s/%%(genome)s %(infiles2)s 
+            > %(tmpdir_bwa)s/%(track2)s.sai 2>>%(outfile)s.bwa.log; checkpoint;
+            bwa sampe %%(bwa_sampe_options)s %%(bwa_index_dir)s/%%(genome)s 
+                      %(tmpdir_bwa)s/%(track1)s.sai 
+                      %(tmpdir_bwa)s/%(track2)s.sai %(infiles1)s %(infiles2)s 
+            > %(tmpdir_bwa)s/%(track)s.sam 2>>%(outfile)s.bwa.log;
             ''' % locals() )
         else:
             raise ValueError( "unexpected number read files to map: %i " % nfiles )
@@ -302,15 +325,66 @@ class bwa( Mapper ):
         '''collect output data and postprocess.'''
         
         track = P.snip( os.path.basename(outfile), ".bam" )
+        outf = P.snip( outfile, ".bam" )
         tmpdir_bwa = self.tmpdir_bwa
-
+        
         statement = '''
-            samtools view -buS %(tmpdir_bwa)s/%(track)s.sam | samtools sort - %(track)s/bam/%(track)s 2>>%(outfile)s.bwa.stderr; 
+            samtools view -buS %(tmpdir_bwa)s/%(track)s.sam | samtools sort - %(outf)s 2>>%(outfile)s.bwa.log; 
             samtools index %(outfile)s;''' % locals()
 
         return statement
 
+class Stampy( BWA ):
+    '''map reads against genome using STAMPY.
 
+    Note: not fully implemented yet.
+    '''
+    def mapper( self, infiles, outfile ):
+        '''build mapping statement on infiles.'''
+        
+        raise NotImplementedError()
+
+        num_files = [ len( x ) for x in infiles ]
+        
+        if max(num_files) != min(num_files):
+            raise ValueError("mixing single and paired-ended data not possible." )
+        
+        nfiles = max(num_files)
+        
+        tmpdir_bwa = os.path.join( self.tmpdir_fastq + "bwa" )
+        statement = [ "mkdir -p %s;" % tmpdir_bwa ]
+        tmpdir_fastq = self.tmpdir_fastq
+
+        if nfiles == 1:
+            infiles = ",".join( [ x[0] for x in infiles ] )
+            track = P.snip( os.path.basename( infiles ), ".fastq" )
+            statement.append('''
+            stampy -g %%(genome)s -h %%(genome)s --bwaoptions="-q10 bwa-hg18-reference" \
+                      -M %(infile)s > %(tmpdir_bwa)s/%(track)s.sai 2>%(outfile)s.stampy.log; 
+                       2>%(outfile)s.log
+               | awk -v OFS="\\t" '{sub(/\/[12]$/,"",$1);print}'
+               | samtools import %%(reffile)s - %(tmpdir_fastq)s/out.bam 1>&2 2>> %(outfile)s.log;
+            ''' % locals() )
+
+        elif nfiles == 2:
+            infiles1 = ",".join( [ x[0] for x in infiles ] )
+            infiles2 = ",".join( [ x[1] for x in infiles ] )
+            track = P.snip( os.path.basename( infiles1 ), ".1.fastq" )
+            track1 = P.snip( os.path.basename( infiles1 ), ".fastq" )
+            track2 = P.snip( os.path.basename( infiles2 ), ".fastq" )
+
+            statement.append('''
+            bwa aln %%(bwa_aln_options)s %%(bwa_index_dir)s/%%(genome)s %(infiles1)s > %(tmpdir_bwa)s/%(track1)s.sai 2>>%(outfile)s.bwa.log; checkpoint;
+            bwa aln %%(bwa_aln_options)s %%(bwa_index_dir)s/%%(genome)s %(infiles2)s > %(tmpdir_bwa)s/%(track2)s.sai 2>>%(outfile)s.bwa.log; checkpoint;
+            bwa sampe %%(bwa_sampe_options)s %%(bwa_index_dir)s/%%(genome)s %(tmpdir_bwa)s/%(track1)s.sai %(tmpdir_bwa)s/%(track2)s.sai %(infiles1)s %(infiles2)s > %(tmpdir_bwa)s/%(track)s.sam 2>>%(outfile)s.bwa.log;
+            ''' % locals() )
+        else:
+            raise ValueError( "unexpected number read files to map: %i " % nfiles )
+
+        self.tmpdir_bwa = tmpdir_bwa
+
+        return " ".join( statement )
+    
 class Tophat( Mapper ):
 
     # tophat can map colour space files directly

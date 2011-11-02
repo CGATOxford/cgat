@@ -114,7 +114,7 @@ if __name__ == "__main__":
         has_error = False
         for e in ee:
             if options.forward_coordinates and e.mSbjctToken in contig_sizes and \
-               e.mSbjctStrand == "-":
+                    e.mSbjctStrand == "-":
                 l = contig_sizes[e.mSbjctToken]
                 e.mGenomeFrom, e.mGenomeTo = l - e.mGenomeTo, l - e.mGenomeFrom
 

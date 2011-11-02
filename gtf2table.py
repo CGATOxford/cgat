@@ -179,9 +179,10 @@ class Counter:
     mMinIntronSize = 10
 
     def __init__(self, fasta = None, section = None, options = None, prefix = None):
-        self.mFasta = fasta
-        self.mSection = section
-        self.mOptions = options
+
+        self.fasta = fasta
+        self.section = section
+        self.options = options
         
         if prefix:
             self.header = tuple(["%s%s" % (prefix, x) for x in self.header ])
@@ -201,8 +202,8 @@ class Counter:
         return "\t".join( (self.contig, self.strand) )
 
     def getHeader(self):
-        if self.mSection:
-            return "\t".join( ["%s_%s" % (self.mSection, x) for x in self.header] )
+        if self.section:
+            return "\t".join( ["%s_%s" % (self.section, x) for x in self.header] )
         else:
             return "\t".join( self.header )
 
@@ -227,7 +228,7 @@ class Counter:
         
         s = []
         for start,end in segments:
-            s.append(self.mFasta.getSequence( contig, strand, start, end ))
+            s.append(self.fasta.getSequence( contig, strand, start, end ))
             
         if Genomics.IsNegativeStrand( strand ):
             return( string.translate( "".join(s), string.maketrans("ACGTacgt", "TGCAtgca") )[::-1] )
@@ -254,9 +255,9 @@ class Counter:
         return introns
 
     def getSegments( self ):
-        if self.mSection == "exons":
+        if self.section == "exons":
             return self.getExons()
-        elif self.mSection == "introns":
+        elif self.section == "introns":
             return self.getIntrons()
         else:
             return self.getExons()
@@ -339,7 +340,7 @@ class CounterSpliceSites(Counter):
         strand = self.getStrand()
         
         for start, end in introns:
-            s = self.mFasta.getSequence( contig, "+", start, end )
+            s = self.fasta.getSequence( contig, "+", start, end )
             
             if self.mCheckBothStrands:
                 r = self.getIntronType( s )
@@ -434,8 +435,8 @@ class CounterOverlap(Counter):
         
         e = readIntervalsFromGFF( filename_gff[0], source, feature, 
                                   self.mWithValues, self.mWithRecords, 
-                                  self.mFasta, 
-                                  format = self.mOptions.filename_format,
+                                  self.fasta, 
+                                  format = self.options.filename_format,
                                   use_strand = self.mUseStrand )
 
         # convert intervals to intersectors
@@ -459,8 +460,8 @@ class CounterOverlap(Counter):
         # collect overlapping segments
         segments = []
         contig = self.getContig()
-        if self.mFasta: 
-            contig = self.mFasta.getToken( contig)
+        if self.fasta: 
+            contig = self.fasta.getToken( contig)
             
         n = 0
         segments = self.getSegments()
@@ -525,7 +526,7 @@ class CounterOverlapStranded(CounterOverlap):
         # collect overlapping segments
         segments = self.getSegments()
         contig, strand = self.getContig(), self.getStrand()
-        if self.mFasta: contig = self.mFasta.getToken( contig)
+        if self.fasta: contig = self.fasta.getToken( contig)
             
         def count( contig, strand ):
             n, intervals = 0, []
@@ -608,8 +609,8 @@ class CounterOverlapTranscripts(CounterOverlap):
         # collect overlapping segments
         segments = []
         contig = self.getContig()
-        if self.mFasta: 
-            contig = self.mFasta.getToken( contig)
+        if self.fasta: 
+            contig = self.fasta.getToken( contig)
             
         n = 0
         segments = self.getSegments()
@@ -676,8 +677,8 @@ class CounterCoverage(CounterOverlap):
         # collect overlapping segments
         segments = []
         contig = self.getContig()
-        if self.mFasta: 
-            contig = self.mFasta.getToken( contig)
+        if self.fasta: 
+            contig = self.fasta.getToken( contig)
             
         n = 0
         segments = self.getSegments()
@@ -803,8 +804,8 @@ class Classifier(Counter):
                 self.mCounters[key] = counter( [gffs], 
                                                source = source, 
                                                feature = feature, 
-                                               fasta = self.mFasta,
-                                               options = self.mOptions )
+                                               fasta = self.fasta,
+                                               options = self.options )
                 
     def count(self):
         
@@ -1348,8 +1349,8 @@ class CounterOverrun(Counter):
                                   feature, 
                                   with_values = self.mWithValues, 
                                   with_records = self.mWithRecords, 
-                                  fasta = self.mFasta,
-                                  format = self.mOptions.filename_format )
+                                  fasta = self.fasta,
+                                  format = self.options.filename_format )
 
         # convert intervals to intersectors
         for contig in e.keys():
@@ -1368,8 +1369,8 @@ class CounterOverrun(Counter):
         # collect overlapping segments
         segments = []
         contig = self.getContig()
-        if self.mFasta: 
-            contig = self.mFasta.getToken( contig)
+        if self.fasta: 
+            contig = self.fasta.getToken( contig)
             
         n = 0
         segments = self.getSegments()
@@ -1489,8 +1490,8 @@ class CounterDistance(Counter):
     def readIntervals( self, filename_gff, source, feature ):
 
         return readIntervalsFromGFF( filename_gff, source, feature, 
-                                     self.mWithValues, self.mWithRecords, self.mFasta,
-                                     format = self.mOptions.filename_format )
+                                     self.mWithValues, self.mWithRecords, self.fasta,
+                                     format = self.options.filename_format )
 
     def count(self):
         """find closest feature in 5' and 3' direction."""
@@ -1498,7 +1499,7 @@ class CounterDistance(Counter):
         # collect overlapping segments
         segments = self.getSegments()
         contig = self.getContig()
-        if self.mFasta: contig = self.mFasta.getToken( contig)
+        if self.fasta: contig = self.fasta.getToken( contig)
 
         start = min( x[0] for x in segments )
         end = max( x[1] for x in segments )
@@ -1620,9 +1621,9 @@ class CounterDistanceGenes(CounterDistance):
     def readIntervals( self, filename_gff, source, feature ):
 
         return readIntervalsFromGFF( filename_gff, source, feature, 
-                                     self.mWithValues, self.mWithRecords, self.mFasta,
+                                     self.mWithValues, self.mWithRecords, self.fasta,
                                      merge_genes = True,
-                                     format = self.mOptions.filename_format )
+                                     format = self.options.filename_format )
 
     def __str__(self):
 
@@ -1737,9 +1738,9 @@ class CounterDistanceTranscriptionStartSites(CounterDistance):
     def readIntervals( self, filename_gff, source, feature ):
 
         return readIntervalsFromGFF( filename_gff, source, feature, 
-                                     self.mWithValues, self.mWithRecords, self.mFasta,
+                                     self.mWithValues, self.mWithRecords, self.fasta,
                                      merge_genes = False,
-                                     format = self.mOptions.filename_format )
+                                     format = self.options.filename_format )
     def __str__(self):
 
         closest_id, closest_dist, closest_strand = ["na"] * 3
@@ -1821,7 +1822,7 @@ class CounterSpliceSiteComparison(CounterOverlap):
         # collect overlapping segments with introns
         segments = self.getIntrons()
         contig = self.getContig()
-        if self.mFasta: contig = self.mFasta.getToken( contig)
+        if self.fasta: contig = self.fasta.getToken( contig)
 
         self.mNMissed, self.mNFound = 0, 0
         self.mNPerfectMatch, self.mNPartialMatch = 0, 0
@@ -1879,15 +1880,15 @@ class CounterProximity(CounterOverlap):
     def __init__(self, *args, **kwargs):
         CounterOverlap.__init__(self, *args, **kwargs )
 
-        self.mProximalDistance = self.mOptions.proximal_distance
+        self.mProximalDistance = self.options.proximal_distance
 
     def count(self):
 
         # collect overlapping segments
         segments = self.getSegments()
         contig = self.getContig()
-        if self.mFasta: 
-            contig = self.mFasta.getToken( contig)
+        if self.fasta: 
+            contig = self.fasta.getToken( contig)
 
         n = 0
         start = min( x[0] for x in segments )
@@ -2067,9 +2068,9 @@ class CounterTerritories(CounterOverlap):
         # collect overlapping segments
         segments = self.getSegments()
         contig = self.getContig()
-        if self.mFasta: 
+        if self.fasta: 
             try:
-                contig = self.mFasta.getToken( contig)
+                contig = self.fasta.getToken( contig)
             except KeyError:
                 warn( "contig %s not found" % contig )
 
@@ -2125,9 +2126,9 @@ class CounterQuality(Counter):
         for start,end in segments:
             if end - start > self.mMaxLength: return []
             if not s:
-                s = self.mFasta.getSequence( contig, strand, start, end )
+                s = self.fasta.getSequence( contig, strand, start, end )
             else:
-                s.extend(self.mFasta.getSequence( contig, strand, start, end ))
+                s.extend(self.fasta.getSequence( contig, strand, start, end ))
         return s
 
     def __str__(self):
@@ -2321,6 +2322,7 @@ class CounterReadExtension(Counter):
     min_quality = 1
 
     def __init__(self, bamfiles, filename_gff, *args, **kwargs ):
+
         Counter.__init__(self, *args, **kwargs )
 
         if len(filename_gff) != 2:
@@ -2335,9 +2337,8 @@ class CounterReadExtension(Counter):
                 [ "%s_%s" % (x,y) for x,y in itertools.product(             
                         [ "%s_%s" % (xx, yy) for xx, yy in itertools.product(self.labels, self.directions)],
                         ("pcovered", ) + Stats.Summary().getHeaders() ) ] )
-
             
-        self.outfiles = IOTools.FilePool( options.output_filename_pattern % "readextension_%s" )
+        self.outfiles = IOTools.FilePool( self.options.output_filename_pattern % "readextension_%s" )
 
         # -1 is the terminal exon
         for x,y in itertools.product( self.labels[:2], self.directions):
@@ -2601,7 +2602,7 @@ class CounterBigwigCounts(Counter):
 
 
 ##------------------------------------------------------------
-if __name__ == '__main__':
+def main( argv = None ):
 
     parser = optparse.OptionParser( version = "%prog version: $Id: gtf2table.py 2888 2010-04-07 08:48:36Z andreas $", usage = globals()["__doc__"])
 
@@ -2682,7 +2683,9 @@ if __name__ == '__main__':
         prefixes = []
         )
 
-    (options, args) = E.Start( parser, add_output_options = True)
+    if not argv: argv = sys.argv
+
+    (options, args) = E.Start( parser, add_output_options = True, argv = argv)
 
     if options.prefixes:
         if len(options.prefixes) != len(options.counters):
@@ -2750,7 +2753,8 @@ if __name__ == '__main__':
         elif c == "read-extension":
             counters.append( CounterReadExtension( bam_files,
                                                    filename_gff = options.filename_gff,
-                                                   options = options, prefix = prefix ) )
+                                                   options = options, 
+                                                   prefix = prefix ) )
         elif c == "read-counts":
             counters.append( CounterReadCounts( bam_files,
                                                 options = options, prefix = prefix ) )
@@ -2871,3 +2875,6 @@ if __name__ == '__main__':
     for counter in counters:
         E.info( "%s\t%s" % (repr(counter), str(counter.counter) ) )
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )

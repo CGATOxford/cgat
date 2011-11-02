@@ -99,7 +99,8 @@ def main( argv = None ):
             
     nkilled = len(to_kill)
     if not options.dry_run:
-        subprocess.Popen(["qdel", ",".join( to_kill)], stdout=subprocess.PIPE).communicate()
+        p = subprocess.Popen(["qdel", ",".join( to_kill)], stdout=subprocess.PIPE)
+        stdout, stderr = p.communicate()
     
     E.info( "ntested=%i, nkilled=%i" % (ntested, nkilled) )
 

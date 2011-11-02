@@ -86,7 +86,7 @@ if __name__ == '__main__':
     print Experiment.GetHeader()
     print Experiment.GetParams()
 
-    print "# token1\ttoken2\tmin\tmax\tcount\ttotal\tavg"
+    print "token1\ttoken2\tmin\tmax\tcount\ttotal\tavg"
 
     last = None
     n = 0
@@ -96,7 +96,12 @@ if __name__ == '__main__':
         if line[0] == "#": continue
         
         data = line[:-1].split("\t")[:3]
-        data[2] = float(data[2])
+        # ignore header lines
+        try:
+            data[2] = float(data[2])
+        except ValueError:
+            continue
+
         if not last:
             last = data
             mmin, mmax, mtotal, n  = data[2], data[2], data[2], 1

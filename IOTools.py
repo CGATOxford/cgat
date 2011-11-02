@@ -288,6 +288,26 @@ def readTable( file,
 
     return matrix, headers
 
+def readMatrix( infile, dtype = numpy.float ):
+    '''read a numpy matrix from infile.
+
+    return tuple of matrix, row_headers, col_headers
+    '''
+
+    lines = [ l for l in infile.readlines() if not l.startswith("#") ]
+    nrows = len(lines) - 1
+    col_headers = lines[0][:-1].split("\t")[1:]
+    ncols = len(col_headers)
+    matrix = numpy.zeros( (nrows, ncols), dtype = dtype )
+    row_headers = []
+
+    for row, l in enumerate(lines[1:]):
+        data = l.split("\t")
+        row_headers.append( data[0] )
+        matrix[row] = numpy.array(data[1:], dtype = dtype)
+        
+    return matrix, row_headers, col_headers
+    
 ########################################################################
 def getInvertedDictionary( dict, make_unique = False ):
     """returns an inverted dictionary with keys and values swapped.

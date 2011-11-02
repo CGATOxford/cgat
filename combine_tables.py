@@ -35,7 +35,7 @@ Purpose
 This script reads several tab-separated tables and joins them.
 
 .. note:: 
-   working with multiple columns per table and sorting is
+   Working with multiple columns per table and sorting is
    not implemented correctly and likely to fail.
 
 Usage
@@ -62,6 +62,266 @@ import sys, re, string, os, time, glob, optparse
 
 import IOTools
 import Experiment as E
+
+def readTable( filename, options ):
+    '''read table and filter.'''
+
+    if os.path.exists(filename):
+        lines = IOTools.openFile(filename, "r").readlines()
+    else: 
+        lines = []
+
+    # extract table by regular expression
+    if options.regex_start:
+        rx = re.compile(options.regex_start)
+        for n, line in enumerate(lines):
+            if rx.search(line): 
+                E.info("reading table from line %i/%i" % (n,len(lines)))
+                lines = lines[n:]
+                break
+        else:
+            E.info("start regex not found - no table")
+            lines = []
+
+    if options.regex_end:
+        rx = re.compile(options.regex_end)
+        for n, line in enumerate(lines):
+            if rx.search(line): break
+        lines = lines[:n]
+
+    # remove comments and empty lines
+    lines = [ x for x in lines if not x.startswith("#") and x.strip()]
+
+    return lines
+
+def concatenateTables( outfile, options, args ):
+    '''concatenate tables.'''
+
+    first = True
+
+    rx = re.compile( options.regex_filename )
+
+    if options.headers == None or options.headers == "auto":
+        headers = [rx.search(x).groups()[0] for x in options.filenames ]
+    else:
+        headers = options.headers
+
+    for nindex, filename in enumerate(options.filenames):
+
+        lines = readTable( filename, options )
+    
+        if len(lines) == 0: continue
+        
+        if first:
+            titles = lines[0]
+            outfile.write( "%s\t%s" % (options.cat, titles ) )
+            first = False
+        else:
+            if titles != lines[0]:
+                raise ValueError("incompatible headers: %s != %s" % (str(titles), lines[0]) )
+
+        for l in lines[1:]:
+            outfile.write( "%s\t%s" % (headers[nindex], l ) )
+            
+def joinTables( outfile, options, args ):
+    '''join tables.'''
+
+    if options.headers and options.headers[0] != "auto" and \
+            len(options.headers) != len(options.filenames):
+        raise ValueError("number of provided headers (%i) is not equal to number filenames (%i)." %\
+                             (len(options.headers), len(options.filenames)) )
+
+    tables = []
+    keys = {}
+    sorted_keys = []
+    sizes = {}
+    if options.merge:
+        titles=["count"]
+    else:
+        titles = []
+
+    headers_to_delete = []
+
+    for nindex, filename in enumerate(options.filenames):
+
+        E.info( "processing %s (%i/%i)" % (filename, nindex+1, len(options.filenames) ))
+
+        prefix = os.path.basename( filename )
+
+        lines = readTable( filename, options )
+
+        # skip (or not skip) empty tables
+        if len(lines) == 0 and options.ignore_empty:
+            E.warn( "%s is empty - skipped" % filename )
+            headers_to_delete.append( nindex )
+            continue
+
+        table = {}
+        sizes = {}
+        max_size = 0
+        ncolumns = 0
+
+        if options.titles:
+            data = string.split(lines[0][:-1], "\t")
+            if not titles:
+                key = "-".join( [data[x] for x in options.columns] )                
+                titles = [key]
+            for x in range(len(data)):
+                if x in options.columns: continue
+                ncolumns += 1
+                if options.add_file_prefix:
+                    p = re.search( options.regex_filename, prefix).groups()[0]
+                    titles.append( "%s_%s" % ( p, data[x] ) )
+                elif options.use_file_prefix:
+                    p = re.search( options.regex_filename, prefix).groups()[0]
+                    titles.append( "%s" % p )
+                else:
+                    titles.append( data[x] )
+                
+            del lines[0]
+        else:
+            ncolumns = 1
+
+        n = 0
+        for line in lines:
+            data = string.split(line[:-1], "\t")
+            row_keys = [ data[x] for x in options.columns ]
+            if options.sort_keys: 
+                if options.sort_keys == "numeric":
+                    row_keys.sort( lambda x,y: cmp(float(x), float(y)) )
+                else:
+                    row_keys.sort()
+            if options.merge:
+                key = n
+            else:
+                key = "-".join( row_keys ) 
+
+            if not keys.has_key(key):
+                sorted_keys.append( key )
+                keys[key] = 1
+                sizes[key] = 0
+
+            max_size = max( len(data) - len(options.columns), max_size )
+            table[key] = [ data[x] for x in filter( lambda x: x not in options.columns, range(0,len(data)) )]
+            n += 1
+
+        ## enter columns of "na" for empty tables.
+        if max_size == 0: max_size = ncolumns
+
+        tables.append( (max_size, table) )
+
+    # delete in reverse order
+    if options.headers:
+        for nindex in headers_to_delete[::-1]:
+            del options.headers[nindex]
+
+    if len(tables) == len(titles) - 1:
+        
+        if options.headers:
+            headers = ["bin"]
+            if options.headers[0] == 'auto':
+                for t in range(len(tables)):
+                    headers.append(os.path.basename(options.filenames[t]))
+                    headers += [""] * (tables[t][0] - 1)
+
+            else:
+                for t in range(len(tables)):
+                    headers.append(options.headers[t])
+                    headers += [""] * (tables[t][0] - 1)                
+
+            ## use headers as titles, if headers is given and skip-titles is turned on
+            if options.titles and options.skip_titles:
+                titles = headers
+            else:
+            ## otherwise: print the headers out right away            
+                outfile.write( string.join( headers, "\t" ) + "\n")
+
+        order = range(0, len(tables)+1)
+
+        if options.titles:
+
+            if options.sort:
+                sort_order = []
+
+                if options.sort == "numeric":
+                    t = zip( map(int, titles[1:]), range( 1, len(titles) + 1) )
+                    t.sort()
+
+                    for tt in t:
+                        sort_order.append( titles[tt[1]] )
+
+                elif options.sort == "alphabetical":
+                    t = zip( titles[1:], range( 1, len(titles) + 1) )
+                    t.sort()
+
+                    for tt in t:
+                        sort_order.append( titles[tt[1]] )
+                else:
+                    sort_order = options.sort
+
+                map_title2pos = {}
+                for x in range(1, len(titles)):
+                    map_title2pos[titles[x]] = x
+
+                order = [0,]
+                for x in sort_order:
+                    if x in map_title2pos:                
+                        order.append( map_title2pos[x] )
+
+            else:
+                order = range(0, len(titles) )
+
+            outfile.write( "\t".join( map(lambda x: titles[order[x]], range(len(titles)))))
+            outfile.write("\n")
+
+        if options.sort_keys:
+            if options.sort_keys: 
+                if options.sort_keys == "numeric":
+                    sorted_keys.sort( lambda x,y: cmp(float(x), float(y)) )
+                else:
+                    sorted_keys.sort()
+
+        for key in sorted_keys:
+
+            outfile.write( "%s" % key)
+
+            for x in order[1:]:
+                max_size, table = tables[x-1]
+                c = 0
+                if table.has_key( key ):
+                    outfile.write("\t")
+                    outfile.write( string.join(table[key], "\t") )
+                    c = len(table[key])
+
+                assert(max_size == 1)
+
+                outfile.write( "\t%s" % options.missing_value * (max_size - c) )
+
+            outfile.write("\n")
+
+    else:
+
+        # for multi-column table, just write
+        if options.titles:
+            outfile.write( "\t".join( map(lambda x: titles[x], range(len(titles)))))
+            outfile.write("\n")
+
+        for key in sorted_keys:
+            
+            outfile.write( "%s" % key)
+
+            for x in range(len(tables)):
+            
+                max_size, table = tables[x]
+                c = 0
+                if table.has_key( key ):
+                    outfile.write("\t")
+                    outfile.write( "\t".join(table[key]) )
+                    c = len(table[key])
+
+                outfile.write( "\t%s" % options.missing_value * (max_size - c) )
+
+            outfile.write("\n")
 
 ##---------------------------------------------------------------------------------------------------------        
 if __name__ == '__main__':
@@ -92,6 +352,10 @@ if __name__ == '__main__':
     parser.add_option("-e", "--merge", dest="merge", action="store_true",
                       help="simply merge tables without matching up rows. [default=%default]." )
 
+    parser.add_option("-a", "--cat", dest="cat", type="string",
+                      help="simply concatenate tables. Adds an additional column # with the filename "
+                           " [default=%default]." )
+
     parser.add_option( "--sort-keys", dest="sort_keys", type="choice",
                       choices=("numeric", "alphabetic"),
                       help="sort key columns by value." )
@@ -105,8 +369,17 @@ if __name__ == '__main__':
     parser.add_option( "--add-file-prefix", dest="add_file_prefix", action="store_true",
                       help="add file prefix to columns headers in multi-column tables [default=%default]" )
 
+    parser.add_option( "--use-file-prefix", dest="use_file_prefix", action="store_true",
+                      help="use file prefix as columns headers [default=%default]" )
+
     parser.add_option( "--regex-filename", dest="regex_filename", type="string",
                       help="pattern to apply to filename to build prefix [default=%default]" )
+
+    parser.add_option( "--regex-start", dest="regex_start", type="string",
+                      help="regular expression to start collecting table in a file [default=%default]" )
+
+    parser.add_option( "--regex-end", dest="regex_end", type="string",
+                      help="regular expression to end collecting table in a file [default=%default]" )
 
     parser.set_defaults(
         titles = True,
@@ -119,7 +392,11 @@ if __name__ == '__main__':
         sort_keys = False,
         merge = False,
         ignore_empty = True,
+        regex_start = None,
+        regex_end = None,
         add_file_prefix = False,
+        use_file_prefix = False,
+        cat = None,
         regex_filename = "(.*)"
         )
 
@@ -157,200 +434,15 @@ if __name__ == '__main__':
 
     if len(options.filenames) == 1:
         for line in open(options.filenames[0]):
-            options.stdout.write( line )
+            outfile.write( line )
         E.Stop()
         sys.exit(0)
         
-    if options.headers and options.headers[0] != "auto" and \
-       len(options.headers) != len(options.filenames):
-        raise ValueError("number of provided headers (%i) is not equal to number filenames (%i)." %\
-                             (len(options.headers), len(options.filenames)) )
-
-    tables = []
-    keys = {}
-    sorted_keys = []
-    sizes = {}
-    if options.merge:
-        titles=["count"]
+    if options.cat:
+        concatenateTables( options.stdout, options, args )
     else:
-        titles = []
-    
-    for nindex, filename in enumerate(options.filenames):
+        joinTables( options.stdout, options, args )
 
-        E.info( "processing %s (%i/%i)" % (filename, nindex+1, len(options.filenames) ))
-
-        prefix = os.path.basename( filename )
-
-        if os.path.exists(filename):
-            lines = [ x for x in IOTools.openFile(filename, "r").readlines() if not x.startswith("#") and x.strip()]
-        else:
-            lines = []
-
-        # skip (or not skip) empty tables
-        if len(lines) == 0 and options.ignore_empty:
-            E.warn( "%s is empty - skipped" % filename )
-            del options.headers[nindex]
-            continue
-
-        table = {}
-        sizes = {}
-        max_size = 0
-        ncolumns = 0
-
-        if options.titles:
-            data = string.split(lines[0][:-1], "\t")
-            if not titles:
-                key = "-".join( [data[x] for x in options.columns] )                
-                titles = [key]
-            for x in range(len(data)):
-                if x in options.columns: continue
-                ncolumns += 1
-                if options.add_file_prefix:
-                    p = re.search( options.regex_filename, prefix).groups()[0]
-                    titles.append( "%s_%s" % ( p, data[x] ) )
-                else:
-                    titles.append( data[x] )
-                
-            del lines[0]
-        else:
-            ncolumns = 1
-
-        n = 0
-        for line in lines:
-            data = string.split(line[:-1], "\t")
-            row_keys = [ data[x] for x in options.columns ]
-            if options.sort_keys: 
-                if options.sort_keys == "numeric":
-                    row_keys.sort( lambda x,y: cmp(float(x), float(y)) )
-                else:
-                    row_keys.sort()
-            if options.merge:
-                key = n
-            else:
-                key = "-".join( row_keys ) 
-
-            if not keys.has_key(key):
-                sorted_keys.append( key )
-                keys[key] = 1
-                sizes[key] = 0
-
-            max_size = max( len(data) - len(options.columns), max_size )
-            table[key] = [ data[x] for x in filter( lambda x: x not in options.columns, range(0,len(data)) )]
-            n += 1
-
-        ## enter columns of "na" for empty tables.
-        if max_size == 0: max_size = ncolumns
-
-        tables.append( (max_size, table) )
-
-    if len(tables) == len(titles) - 1:
-        
-        if options.headers:
-            headers = ["bin"]
-            if options.headers[0] == 'auto':
-                for t in range(len(tables)):
-                    headers.append(os.path.basename(options.filenames[t]))
-                    headers += [""] * (tables[t][0] - 1)
-
-            else:
-                for t in range(len(tables)):
-                    headers.append(options.headers[t])
-                    headers += [""] * (tables[t][0] - 1)                
-
-            ## use headers as titles, if headers is given and skip-titles is turned on
-            if options.titles and options.skip_titles:
-                titles = headers
-            else:
-            ## otherwise: print the headers out right away            
-                sys.stdout.write( string.join( headers, "\t" ) + "\n")
-
-        order = range(0, len(tables)+1)
-
-        if options.titles:
-
-            if options.sort:
-                sort_order = []
-
-                if options.sort == "numeric":
-                    t = zip( map(int, titles[1:]), range( 1, len(titles) + 1) )
-                    t.sort()
-
-                    for tt in t:
-                        sort_order.append( titles[tt[1]] )
-
-                elif options.sort == "alphabetical":
-                    t = zip( titles[1:], range( 1, len(titles) + 1) )
-                    t.sort()
-
-                    for tt in t:
-                        sort_order.append( titles[tt[1]] )
-                else:
-                    sort_order = options.sort
-
-                map_title2pos = {}
-                for x in range(1, len(titles)):
-                    map_title2pos[titles[x]] = x
-
-                order = [0,]
-                for x in sort_order:
-                    if x in map_title2pos:                
-                        order.append( map_title2pos[x] )
-
-            else:
-                order = range(0, len(titles) )
-
-            sys.stdout.write( "\t".join( map(lambda x: titles[order[x]], range(len(titles)))))
-            sys.stdout.write("\n")
-
-        if options.sort_keys:
-            if options.sort_keys: 
-                if options.sort_keys == "numeric":
-                    sorted_keys.sort( lambda x,y: cmp(float(x), float(y)) )
-                else:
-                    sorted_keys.sort()
-
-        for key in sorted_keys:
-
-            sys.stdout.write( "%s" % key)
-
-            for x in order[1:]:
-                max_size, table = tables[x-1]
-                c = 0
-                if table.has_key( key ):
-                    sys.stdout.write("\t")
-                    sys.stdout.write( string.join(table[key], "\t") )
-                    c = len(table[key])
-
-                assert(max_size == 1)
-
-                sys.stdout.write( "\t%s" % options.missing_value * (max_size - c) )
-
-            sys.stdout.write("\n")
-
-    else:
-
-
-        # for multi-column table, just write
-        if options.titles:
-            sys.stdout.write( "\t".join( map(lambda x: titles[x], range(len(titles)))))
-            sys.stdout.write("\n")
-
-        for key in sorted_keys:
-            
-            sys.stdout.write( "%s" % key)
-
-            for x in range(len(tables)):
-            
-                max_size, table = tables[x]
-                c = 0
-                if table.has_key( key ):
-                    sys.stdout.write("\t")
-                    sys.stdout.write( "\t".join(table[key]) )
-                    c = len(table[key])
-
-                sys.stdout.write( "\t%s" % options.missing_value * (max_size - c) )
-
-            sys.stdout.write("\n")
     
     E.Stop()
 

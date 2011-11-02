@@ -39,6 +39,8 @@ def computeMastCurve( evalues ):
     for x, evalue in enumerate(bin_edges[:-1]):
         explained[x] -= evalue
         
+    explained[ explained < 0 ] = 0
+
     return bin_edges[:-1], with_motifs, explained
 
 ##################################################################################
@@ -135,11 +137,12 @@ def getGlamScoreCutoff( scores, controls, fdr = 0.1 ):
 ## Base class for mast analysis
 ##################################################################################
 class Mast( DefaultTracker ):
-    mPattern = "_mast$"
+    pattern = "(.*)_mast$"
 
     def getSlices( self, subset = None ):
         if subset: return subset
-        return MOTIFS
+        if MOTIFS: return MOTIFS
+        return self.getValues( "SELECT DISTINCT motif FROM motif_info" )
 
 ##################################################################################
 ##################################################################################
@@ -181,6 +184,7 @@ class MastSummary( Mast ):
     mFDR = 0.1
 
     def __call__(self, track, slice = None):
+
         data = []
         nintervals = self.getValue( "SELECT COUNT(*) FROM %(track)s_intervals" % locals() )
         data.append( ("nintervals", nintervals ) )
@@ -193,6 +197,9 @@ class MastSummary( Mast ):
             bin_edges, with_motifs, explained = computeMastCurve( evalues )
         except ValueError, msg:
             return odict( ( ("msg", msg),) )
+        
+        if len(explained) == 0:
+            return odict((("msg", "no data"), ) )
 
         am = numpy.argmax( explained )
         evalue = bin_edges[am]
@@ -568,13 +575,24 @@ class MastPeakValWithMotifEvalue( Mast ):
         
         return odict( zip( ("peakval", "proportion with motif", "recall" ), zip( *result ) ) )
     
+class MemeInputSequenceComposition( DefaultTracker ):
+    '''distribution of sequence composition in sequences
+       submitted to motif searches.'''
+    pattern = "(.*)_motifseq_stats"
+    slices = ('nA','nAT','nC','nG','nGC','nN','nT','nUnk','pA','pAT','pC','pG','pGC','pN','pT')
+
+    def __call__(self, track, slice ):
+        return self.getValues( '''SELECT %(slice)s FROM %(track)s_motifseq_stats''' )
+    
 class MemeRuns( DefaultTracker ):
-    mPattern = "_mast$"
+    
+    def getTracks( self ):
+        return self.getValues( "SELECT DISTINCT motif FROM motif_info" ) 
     
     def __call__(self, track, slice = None ):
         
-        resultsdir = os.path.join( EXPORTDIR, "meme", "%s.meme" % track )
-        if not os.path.exists( resultsdir ): return []
+        resultsdir = os.path.abspath( os.path.join( EXPORTDIR, "meme", "%s.meme" % track ) )
+        if not os.path.exists( resultsdir ): return None
 
         data = []
 
@@ -595,11 +613,12 @@ class MemeRuns( DefaultTracker ):
         return odict(data)
 
 class MemeResults( DefaultTracker ):
-    mPattern = "_mast$"
+
+    tracks = list(EXPERIMENTS)
     
     def __call__(self, track, slice = None ):
         
-        resultsdir = os.path.join( EXPORTDIR, "meme", "%s.meme" % track )
+        resultsdir = os.path.abspath( os.path.join( EXPORTDIR, "meme", "%s.meme" % track.asFile() ) )
 
         if not os.path.exists( resultsdir ): return []
 
@@ -624,7 +643,7 @@ class MemeResults( DefaultTracker ):
         return result
 
 class TomTomResults( DefaultTracker ):
-    mPattern = "_tomtom$"
+    pattern = "(.*)_tomtom$"
     
     def __call__(self, track, slice = None ):
 
@@ -740,7 +759,7 @@ class AnnotationsPeakValData( DefaultTracker ):
 ## Base class for glam analysis
 ##################################################################################
 class Glam( DefaultTracker ):
-    mPattern = "_glam$"
+    pattern = "(.*)_glam$"
 
     def getSlices( self, subset = None ):
         if subset: return subset
@@ -847,7 +866,7 @@ class GlamSummary( Glam ):
         data.append( ("FDR-Score", score_cutoff ) )
         data.append( ("FDR-explained", nexplained) )
         data.append( ("FDR-explained / %", "%5.2f" % (100.0 * nexplained / nintervals )) )
-        
+
         return odict(data)
 
 ##################################################################################

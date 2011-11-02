@@ -78,4 +78,3 @@ There are various alignment files created in the mapping process:
 
 
 
-

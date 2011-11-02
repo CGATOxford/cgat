@@ -51,7 +51,7 @@ The peak value is the maximum number of reads falling into the
 bins that constitute an interval. The peak is the position with the maximum
 number of reads.
 
-.. report:: ChipseqReport.IntervalPeakValues
+.. report:: Intervals.IntervalPeakValues
    :render: line-plot
    :transform: histogram
    :tf-aggregate: normalized-total,reverse-cumulative
@@ -61,3 +61,45 @@ number of reads.
    Distribution of the number of reads at the peak within an interval.
    The distribution list the proportion of intervals of a certain peak
    value or more.
+
+Replicates
+----------
+
+.. report:: Intervals.CorrelationsPeakval
+   :render: table
+   :transform: select,correlation
+   :tf-fields: peakval
+   :tracks: replicates
+
+   Full table
+
+.. report:: Intervals.CorrelationsPeakval
+   :render: matrix-plot
+   :transform: select,correlation,select
+   :tf-fields: peakval,coefficient
+   :transform-matrix: correspondence-analysis
+   :zrange: -1,1
+   :tracks: replicates
+
+   Correlation coefficient
+
+.. report:: Intervals.CorrelationsPeakval
+   :render: matrix-plot
+   :transform: select,correlation,select
+   :transform-matrix: correspondence-analysis
+   :tf-fields: peakval,pvalue
+   :tracks: replicates
+
+   P-Value
+
+.. report:: Intervals.CorrelationsPeakval                                                                                                                                                                                                     
+   :render: scatter-plot                                                                                                                                                                                                                     
+   :transform: combine                                                                                                                                                                                                                       
+   :tf-fields: peakval                                                                                                                                                                                                                       
+   :groupby: none
+   :width: 200
+   :layout: column-5
+   :tracks: replicates
+   
+   Scatter plots of pairwise combination of peakval.
+

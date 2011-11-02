@@ -14,6 +14,8 @@ Contents:
 
    pipeline/Methods.rst
    pipeline/FastQC.rst
+   pipeline/BaseQuality.rst
+   pipeline/Filtering.rst
    python/Trackers.rst
  
 .. errorlist::

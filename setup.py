@@ -140,7 +140,6 @@ if __name__ == "__main__":
         destination = ".",
         force = False,
         project = None,
-        source_directory = "/home/andreas/cgat",
         temporary = "/net/cpp-group/gpipe/tmp",
         temporary_local = None,        
         temporary_remote = None,
@@ -163,8 +162,8 @@ if __name__ == "__main__":
 
     if not options.temporary_remote:
         options.temporary_remote = options.temporary_local
-        
-    source_directory = os.path.realpath(options.source_directory)
+       
+    source_directory = os.path.realpath(os.path.abspath( os.path.dirname(__file__ )) )
     target_directory = options.destination
 
     ## create working directories

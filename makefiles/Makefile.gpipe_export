@@ -705,6 +705,7 @@ export_sequences_%_peptides.fasta.gz:
 	WHERE $(EXPORT_SEQUENCES_WHERE) \
 	" \
 	$(PSQL_CONNECTION_OPTIONS) |\
+	perl -p -e "s/[?]/X/g" \
 	gzip >> $@
 	$(EPILOG)
 
@@ -830,7 +831,9 @@ export_clustering_%_peptides.fasta:
 	FROM $(EXPORT_CLUSTERING_FROM) \
 	WHERE $(EXPORT_CLUSTERING_WHERE) \
 	ORDER BY o.prediction_id " \
-	$(PSQL_CONNECTION_OPTIONS) > $@
+	$(PSQL_CONNECTION_OPTIONS) |\
+	perl -p -e "s/[?]/X/g" \
+	> $@
 	$(EPILOG)
 
 ## a list of non-redundant predictions 

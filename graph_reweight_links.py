@@ -183,7 +183,11 @@ if __name__ == "__main__":
         if line[0] == "#": continue
         
         token1, token2, score = line.split("\t")[:3]
-        score = float(score)
+        try:
+            score = float(score)
+        except ValueError:
+            # ignore headers
+            continue
         ninput += 1
         
         if a == 0:

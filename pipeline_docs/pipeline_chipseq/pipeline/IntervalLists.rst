@@ -7,9 +7,8 @@ This sections lists intervals of interest.
 Intervals by fold change
 ========================
 
-.. report:: ChipseqReport.IntervalListFoldChange
+.. report:: Intervals.IntervalListFoldChange
    :render: table
-   :tracks: merged
 
    Intervals with sorted by fold change.
    The fold change is compute as the number
@@ -19,7 +18,7 @@ Intervals by fold change
 Intervals by peak value
 =======================
 
-.. report:: ChipseqReport.IntervalListPeakval
+.. report:: Intervals.IntervalListPeakval
    :render: table
    :groupby: track
 

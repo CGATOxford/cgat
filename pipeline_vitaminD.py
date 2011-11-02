@@ -80,8 +80,8 @@ import Bioprospector
 
 import pipeline_vitaminD_annotator as PAnnotator
 import pipeline_vitaminD_expression as PExpression
-import pipeline_vitaminD_intervals as PIntervals
-import pipeline_vitaminD_motifs as PMotifs
+import PipelineChipseq as PipelineChipseq
+import PipelineMotifs as PipelineMotifs
 import PipelineGeneset as PGeneset
 import time
 
@@ -948,7 +948,7 @@ if PARAMS["method"] == "intervals":
                "(.*).bam",
                r"\1.readstats" )
     def buildBAMStats( infile, outfile ):
-        PIntervals.buildBAMStats( infile, outfile )
+        PipelineChipseq.buildBAMStats( infile, outfile )
 
     @transform( buildBAMStats,
                 regex(r"(run.*).readstats"),
@@ -962,7 +962,7 @@ if PARAMS["method"] == "intervals":
         Duplicated reads are removed at the same time.
         '''
         track = infile[:-len(".bam")]
-        PIntervals.buildNormalizedBAM( ((infile,track + ".readstats"),), outfile )
+        PipelineChipseq.buildNormalizedBAM( ((infile,track + ".readstats"),), outfile )
 
     @follows( buildBAMStats )
     @files( [ ( [ ("%s%s.bam" % (x,y), "%s%s.readstats" % (x,y))  for y in REPLICATES],
@@ -977,7 +977,7 @@ if PARAMS["method"] == "intervals":
 
         Merge reads from several replicates.
         '''
-        PIntervals.buildNormalizedBAM( infiles, outfile )
+        PipelineChipseq.buildNormalizedBAM( infiles, outfile )
 
     ############################################################
     ############################################################
@@ -993,7 +993,7 @@ if PARAMS["method"] == "intervals":
         '''
 
         conditions = [ "run%s%s.bed" % (x,track) for x in CELLLINES ]
-        PIntervals.intersectBedFiles( conditions, outfile )
+        PipelineChipseq.intersectBedFiles( conditions, outfile )
 
     ############################################################
     ############################################################
@@ -1007,7 +1007,7 @@ if PARAMS["method"] == "intervals":
         '''
 
         infile, subtract = infiles
-        PIntervals.subtractBedFiles( infile, subtract, outfile )
+        PipelineChipseq.subtractBedFiles( infile, subtract, outfile )
 
     ############################################################
     ############################################################
@@ -1023,7 +1023,7 @@ if PARAMS["method"] == "intervals":
         '''
 
         replicates = [ "%s%s.bed" % (track, x) for x in REPLICATES  if os.path.exists( "%s%s.bed" % (track, x) ) ]
-        PIntervals.intersectBedFiles( replicates, outfile )
+        PipelineChipseq.intersectBedFiles( replicates, outfile )
 
     ############################################################
     ############################################################
@@ -1036,7 +1036,7 @@ if PARAMS["method"] == "intervals":
                 suffix(".bed"),
                 "_bed.import" )
     def importCombinedIntervals( infiles, outfile ):
-        PIntervals.importCombinedIntervals( infiles, outfile )
+        PipelineChipseq.importCombinedIntervals( infiles, outfile )
 
     ############################################################
     ############################################################
@@ -1100,7 +1100,7 @@ elif PARAMS["method"] == "bowtie-macs":
                 suffix(".bam"),
                 ".readstats" )
     def buildBAMStats( infile, outfile ):
-        PIntervals.buildBAMStats( infile, outfile )
+        PipelineChipseq.buildBAMStats( infile, outfile )
 
     ############################################################
     ############################################################
@@ -1116,7 +1116,7 @@ elif PARAMS["method"] == "bowtie-macs":
 
         Duplicated reads are removed at the same time.
         '''
-        PIntervals.buildNormalizedBAM( (infiles,), outfile )
+        PipelineChipseq.buildNormalizedBAM( (infiles,), outfile )
 
     ############################################################
     ############################################################
@@ -1132,7 +1132,7 @@ elif PARAMS["method"] == "bowtie-macs":
 
         Duplicated reads are removed at the same time.
         '''
-        PIntervals.buildNormalizedBAM( (infiles,), outfile )
+        PipelineChipseq.buildNormalizedBAM( (infiles,), outfile )
 
     ############################################################
     ############################################################
@@ -1149,7 +1149,7 @@ elif PARAMS["method"] == "bowtie-macs":
 
         Merge reads from several replicates.
         '''
-        PIntervals.buildNormalizedBAM( infiles, outfile )
+        PipelineChipseq.buildNormalizedBAM( infiles, outfile )
 
     ############################################################
     ############################################################
@@ -1160,7 +1160,7 @@ elif PARAMS["method"] == "bowtie-macs":
                r"run\1.macs" )
     def runMACS( infile, outfile ):
         '''run MACS for peak detection.'''
-        PIntervals.runMACS( infile, outfile )
+        PipelineChipseq.runMACS( infile, outfile )
         
     ############################################################
     ############################################################
@@ -1169,7 +1169,7 @@ elif PARAMS["method"] == "bowtie-macs":
                 suffix(".macs"),
                 "_macs.import" )
     def importMACS( infile, outfile ):
-        PIntervals.importMACS( infile, outfile )
+        PipelineChipseq.importMACS( infile, outfile )
         
     ############################################################
     ############################################################
@@ -1178,7 +1178,7 @@ elif PARAMS["method"] == "bowtie-macs":
     def summarizeMACS( infiles, outfile ):
         '''run MACS for peak detection.'''
 
-        PIntervals.summarizeMACS( infiles, outfile )
+        PipelineChipseq.summarizeMACS( infiles, outfile )
 
 
     ############################################################
@@ -1189,14 +1189,14 @@ elif PARAMS["method"] == "bowtie-macs":
                 "_summary.import" )
     def importMACSSummary( infile, outfile ):
         '''import macs summary.'''
-        PIntervals.importMACSSummary( infile, outfile )
+        PipelineChipseq.importMACSSummary( infile, outfile )
 
     ############################################################
     ############################################################
     ############################################################
     @transform( importMACS, suffix("_macs.import"), ".bed" )
     def exportIntervalsAsBed( infile, outfile ):
-        PIntervals.exportIntervalsAsBed( infile, outfile )
+        PipelineChipseq.exportIntervalsAsBed( infile, outfile )
 
     ############################################################
     ############################################################
@@ -1212,7 +1212,7 @@ elif PARAMS["method"] == "bowtie-macs":
         '''
 
         conditions = [ "run%s%s.bed" % (x,track) for x in CELLLINES ]
-        PIntervals.intersectBedFiles( conditions, outfile )
+        PipelineChipseq.intersectBedFiles( conditions, outfile )
 
     ############################################################
     ############################################################
@@ -1226,7 +1226,7 @@ elif PARAMS["method"] == "bowtie-macs":
         '''
 
         infile, subtract = infiles
-        PIntervals.subtractBedFiles( infile, subtract, outfile )
+        PipelineChipseq.subtractBedFiles( infile, subtract, outfile )
 
     ############################################################
     ############################################################
@@ -1238,7 +1238,7 @@ elif PARAMS["method"] == "bowtie-macs":
                 suffix(".bed"),
                 "_bed.import" )
     def importCombinedIntervals( infiles, outfile ):
-        PIntervals.importCombinedIntervals( infiles, outfile )
+        PipelineChipseq.importCombinedIntervals( infiles, outfile )
 
     @follows( exportIntervalsAsBed )
     def combineReplicates( ): pass
@@ -1300,7 +1300,7 @@ elif PARAMS["method"] == "eland":
                 suffix(".bam"),
                 ".readstats" )
     def buildBAMStats( infile, outfile ):
-        PIntervals.buildBAMStats( infile, outfile )
+        PipelineChipseq.buildBAMStats( infile, outfile )
 
     ############################################################
     ############################################################
@@ -1317,7 +1317,7 @@ elif PARAMS["method"] == "eland":
         Duplicated reads are removed at the same time.
         '''
         track = infile[:-len(".bam")]
-        PIntervals.buildNormalizedBAM( ((infile,track + ".readstats"),), outfile )
+        PipelineChipseq.buildNormalizedBAM( ((infile,track + ".readstats"),), outfile )
 
     ############################################################
     ############################################################
@@ -1334,7 +1334,7 @@ elif PARAMS["method"] == "eland":
         Duplicated reads are removed at the same time.
         '''
         track = infile[:-len(".bam")]
-        PIntervals.buildNormalizedBAM( ((infile,track + ".readstats"),), outfile )
+        PipelineChipseq.buildNormalizedBAM( ((infile,track + ".readstats"),), outfile )
 
     ############################################################
     ############################################################
@@ -1351,7 +1351,7 @@ elif PARAMS["method"] == "eland":
 
         Merge reads from several replicates.
         '''
-        PIntervals.buildNormalizedBAM( infiles, outfile )
+        PipelineChipseq.buildNormalizedBAM( infiles, outfile )
 
     ############################################################
     ############################################################
@@ -1362,7 +1362,7 @@ elif PARAMS["method"] == "eland":
                r"run\1.macs" )
     def runMACS( infile, outfile ):
         '''run MACS for peak detection.'''
-        PIntervals.runMACS( infile, outfile )
+        PipelineChipseq.runMACS( infile, outfile )
         
     ############################################################
     ############################################################
@@ -1371,7 +1371,7 @@ elif PARAMS["method"] == "eland":
                 suffix(".macs"),
                 "_macs.import" )
     def importMACS( infile, outfile ):
-        PIntervals.importMACS( infile, outfile )
+        PipelineChipseq.importMACS( infile, outfile )
         
     ############################################################
     ############################################################
@@ -1380,7 +1380,7 @@ elif PARAMS["method"] == "eland":
     def summarizeMACS( infiles, outfile ):
         '''run MACS for peak detection.'''
 
-        PIntervals.summarizeMACS( infiles, outfile )
+        PipelineChipseq.summarizeMACS( infiles, outfile )
 
     ############################################################
     ############################################################
@@ -1390,7 +1390,7 @@ elif PARAMS["method"] == "eland":
                 "_summary.import" )
     def importMACSSummary( infile, outfile ):
         '''import macs summary.'''
-        PIntervals.importMACSSummary( infile, outfile )
+        PipelineChipseq.importMACSSummary( infile, outfile )
 
 
     ############################################################
@@ -1398,7 +1398,7 @@ elif PARAMS["method"] == "eland":
     ############################################################
     @transform( importMACS, suffix("_macs.import"), ".bed" )
     def exportIntervalsAsBed( infile, outfile ):
-        PIntervals.exportIntervalsAsBed( infile, outfile )
+        PipelineChipseq.exportIntervalsAsBed( infile, outfile )
 
     ############################################################
     ############################################################
@@ -1414,7 +1414,7 @@ elif PARAMS["method"] == "eland":
         '''
 
         conditions = [ "run%s%s.bed" % (x,track) for x in CELLLINES ]
-        PIntervals.intersectBedFiles( conditions, outfile )
+        PipelineChipseq.intersectBedFiles( conditions, outfile )
 
     ############################################################
     ############################################################
@@ -1428,7 +1428,7 @@ elif PARAMS["method"] == "eland":
         '''
 
         infile, subtract = infiles
-        PIntervals.subtractBedFiles( infile, subtract, outfile )
+        PipelineChipseq.subtractBedFiles( infile, subtract, outfile )
 
     ############################################################
     ############################################################
@@ -1440,7 +1440,7 @@ elif PARAMS["method"] == "eland":
                 suffix(".bed"),
                 "_bed.import" )
     def importCombinedIntervals( infiles, outfile ):
-        PIntervals.importCombinedIntervals( infiles, outfile )
+        PipelineChipseq.importCombinedIntervals( infiles, outfile )
 
     ############################################################
     ############################################################
@@ -1504,7 +1504,7 @@ elif PARAMS["method"] == "bowtie-macs-replicate":
                 suffix(".bam"),
                 ".readstats" )
     def buildBAMStats( infile, outfile ):
-        PIntervals.buildBAMStats( infile, outfile )
+        PipelineChipseq.buildBAMStats( infile, outfile )
 
     ############################################################
     ############################################################
@@ -1521,7 +1521,7 @@ elif PARAMS["method"] == "bowtie-macs-replicate":
         Duplicated reads are removed at the same time.
         '''
         track = infile[:-len(".bam")]
-        PIntervals.buildNormalizedBAM( ((infile,track + ".readstats"),), outfile )
+        PipelineChipseq.buildNormalizedBAM( ((infile,track + ".readstats"),), outfile )
 
     ############################################################
     ############################################################
@@ -1539,7 +1539,7 @@ elif PARAMS["method"] == "bowtie-macs-replicate":
 
         Merge reads from several replicates.
         '''
-        PIntervals.buildNormalizedBAM( infiles, outfile )
+        PipelineChipseq.buildNormalizedBAM( infiles, outfile )
 
     ############################################################
     ############################################################
@@ -1556,7 +1556,7 @@ elif PARAMS["method"] == "bowtie-macs-replicate":
         Duplicated reads are removed at the same time.
         '''
         track = infile[:-len(".bam")]
-        PIntervals.buildNormalizedBAM( ((infile,track + ".readstats"),), outfile )
+        PipelineChipseq.buildNormalizedBAM( ((infile,track + ".readstats"),), outfile )
 
     ############################################################
     ############################################################
@@ -1567,7 +1567,7 @@ elif PARAMS["method"] == "bowtie-macs-replicate":
                 r"run\1.macs" )
     def runMACS( infile, outfile ):
         '''run MACS for peak detection.'''
-        PIntervals.runMACS( infile, outfile )
+        PipelineChipseq.runMACS( infile, outfile )
         
     ############################################################
     ############################################################
@@ -1576,7 +1576,7 @@ elif PARAMS["method"] == "bowtie-macs-replicate":
                 suffix(".macs"),
                 "_macs.import" )
     def importMACS( infile, outfile ):
-        PIntervals.importMACS( infile, outfile )
+        PipelineChipseq.importMACS( infile, outfile )
         
     ############################################################
     ############################################################
@@ -1585,7 +1585,7 @@ elif PARAMS["method"] == "bowtie-macs-replicate":
     def summarizeMACS( infiles, outfile ):
         '''run MACS for peak detection.'''
 
-        PIntervals.summarizeMACS( infiles, outfile )
+        PipelineChipseq.summarizeMACS( infiles, outfile )
 
     ############################################################
     ############################################################
@@ -1595,14 +1595,14 @@ elif PARAMS["method"] == "bowtie-macs-replicate":
                 "_summary.import" )
     def importMACSSummary( infile, outfile ):
         '''import macs summary.'''
-        PIntervals.importMACSSummary( infile, outfile )
+        PipelineChipseq.importMACSSummary( infile, outfile )
 
     ############################################################
     ############################################################
     ############################################################
     @transform( importMACS, suffix("_macs.import"), ".bed" )
     def exportIntervalsAsBed( infile, outfile ):
-        PIntervals.exportIntervalsAsBed( infile, outfile )
+        PipelineChipseq.exportIntervalsAsBed( infile, outfile )
 
     ############################################################
     ############################################################
@@ -1618,7 +1618,7 @@ elif PARAMS["method"] == "bowtie-macs-replicate":
         '''
 
         replicates = [ "%s%s.bed" % (track, x) for x in REPLICATES  if os.path.exists( "%s%s.bed" % (track, x) ) ]
-        PIntervals.intersectBedFiles( replicates, outfile )
+        PipelineChipseq.intersectBedFiles( replicates, outfile )
         
     ############################################################
     ############################################################
@@ -1634,7 +1634,7 @@ elif PARAMS["method"] == "bowtie-macs-replicate":
         '''
 
         conditions = [ "run%s%s.bed" % (x,track) for x in CELLLINES ]
-        PIntervals.intersectBedFiles( conditions, outfile )
+        PipelineChipseq.intersectBedFiles( conditions, outfile )
 
     ############################################################
     ############################################################
@@ -1648,7 +1648,7 @@ elif PARAMS["method"] == "bowtie-macs-replicate":
         '''
 
         infile, subtract = infiles
-        PIntervals.subtractBedFiles( infile, subtract, outfile )
+        PipelineChipseq.subtractBedFiles( infile, subtract, outfile )
 
     ############################################################
     ############################################################
@@ -1660,7 +1660,7 @@ elif PARAMS["method"] == "bowtie-macs-replicate":
                 suffix(".bed"),
                 "_bed.import" )
     def importCombinedIntervals( infiles, outfile ):
-        PIntervals.importCombinedIntervals( infiles, outfile )
+        PipelineChipseq.importCombinedIntervals( infiles, outfile )
 
     ############################################################
     ############################################################
@@ -1725,7 +1725,7 @@ elif PARAMS["method"] == "bowtie-macs-peakreplicate":
                 suffix(".bam"),
                 ".reastats" )
     def buildBAMStats( infile, outfile ):
-        PIntervals.buildBAMStats( infile, outfile )
+        PipelineChipseq.buildBAMStats( infile, outfile )
 
     ############################################################
     ############################################################
@@ -1742,7 +1742,7 @@ elif PARAMS["method"] == "bowtie-macs-peakreplicate":
         Duplicated reads are removed at the same time.
         '''
         track = infile[:-len(".bam")]
-        PIntervals.buildNormalizedBAM( ((infile,track + ".readstats"),), outfile )
+        PipelineChipseq.buildNormalizedBAM( ((infile,track + ".readstats"),), outfile )
 
     ############################################################
     ############################################################
@@ -1760,7 +1760,7 @@ elif PARAMS["method"] == "bowtie-macs-peakreplicate":
 
         Merge reads from several replicates.
         '''
-        PIntervals.buildNormalizedBAM( infiles, outfile )
+        PipelineChipseq.buildNormalizedBAM( infiles, outfile )
 
     ############################################################
     ############################################################
@@ -1777,7 +1777,7 @@ elif PARAMS["method"] == "bowtie-macs-peakreplicate":
         Duplicated reads are removed at the same time.
         '''
         track = infile[:-len(".bam")]
-        PIntervals.buildNormalizedBAM( ((infile,track + ".readstats"),), outfile )
+        PipelineChipseq.buildNormalizedBAM( ((infile,track + ".readstats"),), outfile )
 
     ############################################################
     ############################################################
@@ -1788,7 +1788,7 @@ elif PARAMS["method"] == "bowtie-macs-peakreplicate":
                 r"run\1.macs" )
     def runMACS( infile, outfile ):
         '''run MACS for peak detection.'''
-        PIntervals.runMACS( infile, outfile )
+        PipelineChipseq.runMACS( infile, outfile )
         
     ############################################################
     ############################################################
@@ -1797,7 +1797,7 @@ elif PARAMS["method"] == "bowtie-macs-peakreplicate":
                 suffix(".macs"),
                 "_macs.import" )
     def importMACS( infile, outfile ):
-        PIntervals.importMACS( infile, outfile )
+        PipelineChipseq.importMACS( infile, outfile )
         
     ############################################################
     ############################################################
@@ -1805,7 +1805,7 @@ elif PARAMS["method"] == "bowtie-macs-peakreplicate":
     @merge( runMACS, "macs.summary" )
     def summarizeMACS( infiles, outfile ):
         '''run MACS for peak detection.'''
-        PIntervals.summarizeMACS( infiles, outfile )
+        PipelineChipseq.summarizeMACS( infiles, outfile )
 
     ############################################################
     ############################################################
@@ -1815,14 +1815,14 @@ elif PARAMS["method"] == "bowtie-macs-peakreplicate":
                 "_summary.import" )
     def importMACSSummary( infile, outfile ):
         '''import macs summary.'''
-        PIntervals.importMACSSummary( infile, outfile )
+        PipelineChipseq.importMACSSummary( infile, outfile )
 
     ############################################################
     ############################################################
     ############################################################
     @transform( importMACS, suffix("_macs.import"), ".bed" )
     def exportIntervalsAsBed( infile, outfile ):
-        PIntervals.exportPeaksAsBed( infile, outfile )
+        PipelineChipseq.exportPeaksAsBed( infile, outfile )
 
     ############################################################
     ############################################################
@@ -1838,7 +1838,7 @@ elif PARAMS["method"] == "bowtie-macs-peakreplicate":
         '''
 
         replicates = [ "%s%s.bed" % (track, x) for x in REPLICATES  if os.path.exists( "%s%s.bed" % (track, x) ) ]
-        PIntervals.intersectBedFiles( replicates, outfile )
+        PipelineChipseq.intersectBedFiles( replicates, outfile )
 
     ############################################################
     ############################################################
@@ -1854,7 +1854,7 @@ elif PARAMS["method"] == "bowtie-macs-peakreplicate":
         '''
 
         conditions = [ "run%s%s.bed" % (x,track) for x in CELLLINES ]
-        PIntervals.intersectBedFiles( conditions, outfile )
+        PipelineChipseq.intersectBedFiles( conditions, outfile )
 
     ############################################################
     ############################################################
@@ -1868,7 +1868,7 @@ elif PARAMS["method"] == "bowtie-macs-peakreplicate":
         '''
 
         infile, subtract = infiles
-        PIntervals.subtractBedFiles( infile, subtract, outfile )
+        PipelineChipseq.subtractBedFiles( infile, subtract, outfile )
 
     ############################################################
     ############################################################
@@ -1880,7 +1880,7 @@ elif PARAMS["method"] == "bowtie-macs-peakreplicate":
                 suffix(".bed"),
                 "_bed.import" )
     def importCombinedIntervals( infiles, outfile ):
-        PIntervals.importCombinedIntervals( infiles, outfile )
+        PipelineChipseq.importCombinedIntervals( infiles, outfile )
 
     ############################################################
     ############################################################
@@ -1959,7 +1959,7 @@ elif PARAMS["method"] == "bed-macs-replicate":
                 ".macs" )
     def runMACS( infile, outfile ):
         '''run MACS for peak detection.'''
-        PIntervals.runMACS( infile, outfile )
+        PipelineChipseq.runMACS( infile, outfile )
         
     ############################################################
     ############################################################
@@ -1968,7 +1968,7 @@ elif PARAMS["method"] == "bed-macs-replicate":
                 suffix(".macs"),
                 "_macs.import" )
     def importMACS( infile, outfile ):
-        PIntervals.importMACS( infile, outfile, suffix = ".bam" )
+        PipelineChipseq.importMACS( infile, outfile, suffix = ".bam" )
         
     ############################################################
     ############################################################
@@ -1977,7 +1977,7 @@ elif PARAMS["method"] == "bed-macs-replicate":
     def summarizeMACS( infiles, outfile ):
         '''run MACS for peak detection.'''
 
-        PIntervals.summarizeMACS( infiles, outfile )
+        PipelineChipseq.summarizeMACS( infiles, outfile )
 
     ############################################################
     ############################################################
@@ -1987,14 +1987,14 @@ elif PARAMS["method"] == "bed-macs-replicate":
                 "_summary.import" )
     def importMACSSummary( infile, outfile ):
         '''import macs summary.'''
-        PIntervals.importMACSSummary( infile, outfile )
+        PipelineChipseq.importMACSSummary( infile, outfile )
 
     ############################################################
     ############################################################
     ############################################################
     @transform( importMACS, suffix("_macs.import"), ".bed" )
     def exportIntervalsAsBed( infile, outfile ):
-        PIntervals.exportIntervalsAsBed( infile, outfile )
+        PipelineChipseq.exportIntervalsAsBed( infile, outfile )
 
     ############################################################
     ############################################################
@@ -2023,7 +2023,7 @@ elif PARAMS["method"] == "bed-macs-replicate":
                 suffix(".bed"),
                 "_bed.import" )
     def importCombinedIntervals( infiles, outfile ):
-        PIntervals.importCombinedIntervals( infiles, outfile )
+        PipelineChipseq.importCombinedIntervals( infiles, outfile )
 
     ############################################################
     ############################################################
@@ -2053,7 +2053,7 @@ def makeMerged( infiles, outfile ):
 
     The replicates are combined using a merge.
     '''
-    PIntervals.mergeBedFiles( infiles, outfile )
+    PipelineChipseq.mergeBedFiles( infiles, outfile )
 
 ############################################################
 ############################################################
@@ -3209,7 +3209,7 @@ def makeReadCorrelationTable( infiles, outfile ):
 def makePeakvalCorrelation( infiles, outfile ):
     '''compute correlation of interval properties between sets for field peakval.
     '''
-    PIntervals.makeIntervalCorrelation( infiles, outfile, "peakval" )
+    PipelineChipseq.makeIntervalCorrelation( infiles, outfile, "peakval" )
 
 @follows( makeMerged )
 @files_re( ["%s.bed" % x for x in TRACKS_CORRELATION],
@@ -3218,7 +3218,7 @@ def makePeakvalCorrelation( infiles, outfile ):
 def makeAvgvalCorrelation( infiles, outfile ):
     '''compute correlation of interval properties between sets for field peakval.
     '''
-    PIntervals.makeIntervalCorrelation( infiles, outfile, "avgval" )
+    PipelineChipseq.makeIntervalCorrelation( infiles, outfile, "avgval" )
 
 @follows( makeMerged )
 @files_re( ["%s.bed" % x for x in TRACKS_CORRELATION],
@@ -3227,7 +3227,7 @@ def makeAvgvalCorrelation( infiles, outfile ):
 def makeLengthCorrelation( infiles, outfile ):
     '''compute correlation of interval properties between sets for field peakval.
     '''
-    PIntervals.makeIntervalCorrelation( infiles, outfile, "length" )
+    PipelineChipseq.makeIntervalCorrelation( infiles, outfile, "length" )
 
 @transform( ( makePeakvalCorrelation, makeAvgvalCorrelation, makeLengthCorrelation ),
             suffix(".correlation"),
@@ -3620,7 +3620,7 @@ if PARAMS["motifs_tomtom_master_motif"] != "":
 
         E.info( "%s: keeping %i motifs" % (infile, len(selected) ) )
 
-        PMotifs.filterMotifsFromMEME( infile_meme, outfile, selected )
+        PipelineMotifs.filterMotifsFromMEME( infile_meme, outfile, selected )
 
 else:
     ############################################################
@@ -3643,7 +3643,7 @@ else:
         '''take the top scoring motif from meme runs
         '''
 
-        PMotifs.filterMotifsFromMEME( infile, outfile, ["1"] )
+        PipelineMotifs.filterMotifsFromMEME( infile, outfile, ["1"] )
 
 ############################################################
 ############################################################

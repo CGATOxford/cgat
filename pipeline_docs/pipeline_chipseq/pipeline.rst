@@ -1,12 +1,14 @@
 .. Test documentation master file, created by
    sphinx-quickstart on Mon Mar 23 15:27:57 2009.
 
-=============================
-Vitamin D annotation pipeline
-=============================
+.. _chipseqpipeline:
+
+=================
+ChIP-Seq pipeline
+=================
 
 The following pages contain automatically created tables and 
-images from the VitaminD annotation pipeline.
+plots from the ChIP-Seq pipeline.
 
 Contents:
 
@@ -14,10 +16,12 @@ Contents:
    :maxdepth: 2
 
    pipeline/Methods.rst
+   pipeline/Status.rst
    pipeline/Mapping.rst
    pipeline/PeakCalling.rst
    pipeline/Reproducibility.rst
    pipeline/Intervals.rst
+   pipeline/Peaks.rst	
    pipeline/Binding.rst
    pipeline/IntervalLists.rst
    pipeline/Correlations.rst

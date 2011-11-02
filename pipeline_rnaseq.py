@@ -117,7 +117,6 @@ reconstruction. Also, conflicting transcripts between replicates give an idea of
 However, if there are only few reads,  there might be a case for building transcript models using reads 
 from all replicates of an experiment. However, there is no reason to merge reads between experiments.
 
-
 LncRNA
 --------
 
@@ -435,6 +434,7 @@ from rpy2.rinterface import RRuntimeError
 import PipelineGeneset
 import PipelineMapping
 import PipelineRnaseq
+import PipelineMappingQC
 import Stats
 
 # levels of cuffdiff analysis
@@ -501,6 +501,8 @@ def connect():
 ##################################################################
 ## genesets build - defined statically here, but could be parsed
 ## from configuration options
+## Needs to done in turn to be able to turn off potentially empty gene sets
+## such as refnoncoding
 GENESETS = ("novel", "abinitio", "reference", "refcoding", "refnoncoding", "lincrna" )
 
 # reference gene set for QC purposes
@@ -587,19 +589,20 @@ def mergeAndFilterGTF( infile, outfile, logfile ):
     E.info( "filtering by contig and removing long introns" )    
     contigs = set(IndexedFasta.IndexedFasta( os.path.join( PARAMS["genome_dir"], PARAMS["genome"]) ).getContigs())
 
+    rx_contigs = None
     if "geneset_remove_contigs" in PARAMS:
         rx_contigs = re.compile( PARAMS["geneset_remove_contigs"] )
         E.info( "removing contigs %s" % PARAMS["geneset_remove_contigs"] )
-    else:
-        rx_contigs = None
 
+    rna_index = None
     if "geneset_remove_repetetive_rna" in PARAMS:
         rna_file = os.path.join( PARAMS["annotations_dir"],
                                  PARAMS_ANNOTATIONS["interface_rna_gff"] )
-        rna_index = GFF.readAndIndex( GFF.iterator( IOTools.openFile( rna_file, "r" ) ) )
-        E.info( "removing ribosomal RNA in %s" % rna_file )
-    else:
-        rna_index = None
+        if not os.path.exists( rna_file ):
+            E.warn( "file '%s' to remove repetetive rna does not exist" % rna_file )
+        else:
+            rna_index = GFF.readAndIndex( GFF.iterator( IOTools.openFile( rna_file, "r" ) ) )
+            E.info( "removing ribosomal RNA in %s" % rna_file )
     
     gene_ids = {}
 
@@ -966,7 +969,7 @@ def buildIntronGeneModels(infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@transform( buildCodingGeneSet, suffix(".gtf.gz"), ".junctions.gz")
+@transform( buildCodingGeneSet, suffix(".gtf.gz"), ".junctions")
 def buildJunctions( infile, outfile ):
     '''build file with splice junctions from gtf file.
     
@@ -978,6 +981,7 @@ def buildJunctions( infile, outfile ):
     '''
     
     outf = IOTools.openFile( outfile, "w" )
+    njunctions = 0
     for gffs in GTF.transcript_iterator( GTF.iterator( IOTools.openFile( infile, "r" ) )):
         
         gffs.sort( key = lambda x: x.start )
@@ -987,12 +991,20 @@ def buildJunctions( infile, outfile ):
             # of first and last residue that are to be kept (i.e., within the exon).
             outf.write( "%s\t%i\t%i\t%s\n" % (gff.contig, end - 1, gff.start, gff.strand ) )
             end = gff.end
-                        
+            njunctions += 1
+            
     outf.close()
+
+    if njunctions == 0:
+        E.warn( 'no junctions found in gene set' )
+        return
+    else:
+        E.info( 'found %i junctions before removing duplicates' % njunctions )
+
 
     # make unique
     statement = '''mv %(outfile)s %(outfile)s.tmp; 
-                   gunzip < %(outfile)s.tmp | sort | uniq | gzip > %(outfile)s;
+                   cat < %(outfile)s.tmp | sort | uniq > %(outfile)s;
                    rm -f %(outfile)s.tmp; '''
     P.run()
 
@@ -1103,10 +1115,16 @@ def mapReadsWithTophat( infiles, outfile ):
     A list with known splice junctions is supplied.
     '''
     job_options= "-pe dedicated %i -R y" % PARAMS["tophat_threads"]
+    
+    if "--butterfly-search" in PARAMS["tophat_options"]:
+        # for butterfly search - require insane amount of
+        # RAM.
+        job_options += " -l mem_free=50G"
+
     to_cluster = USECLUSTER
     m = PipelineMapping.Tophat()
     infile, reffile = infiles
-    tophat_options = PARAMS["tophat_options"] + " --raw-juncs <( zcat %(reffile)s) " % locals()
+    tophat_options = PARAMS["tophat_options"] + " --raw-juncs %(reffile)s " % locals()
     statement = m.build( (infile,), outfile ) 
     P.run()
 
@@ -1188,7 +1206,6 @@ def buildJunctionsDB( infiles, outfile ):
     '''
 
     P.run()
-
 
 if "tophat_add_separate_junctions" in PARAMS and PARAMS["tophat_add_separate_junctions"]:
 #########################################################################
@@ -1331,27 +1348,15 @@ def buildMismappedBAMs( infile, outfile ):
 ############################################################
 ############################################################
 @transform( (mapReadsWithTophat, buildBAMs, buildMismappedBAMs), 
-            suffix(".bam" ), ".bam.stats")
-def buildAlignmentStats( infile, outfile ):
+            suffix(".bam" ), ".picard_stats")
+def buildPicardStats( infile, outfile ):
     '''build alignment stats using picard.
 
     Note that picards counts reads but they are in fact alignments.
     '''
-    to_cluster = USECLUSTER
-    
-    # replace the SO field from tophat/samtools with coordinate to indicate
-    # that the file is sorted by coordinate.
-    # naturally - the bam files should be sorted.
-    statement = '''
-    java -Xmx2g net.sf.picard.analysis.CollectMultipleMetrics
-            I=%(infile)s
-            O=%(outfile)s 
-            R=%(cufflinks_genome_dir)s/%(genome)s.fa
-            ASSUME_SORTED=true
-    >& %(outfile)s
-    '''
-    
-    P.run()
+    PipelineMappingQC.buildPicardAlignmentStats( infile, outfile,
+                                                 os.path.join( PARAMS["cufflinks_genome_dir"],
+                                                               PARAMS["genome"] + ".fa" ) )
 
 ############################################################
 ############################################################
@@ -1372,11 +1377,19 @@ def buildBAMReports( infile, outfile ):
     # xvfb-run  -f ~/.Xauthority -a 
     track = P.snip( infile, ".bam" )
 
+    # use a fake X display in order to avoid problems with
+    # no X connection on the cluster
+    xvfb_command = P.which("xvfb-run" )
+
+    # permit multiple servers using -a option
+    if xvfb_command: xvfb_command+= " -a "
+
     # bamstats can not accept a directory as output, hence cd to exportdir
     statement = '''
     cd %(exportdir)s/bamstats;
-    bamstats -i ../../%(infile)s -v html -o %(track)s.html 
-             --qualities --mapped --lengths --distances --starts
+    %(xvfb_command)s
+    %(cmd-run)s bamstats -i ../../%(infile)s -v html -o %(track)s.html 
+                         --qualities --mapped --lengths --distances --starts
     >& ../../%(outfile)s
     '''
 
@@ -1385,63 +1398,11 @@ def buildBAMReports( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-@merge( buildAlignmentStats, "alignment_stats.load" )
-def loadAlignmentStats( infiles, outfile ):
+@merge( buildPicardStats, "picard_stats.load" )
+def loadPicardStats( infiles, outfile, paired_end=PARAMS["paired_end"] ):
     '''merge alignment stats into single tables.'''
 
-    tablename = P.toTable( outfile )
-
-
-    outf = P.getTempFile()
-
-    first = True
-    for f in infiles:
-        track = P.snip( f, ".bam.stats" )
-        fn = f + ".alignment_summary_metrics" 
-        if not os.path.exists( fn ): 
-            E.warn( "file %s missing" % fn )
-            continue
-        lines = [ x for x in open( fn, "r").readlines() if not x.startswith("#") and x.strip() ]
-        if first: outf.write( "%s\t%s" % ("track", lines[0] ) )
-        first = False
-        outf.write( "%s\t%s" % (track,lines[1] ))
-        
-    outf.close()
-    tmpfilename = outf.name
-
-    statement = '''cat %(tmpfilename)s
-                | python %(scriptsdir)s/csv2db.py
-                      --index=track
-                      --table=%(tablename)s 
-                > %(outfile)s
-               '''
-    P.run()
-
-    for suffix, column in ( ("quality_by_cycle_metrics", "cycle"),
-                            ("quality_distribution_metrics", "quality") ):
-
-        # some files might be missing - bugs in Picard
-        xfiles = [ x for x in infiles if os.path.exists( "%s.%s" % (x, suffix) ) ]
-
-        header = ",".join( [P.snip( x, ".bam.stats") for x in xfiles] )        
-        filenames = " ".join( [ "%s.%s" % (x, suffix) for x in xfiles ] )
-
-        tname = "%s_%s" % (tablename, suffix)
-        
-        statement = """python %(scriptsdir)s/combine_tables.py
-                      --missing=0
-                   %(filenames)s
-                | python %(scriptsdir)s/csv2db.py
-                      --header=%(column)s,%(header)s
-                      --replace-header
-                      --index=track
-                      --table=%(tname)s 
-                >> %(outfile)s
-                """
-    
-        P.run()
-
-    os.unlink( tmpfilename )
+    PipelineMappingQC.loadPicardAlignmentStats( infiles, outfile, paired_end )
 
 ############################################################
 ############################################################
@@ -1621,6 +1582,7 @@ def loadBAMStats( infiles, outfile ):
                    %(filenames)s
                 | perl -p -e "s/bin/%(suffix)s/"
                 | python %(scriptsdir)s/csv2db.py
+                      --allow-empty
                       --table=%(tname)s 
                 >> %(outfile)s
                 """
@@ -2261,10 +2223,13 @@ def buildNovelGeneSet( infiles, outfile ):
             if indices[section].contains( gtf.contig, gtf.start, gtf.end):
                 remove_genes[gtf.gene_id].add( section )
 
-        for r in repeats.get( gtf.contig, gtf.start, gtf.end ):
-            if r[0] <= gtf.start and r[1] >= gtf.end:
-                remove_genes[gtf.gene_id].add( "repeat" )
-                break
+        try:
+            for r in repeats.get( gtf.contig, gtf.start, gtf.end ):
+                if r[0] <= gtf.start and r[1] >= gtf.end:
+                    remove_genes[gtf.gene_id].add( "repeat" )
+                    break
+        except KeyError:
+            pass
 
     E.info( "removing %i out of %i genes" % (len(remove_genes), len(total_genes)) )
 
@@ -2560,6 +2525,10 @@ def annotateTranscriptsMappability( infile, outfile ):
     # script will be farmed out
     to_cluster = False
 
+    if "geneset_mappability" not in PARAMS or not PARAMS["geneset_mappability"]:
+        P.touch(outfile)
+        return
+
     statement = """
     zcat < %(infile)s 
     | %(cmd-farm)s --split-at-column=1 --output-header --log=%(outfile)s.log --max-files=60 
@@ -2578,7 +2547,11 @@ def annotateTranscriptsMappability( infile, outfile ):
 def loadTranscriptsMappability( infile, outfile ):
     '''load interval annotations: genome architecture
     '''
-    P.load( infile, outfile, "--index=transcript_id" )
+    if "geneset_mappability" not in PARAMS or not PARAMS["geneset_mappability"]:
+        P.touch(outfile)
+        return
+
+    P.load( infile, outfile, "--index=transcript_id --allow-empty" )
 
 #########################################################################
 #########################################################################
@@ -2906,7 +2879,7 @@ def loadCuffdiff( infile, outfile ):
         statement = '''cat %(indir)s/%(fn)s
         | perl -p -e "s/sample_/track/g; s/value_/value/g; s/yes$/1/; s/no$/0/; s/ln\\(fold_change\\)/lfold/; s/p_value/pvalue/"
         | awk -v OFS='\\t' '/test_id/ {print;next;} 
-                              { $9 = $9 * 1.44269504089; 
+                              { $10 = $10 * 1.44269504089; 
                                 if( $6 == "OK" && ($7 < %(cuffdiff_fpkm_expressed)f || $8 < %(cuffdiff_fpkm_expressed)f )) { $6 = "NOCALL"; };
                                 print; } '
         | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
@@ -3323,7 +3296,7 @@ def buildUnionExons( infile, outfile ):
 @follows( buildUnionExons, mkdir( "exon_counts.dir" ) )
 @files( [ ( ("%s.accepted.bam" % x.asFile(), "%s.union.bed.gz" % y ),
             ("exon_counts.dir/%s_vs_%s.bed.gz" % (x.asFile(),y ) ) )
-          for x,y in itertools.product( TRACKS, GENESETS) ] )
+          for x,y in itertools.product( TRACKS, GENESETS ) ] )
 def buildExonLevelReadCounts( infiles, outfile ):
     '''compute coverage of exons with reads.
     '''
@@ -3828,7 +3801,6 @@ def runDESeq( infile, outfile ):
     geneset, method = outfile.split(".")
     level = "gene"
 
-
     # load data 
     R('''suppressMessages(library('DESeq'))''')
     R( '''counts_table <- read.delim( '%s', header = TRUE, row.names = 1, stringsAsFactors = TRUE )''' % infile )
@@ -4043,7 +4015,7 @@ def buildGeneSetsOfInterest( infile, outfile ):
           buildFastQCReport,
           loadTophatStats,
           loadBAMStats,
-          loadAlignmentStats,
+          loadPicardStats,
           loadContextStats,
           loadMappingStats,
           )
@@ -4092,14 +4064,6 @@ def export(): pass
 @follows( loadExonValidation )
 def validate(): pass
 
-@follows( mapping,
-          genesets,
-          expression,
-          utrs,
-          validate,
-          export)
-def full(): pass
-
 ###################################################################
 ###################################################################
 ###################################################################
@@ -4117,7 +4081,7 @@ def createViewMapping( infile, outfile ):
     mapping_stats: .accepted
     bam_stats: .accepted
     context_stats: .accepted
-    alignment_stats: .accepted
+    picard_stats: .accepted
     '''
 
     tablename = P.toTable( outfile )
@@ -4133,7 +4097,7 @@ def createViewMapping( infile, outfile ):
     FROM bam_stats AS b,
           mapping_stats AS m,
           context_stats AS c,          
-          alignment_stats AS a,
+          picard_stats_alignment_summary_metrics AS a,
           tophat_stats AS t
     WHERE b.track LIKE "%%.accepted" 
       AND b.track = m.track
@@ -4143,6 +4107,15 @@ def createViewMapping( infile, outfile ):
     '''
 
     Database.executewait( dbhandle, statement % locals() )
+
+    nrows = Database.executewait( dbhandle, "SELECT COUNT(*) FROM view_mapping" ).fetchone()[0]
+    
+    if nrows == 0:
+        raise ValueError( "empty view mapping, check statement = %s" % (statement % locals()) )
+
+    E.info( "created view_mapping with %i rows" % nrows )
+
+    P.touch( outfile )
 
 ###################################################################
 ###################################################################
@@ -4154,7 +4127,19 @@ def views():
 ###################################################################
 ###################################################################
 ###################################################################
-@follows( views, mkdir( "report" ) )
+@follows( mapping,
+          genesets,
+          expression,
+          utrs,
+          validate,
+          export,
+          views)
+def full(): pass
+
+###################################################################
+###################################################################
+###################################################################
+@follows( mkdir( "report" ) )
 def build_report():
     '''build report from scratch.'''
 
@@ -4164,7 +4149,7 @@ def build_report():
 ###################################################################
 ###################################################################
 ###################################################################
-@follows( views, mkdir( "report" ) )
+@follows( mkdir( "report" ) )
 def update_report():
     '''update report.'''
 
@@ -4183,7 +4168,7 @@ def update_report():
 def publish():
     '''publish files.'''
     # publish web pages
-    P.publish_report( prefix = "rnaseq_" )
+    P.publish_report()
 
     # publish additional data
     web_dir = PARAMS["web_dir"]

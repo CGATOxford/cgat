@@ -63,7 +63,7 @@ import Experiment
 import Genomics
 import numpy
 
-import Bio.Fasta
+import FastaIterator
 import Bio.Alphabet.IUPAC
 
 ##-------------------------------------------------------------------------
@@ -194,25 +194,25 @@ if __name__ == "__main__":
     options.filters = options.filters.split(",")
     options.fields = options.fields.split(",")    
     
-    parser = Bio.Fasta.RecordParser()
-    iterator = Bio.Fasta.Iterator( sys.stdin, parser)
+    iterator = FastaIterator.FastaIterator( options.stdin )
 
     headers = ["id1", "id2"]
     for f in options.filters:
         headers += list( map( lambda x: "%s_%s" % (f, x), options.fields ) )
 
     options.stdout.write( "\t".join(headers) + "\n")
-    
+
     while 1:
-        cur_record = iterator.next()
-        if cur_record is None: break
+        try:
+            cur_record = iterator.next()
+            if cur_record is None: break
+            first_record = cur_record
+            cur_record = iterator.next()
+            if cur_record is None: break
+            second_record = cur_record
 
-        first_record = cur_record
-
-        cur_record = iterator.next()
-        if cur_record is None: break
-
-        second_record = cur_record
+        except StopIteration:
+            break
 
         if len(first_record.sequence) != len(second_record.sequence):
             raise "sequences %s and %s of unequal length" % (first_record.title, second_record.title)            

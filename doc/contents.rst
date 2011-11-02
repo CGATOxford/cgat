@@ -35,6 +35,7 @@ complete list:
    scripts/pipeline_transcriptome.rst
    scripts/pipeline_variants.rst
    scripts/pipeline_benchmark_rnaseqmappers.rst
+   scripts/pipeline_testing.rst
 
 Help on installing, using and building pipelines is below:
 

@@ -24,6 +24,8 @@
 #
 # blastall -p blastp -i manyseqs.fasta ... | blastchunk.pl > manyseqs.rdb
 #
+# Aug 2011: modified by Andreas Heger to parse BLAST+ 2.2.25
+# 
 # modified by Andreas Heger to parse PSI-BLAST
 # 
 # modified by Andreas Heger to parse BLAST 2.2.14
@@ -32,7 +34,6 @@
 #
 # added option to use zero based coordinates and open/closed intervals
 $|=1;
-$[=1;
 
 # use strict;
 # global variables for the parser :
@@ -144,12 +145,19 @@ while(<STDIN>)
 	    if(/([0-9,]+)\s+letters/) 
 	    {
 		$query_length = $1 ;
-		$query_length =~ s/,//;
+	    }
+	    # for blast+
+	    elsif(/Length=(\d+)/)
+	    {
+		$query_length = $1;
 	    }
 	    ## explicitely test for an empty line
-	    last if (/^\s+$/);
+	    ## last if (/^\s+$/);
+	    ## changed for blastp+
+	    last if (/Sequences producing significant alignments:/);
 	    if(/^Database:/) { $began = 1; last; }
 	}
+	$query_length =~ s/,//;
 	print ">$query\t$query_length\n" unless ($o_table); # pseudo-fasta format
 
 	# start with 0, as first call to rdb_parser is empty;
@@ -251,7 +259,9 @@ sub rdb_parser {
 	# print $_;
 	if(/^>/) {
 	    ($pid,$name)=/^>\s*[\/\:]*(\S+)\s+(\S{0,1}.*)\s*$/;
-	} elsif(/^\s+Length =\s+(\d+)/) {
+#	} elsif(/^\s+Length =\s+(\d+)/) {
+#\	    $len2=$1;
+	} elsif(/^\s*Length\s*=\s*(\d+)/) {
 	    $len2=$1;
 	    # a bitscore can look like this: 1.058e+04 
 	} elsif( /Score =\s+([\d\.e\+\-]+)\s+bits\s+\(([\d\.]+).* Expect\S* =\s+(\S+)/ ) 
@@ -272,8 +282,9 @@ sub rdb_parser {
 	    $invquery = ($1 eq 'Minus'); if($invquery) { $from1 = -$infinite; $to1 = $infinite; }
 	    $invsbjct = ($2 eq 'Minus'); if($invsbjct) { $from2 = -$infinite; $to2 = $infinite; }
 	} elsif(m,^Query[\:\s]+(\d+)\s*([\w\-\*]+)\s+(\d+)\s*$,) {
+	    # Query   123  --AEAA--- 456
 	    if((! $invquery && $1<$from1) || ($invquery && $from1<$1)) { $from1=$1; }
-	    if( (!$invquery && $3>$to1) || ($invquery && $3>$to1)) { $to1=$3; }
+	    if((!$invquery && $3>$to1) || ($invquery && $3>$to1)) { $to1=$3; }
 	    $n=0; $sign='+';
 	    foreach(split(//,$2)) {
 		if(/\-/) { 
@@ -292,6 +303,10 @@ sub rdb_parser {
 		$n++;
 	    }
 	    push(@ali1,$sign.$n);
+	} elsif(m,^Query[\:\s]+\s*([\-]+)\s*$,) {
+	    # completely empty query lines
+	    # query    -------   
+	    push(@ali1,'-'.length($1));
 	} elsif(/^Sbjct[\:\s]+(\d+)\s*([\w\*\-]+)\s+(\d+)\s*$/) {
 	    if((!$invsbjct && $1<$from2) || ($invsbjct && $1>$from2)) { $from2=$1; }
 	    if( (!$invsbjct && $3>$to2) || ($invsbjct && $3<$to2)) { $to2=$3; }
@@ -313,6 +328,10 @@ sub rdb_parser {
 		$n++;
 	    }
 	    push(@ali2,$sign.$n);
+	} elsif(m,^Sbjct[\:\s]+\s*([\-]+)\s*$,) {
+	    # completely empty sbjct lines
+	    # sbjct    ------- 
+	    push(@ali2,'-'.length($1));
 	}
 	if(/Identities =\s+\d+\/(\d+)\s+\((\d+)\%/) {
 	    $lali = $1;
@@ -415,8 +434,11 @@ sub printold {
     
     my ($ali11,$ali22) = ($ali1,$ali2);
     $ali11 =~ s/-/+/g; $ali22 =~ s/-/+/g;
-    if((eval "0$ali11") != (eval "0$ali22")) {
-	warn "problem with ali1/ali2 for $qstart/$qend ; $sstart/$ssend ; on $query versus $hitid";
+    my $lali1=eval "0$ali11";
+    my $lali2=eval "0$ali22";
+    if( $lali1 != $lali2 ) 
+    {
+	warn "problem with ali1/ali2 for query=$qstart-$qend ; sbjct=$sstart-$ssend ; $lali1 != $lali2; on $query versus $hitid";
 	$st = "$bug_warning$st";
     }
    
@@ -429,8 +451,8 @@ sub compressali {
     local(@ali1)=@_;
     local($ali1,$n,$sign,$i);
     $ali1='';
-    $_=$ali1[$[]; $n=$_; ($sign)=/^([+-])/;
-    $i=$[; 
+    $_=$ali1[0]; $n=$_; ($sign)=/^([+-])/;
+    $i=0; 
     while($i<$#ali1) {
 	while($ali1[$i+1]=~/[$sign]/ || $ali1[$i+1] eq '+0') { $i++; $n+=$ali1[$i]; }
 	$n=~s/[\-\+]//g; $ali1.=$sign.$n; 

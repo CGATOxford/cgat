@@ -630,7 +630,7 @@ def runDRMAA( data, environment ):
         jt.jobEnvironment = e
 
         jt.args = []
-        jt.nativeSpecification = "-q %s -p %i -N %s %s" % \
+        jt.nativeSpecification = "-V -q %s -p %i -N %s %s" % \
             (kwargs.get("job_queue", options.cluster_queue ),
              kwargs.get("job_priority", options.cluster_priority ),
              os.path.basename(kwargs.get("outfile", "farm.py" )),

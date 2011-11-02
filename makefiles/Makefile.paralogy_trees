@@ -308,6 +308,7 @@ data.prepare:
 		--pattern-output="data.dir/cluster_%s.dir/cluster_%s.fasta" \
 		--pattern-filter="^([^|]+)[|]" \
 		--list-filter=`echo "$(PARAM_SRC_SCHEMAS)" | perl -p -e "s/ +/,/g"` \
+		--ignore-missing \
 		--output-format=fasta > $@
 	$(CMD_LOG) "adding Makefiles to directories."
 	@for d in data.dir/cluster_*.dir; do \
@@ -991,7 +992,8 @@ analysis.dir/njtrees:
 ## Targets for subtree analysis
 #######################################################################################
 analysis-hook: filtered trees.stats trees.recall \
-		count_orgs orthologs.gz pairwise_inparalogs.gz full_inparalogs.gz
+		count_orgs orthologs.gz pairwise_inparalogs.gz full_inparalogs.gz 
+
 
 #######################################################################################
 #######################################################################################

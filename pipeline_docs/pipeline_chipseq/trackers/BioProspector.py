@@ -2,7 +2,8 @@ from ChipseqReport import *
 import glob
 
 class BioProspectorMotifs( ChipseqTracker ):
-    mPattern = "_bioprospector$"
+
+    pattern = "(.*)_bioprospector$"
     
     def __call__(self, track, slice = None ):
 

@@ -118,6 +118,9 @@ the multiple alignment. The label should be a single letter. If the file is empt
     parser.add_option("--skip-doubles", dest="skip_doubles", action="store_true",
                       help="skip doubles, takes first entry encountered."  )
 
+    parser.add_option("--ignore-missing", dest="ignore_missing", action="store_true",
+                      help="ignore missing alignments [%default]."  )
+
     parser.add_option("--remove-all-gaps", dest = "remove_all_gaps", type = int,
                       help="remove fully masked or gapped positions in a multiple alignment. The integer parameter supplies the frame. Use 3 for codon alignments." )
 
@@ -156,6 +159,7 @@ the multiple alignment. The label should be a single letter. If the file is empt
         filename_extract_regions = None,
         minimum_mali_length = 0,
         use_input_id = False,
+        ignore_missing = False,
         )
 
 def readComponents( options ):
@@ -181,7 +185,7 @@ def readComponents( options ):
                     input_id = val[0]
                     output_id = val[0]
             else:
-                raise "error in reading %s: %s->%s" % (options.filename_components, key, val)
+                raise ValueError("error in reading %s: %s->%s" % (options.filename_components, key, val))
             
             if output_id not in map_component2seq_id: map_component2seq_id[output_id] = []
             map_component2seq_id[output_id].append(key)
@@ -274,7 +278,7 @@ def readAnnotations( options, map_component2input_id ):
             try:
                 id, start, end, label = line[:-1].split("\t")
             except ValueError:
-                raise ValueError, "parsing error in line %s\n" % (line[:-1])
+                raise ValueError("parsing error in line %s\n" % (line[:-1]))
 
             start, end = int(start), int(end)
             if id not in map_id2component: continue
@@ -479,7 +483,11 @@ def getMali( component_id,
         E.debug( "retrieving multiple alignment for component %s from file %s" % (component_id, input_filename))
 
         if not os.path.exists( input_filename):
-            raise OSError( "alignment %s not found" % input_filename )
+            if options.ignore_missing:
+                E.warn( "alignment %s not found" % input_filename )
+                return None
+            else:
+                raise OSError( "alignment %s not found" % input_filename )
 
         mali.readFromFile( open( input_filename, "r"), format=options.input_format )
 
@@ -719,14 +727,12 @@ if __name__ == '__main__':
                         options )
         
         if mali == None:
-            if options.loglevel >= 1:
-                options.stdlog.write("# empty mali returned for component %s\n" % (component_id))            
+            E.warn ("empty mali returned for component %s" % (component_id) )
             nskipped += 1
             continue
 
         if mali.getNumColumns() == 0:
-            if options.loglevel >= 1:
-                options.stdlog.write("# skipping output of empty alignment for component %s\n" % (component_id))            
+            E.warn( "skipping output of empty alignment for component %s" % (component_id) )
             nskipped += 1
             continue
 

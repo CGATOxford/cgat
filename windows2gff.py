@@ -21,8 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-windows2gff.py - create genomic windows according
-=================================================
+windows2gff.py - create genomic windows/tiles
+=============================================
 
 :Author: Andreas Heger
 :Release: $Id$
@@ -81,7 +81,7 @@ def getFixedWidthWindows( map_contig2size, options ):
             if x + window_size > size: continue
             gff = GFF.Entry()
             gff.feature = "window"
-            gff.mSoucre = "window"
+            gff.source = "window"
             gff.contig = contig
             gff.start = x
             gff.end = min(size, x + window_size)

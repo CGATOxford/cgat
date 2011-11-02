@@ -63,7 +63,7 @@ import os, sys, string, re, tempfile, subprocess, optparse, time, math
 
 from types import *
 
-import Experiment as Experiment
+import Experiment as E
 import WrapperCodeML
 import Mali
 import Genomics
@@ -954,7 +954,7 @@ in the model. Provide values in a comma-separated list [%default].""")
         tree = None,
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if options.method == "xrate":
         # imports for xrate computation
@@ -984,6 +984,8 @@ in the model. Provide values in a comma-separated list [%default].""")
 
     mali.readFromFile( sys.stdin, format = options.input_format )
 
+    E.info("read multiple alignment")
+    
     if mali.getLength() == 0:
         raise "refusing to process empty alignment."
 
@@ -1015,5 +1017,5 @@ in the model. Provide values in a comma-separated list [%default].""")
     else:
         processMali( mali, options )
 
-    Experiment.Stop()
+    E.Stop()
 

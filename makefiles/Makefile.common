@@ -20,7 +20,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 
-SHELL=/bin/bash -l -O expand_aliases
+SHELL=/bin/bash -O expand_aliases 
 LOG=log
 
 ################################################
@@ -31,7 +31,7 @@ LOG=log
 ## Directories
 
 ## Directory where gene prediction scripts can be found
-DIR_SCRIPTS?=/home/andreas/cgat/
+DIR_SCRIPTS?=/ifs/devel/cgat/
 ## deprecated, use DIR_SCRIPTS from now on
 DIR_SCRIPTS_GENEPREDICTION?=$(DIR_SCRIPTS)
 ## deprecated, use DIR_SCRIPTS from now on
@@ -52,8 +52,14 @@ PARAM_PRIORITY?=-10
 ## queue to use
 PARAM_QUEUE?=medium_jobs.q
 
+PARAM_QUEUE_SERVER?=server_jobs.q
+PARAM_QUEUE_LOCAL?=local_jobs.q
+
 ## number of jobs to submit to the queue in parallel
 PARAM_NUM_JOBS?=100
+
+## .bashrc to use for running jobs on the cluster
+PARAM_BASHRC?=~/.bashrc
 
 ## additional cluster options, for example
 ## -l mem=3000
@@ -146,7 +152,7 @@ CMD_CLOSE?=@echo "\# job finished at: `date`" >> $@
 
 #########################################################################
 ## record benchmarking information
-PYTHON_BENCHMARK_OPTIONS?=--timeit=$(DIR_ROOT)timeit.log --timeit-name=$@
+PYTHON_BENCHMARK_OPTIONS?=--timeit=$(DIR_ROOT)timeit.log --timeit-name=$@ 
 PYTHON_OPTIONS?=$(PYTHON_BENCHMARK_OPTIONS)
 CMD_BENCHMARK=python $(DIR_SCRIPTS)run.py $(PYTHON_OPTIONS)
 
@@ -157,7 +163,7 @@ CMD_BENCHMARK=python $(DIR_SCRIPTS)run.py $(PYTHON_OPTIONS)
 CMD_REMOTE_SUBMIT?=qrsh \
 	-cwd \
 	-now n \
-	-v BASH_ENV=~/.bashrc \
+	-V \
 	-p $(PARAM_PRIORITY) \
 	-q $(PARAM_QUEUE) \
 	-N $(PARAM_PROJECT_NAME)_`echo $@ | tr -d :` 
@@ -170,9 +176,9 @@ CMD_REMOTE_SUBMIT?=qrsh \
 CMD_SERVER_SUBMIT?=qrsh \
 	-cwd \
 	-now n \
-	-v BASH_ENV=~/.bashrc \
+	-v BASH_ENV=$(PARAM_BASHRC) \
 	-p $(PARAM_PRIORITY) \
-	-q server_jobs.q \
+	-q $(PARAM_QUEUE_SERVER) \
 	-N $(PARAM_PROJECT_NAME)_`echo $@ | tr -d :` 
 
 #########################################################################
@@ -181,9 +187,9 @@ CMD_SERVER_SUBMIT?=qrsh \
 CMD_LOCAL_SUBMIT?=qrsh \
 	-cwd \
 	-now n \
-	-v BASH_ENV=~/.bashrc \
+	-v BASH_ENV=$(PARAM_BASHRC) \
 	-p $(PARAM_PRIORITY) \
-	-q local_jobs.q \
+	-q $(PARAM_QUEUE_LOCAL) \
 	-N $(PARAM_PROJECT_NAME)_`echo $@ | tr -d :` 
 
 

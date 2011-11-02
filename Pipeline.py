@@ -37,7 +37,8 @@ API
 ----
 
 '''
-import os, sys, re, subprocess, optparse, stat, tempfile, time, random, inspect, types, glob, shutil, logging
+import os, sys, re, subprocess, optparse, stat, tempfile, time, random, inspect, types
+import logging, collections, shutil, glob
 import ConfigParser
 
 import drmaa
@@ -53,6 +54,9 @@ global_sessions = {}
 
 class PipelineError( Exception ): pass
 
+# possible to use defaultdict, but then statements will
+# fail on execution if a parameter does not exists, and not
+# while building the statement. Hence, use dict.
 PARAMS= { 
     'scriptsdir' : os.path.dirname( __file__ ),
     'toolsdir' : os.path.dirname( __file__ ),
@@ -63,11 +67,15 @@ PARAMS= {
 		--cluster-num-jobs=100 
 		--cluster-options="" """ % os.path.dirname( __file__ ),
     'cmd-sql' : """sqlite3 -header -csv -separator $'\\t' """,
-           }
+    'cmd-run' : """%s/run.py""" % os.path.dirname( __file__ ),
+    }
 
 CONFIG = {}
 
 PROJECT_ROOT = '/ifs/projects'
+
+# local temporary directory to use
+TMPDIR = '/scratch'
 
 def configToDictionary( config ):
 
@@ -183,6 +191,15 @@ def which( filename ):
             return f
     return None
 
+def clone( infile, outfile ):
+    '''create a clone of ``infile`` named ``outfile``
+    by creating a soft-link.
+    '''
+    try:
+        os.symlink( infile, outfile )
+    except OSError:
+        pass
+    
 def touch( filename, times = None ):
     '''update/create a sentinel file.'''
     fhandle = file(filename, 'a')
@@ -191,24 +208,24 @@ def touch( filename, times = None ):
     finally:
         fhandle.close()
     
-def getTempFilename( dir = None ):
+def getTempFilename( dir = TMPDIR ):
     '''get a temporary filename.
 
     The caller needs to delete it.
     '''
-    tmpfile = tempfile.NamedTemporaryFile(dir=dir,delete=False)
+    tmpfile = tempfile.NamedTemporaryFile(dir=dir,delete=False, prefix = "ctmp" )
     tmpfile.close()
     return tmpfile.name
 
-def getTempFile( dir = None ):
+def getTempFile( dir = TMPDIR ):
     '''get a temporary file.
 
     The caller needs to delete it.
     '''
-    return tempfile.NamedTemporaryFile(dir=dir,delete=False)
+    return tempfile.NamedTemporaryFile(dir=dir, delete=False, prefix = "ctmp" )
 
-def getTempDir( dir = None ):
-    return tempfile.mkdtemp( dir=dir )
+def getTempDir( dir = TMPDIR ):
+    return tempfile.mkdtemp( dir=dir, prefix = "ctmp" )
 
 def checkExecutables( filenames ):
     """check for the presence/absence of executables in the path"""
@@ -259,7 +276,7 @@ def critical( message):
     E.critical( message )
 
 def isEmpty( filename ):
-    '''return true if filename is empty.'''
+    '''return true if file *filename* is empty.'''
     return os.stat(filename)[6]==0
 
 def asList( param ):
@@ -267,6 +284,10 @@ def asList( param ):
     if type(param) not in (types.ListType, types.TupleType):
         return [x.strip() for x in param.split(",")]
     else: return param
+
+def asTuple( param ):
+    '''return a param as a list'''
+    return tuple(asList( param ))
 
 def flatten(l, ltypes=(list, tuple)):
     '''flatten a nested list/tuple.'''
@@ -303,7 +324,9 @@ def toTable( outfile ):
     return quote( name )
 
 def getProjectId():
-    '''cgat specific method: get the (obfuscated) project id.'''
+    '''cgat specific method: get the (obfuscated) project id
+    based on the current working directory.
+    '''
     curdir = os.path.abspath(os.getcwd())
     if not curdir.startswith( PROJECT_ROOT ):
         raise ValueError( "method getProjectId no called within %s" % PROJECT_ROOT )
@@ -315,27 +338,46 @@ def getProjectId():
     target = os.readlink( f )
     return os.path.basename( target )
 
-def load( infile, outfile, options = "" ):
+def getProjectName():
+    '''cgat specific method: get the name of the project 
+    based on the current working directory.'''
+
+    curdir = os.path.abspath(os.getcwd())
+    if not curdir.startswith( PROJECT_ROOT ):
+        raise ValueError( "method getProjectName no called within %s" % PROJECT_ROOT )
+    prefixes = len(PROJECT_ROOT.split("/"))
+    return curdir.split( "/" )[prefixes]
+
+def load( infile, outfile, options = "", transpose = None ):
     '''straight import from tab separated table.
 
     The table name is given by outfile without the
     ".load" suffix.
+
+    If *transpose* is set, the table will be transposed before loading.
+    The first column in the first row will be set to the string
+    within transpose.
     '''
 
     tablename = toTable( outfile )
 
-    if infile.endswith(".gz"): cat = "zcat"
-    else: cat = "cat"
+    statement = []
+    if infile.endswith(".gz"): statement.append( "zcat %(infile)s" )
+    else: statement.append( "cat %(infile)s" )
 
-    statement = '''%(cat)s %(infile)s
-    |python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
+    if transpose:
+        statement.append( "python %(scriptsdir)s/table2table.py --transpose --set-transpose-field=%(transpose)s" )
+
+    statement.append('''
+    python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
               %(options)s 
               --table=%(tablename)s 
     > %(outfile)s
-    '''
+    ''')
+
+    statement = " | ".join( statement)
 
     run()
-
 
 def mergeAndLoad( infiles, outfile, suffix ):
     '''load categorical tables (two columns) into a database.
@@ -540,6 +582,23 @@ def run( **kwargs ):
     options.update( getCallerLocals().items() )
     options.update( kwargs.items() )
 
+    def setupJob( session ):
+
+        jt = session.createJobTemplate()
+        jt.workingDirectory = os.getcwd()
+        jt.jobEnvironment = { 'BASH_ENV' : '~/.bashrc' }
+        jt.args = []
+        jt.nativeSpecification = "-V -q %s -p %i -N %s %s" % \
+            (options.get("job_queue", global_options.cluster_queue ),
+             options.get("job_priority", global_options.cluster_priority ),
+             os.path.basename(options.get("outfile", "ruffus" )),
+             options.get("job_options", global_options.cluster_options))
+
+        # keep stdout and stderr separate
+        jt.joinFiles=False
+
+        return jt
+    
     # run multiple jobs
     if options.get( "statements" ):
 
@@ -559,23 +618,12 @@ def run( **kwargs ):
             global_sessions[pid].initialize()
 
         session = global_sessions[pid]
-
-        jt = session.createJobTemplate()
-        jt.workingDirectory = os.getcwd()
-        jt.jobEnvironment = { 'BASH_ENV' : '~/.bashrc' }
-        jt.args = []
-        jt.nativeSpecification = "-q %s -p %i -N %s %s" % \
-            (options.get("job_queue", global_options.cluster_queue ),
-             options.get("job_priority", global_options.cluster_priority ),
-             os.path.basename(options.get("outfile", "ruffus" )),
-             options.get("job_options", global_options.cluster_options))
         
-        # keep stdout and stderr separate
-        jt.joinFiles=False
-
+        jt = setupJob( session )
+        
         jobids, filenames = [], []
         for statement in statement_list:
-            # create job scrip
+            # create job script
             tmpfile = tempfile.NamedTemporaryFile( dir = os.getcwd() , delete = False )
             tmpfile.write( "#!/bin/bash\n" ) #  -l -O expand_aliases\n" )
             tmpfile.write( expandStatement(statement) + "\n" )
@@ -585,6 +633,7 @@ def run( **kwargs ):
             job_path = os.path.abspath( tmpfile.name )
             stdout_path = job_path + ".stdout" 
             stderr_path = job_path + ".stderr" 
+
             jt.remoteCommand = job_path
             jt.outputPath=":"+ stdout_path
             jt.errorPath=":" + stderr_path
@@ -608,7 +657,10 @@ def run( **kwargs ):
             stdout, stderr = getStdoutStderr( stdout_path, stderr_path )
 
             if retval.exitStatus != 0:
-                raise PipelineError( "Child was terminated by signal %i: \nThe stderr was: \n%s\n%s\n" % \
+                raise PipelineError( "---------------------------------------\n"
+                                     "Child was terminated by signal %i: \n"
+                                     "The stderr was: \n%s\n%s\n" 
+                                     "---------------------------------------\n" % \
                                          (retval.exitStatus, 
                                           "".join( stderr),
                                           statement ) )
@@ -644,19 +696,9 @@ def run( **kwargs ):
 
         session = global_sessions[pid]
 
-        jt = session.createJobTemplate()
-        jt.workingDirectory = os.getcwd()
+        jt = setupJob( session )
+
         jt.remoteCommand = job_path
-        jt.jobEnvironment = { 'BASH_ENV' : '~/.bashrc' }
-        jt.args = []
-        jt.nativeSpecification = "-q %s -p %i -N %s %s" % \
-            (options.get("job_queue", global_options.cluster_queue ),
-             options.get("job_priority", global_options.cluster_priority ),
-             os.path.basename(options.get("outfile", "ruffus" )),
-             options.get("job_options", global_options.cluster_options))
-        
-        # keep stdout and stderr separate
-        jt.joinFiles=False
         # later: allow redirection of stdout and stderr to files; can even be across hosts?
         jt.outputPath=":"+ stdout_path
         jt.errorPath=":" + stderr_path
@@ -684,7 +726,10 @@ def run( **kwargs ):
 
         if "job_array" not in options:
             if retval and retval.exitStatus != 0:
-                raise PipelineError( "Child was terminated by signal %i: \nThe stderr was: \n%s\n%s\n" % \
+                raise PipelineError( "---------------------------------------\n"
+                                     "Child was terminated by signal %i: \n"
+                                     "The stderr was: \n%s\n%s\n"
+                                     "-----------------------------------------" % \
                                          (retval.exitStatus, 
                                           "".join( stderr), statement))
             
@@ -711,8 +756,11 @@ def run( **kwargs ):
         stdout, stderr = process.communicate()
 
         if process.returncode != 0:
-            raise PipelineError( "Child was terminated by signal %i: \nThe stderr was: \n%s\n%s\n" % (-process.returncode, stderr, statement ))
-
+            raise PipelineError( "---------------------------------------\n"
+                                 "Child was terminated by signal %i: \n"
+                                 "The stderr was: \n%s\n%s\n"
+                                 "-----------------------------------------" % \
+                                     (-process.returncode, stderr, statement ))
 
 class MultiLineFormatter(logging.Formatter):
     '''logfile formatter: add identation for multi-line entries.'''
@@ -846,11 +894,13 @@ def main( args = sys.argv ):
                 os.unlink( filename )
 
         except ruffus_exceptions.RethrownJobError, value:
-            print "re-raising exception"
+            E.error("some tasks resulted in errors - error messages follow below" )
+            E.error( value )
             raise
 
     elif options.pipeline_action == "dump":
-        print "dump = %s" % str(PARAMS)
+        # convert to normal dictionary (not defaultdict) for parsing purposes
+        print "dump = %s" % str(dict(PARAMS))
     elif options.pipeline_action == "config":
         if os.path.exists("pipeline.ini"):
             raise ValueError( "file `pipeline.ini` already exists" )
@@ -918,6 +968,8 @@ def run_report( clean = True):
 
     dirname, basename = os.path.split( getCaller().__file__ )
     docdir = os.path.join( dirname, "pipeline_docs", snip( basename, ".py" ) )
+    relpath = os.path.relpath( docdir )
+    trackerdir = os.path.join( docdir, "trackers" )
 
     # Requires an X11 connection to cluster nodes
     # A solution is to run xvfb on the nodes.
@@ -937,6 +989,7 @@ def run_report( clean = True):
 
     statement = '''
     %(clean)s
+    ( export SPHINX_DOCSDIR=%(docdir)s; 
     %(xvfb_command)s
     sphinxreport-build 
            --num-jobs=%(report_threads)s
@@ -945,7 +998,7 @@ def run_report( clean = True):
                     -d %(report_doctrees)s
                     -c . 
            %(docdir)s %(report_html)s
-    >& report.log
+    >& report.log)
     '''
 
     run()

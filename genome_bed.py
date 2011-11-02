@@ -39,7 +39,7 @@ The default window size is 1000.
 Usage
 =====
 
-genome_bed -g <genome.fai> -o <output.bed> -w window size -s shift size
+   python genome_bed -g <genome.fai> -o <output.bed> -w window size -s shift size
 
 
 Code
@@ -67,12 +67,10 @@ def main( argv = None ):
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with Samtools indexed genome [default=%default]."  )
-    parser.add_option("-w", "--window-size", dest="window", type="string",
+    parser.add_option("-w", "--window-size", dest="window", type="int",
                       help="Window size for tiling [default=%default]."  )
-    parser.add_option("-s", "--shift-size", dest="shift", type="string",
+    parser.add_option("-s", "--shift-size", dest="shift", type="int",
                       help="Window shift for tiling [default=%default]."  )
-    parser.add_option("-o", "--output", dest="output_file", type="string",
-                      help="output filename  [default=%default]."  )
 
     parser.set_defaults(
         genome_file = None,
@@ -91,7 +89,7 @@ def main( argv = None ):
     faidx = open(options.genome_file, "r" )
 
     # Open output file
-    bed = open(options.output_file, "w")
+    bed = options.stdout
 
     # Loop over input files and convert to soft clipped
     nwindows = 0
@@ -99,21 +97,20 @@ def main( argv = None ):
     for line in faidx:
         contig, stop = line.split()[0:2]
         stop = int(stop)
-        ncontigs = ncontigs + 1
-        i=1
+        ncontigs += 1
+        i=0
         while (i < stop):
             if stop >= i+options.window:
-                j=i+options.window-1
+                j=i+options.window
             else:
                 j=stop
             #bed.write( """%(contig)s\t%(i)i\t%(j)i\t%(contig)s:%(i)i..%(j)i\n""" % locals() )
             bed.write( """%(contig)s\t%(i)i\t%(j)i\n""" % locals() )
-            nwindows = nwindows + 1
+            nwindows += 1
             i = i+options.shift
         
-    # Close all files
+    # close all files
     faidx.close()
-    bed.close()
                         
     # Report statistics
     E.info( "ncontigs=%i, nwindows=%i" % (ncontigs,nwindows) )

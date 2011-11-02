@@ -149,13 +149,16 @@ class TranscriptClassCounts( RnaseqTracker ):
     
     def getSlices( self, subset = None ):
         '''slice by contig'''
-        return self.getValues( "SELECT DISTINCT source FROM agg_agg_agg_class" )
+        return self.getValues( "SELECT DISTINCT source FROM agg_agg_agg_class" ) + ["-"] 
 
     def __call__( self, track, slice = None ):
+        if slice == "-": stmt = "is NULL"
+        else: stmt = "= '%(slice)s'" % locals()
+
         return self.getDict( '''SELECT class || '-' || CASE WHEN sense = 's' THEN 'sense' WHEN sense = 'a' THEN 'antisense' ELSE 'anysense' END, 
                                        COUNT(*) AS ntranscripts
                                        FROM %(track)s_class 
-                                       WHERE source = '%(slice)s' 
+                                       WHERE source %(stmt)s
                                        GROUP BY class, sense''' )
 
 class TranscriptClassCountsSummaryBySource( RnaseqTracker ):

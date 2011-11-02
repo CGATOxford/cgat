@@ -8,3 +8,4 @@ This page collects the fastqc results from all tracks.
     :render: user
 
     FastQC reports
+
