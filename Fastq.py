@@ -41,7 +41,7 @@ from math import log
 RANGES = {
     'sanger' : (33, 74) ,
     'solexa' : (59, 105) ,
-    'phred64' : (64, 105) ,
+    'phred64' : (64, 106) ,
     }
 
 class Record:
