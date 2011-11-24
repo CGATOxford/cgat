@@ -382,8 +382,8 @@ def loadTranscriptInformation( infile, outfile ):
 
     data = PBiomart.biomart_iterator( columns.keys()
                                       , biomart = "ensembl"
-                                      , dataset = "hsapiens_gene_ensembl" )
-
+                                      , dataset = PARAMS["ensembl_biomart_dataset"] )
+    
     PDatabase.importFromIterator( outfile
                                   , tablename
                                   , data
