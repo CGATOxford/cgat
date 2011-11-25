@@ -521,6 +521,7 @@ class TopHat_fusion( Mapper ):
         if nfiles == 1:
             infiles = ",".join( [ x[0] for x in infiles ] )
             statement = '''
+            module load tophatfusion;
             tophat-fusion --output-dir %(tmpdir_tophat)s
                    --num-threads %%(tophat_threads)i
                    --library-type %%(tophat_library_type)s
@@ -587,8 +588,8 @@ class TopHat_fusion( Mapper ):
         track = P.snip( outfile, "_tophat/accepted_hits.bam" )
         tmpdir_tophat = self.tmpdir_tophat
 
-        if not os.path.exists('%(track)s_tophat' % track):
-            os.path.mkdir('%(track)s_tophat' % track)
+        if not os.path.exists('%s_tophat' % track):
+            os.mkdir('%s_tophat' % track)
 
         statement = '''
             mv -f %(tmpdir_tophat)s/* %(track)s_tophat/;  
