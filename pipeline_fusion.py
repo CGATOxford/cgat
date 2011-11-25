@@ -278,6 +278,7 @@ def postprocessTopHatFusion(infiles,outfile):
     to_cluster = USECLUSTER
     job_options = ' -pe dedicated %i -R y' % PARAMS["tophatfusion_postthreads"]
     statement = '''
+                  module load tophatfusion;
                   tophat-fusion-post -p %(tophatfusion_postthreads)s
                                    %(tophatfusion_postoptions)s 
                                    %(bowtie_index_dir)s/%(genome)s

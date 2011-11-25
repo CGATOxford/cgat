@@ -540,6 +540,7 @@ class TopHat_fusion( Mapper ):
             infiles2 = ",".join( [ x[1] for x in infiles ] )
 
             statement = '''
+            module load tophatfusion;
             tophat-fusion --output-dir %(tmpdir_tophat)s
                    --mate-inner-dist %%(tophat_mate_inner_dist)i
                     --num-threads %%(tophat_threads)i
@@ -561,6 +562,7 @@ class TopHat_fusion( Mapper ):
             infiles4 = ",".join( [ x[3] for x in infiles ] )
 
             statement = '''
+            module load tophatfusion;
             tophat-fusion --output-dir %(tmpdir_tophat)s
                    --mate-inner-dist %%(tophat_mate_inner_dist)i
                    --num-threads %%(tophat_threads)i
