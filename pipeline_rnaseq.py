@@ -2409,7 +2409,6 @@ def loadGeneSetsBuildInformation( infile, outfile ):
 @transform( (buildCodingGeneSet,
              buildNoncodingGeneSet,
              buildGeneModels, 
-             buildAbinitioGeneSet, 
              buildFullGeneSet, 
              buildLincRNAGeneSet,
              buildNovelGeneSet),
@@ -2441,7 +2440,7 @@ def classifyTranscripts( infiles, outfile ):
              compareTranscriptsBetweenExperiments ), 
             suffix(".cuffcompare"), 
             add_inputs( buildReferenceGeneSetWithCDS ),
-            ".class_cuffcompare.tsv.gz" )
+            ".class.tsv.gz" )
 def classifyTranscriptsCuffcompare( infiles, outfile ):
     '''classify transcripts.
     '''
@@ -3675,9 +3674,7 @@ def buildTranscriptLevelReadCounts( infiles, outfile):
 @follows( mkdir("transcript_counts.dir"), buildGeneModels )
 @files( [( ([ "%s.accepted.bam" % y.asFile() for y in EXPERIMENTS[x]], buildCodingGeneSet), 
            "transcript_counts.dir/%s.transcript_counts.tsv.gz" % x.asFile()) 
-         for x in EXPERIMENTS ] +\
-            [ ( ( ["%s.accepted.bam" % y.asFile() for y in TRACKS], buildCodingGeneSet),
-                "transcript_counts.dir/%s.transcript_counts.tsv.gz" % ALL.asFile()) ] )
+         for x in EXPERIMENTS ] )
 def buildAggregateTranscriptLevelReadCounts( infiles, outfile):
     '''count reads falling into transcripts of protein coding 
        gene models.
@@ -3718,7 +3715,8 @@ def buildAggregateTranscriptLevelReadCounts( infiles, outfile):
 #########################################################################
 #########################################################################
 #########################################################################
-@transform( buildTranscriptLevelReadCounts,
+@transform( (buildTranscriptLevelReadCounts,
+             buildAggregateTranscriptLevelReadCounts),
             suffix(".tsv.gz"),
             ".load" )
 def loadTranscriptLevelReadCounts( infile, outfile ):

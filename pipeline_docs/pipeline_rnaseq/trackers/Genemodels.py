@@ -163,14 +163,14 @@ class TranscriptClassCounts( RnaseqTracker ):
 
 class TranscriptClassCountsSummaryBySource( RnaseqTracker ):
     '''return number of transcripts within each class.'''
-    pattern = "(.*)_class"
+    pattern = "(.*)_class$"
     
     def __call__( self, track, slice = None ):
         return self.getDict( '''SELECT source, COUNT(*) AS ntranscripts FROM %(track)s_class GROUP BY source''')
 
 class TranscriptClassCountsSummaryByClass( RnaseqTracker ):
     '''return number of transcripts within each class.'''
-    pattern = "(.*)_class"
+    pattern = "(.*)_class$"
     
     def __call__( self, track, slice = None ):
         return self.getDict( '''SELECT class, COUNT(*) AS ntranscripts FROM %(track)s_class GROUP BY class''')
