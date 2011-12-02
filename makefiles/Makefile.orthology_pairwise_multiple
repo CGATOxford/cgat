@@ -782,7 +782,7 @@ summary.dir/distances.load: summary.dir/kaks.links.gz summary.dir/distances.link
 		--missing=0 \
 		<(gunzip < summary.dir/kaks.links.gz) \
 		<(gunzip < summary.dir/distances.links.gz) |\
-	awk '!/^#/ && !/^id1/ \
+	awk '!/^#/ && !/^id1/ && !/^seq1/ \
 	{ split($$1, a, "$(PARAM_SEPARATOR)"); split($$2, b, "$(PARAM_SEPARATOR)"); \
 	  $$1 = sprintf("%s\t%s\t%s", a[1], a[2], a[3]); $$2 = sprintf("%s\t%s\t%s", b[1], b[2], b[3]); print; \
 	  $$2 = sprintf("%s\t%s\t%s", a[1], a[2], a[3]); $$1 = sprintf("%s\t%s\t%s", b[1], b[2], b[3]); print; \

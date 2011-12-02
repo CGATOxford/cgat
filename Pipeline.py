@@ -92,7 +92,8 @@ def configToDictionary( config ):
         
     return p
 
-def getParameters( filenames = ["pipeline.ini",] ):
+def getParameters( filenames = ["pipeline.ini",],
+                   defaults = None ):
     '''read a config file and return as a dictionary.
 
     Sections and keys are combined with an underscore. If
@@ -121,6 +122,7 @@ def getParameters( filenames = ["pipeline.ini",] ):
     CONFIG.read( filenames )
 
     p = configToDictionary( CONFIG )
+    if defaults: PARAMS.update( defaults )
     PARAMS.update( p )
 
     return PARAMS
@@ -292,7 +294,10 @@ def isEmpty( filename ):
 def asList( param ):
     '''return a param as a list'''
     if type(param) not in (types.ListType, types.TupleType):
-        return [x.strip() for x in param.split(",")]
+        try:
+            return [x.strip() for x in param.split(",")]
+        except AttributeError:
+            return [param]
     else: return param
 
 def asTuple( param ):
@@ -409,7 +414,7 @@ def mergeAndLoad( infiles, outfile, suffix ):
                    %(filenames)s
                 | perl -p -e "s/bin/track/" 
                 | python %(scriptsdir)s/table2table.py --transpose
-                | python %(scriptsdir)s/csv2db.py
+                | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
                       --index=track
                       --table=%(tablename)s 
                 > %(outfile)s
@@ -528,6 +533,41 @@ def expandStatement( statement ):
     
     return " ".join( (_exec_prefix, statement, _exec_suffix) )
 
+def joinStatements( statements, infile ):
+    '''join a chain of statements into a single statement.
+
+    Each statement contains an @IN@ or a @OUT@ or both.
+    These will be replaced by the names of successive temporary
+    files.
+    
+    In the first statement, @IN@ is replaced with *infile*. 
+    
+    The last statement should move @IN@ to outfile.
+
+    returns a single statement.
+    '''
+    
+    prefix = getTempFilename()
+    pattern = "%s_%%i" % prefix
+
+    result = []
+    for x, statement in enumerate(statements):
+        if x == 0:
+            s = re.sub( "@IN@", infile, statement )
+        else:
+            s = re.sub( "@IN@", pattern % x, statement )
+
+        s = re.sub( "@OUT@", pattern % (x+1), s ).strip()
+
+        if s.endswith(";"): s = s[:-1]
+        result.append( s )
+
+    assert prefix != ""
+    result.append( "rm -f %s*" % prefix )
+    
+    result = "; checkpoint ; ".join( result )
+    return result
+
 def getStdoutStderr( stdout_path, stderr_path, tries=5 ):
     '''get stdout/stderr allowing for same lag.
 
@@ -601,7 +641,7 @@ def run( **kwargs ):
         jt.nativeSpecification = "-V -q %s -p %i -N %s %s" % \
             (options.get("job_queue", global_options.cluster_queue ),
              options.get("job_priority", global_options.cluster_priority ),
-             os.path.basename(options.get("outfile", "ruffus" )),
+             "_" + os.path.basename(options.get("outfile", "ruffus" )),
              options.get("job_options", global_options.cluster_options))
 
         # keep stdout and stderr separate
@@ -844,16 +884,12 @@ def main( args = sys.argv ):
     (options, args) = E.Start( parser, 
                                add_cluster_options = True )
 
-    L.info( "test") 
-
     global global_options
     global global_args
     global_options, global_args = options, args
     PARAMS["dryrun"] = options.dry_run
     
     version, _ = execute( "hg identify %s" % PARAMS["scriptsdir"] )
-
-    L.info( "test") 
 
     if args: 
         options.pipeline_action = args[0]
@@ -1069,8 +1105,8 @@ def publish_report( prefix = "", patterns = [], project_id = None):
 
     # substitute links to export
     _patterns = [ (re.compile( src_export ), 
-                  "http://www.cgat.org/downloads/%(project_id)s/%(dest_export)s" % locals() ), 
-                 ]
+                   "http://www.cgat.org/downloads/%(project_id)s/%(dest_export)s" % locals() ), 
+                  ]
     
     _patterns.extend( patterns )
     

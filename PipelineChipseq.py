@@ -11,9 +11,10 @@ import Pipeline as P
 import csv
 import IndexedFasta, IndexedGenome, FastaIterator, Genomics
 import IOTools
-import GTF, GFF, Bed, MACS, WrapperZinba, Bed
+import GTF, GFF, Bed, MACS, WrapperZinba
 # import Stats
 
+import PipelineMapping
 import pysam
 import numpy
 import gzip
@@ -184,99 +185,56 @@ def buildQuicksectMask(bed_file):
 ############################################################
 def buildBAMforPeakCalling( infiles, outfile, dedup, mask):
     ''' Make a BAM file suitable for peak calling.
-        Infiles are merged and unmapped reads removed. If specificied
-        duplicate reads are removed. If a mask is specified, reads falling within
-        the mask are filtered out. The mask is a quicksect object containing
+
+        Infiles are merged and unmapped reads removed. 
+
+        If specificied duplicate reads are removed. 
+        This method use Picard.
+
+        If a mask is specified, reads falling within
+        the mask are filtered out. 
+
+        This uses bedtools.
+
+        The mask is a quicksect object containing
         the regions from which reads are to be excluded.
     '''
+
     #open the infiles, if more than one merge and sort first using samtools.
 
     samfiles = []
     num_reads = 0
     nfiles = 0
 
+    statement = []
+    
+    tmpfile = P.getTempFilename()
+
     if len(infiles) > 1 and isinstance(infiles,str)==0:
+        # assume: samtools merge output is sorted
+        # assume: sam files are sorted already
+        statement.append( '''samtools merge @OUT@ %s''' % (infiles.join(" ")) )
+        statement.append( '''samtools sort @IN@ @OUT@''')
 
-        merge = True
-        tmpfilename = P.getTempFilename()
-        statement = '''
-        samtools merge %s %s 
-        ''' % (tmpfilename, infiles.join(" "))
-        P.run()
-        pysam_in = pysam.Samfile(tmpfilename,"rb")
-        pysam_in.sort()
-
-    else:
-        merge = False
-        pysam_in = pysam.Samfile(infiles,"rb")
-
-    pysam_out = pysam.Samfile( outfile, "wb", template = pysam_in )
-
-    #make a simple counter object to pass through the generators
-    class read_counter:
-        def __init__(self):
-            self.n_in, self.n_out, self.unmapped, self.duplicate, self.filtered = 0, 0, 0, 0, 0
-    counts = read_counter() 
-
-    ## build the generator
-    it = pysam_in
-
-    # discard unmapped reads
-    def drop_unmapped(i,c):
-        for read in i:
-            c.n_in += 1
-            if read.is_unmapped:
-                c.unmapped += 1 
-                continue
-            else:
-                yield read
-
-    it = drop_unmapped(it,counts)
-
-    # discard duplicate reads if requested
     if dedup:
-        def check_for_dup(i,c):
+        statement.append( '''MarkDuplicates
+                                       INPUT=@IN@
+                                       ASSUME_SORTED=true 
+                                       REMOVE_DUPLICATES=true
+                                       QUIET=true
+                                       OUTPUT=@OUT@
+                                       METRICS_FILE=%(outfile)s.picardmetrics
+                                       VALIDATION_STRINGENCY=SILENT 
+                   > %(outfile)s.picardlog ''' )
 
-            last_contig, last_start = None, None
-            for read in i:
-                if read.rname == last_contig and read.pos == last_start:
-                    c.duplicate += 1
-                    continue
-                else:
-                    last_contig, last_start = read.rname, read.pos
-                    yield read
-
-        it = check_for_dup( it, counts )
-
-    # filter reads if requested
     if mask:
-        def filter_reads(i,c,mask):
+        statement.append( '''intersectBed -abam @IN@ -b %(mask)s -wa -v > @OUT@''' )
 
-            for read in i:
-                contig = pysam_in.getrname(read.tid)
-                if mask.contains(contig,read.pos,read.pos):
-                    counts.filtered += 1
-                    continue
-                else:
-                    yield read
+    statement.append('''mv @IN@ %(outfile)s''' )
+    statement.append('''samtools index %(outfile)s''' )
 
-        it = filter_reads( it,counts,mask )
-
-    # call the built generator and write out emmitted reads
-    for read in it:
-        counts.n_out += 1
-        pysam_out.write(read)
-
-    pysam_out.close()
-    pysam.index( outfile )
-
-    #E.info("Screened %i reads, output %i reads - %5.2f%% from %s" %\
-    #      (counts.n_in, counts.n_out, 100.0*counts.n_out/counts.n_in, "+".join(infiles)) )
-    #E.info("No. unmapped reads %i, no. duplicates: %i,  no.filtered: %i" %\
-    #      (counts.unmapped, counts.duplicate, counts.filtered) ) 
-
-    if merge == True:
-        os.unlink( tmpfilename )
+    statement = P.joinStatements( statement, infiles )
+    P.run()
 
 ############################################################
 ############################################################
@@ -322,6 +280,9 @@ def buildNormalizedBAM( infiles, outfile, normalize = True ):
     Infiles are merged and duplicated reads are removed. 
     If *normalize* is set, reads are removed such that all 
     files will have approximately the same number of reads.
+
+    Note that the duplication here is wrong as there
+    is no sense of strandedness preserved.
     '''
 
     min_reads = getMinimumMappedReads( glob.glob("*.readstats") )
@@ -492,7 +453,7 @@ def exportIntervalsAsBed( infile, outfile ):
     if compress:
         E.info( "compressing and indexing %s" % outfile )
         use_cluster = True
-        statement = 'bgzip %(track)s.bed; tabix -p bed %(outfile)s'
+        statement = 'bgzip -f %(track)s.bed; tabix -f -p bed %(outfile)s'
         P.run()
 
 ############################################################
@@ -652,6 +613,8 @@ def summarizeMACS( infiles, outfile ):
         x = line.search(stmt )
         if x: return x.groups() 
 
+    # mapping patternts to values.
+    # tuples of pattern, label, subgroups
     map_targets = [
         ("tags after filtering in treatment: (\d+)", "tag_treatment_filtered",()),
         ("total tags in treatment: (\d+)", "tag_treatment_total",()),
@@ -663,6 +626,7 @@ def summarizeMACS( infiles, outfile ):
         ("#2   scan_window: (\d+)", "scan_window", ()),
         ("#3 Total number of candidates: (\d+)", "ncandidates",("positive", "negative") ),
         ("#3 Finally, (\d+) peaks are called!",  "called", ("positive", "negative") ) ]
+
 
     mapper, mapper_header = {}, {}
     for x,y,z in map_targets: 
@@ -698,13 +662,10 @@ def summarizeMACS( infiles, outfile ):
             if len(val) == 0: v = "na"
             else: 
                 c = len(mapper_header[key])
-                if c >= 1: assert len(val) == c, "key=%s, expected=%i, got=%i, val=%s, c=%s" %\
-                   (key,
-                    len(val),
-                    c,
-                    str(val), mapper_header[key])
-                v = "\t".join( val )
+                # append missing data (no negative peaks without control files)
+                v = "\t".join( map(str, val + ["na"] * (c - len(val)) ))
             row.append(v)
+            # assert len(row) -1 == len( headers )
         outs.write("\t".join(row) + "\n" )
 
     outs.close()
@@ -735,69 +696,6 @@ def summarizeMACSFDR( infiles, outfile ):
         outf.write( "%s\t%s\n" % (track, "\t".join( map(str, called ) ) ) )
 
     outf.close()
-
-############################################################
-############################################################
-############################################################
-def summarizeMACSsolo( infiles, outfile ):
-    '''run MACS for peak detection.'''
-    def __get( line, stmt ):
-        x = line.search(stmt )
-        if x: return x.groups() 
-
-    map_targets = [
-        ("total tags in treatment: (\d+)", "tag_treatment_total",()),
-        ("#2 number of paired peaks: (\d+)", "paired_peaks",()),
-        ("#2   min_tags: (\d+)","min_tags", ()),
-        ("#2   d: (\d+)", "shift", ()),
-        ("#2   scan_window: (\d+)", "scan_window", ()),
-        ("#3 Total number of candidates: (\d+)", "ncandidates",("positive",) ),
-        ("#3 Finally, (\d+) peaks are called!",  "called", ("positive",) ) ]
-
-    mapper, mapper_header = {}, {}
-    for x,y,z in map_targets: 
-        mapper[y] = re.compile( x )
-        mapper_header[y] = z
-
-    keys = [ x[1] for x in map_targets ]
-
-    outs = IOTools.openFile(outfile,"w")
-
-    headers = []
-    for k in keys:
-        if mapper_header[k]:
-            headers.extend( ["%s_%s" % (k,x) for x in mapper_header[k] ])
-        else:
-            headers.append( k )
-    outs.write("track\t%s" % "\t".join(headers) + "\n" )
-
-    for infile in infiles:
-        results = collections.defaultdict(list)
-        with IOTools.openFil( infile ) as f:
-            for line in f:
-                if "diag:" in line: break
-                for x,y in mapper.items():
-                    s = y.search( line )
-                    if s: 
-                        results[x].append( s.groups()[0] )
-                        break
-
-        row = [ P.snip( os.path.basename(infile), ".macs" ) ]
-        for key in keys:
-            val = results[key]
-            if len(val) == 0: v = "na"
-            else: 
-                c = len(mapper_header[key])
-                if c >= 1: assert len(val) == c, "key=%s, expected=%i, got=%i, val=%s, c=%s" %\
-                   (key,
-                    len(val),
-                    c,
-                    str(val), mapper_header[key])
-                v = "\t".join( val )
-            row.append(v)
-        outs.write("\t".join(row) + "\n" )
-
-    outs.close()
 
 ############################################################
 ############################################################
@@ -1089,9 +987,9 @@ def countPeaks( contig, start, end, samfiles, offsets = None):
 def runZinba( infile, outfile, controlfile ):
     '''run Zinba for peak detection.'''
 
-    to_cluster = False
+    to_cluster = True
 
-    job_options= "-pe dedicated %i -R y" % PARAMS["zinba_threads"]
+    job_options= "-l mem_free=16G -pe dedicated %i -R y" % PARAMS["zinba_threads"]
 
     mappability_dir = os.path.join( PARAMS["zinba_mappability_dir"], 
                              PARAMS["genome"],
@@ -1132,7 +1030,9 @@ def runZinba( infile, outfile, controlfile ):
 ############################################################
 ############################################################
 ############################################################
-def loadZinba( infile, outfile, bamfile, tablename = None ):
+def loadZinba( infile, outfile, bamfile, 
+               tablename = None,
+               controlfile = None ):
     '''load Zinba results in *tablename*
 
     This method loads only positive peaks. It filters peaks by p-value,
@@ -1147,6 +1047,16 @@ def loadZinba( infile, outfile, bamfile, tablename = None ):
 
     This method creates :file:`<outfile>.tsv.gz` with the results
     of the filtering.
+
+    This method uses the refined peak locations.
+
+    Zinba peaks can be overlapping. This method does not merge
+    overlapping intervals.
+
+    Zinba calls peaks in regions where there are many reads inside
+    the control. Thus this method applies a filtering step 
+    removing all intervals in which there is a peak of
+    more than readlength / 2 height in the control.
     '''
 
     track = P.snip( os.path.basename(infile), ".zinba" )
@@ -1185,21 +1095,42 @@ def loadZinba( infile, outfile, bamfile, tablename = None ):
         samfiles = [ pysam.Samfile( bamfile, "rb" ) ]
         offsets = [ shift / 2 ]
 
+        if controlfile:
+            controlfiles =  [ pysam.Samfile( controlfile, "rb" ) ]
+            readlength = PipelineMapping.getReadLengthFromBamfile( controlfile )
+            control_max_peakval = readlength // 2
+            E.info( "removing intervals in which control has peak higher than %i reads" % control_max_peakval )
+        else:
+            controlfiles = None
+
         id = 0
 
         ## get thresholds
         max_qvalue = float(PARAMS["zinba_fdr_threshold"])
 
-
         with IOTools.openFile( infilename, "r" ) as ins:
             for peak in WrapperZinba.iteratePeaks( ins ):
 
+                # filter by qvalue
                 if peak.fdr > max_qvalue:
                     counter.removed_qvalue += 1
                     continue
 
                 assert peak.refined_start < peak.refined_end
 
+                # filter by control
+                if controlfiles:
+                    npeaks, peakcenter, length, avgval, peakval, nreads = countPeaks( peak.contig, 
+                                                                                      peak.refined_start, 
+                                                                                      peak.refined_end, 
+                                                                                      controlfiles, 
+                                                                                      offsets )
+                    
+                    if peakval > control_max_peakval: 
+                        counter.removed_control += 1
+                        continue
+
+                # output peak
                 npeaks, peakcenter, length, avgval, peakval, nreads = countPeaks( peak.contig, 
                                                                                   peak.refined_start, 
                                                                                   peak.refined_end, 
@@ -1362,3 +1293,93 @@ def buildIntervalCounts( infile, outfile, track, fg_replicates, bg_replicates ):
         P.run()
 
     os.unlink( tmpfile1 )
+
+
+def loadIntervalsFromBed( bedfile, track, outfile, 
+                          bamfiles, offsets ):
+    '''load intervals from :term:`bed` formatted files into database.
+    
+    Re-evaluate the intervals by counting reads within
+    the interval. In contrast to the initial pipeline, the
+    genome is not binned. In particular, the meaning of the
+    columns in the table changes to:
+
+    nProbes: number of reads in interval
+    PeakCenter: position with maximum number of reads in interval
+    AvgVal: average coverage within interval
+
+    '''
+
+    tmpfile = P.getTempFile()
+
+    headers = ("AvgVal","DisttoStart","GeneList","Length","PeakCenter","PeakVal","Position","interval_id","nCpGs","nGenes","nPeaks","nProbes","nPromoters", "contig","start","end" )
+
+    tmpfile.write( "\t".join(headers) + "\n" )
+
+    avgval,contig,disttostart,end,genelist,length,peakcenter,peakval,position,start,interval_id,ncpgs,ngenes,npeaks,nprobes,npromoters = \
+        0,"",0,0,"",0,0,0,0,0,0,0,0,0,0,0,
+
+    mlength = int(PARAMS["calling_merge_min_interval_length"])
+
+    c = E.Counter()
+
+    # count tags
+    for bed in Bed.iterator( IOTools.openFile(infile, "r") ): 
+
+        c.input += 1
+
+        if "name" not in bed:
+            bed.name = c.input
+        
+        # remove very short intervals
+        if bed.end - bed.start < mlength: 
+            c.skipped_length += 1
+            continue
+
+        if replicates:
+            npeaks, peakcenter, length, avgval, peakval, nprobes = \
+                PipelineChipseq.countPeaks( bed.contig, bed.start, bed.end, samfiles, offsets )
+
+            # nreads can be 0 if the intervals overlap only slightly
+            # and due to the binning, no reads are actually in the overlap region.
+            # However, most of these intervals should be small and have already be deleted via 
+            # the merge_min_interval_length cutoff.
+            # do not output intervals without reads.
+            if nprobes == 0:
+                c.skipped_reads += 1
+
+        else:
+            npeaks, peakcenter, length, avgval, peakval, nprobes = ( 1, 
+                                                                     bed.start + (bed.end - bed.start) // 2, 
+                                                                     bed.end - bed.start, 
+                                                                     1, 
+                                                                     1,
+                                                                     1 )
+            
+        c.output += 1
+        tmpfile.write( "\t".join( map( str, (avgval,disttostart,genelist,length,
+                                             peakcenter,peakval,position, bed.name,
+                                             ncpgs,ngenes,npeaks,nprobes,npromoters, 
+                                             bed.contig,bed.start,bed.end) )) + "\n" )
+
+    if c.output == 0:
+        E.warn( "%s - no intervals" )
+ 
+    tmpfile.close()
+
+    tmpfilename = tmpfile.name
+    tablename = "%s_intervals" % track.asTable()
+    
+    statement = '''
+    python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+              --allow-empty
+              --index=interval_id 
+              --table=%(tablename)s
+    < %(tmpfilename)s 
+    > %(outfile)s
+    '''
+
+    P.run()
+    os.unlink( tmpfile.name )
+
+    L.info( "%s\n" % str(c) )

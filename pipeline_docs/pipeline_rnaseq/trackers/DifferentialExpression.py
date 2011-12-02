@@ -206,6 +206,9 @@ class VolcanoTracker( RnaseqTracker ):
     
     def __call__(self, track, slice = None ):
 
+        # disabled - takes potentially a lot of time
+        return None
+
         data = self.getAll( """SELECT lfold,
                                     pvalue, 
                                     CASE WHEN value1 < value2 THEN value2 ELSE value1 END AS max_fpkm 

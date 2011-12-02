@@ -200,7 +200,7 @@ if __name__ == "__main__":
             for n in xtree.chain.keys():
                 if xtree.node(n).data.branchlength in options.filtered_branch_lengths:
                     xtree.node(n).data.branchlength = 0
-                ntotals = [0] * len(xtree.chain.keys())
+                ntotals = [1] * len(xtree.chain.keys())
                     
             if options.method == "min":
                 f = min
@@ -226,7 +226,7 @@ if __name__ == "__main__":
                     if tree.node(n).data.branchlength not in options.filtered_branch_lengths:
                         xtree.node(n).data.branchlength = f(xtree.node(n).data.branchlength, tree.node(n).data.branchlength)
                         ntotals[n] += 1
-                        
+
             if options.method == "mean":
                 for n in xtree.chain.keys():
                     if ntotals[n] > 0:

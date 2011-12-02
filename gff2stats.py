@@ -33,8 +33,8 @@ Purpose
 -------
 
 This script computes the number of entries for each feature,
-source, gene_id and transcript_id in :term:`gff` or :term:`gtf` 
-formatted files.
+source, gene_id and transcript_id in one or more :term:`gff` 
+or :term:`gtf` formatted files.
 
 Usage
 -----
@@ -92,7 +92,6 @@ class counter_gff:
                                      len(self.counts_strands),
                                      len(self.counts_features),
                                      len(self.counts_sources) )))
-
 
 class counter_exons:
     
@@ -207,7 +206,6 @@ def main( argv = sys.argv ):
 
         c = counters[-1]
         for x in c: pass
-        
 
         for c in counters:
             options.stdout.write("\t%s" % str( c ))

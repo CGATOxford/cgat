@@ -34,7 +34,7 @@ Code
 
 '''
 
-import string, re, sys, os, collections, types, glob, stat, gzip
+import string, re, sys, os, collections, types, glob, stat, gzip, subprocess
 
 import numpy
 import numpy.ma
@@ -366,6 +366,29 @@ def getLastLine( filename, read_size = 1024 ):
     offset += read_size
   f.close()
 
+def getNumLines( filename, ignore_comments = True ):
+    '''get number of lines in filename.'''
+
+    if ignore_comments:
+        filter_cmd = '| grep -v "#" '
+    else:
+        filter_cmd = ""
+
+    # the implementation below seems to fastest
+    # see https://gist.github.com/0ac760859e614cd03652
+    # and http://stackoverflow.com/questions/845058/how-to-get-line-count-cheaply-in-python
+    if filename.endswith(".gz"):
+        cmd = "zcat %(filename)s %(filter_cmd)s | wc -l" % locals()
+    else:
+         cmd = "cat %(filename)s %(filter_cmd)s | wc -l" % locals()
+
+    out = subprocess.Popen( cmd,
+                            shell = True,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT
+                            ).communicate()[0]
+    return int(out.partition(b' ')[0])
+
 def ReadMap( *args, **kwargs ):
     """compatibility - see readMap."""
     return readMap( *args, **kwargs )
@@ -557,7 +580,7 @@ def prettyFloat( val, format = "%5.2f" ):
     """deprecated, use val2str"""
     return val2str( val, format )
 
-def prettyPercent( numerator, denominator, format = "%5.2f" ):
+def prettyPercent( numerator, denominator, format = "%5.2f", na="na" ):
     """output a percent value or "na" if not defined"""
     try:
         x = format % (100.0 * numerator / denominator )

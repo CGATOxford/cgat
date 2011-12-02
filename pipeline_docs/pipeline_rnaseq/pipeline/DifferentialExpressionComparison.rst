@@ -8,31 +8,31 @@ expression.
 All comparisons are on the gene level, which might not be the best choice
 for all methods, for example :term:`cuffdiff`.
 
-Shared genes
-============
+.. Shared genes
+.. ============
 
-The following table lists the number of shared predictions in each
-gene set.
+.. The following table lists the number of shared predictions in each
+.. gene set.
 
-.. report:: DifferentialExpression.DifferentialExpressionOverlap
-   :render: table
-   :groupby: all
+.. .. report:: DifferentialExpression.DifferentialExpressionOverlap
+..    :render: table
+..    :groupby: all
 
-   Number of shared predictions between different methods.
+..    Number of shared predictions between different methods.
 
-Fold change
-===========
+.. Fold change
+.. ===========
 
-.. report:: DifferentialExpression.DifferentialExpressionCorrelationFoldChange
-   :render: r-smooth-scatter-plot
+.. .. report:: DifferentialExpression.DifferentialExpressionCorrelationFoldChange
+..    :render: r-smooth-scatter-plot
    
-   Scatter-plots of fold change estimates
+..    Scatter-plots of fold change estimates
 
-P-values
-===========
+.. P-values
+.. ===========
 
-.. report:: DifferentialExpression.DifferentialExpressionCorrelationPValue
-   :render: r-smooth-scatter-plot
+.. .. report:: DifferentialExpression.DifferentialExpressionCorrelationPValue
+..    :render: r-smooth-scatter-plot
    
-   Scatter-plots of p-value estimates
+..    Scatter-plots of p-value estimates
 

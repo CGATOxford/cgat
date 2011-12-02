@@ -13,7 +13,8 @@ Contents:
    :maxdepth: 2
 
    pipeline/Methods.rst
- 
+   pipeline/Annotations.rst
+    
 .. errorlist::
   
 Indices and tables

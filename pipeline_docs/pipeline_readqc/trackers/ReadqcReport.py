@@ -14,8 +14,6 @@ from SphinxReport import Utils
 EXPORTDIR=P['readqc_exportdir']
 DATADIR=P['readqc_datadir']
 DATABASE=P['readqc_backend']
-PE=P.get('readqc_pe',False)
-
 
 ###################################################################
 # cf. pipeline_rnaseq.py
@@ -51,19 +49,14 @@ class TrackerFastQC( ReadqcTracker ):
         toc_text = []
         link_text = []
         
-        filenames = sorted( [x.asFile() for x in TRACKS ] )
+        tracks = sorted( [x.asFile() for x in TRACKS ] )
         
-        for fn in filenames:
-            if PE=="True":
-                fn1 = fn + ".1"
-                fn2 = fn + ".2"
-                toc_text.append( "* %(fn1)s_" % locals()) 
-                toc_text.append( "* %(fn2)s_" % locals()) 
-                link_text.append( ".. _%(fn1)s: %(edir)s/fastqc/%(fn1)s_fastqc/fastqc_report.html" % locals() )
-                link_text.append( ".. _%(fn2)s: %(edir)s/fastqc/%(fn2)s_fastqc/fastqc_report.html" % locals() )
-            else:
-                toc_text.append( "* %(fn)s_" % locals()) 
-                link_text.append( ".. _%(fn)s: %(edir)s/fastqc/%(fn)s_fastqc/fastqc_report.html" % locals() )
+        for track in tracks:
+            
+            for x, fn in enumerate( glob.glob( os.path.join( EXPORTDIR, "fastqc", "%s*_fastqc" % track ) )):
+                y = x + 1
+                toc_text.append( "* %(track)s-%(y)i_" % locals()) 
+                link_text.append( ".. _%(track)s-%(y)i: %(fn)s/fastqc_report.html" % locals() )
             
         toc_text = "\n".join(toc_text)
         link_text =  "\n".join(link_text)
@@ -100,10 +93,6 @@ class FastQCDetails( ReadqcTracker ):
 
     def __call__(self, track, slice = None ):
 
-        filenames = sorted( [x.asFile() for x in TRACKS ] )
-
-        blocks = ResultBlocks()
-
         # note there are spaces behind the %(image)s directive to accomodate
         # for path substitution
         block = '''
@@ -111,20 +100,19 @@ class FastQCDetails( ReadqcTracker ):
    :height: 300 
 '''
 
-        def _add( fn ):
-            image = os.path.abspath(os.path.join( EXPORTDIR, "fastqc", "%s_fastqc" % fn, "Images", "%s.png" % slice ))
-            if not os.path.exists( image ): return
-
-            blocks.append( ResultBlock( text = block % locals(),
-                                        title = fn ) )
+        blocks = ResultBlocks()
+        tracks = sorted( [x.asFile() for x in TRACKS ] )
+        
+        for track in tracks:
             
-        for fn in filenames:
+            for x, fn in enumerate( glob.glob( os.path.join( EXPORTDIR, "fastqc", "%s*_fastqc" % track ) )):
+                y = x + 1
+                
+                image = os.path.abspath(os.path.join( fn, "Images", "%s.png" % slice ))
+                if not os.path.exists( image ): continue
 
-            if PE=="True":
-                _add( fn + ".1" )
-                _add( fn + ".2" )
-            else:
-                _add( fn )
+                blocks.append( ResultBlock( text = block % locals(),
+                                            title = fn ) )
 
         return odict( (("rst", "\n".join( Utils.layoutBlocks( blocks, layout = "columns-2"))),))
 

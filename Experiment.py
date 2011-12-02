@@ -590,6 +590,13 @@ def run( cmd ):
     raises OSError if process failed or was terminated.
     '''
 
+    # remove new lines
+    cmd = " ".join( re.sub( "\t+", " ", cmd).split( "\n" ) ).strip()
+
+    if "<(" in cmd:
+        if "'" in cmd: raise ValueError( "advanced bash syntax combined with single quotes" )
+        cmd = """/bin/bash -c '%s'""" % cmd
+
     retcode = subprocess.call( cmd, shell=True)
     if retcode < 0:
         raise OSError( "process was terminated by signal %i" % -retcode )

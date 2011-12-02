@@ -101,12 +101,12 @@ class TransfragReproducibility2( RnaseqTracker ):
     '''return proportion of transfrags present in a pair of replicates.
     '''
 
-    mPattern = "_reproducibility"
+    pattern = "(.*)_reproducibility"
  
     def getSlices( self, subset = None ):
         return tuple("=cjeiopruxs.*")
    
-    def __call__(self, track, slice = None ):
+    def __call__(self, track, slice ):
         data = self.getAll( """SELECT track1, track2, 
                                       ROUND( CAST( not_null AS FLOAT) / (pairs-both_null),2) AS pcalled,
                                       ROUND( coeff, 2) as correlation

@@ -333,6 +333,9 @@ def publish():
 @follows( runFastqc )
 def full(): pass
 
+@follows( loadFilteringSummary )
+def cleanData(): pass
+
 @follows( mkdir( "report" ) )
 def build_report():
     '''build report from scratch.'''

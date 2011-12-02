@@ -63,10 +63,12 @@ Code
 
 '''
 
-import os, sys, re, optparse, time, subprocess, tempfile, collections
+import os, sys, re, optparse, time, subprocess, tempfile, collections, itertools
 
 import Experiment as E
 import IOTools
+import pysam
+import Bed
 
 def main( argv = None ):
     """script main.
@@ -83,15 +85,19 @@ def main( argv = None ):
     parser.add_option( "-m", "--min-overlap", dest="min_overlap", type="float",
                        help = "minimum overlap [%default]" )
 
+    parser.add_option( "-k", "--keep-temp", dest="keep_temp", action="store_true",
+                       help = "do not delete temporary files [%default]" )
+
     parser.set_defaults(
         min_overlap = 0.5,
+        keep_temp = False,
         )
 
     ## add common options (-h/--help, ...) and parse command line 
     (options, args) = E.Start( parser, argv = argv )
 
     if len(args) != 2:
-        raise ValueError( "please supply a bam and a bed file." )
+        raise ValueError( "please supply a bam and a bed file or two bed-files." )
     
     bamfile, bedfile = args
     
@@ -100,32 +106,80 @@ def main( argv = None ):
     tmpfile = tempfile.NamedTemporaryFile( delete=False )
     tmpfile.close()
     tmpfilename = tmpfile.name
+
     min_overlap = options.min_overlap
-    
-    statement = """intersectBed -abam %(bamfile)s -b %(bedfile)s -bed -wo -f %(min_overlap)f | groupBy -i stdin -g 4 -c 10 -o collapse > %(tmpfilename)s""" % locals()
+
+    options.stdout.write( "category\talignments\n" )
+
+    if bamfile.endswith(".bam"):
+        format = "-abam"
+        samfile = pysam.Samfile( bamfile, "rb" )
+        total = samfile.mapped
+        data = collections.namedtuple( "data", "contig start end name v1 strand contig2 start2 end2 name2" )
+        # count per read
+        sort_key = lambda x: x.name
+    else: 
+        format = "-a"
+        total = IOTools.getNumLines( bamfile )
+        # get bed format
+        ncolumns = 0
+        for bed in Bed.iterator(IOTools.openFile( bamfile )):
+            ncolumns = bed.columns
+
+        if ncolumns > 0:
+            E.info( "assuming this is bed%i fomat" % ncolumns )
+            extra = " ".join( ["name", "score", "strand", "thickstart", 
+                               "thickend", "rgb", 
+                               "blockcount", "blockstarts", "blockends"][:ncolumns-3] )
+            data = collections.namedtuple( "data", "contig start end %s contig2 start2 end2 name2" % extra)
+
+            if ncolumns == 3:
+                # count per interval
+                sort_key = lambda x: (x.contig, x.start, x.end)
+            else:
+                sort_key = lambda x: x.name
+
+    options.stdout.write( "total\t%i\n" % total )
+
+    if total == 0:
+        E.warn( "no data in %s" % bamfile )
+        return
+
+    statement = """intersectBed %(format)s %(bamfile)s -b %(bedfile)s -bed -wo -f %(min_overlap)f > %(tmpfilename)s""" % locals()
 
     E.info( "running %s" % statement )
-    E.run( statement )
+    retcode = E.run( statement )
+
+    if retcode != 0:
+        raise ValueError( "error while executing statement %s" % statement )
 
     infile = open( tmpfilename, "r")
     counts_per_alignment = collections.defaultdict(int)
 
     E.info( "counting" )
 
-    for line in infile:
-        if not line.strip(): continue
+    take_columns = len(data._fields)
 
-        read, annotations = line[:-1].split("\t")
-        annotations = annotations.split(",")[:-1]
+    def iter( infile ):
+        for line in infile:
+            if not line.strip(): continue
+            yield data._make( line[:-1].split()[:take_columns] )
+
+    for read, overlaps in itertools.groupby( iter(infile), key = sort_key ):
+        annotations = [x.name2 for x in overlaps ]
         for anno in annotations:
             counts_per_alignment[anno] += 1
     infile.close()
 
-    options.stdout.write( "category\talignments\n" )
+    infile = open( tmpfilename, "r")
+
+
+
     for key, counts  in counts_per_alignment.iteritems():
         options.stdout.write( "%s\t%i\n" % (key, counts) )
 
-    os.unlink( tmpfilename )
+    if not options.keep_temp:
+        os.unlink( tmpfilename )
 
     ## write footer and output benchmark information.
     E.Stop()

@@ -218,7 +218,9 @@ import Pipeline as P
 P.getParameters( 
     ["%s.ini" % __file__[:-len(".py")],
      "../pipeline.ini",
-     "pipeline.ini" ] )
+     "pipeline.ini" ],
+    defaults = {
+        'annotations_dir' : "" })
 
 PARAMS = P.PARAMS
 
@@ -465,13 +467,13 @@ def makeMask(infile,outfile):
 ############o################################################
 ############################################################
 @transform( buildBAM, suffix(".genome.bam"), add_inputs( makeMask), ".prep.bam")
-def prepBAMForPeakCalling(infiles, outfile):
+def prepareBAMForPeakCalling(infiles, outfile):
     '''Prepare BAM files for peak calling.
 
         - unmapped reads are removed.
 
-        - if the option "calling_deduplicate" is true duplicate reads are simplistically removed 
-            (using samtools rmdup may be superior)
+        - if the option "calling_deduplicate" is Picard.MarkDuplicates is run 
+            to remove duplicate reads
 
         - reads may be filtered by exon or location 
 
@@ -485,11 +487,11 @@ def prepBAMForPeakCalling(infiles, outfile):
     bam_file, mask_file = infiles
 
     if PARAMS["calling_filter_exons"] or PARAMS["calling_filter_regions"]:
-        mask = PipelineChipseq.buildQuicksectMask(mask_file)
+        mask = mask_file
     else:
         mask = None
 
-    PipelineChipseq.buildBAMforPeakCalling(bam_file,outfile,PARAMS["calling_deduplicate"],mask)
+    PipelineChipseq.buildBAMforPeakCalling(bam_file,outfile,PARAMS["calling_deduplicate"], mask )
 
 ############################################################
 ############################################################
@@ -509,7 +511,7 @@ if PARAMS["calling_normalize"]==True:
     count between experimental and input samples.
     '''
     # First count the number of reads in each bam
-    @transform(prepBAMForPeakCalling,suffix("prep.bam"),"prep.count")
+    @transform(prepareBAMForPeakCalling,suffix("prep.bam"),"prep.count")
     def countReadsInBAM(infile,outfile):
         to_cluster = True
         statement= '''samtools idxstats %s | awk '{s+=$3} END {print s}' > %s ''' % ( infile,outfile )
@@ -530,7 +532,7 @@ if PARAMS["calling_normalize"]==True:
 
     # Make normalised files
     @follows(minReads)
-    @transform(prepBAMForPeakCalling,
+    @transform(prepareBAMForPeakCalling,
                regex(r"(.*).prep.bam"),
                inputs( (r"\1.prep.bam",r"\1.prep.count") ), 
                r"\1.call.bam")
@@ -538,15 +540,15 @@ if PARAMS["calling_normalize"]==True:
         '''build a normalized BAM file such that all
     files have approximately the same number of 
     reads.
-  '''   
-        fh = IOTools.openFiles("minreads")
+    '''   
+        fh = IOTools.openFile("minreads")
         minreads = int(fh.read())
         fh.close
         PipelineChipseq.buildSimpleNormalizedBAM( infiles, 
-                                             outfile,
-                                             minreads)
+                                                  outfile,
+                                                  minreads)
 else:
-    @transform(prepBAMForPeakCalling,
+    @transform(prepareBAMForPeakCalling,
                suffix(".prep.bam"),
                ".call.bam")
     def normalizeBAM( infile, outfile):
@@ -595,6 +597,10 @@ def makeReadCorrelationTable( infiles, outfile ):
     outf = IOTools.openFile(outfile, "w" )
     outf.write("track\tcutoff\tpositions\tcoefficient\n" )
 
+    if len(infiles) < 2:
+        E.warn( "no replicates - no read correlation computed" )
+        P.touch( outfile )
+
     def selector( infile ):
         correlation_cutoff = 5
         for line in infile:
@@ -631,7 +637,7 @@ def makeReadCorrelationTable( infiles, outfile ):
 ############################################################
 ############################################################
 @transform( (buildBAM, 
-             prepBAMForPeakCalling, 
+             prepareBAMForPeakCalling, 
              normalizeBAM),
             suffix(".bam"),
             ".readstats" )
@@ -708,12 +714,15 @@ if PARAMS["calling_caller"] == "macs":
     ############################################################
     ############################################################
     @follows( normalizeBAM )
-    @files( [ (("%s.call.bam" % (x.asFile()), 
-                "%s.call.bam" % (getControl(x).asFile())), 
+    @files( [ ("%s.call.bam" % (x.asFile()), 
                "%s.macs" % x.asFile() ) for x in TRACKS ] )
-    def runMACS( infiles, outfile ):
+    def runMACS( infile, outfile ):
         '''run MACS for peak detection.'''
-        infile, controlfile = infiles
+        track = P.snip( infile, ".call.bam" )
+        controlfile = "%s.call.bam" % getControl(Sample(track)).asFile()
+        if not os.path.exists( controlfile ):
+            L.warn( "no controlfile '%s' for track '%s' not found " % (controlfile, track ) )
+            controlfile = None
 
         PipelineChipseq.runMACS( infile, outfile, controlfile)
 
@@ -788,11 +797,15 @@ elif PARAMS["calling_caller"] == "zinba":
     ############################################################
     @transform( runZinba,
                 regex(r"(.*).zinba"),
-                inputs( (r"\1.zinba", r"\1.call.bam") ),
+                inputs( (r"\1.zinba", r"\1.call.bam" ) ),
                 r"\1_zinba.load" )
     def loadZinba( infiles, outfile ):
         infile, bamfile = infiles
-        PipelineChipseq.loadZinba( infile, outfile, bamfile )
+        track = P.snip( infile, ".zinba" )
+        control = "%s.call.bam" % (getControl(Sample(track)).asFile())
+        PipelineChipseq.loadZinba( infile, outfile, 
+                                   bamfile, 
+                                   controlfile = control )
     
     ############################################################
     ############################################################
@@ -946,21 +959,21 @@ def loadIntervalsFromBed( infile, outfile ):
     c = E.Counter()
 
     # count tags
-    for line in IOTools.openFile(infile, "r"):
+    for bed in Bed.iterator( IOTools.openFile(infile, "r") ): 
 
         c.input += 1
-        contig, start, end, interval_id = line[:-1].split()[:4]
 
-        start, end = int(start), int(end)
-
+        if "name" not in bed:
+            bed.name = c.input
+        
         # remove very short intervals
-        if end-start < mlength: 
+        if bed.end - bed.start < mlength: 
             c.skipped_length += 1
             continue
 
         if replicates:
             npeaks, peakcenter, length, avgval, peakval, nprobes = \
-                PipelineChipseq.countPeaks( contig, start, end, samfiles, offsets )
+                PipelineChipseq.countPeaks( bed.contig, bed.start, bed.end, samfiles, offsets )
 
             # nreads can be 0 if the intervals overlap only slightly
             # and due to the binning, no reads are actually in the overlap region.
@@ -972,17 +985,17 @@ def loadIntervalsFromBed( infile, outfile ):
 
         else:
             npeaks, peakcenter, length, avgval, peakval, nprobes = ( 1, 
-                                                                     start + (end - start) // 2, 
-                                                                     end - start, 
+                                                                     bed.start + (bed.end - bed.start) // 2, 
+                                                                     bed.end - bed.start, 
                                                                      1, 
                                                                      1,
                                                                      1 )
             
         c.output += 1
         tmpfile.write( "\t".join( map( str, (avgval,disttostart,genelist,length,
-                                             peakcenter,peakval,position,interval_id,
+                                             peakcenter,peakval,position, bed.name,
                                              ncpgs,ngenes,npeaks,nprobes,npromoters, 
-                                             contig,start,end) )) + "\n" )
+                                             bed.contig,bed.start,bed.end) )) + "\n" )
 
     if c.output == 0:
         E.warn( "%s - no aggregate intervals" )
@@ -1070,7 +1083,7 @@ def buildReadProfileOfTranscripts( infiles, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-@transform( exportIntervalsAsBed , suffix(".bed.gz"),
+@transform( exportIntervalsAsBed, suffix(".bed.gz"),
             add_inputs( os.path.join( PARAMS["annotations_dir"],
                                       PARAMS_ANNOTATIONS["interface_geneset_all_gtf"] )),
             ".intervalprofile.transcripts.tsv.gz" )
@@ -1097,17 +1110,22 @@ def buildIntervalProfileOfTranscripts( infiles, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-@follows( buildIntervals )
-@files( [ ( ("%s.call.bam" % x, "%s.bed.gz" % x ), 
-            "%s.peakshape.tsv.gz" % x) for x in TRACKS ] )
-def buildPeakShapeTable( infiles, outfile ):
+@transform( exportIntervalsAsBed,
+            suffix(".bed.gz"),
+            ".peakshape.tsv.gz" )
+def buildPeakShapeTable( infile, outfile ):
     '''build a table with peak shape parameters.'''
     
     to_cluster = True
 
-    bamfile, bedfile = infiles
-    track = P.snip( bamfile, '.call.bam' )
-    
+    track = TRACKS.factory( filename = infile[:-len(".bed.gz")] )
+
+    fg_replicates = PipelineTracks.Aggregate( TRACKS, track = track )[track]
+    if len(fg_replicates) > 1:
+        raise NotImplementedError( "peakshape of aggregate tracks not implemented" )
+
+    bamfile = "%s.call.bam" % (fg_replicates[0])
+
     # get peak shift
     shift = PipelineChipseq.getPeakShift( track )
     if shift == None:
@@ -1124,7 +1142,7 @@ def buildPeakShapeTable( infiles, outfile ):
                       --shift=%(shift)i
                       --sort=peak-height
                       --sort=peak-width
-                      %(bamfile)s %(bedfile)s
+                      %(bamfile)s %(infile)s
                    > %(outfile)s
                 '''
     P.run()
@@ -1132,9 +1150,9 @@ def buildPeakShapeTable( infiles, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-@follows( buildIntervals )
+@follows( buildIntervals, mkdir("coverage.dir") )
 @files( [ ( ("%s.prep.bam" % x, "%s.bed.gz" % y), 
-            "%s_vs_%s.coverage.gz" % (x,y)) for (x,y) in itertools.product( TRACKS, repeat = 2 ) ] )
+            "coverage.dir/%s_vs_%s.coverage.gz" % (x,y)) for (x,y) in itertools.product( TRACKS, repeat = 2 ) ] )
 def peakCoverage(infiles, outfile):
     '''uses coverageBed to count the total number of reads under peaks'''
 
@@ -1160,7 +1178,7 @@ def buildReadCoverageTable(infiles, outfile):
     data = {}
 
     for coverageFile in infiles:
-        name = P.snip(coverageFile, ".coverage.gz")
+        name = P.snip(os.path.basename( coverageFile ), ".coverage.gz")
         name = name.split("_")
         bam = name[0]
         bed = name[2] 
@@ -1215,22 +1233,56 @@ def loadReadCoverageTable( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-@files_re( (buildBAM, normalizeBAM),
-           "(.*).bam",
-           "%s/\1.bigwig" % PARAMS["exportdir"])
+@follows( mkdir( os.path.join( PARAMS["exportdir"], "wig") ) )
+@follows( exportIntervalsAsBed )
+@transform( (buildBAM, normalizeBAM),
+            regex("(.*).bam"),
+            r"%s/\1.bigwig" % os.path.join( PARAMS["exportdir"], "wig") )
 def exportBigwig( infile, outfile ):
     '''convert BAM to bigwig file.'''
 
-    # no bedToBigBed on the 32 bit cluster
     to_cluster = True
 
-    statement = '''python %(scriptsdir)s/bam2wiggle.py \
-                --genome-file=%(genome_dir)s/%(genome)s \
-                --output-format=bigwig \
-                --output-filename=%(outfile)s \
-                %(infile)s \
-                > %(outfile)s.log'''
+    track = re.sub( ".(call|genome).bam", "", infile)
+
+    shift = PipelineChipseq.getPeakShift( track ) 
+    if shift == None: 
+        E.warn( "no shift found for %s - using 0" % track )
+        shift = 0
+    else: 
+        shift /= 2
+
+    extend = shift
+
+    statement = '''python %(scriptsdir)s/bam2wiggle.py 
+                      --output-format=bigwig 
+                      --output-filename=%(outfile)s 
+                      --shift=%(shift)i
+                      --extend=%(extend)i
+                      --log=%(outfile)s.log
+                %(infile)s '''
      
+    P.run()
+
+############################################################
+############################################################
+############################################################
+## 
+############################################################
+@merge( exportBigwig, "bigwiginfo.tsv" )
+def buildBigwigInfo( infiles, outfile ):
+    '''collate summary of bigwig files.'''
+
+    pattern = '''<( bigWigInfo %s | perl -p -e "s/: /\\t/" )'''
+    
+    p = " ".join( [pattern % infile for infile in infiles ] )
+    headers = ",".join( [ P.snip( os.path.basename( x ), ".bigwig") for x in infiles ] )
+
+    statement = '''python %(scriptsdir)s/combine_tables.py
+                   --headers=%(headers)s
+                         %(p)s
+                > %(outfile)s
+                '''
     P.run()
 
 ############################################################
@@ -1246,8 +1298,17 @@ def exportBigwig( infile, outfile ):
 def exportMotifSequences( infile, outfile ):
     '''export sequences for all intervals.
     '''
-    PipelineMotifs.exportSequencesFromBedFile( infile, outfile )
-    
+    to_cluster = True
+    statement = '''zcat %(infile)s 
+    | python %(scriptsdir)s/bed2fasta.py 
+              --genome-file=%(genome_dir)s/%(genome)s 
+              --masker=%(motifs_masker)s
+              --mode=intervals
+              --log=%(outfile)s.log
+    > %(outfile)s'''
+
+    P.run()
+
 ############################################################
 ############################################################
 ############################################################
@@ -1262,7 +1323,17 @@ def exportMotifControlSequences( infile, outfile ):
     '''for each interval, export the left and right 
     sequence segment of the same size.
     '''
-    PipelineMotifs.exportControlSequencesFromBedFile( infile, outfile )
+
+    to_cluster = True
+    statement = '''zcat %(infile)s 
+    | python %(scriptsdir)s/bed2fasta.py 
+              --genome-file=%(genome_dir)s/%(genome)s 
+              --masker=%(motifs_masker)s
+              --mode=leftright
+              --log=%(outfile)s.log
+    > %(outfile)s'''
+
+    P.run()
 
 ############################################################
 ############################################################
@@ -1386,7 +1457,7 @@ def makeReproducibility( infiles, outfile ):
     data = []
     for replicate in infiles:
         cc = dbhandle.cursor()
-        tablename = "%s_intervals" % P.quote( P.snip(replicate, ".bed") )
+        tablename = "%s_intervals" % P.quote( P.snip(replicate, ".bed.gz") )
         statement = "SELECT contig, start, end, peakval FROM %(tablename)s" % locals()
         cc.execute( statement )
         data.append( cc.fetchall() )
@@ -1477,7 +1548,7 @@ def reproducibility(): pass
 def makePeakvalCorrelation( infiles, outfile ):
     '''compute correlation of interval properties between sets for field peakval.
     '''
-    PipelineChipseq.makeIntervalCorrelation( infiles, outfile, "peakval", "merged.bed" )
+    PipelineChipseq.makeIntervalCorrelation( infiles, outfile, "peakval", "merged.bed.gz" )
 
 @follows( buildIntervals )
 @files_re( ["%s.bed.gz" % x.asFile() for x in TRACKS_CORRELATION],
@@ -1486,7 +1557,7 @@ def makePeakvalCorrelation( infiles, outfile ):
 def makeAvgvalCorrelation( infiles, outfile ):
     '''compute correlation of interval properties between sets for field peakval.
     '''
-    PipelineChipseq.makeIntervalCorrelation( infiles, outfile, "avgval", "merged.bed" )
+    PipelineChipseq.makeIntervalCorrelation( infiles, outfile, "avgval", "merged.bed.gz" )
 
 @follows( buildIntervals )
 @files_re( ["%s.bed.gz" % x.asFile() for x in TRACKS_CORRELATION],
@@ -1495,7 +1566,7 @@ def makeAvgvalCorrelation( infiles, outfile ):
 def makeLengthCorrelation( infiles, outfile ):
     '''compute correlation of interval properties between sets for field peakval.
     '''
-    PipelineChipseq.makeIntervalCorrelation( infiles, outfile, "length", "merged.bed" )
+    PipelineChipseq.makeIntervalCorrelation( infiles, outfile, "length", "merged.bed.gz" )
 
 @transform( ( makePeakvalCorrelation, makeAvgvalCorrelation, makeLengthCorrelation ),
             suffix(".correlation"),
@@ -1533,7 +1604,7 @@ def buildReferenceMotifs( infile, outfile ):
 ############################################################
 @transform( exportMotifSequences, suffix(".fasta"), ".meme")
 def runMEME( infile, outfile ):
-    '''run MEME on all intervals and motifs.
+    '''run MEME to find motifs.
 
     In order to increase the signal/noise ratio,
     MEME is not run on all intervals but only the 
@@ -1548,7 +1619,9 @@ def runMEME( infile, outfile ):
     '''
     dbhandle = connect()
 
-    PipelineMotifs.runMEME( infile, outfile, dbhandle )
+    track = infile[:-len(".fasta")]
+
+    PipelineMotifs.runMEME( track, outfile, dbhandle )
 
 ############################################################
 ############################################################
@@ -1971,7 +2044,7 @@ def loadIntervalCounts( infile, outfile ):
 ############################################################
 ## export bigwig tracks
 ############################################################
-@files_re(exportBigwig,combine("(.*).bigwig"), "bigwig.view")
+@files_re(exportBigwig, combine("(.*).bigwig"), "bigwig.view")
 def viewBigwig( infiles, outfile ):
 
     outs = IOTools.openFile( outfile, "w" )
@@ -2051,14 +2124,19 @@ def viewIntervals( infiles, outfiles ):
 ############################################################
 ##
 ############################################################
+@follows( makeReadCorrelationTable,
+          loadBAMStats )
+def mapping():
+    '''map reads'''
+    pass
 
-@follows( buildIntervals, 
-          makeReadCorrelationTable,
-          loadBAMStats,
+@follows( mapping,
+          buildIntervals, 
           loadReadCoverageTable,
           buildPeakShapeTable,
           buildReadProfileOfTranscripts,
-          buildIntervalProfileOfTranscripts )
+          buildIntervalProfileOfTranscripts,
+          buildBigwigInfo)
 def intervals():
     '''compute binding intervals.'''
     pass
@@ -2071,8 +2149,8 @@ def export():
 @follows( buildReferenceMotifs,
           exportMotifSequences,
           runMEME,
-          runTomTom, loadTomTom,
-          runBioProspector )
+          runTomTom, loadTomTom )
+#          runBioProspector )
 #          runGLAM2, 
 def discover_motifs():
     '''run motif discovery.'''

@@ -307,7 +307,8 @@ class Sample(object):
             self.data = collections.OrderedDict( ((self.attributes,s),) )
         else:
             d = map( from_aggregate, s.split(sep) )
-            assert len(d) == len(self.attributes)
+            if len(d) != len(self.attributes):
+                raise ValueError("can not match %s (sep='%s') against attributes %s" % (s, sep, self.attributes))
             self.data = collections.OrderedDict( zip( self.attributes, d ))
     
     def asAggregate( self, *args ):

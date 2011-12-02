@@ -13,29 +13,29 @@ exonic expression and intronic expression. A good correlation
 between intronic read depth with exonic read depth hints
 at unprocessed mRNA transcripts.
 
-.. report:: Reference.IntronicExonicReadDepth
-   :render: r-smooth-scatter-plot
-   :xrange: 1,
-   :yrange: 1,
-   :groupby: ungrouped
-   :layout: column-3
-   :width: 300
-   :logscale: xy
+.. .. report:: Reference.IntronicExonicReadDepth
+..    :render: r-smooth-scatter-plot
+..    :xrange: 1,
+..    :yrange: 1,
+..    :groupby: ungrouped
+..    :layout: column-3
+..    :width: 300
+..    :logscale: xy
 
-   Smoothed scatter plots of exonic maximum read depth versus intronic 
-   maximum read depth.
+..    Smoothed scatter plots of exonic maximum read depth versus intronic 
+..    maximum read depth.
    
-UTR extension
-=============
+.. UTR extension
+.. =============
 
-The following plots show a distribution of the UTR extension per data set and gene.
+.. The following plots show a distribution of the UTR extension per data set and gene.
 
-.. report:: Reference.UTRExtension
-   :render: r-smooth-scatter-plot
-   :layout: column-3
-   :width: 300	
+.. .. report:: Reference.UTRExtension
+..    :render: r-smooth-scatter-plot
+..    :layout: column-3
+..    :width: 300	
 
-   Predicted length of UTR versus length of known UTR.
+..    Predicted length of UTR versus length of known UTR.
 
 UTR densities
 -------------
@@ -57,10 +57,10 @@ Expression values are maximum read counts.
 |fit    |fitting results                               |
 +-------+----------------------------------------------+
 
-.. report:: Reference.UTRReadDensityTable
-   :render: user
+.. .. report:: Reference.UTRReadDensityTable
+..    :render: user
 
-   UTR extension
+..    UTR extension
 
 
 

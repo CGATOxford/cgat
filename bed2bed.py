@@ -27,8 +27,8 @@ The script currently implements the following methods:
 
 2. block: build blocked bed file (bed12 format) from individual blocks.
 
-3. sanitize: remove all empty intervals and intervals on unknown contigs. 
-   Intervals extending beyond a contig a truncated.
+3. sanitize-genome: remove all empty intervals and intervals on unknown contigs. 
+   Intervals extending beyond a contig a truncated. 
    
 4. filter-genome: remove all intervals on unknown contigs or extending beyond 
    contigs.
@@ -69,6 +69,7 @@ import Stats
 import GFF, GTF
 import IndexedFasta, IOTools
 import Bed
+import pysam
 
 def merge( iterator, max_distance = 0, by_name = False, min_intervals = 1 ):
     """iterator for merging adjacent bed entries.
@@ -209,9 +210,14 @@ def main( argv = sys.argv ):
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genome."  )
 
+    parser.add_option("-b", "--bam-file", dest="bam_file", type="string",
+                      help="bam-formatted filename with genome."  )
+
     parser.set_defaults( methods = [],
                          merge_distance = 0,
                          binning_method = "equal-bases",
+                         genome_file = None,
+                         bam_file = None,
                          num_bins = 5,
                          merge_min_intervals = 1,
                          bin_edges = None,
@@ -219,16 +225,24 @@ def main( argv = sys.argv ):
     
     (options, args) = E.Start( parser, add_pipe_options = True )
 
+    contigs = None
+
     if options.genome_file:
         genome_fasta = IndexedFasta.IndexedFasta( options.genome_file )
         contigs = genome_fasta.getContigSizes()
+
+    if options.bam_file:
+        samfile = pysam.Samfile( options.bam_file )
+        contigs = dict( zip(samfile.references, samfile.lengths) )
 
     processor = Bed.iterator( options.stdin )
 
     for method in options.methods:
         if method ==  "filter-genome":
+            if not contigs: raise ValueError("please supply contig sizes" )
             processor = filterGenome( processor, contigs )
-        elif method ==  "sanitize-genome":
+        elif method == "sanitize-genome":
+            if not contigs: raise ValueError("please supply contig sizes" )
             processor = sanitizeGenome( processor, contigs )
         elif method == "merge":
             processor = merge( processor, options.merge_distance,

@@ -56,7 +56,7 @@ Code
 ----
 
 '''
-import sys, re, os, tempfile, collections
+import sys, re, os, tempfile, collections, shutil
 
 import logging as L
 import Experiment as E
@@ -99,7 +99,39 @@ def filterMotifsFromMEME( infile, outfile, selected ):
 ############################################################
 ############################################################
 ############################################################
-def exportSequencesFromBedFile( infile, outfile ):
+def maskSequences( sequences, masker = None):
+    '''return a list of masked sequence.
+
+    *masker* can be one of
+        dust/dustmasker * run dustmasker on sequences
+        softmask        * use softmask to hardmask sequences
+    '''
+
+    if masker in ("dust", "dustmasker"):
+        masker_object = Masker.MaskerDustMasker()
+    else:
+        masker_object = None
+
+    if masker == "softmask":
+        # the genome sequence is repeat soft-masked
+        masked_seq = sequences
+    elif masker in ("dust", "dustmasker"):
+        # run dust
+        masked_seq = masker_object.maskSequences( [ x.upper() for x in sequences ] )
+    elif masker == None:
+        masked_seq = [x.upper() for x in sequences ]
+    else:
+        raise ValueError("unknown masker %s" % masker )
+
+    # hard mask softmasked characters
+    masked_seq = [re.sub( "[a-z]","N", x) for x in masked_seq ]
+
+    return masked_seq
+
+############################################################
+############################################################
+############################################################
+def exportSequencesFromBedFile( infile, outfile, masker = None, mode = "intervals" ):
     '''export sequences for intervals in :term:`bed`-formatted *infile* 
     to :term:`fasta` formatted *outfile*
     '''
@@ -109,43 +141,29 @@ def exportSequencesFromBedFile( infile, outfile ):
     fasta = IndexedFasta.IndexedFasta( os.path.join( PARAMS["genome_dir"], PARAMS["genome"] ) )
     outs = IOTools.openFile( outfile, "w")
 
-    for bed in Bed.iterator( IOTools.openFile(infile) ):
-        id = "%s_%s %s:%i..%i" % (track, bed.name, bed.contig, bed.start, bed.end)
-        
-        seq = fasta.getSequence( bed.contig, "+", bed.start, bed.end)
-        outs.write( ">%s\n%s\n" % (id, seq))
-    
+    ids, seqs = [], []
+    for bed in Bed.setName(Bed.iterator( IOTools.openFile(infile) )):
+        lcontig = fasta.getLength( bed.contig )
+
+        if mode == "intervals":
+            seqs.append( fasta.getSequence( bed.contig, "+", bed.start, bed.end) )
+            ids.append( "%s_%s %s:%i..%i" % (track, bed.name, bed.contig, bed.start, bed.end) )
+        elif mode == "leftright":
+            l = bed.end - bed.start
+
+            start, end = max(0,bed.start-l), bed.end-l
+            ids.append( "%s_%s_l %s:%i..%i" % (track, bed.name, bed.contig, start, end) )
+            seqs.append( fasta.getSequence( bed.contig, "+", start, end) )
+            
+            start, end = bed.start+l, min(lcontig,bed.end+l)
+            ids.append( "%s_%s_r %s:%i..%i" % (track, bed.name, bed.contig, start, end) )
+            seqs.append( fasta.getSequence( bed.contig, "+", start, end) )
+            
+    masked = maskSequences( seqs, masker )
+    outs.write("\n".join( [ ">%s\n%s" % (x,y) for x,y in zip(ids, masked) ] ) )
+
     outs.close()
 
-############################################################
-############################################################
-############################################################
-def exportControlSequencesFromBedFile( infile, outfile ):
-    '''for each interval, export the left and right 
-    sequence segment of the same size.
-    '''
-
-    track = P.snip( infile, ".bed.gz")
-
-    fasta = IndexedFasta.IndexedFasta( os.path.join( PARAMS["genome_dir"], PARAMS["genome"] ) )
-
-    outs = open( outfile, "w")
-
-    for bed in Bed.iterator( IOTools.openFile( infile )):
-        l = bed.end - bed.start
-        lcontig = fasta.getLength( contig )
-        start, end = max(0,bed.start-l), bed.end-l
-        id = "%s_%s_l %s:%i..%i" % (track, bed.name, contig, start, end)
-        seq = fasta.getSequence( contig, "+", start, end)
-        outs.write( ">%s\n%s\n" % (id, seq))
-
-        start, end = bed.start+l, min(lcontig,bed.end+l)
-        id = "%s_%s_r %s:%i..%i" % (track, bed.name, contig, start, end)
-        seq = fasta.getSequence( contig, "+", start, end)
-        outs.write( ">%s\n%s\n" % (id, seq))
-    
-    outs.close()
-    
 ############################################################
 ############################################################
 ############################################################
@@ -175,6 +193,11 @@ def writeSequencesForIntervals( track, filename,
 
     If proportion is set, only the top *proportion* intervals are output
     (sorted by peakval).
+
+    *masker* can be any of 
+        * dust, dustmasker: apply dustmasker
+        * softmask: mask softmasked genomic regions
+
     '''
 
     fasta = IndexedFasta.IndexedFasta( os.path.join( PARAMS["genome_dir"], PARAMS["genome"] ) )
@@ -209,7 +232,6 @@ def writeSequencesForIntervals( track, filename,
     L.info( "writeSequencesForIntervals %s: masker=%s" % (track,masker))
 
     fasta = IndexedFasta.IndexedFasta( os.path.join( PARAMS["genome_dir"], PARAMS["genome"]) )
-    masker_object = Masker.MaskerDustMasker()
 
     sequences = []
     current_size, nseq = 0, 0
@@ -232,20 +254,6 @@ def writeSequencesForIntervals( track, filename,
         
     data = new_data
             
-    def maskSequences( sequences, masker ):
-        
-        if masker == "repeatmasker":
-            # the genome sequence is repeat masked
-            masked_seq = sequences
-        elif masker == "dust":
-            masked_seq = [ masker_object( x.upper() ) for x in sequences ]
-        else:
-            masked_seq = [x.upper() for x in sequences ]
-
-        # hard mask softmasked characters
-        masked_seq = [re.sub( "[a-z]","N", x) for x in masked_seq ]
-        return masked_seq
-
     if shuffled:
         # note that shuffling is done on the unmasked sequences
         # Otherwise N's would be interspersed with real sequence
@@ -255,14 +263,22 @@ def writeSequencesForIntervals( track, filename,
         for sequence in sequences: random.shuffle(sequence)
         sequences = maskSequences( ["".join(x) for x in sequences ], masker )
         
+    c = E.Counter()
     outs = IOTools.openFile(filename, "w" )
     for sequence, d in zip( maskSequences( sequences, masker ), data ):
+        c.input += 1
+        if len(sequence) == 0: 
+            c.empty += 1 
+            continue
         start, end, id, contig = d
         id = "%s_%s %s:%i..%i" % (track, str(id), contig, start, end)
         outs.write( ">%s\n%s\n" % (id, sequence ) )
+        c.output += 1
     outs.close()
     
-    return len(sequences)
+    E.info("%s" % c )
+
+    return c.output
 
 ############################################################
 ############################################################
@@ -276,7 +292,6 @@ def runRegexMotifSearch( infiles, outfile ):
     reverse_motif = "T[GC]A[CA]C[TC]"
 
     controlfile, dbfile  = infiles
-    controlfile = dbfile[:-len(".fasta")] + ".controlfasta"
     if not os.path.exists( controlfile ):
         raise P.PipelineError( "control file %s for %s does not exist" % (controlfile, dbfile))
 
@@ -462,33 +477,41 @@ def loadMAST( infile, outfile ):
     chunks = [x for x in range(len(lines)) if lines[x].startswith("::") ]
     chunks.append( len(lines) )
 
-    for chunk in range(len(chunks)-1):
+    def readChunk( lines, chunk ):
         # use real file, as MAST parser can not deal with a
         # list of lines
         tmpfile2 = tempfile.NamedTemporaryFile(delete=False)        
         try:
-            motif = re.match( ":: motif = (\S+) ::", lines[chunks[chunk]]).groups()[0]
+            motif, part = re.match( ":: motif = (\S+) - (\S+) ::", lines[chunks[chunk]]).groups()
         except AttributeError:
             raise P.PipelineError("parsing error in line '%s'" % lines[chunks[chunk]])
 
+        E.info( "reading %s - %s" % (motif, part))
+
         tmpfile2.write( "".join( lines[chunks[chunk]+1:chunks[chunk+1]]) )
         tmpfile2.close()
+
         mast = MAST.parse( IOTools.openFile(tmpfile2.name, "r") )
+
         os.unlink( tmpfile2.name )        
+    
+        return motif, part, mast
+    
+    for chunk in range(0, len(chunks)-1, 2):
 
-        # collect control data
-        full_matches = []
+        motif_fg, part, mast_fg = readChunk( lines, chunk )
+        assert part == "foreground"
+        motif_bg, part, mast_bg = readChunk( lines, chunk + 1 )
+        assert part == "background"
+        assert motif_fg == motif_bg
+
+        # index control data
         controls = collections.defaultdict( dict )
-        for match in mast.matches:
-            m = match.id.split("_")
-            if len(m) == 2:
-                full_matches.append( match )
-                continue
-
-            track, id, pos = m
+        for match in mast_bg.matches:
+            track, id, pos = match.id.split("_")
             controls[id][pos] = (match.evalue, match.pvalue, match.nmotifs, match.length, match.start, match.end )
 
-        for match in full_matches:
+        for match in mast_fg.matches:
             match.id = match.id.split("_")[1]
             # move to genomic coordinates
             contig, start, end = re.match( "(\S+):(\d+)..(\d+)", match.description).groups()
@@ -510,7 +533,7 @@ def loadMAST( infile, outfile ):
             max_nmatches = max( controls[id]["l"][2], controls[id]["r"][2])
 
             tmpfile.write( str(match) + "\t%s\t%s\t%s\t%s\t%s\t%s\t%s" % \
-                               (motif,contig,
+                               (motif_fg, contig,
                                 "\t".join( map(str, controls[id]["l"] )),
                                 "\t".join( map(str, controls[id]["r"] )),
                                 str(min_evalue),
@@ -656,7 +679,6 @@ def runMAST( infiles, outfile ):
     # job_options = "-l mem_free=8000M"
 
     controlfile, dbfile, motiffiles  = infiles
-    controlfile = dbfile[:-len(".fasta")] + ".controlfasta"
 
     if IOTools.isEmpty( dbfile ):
         P.touch( outfile )
@@ -678,13 +700,28 @@ def runMAST( infiles, outfile ):
         
         of = IOTools.openFile(tmpfile, "a")
         motif, x = os.path.splitext( motiffile )
-        of.write(":: motif = %s ::\n" % motif )
+        of.write(":: motif = %s - foreground ::\n" % motif )
         of.close()
         
+        # mast bails if the number of nucleotides gets larger than
+        # 2186800982?
+        # To avoid this, run db and control file separately.
         statement = '''
-        cat %(dbfile)s %(controlfile)s 
-        | mast %(motiffile)s - -nohtml -oc %(tmpdir)s -ev %(mast_evalue)f %(mast_options)s >> %(outfile)s.log;
-        cat %(tmpdir)s/mast.txt >> %(tmpfile)s
+        cat %(dbfile)s 
+        | mast %(motiffile)s - -nohtml -oc %(tmpdir)s -ev %(mast_evalue)f %(mast_options)s >> %(outfile)s.log 2>&1;
+        cat %(tmpdir)s/mast.txt >> %(tmpfile)s 2>&1
+        '''
+        P.run()
+
+        of = IOTools.openFile(tmpfile, "a")
+        motif, x = os.path.splitext( motiffile )
+        of.write(":: motif = %s - background ::\n" % motif )
+        of.close()
+
+        statement = '''
+        cat %(controlfile)s 
+        | mast %(motiffile)s - -nohtml -oc %(tmpdir)s -ev %(mast_evalue)f %(mast_options)s >> %(outfile)s.log 2>&1;
+        cat %(tmpdir)s/mast.txt >> %(tmpfile)s 2>&1
         '''
         P.run()
 
@@ -749,8 +786,67 @@ def runGLAM2( infile, outfile, dbhandle ):
 ############################################################
 ############################################################
 ############################################################
-def runMEME( infile, outfile, dbhandle ):
-    '''run MEME on all intervals and motifs.
+def runMEME( track, outfile, dbhandle ):
+    '''run MEME to find motifs.
+
+    In order to increase the signal/noise ratio,
+    MEME is not run on all intervals but only the 
+    top 10% of intervals (peakval) are used. 
+    Also, only the segment of 200 bp around the peak
+    is used and not the complete interval.
+
+    * Softmasked sequence is converted to hardmasked
+      sequence to avoid the detection of spurious motifs.
+
+    * Sequence is run through dustmasker
+
+    This method is deprecated - use runMEMEOnSequences instead.
+    '''
+    to_cluster = True
+    # job_options = "-l mem_free=8000M"
+
+    target_path = os.path.join( os.path.abspath(PARAMS["exportdir"]), "meme", outfile )
+
+    fasta = IndexedFasta.IndexedFasta( os.path.join( PARAMS["genome_dir"], PARAMS["genome"] ) )
+
+    tmpdir = P.getTempDir( "." )
+    tmpfasta =  os.path.join( tmpdir, "in.fa")
+    
+    nseq = writeSequencesForIntervals( track, tmpfasta,
+                                       dbhandle,
+                                       full = False,
+                                       masker = PARAMS['motifs_masker'],
+                                       halfwidth = int(PARAMS["meme_halfwidth"]),
+                                       maxsize = int(PARAMS["meme_max_size"]),
+                                       proportion = PARAMS["meme_proportion"],
+                                       min_sequences = PARAMS["meme_min_sequences"] )
+
+    if nseq == 0:
+        E.warn( "%s: no sequences - meme skipped" % outfile)
+        P.touch( outfile )
+    else:
+        statement = '''
+        meme %(tmpfasta)s -dna -revcomp -mod %(meme_model)s -nmotifs %(meme_nmotifs)s -oc %(tmpdir)s -maxsize %(meme_max_size)s %(meme_options)s > %(outfile)s.log
+        '''
+        P.run()
+
+        # copy over results
+        try:
+            os.makedirs( os.path.dirname( target_path ) )
+        except OSError: 
+            # ignore "file exists" exception
+            pass
+
+        if os.path.exists( target_path ): shutil.rmtree( target_path )
+        shutil.move( tmpdir, target_path )
+
+        shutil.copyfile( os.path.join(target_path, "meme.txt"), outfile)
+
+############################################################
+############################################################
+############################################################
+def runMEMEOnSequences( infile, outfile ):
+    '''run MEME to find motifs.
 
     In order to increase the signal/noise ratio,
     MEME is not run on all intervals but only the 
@@ -767,40 +863,27 @@ def runMEME( infile, outfile, dbhandle ):
     # job_options = "-l mem_free=8000M"
 
     target_path = os.path.join( os.path.abspath(PARAMS["exportdir"]), "meme", outfile )
+    tmpdir = P.getTempDir( "." )
 
-    fasta = IndexedFasta.IndexedFasta( os.path.join( PARAMS["genome_dir"], PARAMS["genome"] ) )
+    statement = '''
+        meme %(infile)s -dna -revcomp 
+                        -mod %(meme_model)s 
+                        -nmotifs %(meme_nmotifs)s 
+                        -oc %(tmpdir)s 
+                        -maxsize %(motifs_max_size)s 
+                        %(meme_options)s 
+       > %(outfile)s.log
+    '''
+    P.run()
 
-    track = infile[:-len(".fasta")]
+    # copy over results
+    try:
+        os.makedirs( os.path.dirname( target_path ) )
+    except OSError: 
+        # ignore "file exists" exception
+        pass
 
-    tmpdir = tempfile.mkdtemp()
-    tmpfasta =  os.path.join( tmpdir, "in.fa")
-    
-    nseq = writeSequencesForIntervals( track, tmpfasta,
-                                       dbhandle,
-                                       full = False,
-                                       halfwidth = int(PARAMS["meme_halfwidth"]),
-                                       maxsize = int(PARAMS["meme_max_size"]),
-                                       proportion = PARAMS["meme_proportion"],
-                                       min_sequences = PARAMS["meme_min_sequences"] )
+    if os.path.exists( target_path ): shutil.rmtree( target_path )
+    shutil.move( tmpdir, target_path )
 
-    if nseq == 0:
-        E.warn( "%s: no sequences - meme skipped" % infile )
-        P.touch( outfile )
-    else:
-        statement = '''
-        meme %(tmpfasta)s -dna -revcomp -mod %(meme_model)s -nmotifs %(meme_nmotifs)s -oc %(tmpdir)s -maxsize %(meme_maxsize)s %(meme_options)s > %(outfile)s.log
-        '''
-        P.run()
-
-        # copy over results
-        try:
-            os.makedirs( os.path.dirname( target_path ) )
-        except OSError: 
-            # ignore "file exists" exception
-            pass
-
-        if os.path.exists( target_path ): shutil.rmtree( target_path )
-        shutil.move( tmpdir, target_path )
-
-        shutil.copyfile( os.path.join(target_path, "meme.txt"), outfile)
-
+    shutil.copyfile( os.path.join(target_path, "meme.txt"), outfile)

@@ -71,6 +71,7 @@ import os, sys, string, re, time, optparse, tempfile, subprocess, types
 
 import Experiment as E
 import csv, CSV
+import sqlite3
 
 def executewait( dbhandle, statement, error, retry = False, wait=5):
     '''execute sql statement.
@@ -119,8 +120,11 @@ def quoteRow( row, take,
 
 def quoteTableName( name, quote_char = "_", backend="sqlite" ):
     if backend == "sqlite":
+        # no special characters. Column names can not start with a number.
+        if name[0] in "0123456789": name = "_" + name
         return re.sub( "[-(),\[\].]", "_", name )
     elif backend in ("mysql","pg"):
+        if name[0] in "0123456789": name = "_" + name
         return re.sub( "[-(),\[\]]", "_", name )
 
 def createTable( dbhandle, error, options, rows = None, headers = None,
@@ -180,6 +184,7 @@ def createTable( dbhandle, error, options, rows = None, headers = None,
         # remove special characters from column names
         hh = re.sub( '''['"]''', "", hh)
         hh = re.sub( "[,;.:\-\+/ ()]", "_", hh)
+        if hh[0] in "0123456789": hh = "_" + hh
         columns.append( "%s %s" % (hh, t))
 
     # delete old table if it exists
@@ -190,6 +195,10 @@ def createTable( dbhandle, error, options, rows = None, headers = None,
             dbhandle.commit()
             cc.close()
             E.info("existing table %s deleted" % options.tablename )
+        except sqlite3.OperationalError, msg:
+            E.warn( msg )
+            time.sleep(5)
+            continue
         except error, msg:
             E.warn( "could not delete existing table %s: %s" % (options.tablename, str(msg) ))
             dbhandle.rollback()

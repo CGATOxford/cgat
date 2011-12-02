@@ -32,8 +32,81 @@ gtf2table.py - annotate genes/transrcipts
 Purpose
 -------
 
-compute sequence properties for genes of given by a gtf file and output them in 
-tabular format.
+compute properties of genes of given in a gtf file and output them in 
+tabular format. 
+
+The following methods are available:
+
+position
+   output genomic coordinates of gene
+
+length
+   output length summary of gene
+
+splice
+   output splicing summary of gene
+
+quality
+   output base-quality information summary of gene. Needs quality scores.
+
+overrun
+   output intron overrun
+
+read-coverage
+   output read coverage summary of gene
+
+read-extension
+
+read-counts
+
+bigwig-counts
+
+splice-comparison
+
+composition-na
+   output nucleotide composition of gene
+
+composition-cgp
+   output cpg composition of gene
+
+overlap
+
+overlap-stranded
+
+proximity
+
+proximity-exclusive
+
+proximity-lengthmatched
+
+neighbours
+
+territories
+
+distance
+
+distance-genes
+
+distance-tss
+
+coverage
+
+classifier
+
+classifier-chipseq
+   classify chipseq intervals
+
+classifier-rnaseq
+   classify rnaseq transcripts
+
+classifier-polii
+   classify according to PolII transcripts. A gene/transcript is transcribed, if it is covered
+   by large PolII intervals over 80% of its length. A gene/transript is primed if its promotor/UTR
+   is covered by 50% of its length, while the rest of the gene body isn't.
+
+binding-pattern
+   given a list of intervals, determine the binding pattern within and surrounding the gene.
+   
 
 Usage
 -----
@@ -89,6 +162,18 @@ def readIntervalsFromGFF( filename_gff,
     assert not (with_values and with_records), "both with_values and with_records are true."
 
     ninput = 0
+
+    if format == None:
+        if type(filename_gff) == types.StringType:
+            fn = filename_gff
+            if fn.endswith( ".gtf" ) or fn.endswith( ".gtf.gz"):
+                format = "gtf"
+            elif fn.endswith( ".gff" ) or fn.endswith( ".gff.gz"):
+                format = "gff"
+            elif fn.endswith( ".bed" ) or fn.endswith( ".bed.gz"):
+                format = "bed"
+        else:
+            format = "gff"
 
     if format in ("gtf", "gff"):
         infile = None
@@ -212,7 +297,9 @@ class Counter:
         self.strand = self.getStrand()
 
     def getContig(self):
-        return self.mGFFs[0].contig
+        contig = self.mGFFs[0].contig
+        if self.fasta: contig = self.fasta.getToken( contig)
+        return contig
 
     def getStrand(self):
         return self.mGFFs[0].strand
@@ -244,6 +331,14 @@ class Counter:
         return Intervals.combineAtDistance( ranges,
                                             self.mMinIntronSize )
 
+    def getCDS( self ):
+        """merge small introns into single exons. The following features are aggregated
+        as exons: exon, CDS, UTR, UTR3, UTR5
+        """
+        ranges = GTF.asRanges( self.mGFFs, feature = ( "CDS", ) )
+        return Intervals.combineAtDistance( ranges,
+                                            self.mMinIntronSize )
+
     def getIntrons( self ):
         exons = self.getExons()
         assert len(exons) > 0, "no exons in gene"
@@ -261,6 +356,25 @@ class Counter:
             return self.getIntrons()
         else:
             return self.getExons()
+
+    def getUTRs( self ):
+        '''return a tuple with 5' and 3' UTRs.'''
+        exons = self.getExons()
+        cds = self.getCDS()
+        utr3, utr5 = [], []
+        if len(cds) == 0: return utr5, utr3
+        strand = self.getStrand()
+        cds_start, cds_end = cds[0][0], cds[-1][1]
+        midpoint = ( cds_end - cds_start ) / 2 + cds_start
+        for start, end in Intervals.truncate( exons, cds ):
+            if end - start > 3:
+                if start < midpoint:
+                    utr5.append( (start,end) )
+                else:
+                    utr3.append( (start,end) )
+        if strand == "-":
+            utr5, utr3 = utr3, utr5
+        return utr5, utr3
 
 class CounterIntronsExons(Counter):
     """count number of introns and exons.
@@ -979,7 +1093,6 @@ class ClassifierChIPSeq(Classifier):
             h.append( str(self.mCounters[key]) )
         return "\t".join( h )
 
-
 ##-----------------------------------------------------------------------------------
 class ClassifierRNASeq(Counter):
     """classify RNASeq transcripts based on a reference annotation.
@@ -1309,6 +1422,229 @@ class ClassifierRNASeq(Counter):
 
     def __str__(self):
         return "\t".join( map(str, self.result) )
+
+##-----------------------------------------------------------------------------------
+class ClassifierIntervals(CounterOverlap):
+    """classify transcripts based on a list of intervals.
+    """
+
+    header = [ "is_known", "is_unknown", "is_ambiguous", 
+               "is_pc", "is_pseudo", "is_npc", "is_utr", 
+               "is_intronic", "is_assoc", "is_intergenic" ] 
+
+    # do not use strand
+    mUseStrand = False
+
+    def __init__(self, *args, **kwargs ):
+
+        CounterOverlap.__init__(self, *args, **kwargs )
+
+##-----------------------------------------------------------------------------------
+class ClassifierPolII(ClassifierIntervals):
+    """classify transcripts based on PolII annotation.
+    
+    The input is a list of PolII intervals.
+    
+    An interval is classified as:
+    
+    is_transcribed: 
+        the longest interval covers *threshold_min_coverage* of the 
+        gene body.
+
+    """
+
+    headerTemplate = [ "is_transcribed", "is_primed", "noverlap", 
+                       "largest_size", "largest_overlap", "largest_coverage",
+                       "promotor_overlap", "promotor_coverage" ]
+
+    # minimum coverage of a transcript to accept
+    threshold_min_coverage_transcript = 80
+
+    # minimum coverage of a promotor to be accepted
+    threshold_min_coverage_promotor = 50
+
+    # size of promotor - 1kb upstream of tss
+    promotor_upstream = 200
+    
+    # size of promotor - 1kb downstream of tss
+    promotor_downstream = 200
+
+    def count(self):
+
+        self.is_transcribed = False
+        self.is_primed = False
+        self.noverlap = 0
+        self.largest = 0
+        self.largest_interval = 0
+        self.largest_overlap = 0
+        self.largest_coverage = 0
+        self.promotor_overlap = 0
+        self.promotor_coverage = 0
+
+        contig = self.getContig()
+
+        if contig not in self.mIntersectors: return
+        
+        # count overlap over full gene body
+        segments = self.getExons()
+        start, end = segments[0][0], segments[-1][1]
+        
+        promotor_max = max( self.promotor_upstream, self.promotor_downstream )
+
+        r = list(self.mIntersectors[contig].find( start - promotor_max, end + promotor_max ))
+        if len(r) == 0: return
+        self.noverlap = len(r)
+
+        r.sort( key = lambda x: x.end-x.start )
+
+        largest_start, largest_end = r[-1].start, r[-1].end
+        self.largest_interval = largest_end - largest_start
+        self.largest_overlap = min( largest_end, end) - max(largest_start, start)
+        self.largest_coverage = 100.0 * float( self.largest_overlap ) / (end - start)
+
+        strand = self.getStrand()
+        if strand == "+":
+            promotor_start, promotor_end = start - self.promotor_upstream, start + self.promotor_downstream
+        else:
+            promotor_start, promotor_end = end - self.promotor_downstream, end + self.promotor_upstream
+            
+        self.promotor_overlap = Intervals.calculateOverlap( [ (x.start, x.end) for x in r ],
+                                                            [ (promotor_start, promotor_end), ] )
+
+        self.promotor_coverage = 100.0 * float( self.promotor_overlap ) / (promotor_end - promotor_start)
+
+        if self.largest_coverage >= self.threshold_min_coverage_transcript:
+            self.is_transcribed = True
+        elif self.promotor_coverage >= self.threshold_min_coverage_promotor:
+            self.is_primed = True
+
+    def __str__(self):
+
+        def to( v ):
+            if v: return "1" 
+            else: return "0"
+
+        h = [ to(x) for x in (self.is_transcribed, 
+                              self.is_primed ) ]
+        h.extend( [ "%i" % self.noverlap,
+                    "%i" % self.largest_interval,
+                    "%i" % self.largest_overlap,
+                    "%5.2f" % self.largest_coverage,
+                    "%i" % self.promotor_overlap,
+                    "%5.2f" % self.promotor_coverage ] )
+        
+        return "\t".join( h )
+
+##-----------------------------------------------------------------------------------
+class CounterBindingPattern(CounterOverlap):
+    """compute overlaps between gene and various tracks given
+    by one or more gff files.
+    
+    """
+
+    headerTemplate = [ "pattern" ] +\
+        [ "%s_%s" % (x,y) for x,y in itertools.product( 
+            ("cds", "exon", "utr5", "utr3", "flank5", "flank3", "intron"),
+            ("overlap", "poverlap") ) ]
+
+
+    # do not use strand
+    mUseStrand = False
+
+    mWithValues = False
+    
+    mWithRecords = False
+
+    flank = 10000
+
+    def __init__(self, *args, **kwargs ):
+        CounterOverlap.__init__(self, *args, **kwargs )
+            
+    def count( self ):
+
+        self.overlap_intron = 0
+        self.overlap_exon = 0
+        self.overlap_utr5 = 0
+        self.overlap_utr3 = 0
+        self.overlap_cds = 0
+        self.overlap_flank5 = 0
+        self.overlap_flank3 = 0
+
+        self.poverlap_intron = 0
+        self.poverlap_exon = 0
+        self.poverlap_utr5 = 0
+        self.poverlap_utr3 = 0
+        self.poverlap_cds = 0
+        self.poverlap_flank5 = 0
+        self.poverlap_flank3 = 0
+        self.pattern = "0" * 6
+
+        contig = self.getContig()
+        strand = self.getStrand()
+        utr5, utr3 = self.getUTRs()
+        cds = self.getCDS()
+        exons = self.getExons()
+        introns = self.getIntrons()
+        
+        start, end = exons[0][0], exons[-1][1]
+        if strand == "+":
+            flank5 = [(start - self.flank, start) ]
+            flank3 = [(end, end + self.flank) ]
+        else:
+            flank3 = [(start - self.flank, start) ]
+            flank5 = [(end, end + self.flank) ]
+
+        extended_start, extended_end = start - self.flank, end + self.flank
+
+        if contig not in self.mIntersectors: return
+        
+        overlaps = list(self.mIntersectors[contig].find( extended_start, extended_end ))
+        if len(overlaps) == 0 : return 
+
+        intervals = [(x.start, x.end) for x in overlaps ]
+        
+        self.overlap_intron = Intervals.calculateOverlap( introns, intervals )
+        self.overlap_exon = Intervals.calculateOverlap( exons, intervals )
+        self.overlap_utr5 = Intervals.calculateOverlap( utr5, intervals )
+        self.overlap_utr3 = Intervals.calculateOverlap( utr3, intervals )
+        self.overlap_cds = Intervals.calculateOverlap( cds, intervals )
+        self.overlap_flank5 = Intervals.calculateOverlap( flank5, intervals )
+        self.overlap_flank3 = Intervals.calculateOverlap( flank3, intervals )
+        
+        pp = IOTools.prettyPercent
+
+        self.poverlap_intron = pp( self.overlap_intron, Intervals.getLength( introns ), na = 0)
+        self.poverlap_exon = pp(self.overlap_exon, Intervals.getLength( exons ), na = 0)
+        self.poverlap_cds = pp(self.overlap_cds, Intervals.getLength( cds ), na = 0)
+        self.poverlap_utr5 = pp( self.overlap_utr5, Intervals.getLength( utr5 ), na = 0)
+        self.poverlap_utr3 = pp( self.overlap_utr3, Intervals.getLength( utr3 ), na = 0)
+        self.poverlap_flank5 = pp( self.overlap_flank5, Intervals.getLength( flank5 ), na = 0)
+        self.poverlap_flank3 = pp( self.overlap_flank3, Intervals.getLength( flank3 ), na = 0)
+        
+        pattern = []
+        for x in ( self.overlap_flank5, self.overlap_utr5, self.overlap_cds, 
+                   self.overlap_intron, self.overlap_utr3, self.overlap_flank3):
+            if x: pattern.append("1")
+            else: pattern.append("0")
+        self.pattern = "".join(pattern)
+
+    def __str__(self):
+        
+        return "\t".join( map(str, (self.pattern,
+                                    self.overlap_cds,
+                                    self.poverlap_cds,
+                                    self.overlap_exon,
+                                    self.poverlap_exon,
+                                    self.overlap_utr5,
+                                    self.poverlap_utr5,
+                                    self.overlap_utr3,
+                                    self.poverlap_utr3,
+                                    self.overlap_flank5,
+                                    self.poverlap_flank5,
+                                    self.overlap_flank3,
+                                    self.poverlap_flank3,
+                                    self.overlap_intron,
+                                    self.poverlap_intron ) ) )
 
 ##-----------------------------------------------------------------------------------
 class CounterOverrun(Counter):
@@ -1698,10 +2034,12 @@ class CounterDistanceTranscriptionStartSites(CounterDistance):
     """counter for computing the distance to transcription start sites.
 
     There are two distances of interest:
+
     1. distances towards the closest tss.
     2. distances towards the closest promoter 5' or 3' end
        
     The columns output are:
+
     closest_id: id of closest feature
     closest_dist: distance to closest feature
     closest_strand: strand of closest feature
@@ -2304,8 +2642,6 @@ class CounterReadExtension(Counter):
     This method requires a gff-file describing each gene's territory
     to avoid miscounting reads from genes in close proximity.
 
-
-
     Returns the coverage distribution in the territory, the median
     distance and the cumulative distribution every 1kb starting
     from the gene's end.
@@ -2370,6 +2706,7 @@ class CounterReadExtension(Counter):
     def count(self):
         
         segments = self.getSegments()
+
         first_exon_start, last_exon_end = segments[0][0], segments[-1][1]
         first_exon_end, last_exon_start = segments[0][1], segments[-1][0]
         gene_id = self.mGFFs[0].gene_id
@@ -2389,7 +2726,9 @@ class CounterReadExtension(Counter):
 
         # sanity check - is gene within territory?
         assert first_exon_start >= territory_start
-        assert last_exon_end <= territory_end
+        assert last_exon_end <= territory_end, "assertion failed for %s: exon %i > territory %i" % (self.gene_id,
+                                                                                                    last_exon_end,
+                                                                                                    territory_end)
         assert contig == territory_contig
 
         # truncate territory
@@ -2655,7 +2994,9 @@ def main( argv = None ):
                                "proximity", "proximity-exclusive", "proximity-lengthmatched",
                                "position", "territories", "splice-comparison", 
                                "distance", "distance-genes", "distance-tss",
-                               "coverage", "quality", "overrun" ),
+                               "coverage", "quality", "overrun",
+                               "classifier-polii",
+                               "binding-pattern" ),
                       help="select counters to apply [default=%default]."  )
 
     parser.add_option( "--add-gtf-source", dest="add_gtf_source", action="store_true",
@@ -2674,7 +3015,7 @@ def main( argv = None ):
         sections = [],
         counters = [],
         filename_gff = [],
-        filename_format = "gtf",
+        filename_format = None,
         gff_features = [],
         gff_sources = [],
         add_gtf_source = False,
@@ -2723,8 +3064,6 @@ def main( argv = None ):
 
     if not options.gff_sources: options.gff_sources.append( None )
     if not options.gff_features: options.gff_features.append( None )
-
-        
 
     cc = E.Counter()
 
@@ -2785,7 +3124,10 @@ def main( argv = None ):
                     "proximity", "proximity-exclusive", "proximity-lengthmatched",
                     "neighbours",
                     "territories", 
-                    "distance", "distance-genes", "distance-tss",
+                    "distance", 
+                    "distance-genes", 
+                    "distance-tss",
+                    "binding-pattern",
                     "coverage" ):
             if c == "overlap":
                 template = CounterOverlap
@@ -2811,6 +3153,8 @@ def main( argv = None ):
                 template = CounterDistanceTranscriptionStartSites
             elif c == "coverage":
                 template = CounterCoverage
+            elif c == "binding-pattern":
+                template = CounterBindingPattern
 
             for section in options.sections:
                 for source in options.gff_sources:
@@ -2835,6 +3179,19 @@ def main( argv = None ):
             counters.append( ClassifierRNASeq( filename_gff = options.filename_gff,
                                                fasta = fasta,
                                                options = options, prefix = prefix) )
+
+        elif c == "classifier-polii":
+            counters.append( ClassifierPolII( filename_gff = options.filename_gff,
+                                              feature = None,
+                                              source = None,
+                                              fasta = fasta,
+                                              options = options, prefix = prefix) )
+        elif c == "binding-pattern":
+            counters.append( CounterBindingPattern( filename_gff = options.filename_gff,
+                                                    feature = None,
+                                                    source = None,
+                                                    fasta = fasta,
+                                                    options = options, prefix = prefix) )
 
     if options.reporter == "genes":
         iterator = GTF.flat_gene_iterator
