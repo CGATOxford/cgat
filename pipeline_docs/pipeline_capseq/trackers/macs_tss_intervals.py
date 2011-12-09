@@ -89,8 +89,8 @@ class tssIntervalCpGObsExp2( cpgTracker ):
     mPattern = "_replicated_tss$"
 
     def __call__(self, track, slice = None):
-        data1 = self.getValues( "SELECT c.CpG_ObsExp2 FROM %(track)s_replicated_intervals i, %(track)s_replicated_tss t, %(track)s_replicated_composition c WHERE i.interval_id=t.gene_id AND c.gene_id=i.interval_id AND t.closest_dist <=1000" % locals() )
-        data2 = self.getValues( "SELECT c.CpG_ObsExp2 FROM %(track)s_replicated_intervals i, %(track)s_replicated_tss t, %(track)s_replicated_composition c WHERE i.interval_id=t.gene_id AND c.gene_id=i.interval_id AND t.closest_dist >1000" % locals() )
+        data1 = self.getValues( "SELECT c.CpG_ObsExp FROM %(track)s_replicated_intervals i, %(track)s_replicated_tss t, %(track)s_replicated_composition c WHERE i.interval_id=t.gene_id AND c.gene_id=i.interval_id AND t.closest_dist <=1000" % locals() )
+        data2 = self.getValues( "SELECT c.CpG_ObsExp FROM %(track)s_replicated_intervals i, %(track)s_replicated_tss t, %(track)s_replicated_composition c WHERE i.interval_id=t.gene_id AND c.gene_id=i.interval_id AND t.closest_dist >1000" % locals() )
         return { "TSS interval length" : data1, "Non-TSS interval length" : data2 }
 
 ##################################################################################

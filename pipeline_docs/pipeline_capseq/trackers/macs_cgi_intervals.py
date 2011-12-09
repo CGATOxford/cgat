@@ -114,12 +114,12 @@ class cgiIntervalCpGObsExp2( cpgTracker ):
     pattern = "(.*)_replicated_predicted_cgi_and_cap"
 
     def __call__(self, track, slice = None):
-        data1 = self.getAll( '''SELECT CpG_ObsExp2 FROM %(track)s_replicated_predicted_cgi_and_cap u, 
+        data1 = self.getAll( '''SELECT CpG_ObsExp FROM %(track)s_replicated_predicted_cgi_and_cap u, 
                                %(track)s_replicated_intervals i,%(track)s_replicated_composition c
                                WHERE u.contig=i.contig
                                AND u.start=i.start
                                AND c.gene_id=i.interval_id''' % locals() )
-        data2 = self.getAll( '''SELECT CpG_ObsExp2 FROM %(track)s_replicated_cap_not_predicted_cgi u, 
+        data2 = self.getAll( '''SELECT CpG_ObsExp FROM %(track)s_replicated_cap_not_predicted_cgi u, 
                                %(track)s_replicated_intervals i,%(track)s_replicated_composition c
                                WHERE u.contig=i.contig
                                AND u.start=i.start

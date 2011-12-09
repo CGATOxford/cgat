@@ -84,3 +84,43 @@ GC Content of Predicted CGIs
    Distribution of GC content
 
 
+Genomic Features Overlapped by Predicted CGIs
+----------------------------------------------
+
+Intervals were annotated using a reference gene set. Briefly, transcripts 
+of all ENSEMBL protein coding genes were merged per gene. The gene transcriptional start site (TSS)
+was taken as the first base of the merged gene. 
+Intervals were classified according to their overlap with these features. Classification was hierarchical, 
+such that if an interval overlapped two types of feature (for example from overlapping gene models) then 
+that interval was annotated with the term that is highest in the tree. The hierarchy is outlined in the table below.
+
++---------------+---------------------------------------------------------------------------------+
+|Term           | Definition                                                                      |
++---------------+---------------------------------------------------------------------------------+
+|TSS            |Located within 1kb of a transcriptional start site of a protein-coding gene      |
++---------------+---------------------------------------------------------------------------------+
+|Gene           |Overlapping a gene region (intron/exon/utr) but not a TSS region                 |
++---------------+---------------------------------------------------------------------------------+
+|Upstream       |Not any of the above and within 5kb upstream of a protein-coding gene            |
++---------------+---------------------------------------------------------------------------------+
+|Downstream     |Not any of the above and within 5kb downstream of a protein-coding gene          |
++---------------+---------------------------------------------------------------------------------+
+|Intergenic     |None of the above. At least 5kb from the nearest protein coding gene             |
++---------------+---------------------------------------------------------------------------------+
+
+
+.. report:: predicted_cgis.cgiGenomicFeatures
+   :render: matrix 
+
+   Summary of all genomic annotations
+
+.. report:: predicted_cgis.cgiGenomicFeatures
+   :render: interleaved-bar-plot
+
+   Chart of all genomic annotations
+
+.. report:: predicted_cgis.cgiGenomicFeatures
+   :render: pie-plot
+
+   Chart of all genomic annotations
+

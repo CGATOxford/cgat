@@ -130,16 +130,16 @@ class IntervalListLowGC( IntervalList ):
     mPattern = "_replicated_intervals$"
     nresults = 100
     mColumnsFixed = ("pos", "length" )
-    mColumnsVariable= ( "peakval", "avgval", "fold", "pGC", "CpG_ObsExp2" )
+    mColumnsVariable= ( "peakval", "avgval", "fold", "pGC", "CpG_ObsExp" )
 
     def getSQLStatement( self, track, slice = None ):
         nresults = self.nresults
 
         statement = '''SELECT i.interval_id, i.contig, i.start, i.end, i.length, i.peakval, round(i.avgval,2), i.fold, 
-                       round(c.pGC,2), round(c.CpG_ObsExp2,2)
+                       round(c.pGC,2), round(c.CpG_ObsExp,2)
                        FROM %(track)s_replicated_intervals AS i, %(track)s_replicated_composition AS c
                        WHERE i.interval_id=c.gene_id
-                       AND c.CpG_ObsExp2 < 0.6
+                       AND c.CpG_ObsExp < 0.6
                        AND c.pGC < 0.5
                        ORDER BY i.fold DESC
                        LIMIT %(nresults)s''' % locals()

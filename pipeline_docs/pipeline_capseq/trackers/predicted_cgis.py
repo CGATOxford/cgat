@@ -39,6 +39,28 @@ class cgiAnnotations(cpgTracker):
         return odict( zip(mColumns, data) )
 
 ##################################################################################
+class cgiGenomicFeatures(cpgTracker):
+    """return overlap of interval with genomic features """
+
+    mPattern = "cgi_genomic_features$"
+    
+    def __call__(self, track, slice = None ):
+        data = self.getValues( """SELECT count(distinct gene_id) as intervals FROM (
+                               SELECT gene_id,
+                               CASE WHEN  tss_extended_pover1 > 0  THEN 'TSS'
+                               WHEN genes_pover1 > 0 THEN 'Gene'
+                               WHEN upstream_flank_pover1 >0 THEN 'Upstream'
+                               WHEN downstream_flank_pover1 >0 THEN 'Downstream'
+                               ELSE 'Intergenic'
+                               END AS feature_class
+                               FROM cgi_genomic_features)
+                               group by feature_class
+                               order by feature_class asc""" % locals() )
+               
+        result = odict(zip(("Downstream","Gene","Intergenic","TSS","Upstream"),data))
+        return result
+
+##################################################################################
 class cgitssoverlap(cpgTracker):
     """overlap of predicted CGIs with TSS """
 
@@ -53,7 +75,7 @@ class CGI_CpGObsExp2( cpgTracker ):
     mPattern = "_comp$"
 
     def __call__(self, track, slice = None):
-        data = self.getAll( "SELECT CpG_ObsExp2 FROM %(track)s_comp" % locals() )
+        data = self.getAll( "SELECT CpG_ObsExp FROM %(track)s_comp" % locals() )
         return data
 
 ##################################################################################

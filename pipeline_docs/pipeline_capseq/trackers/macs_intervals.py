@@ -117,10 +117,10 @@ class CpGObsExp2( cpgTracker ):
     pattern = "(.*)_merged_composition"
 
     def __call__(self, track, slice = None):
-        data1 = self.getValues( "SELECT CpG_ObsExp2 FROM %(track)s_merged_composition" % locals() )
-        data2 = self.getValues( "SELECT CpG_ObsExp2 FROM %(track)s_merged_composition_control" % locals() )
-        data3 = self.getValues( "SELECT CpG_ObsExp2 FROM %(track)s_merged_composition_flanking5" % locals() )
-        data4 = self.getValues( "SELECT CpG_ObsExp2 FROM %(track)s_merged_composition_flanking3" % locals() )
+        data1 = self.getValues( "SELECT CpG_ObsExp FROM %(track)s_merged_composition" % locals() )
+        data2 = self.getValues( "SELECT CpG_ObsExp FROM %(track)s_merged_composition_control" % locals() )
+        data3 = self.getValues( "SELECT CpG_ObsExp FROM %(track)s_merged_composition_flanking5" % locals() )
+        data4 = self.getValues( "SELECT CpG_ObsExp FROM %(track)s_merged_composition_flanking3" % locals() )
         return odict( zip(("CAPseq composition","Control composition","5` Flank Composition", "3` Flank Composition"), (data1, data2, data3, data4)) )
 
 ##################################################################################

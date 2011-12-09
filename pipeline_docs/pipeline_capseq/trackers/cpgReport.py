@@ -73,7 +73,7 @@ class cpgTracker( TrackerSQL ):
         if not self.db:
             # call base class connect
             TrackerSQL.connect(self )
-            
+            print "Attaching database: %s" % locals()
             statement = "ATTACH DATABASE '%s' as annotations" % (ANNOTATIONS_DB)
             self.db.execute( statement )
 

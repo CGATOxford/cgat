@@ -108,7 +108,7 @@ class UniqueIntervalCpGObsExp2( cpgTracker ):
     mPattern = "_merged_unique_intervals$"
 
     def __call__(self, track, slice = None):
-        data = self.getAll( '''SELECT CpG_ObsExp2 FROM %(track)s_merged_unique_intervals u, 
+        data = self.getAll( '''SELECT CpG_ObsExp FROM %(track)s_merged_unique_intervals u, 
                                %(track)s_macs_merged_intervals i,%(track)s_merged_composition c
                                WHERE u.contig=i.contig
                                AND u.start=i.start

@@ -126,7 +126,7 @@ USECLUSTER = True
 import Pipeline as P
 P.getParameters(  ["%s.ini" % __file__[:-len(".py")],  "../pipeline.ini", "pipeline.ini" ] )
 PARAMS = P.PARAMS
-PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],"pipeline_annotations.py" )
+#PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],"pipeline_annotations.py" )
 
 ###################################################################
 ###################################################################

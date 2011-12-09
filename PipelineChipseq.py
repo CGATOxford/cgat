@@ -160,7 +160,6 @@ def getExonLocations(filename):
 
     return(region_list)
 
-<<<<<<< local
 ############################################################
 ############################################################
 ############################################################
@@ -183,8 +182,6 @@ def getBedLocations(filename):
     #E.info("Read in %i regions from %s" % ( n_regions, filename) )
     return (region_list)
 
-=======
->>>>>>> other
 ############################################################
 ############################################################
 ############################################################
@@ -905,9 +902,9 @@ def loadMACS( infile, outfile, bamfile, tablename = None ):
 
     track = P.snip( os.path.basename(infile), ".macs" )
     folder = os.path.dirname(infile)
-    infilename = infile + "_peaks.xls.gz"
-    filename_diag = infile + "_diag.xls"
-    filename_r = infile + "_model.r"
+    infilename =  folder + "/" + track + "_peaks.xls"
+    filename_diag = folder + "/" + track + "_diag.xls"
+    filename_r = folder + "/" + track + "_model.r"
     
     if not os.path.exists(infilename):
         E.warn("could not find %s" % infilename )
@@ -924,15 +921,10 @@ def loadMACS( infile, outfile, bamfile, tablename = None ):
             # ignore "file exists" exception
             pass
 
-        statement = '''
-        R --vanilla < %(track)s.macs_model.r > %(outfile)s
-        '''
-        
+        statement = '''R --vanilla < %(folder)s/%(track)s_model.r > %(outfile)s '''
         P.run()
 
-        shutil.copyfile(
-            "%s.macs_model.pdf" % track,
-            os.path.join( target_path, "%s_model.pdf" % track) )
+        #shutil.copyfile( "%s/%s_model.pdf" % (folder,track), os.path.join( target_path, "%s_model.pdf" % track) )
         
     # filter peaks
     shift = getPeakShiftFromMacs( infile )
@@ -1007,7 +999,7 @@ def loadMACS( infile, outfile, bamfile, tablename = None ):
 
     # load data into table
     if tablename == None:
-        tablename = "%s_intervals" % track
+        tablename = "%s_macs_intervals" % track
 
     statement = '''
     python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
@@ -1038,7 +1030,6 @@ def loadMACS( infile, outfile, bamfile, tablename = None ):
         P.run()
 
 
-<<<<<<< local
         target_path = os.path.join( os.getcwd(), "export", "MACS" )
         try:
             os.makedirs( target_path )
@@ -1046,14 +1037,13 @@ def loadMACS( infile, outfile, bamfile, tablename = None ):
             # ignore "file exists" exception
             pass
 
-        statement = '''R --vanilla < %(folder)s/%(track)s.macs_model.r > %(outfile)s '''
+        statement = '''R --vanilla < %(folder)s/%(track)s_model.r > %(outfile)s '''
         
         P.run()
 
         #shutil.copyfile("%s.macs_model.pdf" % track, os.path.join( target_path, "%s_model.pdf" % track) )
         
-=======
->>>>>>> other
+
     os.unlink( tmpfilename )
 
 ############################################################

@@ -128,7 +128,7 @@ def filterGenome( iterator, contigs ):
     contigs is a dictionary of contig sizes."""
     
     ninput, noutput = 0, 0
-    nskipped_contig, nskipped_range = 0, 0
+    nskipped_contig, nskipped_range, nskipped_endzero = 0, 0, 0
 
     for bed in iterator:
         ninput += 1
@@ -138,13 +138,49 @@ def filterGenome( iterator, contigs ):
         if bed.end >= contigs[bed.contig]:
             nskipped_range += 1
             continue
+        if bed.end == 0:
+            nskipped_endzero += 1
+            continue    
         noutput += 1
         yield bed
 
-    E.info( "ninput=%i, noutput=%i, nskipped_contig=%i, nskipped_range=%i" % \
-                (ninput, noutput, nskipped_contig, nskipped_range) )
+    E.info( "ninput=%i, noutput=%i, nskipped_contig=%i, nskipped_range=%i, nskipped_endzero=%i" % \
+                (ninput, noutput, nskipped_contig, nskipped_range, nskipped_endzero) )
 
-<<<<<<< local
+def sanitizeGenome( iterator, contigs ):
+    """truncate bed intervals that extend beyond contigs.
+
+    removes empty intervals (start == end).
+
+    throws an error if start > end.
+    """
+    
+    ninput, noutput = 0, 0
+    ntruncated_contig, nskipped_contig, nskipped_empty = 0, 0, 0
+
+    for bed in iterator:
+        ninput += 1
+        if bed.contig not in contigs: 
+            nskipped_contig += 1
+            continue
+        if bed.end >= contigs[bed.contig]:
+            bed.end = contigs[bed.contig]
+            ntruncated_contig += 1
+        if bed.start < 0:
+            bed.start = 0
+            ntruncated_contig += 1
+        if bed.start == bed.end:
+            nskipped_empty += 1
+            continue
+        elif bed.start > bed.end:
+            raise ValueError( "invalid interval: start > end for %s" % str(bed))
+
+        noutput += 1
+        yield bed
+
+    E.info( "ninput=%i, noutput=%i, nskipped_contig=%i, ntruncated=%i, nskipped_empty=%i" % \
+                (ninput, noutput, nskipped_contig, ntruncated_contig, nskipped_empty) )
+
 def shiftIntervals( iterator, contigs, offset ):
     """shift intervals by a certain offset and ensure size is maintaned even id contig end reached.
     
@@ -181,41 +217,6 @@ def shiftIntervals( iterator, contigs, offset ):
 
     E.info( "ninput=%i, noutput=%i, nskipped_contig=%i, nskipped_range=%i" % \
                 (ninput, noutput, nskipped_contig, nskipped_range) )
-=======
-def sanitizeGenome( iterator, contigs ):
-    """truncate bed intervals that extend beyond contigs.
->>>>>>> other
-
-    removes empty intervals (start == end).
-
-    throws an error if start > end.
-    """
-    
-    ninput, noutput = 0, 0
-    ntruncated_contig, nskipped_contig, nskipped_empty = 0, 0, 0
-
-    for bed in iterator:
-        ninput += 1
-        if bed.contig not in contigs: 
-            nskipped_contig += 1
-            continue
-        if bed.end >= contigs[bed.contig]:
-            bed.end = contigs[bed.contig]
-            ntruncated_contig += 1
-        if bed.start < 0:
-            bed.start = 0
-            ntruncated_contig += 1
-        if bed.start == bed.end:
-            nskipped_empty += 1
-            continue
-        elif bed.start > bed.end:
-            raise ValueError( "invalid interval: start > end for %s" % str(bed))
-
-        noutput += 1
-        yield bed
-
-    E.info( "ninput=%i, noutput=%i, nskipped_contig=%i, ntruncated=%i, nskipped_empty=%i" % \
-                (ninput, noutput, nskipped_contig, ntruncated_contig, nskipped_empty) )
 
 def main( argv = sys.argv ):
 
@@ -223,11 +224,7 @@ def main( argv = sys.argv ):
                                     usage = globals()["__doc__"] )
 
     parser.add_option( "-m", "--method", dest="methods", type="choice", action="append",
-<<<<<<< local
-                       choices=("merge", "filter-genome", "bins", "block", "shift" ),
-=======
-                       choices=("merge", "filter-genome", "bins", "block", "sanitize-genome" ),
->>>>>>> other
+                       choices=("merge", "filter-genome", "bins", "block", "sanitize-genome", "shift" ),
                        help="method to apply [default=%default]"  )
 
     parser.add_option( "--num-bins", dest="num_bins", type="int",

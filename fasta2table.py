@@ -76,7 +76,7 @@ def main( argv = None ):
                       help="filename with codon frequencies. Multiple filenames can be separated by comma." )
     
     parser.add_option("-s", "--section", dest="sections", type="string", action="append",
-                      help="which sections to output. Possible choices are length|na|aa|degeneracy|bias|codons|codon-usage|codon-translator|sequence, [%default]" )
+                      help="which sections to output. Possible choices are length|na|aa|cpg|degeneracy|bias|codons|codon-usage|codon-translator|sequence, [%default]" )
 
     parser.add_option("-t", "--type", dest="seqtype", type="choice",
                       choices=("na", "aa"),
@@ -136,6 +136,8 @@ def main( argv = None ):
                 s = SequencePropertiesHid()
             elif section == "na":
                 s = SequencePropertiesNA()
+            elif section == "cpg":
+                s = SequencePropertiesCpg()
             elif section == "aa":
                 s = SequencePropertiesAA()
             elif section == "degeneracy":
