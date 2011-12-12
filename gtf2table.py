@@ -105,8 +105,10 @@ classifier-polii
    is covered by 50% of its length, while the rest of the gene body isn't.
 
 binding-pattern
-   given a list of intervals, determine the binding pattern within and surrounding the gene.
-   
+   given a list of intervals, determine the binding pattern within and surrounding the gene. For each
+   gene, intervals overlapping the CDS, introns, UTRs and the flank are collected and recorded. The binding
+   is summarized with a binding pattern, a binary pattern indicating overlap/no overlap with
+   5' flank, 5' UTR, CDS, Introns, 3' UTR, 3' flank.
 
 Usage
 -----
@@ -1539,12 +1541,16 @@ class ClassifierPolII(ClassifierIntervals):
 class CounterBindingPattern(CounterOverlap):
     """compute overlaps between gene and various tracks given
     by one or more gff files.
+
+    Outputs a binding pattern.
     
     """
 
     headerTemplate = [ "pattern" ] +\
         [ "%s_%s" % (x,y) for x,y in itertools.product( 
-            ("cds", "exon", "utr5", "utr3", "flank5", "flank3", "intron"),
+            ("cds", "first_exon", "exon", "utr5", "utr3", "first_intron", "intron") +\
+                tuple( ["flank5_%05i" % x for x in range(0, 10000, 2000) ] ) +\
+                tuple( ["flank3_%05i" % x for x in range(0, 10000, 2000) ] ),
             ("overlap", "poverlap") ) ]
 
 
@@ -1555,7 +1561,11 @@ class CounterBindingPattern(CounterOverlap):
     
     mWithRecords = False
 
+    # size of flank, make sure the headers are updated above.
     flank = 10000
+
+    # number of bins in the flank
+    flank_bins = 5
 
     def __init__(self, *args, **kwargs ):
         CounterOverlap.__init__(self, *args, **kwargs )
@@ -1567,84 +1577,139 @@ class CounterBindingPattern(CounterOverlap):
         self.overlap_utr5 = 0
         self.overlap_utr3 = 0
         self.overlap_cds = 0
-        self.overlap_flank5 = 0
-        self.overlap_flank3 = 0
+
+        self.overlap_first_intron = 0
+        self.overlap_first_exon = 0
+        self.overlap_flank5 = [0] * self.flank_bins
+        self.overlap_flank3 = [0] * self.flank_bins
 
         self.poverlap_intron = 0
         self.poverlap_exon = 0
         self.poverlap_utr5 = 0
         self.poverlap_utr3 = 0
         self.poverlap_cds = 0
-        self.poverlap_flank5 = 0
-        self.poverlap_flank3 = 0
+
+        self.poverlap_first_intron = 0
+        self.poverlap_first_exon = 0
+        self.poverlap_flank5 = [0] * self.flank_bins
+        self.poverlap_flank3 = [0] * self.flank_bins
+
+        # pattern takes only first bin for flank5 and flank3
         self.pattern = "0" * 6
 
         contig = self.getContig()
         strand = self.getStrand()
+        if contig not in self.mIntersectors: return
+
+
+        ######################################
+        ## build sub-intervals to count
         utr5, utr3 = self.getUTRs()
         cds = self.getCDS()
         exons = self.getExons()
         introns = self.getIntrons()
-        
         start, end = exons[0][0], exons[-1][1]
-        if strand == "+":
-            flank5 = [(start - self.flank, start) ]
-            flank3 = [(end, end + self.flank) ]
-        else:
-            flank3 = [(start - self.flank, start) ]
-            flank5 = [(end, end + self.flank) ]
 
+        ######################################
+        ## get overlapping intervals
         extended_start, extended_end = start - self.flank, end + self.flank
-
-        if contig not in self.mIntersectors: return
-        
         overlaps = list(self.mIntersectors[contig].find( extended_start, extended_end ))
         if len(overlaps) == 0 : return 
-
         intervals = [(x.start, x.end) for x in overlaps ]
-        
+
+        ######################################
+        ## build special sets
+        first_intron, first_exon = [], []
+        flank_increment = self.flank // self.flank_bins
+                
+        # flank is ordered such that indices move away from the tss or tes
+        if strand == "+":
+            flank5 = [ [(x-flank_increment, x)] for x in range(start, start - self.flank, -flank_increment) ]
+            flank3 = [ [(x,x+flank_increment)] for x in range(end, end + self.flank, flank_increment) ]
+            if introns: 
+                first_intron = [introns[0]]
+                del introns[0]
+            first_exon = [exons[0]]
+            del exons[0]
+        else:
+            flank3 = [ [(x-flank_increment, x)] for x in range(start, start - self.flank, -flank_increment) ]
+            flank5 = [ [(x,x+flank_increment)] for x in range(end, end + self.flank, flank_increment) ]
+            if introns: 
+                first_intron = [introns[-1]]
+                del introns[-1]
+            first_exon = [exons[-1]]
+            del exons[-1]
+
+        #######################################
+        ## calculate overlap
         self.overlap_intron = Intervals.calculateOverlap( introns, intervals )
         self.overlap_exon = Intervals.calculateOverlap( exons, intervals )
         self.overlap_utr5 = Intervals.calculateOverlap( utr5, intervals )
         self.overlap_utr3 = Intervals.calculateOverlap( utr3, intervals )
         self.overlap_cds = Intervals.calculateOverlap( cds, intervals )
-        self.overlap_flank5 = Intervals.calculateOverlap( flank5, intervals )
-        self.overlap_flank3 = Intervals.calculateOverlap( flank3, intervals )
-        
-        pp = IOTools.prettyPercent
+        self.overlap_first_exon = Intervals.calculateOverlap( first_exon, intervals )
+        self.overlap_first_intron = Intervals.calculateOverlap( first_intron, intervals )
 
+        for x, i in enumerate( flank5):
+            self.overlap_flank5[x] = Intervals.calculateOverlap( i, intervals )
+        for x, i in enumerate( flank3):
+            self.overlap_flank3[x] = Intervals.calculateOverlap( i, intervals )
+        
+        #######################################
+        ## calculate percent overlap
+        pp = IOTools.prettyPercent
         self.poverlap_intron = pp( self.overlap_intron, Intervals.getLength( introns ), na = 0)
         self.poverlap_exon = pp(self.overlap_exon, Intervals.getLength( exons ), na = 0)
         self.poverlap_cds = pp(self.overlap_cds, Intervals.getLength( cds ), na = 0)
         self.poverlap_utr5 = pp( self.overlap_utr5, Intervals.getLength( utr5 ), na = 0)
         self.poverlap_utr3 = pp( self.overlap_utr3, Intervals.getLength( utr3 ), na = 0)
-        self.poverlap_flank5 = pp( self.overlap_flank5, Intervals.getLength( flank5 ), na = 0)
-        self.poverlap_flank3 = pp( self.overlap_flank3, Intervals.getLength( flank3 ), na = 0)
+        self.poverlap_first_exon = pp( self.overlap_first_exon, Intervals.getLength( first_exon ), na = 0)
+        self.poverlap_first_intron = pp( self.overlap_first_intron, Intervals.getLength( first_intron ), na = 0)
+
+        for x, v in enumerate( self.overlap_flank5 ):
+            self.poverlap_flank5[x] = pp( v, Intervals.getLength( flank5[x] ), na = 0)
+            
+        for x, v in enumerate( self.overlap_flank3 ):
+            self.poverlap_flank3[x] = pp( v, Intervals.getLength( flank3[x] ), na = 0)
         
+            
+        #######################################
+        ## build binding pattern
         pattern = []
-        for x in ( self.overlap_flank5, self.overlap_utr5, self.overlap_cds, 
-                   self.overlap_intron, self.overlap_utr3, self.overlap_flank3):
+        for x in ( self.overlap_flank5[0], self.overlap_utr5, self.overlap_cds, 
+                   self.overlap_intron, self.overlap_utr3, self.overlap_flank3[0]):
             if x: pattern.append("1")
             else: pattern.append("0")
+
         self.pattern = "".join(pattern)
 
     def __str__(self):
         
-        return "\t".join( map(str, (self.pattern,
-                                    self.overlap_cds,
-                                    self.poverlap_cds,
-                                    self.overlap_exon,
-                                    self.poverlap_exon,
-                                    self.overlap_utr5,
-                                    self.poverlap_utr5,
-                                    self.overlap_utr3,
-                                    self.poverlap_utr3,
-                                    self.overlap_flank5,
-                                    self.poverlap_flank5,
-                                    self.overlap_flank3,
-                                    self.poverlap_flank3,
-                                    self.overlap_intron,
-                                    self.poverlap_intron ) ) )
+        data = [ self.pattern,
+                 self.overlap_cds,
+                 self.poverlap_cds,
+                 self.overlap_first_exon,
+                 self.poverlap_first_exon,
+                 self.overlap_exon,
+                 self.poverlap_exon,
+                 self.overlap_utr5,
+                 self.poverlap_utr5,
+                 self.overlap_utr3,
+                 self.poverlap_utr3,
+                 self.overlap_first_intron,
+                 self.poverlap_first_intron,
+                 self.overlap_intron,
+                 self.poverlap_intron ]
+
+        for x in range(len(self.overlap_flank5)):
+            data.append( self.overlap_flank5[x] )
+            data.append( self.poverlap_flank5[x] )
+
+        for x in range(len(self.overlap_flank3)):
+            data.append( self.overlap_flank3[x] )
+            data.append( self.poverlap_flank3[x] )
+
+        return "\t".join( map(str, data ) )
 
 ##-----------------------------------------------------------------------------------
 class CounterOverrun(Counter):

@@ -361,7 +361,7 @@ def buildExonTranscripts( infile, outfile ):
     '''build a collection of transcripts from the protein-coding
     section of the ENSEMBL gene set.
 
-    Only CDS exons are parts of exons are output - UTR's are removed.
+    Only CDS exons are parts of exons are output - UTR's are not removed.
     
     '''
     PipelineGeneset.buildExons( infile, outfile )

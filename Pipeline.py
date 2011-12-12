@@ -363,7 +363,9 @@ def getProjectName():
     prefixes = len(PROJECT_ROOT.split("/"))
     return curdir.split( "/" )[prefixes]
 
-def load( infile, outfile, options = "", transpose = None ):
+def load( infile, outfile = None, 
+          options = "", transpose = None,
+          tablename = None):
     '''straight import from tab separated table.
 
     The table name is given by outfile without the
@@ -374,8 +376,9 @@ def load( infile, outfile, options = "", transpose = None ):
     within transpose.
     '''
 
-    tablename = toTable( outfile )
-
+    if not tablename:
+        tablename = toTable( outfile )
+    
     statement = []
     if infile.endswith(".gz"): statement.append( "zcat %(infile)s" )
     else: statement.append( "cat %(infile)s" )
@@ -1030,6 +1033,14 @@ def run_report( clean = True):
     # permit multiple servers using -a option
     if xvfb_command: xvfb_command+= " -a "
 
+    # if there is no DISPLAY variable set, xvfb runs, but
+    # exits with error when killing process. Thus, ignore return
+    # value.
+    if not os.getenv("DISPLAY"):
+        erase_return = "|| true"
+    else:
+        erase_return = ""
+
     if clean: clean = """rm -rf report _cache _static;"""
     else: clean = ""
 
@@ -1044,7 +1055,7 @@ def run_report( clean = True):
                     -d %(report_doctrees)s
                     -c . 
            %(docdir)s %(report_html)s
-    >& report.log)
+    >& report.log %(erase_return)s )
     '''
 
     run()

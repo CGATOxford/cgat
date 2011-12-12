@@ -45,8 +45,6 @@ unmerged-combinations
 If the ``--exclusive`` option is set, only intervals are reported
 that do not overlap with intervals in the background set.
 
-
-
 Usage
 -----
 

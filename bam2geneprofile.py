@@ -205,13 +205,18 @@ def main( argv = None ):
 
             elif method == "tssprofile":
 
-                plt.subplot( 1, 2, 1)
+                plt.subplot( 1, 3, 1)
                 plt.plot( range(-options.extension_outward, options.extension_inward), counter.aggregate_counts[0] )
                 plt.title( counter.fields[0] )
-                plt.subplot( 1, 2, 2)
+                plt.subplot( 1, 3, 2)
                 plt.plot( range(-options.extension_inward, options.extension_outward), counter.aggregate_counts[1] )
                 plt.title( counter.fields[1] )
-                    
+                plt.subplot( 1, 3, 3)
+                plt.title( "combined" )
+                plt.plot( range(-options.extension_outward, options.extension_inward), counter.aggregate_counts[0] )
+                plt.plot( range(-options.extension_inward, options.extension_outward), counter.aggregate_counts[1] )
+                plt.legend( counter.fields[:2] )
+
             fn = E.getOutputFile( counter.name ) + ".png"
             plt.savefig( os.path.expanduser(fn) )
         

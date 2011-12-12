@@ -341,30 +341,36 @@ def readSequence( file ):
     
     return description, "".join(s)
 
-def getLastLine( filename, read_size = 1024 ):
-  """return last line of a file.
-  """
+def getFirstLine( filename ):
+    f = open(filename, 'rU')    # U is to open it with Universal newline support
+    line = f.readline()
+    f.close()
+    return line
 
-  f = open(filename, 'rU')    # U is to open it with Universal newline support
-  offset = read_size
-  f.seek(0, 2)
-  file_size = f.tell()
-  if file_size == 0: return ""
-  while 1:
-    if file_size < offset:
-      offset = file_size
-    f.seek(-1*offset, 2)
-    read_str = f.read(offset)
-    # Remove newline at the end
-    if read_str[offset - 1] == '\n':
-      read_str = read_str[:-1]
-    lines = read_str.split('\n')
-    if len(lines) >= 2:
-        return lines[-1]
-    if offset == file_size:   # reached the beginning
-      return read_str
-    offset += read_size
-  f.close()
+def getLastLine( filename, nlines = 1, read_size = 1024 ):
+    """return last line of a file.
+    """
+
+    f = open(filename, 'rU')    # U is to open it with Universal newline support
+    offset = read_size
+    f.seek(0, 2)
+    file_size = f.tell()
+    if file_size == 0: return ""
+    while 1:
+        if file_size < offset:
+            offset = file_size
+        f.seek(-1*offset, 2)
+        read_str = f.read(offset)
+        # Remove newline at the end
+        if read_str[offset - 1] == '\n':
+            read_str = read_str[:-1]
+        lines = read_str.split('\n')
+        if len(lines) >= nlines + 1:
+            return "\n".join(lines[-nlines:])
+        if offset == file_size:   # reached the beginning
+            return read_str
+        offset += read_size
+    f.close()
 
 def getNumLines( filename, ignore_comments = True ):
     '''get number of lines in filename.'''

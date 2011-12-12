@@ -4,6 +4,7 @@ import Stats
 import math
 import numpy
 import Experiment as E
+import sys
 
 #import rpy
 #from rpy import r as R
@@ -169,6 +170,7 @@ class SAM( object ):
     I ran into trouble using this library. I was not able to
     reproduce the same results from the original SAM study getting
     differences in d and in the fdr.
+
     '''
     
     def __call__(self, probesets, 
@@ -184,11 +186,14 @@ class SAM( object ):
 
         if ngenes and fdr:
             raise ValueError( "either supply ngenes or fdr, but not both.")
-
+        
         R.library("siggenes")
 
         m = numpy.matrix( treatments + controls )
         m = numpy.transpose(m)
+
+        E.debug( "build expression matrix: %i x %i" % m.shape )
+
         labels = numpy.array([1] * len(treatments) + [0] * len(controls))
         ## 1000 permutations for P-Values of down to 0.0001. Setting this
         ## to a high value improved reproducibility of results.
@@ -216,22 +221,25 @@ class SAM( object ):
             raise ValueError("unknown statistic `%s`" % method )
 
         E.info( "running sam with the following options: %s" % str(kwargs) )
-
+        
         a = R.sam( numpy.array(m),
                    labels,
-                   gene_names=probesets,
+                   gene_names=numpy.array(probesets),
                    **kwargs )
         
+        # E.debug("%s" % str(a))
+
         R.assign( "a", a )
 
         fdr_data = collections.namedtuple( "sam_fdr", ("delta", "p0", "false", "called", "fdr", "cutlow","cutup", "j2","j1" ) )
         cutoff_data = collections.namedtuple( "sam_cutoff", ("delta", "called", "fdr"))
         gene_data = collections.namedtuple( "sam_fdr", ("row","dvalue","stddev","rawp","qvalue","rfold" ) )
 
-        # how to extract the fdr values
-        fdr_values = [ fdr_data( *x ) for x in R('''a@mat.fdr''') ]
-
-        #print R('''print(a)''')
+        # extract the fdr values
+        # returns R matrix
+        s = numpy.matrix( a.do_slot('mat.fdr') )
+        assert s.shape[1] == len(fdr_data._fields)
+        fdr_values = [ fdr_data( *numpy.array(x).reshape(-1,) ) for x in s ]
 
         # find d cutoff
         if fdr != None and fdr > 0:
@@ -254,8 +262,8 @@ class SAM( object ):
             raise ValueError("either supply ngenes or fdr")
 
         # collect (unadjusted) p-values and qvalues for all probesets
-        pvalues = R('''a@p.value''')
-        qvalues = R('''a@q.value''')
+        pvalues = dict( zip( probesets, R('''a@p.value''') ) )
+        qvalues = dict( zip( probesets, R('''a@q.value''') ) )
         
         siggenes = {}        
         called_genes = set()
