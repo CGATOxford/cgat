@@ -165,6 +165,7 @@ def main( argv = None ):
 
         # create bed file with shifted tags
         shift, extend = options.shift, options.extend
+        shift_extend = shift + extend
 
         for contig in samfile.references:
             E.debug("output for %s" % contig )
@@ -172,8 +173,8 @@ def main( argv = None ):
             
             for read in samfile.fetch( contig ):
                 pos = read.pos
-                if read.is_reverse: 
-                    start = max(0, read.pos - shift)
+                if read.is_reverse:
+                    start = max(0, read.pos + read.alen - shift_extend )
                 else: 
                     start = max(0, read.pos + shift)
 
