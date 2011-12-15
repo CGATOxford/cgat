@@ -1,3 +1,5 @@
+.. _BindingProfiles:
+
 ================
 Binding profiles
 ================
@@ -7,10 +9,25 @@ respect to binding sites.
 
 .. report:: Binding.BindingSummary
    :render: matrix-plot
-   :transform-matrix: normalized-row-total
+   :transform-matrix: normalized-col-first
+   :max-rows: 0
+   :max-cols: 0
+   :palette: Blues
+   :restrict: r(peak)
+   
+   Number of intervals in regions around genes. This plot counts the
+   overlap only with the peak.
 
-   Number of intervals in regions around genes.
-
+.. report:: Binding.BindingSummary
+   :render: matrix-plot
+   :transform-matrix: normalized-col-first
+   :max-rows: 0
+   :max-cols: 0
+   :palette: Blues
+   :exclude: r(peak)
+   
+   Number of intervals in regions around genes. This plot counts the
+   overlap with the full extent of an interval.
 
 .. report:: Binding.BindingSummary
    :render: table

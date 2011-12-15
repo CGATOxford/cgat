@@ -909,7 +909,11 @@ def runMACS( infile, outfile, controlfile = None ):
 ############################################################
 ############################################################
 def getCounts( contig, start, end, samfiles, offsets = [] ):
-    '''count reads per position.'''
+    '''count reads per position.
+
+    If offsets are given, shift tags by offset / 2 and extend
+    by offset / 2.
+    '''
     assert len(offsets) == 0 or len(samfiles) == len(offsets)
 
     length = end - start
@@ -920,6 +924,8 @@ def getCounts( contig, start, end, samfiles, offsets = [] ):
     if offsets:
         # if offsets are given, shift tags. 
         for samfile, offset in zip(samfiles,offsets):
+
+            shift = offset / 2
             # for peak counting I follow the MACS protocoll,
             # see the function def __tags_call_peak in PeakDetect.py
             # In words
@@ -928,24 +934,21 @@ def getCounts( contig, start, end, samfiles, offsets = [] ):
             # for counting, extend reads by offset
             # on + strand shift tags upstream
             # i.e. look at the downstream window
-            xstart, xend = max(0, start - offset), max(0, end - offset)
-
+            xstart, xend = max(0, start - shift), max(0, end + shift)
+            
             for read in samfile.fetch( contig, xstart, xend ):
-                if read.is_reverse: continue
-                nreads += 1
-                rstart = max( 0, read.pos - xstart - offset)
-                rend = min( length, read.pos - xstart + offset) 
-                counts[ rstart:rend ] += 1
-                
-            # on the - strand, shift tags downstream
-            xstart, xend = max(0, start + offset), max(0, end + offset)
+                pos = read.pos
+                if read.is_reverse:
+                    # offset = 2 * shift
+                    rstart = read.pos + read.alen - offset
+                else: 
+                    rstart = read.pos + shift
 
-            for read in samfile.fetch( contig, xstart, xend ):
-                if not read.is_reverse: continue
-                nreads += 1
-                rstart = max( 0, read.pos + read.rlen - xstart - offset)
-                rend = min( length, read.pos + read.rlen - xstart + offset) 
+                rend = rstart + shift
+                rstart = max( 0, rstart - start )
+                rend = min( length, rend - start )
                 counts[ rstart:rend ] += 1
+
     else:
         for samfile in samfiles:
             for read in samfile.fetch( contig, start, end ):

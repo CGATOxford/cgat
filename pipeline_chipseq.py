@@ -1249,10 +1249,10 @@ def exportBigwig( infile, outfile ):
     if shift == None: 
         E.warn( "no shift found for %s - using 0" % track )
         shift = 0
+        extend = 0
     else: 
         shift /= 2
-
-    extend = shift
+        extend = shift
 
     statement = '''python %(scriptsdir)s/bam2wiggle.py 
                       --output-format=bigwig 

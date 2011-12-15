@@ -381,7 +381,7 @@ def loadIntervals( infile, outfile ):
 
         if "name" not in bed:
             bed.name = c.input
-        
+            
         if samfiles:
             npeaks, peakcenter, length, avgval, peakval, nprobes = \
                 PipelineChipseq.countPeaks( bed.contig, bed.start, bed.end, samfiles, offsets )
@@ -444,6 +444,27 @@ def indexIntervals( infile, outfile ):
 
     statement = '''zcat %(infile)s | bgzip > %(outfile)s; tabix -p bed %(outfile)s'''
     P.run()
+
+############################################################
+############################################################
+############################################################
+@follows( mkdir( os.path.join( PARAMS["exportdir"], "peaks" ) ) )
+@transform( loadIntervals,
+            regex(r"(.*)_intervals.load"),
+            os.path.join( PARAMS["exportdir"], "peaks", r"\1.peak.bed.gz") )
+def exportPeakLocations( infile, outfile ):
+    '''export peak locations
+    '''
+
+    dbh = connect()
+    outf = IOTools.openFile( outfile, "w" )
+    cc = dbh.cursor()
+    table = P.toTable(infile) 
+    for x in cc.execute( """SELECT contig, peakcenter, peakcenter+1, interval_id, peakval 
+                                   FROM %(table)s """ % locals() ):
+        outf.write( "\t".join( map(str, x) ) + "\n" )
+    outf.close()
+
 
 ############################################################
 ############################################################
@@ -539,9 +560,41 @@ def annotateIntervals( infile, outfile ):
 @transform( TRACKS_BEDFILES,
             suffix(".bed.gz"),
             ".binding.tsv.gz" )
-def annotateBinding( infile, outfile ):
+def annotateBindingFull( infile, outfile ):
     '''classify chipseq intervals according to their location 
     with respect to the gene set.
+
+    Binding is counted both for the full intervals.
+    '''
+    to_cluster = True
+
+    geneset = os.path.join( PARAMS["annotations_dir"],
+                                    PARAMS_ANNOTATIONS["interface_geneset_all_gtf"] )
+
+    statement = """
+    zcat < %(geneset)s
+    | python %(scriptsdir)s/gtf2table.py 
+		--counter=position 
+		--counter=binding-pattern
+		--log=%(outfile)s.log 
+		--filename-gff=%(infile)s
+		--genome-file=%(genome_dir)s/%(genome)s
+    | gzip
+    > %(outfile)s"""
+    
+    P.run()
+
+############################################################
+############################################################
+############################################################
+@transform( exportPeakLocations,
+            suffix(".bed.gz"),
+            ".binding.tsv.gz" )
+def annotateBindingPeak( infile, outfile ):
+    '''classify chipseq intervals according to their location 
+    with respect to the gene set.
+
+    Binding is counted for peaks.
     '''
     to_cluster = True
 
@@ -622,7 +675,7 @@ def loadAnnotations( infile, outfile ):
     P.load( infile, outfile, "--index=gene_id --allow-empty" )
 
 ############################################################
-@transform( annotateBinding, suffix(".binding.tsv.gz"), "_binding.load" )
+@transform( (annotateBindingFull, annotateBindingPeak), suffix(".binding.tsv.gz"), "_binding.load" )
 def loadBinding( infile, outfile ):
     '''load interval binding: genome architecture
     '''
@@ -979,6 +1032,43 @@ def loadMast( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
+@follows( loadMotifInformation, mkdir( os.path.join( PARAMS["exportdir"], "motifs" ) ) )
+@merge( loadMast, "motifs.export" )
+def exportMotifLocations( infiles, outfile ):
+    '''export motif locations. There will be a bed-file per motif.
+
+    Overlapping motif matches in different tracks will be merged.
+    '''
+
+    dbh = connect()
+    cc = dbh.cursor()
+
+    motifs = [ x[0] for x in cc.execute( "SELECT motif FROM motif_info" ).fetchall()]
+
+    
+    for motif in motifs:
+
+        tmpf = P.getTempFile()
+        
+        for infile in infiles:
+            table = P.toTable(infile) 
+            track = P.snip( table, "_mast" )
+            for x in cc.execute( """SELECT contig, start, end, '%(track)s', evalue
+                                   FROM %(table)s WHERE motif = '%(motif)s' AND start IS NOT NULL""" % locals() ):
+                tmpf.write( "\t".join( map(str, x) ) + "\n" )
+        tmpf.close()
+
+        outfile = os.path.join( PARAMS["exportdir"], "motifs", "%s.bed.gz" % motif )
+        tmpfname = tmpf.name 
+
+        statement = '''mergeBed -i %(tmpfname)s -nms | gzip > %(outfile)s'''
+        P.run()
+
+        os.unlink( tmpf.name )
+
+############################################################
+############################################################
+############################################################
 ## compute overlap with genomic features
 ############################################################
 @follows( mkdir("context_gat.dir") )
@@ -1136,7 +1226,8 @@ def viewIntervals( infiles, outfiles ):
 ############################################################
 ############################################################
 ############################################################
-@follows( loadPeakShapeTable )
+@follows( loadPeakShapeTable,
+          buildIntervalProfileOfTranscripts )
 def annotate_withreads():
     pass
 
@@ -1146,9 +1237,7 @@ def annotate_intervals(): pass
 # @follows( mapping,
 #           buildIntervals, 
 #           loadReadCoverageTable,
-#           buildPeakShapeTable,
-#           buildReadProfileOfTranscripts,
-#           buildIntervalProfileOfTranscripts )
+#           buildReadProfileOfTranscripts)
 # def intervals():
 #     '''compute binding intervals.'''
 #     pass
@@ -1244,6 +1333,7 @@ def annotate_intervals(): pass
           annotate_withreads,
           runMeme,
           loadMemeSummary,
+          loadMotifInformation,
           loadMast,
           loadMotifInformation,
           loadMotifSequenceComposition )

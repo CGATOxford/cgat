@@ -644,7 +644,7 @@ def run( **kwargs ):
         jt.nativeSpecification = "-V -q %s -p %i -N %s %s" % \
             (options.get("job_queue", global_options.cluster_queue ),
              options.get("job_priority", global_options.cluster_priority ),
-             "_" + os.path.basename(options.get("outfile", "ruffus" )),
+             "_" + re.sub( "[:]", "_", os.path.basename(options.get("outfile", "ruffus" ))),
              options.get("job_options", global_options.cluster_options))
 
         # keep stdout and stderr separate
