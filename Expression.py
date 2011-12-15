@@ -235,24 +235,34 @@ class SAM( object ):
         cutoff_data = collections.namedtuple( "sam_cutoff", ("delta", "called", "fdr"))
         gene_data = collections.namedtuple( "sam_fdr", ("row","dvalue","stddev","rawp","qvalue","rfold" ) )
 
+        def _totable( robj ):
+            '''convert robj to a row-wise table.'''
+            s = numpy.matrix( robj )
+            t = [ numpy.array(x).reshape(-1,) for x in s ]
+            return t
+
         # extract the fdr values
         # returns R matrix
-        s = numpy.matrix( a.do_slot('mat.fdr') )
-        assert s.shape[1] == len(fdr_data._fields)
-        fdr_values = [ fdr_data( *numpy.array(x).reshape(-1,) ) for x in s ]
+        t = _totable( a.do_slot('mat.fdr') )
+        assert len(t[0]) == len(fdr_data._fields)
+        for x in t:
+            E.debug( "x=%s" % str(x))
+        fdr_values = [ fdr_data( *x ) for x in t ]
 
         # find d cutoff
         if fdr != None and fdr > 0:
+            s = numpy.matrix( R.findDelta( a, fdr ) )
             try:
-                cutoffs = [ cutoff_data( *x ) for x in ( R('''findDelta( a, %f )''' % fdr) ) ]
+                cutoffs = [ cutoff_data( *numpy.array(x).reshape(-1,) ) for x in s ]
                 E.debug( "sam cutoffs for fdr %f: %s" % (fdr, str(cutoffs) ) )
                 cutoff = cutoffs[-1]
             except TypeError:
                 E.debug( "could not get cutoff" )
                 cutoff = None
         elif ngenes:
+            s = numpy.matrix( R.findDelta( a, ngenes ) )
             try:
-                cutoffs = [ cutoff_data( *x ) for x in ( R('''findDelta( a, genes = %i )''' % ngenes) ) ]
+                cutoffs = [ cutoff_data( *numpy.array(x).reshape(-1,) ) for x in s ]
                 E.debug( "sam cutoffs for fdr %f: %s" % (fdr, str(cutoffs) ) )
                 cutoff = cutoffs[-1]
             except TypeError:
@@ -273,25 +283,24 @@ class SAM( object ):
             summary = R.summary( a, cutoff.delta )
             R.assign( "summary", summary )
 
-            called_genes = set(R('''summary@row.sig.genes'''))
-
-            r_result = R('''summary@mat.sig''') 
+            called_genes = set( [probesets[int(x)-1] for x in R('''summary@row.sig.genes''')] )
+            E.debug( "called genes=%s" % str(called_genes))
+            
+            r_result = zip(*_totable( summary.do_slot( 'mat.sig' ) ))
+            
             if len(r_result) > 0:
 
-                assert len(r_result) == 6, "expected six columns from siggenes module, got: %s" % str(r_result.keys())
-
-                try:
-                    # note that the qvalue can be higher than the threshold (I do not know why)
-                    # the qvalue is thus bounded by the threshold in order to get consistent data
-                    for x in zip( *[r_result[y] for y in ("Row", "d.value", "stdev", "rawp", "q.value", "R.fold") ] ):
-                        if x[4] > fdr:
-                            E.warn( "%s has qvalue (%f) larger than cutoff, but is called significant." % (str(x), x[4]))
-
-                except TypeError:
-                    # only a single value
-                    x = [r_result[y] for y in ("Row", "d.value", "stdev", "rawp", "q.value", "R.fold") ]
+                assert len(r_result[0]) == 6, "expected six columns from siggenes module, got: %s" % len(r_result[0])
+                
+                for x in r_result:
                     if x[4] > fdr:
                         E.warn( "%s has qvalue (%f) larger than cutoff, but is called significant." % (str(x), x[4]))
+                            
+                # except TypeError:
+                #     # only a single value
+                #     x = [r_result[y] for y in ("Row", "d.value", "stdev", "rawp", "q.value", "R.fold") ]
+                #     if x[4] > fdr:
+                #         E.warn( "%s has qvalue (%f) larger than cutoff, but is called significant." % (str(x), x[4]))
 
                 siggenes[probesets[int(x[0])-1]] = gene_data( *x )                
 
@@ -300,7 +309,7 @@ class SAM( object ):
                 R.pdf(outfile)
                 R.plot( a, cutoff.delta )
                 R.plot( a )
-                R.dev_off()
+                R['dev.off']()
 
         else:
             E.debug( "no cutoff found - no significant genes." )
