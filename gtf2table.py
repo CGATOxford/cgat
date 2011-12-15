@@ -1542,11 +1542,14 @@ class CounterBindingPattern(CounterOverlap):
     """compute overlaps between gene and various tracks given
     by one or more gff files.
 
-    Outputs a binding pattern.
+    pattern
+       a binding pattern.
+    overlap
+       number of intervals overlapping the genic region
     
     """
 
-    headerTemplate = [ "pattern" ] +\
+    headerTemplate = [ "pattern", "overlap" ] +\
         [ "%s_%s" % (x,y) for x,y in itertools.product( 
             ("cds", "first_exon", "exon", "utr5", "utr3", "first_intron", "intron") +\
                 tuple( ["flank5_%05i" % x for x in range(0, 10000, 2000) ] ) +\
@@ -1593,6 +1596,7 @@ class CounterBindingPattern(CounterOverlap):
         self.poverlap_first_exon = 0
         self.poverlap_flank5 = [0] * self.flank_bins
         self.poverlap_flank3 = [0] * self.flank_bins
+        self.overlap = 0
 
         # pattern takes only first bin for flank5 and flank3
         self.pattern = "0" * 6
@@ -1616,6 +1620,8 @@ class CounterBindingPattern(CounterOverlap):
         overlaps = list(self.mIntersectors[contig].find( extended_start, extended_end ))
         if len(overlaps) == 0 : return 
         intervals = [(x.start, x.end) for x in overlaps ]
+
+        self.overlap = len(intervals )
 
         ######################################
         ## build special sets
@@ -1671,8 +1677,7 @@ class CounterBindingPattern(CounterOverlap):
             
         for x, v in enumerate( self.overlap_flank3 ):
             self.poverlap_flank3[x] = pp( v, Intervals.getLength( flank3[x] ), na = 0)
-        
-            
+
         #######################################
         ## build binding pattern
         pattern = []
@@ -1686,6 +1691,7 @@ class CounterBindingPattern(CounterOverlap):
     def __str__(self):
         
         data = [ self.pattern,
+                 self.overlap,
                  self.overlap_cds,
                  self.poverlap_cds,
                  self.overlap_first_exon,
