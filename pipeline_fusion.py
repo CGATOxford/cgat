@@ -22,7 +22,7 @@
 #################################################################################
 """
 ===========================
-Pipeline template
+Project 4 Pipeline
 ===========================
 
 :Author: Ian Subery
@@ -276,9 +276,9 @@ def postprocessTopHatFusion(infiles,outfile):
         cluster aware and spawns a large number of blast tasks'''
 
     to_cluster = USECLUSTER
-    job_options = ' -pe dedicated %i -R y' % PARAMS["tophatfusion_postthreads"]
+    job_options = ' -l mem_free=50G -pe dedicated %i -R y' % PARAMS["tophatfusion_postthreads"]
     statement = '''
-                  module load tophatfusion;
+                  module load bio/tophatfusion;
                   tophat-fusion-post -p %(tophatfusion_postthreads)s
                                    %(tophatfusion_postoptions)s 
                                    %(bowtie_index_dir)s/%(genome)s
@@ -318,6 +318,52 @@ def doCleanUp(infile,outfile):
     statement = "gzip %(juncfile)s" % locals()
     P.run()
 
+################################################################
+################################################################
+
+@transform(PARAMS['rnaseqdir'] + "*.exon_counts.tsv.gz",
+           suffix(".exon_counts.tsv.gz"),
+           "edgeR_output/\1_edgeR_GLM_analysis.tsv")
+def edgeR_analysis(infile,outfile):
+    ''' Runs the edgeR GLM analysis script using each of the input
+    files as the exon counts, and each of the *design.tsv  as the
+    designs. Options to the script are stored in the ini '''
+
+    to_cluster = USECLUSTER
+    R_path = PARAMS['R_path']
+    R_script_dir = PARAMS['R_scriptdir']
+    R_args = PARAM['R_args']
+    edgeR_args = ['edgeR_args']
+    baseName = snip(infile,".exon_counts.tsv.gz") + "_"
+
+    if not os.path.exists('edgeR_output'):
+        os.mkdir('edgeR_output')
+   
+    for design in glob.iglob(PARAMS['edgeR_design']):
+
+        statement = ''' %(R_path)s CMD BATCH %(R_args)s
+                                  \"--args count_file='%(infile)s'
+                                           conditions_file='%(design)s'
+                                           out_file='%(baseName)s'
+                                           %(edgeR_args)s \"
+                                  %(R_scriptdir)/edgeR-GLM.R
+                                  edgeR_output/%(infile)s.edgeR.log ''' % locals()
+        P.run()
+
+###############################################################
+###############################################################
+
+@transform(edgeR_analysis,
+           suffix("edgeR_GLM_analysis.tsv"),
+           ".edgeR.GLM.diff.load")
+def loadEdgeRResults(infile,outfile):
+    
+    tableName = P.toTable(outfile)
+    statement = ''' python %(scriptsdir)s/csv2db.py
+                            --table=%(tableName)s
+                            --index=id < infile
+                    >outfile '''
+    P.run()
 
 ###################################################################
 ###################################################################

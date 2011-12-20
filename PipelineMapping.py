@@ -562,7 +562,7 @@ class TopHat_fusion( Mapper ):
             infiles4 = ",".join( [ x[3] for x in infiles ] )
 
             statement = '''
-            module load tophatfusion;
+            module load bio/tophatfusion;
             tophat-fusion --output-dir %(tmpdir_tophat)s
                    --mate-inner-dist %%(tophat_mate_inner_dist)i
                    --num-threads %%(tophat_threads)i
@@ -587,15 +587,14 @@ class TopHat_fusion( Mapper ):
     def postprocess( self, infiles, outfile ):
         '''collect output data and postprocess.'''
         
-        track = P.snip( outfile, "_tophat/accepted_hits.bam" )
+        track = P.snip( outfile, "/accepted_hits.sam" )
         tmpdir_tophat = self.tmpdir_tophat
 
-        if not os.path.exists('%s_tophat' % track):
-            os.mkdir('%s_tophat' % track)
+        if not os.path.exists('%s' % track):
+            os.mkdir('%s' % track)
 
         statement = '''
-            mv -f %(tmpdir_tophat)s/* %(track)s_tophat/;  
-            samtools index %(outfile)s;
+            mv -f %(tmpdir_tophat)s/* %(track)s/;  
             ''' % locals()
 
         return statement
