@@ -319,6 +319,35 @@ def loadFilteringSummary( infile, outfile ):
     '''load filtering summary.'''
     P.load(infile, outfile )
 
+
+#########################################################################
+#########################################################################
+#########################################################################
+
+
+@transform( [ x for x in glob.glob("*.fastq.gz") + glob.glob("*.fastq.1.gz") + glob.glob("*.fastq.2.gz")]
+            , regex( r"(\S+).(fastq.1.gz|fastq.gz|fastq.2.gz|csfasta.gz)"), r"trim.\1.\2")
+def trimReads (infile, outfile):
+    '''trim reads to desired length using fastx'''
+
+    to_cluster = True
+    statement = '''zcat %(infile)s | fastx_trimmer %(trim_options)s 2> %(outfile)s.log | gzip > %(outfile)s''' 
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+
+@transform( [ x for x in glob.glob("*.fastq.gz") + glob.glob("*.fastq.1.gz") + glob.glob("*.fastq.2.gz")]
+            , regex( r"(\S+).(fastq.1.gz|fastq.gz|fastq.2.gz|csfasta.gz)"), r"replaced.\1.\2")
+def replaceBaseWithN(infile, outfile):
+    '''replaces the specified base with N'''
+
+    to_cluster = True
+    statement = '''python %(scriptsdir)s/fastq2N.py -i %(infile)s %(replace_options)s'''
+    P.run()
+
+    
 #########################################################################
 #########################################################################
 #########################################################################
