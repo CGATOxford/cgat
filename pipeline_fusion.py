@@ -321,9 +321,9 @@ def doCleanUp(infile,outfile):
 ################################################################
 ################################################################
 
-@transform(PARAMS['rnaseqdir'] + "*.exon_counts.tsv.gz",
+@transform(PARAMS['rnaseqdir'] + "/*.exon_counts.tsv.gz",
            suffix(".exon_counts.tsv.gz"),
-           "edgeR_output/\1_edgeR_GLM_analysis.tsv")
+           r"edgeR_output/\1_edgeR_GLM_analysis.tsv")
 def edgeR_analysis(infile,outfile):
     ''' Runs the edgeR GLM analysis script using each of the input
     files as the exon counts, and each of the *design.tsv  as the
@@ -370,7 +370,7 @@ def loadEdgeRResults(infile,outfile):
 ###################################################################
 ## primary targets
 ###################################################################
-
+@follows(loadEdgeRResults )
 @follows( doCleanUp )
 def full(): pass
 
