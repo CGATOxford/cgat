@@ -452,7 +452,11 @@ import Pipeline as P
 P.getParameters( 
     ["%s.ini" % __file__[:-len(".py")],
      "../pipeline.ini",
-     "pipeline.ini" ] )
+     "pipeline.ini" ],
+    defaults = {
+        'annotations_dir' : "",
+        'paired_end' : False } )
+
 PARAMS = P.PARAMS
 
 PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],
@@ -1399,10 +1403,10 @@ def buildBAMReports( infile, outfile ):
 ############################################################
 ############################################################
 @merge( buildPicardStats, "picard_stats.load" )
-def loadPicardStats( infiles, outfile, paired_end=PARAMS["paired_end"] ):
+def loadPicardStats( infiles, outfile ):
     '''merge alignment stats into single tables.'''
 
-    PipelineMappingQC.loadPicardAlignmentStats( infiles, outfile, paired_end )
+    PipelineMappingQC.loadPicardAlignmentStats( infiles, outfile )
 
 ############################################################
 ############################################################
@@ -1455,6 +1459,12 @@ def buildTophatStats( infiles, outfile ):
         else:
             segment_juncs_version = "na"
             possible_splices = ""
+
+        # fix for paired end reads - tophat reports pairs, not reads
+        if PARAMS["paired_end"]:
+            reads_in *= 2
+            reads_out *= 2
+            reads_removed *= 2
 
         outf.write( "\t".join( map(str, (track,
                                          reads_in, reads_removed, reads_out, 
@@ -1740,7 +1750,7 @@ def oldClassifyTranscripts( infiles, outfile ):
 #########################################################################
 @transform("*.bam", 
            suffix(".bam"), 
-           add_inputs(buildReferenceGeneSet),
+           add_inputs(buildCodingGeneSet),
            ".ref.gtf.gz")
 def estimateExpressionLevelsInReference(infiles, outfile):
     '''estimate expression levels against a set of reference gene models.
@@ -1750,7 +1760,7 @@ def estimateExpressionLevelsInReference(infiles, outfile):
     job_options= "-pe dedicated %i -R y" % PARAMS["cufflinks_threads"]
 
     track = os.path.basename( outfile[:-len(".gtf")] )
-
+    
     tmpfilename = P.getTempFilename( "." )
 
     if os.path.exists( tmpfilename ):
@@ -1769,13 +1779,12 @@ def estimateExpressionLevelsInReference(infiles, outfile):
     cufflinks --label %(track)s      
               --GTF=<(gunzip < %(gtffile)s)
               --num-threads=%(cufflinks_threads)i
-             --library-type %(tophat_library_type)s
+              --frag-bias-correct %(cufflinks_genome_dir)s/%(genome)s.fa
+              --library-type %(tophat_library_type)s
               %(cufflinks_options)s
               %(bamfile)s 
     >& %(outfile)s.log;
     perl -p -e "s/\\0/./g" < transcripts.gtf | gzip > %(outfile)s;
-    mv -f genes.expr %(outfile)s.genes.expr;
-    mv -f transcripts.expr %(outfile)s.transcripts.expr
     '''
 
     P.run()
@@ -2400,7 +2409,6 @@ def loadGeneSetsBuildInformation( infile, outfile ):
 @transform( (buildCodingGeneSet,
              buildNoncodingGeneSet,
              buildGeneModels, 
-             buildAbinitioGeneSet, 
              buildFullGeneSet, 
              buildLincRNAGeneSet,
              buildNovelGeneSet),
@@ -2433,7 +2441,7 @@ def classifyTranscripts( infiles, outfile ):
             suffix(".cuffcompare"), 
             add_inputs( buildReferenceGeneSetWithCDS ),
             ".class.tsv.gz" )
-def classifyTranscripts2( infiles, outfile ):
+def classifyTranscriptsCuffcompare( infiles, outfile ):
     '''classify transcripts.
     '''
     to_cluster = USECLUSTER
@@ -2455,7 +2463,7 @@ def classifyTranscripts2( infiles, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@transform( (classifyTranscripts, classifyTranscripts2), suffix(".tsv.gz"), ".load" )
+@transform( (classifyTranscripts, classifyTranscriptsCuffcompare), suffix(".tsv.gz"), ".load" )
 def loadClassification( infile, outfile ):
     P.load( infile, outfile, options = "--index=transcript_id --index=match_gene_id --index=match_transcript_id --index=source" )
 
@@ -3669,9 +3677,7 @@ def buildTranscriptLevelReadCounts( infiles, outfile):
 @follows( mkdir("transcript_counts.dir"), buildGeneModels )
 @files( [( ([ "%s.accepted.bam" % y.asFile() for y in EXPERIMENTS[x]], buildCodingGeneSet), 
            "transcript_counts.dir/%s.transcript_counts.tsv.gz" % x.asFile()) 
-         for x in EXPERIMENTS ] +\
-            [ ( ( ["%s.accepted.bam" % y.asFile() for y in TRACKS], buildCodingGeneSet),
-                "transcript_counts.dir/%s.transcript_counts.tsv.gz" % ALL.asFile()) ] )
+         for x in EXPERIMENTS ] )
 def buildAggregateTranscriptLevelReadCounts( infiles, outfile):
     '''count reads falling into transcripts of protein coding 
        gene models.
@@ -3681,6 +3687,10 @@ def buildAggregateTranscriptLevelReadCounts( infiles, outfile):
        the actual read counts are approximately twice the fragment
        counts.
        
+    .. note:: this step takes very long if multiple bam-files are supplied.
+    It has thus been taken out of the pipeline. The aggregate can be derived from summing
+    the individual counts anyways.
+
     '''
     bamfiles, geneset = infiles
     
@@ -3710,8 +3720,8 @@ def buildAggregateTranscriptLevelReadCounts( infiles, outfile):
 #########################################################################
 @transform( (buildTranscriptLevelReadCounts,
              buildAggregateTranscriptLevelReadCounts),
-           suffix(".tsv.gz"),
-           ".load" )
+            suffix(".tsv.gz"),
+            ".load" )
 def loadTranscriptLevelReadCounts( infile, outfile ):
     P.load( infile, outfile, options="--index=transcript_id" )
 
@@ -3818,7 +3828,7 @@ def runDESeq( infile, outfile ):
     no_replicates = False
     for group, replicates in EXPERIMENTS.iteritems():
         if len(replicates) == 1:
-            E.warn( "only one replicate in %s - replicates will be ignored in ALL data sets for variance estimation" )
+            E.warn( "only one replicate in %s - replicates will be ignored in ALL data sets for variance estimation" % group )
             no_replicates = True
 
         for r in replicates:
@@ -4014,7 +4024,6 @@ def buildGeneSetsOfInterest( infile, outfile ):
 #########################################################################
 #########################################################################
 @follows( buildBAMs,
-          buildBAMReports,
           buildFastQCReport,
           loadTophatStats,
           loadBAMStats,

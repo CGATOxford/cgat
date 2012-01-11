@@ -73,7 +73,8 @@ def main( argv = None ):
                       help="samtools region string [default=%default]."  )
 
     parser.add_option("-m", "--merge-pairs", dest="merge_pairs", type="int",
-                      help="merge paired-ended reads into a single bed interval. Only merge if less than # bases apart [default=%default]."  )
+                      help="merge paired-ended reads into a single bed interval. "
+                      "Only merge if less than # bases apart [default=%default]."  )
 
     parser.set_defaults(
         region = None,

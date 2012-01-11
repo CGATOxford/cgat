@@ -1070,14 +1070,19 @@ def computeROC( values ):
     return roc
 
 class TTest:
-
-    def __init__(self):
-        pass
+    def __init__(self): pass
 
 class WelchTTest:
+    def __init__(self): pass
 
-    def __init__(self):
-        pass
+PairedTTest = collections.namedtuple( "PairedTTest", "statistic pvalue" )
+
+def doPairedTTest( vals1, vals2) :
+    '''perform paired t-test.
+
+    vals1 and vals2 need to contain the same number of elements.
+    '''
+    return PairedTTest._make( scipy.stats.ttest_rel( vals1, vals2 ) )
 
 def doWelchsTTest(n1, mean1, std1, 
                   n2, mean2, std2,

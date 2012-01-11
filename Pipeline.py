@@ -38,7 +38,7 @@ API
 
 '''
 import os, sys, re, subprocess, optparse, stat, tempfile, time, random, inspect, types
-import logging, collections, shutil, glob
+import logging, collections, shutil, glob, gzip
 import ConfigParser
 
 import drmaa
@@ -92,7 +92,8 @@ def configToDictionary( config ):
         
     return p
 
-def getParameters( filenames = ["pipeline.ini",] ):
+def getParameters( filenames = ["pipeline.ini",],
+                   defaults = None ):
     '''read a config file and return as a dictionary.
 
     Sections and keys are combined with an underscore. If
@@ -121,6 +122,7 @@ def getParameters( filenames = ["pipeline.ini",] ):
     CONFIG.read( filenames )
 
     p = configToDictionary( CONFIG )
+    if defaults: PARAMS.update( defaults )
     PARAMS.update( p )
 
     return PARAMS
@@ -201,8 +203,18 @@ def clone( infile, outfile ):
         pass
     
 def touch( filename, times = None ):
-    '''update/create a sentinel file.'''
+    '''update/create a sentinel file.
+
+    Compressed files (ending in .gz) are created
+    as empty 'gzip' files, i.e., with a header.
+    '''
+    existed = os.path.exists(filename)
     fhandle = file(filename, 'a')
+
+    if filename.endswith (".gz") and not existed:
+        # this will automatically add a gzip header
+        fhandle = gzip.GzipFile( filename, fileobj = fhandle )
+        
     try:
         os.utime(filename, times)
     finally:
@@ -282,7 +294,10 @@ def isEmpty( filename ):
 def asList( param ):
     '''return a param as a list'''
     if type(param) not in (types.ListType, types.TupleType):
-        return [x.strip() for x in param.split(",")]
+        try:
+            return [x.strip() for x in param.split(",")]
+        except AttributeError:
+            return [param]
     else: return param
 
 def asTuple( param ):
@@ -348,7 +363,9 @@ def getProjectName():
     prefixes = len(PROJECT_ROOT.split("/"))
     return curdir.split( "/" )[prefixes]
 
-def load( infile, outfile, options = "", transpose = None ):
+def load( infile, outfile = None, 
+          options = "", transpose = None,
+          tablename = None):
     '''straight import from tab separated table.
 
     The table name is given by outfile without the
@@ -359,8 +376,9 @@ def load( infile, outfile, options = "", transpose = None ):
     within transpose.
     '''
 
-    tablename = toTable( outfile )
-
+    if not tablename:
+        tablename = toTable( outfile )
+    
     statement = []
     if infile.endswith(".gz"): statement.append( "zcat %(infile)s" )
     else: statement.append( "cat %(infile)s" )
@@ -399,7 +417,7 @@ def mergeAndLoad( infiles, outfile, suffix ):
                    %(filenames)s
                 | perl -p -e "s/bin/track/" 
                 | python %(scriptsdir)s/table2table.py --transpose
-                | python %(scriptsdir)s/csv2db.py
+                | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
                       --index=track
                       --table=%(tablename)s 
                 > %(outfile)s
@@ -518,6 +536,41 @@ def expandStatement( statement ):
     
     return " ".join( (_exec_prefix, statement, _exec_suffix) )
 
+def joinStatements( statements, infile ):
+    '''join a chain of statements into a single statement.
+
+    Each statement contains an @IN@ or a @OUT@ or both.
+    These will be replaced by the names of successive temporary
+    files.
+    
+    In the first statement, @IN@ is replaced with *infile*. 
+    
+    The last statement should move @IN@ to outfile.
+
+    returns a single statement.
+    '''
+    
+    prefix = getTempFilename()
+    pattern = "%s_%%i" % prefix
+
+    result = []
+    for x, statement in enumerate(statements):
+        if x == 0:
+            s = re.sub( "@IN@", infile, statement )
+        else:
+            s = re.sub( "@IN@", pattern % x, statement )
+
+        s = re.sub( "@OUT@", pattern % (x+1), s ).strip()
+
+        if s.endswith(";"): s = s[:-1]
+        result.append( s )
+
+    assert prefix != ""
+    result.append( "rm -f %s*" % prefix )
+    
+    result = "; checkpoint ; ".join( result )
+    return result
+
 def getStdoutStderr( stdout_path, stderr_path, tries=5 ):
     '''get stdout/stderr allowing for same lag.
 
@@ -591,7 +644,7 @@ def run( **kwargs ):
         jt.nativeSpecification = "-V -q %s -p %i -N %s %s" % \
             (options.get("job_queue", global_options.cluster_queue ),
              options.get("job_priority", global_options.cluster_priority ),
-             os.path.basename(options.get("outfile", "ruffus" )),
+             "_" + re.sub( "[:]", "_", os.path.basename(options.get("outfile", "ruffus" ))),
              options.get("job_options", global_options.cluster_options))
 
         # keep stdout and stderr separate
@@ -834,16 +887,12 @@ def main( args = sys.argv ):
     (options, args) = E.Start( parser, 
                                add_cluster_options = True )
 
-    L.info( "test") 
-
     global global_options
     global global_args
     global_options, global_args = options, args
     PARAMS["dryrun"] = options.dry_run
     
     version, _ = execute( "hg identify %s" % PARAMS["scriptsdir"] )
-
-    L.info( "test") 
 
     if args: 
         options.pipeline_action = args[0]
@@ -984,6 +1033,14 @@ def run_report( clean = True):
     # permit multiple servers using -a option
     if xvfb_command: xvfb_command+= " -a "
 
+    # if there is no DISPLAY variable set, xvfb runs, but
+    # exits with error when killing process. Thus, ignore return
+    # value.
+    if not os.getenv("DISPLAY"):
+        erase_return = "|| true"
+    else:
+        erase_return = ""
+
     if clean: clean = """rm -rf report _cache _static;"""
     else: clean = ""
 
@@ -998,7 +1055,7 @@ def run_report( clean = True):
                     -d %(report_doctrees)s
                     -c . 
            %(docdir)s %(report_html)s
-    >& report.log)
+    >& report.log %(erase_return)s )
     '''
 
     run()
@@ -1059,8 +1116,8 @@ def publish_report( prefix = "", patterns = [], project_id = None):
 
     # substitute links to export
     _patterns = [ (re.compile( src_export ), 
-                  "http://www.cgat.org/downloads/%(project_id)s/%(dest_export)s" % locals() ), 
-                 ]
+                   "http://www.cgat.org/downloads/%(project_id)s/%(dest_export)s" % locals() ), 
+                  ]
     
     _patterns.extend( patterns )
     

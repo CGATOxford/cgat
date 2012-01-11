@@ -35,6 +35,7 @@ Code
 '''
 import os, sys, subprocess, tempfile, string, re, random
 
+import Experiment as E
 import Genomics, FastaIterator
 import cStringIO as StringIO
 
@@ -43,7 +44,6 @@ class Masker :
     """a masker preserves gaps, but it does not preserve
     whitespace characters."""
     
-    mLogLevel = 0
     mExecutable = None
     mOptions=""
     mHasPeptideMasking = False
@@ -75,7 +75,10 @@ class Masker :
 
         seq = list(sequence)
 
-        if a == "aa" and self.mHasPeptideMasking:
+        if len(seq) < 5:
+            # do not mask empty/short sequences
+            pass
+        elif a == "aa" and self.mHasPeptideMasking:
             c = 0
             for p, m in zip( sequence, self.maskSequence( sequence ) ):
                 if m in "Xx":
@@ -119,9 +122,7 @@ class Masker :
         infile = filename_peptide
         statement = self.mCommand % locals()
 
-        if self.mLogLevel >= 3:
-            print "# statement: %s" % statement
-            sys.stdout.flush()
+        E.debug( "statement: %s" % statement )
 
         s = subprocess.Popen( statement,
                               shell = True,
@@ -152,9 +153,7 @@ class Masker :
                      
         statement = self.mCommand % locals()
 
-        if self.mLogLevel >= 3:
-            print "# statement: %s" % statement
-            sys.stdout.flush()
+        E.debug( "statement: %s" % statement )
 
         s = subprocess.Popen( statement,
                               shell = True,
@@ -176,13 +175,11 @@ class Masker :
 
 class MaskerBias (Masker): 
 
-    mLogLevel = 0
     mCommand = "biasdb.pl %(infile)s"
     mHasPeptideMasking = True
 
 class MaskerSeg (Masker):
 
-    mLogLevel = 0
     # mCommand = "seg %(infile)s 12 2.2 2.5 -x"
     mCommand = "segmasker -in %(infile)s -window 12 -locut 2.2 -hicut 2.5 -outfmt fasta"
     mHasPeptideMasking = True
@@ -190,7 +187,6 @@ class MaskerSeg (Masker):
 class MaskerDustMasker( Masker ):
     '''use dustmasker. masked chars are returned as 
     lower case characters.'''
-    mLogLevel = 0
     mCommand = "dustmasker -outfmt fasta -in %(infile)s"
     mHasNucleicAcidMasking = True
 

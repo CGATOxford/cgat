@@ -28,14 +28,14 @@ for expressed genes, isoforms, etc are shown
 
    Summary of expression FPKM values
 
-Correlation between FPKM and confidence intervals
-=================================================
+.. Correlation between FPKM and confidence intervals
+.. =================================================
 
-.. report:: Expression.ExpressionFPKMConfidenceCorrelation
-   :render: scatter-plot
-   :logscale: xy
-   :groupby: track
-   :layout: column-2
-   :width: 300
+.. .. report:: Expression.ExpressionFPKMConfidenceCorrelation
+..    :render: scatter-plot
+..    :logscale: xy
+..    :groupby: track
+..    :layout: column-2
+..    :width: 300
 
-   FPKM confidence values against FPKM.
+..    FPKM confidence values against FPKM.

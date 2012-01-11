@@ -103,7 +103,9 @@ if __name__ == "__main__":
                                "transpose", 
                                "upper-bound", "lower-bound", 
                                "subtract-first-col", "multiply-by-value", "divide-by-value",
-                               "mask-rows", "mask-columns", "mask-rows-and-columns" ),
+                               "mask-rows", "mask-columns", "mask-rows-and-columns",
+                               "symmetrize-mean", "symmetrize-max", "symmetrize-min",
+                               ),
                       help="""method to use [default=%default]"""  )
     
     parser.add_option("-s", "--scale", dest="scale", type="float",
@@ -343,6 +345,19 @@ if __name__ == "__main__":
                 row_headers = col_headers
                 nrows = ncols
 
+            elif method.startswith("symmetrize"):
+                f = method.split( "-" )[1]
+                if f == "max": f = max
+                elif f == "min": f = min
+                elif f == "mean": f = lambda x,y: float(x+y)/2
+                
+                if nrows != ncols: 
+                    raise ValueError("symmetrize only available for symmetric matrices")
+                if row_headers != col_headers: 
+                    raise ValueError("symmetrize not available for permuted matrices")
+                for x in range(nrows) :
+                    for y in range(ncols):
+                        matrix[x,y] = matrix[y,x] = f( matrix[x,y], matrix[y,x] )
             elif method == "sub":
                 matrix = options.value - matrix
 

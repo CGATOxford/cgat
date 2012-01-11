@@ -140,7 +140,10 @@ import Pipeline as P
 P.getParameters( 
     ["%s.ini" % __file__[:-len(".py")],
      "../pipeline.ini",
-     "pipeline.ini" ] )
+     "pipeline.ini" ],
+    defaults = { 
+        'query' : "",
+        'target' : "" } )
 PARAMS = P.PARAMS
 
 USECLUSTER=True

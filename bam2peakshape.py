@@ -97,11 +97,12 @@ def main( argv = None ):
     parser = optparse.OptionParser( version = "%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
                                     usage = globals()["__doc__"] )
 
-    # parser.add_option( "-c", "--centre", dest="centre", action="store_true",
-    #                    help = "center interval on maximum coverage interval [%default]" )
+    parser.add_option( "-o", "--only-interval", dest="only_interval", action="store_true",
+                       help = "only count tags strictly in interval. Otherwise, use window around peak center "
+                              " [%default]" )
 
     parser.add_option( "-w", "--window-size", dest="window_size", type = "int",
-                       help = "normalize all intervals to the same size. " 
+                       help = "window size to use"
                               "[%default]" )
 
     parser.add_option( "-b", "--bin-size", dest="bin_size", type = "int",
@@ -114,7 +115,7 @@ def main( argv = None ):
                               "[%default]" )
 
     parser.add_option( "-i", "--shift", dest="shift", type = "int",
-                       help = "shift for reads. "
+                       help = "shift for reads. Reads will be shifted upstream/downstream by this amount"
                               "[%default]" )
 
     parser.set_defaults(
@@ -124,7 +125,7 @@ def main( argv = None ):
         force_output = False,
         bin_size = 10,
         shift = 0,
-        window_size = 0,
+        window_size = 1000,
         sort = []
         )
 
@@ -156,7 +157,9 @@ def main( argv = None ):
         # print "%s:%i-%i" % (bed.contig, bed.start, bed.end)
         features = _bam2peakshape.count( pysam_in, bed.contig, bed.start, bed.end, 
                                          shift = shift,
-                                         bins = bins )
+                                         window_size = options.window_size,
+                                         bins = bins,
+                                         only_interval = options.only_interval )
         result.append( (features, bed) )
 
     # center bins
@@ -167,27 +170,39 @@ def main( argv = None ):
         outfile_matrix = E.openOutputFile( "matrix_%s.gz" % re.sub("-", "_", sort ) )            
         outfile_matrix.write( "name\t%s\n" % "\t".join( map(str, out_bins )))
         
+        n = 0
         for features, bed in result:
-            options.stdout.write( "%s\t%i\t%i\t%s\t" % (bed.contig, bed.start, bed.end, bed.name ) )
-            options.stdout.write( "\t".join( map(str, features[:-2] ) ) )
+            n += 1
+            if "name" in bed: name = bed.name
+            else:name = str(n)
             bins, counts = features[-2], features[-1]
-            options.stdout.write( "\t%s" % ",".join( map(str, bins )))
-            options.stdout.write( "\t%s" % ",".join( map(str, counts)))
-            options.stdout.write( "\n" )
-
-            outfile_matrix.write( "%s\t%s\n" % (bed.name, "\t".join(map(str,counts))) )
+            outfile_matrix.write( "%s\t%s\n" % (name, "\t".join(map(str,counts))) )
 
         outfile_matrix.close()
 
+    n = 0
+    for features, bed in result:
+        n += 1
+        if "name" in bed: name = bed.name
+        else: name = str(n)
+        options.stdout.write( "%s\t%i\t%i\t%s\t" % (bed.contig, bed.start, bed.end, name ) )
+
+        options.stdout.write( "\t".join( map(str, features[:-2] ) ) )
+        bins, counts = features[-2], features[-1]
+        options.stdout.write( "\t%s" % ",".join( map(str, bins )))
+        options.stdout.write( "\t%s" % ",".join( map(str, counts)))
+        options.stdout.write( "\n" )
+
     # output sorted matrices
     if not options.sort: writeMatrix( result, "unsorted" )
+
     for sort in options.sort: 
         if sort == "peak-height":
             result.sort( key = lambda x: x[0].peak_height )
             
         elif sort == "peak-width":
             result.sort( key = lambda x: x[0].peak_width )
-
+            
         writeMatrix( result, sort )
 
     ## write footer and output benchmark information.

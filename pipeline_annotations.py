@@ -85,7 +85,7 @@ csvdb
 
 annotation_gff.gz
    A :term:`gff` formatted file annotating the genome with respect to the geneset.
-   Annotations are non-overlapping.
+   Annotations are non-overlapping and are based only on protein coding transcripts.
 
 geneset_all.gtf.gz
    The full gene set after reconciling with assembly. Chromosomes names are
@@ -148,6 +148,10 @@ goslim.tsv.gz
 territories.gff.gz
    A :term:`gff` formatted file of non-overlapping gene territories.
 
+gc_segmentation.bed.gz
+   A :term:`bed` formatted file with the genome segmented in regions
+   of different G+C content.
+
 Example
 =======
 
@@ -168,6 +172,7 @@ import sys, tempfile, optparse, shutil, itertools, csv, math, random, re, glob, 
 import Experiment as E
 import Pipeline as P
 from ruffus import *
+from bx.bbi.bigwig_file import BigWigFile
 
 import sqlite3
 
@@ -175,7 +180,7 @@ import sqlite3
 import MySQLdb
 
 import IndexedFasta, IOTools, GFF
-import PipelineGeneset as PGeneset
+import PipelineGeneset as PipelineGeneset
 import PipelineBiomart as PBiomart
 import PipelineDatabase as PDatabase
 import PipelineGO
@@ -204,7 +209,7 @@ if os.path.exists("pipeline_conf.py"):
 @files( os.path.join( PARAMS["genome_dir"], PARAMS["genome"] + ".fasta"), 
         PARAMS['interface_contigs'] )
 def buildContigSizes( infile, outfile ):
-    '''output contig sizes
+    '''output contig sizes.
     '''
     prefix = P.snip( infile, ".fasta" )
     fasta = IndexedFasta.IndexedFasta( prefix )
@@ -212,6 +217,23 @@ def buildContigSizes( infile, outfile ):
 
     for contig, size in fasta.getContigSizes( with_synonyms = False ).iteritems():
         outs.write( "%s\t%i\n" % ( contig,size) )
+
+    outs.close()
+
+############################################################
+############################################################
+############################################################
+@files( os.path.join( PARAMS["genome_dir"], PARAMS["genome"] + ".fasta"), 
+        PARAMS['interface_contigs_bed'] )
+def buildContigBed( infile, outfile ):
+    '''output bed file with contigs
+    '''
+    prefix = P.snip( infile, ".fasta" )
+    fasta = IndexedFasta.IndexedFasta( prefix )
+    outs = IOTools.openFile(outfile, "w" )
+
+    for contig, size in fasta.getContigSizes( with_synonyms = False ).iteritems():
+        outs.write( "%s\t%i\t%i\n" % ( contig,0,size) )
 
     outs.close()
 
@@ -270,19 +292,26 @@ def buildGeneSet( infile, outfile ):
 ############################################################
 ############################################################
 @files( PARAMS["ensembl_filename_gtf"], PARAMS['interface_annotation_gff'] )
-def buildGeneRegions( infile, outfile ):
+def annotateGenome( infile, outfile ):
     '''annotate genomic regions with reference gene set.
 
-    Only considers protein coding genes. In case of overlapping
-    genes, only take the longest (in genomic coordinates).
+    Only considers protein coding genes. 
+    Processed_transcripts tend to cover larger genomic regions
+    and often overlap between adjacent protein coding genes.
+
+    In case of overlapping genes, only take the longest 
+    (in genomic coordinates).
+
     Genes not on UCSC contigs are removed.
     '''
-    PGeneset.buildGeneRegions( infile, outfile )
+    PipelineGeneset.annotateGenome( infile, 
+                                    outfile,
+                                    only_proteincoding = True )
 
 ############################################################
 ############################################################
 ############################################################
-@follows( buildGeneRegions )
+@follows( annotateGenome )
 @files( PARAMS["ensembl_filename_gtf"], PARAMS['interface_geneset_flat_gtf'] )
 def buildFlatGeneSet( infile, outfile ):
     '''build a flattened gene set.
@@ -291,7 +320,7 @@ def buildFlatGeneSet( infile, outfile ):
 
     *infile* is an ENSEMBL gtf file.
     '''
-    PGeneset.buildFlatGeneSet( infile, outfile )
+    PipelineGeneset.buildFlatGeneSet( infile, outfile )
 
 ############################################################
 ############################################################
@@ -299,7 +328,7 @@ def buildFlatGeneSet( infile, outfile ):
 @files( PARAMS["ensembl_filename_gtf"], "gene_info.load" )
 def loadGeneInformation( infile, outfile ):
     '''load the transcript set.'''
-    PGeneset.loadGeneInformation( infile, outfile )
+    PipelineGeneset.loadGeneInformation( infile, outfile )
 
 ############################################################
 ############################################################
@@ -308,7 +337,7 @@ def loadGeneInformation( infile, outfile ):
 def loadGeneStats( infile, outfile ):
     '''load the transcript set.'''
 
-    PGeneset.loadGeneStats( infile, outfile )
+    PipelineGeneset.loadGeneStats( infile, outfile )
 
 ############################################################
 ############################################################
@@ -321,7 +350,7 @@ def buildCDSTranscripts( infile, outfile ):
 
     Only CDS exons are parts of exons are output - UTR's are removed.
     '''
-    PGeneset.buildCDS( infile, outfile )
+    PipelineGeneset.buildCDS( infile, outfile )
 
 ############################################################
 ############################################################
@@ -332,10 +361,10 @@ def buildExonTranscripts( infile, outfile ):
     '''build a collection of transcripts from the protein-coding
     section of the ENSEMBL gene set.
 
-    Only CDS exons are parts of exons are output - UTR's are removed.
+    Only CDS exons are parts of exons are output - UTR's are not removed.
     
     '''
-    PGeneset.buildExons( infile, outfile )
+    PipelineGeneset.buildExons( infile, outfile )
 
 ############################################################
 ############################################################
@@ -343,7 +372,7 @@ def buildExonTranscripts( infile, outfile ):
 @transform( buildCDSTranscripts, suffix(".gtf.gz"), "_gtf.load" )
 def loadCDSTranscripts( infile, outfile ):
     '''load the transcript set.'''
-    PGeneset.loadTranscripts( infile, outfile )
+    PipelineGeneset.loadTranscripts( infile, outfile )
 
 ############################################################
 ############################################################
@@ -352,7 +381,7 @@ def loadCDSTranscripts( infile, outfile ):
 def loadCDSStats( infile, outfile ):
     '''load the transcript set.'''
 
-    PGeneset.loadTranscriptStats( infile, outfile )
+    PipelineGeneset.loadTranscriptStats( infile, outfile )
 
 ############################################################
 ############################################################
@@ -361,7 +390,7 @@ def loadCDSStats( infile, outfile ):
 def loadTranscriptInformation( infile, outfile ):
     '''load transcript information.'''
     
-#    PGeneset.loadTranscriptInformation( infile, 
+#    PipelineGeneset.loadTranscriptInformation( infile, 
 #                                        outfile,
 #                                       only_proteincoding = PARAMS["ensembl_only_proteincoding"] )
 
@@ -382,8 +411,8 @@ def loadTranscriptInformation( infile, outfile ):
 
     data = PBiomart.biomart_iterator( columns.keys()
                                       , biomart = "ensembl"
-                                      , dataset = "hsapiens_gene_ensembl" )
-
+                                      , dataset = PARAMS["ensembl_biomart_dataset"] )
+    
     PDatabase.importFromIterator( outfile
                                   , tablename
                                   , data
@@ -400,7 +429,7 @@ def buildPeptideFasta( infile, outfile ):
     
     *infile* is an ENSEMBL .pep.all.fa.gz file.
     '''
-    PGeneset.buildPeptideFasta( infile, outfile )
+    PipelineGeneset.buildPeptideFasta( infile, outfile )
 
 ###################################################################
 ###################################################################
@@ -412,7 +441,7 @@ def buildCDNAFasta( infile, outfile ):
     
     *infile* is an ENSEMBL .cdna.all.fa.gz file.
     '''
-    PGeneset.buildCDNAFasta( infile, outfile )
+    PipelineGeneset.buildCDNAFasta( infile, outfile )
 
 ###################################################################
 ###################################################################
@@ -424,7 +453,7 @@ def buildCDSFasta( infile, outfile ):
     *infile* is an ENSEMBL .cdna.all.fa.gz file.
     '''
 
-    PGeneset.buildCDSFasta( infile, outfile )
+    PipelineGeneset.buildCDSFasta( infile, outfile )
 
 ############################################################
 ############################################################
@@ -433,7 +462,7 @@ def buildCDSFasta( infile, outfile ):
 def loadProteinStats( infile, outfile ):
     '''load the transcript set.'''
 
-    PGeneset.loadProteinStats( infile, outfile )
+    PipelineGeneset.loadProteinStats( infile, outfile )
 
 ############################################################
 ############################################################
@@ -443,7 +472,7 @@ def loadProteinStats( infile, outfile ):
         PARAMS["interface_pseudogenes_gtf"] )
 def buildPseudogenes( infile, outfile ):
     '''build set of pseudogenes.'''
-    PGeneset.buildPseudogenes( infile, outfile )
+    PipelineGeneset.buildPseudogenes( infile, outfile )
 
 ############################################################
 ############################################################
@@ -452,7 +481,7 @@ def buildPseudogenes( infile, outfile ):
         PARAMS["interface_numts_gtf"] )
 def buildNUMTs( infile, outfile ):
     '''build list of NUMTs.'''
-    PGeneset.buildNUMTs( infile, outfile )
+    PipelineGeneset.buildNUMTs( infile, outfile )
 
 ############################################################
 ############################################################
@@ -558,23 +587,6 @@ def buildTTSRegions( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-@follows( buildPromotorRegions, buildGeneRegions, buildTSSRegions )
-@files( [ ("%s.gtf.gz" % x, "%s.bed.gz" % x ) for x in ("ensembl", "promotors", "tss" ) ] )
-def exportRegionAsBed( infile, outfile ):
-    '''export a reference gtf file as bed for computing overlap.'''
-
-    bed = Bed.Bed()
-    outfile = open( outfile, "w" )
-    with open(infile, "r") as inf: 
-        for gff in GTF.iterator( inf ):
-            bed.contig, bed.start, bed.end = gff.contig, gff.start, gff.end
-            bed.mFields = [ gff.gene_id ]
-            outfile.write( "%s\n" % str(bed) )
-    outfile.close()
-
-############################################################
-############################################################
-############################################################
 ## UCSC tracks
 ############################################################
 def connectToUCSC():
@@ -670,6 +682,110 @@ def importRepeatsFromUCSC( infile, outfile ):
 ############################################################
 ############################################################
 
+############################################################
+############################################################
+############################################################
+## build bed files with mappable regions
+############################################################
+@transform( os.path.join( PARAMS["ucsc_dir"], 
+                      "gbdb",
+                      PARAMS["ucsc_database"],
+                      "bbi",
+                      "*CrgMapability*.bw"),
+            regex( ".*CrgMapabilityAlign(\d+)mer.bw" ),
+            add_inputs( os.path.join( PARAMS["genome_dir"],
+                                      PARAMS["genome"] + ".fasta" ) ),
+            r"mapability_\1.bed.gz" )
+def buildMapableRegions( infiles, outfile ): 
+    '''build bed files with mappable regions.
+
+    Convert bigwig tracks with mappability information to a
+    bed-formatted file that contains only mappable regions of the
+    genome.
+
+    A mapable region is more permissive than a mapable position.
+
+    This method assumes that files use the ``CRG Alignability
+    tracks``.
+
+    UCSC says:
+ 
+      The CRG Alignability tracks display how uniquely k-mer sequences
+      align to a region of the genome. To generate the data, the
+      GEM-mappability program has been employed. The method is
+      equivalent to mapping sliding windows of k-mers (where k has been
+      set to 36, 40, 50, 75 or 100 nts to produce these tracks) back to
+      the genome using the GEM mapper aligner (up to 2 mismatches were
+      allowed in this case). For each window, a mapability score was
+      computed (S = 1/(number of matches found in the genome): S=1 means
+      one match in the genome, S=0.5 is two matches in the genome, and
+      so on). The CRG Alignability tracks were generated independently
+      of the ENCODE project, in the framework of the GEM (GEnome
+      Multitool) project.
+
+    For the purpose of these tracks, a region is defined to be un-mapable
+    if its maximum mapability score is less than 0.5. 
+    
+    Unmapable regions than are less than half kmer size are mapable, as
+    reads from the left/right mapable positions will extend into the region.
+    
+    '''
+
+    infile, fastafile = infiles
+    fasta = IndexedFasta.IndexedFasta( P.snip( fastafile, ".fasta" ) )
+    contigs = fasta.getContigSizes( with_synonyms = False )
+    
+    kmersize = int(re.search( ".*Align(\d+)mer.bw", infile ).groups()[0])
+    
+    E.info( "creating mapable regions bed files for kmer size of %i" % kmersize )
+
+    max_distance = kmersize // 2
+
+    f = open(infile)
+    bw = BigWigFile(file=f)
+    
+    def _iter_mapable_regions( bw, contig, size ):
+        
+        min_score = PARAMS["ucsc_min_mappability"]
+
+        # there is no iterator access, results are returned as list
+        # thus proceed window-wise in 10Mb windows
+        window_size = 10000000
+        last_start, start = None, None
+
+        for window_start in xrange(0, size, window_size):
+            values = bw.get( contig, window_start, window_start + window_size )
+            if values == None: continue
+
+            for this_start, this_end, value in values:
+                if value < min_score:
+                    if start: yield start, this_start
+                    start = None
+                else:
+                    if start == None: 
+                        start = this_start
+
+        if start != None:
+            yield start, this_end
+                
+    outf = IOTools.openFile( outfile, "w" )
+
+    for contig, size in contigs.iteritems():
+
+        last_start, last_end = None, None
+        for start, end in _iter_mapable_regions( bw, contig, size ):
+            if last_start == None: last_start, last_end = start, end
+            if start - last_end >= max_distance:
+                outf.write( "%s\t%i\t%i\n" % (contig, last_start, last_end ) )
+                last_start = start
+
+            last_end = end
+
+        if last_start != None:
+            outf.write( "%s\t%i\t%i\n" % (contig, last_start, last_end ) )
+
+    outf.close()
+
 if 0:
     ############################################################
     ############################################################
@@ -714,41 +830,10 @@ if 0:
             if tablename in tables:
                 E.info( "skipping %(tablename)s - already exists" % locals())
                 continue            
-
+            
             E.info( "importing %(tablename)s" % locals() )
             P.run()
 
-    ############################################################
-    ############################################################
-    ############################################################
-    ## import UCSC encode tracks
-    ############################################################
-    @files( PARAMS["filename_mappability"], PARAMS["annotator_mappability"] ) 
-    def exportUCSCMappabilityTrackToBed( infile, outfile ):
-        '''convert wiggle track with mappability information to a bed-formatted file
-        with only the mappable regions in the genome.'''
-
-        infile = gzip.open( infile, "r" )
-
-        outf = open( outfile, "w" )
-
-        for line in infile:
-            if line.startswith("fixedStep" ):
-                contig, start, step = re.match( "fixedStep chrom=(\S+) start=(\d+) step=(\d+)", line ).groups()
-                start, step = int(start)-1, int(step)
-                end = start + step
-                last_val = None
-            else:
-                val = int(line)
-                if last_val != val:
-                    if last_val == 1:
-                        outf.write( "\t".join( (contig, str(start), str(end ) ) ) + "\n" )
-                    start = end
-                    end = start + step
-                else:
-                    end += step
-                last_val = val
-        outf.close()
     ############################################################
     ############################################################
     ############################################################
@@ -941,9 +1026,121 @@ def buildGenomicContextStats( infile, outfile ):
 ##################################################################
 ##################################################################
 ##################################################################
+## build G+C segmentation
+##################################################################
+@files( os.path.join( PARAMS["genome_dir"], PARAMS["genome"]) + ".fasta",
+        PARAMS["interface_gc_segmentation_bed"] )
+def buildGenomeGCSegmentation( infile, outfile ):
+    '''segment the genome into windows according to G+C content.'''
+
+    to_cluster = True
+    
+    statement = '''
+    python %(scriptsdir)s/fasta2bed.py 
+        --method=fixed-width-windows-gc
+        --window-size=%(segmentation_window_size)i 
+        --log=%(outfile)s.log 
+    < %(infile)s 
+    | python %(scriptsdir)s/bed2bed.py 
+        --method=bins 
+        --num-bins=%(segmentation_num_bins)s 
+        --binning-method=%(segmentation_method)s 
+        --log=%(outfile)s.log 
+    | bgzip
+    > %(outfile)s'''
+
+    P.run()
+
+@files( os.path.join( PARAMS["genome_dir"], 
+                      PARAMS["genome"]) + ".fasta",
+        "gcprofile.bed.gz" )
+def runGenomeGCProfile( infile, outfile ):
+    '''segment the genome into windows according to G+C content.'''
+
+    to_cluster = True
+    
+    statement = '''
+    cat %(infile)s
+    | python %(scriptsdir)s/fasta2bed.py 
+        --verbose=2
+        --method=GCProfile
+        --min-length=%(segmentation_min_length)i
+        --halting-parameter=%(segmentation_halting_parameter)i
+        --log=%(outfile)s.log
+    | bgzip
+    > %(outfile)s
+    '''
+    P.run()
+
+@merge( runGenomeGCProfile, PARAMS["interface_gc_profile_bed"] )
+def buildGenomeGCProfile( infile, outfile ):
+    '''aggregate windows with similar G+C content into bins.
+    '''
+    statement = '''
+    zcat %(infile)s
+    | python %(scriptsdir)s/bed2bed.py 
+        --method=bins 
+        --num-bins=%(segmentation_num_bins)s 
+        --binning-method=%(segmentation_method)s 
+        --log=%(outfile)s.log 
+    | bgzip
+    > %(outfile)s'''
+    P.run()
+
+##################################################################
+##################################################################
+##################################################################
+## build gff summary
+##################################################################
+@transform( (annotateGenome, 
+             buildGeneTerritories, 
+             importRNAAnnotationFromUCSC,
+             importRepeatsFromUCSC ),
+            suffix(".gff.gz"), ".summary.tsv.gz" )
+def buildGFFSummary( infile, outfile ):
+    '''summarize genomic coverage of gff file.'''
+    tocluster = True
+    statement = '''zcat %(infile)s 
+                | python %(scriptsdir)s/gff2coverage.py 
+                      --genome-file=%(genome_dir)s/%(genome)s
+                | gzip > %(outfile)s
+                '''
+    P.run()
+
+##################################################################
+##################################################################
+##################################################################
+## build bed summary
+##################################################################
+@transform( (buildContigBed,
+             buildPromotorRegions,
+             buildTSSRegions,
+             buildMapableRegions,
+             buildGenomicContext,
+             buildGenomeGCSegmentation ),
+            suffix(".bed.gz"), ".summary.tsv.gz" )
+def buildBedSummary( infile, outfile ):
+    '''summarize genomic coverage of bed file.'''
+    tocluster = True
+    statement = '''zcat %(infile)s 
+                | python %(scriptsdir)s/bed2gff.py 
+                | python %(scriptsdir)s/gff2coverage.py 
+                      --genome-file=%(genome_dir)s/%(genome)s
+                | gzip > %(outfile)s
+                '''
+    P.run()
+
+@transform( (buildGFFSummary, buildBedSummary), suffix(".tsv.gz"), ".load" )
+def loadIntervalSummary( infile, outfile ):
+    P.load(infile, outfile)
+
+##################################################################
+##################################################################
+##################################################################
 ## Primary targets
 ##################################################################
 @follows( buildContigSizes,
+          buildContigBed,
           loadGenomeInformation )
 def genome():
     '''import information on geneset.'''
@@ -988,7 +1185,12 @@ def ontologies():
     '''create and load ontologies'''
     pass
 
-@follows( geneset, fasta, promotors, repeats, genome, ontologies )
+@follows( loadIntervalSummary )
+def summary():
+    '''summary targets.'''
+    pass
+
+@follows( geneset, fasta, promotors, repeats, genome, ontologies, summary )
 def full():
     '''build all targets.'''
     pass

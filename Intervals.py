@@ -380,7 +380,7 @@ def intersect( intervals1, intervals2 ):
 
 #----------------------------------------------------------------
 def getLength( intervals ):
-    '''retrun sum of intervals.'''
+    '''return sum of intervals.'''
     return sum([x[1]-x[0] for x in intervals])
 
 #----------------------------------------------------------------

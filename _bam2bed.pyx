@@ -6,15 +6,15 @@ import Experiment as E
 def merge_pairs( Samfile input_samfile,
                  outfile,
                  max_insert_size = 400 ):
-
     '''merge paired ended data.
 
     For speed reasons, the aligned region is only approximated using
     the read length. Indels within reads are ignored. Thus bed coordinates
     might be a few residues off.
 
-    The strand is always set to '+'
+    The strand is always set to '+'.
 
+    Pairs with a maximum insert size larger than *max_insert_size* are removed.
     '''
 
     cdef int ninput = 0

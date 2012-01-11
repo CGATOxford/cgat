@@ -54,6 +54,7 @@ import os, sys, re, optparse, tempfile, shutil, subprocess
 import collections
 
 import Experiment as E
+import IOTools
 
 ## for zinba
 from rpy2.robjects import r as R
@@ -162,6 +163,11 @@ def main( argv = None ):
         alignability_threshold = 1,
         bit_filename = None,
         fdr_threshold = 0.05,
+        workdir = None,
+        winsize = 250,
+        offset = 125,
+        cnvWinSize = 1e+05,
+        cnvOffset = 2500,
         )
 
 
@@ -177,15 +183,24 @@ def main( argv = None ):
     # load Zinba
     R.library( 'zinba' )
 
-    tmpdir = tempfile.mkdtemp( )
+    if not options.workdir:
+        tmpdir = tempfile.mkdtemp( )
+    else:
+        tmpdir = options.workdir
 
     E.debug( "temporary files are in %s" % tmpdir )
 
     if options.input_format == "bam":
         E.info( "converting bam files to bed" )
-        filename_sample = bamToBed( filename_sample, os.path.join( tmpdir, "sample.bed" ) )
+        if not os.path.exists( os.path.join( tmpdir, "sample.bed")):
+            filename_sample = bamToBed( filename_sample, os.path.join( tmpdir, "sample.bed" ) )
+        else:
+            E.info("using existing file %(tmpdir)s/sample.bed" % locals() )
         if filename_control:
-            filename_control = bamToBed( filename_control, os.path.join( tmpdir, "control.bed" ) )
+            if not os.path.exists( os.path.join( tmpdir, "control.bed")):
+                filename_control = bamToBed( filename_control, os.path.join( tmpdir, "control.bed" ) )
+            else:
+                E.info("using existing file %(tmpdir)s/control.bed" % locals() )
 
     fragment_size = options.fragment_size
     threads = options.threads
@@ -193,16 +208,30 @@ def main( argv = None ):
     mappability_dir = options.mappability_dir
     fdr_threshold = options.fdr_threshold
 
-    E.info( "computing counts" )
-    R( '''basealigncount( inputfile='%(filename_sample)s', 
+    if not os.path.exists( os.path.join( tmpdir, "basecount")):
+        E.info( "computing counts" )
+        
+        R( '''basealigncount( inputfile='%(filename_sample)s', 
                           outputfile='%(tmpdir)s/basecount', 
                           extension=%(fragment_size)i, 
                           filetype='bed', 
                           twoBitFile='%(bit_filename)s' )
                           '''  % locals() )
+    else:
+        E.info( "using existing counts" )
     
-    E.info( "computing peaks" )
+    E.info( "computing windows" )
 
+    contigs = E.run( "twoBitInfo %(bit_filename)s %(tmpdir)s/contig_sizes" % locals() )
+    contig2size = dict( [x.split() for x in IOTools.openFile( os.path.join( tmpdir, "contig_sizes")) ] )
+
+    # tried incremental updates
+    # for contig, size in contig2size.iteritems():
+    #     for size in 
+    #     fn = os.path.join( tmpdir, "sample_%(contig)s_win%(size)ibp_offset(offset)ibp.txt" % locals() )
+
+
+    # run zinba, do not build window data
     R( '''zinba( refinepeaks=1, 
                  seq='%(filename_sample)s', 
                  input='%(filename_control)s', 
@@ -219,8 +248,9 @@ def main( argv = None ):
                  interaction=FALSE, 
                  mode='peaks', 
                  FDR=TRUE) '''  % locals() )
-    
-    shutil.rmtree( tmpdir )
+
+    if not options.workdir:
+        shutil.rmtree( tmpdir )
 
     ## write footer and output benchmark information.
     E.Stop()

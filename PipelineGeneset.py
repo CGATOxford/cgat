@@ -126,7 +126,7 @@ def importRefSeqFromUCSC( infile, outfile, remove_duplicates = True ):
 ############################################################
 ############################################################
 ############################################################
-def buildGeneRegions( infile, outfile, only_proteincoding = False ):
+def annotateGenome( infile, outfile, only_proteincoding = False ):
     '''annotate genomic regions with reference gene set.
 
     *infile* is an ENSEMBL gtf file.
