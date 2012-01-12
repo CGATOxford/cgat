@@ -75,7 +75,7 @@ cdef coverageInInterval( Samfile samfile,
             rend = min( interval_width, rend - xstart )
 
             for i from rstart <= i < rend: ccounts[i] += 1
-
+            
     else:
         for read in samfile.fetch( contig, start, end ):
             nreads += 1
@@ -92,7 +92,6 @@ cdef coverageInInterval( Samfile samfile,
 
     return nreads, counts
 
-
 def count( Samfile samfile,
            contig, 
            int start, 
@@ -101,7 +100,8 @@ def count( Samfile samfile,
            int window_size = 0,
            float peak_ratio = 0.90,
            int shift = 0,
-           only_interval = False ):
+           only_interval = False,
+           centring_method = "reads" ):
     '''
     '''
 
@@ -133,12 +133,20 @@ def count( Samfile samfile,
     # counts only in interval - used to define peak center
     counts_in_interval = counts_in_window[offset_left:-offset_right]
 
+    if len(counts_in_interval) == 0:
+        raise ValueError( "empty interval: %i - %i for %s:%i-%i" % (offset_left, -offset_right, contig, start, end) )
+
     #################################################
     # compute peak shape parameters
     peak_nreads = max(counts_in_interval)
     peaks = numpy.array( range(0,interval_width) )[ counts_in_interval >= peak_nreads ]
-    peak_center = peaks[len(peaks) // 2] 
-
+    if centring_method == "reads":
+        peak_center = peaks[len(peaks) // 2] 
+    elif centring_method == "middle":
+        peak_center = interval_width // 2
+    else:
+        raise ValueError( "unknown centring method '%s'" % centring_method)
+ 
     # define peak height
     cdef int peak_height = numpy.ceil( peak_ratio * peak_nreads )
     
