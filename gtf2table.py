@@ -1830,17 +1830,29 @@ class CounterOverrun(Counter):
 
 ##-----------------------------------------------------------------------------------
 class CounterDistance(Counter):
-    """counter for computing the distance to features.
+    """counter for computing the distance to features on either side 
+    of a feature.
+
+    The strand of a feature is taken into account.
 
     The columns output are:
-    distance: distance to closest feature in any direction
-    id: id of closest feature *(
-    dist5: distance to closest feature in 5' direction
-    strand5: strand of feature in 5' direction
-    id5: id of feature in 5' direction
-    dist3: distance to closest feature in 3' direction
-    strand3: strand of feature in 3' direction
-    id3: id of feature in 5' direction
+
+    distance
+       distance to closest feature in any direction
+    id
+       id of closest feature 
+    dist5
+       distance to closest feature in 5' direction
+    strand5
+       strand of feature in 5' direction
+    id5
+       id of feature in 5' direction
+    dist3
+       distance to closest feature in 3' direction
+    strand3
+       strand of feature in 3' direction
+    id3
+       id of feature in 5' direction
 
     This counter outputs the gene_id of the closest feature.
 
@@ -2102,35 +2114,37 @@ class CounterDistanceGenes(CounterDistance):
 
 ##-----------------------------------------------------------------------------------
 class CounterDistanceTranscriptionStartSites(CounterDistance):
-    """counter for computing the distance to transcription start sites.
+    """compute the distance to transcription start sites.
 
-    There are two distances of interest:
+    Assumes that the intervals supplied are transcription start sites.
 
-    1. distances towards the closest tss.
-    2. distances towards the closest promoter 5' or 3' end
-       
-    The columns output are:
+    An interval is associated with various tss:
 
-    closest_id: id of closest feature
-    closest_dist: distance to closest feature
-    closest_strand: strand of closest feature
-    id5: gene_id of 5' tss 
-    dist5: minimum distance to 5' end of a tss
-    id3: gene_id of 3' tss
-    dist3: minimum distance to 3' end of a tss
+       * the closest tss overall (prefix = closest)
+       * the closest tss for which this interval is upstream of (prefix=upstream)
+       * the closest tss for which this interval is downstream of (prefix=downstream)
 
-    If the interval overlaps with a tss, the distances are set
-    towards the closest end and the flag ``is_overlap`` is set.
+    Note that if the tss is upstream to two genes (on either side), then
+    there will no downstream entry (and vice versa).
 
-    In order to check if gene is closer to 5' or 3' end of a gene, use::
+    For each of these tss', the following features are output:
+       * id: the transcript identifier of this tss
+       * dist: the distance to the tss
+       * strand: the strand of the tss
 
-       CASE WHEN amin3 > 0 THEN '3' ELSE '5' END
+    If the interval overlaps with a tss, the flag ``is_overlap`` is set and
+    the distance is set to 0.
 
-    TODO: check if all is correct.
+    For closest_tss_dist, the distances are positive if the interval is downstream of
+    the tss. It is negative for upstream distances.
     """
 
 
-    headerTemplate = ( "closest_id", "closest_dist", "closest_strand", "id5", "dist5", "id3", "dist3", "is_overlap" )
+    headerTemplate = ( "closest_id", "closest_dist",                        
+                       "closest_strand", 
+                       "upstream_id", "upstream_dist",
+                       "downstream_id", "downstream_dist",
+                       "is_overlap" )
 
     ## do not save value for intervals
     mWithValues = False
@@ -2153,65 +2167,73 @@ class CounterDistanceTranscriptionStartSites(CounterDistance):
     def __str__(self):
 
         closest_id, closest_dist, closest_strand = ["na"] * 3
-        d5_id, d5_dist, d3_id, d3_dist = ["na"] * 4
+        upstream_id, upstream_dist, downstream_id, downstream_dist = ["na"] * 4
 
         overlaps = self.mOverlaps
         if overlaps:
             gene_ids = set([ x[2].gene_id for x in overlaps ])
             is_overlap = str(len(gene_ids))
             closest_id, closest_dist, closest_strand = ",".join( gene_ids), 0, "."            
+            closest_id, closest_dist, closest_strand = list(gene_ids)[0], 0, "."
         else:
             is_overlap = "0"
 
             ## get distances to closest features depending which
             ## direction they are pointing.
-            ## The distance is modified, such that always the
-            ## distance towards the 5' end is recorded.
-            d5, d3 = [], []
+
+            ## distance is always distance to 5' end
+
+            upstream, downstream = [], []
             # 5'-----[ this ] ----- 3'
 
+            # feature closest in 5' direction of this feature
             if self.mData5:
                 if Genomics.IsPositiveStrand(self.strand5):
                     # 5'->3'-----[this] 
                     # feature points in same direction
-                    d3.append( (self.mDistance5 + (self.mData5.end - self.mData5.start), self.mData5.gene_id, self.strand5) )
+                    downstream.append( (self.mDistance5 + (self.mData5.end - self.mData5.start), 
+                                        self.mData5.gene_id, self.strand5) )
                 else:
                     # 3'<-5'-----[this] 
                     # feature points in different direction
-                    d5.append( (self.mDistance5, self.mData5.gene_id, self.strand5) )
+                    upstream.append( (self.mDistance5, self.mData5.gene_id, self.strand5) )
 
             if self.mData3:
                 if Genomics.IsPositiveStrand(self.strand3):
                     # [this]-----5'->3'
-                    d5.append( (self.mDistance3, self.mData3.gene_id, self.strand3) )
+                    upstream.append( (self.mDistance3, self.mData3.gene_id, self.strand3) )
                 else:
                     # [this]-----3'<-5'
-                    d3.append( (self.mDistance3 + (self.mData3.end - self.mData3.start), self.mData3.gene_id, self.strand3) )
+                    downstream.append( (self.mDistance3 + (self.mData3.end - self.mData3.start), self.mData3.gene_id, self.strand3) )
 
             # get minimum distance to 3' or 5' end of a gene
-            if d3: d3 = min(d3) 
-            else: d3 = []
-            if d5: d5 = min(d5)
-            else: d5 = []
+            if downstream: downstream = min(downstream) 
+            else: downstream = []
+            if upstream: upstream = min(upstream)
+            else: upstream = []
 
-            if d3 and d5:
-                closest_dist, closest_id, closest_strand = min( d3, d5 )
-            elif d3:
-                closest_dist, closest_id, closest_strand = d3
-            elif d5:
-                closest_dist, closest_id, closest_strand = d5
+            if downstream and upstream:
+                if downstream < upstream:
+                    closest_dist, closest_id, closest_strand = downstream
+                else:
+                    closest_dist, closest_id, closest_strand = upstream
+                    closest_dist *= -1
+            elif downstream:
+                closest_dist, closest_id, closest_strand = downstream
+            elif upstream:
+                closest_dist, closest_id, closest_strand = upstream
 
-            if d3: d3_dist, d3_id = d3[:2]
-            if d5: d5_dist, d5_id = d5[:2]
+            if downstream: downstream_dist, downstream_id = downstream[:2]
+            if upstream: upstream_dist, upstream_id = upstream[:2]
 
         return "\t".join( ( 
                 closest_id,
                 str(closest_dist),
                 str(closest_strand),
-                d5_id,
-                str(d5_dist),
-                d3_id,
-                str(d3_dist),
+                upstream_id,
+                str(upstream_dist),
+                downstream_id,
+                str(downstream_dist),
                 is_overlap) )    
 
 ##--------------------------------------------------------------------------------------------
