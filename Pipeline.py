@@ -598,6 +598,8 @@ def run( **kwargs ):
         jt.joinFiles=False
 
         return jt
+
+    shellfile = os.path.join( os.getcwd(), "shell.log" )
     
     # run multiple jobs
     if options.get( "statements" ):
@@ -626,6 +628,11 @@ def run( **kwargs ):
             # create job script
             tmpfile = tempfile.NamedTemporaryFile( dir = os.getcwd() , delete = False )
             tmpfile.write( "#!/bin/bash\n" ) #  -l -O expand_aliases\n" )
+            tmpfile.write( 'echo "START--------------------------------" >> %s \n' % shellfile )
+            tmpfile.write( 'echo "statement=%s" >> %s\n' % (statement, shellfile) )
+            tmpfile.write( "set &>> %s\n" % shellfile)
+            tmpfile.write( "module list &>> %s\n" % shellfile )
+            tmpfile.write( 'echo "END----------------------------------" >> %s \n' % shellfile )
             tmpfile.write( expandStatement(statement) + "\n" )
             tmpfile.close()
 
@@ -678,6 +685,12 @@ def run( **kwargs ):
 
         tmpfile = tempfile.NamedTemporaryFile( dir = os.getcwd() , delete = False )
         tmpfile.write( "#!/bin/bash\n" ) #  -l -O expand_aliases\n" )
+
+        tmpfile.write( 'echo "START--------------------------------" >> %s \n' % shellfile )
+        tmpfile.write( 'echo "statement=%s" >> %s\n' % (statement, shellfile) )
+        tmpfile.write( "set &>> %s\n" % shellfile)
+        tmpfile.write( "module list &>> %s\n" % shellfile )
+        tmpfile.write( 'echo "END----------------------------------" >> %s \n' % shellfile )
         tmpfile.write( expandStatement( statement ) + "\n" )
         tmpfile.close()
 
