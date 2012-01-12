@@ -3073,11 +3073,14 @@ def buildCuffdiffPlots( infile, outfile ):
             data = zip( *Database.executewait( dbhandle, statement ))
             
             pngfile = "%(outdir)s/%(geneset)s_%(method)s_%(level)s_%(track1)s_vs_%(track2)s_significance.png" % locals()
-            R.png( pngfile )
+            #ian: Bug fix: moved R.png to after data check so that no plot is started if there is no data
+            #     this was leading to R falling over from too many open devices
+
             if len(data) == 0:
                 E.warn( "no plot for %s - %s -%s vs %s" % ( pngfile, level, track1, track2))
                 continue
 
+            R.png( pngfile )
             R.plot( ro.FloatVector(data[0]), 
                     ro.FloatVector(data[1]), 
                     xlab = 'min(FPKM)',
