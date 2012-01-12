@@ -111,7 +111,8 @@ import Pipeline as P
 P.getParameters( 
     ["%s.ini" % __file__[:-len(".py")],
      "../pipeline.ini",
-     "pipeline.ini" ] )
+     "pipeline.ini" ],
+    defaults = { "maps" : "" } )
 PARAMS = P.PARAMS
 
 ###################################################################
@@ -185,7 +186,7 @@ def convertChainToPsl( infile, outfile ):
 ##################################################################################
 ## extracting alignments from maf files
 ##################################################################################
-if PARAMS["maf_dir"]:
+if "maf_dir" in PARAMS and "maf_tracks" in PARAMS:
     @files( [ ( ("%s/*.maf.gz" % PARAMS["maf_dir"]) 
                 , "%sTo%s.raw.psl.gz" % (PARAMS["%s_label" % track], PARAMS["maf_master"])
                 , track) for track in P.asList(PARAMS["maf_tracks"]) ] )

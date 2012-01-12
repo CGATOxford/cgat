@@ -25,6 +25,8 @@ Contents:
    python/Trackers.rst
  
 .. errorlist::
+
+.. warninglist::
   
 Indices and tables
 ==================

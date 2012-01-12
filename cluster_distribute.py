@@ -78,7 +78,9 @@ import Experiment as E
 def getNodes( nodes = None):
     '''hack - allow ranges, ...'''
     if nodes == None or len(nodes) == 0:
-        return [ "node%02i" % x for x in range(1,15) + range(20,34) + range(48,62) ]
+        # return [ "node%02i" % x for x in range(1,15) + range(20,34) + range(48,62) ]
+        return [ "cgat%03i" % x for x in range( 1,10) + range(101,117) ] + \
+            [ "cgat150", "cgatsmp1", "andromeda", "gandalf", "saruman" ]
     return nodes
 
 def main( argv = None ):

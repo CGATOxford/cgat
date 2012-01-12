@@ -188,7 +188,7 @@ def loadPicardHistogram( infiles, outfile, suffix, column, pipeline_suffix = ".p
     
     P.run()
 
-def loadPicardAlignmentStats( infiles, outfile, paired_end ):
+def loadPicardAlignmentStats( infiles, outfile ):
     '''load all output from Picard's CollectMultipleMetrics
     into sql database.'''
 

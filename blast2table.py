@@ -264,7 +264,7 @@ def main( argv = None ):
                       help="output format options [default=%default]."  )
 
     parser.add_option( "--no-header", dest="with_header", action="store_false",
-                      help="skip output of header [default=%default]."  )
+                       help="skip output of header [default=%default]."  )
 
     parser.add_option("-i", "--iterations", dest="iterations", type="choice",
                       choices = ("last", "all", "first", None ),
@@ -330,8 +330,6 @@ def main( argv = None ):
                         
             for r in filtered:
                 sys.stdout.write( "%s\t%i\n" % (str(r), r.iteration) )
-
-    sys.stdout.write( "#//\n" )
 
 if __name__ == "__main__":
     sys.exit( main( sys.argv) )

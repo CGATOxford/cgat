@@ -11,13 +11,14 @@ from SphinxReport import Utils
 ###################################################################
 ## parameterization
 
-EXPORTDIR=P['template_exportdir']
-DATADIR=P['template_datadir']
-DATABASE=P['template_backend']
+EXPORTDIR=P['intervals_exportdir']
+DATADIR=P['intervals_datadir']
+DATABASE=P['intervals_backend']
 
 ###########################################################################
-class TemplateTracker( TrackerSQL ):
+class IntervalTracker( TrackerSQL ):
     '''Define convenience tracks for plots'''
     def __init__(self, *args, **kwargs ):
         TrackerSQL.__init__(self, *args, backend = DATABASE, **kwargs )
+
 

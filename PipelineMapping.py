@@ -58,9 +58,72 @@ Code
 
 '''
 
-import os, sys, shutil, glob
+import os, sys, shutil, glob, collections
 import Pipeline as P
 import IOTools
+import Fastq
+import pysam
+
+SequenceInformation = collections.namedtuple( "SequenceInformation",
+                                              """paired_end 
+                                                 filename_first
+                                                 filename_second
+                                                 readlength_first
+                                                 readlength_second
+                                                 is_colour""" )
+
+def getReadLengthFromFastq( filename ):
+    '''return readlength from a fasta/fastq file.
+
+    Only the first read is inspected. If there are
+    different read lengths in the file, though luck.
+
+    '''
+
+    with IOTools.openFile( filename ) as infile:
+        record = iterate( infile ).next()
+        readlength = len(record.seq)
+        return readlength
+
+def getReadLengthFromBamfile( filename ):
+    '''return readlength from a bam file.
+
+    Only the first read is inspected. If there are
+    different read lengths in the file, though luck.
+    '''
+
+    samfile = pysam.Samfile( filename, "rb" )
+    record = samfile.fetch().next()
+    readlength = record.rlen
+    samfile.close()
+    return readlength
+
+def getSequencingInformation( track ):
+    '''glean sequencing information from *track*.'''
+
+    colour = False
+    if os.path.exists( "%s.fastq.gz" % track): 
+        first_pair = "%s.fastq.gz" % track
+        second_pair = None
+    elif os.path.exists( "%s.fastq.1.gz" % track): 
+        first_pair = "%s.fastq.1.gz" % track
+        second_pair = "%s.fastq.2.gz" % track
+    elif os.path.exists( "%s.csfasta.gz" % track):
+        first_pair = "%s.csfasta.gz" % track
+        second_pair = None
+        colour = True
+
+    second_length = None
+    if second_pair:
+        if not os.path.exists( second_pair ):
+            raise IOError("could not find second pair %s for %s" % (second_pair, first_pair) )
+        second_length = getReadLength( second_pair )
+    
+    return SequenceInformation._make( (second_pair != None,
+                                       first_pair, second_pair,
+                                       getReadLength( first_pair ),
+                                       second_length,
+                                       colour ) )
 
 class Mapper( object ):
     '''map reads.
@@ -75,6 +138,9 @@ class Mapper( object ):
     # set to True if you want to preserve colour space files.
     # By default, they are converted to fastq.
     preserve_colourspace = False
+
+    # compress fastq files with gzip
+    compress = False
 
     def __init__(self):
         pass
@@ -99,6 +165,13 @@ class Mapper( object ):
         # get track by extension of outfile
         track = os.path.splitext( os.path.basename( outfile ) )[0]
 
+        if self.compress:
+            compress_cmd = "| gzip"
+            extension = ".gz"
+        else:
+            compress_cmd = ""
+            extension = ""
+
         for infile in infiles:
 
             if infile.endswith( ".export.txt.gz"):
@@ -109,8 +182,9 @@ class Mapper( object ):
                              { readname=sprintf( "%%%%s_%%%%s:%%%%s:%%%%s:%%%%s:%%%%s", $1,$2,$3,$4,$5,$6);}
                         else { readname=sprintf( "%%%%s:%%%%s:%%%%s:%%%%s:%%%%s", $1,$3,$4,$5,$6); }
                        printf("@%%%%s\\n%%%%s\\n+\\n%%%%s\\n",readname,$9,$10);}'
-                     > %(tmpdir_fastq)s/%(track)s.fastq""" % locals() )
-                fastqfiles.append( ("%s/%s.fastq" % (tmpdir_fastq, track),) )
+                     %(compress_cmd)s
+                     > %(tmpdir_fastq)s/%(track)s.fastq%(extension)s""" % locals() )
+                fastqfiles.append( ("%s/%s.fastq%s" % (tmpdir_fastq, track, extension ),) )
 
             elif infile.endswith( ".sra"):
                 # sneak preview to determine if paired end or single end
@@ -127,8 +201,9 @@ class Mapper( object ):
 
                 statement.append(  """gunzip < %(infile)s 
                                       | python %%(scriptsdir)s/fastq2fastq.py --change-format=sanger --guess-format=phred64 --log=%(outfile)s.log
-                                      > %(tmpdir_fastq)s/%(track)s.fastq""" % locals() )
-                fastqfiles.append( ("%s/%s.fastq" % (tmpdir_fastq, track),) )
+                                      %(compress_cmd)s
+                                      > %(tmpdir_fastq)s/%(track)s.fastq%(extension)s""" % locals() )
+                fastqfiles.append( ("%s/%s.fastq%s" % (tmpdir_fastq, track, extension),) )
 
             elif infile.endswith( ".csfasta.gz" ):
                 # single end SOLiD data
@@ -137,18 +212,19 @@ class Mapper( object ):
                     if not os.path.exists( quality ):
                         raise ValueError( "no quality file for %s" % infile )
                     statement.append(  """gunzip < %(infile)s 
-                                          > %(tmpdir_fastq)s/%(track)s.csfasta""" % locals() )
+                                          > %(tmpdir_fastq)s/%(track)s.csfasta%(extension)s""" % locals() )
                     statement.append(  """gunzip < %(quality)s 
-                                          > %(tmpdir_fastq)s/%(track)s.qual""" % locals() )
-                    fastqfiles.append( ("%s/%s.csfasta" % (tmpdir_fastq, track),
-                                        "%s/%s.qual" % (tmpdir_fastq, track) ) )
+                                          > %(tmpdir_fastq)s/%(track)s.qual%(extension)s""" % locals() )
+                    fastqfiles.append( ("%s/%s.csfasta%s" % (tmpdir_fastq, track, extension ),
+                                        "%s/%s.qual%s" % (tmpdir_fastq, track, extension) ) )
                     self.datatype = "solid"
                 else:
                     quality = P.snip( infile, ".csfasta.gz" ) + ".qual.gz"
 
                     statement.append( """solid2fastq <(gunzip < %(infile)s) <(gunzip < %(quality)s)
-                                      > %(tmpdir_fastq)s/%(track)s.fastq""" % locals() )
-                    fastqfiles.append( ("%s/%s.fastq" % (tmpdir_fastq, track),) )
+                                      %(compress_cmd)s
+                                      > %(tmpdir_fastq)s/%(track)s.fastq%(extension)""" % locals() )
+                    fastqfiles.append( ("%s/%s.fastq%s" % (tmpdir_fastq, track, extension),) )
 
             elif infile.endswith( ".csfasta.F3.gz" ):
                 # paired end SOLiD data
@@ -160,16 +236,18 @@ class Mapper( object ):
                         fn = "%(bn)s.%(suffix)s" % locals()
                         if not os.path.exists( fn + ".gz"): raise ValueError( "expected file %s.gz missing" % fn )
                         statement.append( """gunzip < %(fn)s.gz
-                                          > %(tmpdir_fastq)s/%(track)s.%(suffix)s""" % locals() )
-                        f.append( "%(tmpdir_fastq)s/%(track)s.%(suffix)s" % locals() )
+                                          %(compress_cmd)s
+                                          > %(tmpdir_fastq)s/%(track)s.%(suffix)s%(extension)s""" % locals() )
+                        f.append( "%(tmpdir_fastq)s/%(track)s.%(suffix)s%(extension)s" % locals() )
                     fastqfiles.append( f )
                     self.datatype = "solid"
                 else:
                     quality = P.snip( infile, ".csfasta.gz" ) + ".qual.gz"
 
                     statement.append( """solid2fastq <(gunzip < %(infile)s) <(gunzip < %(quality)s)
-                                      > %(tmpdir_fastq)s/%(track)s.fastq""" % locals() )
-                    fastqfiles.append( ("%s/%s.fastq" % (tmpdir_fastq, track),) )
+                                      %(compress_cmd)s
+                                      > %(tmpdir_fastq)s/%(track)s.fastq%(extension)s""" % locals() )
+                    fastqfiles.append( ("%s/%s.fastq%s" % (tmpdir_fastq, track, extension),) )
                 
 
             elif infile.endswith( ".fastq.1.gz" ):
@@ -180,13 +258,15 @@ class Mapper( object ):
                     raise ValueError("can not find paired ended file '%s' for '%s'" % (infile2, infile))
                 statement.append( """gunzip < %(infile)s 
                                      | python %%(scriptsdir)s/fastq2fastq.py --change-format=sanger --guess-format=phred64 --log=%(outfile)s.log
-                                     > %(tmpdir_fastq)s/%(track)s.1.fastq;
+                                     %(compress_cmd)s
+                                     > %(tmpdir_fastq)s/%(track)s.1.fastq%(extension)s;
                                      gunzip < %(infile2)s 
                                      | python %%(scriptsdir)s/fastq2fastq.py --change-format=sanger --guess-format=phred64 --log=%(outfile)s.log
-                                     > %(tmpdir_fastq)s/%(track)s.2.fastq
+                                     %(compress_cmd)s
+                                     > %(tmpdir_fastq)s/%(track)s.2.fastq%(extension)s
                                  """ % locals() )
-                fastqfiles.append( ("%s/%s.1.fastq" % (tmpdir_fastq, track),
-                                    "%s/%s.2.fastq" % (tmpdir_fastq, track) ) )
+                fastqfiles.append( ("%s/%s.1.fastq%s" % (tmpdir_fastq, track, extension),
+                                    "%s/%s.2.fastq%s" % (tmpdir_fastq, track, extension) ) )
             else:
                 raise NotImplementedError( "unknown file format %s" % infile )
 
@@ -239,6 +319,9 @@ class Mapper( object ):
 
 class FastQc( Mapper ):
     '''run fastqc to test read quality.'''
+
+    compress = True
+
     def mapper( self, infiles, outfile ):
         '''build mapping statement on infiles.
         
@@ -248,7 +331,7 @@ class FastQc( Mapper ):
         statement = []
         for f in infiles:
             for i, x in enumerate(f):
-                track = P.snip( os.path.basename( x ), ".fastq" )
+                track = P.snip( os.path.basename( x ), ".fastq.gz" )
                 statement.append( '''fastqc --outdir=%%(exportdir)s/fastqc %(x)s >& %(outfile)s;''' % locals() )
         return " ".join( statement )
 
@@ -389,6 +472,9 @@ class Tophat( Mapper ):
 
     # tophat can map colour space files directly
     preserve_colourspace = True
+
+    # newer versions of tophat can work of compressed files
+    compress = True
     
     def mapper( self, infiles, outfile ):
         '''build mapping statement on infiles.
@@ -436,7 +522,7 @@ class Tophat( Mapper ):
             statement = '''
             tophat --output-dir %(tmpdir_tophat)s
                    --mate-inner-dist %%(tophat_mate_inner_dist)i
-                   --num-threads %%(tophat_threads)i
+                    --num-threads %%(tophat_threads)i
                    --library-type %%(tophat_library_type)s
                    %(data_options)s
                    %%(tophat_options)s
@@ -485,6 +571,116 @@ class Tophat( Mapper ):
             gzip < %(tmpdir_tophat)s/junctions.bed > %(track)s.junctions.bed.gz; 
             mv %(tmpdir_tophat)s/logs %(outfile)s.logs;
             samtools index %(outfile)s;
+            ''' % locals()
+
+        return statement
+
+class TopHat_fusion( Mapper ):
+    
+    # tophat can map colour space files directly
+    preserve_colourspace = True
+    
+    def mapper( self, infiles, outfile ):
+        '''build mapping statement on infiles.
+        '''
+
+        num_files = [ len( x ) for x in infiles ]
+        
+        if max(num_files) != min(num_files):
+            raise ValueError("mixing single and paired-ended data not possible." )
+        
+        nfiles = max(num_files)
+        
+        tmpdir_tophat = os.path.join(  self.tmpdir_fastq  + "tophat" )
+        tmpdir_fastq = self.tmpdir_fastq
+
+        # add options specific to data type
+        data_options = []
+        if self.datatype == "solid":
+            data_options.append( "--quals --integer-quals --color" )
+            index_file = "%(bowtie_index_dir)s/%(genome)s_cs"
+        else:
+            index_file = "%(bowtie_index_dir)s/%(genome)s"
+
+        data_options = " ".join( data_options )
+
+        if nfiles == 1:
+            infiles = ",".join( [ x[0] for x in infiles ] )
+            statement = '''
+            module load tophatfusion;
+            tophat-fusion --output-dir %(tmpdir_tophat)s
+                   --num-threads %%(tophat_threads)i
+                   --library-type %%(tophat_library_type)s
+                   %(data_options)s
+                   %%(tophat_options)s
+                   %%(tophatfusion_options)s
+                   %(index_file)s
+                   %(infiles)s 
+                   >> %(outfile)s.log 2>&1 ;
+            ''' % locals()
+
+        elif nfiles == 2:
+            # this section works both for paired-ended fastq files
+            # and single-end color space mapping (separate quality file)
+            infiles1 = ",".join( [ x[0] for x in infiles ] )
+            infiles2 = ",".join( [ x[1] for x in infiles ] )
+
+            statement = '''
+            module load tophatfusion;
+            tophat-fusion --output-dir %(tmpdir_tophat)s
+                   --mate-inner-dist %%(tophat_mate_inner_dist)i
+                    --num-threads %%(tophat_threads)i
+                   --library-type %%(tophat_library_type)s
+                   %(data_options)s
+                  %%(tophat_options)s
+                  %%(tophatfusion_options)s
+                   %(index_file)s
+                   %(infiles1)s %(infiles2)s 
+                   >> %(outfile)s.log 2>&1 ;
+            ''' % locals()
+        elif nfiles == 4:
+            # this section works both for paired-ended fastq files
+            # in color space mapping (separate quality file)
+            # reads1 reads2 qual1 qual2
+            infiles1 = ",".join( [ x[0] for x in infiles ] )
+            infiles2 = ",".join( [ x[1] for x in infiles ] )
+            infiles3 = ",".join( [ x[2] for x in infiles ] )
+            infiles4 = ",".join( [ x[3] for x in infiles ] )
+
+            statement = '''
+            module load bio/tophatfusion;
+            tophat-fusion --output-dir %(tmpdir_tophat)s
+                   --mate-inner-dist %%(tophat_mate_inner_dist)i
+                   --num-threads %%(tophat_threads)i
+                   --library-type %%(tophat_library_type)s
+                   %(data_options)s
+                   %%(tophat_options)s
+                   %%(tophatfusion_options)s
+                   %(index_file)s
+                   %(infiles1)s %(infiles2)s 
+                   %(infiles3)s %(infiles4)s 
+                   >> %(outfile)s.log 2>&1 ;
+            ''' % locals()
+
+
+        else:
+            raise ValueError( "unexpected number reads to map: %i " % nfiles )
+
+        self.tmpdir_tophat = tmpdir_tophat
+
+        return statement
+    
+    def postprocess( self, infiles, outfile ):
+        '''collect output data and postprocess.'''
+        
+        track = P.snip( outfile, "/accepted_hits.sam" )
+        tmpdir_tophat = self.tmpdir_tophat
+
+        if not os.path.exists('%s' % track):
+            os.mkdir('%s' % track)
+
+        statement = '''
+            mv -f %(tmpdir_tophat)s/* %(track)s/;  
             ''' % locals()
 
         return statement

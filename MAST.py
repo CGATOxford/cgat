@@ -141,8 +141,61 @@ def parse( infile ):
                   
     return mast
 
+def frequencies2logodds( counts, background_frequencies = None ): 
+    '''write a motif from *counts* to outfile.
+
+    Counts should be a numpy matrix with *nalphabet* columns and *motif_width* rows.
+    '''
+
+    motif_width, nalphabet = counts.shape
+
+    if background_frequencies == None:
+        # use uniform background
+        f = 1.0 / nalphabet
+        background_frequencies = [f] * nalphabet
+    
+    assert len(background_frequencies) == nalphabet
+    background_freqs = numpy.array( background_frequencies )
+    logodds_matrix = numpy.ones( (motif_width, nalphabet), dtype = numpy.float )
+
+    for x in range( motif_width ):
+        # divide by backgound_freqs 
+        # divide by column total
+        # take log
+        logodds_matrix[x] =  numpy.log( counts[x] / counts[x].sum() / background_freqs )
+        
+    return logodds_matrix
+    
+def writeMast( outfile, logodds_matrix, alphabet ):
+    '''output logodds matrix in MAST format.'''
+
+    
+    motif_width, nalphabet, = logodds_matrix.shape
+    assert len(alphabet) == nalphabet
+
+    outfile.write( "ALPHABET= %s\n" % alphabet )
+    outfile.write( "log-odds matrix: alength= %i w= %i\n" % (nalphabet, motif_width) )
+    for row in logodds_matrix:
+        outfile.write( " ".join( 
+                ["%5.3f" % x for x in row ] ) + "\n")
+
+    outfile.write("\n")
+
+def writeTomTom( outfile, counts_matrix ):
+    '''output counts matrix in tomtom format.
+
+    output counts with columns as motif positions
+    and rows as alphabet.
+    '''
+    
+    for row in numpy.transpose( counts_matrix ):
+        outfile.write( " ".join( 
+                ["%6i" % x for x in row ] ) + "\n")
+
+    outfile.write("\n")
+
 def sequences2motif( outfile, sequences, background_frequencies = None, format = "MAST" ):
-    '''write a motif within sequences to outfile.'''
+    '''write a motif defined by a collection of sequences to outfile.'''
 
     # collect all letters
     counts = collections.defaultdict( int )
@@ -167,18 +220,16 @@ def sequences2motif( outfile, sequences, background_frequencies = None, format =
         outfile.write( "ALPHABET= %s\n" % alphabet )
         outfile.write( "log-odds matrix: alength= %i w= %i\n" % (lalphabet, motif_width) )
         for r in range( 0, motif_width):
+            # use a pseudocount of 1
             row_counts = [ 1 ] * lalphabet
             for s in seqs: row_counts[char2index[s[r]]] += 1
             outfile.write( " ".join(
                 ["%5.3f" % (math.log( float(row_counts[x]) / nsequences / background_frequencies[x]) )
                  for x in range(lalphabet)] ) + "\n" )
-
                    
     elif format == "TOMTOM":
-
         counts = numpy.zeros( (motif_width, lalphabet) )
         for x in range( 0, motif_width):
-            
             for s in seqs:
                 counts[x,char2index[s[x]]] += 1
 
