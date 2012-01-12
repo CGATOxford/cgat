@@ -530,7 +530,37 @@ def loadContextStats( infiles, outfile ):
 @transform( TRACKS_BEDFILES,
             suffix(".bed.gz"),
             ".annotations" )
-def annotateIntervals( infile, outfile ):
+def annotateIntervalsFull( infile, outfile ):
+    '''classify chipseq intervals according to their location 
+    with respect to the gene set.
+    '''
+    to_cluster = True
+
+    annotation_file = os.path.join( PARAMS["annotations_dir"],
+                                    PARAMS_ANNOTATIONS["interface_annotation_gff"] )
+
+    statement = """
+    zcat < %(infile)s 
+    | python %(scriptsdir)s/bed2gff.py --as-gtf 
+    | python %(scriptsdir)s/gtf2table.py 
+		--counter=position 
+		--counter=classifier-chipseq 
+		--section=exons 
+		--counter=length 
+		--log=%(outfile)s.log 
+		--filename-gff=%(annotation_file)s 
+		--genome-file=%(genome_dir)s/%(genome)s
+    > %(outfile)s"""
+    
+    P.run()
+
+############################################################
+############################################################
+############################################################
+@transform( exportPeakLocations,
+            suffix(".bed.gz"),
+            ".annotations" )
+def annotateIntervalsPeak( infile, outfile ):
     '''classify chipseq intervals according to their location 
     with respect to the gene set.
     '''
@@ -644,6 +674,33 @@ def annotateTSS( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
+@transform( exportPeakLocations,
+            suffix(".bed.gz"),
+            ".tss" )
+def annotateTSSPeaks( infile, outfile ):
+    '''compute distance to TSS'''
+
+    to_cluster = True
+
+    annotation_file = os.path.join( PARAMS["annotations_dir"],
+                                    PARAMS_ANNOTATIONS["interface_tss_bed"] )
+
+    statement = """
+    zcat < %(infile)s 
+        | python %(scriptsdir)s/bed2gff.py --as-gtf 
+	| python %(scriptsdir)s/gtf2table.py 
+		--counter=distance-tss 
+		--log=%(outfile)s.log 
+		--filename-gff=%(annotation_file)s 
+                --filename-format="bed" 
+		--genome-file=%(genome_dir)s/%(genome)s
+	> %(outfile)s"""
+
+    P.run()
+
+############################################################
+############################################################
+############################################################
 @transform( TRACKS_BEDFILES,
             suffix(".bed.gz"),
             ".repeats" )
@@ -668,7 +725,7 @@ def annotateRepeats( infile, outfile ):
     P.run()
 
 ############################################################
-@transform( annotateIntervals, suffix(".annotations"), "_annotations.load" )
+@transform( (annotateIntervalsFull, annotateIntervalsPeak), suffix(".annotations"), "_annotations.load" )
 def loadAnnotations( infile, outfile ):
     '''load interval annotations: genome architecture
     '''
@@ -682,11 +739,11 @@ def loadBinding( infile, outfile ):
     P.load( infile, outfile, "--index=gene_id --allow-empty --map=pattern:str" )
 
 ############################################################
-@transform( annotateTSS, suffix( ".tss"), "_tss.load" )
+@transform( (annotateTSS, annotateTSSPeaks), suffix( ".tss"), "_tss.load" )
 def loadTSS( infile, outfile ):
     '''load interval annotations: distance to transcription start sites
     '''
-    P.load( infile, outfile, "--index=gene_id --index=closest_id --index=id5 --index=id3 --allow-empty" )
+    P.load( infile, outfile, "--index=gene_id --index=closest_id --index=upstream_id --index=downstream_id --allow-empty" )
 
 ############################################################
 @transform( annotateRepeats, suffix(".repeats"), "_repeats.load" )
@@ -1071,7 +1128,7 @@ def exportMotifLocations( infiles, outfile ):
 ############################################################
 ## compute overlap with genomic features
 ############################################################
-@follows( mkdir("context_gat.dir") )
+@follows( mkdir("gat_context.dir") )
 @transform( TRACKS_BEDFILES,
             regex("(.*).bed.gz"),
             add_inputs( os.path.join( PARAMS["annotations_dir"],
@@ -1081,7 +1138,7 @@ def exportMotifLocations( infiles, outfile ):
                         os.path.join( PARAMS["annotations_dir"],
                                       PARAMS_ANNOTATIONS["interface_gc_profile_bed"] ),
                         ),
-            r"context_gat.dir/\1.gat.tsv.gz" )
+            r"gat_context.dir/\1.gat.tsv.gz" )
 def runGATOnGenomicContext( infiles, outfile ):
     '''run gat agains genomic context.
 
@@ -1113,7 +1170,12 @@ def runGATOnGenomicContext( infiles, outfile ):
 
     P.run()
 
-@follows( mkdir("annotations_gat.dir") )
+############################################################
+############################################################
+############################################################
+## compute overlap with genomic annotations
+############################################################
+@follows( mkdir("gat_annotations.dir") )
 @transform( TRACKS_BEDFILES,
             regex("(.*).bed.gz"),
             add_inputs( os.path.join( PARAMS["annotations_dir"],
@@ -1123,7 +1185,7 @@ def runGATOnGenomicContext( infiles, outfile ):
                         os.path.join( PARAMS["annotations_dir"],
                                       PARAMS_ANNOTATIONS["interface_gc_profile_bed"] ), 
                         ),
-            r"annotations_gat.dir/\1.gat.tsv.gz" )
+            r"gat_annotations.dir/\1.gat.tsv.gz" )
 def runGATOnGenomicAnnotations( infiles, outfile ):
     '''run gat agains genomic context.
 
@@ -1154,6 +1216,63 @@ def runGATOnGenomicAnnotations( infiles, outfile ):
          > %(outfile)s'''
 
     P.run()
+
+############################################################
+############################################################
+############################################################
+## compute overlap with gene annotations
+############################################################
+@follows( mkdir("gat_functions.dir") )
+@transform( TRACKS_BEDFILES,
+            regex("(.*).bed.gz"),
+            add_inputs( os.path.join( PARAMS["annotations_dir"],
+                                      PARAMS_ANNOTATIONS["interface_genomic_function_bed"] ),
+                        os.path.join( PARAMS["annotations_dir"],
+                                      PARAMS_ANNOTATIONS["interface_genomic_function_tsv"] ),
+                        os.path.join( PARAMS["annotations_dir"],
+                                      PARAMS_ANNOTATIONS["interface_territories_gff"] ),
+                        os.path.join( PARAMS["annotations_dir"],
+                                      PARAMS_ANNOTATIONS["interface_mapability_bed"] % PARAMS["gat_mapability"] ),
+                        os.path.join( PARAMS["annotations_dir"],
+                                      PARAMS_ANNOTATIONS["interface_gc_profile_bed"] ), 
+                        ),
+            r"gat_functions.dir/\1.gat.tsv.gz" )
+def runGATOnGeneAnnotations( infiles, outfile ):
+    '''run gat against genes and their annotations.
+
+    The workspace is composed of all mapable regions within gene territories.
+    Enrichment is controlled by isochores.
+
+    To be rigorous, FDR should be re-computed after merging all
+    analyses.
+    '''
+
+    job_options = "-l mem_free=50G"
+    
+    bedfile, annofile, descriptionfile, workspacefile, mapabilityfile, isochorefile = infiles    
+
+    to_cluster = True
+    outdir = "annotations_gat.dir"
+
+    statement = '''gatrun.py
+         --segments=%(bedfile)s
+         --annotations=%(annofile)s
+         --workspace=<(zcat %(workspacefile)s | awk '{printf("%%s\\t%%i\\t%%i\\n",$1,$4,$5);}')
+         --workspace=%(mapabilityfile)s
+         --isochores=%(isochorefile)s
+         --num-samples=%(gat_num_samples)i
+         --descriptions=%(descriptionfile)s
+         --force
+         --ignore-segment-tracks
+         --output-filename-pattern=%(outfile)s.%%s
+         -v 5
+         --log=%(outfile)s.log
+         | gzip
+         > %(outfile)s'''
+
+    P.run()
+
+
 
 @transform( (runGATOnGenomicContext,
              runGATOnGenomicAnnotations ),
