@@ -43,8 +43,11 @@ def buildProbeset2Gene( infile,
                  len(set(result["probe_id"])),
                  len(set(result["ensembl_id"])) ) )
 
-class GeneExpressionResult(object):
-    pass
+
+
+GeneExpressionResult = collections.namedtuple( "GeneExpressionResult", \
+                                                   "probeset treatment_mean treatment_std control_mean control_std pvalue qvalue l2fold fold called" )
+
 
 class WelchsTTest(object):
     '''base class for computing expression differences.
@@ -171,6 +174,8 @@ class SAM( object ):
     reproduce the same results from the original SAM study getting
     differences in d and in the fdr.
 
+    fold change is treatment / control.
+
     '''
     
     def __call__(self, probesets, 
@@ -284,7 +289,7 @@ class SAM( object ):
             R.assign( "summary", summary )
 
             called_genes = set( [probesets[int(x)-1] for x in R('''summary@row.sig.genes''')] )
-            E.debug( "called genes=%s" % str(called_genes))
+            # E.debug( "called genes=%s" % str(called_genes))
             
             r_result = zip(*_totable( summary.do_slot( 'mat.sig' ) ))
             
@@ -317,28 +322,27 @@ class SAM( object ):
         genes = []
         for probeset, treatment, control in zip( probesets, zip(*treatments), zip(*controls) ):
 
-            nval1, nval2 = len(treatment), len(control)
             mean1, mean2 = numpy.mean(treatment), numpy.mean(control)
-            stddev1, stddev2 = numpy.std(treatment), numpy.std(control)
-            result = GeneExpressionResult()
-
-            result.probeset = probeset
-            result.difference = mean1 - mean2
-            result.fold = math.pow(2,result.difference)
-
-            result.mean1, result.mean2 = mean1, mean2
-            result.stddev1, result.stddev2 = stddev1, stddev2
 
             if probeset in siggenes:
                 s = siggenes[probeset]
-                result.pvalue = s.rawp
-                result.qvalue = s.qvalue
+                pvalue = s.rawp
+                qvalue = s.qvalue
             else:
-                result.pvalue = pvalues[probeset]
-                result.qvalue = qvalues[probeset]
+                pvalue = pvalues[probeset]
+                qvalue = qvalues[probeset]
 
-            result.called = probeset in called_genes
+            called = (0,1)[probeset in called_genes]
 
-            genes.append( result )
+            genes.append( GeneExpressionResult._make( (probeset,
+                                                       mean1,
+                                                       numpy.std( treatment ),
+                                                       mean2,
+                                                       numpy.std( control ),
+                                                       pvalue,
+                                                       qvalue,
+                                                       mean1 - mean2,
+                                                       math.pow(2,mean1 - mean2),
+                                                       called ) ) )
 
         return genes, cutoff, fdr_values
