@@ -375,7 +375,6 @@ def count( counters,
     '''
 
     c = E.Counter()
-
     counts = [0] * len(counters)
 
     iterations = 0
