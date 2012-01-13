@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-SetTools.py - 
+SetTools.py - Tools for working on sets
 ======================================================
 
 :Author: Andreas Heger
@@ -29,12 +29,47 @@ SetTools.py -
 :Date: |today|
 :Tags: Python
 
+Many of the functions in this module precede the :py:class:`set` datatype
+in python.
+
 Code
 ----
 
 '''
-import array
-import numpy
+
+import itertools
+
+def combinations( list_of_sets ):
+    '''create all combinations of a list of sets
+
+    returns a list of tuples ( set_composition, union, intersection )
+    '''
+
+    sr = range(len(list_of_sets))
+    results = []
+    for l in range(1, len(list_of_sets)):
+        for combination in itertools.combinations( sr, l ):
+            union = list_of_sets[combination[0]].union( *[list_of_sets[x] for x in combination[1:]])
+            inter = list_of_sets[combination[0]].intersection( *[list_of_sets[x] for x in combination[1:]])
+
+            results.append( (combination, union, inter ) )
+    return results
+
+def writeSets( outfile, list_of_sets, labels = None ):
+    '''output a list of sets as a tab-separated file.
+
+    *labels* is a list of set labels.
+    '''
+    
+    all_ids = list_of_sets[0].union( *list_of_sets[1:] ) 
+    if not labels: labels = range( len(list_of_sets))
+
+    outfile.write("id\t%s\n" % "\t".join(map(str,labels)))
+
+    for i in sorted(list(all_ids)):
+        outfile.write( "%s\t%s\n" % (i,
+                                  "\t".join( map(str, [ [0,1][i in x] for x in list_of_sets ] ) ) ))
+    
 
 #------------------------------------------------------------------------
 def CompareSets( set1, set2):
