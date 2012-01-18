@@ -8,19 +8,14 @@ Contents:
    :maxdepth: 2
 
    pipeline/Methods.rst
-   pipeline/predicted_cgis.rst
    pipeline/genome_composition.rst
+   pipeline/predicted_cgis.rst
    pipeline/Mapping.rst
    pipeline/macs.rst
-   pipeline/macs_intervals.rst
-   pipeline/macs_genomic_features.rst
-   pipeline/macs_tss_distance.rst
-   pipeline/macs_interval_comparison.rst
-   pipeline/macs_unique_intervals.rst
-   pipeline/macs_shared_intervals.rst
    pipeline/macs_replicated_intervals.rst
-   pipeline/macs_replicated_interval_annotations.rst
+   pipeline/macs_replicated_intervals_per_contig.rst
    pipeline/macs_replicated_interval_genomic_features.rst
+   pipeline/macs_replicated_interval_tss_distance.rst
    pipeline/macs_replicated_interval_comparison.rst
    pipeline/macs_replicated_unique_intervals.rst
    pipeline/macs_replicated_shared_intervals.rst
@@ -28,6 +23,12 @@ Contents:
    pipeline/macs_cgi_intervals.rst
    pipeline/macs_long_intervals.rst
    pipeline/macs_low_cpg_intervals.rst
+   pipeline/macs_genomic_features.rst
+   pipeline/macs_tss_distance.rst
+   pipeline/macs_intervals.rst
+   pipeline/macs_interval_comparison.rst
+   pipeline/macs_unique_intervals.rst
+   pipeline/macs_shared_intervals.rst
    pipeline/macs_parameter_correlation.rst
 .. errorlist::
   

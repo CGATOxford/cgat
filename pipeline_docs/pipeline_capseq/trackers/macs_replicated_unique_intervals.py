@@ -139,4 +139,46 @@ class replicatedUniqueIntervalGCContent( cpgTracker ):
                                AND c.gene_id=i.interval_id''' % locals() )
         return data
 
+##################################################################################
+class replicatedUniqueIntervalEnsemblTranscriptOverlap(featureOverlap):
+    """return overlap of interval with Ensembl protein-coding transcripts """
+    mPattern = "_replicated_unique_intervals$"
+
+    def __call__(self, track, slice = None):
+        data = self.getValues( """ SELECT count(distinct gene_id) as intervals FROM (
+                                   SELECT gene_id,
+                                   CASE WHEN  tss_extended_pover1 > 0  THEN 'TSS'
+                                   WHEN genes_pover1 > 0 THEN 'Gene'
+                                   WHEN upstream_flank_pover1 >0 THEN 'Upstream'
+                                   WHEN downstream_flank_pover1 >0 THEN 'Downstream'
+                                   ELSE 'Intergenic'
+                                   END AS feature_class
+                                   FROM %(track)s_replicated_ensembl_transcript_overlap o, %(track)s_replicated_unique_intervals u
+                                   WHERE u.interval_id=o.gene_id)
+                                   group by feature_class
+                                   order by feature_class asc""" % locals() )
+               
+        return odict(zip(("Downstream","Gene","Intergenic","TSS","Upstream"),data))
+
+##################################################################################
+class replicatedUniqueIntervalEnsemblGeneOverlap(featureOverlap):
+    """return overlap of interval with Ensembl protein-coding genes """
+    mPattern = "_replicated_unique_intervals$"
+
+    def __call__(self, track, slice = None):
+        data = self.getValues( """ SELECT count(distinct gene_id) as intervals FROM (
+                                   SELECT gene_id,
+                                   CASE WHEN tss_gene_interval_pover1 > 0  THEN 'TSS'
+                                   WHEN genes_pover1 > 0 THEN 'Gene'
+                                   WHEN upstream_flank_pover1 >0 THEN 'Upstream'
+                                   WHEN downstream_flank_pover1 >0 THEN 'Downstream'
+                                   ELSE 'Intergenic'
+                                   END AS feature_class
+                                   FROM %(track)s_replicated_ensembl_gene_overlap o, %(track)s_replicated_unique_intervals u
+                                   WHERE u.interval_id=o.gene_id)
+                                   group by feature_class
+                                   order by feature_class asc""" % locals() )
+               
+        return odict(zip(("Downstream","Gene","Intergenic","TSS","Upstream"),data))
+
 

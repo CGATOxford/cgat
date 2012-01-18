@@ -905,6 +905,8 @@ def loadMACS( infile, outfile, bamfile, tablename = None ):
     infilename =  folder + "/" + track + "_peaks.xls"
     filename_diag = folder + "/" + track + "_diag.xls"
     filename_r = folder + "/" + track + "_model.r"
+    filename_rlog = folder + "/" + track + ".r.log"
+    filename_pdf = track + "_model.pdf"
     
     if not os.path.exists(infilename):
         E.warn("could not find %s" % infilename )
@@ -913,19 +915,9 @@ def loadMACS( infile, outfile, bamfile, tablename = None ):
 
     # create plot by calling R
     if os.path.exists( filename_r ):
-
-        target_path = os.path.join( os.getcwd(), "export", "MACS" )
-        try:
-            os.makedirs( target_path )
-        except OSError: 
-            # ignore "file exists" exception
-            pass
-
-        statement = '''R --vanilla < %(folder)s/%(track)s_model.r > %(outfile)s '''
+        statement = '''R --vanilla < %(filename_r)s > %(filename_rlog)s; mv %(filename_pdf)s %(folder)s/%(filename_pdf)s; '''
         P.run()
 
-        #shutil.copyfile( "%s/%s_model.pdf" % (folder,track), os.path.join( target_path, "%s_model.pdf" % track) )
-        
     # filter peaks
     shift = getPeakShiftFromMacs( infile )
     assert shift != None, "could not determine peak shift from MACS file %s" % infile
@@ -955,7 +947,6 @@ def loadMACS( infile, outfile, bamfile, tablename = None ):
     max_qvalue = float(PARAMS["macs_max_qvalue"])
     # min, as it is -10log10
     min_pvalue = float(PARAMS["macs_min_pvalue"])
-    min_fold = float(PARAMS["macs_min_fold"])
     
     counter = E.Counter()
     with IOTools.openFile( infilename, "r" ) as ins:
@@ -967,14 +958,10 @@ def loadMACS( infile, outfile, bamfile, tablename = None ):
             elif peak.pvalue < min_pvalue:
                 counter.removed_pvalue += 1
                 continue
-            elif peak.fold < min_fold:
-                counter.removed_fold += 1
-                continue
 
             assert peak.start < peak.end
 
-            npeaks, peakcenter, length, avgval, peakval, nreads = countPeaks( peak.contig, peak.start, peak.end, 
-                                                                              samfiles, offsets )
+            npeaks, peakcenter, length, avgval, peakval, nreads = countPeaks( peak.contig, peak.start, peak.end, samfiles, offsets )
 
             outtemp.write ( "\t".join( map(str, ( \
                             id, peak.contig, peak.start, peak.end, 
@@ -1000,51 +987,28 @@ def loadMACS( infile, outfile, bamfile, tablename = None ):
     # load data into table
     if tablename == None:
         tablename = "%s_macs_intervals" % track
-
-    statement = '''
-    python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
-              --allow-empty
-              --index=interval_id 
-              --index=contig,start
-              --table=%(tablename)s 
-    < %(tmpfilename)s 
-    > %(outfile)s
-    '''
-
+    statement = '''python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
+                       --allow-empty
+                       --index=interval_id 
+                       --index=contig,start
+                       --table=%(tablename)s 
+                   < %(tmpfilename)s > %(outfile)s '''
     P.run()
+    os.unlink( tmpfilename )
 
     # load diagnostic data
     if os.path.exists( filename_diag ):
 
         tablename = "%s_macsdiag" % track
-
         statement = '''
         cat %(filename_diag)s 
         | sed "s/FC range.*/fc\\tnpeaks\\tp90\\tp80\\tp70\\tp60\\tp50\\tp40\\tp30\\tp20/" 
         | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
                   --map=fc:str 
                   --table=%(tablename)s 
-        > %(outfile)s
+        >> %(outfile)s
         '''
-
-        P.run()
-
-
-        target_path = os.path.join( os.getcwd(), "export", "MACS" )
-        try:
-            os.makedirs( target_path )
-        except OSError: 
-            # ignore "file exists" exception
-            pass
-
-        statement = '''R --vanilla < %(folder)s/%(track)s_model.r > %(outfile)s '''
-        
-        P.run()
-
-        #shutil.copyfile("%s.macs_model.pdf" % track, os.path.join( target_path, "%s_model.pdf" % track) )
-        
-
-    os.unlink( tmpfilename )
+        P.run()        
 
 ############################################################
 ############################################################

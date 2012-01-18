@@ -38,13 +38,14 @@ class cgiIntervalPeakValues( cpgTracker ):
     pattern = "(.*)_replicated_predicted_cgi_and_cap"
 
     def __call__(self, track, slice = None):
-        data1 = self.getValues( '''SELECT i.peakval FROM %(track)s_replicated_predicted_cgi_and_cap u, %(track)s_replicated_intervals i
-                                  WHERE u.contig=i.contig
-                                  AND u.start=i.start''' % locals() )
-        data2 = self.getValues( '''SELECT i.peakval FROM %(track)s_replicated_cap_not_predicted_cgi u, %(track)s_replicated_intervals i
-                                  WHERE u.contig=i.contig
-                                  AND u.start=i.start''' % locals() )
-        return { "Predicted CGI & CAPseq" : data1, "CAPseq not Predicted CGI" : data2 }
+        data1 = self.getValues( '''SELECT peakval FROM %(track)s_replicated_predicted_cgi_and_cap u, 
+                                  %(track)s_replicated_intervals i
+                                  WHERE u.interval_id=i.interval_id''' % locals() )
+        data2 = self.getValues( '''SELECT peakval FROM %(track)s_replicated_cap_not_predicted_cgi u, 
+                                  %(track)s_replicated_intervals i
+                                  WHERE u.interval_id=i.interval_id''' % locals() )
+        data3 = self.getValues( '''SELECT peakval FROM %(track)s_replicated_predicted_cgi_not_cap''' % locals() )
+        return { "Predicted CGI & CAPseq" : data1, "CAPseq not Predicted CGI" : data2, "Predicted CGI not CAPseq" : data3 }
 
 ##################################################################################
 class cgiIntervalAverageValues( cpgTracker ):
@@ -52,13 +53,14 @@ class cgiIntervalAverageValues( cpgTracker ):
     pattern = "(.*)_replicated_predicted_cgi_and_cap"
 
     def __call__(self, track, slice = None):
-        data1 = self.getValues( '''SELECT i.avgval FROM %(track)s_replicated_predicted_cgi_and_cap u, %(track)s_replicated_intervals i
-                                  WHERE u.contig=i.contig
-                                  AND u.start=i.start''' % locals() )
-        data2 = self.getValues( '''SELECT i.avgval FROM %(track)s_replicated_cap_not_predicted_cgi u, %(track)s_replicated_intervals i
-                                  WHERE u.contig=i.contig
-                                  AND u.start=i.start''' % locals() )
-        return { "Predicted CGI & CAPseq" : data1, "CAPseq not Predicted CGI" : data2 }
+        data1 = self.getValues( '''SELECT avgval FROM %(track)s_replicated_predicted_cgi_and_cap u, 
+                                  %(track)s_replicated_intervals i
+                                  WHERE u.interval_id=i.interval_id''' % locals() )
+        data2 = self.getValues( '''SELECT avgval FROM %(track)s_replicated_cap_not_predicted_cgi u, 
+                                  %(track)s_replicated_intervals i
+                                  WHERE u.interval_id=i.interval_id''' % locals() )
+        data3 = self.getValues( '''SELECT avgval FROM %(track)s_replicated_predicted_cgi_not_cap''' % locals() )
+        return { "Predicted CGI & CAPseq" : data1, "CAPseq not Predicted CGI" : data2, "Predicted CGI not CAPseq" : data3 }
 
 ##################################################################################
 class cgiIntervalFoldChange( cpgTracker ):
@@ -66,13 +68,13 @@ class cgiIntervalFoldChange( cpgTracker ):
     pattern = "(.*)_replicated_predicted_cgi_and_cap"
 
     def __call__(self, track, slice = None):
-        data1 = self.getValues( '''SELECT fold FROM %(track)s_replicated_predicted_cgi_and_cap u, %(track)s_replicated_intervals i
-                                  WHERE u.contig=i.contig
-                                  AND u.start=i.start''' % locals() )
-        data2 = self.getValues( '''SELECT fold FROM %(track)s_replicated_cap_not_predicted_cgi u, %(track)s_replicated_intervals i
-                                  WHERE u.contig=i.contig
-                                  AND u.start=i.start''' % locals() )
-        return { "Predicted CGI & CAPseq" : data1, "CAPseq not Predicted CGI" : data2 }
+        data1 = self.getValues( '''SELECT fold FROM %(track)s_replicated_predicted_cgi_and_cap u, 
+                                  %(track)s_replicated_intervals i
+                                  WHERE u.interval_id=i.interval_id''' % locals() )
+        data2 = self.getValues( '''SELECT fold FROM %(track)s_replicated_cap_not_predicted_cgi u, 
+                                  %(track)s_replicated_intervals i
+                                  WHERE u.interval_id=i.interval_id''' % locals() )
+        return { "Predicted CGI & CAPseq" : data1, "CAPseq not Predicted CGI" : data2}
 
 ##################################################################################
 class cgiIntervalTSS( cpgTracker ):
@@ -107,10 +109,12 @@ class cgiIntervalCpGDensity( cpgTracker ):
                                WHERE u.contig=i.contig
                                AND u.start=i.start
                                AND c.gene_id=i.interval_id''' % locals() )
-        return { "Predicted CGI & CAPseq" : data1, "CAPseq not Predicted CGI" : data2 }
+        data3 = self.getAll( '''SELECT pCpG FROM %(track)s_replicated_predicted_cgi_not_cap u, cgi_comp c
+                               WHERE c.gene_id=u.interval_id''' % locals() )
+        return { "Predicted CGI & CAPseq" : data1, "CAPseq not Predicted CGI" : data2, "Predicted CGI not CAPseq" : data3 }
 
 ##################################################################################
-class cgiIntervalCpGObsExp2( cpgTracker ):
+class cgiIntervalCpGObsExp( cpgTracker ):
     pattern = "(.*)_replicated_predicted_cgi_and_cap"
 
     def __call__(self, track, slice = None):
@@ -124,7 +128,9 @@ class cgiIntervalCpGObsExp2( cpgTracker ):
                                WHERE u.contig=i.contig
                                AND u.start=i.start
                                AND c.gene_id=i.interval_id''' % locals() )
-        return { "Predicted CGI & CAPseq" : data1, "CAPseq not Predicted CGI" : data2 }
+        data3 = self.getAll( '''SELECT CpG_ObsExp FROM %(track)s_replicated_predicted_cgi_not_cap u, cgi_comp c
+                               WHERE c.gene_id=u.interval_id''' % locals() )
+        return { "Predicted CGI & CAPseq" : data1, "CAPseq not Predicted CGI" : data2, "Predicted CGI not CAPseq" : data3 }
 
 ##################################################################################
 class cgiIntervalGCContent( cpgTracker ):
@@ -141,5 +147,7 @@ class cgiIntervalGCContent( cpgTracker ):
                                WHERE u.contig=i.contig
                                AND u.start=i.start
                                AND c.gene_id=i.interval_id''' % locals() )
-        return { "Predicted CGI & CAPseq" : data1, "CAPseq not Predicted CGI" : data2 }
+        data3 = self.getAll( '''SELECT pGC FROM %(track)s_replicated_predicted_cgi_not_cap u, cgi_comp c
+                               WHERE c.gene_id=u.interval_id''' % locals() )
+        return { "Predicted CGI & CAPseq" : data1, "CAPseq not Predicted CGI" : data2, "Predicted CGI not CAPseq" : data3 }
 

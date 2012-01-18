@@ -35,6 +35,17 @@ The following plot indicates the number of MACS intervals that pass a particular
 
    Chart of intervals with fold change exceeding threshold
 
+MACS Filtered Intervals
+=======================
+
+The following table presents the number of intervals per dataset after filtering with fold change >=6 and merging intervals les than 200bp apart:
+
+.. report:: macs.IntervalsSummaryFiltered
+   :render: table
+
+   MACS interval summary
+
+
 Background Binding
 ==================
 
@@ -46,22 +57,5 @@ The following table presents the proportion of reads that overalap binding inter
    Table of the proportion of reads that overlap binding intervals
 
 
-MACS Diagnostics
-================
 
-The following plots show the proportion of peaks that are found
-if only a proportion of reads are used for peak calling.
-
-.. report:: macs.MacsDiagnostics
-   :render: line-plot
-   :transform: filter
-   :tf-fields: proportion of reads,proportion of peaks
-   :groupby: track
-   :as-lines:
-   :width: 400
-   :layout: column-2
-   :yrange: 0,110
-
-   Proportion of peaks that are found by MACS if only a proportion of
-   reads are used for peak calling. 
 

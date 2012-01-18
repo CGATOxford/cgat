@@ -2,7 +2,7 @@
 MACS Filtered Intervals
 =======================
 
-The following table presents the number of intervals per dataset after filtering with fold change >=10:
+The following table presents the number of intervals per dataset after filtering with fold change >=6:
 
 .. report:: macs_intervals.IntervalsSummaryFiltered
    :render: table

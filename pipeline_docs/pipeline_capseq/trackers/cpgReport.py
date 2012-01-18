@@ -60,6 +60,19 @@ class cpgTracker( TrackerSQL ):
     def __init__(self, *args, **kwargs ):
         TrackerSQL.__init__(self, *args, backend = DATABASE, **kwargs )
 
+        # issuing the ATTACH DATABASE into the sqlalchemy ORM (self.db.execute( ... ))
+        # does not work. The database is attached, but tables are not accessible in later
+        # SELECT statements.
+        if not self.db:
+            def _create():
+                import sqlite3
+                conn = sqlite3.connect(re.sub( "sqlite:///", "", DATABASE) )
+                statement = "ATTACH DATABASE '%s' AS annotations; "  % (ANNOTATIONS_DB)
+                conn.execute(statement)
+                return conn
+
+            self.connect( creator = _create )
+
     def getTracks( self, subset = None):
         if subset:
             for key, tracks in MAP_TRACKS.iteritems():
@@ -67,14 +80,29 @@ class cpgTracker( TrackerSQL ):
 
         return TrackerSQL.getTracks( self )
 
-    def connect( self ): 
-        '''connect to database.'''
+##################################################################################
+class featureOverlap(cpgTracker):
+    """return overlap of interval with genomic features """
 
-        if not self.db:
-            # call base class connect
-            TrackerSQL.connect(self )
-            print "Attaching database: %s" % locals()
-            statement = "ATTACH DATABASE '%s' as annotations" % (ANNOTATIONS_DB)
-            self.db.execute( statement )
-
+    mPattern = "_ensembl_transcript_overlap$"
+    mTable = "_ensembl_transcript_overlap"
+    mWhere = "tss_extended_pover1"
+    
+    def __call__(self, track, slice = None ):
+        table = self.mTable
+        where = self.mWhere
+        data = self.getValues( """ SELECT count(distinct gene_id) as intervals FROM (
+                                   SELECT gene_id,
+                                   CASE WHEN  %(where)s > 0  THEN 'TSS'
+                                   WHEN genes_pover1 > 0 THEN 'Gene'
+                                   WHEN upstream_flank_pover1 >0 THEN 'Upstream'
+                                   WHEN downstream_flank_pover1 >0 THEN 'Downstream'
+                                   ELSE 'Intergenic'
+                                   END AS feature_class
+                                   FROM %(track)s%(table)s)
+                                   group by feature_class
+                                   order by feature_class asc""" % locals() )
+               
+        result = odict(zip(("Downstream","Gene","Intergenic","TSS","Upstream"),data))
+        return result
 

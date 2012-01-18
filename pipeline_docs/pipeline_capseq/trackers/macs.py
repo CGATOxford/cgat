@@ -90,6 +90,16 @@ class BackgroundSummary( cpgTracker ):
         return odict( zip( ("Reads Overlapping intervals", "Reads Outwith Intervals", "Total Reads", "Percent in Intervals", "Percent Background" ), data) )
 
 ##################################################################################
+class IntervalsSummaryFiltered( cpgTracker ):
+    """Summary stats of intervals after filtering by fold change and merging nearby intervals. """
+
+    mPattern = "_macs_merged_intervals$"
+
+    def __call__(self, track, slice = None):
+        data = self.getRow( "SELECT COUNT(*) as Intervals, round(AVG(length),0) as Mean_length, round(AVG(nprobes),0) as Mean_reads FROM %(track)s_macs_merged_intervals" % locals() )
+        return data
+
+##################################################################################
 class MacsDiagnostics(cpgTracker):
     """Closest distance of transcript models to gene models in the reference set."""
 

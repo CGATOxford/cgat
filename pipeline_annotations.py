@@ -345,6 +345,16 @@ def buildCodingExonTranscripts( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
+@files( PARAMS["ensembl_filename_gtf"], 
+        PARAMS["interface_geneset_noncoding_exons_gtf"] )
+def buildNonCodingExonTranscripts( infile, outfile ):
+    '''build a collection of transcripts from the protein-coding
+    section of the ENSEMBL gene set. '''
+    PGeneset.buildNonCodingExons( infile, outfile )
+
+############################################################
+############################################################
+############################################################
 @transform( buildCDSTranscripts, suffix(".gtf.gz"), "_gtf.load" )
 def loadCDSTranscripts( infile, outfile ):
     '''load the transcript set.'''
@@ -528,7 +538,7 @@ def buildPromotorRegions( infile, outfile ):
 ############################################################
 ############################################################
 @merge( buildCodingExonTranscripts, PARAMS["interface_tss_bed"] )
-def buildTSSRegions( infile, outfile ):
+def buildTranscriptTSS( infile, outfile ):
     '''annotate transcription start sites from reference gene set.
 
     Similar to promotors, except that the witdth is set to 1. '''
@@ -537,23 +547,6 @@ def buildTSSRegions( infile, outfile ):
         | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
         | python %(scriptsdir)s/gtf2gff.py --method=promotors --promotor=1 --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
         | python %(scriptsdir)s/gff2bed.py --is-gtf --name=transcript_id --log=%(outfile)s.log 
-        | gzip
-        > %(outfile)s """
-    P.run()
-
-############################################################
-############################################################
-############################################################
-@merge( buildCodingExonTranscripts, PARAMS["interface_tss_gene_interval_bed"] )
-def buildGeneTSSInterval( infile, outfile ):
-    '''create a single interval that encompasses all annotated TSSs for a given gene (+ 1kb either side)'''
-    statement = """
-        gunzip < %(infile)s 
-        | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
-        | python %(scriptsdir)s/gtf2gff.py --method=promotors --promotor=1 --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
-        | python %(scriptsdir)s/gtf2gtf.py --merge-transcripts --log=%(outfile)s.log 
-        | python %(scriptsdir)s/gff2bed.py --is-gtf --name=transcript_id --log=%(outfile)s.log 
-        | slopBed -i stdin -g %(faidx)s -b 1000 
         | gzip
         > %(outfile)s """
     P.run()
@@ -577,8 +570,36 @@ def buildGeneTSS( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
+@merge( buildCodingExonTranscripts, PARAMS["interface_tss_gene_interval_bed"] )
+def buildGeneTSSInterval( infile, outfile ):
+    '''create a single interval that encompasses all annotated TSSs for a given gene (+ 1kb either side)'''
+    statement = """
+        gunzip < %(infile)s 
+        | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
+        | python %(scriptsdir)s/gtf2gff.py --method=promotors --promotor=1 --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
+        | python %(scriptsdir)s/gtf2gtf.py --merge-transcripts --log=%(outfile)s.log 
+        | python %(scriptsdir)s/gff2bed.py --is-gtf --name=transcript_id --log=%(outfile)s.log 
+        | slopBed -i stdin -g %(faidx)s -b 1000 
+        | gzip
+        > %(outfile)s """
+    P.run()
+
+############################################################
+@transform( buildGeneTSSInterval, suffix(".bed.gz"), ".gtf" )
+def buildGeneTSSIntervalGTF( infile, outfile ):
+    '''convert bed to gtf'''
+    statement = """gunzip < %(infile)s 
+                   | python %(scriptsdir)s/bed2gff.py --as-gtf  --log=%(outfile)s.log 
+                   > %(outfile)s """
+    P.run()
+
+
+
+############################################################
+############################################################
+############################################################
 @merge( buildCodingExonTranscripts, PARAMS["interface_tts_bed"] )
-def buildTTSRegions( infile, outfile ):
+def buildTranscriptTTS( infile, outfile ):
     '''annotate transcription termination sites from reference gene set. '''
     statement = """gunzip < %(infile)s 
                    | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
@@ -591,19 +612,33 @@ def buildTTSRegions( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-@follows( buildPromotorRegions, buildGeneRegions, buildTSSRegions, buildTTSRegions )
-@files( [ ("%s.gtf.gz" % x, "%s.bed.gz" % x ) for x in ("annotations", "promotors", "tss", "tts" ) ] )
-def exportRegionAsBed( infile, outfile ):
-    '''export a reference gtf file as bed for computing overlap.'''
+@merge( buildCodingExonTranscripts, PARAMS["interface_tts_gene_bed"] )
+def buildGeneTTS( infile, outfile ):
+    '''annotate transcription termination sites from reference gene set. '''
+    statement = """gunzip < %(infile)s 
+                   | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
+                   | python %(scriptsdir)s/gtf2gtf.py --merge-transcripts --log=%(outfile)s.log 
+                   | python %(scriptsdir)s/gtf2gff.py --method=tts --promotor=1 --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
+                   | python %(scriptsdir)s/gff2bed.py --is-gtf --name=gene_id --log=%(outfile)s.log 
+                   | gzip
+                   > %(outfile)s"""
+    P.run()
 
-    bed = Bed.Bed()
-    outfile = open( outfile, "w" )
-    with open(infile, "r") as inf: 
-        for gff in GTF.iterator( inf ):
-            bed.contig, bed.start, bed.end = gff.contig, gff.start, gff.end
-            bed.mFields = [ gff.gene_id ]
-            outfile.write( "%s\n" % str(bed) )
-    outfile.close()
+############################################################
+############################################################
+############################################################
+#@follows( buildPromotorRegions, buildGeneRegions, buildTSSRegions, buildTTSRegions )
+#@files( [ ("%s.gtf.gz" % x, "%s.bed.gz" % x ) for x in ("annotations", "promotors", "tss", "tts" ) ] )
+#def exportRegionAsBed( infile, outfile ):
+#    '''export a reference gtf file as bed for computing overlap.'''
+#    bed = Bed.Bed()
+#    outfile = open( outfile, "w" )
+#    with open(infile, "r") as inf: 
+#        for gff in GTF.iterator( inf ):
+#            bed.contig, bed.start, bed.end = gff.contig, gff.start, gff.end
+#            bed.mFields = [ gff.gene_id ]
+#            outfile.write( "%s\n" % str(bed) )
+#    outfile.close()
 
 ############################################################
 ############################################################
@@ -1025,14 +1060,6 @@ def buildTSSBed( infile, outfile ):
     P.run()
 
 ############################################################
-@transform(buildTSSBed, regex(PARAMS['interface_tss_extended_bed']), PARAMS['interface_tss_merged_bed'] )
-def buildMergedTSSBed( infile, outfile ):
-    ''' Merge overlapping TSS intervals (maintain strand)'''
-
-    statement = '''mergeBed -s -i %(infile)s > %(outfile)s'''
-    P.run()
-
-############################################################
 @transform(buildGenicBed, regex(PARAMS['interface_genic_bed']), PARAMS['interface_upstream_flank_bed'] )
 def buildUpstreamFlankBed( infile, outfile ):
     ''' build interval upstream of gene start for each entry in bed file'''
@@ -1114,17 +1141,24 @@ def fasta():
     pass
 
 @follows( buildPromotorRegions,
-          buildTSSRegions,
-          buildTTSRegions,
-          buildGeneTSSInterval )
+          buildTranscriptTSS,
+          buildGeneTSS,
+          buildGeneTSSInterval,
+          buildGeneTSSIntervalGTF,
+          buildTranscriptTTS,
+          buildGeneTTS )
 def promotors():
     '''build promotors.'''
+    pass
+
+@follows( loadGOAssignments, )
+def ontologies():
+    '''create and load ontologies'''
     pass
 
 @follows( buildGenicIntervals,
           buildGenicBed,
           buildTSSBed,
-          buildMergedTSSBed,
           buildUpstreamFlankBed,
           buildDownstreamFlankBed,
           buildIntergenicBed,
@@ -1133,12 +1167,8 @@ def GenicBedFiles():
     '''build genic bed files.'''
     pass
 
-@follows( loadGOAssignments, )
-def ontologies():
-    '''create and load ontologies'''
-    pass
 
-@follows( geneset, fasta, promotors, repeats, genome, ontologies, GenicBedFiles )
+@follows( genome, geneset, repeats, fasta, promotors, ontologies, GenicBedFiles )
 def full():
     '''build all targets.'''
     pass
