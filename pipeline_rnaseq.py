@@ -3369,16 +3369,16 @@ def loadExonLevelReadCounts( infiles, outfile ):
     tracks = [re.match( "exon_counts.dir/(\S+)_vs.*", x).groups()[0] for x in tracks ]
 
     outf = IOTools.openFile( tmpfile2, "w")
-    outf.write( "gene_id\t%s\n" % "\t".join( tracks ) )
+    outf.write( "gene_id\tchromosome\tstart\tend\t%s\n" % "\t".join( tracks ) )
     
     for line in open( tmpfile, "r" ):
         data = line[:-1].split("\t")
         # ims: edit so that now skips five and ens_id is in 3rd index
         genes = list(set([ data[x] for x in range(3,len(data), 5 ) ]))
         # ims: add entries for chromosome, start and ends
-        chrom = list(set( [data[x] for x in range(1,len(data), 5 ) ]))
-        starts = list(set( [data[x] for x in range(2,len(data), 5 ) ]))
-        ends = list(set( [data[x] for x in range(3,len(data), 5 ) ]))
+        chrom = list(set( [data[x] for x in range(0,len(data), 5 ) ]))
+        starts = list(set( [data[x] for x in range(1,len(data), 5 ) ]))
+        ends = list(set( [data[x] for x in range(2,len(data), 5 ) ]))
         # ims: edit as value is now in postion 4 and there are 5 columns per line
         values = [ data[x] for x in range(4,len(data), 5 ) ]
         # ims: extra assets for chrom, starts and ends
