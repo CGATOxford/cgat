@@ -35,7 +35,6 @@ Code
 '''
 
 from math import log
-
 # see http://en.wikipedia.org/wiki/FASTQ_format
 # ranges are conservative - they are open-ended
 RANGES = {
