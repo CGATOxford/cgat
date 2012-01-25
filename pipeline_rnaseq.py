@@ -3354,7 +3354,8 @@ def loadExonLevelReadCounts( infiles, outfile ):
     to_cluster = USECLUSTER
 
     # aggregate not necessary for bed12 files, but kept in
-    src = " ".join( [ "<( zcat %s | cut -f 4,7 )" % x for x in infiles] )
+    # ims: edited so that picks up chromosome, start pos and end pos for downstream use.
+    src = " ".join( [ "<( zcat %s | cut -f 1,2,3,4,7 )" % x for x in infiles] )
 
     tmpfile = P.getTempFilename( "." )
     tmpfile2 = P.getTempFilename( "." )
@@ -3368,14 +3369,25 @@ def loadExonLevelReadCounts( infiles, outfile ):
     tracks = [re.match( "exon_counts.dir/(\S+)_vs.*", x).groups()[0] for x in tracks ]
 
     outf = IOTools.openFile( tmpfile2, "w")
-    outf.write( "gene_id\t%s\n" % "\t".join( tracks ) )
+    outf.write( "gene_id\tchromosome\tstart\tend\t%s\n" % "\t".join( tracks ) )
     
     for line in open( tmpfile, "r" ):
         data = line[:-1].split("\t")
-        genes = list(set([ data[x] for x in range(0,len(data), 2 ) ]))
-        values = [ data[x] for x in range(1,len(data), 2 ) ]
+        # ims: edit so that now skips five and ens_id is in 3rd index
+        genes = list(set([ data[x] for x in range(3,len(data), 5 ) ]))
+        # ims: add entries for chromosome, start and ends
+        chrom = list(set( [data[x] for x in range(0,len(data), 5 ) ]))
+        starts = list(set( [data[x] for x in range(1,len(data), 5 ) ]))
+        ends = list(set( [data[x] for x in range(2,len(data), 5 ) ]))
+        # ims: edit as value is now in postion 4 and there are 5 columns per line
+        values = [ data[x] for x in range(4,len(data), 5 ) ]
+        # ims: extra assets for chrom, starts and ends
         assert len(genes) == 1, "paste command failed, wrong number of genes per line"
-        outf.write( "%s\t%s\n" % (genes[0], "\t".join(map(str, values) ) ) )
+        assert len(chrom) == 1, "paste command failed, wrong number of chromosomes per line"
+        assert len(starts) == 1, "paste command failed, wrong number of starts per line"
+        assert len(ends) == 1, "paste command failed, wrong number of ends per line"
+        # ims: add extra coloumns into output
+        outf.write( "%s\t%s\t%s\t%s\t%s\n" % (genes[0], chrom[0], starts[0], ends[0], "\t".join(map(str, values) ) ) )
     
     outf.close()
 

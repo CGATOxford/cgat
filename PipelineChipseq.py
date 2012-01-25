@@ -987,7 +987,7 @@ def countPeaks( contig, start, end, samfiles, offsets = None):
 ############################################################
 ############################################################
 ############################################################
-def runZinba( infile, outfile, controlfile ):
+def runZinba( infile, outfile, controlfile, action = "full" ):
     '''run Zinba for peak detection.'''
 
     to_cluster = True
@@ -995,10 +995,10 @@ def runZinba( infile, outfile, controlfile ):
     job_options= "-l mem_free=16G -pe dedicated %i -R y" % PARAMS["zinba_threads"]
 
     mappability_dir = os.path.join( PARAMS["zinba_mappability_dir"], 
-                             PARAMS["genome"],
-                             "%i" % PARAMS["zinba_read_length"],
-                             "%i" % PARAMS["zinba_alignability_threshold"],
-                             "%i" % PARAMS["zinba_fragment_size"])
+                                    PARAMS["genome"],
+                                    "%i" % PARAMS["zinba_read_length"],
+                                    "%i" % PARAMS["zinba_alignability_threshold"],
+                                    "%i" % PARAMS["zinba_fragment_size"])
 
     if not os.path.exists( mappability_dir ):
         raise OSError("mappability not found, expected to be at %s" % mappability_dir )
@@ -1022,6 +1022,9 @@ def runZinba( infile, outfile, controlfile ):
            --threads=%(zinba_threads)i
            --bit-file=%(bit_file)s
            --mappability-dir=%(mappability_dir)s
+           --improvement=%(zinba_improvement)f
+           --action=%(action)s
+           %(zinba_options)s
            %(options)s
     %(infile)s %(outfile)s
     >& %(outfile)s

@@ -790,7 +790,13 @@ elif PARAMS["calling_caller"] == "zinba":
     def runZinba( infiles, outfile ):
         '''run Zinba for peak detection.'''
         infile, controlfile = infiles
-        PipelineChipseq.runZinba( infile, outfile, controlfile )
+
+        if not os.path.exists( os.path.join( outfile + "_files" , outfile + ".list")):
+            PipelineChipseq.runZinba( infile, outfile, controlfile, action = "count" )
+        elif not os.path.exists( os.path.join( outfile + "_files" , outfile + ".model")):
+            PipelineChipseq.runZinba( infile, outfile, controlfile, action = "model" )
+        else:
+            PipelineChipseq.runZinba( infile, outfile, controlfile, action = "predict" )
         
     ############################################################
     ############################################################
