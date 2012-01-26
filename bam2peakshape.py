@@ -110,7 +110,7 @@ def main( argv = None ):
                               "[%default]" )
 
     parser.add_option( "-s", "--sort", dest="sort", type = "choice", action = "append",
-                       choices = ("peak-height", "peak-width", "unsorted" ),
+                       choices = ("peak-height", "peak-width", "unsorted", "interval-width", "interval-score" ),
                        help = "output sort order for matrices. "
                               "[%default]" )
 
@@ -126,7 +126,8 @@ def main( argv = None ):
         bin_size = 10,
         shift = 0,
         window_size = 1000,
-        sort = []
+        sort = [],
+        centring_method = "reads",
         )
 
     ## add common options (-h/--help, ...) and parse command line 
@@ -152,15 +153,27 @@ def main( argv = None ):
                               +options.window_size, 
                               options.bin_size )        
         
+    contigs = set(pysam_in.references)
+
     result =[]
+    c = E.Counter()
     for bed in Bed.iterator( IOTools.openFile( bedfile ) ):
-        # print "%s:%i-%i" % (bed.contig, bed.start, bed.end)
+        c.input += 1
+
+        if bed.contig not in contigs: 
+            c.skipped += 1
+            continue
+        
         features = _bam2peakshape.count( pysam_in, bed.contig, bed.start, bed.end, 
                                          shift = shift,
                                          window_size = options.window_size,
                                          bins = bins,
-                                         only_interval = options.only_interval )
+                                         only_interval = options.only_interval,
+                                         centring_method = options.centring_method )
         result.append( (features, bed) )
+        c.added += 1
+
+    E.info( "interval processing: %s" % c )
 
     # center bins
     out_bins = bins[:-1] + options.bin_size
@@ -202,6 +215,12 @@ def main( argv = None ):
             
         elif sort == "peak-width":
             result.sort( key = lambda x: x[0].peak_width )
+
+        elif sort == "interval-width":
+            result.sort( key = lambda x: x[1].end - x[1].start )
+
+        elif sort == "interval-score":
+            result.sort( key = lambda x: x[1].score )
             
         writeMatrix( result, sort )
 
