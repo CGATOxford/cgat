@@ -33,7 +33,10 @@ Code
 ----
 
 '''
-import sys, re, string
+import sys, re, string, collections
+import numpy
+import pandas
+import IOTools
 
 class Matrix:
 
@@ -211,3 +214,44 @@ def getMatrixFromEdges( lines, options, in_map_token2row = {}, in_map_token2col 
         m.mMapToken2Col = map_token2col        
 
     return matrix
+
+def buildMatrixFromLists( lists, dtype = numpy.float, default = None ):
+    '''build a matrix from a list of lists.
+
+    Each list is a list of tuples (row, value).
+    The columns are given by order of the lists.
+
+    Returns matrix, row_headers
+    '''
+
+    all_rows = collections.defaultdict()    
+    for l in lists: all_rows.update( [ (x[0],0) for x in l ] )
+    for x,v in enumerate(all_rows.iteritems()):
+        all_rows[v[0]] = x
+        
+    matrix = numpy.zeros( (len(all_rows), len( lists) ), dtype = dtype )
+    if default: matrix.fill(default)
+    
+    for col, l in enumerate(lists):
+        for row, value in l:
+            matrix[all_rows[row],col] = value
+    return matrix, all_rows.keys()
+
+########################################################################
+def buildMatrixFromTables( infiles, column, column_header = 0, dtype = numpy.float, default = None ):
+    '''build a matrix from a column called *column* in a series of input files.
+   
+    If column_value == None, the first column is taken as the name of the row.
+
+    The columns are given by order of the input files.
+
+    returns matrix, row_headers
+    '''
+    
+    lists = []
+    for infile in infiles:
+        data = pandas.read_table( IOTools.openFile(infile) )
+        lists.append( zip( list( data[column_header] ), list(data[column]) ) )
+        
+    return buildMatrixFromLists( lists, dtype = dtype, default = default )
+        

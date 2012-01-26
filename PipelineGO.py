@@ -54,6 +54,8 @@ import sqlite3
 import Experiment as E
 import Pipeline as P
 import Stats
+import IOTools
+import CSV
 
 try:
     PARAMS = P.getParameters()
@@ -77,6 +79,26 @@ def createGO( infile, outfile ):
         '''
 
     P.run()
+
+############################################################
+############################################################
+############################################################
+## get GO descriptions
+############################################################
+def getGODescriptions( infile ):
+    '''return dictionary mapping GO category to description
+    and namespace.
+    '''
+
+
+    with IOTools.openFile( infile ) as inf:
+        fields, table = CSV.ReadTable( inf, as_rows = False )
+        
+
+    return dict( [ (y, (x,z)) for x,y,z in zip( table[fields.index("go_type")], 
+                                                table[fields.index("go_id")],
+                                                table[fields.index("description")] ) ] )
+
 
 ############################################################
 ############################################################
@@ -116,7 +138,8 @@ def runGOFromFiles( outfile,
                     bg_file = None,
                     go_file = None,
                     ontology_file = None,
-                    samples = None ):
+                    samples = None,
+                    minimum_counts = 0 ):
     '''check for GO enrichment within a gene list.
 
     The gene list is given in ``fg_file``. It is compared
@@ -149,6 +172,7 @@ def runGOFromFiles( outfile,
         --genes=%(fg_file)s 
         --filename-ontology=%(ontology_file)s 
         --output-filename-pattern='%(outdir)s/%%(set)s.%%(go)s.%%(section)s' 
+        --minimum-counts=%(minimum_counts)i 
         %(options)s
     > %(outfile)s'''
 

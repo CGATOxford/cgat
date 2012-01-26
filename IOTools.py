@@ -309,6 +309,15 @@ def readMatrix( infile, dtype = numpy.float ):
     return matrix, row_headers, col_headers
     
 ########################################################################
+def writeMatrix( outfile, matrix, row_headers, col_headers ):
+    '''write a numpy matrix to outfile.
+    '''
+    
+    outfile.write( "\t%s\n" % "\t".join( col_headers))
+    for x, row in enumerate(matrix):
+        outfile.write("%s\t%s\n" % (row_headers[x], "\t".join(map(str, row))) )
+
+########################################################################
 def getInvertedDictionary( dict, make_unique = False ):
     """returns an inverted dictionary with keys and values swapped.
     """

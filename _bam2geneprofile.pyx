@@ -19,6 +19,11 @@ class RangeCounter:
         self.counts = numpy.zeros( Intervals.getLength( ranges ) )
         
     def getCounts( self, contig, ranges, length = 0 ):
+        '''count from a set of ranges.
+
+        The ranges are scaled towards the length of the intervals that
+        are being counted.
+        '''
 
         self.setup( ranges )
         self.count( contig, ranges )
@@ -29,10 +34,11 @@ class RangeCounter:
             if lunnormed == 0: return numpy.zeros(0)
 
             if lunnormed > lnormed:
-                # compress by taking only counts within intervals
+                # compress by taking only counts at certain points within intervals
                 take = numpy.unique( numpy.array( numpy.floor( 
                             numpy.arange( 0, lunnormed - 1, lunnormed / lnormed ) ), dtype = int ) )
             elif lunnormed == lnormed:
+                # same size, no scaling
                 take = numpy.arange( 0, lnormed, dtype = int )
             else:
                 # expand by taking more counts
@@ -72,7 +78,6 @@ class RangeCounterBAM(RangeCounter):
         #
         # In words
         # Only take the start of reads (taking into account the strand)
-        # add d/2=shift to each side of peak and start accumulate counts.
         # for counting, extend reads by shift
         # on + strand shift tags upstream
         # i.e. look at the downstream window
@@ -157,9 +162,13 @@ class IntervalsCounter:
 
     def __init__(self, normalization = None, *args, **kwargs ):
 
+        # normalization method to use before aggregation
         self.normalization = normalization        
-        self.counts = []
+        # lables of categories to count (introns, exons, ...)
         self.fields = []
+        # number of items counted in each category (1012 introns, 114 exons, ...)
+        self.counts = []
+        # aggregate counts
         self.aggregate_counts = []
 
     def add( self, field, length ):
@@ -215,15 +224,22 @@ class IntervalsCounter:
                 
             agg += cc
 
-    def buildMatrix( self ):
-        '''build single matrix with all counts.'''
-
-        max_counts = max( [len(x) for x in self.aggregate_counts] )
+    def buildMatrix( self, normalize = False ):
+        '''build single matrix with all counts.
         
+        cols = intervals counted (exons, introns) )
+        rows = number of bins in intervals (every 10b / 10kb = 1000 bins)
+        '''
+        max_counts = max( [len(x) for x in self.aggregate_counts] )
+
         matrix = numpy.concatenate( list(itertools.chain.from_iterable( 
                 [ (x, [0] * (max_counts - len(x))) for x in self.aggregate_counts ] )))
         
         matrix.shape = (len(self.aggregate_counts), max_counts )
+
+        # normalize
+        for x in range( len(self.counts)):
+            matrix[:,x] /= self.counts[x]
 
         return matrix
 
