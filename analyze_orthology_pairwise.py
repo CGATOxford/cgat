@@ -1621,6 +1621,7 @@ if __name__ == "__main__":
     ninput = 0
     for line in open( options.filename_kaks, "r" ):
         if line[0] == "#": continue
+        if line.starswith( "seq1\tseq2" ): continue
         ninput += 1
         query_token, sbjct_token, ka, ks = line[:-1].split("\t")[:4]
         ka, ks = float(ka), float(ks)

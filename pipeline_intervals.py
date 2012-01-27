@@ -604,6 +604,7 @@ def annotateBindingFull( infile, outfile ):
 
     statement = """
     zcat < %(geneset)s
+    | awk '$2 == "protein_coding"'
     | python %(scriptsdir)s/gtf2table.py 
 		--counter=position 
 		--counter=binding-pattern
@@ -630,10 +631,11 @@ def annotateBindingPeak( infile, outfile ):
     to_cluster = True
 
     geneset = os.path.join( PARAMS["annotations_dir"],
-                                    PARAMS_ANNOTATIONS["interface_geneset_all_gtf"] )
+                            PARAMS_ANNOTATIONS["interface_geneset_all_gtf"] )
 
     statement = """
     zcat < %(geneset)s
+    | awk '$2 == "protein_coding"'
     | python %(scriptsdir)s/gtf2table.py 
 		--counter=position 
 		--counter=binding-pattern

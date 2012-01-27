@@ -329,8 +329,16 @@ def quote( track ):
     return re.sub( "[-(),\[\].]", "_", track)
 
 def shellquote( statement ):
-    '''shell quote a string to be used as a function argument.'''
-    return '%s' % re.sub( '"', '\"', statement)
+    '''shell quote a string to be used as a function argument.
+
+    from http://stackoverflow.com/questions/967443/python-module-to-shellquote-unshellquote
+    '''
+    _quote_pos = re.compile('(?=[^-0-9a-zA-Z_./\n])')
+
+    if statement:
+        return _quote_pos.sub('\\\\', statement).replace('\n',"'\n'")
+    else:
+        return "''"
 
 def toTable( outfile ):
     '''convert an outfile (filename) into
@@ -686,7 +694,8 @@ def run( **kwargs ):
             tmpfile = tempfile.NamedTemporaryFile( dir = os.getcwd() , delete = False )
             tmpfile.write( "#!/bin/bash\n" ) #  -l -O expand_aliases\n" )
             tmpfile.write( 'echo "START--------------------------------" >> %s \n' % shellfile )
-            tmpfile.write( '''echo 'statement=%s' >> %s\n''' % (shellquote(statement), shellfile) )
+            # disabled - problems with quoting
+            # tmpfile.write( '''echo 'statement=%s' >> %s\n''' % (shellquote(statement), shellfile) )
             tmpfile.write( "set &>> %s\n" % shellfile)
             tmpfile.write( "module list &>> %s\n" % shellfile )
             tmpfile.write( 'echo "END----------------------------------" >> %s \n' % shellfile )
@@ -743,7 +752,8 @@ def run( **kwargs ):
         tmpfile = tempfile.NamedTemporaryFile( dir = os.getcwd() , delete = False )
         tmpfile.write( "#!/bin/bash\n" ) #  -l -O expand_aliases\n" )
         tmpfile.write( 'echo "START--------------------------------" >> %s \n' % shellfile )
-        tmpfile.write( '''echo 'statement=%s' >> %s\n''' % (shellquote(statement), shellfile) )
+        # disabled - problems with quoting
+        # tmpfile.write( '''echo 'statement=%s' >> %s\n''' % (shellquote(statement), shellfile) )
         tmpfile.write( "set &>> %s\n" % shellfile)
         tmpfile.write( "module list &>> %s\n" % shellfile )
         tmpfile.write( 'echo "END----------------------------------" >> %s \n' % shellfile )

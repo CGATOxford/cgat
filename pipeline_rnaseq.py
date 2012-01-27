@@ -3756,14 +3756,14 @@ def aggregateExonLevelReadCounts( infiles, outfile ):
     For bed6: use column 7
     For bed12: use column 13
 
-    This method uses the maximum number of reads
-    found in any exon as the tag count.
+    This method uses the sum of the number of reads found in all of the exons as the 
+    tag count.
     '''
     
     to_cluster = USECLUSTER
 
     # aggregate not necessary for bed12 files, but kept in
-    src = " ".join( [ "<( zcat %s | sort -k4,4 | groupBy -i stdin -g 4 -c 7 -o max | sort -k1,1)" % x for x in infiles ] )
+    src = " ".join( [ "<( zcat %s | sort -k4,4 | groupBy -i stdin -g 4 -c 7 -o sum | sort -k1,1)" % x for x in infiles ] )
 
     tmpfile = P.getTempFilename( "." )
     
