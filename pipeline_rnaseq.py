@@ -1025,7 +1025,6 @@ def buildReferenceTranscriptome( infile, outfile ):
     The sequences include both UTR and CDS.
 
     '''
-
     to_cluster = USECLUSTER
 
     statement = '''
@@ -3768,8 +3767,9 @@ def aggregateExonLevelReadCounts( infiles, outfile ):
     tmpfile = P.getTempFilename( "." )
     
     statement = '''paste %(src)s 
-                > %(tmpfile)s'''
+                > %(tmpfile)s''' % locals()
     
+
     P.run()
 
     tracks = [P.snip(x, ".bed.gz" ) for x in infiles ]
