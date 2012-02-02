@@ -1127,6 +1127,8 @@ def mapReadsWithTophat( infiles, outfile ):
     to_cluster = USECLUSTER
     m = PipelineMapping.Tophat()
     infile, reffile = infiles
+
+
     tophat_options = PARAMS["tophat_options"] + " --raw-juncs %(reffile)s " % locals()
     statement = m.build( (infile,), outfile ) 
     P.run()
@@ -1451,10 +1453,16 @@ def buildTophatStats( infiles, outfile ):
         junctions_found = int( _select( lines, "Found (\d+) junctions from happy spliced reads") )
 
         fn = os.path.join( indir, "segment_juncs.log" )
-        lines = open( fn ).readlines()
-        if len(lines) > 0:
-            segment_juncs_version =  _select( lines, "segment_juncs (.*)$" )
-            possible_splices = int( _select( lines, "Reported (\d+) total possible splices") )
+        
+        
+        if os.path.exists(fn):
+            lines = open( fn ).readlines()
+            if len(lines) > 0:
+                segment_juncs_version =  _select( lines, "segment_juncs (.*)$" )
+                possible_splices = int( _select( lines, "Reported (\d+) total possible splices") )
+            else:
+                segment_juncs_version = "na"
+                possible_splices = ""
         else:
             segment_juncs_version = "na"
             possible_splices = ""
@@ -3755,14 +3763,14 @@ def aggregateExonLevelReadCounts( infiles, outfile ):
     For bed6: use column 7
     For bed12: use column 13
 
-    This method uses the sum of the number of reads found in all of the exons as the 
-    tag count.
+    This method uses the maximum number of reads
+    found in any exon as the tag count.
     '''
     
     to_cluster = USECLUSTER
 
     # aggregate not necessary for bed12 files, but kept in
-    src = " ".join( [ "<( zcat %s | sort -k4,4 | groupBy -i stdin -g 4 -c 7 -o sum | sort -k1,1)" % x for x in infiles ] )
+    src = " ".join( [ "<( zcat %s | sort -k4,4 | groupBy -i stdin -g 4 -c 7 -o max | sort -k1,1)" % x for x in infiles ] )
 
     tmpfile = P.getTempFilename( "." )
     
@@ -3848,6 +3856,7 @@ def runDESeq( infile, outfile ):
         conditions.append( group )
 
     ro.globalenv['conds'] = ro.StrVector(sample2condition)
+    R('''print (conds)''')
 
     def build_filename2( **kwargs ):
         return "%(outdir)s/%(geneset)s_%(method)s_%(level)s_%(track1)s_vs_%(track2)s_%(section)s.png" % kwargs

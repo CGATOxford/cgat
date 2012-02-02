@@ -220,7 +220,9 @@ def main( argv = None ):
         outf.write( "category\tcounts\n%s\n" % c.asTable() )
         outf.close()
 
-    transcripts_samfile.close()
+    if options.filename_transcriptome:
+        transcripts_samfile.close()
+    
     genome_samfile.close()
     output_samfile.close()
     if output_mismapped:
