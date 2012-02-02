@@ -56,8 +56,8 @@ promoters
 
 regulons
    declare regulatory regions. Regulatory regions contain the region x kb of
-   upstream and downstream of a transciption start site. The option ``--promotor``
-   sets the region width.
+   upstream and downstream of a transciption start site. The options ``--upstream``
+   and ``-downstream`` set the region width.
 
 Genome
 ++++++
@@ -156,11 +156,23 @@ Only protein coding genes are used to annotate promotors.
 The size of the promotor region can be specified by the command line
 argument ``--promotor``
 
+Regulons
+
++++++++++
+
+If ``--method=regulons``, putative regulon regions are output. This is similar
+to a ``promotor``, but the region extends both upstream and downstream from
+the transcriptsion start site.
+
+Only protein coding genes are used to annotate regulons.
+
+The size of the promotor region can be specified by the command line
+argument ``--upstream`` and ``--downstream``
+ 
 Usage
 -----
 
 Type::
-
    python <script_name>.py --help
 
 for command line help.
@@ -503,6 +515,8 @@ def annotateRegulons( iterator, fasta, options ):
 
     ngenes, ntranscripts, nregulons = 0, 0, 0
 
+    upstream, downstream = options.upstream, options.downstream
+
     for gene in gene_iterator:
         ngenes += 1
         is_negative_strand = Genomics.IsNegativeStrand( gene[0][0].strand )
@@ -513,9 +527,12 @@ def annotateRegulons( iterator, fasta, options ):
 
             ntranscripts += 1
             mi, ma = min( [x.start for x in transcript ] ), max( [x.end for x in transcript ] )
-            transcript_ids.append( transcript[0].transcript_id )
             # add range to both sides of tss
-            regulons.append( (max( 0, mi - options.promotor), min( lcontig, ma + options.promotor) ) )
+            if is_negative_strand:
+                regulons.append( (max( 0, ma - options.downstream), min( lcontig, ma + options.upstream) ) )
+            else:
+                regulons.append( (max( 0, mi - options.upstream), min( lcontig, mi + options.downstream) ) )
+            transcript_ids.append( transcript[0].transcript_id )
 
         if options.merge_promotors:
             # merge the regulons (and rename - as sort order might have changed)
@@ -615,6 +632,12 @@ if __name__ == '__main__':
     parser.add_option("-p", "--promotor", dest="promotor", type="int",
                       help="size of a promotor region [default=%default]."  )
 
+    parser.add_option("-u", "--upstream", dest="upstream", type="int",
+                      help="size of region upstream of tss [default=%default]."  )
+
+    parser.add_option("-d", "--downstream", dest="downstream", type="int",
+                      help="size of region downstream of tss [default=%default]."  )
+
     parser.add_option( "--merge-promotors", dest="merge_promotors", action="store_true",
                        help="merge promotors [default=%default]."  )
 
@@ -632,6 +655,8 @@ if __name__ == '__main__':
         radius = 50000,
         promotor = 5000,
         merge_promotors = False,
+        upstream = 5000,
+        downstream = 5000,
         )
 
     (options, args) = E.Start( parser )
@@ -644,7 +669,7 @@ if __name__ == '__main__':
     if options.restrict_source:
         iterator = GTF.iterator_filtered( GTF.iterator(options.stdin), 
                                           source = options.restrict_source )
-    elif options.method == "promotors" or options.method == "tts":
+    elif options.method in ("promotors", "tts", "regulons"):
         iterator = GTF.iterator_filtered( GTF.iterator(options.stdin), source = "protein_coding" )
     else:
         iterator = GTF.iterator(options.stdin)
