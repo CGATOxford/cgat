@@ -32,7 +32,8 @@ Purpose
 
 Convert BAM into BED.
 
-
+The fragment length of paired-end reads is the read lengths of both pairs
+plus the insert size. 
 
 Usage
 -----
@@ -72,14 +73,23 @@ def main( argv = None ):
     parser.add_option("-r", "--region", dest="region", type="string",
                       help="samtools region string [default=%default]."  )
 
-    parser.add_option("-m", "--merge-pairs", dest="merge_pairs", type="int",
-                      help="merge paired-ended reads into a single bed interval. "
-                      "Only merge if less than # bases apart [default=%default]."  )
+    parser.add_option("-m", "--merge-pairs", dest="merge_pairs", action="store_true",
+                      help="merge paired-ended reads into a single bed interval [default=%default]. " )
+
+    parser.add_option( "--max-insert-size", dest="max_insert_size", type = "int",
+                      help = "only merge if insert size less that # bases. 0 turns of this filter [default=%default]."  )
+
+    parser.add_option( "--min-insert-size", dest="min_insert_size", type = "int",
+                       help = "only merge paired-end reads if they are at least # bases apart. "
+                              " 0 turns of this filter. [default=%default]" )
+
 
     parser.set_defaults(
         region = None,
         merge_pairs = None,
         call_peaks = None,
+        min_insert_size = 0,
+        max_insert_size = 0,
         )
 
     (options, args) = E.Start( parser, argv = argv )
@@ -92,7 +102,8 @@ def main( argv = None ):
     if options.merge_pairs != None:
         counter = _bam2bed.merge_pairs( samfile, 
                                         options.stdout,
-                                        max_insert_size = options.merge_pairs )
+                                        min_insert_size = options.min_insert_size,
+                                        max_insert_size = options.max_insert_size )
 
         options.stdlog.write( "category\tcounts\n%s\n" % counter.asTable() )
 

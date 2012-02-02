@@ -40,6 +40,7 @@ import IOTools
 
 class CuffCompareValues:
     def __init__( self, vals ):
+
         assert len(vals) == 4
         try: self.sn = float( vals[0] )
         except ValueError: self.sn = None
@@ -122,13 +123,23 @@ class CuffCompareResult:
             except ValueError:
                 raise ValueError("parsing error in line %s" % line )
 
+
+
             tag = re.sub( "\s", "", tag ).lower()
             
             if tag.startswith( "wrong" ) or tag.startswith("missed"):
+
                 counts, total = map(int, re.match( "\s+(\d+)/(\d+)", data).groups() )
                 setattr( self, "%s_counts" % tag, counts )
                 setattr( self, "%s_total" % tag, total )
                 self.is_empty = False
+
+                
+            # This has just been added as a quick fix so that the pipeline will run. It doesn't do any
+            # counting of these tags - needs to be implemented once I know what they mean
+            elif tag.startswith("matching") or tag.startswith("novel"):
+                continue
+                
             elif tag.startswith( "total"): 
                 # stop at total union across all super-loci
                 break

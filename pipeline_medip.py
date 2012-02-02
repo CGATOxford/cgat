@@ -460,7 +460,9 @@ def runMEDIPS( infile, outfile ):
     statement = '''
     cat %(infile)s 
     | python %(scriptsdir)s/bam2bed.py
-          --merge-pairs=%(medips_fragment_length)i
+          --merge-pairs
+          --min-insert-size=%(medips_min_insert_size)i
+          --max-max-insert-size=%(medips_max_insert_size)i
           --log=%(outfile)s.log
           -
     | python %(scriptsdir)s/WrapperMEDIPS.py
@@ -494,7 +496,9 @@ def buildCoverageBed( infile, outfile ):
     statement = '''
     cat %(infile)s 
     | python %(scriptsdir)s/bam2bed.py
-          --merge-pairs=%(medips_fragment_length)i
+          --merge-pairs
+          --min-insert-size=%(medips_min_insert_size)i
+          --max-insert-size=%(medips_max_insert_size)i
           --log=%(outfile)s.log
           -
     | sort -k1,1 -k2,2n
@@ -1175,6 +1179,9 @@ def mapping(): pass
           loadDESeqStats,
           loadEdgeRStats)
 def callDMRs(): pass
+
+@follows( mapping, callDMRs) 
+def full(): pass
 
 ###################################################################
 ###################################################################

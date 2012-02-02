@@ -1627,7 +1627,7 @@ class CounterBindingPattern(CounterOverlap):
         ## build special sets
         first_intron, first_exon = [], []
         flank_increment = self.flank // self.flank_bins
-                
+
         # flank is ordered such that indices move away from the tss or tes
         if strand == "+":
             flank5 = [ [(x-flank_increment, x)] for x in range(start, start - self.flank, -flank_increment) ]

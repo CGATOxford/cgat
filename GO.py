@@ -38,7 +38,7 @@ of GO categories within a gene list.
 The script uses a hypergeometric test to check if a particular
 GO category is enriched in a foreground set with respect
 to a background set. Multiple testing is controlled by 
-computing an empirical false discovery rate using a sampling 
+computing a empirical false discovery rate using a sampling 
 procedure.
 
 A GO analysis proceeds in three steps:
@@ -46,6 +46,12 @@ A GO analysis proceeds in three steps:
    1. building gene to GO assignments
    2. create one or more gene lists with foreground and background
    3. run one or more GO analyses for each of the foreground gene lists
+
+This script analyses multiple gene lists in parallel when a matrix of
+gene lists is provided. If multiple gene lists are provided, the FDR is 
+controlled per gene list and not overall. However, my intuition is that
+if the number of tests is large the results should be comparable as if 
+the FDR was controlled globally, though I have no proof for this.
 
 Building gene to GO assignments
 +++++++++++++++++++++++++++++++
@@ -94,16 +100,39 @@ Building gene lists
 +++++++++++++++++++
 
 GO requires a list of genes to test for enrichment. This list is simply
-a table of gene identifiers. For example::
+a table with one column of gene identifiers. For example::
 
+   gene_id
    ENSG00000116586
    ENSG00000065809
    ENSG00000164048
    ENSG00000115137
    ENSG00000121210
 
+Alternatively, the gene list can be a multi-column table such as::
+
+   gene_id             dataset1    dataset2
+   ENSG00000116586     1           0
+   ENSG00000065809     0           0
+   ENSG00000164048     1           0
+   ENSG00000115137     1           1
+   ENSG00000121210     0           1
+
+In this case, enrichment is computed for multiple datasets at once. Make sure
+to add the ``%(set)s`` place holder to ``--filename-output-pattern``.
+
 If no background is given, all genes that have GO assignments will constitute
 the background. 
+
+Statistics
+++++++++++
+
+Enrichment is computed using the hypergeometric test. 
+
+.. todo::
+    * apply filtering
+    * more stats
+    * more FDR
 
 Running the GO analysis
 +++++++++++++++++++++++
@@ -117,12 +146,12 @@ The command below runs a GO analysis, computing an FDR using 10.000 samples::
         --sample=10000
         --fdr 
         --filename-ontology=gene_ontology.obo
-        --output-filename-pattern='result/%(go)s.%(section)s' 
+        --output-filename-pattern='result/%(set)s.%(go)s.%(section)s' 
    > go.log
 
 The output will be stored in the directory :file:`result` and output files will be
-created according to the pattern ``<go>.<section>``. ``<go>`` is one of 
-``biol_process``, ``mol_function`` and ``cell_location``.
+created according to the pattern ``<set>.<go>.<section>``. ``<set>`` is the gene set
+that is analysed, ``<go>`` is one of ``biol_process``, ``mol_function`` and ``cell_location``.
 ``<section>`` denotes the file contents. Files output are:
 
 +------------+----------------------------------------------+
@@ -138,7 +167,6 @@ created according to the pattern ``<go>.<section>``. ``<go>`` is one of
 +------------+----------------------------------------------+
 |fg          |assigments for genes in the foreground set    |
 +------------+----------------------------------------------+
-
 
 Other options
 +++++++++++++
@@ -382,6 +410,7 @@ class GOResult:
     mBackgroundCountsTotal = 0
     mProbabilityOverRepresentation = 0
     mProbabilityUnderRepresentation = 0
+    mPValue = 0
 
     def __init__(self, goid = None):
         self.mGOId = goid
@@ -419,6 +448,7 @@ class GOResult:
                                                                  self.mBackgroundCountsTotal - self.mBackgroundCountsCategory,
                                                                  self.mSampleCountsTotal )
         
+        self.mPValue = min(self.mProbabilityOverRepresentation, self.mProbabilityUnderRepresentation) 
 
         if self.mSampleCountsTotal == 0 or self.mBackgroundCountsCategory == 0:
             self.mRatio = "na"
@@ -440,7 +470,7 @@ class GOResult:
                                                                     self.mBackgroundCountsTotal,
                                                                     IOTools.prettyPercent( self.mBackgroundCountsCategory, self.mBackgroundCountsTotal ),
                                                                     IOTools.prettyFloat( self.mRatio ),
-                                                                    min(self.mProbabilityOverRepresentation,self.mProbabilityUnderRepresentation),
+                                                                    self.mPValue,
                                                                     self.mProbabilityOverRepresentation,
                                                                     self.mProbabilityUnderRepresentation )
 
@@ -817,8 +847,7 @@ def DumpGOFromDatabase( outfile,
     and a dictionary of go-term to go information
     """
 
-    if options.loglevel >= 1:    
-        options.stdlog.write("# category\ttotal\tgenes\tcategories\n" )
+    E.info( "category\ttotal\tgenes\tcategories" )
 
     all_genes = collections.defaultdict( int )
     all_categories = collections.defaultdict( int )
@@ -846,17 +875,14 @@ def DumpGOFromDatabase( outfile,
             all_categories[goid] += 1
             all_ntotal += 1
             
-        if options.loglevel >= 1:    
-            options.stdlog.write( "# %s\t%i\t%i\t%i\n" % (go_type, ntotal,
-                                                          len(genes),
-                                                          len(categories) ) )
+        E.info("%s\t%i\t%i\t%i" % (go_type, ntotal,
+                                   len(genes),
+                                   len(categories) ))
 
-
-    if options.loglevel >= 1:    
-        options.stdlog.write( "# %s\t%i\t%i\t%i\n" % ("all", 
-                                                      all_ntotal,
-                                                      len(all_genes),
-                                                      len(all_categories) ) )
+    E.info( "%s\t%i\t%i\t%i" % ("all", 
+                                all_ntotal,
+                                len(all_genes),
+                                len(all_categories) ) )
 
     return 
 
@@ -873,7 +899,10 @@ def ReadGene2GOFromFile( infile ):
     go2infos = {}
     for line in infile:
         if line[0] == "#": continue
-        go_type, gene_id, goid, description, evidence = line[:-1].split("\t")
+        try:
+            go_type, gene_id, goid, description, evidence = line[:-1].split("\t")
+        except ValueError, msg:
+            raise ValueError("parsing error in line '%s': %s" % (line[:-1], msg))
         if go_type == "go_type": continue
 
         gm = GOMatch( goid, go_type, description, evidence )
@@ -895,14 +924,20 @@ def ReadGene2GOFromFile( infile ):
 def CountGO( gene2go ):
     """count number of genes and go categories in mapping."""
 
-    cats = {}
+    cats = collections.defaultdict( int )
     nmaps = 0
-    for k,vv in gene2go.items():
+    for k, vv in gene2go.items():
         for v in vv:
             nmaps += 1                    
-            cats[v.mGOId] = 1
+            cats[v.mGOId] += 1
             
-    return len(gene2go), len(cats), nmaps
+    return len(gene2go), len(cats), nmaps, cats
+
+def removeCategories( gene2go, categories ):
+    '''remove all genes that map to *categories*.'''
+    
+    for k, vv in gene2go.items():
+        gene2go[k] = [ v for v in vv if v.mGOId not in categories ]
 
 ##---------------------------------------------------------------------------
 def countGOs( gene2gos ):
@@ -917,38 +952,6 @@ def countGOs( gene2gos ):
     return genes, goids
 
 ##---------------------------------------------------------------------------
-def ReadGeneList( filename_genes, gene_pattern = None ):
-    """read a gene list from filename."""
-
-    if filename_genes == "-":
-        infile = sys.stdin
-    else:
-        infile = open(filename_genes,"r")
-
-    genes = map( lambda x: x[:-1].split("\t")[0], filter( lambda x: x[0] != "#", infile.readlines()))
-    infile.close()
-
-    E.info( "read %i genes from %s" % (len(genes), filename_genes))
-
-    ## apply transformation
-    if gene_pattern:
-        rx = re.compile(gene_pattern)
-        genes = map( lambda x: rx.search( x ).groups()[0], genes )
-            
-    #############################################################
-    ## make non-redundant
-    xx = {}
-    for x in genes: xx[x] = 1
-    genes = xx.keys()
-
-    if filename_genes != "-":
-        infile.close()
-
-    E.info("after filtering: %i nonredundant genes." % (len(genes)))
-
-    return genes
-
-##---------------------------------------------------------------------------
 def ReadGeneLists( filename_genes, gene_pattern = None ):
     """read gene lists from filename in matrix.
 
@@ -958,14 +961,17 @@ def ReadGeneLists( filename_genes, gene_pattern = None ):
     if filename_genes == "-":
         infile = sys.stdin
     else:
-        infile = open(filename_genes,"r")
+        infile = IOTools.openFile(filename_genes,"r")
 
     headers, table = CSV.ReadTable( infile.readlines(), as_rows = False )
 
     if filename_genes != "-": infile.close()
 
     all_genes = table[0]
-    infile.close()
+    # if there is only a single column, add a dummy column
+    if len(table) == 1:
+        table.append( [1] * len( table[0]) )
+        headers.append( "foreground" )
 
     E.info( "read %i genes from %s" % (len(all_genes), filename_genes))
 
@@ -973,10 +979,10 @@ def ReadGeneLists( filename_genes, gene_pattern = None ):
         rx = re.compile(gene_pattern)
         all_genes = map( lambda x: rx.search( x ).groups()[0], all_genes )
 
-    gene_lists = {}
+    gene_lists = collections.OrderedDict()
     for header, col in zip( headers[1:], table[1:]):
         s = list(set([x for x,y in zip(all_genes, col) if y != "0" ]))
-        gene_lists[header] = s
+        gene_lists[header] = set(s)
 
     return all_genes, gene_lists 
 
@@ -1005,7 +1011,7 @@ def convertGo2Goslim( options ):
     assert options.filename_ontology, "please supply a GO ontology"
     E.info( "reading ontology from %s" % (options.filename_ontology) )
         
-    infile = open(options.filename_ontology)
+    infile = IOTools.openFile(options.filename_ontology)
     ontology = readOntology( infile )
     infile.close()
         
@@ -1017,7 +1023,7 @@ def convertGo2Goslim( options ):
                                                   description = go.mName )
 
     E.info( "reading GO assignments from %s" % options.filename_slims)
-    go_slims = GetGOSlims( open(options.filename_slims, "r") )
+    go_slims = GetGOSlims( IOTools.openFile(options.filename_slims, "r") )
 
     if options.loglevel >=1:
         v = set()
@@ -1051,6 +1057,7 @@ def convertGo2Goslim( options ):
                           noutput) )
 
 def outputResults( outfile, pairs, go2info,
+                   options,
                    fdrs = None, samples = None ):
     '''output GO results to outfile.'''
 
@@ -1151,9 +1158,7 @@ def getSamples( gene2go, genes, background, options, test_ontology ):
             prob_overs[k].append( v.mProbabilityOverRepresentation )
             prob_unders[k].append( v.mProbabilityUnderRepresentation )                    
 
-            simulation_min_pvalues.append( min( v.mProbabilityUnderRepresentation,
-                                                v.mProbabilityOverRepresentation ) )
-
+            simulation_min_pvalues.append( self.mPValue )
 
     if options.loglevel >= 1:
         sys.stdout.write("\n")
@@ -1277,8 +1282,7 @@ def computeFDRs( go_results, options, test_ontology ):
             #   b = number of nodes in observed data, that have a P-Value of less than p.
             #      aka: pos=positives in observed data
             #   fdr = a/b
-            pvalue = min(v.mProbabilityOverRepresentation,
-                         v.mProbabilityUnderRepresentation)
+            pvalue = v.mPValue
 
             # calculate values for FDR: 
             # nfdr = number of entries with P-Value better than node.
@@ -1302,8 +1306,31 @@ def computeFDRs( go_results, options, test_ontology ):
 
     return fdrs, samples
 
+def getFileName( options, **kwargs ):
+    if options.output_filename_pattern:
+        filename = options.output_filename_pattern % kwargs
+        E.info( "output for section '%s' go to %s" % (kwargs.get("section", "unknown"), filename))
+        outfile = IOTools.openFile(filename, "w", create_dir = True)
+    else:
+        outfile = sys.stdout
+
+    return outfile
+
+# output all significant results (if there is more than one gene set)
+def buildMatrix( results, valuef, dtype = numpy.float ):
+        
+    row_headers = [ set( [x[0] for x in y ] ) for y in results ]
+    row_headers = sorted( list( row_headers[0].union( *row_headers[1:] ) ) )
+    map_row = dict( zip(row_headers, range(len(row_headers)) ) )
+    matrix = numpy.zeros( (len(row_headers), len(results) ), dtype = dtype )
+    for col, pairs in enumerate(results):
+        for row,v in pairs: 
+            matrix[map_row[row]][col] = valuef( v )
+
+    return matrix, row_headers
+
 ##---------------------------------------------------------------------------    
-if __name__ == "__main__":
+def main():
 
     parser = optparse.OptionParser( version = "%prog version: $Id: GO.py 2883 2010-04-07 08:46:22Z andreas $", usage = globals()["__doc__"])
 
@@ -1321,8 +1348,12 @@ if __name__ == "__main__":
     parser.add_option( "-b", "--background", dest="filename_background", type="string",
                        help="filename with background genes to analyse [default=%default]." )
 
+    parser.add_option( "-m", "--minimum-counts", dest="minimum_counts", type="int",
+                       help="minimum count - ignore all categories that have fewer than # number of genes"
+                            " [default=%default]." )
+
     parser.add_option( "-o", "--sort-order", dest="sort_order", type="choice",
-                       choices=("fdr", "pover", "ratio" ),
+                       choices=("fdr", "pvalue", "ratio" ),
                        help="output sort order [default=%default]." )
 
     parser.add_option( "--ontology", dest="ontology", type="choice", action="append",
@@ -1343,23 +1374,21 @@ if __name__ == "__main__":
                        help="read GO category assignments from a flatfile [default=%default]." )
 
     parser.add_option ( "--sample", dest="sample", type="int",
-                       help="do sampling (with # samples) [default=%default]." )
+                        help="do sampling (with # samples) [default=%default]." )
 
-    parser.add_option ( "--filename-output-pattern", dest = "output_filename_pattern", type="string",
+    parser.add_option ( "--filename-output-pattern", "--output-filename-pattern", 
+                        dest = "output_filename_pattern", type="string",
                         help="pattern with output filename pattern (should contain: %(go)s and %(section)s ) [default=%default]")
 
-    parser.add_option ( "--output-filename-pattern", dest = "output_filename_pattern", type="string",
-                        help="pattern with output filename pattern (should contain: %(go)s and %(section)s ) [default=%default]")
-    
     parser.add_option ( "--fdr", dest="fdr", action="store_true",
-                       help="calculate and filter by FDR [default=%default]." )
-
+                        help="calculate and filter by FDR [default=%default]." )
+    
     parser.add_option ( "--go2goslim", dest="go2goslim", action="store_true",
-                       help="convert go assignments in STDIN to goslim assignments and write to STDOUT [default=%default]." )
+                        help="convert go assignments in STDIN to goslim assignments and write to STDOUT [default=%default]." )
 
     parser.add_option ( "--gene-pattern", dest = "gene_pattern", type="string",
                         help="pattern to transform identifiers to GO gene names [default=%default].")
-
+    
     parser.add_option( "--filename-map-slims", dest="filename_map_slims", type="string",
                        help="write mapping between GO categories and GOSlims [default=%default].")
 
@@ -1385,6 +1414,7 @@ if __name__ == "__main__":
                          filename_genes = "-",
                          filename_background = None,
                          filename_slims = None,
+                         minimum_counts = 0,
                          ontology = [],
                          filename_dump = None,
                          sample = 0,
@@ -1432,7 +1462,7 @@ if __name__ == "__main__":
     ## read GO categories from file
     if options.filename_input:
         E.info( "reading association of categories and genes from %s" % (options.filename_input) )
-        infile = open(options.filename_input)
+        infile = IOTools.openFile(options.filename_input)
         gene2gos, go2infos = ReadGene2GOFromFile( infile )
         infile.close()
 
@@ -1441,7 +1471,7 @@ if __name__ == "__main__":
     if options.filename_ontology:
         E.info( "reading ontology from %s" % (options.filename_ontology) )
         
-        infile = open(options.filename_ontology)
+        infile = IOTools.openFile(options.filename_ontology)
         ontology = readOntology( infile )
         infile.close()
         
@@ -1454,9 +1484,11 @@ if __name__ == "__main__":
 
     #############################################################
     ## get foreground gene list
-    genes = ReadGeneList( options.filename_genes, 
-                          gene_pattern = options.gene_pattern )
-        
+    input_foreground, genelists = ReadGeneLists( options.filename_genes, 
+                                                 gene_pattern = options.gene_pattern )
+
+    E.info( "read %i genes for forground in %i gene lists" % (len(input_foreground), len(genelists)) )
+
     #############################################################
     ## get background
     if options.filename_background:
@@ -1473,281 +1505,315 @@ if __name__ == "__main__":
         if options.filename_input:
             options.ontology = gene2gos.keys()
 
+    E.info( "found %i ontologies: %s" % (len(options.ontology), options.ontology))
+    # store all significant results for aggregate output
+    all_significant_results = []
+
     #############################################################
     ## get go categories for genes
     for test_ontology in options.ontology:
 
+        E.info( "working on ontology %s" % test_ontology )
         #############################################################
         ## get/read association of GO categories to genes
         if options.filename_input:
             gene2go, go2info = gene2gos[test_ontology], go2infos[test_ontology]
         else:
-            if options.loglevel >= 1:
-                options.stdlog.write( "# reading data from database ..." )
-                sys.stdout.flush()
+            E.info( "reading data from database ..." )
 
             dbhandle.Connect( options )
             gene2go, go2info = ReadGene2GOFromDatabase( dbhandle,
                                                         test_ontology,
                                                         options.database, options.species )
 
-            E.log( "finished" )
+            E.info( "finished" )
 
         if len(go2info) == 0:
             E.warn( "could not find information for terms - could be mismatch between ontologies")
 
-        ngenes, ncategories, nmaps = CountGO( gene2go )        
-        E.info( "read GO assignments: %i genes mapped to %i categories (%i maps)" % (ngenes, ncategories, nmaps) )
+        ngenes, ncategories, nmaps, counts_per_category = CountGO( gene2go )        
+        E.info( "assignments found: %i genes mapped to %i categories (%i maps)" % (ngenes, ncategories, nmaps) )
 
-        ##################################################################
-        ##################################################################
-        ##################################################################
-        ## build background - reconcile with foreground
-        ##################################################################
-        if input_background == None:
-            background = list(gene2go.keys())
-        else:
-            background = input_background 
-            
-        missing = set(genes).difference( set(background))
+        if options.minimum_counts > 0:
+            to_remove = set([ x for x,y in counts_per_category.iteritems() if y < options.minimum_counts ])
+            E.info("removing %i categories with less than %i genes" % (len(to_remove), options.minimum_counts ) )
+            removeCategories( gene2go, to_remove )
 
-        if options.strict:
-            assert len(missing) == 0, \
-                "%i genes in foreground but not in background: %s" % (len(missing), str(missing))
-        else:
-            if len(missing) != 0:
-                E.warn( "%i genes in foreground that are not in background - added to background of %i" %\
-                            (len(missing), len(background)) )
-            background.extend( missing )
+            ngenes, ncategories, nmaps, counts_per_category = CountGO( gene2go )        
+            E.info( "assignments after filtering: %i genes mapped to %i categories (%i maps)" % (ngenes, ncategories, nmaps) )
 
-        E.info( "(unfiltered) foreground=%i, background=%i" % (len(genes), len(background)))
-
-        #############################################################
-        ## sanity check:            
-        ## are all of the foreground genes in the dataset
-        ## missing = set(genes).difference( set(gene2go.keys()) )
-        ## assert len(missing) == 0, "%i genes in foreground set without GO annotation: %s" % (len(missing), str(missing))
-
-        #############################################################            
-        ## read GO slims and map GO categories to GO slim categories
-        if options.filename_slims:
-            go_slims = GetGOSlims( open(options.filename_slims, "r") )
-            
-            if options.loglevel >=1:
-                v = set()
-                for x in go_slims.values():
-                    for xx in x: v.add(xx)
-                options.stdlog.write( "# read go slims from %s: go=%i, slim=%i\n" %\
-                                          ( options.filename_slims,
-                                            len(go_slims), 
-                                            len( v ) ))
-
-                                       
-
-            if options.filename_map_slims:
-                if options.filename_map_slims == "-":
-                    outfile = options.stdout
-                else:
-                    outfile=IOTools.openFile(options.filename_map_slims, "w" )
-
-                outfile.write( "GO\tGOSlim\n" )
-                for go, go_slim in go_slims.items():
-                    outfile.write("%s\t%s\n" % (go, go_slim))
-
-                if outfile != options.stdout:
-                    outfile.close()
-
-            gene2go = MapGO2Slims( gene2go, go_slims, ontology = ontology )
-
-            if options.loglevel >=1:
-                ngenes, ncategories, nmaps = CountGO( gene2go )
-                options.stdlog.write( "# after go slim filtering: %i genes mapped to %i categories (%i maps)\n" % (ngenes, ncategories, nmaps) )
-
-        #############################################################
-        ## Just dump out the gene list
-        if options.get_genes:
-            fg, bg, ng = [], [], []
-
-            for gene, vv in gene2go.items():
-                for v in vv:
-                    if v.mGOId == options.get_genes:
-                        if gene in genes:
-                            fg.append( gene )
-                        elif gene in background:
-                            bg.append( gene )
-                        else:
-                            ng.append( gene )
-
-            ## skip to next GO class
-            if not (bg or ng): continue
-
-            options.stdout.write( "# genes in GO category %s\n" % options.get_genes )
-            options.stdout.write( "gene\tset\n" )
-            for x in fg: options.stdout.write("%s\t%s\n" % ("fg", x))
-            for x in bg: options.stdout.write("%s\t%s\n" % ("bg", x))           
-            for x in ng: options.stdout.write("%s\t%s\n" % ("ng", x))                       
-
-            E.info( "nfg=%i, nbg=%i, nng=%i" % (len(fg), len(bg), len(ng) ))
-                
-            E.Stop()
-            sys.exit(0)
-                  
-        #############################################################
-        ## do the analysis
-        go_results = AnalyseGO( gene2go, genes, background )
-
-        if len(go_results.mSampleGenes) == 0:
-            E.warn( "no genes with GO categories - analysis aborted" )
-            E.Stop()
-            sys.exit(0)
-
-        pairs = go_results.mResults.items()
-
-        #############################################################
-        ## calculate fdr for each hypothesis
-        if options.fdr:
-            fdrs, samples  = computeFDRs( go_results, options, test_ontology )
-        else:
-            fdrs, samples = {}, None
-
-        if options.sort_order == "fdr":
-            pairs.sort( lambda x, y: cmp(fdrs[x[0]], fdrs[y[0]] ) )           
-        elif options.sort_order == "ratio":
-            pairs.sort( lambda x, y: cmp(x[1].mRatio, y[1].mRatio))
-        elif options.sort_order == "pover":
-            pairs.sort( lambda x, y: cmp(x[1].mProbabilityOverRepresentation, y[1].mProbabilityOverRepresentation))
-
-        #############################################################
-        # output filtered results
-        filtered_pairs = []
-
-        for k, v in pairs:
-            
-            is_ok = False
-
-            pvalue = min(v.mProbabilityOverRepresentation, v.mProbabilityUnderRepresentation) 
-
-            if options.fdr:
-                (fdr, expfpos, pos) = fdrs[k]
-                if fdr < options.threshold: is_ok = True
-            else:
-                if pvalue < options.threshold: is_ok = True
-                
-            if is_ok: filtered_pairs.append( (k,v) )
-
-        nselected = len(filtered_pairs)
-
-        if options.output_filename_pattern:
-            filename = options.output_filename_pattern % { 'go': test_ontology, 'section': "results" }
-            E.info( "results go to %s" % filename)
-            outfile = IOTools.openFile(filename, "w", create_dir = True)
-        else:
-            outfile = sys.stdout
-
-        outputResults( outfile, 
-                       filtered_pairs, 
-                       go2info, 
-                       fdrs = fdrs, 
-                       samples = samples )
-
-        if options.output_filename_pattern:
-            outfile.close()
-
-        #############################################################
-        ## output the full result
-            
-        if options.output_filename_pattern:
-            filename = options.output_filename_pattern % { 'go': test_ontology, 'section': "overall" }
-            E.info( "a list of all categories and pvalues goes to %s" % filename )
-            outfile = IOTools.openFile(filename, "w", create_dir = True)
-        else:
-            outfile = sys.stdout
+        for genelist_name, foreground in genelists.iteritems():
         
-        outputResults( outfile, pairs, go2info, fdrs = fdrs, samples = samples )
-
-        if options.output_filename_pattern:
-            outfile.close()
-
-        #############################################################
-        ## output parameters
-        ngenes, ncategories, nmaps = CountGO( gene2go )
-
-        if options.output_filename_pattern:
-            filename = options.output_filename_pattern % { 'go': test_ontology, 'section': "parameters" }
-            if options.loglevel >= 1:
-                options.stdlog.write( "# parameters go to %s\n" % filename )
-            outfile = IOTools.openFile(filename, "w", create_dir = True)
-        else:
-            outfile = sys.stdout
-            
-        outfile.write( "# input go mappings for category '%s'\n" % test_ontology )
-        outfile.write( "value\tparameter\n" )
-        outfile.write( "%i\tmapped genes\n" % ngenes )
-        outfile.write( "%i\tmapped categories\n" % ncategories )
-        outfile.write( "%i\tmappings\n" % nmaps )
-
-        nbackground = len(background)
-        if nbackground == 0:
-            nbackground = len(go_results.mBackgroundGenes)
-            
-        outfile.write( "%i\tgenes in sample\n" % len(genes) )
-        outfile.write( "%i\tgenes in sample with GO assignments\n" % (len(go_results.mSampleGenes)) )
-        outfile.write( "%i\tinput background\n" % nbackground )
-        outfile.write( "%i\tgenes in background with GO assignments\n" % (len(go_results.mBackgroundGenes)) )
-        outfile.write( "%i\tassociations in sample\n"     % go_results.mSampleCountsTotal )
-        outfile.write( "%i\tassociations in background\n" % go_results.mBackgroundCountsTotal )
-        outfile.write( "%s\tpercent genes in sample with GO assignments\n" % (IOTools.prettyPercent( len(go_results.mSampleGenes) , len(genes), "%5.2f" )))
-        outfile.write( "%s\tpercent genes background with GO assignments\n" % (IOTools.prettyPercent( len(go_results.mBackgroundGenes), nbackground, "%5.2f" )))
-
-        outfile.write( "%i\tsignificant results reported\n" % nselected )
-        outfile.write( "%6.4f\tsignificance threshold\n" % options.threshold )        
-
-        if options.output_filename_pattern:
-            outfile.close()
-
-        #############################################################
-        ## output the fg patterns
-            
-        #############################################################
-        ## Compute reverse map
-        go2genes = {}
-
-        for gene, gos in gene2go.items():
-            if gene not in genes: continue
-            for go in gos:
-                if go.mGOId not in go2genes:
-                    go2genes[go.mGOId] = []
-                go2genes[go.mGOId].append( gene )
-            
-        if options.output_filename_pattern:
-            filename = options.output_filename_pattern % { 'go': test_ontology, 'section': "fg" }
-            if options.loglevel >= 1:
-                options.stdlog.write( "# results go to %s\n" % filename )
-            outfile = IOTools.openFile(filename, "w", create_dir = True)
-        else:
-            outfile = sys.stdout
-
-        headers = ["code", "scount", "stotal", "spercent", "bcount", "btotal", "bpercent",
-                   "ratio", 
-                   "pvalue", "pover", "punder", "goid", "category", "description", "fg"]
-
-        for k, v in pairs:
-
-            code = GetCode( v )            
-
-            if k in go2info:
-                n = go2info[k]
+            E.info("processing %s with %i genes" % (genelist_name, len(foreground)))
+            ##################################################################
+            ##################################################################
+            ##################################################################
+            ## build background - reconcile with foreground
+            ##################################################################
+            if input_background == None:
+                background = list(gene2go.keys())
             else:
-                n = GOInfo()
-                
-            if k in go2genes:
-                g = ";".join( go2genes[k] )
+                background = input_background 
+
+            missing = set(foreground).difference( set(background))
+
+            if options.strict:
+                assert len(missing) == 0, \
+                    "%i genes in foreground but not in background: %s" % (len(missing), str(missing))
             else:
-                g = ""
+                if len(missing) != 0:
+                    E.warn( "%i genes in foreground that are not in background - added to background of %i" %\
+                                (len(missing), len(background)) )
+                background.extend( missing )
 
-            outfile.write("%s\t%s\t%s\t%s\n" % (code, str(v), n, g ) )
+            E.info( "(unfiltered) foreground=%i, background=%i" % (len(foreground), len(background)))
 
-        if outfile != sys.stdout:
-            outfile.close()
+            #############################################################
+            ## sanity checks:            
+            ## are all of the foreground genes in the dataset
+            ## missing = set(genes).difference( set(gene2go.keys()) )
+            ## assert len(missing) == 0, "%i genes in foreground set without GO annotation: %s" % (len(missing), str(missing))
+
+            #############################################################            
+            ## read GO slims and map GO categories to GO slim categories
+            if options.filename_slims:
+                go_slims = GetGOSlims( IOTools.openFile(options.filename_slims, "r") )
+
+                if options.loglevel >=1:
+                    v = set()
+                    for x in go_slims.values():
+                        for xx in x: v.add(xx)
+                    options.stdlog.write( "# read go slims from %s: go=%i, slim=%i\n" %\
+                                              ( options.filename_slims,
+                                                len(go_slims), 
+                                                len( v ) ))
+
+
+
+                if options.filename_map_slims:
+                    if options.filename_map_slims == "-":
+                        outfile = options.stdout
+                    else:
+                        outfile=IOTools.openFile(options.filename_map_slims, "w" )
+
+                    outfile.write( "GO\tGOSlim\n" )
+                    for go, go_slim in go_slims.items():
+                        outfile.write("%s\t%s\n" % (go, go_slim))
+
+                    if outfile != options.stdout:
+                        outfile.close()
+
+                gene2go = MapGO2Slims( gene2go, go_slims, ontology = ontology )
+
+                if options.loglevel >=1:
+                    ngenes, ncategories, nmaps, counts_per_category = CountGO( gene2go )
+                    options.stdlog.write( "# after go slim filtering: %i genes mapped to %i categories (%i maps)\n" % (ngenes, ncategories, nmaps) )
+
+            #############################################################
+            ## Just dump out the gene list
+            if options.get_genes:
+                fg, bg, ng = [], [], []
+
+                for gene, vv in gene2go.items():
+                    for v in vv:
+                        if v.mGOId == options.get_genes:
+                            if gene in genes:
+                                fg.append( gene )
+                            elif gene in background:
+                                bg.append( gene )
+                            else:
+                                ng.append( gene )
+
+                ## skip to next GO class
+                if not (bg or ng): continue
+
+                options.stdout.write( "# genes in GO category %s\n" % options.get_genes )
+                options.stdout.write( "gene\tset\n" )
+                for x in fg: options.stdout.write("%s\t%s\n" % ("fg", x))
+                for x in bg: options.stdout.write("%s\t%s\n" % ("bg", x))           
+                for x in ng: options.stdout.write("%s\t%s\n" % ("ng", x))                       
+
+                E.info( "nfg=%i, nbg=%i, nng=%i" % (len(fg), len(bg), len(ng) ))
+
+                E.Stop()
+                sys.exit(0)
+
+            #############################################################
+            ## do the analysis
+            go_results = AnalyseGO( gene2go, foreground, background )
+
+            if len(go_results.mSampleGenes) == 0:
+                E.warn( "%s: no genes with GO categories - analysis aborted" % genelistname)
+                continue
+
+            pairs = go_results.mResults.items()
+
+            #############################################################
+            ## calculate fdr for each hypothesis
+            if options.fdr:
+                fdrs, samples  = computeFDRs( go_results, options, test_ontology )
+            else:
+                fdrs, samples = {}, None
+
+            if options.sort_order == "fdr":
+                pairs.sort( lambda x, y: cmp(fdrs[x[0]], fdrs[y[0]] ) )           
+            elif options.sort_order == "ratio":
+                pairs.sort( lambda x, y: cmp(x[1].mRatio, y[1].mRatio))
+            elif options.sort_order == "pvalue":
+                pairs.sort( lambda x, y: cmp(x[1].mPValue, y[1].mPValue))
+
+            #############################################################
+            # output filtered results
+            filtered_pairs = []
+
+            for k, v in pairs:
+
+                is_ok = False
+
+                pvalue = v.mPValue
+
+                if options.fdr:
+                    (fdr, expfpos, pos) = fdrs[k]
+                    if fdr < options.threshold: is_ok = True
+                else:
+                    if pvalue < options.threshold: is_ok = True
+
+                if is_ok: filtered_pairs.append( (k,v) )
+
+            nselected = len(filtered_pairs)
+
+            outfile = getFileName( options, 
+                                   go = test_ontology,
+                                   section = 'results',
+                                   set = genelist_name )
+
+            outputResults( outfile, 
+                           filtered_pairs, 
+                           go2info, 
+                           options,
+                           fdrs = fdrs, 
+                           samples = samples )
+            
+            if options.output_filename_pattern:
+                outfile.close()
+
+            #############################################################
+            # add filtered results to full results
+            all_significant_results.append( filtered_pairs )
+
+            #############################################################
+            ## output the full result
+
+            outfile = getFileName( options, 
+                                   go = test_ontology,
+                                   section = 'overall',
+                                   set = genelist_name )
+
+            outputResults( outfile, pairs, go2info, options, fdrs = fdrs, samples = samples )
+
+            if options.output_filename_pattern:
+                outfile.close()
+
+            #############################################################
+            ## output parameters
+            ngenes, ncategories, nmaps, counts_per_category = CountGO( gene2go )
+
+            outfile = getFileName( options, 
+                                   go = test_ontology,
+                                   section = 'parameters',
+                                   set = genelist_name )
+
+            outfile.write( "# input go mappings for category '%s'\n" % test_ontology )
+            outfile.write( "value\tparameter\n" )
+            outfile.write( "%i\tmapped genes\n" % ngenes )
+            outfile.write( "%i\tmapped categories\n" % ncategories )
+            outfile.write( "%i\tmappings\n" % nmaps )
+
+            nbackground = len(background)
+            if nbackground == 0:
+                nbackground = len(go_results.mBackgroundGenes)
+
+            outfile.write( "%i\tgenes in sample\n" % len(foreground) )
+            outfile.write( "%i\tgenes in sample with GO assignments\n" % (len(go_results.mSampleGenes)) )
+            outfile.write( "%i\tinput background\n" % nbackground )
+            outfile.write( "%i\tgenes in background with GO assignments\n" % (len(go_results.mBackgroundGenes)) )
+            outfile.write( "%i\tassociations in sample\n"     % go_results.mSampleCountsTotal )
+            outfile.write( "%i\tassociations in background\n" % go_results.mBackgroundCountsTotal )
+            outfile.write( "%s\tpercent genes in sample with GO assignments\n" % (IOTools.prettyPercent( len(go_results.mSampleGenes) , len(foreground), "%5.2f" )))
+            outfile.write( "%s\tpercent genes background with GO assignments\n" % (IOTools.prettyPercent( len(go_results.mBackgroundGenes), nbackground, "%5.2f" )))
+
+            outfile.write( "%i\tsignificant results reported\n" % nselected )
+            outfile.write( "%6.4f\tsignificance threshold\n" % options.threshold )        
+
+            if options.output_filename_pattern:
+                outfile.close()
+
+            #############################################################
+            ## output the fg patterns
+
+            #############################################################
+            ## Compute reverse map
+            go2genes = {}
+
+            for gene, gos in gene2go.items():
+                if gene not in foreground: continue
+                for go in gos:
+                    if go.mGOId not in go2genes:
+                        go2genes[go.mGOId] = []
+                    go2genes[go.mGOId].append( gene )
+
+            outfile = getFileName( options, 
+                                   go = test_ontology,
+                                   section = 'fg',
+                                   set = genelist_name )
+
+            headers = ["code", "scount", "stotal", "spercent", "bcount", "btotal", "bpercent",
+                       "ratio", 
+                       "pvalue", "pover", "punder", "goid", "category", "description", "fg"]
+
+            for k, v in pairs:
+
+                code = GetCode( v )            
+
+                if k in go2info:
+                    n = go2info[k]
+                else:
+                    n = GOInfo()
+
+                if k in go2genes:
+                    g = ";".join( go2genes[k] )
+                else:
+                    g = ""
+
+                outfile.write("%s\t%s\t%s\t%s\n" % (code, str(v), n, g ) )
+
+            if outfile != sys.stdout:
+                outfile.close()
+
+        if len(genelists) > 1:
+        
+            col_headers = genelists.keys()
+
+            # fold change matrix
+            matrix, row_headers = buildMatrix( all_significant_results, valuef = lambda x: math.log( x.mRatio + 0.00000001, 2 ),
+                                               dtype = numpy.float )
+            outfile = getFileName( options, 
+                                   go = test_ontology,
+                                   section = 'fold',
+                                   set = 'all' )
+            IOTools.writeMatrix( outfile, matrix, row_headers, col_headers )
+
+            # pvalue matrix
+            matrix, row_headers = buildMatrix( all_significant_results, valuef = lambda x: int(-10 * math.log( x.mPValue,10)),
+                                               dtype = numpy.int )
+            outfile = getFileName( options, 
+                                   go = test_ontology,
+                                   section = 'pvalue',
+                                   set = 'all' )
+            IOTools.writeMatrix( outfile, matrix, row_headers, col_headers )
 
     E.Stop()
+
+
+if __name__ == "__main__":
+    sys.exit( main() )

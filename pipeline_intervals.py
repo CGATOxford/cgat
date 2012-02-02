@@ -203,6 +203,7 @@ import sqlite3
 import IndexedFasta, IndexedGenome, FastaIterator, Genomics
 import IOTools
 import GTF, GFF, Bed
+import MatrixTools
 import pysam
 import numpy
 import gzip
@@ -603,6 +604,7 @@ def annotateBindingFull( infile, outfile ):
 
     statement = """
     zcat < %(geneset)s
+    | awk '$2 == "protein_coding"'
     | python %(scriptsdir)s/gtf2table.py 
 		--counter=position 
 		--counter=binding-pattern
@@ -629,10 +631,11 @@ def annotateBindingPeak( infile, outfile ):
     to_cluster = True
 
     geneset = os.path.join( PARAMS["annotations_dir"],
-                                    PARAMS_ANNOTATIONS["interface_geneset_all_gtf"] )
+                            PARAMS_ANNOTATIONS["interface_geneset_all_gtf"] )
 
     statement = """
     zcat < %(geneset)s
+    | awk '$2 == "protein_coding"'
     | python %(scriptsdir)s/gtf2table.py 
 		--counter=position 
 		--counter=binding-pattern
@@ -1272,15 +1275,77 @@ def runGATOnGeneAnnotations( infiles, outfile ):
 
     P.run()
 
-
-
 @transform( (runGATOnGenomicContext,
-             runGATOnGenomicAnnotations ),
-            regex("(.*)_gat.dir/(.*).gat.tsv.gz" ),
-            r"\1_gat.dir/gat_\1_\2.load" )
+             runGATOnGenomicAnnotations,
+             runGATOnGeneAnnotations),
+            regex("gat_(.*).dir/(.*).gat.tsv.gz" ),
+            r"gat_\1.dir/gat_\1_\2.load" )
 def loadGat( infile, outfile ):
+    '''load individual gat results.'''
+
     P.load( infile, outfile )
 
+@collate( (runGATOnGenomicContext,
+           runGATOnGenomicAnnotations,
+           runGATOnGeneAnnotations),
+          regex("gat_(.*).dir/.*.gat.tsv.gz" ),
+          r"gat_\1.summary.tsv.gz" )
+def summarizeGAT( infiles, outfile ):
+    '''summarize GAT results.
+
+    outputs a log2fold and pvalue table for results that
+    pass an fdr < gat_fdr
+    '''
+
+    col_headers = [ P.snip( os.path.basename(x), ".gat.tsv.gz") for x in infiles]
+
+    # get qvalues
+    qval_matrix, qval_row_headers = MatrixTools.buildMatrixFromTables( infiles, 
+                                                                       column = "qvalue",
+                                                                       column_header = "annotation",
+                                                                       default = 1.0 )
+    # output qvalues
+    column = "qvalue"
+    with IOTools.openFile( outfile + "." + column + ".gz", "w") as outf:
+        IOTools.writeMatrix( outf, qval_matrix, qval_row_headers, col_headers )
+
+    ncols = len(infiles)
+    min_qvalue = PARAMS["gat_fdr"]
+
+    E.info( "read matrix with %i rows and %i columns" % qval_matrix.shape )
+
+    # set all values to 1.0 that are above fdr threshold
+    qval_matrix[numpy.where( qval_matrix > min_qvalue )] = 1.0
+    s = numpy.sum( qval_matrix, 1 )
+    take = numpy.where( s != ncols )[0]
+    E.info( "taking %i rows" % len(take))
+    
+    for (column, default) in ( ("fold", 1.0), ( "pvalue", 1.0) ):
+        # output single tables for fold and pvalue
+        matrix, row_headers = MatrixTools.buildMatrixFromTables( infiles, 
+                                                                 column = column,
+                                                                 column_header = "annotation",
+                                                                 default = default )
+
+        assert qval_row_headers == row_headers
+
+        # set those items with qvalue > fdr to default
+        matrix[numpy.where( qval_matrix > min_qvalue )] = default
+        
+        # remove all rows that have no significant results
+        row_headers = numpy.take( row_headers, take )
+        matrix = numpy.take( matrix, take, 0 )
+
+        if column == "fold": 
+            matrix[numpy.where( matrix < 0.00001 )] = 0.00001
+            matrix = numpy.log2( matrix )
+
+        col_headers = [ P.snip( os.path.basename(x), ".gat.tsv.gz") for x in infiles]
+        with IOTools.openFile( outfile + "." + column + ".gz", "w") as outf:
+            IOTools.writeMatrix( outf, matrix, row_headers, col_headers )
+
+    P.touch( outfile )
+    
 @follows( loadGat )
 def gat(): pass
 

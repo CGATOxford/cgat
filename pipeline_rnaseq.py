@@ -1025,7 +1025,6 @@ def buildReferenceTranscriptome( infile, outfile ):
     The sequences include both UTR and CDS.
 
     '''
-
     to_cluster = USECLUSTER
 
     statement = '''
@@ -1128,6 +1127,8 @@ def mapReadsWithTophat( infiles, outfile ):
     to_cluster = USECLUSTER
     m = PipelineMapping.Tophat()
     infile, reffile = infiles
+
+
     tophat_options = PARAMS["tophat_options"] + " --raw-juncs %(reffile)s " % locals()
     statement = m.build( (infile,), outfile ) 
     P.run()
@@ -1452,10 +1453,16 @@ def buildTophatStats( infiles, outfile ):
         junctions_found = int( _select( lines, "Found (\d+) junctions from happy spliced reads") )
 
         fn = os.path.join( indir, "segment_juncs.log" )
-        lines = open( fn ).readlines()
-        if len(lines) > 0:
-            segment_juncs_version =  _select( lines, "segment_juncs (.*)$" )
-            possible_splices = int( _select( lines, "Reported (\d+) total possible splices") )
+        
+        
+        if os.path.exists(fn):
+            lines = open( fn ).readlines()
+            if len(lines) > 0:
+                segment_juncs_version =  _select( lines, "segment_juncs (.*)$" )
+                possible_splices = int( _select( lines, "Reported (\d+) total possible splices") )
+            else:
+                segment_juncs_version = "na"
+                possible_splices = ""
         else:
             segment_juncs_version = "na"
             possible_splices = ""
@@ -3768,8 +3775,9 @@ def aggregateExonLevelReadCounts( infiles, outfile ):
     tmpfile = P.getTempFilename( "." )
     
     statement = '''paste %(src)s 
-                > %(tmpfile)s'''
+                > %(tmpfile)s''' % locals()
     
+
     P.run()
 
     tracks = [P.snip(x, ".bed.gz" ) for x in infiles ]
@@ -3848,6 +3856,7 @@ def runDESeq( infile, outfile ):
         conditions.append( group )
 
     ro.globalenv['conds'] = ro.StrVector(sample2condition)
+    R('''print (conds)''')
 
     def build_filename2( **kwargs ):
         return "%(outdir)s/%(geneset)s_%(method)s_%(level)s_%(track1)s_vs_%(track2)s_%(section)s.png" % kwargs

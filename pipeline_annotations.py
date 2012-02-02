@@ -918,6 +918,9 @@ def buildGenomicFunctionalAnnotation( infiles, outfiles ):
 
     Ambiguities in territories are resolved by outputting 
     annotations for all genes within a territory.
+
+    The output file contains annotations for both GO and GOSlim. These
+    are prefixed by ``go:`` and ``goslim:``.
     '''
     
     to_cluster = True
@@ -951,14 +954,12 @@ def buildGenomicFunctionalAnnotation( infiles, outfiles ):
     statement = '''sort -k1,1 -k2,2n  < %(tmpfname)s | uniq | gzip > %(outfile_bed)s'''
 
     P.run()
-    
 
     outf = IOTools.openFile( outfile_tsv, "w" )
     outf.write("term\tdescription\n" )
     for term, description in term2description.iteritems():
         outf.write("%s\t%s\n" % (term, description))
     outf.close()
-
 
 ############################################################
 ############################################################
