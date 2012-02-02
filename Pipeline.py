@@ -682,7 +682,7 @@ def run( **kwargs ):
             tmpfile = tempfile.NamedTemporaryFile( dir = os.getcwd() , delete = False )
             tmpfile.write( "#!/bin/bash\n" ) #  -l -O expand_aliases\n" )
             tmpfile.write( 'echo "START--------------------------------" >> %s \n' % shellfile )
-            tmpfile.write( 'echo "statement=%s" >> %s\n' % (statement, shellfile) )
+            #tmpfile.write( 'echo "statement=%s" >> %s\n' % (statement, shellfile) )
             tmpfile.write( "set &>> %s\n" % shellfile)
             tmpfile.write( "module list &>> %s\n" % shellfile )
             tmpfile.write( 'echo "END----------------------------------" >> %s \n' % shellfile )
@@ -740,7 +740,7 @@ def run( **kwargs ):
         tmpfile.write( "#!/bin/bash\n" ) #  -l -O expand_aliases\n" )
 
         tmpfile.write( 'echo "START--------------------------------" >> %s \n' % shellfile )
-        tmpfile.write( 'echo "statement=%s" >> %s\n' % (statement, shellfile) )
+        #tmpfile.write( 'echo "statement=%s" >> %s\n' % (statement, shellfile) )
         tmpfile.write( "set &>> %s\n" % shellfile)
         tmpfile.write( "module list &>> %s\n" % shellfile )
         tmpfile.write( 'echo "END----------------------------------" >> %s \n' % shellfile )
