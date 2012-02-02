@@ -54,6 +54,11 @@ promoters
    is the region x kb upstream of a transcription start site. The option
    ``--promotor`` sets the region width.
 
+regulons
+   declare regulatory regions. Regulatory regions contain the region x kb of
+   upstream and downstream of a transciption start site. The option ``--promotor``
+   sets the region width.
+
 Genome
 ++++++
 
@@ -486,8 +491,51 @@ def annotatePromoters( iterator, fasta, options ):
             npromotors += 1
             x += 1
 
-    if options.loglevel >= 1:
-        options.stdlog.write( "# ngenes=%i, ntranscripts=%i, npromotors=%i\n" % (ngenes, ntranscripts, npromotors) )
+    E.info( "ngenes=%i, ntranscripts=%i, npromotors=%i" % (ngenes, ntranscripts, npromotors) )
+
+def annotateRegulons( iterator, fasta, options ):
+    """annotate regulons within iterator.
+
+    Only protein_coding genes are annotated.
+    """
+
+    gene_iterator = GTF.gene_iterator( iterator )
+
+    ngenes, ntranscripts, nregulons = 0, 0, 0
+
+    for gene in gene_iterator:
+        ngenes += 1
+        is_negative_strand = Genomics.IsNegativeStrand( gene[0][0].strand )
+        lcontig = fasta.getLength( gene[0][0].contig )
+        regulons = []
+        transcript_ids = []
+        for transcript in gene:
+
+            ntranscripts += 1
+            mi, ma = min( [x.start for x in transcript ] ), max( [x.end for x in transcript ] )
+            transcript_ids.append( transcript[0].transcript_id )
+            # add range to both sides of tss
+            regulons.append( (max( 0, mi - options.promotor), min( lcontig, ma + options.promotor) ) )
+
+        if options.merge_promotors:
+            # merge the regulons (and rename - as sort order might have changed)
+            regulons = Intervals.combine( regulons )
+            transcript_ids = ["%i" % (x+1) for x in range(len(regulons) )]
+            
+        gtf = GTF.Entry()
+        gtf.fromGFF( gene[0][0], gene[0][0].gene_id, gene[0][0].gene_id )
+        gtf.source = "promotor"
+
+        x = 0
+        for start, end in regulons:
+            gtf.start, gtf.end = start, end
+            gtf.transcript_id = transcript_ids[x]
+            options.stdout.write( "%s\n" % str(gtf) )
+            nregulons += 1
+            x += 1
+
+    E.info( "ngenes=%i, ntranscripts=%i, nregulons=%i" % (ngenes, ntranscripts, nregulons) )
+
 
 def annotateTTS( iterator, fasta, options ):
     """annotate termination sites within iterator.
@@ -555,7 +603,7 @@ if __name__ == '__main__':
                       help="restrict input by source [default=%default]."  )
 
     parser.add_option("-m", "--method", dest="method", type="choice",
-                      choices=("full", "genome", "territories", "exons", "promotors", "tts", ),
+                      choices=("full", "genome", "territories", "exons", "promotors", "tts", "regulons"),
                       help="method for defining segments [default=%default]."  )
 
     parser.add_option("-r", "--radius", dest="radius", type="int",
@@ -609,6 +657,8 @@ if __name__ == '__main__':
         segmentor = annotateExons( iterator, fasta, options )
     elif options.method == "promotors":
         segmentor = annotatePromoters( iterator, fasta, options )
+    elif options.method == "regulons":
+        segmentor = annotateRegulons( iterator, fasta, options )
     elif options.method == "tts":
         segmentor = annotateTTS( iterator, fasta, options )
 
