@@ -27,6 +27,13 @@ and expected number of peaks with motif by chance.
 
    Percentage of peaks explained by motifs.
 
+.. report:: Motifs.MastSummary
+   :render: table
+   :transform: filter                      
+   :tf-fields: MC-Evalue,MC-explained / %
+
+   Percentage of peaks explained by motifs.
+
 .. Location of motifs within intervals
 .. ===================================
 

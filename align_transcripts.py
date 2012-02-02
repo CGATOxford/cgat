@@ -779,7 +779,7 @@ sequences will be aligned to the cds sequences. This produces better coordinates
                     
                 if ee[-1].mPeptideTo != map_p2c.getColTo():
 
-                    E.debug( "%s\n" % str(ee[-1]) )
+                    E.debug( "%s" % str(ee[-1]) )
                     E.warn( "%s of length %i: peptide and exon do not correspond: %i <> %i" %\
                                 (key, len(input[key]), ee[-1].mPeptideTo, map_peptide2cds[key].getColTo()) )
                     ndifferences += 1
@@ -831,11 +831,12 @@ sequences will be aligned to the cds sequences. This produces better coordinates
                                      e.mPeptideTo, peptide_to))
                         E.debug("%s" %str(alignlib.AlignmentFormatEmissions( map_p2c )) )
                         nunmappable += 1
-                    else:
-                        e.mCdsFrom = e.mPeptideFrom
-                        e.mCdsTo = e.mPeptideTo
-                        e.mPeptideFrom = peptide_from
-                        e.mPeptideTo = peptide_to
+                        continue
+
+                    e.mCdsFrom = e.mPeptideFrom
+                    e.mCdsTo = e.mPeptideTo
+                    e.mPeptideFrom = peptide_from
+                    e.mPeptideTo = peptide_to
 
                     # build map of cds to genomic sequence
                     map_c2g.addDiagonal( e.mCdsFrom, e.mCdsTo, e.mGenomeFrom - genome_start - e.mCdsFrom ) 

@@ -497,15 +497,18 @@ def loadMAST( infile, outfile ):
     
         return motif, part, mast
     
-    def splitId( s ):
+    def splitId( s, mode ):
         '''split background match id
 
         has three parts: track _ id _ pos
 
-        track might containt '_'.
+        track might contain '_'.
         '''
         d = match.id.split("_")
-        return "_".join(d[:-2]), d[-2], d[-1]
+        if mode == "bg":
+            return "_".join(d[:-2]), d[-2], d[-1]
+        elif mode == "fg":
+            return "_".join(d[:-1]), d[-1]
 
     for chunk in range(0, len(chunks)-1, 2):
 
@@ -518,13 +521,12 @@ def loadMAST( infile, outfile ):
         # index control data
         controls = collections.defaultdict( dict )
         for match in mast_bg.matches:
-            
-            track, id, pos = splitId( match.id )
+            track, id, pos = splitId( match.id, "bg" )
             controls[id][pos] = (match.evalue, match.pvalue, match.nmotifs, match.length, match.start, match.end )
 
         for match in mast_fg.matches:
             # remove track and pos
-            track, match.id, pos = splitId( match.id )
+            track, match.id = splitId( match.id, "fg" )
             # move to genomic coordinates
             contig, start, end = re.match( "(\S+):(\d+)..(\d+)", match.description).groups()
             if match.nmotifs > 0:

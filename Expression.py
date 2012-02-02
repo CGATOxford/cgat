@@ -11,8 +11,15 @@ import rpy2.robjects.numpy2ri
 
 import Experiment as E
 import Pipeline as P
+import Database
 import IOTools
 import Stats
+import sqlite3
+
+try:
+    PARAMS = P.getParameters()
+except IOError:
+    pass
 
 def buildProbeset2Gene( infile, 
                         outfile, 
@@ -41,11 +48,17 @@ def buildProbeset2Gene( infile,
                  len(set(result["probe_id"])),
                  len(set(result["ensembl_id"])) ) )
 
-
-
 GeneExpressionResult = collections.namedtuple( "GeneExpressionResult", \
-                                                   "probeset treatment_mean treatment_std control_mean control_std pvalue qvalue l2fold fold called" )
+                                               "test_id treatment_name treatment_mean treatment_std " \
+                                                   " control_name control_mean control_std " \
+                                                   " pvalue qvalue l2fold fold called status" )
 
+
+def writeExpressionResults( outfile, result ):
+    '''output expression results table.'''
+    outfile.write( "%s\n" % "\t".join(GeneExpressionResult._fields))
+    for x in result:
+        outfile.write("%s\n" % "\t".join( map(str,x)))
 
 class WelchsTTest(object):
     '''base class for computing expression differences.
@@ -333,15 +346,18 @@ class SAM( object ):
             called = (0,1)[probeset in called_genes]
 
             genes.append( GeneExpressionResult._make( (probeset,
+                                                       "treatment",
                                                        mean1,
                                                        numpy.std( treatment ),
+                                                       "control",
                                                        mean2,
                                                        numpy.std( control ),
                                                        pvalue,
                                                        qvalue,
                                                        mean1 - mean2,
                                                        math.pow(2,mean1 - mean2),
-                                                       called ) ) )
+                                                       called,
+                                                       "OK" ) ) )
 
         return genes, cutoff, fdr_values
 
@@ -418,7 +434,6 @@ def loadTagData( infile, design_file ):
     E.info( "filtered data: %i observations for %i samples" % tuple( R('''dim(countsTable)''') ) )
 
     return groups, pairs
-
 
 def runEdgeR( infile, 
               design_file, 
@@ -502,23 +517,59 @@ def runEdgeR( infile,
 
     # I am assuming that logFC is the base 2 logarithm foldchange.
     # Parse results and parse to file
+    results = []
+    counts = E.Counter()
+
     for interval, data, padj in zip( R('''rownames(lrt$table)'''),
                                      zip( *R('''lrt$table''')), 
                                      R('''padj''')) :
         d = rtype._make( data )
-        
-        outf.write( "%s\t%s\t%s\t" % (groups[0],groups[1], interval))
+        counts.input += 1
 
         # set significant flag
-        if padj <= fdr: signif = 1
-        else: signif = 0
+        if padj <= fdr: 
+            signif = 1
+            counts.significant += 1
+            if d.lfold > 0:
+                counts.significant_over += 1
+            else:
+                counts.significant_under += 1
+        else: 
+            signif = 0
+            counts.insignificant += 1
 
+        if d.lfold > 0:
+            counts.all_over += 1
+        else:
+            counts.all_under += 1
+        
         if isna( d.pvalue ): status = "OK"
         else: status = "FAIL"
 
-        outf.write( "\t".join( map(str, d) ))
-        outf.write("\t%f\t%s\t%s\n" % (padj, status, str(signif)))
+        counts[status] += 1
+        
+        results.append( GeneExpressionResult._make( ( \
+                    interval,
+                    groups[0],
+                    d.logConc,
+                    0,
+                    groups[1],
+                    0,
+                    0,
+                    d.pvalue,
+                    padj,
+                    d.lfold,
+                    math.pow( 2.0, d.lfold ),
+                    str(signif),
+                    status) ) )
             
+    outf.close()
+
+    with IOTools.openFile( outfile, "w" ) as outf:
+        writeExpressionResults( outf, results )
+
+    outf = IOTools.openFile( "(outfile_prefix)ssummary.tsv", "w" )
+    outf.write( "category\tcounts\n%s\n" % counts.asTable() )
     outf.close()
 
 def runDESeq( infile, 
@@ -684,7 +735,7 @@ def runDESeq( infile,
                     col = ifelse( res$padj < %(fdr)s, "red", "black" ) )''' % locals() )
     R['dev.off']()
 
-    outf = IOTools.openFile( outfile, "w" )
+    outf = IOTools.openFile( "%(outfile_prefix)sall.txt", "w" )
     isna = R["is.na"]
 
     E.info("Generating output")
@@ -709,6 +760,9 @@ def runDESeq( infile,
     # Parse results and parse to file
     rtype = collections.namedtuple( "rtype", names )
     counts = E.Counter()
+    
+    results = []
+
     for data in zip( *R['res']) :
         counts.input += 1
         d = rtype._make( data )
@@ -724,10 +778,11 @@ def runDESeq( infile,
         else: 
             signif = 0
             counts.insignificant += 1
-            if d.log2FoldChange > 0:
-                counts.all_over += 1
-            else:
-                counts.all_under += 1
+
+        if d.log2FoldChange > 0:
+            counts.all_over += 1
+        else:
+            counts.all_under += 1
 
         # set lfold change to 0 if both are not expressed
         if d.baseMeanA == 0.0 and d.baseMeanB == 0.0:
@@ -742,9 +797,28 @@ def runDESeq( infile,
         outf.write("\t%s\t%s\n" % (status, str(signif)))
         counts.output += 1
 
+        results.append( GeneExpressionResult._make( ( \
+                    d.id,
+                    groups[0],
+                    d.baseMeanA,
+                    0,
+                    groups[1],
+                    d.baseMeanB,
+                    0,
+                    d.pval,
+                    d.padj,
+                    d.log2FoldChange,
+                    d.foldChange,
+                    str(signif),
+                    status) ) )
+                    
+
     outf.close()
 
     E.info( counts )
+
+    with IOTools.openFile( outfile, "w" ) as outf:
+        writeExpressionResults( outf, results )
 
     outf = IOTools.openFile( "(outfile_prefix)ssummary.tsv", "w" )
     outf.write( "category\tcounts\n%s\n" % counts.asTable() )
@@ -758,18 +832,136 @@ def readDesignFile( design_file ):
     design = collections.OrderedDict()
     with IOTools.openFile( design_file ) as inf:
         for line in inf:
+            design = readDesignFile( design_file )
             if line.startswith("track"): continue
             track, include, group, pair = line[:-1].split("\t")
             if track in design: raise ValueError( "duplicate track '%s'" % track )
             design[track] = Design._make( (int(include), group, pair))
     return design
 
+#########################################################################
+#########################################################################
+#########################################################################
+def loadCuffdiff( infile, outfile ):
+    '''load results from differential expression analysis and produce
+    summary plots.
+
+    Note: converts from ln(fold change) to log2 fold change.
+   
+    The cuffdiff output is parsed. 
+
+    Pairwise comparisons in which one gene is not expressed (fpkm < fpkm_silent)
+    are set to status 'NOCALL'. These transcripts might nevertheless be significant.
+    '''
+
+    prefix = P.toTable( outfile )
+    indir = infile + ".dir"
+
+    if not os.path.exists( indir ):
+        P.touch( outfile )
+        return
+
+    to_cluster = False
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+
+    CuffdiffResult = collections.namedtuple("CuffdiffResult",
+                                            "test_id gene_id gene  locus   sample_1        sample_2  "\
+                                            " status  value_1 value_2 l2fold  "\
+                                            "test_stat p_value q_value significant " )
+
+    tmpname = P.getTempFilename()    
+    min_fpkm = PARAMS["cuffdiff_fpkm_expressed"]
+
+    # ignore promoters and splicing - no fold change column, but  sqrt(JS)
+    for fn, level in ( ("cds_exp.diff", "cds"),
+                       ("gene_exp.diff", "gene"),
+                       ("isoform_exp.diff", "isoform"),
+                       # ("promoters.diff", "promotor"),
+                       # ("splicing.diff", "splice"), 
+                       ("tss_group_exp.diff", "tss") ):
+        
+        tablename = prefix + "_" + level + "_diff"
+
+        results = []
+        for line in IOTools.openFile( os.path.join( indir, fn) ):
+            if line.startswith("test_id"): continue
+            data = CuffdiffResult._make( line[:-1].split("\t"))
+            status = data.status
+            significant = [0,1][data.significant == "yes"]
+            if status == "OK" and (float(data.value_1) < min_fpkm or float(data.value_2) < min_fpkm):
+                status = "NOCALL"
+            try:
+                fold = math.pow(2.0, float(data.l2fold))
+            except OverflowError:
+                fold = "na"
+
+            results.append( GeneExpressionResult._make( (
+                        data.test_id,
+                        data.sample_1,
+                        data.value_1,
+                        0,
+                        data.sample_2,
+                        data.value_2,
+                        0,
+                        data.p_value,
+                        data.q_value,
+                        data.l2fold,
+                        fold,
+                        significant,
+                        status ) ) )
+                
+        with IOTools.openFile( tmpname, "w" ) as outf:
+            writeExpressionResults( outf, results )
+            
+        # max/minimum fold change seems to be (-)1.79769e+308
+        # ln to log2: multiply by log2(e)
+        statement = '''cat %(tmpname)s 
+        | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+              --allow-empty
+              --index=treatment_name
+              --index=control_name
+              --index=test_id
+              --table=%(tablename)s 
+         >> %(outfile)s.log
+         '''
+        
+        P.run()
+
+    for fn, level in ( ("cds.fpkm_tracking", "cds" ),
+                       ("genes.fpkm_tracking", "gene"),
+                       ("isoforms.fpkm_tracking", "isoform"),
+                       ("tss_groups.fpkm_tracking", "tss") ):
+
+        tablename = prefix + "_" + level + "_levels" 
+
+        statement = '''cat %(indir)s/%(fn)s
+        | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+              --allow-empty
+              --index=tracking_id
+              --table=%(tablename)s 
+         >> %(outfile)s.log
+         '''
+        
+        P.run()
+
+    ## build convenience table with tracks
+    tablename = prefix + "_isoform_levels"
+    tracks = Database.getColumnNames( dbhandle, tablename )
+    tracks = [ x[:-len("_FPKM")] for x in tracks if x.endswith("_FPKM") ]
+    
+    tmpfile = P.getTempFile()
+    tmpfile.write( "track\n" )
+    tmpfile.write("\n".join(tracks) + "\n" )
+    tmpfile.close()
+    
+    statement = P.load( tmpfile.name, outfile )
+    os.unlink( tmpfile.name )
+
 def runCuffdiff( bamfiles, 
                  design_file,
                  geneset_file,
                  outfile,
                  cuffdiff_options = "",
-                 outfile_prefix = "cuffdiff.",
                  threads = 4,
                  fdr = 0.1 ):
     '''estimate differential expression using cuffdiff.
@@ -814,7 +1006,7 @@ def runCuffdiff( bamfiles,
 
     reps = "   ".join( [ ",".join( reps[group] ) for group in groups ] )
 
-    statement = '''date > %(outfile)s; hostname >> %(outfile)s;
+    statement = '''date > %(outfile)s; hostname >> %(outfile)s.log;
     cuffdiff --output-dir %(outdir)s
              --verbose
              --num-threads %(threads)i
@@ -823,7 +1015,7 @@ def runCuffdiff( bamfiles,
              %(cuffdiff_options)s
              <(gunzip < %(geneset_file)s )
              %(reps)s
-    >> %(outfile)s 2>&1;
-    date >> %(outfile)s;
+    >> %(outfile)s.log 2>&1;
+    date >> %(outfile)s.log;
     '''
     P.run()
