@@ -1065,8 +1065,36 @@ def buildReferenceTranscriptome( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-##
 #########################################################################
+
+@files(os.path.join(PARAMS["annotations_dir"], "geneset_all.gtf.gz"), "geneset_mask.gtf")
+def buildMaskGtf(infile, outfile):
+    '''
+    This takes ensembl annotations (geneset_all.gtf.gz) and writes out all entries that 
+    have a 'source' match to "rRNA" or 'contig' match to "chrM". for use with cufflinks
+    '''
+    geneset = IOTools.openFile(infile)
+    outf = open(outfile, "wb")
+    for entry in GTF.iterator(geneset):
+        if re.findall("rRNA", entry.source) or re.findall("chrM", entry.contig):
+            outf.write("\t".join((map(str,[entry.contig
+                              , entry.source
+                              , entry.feature
+                              , entry.start
+                              , entry.end
+                              , "."
+                              , entry.strand
+                              , "."
+                              , "transcript_id" + " " + '"' + entry.transcript_id + '"' + ";" + " " + "gene_id" + " " + '"' + entry.gene_id + '"'])))
+                               + "\n")
+
+    outf.close()
+
+#########################################################################
+#########################################################################
+#########################################################################
+#########################################################################
+
 @transform( ("*.fastq.1.gz", 
              "*.fastq.gz",
              "*.sra",
@@ -1105,6 +1133,7 @@ def mapReadsWithBowtieAgainstTranscriptome( infiles, outfile ):
 #########################################################################
 ##
 #########################################################################
+@follows(buildReferenceTranscriptome)
 @transform( ("*.fastq.1.gz", 
              "*.fastq.gz",
              "*.sra",
@@ -1129,7 +1158,7 @@ def mapReadsWithTophat( infiles, outfile ):
     to_cluster = USECLUSTER
     m = PipelineMapping.Tophat()
     infile, reffile = infiles
-
+    
 
     tophat_options = PARAMS["tophat_options"] + " --raw-juncs %(reffile)s " % locals()
     statement = m.build( (infile,), outfile ) 
@@ -1680,6 +1709,7 @@ def loadContextStats( infiles, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
+@follows(buildMaskGtf)
 @transform( buildBAMs, suffix(".accepted.bam"), r"\1.gtf.gz")
 def buildGeneModels(infile, outfile):
     '''build transcript models for each track separately.
@@ -1699,18 +1729,19 @@ def buildGeneModels(infile, outfile):
     outfile = os.path.abspath( outfile )
 
     # note: cufflinks adds \0 bytes to gtf file - replace with '.'
+    
     statement = '''mkdir %(tmpfilename)s; 
-    cd %(tmpfilename)s; 
-    cufflinks --label %(track)s           
+        cd %(tmpfilename)s;
+                cufflinks --label %(track)s           
               --num-threads %(cufflinks_threads)i
               --library-type %(tophat_library_type)s
-              --frag-bias-correct %(cufflinks_genome_dir)s/%(genome)s.fa
+              --frag-bias-correct .%(cufflinks_genome_dir)s/%(genome)s.fa
               --multi-read-correct
               %(cufflinks_options)s
               %(infile)s 
-    >& %(outfile)s.log;
-    perl -p -e "s/\\0/./g" < transcripts.gtf | gzip > %(outfile)s;
-    '''
+        >& %(outfile)s.log;
+        perl -p -e "s/\\0/./g" < transcripts.gtf | gzip > %(outfile)s;
+       '''
 
     P.run()
 
@@ -2892,7 +2923,7 @@ def loadCuffdiff( infile, outfile ):
         tablename = prefix + "_" + level + "_diff"
 
         # max/minimum fold change seems to be (-)1.79769e+308
-        # ln to log2: multiply by log2(e)::: NICK change - this has been taken out because the latest cuffdiff version provides log2 not ln
+
         statement = '''cat %(indir)s/%(fn)s
         | perl -p -e "s/sample_/track/g; s/value_/value/g; s/yes$/1/; s/no$/0/; s/log2\\(fold_change\\)/lfold/; s/p_value/pvalue/"
         | awk -v OFS='\\t' '/test_id/ {print;next;} 
