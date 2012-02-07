@@ -1735,7 +1735,7 @@ def buildGeneModels(infile, outfile):
                 cufflinks --label %(track)s           
               --num-threads %(cufflinks_threads)i
               --library-type %(tophat_library_type)s
-              --frag-bias-correct .%(cufflinks_genome_dir)s/%(genome)s.fa
+              --frag-bias-correct %(cufflinks_genome_dir)s/%(genome)s.fa
               --multi-read-correct
               %(cufflinks_options)s
               %(infile)s 
