@@ -75,16 +75,18 @@ class CuffCompareResult:
           self.locuslevel,
           self.missedexons_counts,
           self.missedexons_total,
-          self.wrongexons_counts,
-          self.wrongexons_total,
+          self.novelexons_counts,
+          self.novelexons_total,
           self.missedintrons_counts,
           self.missedintrons_total,
-          self.wrongintrons_counts,
-          self.wrongintrons_total,
+          self.novelintrons_counts,
+          self.novelintrons_total,
           self.missedloci_counts,
           self.missedloci_total,
-          self.wrongloci_counts,
-          self.wrongloci_total,
+          self.novelloci_counts,
+          self.novelloci_total,
+          self.matchingintronchains_count,
+          self.matchingloci_count,
           self.query,
           self.query_loci,
           self.query_multi_exon,
@@ -93,7 +95,7 @@ class CuffCompareResult:
           self.reference_multi_exon,
           self.loci_multi_exon,
           self.loci_transcripts,
-          ) = [None] * 26
+          ) = [None] * 28
 
     def fromLines( self, lines ):
         '''parse from cuffcompare output.'''
@@ -127,19 +129,19 @@ class CuffCompareResult:
 
             tag = re.sub( "\s", "", tag ).lower()
             
-            if tag.startswith( "wrong" ) or tag.startswith("missed"):
+            if tag.startswith( "novel" ) or tag.startswith("missed"):
 
                 counts, total = map(int, re.match( "\s+(\d+)/(\d+)", data).groups() )
                 setattr( self, "%s_counts" % tag, counts )
                 setattr( self, "%s_total" % tag, total )
-                self.is_empty = False
+                
 
-                
-            # This has just been added as a quick fix so that the pipeline will run. It doesn't do any
-            # counting of these tags - needs to be implemented once I know what they mean
-            elif tag.startswith("matching") or tag.startswith("novel"):
-                continue
-                
+            # NICK FIX: This output changed from the previous version of cufflinks. not sure if it means the same
+            # but nevertheless the new output will be put into sphinxreport
+            elif tag.startswith("matching"):
+                counts = int(data)
+                setattr( self, "%s_count" % tag, counts )
+
             elif tag.startswith( "total"): 
                 # stop at total union across all super-loci
                 break
@@ -158,16 +160,18 @@ class CuffCompareResult:
                     self.locuslevel,
                     self.missedexons_counts,
                     self.missedexons_total,
-                    self.wrongexons_counts,
-                    self.wrongexons_total,
+                    self.novelexons_counts,
+                    self.novelexons_total,
                     self.missedintrons_counts,
                     self.missedintrons_total,
-                    self.wrongintrons_counts,
-                    self.wrongintrons_total,
+                    self.novelintrons_counts,
+                    self.novelintrons_total,
                     self.missedloci_counts,
                     self.missedloci_total,
-                    self.wrongloci_counts,
-                    self.wrongloci_total,
+                    self.novelloci_counts,
+                    self.novelloci_total,
+                    self.matchingintronchains_count,
+                    self.matchingloci_count,
                     self.query,
                     self.query_loci,
                     self.query_multi_exon,
@@ -182,11 +186,12 @@ class CuffCompareResult:
     def getHeaders( cls ):
         m = ( "baselevel", "exonlevel", "intronlevel", "intronchainlevel",
               "transcriptlevel", "locuslevel" )
-        a = ( "missed", "wrong")
+        a = ( "missed", "novel")
         b = ( "exons", "introns", "loci" )
         c = ( "counts", "total" )
         return [ "%s_%s" % (x,y) for x,y in itertools.product( m, CuffCompareValues.getHeaders() ) ] +\
             [ "%s%s_%s" % (x,y,z) for x,y,z in itertools.product( a, b, c) ] +\
+            ["matchingintronchains_count", "matchingloci_count"] +\
             [ "query", "query_loci", "query_multi_exon",
               "reference", "reference_loci", "reference_multi_exon",
               "loci", "loci_multi_exon" ]
@@ -246,9 +251,10 @@ def parseTranscriptComparison( infile ):
         tracks.append( track )
         for contig, block in blocks.iteritems():
             r = CuffCompareResult()
+            
             r.fromLines( block )
             result[track][contig] = r
-                
+
     return tracks, result
 
 Locus = collections.namedtuple( "Locus", "locus_id contig strand start end transcript_ids transcripts" )

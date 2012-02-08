@@ -8,7 +8,10 @@ Tophat results
 ++++++++++++++
 
 Mapping reads with tophat_ across splice-junctions is the first step in the RNASeq 
-analysis pipeline. The following table present an overview of tophat results for 
+analysis pipeline. Tophat now implements mapping of reads to a reference transcriptome,
+carrying over unmapped reads to genomic mapping.
+
+The following table present an overview of tophat results for 
 each :term:`track`.
 
 .. report:: Mapping.TophatSummary
@@ -28,6 +31,8 @@ The RNASeq pipeline offers two filtering options:
 
 1. Remove reads that map better to a reference transcriptome. These are
    often mismapped reads in which the splice-site detection failed.
+   Although Tophat implements this step, the option for filtering has been
+   left in the pipeline.
 
 2. [Optional] Remove reads that are non-unique. By default these are left in.
 

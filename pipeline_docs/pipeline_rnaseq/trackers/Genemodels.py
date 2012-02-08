@@ -28,8 +28,8 @@ class GeneModelsBenchmark( TrackerGenemodels ):
                       locuslevel_sp, locuslevel_sn,
                       100.0 * missedexons_counts / missedexons_total AS missed_exons,
                       100.0 * missedloci_counts / missedloci_total AS missed_loci,
-                      100.0 * wrongexons_counts / wrongexons_total AS wrong_exons,
-                      100.0 * wrongloci_counts / wrongloci_total AS wrong_loci
+                      100.0 * novelexons_counts / novelexons_total AS wrong_exons,
+                      100.0 * novelloci_counts / novelloci_total AS wrong_loci
                       FROM %(name)s WHERE track = '%(track)s' AND contig = '%(slice)s'
                """ % self.members(locals()))
 
