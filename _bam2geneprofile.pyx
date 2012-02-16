@@ -238,8 +238,9 @@ class IntervalsCounter:
         matrix.shape = (len(self.aggregate_counts), max_counts )
 
         # normalize
-        for x in range( len(self.counts)):
-            matrix[:,x] /= self.counts[x]
+        if normalize:
+            for x in range( len(self.counts)):
+                matrix[:,x] /= self.counts[x]
 
         return matrix
 
@@ -315,14 +316,27 @@ class GeneCounter( IntervalsCounter ):
         
         E.debug("counting cds" )
         self.counts_cds = self.counter.getCounts( contig, self.cds, self.resolution_cds  )
-        E.debug("counting upstream_utr" )
-        self.counts_upstream_utr = self.counter.getCounts( contig, self.upstream_utr, self.resolution_upstream_utr )
-        E.debug("counting downstream_utr" )
-        self.counts_downstream_utr = self.counter.getCounts( contig, self.downstream_utr, self.resolution_downstream_utr )
         E.debug("counting upstream" )
         self.counts_upstream = self.counter.getCounts( contig, self.upstream, self.resolution_upstream ) 
         E.debug("counting downstream" )
         self.counts_downstream = self.counter.getCounts( contig, self.downstream, self.resolution_downstream )
+
+        if self.upstream_utr:
+            E.debug("counting upstream_utr" )
+            self.counts_upstream_utr = self.counter.getCounts( contig, self.upstream_utr, self.resolution_upstream_utr )
+        else:
+            # add pseudocounts for those genes without a UTR.
+            self.counts_upstream_utr = numpy.zeros( self.resolution_upstream_utr )
+            self.counts_upstream_utr += (self.counts_upstream[-1] + self.counts_cds[0]) // 2
+
+        if self.downstream_utr:
+            E.debug("counting downstream_utr" )
+            self.counts_downstream_utr = self.counter.getCounts( contig, self.downstream_utr, self.resolution_downstream_utr )
+        else:
+            # add a pseudocount for those genes without a UTR.
+            self.counts_downstream_utr = numpy.zeros( self.resolution_downstream_utr )
+            self.counts_downstream_utr += (self.counts_downstream[0] + self.counts_cds[-1]) // 2
+
         E.debug("counting finished" )
 
         ## revert for negative strand

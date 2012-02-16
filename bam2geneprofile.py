@@ -191,9 +191,9 @@ def main( argv = None ):
         import matplotlib.pyplot as plt
         
         for method, counter in zip(options.methods, counters):
-            plt.figure()
             if method == "geneprofile":
 
+                plt.figure()
                 plt.subplots_adjust( wspace = 0.05)
                 max_scale = max( [max(x) for x in counter.aggregate_counts ] )
 
@@ -203,8 +203,36 @@ def main( argv = None ):
                     plt.title( counter.fields[x] )
                     plt.ylim( 0, max_scale )
 
+                figname = counter.name + ".full"
+                
+                fn = E.getOutputFile( figname ) + ".png"
+                plt.savefig( os.path.expanduser(fn) )
+
+                plt.figure()
+
+                points = []
+                cuts = []
+                for x, counts in enumerate( counter.aggregate_counts ):
+                    points.extend( counts )
+                    cuts.append( len( counts ) )
+                                 
+                plt.plot( range(len(points)), points )
+                xx,xxx = 0, []
+                for x in cuts:
+                    xxx.append( xx + x // 2 )
+                    xx += x
+                    plt.axvline( xx, color = "r", ls = "--" )
+
+                plt.xticks( xxx, counter.fields )
+
+                figname = counter.name + ".detail"
+                
+                fn = E.getOutputFile( figname ) + ".png"
+                plt.savefig( os.path.expanduser(fn) )
+
             elif method == "tssprofile":
 
+                plt.figure()
                 plt.subplot( 1, 3, 1)
                 plt.plot( range(-options.extension_outward, options.extension_inward), counter.aggregate_counts[0] )
                 plt.title( counter.fields[0] )
@@ -217,8 +245,8 @@ def main( argv = None ):
                 plt.plot( range(-options.extension_inward, options.extension_outward), counter.aggregate_counts[1] )
                 plt.legend( counter.fields[:2] )
 
-            fn = E.getOutputFile( counter.name ) + ".png"
-            plt.savefig( os.path.expanduser(fn) )
+                fn = E.getOutputFile( counter.name ) + ".png"
+                plt.savefig( os.path.expanduser(fn) )
         
     ## write footer and output benchmark information.
     E.Stop()
