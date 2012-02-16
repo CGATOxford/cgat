@@ -1238,7 +1238,14 @@ def computeFDRs( go_results, options, test_ontology ):
     if options.qvalue_method == "storey":
 
         # compute fdr via Storey's method
-        fdr_data = Stats.doFDR( observed_min_pvalues )
+        try:
+            fdr_data = Stats.doFDR( observed_min_pvalues )
+        except ValueError, msg:
+            E.warn( "failure in q-value computation: %s" % msg )
+            E.warn( "reverting to Bonferroni correction" )
+            fdr_data = Stats.FDRResult()
+            l = float(len(observed_min_pvalues))
+            fdr_data.mQValues = [ x / l for x in observed_min_pvalues ]
 
         for pair, qvalue in zip( pairs, fdr_data.mQValues ):
             fdrs[pair[0]] = (qvalue, 1.0, 1.0)
@@ -1506,12 +1513,13 @@ def main():
             options.ontology = gene2gos.keys()
 
     E.info( "found %i ontologies: %s" % (len(options.ontology), options.ontology))
-    # store all significant results for aggregate output
-    all_significant_results = []
 
     #############################################################
     ## get go categories for genes
     for test_ontology in options.ontology:
+
+        # store all significant results for aggregate output
+        all_significant_results = []
 
         E.info( "working on ontology %s" % test_ontology )
         #############################################################
@@ -1795,8 +1803,10 @@ def main():
             col_headers = genelists.keys()
 
             # fold change matrix
-            matrix, row_headers = buildMatrix( all_significant_results, valuef = lambda x: math.log( x.mRatio + 0.00000001, 2 ),
+            matrix, row_headers = buildMatrix( all_significant_results, 
+                                               valuef = lambda x: math.log( x.mRatio + 0.00000001, 2 ),
                                                dtype = numpy.float )
+
             outfile = getFileName( options, 
                                    go = test_ontology,
                                    section = 'fold',
