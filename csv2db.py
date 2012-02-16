@@ -294,6 +294,7 @@ def run( options, args ):
 
     rows = []
     for row in reader:
+        if None in row: raise ValueError( "undefined columns in input file" )
         try:
             rows.append( CSV.ConvertDictionary( row , map=options.map ))
         except TypeError, msg:
