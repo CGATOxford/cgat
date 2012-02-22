@@ -825,7 +825,7 @@ def ReadGene2GOFromDatabase( dbhandle, go_type, database, species ):
     result = dbhandle.Execute(statement).fetchall()
 
     gene2go = {}
-    go2info = {}
+    go2info = collections.defaultdict( GOInfo )
     for gene_id, goid, description, evidence in result:
         gm = GOMatch( goid, go_type, description, evidence )
         gi = GOInfo( goid, go_type, description )
@@ -1199,11 +1199,6 @@ def getSamples( gene2go, genes, background, options, test_ontology ):
 
         samples[k] = s
 
-        if k in go2info:
-            n = go2info[k]
-        else:
-            n = "?"
-
         outfile.write( "%s\t%i\t%i\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%s\n" %\
                        (k,
                         min(c),
@@ -1215,7 +1210,7 @@ def getSamples( gene2go, genes, background, options, test_ontology ):
                         scipy.stats.scoreatpercentile( c, 95 ),
                         min(prob_overs[k]),
                         min(prob_unders[k]),
-                        n ))
+                        go2info[k] ))
 
     if options.output_filename_pattern:
         outfile.close()
@@ -1482,7 +1477,10 @@ def main():
         ontology = readOntology( infile )
         infile.close()
         
-        go2infos = collections.defaultdict( dict )
+        def _g():
+            return collections.defaultdict( GOInfo )
+        go2infos = collections.defaultdict( _g )
+
         ## substitute go2infos
         for go in ontology.values():
             go2infos[go.mNameSpace][go.mId] = GOInfo( go.mId,
@@ -1811,7 +1809,15 @@ def main():
                                    go = test_ontology,
                                    section = 'fold',
                                    set = 'all' )
-            IOTools.writeMatrix( outfile, matrix, row_headers, col_headers )
+            IOTools.writeMatrix( outfile, matrix, row_headers, col_headers, row_header="category" )
+
+            outfile = getFileName( options, 
+                                   go = test_ontology,
+                                   section = 'fold',
+                                   set = 'alldesc' )
+            IOTools.writeMatrix( outfile, matrix, 
+                                 [ "%s:%s" % (x, go2info[x].mDescription) for x in row_headers], 
+                                 col_headers, row_header="category" )
 
             # pvalue matrix
             matrix, row_headers = buildMatrix( all_significant_results, valuef = lambda x: int(-10 * math.log( x.mPValue,10)),
@@ -1820,7 +1826,15 @@ def main():
                                    go = test_ontology,
                                    section = 'pvalue',
                                    set = 'all' )
-            IOTools.writeMatrix( outfile, matrix, row_headers, col_headers )
+            IOTools.writeMatrix( outfile, matrix, row_headers, col_headers, row_header="category" )
+
+            outfile = getFileName( options, 
+                                   go = test_ontology,
+                                   section = 'pvalue',
+                                   set = 'alldesc' )
+            IOTools.writeMatrix( outfile, matrix,
+                                 [ "%s:%s" % (x, go2info[x].mDescription) for x in row_headers], 
+                                 col_headers, row_header="category" )
 
     E.Stop()
 
