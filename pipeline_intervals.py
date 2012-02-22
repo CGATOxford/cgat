@@ -777,6 +777,9 @@ def buildIntervalProfileOfTranscripts( infiles, outfile ):
                       --reporter=transcript
                       --method=geneprofile 
                       --method=tssprofile 
+                      --normalize-profile=none
+                      --normalize-profile=area
+                      --normalize-profile=counts
                       %(bedfile)s %(gtffile)s
                    > %(outfile)s
                 '''
@@ -1293,8 +1296,11 @@ def loadGat( infile, outfile ):
 def summarizeGAT( infiles, outfile ):
     '''summarize GAT results.
 
-    outputs a log2fold and pvalue table for results that
-    pass an fdr < gat_fdr
+    outputs a log2fold and pvalue table for results.
+    
+    The results are filtered. Remove all rows that 
+       * have no significant results (fdr)
+       * expected overlap less than 1kb.
     '''
 
     col_headers = [ P.snip( os.path.basename(x), ".gat.tsv.gz") for x in infiles]
@@ -1311,15 +1317,31 @@ def summarizeGAT( infiles, outfile ):
 
     ncols = len(infiles)
     min_qvalue = PARAMS["gat_fdr"]
+    min_expected = PARAMS["gat_min_expected"]
 
     E.info( "read matrix with %i rows and %i columns" % qval_matrix.shape )
 
     # set all values to 1.0 that are above fdr threshold
     qval_matrix[numpy.where( qval_matrix > min_qvalue )] = 1.0
     s = numpy.sum( qval_matrix, 1 )
-    take = numpy.where( s != ncols )[0]
-    E.info( "taking %i rows" % len(take))
-    
+    take_qvalue = numpy.where( s != ncols )[0]
+    E.info( "taking %i rows after qvalue filtering" % len(take_qvalue))
+
+    # remove small results
+    expected_matrix, expected_row_headers = MatrixTools.buildMatrixFromTables( infiles, 
+                                                                               column = "expected",
+                                                                               column_header = "annotation",
+                                                                               default = 1.0 )
+
+    expected_matrix[numpy.where( expected_matrix < min_expected )] = 0
+    s = numpy.sum( expected_matrix, 1 )
+    take_expected = numpy.where( s != 0 )[0]
+    E.info( "taking %i rows after min_expected < % i filtering" % ( len(take_expected), min_expected))
+
+    take = sorted( list( set(take_qvalue).intersection( set(take_expected) )) )
+
+    E.info( "taking %i rows after filtering" % ( len(take)))
+
     for (column, default) in ( ("fold", 1.0), ( "pvalue", 1.0) ):
         # output single tables for fold and pvalue
         matrix, row_headers = MatrixTools.buildMatrixFromTables( infiles, 
