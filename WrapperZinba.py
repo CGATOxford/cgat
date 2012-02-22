@@ -165,7 +165,7 @@ def main( argv = None ):
                       help="keep temporary directory [default=%default]")
 
     parser.add_option( "--action", dest="action", type="choice",
-                       choices=("full", "count", "predict"),
+                       choices=("full", "count", "predict", "model"),
                        help="action to perform [default=%default]")
 
     parser.add_option( "--improvement", dest="improvement", type="float",
