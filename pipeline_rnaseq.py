@@ -80,11 +80,13 @@ best to rely on a set of known splice-junctions. Longer reads map more easily ac
 
 From the tophat manual::
 
-   TopHat finds splice junctions without a reference annotation. By first mapping RNA-Seq reads 
-   to the genome, TopHat identifies potential exons, since many RNA-Seq reads will contiguously 
-   align to the genome. Using this initial mapping, TopHat builds a database of possible splice 
-   junctions, and then maps the reads against this junction to confirm them.
+   TopHat finds splice junctions without a reference annotation. TopHat version 1.4 maps RNA-seq reads
+   first to a reference transcriptome. Only those reads that don't map in this initial process are 
+   mapped against the genome.
 
+   Through the second stage of genome mapping, TopHat identifies novel splice junctions and then confirms
+   these through mapping to known junctions.
+   
    Short read sequencing machines can currently produce reads 100bp or longer, but many exons are 
    shorter than this, and so would be missed in the initial mapping. TopHat solves this problem 
    by splitting all input reads into smaller segments, and then mapping them independently. The segment 
@@ -117,7 +119,7 @@ reconstruction. Also, conflicting transcripts between replicates give an idea of
 However, if there are only few reads,  there might be a case for building transcript models using reads 
 from all replicates of an experiment. However, there is no reason to merge reads between experiments.
 
-LncRNA
+LincRNA
 --------
 
 One of the main benefits of RNASeq over microarrays is that novel transcripts can be detected. A particular
@@ -317,9 +319,9 @@ path:
 +--------------------+-------------------+------------------------------------------------+
 |bowtie_             |>=0.12.7           |read mapping                                    |
 +--------------------+-------------------+------------------------------------------------+
-|tophat_             |>=1.3.1            |read mapping                                    |
+|tophat_             |>=1.4.0            |read mapping                                    |
 +--------------------+-------------------+------------------------------------------------+
-|cufflinks_          |>=1.0.3            |transcription levels                            |
+|cufflinks_          |>=1.3.0            |transcription levels                            |
 +--------------------+-------------------+------------------------------------------------+
 |samtools            |>=0.1.16           |bam/sam files                                   |
 +--------------------+-------------------+------------------------------------------------+
@@ -1063,8 +1065,36 @@ def buildReferenceTranscriptome( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-##
 #########################################################################
+
+@files(os.path.join(PARAMS["annotations_dir"], "geneset_all.gtf.gz"), "geneset_mask.gtf")
+def buildMaskGtf(infile, outfile):
+    '''
+    This takes ensembl annotations (geneset_all.gtf.gz) and writes out all entries that 
+    have a 'source' match to "rRNA" or 'contig' match to "chrM". for use with cufflinks
+    '''
+    geneset = IOTools.openFile(infile)
+    outf = open(outfile, "wb")
+    for entry in GTF.iterator(geneset):
+        if re.findall("rRNA", entry.source) or re.findall("chrM", entry.contig):
+            outf.write("\t".join((map(str,[entry.contig
+                              , entry.source
+                              , entry.feature
+                              , entry.start
+                              , entry.end
+                              , "."
+                              , entry.strand
+                              , "."
+                              , "transcript_id" + " " + '"' + entry.transcript_id + '"' + ";" + " " + "gene_id" + " " + '"' + entry.gene_id + '"'])))
+                               + "\n")
+
+    outf.close()
+
+#########################################################################
+#########################################################################
+#########################################################################
+#########################################################################
+
 @transform( ("*.fastq.1.gz", 
              "*.fastq.gz",
              "*.sra",
@@ -1103,6 +1133,7 @@ def mapReadsWithBowtieAgainstTranscriptome( infiles, outfile ):
 #########################################################################
 ##
 #########################################################################
+@follows(buildReferenceTranscriptome)
 @transform( ("*.fastq.1.gz", 
              "*.fastq.gz",
              "*.sra",
@@ -1127,6 +1158,8 @@ def mapReadsWithTophat( infiles, outfile ):
     to_cluster = USECLUSTER
     m = PipelineMapping.Tophat()
     infile, reffile = infiles
+    
+
     tophat_options = PARAMS["tophat_options"] + " --raw-juncs %(reffile)s " % locals()
     statement = m.build( (infile,), outfile ) 
     P.run()
@@ -1451,10 +1484,16 @@ def buildTophatStats( infiles, outfile ):
         junctions_found = int( _select( lines, "Found (\d+) junctions from happy spliced reads") )
 
         fn = os.path.join( indir, "segment_juncs.log" )
-        lines = open( fn ).readlines()
-        if len(lines) > 0:
-            segment_juncs_version =  _select( lines, "segment_juncs (.*)$" )
-            possible_splices = int( _select( lines, "Reported (\d+) total possible splices") )
+        
+        
+        if os.path.exists(fn):
+            lines = open( fn ).readlines()
+            if len(lines) > 0:
+                segment_juncs_version =  _select( lines, "segment_juncs (.*)$" )
+                possible_splices = int( _select( lines, "Reported (\d+) total possible splices") )
+            else:
+                segment_juncs_version = "na"
+                possible_splices = ""
         else:
             segment_juncs_version = "na"
             possible_splices = ""
@@ -1670,6 +1709,7 @@ def loadContextStats( infiles, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
+@follows(buildMaskGtf)
 @transform( buildBAMs, suffix(".accepted.bam"), r"\1.gtf.gz")
 def buildGeneModels(infile, outfile):
     '''build transcript models for each track separately.
@@ -1689,18 +1729,19 @@ def buildGeneModels(infile, outfile):
     outfile = os.path.abspath( outfile )
 
     # note: cufflinks adds \0 bytes to gtf file - replace with '.'
+    
     statement = '''mkdir %(tmpfilename)s; 
-    cd %(tmpfilename)s; 
-    cufflinks --label %(track)s           
+        cd %(tmpfilename)s;
+                cufflinks --label %(track)s           
               --num-threads %(cufflinks_threads)i
               --library-type %(tophat_library_type)s
               --frag-bias-correct %(cufflinks_genome_dir)s/%(genome)s.fa
               --multi-read-correct
               %(cufflinks_options)s
               %(infile)s 
-    >& %(outfile)s.log;
-    perl -p -e "s/\\0/./g" < transcripts.gtf | gzip > %(outfile)s;
-    '''
+        >& %(outfile)s.log;
+        perl -p -e "s/\\0/./g" < transcripts.gtf | gzip > %(outfile)s;
+       '''
 
     P.run()
 
@@ -2882,12 +2923,11 @@ def loadCuffdiff( infile, outfile ):
         tablename = prefix + "_" + level + "_diff"
 
         # max/minimum fold change seems to be (-)1.79769e+308
-        # ln to log2: multiply by log2(e)
+
         statement = '''cat %(indir)s/%(fn)s
-        | perl -p -e "s/sample_/track/g; s/value_/value/g; s/yes$/1/; s/no$/0/; s/ln\\(fold_change\\)/lfold/; s/p_value/pvalue/"
+        | perl -p -e "s/sample_/track/g; s/value_/value/g; s/yes$/1/; s/no$/0/; s/log2\\(fold_change\\)/lfold/; s/p_value/pvalue/"
         | awk -v OFS='\\t' '/test_id/ {print;next;} 
-                              { $10 = $10 * 1.44269504089; 
-                                if( $6 == "OK" && ($7 < %(cuffdiff_fpkm_expressed)f || $8 < %(cuffdiff_fpkm_expressed)f )) { $6 = "NOCALL"; };
+                                {if( $6 == "OK" && ($7 < %(cuffdiff_fpkm_expressed)f || $8 < %(cuffdiff_fpkm_expressed)f )) { $6 = "NOCALL"; };
                                 print; } '
         | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --allow-empty
@@ -3755,14 +3795,14 @@ def aggregateExonLevelReadCounts( infiles, outfile ):
     For bed6: use column 7
     For bed12: use column 13
 
-    This method uses the sum of the number of reads found in all of the exons as the 
-    tag count.
+    This method uses the maximum number of reads
+    found in any exon as the tag count.
     '''
     
     to_cluster = USECLUSTER
 
     # aggregate not necessary for bed12 files, but kept in
-    src = " ".join( [ "<( zcat %s | sort -k4,4 | groupBy -i stdin -g 4 -c 7 -o sum | sort -k1,1)" % x for x in infiles ] )
+    src = " ".join( [ "<( zcat %s | sort -k4,4 | groupBy -i stdin -g 4 -c 7 -o max | sort -k1,1)" % x for x in infiles ] )
 
     tmpfile = P.getTempFilename( "." )
     
@@ -3848,6 +3888,7 @@ def runDESeq( infile, outfile ):
         conditions.append( group )
 
     ro.globalenv['conds'] = ro.StrVector(sample2condition)
+    R('''print (conds)''')
 
     def build_filename2( **kwargs ):
         return "%(outdir)s/%(geneset)s_%(method)s_%(level)s_%(track1)s_vs_%(track2)s_%(section)s.png" % kwargs
