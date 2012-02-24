@@ -4,7 +4,7 @@ import optparse
 
 USAGE="""%s [OPTIONS]
 
-set up a new CGAT pipeline in the current directory.
+set up a new CGAT pipeline/project in the current directory.
 """ % sys.argv[0]
 
 def main( argv = sys.argv ):
@@ -36,7 +36,7 @@ def main( argv = sys.argv ):
     name = options.name
 
     # create directories
-    for d in ("", "src", "report", "work",
+    for d in ("", "src", "report",
               "src/pipeline_docs", 
               reportdir,
               "%s/_templates" % reportdir,
@@ -74,11 +74,17 @@ def main( argv = sys.argv ):
 
     for f in ( "sphinxreport.ini",
                "conf.py" ):
-        copy( f, "work" )
+        copy( f, "src" )
         
     for f in ( "pipeline_template.py",
                "pipeline_template.ini" ):
         copy( f, "src" )
+
+    # create links
+    for src,dest in ( ("sphinxreport.ini", "sphinxreport.ini"),
+                      ("conf.py", "conf.py"),
+                      ( "pipeline_%s.ini" % name, "pipeline.ini" )):
+        os.symlink( os.path.join( "../src", src), os.path.join( "report", dest ) )
 
     for f in ( "cgat_logo.png",
                "index.html",
@@ -104,9 +110,9 @@ def main( argv = sys.argv ):
 Welcome to your new %(name)s CGAT pipeline.
 
 All files have been successfully copied to `%(dest)s`. In order to start
-the pipeline, go to `%(dest)s/work`
+the pipeline, go to `%(dest)s/report`
 
-   cd %(dest)s/work
+   cd %(dest)s/report
 
 You can start the pipeline by typing:
 
@@ -116,8 +122,9 @@ To build the report, type:
 
    python ../src/pipeline_%(name)s.py -v 5 -p 5 make build_report
 
-The report will be in file:/%(absdest)s/work/report/html/index.html.
+The report will be in file:/%(absdest)s/report/report/html/index.html.
 
+The source code for the pipeline is in %(dest)s/src.
 
 """ % locals()
 
