@@ -348,6 +348,58 @@ def orthologGroupsWithFeature( infile, outfile):
     statement = "touch %s" % outfile
     P.run()
 
+############################################################
+@transform(orthologGroupsWithFeature, suffix(".load"), ".export") 
+def exportConservedGeneListPerSpecies( infile, outfile):
+    '''Export list of conserved genes associated with feature for each species '''
+    
+    species_list = P.asList(PARAMS["species"])
+    ensembl_version = PARAMS["orthology_ensembl_version"]
+    
+    # Get gene list from database
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    for species in species_list:
+        cc = dbhandle.cursor()
+        statement = '''SELECT distinct g.gene_id
+                       FROM ortholog_groups g, ortholog_groups_with_feature f
+                       WHERE f.set_id=g.set_id
+                       AND f.species_count=6
+                       AND g.species="%(species)s%(ensembl_version)s"''' % locals()
+        cc.execute( statement )
+        
+        # Write to file
+        outfilename = species + ".conserved.export"
+        outs = open( outfilename, "w")
+        for result in cc:
+            pre = ""
+            for r in result:
+              outs.write("%s%s" % (pre, str(r)) )
+              pre = "\t"
+            outs.write("\n")
+        cc.close()
+        outs.close()
+        
+    statement = "touch %s" % outfile
+    P.run()
+
+############################################################
+@follows( exportConservedGeneListPerSpecies)
+@transform( "*.conserved.export", regex(r"(\S+).conserved.export"), r"\1.conserved.bed" )
+def exportConservedGeneBed( infile, outfile ):
+    '''export bed file for each list of conserved CAPseq genes'''
+    species_list = P.asList(PARAMS["species"])
+    genome_list = P.asList(PARAMS["genomes"])
+    species_lookup = dict(zip(species_list, genome_list))
+    species = infile[0:2]
+    species_genome = species_lookup[species]
+    track = P.snip( os.path.basename(infile),".export")
+    
+    gtffile = os.path.join( PARAMS["annotations_dir"], species_genome, PARAMS["annotations_gtf"] )
+    statement = '''zcat %(gtffile)s | python %(scriptsdir)s/gtf2gtf.py --filter=gene --apply=%(infile)s 
+                   | python %(scriptsdir)s/gtf2gtf.py --merge-transcripts --with-utr 
+                   | python %(scriptsdir)s/gff2bed.py --is-gtf --name=gene_id --track=feature > %(outfile)s;''' 
+    P.run()
+
 
 ############################################################
 ############################################################
@@ -368,9 +420,15 @@ def stats():
 def conservedFeatures():
     '''Find orthologues genes with conserved features '''
     pass
+    
+@follows( exportConservedGeneListPerSpecies, exportConservedGeneBed)
+def export():
+    '''Find orthologues genes with conserved features '''
+    pass
+
 
 @follows( loadData, stats,
-          conservedFeatures)
+          conservedFeatures, export)
 def full():
     '''Run complete pipeline '''
     pass

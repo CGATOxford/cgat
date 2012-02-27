@@ -104,6 +104,14 @@ def main( argv = None ):
                        help = "normalize all intervals to the same size. " 
                               "[%default]" )
 
+    parser.add_option( "-a", "--bamfile", dest="bamfiles", type = "string", action = "append",
+                       help = "BAM files to use"
+                              "[%default]" )                              
+
+    parser.add_option( "-e", "--bedfile", dest="bedfile", type = "string",
+                       help = "BED file to use"
+                              "[%default]" )  
+
     parser.add_option( "-b", "--bin-size", dest="bin_size", type = "int",
                        help = "bin-size for histogram of read depth. "
                               "[%default]" )
@@ -113,8 +121,8 @@ def main( argv = None ):
                        help = "output sort order for matrices. "
                               "[%default]" )
 
-    parser.add_option( "-i", "--shift", dest="shift", type = "int",
-                       help = "shift for reads. "
+    parser.add_option( "-i", "--shift", dest="shift", type = "int", action = "append",
+                       help = "shift for reads (1 per bam file in order). "
                               "[%default]" )
 
     parser.set_defaults(
@@ -123,7 +131,9 @@ def main( argv = None ):
         input_reads = 0,
         force_output = False,
         bin_size = 10,
-        shift = 0,
+        shift = [],
+        bamfiles = [],
+        bedfile = "",
         window_size = 0,
         sort = []
         )
@@ -131,14 +141,18 @@ def main( argv = None ):
     ## add common options (-h/--help, ...) and parse command line 
     (options, args) = E.Start( parser, argv = argv, add_output_options = True )
 
-    if len(args) != 2:
-        raise ValueError("please specify a bam and bed file" )
+    if len(args) == 2:
+        bamfile, bed = args
+        options.bamfiles.append(bamfile)
+        options.bedfile = bed
 
-    bamfile, bedfile = args
-
-    pysam_in = pysam.Samfile( bamfile, "rb" )
-    shift = options.shift
-
+    if len(options.bamfiles) > 0:
+        if options.bamfiles[0].endswith( ".bam" ):
+            bamfiles = [ pysam.Samfile( x, "rb" ) for x in options.bamfiles ]
+        else:
+            raise NotImplementedError( "can't determine file type for %s" % bamfile )
+                    
+    # Write headers
     options.stdout.write( "\t".join( ("contig", 
                                       "start",
                                       "end",
@@ -152,10 +166,10 @@ def main( argv = None ):
                               options.bin_size )        
         
     result =[]
-    for bed in Bed.iterator( IOTools.openFile( bedfile ) ):
+    for bed in Bed.iterator( IOTools.openFile( options.bedfile ) ):
         # print "%s:%i-%i" % (bed.contig, bed.start, bed.end)
-        features = _bam2peakshape.count( pysam_in, bed.contig, bed.start, bed.end, 
-                                         shift = shift,
+        features = _bam2peakshape.count( bamfiles, bed.contig, bed.start, bed.end, 
+                                         shift = options.shift,
                                          bins = bins )
         result.append( (features, bed) )
 

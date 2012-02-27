@@ -54,6 +54,8 @@ import sqlite3
 import Experiment as E
 import Pipeline as P
 import Stats
+import IOTools
+import CSV
 
 try:
     PARAMS = P.getParameters()
@@ -77,6 +79,26 @@ def createGO( infile, outfile ):
         '''
 
     P.run()
+
+############################################################
+############################################################
+############################################################
+## get GO descriptions
+############################################################
+def getGODescriptions( infile ):
+    '''return dictionary mapping GO category to description
+    and namespace.
+    '''
+
+
+    with IOTools.openFile( infile ) as inf:
+        fields, table = CSV.ReadTable( inf, as_rows = False )
+        
+
+    return dict( [ (y, (x,z)) for x,y,z in zip( table[fields.index("go_type")], 
+                                                table[fields.index("go_id")],
+                                                table[fields.index("description")] ) ] )
+
 
 ############################################################
 ############################################################
@@ -113,32 +135,45 @@ def createGOSlim( infile, outfile ):
 def runGOFromFiles( outfile,
                     outdir,
                     fg_file,
-                    bg_file,
-                    go_file,
+                    bg_file = None,
+                    go_file = None,
                     ontology_file = None,
-                    samples = 1000 ):
+                    samples = None,
+                    minimum_counts = 0 ):
     '''check for GO enrichment within a gene list.
 
     The gene list is given in ``fg_file``. It is compared
     against ``bg_file`` using the GO assignments from
     ``go_file``. Results are saved in ``outfile`` and
     ``outdir``.
+
+    if *bg_file* is None, the all genes with GO annotations
+    will be used.
     '''
 
     to_cluster = True
     
     if ontology_file == None: ontology_file = PARAMS["go_ontology"]
+    options = []
+    if bg_file != None: options.append( "--background=%(bg_file)s" % locals() )
+        
+    if samples != None:
+        options.append( "--fdr" )
+        options.append( "--sample=%(samples)i" % locals() )
+        options.append( "--qvalue-method=empirical" )
+    else:
+        options.append( "--fdr" )
+        options.append( "--qvalue-method=storey" )
 
+    options = " ".join( options )
     statement = '''
     python %(scriptsdir)s/GO.py 
         --filename-input=%(go_file)s 
         --genes=%(fg_file)s 
-        --background=%(bg_file)s 
-        --sample=%(samples)s
-        --fdr 
-        --qvalue-method=storey
         --filename-ontology=%(ontology_file)s 
-        --output-filename-pattern='%(outdir)s/%%(go)s.%%(section)s' 
+        --output-filename-pattern='%(outdir)s/%%(set)s.%%(go)s.%%(section)s' 
+        --minimum-counts=%(minimum_counts)i 
+        %(options)s
     > %(outfile)s'''
 
     P.run()    
@@ -197,7 +232,7 @@ def loadGO( infile, outfile, tablename ):
 
     statement = '''
     python %(toolsdir)s/cat_tables.py %(indir)s/*.overall |\
-   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
+    python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
               --allow-empty \
               --index=category \
               --index=goid \

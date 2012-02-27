@@ -15,8 +15,12 @@ Contents:
    pipeline/macs_replicated_intervals.rst
    pipeline/macs_replicated_intervals_per_contig.rst
    pipeline/macs_replicated_interval_genomic_features.rst
+   pipeline/macs_replicated_interval_noncoding.rst
+   pipeline/macs_replicated_genes_with_nmi.rst
    pipeline/macs_replicated_interval_tss_distance.rst
+   pipeline/macs_replicated_interval_rnaseq_tss.rst
    pipeline/macs_replicated_interval_comparison.rst
+   pipeline/macs_replicated_tissue_specific_intervals.rst
    pipeline/macs_replicated_unique_intervals.rst
    pipeline/macs_replicated_shared_intervals.rst
    pipeline/macs_tss_intervals.rst

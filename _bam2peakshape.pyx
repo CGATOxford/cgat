@@ -14,13 +14,13 @@ PeakShapeResult = collections.namedtuple( "PeakShapeResult",
                                           "bins counts" )
                                           
 
-def count( Samfile samfile,
+def count( samfiles,
            contig, 
            int start, 
            int end,
            bins,
-           float peak_ratio = 0.90,
-           int shift = 0):
+           shift,
+           float peak_ratio = 0.90):
     '''
     '''
 
@@ -45,26 +45,29 @@ def count( Samfile samfile,
     # i.e. look at the downstream window
     # note: filtering?
     # note: does this work with paired-end data?
-    cdef int offset = shift // 2
+    #cdef int offset = shift // 2
 
-    xstart, xend = max(0, start - offset), max(0, end - offset)
+    for offset, samfile in zip(shift,samfiles):
+    
+        offset = offset // 2
+        xstart, xend = max(0, start - offset), max(0, end - offset)
 
-    for read in samfile.fetch( contig, xstart, xend ):
-        if read.is_reverse: continue
-        nreads += 1
-        rstart = max( 0, read.pos - xstart - offset)
-        rend = min( interval_width, read.pos - xstart + offset) 
-        for i from rstart <= i < rend: ccounts[i] += 1
+        for read in samfile.fetch( contig, xstart, xend ):
+            if read.is_reverse: continue
+            nreads += 1
+            rstart = max( 0, read.pos - xstart - offset)
+            rend = min( interval_width, read.pos - xstart + offset) 
+            for i from rstart <= i < rend: ccounts[i] += 1
 
-    # on the - strand, shift tags downstream
-    xstart, xend = max(0, start + offset), max(0, end + offset)
+        # on the - strand, shift tags downstream
+        xstart, xend = max(0, start + offset), max(0, end + offset)
 
-    for read in samfile.fetch( contig, xstart, xend ):
-        if not read.is_reverse: continue
-        nreads += 1
-        rstart = max( 0, read.pos + read.rlen - xstart - offset)
-        rend = min( interval_width, read.pos + read.rlen - xstart + offset) 
-        for i from rstart <= i < rend: ccounts[i] += 1
+        for read in samfile.fetch( contig, xstart, xend ):
+            if not read.is_reverse: continue
+            nreads += 1
+            rstart = max( 0, read.pos + read.rlen - xstart - offset)
+            rend = min( interval_width, read.pos + read.rlen - xstart + offset) 
+            for i from rstart <= i < rend: ccounts[i] += 1
 
     counts = numpy.zeros( interval_width, dtype = numpy.int )
     for i from 0 <= i < interval_width: counts[i] = ccounts[i]

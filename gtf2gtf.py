@@ -78,6 +78,9 @@ if __name__ == '__main__':
     parser.add_option("-m", "--merge-exons", dest="merge_exons", action="store_true",
                       help="merge overlapping exons of all transcripts within a gene [default=%default]."  )
 
+    parser.add_option("-j", "--join-exons", dest="join_exons", action="store_true",
+                      help="join all exons per transcript [default=%default]."  )
+
     parser.add_option( "--merge-exons-distance", dest="merge_exons_distance", type="int",
                       help="distance to merge exons over [default=%default]."  )
 
@@ -180,6 +183,7 @@ if __name__ == '__main__':
     parser.set_defaults(
         sort = None,
         merge_exons = False,
+        join_exons = False,
         merge_exons_distance = 0,
         merge_transcripts = False,
         set_score2distance = False,
@@ -346,6 +350,27 @@ if __name__ == '__main__':
             nfeatures += 1
         
         E.info("transcripts removed due to missing protein ids: %i" % len(missing))
+
+    elif options.join_exons:
+
+        for exons in GTF.transcript_iterator( GTF.iterator(options.stdin) ):
+            ninput += 1
+            strand = Genomics.convertStrand( exons[0].strand )
+            contig = exons[0].contig
+            transid = exons[0].transcript_id
+            geneid = exons[0].gene_id
+            biotype = exons[0].source
+            all_start, all_end = min( [ x.start for x in exons ] ), max( [x.end for x in exons ] )
+            y = GTF.Entry()
+            y.contig = contig
+            y.source = biotype
+            y.feature = "transcript"
+            y.start = all_start
+            y.end = all_end
+            y.strand = strand
+            y.transcript_id = transid
+            y.gene_id = geneid
+            options.stdout.write( "%s\n" % str(y ) )
 
     elif options.merge_genes:
         # merges overlapping genes

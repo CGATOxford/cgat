@@ -4,7 +4,7 @@
 #
 #   $Id: pipeline_capseq.py 2900 2011-05-24 14:38:00Z david $
 #
-#   Copyright (C) 2011 David Sims
+#   Copyright (C) 2012 David Sims
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -147,6 +147,7 @@ import logging as L
 import PipelineChipseq as PIntervals
 import PipelineTracks
 import PipelineMapping
+import PipelineGO
 from ruffus import *
 from rpy2.robjects import r as R
 import rpy2.robjects as ro
@@ -228,33 +229,6 @@ TRACKS_MASTER = EXPERIMENTS.keys() + CONDITIONS.keys()
 TRACKS_CORRELATION = TRACKS_MASTER + list(TRACKS)
 
 print "Expts=", EXPERIMENTS, "\n"
-
-###################################################################
-###################################################################
-###################################################################
-## Analyse GC content of target genome
-@files( os.path.join( PARAMS["genome_dir"], PARAMS["genome"] + ".fasta"), 
-         "genome.tsv.gz")
-def buildGenomeInformation( infile, outfile ):
-    '''compute genome composition information.'''
-
-    to_cluster = True
-
-    statement = '''
-    cat %(infile)s
-    | python %(scriptsdir)s/fasta2table.py 
-        --section=length
-        --section=cpg
-    | gzip
-    > %(outfile)s
-    '''
-    P.run()
-
-###################################################################
-@transform( buildGenomeInformation, suffix(".tsv.gz"), ".load" )
-def loadGenomeInformation( infile, outfile ):
-    '''load genome information.'''
-    P.load( infile, outfile )
 
 ###################################################################
 ###################################################################
@@ -960,9 +934,7 @@ def exportReplicatedIntervalsAsBed( infile, outfile ):
         outs.write( "%s\t%i\t%i\t%i\n" % (contig, start, stop, interval_id) )
     cc.close()
     outs.close()
-
-
-
+    
 
 ############################################################
 ############################################################
@@ -1117,24 +1089,66 @@ def loadSharedReplicatedIntervals(infile, outfile):
                       --index=interval_id
                    > %(outfile)s '''
     P.run()
+    
+############################################################
+@follows(exportReplicatedIntervalsAsBed)
+@files( ("replicated_intervals/*liver*.replicated.bed", "replicated_intervals/*testes*.replicated.bed"), "replicated_intervals/liver.testes.venn" )
+def liverTestesVenn(infiles, outfile):
+    '''identify interval overlap between liver and testes. Merge intervals first.'''
+    liver, testes = infiles
+    to_cluster = True
+    
+    statement = '''cat %(liver)s %(testes)s | mergeBed -i stdin | awk 'OFS="\\t" {print $1,$2,$3,"CAPseq"NR}' > replicated_intervals/liver.testes.merge.bed;
+                   echo "Total merged intervals" > %(outfile)s; cat replicated_intervals/liver.testes.merge.bed | wc -l >> %(outfile)s; 
+                   echo "Liver & testes" >> %(outfile)s; intersectBed -a replicated_intervals/liver.testes.merge.bed -b %(liver)s -u | intersectBed -a stdin -b %(testes)s -u | wc -l >> %(outfile)s; 
+                   echo "Testes only" >> %(outfile)s; intersectBed -a replicated_intervals/liver.testes.merge.bed -b %(liver)s -v | wc -l >> %(outfile)s; 
+                   echo "Liver only" >> %(outfile)s; intersectBed -a replicated_intervals/liver.testes.merge.bed -b %(testes)s -v | wc -l >> %(outfile)s;                   
+                   sed -i '{N;s/\\n/\\t/g}' %(outfile)s; '''
+    P.run()
+    
+############################################################    
+@transform( liverTestesVenn, suffix(".venn"), ".venn.load" )
+def loadLiverTestesVenn(infile, outfile):
+    '''Load liver testes venn overlap into database '''
+    header = "category,intervals"
+    statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
+                      --table=liver_testes_venn
+                      --header=%(header)s
+                   > %(outfile)s '''
+    P.run()
+    
 
+    
 ############################################################
 ############################################################
 ############################################################
 ## Compare peak shape across intervals
-@transform( sanitiseIntervals, suffix(".merged.cleaned.bed"), ".peakshapes" )
+@transform( exportReplicatedIntervalsAsBed, suffix(".replicated.bed"), ".replicated.peakshape" )
 def getPeakShape(infile, outfile):
     '''Cluster intervals based on peak shape '''
-    track = P.snip( os.path.basename( infile ), ".merged.cleaned.bed" )
-    bamfile = "bam/" + track + ".norm.bam"
-    ofp = "intervals/" + track
-    offset = 0
-    fn = "macs/with_input/%s.macs" % track
-    if os.path.exists( fn ):
-        offset= PIntervals.getPeakShiftFromMacs( fn )
-    statement = '''python %(scriptsdir)s/bam2peakshape.py %(bamfile)s %(infile)s
+    track = P.snip( os.path.basename( infile ), ".replicated.bed" )
+    expt_track = track + "-agg"
+    replicates = EXPERIMENTS[expt_track]
+    ofp = "replicated_intervals/" + track + ".replicated.peakshape"
+
+    # setup files
+    samfiles, offsets = [], []
+    for t in replicates:
+        fn = "bam/%s.norm.bam" % t.asFile()
+        assert os.path.exists( fn ), "could not find bamfile %s for track %s" % ( fn, str(t))
+        samfiles.append( fn )
+        fn = "macs/with_input/%s.macs" % t.asFile()
+        if os.path.exists( fn ):
+            offsets.append( PIntervals.getPeakShiftFromMacs( fn ) )
+
+    bamfiles = " ".join( ("--bamfile=%s" % x) for x in samfiles )
+    shifts =  " ".join( ("--shift=%s" % y)  for y in offsets )
+    
+    statement = '''python %(scriptsdir)s/bam2peakshape.py 
+                       %(bamfiles)s 
+                       --bedfile=%(infile)s
                        --output-filename-pattern=%(ofp)s
-                       --shift=%(offset)s
+                       %(shifts)s
                        --sort=peak-height
                        --window-size=5000
                        --bin-size=10
@@ -1142,6 +1156,80 @@ def getPeakShape(infile, outfile):
                    -S %(outfile)s '''
     P.run()
 
+############################################################    
+@transform( uniqueReplicatedIntervals, suffix(".replicated.unique.bed"), ".replicated.unique.peakshape" )
+def getPeakShapeTissueSpecificIntervals(infile, outfile):
+    '''Cluster intervals based on peak shape '''
+    track = P.snip( os.path.basename( infile ), ".replicated.unique.bed" )
+
+    
+    for expt in EXPERIMENTS:
+
+        expt_name = str(expt).replace("-agg", "")
+        replicates = EXPERIMENTS[expt]
+        ofp = "replicated_intervals/" + expt_name + "." + track +".replicated.unique.peakshape"
+
+        # setup files
+        samfiles, offsets = [], []
+        for t in replicates:
+            fn = "bam/%s.norm.bam" % t.asFile()
+            assert os.path.exists( fn ), "could not find bamfile %s for track %s" % ( fn, str(t))
+            samfiles.append( fn )
+            fn = "macs/with_input/%s.macs" % t.asFile()
+            if os.path.exists( fn ):
+                offsets.append( PIntervals.getPeakShiftFromMacs( fn ) )
+
+        bamfiles = " ".join( ("--bamfile=%s" % x) for x in samfiles )
+        shifts =  " ".join( ("--shift=%s" % y)  for y in offsets )
+        
+        statement = '''python %(scriptsdir)s/bam2peakshape.py 
+                           %(bamfiles)s 
+                           --bedfile=%(infile)s
+                           --output-filename-pattern=%(ofp)s
+                           %(shifts)s
+                           --sort=peak-height
+                           --window-size=5000
+                           --bin-size=10
+                           --force
+                       -S %(outfile)s '''
+        P.run()
+    
+############################################################    
+@follows( liverTestesVenn )
+@transform( exportReplicatedIntervalsAsBed, suffix(".replicated.bed"), ".liver.testes.merge.peakshape" )
+def getPeakShapeLiverTestes(infile, outfile):
+    '''Cluster intervals based on peak shape '''
+    track = P.snip( os.path.basename( infile ), ".replicated.bed" )
+    expt_track = track + "-agg"
+    replicates = EXPERIMENTS[expt_track]
+    ofp = "replicated_intervals/" + track + ".liver.testes.merge.peakshape"
+    bedfile = "replicated_intervals/liver.testes.merge.bed"
+    
+    # setup files
+    samfiles, offsets = [], []
+    for t in replicates:
+        fn = "bam/%s.norm.bam" % t.asFile()
+        assert os.path.exists( fn ), "could not find bamfile %s for track %s" % ( fn, str(t))
+        samfiles.append( fn )
+        fn = "macs/with_input/%s.macs" % t.asFile()
+        if os.path.exists( fn ):
+            offsets.append( PIntervals.getPeakShiftFromMacs( fn ) )
+
+    bamfiles = " ".join( ("--bamfile=%s" % x) for x in samfiles )
+    shifts =  " ".join( ("--shift=%s" % y)  for y in offsets )
+    
+    statement = '''python %(scriptsdir)s/bam2peakshape.py 
+                       %(bamfiles)s 
+                       --bedfile=%(bedfile)s
+                       --output-filename-pattern=%(ofp)s
+                       %(shifts)s
+                       --sort=peak-height
+                       --window-size=5000
+                       --bin-size=10
+                       --force
+                   -S %(outfile)s '''
+    P.run()    
+    
 ############################################################
 ############################################################
 ############################################################
@@ -1760,10 +1848,110 @@ def loadCGIEnsemblGeneOverlap( infile, outfile ):
                  > %(outfile)s; """
     P.run()
 
+
 ############################################################
 ############################################################
 ############################################################
-## Ensembl TTS/TTS distance/profile
+## Non-coding transcript overlap
+@transform( loadEnsemblTranscriptOverlap, suffix(".replicated.ensembl_transcript_overlap.load"), ".replicated.intergenic.bed" )
+def getIntergenicCapseqBed( infile, outfile ):
+    '''Make bed file of all CAPseq peaks that do not overlap genes/TSS'''
+    to_cluster = True
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    track= P.snip( os.path.basename(infile), ".replicated.ensembl_transcript_overlap.load")
+    table= track.replace(".","_").replace("-","_")
+
+    cc = dbhandle.cursor()
+    statement =  '''SELECT i.contig, i.start, i.end, i.interval_id
+                    FROM %(table)s_replicated_ensembl_transcript_overlap o, %(table)s_replicated_intervals i
+                    WHERE tss_extended_pover1=0
+                    AND genes_pover1=0
+                    AND downstream_flank_pover1=0
+                    AND upstream_flank_pover1=0
+                    AND i.interval_id=o.gene_id
+                    order by contig, start''' % locals()
+    cc.execute( statement )
+
+    # Write to bed file
+    outs = open( outfile, "w")
+    for result in cc:
+        contig, start, stop, interval_id = result
+        outs.write( "%s\t%i\t%i\t%i\n" % (contig, start, stop, interval_id) )
+    cc.close()
+    outs.close()
+
+############################################################
+@transform( (getIntergenicCapseqBed, exportReplicatedIntervalsAsBed), suffix(".bed"), ".noncoding.tss" )
+def getEnsemblNoncodingTSSDistance( infile, outfile ):
+    '''Get distance of intergenic CAPseq peaks to nearest non-coding transcript'''
+    to_cluster = True
+
+    annotation_file = os.path.join( PARAMS["ensembl_annotation_dir"],
+                                    PARAMS["ensembl_annotation_noncoding_tss"] )
+
+    statement = """cat < %(infile)s 
+                   | python %(scriptsdir)s/bed2gff.py --as-gtf 
+	                 | python %(scriptsdir)s/gtf2table.py 
+		                   --counter=distance-tss 
+		                   --log=%(outfile)s.log 
+                       --filename-gff=%(annotation_file)s 
+                       --filename-format="bed" 
+                   > %(outfile)s"""
+    P.run()
+
+############################################################
+@transform( getEnsemblNoncodingTSSDistance, suffix( ".tss"), ".tss.load" )
+def loadEnsemblNoncodingTSSDistance( infile, outfile ):
+    '''load interval annotations: distance to non-coding transcription start sites '''
+    track= P.snip( os.path.basename(infile), ".noncoding.tss").replace(".","_").replace("-","_")
+    statement = """cat %(infile)s | python ~/src/csv2db.py 
+                         --table=%(track)s_noncoding 
+                         --index=gene_id
+                         --index=closest_id
+                         --index=id5
+                         --index=id3
+                 > %(outfile)s; """
+    P.run()
+
+############################################################
+############################################################
+############################################################
+## Ensembl TTS/TTS overlap/distance
+############################################################
+@transform( exportReplicatedIntervalsAsBed, suffix(".replicated.bed"), ".replicated.ensembl_gene_tss.overlap" )
+def getCapseqEnsemblGeneTSSOverlap( infile, outfile ):
+    '''Establish overlap between capseq and tss intervals'''
+    tss = os.path.join( PARAMS["ensembl_annotation_dir"],PARAMS["ensembl_annotation_gene_tss_interval"] )
+    to_cluster = True
+
+    outtemp1 = P.getTempFile()
+    tmpfilename1 = outtemp1.name
+
+    if os.path.exists( outfile):
+        statement = '''rm %s''' % outfile
+        P.run()
+
+    statement = """echo "CAPseq intervals overlapping 1 or more TSS" >> %(outfile)s; intersectBed -a %(infile)s -b %(tss)s -u | wc -l >> %(outfile)s; """
+    statement += """echo "CAPseq intervals not overlapping any TSS" >> %(outfile)s; intersectBed -a %(infile)s -b %(tss)s -v | wc -l >> %(outfile)s; """
+    statement += """echo "TSS overlapped by 1 or more CAPseq interval" >> %(outfile)s; intersectBed -a %(tss)s -b %(infile)s -u | wc -l >> %(outfile)s; """
+    statement += """echo "TSS not overlapped by any CAPseq intervals" >> %(outfile)s; intersectBed -a %(tss)s -b %(infile)s -v | wc -l >> %(outfile)s; """
+    statement += '''sed -i '{N;s/\\n/\\t/g}' %(outfile)s; '''
+    P.run()
+
+############################################################
+@transform( getCapseqEnsemblGeneTSSOverlap, suffix("replicated.ensembl_gene_tss.overlap"), "replicated.ensembl_gene_tss.overlap.load")
+def loadCapseqEnsemblGeneTSSOverlap(infile, outfile):
+    '''load TSS Capseq overlap into database'''
+
+    header = "track,intervals"
+    track = P.snip( os.path.basename( infile), ".ensembl_gene_tss.overlap" )
+    statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
+                        --table=%(track)s_ensembl_gene_tss_venn
+                        --header=%(header)s
+                   > %(outfile)s '''
+    P.run()
+
+############################################################
 @transform( (sanitiseIntervals,exportReplicatedIntervalsAsBed), suffix(".bed"), ".tss" )
 def annotateEnsemblTranscriptTSS( infile, outfile ):
     '''compute distance to TSS'''
@@ -1795,7 +1983,7 @@ def loadEnsemblTranscriptTSS( infile, outfile ):
                          --index=id3
                  > %(outfile)s; """
     P.run()
-
+    
 ############################################################
 @transform( (sanitiseIntervals,exportReplicatedIntervalsAsBed), suffix(".bed"), ".gene.tss" )
 def annotateEnsemblGeneTSS( infile, outfile ):
@@ -1829,215 +2017,108 @@ def loadEnsemblGeneTSS( infile, outfile ):
                          --index=id3
                  > %(outfile)s; """
     P.run()
-
+        
 ############################################################
-@transform( sanitiseIntervals, suffix(".merged.cleaned.bed"), ".transcript.tss-profile.png" )
-def getEnsemblTranscriptTSSProfile(infile, outfile):
-    '''Build TSS profile from BAM files'''
-    to_cluster = USECLUSTER
-    tss_file = os.path.join( PARAMS["ensembl_annotation_dir"], PARAMS["ensembl_annotation_tss_profile"])
-    track = P.snip( os.path.basename( infile ), ".merged.cleaned.bed" )
-    bamfile = "bam/" + track + ".norm.bam"
-    ofp = "intervals/" + track + ".transcript.tss-profile"
-    offset=0
-    fn = "macs/with_input/%s.macs" % track
-    if os.path.exists( fn ):
-        offset= PIntervals.getPeakShiftFromMacs( fn )
-    statement = '''python %(scriptsdir)s/bam2geneprofile.py %(bamfile)s %(tss_file)s
-                       --output-filename-pattern=%(ofp)s
-                       --shift=%(offset)s
-                       --reporter=transcript
-                       --method=tssprofile'''
-    P.run()
+@transform( loadEnsemblTranscriptTSS, suffix( ".replicated.tss.load"), ".replicated.tss.bed" )
+def exportCapseqEnsemblTSSBed( infile, outfile ):
+    '''export bed file of all CAPseq intervals within 1kb of annotated Ensembl transcript TSS '''
+    track= P.snip( os.path.basename(infile), ".replicated.tss.load").replace(".cleaned","").replace(".","_").replace("-","_")
 
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+
+    cc = dbhandle.cursor()
+    statement = '''SELECT i.contig, i.start, i.end, i.interval_id 
+                   FROM %s_replicated_intervals i, %s_replicated_tss t
+                   WHERE i.interval_id=t.gene_id 
+                   AND t. closest_dist < 1000
+                   ORDER by contig, start''' % (track, track)
+    cc.execute( statement )
+
+    # Write to bed file
+    outs = open( outfile, "w")
+    for result in cc:
+        contig, start, stop, interval_id = result
+        outs.write( "%s\t%i\t%i\t%i\n" % (contig, start, stop, interval_id) )
+    cc.close()
+    outs.close()
+    
 ############################################################
-@transform( exportReplicatedIntervalsAsBed, suffix(".replicated.bed"), ".replicated.transcript.tss-profile.capseq.png" )
-def getReplicatedEnsemblTranscriptTSSProfileCapseq(infile,outfile):
-    '''Build TSS profile from BAM files'''
-    to_cluster = USECLUSTER
-
-    track = P.snip( os.path.basename(infile), ".replicated.bed" )
-    expt_track = track + "-agg"
-    replicates = EXPERIMENTS[expt_track]
-    ofp = "replicated_intervals/" + track + ".transcript.tss-profile.capseq"
-
-    # setup files
-    samfiles, offsets = [], []
-    for t in replicates:
-        fn = "bam/%s.norm.bam" % t.asFile()
-        assert os.path.exists( fn ), "could not find bamfile %s for track %s" % ( fn, str(t))
-        samfiles.append( fn )
-        fn = "macs/with_input/%s.macs" % t.asFile()
-        if os.path.exists( fn ):
-            offsets.append( PIntervals.getPeakShiftFromMacs( fn ) )
-
-    bamfiles = " ".join( ("--bamfile=%s" % x) for x in samfiles )
-    shifts =  " ".join( ("--shift=%s" % y)  for y in offsets )
-
-    gene_file = os.path.join( PARAMS["ensembl_annotation_dir"], PARAMS["ensembl_annotation_tss_profile"])
-    tss_file = os.path.join( PARAMS["ensembl_annotation_dir"],  PARAMS["ensembl_annotation_transcript_tss"])
-
-    tmpfile = P.getTempFile()
-    tmpfilename = tmpfile.name
-
-    statement = '''intersectBed -a %(tss_file)s -b %(infile)s -u | cut -f4 > %(tmpfilename)s; 
-                   zcat %(gene_file)s | python %(scriptsdir)s/gtf2gtf.py --filter=transcript --apply=%(tmpfilename)s | gzip > %(tmpfilename)s.gtf.gz; 
-                   python %(scriptsdir)s/bam2geneprofile.py 
-                       %(bamfiles)s 
-                       --gtffile=%(tmpfilename)s.gtf.gz
-                       --output-filename-pattern=%(ofp)s
-                       %(shifts)s
-                       --reporter=transcript
-                       --method=tssprofile'''
+@follows(exportReplicatedIntervalsAsBed, exportCapseqEnsemblTSSBed)
+@files( ("replicated_intervals/*liver*.replicated.tss.bed", "replicated_intervals/*testes*.replicated.tss.bed"), "replicated_intervals/liver.testes.tss.venn" )
+def liverTestesTSSVenn(infiles, outfile):
+    '''identify interval overlap between liver and testes for TSS associated intervals. Merge intervals first.'''
+    liver, testes = infiles
+    to_cluster = True
+    
+    statement = '''cat %(liver)s %(testes)s | mergeBed -i stdin > replicated_intervals/liver.testes.tss.merge.bed;
+                   echo "Total merged intervals" > %(outfile)s; cat replicated_intervals/liver.testes.tss.merge.bed | wc -l >> %(outfile)s; 
+                   echo "Liver & testes" >> %(outfile)s; intersectBed -a replicated_intervals/liver.testes.tss.merge.bed -b %(liver)s -u | intersectBed -a stdin -b %(testes)s -u | wc -l >> %(outfile)s; 
+                   echo "Testes only" >> %(outfile)s; intersectBed -a replicated_intervals/liver.testes.tss.merge.bed -b %(liver)s -v | wc -l >> %(outfile)s; 
+                   echo "Liver only" >> %(outfile)s; intersectBed -a replicated_intervals/liver.testes.tss.merge.bed -b %(testes)s -v | wc -l >> %(outfile)s;                   
+                   sed -i '{N;s/\\n/\\t/g}' %(outfile)s; '''
     P.run()
-
+    
+############################################################    
+@transform( liverTestesTSSVenn, suffix(".venn"), ".venn.load" )
+def loadLiverTestesTSSVenn(infile, outfile):
+    '''Load liver testes venn overlap into database '''
+    header = "category,intervals"
+    statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
+                      --table=liver_testes_tss_venn
+                      --header=%(header)s
+                   > %(outfile)s '''
+    P.run() 
+    
 ############################################################
-@transform( exportReplicatedIntervalsAsBed, suffix(".replicated.bed"), ".replicated.transcript.tss-profile.nocapseq.png" )
-def getReplicatedEnsemblTranscriptTSSProfileNoCapseq(infile,outfile):
-    '''Build TSS profile from BAM files'''
-    to_cluster = USECLUSTER
+@transform( loadEnsemblTranscriptTSS, suffix( ".replicated.tss.load"), ".replicated.no.tss.bed" )
+def exportCapseqNoEnsemblTSSBed( infile, outfile ):
+    '''export bed file of all CAPseq intervals not within 1kb of annotated Ensembl transcript TSS '''
+    track= P.snip( os.path.basename(infile), ".replicated.tss.load").replace(".cleaned","").replace(".","_").replace("-","_")
 
-    track = P.snip( os.path.basename(infile), ".replicated.bed" )
-    expt_track = track + "-agg"
-    replicates = EXPERIMENTS[expt_track]
-    ofp = "replicated_intervals/" + track + ".transcript.tss-profile.nocapseq"
+    dbhandle = sqlite3.connect( PARAMS["database"] )
 
-    # setup files
-    samfiles, offsets = [], []
-    for t in replicates:
-        fn = "bam/%s.norm.bam" % t.asFile()
-        assert os.path.exists( fn ), "could not find bamfile %s for track %s" % ( fn, str(t))
-        samfiles.append( fn )
-        fn = "macs/with_input/%s.macs" % t.asFile()
-        if os.path.exists( fn ):
-            offsets.append( PIntervals.getPeakShiftFromMacs( fn ) )
+    cc = dbhandle.cursor()
+    statement = '''SELECT i.contig, i.start, i.end, i.interval_id 
+                   FROM %s_replicated_intervals i, %s_replicated_tss t
+                   WHERE i.interval_id=t.gene_id 
+                   AND t. closest_dist >= 1000
+                   ORDER by contig, start''' % (track, track)
+    cc.execute( statement )
 
-    bamfiles = " ".join( ("--bamfile=%s" % x) for x in samfiles )
-    shifts =  " ".join( ("--shift=%s" % y)  for y in offsets )
-
-    gene_file = os.path.join( PARAMS["ensembl_annotation_dir"], PARAMS["ensembl_annotation_tss_profile"])
-    tss_file = os.path.join( PARAMS["ensembl_annotation_dir"],  PARAMS["ensembl_annotation_transcript_tss"])
-
-    tmpfile = P.getTempFile()
-    tmpfilename = tmpfile.name
-
-    statement = '''intersectBed -a %(tss_file)s -b %(infile)s -v | cut -f4 > %(tmpfilename)s; 
-                   zcat %(gene_file)s | python %(scriptsdir)s/gtf2gtf.py --filter=transcript --apply=%(tmpfilename)s | gzip > %(tmpfilename)s.gtf.gz; 
-                   python %(scriptsdir)s/bam2geneprofile.py 
-                       %(bamfiles)s 
-                       --gtffile=%(tmpfilename)s.gtf.gz
-                       --output-filename-pattern=%(ofp)s
-                       %(shifts)s
-                       --reporter=transcript
-                       --method=tssprofile'''
-    P.run()
-
+    # Write to bed file
+    outs = open( outfile, "w")
+    for result in cc:
+        contig, start, stop, interval_id = result
+        outs.write( "%s\t%i\t%i\t%i\n" % (contig, start, stop, interval_id) )
+    cc.close()
+    outs.close()
+    
 ############################################################
-@transform( exportReplicatedIntervalsAsBed, suffix(".replicated.bed"), ".replicated.transcript.tss-profile.png" )
-def getReplicatedEnsemblTranscriptTSSProfile(infile, outfile):
-    '''Build TSS profile from BAM files'''
-    to_cluster = USECLUSTER
-
-    track = P.snip( os.path.basename(infile), ".replicated.bed" )
-    expt_track = track + "-agg"
-    replicates = EXPERIMENTS[expt_track]
-    tss_file = os.path.join( PARAMS["ensembl_annotation_dir"], PARAMS["ensembl_annotation_tss_profile"])
-    ofp = "replicated_intervals/" + track + ".transcript.tss-profile"
-
-    # setup files
-    samfiles, offsets = [], []
-    for t in replicates:
-        fn = "bam/%s.norm.bam" % t.asFile()
-        assert os.path.exists( fn ), "could not find bamfile %s for track %s" % ( fn, str(t))
-        samfiles.append( fn )
-        fn = "macs/with_input/%s.macs" % t.asFile()
-        if os.path.exists( fn ):
-            offsets.append( PIntervals.getPeakShiftFromMacs( fn ) )
-
-    bamfiles = " ".join( ("--bamfile=%s" % x) for x in samfiles )
-    shifts =  " ".join( ("--shift=%s" % y)  for y in offsets )
-
-    statement = '''python %(scriptsdir)s/bam2geneprofile.py 
-                       %(bamfiles)s 
-                       --gtffile=%(tss_file)s
-                       --output-filename-pattern=%(ofp)s
-                       %(shifts)s
-                       --reporter=transcript
-                       --method=tssprofile'''
+@follows(exportReplicatedIntervalsAsBed, exportCapseqNoEnsemblTSSBed)
+@files( ("replicated_intervals/*liver*.replicated.no.tss.bed", "replicated_intervals/*testes*.replicated.no.tss.bed"), "replicated_intervals/liver.testes.intergenic.venn" )
+def liverTestesIntergenicVenn(infiles, outfile):
+    '''identify interval overlap between liver and testes for non-TSS associated intervals. Merge intervals first.'''
+    liver, testes = infiles
+    to_cluster = True
+    
+    statement = '''cat %(liver)s %(testes)s | mergeBed -i stdin > replicated_intervals/liver.testes.intergenic.merge.bed;
+                   echo "Total merged intervals" > %(outfile)s; cat replicated_intervals/liver.testes.intergenic.merge.bed | wc -l >> %(outfile)s; 
+                   echo "Liver & testes" >> %(outfile)s; intersectBed -a replicated_intervals/liver.testes.intergenic.merge.bed -b %(liver)s -u | intersectBed -a stdin -b %(testes)s -u | wc -l >> %(outfile)s; 
+                   echo "Testes only" >> %(outfile)s; intersectBed -a replicated_intervals/liver.testes.intergenic.merge.bed -b %(liver)s -v | wc -l >> %(outfile)s; 
+                   echo "Liver only" >> %(outfile)s; intersectBed -a replicated_intervals/liver.testes.intergenic.merge.bed -b %(testes)s -v | wc -l >> %(outfile)s;                   
+                   sed -i '{N;s/\\n/\\t/g}' %(outfile)s; '''
     P.run()
-
-###########################################################
-@transform( sanitiseIntervals, suffix(".merged.cleaned.bed"), ".transcript.tss-profile.capseq.png" )
-def getEnsemblTranscriptTSSProfileCapseq(infile, outfile):
-    '''Build TSS profile from BAM files'''
-    to_cluster = USECLUSTER
-    gene_file = os.path.join( PARAMS["ensembl_annotation_dir"], PARAMS["ensembl_annotation_tss_profile"])
-    tss_file = os.path.join( PARAMS["ensembl_annotation_dir"],  PARAMS["ensembl_annotation_transcript_tss"])
-    track = P.snip( os.path.basename( infile ), ".merged.cleaned.bed" )
-    bamfile = "bam/" + track + ".norm.bam"
-    ofp = "intervals/" + track + ".transcript.tss-profile.capseq"
-    offset=0
-    fn = "macs/with_input/%s.macs" % track
-
-    tmpfile = P.getTempFile()
-    tmpfilename = tmpfile.name
-
-    if os.path.exists( fn ):
-        offset= PIntervals.getPeakShiftFromMacs( fn )
-    statement = '''intersectBed -a %(tss_file)s -b %(infile)s -u | cut -f4 > %(tmpfilename)s; 
-                   zcat %(gene_file)s | python %(scriptsdir)s/gtf2gtf.py --filter=transcript --apply=%(tmpfilename)s | gzip > %(tmpfilename)s.gtf.gz; 
-                   python %(scriptsdir)s/bam2geneprofile.py %(bamfile)s %(tmpfilename)s.gtf.gz
-                       --output-filename-pattern=%(ofp)s
-                       --shift=%(offset)s
-                       --reporter=transcript
-                       --method=tssprofile'''
-    P.run()
-
-############################################################
-@transform( sanitiseIntervals, suffix(".merged.cleaned.bed"), ".transcript.tss-profile.nocapseq.png" )
-def getEnsemblTranscriptTSSProfileNoCapseq(infile, outfile):
-    '''Build TSS profile from BAM files'''
-    to_cluster = USECLUSTER
-    tss_file = os.path.join( PARAMS["ensembl_annotation_dir"], PARAMS["ensembl_annotation_tss_profile"])
-    track = P.snip( os.path.basename( infile ), ".merged.cleaned.bed" )
-    bamfile = "bam/" + track + ".norm.bam"
-    ofp = "intervals/" + track + ".transcript.tss-profile.nocapseq"
-    offset=0
-    fn = "macs/with_input/%s.macs" % track
-
-    tmpfile = P.getTempFile()
-    tmpfilename = tmpfile.name
-
-    if os.path.exists( fn ):
-        offset= PIntervals.getPeakShiftFromMacs( fn )
-    statement = '''intersectBed -a %(tss_file)s -b %(infile)s -v | cut -f4 > %(tmpfilename)s; 
-                   zcat %(gene_file)s | python %(scriptsdir)s/gtf2gtf.py --filter=transcript --apply=%(tmpfilename)s | gzip > %(tmpfilename)s.gtf.gz; 
-                   python %(scriptsdir)s/bam2geneprofile.py %(bamfile)s %(tmpfilename)s.gtf.gz
-                       --output-filename-pattern=%(ofp)s
-                       --shift=%(offset)s
-                       --reporter=transcript
-                       --method=tssprofile'''
-    P.run()
-
-############################################################
-@transform( sanitiseIntervals, suffix(".merged.cleaned.bed"), ".gene.tss-profile.png" )
-def getEnsemblGeneTSSProfile(infile, outfile):
-    '''Build TSS profile from BAM files'''
-    to_cluster = USECLUSTER
-    tss_file = os.path.join( PARAMS["ensembl_annotation_dir"],PARAMS["ensembl_annotation_tss_profile"] )
-    track = P.snip( os.path.basename( infile ), ".merged.cleaned.bed" )
-    bamfile = "bam/" + track + ".norm.bam"
-    ofp = "intervals/" + track + ".gene.tss-profile"
-    offset=0
-    fn = "macs/with_input/%s.macs" % track
-    if os.path.exists( fn ):
-        offset= PIntervals.getPeakShiftFromMacs( fn )
-    statement = '''python %(scriptsdir)s/bam2geneprofile.py %(bamfile)s %(tss_file)s
-                       --output-filename-pattern=%(ofp)s
-                       --shift=%(offset)s
-                       --reporter=gene
-                       --method=tssprofile'''
-    P.run()
+    
+############################################################    
+@transform( liverTestesIntergenicVenn, suffix(".venn"), ".venn.load" )
+def loadLiverTestesIntergenicVenn(infile, outfile):
+    '''Load liver testes venn overlap into database '''
+    header = "category,intervals"
+    statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
+                      --table=liver_testes_intergenic_venn
+                      --header=%(header)s
+                   > %(outfile)s '''
+    P.run() 
 
 ############################################################
 @transform( (sanitiseIntervals,exportReplicatedIntervalsAsBed), suffix(".bed"), ".tts" )
@@ -2099,6 +2180,254 @@ def loadEnsemblGeneTTS( infile, outfile ):
                  > %(outfile)s; """
     P.run()
 
+############################################################
+############################################################
+############################################################
+## TSS profile
+@transform( exportReplicatedIntervalsAsBed, suffix(".replicated.bed"), ".replicated.transcript.tss-profile.png" )
+def getReplicatedEnsemblTranscriptTSSProfile(infile, outfile):
+    '''Build TSS profile from BAM files'''
+    to_cluster = USECLUSTER
+
+    track = P.snip( os.path.basename(infile), ".replicated.bed" )
+    expt_track = track + "-agg"
+    replicates = EXPERIMENTS[expt_track]
+    tss_file = os.path.join( PARAMS["ensembl_annotation_dir"], PARAMS["ensembl_annotation_tss_profile"])
+    ofp = "replicated_intervals/" + track + ".replicated.transcript.tss-profile"
+
+    # setup files
+    samfiles, offsets = [], []
+    for t in replicates:
+        fn = "bam/%s.norm.bam" % t.asFile()
+        assert os.path.exists( fn ), "could not find bamfile %s for track %s" % ( fn, str(t))
+        samfiles.append( fn )
+        fn = "macs/with_input/%s.macs" % t.asFile()
+        if os.path.exists( fn ):
+            offsets.append( PIntervals.getPeakShiftFromMacs( fn ) )
+
+    bamfiles = " ".join( ("--bamfile=%s" % x) for x in samfiles )
+    shifts =  " ".join( ("--shift=%s" % y)  for y in offsets )
+
+    statement = '''python %(scriptsdir)s/bam2geneprofile.py 
+                       %(bamfiles)s 
+                       --gtffile=%(tss_file)s
+                       --output-filename-pattern=%(ofp)s
+                       %(shifts)s
+                       --perInterval
+                       --reporter=transcript
+                       --method=tssprofile
+                       --normalization=interval'''
+    P.run()
+
+############################################################
+@transform( exportReplicatedIntervalsAsBed, suffix(".replicated.bed"), ".replicated.transcript.tss-profile.capseq.png" )
+def getReplicatedEnsemblTranscriptTSSProfileCapseq(infile,outfile):
+    '''Build TSS profile from BAM files'''
+    to_cluster = USECLUSTER
+
+    track = P.snip( os.path.basename(infile), ".replicated.bed" )
+    expt_track = track + "-agg"
+    replicates = EXPERIMENTS[expt_track]
+    ofp = "replicated_intervals/" + track + ".replicated.transcript.tss-profile.capseq"
+
+    # setup files
+    samfiles, offsets = [], []
+    for t in replicates:
+        fn = "bam/%s.norm.bam" % t.asFile()
+        assert os.path.exists( fn ), "could not find bamfile %s for track %s" % ( fn, str(t))
+        samfiles.append( fn )
+        fn = "macs/with_input/%s.macs" % t.asFile()
+        if os.path.exists( fn ):
+            offsets.append( PIntervals.getPeakShiftFromMacs( fn ) )
+
+    bamfiles = " ".join( ("--bamfile=%s" % x) for x in samfiles )
+    shifts =  " ".join( ("--shift=%s" % y)  for y in offsets )
+
+    gene_file = os.path.join( PARAMS["ensembl_annotation_dir"], PARAMS["ensembl_annotation_tss_profile"])
+    tss_file = os.path.join( PARAMS["ensembl_annotation_dir"],  PARAMS["ensembl_annotation_transcript_tss"])
+
+    tmpfile = P.getTempFile()
+    tmpfilename = tmpfile.name
+
+    statement = '''intersectBed -a %(tss_file)s -b %(infile)s -u | cut -f4 > %(tmpfilename)s; 
+                   zcat %(gene_file)s | python %(scriptsdir)s/gtf2gtf.py --filter=transcript --apply=%(tmpfilename)s | gzip > %(tmpfilename)s.gtf.gz; 
+                   python %(scriptsdir)s/bam2geneprofile.py 
+                       %(bamfiles)s 
+                       --gtffile=%(tmpfilename)s.gtf.gz
+                       --output-filename-pattern=%(ofp)s
+                       %(shifts)s
+                       --reporter=transcript
+                       --method=tssprofile
+                       --perInterval
+                       --normalization=interval'''
+    P.run()
+
+############################################################
+@transform( exportReplicatedIntervalsAsBed, suffix(".replicated.bed"), ".replicated.transcript.tss-profile.nocapseq.png" )
+def getReplicatedEnsemblTranscriptTSSProfileNoCapseq(infile,outfile):
+    '''Build TSS profile from BAM files'''
+    to_cluster = USECLUSTER
+
+    track = P.snip( os.path.basename(infile), ".replicated.bed" )
+    expt_track = track + "-agg"
+    replicates = EXPERIMENTS[expt_track]
+    ofp = "replicated_intervals/" + track + ".replicated.transcript.tss-profile.nocapseq"
+
+    # setup files
+    samfiles, offsets = [], []
+    for t in replicates:
+        fn = "bam/%s.norm.bam" % t.asFile()
+        assert os.path.exists( fn ), "could not find bamfile %s for track %s" % ( fn, str(t))
+        samfiles.append( fn )
+        fn = "macs/with_input/%s.macs" % t.asFile()
+        if os.path.exists( fn ):
+            offsets.append( PIntervals.getPeakShiftFromMacs( fn ) )
+
+    bamfiles = " ".join( ("--bamfile=%s" % x) for x in samfiles )
+    shifts =  " ".join( ("--shift=%s" % y)  for y in offsets )
+
+    gene_file = os.path.join( PARAMS["ensembl_annotation_dir"], PARAMS["ensembl_annotation_tss_profile"])
+    tss_file = os.path.join( PARAMS["ensembl_annotation_dir"],  PARAMS["ensembl_annotation_transcript_tss"])
+
+    tmpfile = P.getTempFile()
+    tmpfilename = tmpfile.name
+
+    statement = '''intersectBed -a %(tss_file)s -b %(infile)s -v | cut -f4 > %(tmpfilename)s; 
+                   zcat %(gene_file)s | python %(scriptsdir)s/gtf2gtf.py --filter=transcript --apply=%(tmpfilename)s | gzip > %(tmpfilename)s.gtf.gz; 
+                   python %(scriptsdir)s/bam2geneprofile.py 
+                       %(bamfiles)s 
+                       --gtffile=%(tmpfilename)s.gtf.gz
+                       --output-filename-pattern=%(ofp)s
+                       %(shifts)s
+                       --reporter=transcript
+                       --method=tssprofile
+                       --perInterval
+                       --normalization=interval'''
+    P.run()
+
+############################################################
+############################################################
+## Per gene
+@transform( exportReplicatedIntervalsAsBed, suffix(".replicated.bed"), ".replicated.gene.tss-profile.png" )
+def getReplicatedEnsemblGeneTSSProfile(infile, outfile):
+    '''Build TSS profile from BAM files'''
+    to_cluster = USECLUSTER
+
+    track = P.snip( os.path.basename(infile), ".replicated.bed" )
+    expt_track = track + "-agg"
+    replicates = EXPERIMENTS[expt_track]
+    tss_file = os.path.join( PARAMS["ensembl_annotation_dir"], PARAMS["ensembl_annotation_tss_profile"])
+    ofp = "replicated_intervals/" + track + ".replicated.gene.tss-profile"
+
+    # setup files
+    samfiles, offsets = [], []
+    for t in replicates:
+        fn = "bam/%s.norm.bam" % t.asFile()
+        assert os.path.exists( fn ), "could not find bamfile %s for track %s" % ( fn, str(t))
+        samfiles.append( fn )
+        fn = "macs/with_input/%s.macs" % t.asFile()
+        if os.path.exists( fn ):
+            offsets.append( PIntervals.getPeakShiftFromMacs( fn ) )
+
+    bamfiles = " ".join( ("--bamfile=%s" % x) for x in samfiles )
+    shifts =  " ".join( ("--shift=%s" % y)  for y in offsets )
+
+    statement = '''python %(scriptsdir)s/bam2geneprofile.py 
+                       %(bamfiles)s 
+                       --gtffile=%(tss_file)s
+                       --output-filename-pattern=%(ofp)s
+                       %(shifts)s
+                       --perInterval
+                       --reporter=gene
+                       --method=tssprofile
+                       --normalization=interval'''
+    P.run()
+
+############################################################
+@transform( exportReplicatedIntervalsAsBed, suffix(".replicated.bed"), ".replicated.gene.tss-profile.capseq.png" )
+def getReplicatedEnsemblGeneTSSProfileCapseq(infile,outfile):
+    '''Build TSS profile from BAM files'''
+    to_cluster = USECLUSTER
+
+    track = P.snip( os.path.basename(infile), ".replicated.bed" )
+    expt_track = track + "-agg"
+    replicates = EXPERIMENTS[expt_track]
+    ofp = "replicated_intervals/" + track + ".replicated.gene.tss-profile.capseq"
+
+    # setup files
+    samfiles, offsets = [], []
+    for t in replicates:
+        fn = "bam/%s.norm.bam" % t.asFile()
+        assert os.path.exists( fn ), "could not find bamfile %s for track %s" % ( fn, str(t))
+        samfiles.append( fn )
+        fn = "macs/with_input/%s.macs" % t.asFile()
+        if os.path.exists( fn ):
+            offsets.append( PIntervals.getPeakShiftFromMacs( fn ) )
+
+    bamfiles = " ".join( ("--bamfile=%s" % x) for x in samfiles )
+    shifts =  " ".join( ("--shift=%s" % y)  for y in offsets )
+
+    gene_file = os.path.join( PARAMS["ensembl_annotation_dir"], PARAMS["ensembl_annotation_tss_profile"])
+    tss_file = os.path.join( PARAMS["ensembl_annotation_dir"],  PARAMS["ensembl_annotation_transcript_tss"])
+
+    tmpfile = P.getTempFile()
+    tmpfilename = tmpfile.name
+
+    statement = '''intersectBed -a %(tss_file)s -b %(infile)s -u | cut -f4 > %(tmpfilename)s; 
+                   zcat %(gene_file)s | python %(scriptsdir)s/gtf2gtf.py --filter=transcript --apply=%(tmpfilename)s | gzip > %(tmpfilename)s.gtf.gz; 
+                   python %(scriptsdir)s/bam2geneprofile.py 
+                       %(bamfiles)s 
+                       --gtffile=%(tmpfilename)s.gtf.gz
+                       --output-filename-pattern=%(ofp)s
+                       %(shifts)s
+                       --reporter=gene
+                       --method=tssprofile
+                       --perInterval
+                       --normalization=interval'''
+    P.run()
+
+############################################################
+@transform( exportReplicatedIntervalsAsBed, suffix(".replicated.bed"), ".replicated.gene.tss-profile.nocapseq.png" )
+def getReplicatedEnsemblGeneTSSProfileNoCapseq(infile,outfile):
+    '''Build TSS profile from BAM files'''
+    to_cluster = USECLUSTER
+
+    track = P.snip( os.path.basename(infile), ".replicated.bed" )
+    expt_track = track + "-agg"
+    replicates = EXPERIMENTS[expt_track]
+    ofp = "replicated_intervals/" + track + ".replicated.gene.tss-profile.nocapseq"
+
+    # setup files
+    samfiles, offsets = [], []
+    for t in replicates:
+        fn = "bam/%s.norm.bam" % t.asFile()
+        assert os.path.exists( fn ), "could not find bamfile %s for track %s" % ( fn, str(t))
+        samfiles.append( fn )
+        fn = "macs/with_input/%s.macs" % t.asFile()
+        if os.path.exists( fn ):
+            offsets.append( PIntervals.getPeakShiftFromMacs( fn ) )
+
+    bamfiles = " ".join( ("--bamfile=%s" % x) for x in samfiles )
+    shifts =  " ".join( ("--shift=%s" % y)  for y in offsets )
+
+    gene_file = os.path.join( PARAMS["ensembl_annotation_dir"], PARAMS["ensembl_annotation_tss_profile"])
+    tss_file = os.path.join( PARAMS["ensembl_annotation_dir"],  PARAMS["ensembl_annotation_transcript_tss"])
+
+    tmpfile = P.getTempFile()
+    tmpfilename = tmpfile.name
+
+    statement = '''intersectBed -a %(tss_file)s -b %(infile)s -v | cut -f4 > %(tmpfilename)s; 
+                   zcat %(gene_file)s | python %(scriptsdir)s/gtf2gtf.py --filter=transcript --apply=%(tmpfilename)s | gzip > %(tmpfilename)s.gtf.gz; 
+                   python %(scriptsdir)s/bam2geneprofile.py 
+                       %(bamfiles)s 
+                       --gtffile=%(tmpfilename)s.gtf.gz
+                       --output-filename-pattern=%(ofp)s
+                       %(shifts)s
+                       --reporter=gene
+                       --method=tssprofile
+                       --perInterval
+                       --normalization=interval'''
+    P.run()
 
 ############################################################
 ############################################################
@@ -2132,12 +2461,42 @@ def loadRepeats( infile, outfile ):
                  > %(outfile)s; """
     P.run()
 
-
 ############################################################
 ############################################################
 ############################################################
 ## RNAseq/CAGE based annotation
+@transform( exportReplicatedIntervalsAsBed, suffix(".replicated.bed"), ".replicated.rnaseq_tss.overlap" )
+def getCapseqRNAseqTSSOverlap( infile, outfile ):
+    '''Establish overlap between capseq and tss intervals'''
+    tss = os.path.join( PARAMS["rnaseq_annotation_dir"],PARAMS["rnaseq_annotation_tss_extended"] )
+    to_cluster = True
 
+    outtemp1 = P.getTempFile()
+    tmpfilename1 = outtemp1.name
+
+    if os.path.exists( outfile):
+        statement = '''rm %s''' % outfile
+        P.run()
+
+    statement = """echo "CAPseq intervals overlapping 1 or more RNAseq TSS" >> %(outfile)s; intersectBed -a %(infile)s -b %(tss)s -u | wc -l >> %(outfile)s; """
+    statement += """echo "CAPseq intervals not overlapping any RNAseq TSS" >> %(outfile)s; intersectBed -a %(infile)s -b %(tss)s -v | wc -l >> %(outfile)s; """
+    statement += """echo "RNAseq TSS overlapped by 1 or more CAPseq interval" >> %(outfile)s; intersectBed -a %(tss)s -b %(infile)s -u | wc -l >> %(outfile)s; """
+    statement += """echo "RNAseq TSS not overlapped by any CAPseq intervals" >> %(outfile)s; intersectBed -a %(tss)s -b %(infile)s -v | wc -l >> %(outfile)s; """
+    statement += '''sed -i '{N;s/\\n/\\t/g}' %(outfile)s; '''
+    P.run()
+    
+############################################################
+@transform( getCapseqRNAseqTSSOverlap, suffix("replicated.rnaseq_tss.overlap"), "replicated.rnaseq_tss.overlap.load")
+def loadCapseqRNAseqTSSOverlap(infile, outfile):
+    '''load TSS Capseq overlap into database'''
+
+    header = "track,intervals"
+    track = P.snip( os.path.basename( infile), ".rnaseq_tss.overlap" )
+    statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
+                        --table=%(track)s_rnaseq_tss_venn
+                        --header=%(header)s
+                   > %(outfile)s '''
+    P.run()
 
 ############################################################
 ############################################################
@@ -2373,6 +2732,7 @@ def loadCGIComposition( infile, outfile ):
                  > %(outfile)s; """
     P.run()
 
+
 ############################################################
 ############################################################
 ############################################################
@@ -2423,26 +2783,6 @@ def exportBigwig( infile, outfile ):
                    %(infile)s > %(outfile)s.log '''
     P.run()
 
-############################################################
-@merge( exportBigwig, "bigwig.view")
-def viewBigwig( infiles, outfile ):
-
-    outs = open( outfile, "w" )
-    outs.write( "# paste the following into the UCSC browser: \n" )
-
-    try:
-        os.makedirs( PARAMS["ucsc_dir"] )
-    except OSError:
-        pass
-    
-    for src in infiles:
-        dest = os.path.join( PARAMS["ucsc_dir"], src ) 
-        if not os.path.exists( dest ) or os.path.getmtime(src) > os.path.getmtime(dest):
-            shutil.copyfile( src, dest )
-        track = src[:-len(".bigwig")]
-        url = PARAMS["ucsc_url"] % src 
-        outs.write( '''track type=bigWig name="%(track)s" description="%(track)s" bigDataUrl=%(url)s\n''' % locals() )
-    outs.close()
 
 ############################################################
 @transform( "*/macs/*.macs_model.pdf", regex( r"(\S+)/macs/(\S+)(.macs_model.pdf)"), r"%s/MACS/\2.macs_model.pdf" % PARAMS["exportdir"])
@@ -2507,6 +2847,7 @@ def exportCapseqTSS1kbGeneList( infile, outfile):
     outs.close()
 
 ############################################################
+############################################################
 @transform( loadCapseqComposition, suffix(".replicated.composition.load"), ".replicated.gc.export" )
 def exportCapseqGCProfiles( infile, outfile ):
     '''Export file of GC content '''
@@ -2537,10 +2878,6 @@ def exportCapseqGCProfiles( infile, outfile ):
     cc.close()
     outs.close()
 
-    publish_dir = PARAMS["publish_dir"]
-    statement = "mkdir %(publish_dir)s/gc; cp %(outfile)s %(publish_dir)s/gc;"
-    P.run()
-
 ############################################################
 @transform( loadCGIComposition, suffix("cgi.composition.load"), "cgi.gc.export" )
 def exportCGIGCProfiles( infile, outfile ):
@@ -2567,10 +2904,71 @@ def exportCGIGCProfiles( infile, outfile ):
 
     cc.close()
     outs.close()
+    
+############################################################
+@transform( loadUniqueReplicatedIntervals, suffix(".replicated.unique.bed.load"), ".replicated.unique.genes.export" )
+def exportTissueSpecificCAPseqGenes( infile, outfile ):
+    '''Export tissue specific CAPseq genes '''
 
-    publish_dir = PARAMS["publish_dir"]
-    statement = "mkdir %(publish_dir)s/gc; cp %(outfile)s %(publish_dir)s/gc;"
-    P.run()
+    track = P.snip( os.path.basename( infile ), ".replicated.unique.bed.load" ).replace("-","_").replace(".","_")
+    
+    # Connect to DB
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    cc = dbhandle.cursor()
+    
+    statement = "ATTACH DATABASE '%s' AS annotations; "  % (PARAMS["ensembl_annotation_database"])
+    cc.execute(statement)
+
+    # Extract data from db
+    query = '''SELECT a.gene_id
+               FROM %(track)s_replicated_unique_intervals u, %(track)s_replicated_tss t, annotations.transcript_info a
+               WHERE u.interval_id=t.gene_id
+               AND t.closest_dist < 1000
+               AND t.closest_id=a.transcript_id
+               AND a.gene_biotype='protein_coding';''' % locals()
+    cc.execute( query )
+    E.info( query )
+
+    # Write to file
+    outs = open( outfile, "w")
+    outs.write("gene_id\n")
+    for result in cc:
+        pre = ""
+        for r in result:
+          outs.write("%s%s" % (pre, str(r)) )
+          pre = "\t"
+        outs.write("\n")
+
+    cc.close()
+    outs.close()
+    
+############################################################
+@transform( exportTissueSpecificCAPseqGenes, suffix(".replicated.unique.genes.export"), ".replicated.unique.genes.go" )
+def runGOOnGeneLists( infile, outfile ):
+    PipelineGO.runGOFromFiles( outfile = outfile,
+                               outdir = "go",
+                               fg_file = infile,
+                               bg_file = None,
+                               go_file = os.path.join(PARAMS["ensembl_annotation_dir"], PARAMS_ANNOTATIONS["interface_go"] ),
+                               ontology_file = os.path.join(PARAMS["ensembl_annotation_dir"], PARAMS_ANNOTATIONS["interface_go_obo"] ),
+                               minimum_counts = PARAMS["go_minimum_counts"] )
+
+############################################################
+@transform( exportTissueSpecificCAPseqGenes, suffix(".replicated.unique.genes.export"), ".replicated.unique.genes.goslim" )
+def runGOSlimOnGeneLists( infile, outfile ):
+    PipelineGO.runGOFromFiles( outfile = outfile,
+                               outdir = "go",
+                               fg_file = infile,
+                               bg_file = None,
+                               go_file = os.path.join(PARAMS["ensembl_annotation_dir"], PARAMS_ANNOTATIONS["interface_goslim"] ),
+                               ontology_file = os.path.join(PARAMS["ensembl_annotation_dir"], PARAMS_ANNOTATIONS["interface_goslim_obo"]),
+                               minimum_counts = PARAMS["go_minimum_counts"] )
+
+############################################################
+@transform( (runGOOnGeneLists, runGOSlimOnGeneLists), regex( "(.*)"), r"\1.load" )
+def loadGOResults( infile, outfile ):
+    '''load GO results.'''
+    P.load( os.path.join( "go", "all.biol_process.fold"), outfile )
 
 ############################################################
 @transform( loadEnsemblTranscriptTSSComposition, suffix("tss.transcript.composition.load"), "tss.transcript.gc.export" )
@@ -2599,10 +2997,6 @@ def exportEnsemblTranscriptTSSGCProfiles( infile, outfile ):
     cc.close()
     outs.close()
 
-    publish_dir = PARAMS["publish_dir"]
-    statement = "mkdir %(publish_dir)s/gc; cp %(outfile)s %(publish_dir)s/gc;"
-    P.run()
-
 ############################################################
 @transform( loadEnsemblGeneTSSComposition, suffix("tss.gene.composition.load"), "tss.gene.gc.export" )
 def exportEnsemblGeneTSSGCProfiles( infile, outfile ):
@@ -2630,10 +3024,6 @@ def exportEnsemblGeneTSSGCProfiles( infile, outfile ):
     cc.close()
     outs.close()
 
-    publish_dir = PARAMS["publish_dir"]
-    statement = "mkdir %(publish_dir)s/gc; cp %(outfile)s %(publish_dir)s/gc;"
-    P.run()
-
 ############################################################
 @transform( loadCapseqComposition, suffix(".replicated.composition.load"), ".replicated.cpg.export" )
 def exportCapseqCpGObsExp( infile, outfile ):
@@ -2657,16 +3047,12 @@ def exportCapseqCpGObsExp( infile, outfile ):
     for result in cc:
         pre = ""
         for r in result:
-          outs.write("%s%s" % (pre, str(r)) )
-          pre = "\t"
+            outs.write("%s%s" % (pre, str(r)) )
+            pre = "\t"
         outs.write("\n")
 
     cc.close()
     outs.close()
-
-    publish_dir = PARAMS["publish_dir"]
-    statement = "mkdir %(publish_dir)s/cpg; cp %(outfile)s %(publish_dir)s/cpg;"
-    P.run()
 
 ############################################################
 @transform( loadCGIComposition, suffix("cgi.composition.load"), "cgi.cpg.export" )
@@ -2695,10 +3081,6 @@ def exportCGICpGObsExp( infile, outfile ):
     cc.close()
     outs.close()
 
-    publish_dir = PARAMS["publish_dir"]
-    statement = "mkdir %(publish_dir)s/cpg; cp %(outfile)s %(publish_dir)s/cpg;"
-    P.run()
-
 ############################################################
 @transform( loadEnsemblTranscriptTSSComposition, suffix("tss.transcript.composition.load"), "tss.transcript.cpg.export" )
 def exportEnsemblTranscriptTSSCpGObsExp( infile, outfile ):
@@ -2725,10 +3107,6 @@ def exportEnsemblTranscriptTSSCpGObsExp( infile, outfile ):
 
     cc.close()
     outs.close()
-
-    publish_dir = PARAMS["publish_dir"]
-    statement = "mkdir %(publish_dir)s/cpg; cp %(outfile)s %(publish_dir)s/cpg;"
-    P.run()
 
 ############################################################
 @transform( loadEnsemblGeneTSSComposition, suffix("tss.gene.composition.load"), "tss.gene.cpg.export" )
@@ -2757,8 +3135,124 @@ def exportEnsemblGeneTSSCpGObsExp( infile, outfile ):
     cc.close()
     outs.close()
 
-    publish_dir = PARAMS["publish_dir"]
-    statement = "mkdir %(publish_dir)s/cpg; cp %(outfile)s %(publish_dir)s/cpg;"
+
+
+############################################################
+@transform( loadCapseqComposition, suffix(".replicated.composition.load"), ".replicated.cpg_density.export" )
+def exportCapseqCpGDensity( infile, outfile ):
+    '''Export file of GC content '''
+
+    # Connect to DB
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    track = P.snip( os.path.basename( infile ), ".replicated.composition.load" ).replace("-","_").replace(".","_")
+
+    # Extract data from db
+    cc = dbhandle.cursor()
+    query = '''SELECT c.gene_id, c.pCpG, cc.pCpG, c3.pCpG, c5.pCpG 
+               FROM %(track)s_replicated_composition c
+               left join %(track)s_replicated_composition_control cc on c.gene_id=cc.gene_id
+               left join %(track)s_replicated_composition_flanking3 c3 on c.gene_id=c3.gene_id
+               left join %(track)s_replicated_composition_flanking5 c5 on c.gene_id=c5.gene_id;''' % locals()
+    cc.execute( query )
+
+    # Write to file
+    outs = open( outfile, "w")
+    for result in cc:
+        pre = ""
+        for r in result:
+            outs.write("%s%s" % (pre, str(r)) )
+            pre = "\t"
+        outs.write("\n")
+
+    cc.close()
+    outs.close()
+
+############################################################
+@transform( loadCGIComposition, suffix("cgi.composition.load"), "cgi.cpg_density.export" )
+def exportCGICpGDensity( infile, outfile ):
+    '''Export file of GC content '''
+
+    # Connect to DB
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+
+    # Extract data from db
+    cc = dbhandle.cursor()
+    query = '''SELECT c.gene_id, c.pCpG
+               FROM cgi_comp c;''' % locals()
+    cc.execute( query )
+    E.info( query )
+
+    # Write to file
+    outs = open( outfile, "w")
+    for result in cc:
+        pre = ""
+        for r in result:
+          outs.write("%s%s" % (pre, str(r)) )
+          pre = "\t"
+        outs.write("\n")
+
+    cc.close()
+    outs.close()
+
+############################################################
+@transform( loadEnsemblTranscriptTSSComposition, suffix("tss.transcript.composition.load"), "tss.transcript.cpg_density.export" )
+def exportEnsemblTranscriptTSSCpGDensity( infile, outfile ):
+    '''Export file of GC content '''
+
+    # Connect to DB
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+
+    # Extract data from db
+    cc = dbhandle.cursor()
+    query = '''SELECT c.gene_id, c.pCpG
+               FROM tss_transcript_comp c;''' % locals()
+    cc.execute( query )
+    E.info( query )
+
+    # Write to file
+    outs = open( outfile, "w")
+    for result in cc:
+        pre = ""
+        for r in result:
+          outs.write("%s%s" % (pre, str(r)) )
+          pre = "\t"
+        outs.write("\n")
+
+    cc.close()
+    outs.close()
+
+############################################################
+@transform( loadEnsemblGeneTSSComposition, suffix("tss.gene.composition.load"), "tss.gene.cpg_density.export" )
+def exportEnsemblGeneTSSCpGDensity( infile, outfile ):
+    '''Export file of GC content '''
+
+    # Connect to DB
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+
+    # Extract data from db
+    cc = dbhandle.cursor()
+    query = '''SELECT c.gene_id, c.pCpG
+               FROM tss_gene_comp c;''' % locals()
+    cc.execute( query )
+    E.info( query )
+
+    # Write to file
+    outs = open( outfile, "w")
+    for result in cc:
+        pre = ""
+        for r in result:
+          outs.write("%s%s" % (pre, str(r)) )
+          pre = "\t"
+        outs.write("\n")
+
+    cc.close()
+    outs.close()
+    
+############################################################    
+@transform( (exportReplicatedIntervalsAsBed, sharedReplicatedIntervals, uniqueReplicatedIntervals), suffix(".bed"), ".length" )
+def exportCAPseqReplicatedLength( infile, outfile ):
+    '''Export length of CAPseq intervals'''
+    statement = '''cat %(infile)s | awk '{print $3-$2}' > %(outfile)s'''
     P.run()
 
 ############################################################
@@ -2783,21 +3277,43 @@ def update_report():
 def publish_report(infile, outfile):
     '''Link bed, bam, wig and report files to web '''
     publish_dir = PARAMS["publish_dir"]
-    bam_dir = PARAMS["publish_bam"]
-    bed_dir = PARAMS["publish_bed"]
-    wig_dir = PARAMS["publish_wig"]   
+    species = PARAMS["genome"]
+    report_dir = os.path.join(publish_dir, species)
+    bam_dir = os.path.join(publish_dir, "bam")
+    bed_dir = os.path.join(publish_dir, "bed")
+    wig_dir = os.path.join(publish_dir, "wig")  
+    tss_dir = os.path.join(publish_dir, "tss")
+    tss_dist_dir = os.path.join(publish_dir, "tss_distance")
+    gc_dir = os.path.join(publish_dir, "gc")
+    cgi_dir = os.path.join(publish_dir, "cpg")
+    cpg_density_dir = os.path.join(publish_dir, "cpg_density")
+    length_dir = os.path.join(publish_dir, "length")
     #report_dir = PARAMS["publish_report"]   
     print(infile)
     working_dir = os.getcwd()
-    statement = '''cp -rf report/html/* %(publish_dir)s > %(outfile)s; '''
+    statement =  '''cp -rf report/html/* %(report_dir)s > %(outfile)s; '''
     statement += '''cp -sn %(working_dir)s/bam/*.norm.bam %(bam_dir)s >> %(outfile)s;'''
-    statement += '''cp -sn %(working_dir)s/replicated_intervals/*.replicated.bed %(bed_dir)s >> %(outfile)s;'''
     statement += '''cp -sn %(working_dir)s/macs/with_input/*/*/*.wig.gz %(wig_dir)s >> %(outfile)s; '''
+    statement += '''cp -sn %(working_dir)s/replicated_intervals/*.replicated.bed %(bed_dir)s >> %(outfile)s;'''    
     statement += '''cp -sn %(working_dir)s/intervals/*solo*.bed %(bed_dir)s/no_input >> %(outfile)s; ''' 
     statement += '''cp -sn %(working_dir)s/intervals/*.merged.cleaned.bed %(bed_dir)s/replicates >> %(outfile)s; '''
     statement += '''cp -sn %(working_dir)s/replicated_intervals/*.replicated.unique.bed %(bed_dir)s/tissue_specific >> %(outfile)s; '''
-    statement += '''mkdir %(publish_dir)s/tss-profile; '''
-    statement += '''cp -sn %(working_dir)s/replicated_intervals/*.tss-profile*.tsv.gz %(publish_dir)s/tss-profile >> %(outfile)s; '''
+    statement += '''cp -sn %(working_dir)s/replicated_intervals/*.tss-profile*.tsv.gz %(tss_dir)s >> %(outfile)s; '''
+    statement += '''cp -sn %(working_dir)s/replicated_intervals/*.replicated.gc.export %(gc_dir)s >> %(outfile)s; ''' 
+    statement += '''cp -sn %(working_dir)s/tss.gene.gc.export %(gc_dir)s/%(species)s.tss.gene.gc.export >> %(outfile)s; ''' 
+    statement += '''cp -sn %(working_dir)s/tss.transcript.gc.export %(gc_dir)s/%(species)s.tss.transcript.gc.export >> %(outfile)s; '''
+    statement += '''cp -sn %(working_dir)s/cgi.gc.export %(gc_dir)s/%(species)s.cgi.gc.export >> %(outfile)s; ''' 
+    statement += '''cp -sn %(working_dir)s/replicated_intervals/*.replicated.cpg.export %(cgi_dir)s >> %(outfile)s; '''
+    statement += '''cp -sn %(working_dir)s/tss.gene.cpg.export %(cgi_dir)s/%(species)s.tss.gene.cpg.export >> %(outfile)s; ''' 
+    statement += '''cp -sn %(working_dir)s/tss.transcript.cpg.export %(cgi_dir)s/%(species)s.tss.transcript.cpg.export >> %(outfile)s; '''
+    statement += '''cp -sn %(working_dir)s/cgi.cpg.export %(cgi_dir)s/%(species)s.cgi.cpg.export >> %(outfile)s; ''' 
+    statement += '''cp -sn %(working_dir)s/replicated_intervals/*.replicated.cpg_density.export %(cpg_density_dir)s >> %(outfile)s; '''   
+    statement += '''cp -sn %(working_dir)s/tss.gene.cpg_density.export %(cpg_density_dir)s/%(species)s.tss.gene.cpg_density.export >> %(outfile)s; ''' 
+    statement += '''cp -sn %(working_dir)s/tss.transcript.cpg_density.export %(cpg_density_dir)s/%(species)s.tss.transcript.cpg_density.export >> %(outfile)s; '''
+    statement += '''cp -sn %(working_dir)s/cgi.cpg_density.export %(cpg_density_dir)s/%(species)s.cgi.cpg_density.export >> %(outfile)s; ''' 
+    statement += '''cp -sn %(working_dir)s/replicated_intervals/*.length %(length_dir)s >> %(outfile)s; ''' 
+    statement += '''cp -sn %(working_dir)s/replicated_intervals/*.gene.tss %(tss_dist_dir)s >> %(outfile)s; '''     
+        
     P.run()
 
 ############################################################
@@ -2903,21 +3419,44 @@ def compareExternal():
           annotateEnsemblGeneTSS, loadEnsemblGeneTSS, 
           annotateEnsemblTranscriptTTS, loadEnsemblTranscriptTTS,
           annotateEnsemblGeneTTS, loadEnsemblGeneTTS,
-          getEnsemblTranscriptTSSProfile, getEnsemblGeneTSSProfile, 
           annotateCGIEnsemblTranscriptOverlap, loadCGIEnsemblTranscriptOverlap,
           annotateCGIEnsemblGeneOverlap, loadCGIEnsemblGeneOverlap,
+          getCapseqEnsemblGeneTSSOverlap, loadCapseqEnsemblGeneTSSOverlap,
 #          runEnsemblGenomicFeaturesGAT, loadEnsemblGenomicFeaturesGAT,
           annotateRepeats, loadRepeats )
 def annotateEnsemblGenomicLocation():
     '''Annotate interval genomic location using data from Ensembl'''
     pass
 
-@follows( getReplicatedEnsemblTranscriptTSSProfile, getReplicatedEnsemblTranscriptTSSProfileCapseq,
-          getReplicatedEnsemblTranscriptTSSProfileNoCapseq)
+@follows( getIntergenicCapseqBed,
+          getEnsemblNoncodingTSSDistance,
+          loadEnsemblNoncodingTSSDistance )
+def noncoding():
+    '''annotate distance of intergeneic CAPseq intervals from non-coding transcripts TSSs'''
+    pass
+
+@follows( getReplicatedEnsemblTranscriptTSSProfile, 
+          getReplicatedEnsemblTranscriptTSSProfileCapseq,
+          getReplicatedEnsemblTranscriptTSSProfileNoCapseq,
+          getReplicatedEnsemblGeneTSSProfile, 
+          getReplicatedEnsemblGeneTSSProfileCapseq,
+          getReplicatedEnsemblGeneTSSProfileNoCapseq )
 def annotateEnsemblTSSProfile():
     ''' Annotate TSS profile for all Ensembl transcripts'''
     pass
-
+    
+@follows( exportCapseqEnsemblTSSBed, exportCapseqNoEnsemblTSSBed )
+def exportCapseqTSSIntervals():
+    ''' Export CAPseq intervals that overlap with Ensembl TSS as bed file'''
+    pass
+    
+@follows( liverTestesVenn, loadLiverTestesVenn,
+          liverTestesTSSVenn, loadLiverTestesTSSVenn,
+          liverTestesIntergenicVenn, loadLiverTestesIntergenicVenn )
+def liverVsTestes():
+    ''' Compare liver vs testes CAPseq intervals to make venn diagram'''
+    pass
+    
 #@follows( annotateRnaseqGenomicFeatureOverlap, loadRnaseqGenomicFeatureOverlap,
 #          annotateRnaseqTranscriptTSS, loadRnaseqTranscriptTSS, 
 #          annotateRnaseqGeneTSS, loadRnaseqGeneTSS, 
@@ -2966,7 +3505,9 @@ def exportGeneLists():
 @follows( exportCapseqGCProfiles, exportCGIGCProfiles,
           exportEnsemblTranscriptTSSGCProfiles, exportEnsemblGeneTSSGCProfiles,
           exportCapseqCpGObsExp, exportCGICpGObsExp,
-          exportEnsemblTranscriptTSSCpGObsExp, exportEnsemblGeneTSSCpGObsExp)
+          exportEnsemblTranscriptTSSCpGObsExp, exportEnsemblGeneTSSCpGObsExp,
+          exportCapseqCpGDensity, exportCGICpGDensity,
+          exportEnsemblTranscriptTSSCpGDensity, exportEnsemblGeneTSSCpGDensity)
 def exportCpGData():
     '''export files'''
     pass
@@ -2983,6 +3524,8 @@ def exportCpGData():
           comparePeakShape,
           compareExternal,
           annotateEnsemblGenomicLocation,
+          noncoding,
+          annotateEnsemblTSSProfile,
           annotateCapseqNucleotideComposition,
           annotateEnsemblTSSNucleotideComposition,
           exportGeneLists )
@@ -3010,6 +3553,8 @@ def compareIntervals():
     pass
 
 @follows( annotateEnsemblGenomicLocation,
+          noncoding,
+          annotateEnsemblTSSProfile,
           annotateCapseqNucleotideComposition,
           annotateEnsemblTSSNucleotideComposition, )
 def annotateEnsembl():
@@ -3026,4 +3571,4 @@ def annotateEnsembl():
 
 if __name__== "__main__":
     sys.exit( P.main(sys.argv) )
-
+    

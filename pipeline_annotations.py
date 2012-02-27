@@ -570,6 +570,22 @@ def buildGeneTSS( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
+@merge( buildNonCodingExonTranscripts, PARAMS["interface_tss_noncoding_bed"] )
+def buildNoncodingTSS( infile, outfile ):
+    '''Assign a TSS for each non-coding transcript'''
+    statement = """
+        gunzip < %(infile)s 
+        | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
+        | python %(scriptsdir)s/gtf2gtf.py --merge-transcripts --log=%(outfile)s.log 
+        | python %(scriptsdir)s/gtf2gff.py --method=promotors --promotor=1 --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
+        | python %(scriptsdir)s/gff2bed.py --is-gtf --name=gene_id --log=%(outfile)s.log 
+        | gzip
+        > %(outfile)s """
+    P.run()
+
+############################################################
+############################################################
+############################################################
 @merge( buildCodingExonTranscripts, PARAMS["interface_tss_gene_interval_bed"] )
 def buildGeneTSSInterval( infile, outfile ):
     '''create a single interval that encompasses all annotated TSSs for a given gene (+ 1kb either side)'''
@@ -734,6 +750,35 @@ def importRepeatsFromUCSC( infile, outfile ):
     dbhandle = connectToUCSC()
     getRepeatsFromUCSC( dbhandle, repclasses, outfile )
 
+#############################################################
+@transform( importRepeatsFromUCSC, suffix(".gff.gz"), ".gff.gz.load" )
+def loadRepeats( infile, outfile ):
+    '''load total repeats length'''
+
+    #statement = """zcat %(infile)s | awk '{print $5-$4}' | awk '{ sum+=$1} END {print sum}' > %(outfile)s; """
+
+    headers = "contig,start,stop,class"
+    statement = """zcat %(infile)s | python %(scriptsdir)s/gff2bed.py --name=class | grep -v "#" | cut -f1,2,3,4
+                   | python %(scriptsdir)s/csv2db.py 
+                         --table=repeats
+                         --header=%(headers)s
+                         --index=
+                 > %(outfile)s; """
+    P.run()
+
+#############################################################
+@transform( loadRepeats, suffix(".gff.gz.load"), ".counts.load" )
+def countTotalRepeatLength( infile, outfile):
+    ''' Count total repeat length and add to database '''
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    cc = dbhandle.cursor()
+    statement = """create table repeat_length as SELECT sum(stop-start) as total_repeat_length from repeats"""
+    cc.execute( statement )
+    cc.close()
+    
+    statement = "touch %(outfile)s"
+    P.run()
+
 ############################################################
 ############################################################
 ############################################################
@@ -786,37 +831,8 @@ if 0:
             E.info( "importing %(tablename)s" % locals() )
             P.run()
 
-    ############################################################
-    ############################################################
-    ############################################################
-    ## import UCSC encode tracks
-    ############################################################
-    @files( PARAMS["filename_mappability"], PARAMS["annotator_mappability"] ) 
-    def exportUCSCMappabilityTrackToBed( infile, outfile ):
-        '''convert wiggle track with mappability information to a bed-formatted file
-        with only the mappable regions in the genome.'''
 
-        infile = gzip.open( infile, "r" )
 
-        outf = open( outfile, "w" )
-
-        for line in infile:
-            if line.startswith("fixedStep" ):
-                contig, start, step = re.match( "fixedStep chrom=(\S+) start=(\d+) step=(\d+)", line ).groups()
-                start, step = int(start)-1, int(step)
-                end = start + step
-                last_val = None
-            else:
-                val = int(line)
-                if last_val != val:
-                    if last_val == 1:
-                        outf.write( "\t".join( (contig, str(start), str(end ) ) ) + "\n" )
-                    start = end
-                    end = start + step
-                else:
-                    end += step
-                last_val = val
-        outf.close()
     ############################################################
     ############################################################
     ############################################################
@@ -1119,6 +1135,7 @@ def genome():
           loadGeneInformation,
           buildExonTranscripts,
           buildCodingExonTranscripts,
+          buildNonCodingExonTranscripts,
           buildPseudogenes,
           buildNUMTs,
           buildSelenoList)
@@ -1146,7 +1163,8 @@ def fasta():
           buildGeneTSSInterval,
           buildGeneTSSIntervalGTF,
           buildTranscriptTTS,
-          buildGeneTTS )
+          buildGeneTTS,
+          buildNoncodingTSS )
 def promotors():
     '''build promotors.'''
     pass

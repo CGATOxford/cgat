@@ -596,8 +596,6 @@ if __name__ == '__main__':
     if options.restrict_source:
         iterator = GTF.iterator_filtered( GTF.iterator(options.stdin), 
                                           source = options.restrict_source )
-    elif options.method == "promotors" or options.method == "tts":
-        iterator = GTF.iterator_filtered( GTF.iterator(options.stdin), source = "protein_coding" )
     else:
         iterator = GTF.iterator(options.stdin)
 
