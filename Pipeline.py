@@ -409,16 +409,24 @@ def load( infile, outfile = None,
 
     run()
 
-def mergeAndLoad( infiles, outfile, suffix ):
-    '''load categorical tables (two columns) into a database.
+def mergeAndLoad( infiles, outfile, suffix = None, columns=(0,1), regex = None ):
+    '''load categorical tables into a database.
+
+    Columns denotes the columns to be taken.
 
     The tables are merged and entered row-wise.
     '''
-    header = ",".join( [ quote( snip( x, suffix)) for x in infiles] )
-    if suffix.endswith(".gz"):
-        filenames = " ".join( [ "<( zcat %s | cut -f 1,2 )" % x for x in infiles ] )
+    if suffix:
+        header = ",".join( [ quote( snip( x, suffix)) for x in infiles] )
+    elif regex:
+        header = ",".join( [ quote( "-".join(re.search( regex, x).groups())) for x in infiles] )        
     else:
-        filenames = " ".join( [ "<( cat %s | cut -f 1,2 )" % x for x in infiles ] )
+        header = ",".join( infiles )
+    columns = ",".join( map(str, [ x + 1 for x in columns ]))
+    if infiles[0].endswith(".gz"):
+        filenames = " ".join( [ "<( zcat %s | cut -f %s )" % (x,columns) for x in infiles ] )
+    else:
+        filenames = " ".join( [ "<( cat %s | cut -f %s )" % (x,columns) for x in infiles ] )
 
     tablename = toTable( outfile )
 
@@ -738,7 +746,10 @@ def run( **kwargs ):
                                           "".join( stderr),
                                           statement ) )
 
-            os.unlink( job_path )
+            try:
+                os.unlink( job_path )
+            except OSError:
+                L.warn( "temporary job file %s not present for clean-up - ignored" % job_path )
             
         session.deleteJobTemplate(jt)
 
@@ -813,8 +824,10 @@ def run( **kwargs ):
                                           "".join( stderr), statement))
             
         session.deleteJobTemplate(jt)
-        os.unlink( job_path )
-
+        try:
+            os.unlink( job_path )
+        except OSError:
+            L.warn( "temporary job file %s not present for clean-up - ignored" % job_path )
     else:
         statement = buildStatement( **options )
 

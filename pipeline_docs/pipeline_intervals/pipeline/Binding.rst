@@ -1,7 +1,7 @@
-.. _BindingProfiles:
+.. _BindingPatterns:
 
 ================
-Binding profiles
+Binding patterns
 ================
 
 This section provides an overview of where intervals are located with

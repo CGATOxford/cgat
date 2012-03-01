@@ -40,6 +40,23 @@ over various annotations.
    
    paired-endedness is not fully implemented.
 
+-n/--normalization
+   normalize counts before aggregation. The normalization options are:
+   * sum: sum of counts within a region
+   * max: maximum count within a region
+   * total-sum: sum of counts across all regions
+   * total-max: maximum count in all regions
+   * none: no normalization
+
+-N/--normalize-profiles
+   normalize profiles when outputting. The normalization methods are:
+   * none: no normalization
+   * area: normalize such that the area under the profile is 1.
+   * counts: normalize by number of features (genes,tss) that have been counted
+
+   several options can be combined.
+
+
 Usage
 -----
 
@@ -56,7 +73,6 @@ for command line help.
 Documentation
 -------------
 
-For read counts to be correct the NH flag to be set correctly.
 
 Code
 ----
@@ -87,13 +103,18 @@ def main( argv = None ):
                                     usage = globals()["__doc__"] )
 
     parser.add_option( "-m", "--method", dest="methods", type = "choice", action = "append",
-                       choices = ("geneprofile", "tssprofile" ),
+                       choices = ("geneprofile", "tssprofile", "utrprofile" ),
                        help = "counters to use. "
                               "[%default]" )
 
     parser.add_option( "-n", "--normalization", dest="normalization", type = "choice",
-                       choices = ("none", "max", "sum", "total-max", "total-sum", "average"  ),
-                       help = "counters to use. "
+                       choices = ("none", "max", "sum", "total-max", "total-sum"),
+                       help = "normalization to use. Normalize the counts before aggregating "
+                              "[%default]" )
+
+    parser.add_option( "-p", "--normalize-profile", dest="profile_normalizations", type = "choice", action="append",
+                       choices = ("none", "area", "counts"),
+                       help = "profile normalization to use. "
                               "[%default]" )
 
     parser.add_option( "-r", "--reporter", dest="reporter", type = "choice",
@@ -119,12 +140,14 @@ def main( argv = None ):
         resolution_downstream_utr = 1000,
         resolution_upstream = 1000,
         resolution_downstream = 1000,
-        extension_upstream = 1000,
-        extension_downstream = 1000,
+        # mean length of transcripts: about 2.5 kb
+        extension_upstream = 2500,
+        extension_downstream = 2500,
         extension_inward = 3000,
         extension_outward = 3000,
         plot = True,
         methods = [],
+        profile_normalizations = [],
         normalization = None,
         )
 
@@ -154,12 +177,19 @@ def main( argv = None ):
 
     counters = []
     for method in options.methods:
-        if method == "geneprofile":
+        if method == "utrprofile":
+            counters.append( _bam2geneprofile.UTRCounter( range_counter, 
+                                                          options.resolution_upstream,
+                                                          options.resolution_upstream_utr,
+                                                          options.resolution_cds,
+                                                          options.resolution_downstream_utr,
+                                                          options.resolution_downstream,
+                                                          options.extension_upstream,
+                                                          options.extension_downstream ) )
+        elif method == "geneprofile":
             counters.append( _bam2geneprofile.GeneCounter( range_counter, 
                                                            options.resolution_upstream,
-                                                           options.resolution_upstream_utr,
                                                            options.resolution_cds,
-                                                           options.resolution_downstream_utr,
                                                            options.resolution_downstream,
                                                            options.extension_upstream,
                                                            options.extension_downstream ) )
@@ -179,10 +209,18 @@ def main( argv = None ):
     _bam2geneprofile.count( counters, gtf_iterator )
 
     for method, counter in zip(options.methods, counters):
-        outfile = IOTools.openFile( E.getOutputFile( counter.name ) + ".tsv.gz", "w")
-        counter.writeMatrix( outfile )
+        if not options.profile_normalizations:
+            options.profile_normalizations.append( "none" )
+
+        for norm in options.profile_normalizations:
+            outfile = IOTools.openFile( E.getOutputFile( counter.name ) + ".%s.tsv.gz" % norm, "w")
+            counter.writeMatrix( outfile, normalize=norm )
+            outfile.close()
+            
+        outfile = IOTools.openFile( E.getOutputFile( counter.name ) + ".lengths.tsv.gz", "w")
+        counter.writeLengthStats( outfile )
         outfile.close()
-        
+
     if options.plot:
 
         import matplotlib
@@ -191,9 +229,9 @@ def main( argv = None ):
         import matplotlib.pyplot as plt
         
         for method, counter in zip(options.methods, counters):
-            plt.figure()
             if method == "geneprofile":
 
+                plt.figure()
                 plt.subplots_adjust( wspace = 0.05)
                 max_scale = max( [max(x) for x in counter.aggregate_counts ] )
 
@@ -203,8 +241,36 @@ def main( argv = None ):
                     plt.title( counter.fields[x] )
                     plt.ylim( 0, max_scale )
 
+                figname = counter.name + ".full"
+                
+                fn = E.getOutputFile( figname ) + ".png"
+                plt.savefig( os.path.expanduser(fn) )
+
+                plt.figure()
+
+                points = []
+                cuts = []
+                for x, counts in enumerate( counter.aggregate_counts ):
+                    points.extend( counts )
+                    cuts.append( len( counts ) )
+                                 
+                plt.plot( range(len(points)), points )
+                xx,xxx = 0, []
+                for x in cuts:
+                    xxx.append( xx + x // 2 )
+                    xx += x
+                    plt.axvline( xx, color = "r", ls = "--" )
+
+                plt.xticks( xxx, counter.fields )
+
+                figname = counter.name + ".detail"
+                
+                fn = E.getOutputFile( figname ) + ".png"
+                plt.savefig( os.path.expanduser(fn) )
+
             elif method == "tssprofile":
 
+                plt.figure()
                 plt.subplot( 1, 3, 1)
                 plt.plot( range(-options.extension_outward, options.extension_inward), counter.aggregate_counts[0] )
                 plt.title( counter.fields[0] )
@@ -217,8 +283,8 @@ def main( argv = None ):
                 plt.plot( range(-options.extension_inward, options.extension_outward), counter.aggregate_counts[1] )
                 plt.legend( counter.fields[:2] )
 
-            fn = E.getOutputFile( counter.name ) + ".png"
-            plt.savefig( os.path.expanduser(fn) )
+                fn = E.getOutputFile( counter.name ) + ".png"
+                plt.savefig( os.path.expanduser(fn) )
         
     ## write footer and output benchmark information.
     E.Stop()

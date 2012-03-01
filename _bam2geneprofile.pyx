@@ -5,7 +5,7 @@ import pysam
 
 import collections, array, struct, sys, itertools
 import Experiment as E
-import Intervals, GTF
+import Intervals, GTF, Stats
 import numpy
 
 CountResult = collections.namedtuple( "Counts", "upstream upstream_utr cds downstream_utr downstream" )
@@ -168,11 +168,14 @@ class IntervalsCounter:
         self.fields = []
         # number of items counted in each category (1012 introns, 114 exons, ...)
         self.counts = []
+        # lengths of items counted in each category
+        self.lengths = []
         # aggregate counts
         self.aggregate_counts = []
 
     def add( self, field, length ):
         self.counts.append( 0 )
+        self.lengths.append( [] )
         self.fields.append( field )
         if self.normalization in ("max", "sum", "total-max", "total-sum" ):
             self.dtype = numpy.float
@@ -193,6 +196,12 @@ class IntervalsCounter:
 
         for x,c in enumerate(self.aggregate_counts):
             self.aggregate_counts[x] = numpy.zeros( len(c), dtype = self.dtype ) 
+
+    def addLengths( self, *lengths ):
+        '''add interval lengths to this counter.'''
+
+        for x, interv in enumerate(lengths):
+            self.lengths[x].append( sum( [x[1]-x[0] for x in interv] ) )
 
     def aggregate( self, *counts ):
 
@@ -224,7 +233,7 @@ class IntervalsCounter:
                 
             agg += cc
 
-    def buildMatrix( self, normalize = False ):
+    def buildMatrix( self, normalize = None ):
         '''build single matrix with all counts.
         
         cols = intervals counted (exons, introns) )
@@ -238,29 +247,121 @@ class IntervalsCounter:
         matrix.shape = (len(self.aggregate_counts), max_counts )
 
         # normalize
-        for x in range( len(self.counts)):
-            matrix[:,x] /= self.counts[x]
+        if normalize == "area":
+            matrix = numpy.array( matrix, dtype = numpy.float )
+            total = matrix.sum()
+            matrix /= total
+        elif normalize == "counts":
+            matrix = numpy.array( matrix, dtype = numpy.float )
+            for x in range( len(self.counts)):
+                matrix[x,:] /= self.counts[x]
 
         return matrix
 
-    def writeMatrix( self, outfile ):
+    def writeMatrix( self, outfile, normalize = None ):
         '''write aggregate counts to *outfile*.
 
         Output format by default is a tab-separated table.
         '''
         outfile.write("bin\t%s\n" % "\t".join(self.fields) )        
 
-        matrix = self.buildMatrix()
+        matrix = self.buildMatrix( normalize )
+        
+        if normalize and normalize != "none":
+            format = "%f"
+        else:
+            format = self.format
 
         for row, cols in enumerate(matrix.transpose()):
-            outfile.write( "%i\t%s\n" % (row, "\t".join( [ self.format % x for x in cols ] ) ))
+            outfile.write( "%i\t%s\n" % (row, "\t".join( [ format % x for x in cols ] ) ))
+            
+    def writeLengthStats( self, outfile ):
+        '''output length stats to outfile.'''
+        
+        outfile.write( "region\t%s\n" % "\t".join(Stats.Summary.fields ))
+        for field,l in zip(self.fields, self.lengths):
+            outfile.write( "%s\t%s\n" % (field, str(Stats.Summary( l))))
 
     def __str__(self):
         return "%s=%s" % (self.name, ",".join( [str(sum(x)) for x in self.aggregate_counts]) )
 
 class GeneCounter( IntervalsCounter ):
-
+    '''count reads in exons and upstream/downstream of genes/transcripts.
+    
+    Only protein coding transcripts are counted (i.e. those with a CDS)
+    '''
+    
     name = "geneprofile"
+    
+    def __init__(self, counter, 
+                 int resolution_upstream,
+                 int resolution_exons,
+                 int resolution_downstream,
+                 int extension_upstream = 0, 
+                 int extension_downstream = 0,
+                 *args,
+                 **kwargs ):
+
+        IntervalsCounter.__init__(self, *args, **kwargs )
+
+        self.counter = counter
+        self.extension_upstream = extension_upstream
+        self.extension_downstream = extension_downstream 
+        self.resolution_exons = resolution_exons
+        self.resolution_upstream = resolution_upstream
+        self.resolution_downstream = resolution_downstream
+
+        for field, length in zip( 
+            ("upstream", "exons", "downstream"),
+            (resolution_upstream,
+             resolution_exons,
+             resolution_downstream ) ):
+            self.add( field, length )
+        
+    def count( self, gtf ):
+        '''build ranges to be analyzed from a gene model.
+
+        Returns a tuple with ranges for exons, upstream, downstream.
+        '''
+
+        contig = gtf[0].contig 
+        exons = GTF.asRanges( gtf, "exon" )
+        exon_start, exon_end = exons[0][0], exons[-1][1]
+
+        # filter for protein coding
+        cds = GTF.asRanges( gtf, "CDS" )
+        if len(cds) == 0: return 0
+
+        upstream = [ ( exon_start - self.extension_upstream, exon_start ), ] 
+        downstream = [ ( exon_end, exon_end + self.extension_downstream ), ]
+        
+        E.debug("counting exons" )
+        self.counts_exons = self.counter.getCounts( contig, exons, self.resolution_exons  )
+        E.debug("counting upstream" )
+        self.counts_upstream = self.counter.getCounts( contig, upstream, self.resolution_upstream ) 
+        E.debug("counting downstream" )
+        self.counts_downstream = self.counter.getCounts( contig, downstream, self.resolution_downstream )
+
+        E.debug("counting finished" )
+
+        ## revert for negative strand
+        if gtf[0].strand == "-":
+            self.counts_exons = self.counts_exons[::-1]
+            self.counts_upstream, self.counts_downstream = self.counts_downstream[::-1], self.counts_upstream[::-1]
+
+        self.addLengths( upstream, exons, downstream )
+
+        self.aggregate( self.counts_upstream,
+                        self.counts_exons,
+                        self.counts_downstream )
+
+        return 1
+
+class UTRCounter( IntervalsCounter ):
+    '''counts reads in 3'UTR and 5'UTR in addition
+    to the extension outside.'''
+
+    name = "utrprofile"
     
     def __init__(self, counter, 
                  int resolution_upstream,
@@ -315,14 +416,27 @@ class GeneCounter( IntervalsCounter ):
         
         E.debug("counting cds" )
         self.counts_cds = self.counter.getCounts( contig, self.cds, self.resolution_cds  )
-        E.debug("counting upstream_utr" )
-        self.counts_upstream_utr = self.counter.getCounts( contig, self.upstream_utr, self.resolution_upstream_utr )
-        E.debug("counting downstream_utr" )
-        self.counts_downstream_utr = self.counter.getCounts( contig, self.downstream_utr, self.resolution_downstream_utr )
         E.debug("counting upstream" )
         self.counts_upstream = self.counter.getCounts( contig, self.upstream, self.resolution_upstream ) 
         E.debug("counting downstream" )
         self.counts_downstream = self.counter.getCounts( contig, self.downstream, self.resolution_downstream )
+
+        if self.upstream_utr:
+            E.debug("counting upstream_utr" )
+            self.counts_upstream_utr = self.counter.getCounts( contig, self.upstream_utr, self.resolution_upstream_utr )
+        else:
+            # add pseudocounts for those genes without a UTR.
+            self.counts_upstream_utr = numpy.zeros( self.resolution_upstream_utr )
+            self.counts_upstream_utr += (self.counts_upstream[-1] + self.counts_cds[0]) // 2
+
+        if self.downstream_utr:
+            E.debug("counting downstream_utr" )
+            self.counts_downstream_utr = self.counter.getCounts( contig, self.downstream_utr, self.resolution_downstream_utr )
+        else:
+            # add a pseudocount for those genes without a UTR.
+            self.counts_downstream_utr = numpy.zeros( self.resolution_downstream_utr )
+            self.counts_downstream_utr += (self.counts_downstream[0] + self.counts_cds[-1]) // 2
+
         E.debug("counting finished" )
 
         ## revert for negative strand

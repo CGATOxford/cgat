@@ -431,6 +431,33 @@ def loadTranscriptInformation( infile, outfile ):
                                   , columns = columns 
                                   , indices = ("gene_id", "transcript_id", "protein_id", "gene_name", "transcript_name") )
 
+
+############################################################
+############################################################
+############################################################
+@files( PARAMS["ensembl_filename_gtf"], "transcript_synonyms.load" )
+def loadTranscriptSynonyms( infile, outfile ):
+    '''load table with synonyms for transcript identifiers.'''
+    
+    tablename = P.toTable( outfile )
+
+    columns = {
+        "ensembl_transcript_id" : "transcript_id",
+        "external_transcript_id" : "transcript_name",
+        "refseq_mrna" : "refseq_id",
+        }
+
+    data = PBiomart.biomart_iterator( columns.keys()
+                                      , biomart = "ensembl"
+                                      , dataset = PARAMS["ensembl_biomart_dataset"] )
+    
+    PDatabase.importFromIterator( outfile
+                                  , tablename
+                                  , data
+                                  , columns = columns 
+                                  , indices = ("transcript_id", "transcript_name", "refseq_id") )
+
+
 ###################################################################
 ###################################################################
 ###################################################################
@@ -1225,6 +1252,7 @@ def genome():
           loadTranscriptInformation,
           loadGeneStats,
           loadGeneInformation,
+          loadTranscriptSynonyms,
           buildExonTranscripts,
           buildPseudogenes,
           buildNUMTs,

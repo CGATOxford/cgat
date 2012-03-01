@@ -1171,10 +1171,10 @@ class ClassifierRNASeq(Counter):
                  ( 's', "extension", ),
                  ( 's', "alternative", ),
                  ( 's', "unknown", ),
-                 ( 's', "intronic", ),
                  ( 's', "utr5", ),
                  ( 's', "utr3", ),
-                 ( 's', "flank5", ),
+                 ( 's', "intronic", )
+		 ( 's', "flank5", ),
                  ( 's', "flank3", ),
                  ( 'n', "complete", ),
                  ( 'n', "fragment", ),
@@ -1183,9 +1183,9 @@ class ClassifierRNASeq(Counter):
                  ( 'n', "extension", ),
                  ( 'n', "alternative", ),
                  ( 'n', "unknown", ),
-                 ( 'n', "intronic", ),
                  ( 'n', "utr5", ),
                  ( 'n', "utr3", ),
+		 ( 'n', "intronic", ),
                  ( 'n', "flank5", ),
                  ( 'n', "flank3", ),
                  ( 'a', "complete", ),
@@ -1195,10 +1195,10 @@ class ClassifierRNASeq(Counter):
                  ( 'a', "extension", ),
                  ( 'a', "alternative", ),
                  ( 'a', "unknown", ),
-                 ( 'a', "intronic", ),
-                 ( 'a', "utr5", ),
+		 ( 'a', "utr5", ),
                  ( 'a', "utr3", ),
-                 ( 'a', "flank5", ),
+		 ( 'a', "intronic", ),
+		 ( 'a', "flank5", ),
                  ( 'a', "flank3", ),
                  ( 'n', "flank", ),
                  ( 'n', "intergenic" ) )
@@ -1251,7 +1251,7 @@ class ClassifierRNASeq(Counter):
         contig = self.getContig()
         strand = self.getStrand()
         start, end = exons[0][0], exons[-1][1]
-
+	print "hello"
         # get closest gene upstream and downstream
         before = self.transcript_intervals.before( contig, start, end, num_intervals = 1, max_dist = self.flank )
         after = self.transcript_intervals.after( contig, start, end, num_intervals = 1, max_dist = self.flank )
@@ -1389,7 +1389,7 @@ class ClassifierRNASeq(Counter):
         contig = self.getContig()
         segments = self.getSegments()
         introns = self.getIntrons()
-
+	print "hello"
         try:
             overlaps = list(self.transcript_intervals.get( contig, segments[0][0], segments[-1][1] ))
         except KeyError, msg:
@@ -3327,4 +3327,5 @@ def main( argv = None ):
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
+	print "hello"
+	sys.exit( main( sys.argv) )

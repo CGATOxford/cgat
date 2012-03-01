@@ -794,6 +794,7 @@ def loadMethylationData( infile, design_file ):
 
     '''
     
+    E.info( "reading data")
     R( '''counts_table = read.delim( '%(infile)s', header = TRUE, 
                                                    row.names = 1, 
                                                    stringsAsFactors = TRUE )''' % locals() )
@@ -817,9 +818,9 @@ def loadMethylationData( infile, design_file ):
     # Subset data & set conditions
     R('''includedSamples <- pheno2$include == '1' ''')
     R('''countsTable <- counts_table[ , includedSamples ]''')
-    R('''groups <- pheno2$group[ includedSamples ]''')
+    R('''groups <- factor(pheno2$group[ includedSamples ])''')
     R('''pairs = factor(pheno2$pair[ includedSamples ])''')
-
+    
     groups = R('''levels(groups)''')
     pairs = R('''levels(pairs)''')
 

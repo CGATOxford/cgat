@@ -182,6 +182,7 @@ def createTable( dbhandle, error, options, rows = None, headers = None,
             t = "TEXT"
 
         # remove special characters from column names
+        if hh == "": raise ValueError("column without header" )
         hh = re.sub( '''['"]''', "", hh)
         hh = re.sub( "[,;.:\-\+/ ()]", "_", hh)
         if hh[0] in "0123456789": hh = "_" + hh
@@ -294,6 +295,7 @@ def run( options, args ):
 
     rows = []
     for row in reader:
+        if None in row: raise ValueError( "undefined columns in input file" )
         try:
             rows.append( CSV.ConvertDictionary( row , map=options.map ))
         except TypeError, msg:
