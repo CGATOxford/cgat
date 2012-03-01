@@ -108,6 +108,9 @@ def main( argv = None ):
     parser.add_option( "-t", "--filename-transcriptome", dest="filename_transcriptome", type="string",
                        help = "bam file with reads mapped against transcripts [%default]" )
 
+    parser.add_option( "-s", "--filename-map", dest="filename_map", type="string",
+                       help = "filename mapping transcript numbers (used by --filename-transrciptom) to transcript names (used by --filename-gtf) [%default]" )
+
     parser.add_option( "-s", "--filename-stats", dest="filename_stats", type="string",
                        help = "filename to output stats to [%default]" )
 
@@ -134,6 +137,7 @@ def main( argv = None ):
         filename_mismapped = None,
         filename_junctions = None,
         filename_transcriptome = None,
+        filename_map = None,
         remove_contigs = None,
         force = False,
         unique = False,
@@ -155,14 +159,29 @@ def main( argv = None ):
     if options.remove_contigs:
         options.remove_contigs = options.remove_contigs.split(",")
 
+    if options.filename_map:
+        E.info( "reading map" )
+        id_map = IOTool.readMap( IOTools.openFile( options.filename_map ) )
+    else:
+        id_map = None
+        
     transcripts = {}
     if options.filename_gtf:
         E.info( "indexing geneset" )
+        mapped, missed = 0, 0
         for gtf in GTF.transcript_iterator( GTF.iterator( IOTools.openFile(options.filename_gtf) )):
             gtf.sort( key = lambda x: x.start )
-            transcripts[gtf[0].transcript_id] = gtf
+            transcript_id = gtf[0].transcript_id
+            if id_map:
+                try:
+                    transcript_id = id_map[transcript_id]
+                    mapped += 1
+                except KeyError:
+                    missed += 1
+                    continue
+            transcripts[transcript_id] = gtf
 
-        E.info( "read %i transcripts from geneset" % len(transcripts) )
+        E.info( "read %i transcripts from geneset (%i mapped, %i missed)" % (len(transcripts), mapped, missed) )
 
     regions_to_remove = None
     if options.filename_regions:
