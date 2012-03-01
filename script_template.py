@@ -21,10 +21,10 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-script_template.py - template for CGAT scipts
+table2bed.py
 =============================================
 
-:Author: Andreas Heger
+:Author: Nick Ilott
 :Release: $Id$
 :Date: |today|
 :Tags: Python
@@ -32,20 +32,18 @@ script_template.py - template for CGAT scipts
 Purpose
 -------
 
-.. todo::
-   
-   describe purpose of the script.
+Not generic. Takes a tab delimited table and converts to bed file
 
 Usage
 -----
 
 Example::
 
-   python script_template.py --help
+   python table2bed.py --help
 
 Type::
 
-   python script_template.py --help
+   python table2bed.py --help
 
 for command line help.
 
@@ -73,30 +71,21 @@ def main( argv = None ):
     parser = optparse.OptionParser( version = "%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
                                     usage = globals()["__doc__"] )
 
-    parser.add_option("-i", "--test-option", dest="test_option", type="string",
-                      help="test option [default=%default]."  )
-
-    parser.set_defaults(
-        test_option = "test"
-        )
+    parser.add_option("-t", "--table", dest="table", type="string",
+                      help="supply input table name"  )
+    parser.add_option("-o", "--outfile", dest = "outfile", type = "string",
+                      help="supply output file name"
 
     ## add common options (-h/--help, ...) and parse command line 
     (options, args) = E.Start( parser, argv = argv )
 
-    ## do sth
-    ninput, nskipped, noutput = 0, 0, 0
-
-    for line in options.stdin:
-        ninput += 1
-        if line.startswith( "#" ): continue
-        options.stdout.write( line )
-        noutput += 1
-
-    E.info( "ninput=%i, noutput=%i, nskipped=%i" % (ninput, noutput,nskipped) )
+    outfile = open(options.outfile, "w")
+    for line in open(options.table).readlines():
+        contig = line.split("\t")[0].split('"')[1]
+        outfile.write("\t".join((contig, line.split("\t")[1], line.split("\t")[2])))
     
     ## write footer and output benchmark information.
     E.Stop()
-    
 
 if __name__ == "__main__":
     sys.exit( main( sys.argv) )

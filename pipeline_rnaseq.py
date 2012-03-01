@@ -1,4 +1,4 @@
-################################################################################
+###############################################################################
 #
 #   MRC FGU Computational Genomics Group
 #
@@ -1028,24 +1028,19 @@ def buildReferenceTranscriptome( infile, outfile ):
 
     '''
     to_cluster = USECLUSTER
+    gtf_file = P.snip(infile, ".gz") 
 
     statement = '''
     zcat %(infile)s
-    | awk '$3 == "exon"'
-    | python %(scriptsdir)s/gff2fasta.py
-        --is-gtf
-        --genome=%(genome_dir)s/%(genome)s
-        --log=%(outfile)s.log
-    | perl -p -e "if (/^>/) { s/ .*$// }"
-    | python %(scriptsdir)s/sequence2sequence.py -v 0
-    | fold 
-    > %(outfile)s;
+    | awk '$3 == "exon"' > %(gtf_file)s;
+    gtf_to_fasta %(gtf_file)s %(genome)s.fa %(outfile)s;
     checkpoint; 
     samtools faidx %(outfile)s
     ''' 
-
     P.run()
     
+    os.symlink(gtf_file, P.snip(gtf_file,".gtf") + ".gff")
+        
     prefix = P.snip( outfile, ".fa" )
 
     # build raw index
@@ -1149,7 +1144,8 @@ def mapReadsWithTophat( infiles, outfile ):
     A list with known splice junctions is supplied.
     '''
     job_options= "-pe dedicated %i -R y" % PARAMS["tophat_threads"]
-    
+    # job_options += " -l mem_free=50G"
+
     if "--butterfly-search" in PARAMS["tophat_options"]:
         # for butterfly search - require insane amount of
         # RAM.
@@ -1159,8 +1155,10 @@ def mapReadsWithTophat( infiles, outfile ):
     m = PipelineMapping.Tophat()
     infile, reffile = infiles
     
-
     tophat_options = PARAMS["tophat_options"] + " --raw-juncs %(reffile)s " % locals()
+    if PARAMS["tophat_include_reference_transcriptome"]:
+        tophat_options = tophat_options + " --transcriptome-index=refcoding -n 2"
+
     statement = m.build( (infile,), outfile ) 
     P.run()
 
@@ -1318,6 +1316,8 @@ def buildFastQCReport( infile, outfile ):
 def buildBAMs( infiles, outfile):
     '''reconcile genomic and transcriptome matches.
     '''
+
+    print infiles
     genome, transcriptome, junctions, reffile = infiles[0][0], infiles[2][0], infiles[1][0], infiles[0][1]
 
     outfile_mismapped = P.snip(outfile, ".accepted.bam") + ".mismapped.bam"
@@ -1351,16 +1351,22 @@ def buildBAMs( infiles, outfile):
 
     prefix = P.snip( outfile, ".bam")
 
+    # map numbered transcript id to real transcript id
+    
+    # statement = ''' cat refcoding.fa | awk 'BEGIN { printf("id\ttranscript_id\n");} /^>/ {printf("%s\t%s\n", substr($1,2),$3)}' > refcoding.map '''
+    # P.run()
+
     if os.path.exists( "%(outfile)s.log" % locals() ):
         os.remove( "%(outfile)s.log" % locals() )
-        
-    statement = '''
-    python %(scriptsdir)s/rnaseq_bams2bam.py 
+
+    statement = ''' 
+      python %(scriptsdir)s/rnaseq_bams2bam.py 
        --force
        --filename-gtf=%(reffile)s
        --filename-mismapped=%(outfile_mismapped)s
        --log=%(outfile)s.log
        --filename-stats=%(outfile)s.tsv
+       --filename-map=refcoding.map
        %(options)s
        %(genome)s
     | samtools sort - %(prefix)s 2>&1 >> %(outfile)s.log;
@@ -1729,7 +1735,10 @@ def buildGeneModels(infile, outfile):
     outfile = os.path.abspath( outfile )
 
     # note: cufflinks adds \0 bytes to gtf file - replace with '.'
-    
+    options=PARAMS["cufflinks_options"]
+    if PARAMs["cufflinks_include_mask"]:
+        options = options + " -M ../geneset_mask.gtf" # add mask option
+
     statement = '''mkdir %(tmpfilename)s; 
         cd %(tmpfilename)s;
                 cufflinks --label %(track)s           
@@ -1737,7 +1746,7 @@ def buildGeneModels(infile, outfile):
               --library-type %(tophat_library_type)s
               --frag-bias-correct %(cufflinks_genome_dir)s/%(genome)s.fa
               --multi-read-correct
-              %(cufflinks_options)s
+              %(options)s
               %(infile)s 
         >& %(outfile)s.log;
         perl -p -e "s/\\0/./g" < transcripts.gtf | gzip > %(outfile)s;
