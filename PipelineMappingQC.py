@@ -70,6 +70,21 @@ except IOError:
     pass
 
 
+def buildPicardInsertSizeStats( infile, outfile, genome_file ):
+    '''gather BAM file insert size statistics using Picard '''
+
+    to_cluster = True
+
+    statement = '''CollectInsertSizeMetrics
+                                       INPUT=%(infile)s 
+                                       REFERENCE_SEQUENCE=%(genome_file)s
+                                       ASSUME_SORTED=true 
+                                       OUTPUT=%(outfile)s 
+                                       VALIDATION_STRINGENCY=SILENT 
+                   > %(outfile)s '''
+
+    P.run()
+
 def buildPicardAlignmentStats( infile, outfile, genome_file ):
     '''gather BAM file alignment statistics using Picard '''
 
