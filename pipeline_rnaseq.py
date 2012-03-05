@@ -1147,18 +1147,27 @@ def mapReadsWithTophat( infiles, outfile ):
     '''map reads from .fastq or .sra files.
 
     A list with known splice junctions is supplied.
+
+    If tophat fails with an error such as::
+
+       Error: segment-based junction search failed with err =-6
+       what():  std::bad_alloc
+ 
+    it means that it ran out of memory.
+
     '''
     job_options= "-pe dedicated %i -R y" % PARAMS["tophat_threads"]
-    
+
     if "--butterfly-search" in PARAMS["tophat_options"]:
         # for butterfly search - require insane amount of
         # RAM.
-        job_options += " -l mem_free=50G"
+        job_options += " -l mem_free=8G"
+    else:
+        job_options += " -l mem_free=2G"
 
     to_cluster = USECLUSTER
     m = PipelineMapping.Tophat()
     infile, reffile = infiles
-    
 
     tophat_options = PARAMS["tophat_options"] + " --raw-juncs %(reffile)s " % locals()
     statement = m.build( (infile,), outfile ) 
@@ -1379,6 +1388,25 @@ def buildBAMs( infiles, outfile):
 def buildMismappedBAMs( infile, outfile ):
     '''pseudo target - update the mismapped bam files.'''
     P.touch( outfile )
+
+
+############################################################
+############################################################
+############################################################
+@transform( (mapReadsWithBowtieAgainstTranscriptome), 
+            suffix(".bam" ),
+            add_inputs( buildReferenceTranscriptome ), 
+            ".picard_inserts")
+def buildPicardInsertSize( infiles, outfile ):
+    '''build alignment stats using picard.
+
+    Note that picards counts reads but they are in fact alignments.
+    '''
+    infile, reffile = infiles
+
+    PipelineMappingQC.buildPicardAlignmentStats( infile, 
+                                                 outfile,
+                                                 reffile )
 
 ############################################################
 ############################################################
@@ -1709,11 +1737,15 @@ def loadContextStats( infiles, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@follows(buildMaskGtf)
-@transform( buildBAMs, suffix(".accepted.bam"), r"\1.gtf.gz")
-def buildGeneModels(infile, outfile):
+@transform( buildBAMs, 
+            suffix(".accepted.bam"), 
+            add_inputs( buildMaskGtf ),
+            r"\1.gtf.gz")
+def buildGeneModels(infiles, outfile):
     '''build transcript models for each track separately.
     '''
+
+    infile, mask_file = infiles
 
     to_cluster = USECLUSTER    
     job_options= "-pe dedicated %i -R y" % PARAMS["cufflinks_threads"]
@@ -1730,13 +1762,17 @@ def buildGeneModels(infile, outfile):
 
     # note: cufflinks adds \0 bytes to gtf file - replace with '.'
     
+    mask_file = os.path.abspath( mask_file )
+    genome_file = os.path.abspath( os.path.join( PARAMS["cufflinks_genome_dir"], PARAMS["genome"] + "fa" ) )
     statement = '''mkdir %(tmpfilename)s; 
         cd %(tmpfilename)s;
-                cufflinks --label %(track)s           
+                cufflinks 
+              --label %(track)s           
               --num-threads %(cufflinks_threads)i
               --library-type %(tophat_library_type)s
-              --frag-bias-correct %(cufflinks_genome_dir)s/%(genome)s.fa
+              --frag-bias-correct %(genome_file)s.fa
               --multi-read-correct
+              -M %(mask_file)s
               %(cufflinks_options)s
               %(infile)s 
         >& %(outfile)s.log;
@@ -2271,7 +2307,7 @@ def buildNovelGeneSet( infiles, outfile ):
         for section in sections:
             if indices[section].contains( gtf.contig, gtf.start, gtf.end):
                 remove_genes[gtf.gene_id].add( section )
-
+ 
         try:
             for r in repeats.get( gtf.contig, gtf.start, gtf.end ):
                 if r[0] <= gtf.start and r[1] >= gtf.end:
@@ -2845,13 +2881,15 @@ def loadGeneSetTranscriptInformation( infile, outfile ):
              buildLincRNAGeneSet,
              buildNovelGeneSet),
             suffix(".gtf.gz"),
+            add_inputs( buildMaskGtf ),
             ".cuffdiff" )
-def runCuffdiff( infile, outfile ):
+def runCuffdiff( infiles, outfile ):
     '''estimate differential expression using cuffdiff.
 
     Replicates are grouped.
     '''
 
+    infile, mask_file = infiles
     to_cluster = USECLUSTER
 
     outdir = outfile + ".dir" 
@@ -2869,9 +2907,12 @@ def runCuffdiff( infile, outfile ):
     reps = "   ".join( reps )
     labels = ",".join( labels )
 
+    mask_file = os.path.abspath( mask_file )
+
     statement = '''date > %(outfile)s; hostname >> %(outfile)s;
     cuffdiff --output-dir %(outdir)s
              --library-type %(tophat_library_type)s
+             -M %(mask_file)s
              %(cuffdiff_options)s
              --verbose
              --num-threads %(cuffdiff_threads)i
