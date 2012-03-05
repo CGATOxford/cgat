@@ -450,7 +450,8 @@ def snip( filename, extension = None):
     If extension is given, make sure that filename has the extension.
     '''
     if extension: 
-        assert filename.endswith( extension )        
+        if not filename.endswith( extension ):
+            raise ValueError("'%s' expected to end in '%s'" % (filename, extension))
         return filename[:-len(extension)]
 
     root, ext = os.path.splitext( filename )
