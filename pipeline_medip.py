@@ -455,14 +455,14 @@ def runMEDIPS( infile, outfile ):
 
     to_cluster = USECLUSTER
 
-    job_options = "-l mem_free=32G"
+    job_options = "-l mem_free=23G"
 
     statement = '''
     cat %(infile)s 
     | python %(scriptsdir)s/bam2bed.py
           --merge-pairs
           --min-insert-size=%(medips_min_insert_size)i
-          --max-max-insert-size=%(medips_max_insert_size)i
+          --max-insert-size=%(medips_max_insert_size)i
           --log=%(outfile)s.log
           -
     | python %(scriptsdir)s/WrapperMEDIPS.py
@@ -955,7 +955,8 @@ def runDESeq( infiles, outfile ):
 
         outf.write( "\t".join( map(str, d) ))
         outf.write("\t%s\t%s\n" % (status, str(signif)))
-            
+
+    outf.write("#//")            
     outf.close()
 
 #########################################################################
@@ -1007,6 +1008,19 @@ def runEdgeR( infiles, outfile ):
 
     groups, pairs = loadMethylationData( infile, design_file )
 
+    # Test if replicates exist
+    min_reps = R('''min(table(groups)) ''')
+    no_replicates = False
+    if min_reps < 2:
+        no_replicates = True
+
+
+    # Test if pairs exist:
+    min_pairs = R('''min(table(pairs)) ''')[0]
+    no_pairs = False
+    if min_pairs < 2:
+        no_pairs = True
+
     # build DGEList object
     R( '''countsTable = DGEList( countsTable, group = groups )''' )
 
@@ -1029,17 +1043,25 @@ def runEdgeR( infiles, outfile ):
     R['dev.off']()
 
     # build design matrix
-    R('''design = model.matrix( ~pairs + countsTable$samples$group )''' )
+    if no_pairs:
+        R('''design = model.matrix( ~countsTable$samples$group )''' )
+    else:
+        R('''design = model.matrix( ~pairs + countsTable$samples$group )''' )
+
     R('''rownames(design) = rownames( countsTable$samples )''')
     R('''colnames(design)[length(colnames(design))] = "CD4" ''' )
     
     # logf.write( R('''design''') + "\n" )
 
-    # estimate common dispersion
-    R('''countsTable = estimateGLMCommonDisp( countsTable, design )''')
-    
-    # fitting model to each tag
-    R('''fit = glmFit( countsTable, design, dispersion = countsTable$common.dispersion )''')
+    if no_replicates:
+        # fitting model to each tag
+        E.warn("no replicates - using a fixed dispersion value (for human data: 0.4 - see EdgeR user guide, page 13 for more explanation" )
+        R('''fit = glmFit( countsTable, design, dispersion = 0.4 )''')
+    else:
+        # estimate common dispersion
+        R('''countsTable = estimateGLMCommonDisp( countsTable, design )''')
+        # fitting model to each tag
+        R('''fit = glmFit( countsTable, design, dispersion = countsTable$common.dispersion )''')
 
     # perform LR test
     R('''lrt = glmLRT( countsTable, fit)''' )
@@ -1079,7 +1101,8 @@ def runEdgeR( infiles, outfile ):
 
         outf.write( "\t".join( map(str, d) ))
         outf.write("\t%f\t%s\t%s\n" % (padj, status, str(signif)))
-            
+
+    outf.write("#//")
     outf.close()
 
 #########################################################################

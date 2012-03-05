@@ -425,7 +425,7 @@ def loadTagData( infile, design_file ):
     # Subset data & set conditions
     R('''includedSamples <- pheno2$include == '1' ''')
     R('''countsTable <- counts_table[ , includedSamples ]''')
-    R('''groups <- pheno2$group[ includedSamples ]''')
+    R('''groups <- factor(pheno2$group[ includedSamples ])''')
     R('''pairs = factor(pheno2$pair[ includedSamples ])''')
 
     groups = R('''levels(groups)''')
@@ -440,7 +440,8 @@ def runEdgeR( infile,
               outfile, 
               outfile_prefix = "edger.",
               fdr = 0.1,
-              prefix = ""
+              prefix = "",
+              dispersion = None,
               ):
     '''run DESeq on.
 
@@ -448,6 +449,16 @@ def runEdgeR( infile,
     *design_file*.
 
     Results are stored in *outfile* and files prefixed by *outfile_prefix*.
+
+    The dispersion is usually measuered from replicates. If there are no 
+    replicates, you need to set the *dispersion* explicitely.
+
+    See page 13 of the EdgeR user guide::
+
+       2. Simply pick a reasonable dispersion value, based on your experience with similar data,
+       and use that. Although subjective, this is still more defensible than assuming Poisson
+       variation. Typical values are dispersion=0.4 for human data, dispersion=0.1 for data
+       on genetically identical model organisms or dispersion=0.01 for technical replicates.
 
     '''
     
@@ -459,7 +470,22 @@ def runEdgeR( infile,
 
     logf = IOTools.openFile( outfile + ".log", "w" )
     
-    groups, pairs = Expression.loadTagData( infile, design_file )
+    groups, pairs = loadTagData( infile, design_file )
+
+    # Test if replicates exist
+    min_reps = R('''min(table(groups)) ''')[0]
+    no_replicates = False
+    if min_reps < 2:
+        no_replicates = True
+
+    # Test if pairs exist:
+    min_pairs = R('''min(table(pairs)) ''')[0]
+    no_pairs = False
+    if min_pairs < 2:
+        no_pairs = True
+
+    E.info('running EdgeR: groups=%s, pairs=%s, replicates=%s, pairs=%s' % \
+           (groups, pairs, not no_replicates, not no_pairs))
 
     # build DGEList object
     R( '''countsTable = DGEList( countsTable, group = groups )''' )
@@ -471,9 +497,9 @@ def runEdgeR( infile,
     # logf.write( str(R('''countsTable''')) + "\n" )
 
     # Remove windows with few counts
-    R( '''countsTable = countsTable[rowSums( 
-             1e+06 * countsTable$counts / 
-             expandAsMatrix ( countsTable$samples$lib.size, dim(countsTable)) > 1 ) >= 2, ]''')
+    # R( '''countsTable = countsTable[rowSums( 
+    #          1e+06 * countsTable$counts / 
+    #          expandAsMatrix ( countsTable$samples$lib.size, dim(countsTable)) > 1 ) >= 2, ]''')
 
     E.info( "trimmed data: %i observations for %i samples" % tuple( R('''dim(countsTable)''') ) )
 
@@ -483,17 +509,28 @@ def runEdgeR( infile,
     R['dev.off']()
 
     # build design matrix
-    R('''design = model.matrix( ~pairs + countsTable$samples$group )''' )
+    if no_pairs:
+        R('''design = model.matrix( ~countsTable$samples$group )''' )
+    else:
+        R('''design = model.matrix( ~pairs + countsTable$samples$group )''' )
     R('''rownames(design) = rownames( countsTable$samples )''')
     R('''colnames(design)[length(colnames(design))] = "CD4" ''' )
     
     # logf.write( R('''design''') + "\n" )
-
-    # estimate common dispersion
-    R('''countsTable = estimateGLMCommonDisp( countsTable, design )''')
     
     # fitting model to each tag
-    R('''fit = glmFit( countsTable, design, dispersion = countsTable$common.dispersion )''')
+    if no_replicates:
+        # fitting model to each tag
+        if dispersion == None:
+            raise ValueError( "no replicates and no dispersion" )
+        E.warn("no replicates - using a fixed dispersion value" )
+        R('''fit = glmFit( countsTable, design, dispersion = %f )''' % dispersion )
+    else:
+        # estimate common dispersion
+        R('''countsTable = estimateGLMCommonDisp( countsTable, design )''')
+
+        # fitting model to each tag
+        R('''fit = glmFit( countsTable, design )''')
 
     # perform LR test
     R('''lrt = glmLRT( countsTable, fit)''' )
@@ -563,6 +600,7 @@ def runEdgeR( infile,
                     str(signif),
                     status) ) )
             
+    outf.write("#//")
     outf.close()
 
     with IOTools.openFile( outfile, "w" ) as outf:
@@ -644,14 +682,14 @@ def runDESeq( infile,
     E.info( "trimmed data: %i observations for %i samples" % tuple( R('''dim(counts_table)''') ) )
 
     # Test if replicates exist
-    min_reps = R('''min(table(groups)) ''')
+    min_reps = R('''min(table(groups)) ''')[0]
     no_replicates = False
     if min_reps < 2:
         no_replicates = True
 
     ######## Run DESeq
     # Create Count data object
-    E.info( "running DESeq" )
+    E.info( "running DESeq: replicates=%s" % (not no_replicates))
     R('''cds <-newCountDataSet( countsTable, groups) ''')
 
     # Estimate size factors
@@ -659,9 +697,16 @@ def runDESeq( infile,
 
     # Estimate variance
     if no_replicates:
-        R('''cds <- estimateVarianceFunctions( cds, method="blind" )''')
+        E.info("no replicates - estimating variance with method='blind'" )
+        # old:R('''cds <- estimateVarianceFunctions( cds, method="blind" )''')
+        R('''cds <- estimateDispersions( cds, method="blind" )''')
     else:
-        R('''cds <- estimateVarianceFunctions( cds )''')
+        E.info("replicates - estimating variance from replicates" )
+        # old:R('''cds <- estimateVarianceFunctions( cds )''')
+        R('''cds <- estimateDispersions( cds )''')
+
+    print R('''warnings()''')
+    R('''str( fitInfo( cds ) )''')
 
     # Plot size factors
     R.png( '''%(outfile_prefix)ssize_factors.png''' % locals() )
@@ -703,9 +748,9 @@ def runDESeq( infile,
     # output counts
     R('''write.table( counts(cds), file='%(outfile_prefix)scounts.tsv.gz', sep='\t') ''' % locals())    
 
-    R.png( '''%(outfile_prefix)sscvplot.png''' % locals() )
-    R('''scvPlot( cds, ylim = c(0,3))''')
-    R['dev.off']()
+    # R.png( '''%(outfile_prefix)sscvplot.png''' % locals() )
+    # R('''scvPlot( cds, ylim = c(0,3))''')
+    # R['dev.off']()
 
     # Generate heatmap of variance stabilised data
     R('''vsd <- getVarianceStabilizedData( cds )''' )
@@ -716,14 +761,15 @@ def runDESeq( infile,
 
     for group in groups:
         if not no_replicates:
-            R.png( '''%(outfile_prefix)s%(group)s_fit.png''' % locals() )
-            R('''diagForT <- varianceFitDiagnostics( cds, "%s" )''' % group )
-            R('''smoothScatter( log10(diagForT$baseMean), log10(diagForT$baseVar) )''')
-            R('''lines( log10(fittedBaseVar) ~ log10(baseMean), diagForT[ order(diagForT$baseMean), ], col="red" )''')
-            R['dev.off']()
-            R.png( '''%(outfile_prefix)s%(group)s_residuals.png''' % locals()  )
-            R('''residualsEcdfPlot( cds, "%s" )''' % group )
-            R['dev.off']()
+            #R.png( '''%(outfile_prefix)s%(group)s_fit.png''' % locals() )
+            #R('''diagForT <- varianceFitDiagnostics( cds, "%s" )''' % group )
+            #R('''smoothScatter( log10(diagForT$baseMean), log10(diagForT$baseVar) )''')
+            #R('''lines( log10(fittedBaseVar) ~ log10(baseMean), diagForT[ order(diagForT$baseMean), ], col="red" )''')
+            #R['dev.off']()
+            #R.png( '''%(outfile_prefix)s%(group)s_residuals.png''' % locals()  )
+            #R('''residualsEcdfPlot( cds, "%s" )''' % group )
+            #R['dev.off']()
+            pass
 
     # Differential expression
     E.info("calling differential expression")
@@ -813,6 +859,7 @@ def runDESeq( infile,
                     status) ) )
                     
 
+    outf.write("#//")
     outf.close()
 
     E.info( counts )
@@ -832,12 +879,123 @@ def readDesignFile( design_file ):
     design = collections.OrderedDict()
     with IOTools.openFile( design_file ) as inf:
         for line in inf:
-            design = readDesignFile( design_file )
             if line.startswith("track"): continue
             track, include, group, pair = line[:-1].split("\t")
             if track in design: raise ValueError( "duplicate track '%s'" % track )
             design[track] = Design._make( (int(include), group, pair))
     return design
+
+#########################################################################
+#########################################################################
+#########################################################################
+def plotTagStats( infile, design_file, outfile ):
+    '''provide summary plots for tag data.'''
+
+    groups, pairs = loadTagData( infile, design_file )
+    
+    import rpy2.robjects.lib.ggplot2 as ggplot2
+
+    R('''library('ggplot2')''')
+    R('''library('reshape')''')
+
+    d = R('''melt( log10(counts_table + 1), variable_name = 'sample' )''')
+    gp = ggplot2.ggplot(d)
+    pp = gp + \
+        ggplot2.geom_density(ggplot2.aes(x='value',group='sample',color='sample',fill='sample'),alpha=R.I(1/3))
+    
+    R.ggsave( outfile + ".densities.png" )
+    R['dev.off']()
+
+    gp = ggplot2.ggplot(d)
+    pp = gp + \
+        ggplot2.geom_boxplot(ggplot2.aes(x='sample',y='value',color='sample',fill='sample'),size=0.3,alpha=R.I(1/3)) + \
+        ggplot2.opts( axis_text_x = ggplot2.theme_text( angle=90, hjust=1, size=8 ) )
+
+    R.ggsave( outfile + ".boxplots.png" )
+    R['dev.off']()
+
+
+#########################################################################
+#########################################################################
+#########################################################################
+def plotTagStats( infile, design_file, outfile ):
+    '''provide summary plots for tag data.'''
+
+    groups, pairs = loadTagData( infile, design_file )
+    
+    import rpy2.robjects.lib.ggplot2 as ggplot2
+
+    R('''library('ggplot2')''')
+    R('''library('reshape')''')
+
+    d = R('''melt( log10(counts_table + 1), variable_name = 'sample' )''')
+    gp = ggplot2.ggplot(d)
+    pp = gp + \
+        ggplot2.geom_density(ggplot2.aes(x='value',group='sample',color='sample',fill='sample'),alpha=R.I(1/3))
+    
+    R.ggsave( outfile + ".densities.png" )
+    R['dev.off']()
+
+    gp = ggplot2.ggplot(d)
+    pp = gp + \
+        ggplot2.geom_boxplot(ggplot2.aes(x='sample',y='value',color='sample',fill='sample'),size=0.3,alpha=R.I(1/3)) + \
+        ggplot2.opts( axis_text_x = ggplot2.theme_text( angle=90, hjust=1, size=8 ) )
+
+    R.ggsave( outfile + ".boxplots.png" )
+    R['dev.off']()
+
+#########################################################################
+#########################################################################
+#########################################################################
+def plotDETagStats( infile, outfile ):
+    '''provide summary plots for tag data.
+
+    Stratify boxplots and densities according to differential expression calls.
+    '''
+
+    import rpy2.robjects.lib.ggplot2 as ggplot2
+
+    R('''library('ggplot2')''')
+    data = R('''read.table( '%s', header = TRUE, row.names=1 )''' % infile ) 
+
+    gp = ggplot2.ggplot(data)
+    a = gp + \
+        ggplot2.geom_density(ggplot2.aes(x='log10(treatment_mean+1)',group='factor(called)',
+                                         color='factor(called)',fill='factor(called)'),alpha=R.I(1/3)) 
+
+    b = gp + \
+        ggplot2.geom_density(ggplot2.aes(x='log10(control_mean+1)',group='factor(called)',
+                                         color='factor(called)',fill='factor(called)'),alpha=R.I(1/3))
+    
+    R.png( outfile + ".densities.png" )
+    R('''grid.newpage()''')
+    R.pushViewport(R.viewport( layout = R('''grid.layout''')(2,1)))
+    p = R['print']
+    p( a, vp = R.viewport( layout_pos_row = 1, layout_pos_col = 1 ) )
+    p( b, vp = R.viewport( layout_pos_row = 2, layout_pos_col = 1 ) )
+    R['dev.off']()
+
+    R.png( outfile + ".boxplots.png" )
+    R('''grid.newpage()''')
+    R.pushViewport(R.viewport( layout = R('''grid.layout''')(2,1)))
+
+    gp = ggplot2.ggplot(data)
+    a = gp + \
+        ggplot2.geom_boxplot(ggplot2.aes(x='factor(called)', y='log10(treatment_mean+1)',
+                                         color='factor(called)',fill='factor(called)'),
+                             size=0.3,
+                             alpha=R.I(1/3)) 
+
+    b = gp + \
+        ggplot2.geom_boxplot(ggplot2.aes(x='factor(called)', y='log10(control_mean+1)',
+                                         color='factor(called)',fill='factor(called)'),
+                             size=0.3,
+                             alpha=R.I(1/3)) +\
+        ggplot2.opts( axis_text_x = ggplot2.theme_text( angle=90, hjust=1, size=8 ) )
+
+    p( a, vp = R.viewport( layout_pos_row = 1, layout_pos_col = 1 ) )
+    p( b, vp = R.viewport( layout_pos_row = 2, layout_pos_col = 1 ) )
+    R['dev.off']()
 
 #########################################################################
 #########################################################################
@@ -852,6 +1010,8 @@ def loadCuffdiff( infile, outfile ):
 
     Pairwise comparisons in which one gene is not expressed (fpkm < fpkm_silent)
     are set to status 'NOCALL'. These transcripts might nevertheless be significant.
+
+    This requires the cummeRbund library to be present in R.
     '''
 
     prefix = P.toTable( outfile )
@@ -860,6 +1020,11 @@ def loadCuffdiff( infile, outfile ):
     if not os.path.exists( indir ):
         P.touch( outfile )
         return
+
+    # E.info( "building cummeRbund database" )
+    # R('''library(cummeRbund)''')
+    # cuff = R('''readCufflinks(dir = %(indir)s, dbfile=%(indir)s/csvdb)''' )
+    # to be continued
 
     to_cluster = False
     dbhandle = sqlite3.connect( PARAMS["database"] )
