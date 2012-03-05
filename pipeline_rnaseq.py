@@ -1062,6 +1062,8 @@ def buildReferenceTranscriptome( infile, outfile ):
 #########################################################################
 #########################################################################
 
+# Nick - added building of a mask file for omitting certain regions during gene model building
+
 @files(os.path.join(PARAMS["annotations_dir"], "geneset_all.gtf.gz"), "geneset_mask.gtf")
 def buildMaskGtf(infile, outfile):
     '''
@@ -1156,6 +1158,8 @@ def mapReadsWithTophat( infiles, outfile ):
     infile, reffile = infiles
     
     tophat_options = PARAMS["tophat_options"] + " --raw-juncs %(reffile)s " % locals()
+    
+    # Nick - added the option to map to the reference transcriptome first (built within the pipeline)
     if PARAMS["tophat_include_reference_transcriptome"]:
         tophat_options = tophat_options + " --transcriptome-index=refcoding -n 2"
 
@@ -1317,7 +1321,6 @@ def buildBAMs( infiles, outfile):
     '''reconcile genomic and transcriptome matches.
     '''
 
-    print infiles
     genome, transcriptome, junctions, reffile = infiles[0][0], infiles[2][0], infiles[1][0], infiles[0][1]
 
     outfile_mismapped = P.snip(outfile, ".accepted.bam") + ".mismapped.bam"
@@ -1352,9 +1355,10 @@ def buildBAMs( infiles, outfile):
     prefix = P.snip( outfile, ".bam")
 
     # map numbered transcript id to real transcript id
-    
-    # statement = ''' cat refcoding.fa | awk 'BEGIN { printf("id\ttranscript_id\n");} /^>/ {printf("%s\t%s\n", substr($1,2),$3)}' > refcoding.map '''
-    # P.run()
+    map_file = P.snip(reffile, ".gtf.gz") + ".map"
+
+    statement = ''' cat refcoding.fa | awk 'BEGIN { printf("id\\ttranscript_id\\n");} /^>/ {printf("%%s\\t%%s\\n", substr($1,2),$3)}' > %(map_file)s '''
+    P.run()
 
     if os.path.exists( "%(outfile)s.log" % locals() ):
         os.remove( "%(outfile)s.log" % locals() )
@@ -1366,7 +1370,7 @@ def buildBAMs( infiles, outfile):
        --filename-mismapped=%(outfile_mismapped)s
        --log=%(outfile)s.log
        --filename-stats=%(outfile)s.tsv
-       --filename-map=refcoding.map
+       --filename-map=%(map_file)s
        %(options)s
        %(genome)s
     | samtools sort - %(prefix)s 2>&1 >> %(outfile)s.log;
@@ -1736,15 +1740,31 @@ def buildGeneModels(infile, outfile):
 
     # note: cufflinks adds \0 bytes to gtf file - replace with '.'
     options=PARAMS["cufflinks_options"]
-    if PARAMs["cufflinks_include_mask"]:
-        options = options + " -M ../geneset_mask.gtf" # add mask option
+
+    # Nick - added options to mask rRNA and ChrM from gene modle builiding. 
+    # Also added options for faux reads. RABT - see cufflinks manual
+    if PARAMS["cufflinks_include_mask"]:
+        mask_file = os.path.abspath ( "geneset_mask.gtf" )
+        options = options + " -M %s" % mask_file # add mask option
+
+    if PARAMS["cufflinks_include_guide"]:
+        # add reference for RABT - this is all genes in reference ensembl 
+        # geneset so includes known lincRNA and transcribed pseudogenes
+        statement = '''zcat reference.gtf.gz > reference.gtf''' 
+        P.run()
+
+        reference = os.path.abspath( "reference.gtf" )
+        options = options + " --GTF-guide %s" % reference
+
+    genome = os.path.join ( PARAMS["cufflinks_genome_dir"], PARAMS["general_genome"]) + ".fa"
+    genome = os.path.abspath( genome )
 
     statement = '''mkdir %(tmpfilename)s; 
         cd %(tmpfilename)s;
                 cufflinks --label %(track)s           
               --num-threads %(cufflinks_threads)i
               --library-type %(tophat_library_type)s
-              --frag-bias-correct %(cufflinks_genome_dir)s/%(genome)s.fa
+              --frag-bias-correct %(genome)s
               --multi-read-correct
               %(options)s
               %(infile)s 
@@ -1882,11 +1902,14 @@ def runCuffCompare( infiles, outfile, reffile ):
     
     cmd_extract = "; ".join( [ "gunzip < %s > %s/%s" % (x,tmpdir,x) for x in infiles ] )
 
+    genome = os.path.join ( PARAMS["cufflinks_genome_dir"], PARAMS["general_genome"]) + ".fa"
+    genome = os.path.abspath( genome )
+
     # note: cuffcompare adds \0 bytes to gtf file - replace with '.'
     statement = '''
         %(cmd_extract)s;
         cuffcompare -o %(outfile)s
-                    -s %(cufflinks_genome_dir)s/%(genome)s.fa
+                    -s %(genome)s
                     -r <( gunzip < %(reffile)s)
                     %(inf)s
         >& %(outfile)s.log;
@@ -2868,6 +2891,14 @@ def runCuffdiff( infile, outfile ):
     except OSError: pass
 
     job_options= "-pe dedicated %i -R y" % PARAMS["cuffdiff_threads"]
+    
+    # Nick - add mask gtf to not assess rRNA and ChrM
+    options=PARAMS["cuffdiff_options"]
+
+    if PARAMS["cufflinks_include_mask"]:
+        mask_file = os.path.abspath ( "geneset_mask.gtf" )
+        options = options + " -M %s" % mask_file # add mask option
+
 
     # replicates are separated by ","
     reps, labels = [], []
@@ -2881,7 +2912,7 @@ def runCuffdiff( infile, outfile ):
     statement = '''date > %(outfile)s; hostname >> %(outfile)s;
     cuffdiff --output-dir %(outdir)s
              --library-type %(tophat_library_type)s
-             %(cuffdiff_options)s
+             %(options)s
              --verbose
              --num-threads %(cuffdiff_threads)i
              --labels %(labels)s

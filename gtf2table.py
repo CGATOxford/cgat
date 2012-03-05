@@ -1173,7 +1173,7 @@ class ClassifierRNASeq(Counter):
                  ( 's', "unknown", ),
                  ( 's', "utr5", ),
                  ( 's', "utr3", ),
-                 ( 's', "intronic", )
+                 ( 's', "intronic", ),
 		 ( 's', "flank5", ),
                  ( 's', "flank3", ),
                  ( 'n', "complete", ),

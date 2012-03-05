@@ -108,8 +108,8 @@ def main( argv = None ):
     parser.add_option( "-t", "--filename-transcriptome", dest="filename_transcriptome", type="string",
                        help = "bam file with reads mapped against transcripts [%default]" )
 
-    parser.add_option( "-s", "--filename-map", dest="filename_map", type="string",
-                       help = "filename mapping transcript numbers (used by --filename-transrciptom) to transcript names (used by --filename-gtf) [%default]" )
+    parser.add_option( "-p", "--filename-map", dest="filename_map", type="string",
+                       help = "filename mapping transcript numbers (used by --filename-transciptome) to transcript names (used by --filename-gtf) [%default]" )
 
     parser.add_option( "-s", "--filename-stats", dest="filename_stats", type="string",
                        help = "filename to output stats to [%default]" )
@@ -161,7 +161,8 @@ def main( argv = None ):
 
     if options.filename_map:
         E.info( "reading map" )
-        id_map = IOTool.readMap( IOTools.openFile( options.filename_map ) )
+        id_map = IOTools.readMap( IOTools.openFile( options.filename_map ))
+	id_map = dict( [ (y,x) for x,y in id_map.iteritems() ])
     else:
         id_map = None
         
