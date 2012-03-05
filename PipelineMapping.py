@@ -331,7 +331,10 @@ class FastQc( Mapper ):
         statement = []
         for f in infiles:
             for i, x in enumerate(f):
-                track = P.snip( os.path.basename( x ), ".fastq.gz" )
+                if x.endswith(".fastq"):
+                    track = P.snip( os.path.basename( x ), ".fastq" )
+                else:
+                    track = P.snip( os.path.basename( x ), ".fastq.gz" )
                 statement.append( '''fastqc --outdir=%%(exportdir)s/fastqc %(x)s >& %(outfile)s;''' % locals() )
         return " ".join( statement )
 
