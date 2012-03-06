@@ -109,6 +109,10 @@ config
    write a new configuration file :file:`pipeline.ini` with default values. An existing 
    configuration file will not be overwritten.
 
+clone <srcdir>
+   clone a pipeline from :file:`srcdir` into the current
+   directory. Cloning attempts to conserve disk space by linking.
+
 In case you are running a long pipeline, make sure you start it appropriately, for example::
 
    nice -19 nohup <src>/pipeline_<name>.py make full

@@ -39,7 +39,7 @@ and calls :file:`segment_juncs` for contig separately and in parallel.
 
 Other than renaming the original executable :file:`segment_juncs` to
 :file:`segment_juncs.original` and linking to this script as
-:file:`segment_juncs` instead no modification of the tophat pipeline
+:file:`segment_juncs` no modification of the tophat pipeline
 is required.
 
 This script uses 8 threads.
@@ -69,7 +69,7 @@ import IOTools
 
 # If true, the original segment_juncs will be called without splitting
 # the input data.
-DISABLE = True
+DISABLE = False
 
 # number of threads to use
 THREADS = 8
@@ -116,7 +116,8 @@ def main( argv = None ):
     
     options = argv[1:x]
 
-    (input_missing_reads, input_genome, output_junctions, 
+    (input_missing_reads, input_genome, 
+     output_junctions, 
      output_insertions, output_deletions,
      input_left_all_reads,
      input_left_all_map,
@@ -195,7 +196,7 @@ def main( argv = None ):
                 raise ValueError( "can not find chromoseme file %s" % new )
             return new
 
-        cmd = ["segment_juncs.original"] +\
+        cmd = ["segment_juncs"] +\
             options +\
             [input_missing_reads,  \
                  modgenome(input_genome,key), \

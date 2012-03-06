@@ -865,6 +865,46 @@ class MultiLineFormatter(logging.Formatter):
             s = s.replace('\n', '\n' + ' '*len(header))
         return s
 
+def clonePipeline( srcdir ):
+    '''clone a pipeline.'''
+    
+    destdir = os.path.curdir
+
+    copy_files = ("sphinxreport.ini", "conf.py", "pipeline.ini" )
+    ignore_prefix = ("report", "_cache", "export", "tmp", "ctmp", "_static", "_templates" )
+
+    def _ignore( p ):
+        for x in ignore_prefix:
+            if p.startswith( x ): 
+                return True
+        return False
+
+    for root, dirs, files in os.walk(srcdir):
+
+        relpath = os.path.relpath( root, srcdir )
+        if _ignore( relpath ): continue
+
+        for d in dirs:
+            if _ignore( d ): continue
+            dest = os.path.join( os.path.join(destdir, relpath, d ) )
+            os.mkdir( dest )
+            # touch
+            s = os.stat( os.path.join(root, d ) )
+            os.utime( dest, (s.st_atime, s.st_mtime ))
+
+        for f in files:
+            if _ignore( f ): continue
+
+            fn = os.path.join( root, f )
+            dest_fn = os.path.join( destdir, relpath, f ) 
+            if f in copy_files:
+                shutil.copyfile( fn, dest_fn )
+            else:
+                # realpath resolves links - thus links will be linked to
+                # the original target
+                os.symlink( os.path.realpath( fn),
+                            dest_fn )
+
 USAGE = '''
 usage: %prog [OPTIONS] [CMD] [target]
 
@@ -898,7 +938,7 @@ def main( args = sys.argv ):
                                     usage = USAGE )
     
     parser.add_option( "--pipeline-action", dest="pipeline_action", type="choice",
-                       choices=("make", "show", "plot", "dump", "config" ),
+                       choices=("make", "show", "plot", "dump", "config", "clone" ),
                        help="action to take [default=%default]." )
 
     parser.add_option( "--pipeline-format", dest="pipeline_format", type="choice",
@@ -974,6 +1014,7 @@ def main( args = sys.argv ):
                 pipeline_printout_graph( options.stdout, 
                                          options.pipeline_format,
                                          [ options.pipeline_target ] )
+
             elif options.pipeline_action == "plot":
                 outf, filename = tempfile.mkstemp()
                 pipeline_printout_graph( os.fdopen(outf,"w"),
@@ -990,6 +1031,7 @@ def main( args = sys.argv ):
     elif options.pipeline_action == "dump":
         # convert to normal dictionary (not defaultdict) for parsing purposes
         print "dump = %s" % str(dict(PARAMS))
+
     elif options.pipeline_action == "config":
         if os.path.exists("pipeline.ini"):
             raise ValueError( "file `pipeline.ini` already exists" )
@@ -1000,6 +1042,10 @@ def main( args = sys.argv ):
             raise ValueError( "default config file `%s` not found"  % configfile )
         shutil.copyfile( configfile, "pipeline.ini" )
         L.info( "created new configuration file `pipeline.ini` " )
+
+    elif options.pipeline_action == "clone":
+        clonePipeline( options.pipeline_target )
+        
     else:
         raise ValueError("unknown pipeline action %s" % options.pipeline_action )
 

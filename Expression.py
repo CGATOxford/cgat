@@ -543,7 +543,6 @@ def runEdgeR( infile,
     outf = IOTools.openFile( outfile, "w" )
     isna = R["is.na"]
 
-    outf.write( "Group1\tGroup2\tinterval_id\tlogConc\tlfold\tLR\tpvalue\tpadj\tstatus\tsignificant\n" )
     rtype = collections.namedtuple( "rtype", "logConc lfold LR pvalue" )
     
     # output differences between pairs
@@ -584,7 +583,14 @@ def runEdgeR( infile,
         else: status = "FAIL"
 
         counts[status] += 1
-        
+
+        try:
+            fold = math.pow( 2.0, d.lfold )
+        except OverflowError:
+            E.warn( "%s: fold change out of range: lfold=%f" % (interval, lfold ))
+            # if out of range set to 0
+            fold = 0
+            
         results.append( GeneExpressionResult._make( ( \
                     interval,
                     groups[0],
@@ -596,13 +602,10 @@ def runEdgeR( infile,
                     d.pvalue,
                     padj,
                     d.lfold,
-                    math.pow( 2.0, d.lfold ),
+                    fold,
                     str(signif),
                     status) ) )
             
-    outf.write("#//")
-    outf.close()
-
     with IOTools.openFile( outfile, "w" ) as outf:
         writeExpressionResults( outf, results )
 

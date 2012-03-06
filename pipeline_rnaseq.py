@@ -746,7 +746,7 @@ def buildReferenceGeneSet( infile, outfile ):
     statement = '''
     cuffcompare -r <( gunzip < %(tmpfilename)s )
          -T 
-         -s %(cufflinks_genome_dir)s/%(genome)s.fa
+         -s %(bowtie_genome_dir)s/%(genome)s.fa
          -o %(tmpfilename2)s
          <( gunzip < %(tmpfilename)s )
          <( gunzip < %(tmpfilename)s )
@@ -1030,10 +1030,12 @@ def buildReferenceTranscriptome( infile, outfile ):
     to_cluster = USECLUSTER
     gtf_file = P.snip(infile, ".gz") 
 
+    genome_file = os.path.abspath( os.path.join( PARAMS["bowtie_genome_dir"], PARAMS["genome"] + ".fa" ) )
+
     statement = '''
     zcat %(infile)s
     | awk '$3 == "exon"' > %(gtf_file)s;
-    gtf_to_fasta %(gtf_file)s %(genome)s.fa %(outfile)s;
+    gtf_to_fasta %(gtf_file)s %(genome_file)s %(outfile)s;
     checkpoint; 
     samtools faidx %(outfile)s
     ''' 
@@ -1428,7 +1430,7 @@ def buildPicardStats( infile, outfile ):
     Note that picards counts reads but they are in fact alignments.
     '''
     PipelineMappingQC.buildPicardAlignmentStats( infile, outfile,
-                                                 os.path.join( PARAMS["cufflinks_genome_dir"],
+                                                 os.path.join( PARAMS["bowtie_genome_dir"],
                                                                PARAMS["genome"] + ".fa" ) )
 
 ############################################################
@@ -1770,7 +1772,8 @@ def buildGeneModels(infiles, outfile):
     outfile = os.path.abspath( outfile )
 
     # note: cufflinks adds \0 bytes to gtf file - replace with '.'
-    genome_file = os.path.abspath( os.path.join( PARAMS["cufflinks_genome_dir"], PARAMS["genome"] + "fa" ) )
+    genome_file = os.path.abspath( os.path.join( PARAMS["bowtie_genome_dir"], PARAMS["genome"] + ".fa" ) )
+
     options=PARAMS["cufflinks_options"]
 
     # Nick - added options to mask rRNA and ChrM from gene modle builiding. 
@@ -1789,16 +1792,13 @@ def buildGeneModels(infiles, outfile):
         reference = os.path.abspath( "reference.gtf" )
         options = options + " --GTF-guide %s" % reference
 
-    genome = os.path.join ( PARAMS["cufflinks_genome_dir"], PARAMS["general_genome"]) + ".fa"
-    genome = os.path.abspath( genome )
-
     statement = '''mkdir %(tmpfilename)s; 
         cd %(tmpfilename)s;
                 cufflinks 
               --label %(track)s           
               --num-threads %(cufflinks_threads)i
               --library-type %(tophat_library_type)s
-              --frag-bias-correct %(genome_file)s.fa
+              --frag-bias-correct %(genome_file)s
               --multi-read-correct
               %(options)s
               %(infile)s 
@@ -1882,7 +1882,7 @@ def estimateExpressionLevelsInReference(infiles, outfile):
     cufflinks --label %(track)s      
               --GTF=<(gunzip < %(gtffile)s)
               --num-threads=%(cufflinks_threads)i
-              --frag-bias-correct %(cufflinks_genome_dir)s/%(genome)s.fa
+              --frag-bias-correct %(bowtie_genome_dir)s/%(genome)s.fa
               --library-type %(tophat_library_type)s
               %(cufflinks_options)s
               %(bamfile)s 
@@ -1936,7 +1936,7 @@ def runCuffCompare( infiles, outfile, reffile ):
     
     cmd_extract = "; ".join( [ "gunzip < %s > %s/%s" % (x,tmpdir,x) for x in infiles ] )
 
-    genome = os.path.join ( PARAMS["cufflinks_genome_dir"], PARAMS["general_genome"]) + ".fa"
+    genome = os.path.join ( PARAMS["bowtie_genome_dir"], PARAMS["genome"]) + ".fa"
     genome = os.path.abspath( genome )
 
     # note: cuffcompare adds \0 bytes to gtf file - replace with '.'
@@ -2849,7 +2849,7 @@ def loadReproducibility( infile, outfile ):
 #     statement = '''
 #     cuffdiff -o %(outdir)s
 #              --verbose
-#              -r %(cufflinks_genome_dir)s/%(genome)s.fa
+#              -r %(bowtie_genome_dir)s/%(genome)s.fa
 #              --num-threads %(cuffdiff_threads)i
 #              <(gunzip < %(reffile)s)
 #              %(reps)s
