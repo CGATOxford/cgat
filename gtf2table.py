@@ -1251,7 +1251,7 @@ class ClassifierRNASeq(Counter):
         contig = self.getContig()
         strand = self.getStrand()
         start, end = exons[0][0], exons[-1][1]
-	print "hello"
+
         # get closest gene upstream and downstream
         before = self.transcript_intervals.before( contig, start, end, num_intervals = 1, max_dist = self.flank )
         after = self.transcript_intervals.after( contig, start, end, num_intervals = 1, max_dist = self.flank )
@@ -1389,7 +1389,7 @@ class ClassifierRNASeq(Counter):
         contig = self.getContig()
         segments = self.getSegments()
         introns = self.getIntrons()
-	print "hello"
+
         try:
             overlaps = list(self.transcript_intervals.get( contig, segments[0][0], segments[-1][1] ))
         except KeyError, msg:
@@ -3327,5 +3327,4 @@ def main( argv = None ):
     E.Stop()
 
 if __name__ == "__main__":
-	print "hello"
 	sys.exit( main( sys.argv) )
