@@ -605,7 +605,7 @@ title(main='%s');
                         print "could not plot %s versus %s: %s" % (headers[b], headers[a], msg)
 
         if options.hardcopy:
-            R.dev_off()
+            R['dev.off']()
 
     E.info( "matrix added as >matrix< in R.")
         
