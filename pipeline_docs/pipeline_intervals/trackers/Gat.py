@@ -16,3 +16,25 @@ class GatGenomicAnnotationTable( GatTracker ):
 
     def __call__(self, track):
         return self.getAll( "SELECT * FROM gat_annotation_%(track)s" )
+
+
+##################################################################################
+##################################################################################
+##################################################################################
+## GAT results
+##################################################################################
+class GatResults( IntervalTracker, SingleTableTrackerRows ):
+    '''All gat results.'''
+    fields = ('track', 'annotation')
+    extra_columns = { "colour" : "CASE WHEN qvalue < 0.05 THEN 'red' ELSE 'blue' END" }
+    sort = 'l2fold'
+
+class GatLogFold( IntervalTracker ):
+    pattern = "gat_(.*)"
+
+    fdr = 2.0
+
+    def __call__(self, track ):
+        return self.getDict( """SELECT annotation, fold, 
+                                       CASE WHEN qvalue < %(fdr)f THEN 'red' ELSE 'blue' END AS colour
+                               FROM gat_%(track)s ORDER BY fold""")

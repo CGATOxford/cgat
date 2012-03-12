@@ -240,6 +240,15 @@ class MastSummary( Mast ):
 
         return odict(data)
 
+class MastMotifEvalues( Mast ):
+    '''distribution of evalues.'''
+    
+    def __call__(self, track, slice = None ):
+        r = odict()
+        for x in ("evalue", "l_evalue", "r_evalue" ):
+            r[x] = self.getValues( "SELECT %(x)s FROM %(track)s_mast WHERE motif = '%(slice)s'" % locals() )
+        return r
+
 # class MastNumberOfMotifs( Mast ):
 #     '''number of motifs matching within intervals.'''
     
