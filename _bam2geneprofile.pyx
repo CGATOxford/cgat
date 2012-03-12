@@ -172,6 +172,10 @@ class IntervalsCounter:
         self.lengths = []
         # aggregate counts
         self.aggregate_counts = []
+        # number of aggregates skipped due to shape mismatch
+        # (happens if region extends beyound start/end of contig
+        self.nskipped = 0
+        
 
     def add( self, field, length ):
         self.counts.append( 0 )
@@ -230,9 +234,12 @@ class IntervalsCounter:
                 cc = c / m
             else:
                 cc = c
-                
-            agg += cc
 
+            try:
+                agg += cc
+            except ValueError:
+                self.nskipped += 1
+            
     def buildMatrix( self, normalize = None ):
         '''build single matrix with all counts.
         
@@ -332,7 +339,7 @@ class GeneCounter( IntervalsCounter ):
         cds = GTF.asRanges( gtf, "CDS" )
         if len(cds) == 0: return 0
 
-        upstream = [ ( exon_start - self.extension_upstream, exon_start ), ] 
+        upstream = [ ( max(0, exon_start - self.extension_upstream), exon_start ), ] 
         downstream = [ ( exon_end, exon_end + self.extension_downstream ), ]
         
         E.debug("counting exons" )
@@ -411,7 +418,7 @@ class UTRCounter( IntervalsCounter ):
         utrs = Intervals.truncate( exons, self.cds )
         self.upstream_utr = [ x for x in utrs if x[1] <= cds_start ]
         self.downstream_utr = [ x for x in utrs if x[0] >= cds_end ]
-        self.upstream = [ ( exon_start - self.extension_upstream, exon_start ), ] 
+        self.upstream = [ ( max(0, exon_start - self.extension_upstream), exon_start ), ] 
         self.downstream = [ ( exon_end, exon_end + self.extension_downstream ), ]
         
         E.debug("counting cds" )
@@ -482,9 +489,9 @@ class TSSCounter( IntervalsCounter ):
         self.tss, self.tts = exons[0][0], exons[-1][1]
 
         # no max(0, ...) here as these ranges need to have always the same length
-        self.tss_ranges = [ (self.tss - self.extension_out, 
+        self.tss_ranges = [ (max(0, self.tss - self.extension_out), 
                              self.tss + self.extension_in), ]
-        self.tts_ranges = [ (self.tts - self.extension_in, 
+        self.tts_ranges = [ (max(0, self.tts - self.extension_in), 
                              self.tts + self.extension_out), ]
         E.debug( "tss=%s, tts=%s" % (self.tss_ranges, self.tts_ranges) )
 
@@ -508,8 +515,11 @@ def count( counters,
     counts = [0] * len(counters)
 
     iterations = 0
+    E.info("starting counting" )
 
     for iteration, gtf in enumerate(gtf_iterator):
+        E.debug( "processing %s" % (gtf[0].gene_id))
+
         c.input += 1
         for x, counter in enumerate(counters):
             counter.count( gtf )
