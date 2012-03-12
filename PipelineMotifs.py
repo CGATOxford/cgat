@@ -69,6 +69,7 @@ import MAST
 import IOTools
 import Bed
 import Bioprospector
+import FastaIterator
 
 PARAMS = P.getParameters()
 
@@ -876,6 +877,12 @@ def runMEMEOnSequences( infile, outfile ):
     to_cluster = True
     # job_options = "-l mem_free=8000M"
 
+    nseqs = int(FastaIterator.count( infile ))
+    if nseqs == 0:
+        E.warn( "%s: no sequences - meme skipped" % outfile)
+        P.touch( outfile )
+        return
+    
     target_path = os.path.join( os.path.abspath(PARAMS["exportdir"]), "meme", outfile )
     tmpdir = P.getTempDir( "." )
 
