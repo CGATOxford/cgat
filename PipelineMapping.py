@@ -198,7 +198,7 @@ class Mapper( object ):
                 statement.append( "fastq-dump --outdir %(tmpdir_fastq)s %(infile)s" % locals() )
                 
             elif infile.endswith( ".fastq.gz" ):
-
+                
                 statement.append(  """gunzip < %(infile)s 
                                       | python %%(scriptsdir)s/fastq2fastq.py --change-format=sanger --guess-format=phred64 --log=%(outfile)s.log
                                       %(compress_cmd)s
@@ -479,9 +479,17 @@ class Tophat( Mapper ):
     # newer versions of tophat can work of compressed files
     compress = True
     
+    executable = "tophat"
+
+    def __init__(self, executable = "tophat", *args, **kwargs ):
+        self.executable = executable
+        Mapper.__init__(self, *args, **kwargs)
+
     def mapper( self, infiles, outfile ):
         '''build mapping statement on infiles.
         '''
+
+        executable = self.executable
 
         num_files = [ len( x ) for x in infiles ]
         
@@ -506,7 +514,7 @@ class Tophat( Mapper ):
         if nfiles == 1:
             infiles = ",".join( [ x[0] for x in infiles ] )
             statement = '''
-            tophat --output-dir %(tmpdir_tophat)s
+            %(executable)s --output-dir %(tmpdir_tophat)s
                    --num-threads %%(tophat_threads)i
                    --library-type %%(tophat_library_type)s
                    %(data_options)s
@@ -523,7 +531,7 @@ class Tophat( Mapper ):
             infiles2 = ",".join( [ x[1] for x in infiles ] )
 
             statement = '''
-            tophat --output-dir %(tmpdir_tophat)s
+            %(executable)s --output-dir %(tmpdir_tophat)s
                    --mate-inner-dist %%(tophat_mate_inner_dist)i
                     --num-threads %%(tophat_threads)i
                    --library-type %%(tophat_library_type)s
@@ -542,8 +550,8 @@ class Tophat( Mapper ):
             infiles3 = ",".join( [ x[2] for x in infiles ] )
             infiles4 = ",".join( [ x[3] for x in infiles ] )
 
-            statement = '''
-            tophat --output-dir %(tmpdir_tophat)s
+            statement = '''%(executable)s
+                   --output-dir %(tmpdir_tophat)s
                    --mate-inner-dist %%(tophat_mate_inner_dist)i
                    --num-threads %%(tophat_threads)i
                    --library-type %%(tophat_library_type)s

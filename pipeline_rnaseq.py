@@ -1140,7 +1140,7 @@ def mapReadsWithBowtieAgainstTranscriptome( infiles, outfile ):
              "*.csfasta.F3.gz",
              ),
             regex( r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz|csfasta.F3.gz)"), 
-            add_inputs( buildJunctions), 
+            add_inputs( buildJunctions, buildReferenceTranscriptome ), 
             r"\1.genome.bam" )
 def mapReadsWithTophat( infiles, outfile ):
     '''map reads from .fastq or .sra files.
@@ -1165,13 +1165,14 @@ def mapReadsWithTophat( infiles, outfile ):
         job_options += " -l mem_free=2G"
 
     to_cluster = USECLUSTER
-    m = PipelineMapping.Tophat()
-    infile, reffile = infiles
+    m = PipelineMapping.Tophat( executable = PARAMS["tophat_executable"] )
+    infile, reffile, transcriptfile = infiles
     tophat_options = PARAMS["tophat_options"] + " --raw-juncs %(reffile)s " % locals()
     
     # Nick - added the option to map to the reference transcriptome first (built within the pipeline)
     if PARAMS["tophat_include_reference_transcriptome"]:
-        tophat_options = tophat_options + " --transcriptome-index=refcoding -n 2"
+        prefix = os.path.abspath( P.snip( transcriptfile, ".fa" ) )
+        tophat_options = tophat_options + " --transcriptome-index=%s -n 2" % prefix
 
     statement = m.build( (infile,), outfile ) 
     P.run()
@@ -2260,14 +2261,18 @@ def buildFullGeneSet( infiles, outfile ):
 
     tablename = P.quote( P.snip( abinitio_gtf, ".gtf.gz") + "_cuffcompare_tracking" )
     
+
     dbhandle = sqlite3.connect( PARAMS["database"] )
-    cc = dbhandle.cursor()    
+    tables = Database.getTables( dbhandle )
+    if tablename in tables:
+        cc = dbhandle.cursor()    
+        statement = '''SELECT transfrag_id FROM %(tablename)s WHERE nexperiments > 1''' % locals()
+        keep = set( [ x[0] for x in cc.execute(statement).fetchall()] )
+        E.info( "keeping %i transfrags" % len(keep) )
 
-    statement = '''SELECT transfrag_id FROM %(tablename)s WHERE nexperiments > 1''' % locals()
-
-    keep = set( [ x[0] for x in cc.execute(statement).fetchall()] )
-    
-    E.info( "keeping %i transfrags" % len(keep) )
+    else:
+        E.warn( "table %s missing - no replicates - keepy all transfrags" % tablename ) 
+        keep = None
 
     inf = GTF.iterator( IOTools.openFile( abinitio_gtf ) )
     outf1 = IOTools.openFile( keep_gtf, "w" )
@@ -2276,7 +2281,7 @@ def buildFullGeneSet( infiles, outfile ):
     c = E.Counter()
     for gtf in inf:
         c.input += 1
-        if gtf.transcript_id in keep:
+        if keep == None or gtf.transcript_id in keep:
             c.kept += 1
             outf1.write( "%s\n" % str(gtf ) )
         else:
@@ -2731,6 +2736,12 @@ def buildReproducibility( infile, outfile ):
 
     tablename = "%s_cuffcompare_fpkm" % track.asTable()
     tablename2 = "%s_cuffcompare_tracking" % track.asTable()
+
+    tables = Database.getTables( dbhandle )
+    if tablename2 not in tables:
+        E.warn( "table %s missing - no replicates" % tablename2 )
+        P.touch( outfile )
+        return
 
     ##################################################################
     ##################################################################
