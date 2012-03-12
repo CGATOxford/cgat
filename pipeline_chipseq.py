@@ -1076,7 +1076,6 @@ def buildReadProfileOfTranscripts( infiles, outfile ):
     
     statement = '''python %(scriptsdir)s/bam2geneprofile.py
                       --output-filename-pattern="%(outfile)s.%%s"
-                      --f
                       --reporter=transcript
                       --method=geneprofile 
                       --method=tssprofile 
@@ -1919,7 +1918,7 @@ def annotateIntervals( infile, outfile ):
     to_cluster = True
 
     annotation_file = os.path.join( PARAMS["annotations_dir"],
-                                    PARAMS_ANNOTATIONS["interface_geneset_all_gtf"] )
+                                    PARAMS_ANNOTATIONS["interface_annotation_gff"] )
 
     statement = """
     zcat < %(infile)s 
