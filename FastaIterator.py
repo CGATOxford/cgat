@@ -31,6 +31,7 @@ Code
 ----
 
 """
+import subprocess, os
 
 class FastaRecord:
 
@@ -96,3 +97,21 @@ def iterate_together( *args ):
 
     while 1:
         yield [ x.next() for x in iterators ]
+
+
+##------------------------------------------------------------
+def count( filename ):
+    '''count number of sequences in fasta file.'''
+    if filename.endswith(".gz"):
+        statement = "zcat %s | grep -c '>'" % filename
+    else:
+        statement = "cat %s | grep -c '>'" % filename
+
+    if not os.path.exists( filename ):
+        raise OSError( "file '%s' does not exist" % filename )
+
+    # grep returns error if no match is found
+    try:
+        return subprocess.check_output( statement, shell = True )
+    except subprocess.CalledProcessError:
+        return 0
