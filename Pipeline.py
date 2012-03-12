@@ -957,7 +957,7 @@ def main( args = sys.argv ):
     parser.set_defaults(
         pipeline_action = None,
         pipeline_format = "svg",
-        pipeline_target = "full",
+        pipeline_targets = [],
         multiprocess = 2,
         logfile = "pipeline.log",
         dry_run = False,
@@ -977,7 +977,7 @@ def main( args = sys.argv ):
     if args: 
         options.pipeline_action = args[0]
         if len(args) > 1:
-            options.pipeline_target = args[1]
+            options.pipeline_targets.extend( args[1:] )
 
     if options.pipeline_action in ("make", "show", "svg", "plot", "touch" ):
 
@@ -995,7 +995,7 @@ def main( args = sys.argv ):
                 L.info( "code location: %s" % PARAMS["scriptsdir"] )
                 L.info( "code version: %s" % version[:-1] )
 
-                pipeline_run( [ options.pipeline_target ], 
+                pipeline_run( options.pipeline_targets, 
                               multiprocess = options.multiprocess, 
                               logger = logger,
                               verbose = options.loglevel )
@@ -1003,23 +1003,23 @@ def main( args = sys.argv ):
                 L.info( E.GetFooter() )
 
             elif options.pipeline_action == "show":
-                pipeline_printout( options.stdout, [ options.pipeline_target ], verbose = options.loglevel )
+                pipeline_printout( options.stdout, options.pipeline_targets, verbose = options.loglevel )
 
             elif options.pipeline_action == "touch":
-                pipeline_run( [ options.pipeline_target ], 
+                pipeline_run( options.pipeline_targets, 
                               touch_files_only = True,
                               verbose = options.loglevel )
 
             elif options.pipeline_action == "svg":
                 pipeline_printout_graph( options.stdout, 
                                          options.pipeline_format,
-                                         [ options.pipeline_target ] )
+                                         options.pipeline_targets )
 
             elif options.pipeline_action == "plot":
                 outf, filename = tempfile.mkstemp()
                 pipeline_printout_graph( os.fdopen(outf,"w"),
                                          options.pipeline_format,
-                                         [ options.pipeline_target ] )
+                                         options.pipeline_targets )
                 execute( "inkscape %s" % filename ) 
                 os.unlink( filename )
 
@@ -1044,8 +1044,8 @@ def main( args = sys.argv ):
         L.info( "created new configuration file `pipeline.ini` " )
 
     elif options.pipeline_action == "clone":
-        clonePipeline( options.pipeline_target )
-        
+        clonePipeline( options.pipeline_targets[0] )
+
     else:
         raise ValueError("unknown pipeline action %s" % options.pipeline_action )
 
