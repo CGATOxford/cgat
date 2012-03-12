@@ -220,8 +220,11 @@ def main( argv = None ):
             result.sort( key = lambda x: x[1].end - x[1].start )
 
         elif sort == "interval-score":
-            result.sort( key = lambda x: x[1].score )
-            
+            try:
+                result.sort( key = lambda x: x[1].score )
+            except IndexError:
+                E.warn("score field not present - no output" )
+
         writeMatrix( result, sort )
 
     ## write footer and output benchmark information.
