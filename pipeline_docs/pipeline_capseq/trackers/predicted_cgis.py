@@ -13,13 +13,13 @@ from SphinxReport.odict import OrderedDict as odict
 class cgiEnsemblTranscriptOverlap(featureOverlap):
     mPattern = "cgi_ensembl_transcript_overlap$"
     mTable = "cgi_ensembl_transcript_overlap"
-    mWhere = "tss_extended_pover1"
+    mWhere = "tss_transcript_extended_pover1"
 
 ##################################################################################
 class cgiEnsemblGeneOverlap(featureOverlap):
     mPattern = "cgi_ensembl_gene_overlap$"
     mTable = "cgi_ensembl_gene_overlap"
-    mWhere = "tss_gene_interval_pover1"
+    mWhere = "tss_gene_extended_pover1"
 
 ##################################################################################
 class cgiEnsemblTranscriptTSSOverlap(cpgTracker):

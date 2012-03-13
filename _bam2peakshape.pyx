@@ -20,7 +20,8 @@ def count( samfiles,
            int end,
            bins,
            shift,
-           float peak_ratio = 0.90):
+           float peak_ratio = 0.90,
+           normalization = "none"):
     '''
     '''
 
@@ -137,7 +138,23 @@ def count( samfiles,
         if xstart >= 0 and xend < interval_width:
             hist[i] = sum( counts[xstart:xend] ) 
         xstart = xend
-
+        
+    # normalise bins
+    norm_hist = numpy.zeros( nbins, dtype = numpy.int )
+    m = max(hist)
+    s = sum(hist)
+    for i, h in enumerate(hist):
+        if normalization == "max":
+            if m == 0: continue
+            hh = h / m
+        elif normalization == "sum":
+            if s == 0: continue
+            hh = h / s
+        else:
+            hh = h
+            
+        norm_hist[i] = hh
+        
     # debugging
     #for x,v in enumerate( hist ):
         # print x, "*" * v
@@ -151,7 +168,7 @@ def count( samfiles,
                                      numpy.median(counts),
                                      closest_dist, furthest_dist,
                                      bins,
-                                     hist ) )
+                                     norm_hist ) )
 
     free( ccounts )
     

@@ -473,19 +473,49 @@ def normaliseBAMs( infiles, outfile ):
 
 
 ############################################################
-@follows(normaliseBAMs)
+@follows(normaliseBAMs, mkdir("merged_bams"))
 @files( [( [ "bam/%s.norm.bam" % y for y in EXPERIMENTS[x]], 
-           "bam/%s.rep.bam" % str(x).replace("-agg","")) for x in EXPERIMENTS ] )
+           "merged_bams/%s.merge.bam" % str(x).replace("-agg","")) for x in EXPERIMENTS ] )
 def mergeReplicateBAMs( infiles, outfile ):
     '''Merge normalised BAM files for all replicates, then sort and index. '''
-    track = P.snip( outfile, ".rep.bam" )
+    track = P.snip( outfile, ".merge.bam" )
     in_list = " ".join(infiles)
-    statement = '''samtools merge %(track)s.merge.bam %(in_list)s;
-                   samtools sort  %(track)s.merge.bam %(track)s.rep; 
+    statement = '''samtools merge %(track)s.rep.bam %(in_list)s;
+                   samtools sort  %(track)s.rep.bam %(track)s.merge; 
                    samtools index %(outfile)s;
-                   rm %(track)s.merge.bam; ''' % locals()
+                   rm %(track)s.rep.bam; ''' % locals()
     P.run()
 
+############################################################   
+@transform( mergeBams, suffix(".bam"), ".bw" )
+def getMergedBigWig( infile, outfile ):
+    '''Merge multiple BAM files per replicate to produce a single non peak-shifted bigwig file'''
+
+    statement = '''python %(scriptsdir)s/bam2wiggle.py --output-format=bigwig %(infile)s %(outfile)s '''
+    P.run()
+    
+############################################################   
+@follows( normaliseBAMs, mkdir("merged_bigwigs") )
+@files( [( [ "bam/%s.norm.bam" % y for y in EXPERIMENTS[x]], 
+           "merged_bigwigs/%s.merged.bw" % str(x).replace("-agg","")) for x in EXPERIMENTS ] )
+def getMergedBigWigPeakShift( infiles, outfile ):
+    '''Merge multiple BAM files per replicate to produce a single peak-shifted bigwig file'''
+    expt = P.snip( os.path.basename( outfile ), ".merged.bw").replace("-agg","")
+    in_list = " --bamfile=".join(infiles)
+    
+    offsets = []
+    for t in infiles:
+        fn = "macs/with_input/%s.macs" % t.asFile()
+        if os.path.exists( fn ):
+            offsets.append( PIntervals.getPeakShiftFromMacs( fn ) )
+
+    shifts = " --shift=".join(offsets)
+    statement = '''python %(scriptsdir)s/bam2wiggle.py 
+                      --output-format=bigwig
+                      %(in_list)s
+                      %(shifts)s '''
+    P.run()
+    
 ############################################################
 ############################################################
 ############################################################
@@ -844,7 +874,8 @@ def replicatedIntervals( infiles, outfile ):
     for i in infiles:
         statement = '''intersectBed -a %(outfile)s -b %(i)s -u > %(tmpfilename)s; mv %(tmpfilename)s %(outfile)s; ''' 
         P.run()
-
+   
+    
 ############################################################
 @transform( replicatedIntervals, suffix(".rep.bed"), ".rep.bed.load")
 def loadReplicatedIntervals(infile, outfile):
@@ -1096,13 +1127,15 @@ def loadSharedReplicatedIntervals(infile, outfile):
 def liverTestesVenn(infiles, outfile):
     '''identify interval overlap between liver and testes. Merge intervals first.'''
     liver, testes = infiles
+    liver_name = P.snip( os.path.basename(liver), ".replicated.bed" )
+    testes_name = P.snip( os.path.basename(testes), ".replicated.bed" )
     to_cluster = True
     
     statement = '''cat %(liver)s %(testes)s | mergeBed -i stdin | awk 'OFS="\\t" {print $1,$2,$3,"CAPseq"NR}' > replicated_intervals/liver.testes.merge.bed;
                    echo "Total merged intervals" > %(outfile)s; cat replicated_intervals/liver.testes.merge.bed | wc -l >> %(outfile)s; 
-                   echo "Liver & testes" >> %(outfile)s; intersectBed -a replicated_intervals/liver.testes.merge.bed -b %(liver)s -u | intersectBed -a stdin -b %(testes)s -u | wc -l >> %(outfile)s; 
-                   echo "Testes only" >> %(outfile)s; intersectBed -a replicated_intervals/liver.testes.merge.bed -b %(liver)s -v | wc -l >> %(outfile)s; 
-                   echo "Liver only" >> %(outfile)s; intersectBed -a replicated_intervals/liver.testes.merge.bed -b %(testes)s -v | wc -l >> %(outfile)s;                   
+                   echo "Liver & testes" >> %(outfile)s; intersectBed -a replicated_intervals/liver.testes.merge.bed -b %(liver)s -u | intersectBed -a stdin -b %(testes)s -u > replicated_intervals/liver.testes.shared.bed; cat replicated_intervals/liver.testes.shared.bed | wc -l >> %(outfile)s; 
+                   echo "Testes only" >> %(outfile)s; intersectBed -a replicated_intervals/liver.testes.merge.bed -b %(liver)s -v > replicated_intervals/%(testes_name)s.liver.testes.unique.bed; cat replicated_intervals/%(testes_name)s.liver.testes.unique.bed | wc -l >> %(outfile)s; 
+                   echo "Liver only" >> %(outfile)s; intersectBed -a replicated_intervals/liver.testes.merge.bed -b %(testes)s -v > replicated_intervals/%(liver_name)s.liver.testes.unique.bed; cat replicated_intervals/%(liver_name)s.liver.testes.unique.bed | wc -l >> %(outfile)s;                   
                    sed -i '{N;s/\\n/\\t/g}' %(outfile)s; '''
     P.run()
     
@@ -1117,8 +1150,282 @@ def loadLiverTestesVenn(infile, outfile):
                    > %(outfile)s '''
     P.run()
     
+############################################################   
+@follows(liverTestesVenn) 
+@files( "replicated_intervals/liver.testes.shared.bed", "replicated_intervals/liver.testes.shared.bed.load" )
+def loadLiverTestesShared(infile, outfile):
+    '''Load liver testes shared intervals into database '''
+    header = "contig,start,end,interval_id"
+    statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
+                      --table=liver_testes_shared_intervals
+                      --header=%(header)s
+                   > %(outfile)s '''
+    P.run()
 
+############################################################       
+@follows(liverTestesVenn) 
+@transform( "replicated_intervals/*.liver.testes.unique.bed", suffix(".liver.testes.unique.bed"),  ".liver.testes.unique.bed.load" )
+def loadLiverTestesUnique(infile, outfile):
+    '''Load liver testes unique intervals into database '''
+    header = "contig,start,end,interval_id"
+    track = P.snip(os.path.basename(infile), ".liver.testes.unique.bed")
+    statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
+                      --table=%(track)s_liver_testes_unique_intervals
+                      --header=%(header)s
+                   > %(outfile)s '''
+    P.run()
+
+
+############################################################       
+@follows(liverTestesVenn) 
+@files( "replicated_intervals/liver.testes.merge.bed", "replicated_intervals/liver.testes.merge.bed.load" )
+def loadLiverTestesMerge(infile, outfile):
+    '''Load liver testes shared intervals into database '''
+    header = "contig,start,end,interval_id"
+    statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
+                      --table=liver_testes_merged_intervals
+                      --header=%(header)s
+                   > %(outfile)s '''
+    P.run()
+
+############################################################
+@follows(loadLiverTestesShared, loadLiverTestesUnique, loadLiverTestesMerge)
+@merge( "replicated_intervals/*.liver.testes.unique.bed", "replicated_intervals/liver.testes.merge.sort.bed")
+def exportLiverTestesMergeWithSort( infiles, outfile):
+    ''' query database to produce a bed file which can be sorted by liver testes unique category and then length'''
+    # Connect to DB
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    tracks = []
+    for infile in infiles:
+        t = P.snip(os.path.basename(infile), ".liver.testes.unique.bed").replace("-","_")
+        tracks.append(t)
+
+
+    # Extract data from db
+    cc = dbhandle.cursor()
+    query = '''SELECT m.contig, m.start, m.end, m.interval_id, 
+               "sh_" || substr('000000' || (m.end-m.start), -6, 6)  as sort
+               FROM liver_testes_merged_intervals m, liver_testes_shared_intervals s 
+               WHERE m.interval_id=s.interval_id ''' % locals()
+    for i, t in enumerate(tracks):
+        query += '''UNION 
+                    SELECT m.contig, m.start, m.end, m.interval_id, 
+                    "a%(i)s_" || substr('000000' || (m.end-m.start), -6, 6)  as sort
+                    FROM liver_testes_merged_intervals m, %(t)s_liver_testes_unique_intervals u%(i)s 
+                    WHERE m.interval_id=u%(i)s.interval_id ''' % locals()
+    print query
+    cc.execute( query )
+
+    # Write to file
+    outs = open( outfile, "w")
+    for result in cc:
+        pre = ""
+        for r in result:
+            outs.write("%s%s" % (pre, str(r)) )
+            pre = "\t"
+        outs.write("\n")
+
+    cc.close()
+    outs.close()
     
+############################################################
+@follows( liverTestesVenn )
+@files( "replicated_intervals/*.liver.testes.unique.bed", "replicated_intervals/liver.testes.chromatin.log" )    
+def liverTestesUniqueChromatinProfile(infiles, outfile):
+    '''plot chromatin mark profiles over tissue-specific CAPseq intervals'''
+    chromatin = P.asList(PARAMS["bigwig_chromatin"])
+    
+    for infile in infiles:
+        track = P.snip( os.path.basename(infile), ".liver.testes.unique.bed" )
+        
+        outtemp = P.getTempFile()
+        tmpfilename = outtemp.name
+    
+        for bw in chromatin:
+            chromatin_track = P.snip( os.path.basename(bw), ".bw" )
+            ofp = "replicated_intervals/" + track + "." + chromatin_track + ".profile"    
+            statement = '''cat %(infile)s | python %(scriptsdir)s/bed2gff.py --as-gtf | gzip > %(tmpfilename)s.gtf.gz;
+                           python %(scriptsdir)s/bam2geneprofile.py 
+                           --bamfile=%(bw)s 
+                           --gtffile=%(tmpfilename)s.gtf.gz
+                           --output-filename-pattern=%(ofp)s
+                           --reporter=interval
+                           --method=intervalprofile
+                           --log=%(outfile)s'''
+            P.run()      
+
+############################################################
+@transform( exportReplicatedIntervalsAsBed, suffix(".bed"), ".long.bed" )
+def getLongIntervalBed( infile, outfile ):
+    '''Generate bed file of top 500 longest intervals'''
+    # Connect to DB
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    track = P.snip( os.path.basename( infile ), ".replicated.bed" ).replace("-","_").replace(".","_")
+
+    # Extract data from db
+    cc = dbhandle.cursor()
+    query = '''SELECT i.contig, i.start, i.end, i.interval_id
+               FROM %(track)s_replicated_intervals i
+               ORDER BY length desc LIMIT 500;''' % locals()
+    cc.execute( query )
+
+    # Write to file
+    outs = open( outfile, "w")
+    for result in cc:
+        pre = ""
+        for r in result:
+            outs.write("%s%s" % (pre, str(r)) )
+            pre = "\t"
+        outs.write("\n")
+
+    cc.close()
+    outs.close()
+    
+############################################################
+@transform( exportReplicatedIntervalsAsBed, suffix(".bed"), ".long.genelist" )
+def getLongIntervalGenes( infile, outfile ):
+    '''Generate bed file of top 500 longest intervals'''
+    # Connect to DB
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    track = P.snip( os.path.basename( infile ), ".replicated.bed" ).replace("-","_").replace(".","_")
+    cc = dbhandle.cursor()
+    statement = "ATTACH DATABASE '%s' AS annotations; "  % (PARAMS["ensembl_annotation_database"])
+    cc.execute(statement)
+
+    # Extract data from db
+    query = '''SELECT distinct t.gene_id
+               FROM %(track)s_replicated_intervals i, %(track)s_replicated_tss s, %(track)s_replicated_ensembl_gene_overlap o, annotations.transcript_info t
+               WHERE (substr(s.closest_id,1,18)=t.transcript_id
+               or substr(s.closest_id,20,18)=t.transcript_id
+               or substr(s.closest_id,39,18)=t.transcript_id
+               or substr(s.closest_id,58,18)=t.transcript_id
+               or substr(s.closest_id,77,18)=t.transcript_id)
+               AND i.interval_id=s.gene_id
+               AND o.gene_id=i.interval_id
+               AND s.is_overlap > 0
+               AND t.gene_biotype='protein_coding'
+               AND i.length > 3000
+               AND o.genes_pover2 > 20
+               ORDER BY i.length desc
+               LIMIT 500''' % locals()
+    cc.execute( query )
+
+    # Write to file
+    outs = open( outfile, "w")
+    for result in cc:
+        pre = ""
+        for r in result:
+            outs.write("%s%s" % (pre, str(r)) )
+            pre = "\t"
+        outs.write("\n")
+
+    cc.close()
+    outs.close()
+    
+############################################################
+@transform( getLongIntervalGenes, suffix(".genelist"), ".gtf.gz" )
+def getLongIntervalGeneGTF( infile, outfile ):
+    '''Filter Ensembl GTF file using list of Ensembl gene ids associated with long CAPseq intervals '''
+    gene_file = os.path.join( PARAMS["ensembl_annotation_dir"], PARAMS["ensembl_annotation_tss_profile"])
+    statement = '''zcat %(gene_file)s | python %(scriptsdir)s/gtf2gtf.py --filter=gene --apply=%(infile)s | gzip > %(outfile)s; '''
+    P.run()
+    
+    
+############################################################
+@transform( getLongIntervalGeneGTF, suffix(".gtf.gz"), ".chromatin_profile.log" )    
+def longIntervalGeneChromatinProfile(infile, outfile):
+    '''plot chromatin mark profiles over tissue-specific CAPseq intervals'''
+    chromatin = P.asList(PARAMS["bigwig_chromatin"])
+    
+    track = P.snip( os.path.basename(infile), ".gtf.gz" )
+        
+    outtemp = P.getTempFile()
+    tmpfilename = outtemp.name
+    
+    for bw in chromatin:
+        chromatin_track = P.snip( os.path.basename(bw), ".bw" )
+        ofp = "replicated_intervals/" + track + ".genes." + chromatin_track + ".profile"    
+        statement = '''python %(scriptsdir)s/bam2geneprofile.py 
+                       --bamfile=%(bw)s 
+                       --gtffile=%(infile)s
+                       --output-filename-pattern=%(ofp)s
+                       --reporter=interval
+                       --method=intervalprofile
+                       --log=%(outfile)s'''
+        P.run() 
+            
+    
+############################################################
+@transform( exportReplicatedIntervalsAsBed, suffix(".bed"), ".short.bed" )
+def getShortIntervalBed( infile, outfile ):
+    '''Generate bed file intervals < 2kb in length'''
+    # Connect to DB
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    track = P.snip( os.path.basename( infile ), ".replicated.bed" ).replace("-","_").replace(".","_")
+
+    # Extract data from db
+    cc = dbhandle.cursor()
+    query = '''SELECT i.contig, i.start, i.end, i.interval_id
+               FROM %(track)s_replicated_intervals i
+               WHERE length < 2000;''' % locals()
+    cc.execute( query )
+
+    # Write to file
+    outs = open( outfile, "w")
+    for result in cc:
+        pre = ""
+        for r in result:
+            outs.write("%s%s" % (pre, str(r)) )
+            pre = "\t"
+        outs.write("\n")
+
+    cc.close()
+    outs.close()
+    
+############################################################
+@merge( (getLongIntervalBed, getShortIntervalBed), "long_interval_chromatin_profile.log" )    
+def longIntervalChromatinProfile(infiles, outfile):
+    '''plot chromatin mark profiles over tissue-specific CAPseq intervals'''
+    chromatin = P.asList(PARAMS["bigwig_chromatin"])
+    
+    for infile in infiles:
+        track = P.snip( os.path.basename(infile), ".bed" )
+        
+        outtemp = P.getTempFile()
+        tmpfilename = outtemp.name
+    
+        for bw in chromatin:
+            chromatin_track = P.snip( os.path.basename(bw), ".bw" )
+            ofp = "replicated_intervals/" + track + "." + chromatin_track + ".profile"    
+            statement = '''cat %(infile)s | python %(scriptsdir)s/bed2gff.py --as-gtf | gzip > %(tmpfilename)s.gtf.gz;
+                           python %(scriptsdir)s/bam2geneprofile.py 
+                           --bamfile=%(bw)s 
+                           --gtffile=%(tmpfilename)s.gtf.gz
+                           --output-filename-pattern=%(ofp)s
+                           --reporter=interval
+                           --method=intervalprofile
+                           --log=%(outfile)s'''
+            P.run() 
+            
+############################################################
+@transform( getMergedBigWig, suffix(".bw"), ".profile_long_interval_genes" )    
+def longIntervalGeneCAPseqProfile(infiles, outfile):
+    '''plot CAPseq profiles over long intervals'''
+    
+    track = P.snip( os.path.basename(infile), ".bed" )
+    capseq = os.path.join ("replicated_intervals", track, ".long.gtf.gz")
+        
+    ofp = "replicated_intervals/" + track + "." + chromatin_track + ".profile"    
+    statement = '''python %(scriptsdir)s/bam2geneprofile.py 
+                           --bamfile=%(infile)s 
+                           --gtffile=%(capseq)s
+                           --output-filename-pattern=%(outfile)s
+                           --reporter=interval
+                           --method=intervalprofile
+                           --log=%(outfile)s.log'''
+    P.run() 
+
+
 ############################################################
 ############################################################
 ############################################################
@@ -1149,10 +1456,11 @@ def getPeakShape(infile, outfile):
                        --bedfile=%(infile)s
                        --output-filename-pattern=%(ofp)s
                        %(shifts)s
-                       --sort=peak-height
+                       --sort=peak-width
                        --window-size=5000
                        --bin-size=10
                        --force
+                       --log=%(outfile)s.log
                    -S %(outfile)s '''
     P.run()
 
@@ -1187,23 +1495,24 @@ def getPeakShapeTissueSpecificIntervals(infile, outfile):
                            --bedfile=%(infile)s
                            --output-filename-pattern=%(ofp)s
                            %(shifts)s
-                           --sort=peak-height
+                           --sort=peak-width
                            --window-size=5000
                            --bin-size=10
                            --force
+                           --log=%(outfile)s.log
                        -S %(outfile)s '''
         P.run()
     
 ############################################################    
 @follows( liverTestesVenn )
-@transform( exportReplicatedIntervalsAsBed, suffix(".replicated.bed"), ".liver.testes.merge.peakshape" )
+@transform( exportReplicatedIntervalsAsBed, suffix(".replicated.bed"), ".liver.testes.merge.peakshape.gz" )
 def getPeakShapeLiverTestes(infile, outfile):
     '''Cluster intervals based on peak shape '''
     track = P.snip( os.path.basename( infile ), ".replicated.bed" )
     expt_track = track + "-agg"
     replicates = EXPERIMENTS[expt_track]
-    ofp = "replicated_intervals/" + track + ".liver.testes.merge.peakshape"
-    bedfile = "replicated_intervals/liver.testes.merge.bed"
+    #ofp = "replicated_intervals/" + track + ".liver.testes.merge.peakshape"
+    bedfile = "replicated_intervals/liver.testes.merge.sort.bed"
     
     # setup files
     samfiles, offsets = [], []
@@ -1221,13 +1530,19 @@ def getPeakShapeLiverTestes(infile, outfile):
     statement = '''python %(scriptsdir)s/bam2peakshape.py 
                        %(bamfiles)s 
                        --bedfile=%(bedfile)s
-                       --output-filename-pattern=%(ofp)s
+                       --output-filename-pattern=%(outfile)s.%%s
                        %(shifts)s
+                       --sort=peak-width
                        --sort=peak-height
+                       --sort=interval-width
+                       --sort=interval-score
                        --window-size=5000
                        --bin-size=10
+                       --normalization=sum
                        --force
-                   -S %(outfile)s '''
+                       --log=%(outfile)s.log
+                   | gzip
+                   > %(outfile)s '''
     P.run()    
     
 ############################################################
@@ -2213,10 +2528,12 @@ def getReplicatedEnsemblTranscriptTSSProfile(infile, outfile):
                        --gtffile=%(tss_file)s
                        --output-filename-pattern=%(ofp)s
                        %(shifts)s
-                       --perInterval
                        --reporter=transcript
                        --method=tssprofile
-                       --normalization=interval'''
+                       --normalization=total-sum
+                       --normalize-profile=area
+                       --normalize-profile=counts
+                       --normalize-profile=none'''
     P.run()
 
 ############################################################
@@ -3288,6 +3605,7 @@ def publish_report(infile, outfile):
     cgi_dir = os.path.join(publish_dir, "cpg")
     cpg_density_dir = os.path.join(publish_dir, "cpg_density")
     length_dir = os.path.join(publish_dir, "length")
+    chromatin_dir = os.path.join(publish_dir, "chromatin")
     #report_dir = PARAMS["publish_report"]   
     print(infile)
     working_dir = os.getcwd()
@@ -3313,6 +3631,8 @@ def publish_report(infile, outfile):
     statement += '''cp -sn %(working_dir)s/cgi.cpg_density.export %(cpg_density_dir)s/%(species)s.cgi.cpg_density.export >> %(outfile)s; ''' 
     statement += '''cp -sn %(working_dir)s/replicated_intervals/*.length %(length_dir)s >> %(outfile)s; ''' 
     statement += '''cp -sn %(working_dir)s/replicated_intervals/*.gene.tss %(tss_dist_dir)s >> %(outfile)s; '''     
+    statement += '''cp -sn %(working_dir)s/replicated_intervals/*.profile.tsv.gz %(chromatin_dir)s >> %(outfile)s; ''' 
+    statement += '''cp -sn %(working_dir)s/replicated_intervals/*.liver.testes.unique.bed %(bed_dir)s/liver_testes >> %(outfile)s; ''' 
         
     P.run()
 
@@ -3327,8 +3647,9 @@ def replicateMappingAndCalling(infile, outfile):
     prev_run = PARAMS["previous_run"]
     statement = '''cp -ps %(prev_run)s/*.fastq.gz .;'''
     statement += '''cp %(prev_run)s/conf.py %(prev_run)s/sphinxreport.ini .; '''
-    statement += '''mkdir bam; cp -psr %(prev_run)s/*/bam/* bam/; '''
-    statement += '''mkdir external_bed; cp %(prev_run)s/gat/*.bed external_bed/;'''
+    statement += '''mkdir bam; cp -psr %(prev_run)s/bam/* bam/; '''
+    statement += '''mkdir macs; cp -psr %(prev_run)s/macs/* macs/; '''
+    statement += '''mkdir external_bed; cp %(prev_run)s/external_bed/*.bed external_bed/;'''
     P.run()
 
 ############################################################

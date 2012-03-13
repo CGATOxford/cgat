@@ -100,7 +100,7 @@ class IntervalListFoldChange( IntervalList ):
 ##################################################################################
 class IntervalListLength( IntervalList ):
     '''list of intervals.'''
-
+    
     def getSQLStatement( self, track, slice = None ):
         nresults = self.nresults
 
@@ -114,13 +114,29 @@ class IntervalListLength( IntervalList ):
 class LongIntervals( IntervalList ):
     '''list of intervals >10kb in length sorted by fold change'''
 
+    nresults = 1000
+    mColumnsFixed = ("pos", "length" )
+    mColumnsVariable= ( "avgval", "fold", "gene_id", "gene_name", "genes_pover1", "genes_pover2" )
+    mPattern = "_replicated_intervals$"
+    
     def getSQLStatement( self, track, slice = None ):
         nresults = self.nresults
 
-        statement = '''SELECT i.interval_id, i.contig, i.start, i.end, i.length, i.peakval, round(i.avgval,2), i.fold
-                       FROM %(track)s_macs_merged_intervals AS i
-                       WHERE i.length > 10000
-                       ORDER BY fold DESC''' % locals()
+        statement = '''SELECT distinct i.interval_id, i.contig, i.start, i.end, i.length, i.avgval, i.fold, t.gene_id, t.gene_name, o.genes_pover1, o.genes_pover2
+                       FROM %(track)s_replicated_intervals i, %(track)s_replicated_tss s, %(track)s_replicated_ensembl_gene_overlap o, annotations.transcript_info t
+                       WHERE (substr(s.closest_id,1,18)=t.transcript_id
+                       or substr(s.closest_id,20,18)=t.transcript_id
+                       or substr(s.closest_id,39,18)=t.transcript_id
+                       or substr(s.closest_id,58,18)=t.transcript_id
+                       or substr(s.closest_id,77,18)=t.transcript_id)
+                       AND i.interval_id=s.gene_id
+                       AND o.gene_id=i.interval_id
+                       AND s.is_overlap > 0
+                       AND t.gene_biotype='protein_coding'
+                       AND i.length > 3000
+                       AND o.genes_pover2 > 20
+                       ORDER BY i.length desc
+                       LIMIT 500''' % locals()
         return statement
 
 ##################################################################################

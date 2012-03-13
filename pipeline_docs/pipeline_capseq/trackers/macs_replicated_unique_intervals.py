@@ -147,7 +147,7 @@ class replicatedUniqueIntervalEnsemblTranscriptOverlap(featureOverlap):
     def __call__(self, track, slice = None):
         data = self.getValues( """ SELECT count(distinct gene_id) as intervals FROM (
                                    SELECT gene_id,
-                                   CASE WHEN  tss_extended_pover1 > 0  THEN 'TSS'
+                                   CASE WHEN  tss_transcript_extended_pover1 > 0  THEN 'TSS'
                                    WHEN genes_pover1 > 0 THEN 'Gene'
                                    WHEN upstream_flank_pover1 >0 THEN 'Upstream'
                                    WHEN downstream_flank_pover1 >0 THEN 'Downstream'
@@ -168,7 +168,7 @@ class replicatedUniqueIntervalEnsemblGeneOverlap(featureOverlap):
     def __call__(self, track, slice = None):
         data = self.getValues( """ SELECT count(distinct gene_id) as intervals FROM (
                                    SELECT gene_id,
-                                   CASE WHEN tss_gene_interval_pover1 > 0  THEN 'TSS'
+                                   CASE WHEN tss_gene_extended_pover1 > 0  THEN 'TSS'
                                    WHEN genes_pover1 > 0 THEN 'Gene'
                                    WHEN upstream_flank_pover1 >0 THEN 'Upstream'
                                    WHEN downstream_flank_pover1 >0 THEN 'Downstream'

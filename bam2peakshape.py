@@ -116,8 +116,13 @@ def main( argv = None ):
                        help = "bin-size for histogram of read depth. "
                               "[%default]" )
 
+    parser.add_option( "-n", "--normalization", dest="normalization", type = "choice",
+                       choices = ("none", "max", "sum" ),
+                       help = "normalisation to perform. "
+                              "[%default]" )                             
+
     parser.add_option( "-s", "--sort", dest="sort", type = "choice", action = "append",
-                       choices = ("peak-height", "peak-width", "unsorted" ),
+                       choices = ("peak-height", "peak-width", "unsorted", "interval-width", "interval-score" ),
                        help = "output sort order for matrices. "
                               "[%default]" )
 
@@ -135,7 +140,8 @@ def main( argv = None ):
         bamfiles = [],
         bedfile = "",
         window_size = 0,
-        sort = []
+        sort = [],
+        normalisation = "none"
         )
 
     ## add common options (-h/--help, ...) and parse command line 
@@ -168,14 +174,12 @@ def main( argv = None ):
     result =[]
     for bed in Bed.iterator( IOTools.openFile( options.bedfile ) ):
         # print "%s:%i-%i" % (bed.contig, bed.start, bed.end)
-        features = _bam2peakshape.count( bamfiles, bed.contig, bed.start, bed.end, 
-                                         shift = options.shift,
-                                         bins = bins )
+        features = _bam2peakshape.count( bamfiles, bed.contig, bed.start, bed.end, shift = options.shift, bins = bins, normalization=options.normalization )
         result.append( (features, bed) )
 
     # center bins
     out_bins = bins[:-1] + options.bin_size
-
+    
     def writeMatrix( result, sort ):
 
         outfile_matrix = E.openOutputFile( "matrix_%s.gz" % re.sub("-", "_", sort ) )            
@@ -188,7 +192,6 @@ def main( argv = None ):
             options.stdout.write( "\t%s" % ",".join( map(str, bins )))
             options.stdout.write( "\t%s" % ",".join( map(str, counts)))
             options.stdout.write( "\n" )
-
             outfile_matrix.write( "%s\t%s\n" % (bed.name, "\t".join(map(str,counts))) )
 
         outfile_matrix.close()
@@ -201,7 +204,13 @@ def main( argv = None ):
             
         elif sort == "peak-width":
             result.sort( key = lambda x: x[0].peak_width )
+        
+        elif sort == "interval-width":
+            result.sort( key = lambda x: x[1].end - x[1].start )
 
+        elif sort == "interval-score":
+            result.sort( key = lambda x: x[1].score )
+            
         writeMatrix( result, sort )
 
     ## write footer and output benchmark information.

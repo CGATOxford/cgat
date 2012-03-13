@@ -19,6 +19,8 @@ Contents:
    pipeline/macs_replicated_genes_with_nmi.rst
    pipeline/macs_replicated_interval_tss_distance.rst
    pipeline/macs_replicated_interval_rnaseq_tss.rst
+   pipeline/peakshape.rst
+   pipeline/macs_replicated_unique_interval_chromatin_profile.rst
    pipeline/macs_replicated_interval_comparison.rst
    pipeline/macs_replicated_tissue_specific_intervals.rst
    pipeline/macs_replicated_unique_intervals.rst

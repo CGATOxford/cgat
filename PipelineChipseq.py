@@ -902,12 +902,19 @@ def loadMACS( infile, outfile, bamfile, tablename = None ):
 
     track = P.snip( os.path.basename(infile), ".macs" )
     folder = os.path.dirname(infile)
-    infilename =  folder + "/" + track + "_peaks.xls"
-    filename_diag = folder + "/" + track + "_diag.xls"
-    filename_r = folder + "/" + track + "_model.r"
-    filename_rlog = folder + "/" + track + ".r.log"
-    filename_pdf = track + "_model.pdf"
-    
+    if len(folder) > 0:
+        infilename =  folder + "/" + track + "_peaks.xls"
+        filename_diag = folder + "/" + track + "_diag.xls"
+        filename_r = folder + "/" + track + "_model.r"
+        filename_rlog = folder + "/" + track + ".r.log"
+        filename_pdf = track + "_model.pdf"
+    else: 
+        infilename =  track + "_peaks.xls"
+        filename_diag = track + "_diag.xls"
+        filename_r = track + "_model.r"
+        filename_rlog = track + ".r.log"
+        filename_pdf = track + "_model.pdf"
+
     if not os.path.exists(infilename):
         E.warn("could not find %s" % infilename )
         P.touch( outfile )
@@ -915,7 +922,10 @@ def loadMACS( infile, outfile, bamfile, tablename = None ):
 
     # create plot by calling R
     if os.path.exists( filename_r ):
-        statement = '''R --vanilla < %(filename_r)s > %(filename_rlog)s; mv %(filename_pdf)s %(folder)s/%(filename_pdf)s; '''
+        if len(folder) > 0:
+            statement = '''R --vanilla < %(filename_r)s > %(filename_rlog)s; mv %(filename_pdf)s %(folder)s/%(filename_pdf)s; '''
+        else:
+            statement = '''R --vanilla < %(filename_r)s > %(filename_rlog)s; '''
         P.run()
 
     # filter peaks
