@@ -60,6 +60,7 @@ Code
 
 import os, sys, shutil, glob, collections
 import Pipeline as P
+import Experiment as E
 import IOTools
 import Fastq
 import pysam
@@ -198,12 +199,20 @@ class Mapper( object ):
                 statement.append( "fastq-dump --outdir %(tmpdir_fastq)s %(infile)s" % locals() )
                 
             elif infile.endswith( ".fastq.gz" ):
+                try:
+                    format = Fastq.guessFormat( IOTools.openFile( infile, "r"))
+                except ValueError:
+                    format = None
                 
-                statement.append(  """gunzip < %(infile)s 
+                if format != "sanger":
+                    statement.append(  """gunzip < %(infile)s 
                                       | python %%(scriptsdir)s/fastq2fastq.py --change-format=sanger --guess-format=phred64 --log=%(outfile)s.log
                                       %(compress_cmd)s
                                       > %(tmpdir_fastq)s/%(track)s.fastq%(extension)s""" % locals() )
-                fastqfiles.append( ("%s/%s.fastq%s" % (tmpdir_fastq, track, extension),) )
+                    fastqfiles.append( ("%s/%s.fastq%s" % (tmpdir_fastq, track, extension),) )
+                else:
+                    E.debug( "%s: assuming quality score format %s" % (infile, format ) ) 
+                    fastqfiles.append( (infile, ) )
 
             elif infile.endswith( ".csfasta.gz" ):
                 # single end SOLiD data
@@ -256,7 +265,14 @@ class Mapper( object ):
                 infile2 = "%s.fastq.2.gz" % bn
                 if not os.path.exists( infile2 ):
                     raise ValueError("can not find paired ended file '%s' for '%s'" % (infile2, infile))
-                statement.append( """gunzip < %(infile)s 
+                
+                try:
+                    format = Fastq.guessFormat( IOTools.openFile( infile ) )
+                except ValueError:
+                    format = None
+
+                if format != "sanger":
+                    statement.append( """gunzip < %(infile)s 
                                      | python %%(scriptsdir)s/fastq2fastq.py --change-format=sanger --guess-format=phred64 --log=%(outfile)s.log
                                      %(compress_cmd)s
                                      > %(tmpdir_fastq)s/%(track)s.1.fastq%(extension)s;
@@ -265,8 +281,13 @@ class Mapper( object ):
                                      %(compress_cmd)s
                                      > %(tmpdir_fastq)s/%(track)s.2.fastq%(extension)s
                                  """ % locals() )
-                fastqfiles.append( ("%s/%s.1.fastq%s" % (tmpdir_fastq, track, extension),
-                                    "%s/%s.2.fastq%s" % (tmpdir_fastq, track, extension) ) )
+                    fastqfiles.append( ("%s/%s.1.fastq%s" % (tmpdir_fastq, track, extension),
+                                        "%s/%s.2.fastq%s" % (tmpdir_fastq, track, extension) ) )
+
+                else:
+                    E.debug( "%s: assuming quality score format %s" % (infile, format ) ) 
+                    fastqfiles.append( (infile, infile2, ) )
+                    
             else:
                 raise NotImplementedError( "unknown file format %s" % infile )
 
@@ -799,6 +820,9 @@ class BowtieTranscripts( Mapper ):
     # bowtie can map colour space files directly
     preserve_colourspace = True
 
+    compress = True
+
+
     def mapper( self, infiles, outfile ):
         '''build mapping statement on infiles.
 
@@ -829,7 +853,7 @@ class BowtieTranscripts( Mapper ):
                 data_options.append( "--quals %s" % ",".join( infiles[1] ) )
                 nfiles -= 1
             elif nfiles == 4:
-                data_options.append( "-Q1 %s -Q2 %s" % (",".join(infiles[2], infiles[3])) )
+                data_options.append( "-Q1 <( zcat %s ) -Q2 <( zcat %s)" % (",".join(infiles[2], infiles[3])) )
                 nfiles -= 2
             else:
                 raise ValueError( "unexpected number of files" )
@@ -841,7 +865,7 @@ class BowtieTranscripts( Mapper ):
         tmpdir_fastq = self.tmpdir_fastq
 
         if nfiles == 1:
-            infiles = ",".join( infiles[0])
+            infiles = ",".join( ["<(zcat %s)" % x for x in infiles[0] ] )
             statement = '''
                 bowtie --quiet --sam
                        --threads %%(bowtie_threads)i
@@ -855,8 +879,8 @@ class BowtieTranscripts( Mapper ):
             ''' % locals()
 
         elif nfiles == 2:
-            infiles1 = ",".join( infiles[0] )
-            infiles2 = ",".join( infiles[1] )
+            infiles1 = ",".join( ["<(zcat %s)" % x for x in infiles[0] ] )
+            infiles2 = ",".join( ["<(zcat %s)" % x for x in infiles[1] ] )
 
             statement = '''
                 bowtie --quiet --sam

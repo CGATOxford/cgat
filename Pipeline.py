@@ -870,7 +870,7 @@ def clonePipeline( srcdir ):
     
     destdir = os.path.curdir
 
-    copy_files = ("sphinxreport.ini", "conf.py", "pipeline.ini" )
+    copy_files = ("sphinxreport.ini", "conf.py", "pipeline.ini", "csvdb" )
     ignore_prefix = ("report", "_cache", "export", "tmp", "ctmp", "_static", "_templates" )
 
     def _ignore( p ):

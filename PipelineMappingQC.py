@@ -63,17 +63,27 @@ import rpy2.robjects.vectors as rovectors
 import rpy2.rinterface as ri
 
 import Pipeline as P
+import pysam
 
 try:
     PARAMS = P.getParameters()
 except IOError:
     pass
 
+def getNumReadsFromBAMFile( infile ):
+    '''count number of reads in bam file.'''
+    read_info = pysam.idxstats( infile )
+    return sum( map(int, [ x.split("\t")[2] for x in read_info]  ) )
 
 def buildPicardInsertSizeStats( infile, outfile, genome_file ):
     '''gather BAM file insert size statistics using Picard '''
 
     to_cluster = True
+
+    if getNumReadsFromBAMFile(infile) == 0:
+        E.warn( "no reads in %s - no metrics" % infile )
+        P.touch( outfile )
+        return
 
     statement = '''CollectInsertSizeMetrics
                                        INPUT=%(infile)s 
@@ -90,6 +100,11 @@ def buildPicardAlignmentStats( infile, outfile, genome_file ):
 
     to_cluster = True
 
+    if getNumReadsFromBAMFile(infile) == 0:
+        E.warn( "no reads in %s - no metrics" % infile )
+        P.touch( outfile )
+        return
+
     statement = '''CollectMultipleMetrics 
                                        INPUT=%(infile)s 
                                        REFERENCE_SEQUENCE=%(genome_file)s
@@ -103,6 +118,11 @@ def buildPicardAlignmentStats( infile, outfile, genome_file ):
 def buildPicardGCStats( infile, outfile, genome_file ):
     '''Gather BAM file GC bias stats using Picard '''
     to_cluster = True
+
+    if getNumReadsFromBAMFile(infile) == 0:
+        E.warn( "no reads in %s - no metrics" % infile )
+        P.touch( outfile )
+        return
 
     statement = '''CollectGcBiasMetrics
                                        INPUT=%(infile)s 

@@ -433,6 +433,8 @@ import rpy2.robjects as ro
 import rpy2.robjects.vectors as rovectors
 from rpy2.rinterface import RRuntimeError
 
+import Expression
+
 import PipelineGeneset
 import PipelineMapping
 import PipelineRnaseq
@@ -1400,7 +1402,6 @@ def buildBAMs( infiles, outfile):
 def buildMismappedBAMs( infile, outfile ):
     '''pseudo target - update the mismapped bam files.'''
     P.touch( outfile )
-
 
 ############################################################
 ############################################################
@@ -2989,74 +2990,8 @@ def loadCuffdiff( infile, outfile ):
     are set to status 'NOCALL'. These transcripts might nevertheless be significant.
     '''
 
-    prefix = P.toTable( outfile )
-    indir = infile + ".dir"
+    Expression.loadCuffdiff( infile, outfile )
 
-    if not os.path.exists( indir ):
-        P.touch( outfile )
-        return
-
-    to_cluster = False
-    dbhandle = sqlite3.connect( PARAMS["database"] )
-    
-    # ignore promoters and splicing - no fold change column, but  sqrt(JS)
-    for fn, level in ( ("cds_exp.diff", "cds"),
-                       ("gene_exp.diff", "gene"),
-                       ("isoform_exp.diff", "isoform"),
-                       # ("promoters.diff", "promotor"),
-                       # ("splicing.diff", "splice"), 
-                       ("tss_group_exp.diff", "tss") ):
-        
-        tablename = prefix + "_" + level + "_diff"
-
-        # max/minimum fold change seems to be (-)1.79769e+308
-
-        statement = '''cat %(indir)s/%(fn)s
-        | perl -p -e "s/sample_/track/g; s/value_/value/g; s/yes$/1/; s/no$/0/; s/log2\\(fold_change\\)/lfold/; s/p_value/pvalue/"
-        | awk -v OFS='\\t' '/test_id/ {print;next;} 
-                                {if( $6 == "OK" && ($7 < %(cuffdiff_fpkm_expressed)f || $8 < %(cuffdiff_fpkm_expressed)f )) { $6 = "NOCALL"; };
-                                print; } '
-        | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --allow-empty
-              --index=track1
-              --index=track2
-              --index=test_id
-              --table=%(tablename)s 
-         >> %(outfile)s.log
-         '''
-        
-        P.run()
-
-    for fn, level in ( ("cds.fpkm_tracking", "cds" ),
-                       ("genes.fpkm_tracking", "gene"),
-                       ("isoforms.fpkm_tracking", "isoform"),
-                       ("tss_groups.fpkm_tracking", "tss") ):
-
-        tablename = prefix + "_" + level + "_levels" 
-
-        statement = '''cat %(indir)s/%(fn)s
-        | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --allow-empty
-              --index=tracking_id
-              --table=%(tablename)s 
-         >> %(outfile)s.log
-         '''
-        
-        P.run()
-
-    ## build convenience table with tracks
-    tablename = prefix + "_isoform_levels"
-    tracks = Database.getColumnNames( dbhandle, tablename )
-    tracks = [ x[:-len("_FPKM")] for x in tracks if x.endswith("_FPKM") ]
-    
-    tmpfile = P.getTempFile()
-    tmpfile.write( "track\n" )
-    tmpfile.write("\n".join(tracks) + "\n" )
-    tmpfile.close()
-    
-    statement = P.load( tmpfile.name, outfile )
-    os.unlink( tmpfile.name )
-    
 #########################################################################
 #########################################################################
 #########################################################################
@@ -3076,7 +3011,7 @@ def buildExpressionStats( tables, method, outfile ):
     keys_status = "OK", "NOTEST", "FAIL", "NOCALL"
 
     outf = IOTools.openFile( outfile, "w" )
-    outf.write( "\t".join( ("geneset", "level", "track1", "track2", "tested",
+    outf.write( "\t".join( ("geneset", "level", "treatment_name", "control_name", "tested",
                             "\t".join( [ "status_%s" % x for x in keys_status ] ),
                             "significant",
                             "twofold" ) ) + "\n" )
@@ -3097,30 +3032,30 @@ def buildExpressionStats( tables, method, outfile ):
                 return collections.defaultdict( int, [ (tuple( x[:l]), x[l]) for x in vals ] )
             
             tested = toDict( Database.executewait( dbhandle,
-                                               """SELECT track1, track2, COUNT(*) FROM %(tablename_diff)s 
-                                    GROUP BY track1,track2""" % locals() ).fetchall() )
+                                               """SELECT treatment_name, control_name, COUNT(*) FROM %(tablename_diff)s 
+                                    GROUP BY treatment_name,control_name""" % locals() ).fetchall() )
             status = toDict( Database.executewait( dbhandle,
-                                                   """SELECT track1, track2, status, COUNT(*) FROM %(tablename_diff)s 
-                                    GROUP BY track1,track2,status""" % locals() ).fetchall(), 3 )
+                                                   """SELECT treatment_name, control_name, status, COUNT(*) FROM %(tablename_diff)s 
+                                    GROUP BY treatment_name,control_name,status""" % locals() ).fetchall(), 3 )
             signif = toDict( Database.executewait( dbhandle,
-                                                   """SELECT track1, track2, COUNT(*) FROM %(tablename_diff)s 
+                                                   """SELECT treatment_name, control_name, COUNT(*) FROM %(tablename_diff)s 
                                     WHERE significant
-                                    GROUP BY track1,track2""" % locals() ).fetchall() )
+                                    GROUP BY treatment_name,control_name""" % locals() ).fetchall() )
             fold2 = toDict( Database.executewait( dbhandle,
-                    """SELECT track1, track2, COUNT(*) FROM %(tablename_diff)s 
-                                    WHERE (lfold >= 1 or lfold <= -1) AND significant
-                                    GROUP BY track1,track2,significant""" % locals() ).fetchall() )
+                    """SELECT treatment_name, control_name, COUNT(*) FROM %(tablename_diff)s 
+                                    WHERE (l2fold >= 1 or l2fold <= -1) AND significant
+                                    GROUP BY treatment_name,control_name,significant""" % locals() ).fetchall() )
             
-            for track1, track2 in itertools.combinations( EXPERIMENTS, 2 ):
+            for treatment_name, control_name in itertools.combinations( EXPERIMENTS, 2 ):
                 outf.write( "\t".join(map(str, (
                                 geneset,
                                 level,
-                                track1,
-                                track2,
-                                tested[(track1,track2)],
-                                "\t".join( [ str(status[(track1,track2,x)]) for x in keys_status]),
-                                signif[(track1,track2)],
-                                fold2[(track1,track2)] ) ) ) + "\n" )
+                                treatment_name,
+                                control_name,
+                                tested[(treatment_name,control_name)],
+                                "\t".join( [ str(status[(treatment_name,control_name,x)]) for x in keys_status]),
+                                signif[(treatment_name,control_name)],
+                                fold2[(treatment_name,control_name)] ) ) ) + "\n" )
                 
             ###########################################
             ###########################################
@@ -3183,17 +3118,19 @@ def buildCuffdiffPlots( infile, outfile ):
         
         # note that the ordering of EXPERIMENTS and the _diff table needs to be the same
         # as only one triangle is stored of the pairwise results.
-        # do not plot "undefined" lfold values (where value1 or value2 = 0)
+        # do not plot "undefined" lfold values (where treatment_mean or control_mean = 0)
         # do not plot lfold values where the confidence bounds contain 0.
         for track1, track2 in itertools.combinations( EXPERIMENTS, 2 ):
             statement = """
-                        SELECT CASE WHEN d.value1 < d.value2 THEN d.value1 ELSE d.value2 END, d.lfold, d.significant
+                        SELECT CASE WHEN d.treatment_mean < d.control_mean THEN d.treatment_mean 
+                                          ELSE d.control_mean END, 
+                               d.l2fold, d.significant
                         FROM %(tablename_diff)s AS d
-                        WHERE track1 = '%(track1)s' AND 
-                              track2 = '%(track2)s' AND 
+                        WHERE treatment_name = '%(track1)s' AND 
+                              control_name = '%(track2)s' AND 
                               status = 'OK' AND
-                              value1 > 0 AND 
-                              value2 > 0 
+                              treatment_mean > 0 AND 
+                              control_mean > 0 
                         """ % locals()
             
             data = zip( *Database.executewait( dbhandle, statement ))
@@ -3949,17 +3886,16 @@ def runDESeq( infile, outfile ):
     to_cluster = USECLUSTER
 
     outdir = os.path.join( PARAMS["exportdir"], "deseq" )
-
     geneset, method = outfile.split(".")
     level = "gene"
 
     # load data 
     R('''suppressMessages(library('DESeq'))''')
-    R( '''counts_table <- read.delim( '%s', header = TRUE, row.names = 1, stringsAsFactors = TRUE )''' % infile )
+    R( '''countsTable <- read.delim( '%s', header = TRUE, row.names = 1, stringsAsFactors = TRUE )''' % infile )
 
     # get conditions to test
     # note that tracks in R use a '.' as separator
-    tracks = R('''colnames(counts_table)''')
+    tracks = R('''colnames(countsTable)''')
     map_track2column = dict( [ (y,x) for x,y in enumerate( tracks ) ] )
     
     sample2condition = [None] * len(tracks)
@@ -3974,8 +3910,8 @@ def runDESeq( infile, outfile ):
             sample2condition[map_track2column[r.asR()]] = group.asR()
         conditions.append( group )
 
-    ro.globalenv['conds'] = ro.StrVector(sample2condition)
-    R('''print (conds)''')
+    ro.globalenv['groups'] = ro.StrVector(sample2condition)
+    R('''print (groups)''')
 
     def build_filename2( **kwargs ):
         return "%(outdir)s/%(geneset)s_%(method)s_%(level)s_%(track1)s_vs_%(track2)s_%(section)s.png" % kwargs
@@ -3983,47 +3919,41 @@ def runDESeq( infile, outfile ):
         return "%(outdir)s/%(geneset)s_%(method)s_%(level)s_%(section)s_%(track)s.png" % kwargs
     def build_filename0( **kwargs ):
         return "%(outdir)s/%(geneset)s_%(method)s_%(level)s_%(section)s.png" % kwargs
+    def build_filename0b( **kwargs ):
+        return "%(outdir)s/%(geneset)s_%(method)s_%(level)s_%(section)s.tsv" % kwargs
 
-    # this analysis follows the 'Analysing RNA-Seq data with the "DESeq" package'
-    # tutorial 
-    R('''cds <-newCountDataSet( counts_table, conds) ''')
+    ######## Run DESeq
+    # Create Count data object
+    E.info( "running DESeq: replicates=%s" % (not no_replicates))
+    R('''cds <-newCountDataSet( countsTable, groups) ''')
+
+    # Estimate size factors
     R('''cds <- estimateSizeFactors( cds )''')
 
+    # Estimate variance
     if no_replicates:
-        R('''cds <- estimateVarianceFunctions( cds, method="blind" )''')
+        E.info("no replicates - estimating variance with method='blind'" )
+        # old:R('''cds <- estimateVarianceFunctions( cds, method="blind" )''')
+        R('''cds <- estimateDispersions( cds, method="blind" )''')
     else:
-        R('''cds <- estimateVarianceFunctions( cds )''')
+        E.info("replicates - estimating variance from replicates" )
+        # old:R('''cds <- estimateVarianceFunctions( cds )''')
+        R('''cds <- estimateDispersions( cds )''')
+
+    R('''str( fitInfo( cds ) )''')
 
     L.info("creating diagnostic plots" ) 
-    size_factors = R('''sizeFactors( cds )''')
-    R.png( build_filename0( section = "scvplot", **locals() ) )
-    R('''scvPlot( cds, ylim = c(0,3))''')
-    R['dev.off']()
 
-    R('''vsd <- getVarianceStabilizedData( cds )''' )
-    R('''dists <- dist( t( vsd ) )''')
-    R.png( build_filename0( section = "heatmap", **locals() ) )
-    R('''heatmap( as.matrix( dists ), symm=TRUE )''' )
-    R['dev.off']()
-
-    for track in conditions:
-        condition = track.asR()
-        R.png( build_filename1( section = "fit", **locals() ) )
-        R('''diagForT <- varianceFitDiagnostics( cds, "%s" )''' % condition )
-        if not no_replicates:
-            R('''smoothScatter( log10(diagForT$baseMean), log10(diagForT$baseVar) )''')
-            R('''lines( log10(fittedBaseVar) ~ log10(baseMean), diagForT[ order(diagForT$baseMean), ], col="red" )''')
-            R['dev.off']()
-            R.png( build_filename1( section = "residuals", **locals() ) )
-            R('''residualsEcdfPlot( cds, "%s" )''' % condition )
-            R['dev.off']()
+    # Plot size factors
+    Expression.deseqPlotSizeFactors( build_filename0( section = "size_factors", **locals() ) )
+    Expression.deseqOutputSizeFactors( build_filename0b( section = "size_factors", **locals() ))
+    Expression.deseqPlotHeatmap( build_filename0( section = "heatmap", **locals() ) )
+    Expression.deseqPlotPairs( build_filename0( section = "pairs", **locals() ) )
 
     L.info("calling differential expression")
 
-    outf = IOTools.openFile( outfile, "w" )
-    names = None
-    fdr = PARAMS["cuffdiff_fdr"]
-    isna = R["is.na"]
+
+    all_results = []
 
     for track1, track2 in itertools.combinations( conditions, 2 ):
         R('''res <- nbinomTest( cds, '%s', '%s' )''' % (track1.asR(),track2.asR()))
@@ -4032,42 +3962,12 @@ def runDESeq( infile, outfile ):
         R('''plot( res$baseMean, res$log2FoldChange, log="x", pch=20, cex=.1,
                    col = ifelse( res$padj < %(cuffdiff_fdr)s, "red", "black" ) )''' % PARAMS )
         R['dev.off']()
-        if not names:
-            names = list(R['res'].names)
-            m = dict( [ (x,x) for x in names ])
-            m.update( dict(
-                    pval = "pvalue", 
-                    baseMeanA = "value1", 
-                    baseMeanB = "value2",
-                    id = "test_id", 
-                    log2FoldChange = "lfold") )
-            
-            header = [ m[x] for x in names ] 
-            outf.write( "track1\ttrack2\t%s\tstatus\tsignificant\n" % "\t".join(header))
-        else:
-            if names != list(R['res'].names):
-                raise ValueError( "different column headers in DESeq output: %s vs %s" % (names, list(R['res'].names)))
+        results, counts = Expression.deseqParseResults( track1, track2, fdr = PARAMS["cuffdiff_fdr"] )
+        all_results.extend( results )
+        E.info( "%s vs %s: %s" % (track1,track2,counts ))
 
-        rtype = collections.namedtuple( "rtype", names )
-        
-        for data in zip( *R['res']) :
-            d = rtype._make( data )
-            outf.write( "%s\t%s\t" % (track1,track2))
-            # set significant flag
-            if d.padj <= fdr: signif = 1
-            else: signif = 0
-
-            # set lfold change to 0 if both are not expressed
-            if d.baseMeanA == 0.0 and d.baseMeanB == 0.0:
-                d = d._replace( foldChange = 0, log2FoldChange = 0 )
-
-            if isna( d.pval )[0]: status = "FAIL"
-            else: status = "OK"
-
-            outf.write( "\t".join( map(str, d) ))
-            outf.write("\t%s\t%s\n" % (status, str(signif)))
-            
-    outf.close()
+    with IOTools.openFile( outfile, "w" ) as outf:
+        Expression.writeExpressionResults( outf, all_results )
 
 #########################################################################
 #########################################################################
@@ -4087,8 +3987,8 @@ def loadDESeq( infile, outfile ):
     statement = '''cat %(infile)s
             | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --allow-empty
-              --index=track1
-              --index=track2
+              --index=treatment_name
+              --index=control_name
               --index=test_id
               --table=%(tablename)s 
             > %(outfile)s
@@ -4134,7 +4034,9 @@ def buildGeneSetsOfInterest( infile, outfile ):
     table = P.toTable( infile ) + "_gene_diff"
     track = table[:table.index('_')]
 
-    statement = '''SELECT test_id, track1, track2, info.contig, info.start, info.end, info.strand, lfold
+    statement = '''SELECT test_id, treatment_name, control_name, 
+                          info.contig, info.start, info.end, info.strand, 
+                          l2fold
                           FROM %(table)s, 
                                %(track)s_geneinfo AS info
                           WHERE 
@@ -4146,15 +4048,15 @@ def buildGeneSetsOfInterest( infile, outfile ):
 
     outfiles = IOTools.FilePool( outfile + "_%s.bed.gz" )
 
-    for test_id, track1, track2, contig, start, end, strand, lfold in data:
+    for test_id, track1, track2, contig, start, end, strand, l2fold in data:
         try: 
-            lfold = float(lfold)
+            l2fold = float(l2fold)
         except TypeError:
-            lfold = 0
+            l2fold = 0
 
         key = "%s_vs_%s" % (track1, track2)
         outfiles.write( key, "%s\t%i\t%i\t%s\t%5.2f\t%s\n" % \
-                        (contig, start, end, test_id, lfold, strand))
+                        (contig, start, end, test_id, l2fold, strand))
 
     outfiles.close()
 

@@ -149,6 +149,7 @@ def exportSequencesFromBedFile( infile, outfile, masker = None, mode = "interval
         if mode == "intervals":
             seqs.append( fasta.getSequence( bed.contig, "+", bed.start, bed.end) )
             ids.append( "%s_%s %s:%i..%i" % (track, bed.name, bed.contig, bed.start, bed.end) )
+
         elif mode == "leftright":
             l = bed.end - bed.start
 
@@ -895,6 +896,7 @@ def runMEMEOnSequences( infile, outfile ):
                         %(meme_options)s 
        > %(outfile)s.log
     '''
+
     P.run()
 
     # copy over results

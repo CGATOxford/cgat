@@ -33,13 +33,17 @@ Purpose
 -------
 
 This script takes a :term:`gtf` formatted file and computes density profiles
-over various annotations.
+over various annotations derived from the :term:`gtf` file. 
 
+The densities can be computed from :term:`bam` or :term:`bed` formatted files.
+:term:`bam` files need to be sorted by coordinate and indexed. If a :term:`bed` 
+formatted file is supplied, it must be compressed with  and indexed with :file:`tabix`.
 
 .. todo::
    
-   paired-endedness is not fully implemented.
-
+   * paired-endedness is ignored. Both ends of a paired-ended read are treated 
+   individually.
+  
 -n/--normalization
    normalize counts before aggregation. The normalization options are:
    * sum: sum of counts within a region
@@ -56,17 +60,16 @@ over various annotations.
 
    several options can be combined.
 
-
 Usage
 -----
 
 Example::
 
-   python script_template.py --help
+   python bam2geneprofile.py reads.bam genes.gtf
 
 Type::
 
-   python script_template.py --help
+   python bam2geneprofile.py --help
 
 for command line help.
 
@@ -123,7 +126,7 @@ def main( argv = None ):
                               "[%default]" )
 
     parser.add_option( "-i", "--shift", dest="shift", type = "int",
-                       help = "shift for reads. "
+                       help = "shift reads in :term:`bam` formatted file before computing densities. "
                               "[%default]" )
 
     parser.set_defaults(

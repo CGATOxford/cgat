@@ -42,11 +42,11 @@ class TrackerDESeqFit( Tracker ):
 ##############################################################
 class TrackerDESummaryDESeq( RnaseqTracker, SingleTableTrackerRows ):
     table = "deseq_stats"
-    fields = ("level", "geneset", "track1", "track2" )
+    fields = ("level", "geneset", "treatment_name", "control_name" )
 
 class TrackerDESummaryCuffdiff( RnaseqTracker, SingleTableTrackerRows ):
     table = "cuffdiff_stats"
-    fields = ("level", "geneset", "track1", "track2" )
+    fields = ("level", "geneset", "treatment_name", "control_name" )
 
 ##############################################################
 ##############################################################
@@ -143,8 +143,8 @@ class DifferentialExpressionOverlap( DifferentialExpressionComparison ):
         
         pair1, pair2 = track
         
-        a = self.get('''SELECT test_id, track1, track2 FROM %(slice)s_%(pair1)s_gene_diff WHERE significant''')
-        b = self.get('''SELECT test_id, track1, track2 FROM %(slice)s_%(pair2)s_gene_diff WHERE significant''')
+        a = self.get('''SELECT test_id, treatment_name, control_name FROM %(slice)s_%(pair1)s_gene_diff WHERE significant''')
+        b = self.get('''SELECT test_id, treatment_name, control_name FROM %(slice)s_%(pair2)s_gene_diff WHERE significant''')
 
         a = set(map(str,a))
         b = set(map(str,b))
@@ -164,9 +164,9 @@ class DifferentialExpressionCorrelationPValue( DifferentialExpressionComparison 
                    SELECT a.pvalue as %(pair1)s, b.pvalue as %(pair2)s
                           FROM %(slice)s_%(pair1)s_gene_diff AS a, 
                                %(slice)s_%(pair2)s_gene_diff AS b 
-                   WHERE a.test_id = b.test_id AND a.track1 = b.track1 AND a.track2 = b.track2
-                         AND ABS( a.lfold ) != 10
-                         AND ABS( b.lfold ) != 10
+                   WHERE a.test_id = b.test_id AND a.treatment_name = b.treatment_name AND a.control_name = b.control_name
+                         AND ABS( a.l2fold ) != 10
+                         AND ABS( b.l2fold ) != 10
                          AND a.pvalue IS NOT NULL
                          AND b.pvalue IS NOT NULL
                          AND a.status == 'OK' and b.status == 'OK'
@@ -184,12 +184,12 @@ class DifferentialExpressionCorrelationFoldChange( DifferentialExpressionCompari
         pair1, pair2 = track
 
         data = self.getAll( '''
-                   SELECT a.lfold as %(pair1)s, b.lfold as %(pair2)s
+                   SELECT a.l2fold as %(pair1)s, b.l2fold as %(pair2)s
                           FROM %(slice)s_%(pair1)s_gene_diff AS a, 
                                %(slice)s_%(pair2)s_gene_diff AS b 
-                   WHERE a.test_id = b.test_id AND a.track1 = b.track1 AND a.track2 = b.track2
-                         AND ABS( a.lfold ) != 10
-                         AND ABS( b.lfold ) != 10''' )
+                   WHERE a.test_id = b.test_id AND a.treatment_name = b.treatment_name AND a.control_name = b.control_name
+                         AND ABS( a.l2fold ) != 10
+                         AND ABS( b.l2fold ) != 10''' )
 
 
         return data
@@ -209,12 +209,12 @@ class VolcanoTracker( RnaseqTracker ):
         # disabled - takes potentially a lot of time
         return None
 
-        data = self.getAll( """SELECT lfold,
+        data = self.getAll( """SELECT l2fold,
                                     pvalue, 
                                     CASE WHEN value1 < value2 THEN value2 ELSE value1 END AS max_fpkm 
                                     FROM %(track)s_%(method)s_%(slice)s_diff 
                                     WHERE pvalue IS NOT NULL AND pvalue != 'nan' AND 
-                                          lfold IS NOT NULL AND 
+                                          l2fold IS NOT NULL AND 
                                           max_fpkm > 0""" )
         if data:
             data["pvalue"] = [ -math.log10( x + 0.00001 ) for x in data["pvalue"] ]

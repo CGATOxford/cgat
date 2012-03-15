@@ -51,7 +51,7 @@ def buildProbeset2Gene( infile,
 GeneExpressionResult = collections.namedtuple( "GeneExpressionResult", \
                                                "test_id treatment_name treatment_mean treatment_std " \
                                                    " control_name control_mean control_std " \
-                                                   " pvalue qvalue l2fold fold called status" )
+                                                   " pvalue qvalue l2fold fold significant status" )
 
 
 def writeExpressionResults( outfile, result ):
@@ -247,8 +247,8 @@ class SAM( object ):
 
         R.assign( "a", a )
 
-        fdr_data = collections.namedtuple( "sam_fdr", ("delta", "p0", "false", "called", "fdr", "cutlow","cutup", "j2","j1" ) )
-        cutoff_data = collections.namedtuple( "sam_cutoff", ("delta", "called", "fdr"))
+        fdr_data = collections.namedtuple( "sam_fdr", ("delta", "p0", "false", "significant", "fdr", "cutlow","cutup", "j2","j1" ) )
+        cutoff_data = collections.namedtuple( "sam_cutoff", ("delta", "significant", "fdr"))
         gene_data = collections.namedtuple( "sam_fdr", ("row","dvalue","stddev","rawp","qvalue","rfold" ) )
 
         def _totable( robj ):
@@ -292,15 +292,15 @@ class SAM( object ):
         qvalues = dict( zip( probesets, R('''a@q.value''') ) )
         
         siggenes = {}        
-        called_genes = set()
+        significant_genes = set()
         if cutoff != None:
             E.debug( "using cutoff %s" % str(cutoff) )
             
             summary = R.summary( a, cutoff.delta )
             R.assign( "summary", summary )
 
-            called_genes = set( [probesets[int(x)-1] for x in R('''summary@row.sig.genes''')] )
-            # E.debug( "called genes=%s" % str(called_genes))
+            significant_genes = set( [probesets[int(x)-1] for x in R('''summary@row.sig.genes''')] )
+            # E.debug( "significant genes=%s" % str(significant_genes))
             
             r_result = zip(*_totable( summary.do_slot( 'mat.sig' ) ))
             
@@ -310,7 +310,7 @@ class SAM( object ):
                 
                 for x in r_result:
                     if x[4] > fdr:
-                        E.warn( "%s has qvalue (%f) larger than cutoff, but is called significant." % (str(x), x[4]))
+                        E.warn( "%s has qvalue (%f) larger than cutoff, but is significant significant." % (str(x), x[4]))
                             
                 # except TypeError:
                 #     # only a single value
@@ -343,7 +343,7 @@ class SAM( object ):
                 pvalue = pvalues[probeset]
                 qvalue = qvalues[probeset]
 
-            called = (0,1)[probeset in called_genes]
+            significant = (0,1)[probeset in significant_genes]
 
             genes.append( GeneExpressionResult._make( (probeset,
                                                        "treatment",
@@ -356,7 +356,7 @@ class SAM( object ):
                                                        qvalue,
                                                        mean1 - mean2,
                                                        math.pow(2,mean1 - mean2),
-                                                       called,
+                                                       significant,
                                                        "OK" ) ) )
 
         return genes, cutoff, fdr_values
@@ -420,12 +420,8 @@ def loadTagData( infile, design_file ):
     # Subset data & set conditions
     R('''includedSamples <- pheno2$include == '1' ''')
     R('''countsTable <- counts_table[ , includedSamples ]''')
-    R('''conds <- pheno2$group[ includedSamples ]''')
-
-    # Subset data & set conditions
-    R('''includedSamples <- pheno2$include == '1' ''')
-    R('''countsTable <- counts_table[ , includedSamples ]''')
     R('''groups <- factor(pheno2$group[ includedSamples ])''')
+    R('''conds <- pheno2$group[ includedSamples ]''')
     R('''pairs = factor(pheno2$pair[ includedSamples ])''')
 
     groups = R('''levels(groups)''')
@@ -613,6 +609,120 @@ def runEdgeR( infile,
     outf.write( "category\tcounts\n%s\n" % counts.asTable() )
     outf.close()
 
+## needs to put into class
+##
+def deseqPlotSizeFactors(outfile):
+    '''plot size factors - requires cds object.'''
+    R.png( outfile )
+    R('''par(mar=c(8,4,4,2))''')
+    R('''barplot( sizeFactors( cds ), main="size factors", las=2)''')
+    R['dev.off']()
+
+def deseqOutputSizeFactors( outfile ):
+    '''output size factors - requires cds object.'''
+    size_factors = R('''sizeFactors( cds )''')
+    samples = R('''names(sizeFactors(cds))''')
+    with IOTools.openFile( outfile, "w" ) as outf:
+        outf.write( "sample\tfactor\n" )
+        for name, x in zip( samples, size_factors):
+            outf.write( "%s\t%s\n" % (name, str(x)))
+
+def deseqPlotHeatmap( outfile ):
+    R('''vsd <- getVarianceStabilizedData( cds )''' )
+    R('''dists <- dist( t( vsd ) )''')
+    R.png( outfile )
+    R('''heatmap( as.matrix( dists ), symm=TRUE )''' )
+    R['dev.off']()
+
+def deseqPlotPairs( outfile ):
+    '''requires counts table'''
+    # Plot pairs
+    R.png( outfile, width=960, height=960 )
+    R('''panel.pearson <- function(x, y, digits=2, prefix="", cex.cor, ...)
+            {
+            usr <- par("usr"); on.exit(par(usr))
+            par(usr = c(0, 1, 0, 1))
+            r <- abs(cor(x, y))
+            txt <- format(c(r, 0.123456789), digits=digits)[1]
+            txt <- paste(prefix, txt, sep="")
+            if(missing(cex.cor)) cex <- 0.6/strwidth(txt)
+            x = 0.5;
+            y = 0.5;
+            if (par("xlog")) { x = 10^x }; 
+            if (par("ylog")) { y = 10^y }; 
+            text(x, y, txt, cex = cex);
+            }
+       ''')
+    R('''pairs( countsTable, lower.panel = panel.pearson, pch=".", log="xy" )''')
+    R['dev.off']()
+
+def deseqParseResults( track1, track2, fdr):
+
+    results = []
+    isna = R["is.na"]
+
+    # Get column names from output and edit
+    names = list(R['res'].names)
+    m = dict( [ (x,x) for x in names ])
+    m.update( dict(
+            pval = "pvalue", 
+            baseMeanA = "value1", 
+            baseMeanB = "value2",
+            id = "interval_id", 
+            log2FoldChange = "lfold") )
+    
+    rtype = collections.namedtuple( "rtype", names )
+    counts = E.Counter()
+    
+    for data in zip( *R['res']) :
+        counts.input += 1
+        d = rtype._make( data )
+        # set significant flag
+        if d.padj <= fdr: 
+            signif = 1
+            counts.significant += 1
+            if d.log2FoldChange > 0:
+                counts.significant_over += 1
+            else:
+                counts.significant_under += 1
+        else: 
+            signif = 0
+            counts.insignificant += 1
+
+        if d.log2FoldChange > 0:
+            counts.all_over += 1
+        else:
+            counts.all_under += 1
+
+        # set lfold change to 0 if both are not expressed
+        if d.baseMeanA == 0.0 and d.baseMeanB == 0.0:
+            d = d._replace( foldChange = 0, log2FoldChange = 0 )
+
+        if isna( d.pval ): status = "OK"
+        else: status = "FAIL"
+
+        counts[status] += 1
+
+        counts.output += 1
+
+        results.append( GeneExpressionResult._make( ( \
+                    d.id,
+                    track1,
+                    d.baseMeanA,
+                    0,
+                    track2,
+                    d.baseMeanB,
+                    0,
+                    d.pval,
+                    d.padj,
+                    d.log2FoldChange,
+                    d.foldChange,
+                    str(signif),
+                    status) ) )
+                    
+
+    return results, counts
+
 def runDESeq( infile, 
               design_file, 
               outfile, 
@@ -679,10 +789,10 @@ def runDESeq( infile,
     groups, pairs = loadTagData( infile, design_file )
 
     # Remove windows with no data
-    R( '''max_counts = apply(counts_table,1,max)''' )
-    R( '''counts_table = counts_table[max_counts>0,]''')
+    R( '''max_counts = apply(countsTable,1,max)''' )
+    R( '''countsTable = countsTable[max_counts>0,]''')
     E.info( "removed %i empty rows" % tuple( R('''sum(max_counts == 0)''') ) )
-    E.info( "trimmed data: %i observations for %i samples" % tuple( R('''dim(counts_table)''') ) )
+    E.info( "trimmed data: %i observations for %i samples" % tuple( R('''dim(countsTable)''') ) )
 
     # Test if replicates exist
     min_reps = R('''min(table(groups)) ''')[0]
@@ -708,42 +818,15 @@ def runDESeq( infile,
         # old:R('''cds <- estimateVarianceFunctions( cds )''')
         R('''cds <- estimateDispersions( cds )''')
 
-    print R('''warnings()''')
     R('''str( fitInfo( cds ) )''')
 
     # Plot size factors
-    R.png( '''%(outfile_prefix)ssize_factors.png''' % locals() )
-    R('''par(mar=c(8,4,4,2))''')
-    R('''barplot( sizeFactors( cds ), main="size factors", las=2)''')
-    R['dev.off']()
+    deseqPlotSizeFactors( '%(outfile_prefix)ssize_factors.png''' % locals() )
 
     # output size factors
-    size_factors = R('''sizeFactors( cds )''')
-    samples = R('''names(sizeFactors(cds))''')
-    with IOTools.openFile( "%(outfile_prefix)ssize_factors.tsv" % locals(), "w" ) as outf:
-        outf.write( "sample\tfactor\n" )
-        for name, x in zip( samples, size_factors):
-            outf.write( "%s\t%s\n" % (name, str(x)))
+    deseqOutputSizeFactors( "%(outfile_prefix)ssize_factors.tsv" % locals() ) 
 
-    # Plot pairs
-    R.png( '''%(outfile_prefix)spairs.png''' % locals(), width=960, height=960 )
-    R('''panel.pearson <- function(x, y, digits=2, prefix="", cex.cor, ...)
-            {
-            usr <- par("usr"); on.exit(par(usr))
-            par(usr = c(0, 1, 0, 1))
-            r <- abs(cor(x, y))
-            txt <- format(c(r, 0.123456789), digits=digits)[1]
-            txt <- paste(prefix, txt, sep="")
-            if(missing(cex.cor)) cex <- 0.6/strwidth(txt)
-            x = 0.5;
-            y = 0.5;
-            if (par("xlog")) { x = 10^x }; 
-            if (par("ylog")) { y = 10^y }; 
-            text(x, y, txt, cex = cex);
-            }
-       ''')
-    R('''pairs( counts_table, lower.panel = panel.pearson, pch=".", log="xy" )''')
-    R['dev.off']()
+    deseqPlotPairs('%(outfile_prefix)spairs.png' % locals()) 
 
     # in DESeq versions > 1.6 the following can be used
     # to output normalized data
@@ -755,12 +838,7 @@ def runDESeq( infile,
     # R('''scvPlot( cds, ylim = c(0,3))''')
     # R['dev.off']()
 
-    # Generate heatmap of variance stabilised data
-    R('''vsd <- getVarianceStabilizedData( cds )''' )
-    R('''dists <- dist( t( vsd ) )''')
-    R.png( '''%(outfile_prefix)sheatmap.png''' % locals() )
-    R('''heatmap( as.matrix( dists ), symm=TRUE )''' )
-    R['dev.off']()
+    deseqPlotHeatmap( '%(outfile_prefix)sheatmap.png' % locals())
 
     for group in groups:
         if not no_replicates:
@@ -788,82 +866,9 @@ def runDESeq( infile,
     isna = R["is.na"]
 
     E.info("Generating output")
-    # Get column names from output and edit
-    names = None
-    if not names:
-        names = list(R['res'].names)
-        m = dict( [ (x,x) for x in names ])
-        m.update( dict(
-                pval = "pvalue", 
-                baseMeanA = "value1", 
-                baseMeanB = "value2",
-                id = "interval_id", 
-                log2FoldChange = "lfold") )
-        
-        header = [ m[x] for x in names ] 
-        outf.write( "Group1\tGroup2\t%s\tstatus\tsignificant\n" % "\t".join(header))
-    else:
-        if names != list(R['res'].names):
-            raise ValueError( "different column headers in DESeq output: %s vs %s" % (names, list(R['res'].names)))
 
     # Parse results and parse to file
-    rtype = collections.namedtuple( "rtype", names )
-    counts = E.Counter()
-    
-    results = []
-
-    for data in zip( *R['res']) :
-        counts.input += 1
-        d = rtype._make( data )
-        outf.write( "%s\t%s\t" % (groups[0],groups[1]))
-        # set significant flag
-        if d.padj <= fdr: 
-            signif = 1
-            counts.significant += 1
-            if d.log2FoldChange > 0:
-                counts.significant_over += 1
-            else:
-                counts.significant_under += 1
-        else: 
-            signif = 0
-            counts.insignificant += 1
-
-        if d.log2FoldChange > 0:
-            counts.all_over += 1
-        else:
-            counts.all_under += 1
-
-        # set lfold change to 0 if both are not expressed
-        if d.baseMeanA == 0.0 and d.baseMeanB == 0.0:
-            d = d._replace( foldChange = 0, log2FoldChange = 0 )
-
-        if isna( d.pval ): status = "OK"
-        else: status = "FAIL"
-
-        counts[status] += 1
-
-        outf.write( "\t".join( map(str, d) ))
-        outf.write("\t%s\t%s\n" % (status, str(signif)))
-        counts.output += 1
-
-        results.append( GeneExpressionResult._make( ( \
-                    d.id,
-                    groups[0],
-                    d.baseMeanA,
-                    0,
-                    groups[1],
-                    d.baseMeanB,
-                    0,
-                    d.pval,
-                    d.padj,
-                    d.log2FoldChange,
-                    d.foldChange,
-                    str(signif),
-                    status) ) )
-                    
-
-    outf.write("#//")
-    outf.close()
+    results, counts = deseqParseResults( groups[0], groups[1], fdr = fdr )
 
     E.info( counts )
 
@@ -901,7 +906,7 @@ def plotTagStats( infile, design_file, outfile ):
     R('''library('ggplot2')''')
     R('''library('reshape')''')
 
-    d = R('''melt( log10(counts_table + 1), variable_name = 'sample' )''')
+    d = R('''melt( log10(countsTable + 1), variable_name = 'sample' )''')
     gp = ggplot2.ggplot(d)
     pp = gp + \
         ggplot2.geom_density(ggplot2.aes(x='value',group='sample',color='sample',fill='sample'),alpha=R.I(1/3))
@@ -931,7 +936,7 @@ def plotTagStats( infile, design_file, outfile ):
     R('''library('ggplot2')''')
     R('''library('reshape')''')
 
-    d = R('''melt( log10(counts_table + 1), variable_name = 'sample' )''')
+    d = R('''melt( log10(countsTable + 1), variable_name = 'sample' )''')
     gp = ggplot2.ggplot(d)
     pp = gp + \
         ggplot2.geom_density(ggplot2.aes(x='value',group='sample',color='sample',fill='sample'),alpha=R.I(1/3))
@@ -963,12 +968,12 @@ def plotDETagStats( infile, outfile ):
 
     gp = ggplot2.ggplot(data)
     a = gp + \
-        ggplot2.geom_density(ggplot2.aes(x='log10(treatment_mean+1)',group='factor(called)',
-                                         color='factor(called)',fill='factor(called)'),alpha=R.I(1/3)) 
+        ggplot2.geom_density(ggplot2.aes(x='log10(treatment_mean+1)',group='factor(significant)',
+                                         color='factor(significant)',fill='factor(significant)'),alpha=R.I(1/3)) 
 
     b = gp + \
-        ggplot2.geom_density(ggplot2.aes(x='log10(control_mean+1)',group='factor(called)',
-                                         color='factor(called)',fill='factor(called)'),alpha=R.I(1/3))
+        ggplot2.geom_density(ggplot2.aes(x='log10(control_mean+1)',group='factor(significant)',
+                                         color='factor(significant)',fill='factor(significant)'),alpha=R.I(1/3))
     
     R.png( outfile + ".densities.png" )
     R('''grid.newpage()''')
@@ -984,14 +989,14 @@ def plotDETagStats( infile, outfile ):
 
     gp = ggplot2.ggplot(data)
     a = gp + \
-        ggplot2.geom_boxplot(ggplot2.aes(x='factor(called)', y='log10(treatment_mean+1)',
-                                         color='factor(called)',fill='factor(called)'),
+        ggplot2.geom_boxplot(ggplot2.aes(x='factor(significant)', y='log10(treatment_mean+1)',
+                                         color='factor(significant)',fill='factor(significant)'),
                              size=0.3,
                              alpha=R.I(1/3)) 
 
     b = gp + \
-        ggplot2.geom_boxplot(ggplot2.aes(x='factor(called)', y='log10(control_mean+1)',
-                                         color='factor(called)',fill='factor(called)'),
+        ggplot2.geom_boxplot(ggplot2.aes(x='factor(significant)', y='log10(control_mean+1)',
+                                         color='factor(significant)',fill='factor(significant)'),
                              size=0.3,
                              alpha=R.I(1/3)) +\
         ggplot2.opts( axis_text_x = ggplot2.theme_text( angle=90, hjust=1, size=8 ) )

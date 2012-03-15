@@ -137,8 +137,6 @@ def iterate_guess( infile, max_tries = 10000):
 
     if len(quals) == 1:
         ref_format = list(quals)[0]
-    elif guess in quals:
-        ref_format = guess
     else:
         raise ValueError( "could not guess format - should be one of %s." % str(quals) )
             
@@ -188,5 +186,23 @@ def iterate_convert( infile, format, max_tries = 10000, guess = None ):
         r.fromPhred( r.toPhred(), format )
         yield r
          
-     
+
+def guessFormat( infile, max_lines = 10000 ):
+    '''guess format of FASTQ File.'''
+    
+    quals = set( RANGES.keys() )
+    myiter = iterate(infile)
+    for c, record in enumerate(myiter):
+        quals.intersection_update( set(record.guessFormat()) )
+        if len(quals) == 0:
+            raise ValueError( "could not guess format - ranges incompatible." )
+        if len(quals) == 1:
+            break
+        if c > max_lines: 
+            break
+
+    if len(quals) == 1:
+        return list(quals)[0]
+    else:
+        raise ValueError( "could not guess format - should be one of %s." % str(quals) )
 
