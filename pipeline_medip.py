@@ -171,7 +171,7 @@ USECLUSTER = True
 #########################################################################
 #########################################################################
 # load options from the config file
-P.getParameters( ["%s.ini" % __file__[:-len(".py")], 
+P.getParameters( ["%s/pipeline.ini" % __file__[:-len(".py")], 
                   "../pipeline.ini", 
                   "pipeline.ini" ] )
 

@@ -905,6 +905,19 @@ def clonePipeline( srcdir ):
                 os.symlink( os.path.realpath( fn),
                             dest_fn )
 
+def writeConfigFiles( path ):
+    
+    for dest in ( "pipeline.ini", "sphinxreport.ini", "conf.py" ):
+        src = os.path.join( path, dest)
+        if os.path.exists(dest):
+            L.warn( "file `%s` already exists - skipped" % dest )
+            continue
+
+        if not os.path.exists( src ):
+            raise ValueError( "default config file `%s` not found"  % src )
+        shutil.copyfile( src, dest )
+        L.info( "created new configuration file `%s` " % dest )
+
 USAGE = '''
 usage: %prog [OPTIONS] [CMD] [target]
 
@@ -922,7 +935,8 @@ plot <target>
    plot image (using inkscape) of pipeline state for *target*
 
 config
-   write a new configuration file pipeline.ini with default values
+   write new configuration files pipeline.ini, sphinxreport.ini and conf.py
+   with default values
 
 dump
    write pipeline configuration to stdout
@@ -1033,15 +1047,10 @@ def main( args = sys.argv ):
         print "dump = %s" % str(dict(PARAMS))
 
     elif options.pipeline_action == "config":
-        if os.path.exists("pipeline.ini"):
-            raise ValueError( "file `pipeline.ini` already exists" )
         f = sys._getframe(1)
         caller = inspect.getargvalues(f).locals["__file__"]
-        configfile = os.path.splitext(caller)[0] + ".ini" 
-        if not os.path.exists( configfile ):
-            raise ValueError( "default config file `%s` not found"  % configfile )
-        shutil.copyfile( configfile, "pipeline.ini" )
-        L.info( "created new configuration file `pipeline.ini` " )
+        prefix = os.path.splitext(caller)[0]
+        writeConfigFiles( prefix )
 
     elif options.pipeline_action == "clone":
         clonePipeline( options.pipeline_targets[0] )

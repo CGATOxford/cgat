@@ -58,7 +58,7 @@ Code
 
 '''
 
-import os, sys, shutil, glob, collections
+import os, sys, shutil, glob, collections, re
 import Pipeline as P
 import Experiment as E
 import IOTools
@@ -352,10 +352,7 @@ class FastQc( Mapper ):
         statement = []
         for f in infiles:
             for i, x in enumerate(f):
-                if x.endswith(".fastq"):
-                    track = P.snip( os.path.basename( x ), ".fastq" )
-                else:
-                    track = P.snip( os.path.basename( x ), ".fastq.gz" )
+                track = os.path.basename(  re.sub(".fastq.*", "", x) )
                 statement.append( '''fastqc --outdir=%%(exportdir)s/fastqc %(x)s >& %(outfile)s;''' % locals() )
         return " ".join( statement )
 

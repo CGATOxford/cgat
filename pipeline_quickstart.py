@@ -83,7 +83,7 @@ def main( argv = sys.argv ):
     # create links
     for src,dest in ( ("sphinxreport.ini", "sphinxreport.ini"),
                       ("conf.py", "conf.py"),
-                      ( "pipeline_%s.ini" % name, "pipeline.ini" )):
+                      ( "pipeline_%s/pipeline.ini" % name, "pipeline.ini" )):
         os.symlink( os.path.join( "../src", src), os.path.join( "report", dest ) )
 
     for f in ( "cgat_logo.png",

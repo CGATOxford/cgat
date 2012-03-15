@@ -24,7 +24,7 @@ import fileinput
 ## Pipeline configuration
 ###################################################
 P.getParameters( 
-    ["%s.ini" % __file__[:-len(".py")],
+    ["%s/pipeline.ini" % __file__[:-len(".py")],
      "../pipeline.ini",
      "pipeline.ini" ] )
 
