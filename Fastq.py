@@ -39,6 +39,7 @@ from math import log
 # ranges are conservative - they are open-ended
 RANGES = {
     'sanger' : (33, 75) ,
+    'illumina-1.8' : (33, 76) ,
     'solexa' : (59, 106) ,
     'phred64' : (64, 106) ,
     }
@@ -138,7 +139,7 @@ def iterate_guess( infile, max_tries = 10000):
     if len(quals) == 1:
         ref_format = list(quals)[0]
     else:
-        raise ValueError( "could not guess format - should be one of %s." % str(quals) )
+        raise ValueError( "could not guess format - could be one of %s." % str(quals) )
             
     for r in cache:
         r.format = ref_format
@@ -174,7 +175,7 @@ def iterate_convert( infile, format, max_tries = 10000, guess = None ):
     elif guess in quals:
         ref_format = guess
     else:
-        raise ValueError( "could not guess format - should be one of %s." % str(quals) )
+        raise ValueError( "could not guess format - could be one of %s." % str(quals) )
             
     for r in cache:
         r.format = ref_format
@@ -187,8 +188,12 @@ def iterate_convert( infile, format, max_tries = 10000, guess = None ):
         yield r
          
 
-def guessFormat( infile, max_lines = 10000 ):
-    '''guess format of FASTQ File.'''
+def guessFormat( infile, max_lines = 10000, raises = True ):
+    '''guess format of FASTQ File.
+
+    If *raises* , a ValueError is raised if there is not a single format.
+    
+    '''
     
     quals = set( RANGES.keys() )
     myiter = iterate(infile)
@@ -203,6 +208,26 @@ def guessFormat( infile, max_lines = 10000 ):
 
     if len(quals) == 1:
         return list(quals)[0]
+    elif raises == False:
+        return quals
     else:
-        raise ValueError( "could not guess format - should be one of %s." % str(quals) )
+        raise ValueError( "could not guess format - could be one of %s." % str(quals) )
 
+
+def getOffset( format, raises = True ):
+    '''returns the ASCII offset for a certain format.
+
+    If *raises* , a ValueError is raised if there is not a single offset.
+
+    Otherwise, a minimum offset is returned.
+    '''
+    if type(format) in (set, list, tuple):
+        offsets = set([ RANGES[f][0] for f in format ])
+        if len(offsets) == 1:
+            return list(offsets)[0]
+        elif raises == False:
+            return min(offsets)
+        else:
+            raise ValueError("inconsistent offsets for multiple formats: %s" % offsets)
+
+    return RANGES[format][0]
