@@ -4,6 +4,7 @@ import math
 import numpy
 import sys, os
 import collections
+import itertools
 
 from rpy2.robjects import r as R
 import rpy2.robjects as ro
@@ -404,12 +405,14 @@ def loadTagData( infile, design_file ):
 
     R( '''counts_table = read.delim( '%(infile)s', header = TRUE,
                                                    row.names = 1,
-                                                   stringsAsFactors = TRUE )''' % locals() )
+                                                   stringsAsFactors = TRUE,
+                                                   comment.char = '#' )''' % locals() )
 
     E.info( "read data: %i observations for %i samples" % tuple(R('''dim(counts_table)''')))
 
     # Load comparisons from file
-    R('''pheno = read.delim( '%(design_file)s', header = TRUE, stringsAsFactors = TRUE )''' % locals() )
+    R('''pheno = read.delim( '%(design_file)s', header = TRUE, stringsAsFactors = TRUE,
+                             comment.char = '#')''' % locals() )
 
     # Make sample names R-like - substitute - for . and add the .prep suffix
     R('''pheno[,1] = gsub('-', '.', pheno[,1]) ''')
@@ -461,7 +464,6 @@ def runEdgeR( infile,
     # load library 
     R('''suppressMessages(library('edgeR'))''')
     R('''suppressMessages(library('limma'))''')
-    
     to_cluster = True
 
     logf = IOTools.openFile( outfile + ".log", "w" )
@@ -483,6 +485,57 @@ def runEdgeR( infile,
     E.info('running EdgeR: groups=%s, pairs=%s, replicates=%s, pairs=%s' % \
            (groups, pairs, not no_replicates, not no_pairs))
 
+    if not no_pairs:
+        # output difference between groups
+        R.png( '''%(outfile_prefix)sbalance_groups.png''' % locals() )
+        first = True
+        for g1, g2 in itertools.combinations(groups, 2 ):
+            R('''a = rowSums( countsTable[groups == '%s'] ) ''' % g1 )
+            R('''b = rowSums( countsTable[groups == '%s'] ) ''' % g2 )
+            if first:
+                R('''plot( cumsum( sort(a - b) ), type = 'l') ''' )
+                first = False
+            else:
+                R('''lines( cumsum( sort(a - b) )) ''' )
+
+        R['dev.off']()
+
+        R('''library('ggplot2')''')
+        R('''library('reshape')''')
+
+        # output difference between pairs within groups
+        first = True
+        legend = []
+        for pair in pairs:
+            for g1, g2 in itertools.combinations(groups, 2 ):
+                key = "pair_%s_%s_vs_%s" % (pair, g1,g2)
+                legend.append( key )
+                R('''a = rowSums( countsTable[pairs == '%s' & groups == '%s'] ) ''' % (pair,g1) )
+                R('''b = rowSums( countsTable[pairs == '%s' & groups == '%s'] ) ''' % (pair,g2) )
+                R('''c = cumsum( sort(a - b) )''' )
+                R('''c = c - min(c)''')
+                if first:
+                    data = R( '''d = data.frame( %s = c)''' % key)
+                    first = False
+                else:
+                    R('''d$%s = c''' % key)
+
+        # remove row names (gene idenitifiers)
+        R('''row.names(d) = NULL''')
+        # add numbers of genes (x-axis)
+        R('''d$genes=1:nrow(d)''')
+
+        # merge data for ggplot
+        R('''d = melt( d, 'genes', variable_name = 'comparison' )''')
+
+        # plot
+        R('''gp = ggplot(d)''')
+        R('''pp = gp + \
+            geom_line(aes(x=genes,y=value,group=comparison,color=comparison))''')
+                    
+        R.ggsave( '''%(outfile_prefix)sbalance_pairs.png''' % locals() )
+        R['dev.off']()
+    
     # build DGEList object
     R( '''countsTable = DGEList( countsTable, group = groups )''' )
 
@@ -509,6 +562,7 @@ def runEdgeR( infile,
         R('''design = model.matrix( ~countsTable$samples$group )''' )
     else:
         R('''design = model.matrix( ~pairs + countsTable$samples$group )''' )
+
     R('''rownames(design) = rownames( countsTable$samples )''')
     R('''colnames(design)[length(colnames(design))] = "CD4" ''' )
     
@@ -547,6 +601,8 @@ def runEdgeR( infile,
     R('''abline( h = c(-2,2), col = 'dodgerblue') ''' )
     R['dev.off']()
 
+    
+
     # I am assuming that logFC is the base 2 logarithm foldchange.
     # Parse results and parse to file
     results = []
@@ -583,7 +639,7 @@ def runEdgeR( infile,
         try:
             fold = math.pow( 2.0, d.lfold )
         except OverflowError:
-            E.warn( "%s: fold change out of range: lfold=%f" % (interval, lfold ))
+            E.warn( "%s: fold change out of range: lfold=%f" % (interval, d.lfold ))
             # if out of range set to 0
             fold = 0
             
@@ -862,7 +918,7 @@ def runDESeq( infile,
                     col = ifelse( res$padj < %(fdr)s, "red", "black" ) )''' % locals() )
     R['dev.off']()
 
-    outf = IOTools.openFile( "%(outfile_prefix)sall.txt", "w" )
+    outf = IOTools.openFile( "%(outfile_prefix)sall.txt" % locals(), "w" )
     isna = R["is.na"]
 
     E.info("Generating output")
@@ -875,7 +931,7 @@ def runDESeq( infile,
     with IOTools.openFile( outfile, "w" ) as outf:
         writeExpressionResults( outf, results )
 
-    outf = IOTools.openFile( "(outfile_prefix)ssummary.tsv", "w" )
+    outf = IOTools.openFile( "(outfile_prefix)ssummary.tsv" % locals(), "w" )
     outf.write( "category\tcounts\n%s\n" % counts.asTable() )
     outf.close()
 
@@ -901,27 +957,26 @@ def plotTagStats( infile, design_file, outfile ):
 
     groups, pairs = loadTagData( infile, design_file )
     
-    import rpy2.robjects.lib.ggplot2 as ggplot2
+    # import rpy2.robjects.lib.ggplot2 as ggplot2
 
     R('''library('ggplot2')''')
     R('''library('reshape')''')
 
-    d = R('''melt( log10(countsTable + 1), variable_name = 'sample' )''')
-    gp = ggplot2.ggplot(d)
-    pp = gp + \
-        ggplot2.geom_density(ggplot2.aes(x='value',group='sample',color='sample',fill='sample'),alpha=R.I(1/3))
+    R('''d = melt( log10(countsTable + 1), variable_name = 'sample' )''')
+    R('''gp = ggplot(d)''')
+    R('''pp = gp + 
+        geom_density(aes(x='value',group='sample',color='sample',fill='sample'),alpha=I(1/3)''')
     
     R.ggsave( outfile + ".densities.png" )
     R['dev.off']()
 
-    gp = ggplot2.ggplot(d)
-    pp = gp + \
-        ggplot2.geom_boxplot(ggplot2.aes(x='sample',y='value',color='sample',fill='sample'),size=0.3,alpha=R.I(1/3)) + \
-        ggplot2.opts( axis_text_x = ggplot2.theme_text( angle=90, hjust=1, size=8 ) )
+    R('''gp = ggplot(d)''')
+    R('''pp = gp + 
+        geom_boxplot(aes(x='sample',y='value',color='sample',fill='sample'),size=0.3,alpha=I(1/3)) + \
+        opts( axis_text_x = theme_text( angle=90, hjust=1, size=8 ) )''')
 
     R.ggsave( outfile + ".boxplots.png" )
     R['dev.off']()
-
 
 #########################################################################
 #########################################################################
@@ -931,23 +986,23 @@ def plotTagStats( infile, design_file, outfile ):
 
     groups, pairs = loadTagData( infile, design_file )
     
-    import rpy2.robjects.lib.ggplot2 as ggplot2
+    # import rpy2.robjects.lib.ggplot2 as ggplot2
 
     R('''library('ggplot2')''')
     R('''library('reshape')''')
 
-    d = R('''melt( log10(countsTable + 1), variable_name = 'sample' )''')
-    gp = ggplot2.ggplot(d)
-    pp = gp + \
-        ggplot2.geom_density(ggplot2.aes(x='value',group='sample',color='sample',fill='sample'),alpha=R.I(1/3))
+    R('''d = melt( log10(countsTable + 1), variable_name = 'sample' )''')
+    R('''gp = ggplot(d)''')
+    R('''pp = gp + \
+        geom_density(aes(x=value,group=sample,color=sample,fill=sample),alpha=I(1/3))''')
     
     R.ggsave( outfile + ".densities.png" )
     R['dev.off']()
 
-    gp = ggplot2.ggplot(d)
-    pp = gp + \
-        ggplot2.geom_boxplot(ggplot2.aes(x='sample',y='value',color='sample',fill='sample'),size=0.3,alpha=R.I(1/3)) + \
-        ggplot2.opts( axis_text_x = ggplot2.theme_text( angle=90, hjust=1, size=8 ) )
+    R('''gp = ggplot(d)''')
+    R('''pp = gp + \
+        geom_boxplot(aes(x=sample,y=value,color=sample,fill=sample),size=0.3,alpha=I(1/3)) + 
+        opts( axis_text_x = theme_text( angle=90, hjust=1, size=8 ) )''')
 
     R.ggsave( outfile + ".boxplots.png" )
     R['dev.off']()
@@ -961,19 +1016,19 @@ def plotDETagStats( infile, outfile ):
     Stratify boxplots and densities according to differential expression calls.
     '''
 
-    import rpy2.robjects.lib.ggplot2 as ggplot2
+    # import rpy2.robjects.lib.ggplot2 as ggplot2
 
     R('''library('ggplot2')''')
-    data = R('''read.table( '%s', header = TRUE, row.names=1 )''' % infile ) 
+    R('''data = read.table( '%s', header = TRUE, row.names=1 )''' % infile ) 
 
-    gp = ggplot2.ggplot(data)
-    a = gp + \
-        ggplot2.geom_density(ggplot2.aes(x='log10(treatment_mean+1)',group='factor(significant)',
-                                         color='factor(significant)',fill='factor(significant)'),alpha=R.I(1/3)) 
+    R(''' gp = ggplot(data)''')
+    R('''a = gp + 
+        geom_density(aes(x=log10(treatment_mean+1),group=factor(significant),
+                                         color='factor(significant)',fill='factor(significant)'),alpha=I(1/3))''')
 
-    b = gp + \
-        ggplot2.geom_density(ggplot2.aes(x='log10(control_mean+1)',group='factor(significant)',
-                                         color='factor(significant)',fill='factor(significant)'),alpha=R.I(1/3))
+    R('''b = gp + 
+        geom_density(aes(x=log10(control_mean+1),group=factor(significant),
+                                         color=factor(significant),fill=factor(significant)),alpha=I(1/3))''')
     
     R.png( outfile + ".densities.png" )
     R('''grid.newpage()''')
@@ -987,19 +1042,21 @@ def plotDETagStats( infile, outfile ):
     R('''grid.newpage()''')
     R.pushViewport(R.viewport( layout = R('''grid.layout''')(2,1)))
 
-    gp = ggplot2.ggplot(data)
-    a = gp + \
-        ggplot2.geom_boxplot(ggplot2.aes(x='factor(significant)', y='log10(treatment_mean+1)',
-                                         color='factor(significant)',fill='factor(significant)'),
+    R(''' gp = ggplot(data)''')
+    R('''a = gp + 
+        geom_boxplot(aes(x=factor(significant), y=log10(treatment_mean+1),
+                                         color=factor(significant),fill=factor(significant)),
                              size=0.3,
-                             alpha=R.I(1/3)) 
+                             alpha=I(1/3))''') 
 
-    b = gp + \
-        ggplot2.geom_boxplot(ggplot2.aes(x='factor(significant)', y='log10(control_mean+1)',
-                                         color='factor(significant)',fill='factor(significant)'),
-                             size=0.3,
-                             alpha=R.I(1/3)) +\
-        ggplot2.opts( axis_text_x = ggplot2.theme_text( angle=90, hjust=1, size=8 ) )
+    R('''b = gp + 
+        geom_boxplot(aes(x=factor(significant), 
+                         y=log10(control_mean+1),
+                         color=factor(significant),
+                         fill=factor(significant)),
+                         size=0.3,
+                         alpha=I(1/3)) +\
+        opts( axis_text_x = theme_text( angle=90, hjust=1, size=8 ) )''')
 
     p( a, vp = R.viewport( layout_pos_row = 1, layout_pos_col = 1 ) )
     p( b, vp = R.viewport( layout_pos_row = 2, layout_pos_col = 1 ) )
