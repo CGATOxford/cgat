@@ -126,7 +126,47 @@ def main( argv = None ):
                               "[%default]" )
 
     parser.add_option( "-i", "--shift", dest="shift", type = "int",
-                       help = "shift reads in :term:`bam` formatted file before computing densities. "
+                       help = "shift reads in :term:`bam` formatted file before computing densities (ChIP-Seq). "
+                              "[%default]" )
+
+    parser.add_option( "-e", "--extend", dest="extend", type = "int",
+                       help = "extend reads in :term:`bam` formatted file (ChIP-Seq). "
+                              "[%default]" )
+
+    parser.add_option("--resolution-upstream", dest="resolution_upstream", type = "int",
+                       help = "resolution of upstream region in bp "
+                              "[%default]" )
+
+    parser.add_option("--resolution-downstream", dest="resolution_downstream", type = "int",
+                       help = "resolution of downstream region in bp "
+                              "[%default]" )
+
+    parser.add_option("--resolution-upstream-utr", dest="resolution_upstream_utr", type = "int",
+                       help = "resolution of upstream UTR region in bp "
+                              "[%default]" )
+
+    parser.add_option("--resolution-downstream-utr", dest="resolution_downstream_utr", type = "int",
+                       help = "resolution of downstream UTR region in bp "
+                              "[%default]" )
+
+    parser.add_option("--resolution-cds", dest="resolution_cds", type = "int",
+                       help = "resolution of cds region in bp "
+                              "[%default]" )
+
+    parser.add_option("--extension_upstream", dest = "extension_upstream", type = "int",
+                       help = "extension upstream from the first exon in bp"
+                              "[%default]" )
+
+    parser.add_option("--extension_downstream", dest = "extension_downstream", type = "int",
+                       help = "extension downstream from the last exon in bp"
+                              "[%default]" )
+
+    parser.add_option("--extension_inward", dest="extension_inward", type = "int",
+                       help = "extension inward from a TSS start site in bp"
+                              "[%default]" )
+
+    parser.add_option("--extension_outward", dest="extension_outward", type = "int",
+                       help = "extension outward from a TSS start site in bp"
                               "[%default]" )
 
     parser.set_defaults(
@@ -135,6 +175,7 @@ def main( argv = None ):
         input_reads = 0,
         force_output = False,
         bin_size = 10,
+        extend = 0,
         shift = 0,
         sort = [],
         reporter = "transcript",
@@ -232,6 +273,7 @@ def main( argv = None ):
         import matplotlib.pyplot as plt
         
         for method, counter in zip(options.methods, counters):
+
             if method == "geneprofile":
 
                 plt.figure()

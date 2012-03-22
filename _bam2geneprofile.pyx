@@ -27,12 +27,12 @@ class RangeCounter:
 
         self.setup( ranges )
         self.count( contig, ranges )
-        
+
         if length > 0:
             lnormed = float(length)
             lunnormed = float(len(self.counts))
             if lunnormed == 0: return numpy.zeros(0)
-
+            # E.debug( "normed length = %i, unnormed length =%i " % (lnormed, lunnormed) )
             if lunnormed > lnormed:
                 # compress by taking only counts at certain points within intervals
                 take = numpy.unique( numpy.array( numpy.floor( 
@@ -52,10 +52,15 @@ class RangeCounter:
 
 class RangeCounterBAM(RangeCounter):
 
-    def __init__(self, Samfile samfile, int shift, *args, **kwargs ):
+    def __init__(self, Samfile samfile, int shift = 0, int extend = 0, *args, **kwargs ):
         RangeCounter.__init__(self, *args, **kwargs )
         self.samfile = samfile
         self.shift = shift
+        self.extend = extend
+
+        if shift > 0 and extend == 0:
+            E.warn( "no extension given for shift > 0 - extension will be 2 * shift" )
+            self.extend = self.shift * 2
 
     def count(self, contig, ranges ):
 
@@ -68,46 +73,49 @@ class RangeCounterBAM(RangeCounter):
         cdef int current_offset
         cdef Samfile samfile = self.samfile
         cdef AlignedRead read
-        cdef int length
-
         current_offset = 0
         counts = self.counts
-        length = len(counts)
-        # for peak counting follow the MACS protocol:
-        # see the function def __tags_call_peak in PeakDetect.py
-        #
-        # In words
-        # Only take the start of reads (taking into account the strand)
-        # for counting, extend reads by shift
-        # on + strand shift tags upstream
-        # i.e. look at the downstream window
-        # note: filtering?
-        # note: does this work with paired-end data?
-        cdef int offset = self.shift // 2
 
+        # shifting:
+        # forward strand reads:
+        #   - shift read upstream by shift
+        #   - extend read upstream by extend 
+        # reverse strand: 
+        #   - shift read downstream by shift
+        #   - extend read downstream by extend
+
+        # There is a problem of discontinuity through shifting at
+        # exon boundaries
+        # 1. Density will accumulate at the ends as reads are shifted
+        # up and downstream. However, shifted density will end up
+        # in the introns and thus not counted. 
+        # 2. The densities along exon boundaries will always be 
+        # discontinuous.
+
+        cdef int extend = self.extend
+        cdef int shift = self.shift
+        cdef int shift_extend = shift + extend
+        cdef int work_offset = 0
         cdef int last_end = ranges[0][0]
-
+        cdef int pos
+        cdef int length
         current_offset = 0
 
         for start, end in ranges:
-
-            if offset > 0:
-                # on the + strand, shift tags upstream
-                xstart, xend = max(0, start - offset), max(0, end - offset)
-
+            length = end - start
+            if shift_extend > 0:
+                # collect reads including the regions left/right of interval
+                xstart, xend = max(0, start - shift_extend), max(0, end + shift_extend)
+                
+                work_offset = -start
                 for read in samfile.fetch( contig, xstart, xend ):
-                    if read.is_reverse: continue
-                    rstart = max( 0, read.pos - xstart - offset)
-                    rend = min( length, read.pos - xstart + offset) 
-                    for i from rstart <= i < rend: counts[i] += 1
+                    if read.is_reverse: 
+                        rstart = read.aend - start - shift_extend
+                    else:
+                        rstart = read.pos - start + shift
 
-                # on the - strand, shift tags downstream
-                xstart, xend = max(0, start + offset), max(0, end + offset)
-
-                for read in samfile.fetch( contig, xstart, xend ):
-                    if not read.is_reverse: continue
-                    rstart = max( 0, read.pos + read.rlen - xstart - offset)
-                    rend = min( length, read.pos + read.rlen - xstart + offset) 
+                    rend = min( length, rstart + extend ) + current_offset
+                    rstart = max( 0, rstart ) + current_offset
                     for i from rstart <= i < rend: counts[i] += 1
             else:
                 for read in samfile.fetch( contig, start, end ):
@@ -335,9 +343,9 @@ class GeneCounter( IntervalsCounter ):
         exons = GTF.asRanges( gtf, "exon" )
         exon_start, exon_end = exons[0][0], exons[-1][1]
 
-        # filter for protein coding
-        cds = GTF.asRanges( gtf, "CDS" )
-        if len(cds) == 0: return 0
+        # do not filter for protein coding
+        # cds = GTF.asRanges( gtf, "CDS" )
+        # if len(cds) == 0: return 0
 
         upstream = [ ( max(0, exon_start - self.extension_upstream), exon_start ), ] 
         downstream = [ ( exon_end, exon_end + self.extension_downstream ), ]
@@ -351,11 +359,17 @@ class GeneCounter( IntervalsCounter ):
 
         E.debug("counting finished" )
 
+        print self.counts_upstream[-100:]
+        print self.counts_exons[0:100]
+
+        print self.counts_exons[-100:]
+        print self.counts_downstream[0:100]
+
         ## revert for negative strand
         if gtf[0].strand == "-":
             self.counts_exons = self.counts_exons[::-1]
             self.counts_upstream, self.counts_downstream = self.counts_downstream[::-1], self.counts_upstream[::-1]
-
+            
         self.addLengths( upstream, exons, downstream )
 
         self.aggregate( self.counts_upstream,
@@ -520,6 +534,7 @@ def count( counters,
     for iteration, gtf in enumerate(gtf_iterator):
         E.debug( "processing %s" % (gtf[0].gene_id))
 
+        gtf.sort( key = lambda x: x.start )
         c.input += 1
         for x, counter in enumerate(counters):
             counter.count( gtf )
