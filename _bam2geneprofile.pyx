@@ -185,11 +185,10 @@ class RangeCounterBigWig(RangeCounter):
         
         # collect pileup profile in region bounded by start and end.
         cdef int i
-        cdef int rstart, rend, start, end
+        cdef int rstart, rend, start, end, tstart, tend
 
         if len(ranges) == 0: return
 
-        wigfile = self.wigfile
         counts = self.counts
 
         cdef int length

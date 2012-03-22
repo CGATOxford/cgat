@@ -236,13 +236,13 @@ def main( argv = None ):
                                                               shifts = options.shifts, 
                                                               extends = options.extends )
         elif options.infiles[0].endswith( ".bed.gz" ):
-            bamfiles = [ pysam.Tabixfile( x ) for x in options.infiles ]
+            bedfiles = [ pysam.Tabixfile( x ) for x in options.infiles ]
             format = "bed"
-            range_counter = _bam2geneprofile.RangeCounterBed( bamfiles )
+            range_counter = _bam2geneprofile.RangeCounterBed( bedfiles )
         elif options.infiles[0].endswith( ".bw" ):
-            bamfiles = [ BigWigFile(file=open(options.infiles[0]))]
+            wigfiles = [ BigWigFile(file=open(x)) for x in options.infiles ]
             format = "bigwig"
-            range_counter = _bam2geneprofile.RangeCounterBigWig( bamfiles )
+            range_counter = _bam2geneprofile.RangeCounterBigWig( wigfiles )
         else:
             raise NotImplementedError( "can't determine file type for %s" % bamfile )
 
