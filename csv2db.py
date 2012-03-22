@@ -182,9 +182,9 @@ def createTable( dbhandle, error, options, rows = None, headers = None,
             t = "TEXT"
 
         # remove special characters from column names
-        if hh == "": raise ValueError("column without header" )
+        if hh == "": raise ValueError("column '%s' without header " % h )
         hh = re.sub( '''['"]''', "", hh)
-        hh = re.sub( "[,;.:\-\+/ ()]", "_", hh)
+        hh = re.sub( "[,;.:\-\+/ ()%]", "_", hh)
         if hh[0] in "0123456789": hh = "_" + hh
         columns.append( "%s %s" % (hh, t))
 
@@ -240,7 +240,7 @@ def createTable( dbhandle, error, options, rows = None, headers = None,
     
     return take, map_column2type, ignored
 
-def run( options, args ):
+def run( infile, options ):
 
     options.tablename = quoteTableName( options.tablename, backend = options.backend )
     
@@ -277,12 +277,6 @@ def run( options, args ):
         existing_tables = set( [ x[0] for x in cc ] )
         cc.close()
 
-    if options.from_zipped:
-        import gzip
-        infile = gzip.GzipFile( fileobj= options.stdin, mode='r')
-    else:
-        infile = options.stdin
-
     if options.header != None:
         options.header = [x.strip() for x in options.header.split(",")]
 
@@ -295,7 +289,9 @@ def run( options, args ):
 
     rows = []
     for row in reader:
-        if None in row: raise ValueError( "undefined columns in input file" )
+        if None in row: 
+            raise ValueError( "undefined columns in input file at row: %s" % row )
+        
         try:
             rows.append( CSV.ConvertDictionary( row , map=options.map ))
         except TypeError, msg:
@@ -457,7 +453,7 @@ def run( options, args ):
 
     dbhandle.commit()
 
-def main( argv = sys.argv ):
+def buildParser( ):
 
     parser = optparse.OptionParser( version = "%prog version: $Id: csv2db.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
 
@@ -536,10 +532,22 @@ def main( argv = sys.argv ):
         allow_empty = False,
         retry = False,
         )
+    
+    return parser
+
+def main( argv = sys.argv ):
+
+    parser = buildParser()
 
     (options, args) = E.Start( parser, argv = argv, add_psql_options = True )
 
-    run( options, args )
+    if options.from_zipped:
+        import gzip
+        infile = gzip.GzipFile( fileobj= options.stdin, mode='r')
+    else:
+        infile = options.stdin
+
+    run( infile, options )
 
     E.Stop()
 
