@@ -116,3 +116,9 @@ class FastQCDetails( ReadqcTracker ):
 
         return odict( (("rst", "\n".join( Utils.layoutBlocks( blocks, layout = "columns-2"))),))
 
+
+class FastqcSummary( ReadqcTracker ):
+    pattern = "(.*)_Basic_Statistics"
+    slices = ("File type", "Filename", "Encoding", "Total Sequences", "Sequence Length", "%GC" )
+    def __call__(self, track, slice ):
+        return self.getAll( "SELECT * FROM %(track)s_Basic_Statistics WHERE measure = '%(slice)s'" )

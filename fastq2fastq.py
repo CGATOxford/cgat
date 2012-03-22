@@ -107,7 +107,7 @@ def main( argv = None ):
             c.input += 1
             options.stdout.write( "%s\n" % record )
             c.output += 1
-
+                                                                   
     elif options.sample:
         sample_threshold = min( 1.0, options.sample)
         

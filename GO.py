@@ -1820,7 +1820,8 @@ def main():
                                  col_headers, row_header="category" )
 
             # pvalue matrix
-            matrix, row_headers = buildMatrix( all_significant_results, valuef = lambda x: int(-10 * math.log( x.mPValue,10)),
+            matrix, row_headers = buildMatrix( all_significant_results, 
+                                               valuef = lambda x: int(-10 * math.log( x.mPValue,10)),
                                                dtype = numpy.int )
             outfile = getFileName( options, 
                                    go = test_ontology,

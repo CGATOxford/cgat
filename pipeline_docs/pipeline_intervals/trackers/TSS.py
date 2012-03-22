@@ -63,13 +63,13 @@ class TSSDistanceVersusPeakVal(Annotations.AnnotationSlicer, IntervalTracker):
 
 class TSSClosestUpstream(TSSClosest):
     """for each interval, return peakval and the distance to the closest upstream TSS."""
-    mColumn = "d.dist5"
-    mWhere = "d.dist5 > 0"
+    mColumn = "d.upstream_dist"
+    mWhere = "d.upstream_dist > 0"
 
 class TSSClosestDownstream(TSSClosest):
     """for each interval, return peakval and the distance to the closest downstream TSS."""
-    mColumn = "d.dist3"
-    mWhere = "d.dist3 > 0"
+    mColumn = "d.downstream_dist"
+    mWhere = "d.downstream_dist > 0"
 
 class TSSOverlap(Annotations.AnnotationSlicer, IntervalTracker):
     '''number of intervals that overlap 0 or more than one transcription start sites.'''
