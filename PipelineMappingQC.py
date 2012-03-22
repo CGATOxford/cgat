@@ -147,6 +147,7 @@ def loadPicardMetrics( infiles, outfile, suffix, pipeline_suffix = ".picard_stat
 
     first = True
 
+
     for filename in filenames:
         track = P.snip( os.path.basename(filename), "%s.%s" % (pipeline_suffix, suffix ) )
 
@@ -209,9 +210,12 @@ def loadPicardHistogram( infiles, outfile, suffix, column, pipeline_suffix = ".p
     header = ",".join( [P.snip( os.path.basename(x), pipeline_suffix) for x in xfiles ] )        
     filenames = " ".join( [ "%s.%s" % (x, suffix) for x in xfiles ] )
 
+    # there might be a variable number of columns in the tables
+    # only take the first ignoring the rest
     statement = """python %(scriptsdir)s/combine_tables.py
                       --regex-start="## HISTOGRAM"
                       --missing=0
+                      --take=2
                    %(filenames)s
                 | python %(scriptsdir)s/csv2db.py
                       --header=%(column)s,%(header)s
@@ -231,6 +235,7 @@ def loadPicardAlignmentStats( infiles, outfile ):
 
     # insert size metrics only available for paired-ended data
     loadPicardMetrics( infiles, outfile, "insert_size_metrics" )
+
     histograms = ( ("quality_by_cycle_metrics", "cycle"),
                    ("quality_distribution_metrics", "quality"),
                    ("insert_size_metrics", "insert_size" ) )
@@ -241,8 +246,8 @@ def loadPicardAlignmentStats( infiles, outfile ):
 def loadPicardDuplicateStats( infiles, outfile ):
     '''load picard duplicate filtering stats.'''
 
-    loadPicardMetrics( infiles, outfile, "duplicate_metrics", "bam" )
-    loadPicardHistogram( infiles, outfile, "duplicate_metrics", "duplicates", "bam" )
+    loadPicardMetrics( infiles, outfile, "duplicate_metrics", pipeline_suffix = ".bam" )
+    loadPicardHistogram( infiles, outfile, "duplicate_metrics", "duplicates", pipeline_suffix = ".bam" )
     
 def buildBAMStats( infile, outfile ):
     '''Count number of reads mapped, duplicates, etc. '''
