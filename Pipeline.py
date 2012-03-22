@@ -162,10 +162,10 @@ def substituteParameters( **kwargs ):
                 p = k[len(outfile)+1:]
                 if p not in local_params:
                     raise KeyError( "task specific parameter '%s' does not exist for '%s' " % (p,k))
+                E.debug( "substituting task specific parameter for %s: %s = %s" % (outfile,p,local_params[k] ) )
                 local_params[p] = local_params[k]
 
     return local_params
-
 
 def checkFiles( filenames ):
     """check for the presence/absence of files"""
