@@ -1167,7 +1167,7 @@ def mapReadsWithTophat( infiles, outfile ):
         job_options += " -l mem_free=2G"
 
     to_cluster = USECLUSTER
-    m = PipelineMapping.Tophat( executable = PARAMS["tophat_executable"] )
+    m = PipelineMapping.Tophat( executable = P.substituteParameters( **locals() )["tophat_executable"] )
     infile, reffile, transcriptfile = infiles
     tophat_options = PARAMS["tophat_options"] + " --raw-juncs %(reffile)s " % locals()
     
@@ -1640,13 +1640,15 @@ def loadBAMStats( infiles, outfile ):
     '''import bam statisticis.'''
 
     header = ",".join( [P.snip( x, ".readstats") for x in infiles] )
-    filenames = " ".join( [ "<( cut -f 1,2 < %s)" % x for x in infiles ] )
+    # filenames = " ".join( [ "<( cut -f 1,2 < %s)" % x for x in infiles ] )
+    filenames = " ".join( infiles )
     tablename = P.toTable( outfile )
     E.info( "loading bam stats - summary" )
     statement = """python %(scriptsdir)s/combine_tables.py
                       --headers=%(header)s
                       --missing=0
                       --ignore-empty
+                      --take=2
                    %(filenames)s
                 | perl -p -e "s/bin/track/"
                 | perl -p -e "s/unique/unique_alignments/"
