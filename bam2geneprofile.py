@@ -92,6 +92,7 @@ import numpy
 import pyximport
 pyximport.install(build_in_temp=False)
 import _bam2geneprofile
+from bx.bbi.bigwig_file import BigWigFile
 
 def main( argv = None ):
     """script main.
@@ -106,8 +107,16 @@ def main( argv = None ):
                                     usage = globals()["__doc__"] )
 
     parser.add_option( "-m", "--method", dest="methods", type = "choice", action = "append",
-                       choices = ("geneprofile", "tssprofile", "utrprofile" ),
+                       choices = ("geneprofile", "tssprofile", "utrprofile", "intervalprofile" ),
                        help = "counters to use. "
+                              "[%default]" )
+
+    parser.add_option( "-b", "--bamfile", "--bedfile", dest="infiles", type = "string", action = "append",
+                       help = "BAM/bed/bigwig files to use. Do not mix different types"
+                              "[%default]" )
+
+    parser.add_option( "-g", "--gtffile", dest="gtffile", type = "string",
+                       help = "GTF file to use. "
                               "[%default]" )
 
     parser.add_option( "-n", "--normalization", dest="normalization", type = "choice",
@@ -125,11 +134,11 @@ def main( argv = None ):
                        help = "report results for gene or transcript. "
                               "[%default]" )
 
-    parser.add_option( "-i", "--shift", dest="shift", type = "int",
+    parser.add_option( "-i", "--shift", dest="shifts", type = "int", action = "append",
                        help = "shift reads in :term:`bam` formatted file before computing densities (ChIP-Seq). "
                               "[%default]" )
 
-    parser.add_option( "-e", "--extend", dest="extend", type = "int",
+    parser.add_option( "-e", "--extend", dest="extends", type = "int", action = "append",
                        help = "extend reads in :term:`bam` formatted file (ChIP-Seq). "
                               "[%default]" )
 
@@ -175,8 +184,8 @@ def main( argv = None ):
         input_reads = 0,
         force_output = False,
         bin_size = 10,
-        extend = 0,
-        shift = 0,
+        extends = [],
+        shifts = [],
         sort = [],
         reporter = "transcript",
         resolution_cds = 1000,
@@ -191,6 +200,8 @@ def main( argv = None ):
         extension_outward = 3000,
         plot = True,
         methods = [],
+        infiles = [],
+        gtffile = None,
         profile_normalizations = [],
         normalization = None,
         )
@@ -198,26 +209,42 @@ def main( argv = None ):
     ## add common options (-h/--help, ...) and parse command line 
     (options, args) = E.Start( parser, argv = argv, add_output_options = True )
 
-    if len(args) != 2:
-        raise ValueError("please specify a bam or bed file and a gtf file" )
+    # Keep for backwards compatability
+    if len(args) == 2:
+        infile, gtf = args
+        options.infiles.append(infile)
+        options.gtffile = gtf
 
-    bamfile, gtffile = args
+    if not options.gtffile:
+        raise ValueError("no GTF file specified" )
+
+    if len(options.infiles) == 0:
+        raise ValueError("no bam/wig/bed files specified" )
 
     if options.reporter == "gene":
-        gtf_iterator = GTF.flat_gene_iterator( GTF.iterator( IOTools.openFile( gtffile ) ) )
+        gtf_iterator = GTF.flat_gene_iterator( GTF.iterator( IOTools.openFile( options.gtffile ) ) )
     elif options.reporter == "transcript":
-        gtf_iterator = GTF.transcript_iterator( GTF.iterator( IOTools.openFile( gtffile ) ) )
-
-    if bamfile.endswith( ".bam" ):
-        infile = pysam.Samfile( bamfile, "rb" )
-        format = "bam"
-        range_counter = _bam2geneprofile.RangeCounterBAM( infile, shift = options.shift )
-    elif bamfile.endswith( ".bed.gz" ):
-        infile = pysam.Tabixfile( bamfile )
-        format = "bed"
-        range_counter = _bam2geneprofile.RangeCounterBed( infile )
-    else:
-        raise NotImplementedError( "can't determine file type for %s" % bamfile )
+        gtf_iterator = GTF.transcript_iterator( GTF.iterator( IOTools.openFile( options.gtffile ) ) )
+        
+    # Select rangecounter based on file type
+    if len(options.infiles) > 0:
+        if options.infiles[0].endswith( ".bam" ):
+            bamfiles = [ pysam.Samfile( x, "rb" ) for x in options.infiles ]
+            #infile = pysam.Samfile( bamfile, "rb" )
+            format = "bam"
+            range_counter = _bam2geneprofile.RangeCounterBAM( bamfiles, 
+                                                              shifts = options.shifts, 
+                                                              extends = options.extends )
+        elif options.infiles[0].endswith( ".bed.gz" ):
+            bamfiles = [ pysam.Tabixfile( x ) for x in options.infiles ]
+            format = "bed"
+            range_counter = _bam2geneprofile.RangeCounterBed( bamfiles )
+        elif options.infiles[0].endswith( ".bw" ):
+            bamfiles = [ BigWigFile(file=open(options.infiles[0]))]
+            format = "bigwig"
+            range_counter = _bam2geneprofile.RangeCounterBigWig( bamfiles )
+        else:
+            raise NotImplementedError( "can't determine file type for %s" % bamfile )
 
     counters = []
     for method in options.methods:
@@ -243,6 +270,14 @@ def main( argv = None ):
             counters.append( _bam2geneprofile.TSSCounter( range_counter, 
                                                            options.extension_outward,
                                                            options.extension_inward ) )
+
+        elif method == "intervalprofile":
+            counters.append( _bam2geneprofile.RegionCounter( range_counter, 
+                                                             options.resolution_upstream,
+                                                             options.resolution_cds,
+                                                             options.resolution_downstream,
+                                                             options.extension_upstream,
+                                                             options.extension_downstream ) )
 
     # set normalization
     for c in counters:
@@ -274,7 +309,7 @@ def main( argv = None ):
         
         for method, counter in zip(options.methods, counters):
 
-            if method == "geneprofile":
+            if method in ("geneprofile", "utrprofile", "intervalprofile"):
 
                 plt.figure()
                 plt.subplots_adjust( wspace = 0.05)
