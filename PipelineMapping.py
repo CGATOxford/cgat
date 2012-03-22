@@ -199,12 +199,8 @@ class Mapper( object ):
                 statement.append( "fastq-dump --outdir %(tmpdir_fastq)s %(infile)s" % locals() )
                 
             elif infile.endswith( ".fastq.gz" ):
-                try:
-                    format = Fastq.guessFormat( IOTools.openFile( infile, "r"))
-                except ValueError:
-                    format = None
-                
-                if format != "sanger":
+                format = Fastq.guessFormat( IOTools.openFile( infile, "r"), raises = False)
+                if 'sanger' not in format:
                     statement.append(  """gunzip < %(infile)s 
                                       | python %%(scriptsdir)s/fastq2fastq.py --change-format=sanger --guess-format=phred64 --log=%(outfile)s.log
                                       %(compress_cmd)s
@@ -266,12 +262,8 @@ class Mapper( object ):
                 if not os.path.exists( infile2 ):
                     raise ValueError("can not find paired ended file '%s' for '%s'" % (infile2, infile))
                 
-                try:
-                    format = Fastq.guessFormat( IOTools.openFile( infile ) )
-                except ValueError:
-                    format = None
-
-                if format != "sanger":
+                format = Fastq.guessFormat( IOTools.openFile( infile ), raises = False )
+                if 'sanger' not in format:
                     statement.append( """gunzip < %(infile)s 
                                      | python %%(scriptsdir)s/fastq2fastq.py --change-format=sanger --guess-format=phred64 --log=%(outfile)s.log
                                      %(compress_cmd)s
