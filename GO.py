@@ -887,9 +887,12 @@ def DumpGOFromDatabase( outfile,
     return 
 
 ##---------------------------------------------------------------------------
-def ReadGene2GOFromFile( infile ):
+def ReadGene2GOFromFile( infile, synonyms = {}, obsolete = {} ):
     """reads GO mappings for all go_types from a
     file.
+
+    If synonyms is given, goids in synynoms will be translated.
+    Terms in *obsolete* will be discarded.
 
     returns two maps: gene2go maps genes to go categories
     and go2info maps go categories to information.
@@ -897,6 +900,8 @@ def ReadGene2GOFromFile( infile ):
 
     gene2gos = {}
     go2infos = {}
+    c = E.Counter()
+
     for line in infile:
         if line[0] == "#": continue
         try:
@@ -904,6 +909,16 @@ def ReadGene2GOFromFile( infile ):
         except ValueError, msg:
             raise ValueError("parsing error in line '%s': %s" % (line[:-1], msg))
         if go_type == "go_type": continue
+
+        c.input += 1
+
+        if goid in synonyms:
+            c.synonyms += 1
+            goid = synonyms[goid]
+
+        if goid in obsolete: 
+            c.obsolete += 1
+            continue
 
         gm = GOMatch( goid, go_type, description, evidence )
         gi = GOInfo( goid, go_type, description )
@@ -917,7 +932,10 @@ def ReadGene2GOFromFile( infile ):
         if gene_id not in gene2go: gene2go[gene_id] = []
         gene2go[gene_id].append(gm)
         go2info[goid] = gi
-    
+        c.output += 1
+        
+    E.debug( "read gene2go assignments: %s" % str(c) )
+
     return gene2gos, go2infos
 
 ##---------------------------------------------------------------------------

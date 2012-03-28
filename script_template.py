@@ -32,18 +32,16 @@ table2bed.py
 Purpose
 -------
 
-Not generic. Takes a tab delimited table and converts to bed file
-
 Usage
 -----
 
 Example::
 
-   python script_temp.py --help
+   python script_template.py --help
 
 Type::
 
-   python table2bed.py --help
+   python script_template.py --help
 
 for command line help.
 
