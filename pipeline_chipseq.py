@@ -238,6 +238,7 @@ Sample = PipelineTracks.Sample3
 suffixes = ["export.txt.gz",
             "sra",
             "fastq.gz",
+            "fa.gz",
             "cfastq.1.gz",
             "csfasta.gz" ]
 
@@ -393,8 +394,9 @@ if PARAMS["mapping_mapper"] == "bowtie":
                  "*.fastq.1.gz", 
                  "*.fastq.gz",
                  "*.sra",
+                 "*.fa.gz",
                  "*.csfasta.gz" ),
-                regex( r"(\S+).(export.txt.gz|fastq.1.gz|fastq.gz|sra|csfasta.gz)"), 
+                regex( r"(\S+).(export.txt.gz|fastq.1.gz|fa.gz|fastq.gz|sra|csfasta.gz)"), 
                 r"\1.genome.bam" )
     def buildBAM( infile, outfile ):
         '''re-map eland formatted reads with bowtie

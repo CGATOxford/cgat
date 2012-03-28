@@ -987,6 +987,22 @@ def ReadGeneLists( filename_genes, gene_pattern = None ):
     return all_genes, gene_lists 
 
 ##---------------------------------------------------------------------------
+def buildGO2Genes( gene2gos, ancestors = None ):
+    '''invert the dictionary genes2go. 
+
+    If ancestors is given, add missing ancestral information.
+    '''
+    
+    go2genes = collections.defaultdict( set )
+    for gene_id, terms in gene2gos.iteritems():
+        for term in terms:
+            go2genes[term.mGOId].add(gene_id)
+            if ancestors:
+                for anc in ancestors[term.mGOId]:
+                    go2genes[anc].add(gene_id)
+    return go2genes
+
+##---------------------------------------------------------------------------
 def GetCode( v ):
     """return a code for over/underrepresentation."""
 
@@ -1058,7 +1074,7 @@ def convertGo2Goslim( options ):
 
 def outputResults( outfile, pairs, go2info,
                    options,
-                   fdrs = None, samples = None ):
+                   fdrs = None, samples = None, gene2go = None, foreground = None ):
     '''output GO results to outfile.'''
 
     headers = ["code",
@@ -1070,6 +1086,10 @@ def outputResults( outfile, pairs, go2info,
 
     if fdrs:
         headers += ["fdr"]
+
+    if gene2go and foreground:
+        headers += ['foreground']
+        go2genes = buildGO2Genes( gene2go )
 
     if samples:
         headers += ["min", "max", "zscore", "mpover", "mpunder", 
@@ -1096,8 +1116,6 @@ def outputResults( outfile, pairs, go2info,
 
             if k in samples:
                 s = samples[k]
-            else:
-                outfile.write("\n")
 
             ## calculate values for z-score
             if s.mStddev > 0:
@@ -1115,9 +1133,15 @@ def outputResults( outfile, pairs, go2info,
                            scipy.stats.scoreatpercentile( s.mCounts, 5 ),
                            scipy.stats.scoreatpercentile( s.mCounts, 95 ),
                            ) )
+        
+        if foreground:
+            if k in go2genes:
+                g = ";".join( [ x for x in go2genes[k] if x in foreground] )
+            else:
+                g = ""
+            outfile.write("\t%s" % g )
 
         outfile.write("\n")
-
 
 def getSamples( gene2go, genes, background, options, test_ontology ):
 
@@ -1645,6 +1669,25 @@ def main():
                 sys.exit(0)
 
             #############################################################
+            outfile = getFileName( options, 
+                                   go = test_ontology,
+                                   section = 'foreground',
+                                   set = genelist_name )
+
+            outfile.write ("gene_id\n%s\n" % ("\n".join( sorted( foreground) ) ) )
+            if options.output_filename_pattern:
+                outfile.close()
+
+            outfile = getFileName( options, 
+                                   go = test_ontology,
+                                   section = 'background',
+                                   set = genelist_name )
+
+            outfile.write ("gene_id\n%s\n" % ("\n".join( sorted( background) ) ) )
+            if options.output_filename_pattern:
+                outfile.close()
+
+            #############################################################
             ## do the analysis
             go_results = AnalyseGO( gene2go, foreground, background )
 
@@ -1755,45 +1798,20 @@ def main():
                 outfile.close()
 
             #############################################################
-            ## output the fg patterns
-
             #############################################################
-            ## Compute reverse map
-            go2genes = {}
-
-            for gene, gos in gene2go.items():
-                if gene not in foreground: continue
-                for go in gos:
-                    if go.mGOId not in go2genes:
-                        go2genes[go.mGOId] = []
-                    go2genes[go.mGOId].append( gene )
-
+            #############################################################
+            ## output the fg patterns
             outfile = getFileName( options, 
                                    go = test_ontology,
-                                   section = 'fg',
+                                   section = 'withgenes',
                                    set = genelist_name )
 
-            headers = ["code", "scount", "stotal", "spercent", "bcount", "btotal", "bpercent",
-                       "ratio", 
-                       "pvalue", "pover", "punder", "goid", "category", "description", "fg"]
+            outputResults( outfile, pairs, go2info, options, 
+                           fdrs = fdrs, 
+                           gene2go = gene2go,
+                           foreground = foreground)
 
-            for k, v in pairs:
-
-                code = GetCode( v )            
-
-                if k in go2info:
-                    n = go2info[k]
-                else:
-                    n = GOInfo()
-
-                if k in go2genes:
-                    g = ";".join( go2genes[k] )
-                else:
-                    g = ""
-
-                outfile.write("%s\t%s\t%s\t%s\n" % (code, str(v), n, g ) )
-
-            if outfile != sys.stdout:
+            if options.output_filename_pattern:
                 outfile.close()
 
         if len(genelists) > 1:

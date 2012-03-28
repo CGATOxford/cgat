@@ -186,7 +186,11 @@ class Mapper( object ):
                      %(compress_cmd)s
                      > %(tmpdir_fastq)s/%(track)s.fastq%(extension)s""" % locals() )
                 fastqfiles.append( ("%s/%s.fastq%s" % (tmpdir_fastq, track, extension ),) )
-
+            elif infile.endswith( ".fa.gz" ):
+                statement.append( '''gunzip < %(infile)s > %(tmpdir_fastq)s/%(track)s.fa''' % locals() )
+                fastqfiles.append( ("%s/%s.fa" % (tmpdir_fastq, track ),) )
+                self.datatype = "fasta"
+                
             elif infile.endswith( ".sra"):
                 # sneak preview to determine if paired end or single end
                 outdir = P.getTempDir()
@@ -329,7 +333,7 @@ class Mapper( object ):
         return statement
 
 
-
+    
 class FastQc( Mapper ):
     '''run fastqc to test read quality.'''
 
@@ -696,7 +700,7 @@ class TopHat_fusion( Mapper ):
         
         track = P.snip( outfile, "/accepted_hits.sam" )
         tmpdir_tophat = self.tmpdir_tophat
-
+        
         if not os.path.exists('%s' % track):
             os.mkdir('%s' % track)
 
@@ -731,7 +735,7 @@ class Bowtie( Mapper ):
 
         # transpose files
         infiles = zip( *infiles )
-
+        
         # add options specific to data type
         data_options = []
         if self.datatype == "solid":
@@ -748,12 +752,14 @@ class Bowtie( Mapper ):
             else:
                 raise ValueError( "unexpected number of files" )
             index_file = "%(bowtie_index_dir)s/%(genome)s_cs"
+        elif self.datatype == "fasta":
+            data_options.append( "-f" )
+            index_file = "%(bowtie_index_dir)s/%(genome)s"
         else:
             index_file = "%(bowtie_index_dir)s/%(genome)s"
 
         data_options = " ".join( data_options )
 
-        data_options = " ".join( data_options )
         tmpdir_fastq = self.tmpdir_fastq
 
         if nfiles == 1:
