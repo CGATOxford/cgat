@@ -1030,10 +1030,12 @@ def buildReferenceTranscriptome( infile, outfile ):
     to_cluster = USECLUSTER
     gtf_file = P.snip(infile, ".gz") 
 
+    genome = os.path.join(PARAMS["general_genome_dir"], PARAMS["genome"])
+    
     statement = '''
     zcat %(infile)s
     | awk '$3 == "exon"' > %(gtf_file)s;
-    gtf_to_fasta %(gtf_file)s %(genome)s.fa %(outfile)s;
+    gtf_to_fasta %(gtf_file)s %(genome)s.fasta %(outfile)s;
     checkpoint; 
     samtools faidx %(outfile)s
     ''' 
@@ -4282,9 +4284,9 @@ def publish():
     # directory, files
     exportfiles = {
         "bamfiles" : glob.glob( "*.accepted.bam" ) + glob.glob( "*.accepted.bam.bai" ),
-        "genesets": [ "lincrna.gtf.gz", "abinitio.gtf.gz" ],
-        "classification": glob.glob("*.class.tsv.gz") ,
-        "differential_expression" : glob.glob( "*.cuffdiff.dir" ),
+       "genesets": [ "lincrna.gtf.gz", "abinitio.gtf.gz" ],
+       "classification": glob.glob("*.class.tsv.gz") ,
+       "differential_expression" : glob.glob( "*.cuffdiff.dir" ),
         }
     
     bams = []
@@ -4296,7 +4298,7 @@ def publish():
             dest = os.path.abspath( dest )
             if not os.path.exists( dest ):
                 os.symlink( os.path.abspath(src), dest )
-    
+
     # output ucsc links
     for bam in bams: 
         filename = os.path.basename( bam )

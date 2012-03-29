@@ -1055,7 +1055,10 @@ def run_report( clean = True):
     '''run sphinxreport.'''
 
     dirname, basename = os.path.split( getCaller().__file__ )
+    print dirname
+
     docdir = os.path.join( dirname, "pipeline_docs", snip( basename, ".py" ) )
+    print docdir
     relpath = os.path.relpath( docdir )
     trackerdir = os.path.join( docdir, "trackers" )
 
