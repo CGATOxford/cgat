@@ -999,11 +999,45 @@ def getAncestors( g, node ):
 
     return ancestors
 
-def outputList( s, go2info, p, lp ):
+def readPValues( infile, synonyms ):
+    '''read pvalues and optionally fold changes from infile.'''
+    term2pvalue, term2log2fold = {}, collections.defaultdict( float )
 
-    for x in s: 
-        print x, go2info.get(x, "na"), p.get(x, "na"), lp.get(x,"na")
+    def _parse2(data):
+        goid = synonyms.get( data[0], data[0] )
+        term2pvalue[goid] = float(data[1])
+
+    def _parse3(data):
+        goid = synonyms.get( data[0], data[0] )
+        term2pvalue[goid] = float(data[1])
+        term2log2fold[goid] = math.log( float(data[2]), 2 )
+
+    def _parseGO(data):
+        '''parse output from GO.py'''
+        if len(data) < 14: return
+        goid = synonyms.get( data[11], data[11] )
+        term2pvalue[goid] = float( data[8] )
+        term2log2fold[goid] = math.log( float(data[2]), 2 )
+
+    parser = None
+    for line in infile:
+        if line.startswith("code"): 
+            parser = _parseGO
+            continue
+        elif line.startswith("goid"):
+            data = line[:-1].split("\t")
+            if len(data) == 2:
+                parser = _parse2
+            else:
+                parser = _parse3
+            continue
+        if parser == None:
+            raise ValueError("don't know how to parse this file at line %s" % line)
         
+        parser( line[:-1].split() )
+
+    return term2pvalue, term2log2fold
+
 def readSimrelMatrix( infile ):
     '''read simrel matrix from file.'''
     matrix, row_headers, col_headers = IOTools.readMatrix( infile )
@@ -1329,7 +1363,7 @@ def main( argv ):
 
     parser.add_option("-g", "--filename-go", dest="filename_go", type="string",
                       help="filename with gene to go assignments "
-                      " This is a tab-separated file with the columns <namespace> <gene_id> <goid> <description> <evidence>" 
+                      " This is a tab-separated file with the columns <namespace> <gene_id> <goid> <description> <evidence>." 
                       " The evidence column is currently ignored. "
                       " [default=%default]." )
 
@@ -1373,7 +1407,7 @@ def main( argv ):
                          min_frequency = 0.05,
                          min_pvalue = 0.05,
                          min_child_threshold = 0.75,
-                         max_clusters = 10,
+                         max_clusters_threshold = 10,
                          palette = "RdBu",
                          reverse_palette = False,
                          )
@@ -1386,7 +1420,7 @@ def main( argv ):
         'mol_function': 'molecular_function' }
 
     if "all" in options.ontology:
-        options.ontology = map_ontology2nampespace.keys()
+        options.ontology = map_ontology2namespace.keys()
 
     for test_ontology in options.ontology:
 
@@ -1394,7 +1428,7 @@ def main( argv ):
 
         ################################################################
         # compute or load ancestry information for all nodes
-        fn = buildFilename( test_ontology, "ancestors", "tsv" )
+        fn = buildFilename( test_ontology, "ancestors", "tsv.gz" )
         if os.path.exists( fn ):
             E.info( "reading ancestor information from %s" % fn )
             with IOTools.openFile( fn ) as infile:
@@ -1418,19 +1452,7 @@ def main( argv ):
         #########################################
         E.info("reading pvalues from %s " % options.filename_pvalues)
         with IOTools.openFile( options.filename_pvalues ) as infile:
-            term2pvalue = {}
-            # for line in infile:
-            #     if line.startswith("code"): continue
-            #     data = line[:-1].split()
-            #     if len(data) < 14: continue
-            #     pvalue = float( data[8] )
-            #     if pvalue > options.min_pvalue: continue
-            #     term2pvalue[data[11]] = pvalue
-            for line in infile:
-                if line.startswith("goid"): continue
-                data = line[:-1].split()
-                goid = graph.synonyms.get( data[0], data[0] )
-                term2pvalue[goid] = float(data[1])
+            term2pvalue, term2log2fold = readPValues( infile, graph.synonyms )
         
         go2info = all_go2infos[test_ontology]
         go2info = collections.defaultdict( str, dict( [(x.mGOId, x.mDescription) for x in go2info.values()] ) )
@@ -1447,7 +1469,7 @@ def main( argv ):
 
         ################################################################
         # compute or load term frequences
-        fn = buildFilename( test_ontology, "termfrequencies", "tsv" )
+        fn = buildFilename( test_ontology, "termfrequencies", "tsv.gz" )
         if os.path.exists( fn ):
             E.info( "reading term frequencies from %s" % fn )
             with IOTools.openFile( fn ) as infile:
@@ -1460,7 +1482,7 @@ def main( argv ):
                     outfile.write("%s\t%f\t%s\n" % (k, p[k], ";".join(counts[k]) ))
 
         # compute or load simrel matrix
-        fn = buildFilename( test_ontology, "simrel", "matrix" )
+        fn = buildFilename( test_ontology, "simrel", "matrix.gz" )
         if os.path.exists( fn ):
             E.info( "reading simrel matrix from %s" % fn )
             with IOTools.openFile( fn, "r") as infile:
@@ -1471,7 +1493,7 @@ def main( argv ):
             with IOTools.openFile( fn, "w" ) as outfile:
                 IOTools.writeMatrix( outfile, matrix, terms, terms )
             
-        fn = buildFilename( test_ontology, "cluster", "matrix" )
+        fn = buildFilename( test_ontology, "cluster", "matrix.gz" )
 
         if os.path.exists( fn ):
             E.info( "reading clustered matrix matrix from %s" % fn )
@@ -1479,9 +1501,9 @@ def main( argv ):
                 matrix, terms = readSimrelMatrix( infile )
         else:
             matrix, terms, clusters = clusterSimrelMatrix( matrix, terms, 
-                                                 ancestors, p, counts, 
-                                                 term2pvalue, go2info,
-                                                 options )
+                                                           ancestors, p, counts, 
+                                                           term2pvalue, go2info,
+                                                           options )
             with IOTools.openFile( fn, "w" ) as outfile:
                 IOTools.writeMatrix( outfile, matrix, terms, terms )
 
@@ -1496,15 +1518,13 @@ def main( argv ):
 
 
         # visualize output
-        # perform mds and output coordinates
-
         rows = len(terms)
         # revigo
         #     color = pvalue, size = frequency, egdewith = simrel score
         # me:
-        #     size  = fold
-        #     color = pvalue (blueish for depletion, reddish for enrichment), 
-        #     edgewith = simrel measure?
+        #     size  = pvalue
+        #     color = fold (blueish for depletion, reddish for enrichment), 
+        #     edgewith = can't be done with networkx? (only edgecolor)
 
         # build graph from matrix
         term_graph = networkx.Graph()
@@ -1522,8 +1542,10 @@ def main( argv ):
             color_scheme = eval( "pylab.cm.%s" % options.palette)
         
         labels = dict( [ (x, go2info.get(x,x)) for x in terms] )
-        node_size = [ -100 * math.log(term2pvalue[x],10) for x in term_graph.nodes() ]
-        node_color = [ math.log(p[x],10) for x in term_graph.nodes() ]
+        node_size = [ -100.0 * math.log(term2pvalue[x],10) for x in term_graph.nodes() ]
+        for x in term2pvalue.keys():
+            term2log2fold[x] = numpy.random.normal(0, 5)
+        node_color = [ term2log2fold[x] for x in term_graph.nodes() ]
 
         networkx.draw_networkx_nodes( term_graph, layout, 
                                       node_size = node_size,
@@ -1537,6 +1559,18 @@ def main( argv ):
         fn = buildFilename( test_ontology, "graph", "svg" )
         plt.colorbar()
         plt.savefig( fn )
+        
+        fn = buildFilename( test_ontology, "graph", "tsv.gz" )
+        with IOTools.openFile( fn, "w") as outfile:
+            outfile.write("x\ty\tpvalue\tl2fold\tgoid\tdescription\n" )
+            for term in terms:
+                outfile.write("%s\t%f\t%f\t%f\t%f\t%s\n" % \
+                                  (term, 
+                                   layout[term][0],
+                                   layout[term][1],
+                                   term2pvalue[term],
+                                   term2log2fold[term],
+                                   go2info.get(term,"na") ) )
 
     E.Stop()
 
