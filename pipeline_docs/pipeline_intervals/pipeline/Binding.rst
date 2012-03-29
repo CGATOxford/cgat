@@ -5,7 +5,10 @@ Binding patterns
 ================
 
 This section provides an overview of where intervals are located with
-respect to binding sites.
+respect to binding sites. The plots below count the number of genes
+with at least one binding event in any of the various regions (cds,
+utr, etc) that constitute a gene. Note that regions have very
+different sizes which distorts these plots somewhat.
 
 .. report:: Binding.BindingSummary
    :render: matrix-plot
@@ -17,6 +20,14 @@ respect to binding sites.
    
    Number of intervals in regions around genes. This plot counts the
    overlap only with the peak.
+
+.. report:: Binding.BindingSummary
+   :render: table
+   :restrict: r(peak)
+   
+   Number of intervals in regions around genes. This plot counts the
+   overlap only with the peak.
+
 
 .. report:: Binding.BindingSummary
    :render: matrix-plot
@@ -31,8 +42,16 @@ respect to binding sites.
 
 .. report:: Binding.BindingSummary
    :render: table
+   :exclude: r(peak)
+   
+   Number of intervals in regions around genes. This plot counts the
+   overlap with the full extent of an interval.
+
+.. report:: Binding.BindingSummary
+   :render: table
 
    Number of intervals in regions around genes.
+
 
 Binding patterns
 =================

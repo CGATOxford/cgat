@@ -28,7 +28,7 @@ class BindingSummary(IntervalTracker):
                                 WHERE overlap > 0""" )
         cols = [x for x in self.getColumns( "%s_binding" % track ) if x.endswith("_overlap") ]
         
-        for section in ( "flank5", "utr5", "cds", "first_exon", "first_intron", "intron", "utr3", "flank3" ):
+        for section in ( "flank5", "utr5", "cds", "first_exon", "first_intron", "middle_intron", "last_intron", "utr3", "flank3", "intron" ):
             columns = [ x for x in cols if x.startswith( section ) ]
             columns.sort()
             if section.endswith("5"):
@@ -52,7 +52,7 @@ class BindingFullSummary(IntervalTracker):
         #                       SELECT COUNT(*) FROM %(track)s_binding 
         #                       WHERE CAST(pattern AS INT) == 0""" )
 
-        for section in ( "flank5", "utr5", "cds", "first_intron", "intron", "utr3", "flank3" ):
+        for section in ( "flank5", "utr5", "cds", "first_intron", "middle_intron", "last_intron", "utr3", "flank3" ):
             data[section] = self.getValue( """
                               SELECT COUNT(*) FROM %(track)s_binding 
                               WHERE %(section)s_overlap > 0""" )

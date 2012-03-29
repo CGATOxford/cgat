@@ -83,7 +83,6 @@ def main( argv = None ):
                        help = "only merge paired-end reads if they are at least # bases apart. "
                               " 0 turns of this filter. [default=%default]" )
 
-
     parser.set_defaults(
         region = None,
         merge_pairs = None,

@@ -63,17 +63,47 @@ import rpy2.robjects.vectors as rovectors
 import rpy2.rinterface as ri
 
 import Pipeline as P
+import pysam
 
 try:
     PARAMS = P.getParameters()
 except IOError:
     pass
 
+def getNumReadsFromBAMFile( infile ):
+    '''count number of reads in bam file.'''
+    read_info = pysam.idxstats( infile )
+    return sum( map(int, [ x.split("\t")[2] for x in read_info]  ) )
+
+def buildPicardInsertSizeStats( infile, outfile, genome_file ):
+    '''gather BAM file insert size statistics using Picard '''
+
+    to_cluster = True
+
+    if getNumReadsFromBAMFile(infile) == 0:
+        E.warn( "no reads in %s - no metrics" % infile )
+        P.touch( outfile )
+        return
+
+    statement = '''CollectInsertSizeMetrics
+                                       INPUT=%(infile)s 
+                                       REFERENCE_SEQUENCE=%(genome_file)s
+                                       ASSUME_SORTED=true 
+                                       OUTPUT=%(outfile)s 
+                                       VALIDATION_STRINGENCY=SILENT 
+                   > %(outfile)s '''
+
+    P.run()
 
 def buildPicardAlignmentStats( infile, outfile, genome_file ):
     '''gather BAM file alignment statistics using Picard '''
 
     to_cluster = True
+
+    if getNumReadsFromBAMFile(infile) == 0:
+        E.warn( "no reads in %s - no metrics" % infile )
+        P.touch( outfile )
+        return
 
     statement = '''CollectMultipleMetrics 
                                        INPUT=%(infile)s 
@@ -88,6 +118,11 @@ def buildPicardAlignmentStats( infile, outfile, genome_file ):
 def buildPicardGCStats( infile, outfile, genome_file ):
     '''Gather BAM file GC bias stats using Picard '''
     to_cluster = True
+
+    if getNumReadsFromBAMFile(infile) == 0:
+        E.warn( "no reads in %s - no metrics" % infile )
+        P.touch( outfile )
+        return
 
     statement = '''CollectGcBiasMetrics
                                        INPUT=%(infile)s 
@@ -111,6 +146,7 @@ def loadPicardMetrics( infiles, outfile, suffix, pipeline_suffix = ".picard_stat
     filenames = [ "%s.%s" % (x, suffix) for x in infiles ]
 
     first = True
+
 
     for filename in filenames:
         track = P.snip( os.path.basename(filename), "%s.%s" % (pipeline_suffix, suffix ) )
@@ -174,9 +210,12 @@ def loadPicardHistogram( infiles, outfile, suffix, column, pipeline_suffix = ".p
     header = ",".join( [P.snip( os.path.basename(x), pipeline_suffix) for x in xfiles ] )        
     filenames = " ".join( [ "%s.%s" % (x, suffix) for x in xfiles ] )
 
+    # there might be a variable number of columns in the tables
+    # only take the first ignoring the rest
     statement = """python %(scriptsdir)s/combine_tables.py
                       --regex-start="## HISTOGRAM"
                       --missing=0
+                      --take=2
                    %(filenames)s
                 | python %(scriptsdir)s/csv2db.py
                       --header=%(column)s,%(header)s
@@ -196,6 +235,7 @@ def loadPicardAlignmentStats( infiles, outfile ):
 
     # insert size metrics only available for paired-ended data
     loadPicardMetrics( infiles, outfile, "insert_size_metrics" )
+
     histograms = ( ("quality_by_cycle_metrics", "cycle"),
                    ("quality_distribution_metrics", "quality"),
                    ("insert_size_metrics", "insert_size" ) )
@@ -206,8 +246,8 @@ def loadPicardAlignmentStats( infiles, outfile ):
 def loadPicardDuplicateStats( infiles, outfile ):
     '''load picard duplicate filtering stats.'''
 
-    loadPicardMetrics( infiles, outfile, "duplicate_metrics", "bam" )
-    loadPicardHistogram( infiles, outfile, "duplicate_metrics", "duplicates", "bam" )
+    loadPicardMetrics( infiles, outfile, "duplicate_metrics", pipeline_suffix = ".bam" )
+    loadPicardHistogram( infiles, outfile, "duplicate_metrics", "duplicates", pipeline_suffix = ".bam" )
     
 def buildBAMStats( infile, outfile ):
     '''Count number of reads mapped, duplicates, etc. '''

@@ -69,6 +69,7 @@ import MAST
 import IOTools
 import Bed
 import Bioprospector
+import FastaIterator
 
 PARAMS = P.getParameters()
 
@@ -148,6 +149,7 @@ def exportSequencesFromBedFile( infile, outfile, masker = None, mode = "interval
         if mode == "intervals":
             seqs.append( fasta.getSequence( bed.contig, "+", bed.start, bed.end) )
             ids.append( "%s_%s %s:%i..%i" % (track, bed.name, bed.contig, bed.start, bed.end) )
+
         elif mode == "leftright":
             l = bed.end - bed.start
 
@@ -876,6 +878,12 @@ def runMEMEOnSequences( infile, outfile ):
     to_cluster = True
     # job_options = "-l mem_free=8000M"
 
+    nseqs = int(FastaIterator.count( infile ))
+    if nseqs == 0:
+        E.warn( "%s: no sequences - meme skipped" % outfile)
+        P.touch( outfile )
+        return
+    
     target_path = os.path.join( os.path.abspath(PARAMS["exportdir"]), "meme", outfile )
     tmpdir = P.getTempDir( "." )
 
@@ -888,6 +896,7 @@ def runMEMEOnSequences( infile, outfile ):
                         %(meme_options)s 
        > %(outfile)s.log
     '''
+
     P.run()
 
     # copy over results

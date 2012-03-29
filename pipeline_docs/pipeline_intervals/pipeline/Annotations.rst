@@ -52,5 +52,9 @@ Overview
    :render: matrix
    :transform-matrix: normalized-row-max
 
-   Bases overlapping annotations.
+   Table of bases overlapping annotations.
+
+Significance
+============
+
 

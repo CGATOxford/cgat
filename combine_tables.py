@@ -142,6 +142,12 @@ def joinTables( outfile, options, args ):
 
     headers_to_delete = []
 
+    if options.take:
+        take = [ x - 1 for x in options.take]
+    else:
+        # tables with max 100 columns
+        take = None
+
     for nindex, filename in enumerate(options.filenames):
 
         E.info( "processing %s (%i/%i)" % (filename, nindex+1, len(options.filenames) ))
@@ -167,7 +173,7 @@ def joinTables( outfile, options, args ):
                 key = "-".join( [data[x] for x in options.columns] )                
                 titles = [key]
             for x in range(len(data)):
-                if x in options.columns: continue
+                if x in options.columns or (take and x not in take): continue
                 ncolumns += 1
                 if options.add_file_prefix:
                     p = re.search( options.regex_filename, prefix).groups()[0]
@@ -201,8 +207,12 @@ def joinTables( outfile, options, args ):
                 keys[key] = 1
                 sizes[key] = 0
 
-            max_size = max( len(data) - len(options.columns), max_size )
-            table[key] = [ data[x] for x in filter( lambda x: x not in options.columns, range(0,len(data)) )]
+            if take: 
+                max_size = len(take)
+                table[key] = [ data[x] for x in take ]
+            else:
+                max_size = max( len(data) - len(options.columns), max_size )
+                table[key] = [ data[x] for x in range(0,len(data)) if x not in options.columns ]
             n += 1
 
         ## enter columns of "na" for empty tables.
@@ -286,6 +296,7 @@ def joinTables( outfile, options, args ):
             outfile.write( "%s" % key)
 
             for x in order[1:]:
+
                 max_size, table = tables[x-1]
                 c = 0
                 if table.has_key( key ):
@@ -342,6 +353,9 @@ if __name__ == '__main__':
 
     parser.add_option( "-c", "--columns", dest="columns", type="string",
                       help="columns to use for joining. Multiple columns can be specified as a comma-separated list [default=%default]."  )
+    
+    parser.add_option( "-k", "--take", dest="take", type=int, action="append",
+                       help = "columns to take. If not set, all columns except for the join columns are taken [%default]" )
 
     parser.add_option( "-g", "--glob", dest="glob", type="string",
                       help="wildcard expression for table names."  )
@@ -397,6 +411,7 @@ if __name__ == '__main__':
         add_file_prefix = False,
         use_file_prefix = False,
         cat = None,
+        take = [],
         regex_filename = "(.*)"
         )
 

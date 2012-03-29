@@ -1251,7 +1251,7 @@ class ClassifierRNASeq(Counter):
         contig = self.getContig()
         strand = self.getStrand()
         start, end = exons[0][0], exons[-1][1]
-	print "hello"
+
         # get closest gene upstream and downstream
         before = self.transcript_intervals.before( contig, start, end, num_intervals = 1, max_dist = self.flank )
         after = self.transcript_intervals.after( contig, start, end, num_intervals = 1, max_dist = self.flank )
@@ -1389,7 +1389,7 @@ class ClassifierRNASeq(Counter):
         contig = self.getContig()
         segments = self.getSegments()
         introns = self.getIntrons()
-	print "hello"
+
         try:
             overlaps = list(self.transcript_intervals.get( contig, segments[0][0], segments[-1][1] ))
         except KeyError, msg:
@@ -1547,14 +1547,22 @@ class CounterBindingPattern(CounterOverlap):
     overlap
        number of intervals overlapping the genic region
     
+    Single exon genes have no intron.
+    Genes with one intron have only a first intron.
+    Genes with two introns have a first and a middle intron.
+
+    This method also computes the expected number of times 
+    an interval would overlap with a certain feature. The 
+    probability is only exact if it is assumed that the 
+    intervals are point features.
     """
 
     headerTemplate = [ "pattern", "overlap" ] +\
         [ "%s_%s" % (x,y) for x,y in itertools.product( 
-            ("cds", "first_exon", "exon", "utr5", "utr3", "first_intron", "intron") +\
-                tuple( ["flank5_%05i" % x for x in range(0, 10000, 2000) ] ) +\
-                tuple( ["flank3_%05i" % x for x in range(0, 10000, 2000) ] ),
-            ("overlap", "poverlap") ) ]
+		    ("cds", "first_exon", "exon", "utr5", "utr3", "first_intron", "middle_intron", "last_intron", "intron",) +\
+			    tuple( ["flank5_%05i" % x for x in range(0, 10000, 2000) ] ) +\
+			    tuple( ["flank3_%05i" % x for x in range(0, 10000, 2000) ] ),
+            ("overlap", "poverlap", "expect" ) ) ]
 
 
     # do not use strand
@@ -1582,6 +1590,8 @@ class CounterBindingPattern(CounterOverlap):
         self.overlap_cds = 0
 
         self.overlap_first_intron = 0
+	self.overlap_last_intron = 0
+	self.overlap_middle_intron = 0
         self.overlap_first_exon = 0
         self.overlap_flank5 = [0] * self.flank_bins
         self.overlap_flank3 = [0] * self.flank_bins
@@ -1593,6 +1603,8 @@ class CounterBindingPattern(CounterOverlap):
         self.poverlap_cds = 0
 
         self.poverlap_first_intron = 0
+        self.poverlap_last_intron = 0
+	self.poverlap_middle_intron = 0
         self.poverlap_first_exon = 0
         self.poverlap_flank5 = [0] * self.flank_bins
         self.poverlap_flank3 = [0] * self.flank_bins
@@ -1604,7 +1616,6 @@ class CounterBindingPattern(CounterOverlap):
         contig = self.getContig()
         strand = self.getStrand()
         if contig not in self.mIntersectors: return
-
 
         ######################################
         ## build sub-intervals to count
@@ -1626,6 +1637,7 @@ class CounterBindingPattern(CounterOverlap):
         ######################################
         ## build special sets
         first_intron, first_exon = [], []
+	last_intron, middle_intron = [], []
         flank_increment = self.flank // self.flank_bins
 
         # flank is ordered such that indices move away from the tss or tes
@@ -1634,7 +1646,10 @@ class CounterBindingPattern(CounterOverlap):
             flank3 = [ [(x,x+flank_increment)] for x in range(end, end + self.flank, flank_increment) ]
             if introns: 
                 first_intron = [introns[0]]
-                del introns[0]
+		if len(introns) > 1:
+			last_intron = [introns[-1]]
+		if len(introns) > 2:
+			middle_intron = [introns[len(introns) // 2 ] ] 
             first_exon = [exons[0]]
             del exons[0]
         else:
@@ -1642,7 +1657,11 @@ class CounterBindingPattern(CounterOverlap):
             flank5 = [ [(x,x+flank_increment)] for x in range(end, end + self.flank, flank_increment) ]
             if introns: 
                 first_intron = [introns[-1]]
-                del introns[-1]
+		if len(introns) > 1:
+			last_intron = [introns[0]]
+		if len(introns) > 2:
+			middle_intron = [introns[len(introns) // 2 ] ] 
+
             first_exon = [exons[-1]]
             del exons[-1]
 
@@ -1655,6 +1674,8 @@ class CounterBindingPattern(CounterOverlap):
         self.overlap_cds = Intervals.calculateOverlap( cds, intervals )
         self.overlap_first_exon = Intervals.calculateOverlap( first_exon, intervals )
         self.overlap_first_intron = Intervals.calculateOverlap( first_intron, intervals )
+        self.overlap_last_intron = Intervals.calculateOverlap( last_intron, intervals )
+        self.overlap_middle_intron = Intervals.calculateOverlap( middle_intron, intervals )
 
         for x, i in enumerate( flank5):
             self.overlap_flank5[x] = Intervals.calculateOverlap( i, intervals )
@@ -1671,6 +1692,8 @@ class CounterBindingPattern(CounterOverlap):
         self.poverlap_utr3 = pp( self.overlap_utr3, Intervals.getLength( utr3 ), na = 0)
         self.poverlap_first_exon = pp( self.overlap_first_exon, Intervals.getLength( first_exon ), na = 0)
         self.poverlap_first_intron = pp( self.overlap_first_intron, Intervals.getLength( first_intron ), na = 0)
+        self.poverlap_middle_intron = pp( self.overlap_middle_intron, Intervals.getLength( middle_intron ), na = 0)
+        self.poverlap_last_intron = pp( self.overlap_last_intron, Intervals.getLength( last_intron ), na = 0)
 
         for x, v in enumerate( self.overlap_flank5 ):
             self.poverlap_flank5[x] = pp( v, Intervals.getLength( flank5[x] ), na = 0)
@@ -1704,8 +1727,13 @@ class CounterBindingPattern(CounterOverlap):
                  self.poverlap_utr3,
                  self.overlap_first_intron,
                  self.poverlap_first_intron,
+                 self.overlap_middle_intron,
+                 self.poverlap_middle_intron,
+                 self.overlap_last_intron,
+                 self.poverlap_last_intron,
                  self.overlap_intron,
-                 self.poverlap_intron ]
+                 self.poverlap_intron,
+		 ]
 
         for x in range(len(self.overlap_flank5)):
             data.append( self.overlap_flank5[x] )
@@ -3327,5 +3355,4 @@ def main( argv = None ):
     E.Stop()
 
 if __name__ == "__main__":
-	print "hello"
 	sys.exit( main( sys.argv) )

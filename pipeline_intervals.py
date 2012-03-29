@@ -221,7 +221,7 @@ import PipelineMapping
 ###################################################
 import Pipeline as P
 P.getParameters( 
-    ["%s.ini" % __file__[:-len(".py")],
+    ["%s/pipeline.ini" % __file__[:-len(".py")],
      "../pipeline.ini",
      "pipeline.ini" ],
     defaults = {
@@ -283,20 +283,45 @@ def getAssociatedBAMFiles( track ):
        track1=120,200
 
     returns a list of BAM files and offsets.
+
+    Default tracks and offsets can be specified using a placeholder ``%``. The
+    following will associate all tracks with the same bam file::
+
+        [bams]
+        %=all.bam
+
+
     '''
     fn = track.asFile()
-    bamfiles = []
-    if "bams_%s" % fn.lower() in PARAMS:
-        for ff in P.asList( PARAMS["bams_%s" % fn.lower() ] ):
-            bamfiles.extend( glob.glob( ff ) )
-    else:
-        bamfiles = glob.glob( "%s.bam" % fn )
-        
-        
+    bamfiles = glob.glob( "%s.bam" % fn )
+
+    if bamfiles == []:
+        if "bams_%s" % fn.lower() in PARAMS:
+            for ff in P.asList( PARAMS["bams_%s" % fn.lower() ] ):
+                bamfiles.extend( glob.glob( ff ) )
+        else:
+            for pattern, value in P.CONFIG.items( "bams" ):
+                if "%" in pattern:
+                    p = re.sub( "%", "\S+", pattern )
+                    if re.search( p, fn ):
+                        bamfiles.extend( glob.glob( value ) )
+
+    offsets = []
     if "offsets_%s" % fn.lower() in PARAMS:
         offsets = map(int, P.asList( PARAMS["offsets_%s" % fn.lower() ] ))
     else:
+        for pattern, value in P.CONFIG.items( "offsets" ):
+            if "%" in pattern:
+                p = re.sub( "%", "\S+", pattern )
+                if re.search( p, fn ):
+                    offsets.extend( map( int, value.split(",") ) )
+
+    if offsets == []:
         offsets = [0] * len(bamfiles)
+
+    if len(bamfiles) != len(offsets):
+        raise ValueError("number of BAM files %s is not the same as number of offsets: %s" % (str(bamfiles), str(offsets)))
+
 
     return bamfiles, offsets
 
@@ -443,7 +468,7 @@ def indexIntervals( infile, outfile ):
     '''index intervals.
     '''
 
-    statement = '''zcat %(infile)s | bgzip > %(outfile)s; tabix -p bed %(outfile)s'''
+    statement = '''zcat %(infile)s | sort -k1,1 -k2,2n | bgzip > %(outfile)s; tabix -p bed %(outfile)s'''
     P.run()
 
 ############################################################
@@ -923,15 +948,16 @@ def exportMotifSequences( infile, outfile ):
     track = P.snip( infile, "_intervals.load" )
     dbhandle = connect()
         
+    p = P.substituteParameters( **locals() )
     nseq = PipelineMotifs.writeSequencesForIntervals( track, 
                                                       outfile,
                                                       dbhandle,
                                                       full = False,
-                                                      masker = PARAMS['motifs_masker'],
-                                                      halfwidth = int(PARAMS["motifs_halfwidth"]),
-                                                      maxsize = int(PARAMS["motifs_max_size"]),
-                                                      proportion = PARAMS["motifs_proportion"],
-                                                      min_sequences = PARAMS["motifs_min_sequences"] )
+                                                      masker = p['motifs_masker'],
+                                                      halfwidth = int(p["motifs_halfwidth"]),
+                                                      maxsize = int(p["motifs_max_size"]),
+                                                      proportion = p["motifs_proportion"],
+                                                      min_sequences = p["motifs_min_sequences"] )
 
     if nseq == 0:
         E.warn( "%s: no sequences - meme skipped" % outfile)

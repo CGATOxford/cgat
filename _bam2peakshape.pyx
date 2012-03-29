@@ -14,6 +14,9 @@ PeakShapeResult = collections.namedtuple( "PeakShapeResult",
                                           "median closest_half_height furthest_halfheight "
                                           "bins counts" )
 
+PeakShapeCounts = collections.namedtuple( "PeakShapeCounts",
+                                          "nreads median counts" )
+
 cdef coverageInInterval( Samfile samfile,
                          contig,
                          int start, 
@@ -46,7 +49,10 @@ cdef coverageInInterval( Samfile samfile,
     # collect pileup profile in region bounded by maxwindow_start and maxwindow_end.
     cdef int interval_width = end - start
     cdef int * ccounts = <int*>calloc( interval_width, sizeof(int))
-    
+
+    if interval_width <= 0: 
+        return 0, numpy.zeros(0)
+
     if shift:
         xstart, xend = max(0, start - offset), max(0, end - offset)
 
@@ -242,5 +248,40 @@ def count( Samfile samfile,
 
     
     return result
+
+def countAroundPos( Samfile samfile,
+                    contig, 
+                    int pos,
+                    shift,
+                    bins ):
+    '''count and bin in bins.
+    '''
+    cdef int xstart, xend, rstart, rend, i, offset
+
+    nreads, counts = coverageInInterval( samfile, 
+                                         contig, 
+                                         max( 0, pos + bins[0]),
+                                         pos + bins[-1],
+                                         shift )
+    
+    nbins = len(bins) - 1
+    hist = numpy.zeros( nbins, dtype = numpy.int )
+    cdef int lcounts = len(counts)
+
+    offset = -bins[0]
+    xstart = offset + bins[0] 
+    for i from 0 <= i < nbins:
+        xend = offset + bins[i+1]
+        # only take complete bins
+        if xstart >= 0 and xend < lcounts:
+            hist[i] = sum( counts[xstart:xend] ) 
+        xstart = xend
+
+    result = PeakShapeCounts._make( (nreads, 
+                                     numpy.median(counts),
+                                     hist ) )
+    
+    return result
+
 
     

@@ -27,12 +27,12 @@ class RangeCounter:
 
         self.setup( ranges )
         self.count( contig, ranges )
-        
+
         if length > 0:
             lnormed = float(length)
             lunnormed = float(len(self.counts))
             if lunnormed == 0: return numpy.zeros(0)
-
+            # E.debug( "normed length = %i, unnormed length =%i " % (lnormed, lunnormed) )
             if lunnormed > lnormed:
                 # compress by taking only counts at certain points within intervals
                 take = numpy.unique( numpy.array( numpy.floor( 
@@ -52,10 +52,27 @@ class RangeCounter:
 
 class RangeCounterBAM(RangeCounter):
 
-    def __init__(self, Samfile samfile, int shift, *args, **kwargs ):
+    def __init__(self, samfiles, shifts, extends, *args, **kwargs ):
         RangeCounter.__init__(self, *args, **kwargs )
-        self.samfile = samfile
-        self.shift = shift
+        self.samfiles = samfiles
+
+        self.shifts, self.extends = [], []
+        for x in xrange(max( (len(shifts), len(extends), len(samfiles)) )):
+            if x >= len(shifts):
+                shift = 0
+            else:
+                shift = shifts[0]
+            if x >= len(extends):
+                extend = 0
+            else:
+                extend = extends[0]
+
+            if shift > 0 and extend == 0:
+                E.warn( "no extension given for shift > 0 - extension will be 2 * shift" )
+                extend = shift * 2
+
+            self.shifts.append( shift )
+            self.extends.append( extend )
 
     def count(self, contig, ranges ):
 
@@ -66,56 +83,60 @@ class RangeCounterBAM(RangeCounter):
         cdef int xstart, xend, rstart, rend, start, end
         cdef int interval_width
         cdef int current_offset
-        cdef Samfile samfile = self.samfile
         cdef AlignedRead read
+        cdef int shift_extend
+        cdef int work_offset
+        cdef int pos
         cdef int length
 
-        current_offset = 0
         counts = self.counts
-        length = len(counts)
-        # for peak counting follow the MACS protocol:
-        # see the function def __tags_call_peak in PeakDetect.py
-        #
-        # In words
-        # Only take the start of reads (taking into account the strand)
-        # for counting, extend reads by shift
-        # on + strand shift tags upstream
-        # i.e. look at the downstream window
-        # note: filtering?
-        # note: does this work with paired-end data?
-        cdef int offset = self.shift // 2
 
-        cdef int last_end = ranges[0][0]
+        # shifting:
+        # forward strand reads:
+        #   - shift read upstream by shift
+        #   - extend read upstream by extend 
+        # reverse strand: 
+        #   - shift read downstream by shift
+        #   - extend read downstream by extend
 
-        current_offset = 0
+        # There is a problem of discontinuity through shifting at
+        # exon boundaries
+        # 1. Density will accumulate at the ends as reads are shifted
+        # up and downstream. However, shifted density will end up
+        # in the introns and thus not counted. 
+        # 2. The densities along exon boundaries will always be 
+        # discontinuous.
 
-        for start, end in ranges:
+        cdef int extend
+        cdef int shift
+        cdef Samfile samfile
+        for samfile, shift, extend in zip( self.samfiles, self.shifts, self.extends):
 
-            if offset > 0:
-                # on the + strand, shift tags upstream
-                xstart, xend = max(0, start - offset), max(0, end - offset)
+            current_offset = 0
+            shift_extend = shift + extend
 
-                for read in samfile.fetch( contig, xstart, xend ):
-                    if read.is_reverse: continue
-                    rstart = max( 0, read.pos - xstart - offset)
-                    rend = min( length, read.pos - xstart + offset) 
-                    for i from rstart <= i < rend: counts[i] += 1
+            for start, end in ranges:
+                length = end - start
+                if shift_extend > 0:
+                    # collect reads including the regions left/right of interval
+                    xstart, xend = max(0, start - shift_extend), max(0, end + shift_extend)
 
-                # on the - strand, shift tags downstream
-                xstart, xend = max(0, start + offset), max(0, end + offset)
+                    for read in samfile.fetch( contig, xstart, xend ):
+                        if read.is_reverse: 
+                            rstart = read.aend - start - shift_extend
+                        else:
+                            rstart = read.pos - start + shift
 
-                for read in samfile.fetch( contig, xstart, xend ):
-                    if not read.is_reverse: continue
-                    rstart = max( 0, read.pos + read.rlen - xstart - offset)
-                    rend = min( length, read.pos + read.rlen - xstart + offset) 
-                    for i from rstart <= i < rend: counts[i] += 1
-            else:
-                for read in samfile.fetch( contig, start, end ):
-                    rstart = max( start, read.pos ) - start + current_offset
-                    rend = min( end, read.aend) - start + current_offset
-                    for i from rstart <= i < rend: counts[i] += 1
+                        rend = min( length, rstart + extend ) + current_offset
+                        rstart = max( 0, rstart ) + current_offset
+                        for i from rstart <= i < rend: counts[i] += 1
+                else:
+                    for read in samfile.fetch( contig, start, end ):
+                        rstart = max( start, read.pos ) - start + current_offset
+                        rend = min( end, read.aend) - start + current_offset
+                        for i from rstart <= i < rend: counts[i] += 1
 
-            current_offset += end - start
+                current_offset += length
 
 class RangeCounterBed(RangeCounter):
 
@@ -131,30 +152,64 @@ class RangeCounterBed(RangeCounter):
 
         if len(ranges) == 0: return
 
-        bedfile = self.bedfile
         counts = self.counts
 
-        cdef int length = len(counts)
-        cdef int current_offset = ranges[0][0]
-        cdef int last_end = ranges[0][0]
-        cdef int interval_width = 0
+        cdef int length
+        cdef int current_offset
+        cdef int interval_width
 
-        for start, end in ranges:
-            current_offset += start - last_end
-            interval_width = end - start
-            
-            try:
-                for bed in bedfile.fetch( contig, max(0,start), end, parser = pysam.asBed() ):
-                    # truncate to range of interest
-                    tstart, tend = max( bed.start, start), min( bed.end, end )
-                    rstart = max( 0, tstart - current_offset )
-                    rend = min( length, tend - current_offset )
-                    for i from rstart <= i < rend: counts[i] += 1
-            except ValueError:
-                # contig not present
-                pass
+        for bedfile in self.bedfiles:
+            current_offset = 0
 
-            last_end = end
+            for start, end in ranges:
+                length = end - start
+                try:
+                    for bed in bedfile.fetch( contig, max(0,start), end, parser = pysam.asBed() ):
+                        # truncate to range of interest
+                        tstart = max(0, bed.start - start) + current_offset
+                        tend = min( length, bed.end - start) + current_offset
+                        for i from rstart <= i < rend: counts[i] += 1
+                except ValueError:
+                    # contig not present
+                    pass
+
+                current_offset += length
+
+class RangeCounterBigWig(RangeCounter):
+
+    def __init__(self, wigfiles, *args, **kwargs ):
+        RangeCounter.__init__(self, *args, **kwargs )
+        self.wigfiles = wigfiles
+        
+    def count(self, contig, ranges ):
+        
+        # collect pileup profile in region bounded by start and end.
+        cdef int i
+        cdef int rstart, rend, start, end
+
+        if len(ranges) == 0: return
+
+        wigfile = self.wigfile
+        counts = self.counts
+
+        cdef int length
+        cdef int current_offset
+
+        for wigfile in self.wigfiles:
+
+            current_offset = 0
+            for start, end in ranges:
+                length = end - start
+
+                values = wigfile.get( contig, start, end )
+                if values == None: continue
+
+                for tstart, tend, value in values:
+                    rstart = tstart - start + current_offset
+                    rend = tend - start + current_offset
+                    for i from rstart <= i < rend: counts[i] = value
+                    
+                current_offset += length
 
 class IntervalsCounter:
     
@@ -172,6 +227,10 @@ class IntervalsCounter:
         self.lengths = []
         # aggregate counts
         self.aggregate_counts = []
+        # number of aggregates skipped due to shape mismatch
+        # (happens if region extends beyound start/end of contig
+        self.nskipped = 0
+        
 
     def add( self, field, length ):
         self.counts.append( 0 )
@@ -230,9 +289,12 @@ class IntervalsCounter:
                 cc = c / m
             else:
                 cc = c
-                
-            agg += cc
 
+            try:
+                agg += cc
+            except ValueError:
+                self.nskipped += 1
+            
     def buildMatrix( self, normalize = None ):
         '''build single matrix with all counts.
         
@@ -328,11 +390,7 @@ class GeneCounter( IntervalsCounter ):
         exons = GTF.asRanges( gtf, "exon" )
         exon_start, exon_end = exons[0][0], exons[-1][1]
 
-        # filter for protein coding
-        cds = GTF.asRanges( gtf, "CDS" )
-        if len(cds) == 0: return 0
-
-        upstream = [ ( exon_start - self.extension_upstream, exon_start ), ] 
+        upstream = [ ( max(0, exon_start - self.extension_upstream), exon_start ), ] 
         downstream = [ ( exon_end, exon_end + self.extension_downstream ), ]
         
         E.debug("counting exons" )
@@ -348,7 +406,7 @@ class GeneCounter( IntervalsCounter ):
         if gtf[0].strand == "-":
             self.counts_exons = self.counts_exons[::-1]
             self.counts_upstream, self.counts_downstream = self.counts_downstream[::-1], self.counts_upstream[::-1]
-
+            
         self.addLengths( upstream, exons, downstream )
 
         self.aggregate( self.counts_upstream,
@@ -411,7 +469,7 @@ class UTRCounter( IntervalsCounter ):
         utrs = Intervals.truncate( exons, self.cds )
         self.upstream_utr = [ x for x in utrs if x[1] <= cds_start ]
         self.downstream_utr = [ x for x in utrs if x[0] >= cds_end ]
-        self.upstream = [ ( exon_start - self.extension_upstream, exon_start ), ] 
+        self.upstream = [ ( max(0, exon_start - self.extension_upstream), exon_start ), ] 
         self.downstream = [ ( exon_end, exon_end + self.extension_downstream ), ]
         
         E.debug("counting cds" )
@@ -453,6 +511,31 @@ class UTRCounter( IntervalsCounter ):
 
         return 1
 
+class RegionCounter( GeneCounter ):
+    '''count in complete region given by gene/transcript.'''
+
+    name = "intervalprofile"
+    
+    def __init__(self, 
+                 *args,
+                 **kwargs ):
+
+        GeneCounter.__init__(self, *args, **kwargs )
+
+        # substitute field name 'exons' with 'exon'
+        assert self.fields[1] == "exons"
+        self.fields[1] = "exon"
+
+    def count( self, gtf ):
+        '''count intervals.'''
+
+        g = GTF.Entry()
+        g.copy( gtf[0] )
+        g.start = gtf[0].start
+        g.end = gtf[-1].end
+        
+        return GeneCounter.count( self, [ g ] )
+        
 class TSSCounter( IntervalsCounter ):
     '''count profile at transcription start/end site.
 
@@ -482,9 +565,9 @@ class TSSCounter( IntervalsCounter ):
         self.tss, self.tts = exons[0][0], exons[-1][1]
 
         # no max(0, ...) here as these ranges need to have always the same length
-        self.tss_ranges = [ (self.tss - self.extension_out, 
+        self.tss_ranges = [ (max(0, self.tss - self.extension_out), 
                              self.tss + self.extension_in), ]
-        self.tts_ranges = [ (self.tts - self.extension_in, 
+        self.tts_ranges = [ (max(0, self.tts - self.extension_in), 
                              self.tts + self.extension_out), ]
         E.debug( "tss=%s, tts=%s" % (self.tss_ranges, self.tts_ranges) )
 
@@ -508,8 +591,12 @@ def count( counters,
     counts = [0] * len(counters)
 
     iterations = 0
+    E.info("starting counting" )
 
     for iteration, gtf in enumerate(gtf_iterator):
+        E.debug( "processing %s" % (gtf[0].gene_id))
+
+        gtf.sort( key = lambda x: x.start )
         c.input += 1
         for x, counter in enumerate(counters):
             counter.count( gtf )

@@ -1479,7 +1479,7 @@ def main():
         
         def _g():
             return collections.defaultdict( GOInfo )
-        go2infos = collections.defaultdict( _g )
+        go2infos = collections.defaultdict( _g );
 
         ## substitute go2infos
         for go in ontology.values():
@@ -1649,7 +1649,7 @@ def main():
             go_results = AnalyseGO( gene2go, foreground, background )
 
             if len(go_results.mSampleGenes) == 0:
-                E.warn( "%s: no genes with GO categories - analysis aborted" % genelistname)
+                E.warn( "%s: no genes with GO categories - analysis aborted" % genelist_name)
                 continue
 
             pairs = go_results.mResults.items()
@@ -1820,7 +1820,8 @@ def main():
                                  col_headers, row_header="category" )
 
             # pvalue matrix
-            matrix, row_headers = buildMatrix( all_significant_results, valuef = lambda x: int(-10 * math.log( x.mPValue,10)),
+            matrix, row_headers = buildMatrix( all_significant_results, 
+                                               valuef = lambda x: int(-10 * math.log( x.mPValue,10)),
                                                dtype = numpy.int )
             outfile = getFileName( options, 
                                    go = test_ontology,

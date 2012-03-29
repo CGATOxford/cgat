@@ -34,6 +34,22 @@ and expected number of peaks with motif by chance.
 
    Percentage of peaks explained by motifs.
 
+
+Specificity of Motifs
+=====================
+
+The following plots show the distribution of E-values of matches
+within an interval and within a same-sized interval left and right of
+the interval. A good motif/interval combination should have lower
+evalues within intervals compared to left/right of an interval.
+
+.. report:: Motifs.MastMotifEvalues
+   :render: box-plot
+   :layout: column-4
+   :width: 200
+
+   Distribution of Evalues.
+
 .. Location of motifs within intervals
 .. ===================================
 
@@ -63,7 +79,7 @@ and expected number of peaks with motif by chance.
 .. +++++++++++++++++
 
 .. The following plots show the relative location of motifs within
-.. *control* intervals, random genomic locations of the same size. 
+.. *control* intervals, random genomic locations of the same size.
 .. These plots should all show a straight line.
 
 .. .. report:: Motifs.MastControlLocationMiddle

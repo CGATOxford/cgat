@@ -39,9 +39,13 @@ fastq and performs basic quality control steps:
 
 For further details see http://www.bioinformatics.bbsrc.ac.uk/projects/fastqc/
 
-The pipeline can also be used to pre-process reads. Implemented tasks are:
+The pipeline can also be used to pre-process reads (target ``process_reads``). 
 
-   * :meth:`removeContaminants` - remove contaminants from read set
+Implemented tasks are:
+
+   * :meth:`removeContaminants` - remove contaminants from read sets
+   * :meth:`trim` - trim reads by a certain amount
+   * :meth:`filter` - filter reads by quality score
 
 Usage
 =====
@@ -155,6 +159,9 @@ import PipelineMapping
 import Stats
 import PipelineTracks
 import Pipeline as P
+import Fastq
+import csv2db
+import cStringIO
 
 USECLUSTER = True
 
@@ -167,7 +174,7 @@ USECLUSTER = True
 # load options from the config file
 import Pipeline as P
 P.getParameters( 
-    ["%s.ini" % __file__[:-len(".py")],
+    ["%s/pipeline.ini" % __file__[:-len(".py")],
      "../pipeline.ini",
      "pipeline.ini" ] )
 PARAMS = P.PARAMS
@@ -193,6 +200,57 @@ def runFastqc(infiles, outfile):
 #########################################################################
 #########################################################################
 #########################################################################
+## 
+#########################################################################
+@transform( runFastqc, suffix(".fastqc"), "_fastqc.load" )
+def loadFastqc( infile, outfile ):
+    '''load FASTQC stats.'''
+    
+    track = P.snip( infile, ".fastqc" )
+
+    def section_iterator( infile ):
+
+        data = []
+        for line in infile:
+            if line.startswith( ">>END_MODULE" ): 
+                yield name, status, header, data
+            elif line.startswith(">>"):
+                name, status = line[2:-1].split("\t")
+                data = []
+            elif line.startswith("#"):
+                header = "\t".join([ x for x in line[1:-1].split("\t") if x != ""] )
+            else:
+                data.append( "\t".join([ x for x in line[:-1].split("\t") if x != ""] ) )
+
+    filename = os.path.join( PARAMS["exportdir"], "fastqc", track + "*_fastqc", "fastqc_data.txt" )
+
+    for fn in glob.glob( filename ):
+        prefix = os.path.basename( os.path.dirname( fn ) )
+        results = []
+        
+        for name, status, header, data in section_iterator(IOTools.openFile( fn )):
+
+            parser = csv2db.buildParser()
+            (options, args) = parser.parse_args([])
+            options.tablename = prefix + "_" + re.sub(" ", "_", name ) 
+            options.allow_empty= True
+
+            inf = cStringIO.StringIO( "\n".join( [header] + data ) + "\n" )
+            csv2db.run( inf, options )
+            results.append( (name, status ) )
+
+        # load status table
+        parser = csv2db.buildParser()
+        (options, args) = parser.parse_args([])
+        options.tablename = prefix + "_status"
+        options.allow_empty= True
+
+        inf = cStringIO.StringIO( "\n".join( ["name\tstatus"] + ["\t".join( x ) for x in results ] ) + "\n" )
+        csv2db.run( inf, options )
+
+#########################################################################
+#########################################################################
+#########################################################################
 ## adapter trimming
 #########################################################################
 # see http://intron.ccam.uchc.edu/groups/tgcore/wiki/013c0/Solexa_Library_Primer_Sequences.html
@@ -207,7 +265,6 @@ ILLUMINA_ADAPTORS = { "Genomic/ChIPSeq-Adapters1-1" : "GATCGGAAGAGCTCGTATGCCGTCT
 		      "Paired-End-PCR-2" : "CAAGCAGAAGACGGCATACGAGATCGGTCTCGGCATTCCTGCTGAACCGCTCTTCCGATCT",
 		      "Paired-End-Sequencing-1" : "ACACTCTTTCCCTACACGACGCTCTTCCGATCT",
 		      "Paired-End-Sequencing-2" : "CGGTCTCGGCATTCCTGCTGAACCGCTCTTCCGATCT" }
-
 
 #########################################################################
 #########################################################################
@@ -231,7 +288,6 @@ def outputContaminants( infile, outfile ):
 	    r"nocontaminants.\1.\2")
 def removeContaminants( infiles, outfile ):
     '''remove adaptor contamination from fastq files.
-
     
     This method uses cutadapt.
     '''
@@ -258,12 +314,72 @@ def removeContaminants( infiles, outfile ):
     '''
     P.run()
 
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( [ x for x in \
+                  glob.glob("*.fastq.gz") + glob.glob("*.fastq.1.gz") + glob.glob("*.fastq.2.gz") \
+                  if not x.startswith("processed.")],
+	    regex( r"(\S+).(fastq.1.gz|fastq.gz|fastq.2.gz|csfasta.gz)"),
+	    add_inputs(outputContaminants),
+	    r"processed.\1.\2")
+def processReads( infiles, outfile ):
+    '''process reads.'''
+    
+    infile, contaminant_file = infiles
+
+    do_sth = False
+    to_cluster = True
+
+    # fastx does not like quality scores below 64 (Illumina 1.3 format)
+    # need to detect the scores and convert
+    
+    format = Fastq.guessFormat( IOTools.openFile(infile ) , raises = False)
+    E.info( "%s: format guess: %s" % (infile, format))
+    offset = Fastq.getOffset( format, raises = False )
+
+    if PARAMS["process_remove_contaminants"]:
+        statement.append( '''
+        cutadapt 
+              --discard
+              %(adaptors)s
+              --overlap=%(contamination_min_overlap_length)i
+              --format=fastq
+              %(contamination_options)s
+              <( zcat < %(infile)s )
+              2> %(outfile)s_contaminants.log
+        ''' )
+        do_sth = True
+    else:
+        statement = ['zcat %(infile)s' ]
+
+    if PARAMS["process_artifacts"]:
+        statement.append( 'fastx_artifacts_filter -Q %(offset)i -v %(artifacts_options)s 2> %(outfile)s_artifacts.log' )
+        do_sth = True
+        
+    if PARAMS["process_trim"]:
+        statement.append( 'fastx_trimmer -Q %(offset)i -v %(trim_options)s 2> %(outfile)s_trim.log' )
+        do_sth = True
+
+    if PARAMS["process_filter"]:
+        statement.append( 'fastq_quality_filter -Q %(offset)i -v %(filter_options)s 2> %(outfile)s_filter.log')
+        do_sth = True
+
+    if do_sth:
+        statement.append( "gzip" )
+        statement = " | ".join( statement ) + " > %(outfile)s" 
+        P.run()
+    else:
+        E.warn( "no filtering specified for %s - nothing done" % infile )
+
 #########################################################################
 #########################################################################
 #########################################################################
 @merge( removeContaminants, "filtering.summary.tsv.gz" )
 def summarizeFiltering( infiles, outfile ):
     '''collect summary output from filtering stage.'''
+
     tracks = {}
     adapters = {}
     def _chunker( inf ):
@@ -323,12 +439,14 @@ def loadFilteringSummary( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-
-
 @transform( [ x for x in glob.glob("*.fastq.gz") + glob.glob("*.fastq.1.gz") + glob.glob("*.fastq.2.gz")]
             , regex( r"(\S+).(fastq.1.gz|fastq.gz|fastq.2.gz|csfasta.gz)"), r"trim.\1.\2")
 def trimReads (infile, outfile):
-    '''trim reads to desired length using fastx'''
+    '''trim reads to desired length using fastx
+
+    '''
+
+    E.warn( "deprecated - use processReads instead" )
 
     to_cluster = True
     statement = '''zcat %(infile)s | fastx_trimmer %(trim_options)s 2> %(outfile)s.log | gzip > %(outfile)s''' 
@@ -346,7 +464,6 @@ def replaceBaseWithN(infile, outfile):
     to_cluster = True
     statement = '''python %(scriptsdir)s/fastq2N.py -i %(infile)s %(replace_options)s'''
     P.run()
-
     
 #########################################################################
 #########################################################################

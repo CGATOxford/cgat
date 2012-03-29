@@ -163,7 +163,7 @@ import rpy2.robjects.numpy2ri
 ###################################################################
 ## Pipeline configuration
 import Pipeline as P
-P.getParameters( ["%s.ini" % __file__[:-len(".py")], "../pipeline.ini", "pipeline.ini" ] )
+P.getParameters( ["%s/pipeline.ini" % __file__[:-len(".py")], "../pipeline.ini", "pipeline.ini" ] )
 
 PARAMS = P.PARAMS
 PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],

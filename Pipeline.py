@@ -162,10 +162,10 @@ def substituteParameters( **kwargs ):
                 p = k[len(outfile)+1:]
                 if p not in local_params:
                     raise KeyError( "task specific parameter '%s' does not exist for '%s' " % (p,k))
+                E.debug( "substituting task specific parameter for %s: %s = %s" % (outfile,p,local_params[k] ) )
                 local_params[p] = local_params[k]
 
     return local_params
-
 
 def checkFiles( filenames ):
     """check for the presence/absence of files"""
@@ -450,7 +450,8 @@ def snip( filename, extension = None):
     If extension is given, make sure that filename has the extension.
     '''
     if extension: 
-        assert filename.endswith( extension )        
+        if not filename.endswith( extension ):
+            raise ValueError("'%s' expected to end in '%s'" % (filename, extension))
         return filename[:-len(extension)]
 
     root, ext = os.path.splitext( filename )
@@ -864,6 +865,59 @@ class MultiLineFormatter(logging.Formatter):
             s = s.replace('\n', '\n' + ' '*len(header))
         return s
 
+def clonePipeline( srcdir ):
+    '''clone a pipeline.'''
+    
+    destdir = os.path.curdir
+
+    copy_files = ("sphinxreport.ini", "conf.py", "pipeline.ini", "csvdb" )
+    ignore_prefix = ("report", "_cache", "export", "tmp", "ctmp", "_static", "_templates" )
+
+    def _ignore( p ):
+        for x in ignore_prefix:
+            if p.startswith( x ): 
+                return True
+        return False
+
+    for root, dirs, files in os.walk(srcdir):
+
+        relpath = os.path.relpath( root, srcdir )
+        if _ignore( relpath ): continue
+
+        for d in dirs:
+            if _ignore( d ): continue
+            dest = os.path.join( os.path.join(destdir, relpath, d ) )
+            os.mkdir( dest )
+            # touch
+            s = os.stat( os.path.join(root, d ) )
+            os.utime( dest, (s.st_atime, s.st_mtime ))
+
+        for f in files:
+            if _ignore( f ): continue
+
+            fn = os.path.join( root, f )
+            dest_fn = os.path.join( destdir, relpath, f ) 
+            if f in copy_files:
+                shutil.copyfile( fn, dest_fn )
+            else:
+                # realpath resolves links - thus links will be linked to
+                # the original target
+                os.symlink( os.path.realpath( fn),
+                            dest_fn )
+
+def writeConfigFiles( path ):
+    
+    for dest in ( "pipeline.ini", "sphinxreport.ini", "conf.py" ):
+        src = os.path.join( path, dest)
+        if os.path.exists(dest):
+            L.warn( "file `%s` already exists - skipped" % dest )
+            continue
+
+        if not os.path.exists( src ):
+            raise ValueError( "default config file `%s` not found"  % src )
+        shutil.copyfile( src, dest )
+        L.info( "created new configuration file `%s` " % dest )
+
 USAGE = '''
 usage: %prog [OPTIONS] [CMD] [target]
 
@@ -881,7 +935,8 @@ plot <target>
    plot image (using inkscape) of pipeline state for *target*
 
 config
-   write a new configuration file pipeline.ini with default values
+   write new configuration files pipeline.ini, sphinxreport.ini and conf.py
+   with default values
 
 dump
    write pipeline configuration to stdout
@@ -897,7 +952,7 @@ def main( args = sys.argv ):
                                     usage = USAGE )
     
     parser.add_option( "--pipeline-action", dest="pipeline_action", type="choice",
-                       choices=("make", "show", "plot", "dump", "config" ),
+                       choices=("make", "show", "plot", "dump", "config", "clone" ),
                        help="action to take [default=%default]." )
 
     parser.add_option( "--pipeline-format", dest="pipeline_format", type="choice",
@@ -916,7 +971,7 @@ def main( args = sys.argv ):
     parser.set_defaults(
         pipeline_action = None,
         pipeline_format = "svg",
-        pipeline_target = "full",
+        pipeline_targets = [],
         multiprocess = 2,
         logfile = "pipeline.log",
         dry_run = False,
@@ -936,7 +991,7 @@ def main( args = sys.argv ):
     if args: 
         options.pipeline_action = args[0]
         if len(args) > 1:
-            options.pipeline_target = args[1]
+            options.pipeline_targets.extend( args[1:] )
 
     if options.pipeline_action in ("make", "show", "svg", "plot", "touch" ):
 
@@ -954,7 +1009,7 @@ def main( args = sys.argv ):
                 L.info( "code location: %s" % PARAMS["scriptsdir"] )
                 L.info( "code version: %s" % version[:-1] )
 
-                pipeline_run( [ options.pipeline_target ], 
+                pipeline_run( options.pipeline_targets, 
                               multiprocess = options.multiprocess, 
                               logger = logger,
                               verbose = options.loglevel )
@@ -962,22 +1017,23 @@ def main( args = sys.argv ):
                 L.info( E.GetFooter() )
 
             elif options.pipeline_action == "show":
-                pipeline_printout( options.stdout, [ options.pipeline_target ], verbose = options.loglevel )
+                pipeline_printout( options.stdout, options.pipeline_targets, verbose = options.loglevel )
 
             elif options.pipeline_action == "touch":
-                pipeline_run( [ options.pipeline_target ], 
+                pipeline_run( options.pipeline_targets, 
                               touch_files_only = True,
                               verbose = options.loglevel )
 
             elif options.pipeline_action == "svg":
                 pipeline_printout_graph( options.stdout, 
                                          options.pipeline_format,
-                                         [ options.pipeline_target ] )
+                                         options.pipeline_targets )
+
             elif options.pipeline_action == "plot":
                 outf, filename = tempfile.mkstemp()
                 pipeline_printout_graph( os.fdopen(outf,"w"),
                                          options.pipeline_format,
-                                         [ options.pipeline_target ] )
+                                         options.pipeline_targets )
                 execute( "inkscape %s" % filename ) 
                 os.unlink( filename )
 
@@ -989,16 +1045,16 @@ def main( args = sys.argv ):
     elif options.pipeline_action == "dump":
         # convert to normal dictionary (not defaultdict) for parsing purposes
         print "dump = %s" % str(dict(PARAMS))
+
     elif options.pipeline_action == "config":
-        if os.path.exists("pipeline.ini"):
-            raise ValueError( "file `pipeline.ini` already exists" )
         f = sys._getframe(1)
         caller = inspect.getargvalues(f).locals["__file__"]
-        configfile = os.path.splitext(caller)[0] + ".ini" 
-        if not os.path.exists( configfile ):
-            raise ValueError( "default config file `%s` not found"  % configfile )
-        shutil.copyfile( configfile, "pipeline.ini" )
-        L.info( "created new configuration file `pipeline.ini` " )
+        prefix = os.path.splitext(caller)[0]
+        writeConfigFiles( prefix )
+
+    elif options.pipeline_action == "clone":
+        clonePipeline( options.pipeline_targets[0] )
+
     else:
         raise ValueError("unknown pipeline action %s" % options.pipeline_action )
 
