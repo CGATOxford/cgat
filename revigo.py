@@ -117,6 +117,8 @@ from networkx import DiGraph
 from networkx import topological_sort
 import cPickle
 
+import matplotlib
+matplotlib.use('Agg') 
 import matplotlib.pyplot as plt
 import pylab
 
@@ -862,7 +864,7 @@ class GOGraph(networkx.DiGraph):
         parser = make_parser()
         handler = GOOboXmlHandler(self)
         parser.setContentHandler(handler)
-        f = open(GOOboXmlFileName, 'r')
+        f = IOTools.openFile(GOOboXmlFileName, 'r')
         parser.parse(f)
         f.close()
         self.synonyms = handler.synonyms
@@ -999,7 +1001,7 @@ def getAncestors( g, node ):
 
     return ancestors
 
-def readPValues( infile, synonyms ):
+def readPValues( infile, synonyms = {} ):
     '''read pvalues and optionally fold changes from infile.'''
     term2pvalue, term2log2fold = {}, collections.defaultdict( float )
 
@@ -1017,7 +1019,7 @@ def readPValues( infile, synonyms ):
         if len(data) < 14: return
         goid = synonyms.get( data[11], data[11] )
         term2pvalue[goid] = float( data[8] )
-        term2log2fold[goid] = math.log( float(data[2]), 2 )
+        term2log2fold[goid] = math.log( float(data[7])+0.0000001, 2 )
 
     parser = None
     for line in infile:
@@ -1067,9 +1069,9 @@ def readAncestors( infile ):
 def computeAncestors( graph, nodes ):
     '''build dictionary with node ancestors in graph.'''
 
-    E.info("computing ancestral information")
-
     iteration, total = 0, len(nodes)
+
+    E.info("computing ancestral information for %i nodes" % len(nodes))
 
     ancestors = {}
     for node in nodes:
@@ -1080,7 +1082,7 @@ def computeAncestors( graph, nodes ):
         # a.add( node )
         ancestors[node] = a 
         iteration += 1
-        if iteration % 1000 == 0: 
+        if iteration % 500 == 0: 
             E.debug( "total = %i (%5.2f%%)" % (iteration, 100.0 * iteration / total) )
     return ancestors
 
@@ -1113,8 +1115,9 @@ def computeTermFrequencies( graph, go2genes ):
     # eq. 1 in Schlicker et al. (2006)
     E.info("computing term frequencies" )
     # compute counts
-    # for node in traversal.dfs_postorder( graph, source = root ):
-    for node in traversal.dfs_postorder_nodes( graph, source = root ):
+    for node in traversal.dfs_postorder( graph, source = root ):
+    # older networkx:
+    # for node in traversal.dfs_postorder_nodes( graph, source = root ):
         counts[node] = set(go2genes[node])
         for x in graph.successors( node ):
             counts[node].update( counts[x] )
@@ -1222,7 +1225,9 @@ def clusterSimrelMatrix( matrix, terms, ancestors, p, counts, term2pvalue, go2in
 
     E.info("after removing terms with no p-value: %i terms" % len(terms))
     if len(terms) == 0:
-        raise ValueError( "no terms given after p-value filtering" )
+        E.warn( "no terms given after p-value filtering" )
+        return None, [], []
+
     matrix = matrix[ numpy.array( [ term2index[x] for x in terms ]) ]
     matrix = matrix[ :, numpy.array( [ term2index[x] for x in terms ]) ]
     term2index = dict( [ (y,x) for x,y in enumerate( terms ) ] )
@@ -1393,10 +1398,14 @@ def main( argv ):
                                 "RdBu", "RdGy", "BrBG", "BuGn", "Blues", "Greens", "Reds", "Oranges", "Greys" ),
                        help="colour palette [default=%Default]")
     
-    parser.set_defaults( filename_obo = 'go_daily-termdb.obo-xml',
+
+    parser.add_option( "--reverse-palette", dest="reverse_palette", action="store_true",
+                      help="reverse colour palette [default=%default]." )
+
+    parser.set_defaults( filename_obo = 'go_daily-termdb.obo-xml.gz',
                          filename_go = "go.tsv.gz",
                          #filename_pvalues = "/ifs/projects/proj008/report/genelists.go.dir/rela_upstream-changed.biol_process.results", 
-                         filename_pvalues = "test.list", 
+                         filename_pvalues = None,
                          filename_bg = None, 
                          filename_matrix = None,
                          filename_frequencies = None,
@@ -1422,7 +1431,20 @@ def main( argv ):
     if "all" in options.ontology:
         options.ontology = map_ontology2namespace.keys()
 
+    #########################################
+    if options.filename_pvalues == None:
+        E.info("reading pvalues from stdin")
+        all_term2pvalue, all_term2log2fold = readPValues( options.stdin )
+    else:
+        E.info("reading pvalues from %s " % options.filename_pvalues)
+        with IOTools.openFile( options.filename_pvalues ) as infile:
+            all_term2pvalue, all_term2log2fold = readPValues( infile )
+        
+    E.info( "read %i pvalue and %i fold assignments" % ( len(all_term2pvalue), len(all_term2log2fold) ))
+
     for test_ontology in options.ontology:
+        
+        E.info( "working on namespace %s" % test_ontology)
 
         namespace = map_ontology2namespace[test_ontology]
 
@@ -1450,15 +1472,20 @@ def main( argv ):
                                                              obsolete = graph.obsoletes )
 
         #########################################
-        E.info("reading pvalues from %s " % options.filename_pvalues)
-        with IOTools.openFile( options.filename_pvalues ) as infile:
-            term2pvalue, term2log2fold = readPValues( infile, graph.synonyms )
+        # filter pvalues
+        synonyms = graph.synonyms 
+        term2pvalue = dict([ (synonyms.get(x,x),y) for x,y in all_term2pvalue.iteritems() ])
+        term2log2fold = dict([ (synonyms.get(x,x),y) for x,y in all_term2log2fold.iteritems() ])
+
+        if len(term2pvalue) == 0:
+            E.warn( "no data - no output produced" )
+            E.Stop()
+            return
         
         go2info = all_go2infos[test_ontology]
         go2info = collections.defaultdict( str, dict( [(x.mGOId, x.mDescription) for x in go2info.values()] ) )
         gene2gos = all_gene2gos[test_ontology]
 
-                
         if options.filename_bg:
             background = IOTools.readList( IOTools.openFile( filename_bg )) 
         else:
@@ -1504,6 +1531,12 @@ def main( argv ):
                                                            ancestors, p, counts, 
                                                            term2pvalue, go2info,
                                                            options )
+
+            if matrix == None:
+                E.warn( "%s: no output" % test_ontology)
+                continue
+            
+            E.info( "after clustering: %i x %i matrix" % (len(terms), len(terms)))
             with IOTools.openFile( fn, "w" ) as outfile:
                 IOTools.writeMatrix( outfile, matrix, terms, terms )
 
@@ -1519,6 +1552,7 @@ def main( argv ):
 
         # visualize output
         rows = len(terms)
+            
         # revigo
         #     color = pvalue, size = frequency, egdewith = simrel score
         # me:
@@ -1528,6 +1562,8 @@ def main( argv ):
 
         # build graph from matrix
         term_graph = networkx.Graph()
+        figure = plt.figure()
+
         term_graph.add_nodes_from( terms )
         for i,j in itertools.combinations( xrange( rows), 2 ):
             w = weight=matrix[i][j]
@@ -1542,20 +1578,40 @@ def main( argv ):
             color_scheme = eval( "pylab.cm.%s" % options.palette)
         
         labels = dict( [ (x, go2info.get(x,x)) for x in terms] )
-        node_size = [ -100.0 * math.log(term2pvalue[x],10) for x in term_graph.nodes() ]
+        node_size = [ -20.0 * math.log(term2pvalue[x],10) for x in term_graph.nodes() ]
         for x in term2pvalue.keys():
             term2log2fold[x] = numpy.random.normal(0, 5)
         node_color = [ term2log2fold[x] for x in term_graph.nodes() ]
 
+        networkx.draw_networkx_edges( term_graph, layout, edge_color='0.50' )
+
+        vmin = min(node_color)
+        vmax = max(node_color)
+        vmin = min( vmin, -vmax )
+        vmax = max( vmax, -vmin )
+
         networkx.draw_networkx_nodes( term_graph, layout, 
                                       node_size = node_size,
                                       node_color = node_color,
-                                      cmap = color_scheme )
+                                      cmap = color_scheme,
+                                      alpha = 0.8,
+                                      vmin = vmin,
+                                      vmax = vmax,
+                                      linewidths = 0.5 )
 
-        networkx.draw_networkx_edges( term_graph, layout )
+        positions = dict( [ (x, numpy.array( (y[0],y[1]-0.02)) ) for x,y in layout.iteritems() ] )
         
-        networkx.draw_networkx_labels( term_graph, layout, labels = labels )
+        networkx.draw_networkx_labels( term_graph, 
+                                       positions, 
+                                       labels = labels,
+                                       font_size = 5,
+                                       alpha = 0.5 )
 
+        # turn of tick marks
+        gca = figure.gca()
+        gca.set_xticklabels( [], visibile = False )
+        gca.set_yticklabels( [], visibile = False )
+        
         fn = buildFilename( test_ontology, "graph", "svg" )
         plt.colorbar()
         plt.savefig( fn )
