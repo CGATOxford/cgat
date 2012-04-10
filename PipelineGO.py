@@ -163,7 +163,7 @@ def runGOFromFiles( outfile,
         options.append( "--qvalue-method=empirical" )
     else:
         options.append( "--fdr" )
-        options.append( "--qvalue-method=storey" )
+        options.append( "--qvalue-method=BH" )
 
     options = " ".join( options )
     statement = '''
@@ -173,6 +173,7 @@ def runGOFromFiles( outfile,
         --filename-ontology=%(ontology_file)s 
         --output-filename-pattern='%(outdir)s/%%(set)s.%%(go)s.%%(section)s' 
         --minimum-counts=%(minimum_counts)i 
+        --log=%(outfile)s.log
         %(options)s
     > %(outfile)s'''
 
