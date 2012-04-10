@@ -190,6 +190,8 @@ import Experiment as E
 import IOTools
 import CSV
 
+from rpy2.robjects import r as R
+
 MIN_FLOAT = sys.float_info.min
 # The following code was taken from:
 #
@@ -1272,17 +1274,21 @@ def computeFDRs( go_results, options, test_ontology ):
 
     fdrs = {}
 
+    method = options.qvalue_method
+
     if options.qvalue_method == "storey":
 
         # compute fdr via Storey's method
         try:
             fdr_data = Stats.doFDR( observed_min_pvalues )
+
         except ValueError, msg:
             E.warn( "failure in q-value computation: %s" % msg )
             E.warn( "reverting to Bonferroni correction" )
+            method = "bonf"
             fdr_data = Stats.FDRResult()
             l = float(len(observed_min_pvalues))
-            fdr_data.mQValues = [ x / l for x in observed_min_pvalues ]
+            fdr_data.mQValues = [ min(1.0, x * l) for x in observed_min_pvalues ]
 
         for pair, qvalue in zip( pairs, fdr_data.mQValues ):
             fdrs[pair[0]] = (qvalue, 1.0, 1.0)
@@ -1346,9 +1352,14 @@ def computeFDRs( go_results, options, test_ontology ):
                 fdr = 1.0
 
             fdrs[k] = (fdr, a, b)
-
-
-    return fdrs, samples
+    else:
+        qvalues = R['p.adjust']( observed_min_pvalues, method = options.qvalue_method )
+        fdr_data = Stats.FDRResult()
+        fdr_data.mQValues = list(qvalues)
+        for pair, qvalue in zip( pairs, fdr_data.mQValues ):
+            fdrs[pair[0]] = (qvalue, 1.0, 1.0)
+        
+    return fdrs, samples, method
 
 def getFileName( options, **kwargs ):
     if options.output_filename_pattern:
@@ -1444,7 +1455,7 @@ def main():
                        "If not set, genes in foreground will be added to the background [default=%default]." )
 
     parser.add_option("-q", "--qvalue-method", dest="qvalue_method", type="choice",
-                      choices = ( "empirical", "storey" ),
+                      choices = ( "empirical", "storey", "BH" ),
                       help="method to perform multiple testing correction by controlling the fdr [default=%default]."  )
 
     # parser.add_option( "--qvalue-lambda", dest="qvalue_lambda", type="float",
@@ -1482,6 +1493,7 @@ def main():
 
     if options.fdr and options.sample == 0:
         E.warn( "fdr will be computed without sampling" )
+        
 
     #############################################################
     ## dump GO
@@ -1554,6 +1566,24 @@ def main():
 
     E.info( "found %i ontologies: %s" % (len(options.ontology), options.ontology))
 
+    outfile_summary = options.stdout
+    outfile_summary.write( "\t".join( (
+                "genelist",
+                "ontology",
+                "significant",
+                "threshold",
+                "ngenes",
+                "ncategories",
+                "nmaps",
+                "nforegound",
+                "nforeground_mapped",
+                "nbackground",
+                "nbackground_mapped",
+                "nsample_counts",
+                "nbackground_counts",
+                "psample_assignments",
+                "pbackground_assignments") ) + "\n" )
+
     #############################################################
     ## get go categories for genes
     for test_ontology in options.ontology:
@@ -1591,7 +1621,8 @@ def main():
             E.info( "assignments after filtering: %i genes mapped to %i categories (%i maps)" % (ngenes, ncategories, nmaps) )
 
         for genelist_name, foreground in genelists.iteritems():
-        
+
+            msgs = []
             E.info("processing %s with %i genes" % (genelist_name, len(foreground)))
             ##################################################################
             ##################################################################
@@ -1718,9 +1749,11 @@ def main():
             #############################################################
             ## calculate fdr for each hypothesis
             if options.fdr:
-                fdrs, samples  = computeFDRs( go_results, options, test_ontology )
+                fdrs, samples, method  = computeFDRs( go_results, options, test_ontology )
             else:
-                fdrs, samples = {}, None
+                fdrs, samples, method = {}, None
+                
+            msgs.append( "fdr=%s" % method)
 
             if options.sort_order == "fdr":
                 pairs.sort( lambda x, y: cmp(fdrs[x[0]], fdrs[y[0]] ) )           
@@ -1790,16 +1823,15 @@ def main():
                                    section = 'parameters',
                                    set = genelist_name )
 
-            outfile.write( "# input go mappings for category '%s'\n" % test_ontology )
-            outfile.write( "value\tparameter\n" )
-            outfile.write( "%i\tmapped genes\n" % ngenes )
-            outfile.write( "%i\tmapped categories\n" % ncategories )
-            outfile.write( "%i\tmappings\n" % nmaps )
-
             nbackground = len(background)
             if nbackground == 0:
                 nbackground = len(go_results.mBackgroundGenes)
 
+            outfile.write( "# input go mappings for gene list '%s' and category '%s'\n" % (genelist_name, test_ontology ))
+            outfile.write( "value\tparameter\n" )
+            outfile.write( "%i\tmapped genes\n" % ngenes )
+            outfile.write( "%i\tmapped categories\n" % ncategories )
+            outfile.write( "%i\tmappings\n" % nmaps )
             outfile.write( "%i\tgenes in sample\n" % len(foreground) )
             outfile.write( "%i\tgenes in sample with GO assignments\n" % (len(go_results.mSampleGenes)) )
             outfile.write( "%i\tinput background\n" % nbackground )
@@ -1808,12 +1840,30 @@ def main():
             outfile.write( "%i\tassociations in background\n" % go_results.mBackgroundCountsTotal )
             outfile.write( "%s\tpercent genes in sample with GO assignments\n" % (IOTools.prettyPercent( len(go_results.mSampleGenes) , len(foreground), "%5.2f" )))
             outfile.write( "%s\tpercent genes background with GO assignments\n" % (IOTools.prettyPercent( len(go_results.mBackgroundGenes), nbackground, "%5.2f" )))
-
             outfile.write( "%i\tsignificant results reported\n" % nselected )
             outfile.write( "%6.4f\tsignificance threshold\n" % options.threshold )        
 
             if options.output_filename_pattern:
                 outfile.close()
+
+            if outfile_summary:
+                outfile_summary.write( "\t".join( map(str, ( \
+                                genelist_name,
+                                test_ontology,
+                                nselected,
+                                options.threshold,
+                                ngenes,
+                                ncategories,
+                                nmaps,
+                                len(foreground),
+                                len(go_results.mSampleGenes),
+                                nbackground,
+                                len(go_results.mBackgroundGenes),
+                                go_results.mSampleCountsTotal,
+                                go_results.mBackgroundCountsTotal,
+                                IOTools.prettyPercent( len(go_results.mSampleGenes) , len(foreground), "%5.2f" ),
+                                IOTools.prettyPercent( len(go_results.mBackgroundGenes), nbackground, "%5.2f" ),
+                                ",".join( msgs) ) ) ) + "\n" )
 
             #############################################################
             #############################################################
