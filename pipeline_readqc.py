@@ -39,7 +39,7 @@ fastq and performs basic quality control steps:
 
 For further details see http://www.bioinformatics.bbsrc.ac.uk/projects/fastqc/
 
-The pipeline can also be used to pre-process reads (target ``process_reads``). 
+The pipeline can also be used to pre-process reads (target ``process``). 
 
 Implemented tasks are:
 
@@ -321,9 +321,9 @@ def removeContaminants( infiles, outfile ):
 #########################################################################
 #########################################################################
 @transform( [ x for x in \
-                  glob.glob("*.fastq.gz") + glob.glob("*.fastq.1.gz") + glob.glob("*.fastq.2.gz") \
+                  glob.glob("*.fastq.gz") + glob.glob("*.fastq.1.gz")
                   if not x.startswith("processed.")],
-	    regex( r"(\S+).(fastq.1.gz|fastq.gz|fastq.2.gz|csfasta.gz)"),
+	    regex( r"(\S+).(fastq.1.gz|fastq.gz|csfasta.gz)"),
 	    add_inputs(outputContaminants),
 	    r"processed.\1.\2")
 def processReads( infiles, outfile ):
@@ -334,15 +334,23 @@ def processReads( infiles, outfile ):
     do_sth = False
     to_cluster = True
 
+    # check for paired read files
+    if infile.endswith( ".fastq.1.gz"):
+        track = P.snip( outfile, ".fastq.1.gz")
+        infile2 = P.snip( infile, ".fastq.1.gz") + ".fastq.2.gz"
+        outfile2 = P.snip( outfile, ".fastq.1.gz") + ".fastq.2.gz"
+        assert os.path.exists( infile2 ), "second part of read pair (%s) missing" % infile2
+    else:
+        infile2 = None
+
     # fastx does not like quality scores below 64 (Illumina 1.3 format)
     # need to detect the scores and convert
-    
     format = Fastq.guessFormat( IOTools.openFile(infile ) , raises = False)
     E.info( "%s: format guess: %s" % (infile, format))
     offset = Fastq.getOffset( format, raises = False )
 
     if PARAMS["process_remove_contaminants"]:
-        statement.append( '''
+        s.append( '''
         cutadapt 
               --discard
               %(adaptors)s
@@ -350,31 +358,61 @@ def processReads( infiles, outfile ):
               --format=fastq
               %(contamination_options)s
               <( zcat < %(infile)s )
-              2> %(outfile)s_contaminants.log
+              2>> %(outfile)s_contaminants.log
         ''' )
         do_sth = True
     else:
-        statement = ['zcat %(infile)s' ]
+        s = ['zcat %(infile)s' ]
 
     if PARAMS["process_artifacts"]:
-        statement.append( 'fastx_artifacts_filter -Q %(offset)i -v %(artifacts_options)s 2> %(outfile)s_artifacts.log' )
+        s.append( 'fastx_artifacts_filter -Q %(offset)i -v %(artifacts_options)s 2>> %(outfile)s_artifacts.log' )
         do_sth = True
         
     if PARAMS["process_trim"]:
-        statement.append( 'fastx_trimmer -Q %(offset)i -v %(trim_options)s 2> %(outfile)s_trim.log' )
+        s.append( 'fastx_trimmer -Q %(offset)i -v %(trim_options)s 2>> %(outfile)s_trim.log' )
         do_sth = True
 
     if PARAMS["process_filter"]:
-        statement.append( 'fastq_quality_filter -Q %(offset)i -v %(filter_options)s 2> %(outfile)s_filter.log')
+        s.append( 'fastq_quality_filter -Q %(offset)i -v %(filter_options)s 2>> %(outfile)s_filter.log')
         do_sth = True
 
-    if do_sth:
-        statement.append( "gzip" )
-        statement = " | ".join( statement ) + " > %(outfile)s" 
+    if not do_sth:
+        E.warn( "no filtering specified for %s - nothing done" % infile )
+        return
+
+    s.append( "gzip" )
+    if not infile2:
+        statement = " | ".join( s ) + " > %(outfile)s" 
         P.run()
     else:
-        E.warn( "no filtering specified for %s - nothing done" % infile )
+        tmpfile = P.getTempFilename(".")
+        tmpfile1 = tmpfile + ".fastq.1.gz"
+        tmpfile2 = tmpfile + ".fastq.2.gz"
 
+        E.warn( "processing first of pair")
+        # first read pair
+        statement = " | ".join( s ) + " > %(tmpfile1)s" 
+        P.run()
+
+        # second read pair        
+        E.warn( "processing second of pair")
+        statement = " | ".join( s ) + " > %(tmpfile2)s" 
+        P.run()
+
+        # reconcile
+        E.info("starting reconciliation" )
+        statement = """python %(scriptsdir)s/fastqs2fastq.py
+                           --method=reconcile
+                           --output-pattern=%(track)s.fastq.%%i.gz
+                           %(tmpfile1)s %(tempfile2)s
+                     > %(outfile)s_reconcile.log"""
+        
+        P.run()
+
+        os.unlink( tmpfile1 )
+        os.unlink( tmpfile2 )
+        os.unlink( tmpfile )
+        
 #########################################################################
 #########################################################################
 #########################################################################
@@ -470,19 +508,25 @@ def replaceBaseWithN(infile, outfile):
 #########################################################################
 #########################################################################
 #########################################################################
-@follows() 
-def publish():
-    '''publish files.'''
-    P.publish_report()
+#########################################################################
+@follows( processReads )
+def process():
+    '''process (filter,trim) reads.'''
+    pass
 
-#########################################################################
-#########################################################################
 #########################################################################
 @follows( loadFastqc )
 def full(): pass
 
+#########################################################################
 @follows( loadFilteringSummary )
 def cleanData(): pass
+
+#########################################################################
+@follows() 
+def publish():
+    '''publish files.'''
+    P.publish_report()
 
 @follows( mkdir( "report" ) )
 def build_report():

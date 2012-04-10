@@ -700,7 +700,7 @@ def run( **kwargs ):
         jobids, filenames = [], []
         for statement in statement_list:
             # create job script
-            tmpfile = tempfile.NamedTemporaryFile( dir = os.getcwd() , delete = False )
+            tmpfile = getTempFile( dir = os.getcwd() )
             tmpfile.write( "#!/bin/bash\n" ) #  -l -O expand_aliases\n" )
             tmpfile.write( 'echo "START--------------------------------" >> %s \n' % shellfile )
             # disabled - problems with quoting
@@ -761,7 +761,7 @@ def run( **kwargs ):
 
         if options.get( "dryrun", False ): return
 
-        tmpfile = tempfile.NamedTemporaryFile( dir = os.getcwd() , delete = False )
+        tmpfile = getTempFile( dir = os.getcwd() )
         tmpfile.write( "#!/bin/bash\n" ) #  -l -O expand_aliases\n" )
         tmpfile.write( 'echo "START--------------------------------" >> %s \n' % shellfile )
         # disabled - problems with quoting

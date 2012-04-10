@@ -112,7 +112,7 @@ class FastQCDetails( ReadqcTracker ):
                 if not os.path.exists( image ): continue
 
                 blocks.append( ResultBlock( text = block % locals(),
-                                            title = fn ) )
+                                            title = os.path.basename(fn) ) )
 
         return odict( (("rst", "\n".join( Utils.layoutBlocks( blocks, layout = "columns-2"))),))
 
