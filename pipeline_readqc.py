@@ -184,11 +184,11 @@ PARAMS = P.PARAMS
 #########################################################################
 @follows(mkdir(PARAMS["exportdir"]), mkdir(os.path.join(PARAMS["exportdir"], "fastqc")) )
 @transform( ("*.fastq.1.gz", 
-              "*.fastq.gz",
-              "*.sra",
-	      "*.csfasta.gz"),
-              regex( r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz)"),
-              r"\1.fastqc")
+             "*.fastq.gz",
+             "*.sra",
+             "*.csfasta.gz"),
+            regex( r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz)"),
+            r"\1.fastqc")
 def runFastqc(infiles, outfile):
     '''convert sra files to fastq and check mapping qualities are in solexa format. 
     Perform quality control checks on reads from .fastq files.'''
@@ -247,6 +247,8 @@ def loadFastqc( infile, outfile ):
 
         inf = cStringIO.StringIO( "\n".join( ["name\tstatus"] + ["\t".join( x ) for x in results ] ) + "\n" )
         csv2db.run( inf, options )
+
+    P.touch( outfile )
 
 #########################################################################
 #########################################################################
@@ -476,7 +478,7 @@ def publish():
 #########################################################################
 #########################################################################
 #########################################################################
-@follows( runFastqc )
+@follows( loadFastqc )
 def full(): pass
 
 @follows( loadFilteringSummary )
