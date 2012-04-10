@@ -1,5 +1,5 @@
 import os, sys, re, types, itertools
-
+import IOTools
 from SphinxReport.Tracker import *
 from SphinxReport.odict import OrderedDict as odict
 
@@ -34,4 +34,50 @@ class conservedGenesAllSpecies( TrackerSQL ):
                        WHERE species_count=6;'''
         return self.getAll( statement )
 
+##################################################################################
+class pairwiseHeatmap( Tracker ):
 
+    def getTracks(self):
+        return [ "ortholog_pairs_with_feature.matrix", ]
+        
+    def __call__(self, track, slice = None ):
+        fn = "ortholog_pairs_with_feature.matrix"
+        if not os.path.exists( fn ): 
+            return
+            
+        x = IOTools.openFile( fn )
+        matrix, rownames, colnames = IOTools.readMatrix( x )
+        return odict( (('matrix', matrix),
+                       ('rows', rownames),
+                       ('columns', colnames)) )
+
+##################################################################################
+class pairwiseTable( Tracker ):
+
+    def getTracks(self):
+        return [ "ortholog_pairs_with_feature.matrix", ]
+        
+    def __call__(self, track, slice = None ):
+        fn = "ortholog_pairs_with_feature.matrix"
+        if not os.path.exists( fn ): 
+            return
+            
+        x = open( fn )
+        data = odict()
+        for line in x:
+            temp = line.split()
+            name = temp[0]
+            scores = temp[1:]
+            data[name] = scores
+        return data
+                       
+##################################################################################
+class threewayVenn( TrackerSQL ):
+
+    mPattern = "triple_ortholog_stats"
+
+    def __call__(self, track, slice = None ):
+        statement = '''SELECT species_list, conserved_nmis
+                       FROM triple_ortholog_stats'''
+        return self.getAll( statement )
+                

@@ -253,10 +253,10 @@ def calculateMappability( infile, outfile ):
     '''Calculate mappability using GEM '''
     index = P.snip(infile, ".gem")
     to_cluster = True
-    window_size = PARAMS("gem_window_size")
-    threads = PARAMS("gem_threads")
-    mismatches = PARAMS("gem_mismatches")
-    max_indel_length = PARAMS("gem_max_indel_length")
+    window_size = PARAMS["gem_window_size"]
+    threads = PARAMS["gem_threads"]
+    mismatches = PARAMS["gem_mismatches"]
+    max_indel_length = PARAMS["gem_max_indel_length"]
     statement = '''gem-mappability -t %(threads)s -m %(mismatches)s --max-indel-length %(max_indel_length)s -l %(window_size)s -I %(index)s -o %(outfile)s ''' % locals()
     P.run()
 
@@ -605,6 +605,36 @@ def buildPromotorRegions( infile, outfile ):
         > %(outfile)s
     """
 
+    P.run()
+    
+############################################################
+## TRANSCRIPTS
+@merge( buildCodingExonTranscripts, PARAMS["interface_transcripts_bed"] )
+def buildTranscripts( infile, outfile ):
+    '''annotate transcripts from reference gene set. '''
+    statement = """
+        gunzip < %(infile)s 
+        | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
+        | python %(scriptsdir)s/gtf2gtf.py --join-exons --log=%(outfile)s.log 
+        | python %(scriptsdir)s/gff2bed.py --is-gtf --name=transcript_id --log=%(outfile)s.log 
+        | python %(scriptsdir)s/bed2bed.py --method=filter-genome --genome-file=%(genome_dir)s/%(genome)s --log %(outfile)s.log
+        | gzip
+        > %(outfile)s """
+    P.run()
+    
+############################################################
+## NON-CODING TRANSCRIPTS
+@merge( buildNonCodingExonTranscripts, PARAMS["interface_noncoding_bed"] )
+def buildNoncodingTranscripts( infile, outfile ):
+    '''annotate transcripts from reference gene set. '''
+    statement = """
+        gunzip < %(infile)s 
+        | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
+        | python %(scriptsdir)s/gtf2gtf.py --join-exons --log=%(outfile)s.log 
+        | python %(scriptsdir)s/gff2bed.py --is-gtf --name=transcript_id --log=%(outfile)s.log 
+        | python %(scriptsdir)s/bed2bed.py --method=filter-genome --genome-file=%(genome_dir)s/%(genome)s --log %(outfile)s.log
+        | gzip
+        > %(outfile)s """
     P.run()
 
 ############################################################
@@ -1188,7 +1218,7 @@ def genome():
           buildCodingExonTranscripts,
           buildNonCodingExonTranscripts,
           buildPseudogenes,
-          buildNUMTs,
+#          buildNUMTs,
           buildSelenoList)
 def geneset():
     '''import information on geneset.'''

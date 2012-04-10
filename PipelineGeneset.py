@@ -496,6 +496,7 @@ def buildNonCodingExons( infile, outfile ):
     gunzip < %(infile)s 
     | awk '$2 != "protein_coding"' 
     | awk '$3 == "exon"' 
+    | grep -v "protein_coding"
     | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
     | python %(scriptsdir)s/gtf2gtf.py --remove-duplicates=gene --log=%(outfile)s.log 
     | gzip > %(outfile)s

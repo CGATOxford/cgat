@@ -89,9 +89,14 @@ def main( argv = sys.argv ):
         gff.contig = bed.contig
         gff.start = bed.start 
         gff.end = bed.end
+        if bed.mFields and len(bed.mFields) >= 3:
+            gff.strand = bed.mFields[2]
+        else: 
+            gff.strand = "."
 
         if bed.mFields and len(bed.mFields) >= 2:
             gff.score = bed.mFields[1]
+        
         
         if as_gtf:
             if bed.mFields:

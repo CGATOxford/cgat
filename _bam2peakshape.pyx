@@ -1,10 +1,8 @@
 #cimport csamtools
 
 from csamtools cimport *
-
 import collections, array, struct
 import Experiment as E
-
 import numpy
 
 PeakShapeResult = collections.namedtuple( "PeakShapeResult",
@@ -139,22 +137,6 @@ def count( samfiles,
             hist[i] = sum( counts[xstart:xend] ) 
         xstart = xend
         
-    # normalise bins
-    norm_hist = numpy.zeros( nbins, dtype = numpy.int )
-    m = max(hist)
-    s = sum(hist)
-    for i, h in enumerate(hist):
-        if normalization == "max":
-            if m == 0: continue
-            hh = h / m
-        elif normalization == "sum":
-            if s == 0: continue
-            hh = h / s
-        else:
-            hh = h
-            
-        norm_hist[i] = hh
-        
     # debugging
     #for x,v in enumerate( hist ):
         # print x, "*" * v
@@ -168,7 +150,7 @@ def count( samfiles,
                                      numpy.median(counts),
                                      closest_dist, furthest_dist,
                                      bins,
-                                     norm_hist ) )
+                                     hist ) )
 
     free( ccounts )
     

@@ -176,7 +176,7 @@ if __name__ == '__main__':
                        help="permit duplicate genes (on different chromosomes, ...) [default=%default]" )
 
     parser.add_option( "--remove-duplicates", dest="remove_duplicates", type="choice",
-                       choices=("gene", "transcript", "ucsc"),
+                       choices=("gene", "transcript", "ucsc","coordinates"),
                        help="remove duplicates by gene/transcript. If ``ucsc`` is chosen, transcripts ending on _dup# are removed" 
                        " this is necessary to remove duplicate entries that are next to each other in the sort order [%default]" )
 
@@ -262,11 +262,14 @@ if __name__ == '__main__':
                 gffs = GTF.gene_iterator(GTF.iterator(options.stdin), strict = False )
                 f = lambda x: x[0][0].gene_id
                 outf = lambda x: "\n".join( [ "\n".join( [ str(y) for y in xx] ) for xx in x] )
-
             elif options.remove_duplicates == "transcript":
                 gffs = GTF.transcript_iterator(GTF.iterator(options.stdin), strict = False)
                 f = lambda x: x[0].transcript_id
                 outf = lambda x: "\n".join( [ str(y) for y in x] )
+            elif options.remove_duplicates == "coordinates":
+                gffs = GTF.chunk_iterator(GTF.iterator(options.stdin) )
+                f = lambda x: x[0].contig+"_"+str(x[0].start)+"-"+str(x[0].end)
+                outf = lambda x: "\n".join( [ str(y) for y in x] )    
 
             store = []
 
@@ -276,14 +279,28 @@ if __name__ == '__main__':
                 id = f(entry)
                 counts[id] += 1
 
-            for entry in store:
-                id = f(entry)
-                if counts[id] == 1:
-                    options.stdout.write( outf(entry) + "\n" )
-                    noutput += 1
-                else:
-                    ndiscarded += 1
-                    E.info("discarded duplicates for %s: %i" % (id, counts[id]))
+            # Assumes GTF file sorted by contig then start
+            last_id = ""
+            if options.remove_duplicates == "coordinates":
+                for entry in store:
+                    id = f(entry)
+                    if id == last_id:
+                        ndiscarded += 1
+                        E.info("discarded duplicates for %s: %i" % (id, counts[id]))
+                    else:
+                        options.stdout.write( outf(entry) + "\n" )
+                        noutput += 1
+                    last_id = id
+                        
+            else:
+                for entry in store:
+                    id = f(entry)
+                    if counts[id] == 1:
+                        options.stdout.write( outf(entry) + "\n" )
+                        noutput += 1
+                    else:
+                        ndiscarded += 1
+                        E.info("discarded duplicates for %s: %i" % (id, counts[id]))
 
     elif options.sort:
 

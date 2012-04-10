@@ -131,27 +131,13 @@ PARAMS = P.PARAMS
 ###################################################################
 ###################################################################
 ###################################################################
-@files( PARAMS["orthology_groups"], "ortholog_groups.load" )
-def loadOrthologousGroups( infile, outfile ):
-    '''Load list of orthologous genes into sqlite3 database'''
-
-    header="set_id,species,gene_id"
-    statement = '''cat %(infile)s
-                   | python %(scriptsdir)s/csv2db.py
-                       --header=%(header)s
-                       --index=set_id
-                       --index=species
-                       --index=gene_id
-                       --table=ortholog_groups 
-                   > %(outfile)s '''
-    P.run()
-
+##
 ############################################################
 @transform( "*.genelist", regex( r"(\S+).genelist"), r"\1.genelist.load" )
 def loadGeneLists( infile, outfile ):
     '''Load list of genes associated with feature from each species into sqlite3 database'''
 
-    track = P.snip( os.path.basename( infile), ".genelist" )
+    track = P.snip( os.path.basename( infile), ".genelist" ).replace(".","_").replace("-","_")
     statement = '''cat %(infile)s
                    | python %(scriptsdir)s/csv2db.py
                        --header=gene_id
@@ -164,7 +150,7 @@ def loadGeneLists( infile, outfile ):
 @transform( loadGeneLists, suffix( ".genelist.load"), ".genelist.stats" )
 def GeneListStats( infile, outfile ):
 
-    track = P.snip( os.path.basename( infile), ".genelist.load" ).replace("-","_")
+    track = P.snip( os.path.basename( infile), ".genelist.load" ).replace("-","_").replace(".","_")
     species = track[:2]
     anno_base = PARAMS["annotations_dir"]
     species_list = P.asList(PARAMS["species"])
@@ -292,7 +278,7 @@ def mergeGeneLists( infiles, outfile ):
     pre = "CREATE TABLE %s AS " % tablename
     statement = ""
     for f in infiles:
-        track = P.snip( os.path.basename( f), ".genelist.load" ).replace("-","_")
+        track = P.snip( os.path.basename( f), ".genelist.load" ).replace("-","_").replace(".","_")
         species = track[:2]
         statement += pre + '''SELECT distinct t.gene_id, t.gene_name
                        FROM %(track)s_genelist g, %(species)s.transcript_info t
@@ -303,9 +289,39 @@ def mergeGeneLists( infiles, outfile ):
     cc = dbhandle.cursor()
     cc.execute( "DROP TABLE IF EXISTS %(tablename)s" % locals() )
     cc.execute( statement )
+    cc,execute( '''CREATE INDEX "glm_idx1" ON "%s" ("gene_id" ASC) ''' % tablename )
     cc.close()
 
     statement = "touch %s" % outfile
+    P.run()
+
+############################################################
+############################################################
+############################################################    
+@transform( "pipeline.ini", regex(r"pipeline.ini"), PARAMS["orthology_groups"] )
+def getOrthologousGroups( infile, outfile ):
+    '''Export list of orthologous genes from all species from postgres database'''
+    statement = '''psql -h db -U andreas -d postgres -F "," -A -c "select s.set_id, m.schema, m.gene_id 
+                   from cgat_proj007.ortholog_sets_members m, cgat_proj007.ortholog_sets s 
+                   where m.set_id=s.set_id and s.nspecies=7"
+                   | sed s/,/\\t/g
+                   > %(outfile)s '''
+    P.run()
+    
+###################################################################
+@transform( getOrthologousGroups, regex(PARAMS["orthology_groups"]), "ortholog_groups.load" )
+def loadOrthologousGroups( infile, outfile ):
+    '''Load list of orthologous genes into sqlite3 database'''
+
+    header="set_id,species,gene_id"
+    statement = '''cat %(infile)s
+                   | python %(scriptsdir)s/csv2db.py
+                       --header=%(header)s
+                       --index=set_id
+                       --index=species
+                       --index=gene_id
+                       --table=ortholog_groups 
+                   > %(outfile)s '''
     P.run()
 
 ############################################################
@@ -343,12 +359,258 @@ def orthologGroupsWithFeature( infile, outfile):
                    WHERE  g.gene_id=o.gene_id
                    GROUP BY set_id ''' % locals()
     cc.execute( statement )
+    # add index
+    #cc.execute( )
     cc.close()
 
     statement = "touch %s" % outfile
     P.run()
 
+###################################################################
+###################################################################
+###################################################################
+## Ortholog pairs
+@files( "pipeline.ini", PARAMS["orthology_pairwise"] )
+def getPairwiseOrthologs( infile, outfile ):
+    '''Export list of pairwise orthologous genes from all species comparisons from postgres database'''
+    statement = '''psql -h db -U andreas -d postgres -F "," -A -c "select s.set_id, m.schema, m.gene_id, s.pattern 
+                   from cgat_proj007.ortholog_sets_members m, cgat_proj007.ortholog_sets s 
+                   where m.set_id=s.set_id and s.nspecies=2"
+                   | sed s/,/\\t/g
+                   > %(outfile)s '''
+    P.run()
+    
+###################################################################
+@files( PARAMS["orthology_pairwise"], "pairwise_ortholog_groups.load" )
+def loadPairwiseOrthologs( infile, outfile ):
+    '''Load list of orthologous genes into sqlite3 database'''
+
+    header="set_id,species,gene_id,pattern"
+    statement = '''cat %(infile)s
+                   | python %(scriptsdir)s/csv2db.py
+                       --header=%(header)s
+                       --index=set_id
+                       --index=species
+                       --index=gene_id
+                       --index=pattern
+                       --table=pairwise_ortholog_groups 
+                   > %(outfile)s '''
+    P.run()
+    
+###################################################################
+@transform( loadPairwiseOrthologs, regex(r"pairwise_ortholog_groups.load"), "pattern_lookup.load" )
+def loadPatternLookup( infile, outfile ):
+    '''Load lookup of pattern to species pair'''
+    # Connect to database and attach annotation databases
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    cc = dbhandle.cursor()
+    statement = '''create table pattern_lookup as 
+                   select a.pattern as pattern, group_concat(a.species,"-") as species_pair from 
+                   (select c.pattern, c.species from 
+                   (SELECT distinct pattern, substr(species,6,2) as species FROM pairwise_ortholog_groups) c
+                   order by c.pattern asc,  c.species desc ) a
+                   group by a.pattern'''
+    cc.execute( "DROP TABLE IF EXISTS pattern_lookup" % locals() )
+    cc.execute( statement )
+    cc.execute( '''CREATE UNIQUE INDEX "pl_idx1" ON "pattern_lookup" ("pattern" ASC)''' )
+    cc.execute( '''CREATE UNIQUE INDEX "pl_idx2" ON "pattern_lookup" ("species_pair" ASC)''' )
+    cc.close()
+
+    statement = "touch %s" % outfile
+    P.run()
+    
+###################################################################
+@transform(mergeGeneLists, regex(r"(\S+).load"), "ortholog_pairs_with_feature.load") 
+def orthologPairsWithFeature( infile, outfile):
+    '''Generate list of conserved genes associated with feature in all species '''
+    tablename = "ortholog_pairs_with_feature"
+    anno_base = PARAMS["annotations_dir"]
+    species_list = P.asList(PARAMS["species"])
+    genome_list = P.asList(PARAMS["genomes"])
+    db_name = PARAMS["database"]
+    ensembl_version = PARAMS["orthology_ensembl_version"]
+    species_lookup = dict(zip(species_list, genome_list))
+
+    # Connect to database and attach annotation databases
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    for species in species_lookup.iterkeys():
+        species_genome = species_lookup[species]
+        species_db = anno_base + species_genome + "/" + db_name
+        cc = dbhandle.cursor()
+        statement = '''ATTACH DATABASE '%(species_db)s' as %(species)s''' % locals()
+        cc.execute( statement )
+        cc.close()
+
+    # Extract data from db
+    cc = dbhandle.cursor()
+    cc.execute( "DROP TABLE IF EXISTS %(tablename)s" % locals() )
+    statement = '''CREATE TABLE %(tablename)s AS 
+                   SELECT count(distinct o.species) as species_count, 
+                   group_concat(o.gene_id,",") as gene_ids,
+                   group_concat(g.gene_name,",") as gene_names,
+                   set_id, p.pattern as pattern, p.species_pair as species_pair
+                   FROM genelists_merged g, pairwise_ortholog_groups o, pattern_lookup p
+                   WHERE  g.gene_id=o.gene_id
+                   AND p.pattern=o.pattern
+                   GROUP BY set_id ''' % locals()
+    cc.execute( statement )
+    cc.close()
+    statement = "touch %s" % outfile
+    P.run()
+    
 ############################################################
+@transform( orthologPairsWithFeature, suffix( ".load"), ".stats" )
+def pairsStats( infile, outfile ):
+
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    cc = dbhandle.cursor()
+    statement = '''CREATE table pairwise_ortholog_stats AS
+                   SELECT a.species1, a.species2, a.species_pair,
+                   a.conserved_nmis, b.total_conserved_genes_with_nmi, 
+                   (2.0*a.conserved_nmis)/ b.total_conserved_genes_with_nmi as score from
+                   (SELECT substr(species_pair,1,2) as species1, substr(species_pair,4,2) as species2, 
+                   species_pair, count(gene_ids) as conserved_nmis 
+                   FROM ortholog_pairs_with_feature 
+                   WHERE species_count=2 group by species_pair) a,
+                   (SELECT count(o.gene_id) as total_conserved_genes_with_nmi, p.species_pair as species_pair, p.pattern
+                   FROM genelists_merged g, pairwise_ortholog_groups o, pattern_lookup p
+                   WHERE g.gene_id=o.gene_id AND p.pattern=o.pattern
+                   GROUP BY species_pair, p.pattern) b
+                   WHERE a.species_pair=b.species_pair
+                   order by score desc''' % locals()
+    cc.execute( statement )
+    cc.close()
+    statement = "touch %s" % outfile
+    P.run()
+    
+############################################################
+@transform( pairsStats, suffix( ".stats"), ".matrix" )
+def exportPairsScoreMatrix( infile, outfile ):
+    species_list = P.asList(PARAMS["species"])
+    outs = open( outfile, "w")
+    first=True
+    for species in species_list:
+        dbhandle = sqlite3.connect( PARAMS["database"] )
+        cc = dbhandle.cursor()
+        statement = ''' SELECT species, score from (
+                        SELECT species2 as species, score from pairwise_ortholog_stats where species1="%(species)s"
+                        UNION SELECT species1 as species, score from pairwise_ortholog_stats where species2="%(species)s"
+                        UNION SELECT "%(species)s" as species,  1.0 as score)
+                        ORDER BY species desc''' % locals()
+        
+        # If first write headers
+        if first: 
+            cc.execute( statement )
+            outs.write("species")
+            for result in cc:
+                outs.write("\t%s" % result[0] )
+            outs.write("\n")
+            first = False
+        
+        cc.execute( statement )
+        outs.write(species)
+        for result in cc:
+            outs.write("\t%s" % result[1] )
+        outs.write("\n")
+        cc.close()
+    outs.close()
+
+###################################################################
+###################################################################
+###################################################################
+## Human, mouse zebrafish threeway orthologs
+@files( "pipeline.ini", PARAMS["orthology_triple"] )
+def getTripleOrthologs( infile, outfile ):
+    '''Export list of orthologous genes from human, mouse and zebrafish from postgres database'''
+    statement = '''psql -h db -U andreas -d postgres -F "," -A -c "select s.set_id, m.schema, m.gene_id 
+                   from cgat_proj007.ortholog_sets_members m, cgat_proj007.ortholog_sets s 
+                   where m.set_id=s.set_id and s.pattern=1100001"
+                   | sed s/,/\\t/g
+                   > %(outfile)s '''
+    P.run()
+    
+###################################################################
+@files( PARAMS["orthology_triple"], "triple_ortholog_groups.load" )
+def loadTripleOrthologs( infile, outfile ):
+    '''Load list of orthologous genes into sqlite3 database'''
+
+    header="set_id,species,gene_id"
+    statement = '''cat %(infile)s
+                   | python %(scriptsdir)s/csv2db.py
+                       --header=%(header)s
+                       --index=set_id
+                       --index=species
+                       --index=gene_id
+                       --table=triple_ortholog_groups 
+                   > %(outfile)s '''
+    P.run()
+
+###################################################################
+@follows( loadTripleOrthologs )
+@transform(mergeGeneLists, regex(r"(\S+).load"), "ortholog_triple_with_feature.load") 
+def orthologTripleWithFeature( infile, outfile):
+    '''Generate list of conserved genes associated with feature in all species '''
+    tablename = "ortholog_triple_with_feature"
+    anno_base = PARAMS["annotations_dir"]
+    species_list = P.asList(PARAMS["species"])
+    genome_list = P.asList(PARAMS["genomes"])
+    db_name = PARAMS["database"]
+    species_lookup = dict(zip(species_list, genome_list))
+
+    # Connect to database and attach annotation databases
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    for species in species_lookup.iterkeys():
+        species_genome = species_lookup[species]
+        species_db = anno_base + species_genome + "/" + db_name
+        cc = dbhandle.cursor()
+        statement = '''ATTACH DATABASE '%(species_db)s' as %(species)s''' % locals()
+        cc.execute( statement )
+        cc.close()
+
+    # Extract data from db
+    cc = dbhandle.cursor()
+    cc.execute( "DROP TABLE IF EXISTS %(tablename)s" % locals() )
+    statement = '''CREATE TABLE %(tablename)s AS 
+                   SELECT count(distinct o.species) as species_count, 
+                   group_concat(o.gene_id,",") as gene_ids,
+                   group_concat(g.gene_name,",") as gene_names,
+                   group_concat(o.species,",") as species_list, set_id
+                   FROM genelists_merged g, triple_ortholog_groups o
+                   WHERE g.gene_id=o.gene_id
+                   GROUP BY set_id ''' % locals()
+    cc.execute( statement )
+    cc.close()
+    statement = "touch %s" % outfile
+    P.run()
+
+############################################################
+@transform( orthologTripleWithFeature, suffix( ".load"), ".stats" )
+def tripleStats( infile, outfile ):
+
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    cc = dbhandle.cursor()
+    # conserved in all three species
+    statement = '''CREATE table triple_ortholog_stats AS
+                   SELECT replace(replace(species_list,"cgat_",""),"62","") as species_list, count(gene_ids) as conserved_nmis 
+                   FROM ortholog_triple_with_feature 
+                   WHERE species_count=3 
+                   UNION
+                   SELECT replace(replace(species_list,"cgat_",""),"62","") as species_list, count(gene_ids) as conserved_nmis 
+                   FROM ortholog_triple_with_feature 
+                   WHERE species_count=2 group by species_list
+                   UNION
+                   SELECT replace(replace(species_list,"cgat_",""),"62","") as species_list, count(gene_ids) as conserved_nmis 
+                   FROM ortholog_triple_with_feature 
+                   WHERE species_count=1 group by species_list'''
+    cc.execute( statement )
+    cc.close()
+    statement = "touch %s" % outfile
+    P.run()
+        
+############################################################
+############################################################    
+############################################################
+## Export data
 @transform(orthologGroupsWithFeature, suffix(".load"), ".export") 
 def exportConservedGeneListPerSpecies( infile, outfile):
     '''Export list of conserved genes associated with feature for each species '''
@@ -400,39 +662,45 @@ def exportConservedGeneBed( infile, outfile ):
                    | python %(scriptsdir)s/gff2bed.py --is-gtf --name=gene_id --track=feature > %(outfile)s;''' 
     P.run()
 
-
 ############################################################
 ############################################################
 ############################################################
 ## Pipeline organisation
-@follows( loadOrthologousGroups, 
-          loadGeneLists)
-def loadData():
+@follows( loadGeneLists, mergeGeneLists,
+          GeneListStats, loadGeneListStats )
+def loadNMIgenes():
+    '''Load NMI data into database'''
+    pass
+    
+@follows( getOrthologousGroups, loadOrthologousGroups,
+          orthologGroupsWithFeature)
+def allSpecies():
     '''Load all data into database'''
     pass
 
-@follows( GeneListStats, loadGeneListStats)
-def stats():
-    '''calculate feature conservation stats per gene list'''
+@follows( getPairwiseOrthologs, loadPairwiseOrthologs, loadPatternLookup,
+          orthologPairsWithFeature, pairsStats, 
+          exportPairsScoreMatrix)
+def orthologPairs():
+    '''Find ortholog pairs with conserved features '''
     pass
-
-@follows( mergeGeneLists, orthologGroupsWithFeature)
-def conservedFeatures():
-    '''Find orthologues genes with conserved features '''
-    pass
+    
+@follows( getTripleOrthologs, loadTripleOrthologs)
+def orthologTriple():
+    '''Load all data into database'''
+    pass    
     
 @follows( exportConservedGeneListPerSpecies, exportConservedGeneBed)
 def export():
     '''Find orthologues genes with conserved features '''
     pass
 
-
-@follows( loadData, stats,
-          conservedFeatures, export)
+@follows( loadNMIgenes, allSpecies, 
+          orthologPairs, orthologTriple, 
+          export)
 def full():
     '''Run complete pipeline '''
     pass
-
 
 ############################################################
 ############################################################
@@ -441,17 +709,24 @@ def full():
 @follows( mkdir( "report" ) )
 def build_report():
     '''build report from scratch.'''
-
     E.info( "starting documentation build process from scratch" )
     P.run_report( clean = True )
 
+############################################################
 @follows( mkdir( "report" ) )
 def update_report():
     '''update report.'''
-
     E.info( "updating documentation" )
     P.run_report( clean = False )
 
+############################################################
+@files( "report.log", "publish.log")
+def publish_report(infile, outfile):
+    '''Copy report to web '''
+    publish_dir = PARAMS["publish_dir"]
+    statement = '''cp -rf report/html/* %(publish_dir)s > %(outfile)s; ''' 
+    P.run()
+    
 if __name__== "__main__":
     sys.exit( P.main(sys.argv) )
 

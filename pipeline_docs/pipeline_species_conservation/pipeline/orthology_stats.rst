@@ -1,5 +1,5 @@
 ===================
-Orthology Stats
+7-way Conservation
 ===================
 
 Genes Associated with CpG Islands
