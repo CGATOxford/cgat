@@ -140,9 +140,9 @@ class RangeCounterBAM(RangeCounter):
 
 class RangeCounterBed(RangeCounter):
 
-    def __init__(self, bedfile, *args, **kwargs ):
+    def __init__(self, bedfiles, *args, **kwargs ):
         RangeCounter.__init__(self, *args, **kwargs )
-        self.bedfile = bedfile
+        self.bedfiles = bedfiles
         
     def count(self, contig, ranges ):
         
