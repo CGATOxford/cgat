@@ -655,6 +655,38 @@ SEQUENCEFILES=("*.fastq.1.gz",
                )
 SEQUENCEFILES_REGEX=regex( r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz|csfasta.F3.gz)")
 
+###################################################################
+###################################################################
+###################################################################
+## load number of reads
+###################################################################
+@transform( SEQUENCEFILES,
+            SEQUENCEFILES_REGEX,
+            r"\1.nreads" )
+def countReads( infile, outfile ):
+    '''count number of reads in input files.'''
+    to_cluster = True
+    m = PipelineMapping.Counter()
+    statement = m.build( (infile,), outfile ) 
+    P.run()
+
+@merge(countReads, "reads_summary.load" )
+def loadReadCounts( infiles, outfile ):
+    '''load read counts into database.'''
+
+    outf = P.getTempFile()
+    outf.write( "track\ttotal_reads\n")
+    for infile in infiles:
+        track = P.snip(infile, ".nreads")
+        lines = IOTools.openFile( infile ).readlines()
+        nreads = int( lines[0][:-1].split("\t")[1])
+        outf.write( "%s\t%i\n" % (track,nreads))
+    outf.close()
+        
+    P.load( outf.name, outfile )
+    
+    os.unlink(outf.name)
+
 #########################################################################
 #########################################################################
 #########################################################################
@@ -1132,6 +1164,7 @@ def createViewMapping( infile, outfile ):
     The table is built from the following tracks:
 
     always present:
+       reads_summary
        context_stats
        bam_stats
        picard_stats_alignment_summary_metrics
@@ -1148,12 +1181,14 @@ def createViewMapping( infile, outfile ):
     statement = '''
     CREATE %(view_type)s %(tablename)s AS
     SELECT b.track, *
-    FROM bam_stats AS b,
+    FROM  reads_summary AS r,
+          bam_stats AS b,
           context_stats AS c,          
           picard_stats_alignment_summary_metrics AS a
     WHERE 
       b.track = c.track
       AND b.track = a.track
+      AND substr( b.track, 1, LENGTH( r.track ) = r.track
     '''
 
     Database.executewait( dbhandle, statement % locals() )
@@ -1177,7 +1212,7 @@ def views():
 ###################################################################
 ###################################################################
 ###################################################################
-@follows( loadPicardStats, loadBAMStats, loadContextStats )
+@follows( loadReadCounts, loadPicardStats, loadBAMStats, loadContextStats )
 def qc(): pass
 
 ###################################################################

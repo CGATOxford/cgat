@@ -1071,14 +1071,18 @@ def plotDETagStats( infile, outfile ):
                                          color=factor(significant),fill=factor(significant)),alpha=I(1/3))''')
     
 
-    R.png( outfile + ".densities.png" )
-    R('''grid.newpage()''')
-    R.pushViewport(R.viewport( layout = R('''grid.layout''')(2,1)))
-    R('''print( a, vp = viewport( layout.pos.row = 1, layout.pos.col = 1 ) )''')
-    R('''print( b, vp = viewport( layout.pos.row = 2, layout.pos.col = 1 ) )''')
+    fn = outfile + ".densities.png" 
+    R.png( fn )
+    try:
+        R('''grid.newpage()''')
+        R.pushViewport(R.viewport( layout = R('''grid.layout''')(2,1)))
+        R('''print( a, vp = viewport( layout.pos.row = 1, layout.pos.col = 1 ) )''')
+        R('''print( b, vp = viewport( layout.pos.row = 2, layout.pos.col = 1 ) )''')
+    except rpy2.rinterface.RRuntimeError:
+        E.warn( "could not create %s" % fn )
     R['dev.off']()
+
     
-    R.png( outfile + ".boxplots.png" )
     R('''grid.newpage()''')
     R.pushViewport(R.viewport( layout = R('''grid.layout''')(2,1)))
 
@@ -1098,12 +1102,18 @@ def plotDETagStats( infile, outfile ):
                          alpha=I(1/3)) +\
         opts( axis_text_x = theme_text( angle=90, hjust=1, size=8 ) )''')
 
-    R('''print( a, vp = viewport( layout.pos.row = 1, layout.pos.col = 1 ) )''')
-    R('''print( b, vp = viewport( layout.pos.row = 2, layout.pos.col = 1 ) )''')
+    fn = outfile + ".boxplots.png" 
+    R.png( fn )
+    try:
+        R('''print( a, vp = viewport( layout.pos.row = 1, layout.pos.col = 1 ) )''')
+        R('''print( b, vp = viewport( layout.pos.row = 2, layout.pos.col = 1 ) )''')
+    except rpy2.rinterface.RRuntimeError:
+        E.warn( "could not create %s" % fn )
     R['dev.off']()
 
 def parseCuffdiff( infile):
     '''parse a cuffdiff .diff output file.'''
+    min_fpkm = PARAMS["cuffdiff_fpkm_expressed"]
 
     CuffdiffResult = collections.namedtuple("CuffdiffResult",
                                             "test_id gene_id gene  locus   sample_1 sample_2  " 
@@ -1138,6 +1148,8 @@ def parseCuffdiff( infile):
                     significant,
                     status ) ) )
                                             
+    return results
+
 #########################################################################
 #########################################################################
 #########################################################################
@@ -1172,7 +1184,6 @@ def loadCuffdiff( infile, outfile ):
 
 
     tmpname = P.getTempFilename()    
-    min_fpkm = PARAMS["cuffdiff_fpkm_expressed"]
 
     # ignore promoters and splicing - no fold change column, but  sqrt(JS)
     for fn, level in ( ("cds_exp.diff", "cds"),

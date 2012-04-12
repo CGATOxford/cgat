@@ -143,6 +143,9 @@ class Mapper( object ):
     # compress fastq files with gzip
     compress = False
 
+    # convert to sanger quality scores
+    convert = False
+
     def __init__(self):
         pass
 
@@ -219,7 +222,7 @@ class Mapper( object ):
                 
             elif infile.endswith( ".fastq.gz" ):
                 format = Fastq.guessFormat( IOTools.openFile( infile, "r"), raises = False)
-                if 'sanger' not in format:
+                if 'sanger' not in format and self.convert:
                     statement.append(  """gunzip < %(infile)s 
                                       | python %%(scriptsdir)s/fastq2fastq.py --change-format=sanger --guess-format=phred64 --log=%(outfile)s.log
                                       %(compress_cmd)s
@@ -347,8 +350,6 @@ class Mapper( object ):
                                            cmd_clean ) )
 
         return statement
-
-
     
 class FastQc( Mapper ):
     '''run fastqc to test read quality.'''
@@ -370,6 +371,8 @@ class FastQc( Mapper ):
 
 class Counter( Mapper ):
     '''count number of reads in fastq files.'''
+
+    compress = True
     
     def mapper( self, infiles, outfile ):
         '''count number of reads by counting number of lines
@@ -378,8 +381,8 @@ class Counter( Mapper ):
         
         statement = []
         for f in infiles:
-            for i, x in enumerate(f):
-                statement.append( '''awk '{n+=1;} END {printf("nreads\\t%%%%i\\n",n/4);}' < %(x)s >& %(outfile)s;''' % locals() )
+            x = " ".join( f )
+            statement.append( '''zcat %(x)s | awk '{n+=1;} END {printf("nreads\\t%%%%i\\n",n/4);}' >& %(outfile)s;''' % locals() )
         return " ".join( statement )
 
 class BWA( Mapper ):
