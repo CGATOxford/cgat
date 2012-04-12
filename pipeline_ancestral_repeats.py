@@ -145,7 +145,6 @@ P.getParameters(
         'query' : "",
         'target' : "" } )
 PARAMS = P.PARAMS
-
 USECLUSTER=True
 
 #########################################################################

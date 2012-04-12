@@ -898,7 +898,7 @@ def runEdgeR( infiles, outfile ):
     design = P.snip( os.path.basename(design_file), ".tsv")
     tiling = P.snip( os.path.basename( infile ), ".counts.tsv.gz" )
 
-    outdir = os.path.join( PARAMS["exportdir"], "diff_methylation", "%s_%s_" % (tiling, design )
+    outdir = os.path.join( PARAMS["exportdir"], "diff_methylation", "%s_%s_" % (tiling, design ) )
 
     Expression.runEdgeR( infile, design_file, outfile, 
                          outfile_prefix = outdir,

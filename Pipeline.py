@@ -84,7 +84,7 @@ def configToDictionary( config ):
         for key,value in config.items( section ):
             v = IOTools.convertValue( value )
             p["%s_%s" % (section,key)] = v
-            if section == "general":
+            if section in ( "general", "DEFAULT" ):
                 p["%s" % (key)] = v
                
     for key, value in config.defaults().iteritems():
@@ -119,6 +119,7 @@ def getParameters( filenames = ["pipeline.ini",],
     global CONFIG
 
     CONFIG = ConfigParser.ConfigParser()
+    
     CONFIG.read( filenames )
 
     p = configToDictionary( CONFIG )
@@ -444,15 +445,18 @@ def mergeAndLoad( infiles, outfile, suffix = None, columns=(0,1), regex = None )
             """
     run()
 
-def snip( filename, extension = None):
+def snip( filename, extension = None, alt_extension = None):
     '''return prefix of filename.
 
     If extension is given, make sure that filename has the extension.
     '''
     if extension: 
-        if not filename.endswith( extension ):
+        if filename.endswith( extension ):
+            return filename[:-len(extension)]
+        elif filename.endswith( alt_extension ):
+            return filename[:-len(alt_extension)]
+        else:
             raise ValueError("'%s' expected to end in '%s'" % (filename, extension))
-        return filename[:-len(extension)]
 
     root, ext = os.path.splitext( filename )
     return root
@@ -1039,7 +1043,8 @@ def main( args = sys.argv ):
 
         except ruffus_exceptions.RethrownJobError, value:
             E.error("some tasks resulted in errors - error messages follow below" )
-            E.error( value )
+            # print value
+            # E.error( value )
             raise
 
     elif options.pipeline_action == "dump":

@@ -66,10 +66,11 @@ import gzip
 import Expression
 import fileinput
 
-if not os.path.exists("conf.py"):
-    raise IOError( "could not find configuration file conf.py" )
+import rpy2
+from rpy2.robjects import r as R
 
-execfile("conf.py")
+if os.path.exists("conf.py"):
+    execfile("conf.py")
 
 TARGET_ANNOTATION= 'ensembl_regions.gff'
 TARGET_GENESET= 'ensembl.gtf'
@@ -150,9 +151,6 @@ def importCEL( infile, outfiles ):
 
         os.symlink( os.path.abspath( oldname), os.path.abspath( newname ) )
     
-import rpy
-from rpy import r as R
-
 @merge( "*.CEL.gz", "expression.out" )
 def estimateExpression( infiles, outfile ):
     '''estimate expression levels.'''

@@ -6,8 +6,8 @@ import Experiment
 import scipy, scipy.stats
 import IOTools
 
-import rpy
-from rpy import r as R
+import rpy2
+from rpy2.robjects import r as R
 
 ##---------------------------------------------------------------------------------------------------------        
 if __name__ == '__main__':
@@ -67,6 +67,8 @@ if __name__ == '__main__':
     for field in fields:
         options.stdout.write("\t%s" % field )
     options.stdout.write("\n" )
+
+    # CODE needs to be refactored for rpy2 usage
 
     for x in range( len(data )):
 

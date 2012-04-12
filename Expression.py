@@ -1,8 +1,64 @@
-'''utility methods for computing expression differences.'''
+################################################################################
+#
+#   MRC FGU Computational Genomics Group
+#
+#   $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $
+#
+#   Copyright (C) 2009 Andreas Heger
+#
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU General Public License
+#   as published by the Free Software Foundation; either version 2
+#   of the License, or (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#################################################################################
+'''
+Expression.py - wrap various differential expression tools
+===========================================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+This module provides tools for differential expression analysis 
+for a variety of methods.
+
+Methods implemented are:
+
+   DESeq
+   EdgeR
+   cuffdiff
+
+There is also a command line interface. Note that the module is incomplete
+as a stand-alone script as it requires to be executed in the context of
+an existing pipeline for parameterization.
+
+Usage
+-----
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 
 import math
 import numpy
-import sys, os
+import sys, os, optparse
 import collections
 import itertools
 
@@ -403,25 +459,34 @@ def loadTagData( infile, design_file ):
     It returns (groups,pairs)
     '''
 
-    R( '''counts_table = read.delim( '%(infile)s', header = TRUE,
-                                                   row.names = 1,
-                                                   stringsAsFactors = TRUE,
-                                                   comment.char = '#' )''' % locals() )
+    R( '''counts_table = read.delim( '%(infile)s', 
+                                     header = TRUE,
+                                     row.names = 1,
+                                     stringsAsFactors = TRUE,
+                                     comment.char = '#' )''' % locals() )
 
     E.info( "read data: %i observations for %i samples" % tuple(R('''dim(counts_table)''')))
+    E.debug( "sample names: %s" % R('''colnames(counts_table)'''))
 
     # Load comparisons from file
-    R('''pheno = read.delim( '%(design_file)s', header = TRUE, stringsAsFactors = TRUE,
+    R('''pheno = read.delim( '%(design_file)s', 
+                             header = TRUE, 
+                             stringsAsFactors = TRUE,
                              comment.char = '#')''' % locals() )
 
-    # Make sample names R-like - substitute - for . and add the .prep suffix
+    # Make sample names R-like - substitute - for .
     R('''pheno[,1] = gsub('-', '.', pheno[,1]) ''')
-
+    E.debug( "design names: %s" % R('''pheno[,1]'''))
+    
     # Ensure pheno rows match count columns
-    R('''pheno2 = pheno[match(colnames(counts_table),pheno[,1]),,drop=FALSE]''' )
-
+    pheno = R('''pheno2 = pheno[match(colnames(counts_table),pheno[,1]),,drop=FALSE]''' )
+    missing = R('''colnames(counts_table)[is.na(pheno2)][1]''')
+    if missing:
+        E.warn( "missing samples from design file are ignored: %s" % missing)
+        
     # Subset data & set conditions
-    R('''includedSamples <- pheno2$include == '1' ''')
+    R('''includedSamples <- !(is.na(pheno2$include) | pheno2$include == '0') ''')
+    E.debug( "included samples: %s" % R('''colnames(counts_table)[includedSamples]''') )
     R('''countsTable <- counts_table[ , includedSamples ]''')
     R('''groups <- factor(pheno2$group[ includedSamples ])''')
     R('''conds <- pheno2$group[ includedSamples ]''')
@@ -432,7 +497,20 @@ def loadTagData( infile, design_file ):
 
     E.info( "filtered data: %i observations for %i samples" % tuple( R('''dim(countsTable)''') ) )
 
-    return groups, pairs
+    # Test if replicates exist - at least to samples pre replicate
+    min_per_group = R('''min(table(groups)) ''')[0]
+    has_replicates = min_per_group >= 2
+
+    # Test if pairs exist:
+    npairs = R('''length(table(pairs)) ''')[0]
+    has_pairs = npairs == 2
+
+    # at least two samples per pair
+    if has_pairs:
+        min_per_pair = R('''min(table(pairs)) ''')[0]
+        has_pairs = min_per_pair >= 2
+
+    return groups, pairs, has_replicates, has_pairs
 
 def runEdgeR( infile, 
               design_file, 
@@ -463,29 +541,14 @@ def runEdgeR( infile,
     
     # load library 
     R('''suppressMessages(library('edgeR'))''')
-    R('''suppressMessages(library('limma'))''')
     to_cluster = True
 
-    logf = IOTools.openFile( outfile + ".log", "w" )
-    
-    groups, pairs = loadTagData( infile, design_file )
-
-    # Test if replicates exist
-    min_reps = R('''min(table(groups)) ''')[0]
-    no_replicates = False
-    if min_reps < 2:
-        no_replicates = True
-
-    # Test if pairs exist:
-    min_pairs = R('''min(table(pairs)) ''')[0]
-    no_pairs = False
-    if min_pairs < 2:
-        no_pairs = True
+    groups, pairs, has_replicates, has_pairs = loadTagData( infile, design_file )
 
     E.info('running EdgeR: groups=%s, pairs=%s, replicates=%s, pairs=%s' % \
-           (groups, pairs, not no_replicates, not no_pairs))
+           (groups, pairs, has_replicates, has_pairs))
 
-    if not no_pairs:
+    if has_pairs:
         # output difference between groups
         R.png( '''%(outfile_prefix)sbalance_groups.png''' % locals() )
         first = True
@@ -543,7 +606,6 @@ def runEdgeR( infile,
     E.info( "calculating normalization factors" )
     R('''countsTable = calcNormFactors( countsTable )''' )
     E.info( "output")
-    # logf.write( str(R('''countsTable''')) + "\n" )
 
     # Remove windows with few counts
     # R( '''countsTable = countsTable[rowSums( 
@@ -558,29 +620,27 @@ def runEdgeR( infile,
     R['dev.off']()
 
     # build design matrix
-    if no_pairs:
-        R('''design = model.matrix( ~countsTable$samples$group )''' )
-    else:
+    if has_pairs:
         R('''design = model.matrix( ~pairs + countsTable$samples$group )''' )
+    else:
+        R('''design = model.matrix( ~countsTable$samples$group )''' )
 
-    R('''rownames(design) = rownames( countsTable$samples )''')
-    R('''colnames(design)[length(colnames(design))] = "CD4" ''' )
-    
-    # logf.write( R('''design''') + "\n" )
+    # R('''rownames(design) = rownames( countsTable$samples )''')
+    # R('''colnames(design)[length(colnames(design))] = "CD4" ''' )
     
     # fitting model to each tag
-    if no_replicates:
-        # fitting model to each tag
-        if dispersion == None:
-            raise ValueError( "no replicates and no dispersion" )
-        E.warn("no replicates - using a fixed dispersion value" )
-        R('''fit = glmFit( countsTable, design, dispersion = %f )''' % dispersion )
-    else:
+    if has_replicates:
         # estimate common dispersion
         R('''countsTable = estimateGLMCommonDisp( countsTable, design )''')
 
         # fitting model to each tag
         R('''fit = glmFit( countsTable, design )''')
+    else:
+        # fitting model to each tag
+        if dispersion == None:
+            raise ValueError( "no replicates and no dispersion" )
+        E.warn("no replicates - using a fixed dispersion value" )
+        R('''fit = glmFit( countsTable, design, dispersion = %f )''' % dispersion )
 
     # perform LR test
     R('''lrt = glmLRT( countsTable, fit)''' )
@@ -588,9 +648,8 @@ def runEdgeR( infile,
     E.info("Generating output")
 
     # compute adjusted P-Values
-    R('''padj = p.adjust( lrt$table$p.value, 'BH' )''' )
+    R('''padj = p.adjust( lrt$table$PValue, 'BH' )''' )
 
-    outf = IOTools.openFile( outfile, "w" )
     isna = R["is.na"]
 
     rtype = collections.namedtuple( "rtype", "logConc lfold LR pvalue" )
@@ -601,13 +660,11 @@ def runEdgeR( infile,
     R('''abline( h = c(-2,2), col = 'dodgerblue') ''' )
     R['dev.off']()
 
-    
-
     # I am assuming that logFC is the base 2 logarithm foldchange.
     # Parse results and parse to file
     results = []
     counts = E.Counter()
-
+    
     for interval, data, padj in zip( R('''rownames(lrt$table)'''),
                                      zip( *R('''lrt$table''')), 
                                      R('''padj''')) :
@@ -658,10 +715,13 @@ def runEdgeR( infile,
                     str(signif),
                     status) ) )
             
-    with IOTools.openFile( outfile, "w" ) as outf:
-        writeExpressionResults( outf, results )
+    if outfile == sys.stdout:
+        writeExpressionResults( outfile, results )
+    else:
+        with IOTools.openFile( outfile, "w" ) as outf:
+            writeExpressionResults( outf, results )
 
-    outf = IOTools.openFile( "(outfile_prefix)ssummary.tsv", "w" )
+    outf = IOTools.openFile( "%(outfile_prefix)ssummary.tsv", "w" )
     outf.write( "category\tcounts\n%s\n" % counts.asTable() )
     outf.close()
 
@@ -684,6 +744,17 @@ def deseqOutputSizeFactors( outfile ):
             outf.write( "%s\t%s\n" % (name, str(x)))
 
 def deseqPlotHeatmap( outfile ):
+    '''plot a heatmap.'''
+
+    method = PARAMS.get( "deseq_dispersion_method", "pooled" )
+    fit_type = PARAMS.get( "deseq_fit_type", "parametric" )
+    
+    if method == "per-condition":
+        # required to call "pooled" or "blind" if method = per-condition 
+        R('''cds <- estimateDispersions( cds, 
+                                         method='pooled',
+                                         fitType='%(fit_type)s' )''' % locals())
+        
     R('''vsd <- getVarianceStabilizedData( cds )''' )
     R('''dists <- dist( t( vsd ) )''')
     R.png( outfile )
@@ -842,7 +913,7 @@ def runDESeq( infile,
     # load library 
     R('''suppressMessages(library('DESeq'))''')
 
-    groups, pairs = loadTagData( infile, design_file )
+    groups, pairs, has_replicates, has_pairs = loadTagData( infile, design_file )
 
     # Remove windows with no data
     R( '''max_counts = apply(countsTable,1,max)''' )
@@ -850,31 +921,25 @@ def runDESeq( infile,
     E.info( "removed %i empty rows" % tuple( R('''sum(max_counts == 0)''') ) )
     E.info( "trimmed data: %i observations for %i samples" % tuple( R('''dim(countsTable)''') ) )
 
-    # Test if replicates exist
-    min_reps = R('''min(table(groups)) ''')[0]
-    no_replicates = False
-    if min_reps < 2:
-        no_replicates = True
-
     ######## Run DESeq
     # Create Count data object
-    E.info( "running DESeq: replicates=%s" % (not no_replicates))
+    E.info( "running DESeq: replicates=%s" % (has_replicates))
     R('''cds <-newCountDataSet( countsTable, groups) ''')
 
     # Estimate size factors
     R('''cds <- estimateSizeFactors( cds )''')
-
     # Estimate variance
-    if no_replicates:
-        E.info("no replicates - estimating variance with method='blind'" )
-        # old:R('''cds <- estimateVarianceFunctions( cds, method="blind" )''')
-        R('''cds <- estimateDispersions( cds, method="blind" )''')
-    else:
+    fit_type = PARAMS.get( "deseq_fit_type", "parametric" )
+    if has_replicates:
         E.info("replicates - estimating variance from replicates" )
-        # old:R('''cds <- estimateVarianceFunctions( cds )''')
-        R('''cds <- estimateDispersions( cds )''')
+        method = PARAMS.get( "deseq_dispersion_method", "per-condition" )
+    else:
+        E.info("no replicates - estimating variance with method='blind'" )
+        method = "blind"
 
-    R('''str( fitInfo( cds ) )''')
+    R('''cds <- estimateDispersions( cds, 
+                                     method='%(method)s',
+                                     fitType='%(fit_type)s' )''' % locals())
 
     # Plot size factors
     deseqPlotSizeFactors( '%(outfile_prefix)ssize_factors.png''' % locals() )
@@ -897,7 +962,7 @@ def runDESeq( infile,
     deseqPlotHeatmap( '%(outfile_prefix)sheatmap.png' % locals())
 
     for group in groups:
-        if not no_replicates:
+        if has_replicates:
             #R.png( '''%(outfile_prefix)s%(group)s_fit.png''' % locals() )
             #R('''diagForT <- varianceFitDiagnostics( cds, "%s" )''' % group )
             #R('''smoothScatter( log10(diagForT$baseMean), log10(diagForT$baseVar) )''')
@@ -928,10 +993,13 @@ def runDESeq( infile,
 
     E.info( counts )
 
-    with IOTools.openFile( outfile, "w" ) as outf:
-        writeExpressionResults( outf, results )
+    if outfile == sys.stdout:
+        writeExpressionResults( outfile, results )
+    else:
+        with IOTools.openFile( outfile, "w" ) as outf:
+            writeExpressionResults( outf, results )
 
-    outf = IOTools.openFile( "(outfile_prefix)ssummary.tsv" % locals(), "w" )
+    outf = IOTools.openFile( "%(outfile_prefix)ssummary.tsv" % locals(), "w" )
     outf.write( "category\tcounts\n%s\n" % counts.asTable() )
     outf.close()
 
@@ -955,36 +1023,7 @@ def readDesignFile( design_file ):
 def plotTagStats( infile, design_file, outfile ):
     '''provide summary plots for tag data.'''
 
-    groups, pairs = loadTagData( infile, design_file )
-    
-    # import rpy2.robjects.lib.ggplot2 as ggplot2
-
-    R('''library('ggplot2')''')
-    R('''library('reshape')''')
-
-    R('''d = melt( log10(countsTable + 1), variable_name = 'sample' )''')
-    R('''gp = ggplot(d)''')
-    R('''pp = gp + 
-        geom_density(aes(x='value',group='sample',color='sample',fill='sample'),alpha=I(1/3)''')
-    
-    R.ggsave( outfile + ".densities.png" )
-    R['dev.off']()
-
-    R('''gp = ggplot(d)''')
-    R('''pp = gp + 
-        geom_boxplot(aes(x='sample',y='value',color='sample',fill='sample'),size=0.3,alpha=I(1/3)) + \
-        opts( axis_text_x = theme_text( angle=90, hjust=1, size=8 ) )''')
-
-    R.ggsave( outfile + ".boxplots.png" )
-    R['dev.off']()
-
-#########################################################################
-#########################################################################
-#########################################################################
-def plotTagStats( infile, design_file, outfile ):
-    '''provide summary plots for tag data.'''
-
-    groups, pairs = loadTagData( infile, design_file )
+    groups, pairs, has_replicates, has_pairs = loadTagData( infile, design_file )
     
     # import rpy2.robjects.lib.ggplot2 as ggplot2
 
@@ -1019,6 +1058,7 @@ def plotDETagStats( infile, outfile ):
     # import rpy2.robjects.lib.ggplot2 as ggplot2
 
     R('''library('ggplot2')''')
+    R('''library('grid')''')
     R('''data = read.table( '%s', header = TRUE, row.names=1 )''' % infile ) 
 
     R(''' gp = ggplot(data)''')
@@ -1030,14 +1070,14 @@ def plotDETagStats( infile, outfile ):
         geom_density(aes(x=log10(control_mean+1),group=factor(significant),
                                          color=factor(significant),fill=factor(significant)),alpha=I(1/3))''')
     
+
     R.png( outfile + ".densities.png" )
     R('''grid.newpage()''')
     R.pushViewport(R.viewport( layout = R('''grid.layout''')(2,1)))
-    p = R['print']
-    p( a, vp = R.viewport( layout_pos_row = 1, layout_pos_col = 1 ) )
-    p( b, vp = R.viewport( layout_pos_row = 2, layout_pos_col = 1 ) )
+    R('''print( a, vp = viewport( layout.pos.row = 1, layout.pos.col = 1 ) )''')
+    R('''print( b, vp = viewport( layout.pos.row = 2, layout.pos.col = 1 ) )''')
     R['dev.off']()
-
+    
     R.png( outfile + ".boxplots.png" )
     R('''grid.newpage()''')
     R.pushViewport(R.viewport( layout = R('''grid.layout''')(2,1)))
@@ -1050,18 +1090,54 @@ def plotDETagStats( infile, outfile ):
                              alpha=I(1/3))''') 
 
     R('''b = gp + 
-        geom_boxplot(aes(x=factor(significant), 
-                         y=log10(control_mean+1),
+      geom_boxplot(aes(x=factor(significant), 
+                       y=log10(control_mean+1),
                          color=factor(significant),
                          fill=factor(significant)),
                          size=0.3,
                          alpha=I(1/3)) +\
         opts( axis_text_x = theme_text( angle=90, hjust=1, size=8 ) )''')
 
-    p( a, vp = R.viewport( layout_pos_row = 1, layout_pos_col = 1 ) )
-    p( b, vp = R.viewport( layout_pos_row = 2, layout_pos_col = 1 ) )
+    R('''print( a, vp = viewport( layout.pos.row = 1, layout.pos.col = 1 ) )''')
+    R('''print( b, vp = viewport( layout.pos.row = 2, layout.pos.col = 1 ) )''')
     R['dev.off']()
 
+def parseCuffdiff( infile):
+    '''parse a cuffdiff .diff output file.'''
+
+    CuffdiffResult = collections.namedtuple("CuffdiffResult",
+                                            "test_id gene_id gene  locus   sample_1 sample_2  " 
+                                            " status  value_1 value_2 l2fold  " 
+                                            "test_stat p_value q_value significant " )
+    
+    results = []
+
+    for line in IOTools.openFile( infile ):
+        if line.startswith("test_id"): continue
+        data = CuffdiffResult._make( line[:-1].split("\t"))
+        status = data.status
+        significant = [0,1][data.significant == "yes"]
+        if status == "OK" and (float(data.value_1) < min_fpkm or float(data.value_2) < min_fpkm):
+            status = "NOCALL"
+
+        try: fold = math.pow(2.0, float(data.l2fold))
+        except OverflowError: fold = "na"
+
+        results.append( GeneExpressionResult._make( (
+                    data.test_id,
+                    data.sample_1,
+                    data.value_1,
+                    0,
+                    data.sample_2,
+                    data.value_2,
+                    0,
+                    data.p_value,
+                    data.q_value,
+                    data.l2fold,
+                    fold,
+                    significant,
+                    status ) ) )
+                                            
 #########################################################################
 #########################################################################
 #########################################################################
@@ -1094,10 +1170,6 @@ def loadCuffdiff( infile, outfile ):
     to_cluster = False
     dbhandle = sqlite3.connect( PARAMS["database"] )
 
-    CuffdiffResult = collections.namedtuple("CuffdiffResult",
-                                            "test_id gene_id gene  locus   sample_1        sample_2  "\
-                                            " status  value_1 value_2 l2fold  "\
-                                            "test_stat p_value q_value significant " )
 
     tmpname = P.getTempFilename()    
     min_fpkm = PARAMS["cuffdiff_fpkm_expressed"]
@@ -1112,39 +1184,12 @@ def loadCuffdiff( infile, outfile ):
         
         tablename = prefix + "_" + level + "_diff"
 
-        results = []
-        for line in IOTools.openFile( os.path.join( indir, fn) ):
-            if line.startswith("test_id"): continue
-            data = CuffdiffResult._make( line[:-1].split("\t"))
-            status = data.status
-            significant = [0,1][data.significant == "yes"]
-            if status == "OK" and (float(data.value_1) < min_fpkm or float(data.value_2) < min_fpkm):
-                status = "NOCALL"
-            try:
-                fold = math.pow(2.0, float(data.l2fold))
-            except OverflowError:
-                fold = "na"
+        infile = os.path.join( indir, fn)                
+        results = parseCuffdiff( infile )
 
-            results.append( GeneExpressionResult._make( (
-                        data.test_id,
-                        data.sample_1,
-                        data.value_1,
-                        0,
-                        data.sample_2,
-                        data.value_2,
-                        0,
-                        data.p_value,
-                        data.q_value,
-                        data.l2fold,
-                        fold,
-                        significant,
-                        status ) ) )
-                
         with IOTools.openFile( tmpname, "w" ) as outf:
             writeExpressionResults( outf, results )
             
-        # max/minimum fold change seems to be (-)1.79769e+308
-        # ln to log2: multiply by log2(e)
         statement = '''cat %(tmpname)s 
         | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --allow-empty
@@ -1193,7 +1238,8 @@ def runCuffdiff( bamfiles,
                  outfile,
                  cuffdiff_options = "",
                  threads = 4,
-                 fdr = 0.1 ):
+                 fdr = 0.1,
+                 mask_file = None ):
     '''estimate differential expression using cuffdiff.
 
     infiles
@@ -1222,7 +1268,8 @@ def runCuffdiff( bamfiles,
     reps = collections.defaultdict( list )
     for bamfile in bamfiles:
         groups = collections.defaultdict()
-        track = P.snip( os.path.basename( bamfile ), ".accepted.bam" )
+        # .accepted.bam kept for legacy reasons (see rnaseq pipeline)
+        track = P.snip( os.path.basename( bamfile ), ".bam", ".accepted.bam" )
         if track not in design:
             E.warn( "bamfile '%s' not part of design - skipped" % bamfile )
             continue
@@ -1233,15 +1280,23 @@ def runCuffdiff( bamfiles,
         
     groups = sorted(reps.keys())
     labels = ",".join( groups )
-
     reps = "   ".join( [ ",".join( reps[group] ) for group in groups ] )
 
-    statement = '''date > %(outfile)s; hostname >> %(outfile)s.log;
+    # Nick - add mask gtf to not assess rRNA and ChrM
+    extra_options = []
+
+    if mask_file:
+        extra_options.append( " -M %s" % os.path.abspath( mask_file ) )
+
+    extra_options = " ".join( extra_options )
+
+    statement = '''date > %(outfile)s.log; hostname >> %(outfile)s.log;
     cuffdiff --output-dir %(outdir)s
              --verbose
              --num-threads %(threads)i
              --labels %(labels)s
              --FDR %(fdr)f
+             %(extra_options)s
              %(cuffdiff_options)s
              <(gunzip < %(geneset_file)s )
              %(reps)s
@@ -1249,3 +1304,75 @@ def runCuffdiff( bamfiles,
     date >> %(outfile)s.log;
     '''
     P.run()
+
+    results = parseCuffdiff( os.path.join( outdir, "gene_exp.diff") )
+    
+    if outfile == sys.stdout:
+        writeExpressionResults( outfile, results )
+    else:
+        with IOTools.openFile( outfile, "w" ) as outf:
+            writeExpressionResults( outf, results )
+    
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if not argv: argv = sys.argv
+
+    # setup command line parser
+    parser = optparse.OptionParser( version = "%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
+                                    usage = globals()["__doc__"] )
+
+    parser.add_option("-t", "--filename-tags", dest="input_filename_tags", type="string",
+                      help="input file with tag counts [default=%default]."  )
+
+    parser.add_option("-d", "--filename-design", dest="input_filename_design", type="string",
+                      help="input file with experimental design [default=%default]."  )
+
+    parser.add_option("-o", "--outfile", dest="output_filename", type="string",
+                      help="output filename [default=%default]."  )
+
+    parser.add_option("-m", "--method", dest="method", type="choice",
+                      choices = ("deseq", "edger", "cuffdiff"),
+                      help="differential expression method to apply [default=%default]."  )
+
+    parser.add_option("-f", "--fdr", dest="fdr", type="float",
+                      help="fdr to apply [default=%default]."  )
+
+    parser.set_defaults(
+        input_filename_tags = None,
+        input_filename_design = None,
+        output_filename = sys.stdout,
+        method = "deseq",
+        fdr = 0.1,
+        )
+
+    ## add common options (-h/--help, ...) and parse command line 
+    (options, args) = E.Start( parser, argv = argv, add_output_options = True )
+
+    if options.method == "deseq":
+        assert options.input_filename_tags and os.path.exists(options.input_filename_tags)
+        assert options.input_filename_design and os.path.exists(options.input_filename_design)
+        runDESeq( options.input_filename_tags,
+                  options.input_filename_design,
+                  options.output_filename,
+                  options.output_filename_pattern,
+                  fdr = options.fdr )
+
+    elif options.method == "edger":
+        assert options.input_filename_tags and os.path.exists(options.input_filename_tags)
+        assert options.input_filename_design and os.path.exists(options.input_filename_design)
+        runEdgeR( options.input_filename_tags,
+                  options.input_filename_design,
+                  options.output_filename,
+                  options.output_filename_pattern,
+                  fdr = options.fdr )
+
+    E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+    

@@ -146,18 +146,33 @@ class Mapper( object ):
     def __init__(self):
         pass
 
+    def quoteFile( self, filename ):
+        '''add uncompression for compressed files.
+        and programs that expect uncompressed files.
+
+        .. warn::
+            This will only work if the downstream programs read the
+            file only once.
+        '''
+        if filename.endswith( ".gz" ) and not self.compress:
+            return "<( gunzip < %s )" % filename 
+        else:
+            return filename
+
     def preprocess( self, infiles, outfile ):
         '''build preprocessing statement
 
-        returns statement and fastq files to map.
+        Build a command line statement that extracts/converts 
+        various input formats to fastq formatted files.
 
         Mapping qualities are changed to solexa format.
+
+        returns the statement and the fastq files to map.
         '''
 
         assert len(infiles) > 0, "no input files for mapping"
 
         tmpdir_fastq = P.getTempDir()
-        #print outfile
 
         # create temporary directory again for nodes
         statement = [ "mkdir -p %s" % tmpdir_fastq ]
@@ -282,7 +297,8 @@ class Mapper( object ):
 
                 else:
                     E.debug( "%s: assuming quality score format %s" % (infile, format ) ) 
-                    fastqfiles.append( (infile, infile2, ) )
+                    fastqfiles.append( (infile, 
+                                        infile2, ) )
                     
             else:
                 raise NotImplementedError( "unknown file format %s" % infile )
@@ -386,9 +402,27 @@ class BWA( Mapper ):
         statement = [ "mkdir -p %s;" % tmpdir_bwa ]
         tmpdir_fastq = self.tmpdir_fastq
 
+        # transpose files
+        infiles = zip( *infiles )
+        
+        # add options specific to data type
+        data_options = ["%(bwa_align_options)s"]
+        if self.datatype == "solid":
+            data_options.append( "-c" )
+            index_file = "%(bwa_index_dir)s/%(genome)s_cs"
+        elif self.datatype == "fasta":
+            index_file = "%(bwa_index_dir)s/%(genome)s"
+        else:
+            index_file = "%(bwa_index_dir)s/%(genome)s"
+
+        data_options = " ".join( data_options )
+
+        tmpdir_fastq = self.tmpdir_fastq
+
+        track = P.snip( os.path.basename( outfile ), ".bam" )
+
         if nfiles == 1:
-            infiles = ",".join( [ x[0] for x in infiles ] )
-            track = P.snip( os.path.basename( infiles ), ".fastq" )
+            infiles = ",".join( [ self.quoteFile(x[0]) for x in infiles ] )
             
             statement.append('''
             bwa aln %%(bwa_aln_options)s -t %%(bwa_threads)i %%(bwa_index_dir)s/%%(genome)s %(infiles)s 
@@ -398,11 +432,12 @@ class BWA( Mapper ):
             ''' % locals() )
 
         elif nfiles == 2:
-            infiles1 = ",".join( [ x[0] for x in infiles ] )
-            infiles2 = ",".join( [ x[1] for x in infiles ] )
-            track = P.snip( os.path.basename( infiles1 ), ".1.fastq" )
-            track1 = P.snip( os.path.basename( infiles1 ), ".fastq" )
-            track2 = P.snip( os.path.basename( infiles2 ), ".fastq" )
+            track = P.snip( os.path.basename( infiles[0][0] ), ".1.fastq", ".1.fastq.gz" )
+            track1 = track + ".1"
+            track2 = track + ".2"
+            
+            infiles1 = ",".join( [ self.quoteFile(x[0]) for x in infiles ] )
+            infiles2 = ",".join( [ self.quoteFile(x[1]) for x in infiles ] )
 
             statement.append('''
             bwa aln %%(bwa_aln_options)s -t %%(bwa_threads)i %%(bwa_index_dir)s/%%(genome)s %(infiles1)s 
@@ -411,7 +446,9 @@ class BWA( Mapper ):
             > %(tmpdir_bwa)s/%(track2)s.sai 2>>%(outfile)s.bwa.log; checkpoint;
             bwa sampe %%(bwa_sampe_options)s %%(bwa_index_dir)s/%%(genome)s 
                       %(tmpdir_bwa)s/%(track1)s.sai 
-                      %(tmpdir_bwa)s/%(track2)s.sai %(infiles1)s %(infiles2)s 
+                      %(tmpdir_bwa)s/%(track2)s.sai 
+                      %(infiles1)s 
+                      %(infiles2)s 
             > %(tmpdir_bwa)s/%(track)s.sam 2>>%(outfile)s.bwa.log;
             ''' % locals() )
         else:
@@ -740,13 +777,13 @@ class Bowtie( Mapper ):
         data_options = []
         if self.datatype == "solid":
             data_options.append( "--quals --integer-quals --color" )
-#            data_options.append( "-f -C" )
             if nfiles == 2:
                 # single end,
                 # second file will colors (unpaired data)
-                data_options.append( "--quals %s" % ",".join( infiles[1] ) )
+                data_options.append( "--quals %s" % ",".join( [ self.quoteFile(x) for x in infiles[1] ] ) ) 
                 nfiles -= 1
             elif nfiles == 4:
+                raise NotImplementeError()
                 data_options.append( "-Q1 %s -Q2 %s" % (",".join(infiles[2], infiles[3])) )
                 nfiles -= 2
             else:
@@ -763,7 +800,7 @@ class Bowtie( Mapper ):
         tmpdir_fastq = self.tmpdir_fastq
 
         if nfiles == 1:
-            infiles = ",".join( infiles[0])
+            infiles = ",".join( [ self.quoteFile(x) for x in infiles[0] ] )
             statement = '''
                 bowtie --quiet --sam
                        --threads %%(bowtie_threads)i
@@ -777,8 +814,8 @@ class Bowtie( Mapper ):
             ''' % locals()
 
         elif nfiles == 2:
-            infiles1 = ",".join( infiles[0] )
-            infiles2 = ",".join( infiles[1] )
+            infiles1 = ",".join( [ self.quoteFile( x ) for x in infiles[0] ] )
+            infiles2 = ",".join( [ self.quoteFile( x ) for x in infiles[1] ] )
 
             statement = '''
                 bowtie --quiet --sam
@@ -928,3 +965,5 @@ class BowtieJunctions( BowtieTranscripts ):
              ''' % locals()
 
         return statement
+
+

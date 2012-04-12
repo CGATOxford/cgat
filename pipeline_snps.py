@@ -70,8 +70,8 @@ import scipy.stats
 import Stats
 import pysam
 
-from rpy import r as R
-import rpy
+import rpy2
+from rpy2.robjects import r as R
 
 ###################################################################
 ###################################################################
@@ -92,10 +92,9 @@ P.PARAMS.update(
 
 PARAMS = P.PARAMS
 
-if not os.path.exists("conf.py"):
-    raise IOError( "could not find configuration file conf.py" )
+if os.path.exists("conf.py"):
+    execfile("conf.py")
 
-execfile("conf.py")
 SEPARATOR = "|"
 
 ###################################################################
@@ -466,6 +465,10 @@ elif PARAMS["filename_vcf"]:
 
         P.run()
 
+else:
+    @follows( [] )
+    def buildPileUps(): pass
+    
 @transform( buildPileups, suffix(".pileup.gz"), ".pileup.stats")
 def countPileups( infile, outfile ):
     '''get some basic counts from the pileup files.'''

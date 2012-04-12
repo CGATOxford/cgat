@@ -748,7 +748,7 @@ def buildReferenceGeneSet( infile, outfile ):
     statement = '''
     cuffcompare -r <( gunzip < %(tmpfilename)s )
          -T 
-         -s %(bowtie_genome_dir)s/%(genome)s.fa
+         -s %(bowtie_index_dir)s/%(genome)s.fa
          -o %(tmpfilename2)s
          <( gunzip < %(tmpfilename)s )
          <( gunzip < %(tmpfilename)s )

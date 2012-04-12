@@ -80,10 +80,9 @@ P.PARAMS.update(
 
 PARAMS = P.PARAMS
 
-if not os.path.exists("conf.py"):
-    raise IOError( "could not find configuration file conf.py" )
+if os.path.exists("conf.py"):
+    execfile("conf.py")
 
-execfile("conf.py")
 SEPARATOR = "|"
 
 ###################################################################

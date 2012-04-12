@@ -66,7 +66,6 @@ from rpy2.robjects import r as R
 import rpy2.robjects as ro
 import rpy2.robjects.numpy2ri
 
-
 def readTable( lines,
                assign,
                separator = "\t",

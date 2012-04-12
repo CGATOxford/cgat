@@ -316,6 +316,15 @@ def removeContaminants( infiles, outfile ):
     '''
     P.run()
 
+def checkPairs( infile ):
+    '''check for paired read files'''
+    if infile.endswith( ".fastq.1.gz"):
+        infile2 = P.snip( infile, ".fastq.1.gz") + ".fastq.2.gz"
+        assert os.path.exists( infile2 ), "second part of read pair (%s) missing" % infile2
+    else:
+        infile2 = None
+        
+    return infile2
 
 #########################################################################
 #########################################################################
@@ -328,20 +337,17 @@ def removeContaminants( infiles, outfile ):
 	    r"processed.\1.\2")
 def processReads( infiles, outfile ):
     '''process reads.'''
-    
+
     infile, contaminant_file = infiles
 
     do_sth = False
     to_cluster = True
 
-    # check for paired read files
-    if infile.endswith( ".fastq.1.gz"):
-        track = P.snip( outfile, ".fastq.1.gz")
-        infile2 = P.snip( infile, ".fastq.1.gz") + ".fastq.2.gz"
+    track = P.snip( outfile, ".fastq.1.gz")
+    infile2 = checkPairs( infile )
+
+    if infile2:
         outfile2 = P.snip( outfile, ".fastq.1.gz") + ".fastq.2.gz"
-        assert os.path.exists( infile2 ), "second part of read pair (%s) missing" % infile2
-    else:
-        infile2 = None
 
     # fastx does not like quality scores below 64 (Illumina 1.3 format)
     # need to detect the scores and convert
@@ -396,6 +402,7 @@ def processReads( infiles, outfile ):
 
         # second read pair        
         E.warn( "processing second of pair")
+        infile = infile2
         statement = " | ".join( s ) + " > %(tmpfile2)s" 
         P.run()
 
@@ -404,7 +411,7 @@ def processReads( infiles, outfile ):
         statement = """python %(scriptsdir)s/fastqs2fastq.py
                            --method=reconcile
                            --output-pattern=%(track)s.fastq.%%i.gz
-                           %(tmpfile1)s %(tempfile2)s
+                           %(tmpfile1)s %(tmpfile2)s
                      > %(outfile)s_reconcile.log"""
         
         P.run()
@@ -412,6 +419,53 @@ def processReads( infiles, outfile ):
         os.unlink( tmpfile1 )
         os.unlink( tmpfile2 )
         os.unlink( tmpfile )
+
+@transform( processReads,
+            suffix(""),
+            ".tsv")
+def summarizeProcessing( infile, outfile ):
+    '''build processing summary.'''
+
+    def _parseLog( inf, step ):
+
+        inputs, outputs = [], []
+        if step == "reconcile":
+            for line in inf:
+                x = re.search( "first pair: (\d+) reads, second pair: (\d+) reads, shared: (\d+) reads", line )
+                if x:
+                    i1, i2, o = map(int, x.groups())
+                    inputs = [i1,i2]
+                    outputs = [o,o]
+                    break
+        else:
+            for line in inf:
+                if line.startswith( "Input:"):
+                    inputs.append( int( re.match( "Input: (\d+) reads.", line).groups()[0] ) )
+                elif line.startswith( "Output:"):
+                    outputs.append( int( re.match( "Output: (\d+) reads.", line).groups()[0] ) )
+
+        return zip(inputs, outputs)
+    
+    track = P.snip( infile, ".fastq.1.gz")
+    infile2 = checkPairs( infile )
+
+    outf = IOTools.openFile( outfile, "w")
+    outf.write( "track\tstep\tpair\tinput\toutput\n")
+
+    for step in "artifacts", "trim", "filter", "reconcile":
+        fn = infile + "_%s.log" % step
+        if not os.path.exists(fn): continue
+        for x, v in enumerate( _parseLog( IOTools.openFile( fn ), step)):
+            outf.write( "%s\t%s\t%i\t%i\t%i\n" % (track, step, x, v[0], v[1]) )
+    
+    outf.close()
+    
+@transform( summarizeProcessing,
+            regex(r"processed.(\S+).fastq.*.gz.tsv"),
+            r"\1_processed.load")
+def loadProcessingSummary( infile, outfile ):
+    '''load filtering summary.'''
+    P.load(infile, outfile )
         
 #########################################################################
 #########################################################################

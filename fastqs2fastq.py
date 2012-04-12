@@ -76,20 +76,24 @@ def main( argv = None ):
                                     usage = globals()["__doc__"] )
 
     parser.add_option("-m", "--method", dest="method", type="choice",
-                      choices = ('reconcile' ),
+                      choices = ('reconcile', ),
                       help="method to apply [default=%default]."  )
 
-    parser.add_option("-o", "--outfile-pattern", dest="outfile_pattern", type="string",
+    parser.add_option("-o", "--output-pattern", dest="output_pattern", type="string",
                       help="pattern for output files [default=%default]."  )
 
     parser.set_defaults(
         method = "reconcile",
-        outfile_pattern = "%i.fastq.gz",
+        output_pattern = "%i.fastq.gz",
         )
 
     ## add common options (-h/--help, ...) and parse command line 
     (options, args) = E.Start( parser, argv = argv )
 
+    if len(args) != 2:
+        raise ValueError("please supply at least two fastq files on the commandline")
+
+    fn1, fn2 = args
     c = E.Counter()
     
     if options.method == "reconcile":
@@ -99,7 +103,7 @@ def main( argv = None ):
             aread = infile.readline
             while True:
                 l = [aread().rstrip("\r\n") for i in range(4)]
-                if not l: break
+                if not l[0]: break
                 yield l[0].split()[0]
 
         def write( outfile, infile, take ):
@@ -107,27 +111,31 @@ def main( argv = None ):
             aread = infile.readline
             while True:
                 l = [aread().rstrip("\r\n") for i in range(4)]
-                if not l: break
+                if not l[0]: break
                 if (l[0].split()[0]) not in take: continue
                 outfile.write("\n".join(l) + "\n" )
 
+        E.info( "reading first in pair" )
         inf1 = IOTools.openFile( fn1 )
         ids1 = set( getIds( inf1 ) )
+
+        E.info( "reading second in pair" )
         inf2 = IOTools.openFile( fn2 )
         ids2 = set( getIds( inf2 ) )
-        take = ids1.intersect( ids2 )
+
+        take = ids1.intersection( ids2 )
         
         E.info( "first pair: %i reads, second pair: %i reads, shared: %i reads" % \
                     ( len(ids1),
                       len(ids2),
                       len(take)) )
  
-        with IOTools.openFile( outfile_pattern % 1, "w" ) as outf:
+        with IOTools.openFile( options.output_pattern % 1, "w" ) as outf:
             inf = IOTools.openFile( fn1 )
             E.info( "writing first in pair" )
             write( outf, inf, take )
 
-        with IOTools.openFile( outfile_pattern % 2, "w" ) as outf:
+        with IOTools.openFile( options.output_pattern % 2, "w" ) as outf:
             inf = IOTools.openFile( fn2 )
             E.info( "writing second in pair" )
             write( outf, inf, take )
