@@ -15,12 +15,7 @@ for differential expression succeeded.
 .. report:: Status.ExpressionStatus
    :render: status        
 
-   Status of expression stage for known coding transcripts
-
-.. report:: Status.ExpressionStatusNoncoding
-   :render: status        
-
-   Status of expression stage for known non-coding transcripts
+   Status of expression stage 
 
 .. report:: Status.DifferentialExpressionStatus
    :render: status        

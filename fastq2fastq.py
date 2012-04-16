@@ -59,6 +59,7 @@ Code
 
 import os, sys, re, optparse, math, random
 
+import IOTools
 import Experiment as E
 import Fastq
 
@@ -85,6 +86,9 @@ def main( argv = None ):
     parser.add_option( "--sample", dest="sample", type="float",
                        help="sample a proportion of reads [default=%default]."  )
 
+    parser.add_option( "--apply", dest="apply", type="string",
+                       help="apply a filter to fastq file (taking only reads in filename) [default=%default]."  )
+
     parser.add_option( "--trim3", dest="trim3", type="int",
                        help="trim # bases from 3' end [default=%default]."  )
 
@@ -93,6 +97,7 @@ def main( argv = None ):
         guess_format = None,
         sample = None,
         trim3 = None,
+        apply = None,
         )
 
     ## add common options (-h/--help, ...) and parse command line 
@@ -114,6 +119,15 @@ def main( argv = None ):
         for record in Fastq.iterate( options.stdin ):
             c.input += 1
             if random.random() <= sample_threshold:
+                c.output += 1
+                options.stdout.write( "%s\n" % record )
+
+    elif options.apply:
+        ids = set(IOTools.readList( IOTools.openFile( options.apply ) ))
+        
+        for record in Fastq.iterate( options.stdin ):
+            c.input += 1
+            if re.sub(" .*", "", record.identifier).strip() in ids:
                 c.output += 1
                 options.stdout.write( "%s\n" % record )
 

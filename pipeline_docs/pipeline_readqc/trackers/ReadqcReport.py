@@ -105,7 +105,8 @@ class FastQCDetails( ReadqcTracker ):
         
         for track in tracks:
             
-            for x, fn in enumerate( glob.glob( os.path.join( EXPORTDIR, "fastqc", "%s*_fastqc" % track ) )):
+            files = glob.glob( os.path.join( EXPORTDIR, "fastqc", "%s*_fastqc" % track ) )
+            for x, fn in enumerate( sorted(files) ):
                 y = x + 1
                 
                 image = os.path.abspath(os.path.join( fn, "Images", "%s.png" % slice ))

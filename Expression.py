@@ -632,7 +632,8 @@ def runEdgeR( infile,
     if has_replicates:
         # estimate common dispersion
         R('''countsTable = estimateGLMCommonDisp( countsTable, design )''')
-
+        # estimate tagwise dispersion
+        R('''countsTable = estimateGLMTagwiseDisp( countsTable, design )''')
         # fitting model to each tag
         R('''fit = glmFit( countsTable, design )''')
     else:
@@ -652,8 +653,9 @@ def runEdgeR( infile,
 
     isna = R["is.na"]
 
-    rtype = collections.namedtuple( "rtype", "logConc lfold LR pvalue" )
-    
+    rtype = collections.namedtuple( "rtype", "lfold logCPM LR pvalue" )
+    print R('''(colnames( lrt$table ))''')
+
     # output differences between pairs
     R.png( '''%(outfile_prefix)smaplot.png''' % locals() )
     R('''plotSmear( countsTable, pair=c('%s') )''' % "','".join( groups) )
@@ -669,6 +671,7 @@ def runEdgeR( infile,
                                      zip( *R('''lrt$table''')), 
                                      R('''padj''')) :
         d = rtype._make( data )
+
         counts.input += 1
 
         # set significant flag
@@ -703,10 +706,10 @@ def runEdgeR( infile,
         results.append( GeneExpressionResult._make( ( \
                     interval,
                     groups[0],
-                    d.logConc,
+                    d.logCPM,
                     0,
                     groups[1],
-                    0,
+                    d.logCPM,
                     0,
                     d.pvalue,
                     padj,

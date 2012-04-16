@@ -376,8 +376,10 @@ def getProjectName():
     prefixes = len(PROJECT_ROOT.split("/"))
     return curdir.split( "/" )[prefixes]
 
-def load( infile, outfile = None, 
-          options = "", transpose = None,
+def load( infile, 
+          outfile = None, 
+          options = "", 
+          transpose = None,
           tablename = None):
     '''straight import from tab separated table.
 
@@ -1117,6 +1119,7 @@ def run_report( clean = True):
 
     dirname, basename = os.path.split( getCaller().__file__ )
     docdir = os.path.join( dirname, "pipeline_docs", snip( basename, ".py" ) )
+    themedir = os.path.join( dirname, "pipeline_docs", "themes")
     relpath = os.path.relpath( docdir )
     trackerdir = os.path.join( docdir, "trackers" )
 
@@ -1147,6 +1150,7 @@ def run_report( clean = True):
     statement = '''
     %(clean)s
     ( export SPHINX_DOCSDIR=%(docdir)s; 
+      export SPHINX_THEMEDIR=%(themedir)s; 
     %(xvfb_command)s
     sphinxreport-build 
            --num-jobs=%(report_threads)s

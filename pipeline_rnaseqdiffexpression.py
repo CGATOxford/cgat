@@ -46,7 +46,8 @@ with one or more biological and/or technical replicates (:term:`replicate`). A :
 within each :term:`experiment` is a :term:`track`.
 
 The pipeline performs the following:
-   * compute tag counts on an exon, transcript and gene level
+   * compute tag counts on an exon, transcript and gene level for each of the genesets
+   * estimate FPKM using cufflinks for each of the gene sets
    * perform differential expression analysis. The methods currently implemented are:
       * DESeq
       * EdgeR
@@ -183,6 +184,16 @@ path:
 Pipeline output
 ===============
 
+FPKM values
+-----------
+
+The directory :file:`fpkm.dir` contains the output of running cufflinks against each 
+set of reads for each geneset. 
+
+The syntax of the output files is ``<geneset>_<track>.cufflinks``. The FPKM values are
+uploaded into tables as ``<geneset>_<track>_fpkm`` for per-transcript FPKM values and 
+``<geneset>_<track>_genefpkm`` for per-gene FPKM values.
+
 Differential gene expression results
 -------------------------------------
 
@@ -191,11 +202,11 @@ with a variety of methods. Results are stored per method in
 subdirectories such as :file:`deseq.dir`, :file:`edger.dir`
 or :file:`cuffdiff.dir`.
 
-The syntax of the output files is generally ``<design>_<geneset><content>``.
+The syntax of the output files is ``<design>_<geneset>_...``.
 
 :file:`.diff` files:
     The .diff files are :term:`tsv` formatted tables with the result of the differential
-    expression analysis. The results are uploaded into the database.
+    expression analysis. 
 
     The column names are:
 
@@ -222,6 +233,14 @@ The syntax of the output files is generally ``<design>_<geneset><content>``.
     status
        status of test. Values are 
        OK: test ok, FAIL: test failed, NOCALL: no test (insufficient data, etc.).
+
+The results are uploaded into the database as tables called ``<design>_<geneset>_<method>_<level>_<section>``.
+
+Level denotes the biological entity that the differential analysis was performed on.
+Level can be one of ``cds``,``isoform``,``tss`` and ``gene``. The later should always be present.
+
+Section is ``diff`` for differential expression results (:file:`.diff`` files) and ``levels`` for expression levels.
+
 
 Example
 =======
@@ -341,6 +360,21 @@ def connect():
 #########################################################################
 #########################################################################
 #########################################################################
+## Definition of targets
+## Differential expression: design vs geneset
+TARGETS_DE = [ ( (x, y, glob.glob("*.bam") ), 
+                 "%s_%s.diff" % (P.snip(x, ".tsv"), P.snip(y,".gtf.gz") )) 
+               for x,y in itertools.product( glob.glob( "design*.tsv"),
+                                             glob.glob( "*.gtf.gz" ) ) ]
+
+## Expression levels: geneset vs bam files
+TARGETS_FPKM = [ ( ( "%s.gtf.gz" % x.asFile(), "%s.bam" % y.asFile()),
+                   "%s_%s.cufflinks" % (x.asFile(), y.asFile()) )
+                 for x,y in itertools.product( GENESETS, TRACKS) ]
+
+#########################################################################
+#########################################################################
+#########################################################################
 ## preparation targets
 
 #########################################################################
@@ -381,11 +415,72 @@ def loadGeneSetGeneInformation( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-TARGETS_DE = [ ( (x, y, glob.glob("*.bam") ), 
-                 "%s_%s.diff" % (P.snip(x, ".tsv"), P.snip(y,".gtf.gz") )) 
-               for x,y in itertools.product( glob.glob( "design*.tsv"),
-                                             glob.glob( "*.gtf.gz" ) ) ]
+@follows( mkdir( "fpkm.dir"  ) )
+@files( [ (x, os.path.join( "fpkm.dir",y)) for x,y in TARGETS_FPKM ] )
+def runCufflinks(infiles, outfile):
+    '''estimate expression levels in each set.
+    '''
 
+    gtffile, bamfile = infiles
+    to_cluster = True
+ 
+    job_options= "-pe dedicated %i -R y" % PARAMS["cufflinks_threads"]
+
+    track = os.path.basename( P.snip( gtffile, ".gtf.gz" ) )
+    
+    tmpfilename = P.getTempFilename( "." )
+    if os.path.exists( tmpfilename ):
+        os.unlink( tmpfilename )
+
+    gtffile = os.path.abspath( gtffile )
+    bamfile = os.path.abspath( bamfile )
+    outfile = os.path.abspath( outfile )
+
+    # note: cufflinks adds \0 bytes to gtf file - replace with '.'
+    # increase max-bundle-length to 4.5Mb due to Galnt-2 in mm9 with a 4.3Mb intron.
+    statement = '''mkdir %(tmpfilename)s; 
+    cd %(tmpfilename)s; 
+    cufflinks --label %(track)s      
+              --GTF <(gunzip < %(gtffile)s)
+              --num-threads %(cufflinks_threads)i
+              --frag-bias-correct %(bowtie_index_dir)s/%(genome)s.fa
+              --library-type %(cufflinks_library_type)s
+              %(cufflinks_options)s
+              %(bamfile)s 
+    >& %(outfile)s;
+    perl -p -e "s/\\0/./g" < transcripts.gtf | gzip > %(outfile)s.gtf.gz;
+    gzip < isoforms.fpkm_tracking > %(outfile)s.fpkm_tracking.gz;
+    gzip < genes.fpkm_tracking > %(outfile)s.genes_tracking.gz;
+    '''
+
+    P.run()
+
+    shutil.rmtree( tmpfilename )
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( runCufflinks,
+            suffix(".cufflinks"), 
+            ".load")
+def loadCufflinks( infile, outfile ):
+    '''load expression level measurements.'''
+
+    track = P.snip( outfile, ".load" )
+    P.load( infile + ".genes_tracking.gz",
+            outfile = track + "_genefpkm.load",
+            options = "--index=gene_id --ignore-column=tracking_id --ignore-column=class_code --ignore-column=nearest_ref_id" )
+
+    track = P.snip( outfile, ".load" )
+    P.load( infile + ".fpkm_tracking.gz",
+            outfile = track + "_fpkm.load",
+            options = "--index=tracking_id --ignore-column=nearest_ref_id --rename-column=tracking_id:transcript_id" )
+
+    P.touch( outfile )
+
+#########################################################################
+#########################################################################
+#########################################################################
 @follows( mkdir( "cuffdiff.dir" ), buildMaskGtf )
 @files( [ (x, os.path.join( "cuffdiff.dir", y)) for x, y in TARGETS_DE ] )
 def runCuffdiff( infiles, outfile ):
@@ -400,12 +495,14 @@ def runCuffdiff( infiles, outfile ):
     else:
         mask_file = None
 
+    options = PARAMS["cuffdiff_options"] + "--library-type %s" % PARAMS["cufflinks_library_type"]
+
     Expression.runCuffdiff( bamfiles, 
                             design_file,
                             geneset_file,
                             outfile,
-                            cuffdiff_options = "--upper-quartile-norm --library-type=fr-unstranded",
-                            fdr = PARAMS["deseq_fdr"],
+                            cuffdiff_options = options,
+                            fdr = PARAMS["cuffdiff_fdr"],
                             mask_file = mask_file )
 
 @transform( runCuffdiff, 
@@ -822,7 +919,7 @@ def buildGeneLevelReadCounts( infiles, outfile ):
 #########################################################################
 @transform( buildGeneLevelReadCounts,
             suffix(".tsv.gz"),
-            ".load" )
+            "_gene_counts.load" )
 def loadGeneLevelReadCounts( infile, outfile ):
     P.load( infile, outfile, options="--index=gene_id" )
     
@@ -988,16 +1085,14 @@ TARGETS_DE = [ ( (x, y, glob.glob("*.bam") ),
 #########################################################################
 #########################################################################
 #########################################################################
-@follows( mkdir("deseq.dir"), aggregateExonLevelReadCounts )
-@files( [ (x, os.path.join( "deseq.dir", y)) for x, y in TARGETS_DE ] )
+@follows( mkdir("deseq.dir") )
+@files( [ ((x, aggregateExonLevelReadCounts), os.path.join( "deseq.dir", y)) for x, y in TARGETS_DE ] )
 def runDESeq( infiles, outfile ):
     '''perform differential expression analysis using deseq.'''
-    
-    design_file, geneset_file, bamfiles = infiles
 
-    infile = os.path.join( "exon_counts.dir", P.snip( geneset_file, ".gtf.gz") + ".exon_counts.tsv.gz" )
-    if not os.path.exists( infile):
-        raise OSError( "file '%s' with count data not found" % infile )
+    
+    design_file, geneset_file, bamfiles = infiles[0]
+    infile = infiles[1]
 
     track = P.snip( outfile, ".diff")
 
@@ -1053,15 +1148,12 @@ def loadDESeqStats( infile, outfile ):
 #########################################################################
 #########################################################################
 @follows( mkdir("edger.dir") )
-@files( [ (x, os.path.join( "edger.dir", y)) for x, y in TARGETS_DE ] )
+@files( [ ((x, aggregateExonLevelReadCounts), os.path.join( "edger.dir", y)) for x, y in TARGETS_DE ] )
 def runEdgeR( infiles, outfile ):
     '''perform differential expression analysis using edger.'''
 
-    design_file, geneset_file, bamfiles = infiles
-
-    infile = os.path.join( "exon_counts.dir", P.snip( geneset_file, ".gtf.gz") + ".exon_counts.tsv.gz" )
-    if not os.path.exists( infile):
-        raise OSError( "file '%s' with count data not found" % infile )
+    design_file, geneset_file, bamfiles = infiles[0]
+    infile = infiles[1]
 
     track = P.snip( outfile, ".diff")
 
@@ -1097,7 +1189,7 @@ def loadEdgeR( infile, outfile ):
 #########################################################################
 #########################################################################
 @follows( loadGeneSetGeneInformation )
-@merge( loadDESeq, "edger_stats.tsv" )
+@merge( loadEdgeR, "edger_stats.tsv" )
 def buildEdgeRStats( infiles, outfile ):
     tablenames = [P.toTable( x ) for x in infiles ] 
     outdir = os.path.dirname( infiles[0] )
@@ -1115,14 +1207,17 @@ def loadEdgeRStats( infile, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
+@follows( loadCufflinks, loadGeneLevelReadCounts )
+def expression(): pass
+
 mapToTargets = { 'cuffdiff': loadCuffdiffStats,
                  'deseq': loadDESeqStats,
                  'edger': loadEdgeRStats,
                  }
-TARGETS = [ mapToTargets[x] for x in P.asList( PARAMS["methods"] ) ]
+TARGETS_DIFFEXPRESSION = [ mapToTargets[x] for x in P.asList( PARAMS["methods"] ) ]
 
-@follows( *TARGETS )
-def expression(): pass
+@follows( *TARGETS_DIFFEXPRESSION )
+def diff_expression(): pass
 
 ###################################################################
 ###################################################################
@@ -1162,7 +1257,7 @@ def qc(): pass
 ###################################################################
 ###################################################################
 ###################################################################
-@follows( expression, qc )
+@follows( expression, diff_expression, qc )
 def full(): pass
 
 ###################################################################

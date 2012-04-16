@@ -146,8 +146,9 @@ class Mapper( object ):
     # convert to sanger quality scores
     convert = False
 
-    def __init__(self):
-        pass
+    def __init__(self, executable = None):
+        if executable:
+            self.executable = executable
 
     def quoteFile( self, filename ):
         '''add uncompression for compressed files.
@@ -212,13 +213,14 @@ class Mapper( object ):
             elif infile.endswith( ".sra"):
                 # sneak preview to determine if paired end or single end
                 outdir = P.getTempDir()
-                P.execute( "fastq-dump -X 1000 --outdir %(outdir)s %(infile)s" % locals() )
-                f = glob.glob( os.path.join( outdir, "*.fastq" ) )
+                P.execute( "fastq-dump --gzip -X 1000 --outdir %(outdir)s %(infile)s" % locals() )
+                f = glob.glob( os.path.join( outdir, "*.fastq.gz" ) )
                 if len(f) == 3:
-                    f = glob.glob( os.path.join( outdir, "*_[12].fastq" ) )
+                    f = glob.glob( os.path.join( outdir, "*_[12].fastq.gz" ) )
+                E.info("sra file contains the following files: %s" % f )
                 shutil.rmtree( outdir )
                 fastqfiles.append( [ "%s/%s" % (tmpdir_fastq, os.path.basename( x )) for x in sorted(f) ] )
-                statement.append( "fastq-dump --outdir %(tmpdir_fastq)s %(infile)s" % locals() )
+                statement.append( "fastq-dump --gzip --outdir %(tmpdir_fastq)s %(infile)s" % locals() )
                 
             elif infile.endswith( ".fastq.gz" ):
                 format = Fastq.guessFormat( IOTools.openFile( infile, "r"), raises = False)
@@ -409,14 +411,15 @@ class BWA( Mapper ):
         infiles = zip( *infiles )
         
         # add options specific to data type
+        # note: not fully implemented
         data_options = ["%(bwa_align_options)s"]
         if self.datatype == "solid":
             data_options.append( "-c" )
-            index_file = "%(bwa_index_dir)s/%(genome)s_cs"
+            index_prefix = "%(bwa_index_dir)s/%(genome)s_cs"
         elif self.datatype == "fasta":
-            index_file = "%(bwa_index_dir)s/%(genome)s"
+            index_prefix = "%(bwa_index_dir)s/%(genome)s"
         else:
-            index_file = "%(bwa_index_dir)s/%(genome)s"
+            index_prefix = "%(bwa_index_dir)s/%(genome)s"
 
         data_options = " ".join( data_options )
 
@@ -428,26 +431,26 @@ class BWA( Mapper ):
             infiles = ",".join( [ self.quoteFile(x[0]) for x in infiles ] )
             
             statement.append('''
-            bwa aln %%(bwa_aln_options)s -t %%(bwa_threads)i %%(bwa_index_dir)s/%%(genome)s %(infiles)s 
+            bwa aln %%(bwa_aln_options)s -t %%(bwa_threads)i %(index_prefix)s %(infiles)s 
             > %(tmpdir_bwa)s/%(track)s.sai 2>>%(outfile)s.bwa.log; 
             bwa samse %%(bwa_index_dir)s/%%(genome)s %(tmpdir_bwa)s/%(track)s.sai %(infiles)s 
             > %(tmpdir_bwa)s/%(track)s.sam 2>>%(outfile)s.bwa.log;
             ''' % locals() )
 
         elif nfiles == 2:
-            track = P.snip( os.path.basename( infiles[0][0] ), ".1.fastq", ".1.fastq.gz" )
+            track = P.snip( os.path.basename( infiles[0][0] ), ".fastq.1", ".fastq.1.gz" )
             track1 = track + ".1"
             track2 = track + ".2"
             
-            infiles1 = ",".join( [ self.quoteFile(x[0]) for x in infiles ] )
-            infiles2 = ",".join( [ self.quoteFile(x[1]) for x in infiles ] )
+            infiles1 = ",".join( [ self.quoteFile(x) for x in infiles[0] ] )
+            infiles2 = ",".join( [ self.quoteFile(x) for x in infiles[1] ] )
 
             statement.append('''
-            bwa aln %%(bwa_aln_options)s -t %%(bwa_threads)i %%(bwa_index_dir)s/%%(genome)s %(infiles1)s 
+            bwa aln %%(bwa_aln_options)s -t %%(bwa_threads)i %(index_prefix)s %(infiles1)s 
             > %(tmpdir_bwa)s/%(track1)s.sai 2>>%(outfile)s.bwa.log; checkpoint;
-            bwa aln %%(bwa_aln_options)s -t %%(bwa_threads)i %%(bwa_index_dir)s/%%(genome)s %(infiles2)s 
+            bwa aln %%(bwa_aln_options)s -t %%(bwa_threads)i %(index_prefix)s %(infiles2)s 
             > %(tmpdir_bwa)s/%(track2)s.sai 2>>%(outfile)s.bwa.log; checkpoint;
-            bwa sampe %%(bwa_sampe_options)s %%(bwa_index_dir)s/%%(genome)s 
+            bwa sampe %%(bwa_sampe_options)s %(index_prefix)s
                       %(tmpdir_bwa)s/%(track1)s.sai 
                       %(tmpdir_bwa)s/%(track2)s.sai 
                       %(infiles1)s 
@@ -535,8 +538,7 @@ class Tophat( Mapper ):
     
     executable = "tophat"
 
-    def __init__(self, executable = "tophat", *args, **kwargs ):
-        self.executable = executable
+    def __init__(self, *args, **kwargs ):
         Mapper.__init__(self, *args, **kwargs)
 
     def mapper( self, infiles, outfile ):
@@ -559,9 +561,9 @@ class Tophat( Mapper ):
         data_options = []
         if self.datatype == "solid":
             data_options.append( "--quals --integer-quals --color" )
-            index_file = "%(bowtie_index_dir)s/%(genome)s_cs"
+            index_prefix = "%(bowtie_index_dir)s/%(genome)s_cs"
         else:
-            index_file = "%(bowtie_index_dir)s/%(genome)s"
+            index_prefix = "%(bowtie_index_dir)s/%(genome)s"
 
         data_options = " ".join( data_options )
 
@@ -573,7 +575,7 @@ class Tophat( Mapper ):
                    --library-type %%(tophat_library_type)s
                    %(data_options)s
                    %%(tophat_options)s
-                   %(index_file)s
+                   %(index_prefix)s
                    %(infiles)s 
                    >> %(outfile)s.log 2>&1 ;
             ''' % locals()
@@ -591,7 +593,7 @@ class Tophat( Mapper ):
                    --library-type %%(tophat_library_type)s
                    %(data_options)s
                    %%(tophat_options)s
-                   %(index_file)s
+                   %(index_prefix)s
                    %(infiles1)s %(infiles2)s 
                    >> %(outfile)s.log 2>&1 ;
             ''' % locals()
@@ -611,7 +613,7 @@ class Tophat( Mapper ):
                    --library-type %%(tophat_library_type)s
                    %(data_options)s
                    %%(tophat_options)s
-                   %(index_file)s
+                   %(index_prefix)s
                    %(infiles1)s %(infiles2)s 
                    %(infiles3)s %(infiles4)s 
                    >> %(outfile)s.log 2>&1 ;
@@ -663,9 +665,9 @@ class TopHat_fusion( Mapper ):
         data_options = []
         if self.datatype == "solid":
             data_options.append( "--quals --integer-quals --color" )
-            index_file = "%(bowtie_index_dir)s/%(genome)s_cs"
+            index_prefix = "%(bowtie_index_dir)s/%(genome)s_cs"
         else:
-            index_file = "%(bowtie_index_dir)s/%(genome)s"
+            index_prefix = "%(bowtie_index_dir)s/%(genome)s"
 
         data_options = " ".join( data_options )
 
@@ -679,7 +681,7 @@ class TopHat_fusion( Mapper ):
                    %(data_options)s
                    %%(tophat_options)s
                    %%(tophatfusion_options)s
-                   %(index_file)s
+                   %(index_prefix)s
                    %(infiles)s 
                    >> %(outfile)s.log 2>&1 ;
             ''' % locals()
@@ -699,7 +701,7 @@ class TopHat_fusion( Mapper ):
                    %(data_options)s
                   %%(tophat_options)s
                   %%(tophatfusion_options)s
-                   %(index_file)s
+                   %(index_prefix)s
                    %(infiles1)s %(infiles2)s 
                    >> %(outfile)s.log 2>&1 ;
             ''' % locals()
@@ -721,7 +723,7 @@ class TopHat_fusion( Mapper ):
                    %(data_options)s
                    %%(tophat_options)s
                    %%(tophatfusion_options)s
-                   %(index_file)s
+                   %(index_prefix)s
                    %(infiles1)s %(infiles2)s 
                    %(infiles3)s %(infiles4)s 
                    >> %(outfile)s.log 2>&1 ;
@@ -766,6 +768,8 @@ class Bowtie( Mapper ):
             problems using read name lookup.
         '''
 
+        executable = self.executable
+
         num_files = [ len( x ) for x in infiles ]
         
         if max(num_files) != min(num_files):
@@ -791,12 +795,12 @@ class Bowtie( Mapper ):
                 nfiles -= 2
             else:
                 raise ValueError( "unexpected number of files" )
-            index_file = "%(bowtie_index_dir)s/%(genome)s_cs"
+            index_prefix = "%(bowtie_index_dir)s/%(genome)s_cs"
         elif self.datatype == "fasta":
             data_options.append( "-f" )
-            index_file = "%(bowtie_index_dir)s/%(genome)s"
+            index_prefix = "%(bowtie_index_dir)s/%(genome)s"
         else:
-            index_file = "%(bowtie_index_dir)s/%(genome)s"
+            index_prefix = "%(bowtie_index_dir)s/%(genome)s"
 
         data_options = " ".join( data_options )
 
@@ -805,11 +809,11 @@ class Bowtie( Mapper ):
         if nfiles == 1:
             infiles = ",".join( [ self.quoteFile(x) for x in infiles[0] ] )
             statement = '''
-                bowtie --quiet --sam
+                %(executable)s --quiet --sam
                        --threads %%(bowtie_threads)i
                        %(data_options)s
                        %%(bowtie_options)s
-                       %(index_file)s
+                       %(index_prefix)s
                        %(infiles)s
                        2>%(outfile)s.log
                | awk -v OFS="\\t" '{sub(/\/[12]$/,"",$1);print}'
@@ -821,7 +825,7 @@ class Bowtie( Mapper ):
             infiles2 = ",".join( [ self.quoteFile( x ) for x in infiles[1] ] )
 
             statement = '''
-                bowtie --quiet --sam
+                %(executable)s --quiet --sam
                        --threads %%(bowtie_threads)i
                        %(data_options)s
                        %%(bowtie_options)s
@@ -848,7 +852,6 @@ class Bowtie( Mapper ):
 
         return statement
 
-
 class BowtieTranscripts( Mapper ):
     '''map with bowtie against transcripts.'''
 
@@ -857,6 +860,7 @@ class BowtieTranscripts( Mapper ):
 
     compress = True
 
+    executable = "bowtie"
 
     def mapper( self, infiles, outfile ):
         '''build mapping statement on infiles.
@@ -867,6 +871,7 @@ class BowtieTranscripts( Mapper ):
             not for single-end data and will cause
             problems using read name lookup.
         '''
+        executable = self.executable
 
         num_files = [ len( x ) for x in infiles ]
         
@@ -902,7 +907,7 @@ class BowtieTranscripts( Mapper ):
         if nfiles == 1:
             infiles = ",".join( ["<(zcat %s)" % x for x in infiles[0] ] )
             statement = '''
-                bowtie --quiet --sam
+                %(executable)s --quiet --sam
                        --threads %%(bowtie_threads)i
                        %(data_options)s
                        %%(bowtie_options)s
@@ -918,7 +923,7 @@ class BowtieTranscripts( Mapper ):
             infiles2 = ",".join( ["<(zcat %s)" % x for x in infiles[1] ] )
 
             statement = '''
-                bowtie --quiet --sam
+                %(executable)s --quiet --sam
                        --threads %%(bowtie_threads)i
                        %(data_options)s
                        %%(bowtie_options)s

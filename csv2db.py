@@ -146,7 +146,8 @@ def createTable( dbhandle, error, options, rows = None, headers = None,
         ignored = 0
 
     columns_to_ignore = set( [ x.lower() for x in options.ignore_columns] )
-    
+    columns_to_rename = dict( [x.lower().split(":") for x in options.rename_columns ] )
+
     take = []
     ## associate headers to field names
     columns = []
@@ -183,6 +184,7 @@ def createTable( dbhandle, error, options, rows = None, headers = None,
 
         # remove special characters from column names
         if hh == "": raise ValueError("column '%s' without header " % h )
+        hh = columns_to_rename.get( hh, hh )
         hh = re.sub( '''['"]''', "", hh)
         hh = re.sub( "[,;.:\-\+/ ()%]", "_", hh)
         if hh[0] in "0123456789": hh = "_" + hh
@@ -486,6 +488,9 @@ def buildParser( ):
 
     parser.add_option("--ignore-column", dest="ignore_columns", type="string", action="append",
                       help="ignore columns [default=%default]." )
+
+    parser.add_option("--rename-column", dest="rename_columns", type="string", action="append",
+                      help="rename columns [default=%default]." )
     
     parser.add_option("-e", "--ignore-empty", dest="ignore_empty", action="store_true",
                       help="ignore columns which are all empty [default=%default]." )
@@ -521,6 +526,7 @@ def buildParser( ):
         ignore_empty = False,
         insert_many = False,
         ignore_columns = [],
+        rename_columns = [],
         header = None,
         replace_header = False,
         guess_size = 1000,

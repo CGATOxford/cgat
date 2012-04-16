@@ -557,6 +557,29 @@ def buildCodingGeneSet( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
+@merge( os.path.join( PARAMS["annotations_dir"], 
+                      PARAMS_ANNOTATIONS["interface_geneset_all_gtf"]),
+        "coding_exons.gtf.gz" )
+def buildCodingExons( infile, outfile ):
+    '''compile set of protein coding exons.
+
+    This set is used for splice-site validation
+    '''
+
+    to_cluster = True
+    statement = '''
+    zcat %(infile)s 
+    | awk '$2 == "protein_coding" && $3 == "CDS"'
+    | perl -p -e "s/CDS/exon/" 
+    | python %(scriptsdir)s/gtf2gtf.py --merge-exons --log=%(outfile)s.log 
+    | gzip 
+    > %(outfile)s
+    '''
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
 @transform( buildCodingGeneSet, suffix(".gtf.gz"), ".fa")
 def buildReferenceTranscriptome( infile, outfile ):
     '''build reference transcriptome. 
@@ -650,10 +673,11 @@ def buildJunctions( infile, outfile ):
 SEQUENCEFILES=("*.fastq.1.gz", 
                "*.fastq.gz",
                "*.sra",
+               "*.export.txt.gz",
                "*.csfasta.gz",
                "*.csfasta.F3.gz",
                )
-SEQUENCEFILES_REGEX=regex( r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz|csfasta.F3.gz)")
+SEQUENCEFILES_REGEX=regex( r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz|csfasta.F3.gz|export.txt.gz)")
 
 ###################################################################
 ###################################################################
@@ -692,10 +716,11 @@ def loadReadCounts( infiles, outfile ):
 #########################################################################
 ## Map reads with tophat
 #########################################################################
+@follows( mkdir("tophat.dir" ) )
 @transform( SEQUENCEFILES,
             SEQUENCEFILES_REGEX,
             add_inputs( buildJunctions, buildReferenceTranscriptome ), 
-            r"\1.tophat.bam" )
+            r"tophat.dir/\1.tophat.bam" )
 def mapReadsWithTophat( infiles, outfile ):
     '''map reads from .fastq or .sra files.
 
@@ -813,16 +838,17 @@ def loadTophatStats( infile, outfile ):
 ###################################################################
 ## Map reads with bowtie
 ###################################################################
+@follows( mkdir("bowtie.dir" ) )
 @transform( SEQUENCEFILES,
             SEQUENCEFILES_REGEX,
             add_inputs( os.path.join( PARAMS["bowtie_index_dir"], PARAMS["genome"] + ".fa") ),
-            r"\1.bowtie.bam" )
+            r"bowtie.dir/\1.bowtie.bam" )
 def mapReadsWithBowtie( infiles, outfile ):
     '''map reads with bowtie'''
 
     job_options= "-pe dedicated %i -R y" % PARAMS["bowtie_threads"]
     to_cluster = True
-    m = PipelineMapping.Bowtie()
+    m = PipelineMapping.Bowtie( executable = P.substituteParameters( **locals() )["bowtie_executable"] )
     infile, reffile = infiles
     bowtie_options = "%s --best --strata -a" % PARAMS["bowtie_options"] 
     statement = m.build( (infile,), outfile ) 
@@ -833,9 +859,10 @@ def mapReadsWithBowtie( infiles, outfile ):
 ###################################################################
 ## Map reads with bwa
 ###################################################################
+@follows( mkdir("bwa.dir") )
 @transform( SEQUENCEFILES,
             SEQUENCEFILES_REGEX,
-            r"\1.bwa.bam" )
+            r"bwa.dir/\1.bwa.bam" )
 def mapReadsWithBWA( infile, outfile ):
     '''map reads with shrimp'''
 
@@ -861,46 +888,6 @@ def mapping(): pass
 ###################################################################
 ## QC targets
 ###################################################################
-
-# The following is specific to spliced mapping:
-# ###################################################################
-# ###################################################################
-# ###################################################################
-# @transform( MAPPINGTARGETS,
-#             suffix(".bam"),
-#             add_inputs( buildCodingExons ),
-#             ".exon.validation.tsv.gz" )
-# def buildExonValidation( infiles, outfile ):
-#     '''count number of reads mapped, duplicates, etc.
-#     '''
-
-#     to_cluster = True
-#     infile, exons = infiles
-#     statement = '''cat %(infile)s
-#     | python %(scriptsdir)s/rnaseq_bam_vs_exons.py
-#          --filename-exons=%(exons)s
-#          --force
-#          --log=%(outfile)s.log
-#          --output-filename-pattern="%(outfile)s.%%s.gz"
-#     | gzip
-#     > %(outfile)s
-#     '''
-
-#     P.run()
-
-# ############################################################
-# ############################################################
-# ############################################################
-# @merge( buildExonValidation, "exon_validation.load" )
-# def loadExonValidation( infiles, outfile ):
-#     '''merge alignment stats into single tables.'''
-#     suffix = suffix = ".exon.validation.tsv.gz" 
-#     P.mergeAndLoad( infiles, outfile, suffix = suffix )
-#     for infile in infiles:
-#         track = P.snip( infile, suffix )
-#         o = "%s_overrun.load" % track 
-#         P.load( infile + ".overrun.gz", o )
-
 
 ############################################################
 ############################################################
@@ -1205,6 +1192,49 @@ def createViewMapping( infile, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
+## QC specific to spliced mapping
+###################################################################
+###################################################################
+###################################################################
+@transform( MAPPINGTARGETS,
+            suffix(".bam"),
+            add_inputs( buildCodingExons ),
+            ".exon.validation.tsv.gz" )
+def buildExonValidation( infiles, outfile ):
+    '''count number of reads mapped, duplicates, etc.
+    '''
+
+    to_cluster = True
+    infile, exons = infiles
+    statement = '''cat %(infile)s
+    | python %(scriptsdir)s/rnaseq_bam_vs_exons.py
+         --filename-exons=%(exons)s
+         --force
+         --log=%(outfile)s.log
+         --output-filename-pattern="%(outfile)s.%%s.gz"
+    | gzip
+    > %(outfile)s
+    '''
+
+    P.run()
+
+
+############################################################
+############################################################
+############################################################
+@merge( buildExonValidation, "exon_validation.load" )
+def loadExonValidation( infiles, outfile ):
+    '''merge alignment stats into single tables.'''
+    suffix = suffix = ".exon.validation.tsv.gz" 
+    P.mergeAndLoad( infiles, outfile, suffix = suffix )
+    for infile in infiles:
+        track = P.snip( infile, suffix )
+        o = "%s_overrun.load" % track 
+        P.load( infile + ".overrun.gz", o )
+
+###################################################################
+###################################################################
+###################################################################
 @follows( createViewMapping )
 def views():
     pass
@@ -1213,6 +1243,12 @@ def views():
 ###################################################################
 ###################################################################
 @follows( loadReadCounts, loadPicardStats, loadBAMStats, loadContextStats )
+def general_qc(): pass
+
+@follows( loadExonValidation )
+def spliced_qc(): pass
+
+@follows( general_qc, spliced_qc )
 def qc(): pass
 
 ###################################################################
