@@ -1,6 +1,6 @@
 ################################################################################
 #
-#   MRC FGU Computational Genomics Group
+#   MRC FGU Computa[11~tional Genomics Group
 #
 #   $Id: PipelineGO.py 2877 2010-03-27 17:42:26Z andreas $
 #
@@ -64,13 +64,16 @@ from rpy2.robjects import r as R
 import rpy2.robjects as ro
 import rpy2.robjects.vectors as rovectors
 import rpy2.rinterface as ri
-
+import rpy2.robjects.numpy2ri
 import Pipeline as P
 
 try:
     PARAMS = P.getParameters()
 except IOError:
     pass
+
+#IMS: Activate numpy2ri
+rpy2.robjects.numpy2ri.activate()
 
 Utr = collections.namedtuple( "Utr", "old new max status" )
 
