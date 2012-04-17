@@ -438,7 +438,6 @@ class BWA( Mapper ):
             ''' % locals() )
 
         elif nfiles == 2:
-            track = P.snip( os.path.basename( infiles[0][0] ), ".fastq.1", ".fastq.1.gz" )
             track1 = track + ".1"
             track2 = track + ".2"
             

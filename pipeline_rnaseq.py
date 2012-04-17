@@ -1478,7 +1478,6 @@ def buildBAMReports( infile, outfile ):
 @merge( buildPicardStats, "picard_stats.load" )
 def loadPicardStats( infiles, outfile ):
     '''merge alignment stats into single tables.'''
-
     PipelineMappingQC.loadPicardAlignmentStats( infiles, outfile )
 
 ############################################################

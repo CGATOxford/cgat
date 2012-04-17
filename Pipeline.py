@@ -417,15 +417,21 @@ def mergeAndLoad( infiles, outfile, suffix = None, columns=(0,1), regex = None )
 
     Columns denotes the columns to be taken.
 
-    The tables are merged and entered row-wise.
+    The tables are merged and entered row-wise. Each file is 
+    a row.
+
+    Filenames are stored in a ``track`` column. Directory names
+    are chopped off.
     '''
     if suffix:
-        header = ",".join( [ quote( snip( x, suffix)) for x in infiles] )
+        header = ",".join( [ os.path.basename( snip( x, suffix) ) for x in infiles] )
     elif regex:
-        header = ",".join( [ quote( "-".join(re.search( regex, x).groups())) for x in infiles] )        
+        header = ",".join( [ "-".join(re.search( regex, x).groups()) for x in infiles] )        
     else:
-        header = ",".join( infiles )
+        header = ",".join( [ os.path.basename( x ) for x in infiles] )
+
     columns = ",".join( map(str, [ x + 1 for x in columns ]))
+
     if infiles[0].endswith(".gz"):
         filenames = " ".join( [ "<( zcat %s | cut -f %s )" % (x,columns) for x in infiles ] )
     else:

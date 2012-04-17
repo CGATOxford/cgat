@@ -724,7 +724,7 @@ def runEdgeR( infile,
         with IOTools.openFile( outfile, "w" ) as outf:
             writeExpressionResults( outf, results )
 
-    outf = IOTools.openFile( "%(outfile_prefix)ssummary.tsv", "w" )
+    outf = IOTools.openFile( "%(outfile_prefix)ssummary.tsv" % locals(), "w" )
     outf.write( "category\tcounts\n%s\n" % counts.asTable() )
     outf.close()
 

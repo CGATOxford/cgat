@@ -557,6 +557,60 @@ def buildCodingGeneSet( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
+@merge( os.path.join(PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_geneset_flat_gtf"]),
+        "introns.gtf.gz" )
+def buildIntronGeneModels(infile, outfile ):
+    '''build protein-coding intron-transcipts.
+
+    Intron-transcripts are the reverse complement of transcripts.
+
+    Only protein coding genes are taken.
+
+    10 bp are truncated on either end of an intron and need
+    to have a minimum length of 100.
+
+    Introns from nested genes might overlap, but all exons
+    are removed.
+    '''
+
+    to_cluster = True
+    
+    filename_exons = os.path.join( PARAMS["annotations_dir"],
+                                   PARAMS_ANNOTATIONS["interface_geneset_exons_gtf"] )
+
+    statement = '''gunzip
+        < %(infile)s 
+        | awk '$2 == "protein_coding"'
+	| python %(scriptsdir)s/gtf2gtf.py --sort=gene 
+	| python %(scriptsdir)s/gtf2gtf.py 
+               --exons2introns 
+               --intron-min-length=100 
+               --intron-border=10 
+               --log=%(outfile)s.log
+        | python %(scriptsdir)s/gff2gff.py
+               --crop=%(filename_exons)s
+               --log=%(outfile)s.log
+	| python %(scriptsdir)s/gtf2gtf.py 
+              --set-transcript-to-gene 
+              --log=%(outfile)s.log 
+	| perl -p -e 's/intron/exon/'
+        | gzip
+        > %(outfile)s
+    '''
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( buildCodingGeneSet,
+            suffix(".gtf.gz"),
+            "_transcript2gene.load" )
+def loadGeneInformation( infile, outfile ):
+    PipelineGeneset.loadTranscript2Gene( infile, outfile )
+
+#########################################################################
+#########################################################################
+#########################################################################
 @merge( os.path.join( PARAMS["annotations_dir"], 
                       PARAMS_ANNOTATIONS["interface_geneset_all_gtf"]),
         "coding_exons.gtf.gz" )
@@ -873,13 +927,13 @@ def mapReadsWithBWA( infile, outfile ):
     P.run()
 
 MAPPINGTARGETS = []
-mapToMappingTargets = { 'tophat': loadTophatStats,
+mapToMappingTargets = { 'tophat': mapReadsWithTophat,
                         'bowtie': mapReadsWithBowtie,
                         'bwa': mapReadsWithBWA,
                         }
 for x in P.asList( PARAMS["mappers"]):
     MAPPINGTARGETS.append( mapToMappingTargets[x] )
-
+        
 @follows( *MAPPINGTARGETS )
 def mapping(): pass
 
@@ -1027,7 +1081,7 @@ def buildBAMStats( infile, outfile ):
 def loadBAMStats( infiles, outfile ):
     '''import bam statisticis.'''
 
-    header = ",".join( [P.snip( x, ".readstats") for x in infiles] )
+    header = ",".join( [ os.path.basename(P.snip( x, ".readstats")) for x in infiles] )
     # filenames = " ".join( [ "<( cut -f 1,2 < %s)" % x for x in infiles ] )
     filenames = " ".join( infiles )
     tablename = P.toTable( outfile )
@@ -1109,7 +1163,7 @@ def buildContextStats( infiles, outfile ):
 def loadContextStats( infiles, outfile ):
     """load context mapping statistics."""
 
-    header = ",".join( [P.snip( x, ".contextstats") for x in infiles] )
+    header = ",".join( [os.path.basename( P.snip( x, ".contextstats") ) for x in infiles] )
     filenames = " ".join( infiles  )
     tablename = P.toTable( outfile )
 
@@ -1136,58 +1190,6 @@ def loadContextStats( infiles, outfile ):
 
     cc = Database.executewait( dbhandle, statement )
     dbhandle.commit()
-
-###################################################################
-###################################################################
-###################################################################
-## export targets
-###################################################################
-@merge( mapping,  "view_mapping.load" )
-def createViewMapping( infile, outfile ):
-    '''create view in database for alignment stats.
-
-    This view aggregates all information on a per-track basis.
-
-    The table is built from the following tracks:
-
-    always present:
-       reads_summary
-       context_stats
-       bam_stats
-       picard_stats_alignment_summary_metrics
-    
-    '''
-
-    tablename = P.toTable( outfile )
-    # can not create views across multiple database, so use table
-    view_type = "TABLE"
-    
-    dbhandle = connect()
-    Database.executewait( dbhandle, "DROP %(view_type)s IF EXISTS %(tablename)s" % locals() )
-
-    statement = '''
-    CREATE %(view_type)s %(tablename)s AS
-    SELECT b.track, *
-    FROM  reads_summary AS r,
-          bam_stats AS b,
-          context_stats AS c,          
-          picard_stats_alignment_summary_metrics AS a
-    WHERE 
-      b.track = c.track
-      AND b.track = a.track
-      AND substr( b.track, 1, LENGTH( r.track ) = r.track
-    '''
-
-    Database.executewait( dbhandle, statement % locals() )
-
-    nrows = Database.executewait( dbhandle, "SELECT COUNT(*) FROM view_mapping" ).fetchone()[0]
-    
-    if nrows == 0:
-        raise ValueError( "empty view mapping, check statement = %s" % (statement % locals()) )
-
-    E.info( "created view_mapping with %i rows" % nrows )
-
-    P.touch( outfile )
 
 ###################################################################
 ###################################################################
@@ -1225,12 +1227,171 @@ def buildExonValidation( infiles, outfile ):
 @merge( buildExonValidation, "exon_validation.load" )
 def loadExonValidation( infiles, outfile ):
     '''merge alignment stats into single tables.'''
-    suffix = suffix = ".exon.validation.tsv.gz" 
+    suffix = ".exon.validation.tsv.gz" 
     P.mergeAndLoad( infiles, outfile, suffix = suffix )
     for infile in infiles:
         track = P.snip( infile, suffix )
         o = "%s_overrun.load" % track 
         P.load( infile + ".overrun.gz", o )
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( MAPPINGTARGETS, 
+            suffix(".bam"),
+            add_inputs( buildCodingGeneSet ),
+            ".transcript_counts.tsv.gz" )
+def buildTranscriptLevelReadCounts( infiles, outfile):
+    '''count reads falling into transcripts of protein coding 
+       gene models.
+
+    .. note::
+       In paired-end data sets each mate will be counted. Thus
+       the actual read counts are approximately twice the fragment
+       counts.
+       
+    '''
+    infile, geneset = infiles
+    
+    to_cluster = True
+
+    statement = '''
+    zcat %(geneset)s 
+    | python %(scriptsdir)s/gtf2table.py 
+          --reporter=transcripts
+          --bam-file=%(infile)s 
+          --counter=length
+          --prefix="exons_"
+          --counter=read-counts 
+          --prefix=""
+          --counter=read-coverage
+          --prefix=coverage_
+    | gzip
+    > %(outfile)s
+    '''
+    
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( buildTranscriptLevelReadCounts,
+            suffix(".tsv.gz"),
+            ".load" )
+def loadTranscriptLevelReadCounts( infile, outfile ):
+    P.load( infile, outfile, options="--index=transcript_id" )
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( MAPPINGTARGETS,
+            suffix(".bam"),
+            add_inputs( buildIntronGeneModels ),
+            ".intron_counts.tsv.gz" )
+def buildIntronLevelReadCounts( infiles, outfile ):
+    '''compute coverage of exons with reads.
+    '''
+
+    infile, exons = infiles
+
+    to_cluster = True
+
+    statement = '''
+    zcat %(exons)s 
+    | python %(scriptsdir)s/gtf2table.py 
+          --reporter=genes
+          --bam-file=%(infile)s 
+          --counter=length
+          --prefix="introns_"
+          --counter=read-counts 
+          --prefix=""
+          --counter=read-coverage
+          --prefix=coverage_
+    | gzip
+    > %(outfile)s
+    '''
+    
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform(buildIntronLevelReadCounts,
+           suffix(".tsv.gz"),
+           ".load" )
+def loadIntronLevelReadCounts( infile, outfile ):
+    P.load( infile, outfile, options="--index=gene_id" )
+
+###################################################################
+###################################################################
+###################################################################
+@follows( loadReadCounts, 
+          loadPicardStats, 
+          loadBAMStats, 
+          loadContextStats )
+def general_qc(): pass
+
+@follows( loadTophatStats, 
+          loadExonValidation,
+          loadGeneInformation,
+          loadTranscriptLevelReadCounts,
+          loadIntronLevelReadCounts )
+def spliced_qc(): pass
+
+@follows( general_qc, spliced_qc )
+def qc(): pass
+
+###################################################################
+###################################################################
+###################################################################
+## export targets
+###################################################################
+@merge( (mapping, qc), "view_mapping.load" )
+def createViewMapping( infile, outfile ):
+    '''create view in database for alignment stats.
+
+    This view aggregates all information on a per-track basis.
+
+    The table is built from the following tracks:
+
+    always present:
+       reads_summary
+       context_stats
+       bam_stats
+       picard_stats_alignment_summary_metrics
+    
+    '''
+
+    tablename = P.toTable( outfile )
+    # can not create views across multiple database, so use table
+    view_type = "TABLE"
+    
+    dbhandle = connect()
+    Database.executewait( dbhandle, "DROP %(view_type)s IF EXISTS %(tablename)s" % locals() )
+
+    statement = '''
+    CREATE %(view_type)s %(tablename)s AS
+    SELECT b.track, *
+    FROM  reads_summary AS r,
+          bam_stats AS b,
+          context_stats AS c,          
+          picard_stats_alignment_summary_metrics AS a
+    WHERE 
+      b.track = c.track
+      AND b.track = a.track
+      AND substr( b.track, 1, LENGTH( r.track )) = r.track
+    ''' % locals()
+
+    Database.executewait( dbhandle, statement )
+
+    nrows = Database.executewait( dbhandle, "SELECT COUNT(*) FROM view_mapping" ).fetchone()[0]
+    
+    if nrows == 0:
+        raise ValueError( "empty view mapping, check statement = %s" % (statement % locals()) )
+
+    E.info( "created view_mapping with %i rows" % nrows )
+
+    P.touch( outfile )
 
 ###################################################################
 ###################################################################
@@ -1238,18 +1399,6 @@ def loadExonValidation( infiles, outfile ):
 @follows( createViewMapping )
 def views():
     pass
-
-###################################################################
-###################################################################
-###################################################################
-@follows( loadReadCounts, loadPicardStats, loadBAMStats, loadContextStats )
-def general_qc(): pass
-
-@follows( loadExonValidation )
-def spliced_qc(): pass
-
-@follows( general_qc, spliced_qc )
-def qc(): pass
 
 ###################################################################
 ###################################################################

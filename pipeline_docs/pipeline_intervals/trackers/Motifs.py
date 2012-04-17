@@ -620,7 +620,8 @@ class MemeResults( IntervalTracker ):
                     ("evalue", motif.get("e_value" )),
                     ("information content",motif.get("ic")),
                     ("sites", motif.get("sites" )),
-                    ("link", "`meme_%s_%i <%s/meme.html#summary%i>`_" % (track, nmotif, resultsdir, nmotif)) ))
+                    ("link", "`meme_%s_%i <%s/meme.html#summary%i>`_" % (track, nmotif, resultsdir, nmotif)),
+                    ))
 
         return result
 
