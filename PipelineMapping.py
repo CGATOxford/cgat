@@ -578,7 +578,7 @@ class Tophat( Mapper ):
 class TopHat_fusion( Mapper ):
     
     # tophat can map colour space files directly
-    preserve_colourspace = True
+    preserve_colourspace = False
     
     def mapper( self, infiles, outfile ):
         '''build mapping statement on infiles.
@@ -607,10 +607,10 @@ class TopHat_fusion( Mapper ):
         if nfiles == 1:
             infiles = ",".join( [ x[0] for x in infiles ] )
             statement = '''
-            module load tophatfusion;
-            tophat-fusion --output-dir %(tmpdir_tophat)s
+            tophat2 --output-dir %(tmpdir_tophat)s
                    --num-threads %%(tophat_threads)i
                    --library-type %%(tophat_library_type)s
+                   --fusion-search
                    %(data_options)s
                    %%(tophat_options)s
                    %%(tophatfusion_options)s
@@ -626,17 +626,18 @@ class TopHat_fusion( Mapper ):
             infiles2 = ",".join( [ x[1] for x in infiles ] )
 
             statement = '''
-            module load tophatfusion;
-            tophat-fusion --output-dir %(tmpdir_tophat)s
-                   --mate-inner-dist %%(tophat_mate_inner_dist)i
+      
+            tophat2 --output-dir %(tmpdir_tophat)s
+                    --mate-inner-dist %%(tophat_mate_inner_dist)i
                     --num-threads %%(tophat_threads)i
-                   --library-type %%(tophat_library_type)s
-                   %(data_options)s
-                  %%(tophat_options)s
-                  %%(tophatfusion_options)s
-                   %(index_file)s
-                   %(infiles1)s %(infiles2)s 
-                   >> %(outfile)s.log 2>&1 ;
+                    --library-type %%(tophat_library_type)s
+                    --fusion-search
+                    %(data_options)s
+                   %%(tophat_options)s
+                   %%(tophatfusion_options)s
+                    %(index_file)s
+                    %(infiles1)s %(infiles2)s 
+                    >> %(outfile)s.log 2>&1 ;
             ''' % locals()
         elif nfiles == 4:
             # this section works both for paired-ended fastq files
@@ -648,17 +649,17 @@ class TopHat_fusion( Mapper ):
             infiles4 = ",".join( [ x[3] for x in infiles ] )
 
             statement = '''
-            module load bio/tophatfusion;
-            tophat-fusion --output-dir %(tmpdir_tophat)s
-                   --mate-inner-dist %%(tophat_mate_inner_dist)i
-                   --num-threads %%(tophat_threads)i
-                   --library-type %%(tophat_library_type)s
-                   %(data_options)s
-                   %%(tophat_options)s
-                   %%(tophatfusion_options)s
-                   %(index_file)s
-                   %(infiles1)s %(infiles2)s 
-                   %(infiles3)s %(infiles4)s 
+            tophat2 --output-dir %(tmpdir_tophat)s
+                    --mate-inner-dist %%(tophat_mate_inner_dist)i
+                    --num-threads %%(tophat_threads)i
+                    --library-type %%(tophat_library_type)s
+                    --fusion-search
+                    %(data_options)s
+                    %%(tophat_options)s
+                    %%(tophatfusion_options)s
+                    %(index_file)s
+                    %(infiles1)s %(infiles2)s 
+                    %(infiles3)s %(infiles4)s 
                    >> %(outfile)s.log 2>&1 ;
             ''' % locals()
 
@@ -673,14 +674,15 @@ class TopHat_fusion( Mapper ):
     def postprocess( self, infiles, outfile ):
         '''collect output data and postprocess.'''
         
-        track = P.snip( outfile, "/accepted_hits.sam" )
+        track = P.snip( outfile, "/accepted_hits.bam" )
         tmpdir_tophat = self.tmpdir_tophat
 
         if not os.path.exists('%s' % track):
             os.mkdir('%s' % track)
 
         statement = '''
-            mv -f %(tmpdir_tophat)s/* %(track)s/;  
+            mv -f %(tmpdir_tophat)s/* %(track)s/; 
+            samtools index %(outfile)s;
             ''' % locals()
 
         return statement
