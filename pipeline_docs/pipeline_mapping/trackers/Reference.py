@@ -23,7 +23,6 @@ class TranscriptCoverage(ReferenceData):
         return self.getValues( """SELECT coverage_sense_pcovered 
                                          FROM %(track)s_transcript_counts 
                                          WHERE coverage_sense_nval > 0""" )
-        return data
 
 class GeneCoverage(ReferenceData):
     '''Coverage of reference genes - max transcript coverage per gene.'''

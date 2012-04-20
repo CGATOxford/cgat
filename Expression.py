@@ -318,8 +318,7 @@ class SAM( object ):
         # returns R matrix
         t = _totable( a.do_slot('mat.fdr') )
         assert len(t[0]) == len(fdr_data._fields)
-        for x in t:
-            E.debug( "x=%s" % str(x))
+        # for x in t: E.debug( "x=%s" % str(x))
         fdr_values = [ fdr_data( *x ) for x in t ]
 
         # find d cutoff
@@ -347,13 +346,24 @@ class SAM( object ):
         # collect (unadjusted) p-values and qvalues for all probesets
         pvalues = dict( zip( probesets, R('''a@p.value''') ) )
         qvalues = dict( zip( probesets, R('''a@q.value''') ) )
+
+        if pattern:
+            outfile = pattern % "sam.pdf"
+            R.pdf(outfile)
+            if cutoff:
+                R.plot( a, cutoff.delta )
+            else:
+                R.plot( a )
+            R['dev.off']()
         
         siggenes = {}        
         significant_genes = set()
         if cutoff != None:
             E.debug( "using cutoff %s" % str(cutoff) )
             
-            summary = R.summary( a, cutoff.delta )
+            summary = R('''summary( a, %f )''' % cutoff.delta)
+
+            # summary = R.summary( a, cutoff.delta )
             R.assign( "summary", summary )
 
             significant_genes = set( [probesets[int(x)-1] for x in R('''summary@row.sig.genes''')] )
@@ -376,13 +386,6 @@ class SAM( object ):
                 #         E.warn( "%s has qvalue (%f) larger than cutoff, but is called significant." % (str(x), x[4]))
 
                 siggenes[probesets[int(x[0])-1]] = gene_data( *x )                
-
-            if pattern:
-                outfile = pattern % "sam.pdf"
-                R.pdf(outfile)
-                R.plot( a, cutoff.delta )
-                R.plot( a )
-                R['dev.off']()
 
         else:
             E.debug( "no cutoff found - no significant genes." )
@@ -423,7 +426,7 @@ class SAM( object ):
 #########################################################################
 #########################################################################
 #########################################################################
-def loadTagData( infile, design_file ):
+def loadTagData( tags_filename, design_filename ):
     '''load tag data for deseq/edger analysis.
     
     *Infile* is a tab-separated file with counts.
@@ -459,7 +462,9 @@ def loadTagData( infile, design_file ):
     It returns (groups,pairs)
     '''
 
-    R( '''counts_table = read.delim( '%(infile)s', 
+    E.info( "loading tag data from %s" % tags_filename)
+
+    R( '''counts_table = read.delim( '%(tags_filename)s', 
                                      header = TRUE,
                                      row.names = 1,
                                      stringsAsFactors = TRUE,
@@ -469,7 +474,7 @@ def loadTagData( infile, design_file ):
     E.debug( "sample names: %s" % R('''colnames(counts_table)'''))
 
     # Load comparisons from file
-    R('''pheno = read.delim( '%(design_file)s', 
+    R('''pheno = read.delim( '%(design_filename)s', 
                              header = TRUE, 
                              stringsAsFactors = TRUE,
                              comment.char = '#')''' % locals() )
@@ -654,7 +659,6 @@ def runEdgeR( infile,
     isna = R["is.na"]
 
     rtype = collections.namedtuple( "rtype", "lfold logCPM LR pvalue" )
-    print R('''(colnames( lrt$table ))''')
 
     # output differences between pairs
     R.png( '''%(outfile_prefix)smaplot.png''' % locals() )
@@ -1185,7 +1189,6 @@ def loadCuffdiff( infile, outfile ):
     to_cluster = False
     dbhandle = sqlite3.connect( PARAMS["database"] )
 
-
     tmpname = P.getTempFilename()    
 
     # ignore promoters and splicing - no fold change column, but  sqrt(JS)
@@ -1357,7 +1360,7 @@ def main( argv = None ):
                       help="fdr to apply [default=%default]."  )
 
     parser.set_defaults(
-        input_filename_tags = None,
+        input_filename_tags = "-",
         input_filename_design = None,
         output_filename = sys.stdout,
         method = "deseq",
@@ -1366,6 +1369,14 @@ def main( argv = None ):
 
     ## add common options (-h/--help, ...) and parse command line 
     (options, args) = E.Start( parser, argv = argv, add_output_options = True )
+
+    if options.input_filename_tags == "-":
+        fh = P.getTempFile()
+        fh.write( "".join( [ x for x in options.stdin ] ) )
+        fh.close()
+        options.input_filename_tags = fh.name
+    else:
+        fh = None
 
     if options.method == "deseq":
         assert options.input_filename_tags and os.path.exists(options.input_filename_tags)
@@ -1384,6 +1395,8 @@ def main( argv = None ):
                   options.output_filename,
                   options.output_filename_pattern,
                   fdr = options.fdr )
+
+    if fh and os.path.exists( fh.name): os.unlink( fh.name )
 
     E.Stop()
 

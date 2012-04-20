@@ -826,7 +826,7 @@ def runCuffCompare( infiles, outfile, reffile ):
     
     cmd_extract = "; ".join( [ "gunzip < %s > %s/%s" % (x,tmpdir,x) for x in infiles ] )
 
-    genome = os.path.join ( PARAMS["bowtie_genome_dir"], PARAMS["genome"]) + ".fa"
+    genome = os.path.join ( PARAMS["bowtie_index_dir"], PARAMS["genome"]) + ".fa"
     genome = os.path.abspath( genome )
 
     # note: cuffcompare adds \0 bytes to gtf file - replace with '.'
@@ -850,24 +850,31 @@ def runCuffCompare( infiles, outfile, reffile ):
     # the bug depended on various things, including the order of arguments
     # on the command line. Until this is resolved, simply try several times
     # with random order of command line arguments.
-
-    for t in range( PARAMS["cufflinks_ntries"] ):
-        random.shuffle( infiles )
+    if 0:
+        for t in range( PARAMS["cufflinks_ntries"] ):
+            random.shuffle( infiles )
+            inf = " ".join( ["%s/%s" % (tmpdir,x) for x in infiles] )
+            try:
+                P.run()
+                break
+            except P.PipelineError, msg:
+                E.warn("caught exception - trying again" )
+    else:
         inf = " ".join( ["%s/%s" % (tmpdir,x) for x in infiles] )
-        try:
-            P.run()
-            break
-        except P.PipelineError, msg:
-            E.warn("caught exception - trying again" )
-
+        P.run()
+                
     shutil.rmtree( tmpdir )
 
 #########################################################################
 #########################################################################
 #########################################################################
-@files( [( ([ "%s.gtf.gz" % y.asFile() for y in EXPERIMENTS[x]], buildCodingGeneSet), 
-           "%s.cuffcompare" % x.asFile()) 
-         for x in EXPERIMENTS ] )
+# @files( [( ([ "%s.gtf.gz" % y.asFile() for y in EXPERIMENTS[x]], buildCodingGeneSet), 
+#            "%s.cuffcompare" % x.asFile()) 
+#          for x in EXPERIMENTS ] )
+@collate( METHODTARGET,
+          regex( r"(.*)-(.*)-(.*).gtf.gz" ),
+          add_inputs( buildCodingGeneSet ),
+          r"\1-\2-agg.cuffcompare" )
 def compareTranscriptsPerExperiment( infiles, outfile ):
     '''compare transcript models between replicates within each experiment.'''
     infiles, reffile = infiles

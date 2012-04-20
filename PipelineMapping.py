@@ -403,13 +403,10 @@ class BWA( Mapper ):
         
         nfiles = max(num_files)
         
-        tmpdir_bwa = os.path.join( self.tmpdir_fastq + "bwa" )
-        statement = [ "mkdir -p %s;" % tmpdir_bwa ]
+        tmpdir = os.path.join( self.tmpdir_fastq + "bwa" )
+        statement = [ "mkdir -p %s;" % tmpdir ]
         tmpdir_fastq = self.tmpdir_fastq
 
-        # transpose files
-        infiles = zip( *infiles )
-        
         # add options specific to data type
         # note: not fully implemented
         data_options = ["%(bwa_align_options)s"]
@@ -432,34 +429,33 @@ class BWA( Mapper ):
             
             statement.append('''
             bwa aln %%(bwa_aln_options)s -t %%(bwa_threads)i %(index_prefix)s %(infiles)s 
-            > %(tmpdir_bwa)s/%(track)s.sai 2>>%(outfile)s.bwa.log; 
-            bwa samse %%(bwa_index_dir)s/%%(genome)s %(tmpdir_bwa)s/%(track)s.sai %(infiles)s 
-            > %(tmpdir_bwa)s/%(track)s.sam 2>>%(outfile)s.bwa.log;
+            > %(tmpdir)s/%(track)s.sai 2>>%(outfile)s.bwa.log; 
+            bwa samse %%(bwa_index_dir)s/%%(genome)s %(tmpdir)s/%(track)s.sai %(infiles)s 
+            > %(tmpdir)s/%(track)s.sam 2>>%(outfile)s.bwa.log;
             ''' % locals() )
 
         elif nfiles == 2:
             track1 = track + ".1"
             track2 = track + ".2"
-            
-            infiles1 = ",".join( [ self.quoteFile(x) for x in infiles[0] ] )
-            infiles2 = ",".join( [ self.quoteFile(x) for x in infiles[1] ] )
+            infiles1 = ",".join( [ self.quoteFile(x[0]) for x in infiles ] )
+            infiles2 = ",".join( [ self.quoteFile(x[1]) for x in infiles ] )
 
             statement.append('''
             bwa aln %%(bwa_aln_options)s -t %%(bwa_threads)i %(index_prefix)s %(infiles1)s 
-            > %(tmpdir_bwa)s/%(track1)s.sai 2>>%(outfile)s.bwa.log; checkpoint;
+            > %(tmpdir)s/%(track1)s.sai 2>>%(outfile)s.bwa.log; checkpoint;
             bwa aln %%(bwa_aln_options)s -t %%(bwa_threads)i %(index_prefix)s %(infiles2)s 
-            > %(tmpdir_bwa)s/%(track2)s.sai 2>>%(outfile)s.bwa.log; checkpoint;
+            > %(tmpdir)s/%(track2)s.sai 2>>%(outfile)s.bwa.log; checkpoint;
             bwa sampe %%(bwa_sampe_options)s %(index_prefix)s
-                      %(tmpdir_bwa)s/%(track1)s.sai 
-                      %(tmpdir_bwa)s/%(track2)s.sai 
+                      %(tmpdir)s/%(track1)s.sai 
+                      %(tmpdir)s/%(track2)s.sai 
                       %(infiles1)s 
                       %(infiles2)s 
-            > %(tmpdir_bwa)s/%(track)s.sam 2>>%(outfile)s.bwa.log;
+            > %(tmpdir)s/%(track)s.sam 2>>%(outfile)s.bwa.log;
             ''' % locals() )
         else:
             raise ValueError( "unexpected number read files to map: %i " % nfiles )
 
-        self.tmpdir_bwa = tmpdir_bwa
+        self.tmpdir = tmpdir
 
         return " ".join( statement )
     
@@ -468,62 +464,77 @@ class BWA( Mapper ):
         
         track = P.snip( os.path.basename(outfile), ".bam" )
         outf = P.snip( outfile, ".bam" )
-        tmpdir_bwa = self.tmpdir_bwa
+        tmpdir = self.tmpdir
         
         statement = '''
-            samtools view -buS %(tmpdir_bwa)s/%(track)s.sam | samtools sort - %(outf)s 2>>%(outfile)s.bwa.log; 
+            samtools view -buS %(tmpdir)s/%(track)s.sam | samtools sort - %(outf)s 2>>%(outfile)s.bwa.log; 
             samtools index %(outfile)s;''' % locals()
 
         return statement
 
 class Stampy( BWA ):
     '''map reads against genome using STAMPY.
-
-    Note: not fully implemented yet.
     '''
+
+    # compress fastq files with gzip
+    compress = True
+
+    executable = "stampy.py"
+
     def mapper( self, infiles, outfile ):
         '''build mapping statement on infiles.'''
         
-        raise NotImplementedError()
-
         num_files = [ len( x ) for x in infiles ]
         
         if max(num_files) != min(num_files):
             raise ValueError("mixing single and paired-ended data not possible." )
         
         nfiles = max(num_files)
-        
-        tmpdir_bwa = os.path.join( self.tmpdir_fastq + "bwa" )
-        statement = [ "mkdir -p %s;" % tmpdir_bwa ]
+        executable = self.executable
+
+        tmpdir = os.path.join( self.tmpdir_fastq + "stampy" )
+        statement = [ "mkdir -p %s;" % tmpdir ]
         tmpdir_fastq = self.tmpdir_fastq
 
+        # add options specific to data type
+        # note: not fully implemented
+        data_options = ["%(stampy_align_options)s"]
+        if self.datatype == "solid":
+            data_options.append( "-c" )
+            bwa_index_prefix = "%(bwa_index_dir)s/%(genome)s_cs"
+        elif self.datatype == "fasta":
+            bwa_index_prefix = "%(bwa_index_dir)s/%(genome)s"
+        else:
+            bwa_index_prefix = "%(bwa_index_dir)s/%(genome)s"
+
+        track = P.snip( os.path.basename( outfile ), ".bam" )
+
         if nfiles == 1:
-            infiles = ",".join( [ x[0] for x in infiles ] )
-            track = P.snip( os.path.basename( infiles ), ".fastq" )
+            infiles = ",".join( [ self.quoteFile(x[0]) for x in infiles ] )
+
             statement.append('''
-            stampy -g %%(genome)s -h %%(genome)s --bwaoptions="-q10 bwa-hg18-reference" \
-                      -M %(infile)s > %(tmpdir_bwa)s/%(track)s.sai 2>%(outfile)s.stampy.log; 
-                       2>%(outfile)s.log
-               | awk -v OFS="\\t" '{sub(/\/[12]$/,"",$1);print}'
-               | samtools import %%(reffile)s - %(tmpdir_fastq)s/out.bam 1>&2 2>> %(outfile)s.log;
+            %(executable)s -v 3 -g %%(stampy_index_dir)s/%%(genome)s -h %%(stampy_index_dir)s/%%(genome)s 
+                      --bwaoptions="-q10 %(bwa_index_prefix)s" 
+                      -M %(infiles)s 
+            > %(tmpdir)s/%(track)s.sam 2>%(outfile)s.log;
             ''' % locals() )
 
         elif nfiles == 2:
-            infiles1 = ",".join( [ x[0] for x in infiles ] )
-            infiles2 = ",".join( [ x[1] for x in infiles ] )
-            track = P.snip( os.path.basename( infiles1 ), ".1.fastq" )
-            track1 = P.snip( os.path.basename( infiles1 ), ".fastq" )
-            track2 = P.snip( os.path.basename( infiles2 ), ".fastq" )
+            track1 = track + ".1"
+            track2 = track + ".2"
+            infiles1 = ",".join( [ self.quoteFile(x[0]) for x in infiles ] )
+            infiles2 = ",".join( [ self.quoteFile(x[1]) for x in infiles ] )
 
             statement.append('''
-            bwa aln %%(bwa_aln_options)s %%(bwa_index_dir)s/%%(genome)s %(infiles1)s > %(tmpdir_bwa)s/%(track1)s.sai 2>>%(outfile)s.bwa.log; checkpoint;
-            bwa aln %%(bwa_aln_options)s %%(bwa_index_dir)s/%%(genome)s %(infiles2)s > %(tmpdir_bwa)s/%(track2)s.sai 2>>%(outfile)s.bwa.log; checkpoint;
-            bwa sampe %%(bwa_sampe_options)s %%(bwa_index_dir)s/%%(genome)s %(tmpdir_bwa)s/%(track1)s.sai %(tmpdir_bwa)s/%(track2)s.sai %(infiles1)s %(infiles2)s > %(tmpdir_bwa)s/%(track)s.sam 2>>%(outfile)s.bwa.log;
+            %(executable)s -v 3 -g %%(stampy_index_dir)s/%%(genome)s -h %%(stampy_index_dir)s/%%(genome)s 
+                      --bwaoptions="-q10 %(bwa_index_prefix)s" 
+                      -M %(infiles1)s %(infiles2)s 
+            > %(tmpdir)s/%(track)s.sam 2>%(outfile)s.log;
             ''' % locals() )
         else:
-            raise ValueError( "unexpected number read files to map: %i " % nfiles )
+            raise ValueError( "unexpected number of read files to map: %i " % nfiles )
 
-        self.tmpdir_bwa = tmpdir_bwa
+        self.tmpdir = tmpdir
 
         return " ".join( statement )
     

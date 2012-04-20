@@ -793,9 +793,9 @@ def mapReadsWithTophat( infiles, outfile ):
     if "--butterfly-search" in PARAMS["tophat_options"]:
         # for butterfly search - require insane amount of
         # RAM.
-        job_options += " -l mem_free=8G"
+        job_options += " -l mem_free=50G"
     else:
-        job_options += " -l mem_free=2G"
+        job_options += " -l mem_free=%s" % PARAMS["tophat_memory"]
 
     to_cluster = True
     m = PipelineMapping.Tophat( executable = P.substituteParameters( **locals() )["tophat_executable"] )
@@ -918,11 +918,31 @@ def mapReadsWithBowtie( infiles, outfile ):
             SEQUENCEFILES_REGEX,
             r"bwa.dir/\1.bwa.bam" )
 def mapReadsWithBWA( infile, outfile ):
-    '''map reads with shrimp'''
+    '''map reads with bwa'''
 
-    job_options= "-pe dedicated %i -R y -l mem_free=16G" % PARAMS["bwa_threads"] 
+    job_options= "-pe dedicated %i -R y -l mem_free=%s" % (PARAMS["bwa_threads"],
+                                                           PARAMS["bwa_memory"] )
     to_cluster = True
     m = PipelineMapping.BWA()
+    statement = m.build( (infile,), outfile ) 
+    P.run()
+
+###################################################################
+###################################################################
+###################################################################
+## Map reads with bwa
+###################################################################
+@follows( mkdir("stampy.dir") )
+@transform( SEQUENCEFILES,
+            SEQUENCEFILES_REGEX,
+            r"stampy.dir/\1.stampy.bam" )
+def mapReadsWithStampy( infile, outfile ):
+    '''map reads with stampy'''
+
+    job_options= "-pe dedicated %i -R y -l mem_free=%s" % ( PARAMS["stampy_threads"],
+                                                            PARAMS["stampy_memory"] )
+    to_cluster = True
+    m = PipelineMapping.Stampy()
     statement = m.build( (infile,), outfile ) 
     P.run()
 
@@ -930,6 +950,7 @@ MAPPINGTARGETS = []
 mapToMappingTargets = { 'tophat': mapReadsWithTophat,
                         'bowtie': mapReadsWithBowtie,
                         'bwa': mapReadsWithBWA,
+                        'stampy': mapReadsWithStampy,
                         }
 for x in P.asList( PARAMS["mappers"]):
     MAPPINGTARGETS.append( mapToMappingTargets[x] )
@@ -978,50 +999,11 @@ def buildPicardStats( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-@follows( mkdir( os.path.join( PARAMS["exportdir"], "bamstats" ) ) )
-@transform( MAPPINGTARGETS,
-            suffix(".bam" ), 
-             ".bam.report")
-def buildBAMReports( infile, outfile ):
-    '''build alignment stats using bamstats
-
-    '''
-    to_cluster = True
-
-    # requires a large amount of memory to run.
-    # only use high-mem machines
-    job_options = "-l mem_free=32G"
-
-    # xvfb-run  -f ~/.Xauthority -a 
-    track = P.snip( infile, ".bam" )
-
-    # use a fake X display in order to avoid problems with
-    # no X connection on the cluster
-    xvfb_command = P.which("xvfb-run" )
-
-    # permit multiple servers using -a option
-    if xvfb_command: xvfb_command+= " -a "
-
-    # bamstats can not accept a directory as output, hence cd to exportdir
-    statement = '''
-    cd %(exportdir)s/bamstats;
-    %(xvfb_command)s
-    %(cmd-run)s bamstats -i ../../%(infile)s -v html -o %(track)s.html 
-                         --qualities --mapped --lengths --distances --starts
-    >& ../../%(outfile)s
-    '''
-
-    P.run()
-
-############################################################
-############################################################
-############################################################
 @merge( buildPicardStats, "picard_stats.load" )
 def loadPicardStats( infiles, outfile ):
     '''merge alignment stats into single tables.'''
 
     PipelineMappingQC.loadPicardAlignmentStats( infiles, outfile )
-
         
 # ############################################################
 # ############################################################

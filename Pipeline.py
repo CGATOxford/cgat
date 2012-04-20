@@ -57,17 +57,20 @@ class PipelineError( Exception ): pass
 # possible to use defaultdict, but then statements will
 # fail on execution if a parameter does not exists, and not
 # while building the statement. Hence, use dict.
+ROOT_DIR=os.path.dirname( __file__ )
+
 PARAMS= { 
-    'scriptsdir' : os.path.dirname( __file__ ),
-    'toolsdir' : os.path.dirname( __file__ ),
+    'scriptsdir' : ROOT_DIR,
+    'toolsdir' : ROOT_DIR,
     'cmd-farm' : """%s/farm.py 
                 --method=drmaa 
                 --cluster-priority=-10 
 		--cluster-queue=all.q 
 		--cluster-num-jobs=100 
-		--cluster-options="" """ % os.path.dirname( __file__ ),
+                --bashrc=%s/bashrc.cgat
+		--cluster-options="" """ % (ROOT_DIR,ROOT_DIR),
     'cmd-sql' : """sqlite3 -header -csv -separator $'\\t' """,
-    'cmd-run' : """%s/run.py""" % os.path.dirname( __file__ ),
+    'cmd-run' : """%s/run.py""" % ROOT_DIR
     }
 
 CONFIG = {}

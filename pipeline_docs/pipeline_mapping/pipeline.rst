@@ -1,11 +1,11 @@
 .. Test documentation master file, created by
    sphinx-quickstart on Mon Mar 23 15:27:57 2009.
 
-.. _rnaseqpipeline:
+.. _mappingpipeline:
 
-=============================
-RNASeq annotation pipeline
-=============================
+===========================
+Short Read Mapping Pipeline
+===========================
 
 Contents:
 

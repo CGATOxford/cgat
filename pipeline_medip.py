@@ -161,11 +161,10 @@ import PipelineTracks
 import PipelineMappingQC
 import PipelineMedip
 import Pipeline as P
+import Expression
 
 from rpy2.robjects import r as R
 import rpy2.robjects as ro
-
-USECLUSTER = True
 
 #########################################################################
 #########################################################################
@@ -277,7 +276,7 @@ def makeTrackDirectories( infile, outfile ):
              r"\1.dir/\1.genome.bam")
 def mapReads(infiles, outfile):
     '''Map reads to the genome using BWA '''
-    to_cluster = USECLUSTER
+    to_cluster = True
     job_options= "-pe dedicated %i -R y" % PARAMS["bwa_threads"]
     m = PipelineMapping.BWA()
     statement = m.build((infiles,), outfile) 
@@ -299,7 +298,7 @@ def prepareBAMs( infile, outfile ):
     * quality score filtering - remove reads below a certain quality score.
 
     '''
-    to_cluster = USECLUSTER
+    to_cluster = True
     track = P.snip( outfile, ".bam" )
 
     tmpdir = P.getTempFilename()
@@ -453,7 +452,7 @@ def runMEDIPS( infile, outfile ):
     outputs methylation profiles.
     '''
 
-    to_cluster = USECLUSTER
+    to_cluster = True
 
     job_options = "-l mem_free=23G"
 
@@ -491,7 +490,7 @@ def buildCoverageBed( infile, outfile ):
     Intervals containing only few reads (tiling_min_reads) are removed.
     '''
     
-    to_cluster = USECLUSTER
+    to_cluster = True
 
     statement = '''
     cat %(infile)s 
@@ -526,7 +525,7 @@ def buildVariableWidthTiles( infiles, outfile ):
     '''
     
     infiles = " ".join( infiles )
-    to_cluster = USECLUSTER
+    to_cluster = True
 
     statement = '''
     zcat %(infiles)s 
@@ -660,7 +659,7 @@ def buildBigBed( infile, outfile ):
     '''bed file with intervals that are covered by reads in any of the experiments.
     '''
     
-    to_cluster = USECLUSTER
+    to_cluster = True
     to_cluster = False
 
     tmpfile = P.getTempFilename()
@@ -682,7 +681,7 @@ def buildBigBed( infile, outfile ):
 def buildTiledReadCounts( infiles, outfile ):
     '''compute coverage of genome with reads.'''
 
-    to_cluster = USECLUSTER
+    to_cluster = True
 
     infile, tiles = infiles
 
@@ -768,7 +767,7 @@ def aggregateTiledReadCounts( infiles, outfile ):
     found in any interval as the tag count.
     '''
     
-    to_cluster = USECLUSTER
+    to_cluster = True
 
     src = " ".join( [ '''<( zcat %s | awk '{printf("%%s:%%i-%%i\\t%%i\\n", $1,$2,$3,$4 );}' ) ''' % x for x in infiles] )
     tmpfile = P.getTempFilename( "." )
@@ -850,16 +849,31 @@ def runDESeq( infiles, outfile ):
     it contains a similar output and similar fdr compared to cuffdiff.
     '''
 
+    job_options= "-l mem_free=10G"
+    to_cluster = True
     infile, design_file = infiles
     design = P.snip( os.path.basename(design_file), ".tsv")
     tiling = P.snip( os.path.basename( infile ), ".counts.tsv.gz" )
 
-    outprefix = os.path.join( PARAMS["exportdir"], "diff_methylation", "%s_%s_" % (tiling, design) )
+    outdir = os.path.join( PARAMS["exportdir"], "diff_methylation", "%s_%s_" % (tiling, design) )
 
-    Expression.runDESeq( infile, design_file, 
-                         outfile,
-                         outfile_prefix = outprefix,
-                         fdr = PARAMS["deseq_fdr"] )
+    # run on 
+    statement = '''zcat %(infile)s 
+              | %(cmd-farm)s
+                  --input-header 
+                  --output-header 
+                  --split-at-lines=100000 
+              python %(scriptsdir)s/Expression.py
+              --method=deseq
+              --filename-tags=-
+              --filename-design=%(design_file)s
+              --output-filename-pattern=%(outdir)s_
+              --log=%(outfile)s.log
+              --outfile=%(outfile)s
+              --fdr=%(deseq_fdr)f
+              > %(outfile)s'''
+
+    P.run()
 
 #########################################################################
 @transform( runDESeq, suffix(".deseq"), "_deseq.load" )
@@ -894,15 +908,26 @@ def runEdgeR( infiles, outfile ):
     the example in chapter 11 of the EdgeR manual.
     '''
 
+    to_cluster = True
+    
+    job_options= "-l mem_free=10G"
+
     infile, design_file = infiles
     design = P.snip( os.path.basename(design_file), ".tsv")
     tiling = P.snip( os.path.basename( infile ), ".counts.tsv.gz" )
 
     outdir = os.path.join( PARAMS["exportdir"], "diff_methylation", "%s_%s_" % (tiling, design ) )
 
-    Expression.runEdgeR( infile, design_file, outfile, 
-                         outfile_prefix = outdir,
-                         fdr = PARAMS["deseq_fdr"] )                         
+    statement = '''python %(scriptsdir)s/Expression.py
+              --method=edger
+              --filename-tags=%(infile)s
+              --filename-design=%(design_file)s
+              --output-filename-pattern=%(outdir)s_
+              --outfile=%(outfile)s
+              --fdr=%(edger_fdr)f
+              > %(outfile)s.log '''
+
+    P.run()
 
 #########################################################################
 @transform( runEdgeR, suffix(".edger"), "_edger.load" )
@@ -942,16 +967,20 @@ def buildEdgeRStats( infiles, outfile ):
 def loadEdgeRStats( infile, outfile ):
     P.load( infile, outfile )
 
-
 #########################################################################
 @transform( (runEdgeR, runDESeq), regex(  "(.*)\.(.*)"), r"\1_\2.dmr.bed.gz" )
 def buildDMRBed( infile, outfile ):
     '''output bed6 file with differentially methylated regions.
 
-    The score is the log fold change.
+    Overlapping/book-ended entries are merged.
+
+    The score is the average log fold change.
     '''
     
-    outf = IOTools.openFile( outfile, "w" )
+    to_cluster = True
+
+    tmpf = IOTools.getTempFile( "." )
+    
     c = E.Counter()
     for row in csv.DictReader( IOTools.openFile( infile ),
                                dialect = "excel-tab" ):
@@ -960,11 +989,17 @@ def buildDMRBed( infile, outfile ):
 
         contig, start, end = re.match("(.*):(\d+)-(\d+)", row["interval_id"] ).groups()
         c.output += 1
-        outf.write( "\t".join( (contig, start, end, str(c.input), row["lfold"] ) ) + "\n" )
-        
-    outf.close()
-    
+        tmpf.write( "\t".join( (contig, start, end, str(c.input), row["lfold"] ) ) + "\n" )
+
     E.info( "%s" % str(c) )
+        
+    tmpf.close()
+    tmpfname = tmpf.name
+
+    statement = '''mergeBed -i %(tmpfname)s -scores mean | gzip > %(outfile)s'''
+    P.run()
+
+    os.unlink( tmpf.name )
 
 @transform( (runEdgeR, runDESeq), regex(  "(.*)\.(.*)"), r"\1_\2.bed.gz" )
 def buildMRBed( infile, outfile ):

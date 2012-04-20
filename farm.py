@@ -491,11 +491,12 @@ def runCommand( data ):
         if r"\|" not in cmd:
             E.warn( "pipes (`|`) within command need to be escaped, otherwise jobs run on submit host" )
 
-    c = "%s -q %s -p %i %s %s" % (options.cluster_cmd, 
-                                  options.cluster_queue,
-                                  options.cluster_priority,
-                                  options.cluster_options,
-                                  cmd )
+    c = '%s -v "BASH_ENV=%s" -q %s -p %i %s %s' % (options.cluster_cmd, 
+                                                   options.bashrc,
+                                                   options.cluster_queue,
+                                                   options.cluster_priority,
+                                                   options.cluster_options,
+                                                   cmd )
 
     iteration = 0
 
@@ -620,7 +621,7 @@ def runDRMAA( data, environment ):
         # get session for process - only one is permitted
         jt.workingDirectory = os.getcwd()
         jt.remoteCommand = job_path
-        e = { 'BASH_ENV' : '~/.bashrc' }
+        e = { 'BASH_ENV' : options.bashrc }
         if environment:
             for en in environment:
                 try:
@@ -698,7 +699,7 @@ def getOptionParser():
                        help = "split a file at a tag [default=%default]." )
 
     parser.add_option( "--chunksize", dest="chunksize", type="int",
-                       help = "aggregate x entries [default=%default]." )
+                       help = "when splitting at regex or tag, aggregate x entries [default=%default]." )
 
     parser.add_option( "--debug", dest="debug", action="store_true",
                        help = "debug mode. Do not delete temporary file [default=%default]." )
@@ -757,6 +758,9 @@ def getOptionParser():
     parser.add_option( "--fail", dest="resubmit", action="store_false",
                        help = "if a job fails, do not resubmit [%default]")
 
+    parser.add_option( "--bashrc", dest="bashrc", type="string",
+                       help = "bashrc file to use [%default]")
+
     parser.add_option( "--method", dest="method", type="choice",
                        choices=("multiprocessing", "threads", "drmaa"),
                        help = "method to submit jobs [%default]")
@@ -771,7 +775,8 @@ def getOptionParser():
         group_by_regex = None,
         split_at_tag = None,
         chunksize = None,
-        cluster_cmd = 'qrsh -cwd -now n -v "BASH_ENV=~/.bashrc"',
+        cluster_cmd = 'qrsh -cwd -now n',
+        bashrc = "~/.bashrc",
         input_header = False,
         output_header = False,
         debug = False,
@@ -806,9 +811,12 @@ def main():
     (options, args) = E.Start( parser, 
                                add_cluster_options = True )
 
+    if len(args) == 0:
+        raise ValueError( "command line argument missing - see usage information" )
 
     options.renumber_column = [ x.split( ":" ) for x in options.renumber_column ]
 
+        
     cmd = args[0]
     if len(args) > 1:
         cmd += " '" + "' '".join(args[1:]) + "'" 
@@ -846,6 +854,8 @@ def main():
         elif options.group_by_regex:
             chunk_iterator = chunk_iterator_regex_group
             args = (re.compile( options.group_by_regex ),0, options.chunksize)
+        else:
+            raise ValueError( "please specify a way to chunk input data" )
 
         data = [ (x, cmd, options, None, options.subdirs) for x in chunk_iterator( options.stdin, 
                                                                                    args, 

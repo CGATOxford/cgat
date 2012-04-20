@@ -1090,7 +1090,7 @@ TARGETS_DE = [ ( (x, y, glob.glob("*.bam") ),
 def runDESeq( infiles, outfile ):
     '''perform differential expression analysis using deseq.'''
 
-    
+    to_cluster = True 
     design_file, geneset_file, bamfiles = infiles[0]
     infile = infiles[1]
 
@@ -1102,6 +1102,7 @@ def runDESeq( infiles, outfile ):
               --filename-design=%(design_file)s
               --output-filename-pattern=%(track)s_
               --outfile=%(outfile)s
+              --fdr=%(deseq_fdr)f
               > %(outfile)s.log '''
 
     P.run()
@@ -1152,6 +1153,7 @@ def loadDESeqStats( infile, outfile ):
 def runEdgeR( infiles, outfile ):
     '''perform differential expression analysis using edger.'''
 
+    to_cluster = True 
     design_file, geneset_file, bamfiles = infiles[0]
     infile = infiles[1]
 
@@ -1163,10 +1165,11 @@ def runEdgeR( infiles, outfile ):
               --filename-design=%(design_file)s
               --output-filename-pattern=%(track)s_
               --outfile=%(outfile)s
+              --fdr=%(edger_fdr)f
               > %(outfile)s.log '''
 
     P.run()
-
+    
 #########################################################################
 #########################################################################
 #########################################################################

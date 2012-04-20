@@ -86,6 +86,9 @@ def main( argv = None ):
     parser.add_option( "--sample", dest="sample", type="float",
                        help="sample a proportion of reads [default=%default]."  )
 
+    parser.add_option( "--uniq", dest="uniq", action="store_true",
+                       help="remove duplicate reads (by name) [default=%default]."  )
+
     parser.add_option( "--apply", dest="apply", type="string",
                        help="apply a filter to fastq file (taking only reads in filename) [default=%default]."  )
 
@@ -98,6 +101,7 @@ def main( argv = None ):
         sample = None,
         trim3 = None,
         apply = None,
+        uniq = False,
         )
 
     ## add common options (-h/--help, ...) and parse command line 
@@ -138,6 +142,16 @@ def main( argv = None ):
             record.trim( trim3 )
             options.stdout.write( "%s\n" % record )
             c.output += 1
+            
+    elif options.uniq:
+        keys = set()
+        for record in Fastq.iterate( options.stdin ):
+            c.input += 1
+            if record.identifier in keys: continue
+            else: keys.add( record.identifier )
+            options.stdout.write( "%s\n" % record )
+            c.output += 1
+        
 
     ## write footer and output benchmark information.
     E.info( "%s" % str(c) )
