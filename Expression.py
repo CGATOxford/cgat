@@ -78,6 +78,7 @@ try:
 except IOError:
     pass
 
+
 def buildProbeset2Gene( infile, 
                         outfile, 
                         database = "hgu133plus2.db",
@@ -750,11 +751,8 @@ def deseqOutputSizeFactors( outfile ):
         for name, x in zip( samples, size_factors):
             outf.write( "%s\t%s\n" % (name, str(x)))
 
-def deseqPlotHeatmap( outfile ):
+def deseqPlotHeatmap( outfile, method, fit_type ):
     '''plot a heatmap.'''
-
-    method = PARAMS.get( "deseq_dispersion_method", "pooled" )
-    fit_type = PARAMS.get( "deseq_fit_type", "parametric" )
     
     if method == "per-condition":
         # required to call "pooled" or "blind" if method = per-condition 
@@ -862,7 +860,9 @@ def runDESeq( infile,
               outfile, 
               outfile_prefix = "deseq.",
               fdr = 0.1,
-              prefix = ""
+              prefix = "",
+              fit_type = "parametric",
+              dispersion_method = "pooled",
               ):
     '''run DESeq on.
 
@@ -936,16 +936,15 @@ def runDESeq( infile,
     # Estimate size factors
     R('''cds <- estimateSizeFactors( cds )''')
     # Estimate variance
-    fit_type = PARAMS.get( "deseq_fit_type", "parametric" )
     if has_replicates:
         E.info("replicates - estimating variance from replicates" )
-        method = PARAMS.get( "deseq_dispersion_method", "per-condition" )
     else:
         E.info("no replicates - estimating variance with method='blind'" )
-        method = "blind"
+        dispersion_method = "blind"
 
+    E.info( "Dispersion method = %s, fit type =%s" % (dispersion_method, fit_type ) )
     R('''cds <- estimateDispersions( cds, 
-                                     method='%(method)s',
+                                     method='%(dispersion_method)s',
                                      fitType='%(fit_type)s' )''' % locals())
 
     # Plot size factors
@@ -960,13 +959,15 @@ def runDESeq( infile,
     # to output normalized data
     # R('''write.table( counts(cds, normalized=TRUE), file='%(outfile_prefix)scounts.tsv.gz', sep='\t') ''' % locals())
     # output counts
-    R('''write.table( counts(cds), file='%(outfile_prefix)scounts.tsv.gz', sep='\t') ''' % locals())    
+    R('''write.table( counts(cds), file=gzfile('%(outfile_prefix)scounts.tsv.gz'), sep='\t') ''' % locals())    
 
     # R.png( '''%(outfile_prefix)sscvplot.png''' % locals() )
     # R('''scvPlot( cds, ylim = c(0,3))''')
     # R['dev.off']()
 
-    deseqPlotHeatmap( '%(outfile_prefix)sheatmap.png' % locals())
+    deseqPlotHeatmap( '%(outfile_prefix)sheatmap.png' % locals(), 
+                      method = dispersion_method, 
+                      fit_type = fit_type )
 
     for group in groups:
         if has_replicates:
@@ -1356,6 +1357,14 @@ def main( argv = None ):
                       choices = ("deseq", "edger", "cuffdiff"),
                       help="differential expression method to apply [default=%default]."  )
 
+    parser.add_option( "--deseq-dispersion-method", dest="deseq_dispersion_method", type="choice",
+                      choices = ("pooled", "per-condition", "blind"),
+                      help="dispersion method for deseq [default=%default]."  )
+
+    parser.add_option( "--deseq-fit-type", dest="deseq_fit_type", type="choice",
+                      choices = ("parametric", "local"),
+                      help="fit type for deseq [default=%default]."  )
+
     parser.add_option("-f", "--fdr", dest="fdr", type="float",
                       help="fdr to apply [default=%default]."  )
 
@@ -1365,6 +1374,8 @@ def main( argv = None ):
         output_filename = sys.stdout,
         method = "deseq",
         fdr = 0.1,
+        deseq_dispersion_method = "pooled",
+        deseq_fit_type = "local",
         )
 
     ## add common options (-h/--help, ...) and parse command line 
@@ -1385,7 +1396,9 @@ def main( argv = None ):
                   options.input_filename_design,
                   options.output_filename,
                   options.output_filename_pattern,
-                  fdr = options.fdr )
+                  fdr = options.fdr,
+                  dispersion_method = options.deseq_dispersion_method,
+                  fit_type = options.deseq_fit_type)
 
     elif options.method == "edger":
         assert options.input_filename_tags and os.path.exists(options.input_filename_tags)

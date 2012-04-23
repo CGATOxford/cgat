@@ -1103,6 +1103,8 @@ def runDESeq( infiles, outfile ):
               --output-filename-pattern=%(track)s_
               --outfile=%(outfile)s
               --fdr=%(deseq_fdr)f
+              --deseq-fit-type=%(deseq_fit_type)s
+              --deseq-dispersion-method=%(deseq_dispersion_method)s
               > %(outfile)s.log '''
 
     P.run()

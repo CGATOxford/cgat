@@ -837,7 +837,7 @@ def loadMethylationData( infile, design_file ):
 
 @follows( aggregateTiledReadCounts, mkdir( os.path.join( PARAMS["exportdir"], "diff_methylation")) )
 @files( [ ( (data, design), 
-            "diff_methylation/%s_%s.deseq" % (P.snip(os.path.basename(data),".counts.tsv.gz"),
+            "diff_methylation/%s_%s.deseq.gz" % (P.snip(os.path.basename(data),".counts.tsv.gz"),
                                    P.snip(os.path.basename(design),".tsv" ) ) ) \
               for data, design in itertools.product( 
                                                glob.glob("diff_methylation/*.counts.tsv.gz"),
@@ -849,7 +849,6 @@ def runDESeq( infiles, outfile ):
     it contains a similar output and similar fdr compared to cuffdiff.
     '''
 
-    job_options= "-l mem_free=10G"
     to_cluster = True
     infile, design_file = infiles
     design = P.snip( os.path.basename(design_file), ".tsv")
@@ -857,36 +856,46 @@ def runDESeq( infiles, outfile ):
 
     outdir = os.path.join( PARAMS["exportdir"], "diff_methylation", "%s_%s_" % (tiling, design) )
 
+    # --output-filename-pattern=%%DIR%%/%(outdir)s_
+
     # run on 
     statement = '''zcat %(infile)s 
               | %(cmd-farm)s
                   --input-header 
                   --output-header 
-                  --split-at-lines=100000 
-              python %(scriptsdir)s/Expression.py
+                  --split-at-lines=1000000 
+                  --log=%(outfile)s.log
+                  --output-pattern=%(outdir)s_%%s
+                  --subdirs
+              "python %(scriptsdir)s/Expression.py
               --method=deseq
               --filename-tags=-
               --filename-design=%(design_file)s
-              --output-filename-pattern=%(outdir)s_
+              --output-filename-pattern=%%DIR%%/
+              --deseq-fit-type=%(deseq_fit_type)s
+              --deseq-dispersion-method=%(deseq_dispersion_method)s
               --log=%(outfile)s.log
-              --outfile=%(outfile)s
-              --fdr=%(deseq_fdr)f
-              > %(outfile)s'''
+              --fdr=%(deseq_fdr)f"
+              | grep -v "warnings"
+              | gzip
+              > %(outfile)s '''
 
     P.run()
 
 #########################################################################
-@transform( runDESeq, suffix(".deseq"), "_deseq.load" )
+@jobs_limit(1)
+@transform( runDESeq, suffix(".deseq.gz"), "_deseq.load" )
 def loadDESeq( infile, outfile ):
     '''load differential expression results.'''
 
     tablename = P.toTable( outfile )
     statement = '''
-                cat %(infile)s
-                | perl -p -e "s/interval_id/contig\\tstart\\tend/; s/:/\\t/; s/-/\\t/;"
+                zcat %(infile)s
+                | perl -p -e "s/test_id/contig\\tstart\\tend/; s/:/\\t/; s/-/\\t/;"
                 | python %(scriptsdir)s/csv2db.py
                       --index=group1 --index=group2 --allow-empty
                       --table=%(tablename)s 
+                      --quick
                 > %(outfile)s
                 '''
     P.run()
@@ -896,7 +905,7 @@ def loadDESeq( infile, outfile ):
 #########################################################################
 @follows( aggregateTiledReadCounts, mkdir( os.path.join( PARAMS["exportdir"], "diff_methylation")) )
 @files( [ ( (data, design), 
-            "diff_methylation/%s_%s.edger" % (P.snip(os.path.basename(data),".counts.tsv.gz"),
+            "diff_methylation/%s_%s.edger.gz" % (P.snip(os.path.basename(data),".counts.tsv.gz"),
                                    P.snip(os.path.basename(design),".tsv" ) ) ) \
               for data, design in itertools.product( 
                                                glob.glob("diff_methylation/*.counts.tsv.gz"),
@@ -910,34 +919,45 @@ def runEdgeR( infiles, outfile ):
 
     to_cluster = True
     
-    job_options= "-l mem_free=10G"
-
     infile, design_file = infiles
     design = P.snip( os.path.basename(design_file), ".tsv")
     tiling = P.snip( os.path.basename( infile ), ".counts.tsv.gz" )
 
     outdir = os.path.join( PARAMS["exportdir"], "diff_methylation", "%s_%s_" % (tiling, design ) )
 
-    statement = '''python %(scriptsdir)s/Expression.py
+    statement = '''zcat %(infile)s 
+              | %(cmd-farm)s
+                  --input-header 
+                  --output-header 
+                  --split-at-lines=100000 
+                  --log=%(outfile)s.log
+                  --output-pattern=%(outdir)s_%%s
+                  --subdirs
+              "python %(scriptsdir)s/Expression.py
               --method=edger
-              --filename-tags=%(infile)s
+              --filename-tags=-
               --filename-design=%(design_file)s
-              --output-filename-pattern=%(outdir)s_
-              --outfile=%(outfile)s
-              --fdr=%(edger_fdr)f
-              > %(outfile)s.log '''
+              --output-filename-pattern=%%DIR%%/
+              --deseq-fit-type=%(deseq_fit_type)s
+              --deseq-dispersion-method=%(deseq_dispersion_method)s
+              --log=%(outfile)s.log
+              --fdr=%(edger_fdr)f"
+              | grep -v "warnings"
+              | gzip
+              > %(outfile)s '''
 
     P.run()
 
 #########################################################################
-@transform( runEdgeR, suffix(".edger"), "_edger.load" )
+@jobs_limit(1)
+@transform( runEdgeR, suffix(".edger.gz"), "_edger.load" )
 def loadEdgeR( infile, outfile ):
     '''load differential expression results.'''
 
     tablename = P.toTable( outfile )
     statement = '''
-                cat %(infile)s
-                | perl -p -e "s/interval_id/contig\\tstart\\tend/; s/:/\\t/; s/-/\\t/;"
+                zcat %(infile)s
+                | perl -p -e "s/test_id/contig\\tstart\\tend/; s/:/\\t/; s/-/\\t/;"
                 | python %(scriptsdir)s/csv2db.py
                       --index=group1 --index=group2 --allow-empty
                       --table=%(tablename)s 

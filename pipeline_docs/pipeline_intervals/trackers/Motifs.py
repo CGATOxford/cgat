@@ -596,7 +596,7 @@ class MemeRuns( IntervalTracker ):
 class MemeResults( IntervalTracker ):
 
     def getTracks( self ):
-        return self.getValues( "SELECT DISTINCT track FROM meme_summary" ) 
+        return self.getValues( "SELECT DISTINCT track FROM meme_summary limit 2" ) 
     
     def __call__(self, track, slice = None ):
         
@@ -615,12 +615,14 @@ class MemeResults( IntervalTracker ):
         result = odict()
         for motif in motifs.getiterator( "motif" ):
             nmotif += 1
+            print "adding", resultsdir + "/logo1.eps"
             result[str(nmotif)] = odict( (\
                     ("width", motif.get("width" )),
                     ("evalue", motif.get("e_value" )),
                     ("information content",motif.get("ic")),
                     ("sites", motif.get("sites" )),
                     ("link", "`meme_%s_%i <%s/meme.html#summary%i>`_" % (track, nmotif, resultsdir, nmotif)),
+                    ("img", ".. image:: %s/logo1.eps" % (resultsdir)),
                     ))
 
         return result
