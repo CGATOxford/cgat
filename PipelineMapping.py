@@ -812,6 +812,10 @@ class Bowtie( Mapper ):
         else:
             index_prefix = "%(bowtie_index_dir)s/%(genome)s"
 
+        # bowtie outputs sam per default
+        if executable == 'bowtie':
+            data_options.append( '--sam' )
+
         data_options = " ".join( data_options )
 
         tmpdir_fastq = self.tmpdir_fastq
@@ -819,7 +823,7 @@ class Bowtie( Mapper ):
         if nfiles == 1:
             infiles = ",".join( [ self.quoteFile(x) for x in infiles[0] ] )
             statement = '''
-                %(executable)s --quiet --sam
+                %(executable)s --quiet
                        --threads %%(bowtie_threads)i
                        %(data_options)s
                        %%(bowtie_options)s
@@ -835,7 +839,7 @@ class Bowtie( Mapper ):
             infiles2 = ",".join( [ self.quoteFile( x ) for x in infiles[1] ] )
 
             statement = '''
-                %(executable)s --quiet --sam
+                %(executable)s --quiet
                        --threads %%(bowtie_threads)i
                        %(data_options)s
                        %%(bowtie_options)s

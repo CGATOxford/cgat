@@ -883,6 +883,18 @@ def runDESeq( infiles, outfile ):
     P.run()
 
 #########################################################################
+def mergeDESeq( infile, outfile ):
+    '''merge overlapping windows.'''
+    
+    statement = '''
+    zcat %(infile)s
+    | perl -p -e "s/test_id/contig\\tstart\\tend/; s/:/\\t/; s/-/\\t/;"
+    | python %(scriptsdir)s/medip_merge_intervals.py
+    | gzip
+    > %(outfile)s
+    '''
+
+#########################################################################
 @jobs_limit(1)
 @transform( runDESeq, suffix(".deseq.gz"), "_deseq.load" )
 def loadDESeq( infile, outfile ):
@@ -930,6 +942,7 @@ def runEdgeR( infiles, outfile ):
                   --input-header 
                   --output-header 
                   --split-at-lines=100000 
+                  --cluster-options="-l mem_free=8G"
                   --log=%(outfile)s.log
                   --output-pattern=%(outdir)s_%%s
                   --subdirs
@@ -950,7 +963,8 @@ def runEdgeR( infiles, outfile ):
 
 #########################################################################
 @jobs_limit(1)
-@transform( runEdgeR, suffix(".edger.gz"), "_edger.load" )
+#@transform( runEdgeR, suffix(".edger.gz"), "_edger.load" )
+@transform( "diff_methylation/*.edger.gz", suffix(".edger.gz"), "_edger.load" )
 def loadEdgeR( infile, outfile ):
     '''load differential expression results.'''
 
@@ -958,9 +972,13 @@ def loadEdgeR( infile, outfile ):
     statement = '''
                 zcat %(infile)s
                 | perl -p -e "s/test_id/contig\\tstart\\tend/; s/:/\\t/; s/-/\\t/;"
+                | sed -n '/contig/,$p'
                 | python %(scriptsdir)s/csv2db.py
-                      --index=group1 --index=group2 --allow-empty
+                      --index=group1 
+                      --index=group2 
+                      --allow-empty
                       --table=%(tablename)s 
+                      --quick
                 > %(outfile)s
                 '''
     P.run()

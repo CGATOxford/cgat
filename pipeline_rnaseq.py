@@ -1042,24 +1042,26 @@ def buildReferenceTranscriptome( infile, outfile ):
     samtools faidx %(outfile)s
     ''' 
     P.run()
-    
-    os.symlink(gtf_file, P.snip(gtf_file,".gtf") + ".gff")
+
+    dest = P.snip(gtf_file,".gtf") + ".gff"
+    if not os.path.exists( dest ):
+        os.symlink(gtf_file, dest )
         
     prefix = P.snip( outfile, ".fa" )
 
     # build raw index
     statement = '''
-    bowtie-build -f %(outfile)s %(prefix)s >> %(outfile)s.log 2>&1
+    %(bowtie_executable)s-build -f %(outfile)s %(prefix)s >> %(outfile)s.log 2>&1
     '''
 
     P.run()
 
     # build color space index
-    statement = '''
-    bowtie-build -C -f %(outfile)s %(prefix)s_cs >> %(outfile)s.log 2>&1
-    '''
+    #statement = '''
+    #%(bowtie_executable)s-build -C -f %(outfile)s %(prefix)s_cs >> %(outfile)s.log 2>&1
+    #'''
 
-    P.run()
+    #P.run()
 
 #########################################################################
 #########################################################################
@@ -1121,7 +1123,7 @@ def mapReadsWithBowtieAgainstTranscriptome( infiles, outfile ):
     # reads would be filtered out).
     job_options= "-pe dedicated %i -R y" % PARAMS["bowtie_threads"]
     to_cluster = USECLUSTER
-    m = PipelineMapping.BowtieTranscripts()
+    m = PipelineMapping.BowtieTranscripts( executable = P.substituteParameters( **locals() )["bowtie_executable"] )
     infile, reffile = infiles
     prefix = P.snip( reffile, ".fa" )
     bowtie_options = "%s --best --strata -a" % PARAMS["bowtie_options"] 
@@ -1246,15 +1248,15 @@ def buildJunctionsDB( infiles, outfile ):
 
     # build raw index
     statement = '''
-    bowtie-build -f %(outfile)s %(prefix)s >> %(outfile)s.log 2>&1
+    %(bowtie_executable)s-build -f %(outfile)s %(prefix)s >> %(outfile)s.log 2>&1
     '''
 
     P.run()
 
     # build color space index
-    statement = '''
-    bowtie-build -C -f %(outfile)s %(prefix)s_cs >> %(outfile)s.log 2>&1
-    '''
+    #statement = '''
+    #%(bowtie_executable)s-build -C -f %(outfile)s %(prefix)s_cs >> %(outfile)s.log 2>&1
+    #'''
 
     P.run()
 
@@ -1368,10 +1370,7 @@ def buildBAMs( infiles, outfile):
     prefix = P.snip( outfile, ".bam")
 
     # map numbered transcript id to real transcript id
-    map_file = P.snip(reffile, ".gtf.gz") + ".map"
-
-    statement = ''' cat refcoding.fa | awk 'BEGIN { printf("id\\ttranscript_id\\n");} /^>/ {printf("%%s\\t%%s\\n", substr($1,2),$3)}' > %(map_file)s '''
-    P.run()
+    map_file_statement = '''<( cat refcoding.fa | awk 'BEGIN { printf("id\\ttranscript_id\\n");} /^>/ {printf("%s\\t%s\\n", substr($1,2),$3)}' )'''
 
     if os.path.exists( "%(outfile)s.log" % locals() ):
         os.remove( "%(outfile)s.log" % locals() )
@@ -1383,7 +1382,7 @@ def buildBAMs( infiles, outfile):
        --filename-mismapped=%(outfile_mismapped)s
        --log=%(outfile)s.log
        --filename-stats=%(outfile)s.tsv
-       --filename-map=%(map_file)s
+       --filename-map=%(map_file_statement)s
        %(options)s
        %(genome)s
     | samtools sort - %(prefix)s 2>&1 >> %(outfile)s.log;
@@ -1511,26 +1510,34 @@ def buildTophatStats( infiles, outfile ):
         track = P.snip( infile, ".bam" )
         indir = infile + ".logs" 
 
-        fn = os.path.join( indir, "prep_reads.log" )
-        lines = open( fn ).readlines()
-        reads_removed, reads_in = map(int, _select( lines, "(\d+) out of (\d+) reads have been filtered out" ) )
-        reads_out = reads_in - reads_removed
-        prep_reads_version = _select( lines, "prep_reads (.*)$" )
-        
-        fn = os.path.join( indir, "reports.log" )
-        lines = open( fn ).readlines()
-        tophat_reports_version = _select( lines, "tophat_reports (.*)$" )
-        junctions_loaded = int( _select( lines, "Loaded (\d+) junctions") )
-        junctions_found = int( _select( lines, "Found (\d+) junctions from happy spliced reads") )
+        try:
+            fn = os.path.join( indir, "prep_reads.log" )
+            lines = IOTools.openFile( fn ).readlines()
+            reads_removed, reads_in = map(int, _select( lines, "(\d+) out of (\d+) reads have been filtered out" ) )
+            reads_out = reads_in - reads_removed
+            prep_reads_version = _select( lines, "prep_reads (.*)$" )
+        except IOError:
+            reads_removed, reads_in, reads_out, prep_reads_version = 0, 0, 0, "na"
+            
+        try:
+            fn = os.path.join( indir, "reports.log" )
+            lines = IOTools.openFile( fn ).readlines()
+            tophat_reports_version = _select( lines, "tophat_reports (.*)$" )
+            junctions_loaded = int( _select( lines, "Loaded (\d+) junctions") )
+            junctions_found = int( _select( lines, "Found (\d+) junctions from happy spliced reads") )
+        except IOError:
+            junctions_loaded, junctions_found = 0, 0
 
         fn = os.path.join( indir, "segment_juncs.log" )
-        
-        
         if os.path.exists(fn):
             lines = open( fn ).readlines()
             if len(lines) > 0:
                 segment_juncs_version =  _select( lines, "segment_juncs (.*)$" )
-                possible_splices = int( _select( lines, "Reported (\d+) total possible splices") )
+                try:
+                    possible_splices = int( _select( lines, "Reported (\d+) total possible splices") )
+                except ValueError:
+                    E.warn( "could not find splices" )
+                    possible_splices = ""
             else:
                 segment_juncs_version = "na"
                 possible_splices = ""

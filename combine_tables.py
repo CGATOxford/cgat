@@ -1,5 +1,5 @@
 ################################################################################
-#
+ #
 #   MRC FGU Computational Genomics Group
 #
 #   $Id$
@@ -448,8 +448,8 @@ if __name__ == '__main__':
     E.info( "combining %i tables" % len(options.filenames) )
 
     if len(options.filenames) == 1:
-        for line in open(options.filenames[0]):
-            outfile.write( line )
+        for line in IOTools.openFile(options.filenames[0]):
+            options.stdout.write( line )
         E.Stop()
         sys.exit(0)
         

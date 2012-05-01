@@ -751,7 +751,7 @@ def deseqOutputSizeFactors( outfile ):
         for name, x in zip( samples, size_factors):
             outf.write( "%s\t%s\n" % (name, str(x)))
 
-def deseqPlotHeatmap( outfile, method, fit_type ):
+def deseqPlotHeatmap( outfile, method = 'pooled', fit_type = 'parametric' ):
     '''plot a heatmap.'''
     
     if method == "per-condition":
