@@ -1590,6 +1590,7 @@ def main():
 
         # store all significant results for aggregate output
         all_significant_results = []
+        all_genelists_with_results = []
 
         E.info( "working on ontology %s" % test_ontology )
         #############################################################
@@ -1800,6 +1801,7 @@ def main():
             #############################################################
             # add filtered results to full results
             all_significant_results.append( filtered_pairs )
+            all_genelists_with_results.append( genelist_name )
 
             #############################################################
             ## output the full result
@@ -1884,7 +1886,9 @@ def main():
 
         if len(genelists) > 1:
         
-            col_headers = genelists.keys()
+            col_headers = all_genelists_with_results
+
+            assert len(col_headers) == len(all_significant_results)
 
             # fold change matrix
             matrix, row_headers = buildMatrix( all_significant_results, 
@@ -1896,7 +1900,7 @@ def main():
                                    section = 'fold',
                                    set = 'all' )
             IOTools.writeMatrix( outfile, matrix, row_headers, col_headers, row_header="category" )
-
+            
             outfile = getFileName( options, 
                                    go = test_ontology,
                                    section = 'fold',
