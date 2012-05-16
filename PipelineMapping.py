@@ -597,7 +597,8 @@ class TopHat_fusion( Mapper ):
         # add options specific to data type
         data_options = []
         if self.datatype == "solid":
-            data_options.append( "--quals --integer-quals --color" )
+            #bowtie2 cannot map color space reads yet. Force bowtie1 mode and use bowtie1 index
+            data_options.append( "--bowtie1 --quals --integer-quals --color" )
             index_file = "%(bowtie_index_dir)s/%(genome)s_cs"
         else:
             index_file = "%(bowtie_index_dir)s/%(genome)s"
@@ -607,10 +608,10 @@ class TopHat_fusion( Mapper ):
         if nfiles == 1:
             infiles = ",".join( [ x[0] for x in infiles ] )
             statement = '''
-            tophat2 --output-dir %(tmpdir_tophat)s
+            module load bio/tophatfusion;
+            tophat-fusion --output-dir %(tmpdir_tophat)s
                    --num-threads %%(tophat_threads)i
-                   --library-type %%(tophat_library_type)s
-                   --fusion-search
+                   --library-type %%(tophat_library_type)s                  
                    %(data_options)s
                    %%(tophat_options)s
                    %%(tophatfusion_options)s
@@ -626,12 +627,11 @@ class TopHat_fusion( Mapper ):
             infiles2 = ",".join( [ x[1] for x in infiles ] )
 
             statement = '''
-      
-            tophat2 --output-dir %(tmpdir_tophat)s
+            module load bio/tophatfusion;
+            tophat-fusion --output-dir %(tmpdir_tophat)s
                     --mate-inner-dist %%(tophat_mate_inner_dist)i
                     --num-threads %%(tophat_threads)i
                     --library-type %%(tophat_library_type)s
-                    --fusion-search
                     %(data_options)s
                    %%(tophat_options)s
                    %%(tophatfusion_options)s
@@ -649,11 +649,11 @@ class TopHat_fusion( Mapper ):
             infiles4 = ",".join( [ x[3] for x in infiles ] )
 
             statement = '''
-            tophat2 --output-dir %(tmpdir_tophat)s
+            module load bio/tophatfusion
+            tophat-fusionb --output-dir %(tmpdir_tophat)s
                     --mate-inner-dist %%(tophat_mate_inner_dist)i
                     --num-threads %%(tophat_threads)i
                     --library-type %%(tophat_library_type)s
-                    --fusion-search
                     %(data_options)s
                     %%(tophat_options)s
                     %%(tophatfusion_options)s
@@ -674,17 +674,20 @@ class TopHat_fusion( Mapper ):
     def postprocess( self, infiles, outfile ):
         '''collect output data and postprocess.'''
         
-        track = P.snip( outfile, "/accepted_hits.bam" )
+        track = P.snip( outfile, "/accepted_hits.sam" )
         tmpdir_tophat = self.tmpdir_tophat
 
         if not os.path.exists('%s' % track):
             os.mkdir('%s' % track)
 
+        #statement = '''
+        #    mv -f %(tmpdir_tophat)s/* %(track)s/; 
+        #    samtools index %(outfile)s;
+        #    ''' % locals()
         statement = '''
             mv -f %(tmpdir_tophat)s/* %(track)s/; 
-            samtools index %(outfile)s;
+         
             ''' % locals()
-
         return statement
 
 class Bowtie( Mapper ):

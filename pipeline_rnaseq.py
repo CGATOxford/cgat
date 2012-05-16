@@ -3486,6 +3486,10 @@ def buildAggregateGeneLevelReadCounts( infiles, outfile):
        the actual read counts are approximately twice the fragment
        counts.
        
+    .. note::
+       As with buildAggregateTranscriptLevelReadCounts, this takes a very
+       long time if there are many bam files. Thus it has been removed for
+       now from the pipeline. (IMS)
     '''
     bamfiles, geneset = infiles
     
@@ -3513,8 +3517,12 @@ def buildAggregateGeneLevelReadCounts( infiles, outfile):
 #########################################################################
 #########################################################################
 #########################################################################
-@transform( ( buildGeneLevelReadCounts,
-              buildAggregateGeneLevelReadCounts),
+#IMS removing buildAggregateLevelReadCounts
+#@transform( ( buildGeneLevelReadCounts,
+#              buildAggregateGeneLevelReadCounts),
+#           suffix(".tsv.gz"),
+#           ".load" )
+@transform( buildGeneLevelReadCounts,
            suffix(".tsv.gz"),
            ".load" )
 def loadGeneLevelReadCounts( infile, outfile ):
@@ -3769,8 +3777,14 @@ def buildAggregateTranscriptLevelReadCounts( infiles, outfile):
 #########################################################################
 #########################################################################
 #########################################################################
-@transform( (buildTranscriptLevelReadCounts,
-             buildAggregateTranscriptLevelReadCounts),
+#IMS: I thought that buildAggregateTranscriptLevelReadCounts was supposed 
+#     to be removed?
+#@transform( (buildTranscriptLevelReadCounts,
+#             buildAggregateTranscriptLevelReadCounts),
+#            suffix(".tsv.gz"),
+#            ".load" )
+
+@transform( buildTranscriptLevelReadCounts,
             suffix(".tsv.gz"),
             ".load" )
 def loadTranscriptLevelReadCounts( infile, outfile ):
@@ -3902,34 +3916,39 @@ def runDESeq( infile, outfile ):
     R('''cds <-newCountDataSet( counts_table, conds) ''')
     R('''cds <- estimateSizeFactors( cds )''')
 
+#as of DESeq 1.6 estimateVarianceFunctions is estimateDispersions
     if no_replicates:
-        R('''cds <- estimateVarianceFunctions( cds, method="blind" )''')
+        R('''cds <- estimateDispersions( cds, method="blind" )''')
     else:
-        R('''cds <- estimateVarianceFunctions( cds )''')
+        R('''cds <- estimateDispersions( cds )''')
 
     L.info("creating diagnostic plots" ) 
     size_factors = R('''sizeFactors( cds )''')
-    R.png( build_filename0( section = "scvplot", **locals() ) )
-    R('''scvPlot( cds, ylim = c(0,3))''')
-    R['dev.off']()
+    #IMS as of DESeq 1.6 scvPlot has been removed
+    #R.png( build_filename0( section = "scvplot", **locals() ) )
+    #R('''scvPlot( cds, ylim = c(0,3))''')
+    #R['dev.off']()
 
     R('''vsd <- getVarianceStabilizedData( cds )''' )
     R('''dists <- dist( t( vsd ) )''')
     R.png( build_filename0( section = "heatmap", **locals() ) )
     R('''heatmap( as.matrix( dists ), symm=TRUE )''' )
     R['dev.off']()
-
-    for track in conditions:
-        condition = track.asR()
-        R.png( build_filename1( section = "fit", **locals() ) )
-        R('''diagForT <- varianceFitDiagnostics( cds, "%s" )''' % condition )
-        if not no_replicates:
-            R('''smoothScatter( log10(diagForT$baseMean), log10(diagForT$baseVar) )''')
-            R('''lines( log10(fittedBaseVar) ~ log10(baseMean), diagForT[ order(diagForT$baseMean), ], col="red" )''')
-            R['dev.off']()
-            R.png( build_filename1( section = "residuals", **locals() ) )
-            R('''residualsEcdfPlot( cds, "%s" )''' % condition )
-            R['dev.off']()
+    
+    #IMS: as of DESeq 1.6 varianceFitDiagnostics and residualsEcdfPlot has been removed.
+    #for track in conditions:
+     #   condition = track.asR()
+      #  R.png( build_filename1( section = "fit", **locals() ) )
+        
+        #R('''diagForT <- varianceFitDiagnostics( cds, "%s" )''' % condition )
+        #if not no_replicates:
+       #     R('''smoothScatter( log10(diagForT$baseMean), log10(diagForT$baseVar) )''')
+        #    R('''lines( log10(fittedBaseVar) ~ log10(baseMean), diagForT[ order(diagForT$baseMean), ], col="red" )''')
+         #   R['dev.off']()
+           
+            #R.png( build_filename1( section = "residuals", **locals() ) )
+            #R('''residualsEcdfPlot( cds, "%s" )''' % condition )
+            #R['dev.off']()
 
     L.info("calling differential expression")
 
@@ -4228,7 +4247,6 @@ def update_report():
           mkdir("%s/genesets" % PARAMS["web_dir"]),
           mkdir("%s/classification" % PARAMS["web_dir"]),
           mkdir("%s/differential_expression" % PARAMS["web_dir"]),
-          update_report,
           )
 def publish():
     '''publish files.'''
