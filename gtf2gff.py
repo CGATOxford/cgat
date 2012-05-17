@@ -40,7 +40,14 @@ Various methods can be used to do the conversion (see command line argument *met
 
 genome
    annotate genome with gene set. Genomic segments are labeled 
-   ``intronic``, ``intergenic``, ...
+   ``intronic``, ``intergenic``, etc. This annotation aggregates
+   the information of multiple genes such that each annotation
+   is either valid or ambiguous.
+
+gene
+    annotate genome using the information on a gene-by-gene basis.
+    Multiple overlapping annotations will be created for each transcript.
+    Redundant annotations will be merged.
 
 territories
    build territories around gene set.
@@ -53,6 +60,11 @@ promoters
    declare promoter regions. These segments might be overlapping. A promotor
    is the region x kb upstream of a transcription start site. The option
    ``--promotor`` sets the region width.
+
+regulons
+   declare regulatory regions. Regulatory regions contain the region x kb of
+   upstream and downstream of a transciption start site. The options ``--upstream``
+   and ``-downstream`` set the region width.
 
 Genome
 ++++++
@@ -94,6 +106,32 @@ All segments are annotated by their closest gene. Intergenic regions are
 annotated with their two neighbouring genes. The upstream gene is listed
 in the attribute gene_id, the downstream one is listed in the attribute
 downstream_gene_id.
+
+Genes
++++++
+
+If ``--method=genome``, the gene set is used to annotate the complete genome.
+
+.. note::
+   The gtf file has to be sorted by gene.
+
+A segment in the genome will be annotated as:
+
+cds
+   a coding exon
+
+utr5, utr3
+   a 5' or 3' utr
+
+exon
+   an exon. Exons are further classified into first, middle and last exons.
+
+intronic
+   an intronic region. Intronic regions are further divided into first, middle, last.
+   
+upstream, downstream
+   upstream/downstream regions in 5 intervals of a total of 1kb (see option --flank to increase
+   the total size).
 
 Territories
 +++++++++++
@@ -151,11 +189,23 @@ Only protein coding genes are used to annotate promotors.
 The size of the promotor region can be specified by the command line
 argument ``--promotor``
 
+Regulons
+
++++++++++
+
+If ``--method=regulons``, putative regulon regions are output. This is similar
+to a ``promotor``, but the region extends both upstream and downstream from
+the transcriptsion start site.
+
+Only protein coding genes are used to annotate regulons.
+
+The size of the promotor region can be specified by the command line
+argument ``--upstream`` and ``--downstream``
+ 
 Usage
 -----
 
 Type::
-
    python <script_name>.py --help
 
 for command line help.
@@ -164,7 +214,7 @@ Code
 ----
 """
 
-import os, sys, string, re, optparse, types, collections
+import os, sys, string, re, optparse, types, collections, itertools
 
 import GFF, GTF
 import Experiment as E
@@ -486,8 +536,56 @@ def annotatePromoters( iterator, fasta, options ):
             npromotors += 1
             x += 1
 
-    if options.loglevel >= 1:
-        options.stdlog.write( "# ngenes=%i, ntranscripts=%i, npromotors=%i\n" % (ngenes, ntranscripts, npromotors) )
+    E.info( "ngenes=%i, ntranscripts=%i, npromotors=%i" % (ngenes, ntranscripts, npromotors) )
+
+def annotateRegulons( iterator, fasta, options ):
+    """annotate regulons within iterator.
+
+    Only protein_coding genes are annotated.
+    """
+
+    gene_iterator = GTF.gene_iterator( iterator )
+
+    ngenes, ntranscripts, nregulons = 0, 0, 0
+
+    upstream, downstream = options.upstream, options.downstream
+
+    for gene in gene_iterator:
+        ngenes += 1
+        is_negative_strand = Genomics.IsNegativeStrand( gene[0][0].strand )
+        lcontig = fasta.getLength( gene[0][0].contig )
+        regulons = []
+        transcript_ids = []
+        for transcript in gene:
+
+            ntranscripts += 1
+            mi, ma = min( [x.start for x in transcript ] ), max( [x.end for x in transcript ] )
+            # add range to both sides of tss
+            if is_negative_strand:
+                regulons.append( (max( 0, ma - options.downstream), min( lcontig, ma + options.upstream) ) )
+            else:
+                regulons.append( (max( 0, mi - options.upstream), min( lcontig, mi + options.downstream) ) )
+            transcript_ids.append( transcript[0].transcript_id )
+
+        if options.merge_promotors:
+            # merge the regulons (and rename - as sort order might have changed)
+            regulons = Intervals.combine( regulons )
+            transcript_ids = ["%i" % (x+1) for x in range(len(regulons) )]
+            
+        gtf = GTF.Entry()
+        gtf.fromGFF( gene[0][0], gene[0][0].gene_id, gene[0][0].gene_id )
+        gtf.source = "promotor"
+
+        x = 0
+        for start, end in regulons:
+            gtf.start, gtf.end = start, end
+            gtf.transcript_id = transcript_ids[x]
+            options.stdout.write( "%s\n" % str(gtf) )
+            nregulons += 1
+            x += 1
+
+    E.info( "ngenes=%i, ntranscripts=%i, nregulons=%i" % (ngenes, ntranscripts, nregulons) )
+
 
 def annotateTTS( iterator, fasta, options ):
     """annotate termination sites within iterator.
@@ -539,6 +637,113 @@ def annotateTTS( iterator, fasta, options ):
     if options.loglevel >= 1:
         options.stdlog.write( "# ngenes=%i, ntranscripts=%i, ntss=%i\n" % (ngenes, ntranscripts, npromotors) )
 
+def annotateGenes( iterator, fasta, options ):
+    """annotate termination sites within iterator.
+
+    Only protein_coding genes are annotated.
+    """
+
+    gene_iterator = GTF.gene_iterator( iterator )
+
+    ngenes, ntranscripts, nskipped = 0, 0, 0
+
+    results = []
+    increment =  options.flank // options.nflanks 
+
+    for gene in gene_iterator:
+        ngenes += 1
+        is_negative_strand = Genomics.IsNegativeStrand( gene[0][0].strand )
+        try:
+            lcontig = fasta.getLength( gene[0][0].contig )
+        except KeyError:
+            nskipped += 1
+            continue
+
+        results = []
+
+        for transcript in gene:
+
+            def _add( interval, anno ):
+                gtf = GTF.Entry()
+                gtf.contig = transcript[0].contig
+                gtf.gene_id = transcript[0].gene_id
+                gtf.transcript_id = transcript[0].transcript_id
+                gtf.strand = transcript[0].strand
+                gtf.feature = anno
+                gtf.start, gtf.end = interval
+                results.append( gtf )
+
+            ntranscripts += 1
+
+            exons = [ (x.start, x.end) for x in transcript if x.feature == "exon" ]
+            if len(exons) == 0: nskipped += 1
+            
+            exons.sort()
+            introns = []
+            end = exons[0][1]
+            for exon in exons[1:]:
+                introns.append( (end, exon[0]) )
+                end = exon[1]
+
+            # add flank
+            start, end = exons[0][0], exons[-1][1]
+            upstream, downstream = [], []
+            for x in xrange( 0, options.flank, increment ):
+                upstream.append( (start - increment, start) )
+                start -= increment
+                downstream.append( (end, end + increment) )  
+                end += increment
+
+            # remove out-of-bounds coordinates
+            upstream = [ x for x in upstream if x[0] >= 0]
+            downstream = [ x for x in downstream if x[1] <= lcontig ]
+
+            if is_negative_strand:
+                exons.reverse()
+                introns.reverse()
+                upstream, downstream = downstream, upstream
+            
+            # add exons
+            _add( exons[0], "first_exon" )
+            if len(exons) > 1:
+                _add( exons[-1], "last_exon" )
+            for e in exons[1:-1]:
+                _add( e, "middle_exon" )
+                
+            # add introns
+            if len(introns) > 0:
+                _add( introns[0], "first_intron" )
+            if len(introns) > 1:
+                _add( introns[-1], "last_intron" )
+            for i in introns[1:-1]:
+                _add( i, "middle_intron" )
+                
+            for x, u in enumerate( upstream ):
+                _add(u, "upstream_%i" % (increment * x ) )
+
+            for x, u in enumerate( downstream ):
+                _add(u, "downstream_%i" % (increment * x ) )
+                
+            results.sort( key = lambda x: x.feature )
+
+        cache = []
+        for key, vals in itertools.groupby( results, key = lambda x: x.feature  ):
+            v = list(vals)
+            intervals = [(x.start, x.end) for x in v ]
+            intervals = Intervals.combine( intervals )
+            
+            for start, end in intervals:
+                r = GTF.Entry()
+                r.copy( v[0] )
+                r.start, r.end = start, end
+                cache.append( r )
+
+        cache.sort( key = lambda x: x.start )
+        for r in cache:
+            options.stdout.write( "%s\n" % str(r))
+                
+    E.info( "ngenes=%i, ntranscripts=%i, nskipped=%i\n" % (ngenes, ntranscripts, nskipped) )
+
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
@@ -555,7 +760,7 @@ if __name__ == '__main__':
                       help="restrict input by source [default=%default]."  )
 
     parser.add_option("-m", "--method", dest="method", type="choice",
-                      choices=("full", "genome", "territories", "exons", "promotors", "tts", ),
+                      choices=("full", "genome", "territories", "exons", "promotors", "tts", "regulons", "genes"),
                       help="method for defining segments [default=%default]."  )
 
     parser.add_option("-r", "--radius", dest="radius", type="int",
@@ -567,6 +772,12 @@ if __name__ == '__main__':
     parser.add_option("-p", "--promotor", dest="promotor", type="int",
                       help="size of a promotor region [default=%default]."  )
 
+    parser.add_option("-u", "--upstream", dest="upstream", type="int",
+                      help="size of region upstream of tss [default=%default]."  )
+
+    parser.add_option("-d", "--downstream", dest="downstream", type="int",
+                      help="size of region downstream of tss [default=%default]."  )
+
     parser.add_option( "--merge-promotors", dest="merge_promotors", action="store_true",
                        help="merge promotors [default=%default]."  )
 
@@ -576,6 +787,7 @@ if __name__ == '__main__':
     parser.set_defaults(
         genome_file = None,
         flank = 1000,
+        nflanks = 5,
         max_frameshift_length = 4,
         min_intron_length = 30,
         ignore_missing = False,
@@ -584,6 +796,8 @@ if __name__ == '__main__':
         radius = 50000,
         promotor = 5000,
         merge_promotors = False,
+        upstream = 5000,
+        downstream = 5000,
         )
 
     (options, args) = E.Start( parser )
@@ -596,7 +810,7 @@ if __name__ == '__main__':
     if options.restrict_source:
         iterator = GTF.iterator_filtered( GTF.iterator(options.stdin), 
                                           source = options.restrict_source )
-    elif options.method == "promotors" or options.method == "tts":
+    elif options.method in ("promotors", "tts", "regulons"):
         iterator = GTF.iterator_filtered( GTF.iterator(options.stdin), source = "protein_coding" )
     else:
         iterator = GTF.iterator(options.stdin)
@@ -609,8 +823,13 @@ if __name__ == '__main__':
         segmentor = annotateExons( iterator, fasta, options )
     elif options.method == "promotors":
         segmentor = annotatePromoters( iterator, fasta, options )
+    elif options.method == "regulons":
+        segmentor = annotateRegulons( iterator, fasta, options )
     elif options.method == "tts":
         segmentor = annotateTTS( iterator, fasta, options )
+    elif options.method == "genes":
+        segmentor = annotateGenes( iterator, fasta, options )
+
 
     E.Stop()
 

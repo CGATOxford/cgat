@@ -55,7 +55,7 @@ class PicardAlign( MedipTracker ):
                        round(strand_balance*100,2) as Strand_balance, round(pds.percent_duplication*100,2) as Duplicates, round(pct_adapter,2) as Adapter
                        FROM picard_stats_alignment_summary_metrics pas, picard_duplicates_duplicate_metrics pds
                        where pas.track=pds.track and pas.category='PAIR';'''
-        #print (statement)
+        print (statement)
         return self.getAll( statement )
 
 class PicardAlignPlot( MedipTracker ):

@@ -240,6 +240,15 @@ class MastSummary( Mast ):
 
         return odict(data)
 
+class MastMotifEvalues( Mast ):
+    '''distribution of evalues.'''
+    
+    def __call__(self, track, slice = None ):
+        r = odict()
+        for x in ("evalue", "l_evalue", "r_evalue" ):
+            r[x] = self.getValues( "SELECT %(x)s FROM %(track)s_mast WHERE motif = '%(slice)s'" % locals() )
+        return r
+
 # class MastNumberOfMotifs( Mast ):
 #     '''number of motifs matching within intervals.'''
     
@@ -587,7 +596,7 @@ class MemeRuns( IntervalTracker ):
 class MemeResults( IntervalTracker ):
 
     def getTracks( self ):
-        return self.getValues( "SELECT DISTINCT track FROM meme_summary" ) 
+        return self.getValues( "SELECT DISTINCT track FROM meme_summary limit 2" ) 
     
     def __call__(self, track, slice = None ):
         
@@ -606,12 +615,15 @@ class MemeResults( IntervalTracker ):
         result = odict()
         for motif in motifs.getiterator( "motif" ):
             nmotif += 1
+            print "adding", resultsdir + "/logo1.eps"
             result[str(nmotif)] = odict( (\
                     ("width", motif.get("width" )),
                     ("evalue", motif.get("e_value" )),
                     ("information content",motif.get("ic")),
                     ("sites", motif.get("sites" )),
-                    ("link", "`meme_%s_%i <%s/meme.html#summary%i>`_" % (track, nmotif, resultsdir, nmotif)) ))
+                    ("link", "`meme_%s_%i <%s/meme.html#summary%i>`_" % (track, nmotif, resultsdir, nmotif)),
+                    ("img", ".. image:: %s/logo1.eps" % (resultsdir)),
+                    ))
 
         return result
 

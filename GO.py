@@ -190,6 +190,8 @@ import Experiment as E
 import IOTools
 import CSV
 
+from rpy2.robjects import r as R
+
 MIN_FLOAT = sys.float_info.min
 # The following code was taken from:
 #
@@ -825,7 +827,7 @@ def ReadGene2GOFromDatabase( dbhandle, go_type, database, species ):
     result = dbhandle.Execute(statement).fetchall()
 
     gene2go = {}
-    go2info = {}
+    go2info = collections.defaultdict( GOInfo )
     for gene_id, goid, description, evidence in result:
         gm = GOMatch( goid, go_type, description, evidence )
         gi = GOInfo( goid, go_type, description )
@@ -887,9 +889,12 @@ def DumpGOFromDatabase( outfile,
     return 
 
 ##---------------------------------------------------------------------------
-def ReadGene2GOFromFile( infile ):
+def ReadGene2GOFromFile( infile, synonyms = {}, obsolete = {} ):
     """reads GO mappings for all go_types from a
     file.
+
+    If synonyms is given, goids in synynoms will be translated.
+    Terms in *obsolete* will be discarded.
 
     returns two maps: gene2go maps genes to go categories
     and go2info maps go categories to information.
@@ -897,6 +902,8 @@ def ReadGene2GOFromFile( infile ):
 
     gene2gos = {}
     go2infos = {}
+    c = E.Counter()
+
     for line in infile:
         if line[0] == "#": continue
         try:
@@ -904,6 +911,16 @@ def ReadGene2GOFromFile( infile ):
         except ValueError, msg:
             raise ValueError("parsing error in line '%s': %s" % (line[:-1], msg))
         if go_type == "go_type": continue
+
+        c.input += 1
+
+        if goid in synonyms:
+            c.synonyms += 1
+            goid = synonyms[goid]
+
+        if goid in obsolete: 
+            c.obsolete += 1
+            continue
 
         gm = GOMatch( goid, go_type, description, evidence )
         gi = GOInfo( goid, go_type, description )
@@ -917,7 +934,10 @@ def ReadGene2GOFromFile( infile ):
         if gene_id not in gene2go: gene2go[gene_id] = []
         gene2go[gene_id].append(gm)
         go2info[goid] = gi
-    
+        c.output += 1
+        
+    E.debug( "read gene2go assignments: %s" % str(c) )
+
     return gene2gos, go2infos
 
 ##---------------------------------------------------------------------------
@@ -985,6 +1005,22 @@ def ReadGeneLists( filename_genes, gene_pattern = None ):
         gene_lists[header] = set(s)
 
     return all_genes, gene_lists 
+
+##---------------------------------------------------------------------------
+def buildGO2Genes( gene2gos, ancestors = None ):
+    '''invert the dictionary genes2go. 
+
+    If ancestors is given, add missing ancestral information.
+    '''
+    
+    go2genes = collections.defaultdict( set )
+    for gene_id, terms in gene2gos.iteritems():
+        for term in terms:
+            go2genes[term.mGOId].add(gene_id)
+            if ancestors:
+                for anc in ancestors[term.mGOId]:
+                    go2genes[anc].add(gene_id)
+    return go2genes
 
 ##---------------------------------------------------------------------------
 def GetCode( v ):
@@ -1058,7 +1094,7 @@ def convertGo2Goslim( options ):
 
 def outputResults( outfile, pairs, go2info,
                    options,
-                   fdrs = None, samples = None ):
+                   fdrs = None, samples = None, gene2go = None, foreground = None ):
     '''output GO results to outfile.'''
 
     headers = ["code",
@@ -1070,6 +1106,10 @@ def outputResults( outfile, pairs, go2info,
 
     if fdrs:
         headers += ["fdr"]
+
+    if gene2go and foreground:
+        headers += ['foreground']
+        go2genes = buildGO2Genes( gene2go )
 
     if samples:
         headers += ["min", "max", "zscore", "mpover", "mpunder", 
@@ -1096,8 +1136,6 @@ def outputResults( outfile, pairs, go2info,
 
             if k in samples:
                 s = samples[k]
-            else:
-                outfile.write("\n")
 
             ## calculate values for z-score
             if s.mStddev > 0:
@@ -1115,9 +1153,15 @@ def outputResults( outfile, pairs, go2info,
                            scipy.stats.scoreatpercentile( s.mCounts, 5 ),
                            scipy.stats.scoreatpercentile( s.mCounts, 95 ),
                            ) )
+        
+        if foreground:
+            if k in go2genes:
+                g = ";".join( [ x for x in go2genes[k] if x in foreground] )
+            else:
+                g = ""
+            outfile.write("\t%s" % g )
 
         outfile.write("\n")
-
 
 def getSamples( gene2go, genes, background, options, test_ontology ):
 
@@ -1199,11 +1243,6 @@ def getSamples( gene2go, genes, background, options, test_ontology ):
 
         samples[k] = s
 
-        if k in go2info:
-            n = go2info[k]
-        else:
-            n = "?"
-
         outfile.write( "%s\t%i\t%i\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%s\n" %\
                        (k,
                         min(c),
@@ -1215,7 +1254,7 @@ def getSamples( gene2go, genes, background, options, test_ontology ):
                         scipy.stats.scoreatpercentile( c, 95 ),
                         min(prob_overs[k]),
                         min(prob_unders[k]),
-                        n ))
+                        go2info[k] ))
 
     if options.output_filename_pattern:
         outfile.close()
@@ -1235,10 +1274,21 @@ def computeFDRs( go_results, options, test_ontology ):
 
     fdrs = {}
 
+    method = options.qvalue_method
+
     if options.qvalue_method == "storey":
 
         # compute fdr via Storey's method
-        fdr_data = Stats.doFDR( observed_min_pvalues )
+        try:
+            fdr_data = Stats.doFDR( observed_min_pvalues )
+
+        except ValueError, msg:
+            E.warn( "failure in q-value computation: %s" % msg )
+            E.warn( "reverting to Bonferroni correction" )
+            method = "bonf"
+            fdr_data = Stats.FDRResult()
+            l = float(len(observed_min_pvalues))
+            fdr_data.mQValues = [ min(1.0, x * l) for x in observed_min_pvalues ]
 
         for pair, qvalue in zip( pairs, fdr_data.mQValues ):
             fdrs[pair[0]] = (qvalue, 1.0, 1.0)
@@ -1302,9 +1352,14 @@ def computeFDRs( go_results, options, test_ontology ):
                 fdr = 1.0
 
             fdrs[k] = (fdr, a, b)
-
-
-    return fdrs, samples
+    else:
+        qvalues = R['p.adjust']( observed_min_pvalues, method = options.qvalue_method )
+        fdr_data = Stats.FDRResult()
+        fdr_data.mQValues = list(qvalues)
+        for pair, qvalue in zip( pairs, fdr_data.mQValues ):
+            fdrs[pair[0]] = (qvalue, 1.0, 1.0)
+        
+    return fdrs, samples, method
 
 def getFileName( options, **kwargs ):
     if options.output_filename_pattern:
@@ -1400,7 +1455,7 @@ def main():
                        "If not set, genes in foreground will be added to the background [default=%default]." )
 
     parser.add_option("-q", "--qvalue-method", dest="qvalue_method", type="choice",
-                      choices = ( "empirical", "storey" ),
+                      choices = ( "empirical", "storey", "BH" ),
                       help="method to perform multiple testing correction by controlling the fdr [default=%default]."  )
 
     # parser.add_option( "--qvalue-lambda", dest="qvalue_lambda", type="float",
@@ -1438,6 +1493,7 @@ def main():
 
     if options.fdr and options.sample == 0:
         E.warn( "fdr will be computed without sampling" )
+        
 
     #############################################################
     ## dump GO
@@ -1475,7 +1531,10 @@ def main():
         ontology = readOntology( infile )
         infile.close()
         
-        go2infos = collections.defaultdict( dict )
+        def _g():
+            return collections.defaultdict( GOInfo )
+        go2infos = collections.defaultdict( _g );
+
         ## substitute go2infos
         for go in ontology.values():
             go2infos[go.mNameSpace][go.mId] = GOInfo( go.mId,
@@ -1506,12 +1565,31 @@ def main():
             options.ontology = gene2gos.keys()
 
     E.info( "found %i ontologies: %s" % (len(options.ontology), options.ontology))
-    # store all significant results for aggregate output
-    all_significant_results = []
+
+    outfile_summary = options.stdout
+    outfile_summary.write( "\t".join( (
+                "genelist",
+                "ontology",
+                "significant",
+                "threshold",
+                "ngenes",
+                "ncategories",
+                "nmaps",
+                "nforegound",
+                "nforeground_mapped",
+                "nbackground",
+                "nbackground_mapped",
+                "nsample_counts",
+                "nbackground_counts",
+                "psample_assignments",
+                "pbackground_assignments") ) + "\n" )
 
     #############################################################
     ## get go categories for genes
     for test_ontology in options.ontology:
+
+        # store all significant results for aggregate output
+        all_significant_results = []
 
         E.info( "working on ontology %s" % test_ontology )
         #############################################################
@@ -1543,7 +1621,8 @@ def main():
             E.info( "assignments after filtering: %i genes mapped to %i categories (%i maps)" % (ngenes, ncategories, nmaps) )
 
         for genelist_name, foreground in genelists.iteritems():
-        
+
+            msgs = []
             E.info("processing %s with %i genes" % (genelist_name, len(foreground)))
             ##################################################################
             ##################################################################
@@ -1639,11 +1718,30 @@ def main():
                 sys.exit(0)
 
             #############################################################
+            outfile = getFileName( options, 
+                                   go = test_ontology,
+                                   section = 'foreground',
+                                   set = genelist_name )
+
+            outfile.write ("gene_id\n%s\n" % ("\n".join( sorted( foreground) ) ) )
+            if options.output_filename_pattern:
+                outfile.close()
+
+            outfile = getFileName( options, 
+                                   go = test_ontology,
+                                   section = 'background',
+                                   set = genelist_name )
+
+            outfile.write ("gene_id\n%s\n" % ("\n".join( sorted( background) ) ) )
+            if options.output_filename_pattern:
+                outfile.close()
+
+            #############################################################
             ## do the analysis
             go_results = AnalyseGO( gene2go, foreground, background )
 
             if len(go_results.mSampleGenes) == 0:
-                E.warn( "%s: no genes with GO categories - analysis aborted" % genelistname)
+                E.warn( "%s: no genes with GO categories - analysis aborted" % genelist_name)
                 continue
 
             pairs = go_results.mResults.items()
@@ -1651,9 +1749,11 @@ def main():
             #############################################################
             ## calculate fdr for each hypothesis
             if options.fdr:
-                fdrs, samples  = computeFDRs( go_results, options, test_ontology )
+                fdrs, samples, method  = computeFDRs( go_results, options, test_ontology )
             else:
-                fdrs, samples = {}, None
+                fdrs, samples, method = {}, None
+                
+            msgs.append( "fdr=%s" % method)
 
             if options.sort_order == "fdr":
                 pairs.sort( lambda x, y: cmp(fdrs[x[0]], fdrs[y[0]] ) )           
@@ -1723,16 +1823,15 @@ def main():
                                    section = 'parameters',
                                    set = genelist_name )
 
-            outfile.write( "# input go mappings for category '%s'\n" % test_ontology )
-            outfile.write( "value\tparameter\n" )
-            outfile.write( "%i\tmapped genes\n" % ngenes )
-            outfile.write( "%i\tmapped categories\n" % ncategories )
-            outfile.write( "%i\tmappings\n" % nmaps )
-
             nbackground = len(background)
             if nbackground == 0:
                 nbackground = len(go_results.mBackgroundGenes)
 
+            outfile.write( "# input go mappings for gene list '%s' and category '%s'\n" % (genelist_name, test_ontology ))
+            outfile.write( "value\tparameter\n" )
+            outfile.write( "%i\tmapped genes\n" % ngenes )
+            outfile.write( "%i\tmapped categories\n" % ncategories )
+            outfile.write( "%i\tmappings\n" % nmaps )
             outfile.write( "%i\tgenes in sample\n" % len(foreground) )
             outfile.write( "%i\tgenes in sample with GO assignments\n" % (len(go_results.mSampleGenes)) )
             outfile.write( "%i\tinput background\n" % nbackground )
@@ -1741,53 +1840,46 @@ def main():
             outfile.write( "%i\tassociations in background\n" % go_results.mBackgroundCountsTotal )
             outfile.write( "%s\tpercent genes in sample with GO assignments\n" % (IOTools.prettyPercent( len(go_results.mSampleGenes) , len(foreground), "%5.2f" )))
             outfile.write( "%s\tpercent genes background with GO assignments\n" % (IOTools.prettyPercent( len(go_results.mBackgroundGenes), nbackground, "%5.2f" )))
-
             outfile.write( "%i\tsignificant results reported\n" % nselected )
             outfile.write( "%6.4f\tsignificance threshold\n" % options.threshold )        
 
             if options.output_filename_pattern:
                 outfile.close()
 
+            if outfile_summary:
+                outfile_summary.write( "\t".join( map(str, ( \
+                                genelist_name,
+                                test_ontology,
+                                nselected,
+                                options.threshold,
+                                ngenes,
+                                ncategories,
+                                nmaps,
+                                len(foreground),
+                                len(go_results.mSampleGenes),
+                                nbackground,
+                                len(go_results.mBackgroundGenes),
+                                go_results.mSampleCountsTotal,
+                                go_results.mBackgroundCountsTotal,
+                                IOTools.prettyPercent( len(go_results.mSampleGenes) , len(foreground), "%5.2f" ),
+                                IOTools.prettyPercent( len(go_results.mBackgroundGenes), nbackground, "%5.2f" ),
+                                ",".join( msgs) ) ) ) + "\n" )
+
+            #############################################################
+            #############################################################
             #############################################################
             ## output the fg patterns
-
-            #############################################################
-            ## Compute reverse map
-            go2genes = {}
-
-            for gene, gos in gene2go.items():
-                if gene not in foreground: continue
-                for go in gos:
-                    if go.mGOId not in go2genes:
-                        go2genes[go.mGOId] = []
-                    go2genes[go.mGOId].append( gene )
-
             outfile = getFileName( options, 
                                    go = test_ontology,
-                                   section = 'fg',
+                                   section = 'withgenes',
                                    set = genelist_name )
 
-            headers = ["code", "scount", "stotal", "spercent", "bcount", "btotal", "bpercent",
-                       "ratio", 
-                       "pvalue", "pover", "punder", "goid", "category", "description", "fg"]
+            outputResults( outfile, pairs, go2info, options, 
+                           fdrs = fdrs, 
+                           gene2go = gene2go,
+                           foreground = foreground)
 
-            for k, v in pairs:
-
-                code = GetCode( v )            
-
-                if k in go2info:
-                    n = go2info[k]
-                else:
-                    n = GOInfo()
-
-                if k in go2genes:
-                    g = ";".join( go2genes[k] )
-                else:
-                    g = ""
-
-                outfile.write("%s\t%s\t%s\t%s\n" % (code, str(v), n, g ) )
-
-            if outfile != sys.stdout:
+            if options.output_filename_pattern:
                 outfile.close()
 
         if len(genelists) > 1:
@@ -1795,22 +1887,41 @@ def main():
             col_headers = genelists.keys()
 
             # fold change matrix
-            matrix, row_headers = buildMatrix( all_significant_results, valuef = lambda x: math.log( x.mRatio + 0.00000001, 2 ),
+            matrix, row_headers = buildMatrix( all_significant_results, 
+                                               valuef = lambda x: math.log( x.mRatio + 0.00000001, 2 ),
                                                dtype = numpy.float )
+
             outfile = getFileName( options, 
                                    go = test_ontology,
                                    section = 'fold',
                                    set = 'all' )
-            IOTools.writeMatrix( outfile, matrix, row_headers, col_headers )
+            IOTools.writeMatrix( outfile, matrix, row_headers, col_headers, row_header="category" )
+
+            outfile = getFileName( options, 
+                                   go = test_ontology,
+                                   section = 'fold',
+                                   set = 'alldesc' )
+            IOTools.writeMatrix( outfile, matrix, 
+                                 [ "%s:%s" % (x, go2info[x].mDescription) for x in row_headers], 
+                                 col_headers, row_header="category" )
 
             # pvalue matrix
-            matrix, row_headers = buildMatrix( all_significant_results, valuef = lambda x: int(-10 * math.log( x.mPValue,10)),
+            matrix, row_headers = buildMatrix( all_significant_results, 
+                                               valuef = lambda x: int(-10 * math.log( x.mPValue,10)),
                                                dtype = numpy.int )
             outfile = getFileName( options, 
                                    go = test_ontology,
                                    section = 'pvalue',
                                    set = 'all' )
-            IOTools.writeMatrix( outfile, matrix, row_headers, col_headers )
+            IOTools.writeMatrix( outfile, matrix, row_headers, col_headers, row_header="category" )
+
+            outfile = getFileName( options, 
+                                   go = test_ontology,
+                                   section = 'pvalue',
+                                   set = 'alldesc' )
+            IOTools.writeMatrix( outfile, matrix,
+                                 [ "%s:%s" % (x, go2info[x].mDescription) for x in row_headers], 
+                                 col_headers, row_header="category" )
 
     E.Stop()
 

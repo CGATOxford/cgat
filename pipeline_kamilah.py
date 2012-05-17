@@ -63,10 +63,10 @@ import Database
 import PipelineGeneset as PGeneset
 import PipelineAnnotator as PAnnotator
 
-if not os.path.exists("conf.py"):
-    raise IOError( "could not find configuration file conf.py" )
-
-execfile("conf.py")
+if os.path.exists("conf.py"):
+    execfile("conf.py")
+else:
+    EXPERIMENTAL_TRACKS = []
 
 PARAMS = P.getParameters()
 
@@ -75,7 +75,6 @@ PARAMS.update( {
     "genes": "genes.gtf.gz",
     "merged": "merged.gtf.gz",
     "transcripts": "transcripts.gtf.gz" } )
-
 
 def getSourceTrack( track, all_tracks ):
     '''if track is in derived tracks, get the source track.

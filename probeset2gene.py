@@ -66,8 +66,8 @@ import os, sys, re, optparse, collections
 import Experiment as E
 
 import Expression
-import rpy
-from rpy import r as R
+import rpy2
+from rpy2.robjects import r as R
 
 import Experiment as E
 import GTF, IOTools

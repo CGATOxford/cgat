@@ -21,9 +21,9 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 """
-===================
+=========================================
 Read Mapping parameter titration pipeline
-===================
+=========================================
 
 :Author: David Sims 
 :Release: $Id: mapping_titration.py 2900 2011-05-24 14:38:00Z david $
@@ -92,7 +92,7 @@ USECLUSTER = True
 ## Pipeline configuration
 ###################################################
 import Pipeline as P
-P.getParameters(  ["%s.ini" % __file__[:-len(".py")],  "../pipeline.ini", "pipeline.ini" ] )
+P.getParameters(  ["%s/pipeline.ini" % __file__[:-len(".py")],  "../pipeline.ini", "pipeline.ini" ] )
 PARAMS = P.PARAMS
 
 bowtie_options = {'n0m1':"-n 0 -a --best --strata -m 1 -3 1",'n1m1':"-n 1 -a --best --strata -m 1 -3 1",'n2m1':"-n 2 -a --best --strata -m 1 -3 1",'n3m1':"-n 3 -a --best --strata -m 1 -3 1",

@@ -11,7 +11,7 @@ PAPEROPT_a4     = -D latex_paper_size=a4
 PAPEROPT_letter = -D latex_paper_size=letter
 ALLSPHINXOPTS   = -d _build/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 
-DIR_PUBLISH=/home/andreas/public_html/documentation/cgat/
+DIR_PUBLISH=/ifs/home/andreas/public_html/documentation/cgat/
 URL_SUB="s/\/ifs\/devel\/cgat\/doc/http:\/\/www.cgat.org\/~andreas\/documentation\/cgat/"                                                                                  
 
 

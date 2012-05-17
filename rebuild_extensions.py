@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-rebuild_extenstions.py - rebuild all cython extensions
+rebuild_extensions.py - rebuild all cython extensions
 ======================================================
 
 :Author: Andreas Heger
@@ -116,7 +116,7 @@ def main( argv = None ):
             continue
         
         E.info( "compiling %s" % scriptname )
-        os.system( "python %s --help > /dev/null" % scriptname )
+        os.system( "%s %s --help > /dev/null" % (sys.executable, scriptname ) )
 
         noutput += 1
 

@@ -58,7 +58,7 @@ Code
 ----
 
 '''
-import os, sys, string, re, optparse, types, random, collections
+import os, sys, string, re, optparse, types, random, collections, itertools
 
 import GFF,GTF
 import Experiment as E
@@ -127,9 +127,11 @@ if __name__ == '__main__':
                        help="convert exons to introns for a gene. Introns are labelled with the feature 'intron'." )
 
     parser.add_option("-f", "--filter", dest="filter", type="choice",
-                      choices=("gene", "transcript","longest-gene" ),
-                      help="filter by gene-id or transcript-id. If `longest-gene` is chosen, "
-                           " the longest gene is kept case of overlapping genes [default=%default]."  )
+                      choices=("gene", "transcript", "longest-gene", "longest-transcript", "representative-transcript" ),
+                      help="filter by gene-id or transcript-id or other [default=%default]"
+                           " `longest-gene`: the longest gene is kept case of overlapping genes ." 
+                           " `longest-transcript`: the longest transcript per gene is kept." 
+                           " `representative-transcript`: the representative transcript per gene is kept (shared exons)" )
 
     parser.add_option("-r", "--rename", dest="rename", type="choice",
                       choices=("gene", "transcript","longest-gene"),
@@ -544,6 +546,49 @@ if __name__ == '__main__':
                         options.stdout.write("%s\n" % g )
                 else:
                     ndiscarded += 1
+        elif options.filter in ("longest-transcript", "representative-transcript" ):
+            
+            iterator = GTF.gene_iterator( GTF.iterator(options.stdin) )
+
+            def selectLongestTranscript( gene ):
+                r = []
+                for transcript in gene:
+                    transcript.sort( key = lambda x: x.start )
+                    r.append( transcript[-1].end - transcript[0].start )
+                r.sort()
+                return r[-1][1]
+            
+            def selectRepresentativeTranscript( gene ):
+                '''select a representative transcript.
+
+                The representative transcript represent the largest number
+                of exons over all transcripts.
+                '''
+                all_exons = []
+                for transcript in gene:
+                    all_exons.extend( [ (x.start, x.end) for x in transcript if x.feature == "exon"] )
+                exon_counts = {}
+                for key, exons in itertools.groupby( all_exons ):
+                    exon_counts[key] = len(list(exons))
+                transcript_counts = []
+                for transcript in gene:
+                    count = sum( [ exon_counts[(x.start, x.end)] for x in transcript if x.feature == "exon" ] )
+                    transcript_counts.append( (count, transcript) )
+                transcript_counts.sort()
+                return transcript_counts[-1][1]
+
+            if options.filter == "longest_transcript":
+                _selector = selectLongestTranscript
+            elif options.filter == "representative-transcript":
+                _select = selectRepresentativeTranscript
+
+            for gene in iterator:
+                ninput += 1
+                transcript = _select( gene )
+                noutput += 1
+                for g in transcript:
+                    nfeatures += 1
+                    options.stdout.write("%s\n" % g )
 
         elif options.filter in ("gene", "transcript"):
 

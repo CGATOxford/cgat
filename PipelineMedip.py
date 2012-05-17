@@ -78,33 +78,34 @@ def buildDMRStats( tables, method, outfile ):
             return collections.defaultdict( int, [ (tuple( x[:l]), x[l]) for x in vals ] )
 
         E.info( "collecting data from %s" % tablename )
+        
         tested = toDict( Database.executewait( dbhandle,
-                                               """SELECT group1, group2, COUNT(*) FROM %(tablename)s 
-                                GROUP BY group1,group2""" % locals() ).fetchall() )
+                                               """SELECT treatment_name, control_name, COUNT(*) FROM %(tablename)s 
+                                GROUP BY treatment_name,control_name""" % locals() ).fetchall() )
         status = toDict( Database.executewait( dbhandle,
-                                               """SELECT group1, group2, status, COUNT(*) FROM %(tablename)s 
-                                GROUP BY group1,group2,status""" % locals() ).fetchall(), 3 )
+                                               """SELECT treatment_name, control_name, status, COUNT(*) FROM %(tablename)s 
+                                GROUP BY treatment_name,control_name,status""" % locals() ).fetchall(), 3 )
         signif = toDict( Database.executewait( dbhandle,
-                                               """SELECT group1, group2, COUNT(*) FROM %(tablename)s 
+                                               """SELECT treatment_name, control_name, COUNT(*) FROM %(tablename)s 
                                 WHERE significant
-                                GROUP BY group1,group2""" % locals() ).fetchall() )
+                                GROUP BY treatment_name,control_name""" % locals() ).fetchall() )
         fold2 = toDict( Database.executewait( dbhandle,
-                """SELECT group1, group2, COUNT(*) FROM %(tablename)s 
-                                WHERE (lfold >= 1 or lfold <= -1) AND significant
-                                GROUP BY group1,group2,significant""" % locals() ).fetchall() )
+                """SELECT treatment_name, control_name, COUNT(*) FROM %(tablename)s 
+                                WHERE (l2fold >= 1 or l2fold <= -1) AND significant
+                                GROUP BY treatment_name,control_name,significant""" % locals() ).fetchall() )
         
         groups = tested.keys()
 
-        for group1, group2 in groups:
+        for treatment_name, control_name in groups:
             outf.write( "\t".join(map(str, (
                             tileset,
                             design,
-                            group1,
-                            group2,
-                            tested[(group1,group2)],
-                            "\t".join( [ str(status[(group1,group2,x)]) for x in keys_status]),
-                            signif[(group1,group2)],
-                            fold2[(group1,group2)] ) ) ) + "\n" )
+                            treatment_name,
+                            control_name,
+                            tested[(treatment_name,control_name)],
+                            "\t".join( [ str(status[(treatment_name,control_name,x)]) for x in keys_status]),
+                            signif[(treatment_name,control_name)],
+                            fold2[(treatment_name,control_name)] ) ) ) + "\n" )
 
         ###########################################
         ###########################################

@@ -57,17 +57,20 @@ class PipelineError( Exception ): pass
 # possible to use defaultdict, but then statements will
 # fail on execution if a parameter does not exists, and not
 # while building the statement. Hence, use dict.
+ROOT_DIR=os.path.dirname( __file__ )
+
 PARAMS= { 
-    'scriptsdir' : os.path.dirname( __file__ ),
-    'toolsdir' : os.path.dirname( __file__ ),
+    'scriptsdir' : ROOT_DIR,
+    'toolsdir' : ROOT_DIR,
     'cmd-farm' : """%s/farm.py 
                 --method=drmaa 
                 --cluster-priority=-10 
 		--cluster-queue=all.q 
 		--cluster-num-jobs=100 
-		--cluster-options="" """ % os.path.dirname( __file__ ),
+                --bashrc=%s/bashrc.cgat
+		--cluster-options="" """ % (ROOT_DIR,ROOT_DIR),
     'cmd-sql' : """sqlite3 -header -csv -separator $'\\t' """,
-    'cmd-run' : """%s/run.py""" % os.path.dirname( __file__ ),
+    'cmd-run' : """%s/run.py""" % ROOT_DIR
     }
 
 CONFIG = {}
@@ -84,7 +87,7 @@ def configToDictionary( config ):
         for key,value in config.items( section ):
             v = IOTools.convertValue( value )
             p["%s_%s" % (section,key)] = v
-            if section == "general":
+            if section in ( "general", "DEFAULT" ):
                 p["%s" % (key)] = v
                
     for key, value in config.defaults().iteritems():
@@ -119,6 +122,7 @@ def getParameters( filenames = ["pipeline.ini",],
     global CONFIG
 
     CONFIG = ConfigParser.ConfigParser()
+    
     CONFIG.read( filenames )
 
     p = configToDictionary( CONFIG )
@@ -162,10 +166,10 @@ def substituteParameters( **kwargs ):
                 p = k[len(outfile)+1:]
                 if p not in local_params:
                     raise KeyError( "task specific parameter '%s' does not exist for '%s' " % (p,k))
+                E.debug( "substituting task specific parameter for %s: %s = %s" % (outfile,p,local_params[k] ) )
                 local_params[p] = local_params[k]
 
     return local_params
-
 
 def checkFiles( filenames ):
     """check for the presence/absence of files"""
@@ -375,8 +379,10 @@ def getProjectName():
     prefixes = len(PROJECT_ROOT.split("/"))
     return curdir.split( "/" )[prefixes]
 
-def load( infile, outfile = None, 
-          options = "", transpose = None,
+def load( infile, 
+          outfile = None, 
+          options = "", 
+          transpose = None,
           tablename = None):
     '''straight import from tab separated table.
 
@@ -409,16 +415,30 @@ def load( infile, outfile = None,
 
     run()
 
-def mergeAndLoad( infiles, outfile, suffix ):
-    '''load categorical tables (two columns) into a database.
+def mergeAndLoad( infiles, outfile, suffix = None, columns=(0,1), regex = None ):
+    '''load categorical tables into a database.
 
-    The tables are merged and entered row-wise.
+    Columns denotes the columns to be taken.
+
+    The tables are merged and entered row-wise. Each file is 
+    a row.
+
+    Filenames are stored in a ``track`` column. Directory names
+    are chopped off.
     '''
-    header = ",".join( [ quote( snip( x, suffix)) for x in infiles] )
-    if suffix.endswith(".gz"):
-        filenames = " ".join( [ "<( zcat %s | cut -f 1,2 )" % x for x in infiles ] )
+    if suffix:
+        header = ",".join( [ os.path.basename( snip( x, suffix) ) for x in infiles] )
+    elif regex:
+        header = ",".join( [ "-".join(re.search( regex, x).groups()) for x in infiles] )        
     else:
-        filenames = " ".join( [ "<( cat %s | cut -f 1,2 )" % x for x in infiles ] )
+        header = ",".join( [ os.path.basename( x ) for x in infiles] )
+
+    columns = ",".join( map(str, [ x + 1 for x in columns ]))
+
+    if infiles[0].endswith(".gz"):
+        filenames = " ".join( [ "<( zcat %s | cut -f %s )" % (x,columns) for x in infiles ] )
+    else:
+        filenames = " ".join( [ "<( cat %s | cut -f %s )" % (x,columns) for x in infiles ] )
 
     tablename = toTable( outfile )
 
@@ -436,14 +456,18 @@ def mergeAndLoad( infiles, outfile, suffix ):
             """
     run()
 
-def snip( filename, extension = None):
+def snip( filename, extension = None, alt_extension = None):
     '''return prefix of filename.
 
     If extension is given, make sure that filename has the extension.
     '''
     if extension: 
-        assert filename.endswith( extension )        
-        return filename[:-len(extension)]
+        if filename.endswith( extension ):
+            return filename[:-len(extension)]
+        elif filename.endswith( alt_extension ):
+            return filename[:-len(alt_extension)]
+        else:
+            raise ValueError("'%s' expected to end in '%s'" % (filename, extension))
 
     root, ext = os.path.splitext( filename )
     return root
@@ -691,7 +715,7 @@ def run( **kwargs ):
         jobids, filenames = [], []
         for statement in statement_list:
             # create job script
-            tmpfile = tempfile.NamedTemporaryFile( dir = os.getcwd() , delete = False )
+            tmpfile = getTempFile( dir = os.getcwd() )
             tmpfile.write( "#!/bin/bash\n" ) #  -l -O expand_aliases\n" )
             tmpfile.write( 'echo "START--------------------------------" >> %s \n' % shellfile )
             # disabled - problems with quoting
@@ -738,7 +762,10 @@ def run( **kwargs ):
                                           "".join( stderr),
                                           statement ) )
 
-            os.unlink( job_path )
+            try:
+                os.unlink( job_path )
+            except OSError:
+                L.warn( "temporary job file %s not present for clean-up - ignored" % job_path )
             
         session.deleteJobTemplate(jt)
 
@@ -749,7 +776,7 @@ def run( **kwargs ):
 
         if options.get( "dryrun", False ): return
 
-        tmpfile = tempfile.NamedTemporaryFile( dir = os.getcwd() , delete = False )
+        tmpfile = getTempFile( dir = os.getcwd() )
         tmpfile.write( "#!/bin/bash\n" ) #  -l -O expand_aliases\n" )
         tmpfile.write( 'echo "START--------------------------------" >> %s \n' % shellfile )
         # disabled - problems with quoting
@@ -813,8 +840,10 @@ def run( **kwargs ):
                                           "".join( stderr), statement))
             
         session.deleteJobTemplate(jt)
-        os.unlink( job_path )
-
+        try:
+            os.unlink( job_path )
+        except OSError:
+            L.warn( "temporary job file %s not present for clean-up - ignored" % job_path )
     else:
         statement = buildStatement( **options )
 
@@ -851,6 +880,59 @@ class MultiLineFormatter(logging.Formatter):
             s = s.replace('\n', '\n' + ' '*len(header))
         return s
 
+def clonePipeline( srcdir ):
+    '''clone a pipeline.'''
+    
+    destdir = os.path.curdir
+
+    copy_files = ("sphinxreport.ini", "conf.py", "pipeline.ini", "csvdb" )
+    ignore_prefix = ("report", "_cache", "export", "tmp", "ctmp", "_static", "_templates" )
+
+    def _ignore( p ):
+        for x in ignore_prefix:
+            if p.startswith( x ): 
+                return True
+        return False
+
+    for root, dirs, files in os.walk(srcdir):
+
+        relpath = os.path.relpath( root, srcdir )
+        if _ignore( relpath ): continue
+
+        for d in dirs:
+            if _ignore( d ): continue
+            dest = os.path.join( os.path.join(destdir, relpath, d ) )
+            os.mkdir( dest )
+            # touch
+            s = os.stat( os.path.join(root, d ) )
+            os.utime( dest, (s.st_atime, s.st_mtime ))
+
+        for f in files:
+            if _ignore( f ): continue
+
+            fn = os.path.join( root, f )
+            dest_fn = os.path.join( destdir, relpath, f ) 
+            if f in copy_files:
+                shutil.copyfile( fn, dest_fn )
+            else:
+                # realpath resolves links - thus links will be linked to
+                # the original target
+                os.symlink( os.path.realpath( fn),
+                            dest_fn )
+
+def writeConfigFiles( path ):
+    
+    for dest in ( "pipeline.ini", "sphinxreport.ini", "conf.py" ):
+        src = os.path.join( path, dest)
+        if os.path.exists(dest):
+            L.warn( "file `%s` already exists - skipped" % dest )
+            continue
+
+        if not os.path.exists( src ):
+            raise ValueError( "default config file `%s` not found"  % src )
+        shutil.copyfile( src, dest )
+        L.info( "created new configuration file `%s` " % dest )
+
 USAGE = '''
 usage: %prog [OPTIONS] [CMD] [target]
 
@@ -868,7 +950,8 @@ plot <target>
    plot image (using inkscape) of pipeline state for *target*
 
 config
-   write a new configuration file pipeline.ini with default values
+   write new configuration files pipeline.ini, sphinxreport.ini and conf.py
+   with default values
 
 dump
    write pipeline configuration to stdout
@@ -884,7 +967,7 @@ def main( args = sys.argv ):
                                     usage = USAGE )
     
     parser.add_option( "--pipeline-action", dest="pipeline_action", type="choice",
-                       choices=("make", "show", "plot", "dump", "config" ),
+                       choices=("make", "show", "plot", "dump", "config", "clone" ),
                        help="action to take [default=%default]." )
 
     parser.add_option( "--pipeline-format", dest="pipeline_format", type="choice",
@@ -903,7 +986,7 @@ def main( args = sys.argv ):
     parser.set_defaults(
         pipeline_action = None,
         pipeline_format = "svg",
-        pipeline_target = "full",
+        pipeline_targets = [],
         multiprocess = 2,
         logfile = "pipeline.log",
         dry_run = False,
@@ -923,7 +1006,7 @@ def main( args = sys.argv ):
     if args: 
         options.pipeline_action = args[0]
         if len(args) > 1:
-            options.pipeline_target = args[1]
+            options.pipeline_targets.extend( args[1:] )
 
     if options.pipeline_action in ("make", "show", "svg", "plot", "touch" ):
 
@@ -941,7 +1024,7 @@ def main( args = sys.argv ):
                 L.info( "code location: %s" % PARAMS["scriptsdir"] )
                 L.info( "code version: %s" % version[:-1] )
 
-                pipeline_run( [ options.pipeline_target ], 
+                pipeline_run( options.pipeline_targets, 
                               multiprocess = options.multiprocess, 
                               logger = logger,
                               verbose = options.loglevel )
@@ -949,43 +1032,45 @@ def main( args = sys.argv ):
                 L.info( E.GetFooter() )
 
             elif options.pipeline_action == "show":
-                pipeline_printout( options.stdout, [ options.pipeline_target ], verbose = options.loglevel )
+                pipeline_printout( options.stdout, options.pipeline_targets, verbose = options.loglevel )
 
             elif options.pipeline_action == "touch":
-                pipeline_run( [ options.pipeline_target ], 
+                pipeline_run( options.pipeline_targets, 
                               touch_files_only = True,
                               verbose = options.loglevel )
 
             elif options.pipeline_action == "svg":
                 pipeline_printout_graph( options.stdout, 
                                          options.pipeline_format,
-                                         [ options.pipeline_target ] )
+                                         options.pipeline_targets )
+
             elif options.pipeline_action == "plot":
                 outf, filename = tempfile.mkstemp()
                 pipeline_printout_graph( os.fdopen(outf,"w"),
                                          options.pipeline_format,
-                                         [ options.pipeline_target ] )
+                                         options.pipeline_targets )
                 execute( "inkscape %s" % filename ) 
                 os.unlink( filename )
 
         except ruffus_exceptions.RethrownJobError, value:
             E.error("some tasks resulted in errors - error messages follow below" )
-            E.error( value )
+            # print value
+            # E.error( value )
             raise
 
     elif options.pipeline_action == "dump":
         # convert to normal dictionary (not defaultdict) for parsing purposes
         print "dump = %s" % str(dict(PARAMS))
+
     elif options.pipeline_action == "config":
-        if os.path.exists("pipeline.ini"):
-            raise ValueError( "file `pipeline.ini` already exists" )
         f = sys._getframe(1)
         caller = inspect.getargvalues(f).locals["__file__"]
-        configfile = os.path.splitext(caller)[0] + ".ini" 
-        if not os.path.exists( configfile ):
-            raise ValueError( "default config file `%s` not found"  % configfile )
-        shutil.copyfile( configfile, "pipeline.ini" )
-        L.info( "created new configuration file `pipeline.ini` " )
+        prefix = os.path.splitext(caller)[0]
+        writeConfigFiles( prefix )
+
+    elif options.pipeline_action == "clone":
+        clonePipeline( options.pipeline_targets[0] )
+
     else:
         raise ValueError("unknown pipeline action %s" % options.pipeline_action )
 
@@ -1043,6 +1128,7 @@ def run_report( clean = True):
 
     dirname, basename = os.path.split( getCaller().__file__ )
     docdir = os.path.join( dirname, "pipeline_docs", snip( basename, ".py" ) )
+    themedir = os.path.join( dirname, "pipeline_docs", "themes")
     relpath = os.path.relpath( docdir )
     trackerdir = os.path.join( docdir, "trackers" )
 
@@ -1073,6 +1159,7 @@ def run_report( clean = True):
     statement = '''
     %(clean)s
     ( export SPHINX_DOCSDIR=%(docdir)s; 
+      export SPHINX_THEMEDIR=%(themedir)s; 
     %(xvfb_command)s
     sphinxreport-build 
            --num-jobs=%(report_threads)s

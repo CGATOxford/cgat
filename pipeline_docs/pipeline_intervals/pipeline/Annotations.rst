@@ -52,5 +52,21 @@ Overview
    :render: matrix
    :transform-matrix: normalized-row-max
 
-   Bases overlapping annotations.
+   Table of bases overlapping annotations.
+
+Significance
+============
+
+.. report:: GAT.GatLogFold
+   :render: interleaved-bar-plot
+   :restrict: r(.*H3.*),r(.*kap1.*),Irf5-120m-R1,Rela-120m-R1,r(.*p300.*),r(.*PU.*)
+   :tracks: enhancer_territories_Rela_120m_R1,marks_territories_Irf5_120m_R1
+   :groupby: track
+   :colour: colour
+   :layout: column-2
+   :width: 300
+   :extra-formats: svg
+
+   Fold change. Those that are significant (qvalue < 0.05) are shown
+   in red.
 

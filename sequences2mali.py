@@ -60,9 +60,7 @@ import Experiment
 import IOTools
 import Mali
 import alignlib
-import Bio
-import Bio.Fasta
-
+import FastaIterator
 
 def convertMali2Mali( mali ):
     """convert a mali to a profile."""
@@ -114,8 +112,7 @@ if __name__ == '__main__':
 
     options.parameters = options.parameters.split(",")    
 
-    parser = Bio.Fasta.RecordParser()
-    iterator = Bio.Fasta.Iterator( sys.stdin, parser)
+    iterator = FastaIterator.iterate( sys.stdin )
 
     if options.method == "add":
         

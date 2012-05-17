@@ -137,7 +137,7 @@ def combineUnmergedIntervals( foreground, background ):
     for bed in foreground.fetch( parser = pysam.asBed() ):
         c += 1
         if isContainedInAll( bed.contig, bed.start, bed.end, background ):
-            yield bed.contig, bed.start, bed.end
+            yield bed
 
 def main( argv = None ):
     """script main.
@@ -245,15 +245,15 @@ def main( argv = None ):
 
                     outf = IOTools.openFile( E.getOutputFile( tag ), "w", create_dir = True)
                     c = E.Counter()
-                    for contig, start, end in combineUnmergedIntervals(
+                    for bed in combineUnmergedIntervals(
                         bedfiles[foreground],
                         combination_bed ):
                         c.found += 1
-                        if is_exclusive and isContainedInOne( contig, start, end, other_bed ):
+                        if is_exclusive and isContainedInOne( bed.contig, bed.start, bed.end, other_bed ):
                             c.removed += 1
                             continue
                         c.output += 1
-                        outf.write( "%s\t%i\t%i\n" % (contig, start, end ) )
+                        outf.write( "%s\n" % str(bed))
 
                     outf.close()
                     E.info( "combination %s finished: %s" % (tag, c))

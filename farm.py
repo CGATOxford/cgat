@@ -113,7 +113,7 @@ def chunk_iterator_lines( infile, args, prefix, use_header = False ):
     chunk_size = args[0]
     n = 0
     filename = "%s/%010i.in" % (prefix, n)
-    outfile = open( filename, "w" )
+    outfile = IOTools.openFile( filename, "w" )
     header = None
 
     for line in infile:
@@ -130,7 +130,7 @@ def chunk_iterator_lines( infile, args, prefix, use_header = False ):
             outfile.close()
             yield filename
             filename = "%s/%010i.in" % (prefix, n)
-            outfile = open( filename, "w" )
+            outfile = IOTools.openFile( filename, "w" )
             if header: outfile.write( header )
 
         outfile.write( line )
@@ -216,7 +216,7 @@ def chunk_iterator_regex_group( infile, args, prefix, use_header = False ):
             last = this
 
             filename = "%s/%s.in" % (prefix, this)
-            outfile = open( filename, "w" )
+            outfile = IOTools.openFile( filename, "w" )
             if header: outfile.write( header )
             n = 0
 
@@ -241,7 +241,7 @@ def chunk_iterator_regex_split( infile, args, prefix, use_header = False ):
     nlines = 0
     n = 0
     filename = "%s/%010i.in" % (prefix, n)
-    outfile = open( filename, "w" )
+    outfile = IOTools.openFile( filename, "w" )
 
     for line in infile:
 
@@ -252,7 +252,7 @@ def chunk_iterator_regex_split( infile, args, prefix, use_header = False ):
                 outfile.close()
                 yield filename
                 filename = "%s/%010i.in" % (prefix, n)
-                outfile = open( filename, "w" )
+                outfile = IOTools.openFile( filename, "w" )
                 nlines = 0
 
             n += 1
@@ -372,7 +372,7 @@ class ResultBuilder:
 
         for fi, fn in filenames:
             E.debug( "# merging %s" % fn )
-            infile = open( fn, "r" )
+            infile = IOTools.openFile( fn, "r" )
 
             if options.output_header: 
                 self.parseHeader( infile, outfile, options )
@@ -426,7 +426,7 @@ class ResultBuilderFasta( ResultBuilder) :
     
     def __call__( self, filenames, outfile, options ):
         for fi, fn in filenames:
-            infile = open( fn, "r" )
+            infile = IOtools.openFile( fn, "r" )
             for l in infile:
                 if l[0] == "#": 
                     options.stdlog.write( l )
@@ -446,7 +446,20 @@ class ResultBuilderBinary( ResultBuilder) :
     
     def __call__( self, filenames, outfile, options ):
         for fi, fn in filenames:
-            shutil.copyfileobj( open(fn, "r"), outfile )
+            shutil.copyfileobj( IOTools.openFile(fn, "r"), outfile )
+
+class ResultBuilderCopies( ResultBuilder) :
+    '''create indexed copiers.'''
+
+    def __init__( self, *args, **kwargs ):
+        ResultBuilder.__init__(self, *args, **kwargs)
+    
+    def __call__( self, filenames, outfile, options ):
+        idx = 0
+        base, ext = os.path.splitext( outfile.name )
+        for fi, fn in filenames:
+            idx += 1
+            shutil.copyfile( fn, base + ".%i" % idx + ext )
 
 class ResultBuilderLog( ResultBuilder) :
     """processor for log files."""
@@ -456,7 +469,7 @@ class ResultBuilderLog( ResultBuilder) :
     
     def __call__( self, filenames, outfile, options ):
         for fi, fn in filenames:
-            infile = open( fn, "r" )
+            infile = IOTools.openFile( fn, "r" )
             outfile.write("######### logging output for %s ###################\n" % fi)
             for l in infile:
                 outfile.write(l)
@@ -491,11 +504,12 @@ def runCommand( data ):
         if r"\|" not in cmd:
             E.warn( "pipes (`|`) within command need to be escaped, otherwise jobs run on submit host" )
 
-    c = "%s -q %s -p %i %s %s" % (options.cluster_cmd, 
-                                  options.cluster_queue,
-                                  options.cluster_priority,
-                                  options.cluster_options,
-                                  cmd )
+    c = '%s -v "BASH_ENV=%s" -q %s -p %i %s %s' % (options.cluster_cmd, 
+                                                   options.bashrc,
+                                                   options.cluster_queue,
+                                                   options.cluster_priority,
+                                                   options.cluster_options,
+                                                   cmd )
 
     iteration = 0
 
@@ -507,9 +521,9 @@ def runCommand( data ):
         else:
             E.info("%s: submitting command: %s" % (filename, c))
 
-        infile = open( filename, "r" )
-        outfile = open( filename + ".out", "w")
-        errfile = open( filename + ".err", "a")
+        infile = IOtolos.openFile( filename, "r" )
+        outfile = IOTools.openFile( filename + ".out", "w")
+        errfile = IOTools.openFile( filename + ".err", "a")
 
         retcode = subprocess.call( c,
                                    shell = True,
@@ -620,7 +634,7 @@ def runDRMAA( data, environment ):
         # get session for process - only one is permitted
         jt.workingDirectory = os.getcwd()
         jt.remoteCommand = job_path
-        e = { 'BASH_ENV' : '~/.bashrc' }
+        e = { 'BASH_ENV' : options.bashrc }
         if environment:
             for en in environment:
                 try:
@@ -698,7 +712,7 @@ def getOptionParser():
                        help = "split a file at a tag [default=%default]." )
 
     parser.add_option( "--chunksize", dest="chunksize", type="int",
-                       help = "aggregate x entries [default=%default]." )
+                       help = "when splitting at regex or tag, aggregate x entries [default=%default]." )
 
     parser.add_option( "--debug", dest="debug", action="store_true",
                        help = "debug mode. Do not delete temporary file [default=%default]." )
@@ -757,6 +771,9 @@ def getOptionParser():
     parser.add_option( "--fail", dest="resubmit", action="store_false",
                        help = "if a job fails, do not resubmit [%default]")
 
+    parser.add_option( "--bashrc", dest="bashrc", type="string",
+                       help = "bashrc file to use [%default]")
+
     parser.add_option( "--method", dest="method", type="choice",
                        choices=("multiprocessing", "threads", "drmaa"),
                        help = "method to submit jobs [%default]")
@@ -764,6 +781,9 @@ def getOptionParser():
     parser.add_option( "-e", "--env", dest="environment", type="string", action="append",
                        help = "environment variables to be passed to the jobs [%default]" )
 
+    parser.add_option( "--output-pattern", dest="output_pattern", type="string",
+                       help = "Pattern for secondary output filenames. Should contain a '%s' " 
+                              "[default=%default]." )
     parser.set_defaults( 
         split_at_lines = None,
         split_at_column = None,
@@ -771,7 +791,8 @@ def getOptionParser():
         group_by_regex = None,
         split_at_tag = None,
         chunksize = None,
-        cluster_cmd = 'qrsh -cwd -now n -v "BASH_ENV=~/.bashrc"',
+        cluster_cmd = 'qrsh -cwd -now n',
+        bashrc = "~/.bashrc",
         input_header = False,
         output_header = False,
         debug = False,
@@ -791,6 +812,7 @@ def getOptionParser():
         max_lines = None,
         binary = False,
         environment = [],
+        output_pattern = "%s",
         )
 
     ## stop parsing options at the first argument
@@ -806,9 +828,12 @@ def main():
     (options, args) = E.Start( parser, 
                                add_cluster_options = True )
 
+    if len(args) == 0:
+        raise ValueError( "command line argument missing - see usage information" )
 
     options.renumber_column = [ x.split( ":" ) for x in options.renumber_column ]
 
+        
     cmd = args[0]
     if len(args) > 1:
         cmd += " '" + "' '".join(args[1:]) + "'" 
@@ -846,6 +871,8 @@ def main():
         elif options.group_by_regex:
             chunk_iterator = chunk_iterator_regex_group
             args = (re.compile( options.group_by_regex ),0, options.chunksize)
+        else:
+            raise ValueError( "please specify a way to chunk input data" )
 
         data = [ (x, cmd, options, None, options.subdirs) for x in chunk_iterator( options.stdin, 
                                                                                    args, 
@@ -935,7 +962,7 @@ def main():
         x = re.search( "'--log=(\S+)'", cmd ) or re.search( "'--L\s+(\S+)'", cmd )
         if x:
             E.info( "logging output goes to %s" % x.groups()[0])
-            logfile = open(x.groups()[0], "a")
+            logfile = IOtools.openFile(x.groups()[0], "a")
             ResultBuilderLog() ( [ (x[0], "%s.log" % x[0]) for x in started_requests ], logfile, options )
             logfile.close()
 
@@ -943,18 +970,19 @@ def main():
         if options.subdirs:
 
             files = glob.glob( "%s/*.dir/*" % tmpdir )
-            suffixes = set([ re.sub(".*/", "", x) for x in files ])
+            # remove directory
+            filenames = set([ os.path.basename(x) for x in files ])
             xx = len(".out")
 
-            for suffix in suffixes:
+            for filename in filenames:
 
-                filetype = suffix[suffix.rindex("."):]
+                _, filetype = os.path.splitext( filename )
 
                 name = None
                 index = None
 
                 for pattern, column in options.renumber_column:
-                    if re.search( pattern, suffix):
+                    if re.search( pattern, filename):
                         try:
                             index = int(column) - 1
                         except ValueError:
@@ -971,25 +999,25 @@ def main():
                     builder = ResultBuilderPSL( mapper = mapper )
                 elif filetype in ( ".gtf", ".gff"):
                     builder = ResultBuilderGFF( mapper = mapper, field_index = index, field_name = name )
-                elif filetype in (".gz"):
-                    raise NotImplementedError( "gzipped files still need to be implemented")
+                elif filetype in ( ".png" ):
+                    builder = ResultBuilderCopies( mapper = mapper )
                 else:
                     builder = ResultBuilder( mapper = mapper, field_index = index, field_name = name )
 
-                E.debug("chose the following builder for %s: %s: %s" % (suffix, filetype, str(builder)))
+                E.debug("chose the following builder for %s: %s: %s" % (filename, filetype, str(builder)))
 
-                E.info( "collecting results for %s" % suffix )
+                E.info( "collecting results for %s" % filename )
 
-                filenames = []
+                input_filenames = []
                 for fi, fn in started_requests:
-                    fn = fn[:-xx] + ".dir/" + suffix
+                    fn = fn[:-xx] + ".dir/" + filename
                     if os.path.exists( fn ):
-                        filenames.append( (fi, fn)  )
+                        input_filenames.append( (fi, fn)  )
 
-                E.info( "output of %i files goes to %s" % (len(filenames), suffix ) )
+                E.info( "output of %i files goes to %s" % (len(filenames), filename ) )
 
-                outfile = open( suffix, "w" )
-                builder( filenames, outfile, options )
+                outfile = IOTools.openFile( options.output_pattern % filename, "w" )
+                builder( input_filenames, outfile, options )
                 outfile.close()
 
     if not options.debug and (not options.resume or not options.collect):

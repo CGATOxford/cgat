@@ -226,6 +226,14 @@ def sequences2motif( outfile, sequences, background_frequencies = None, format =
             outfile.write( " ".join(
                 ["%5.3f" % (math.log( float(row_counts[x]) / nsequences / background_frequencies[x]) )
                  for x in range(lalphabet)] ) + "\n" )
+    elif format == "probability":
+        for r in range( 0, motif_width):
+            # use a pseudocount of 1
+            row_counts = [ 1 ] * lalphabet
+            for s in seqs: row_counts[char2index[s[r]]] += 1
+            outfile.write( " ".join(
+                ["%5.3f" % (float(row_counts[x]) / nsequences ) 
+                 for x in range(lalphabet) ] ) + "\n" )
                    
     elif format == "TOMTOM":
         counts = numpy.zeros( (motif_width, lalphabet) )

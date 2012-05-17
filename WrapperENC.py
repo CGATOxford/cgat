@@ -39,9 +39,8 @@ import os, sys, string, re, tempfile, subprocess, optparse
 """
 
 import Experiment
-import Bio.Fasta
+import FastaIterator
 
-parser = optparse.OptionParser( version = "%prog version: $Id: WrapperENC.py 14 2005-08-09 15:24:07Z andreas $")
 
 class ENCError(Exception):
     pass
@@ -108,7 +107,7 @@ class ENC:
                                  " ")
 
         
-        i = Bio.Fasta.Iterator( infile, Bio.Fasta.RecordParser() )
+        i = FastaIterator.FastaIterator( infile )
 
         outfile.write( "GENE\tENC\n")
         
@@ -143,6 +142,8 @@ class ENC:
         self.DeleteTemporaryFiles()
     
 if __name__ == "__main__":
+
+    parser = optparse.OptionParser( version = "%prog version: $Id: WrapperENC.py 14 2005-08-09 15:24:07Z andreas $")
 
     parser.add_option("-f", "--input-file", dest="input_filename", type="string",
                       help="input filename. If '-', stdin is used [default=%default].",

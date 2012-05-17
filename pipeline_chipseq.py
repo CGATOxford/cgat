@@ -216,7 +216,7 @@ import PipelineMapping
 ###################################################
 import Pipeline as P
 P.getParameters( 
-    ["%s.ini" % __file__[:-len(".py")],
+    ["%s/pipeline.ini" % __file__[:-len(".py")],
      "../pipeline.ini",
      "pipeline.ini" ],
     defaults = {
@@ -224,7 +224,7 @@ P.getParameters(
 
 PARAMS = P.PARAMS
 
-PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],
+PARAMS_ANNOTATIONS = P.peekParameters(PARAMS["annotations_dir"],
                                        "pipeline_annotations.py" )
 
 ###################################################################
@@ -238,6 +238,7 @@ Sample = PipelineTracks.Sample3
 suffixes = ["export.txt.gz",
             "sra",
             "fastq.gz",
+            "fa.gz",
             "cfastq.1.gz",
             "csfasta.gz" ]
 
@@ -393,8 +394,9 @@ if PARAMS["mapping_mapper"] == "bowtie":
                  "*.fastq.1.gz", 
                  "*.fastq.gz",
                  "*.sra",
+                 "*.fa.gz",
                  "*.csfasta.gz" ),
-                regex( r"(\S+).(export.txt.gz|fastq.1.gz|fastq.gz|sra|csfasta.gz)"), 
+                regex( r"(\S+).(export.txt.gz|fastq.1.gz|fa.gz|fastq.gz|sra|csfasta.gz)"), 
                 r"\1.genome.bam" )
     def buildBAM( infile, outfile ):
         '''re-map eland formatted reads with bowtie
@@ -1076,7 +1078,6 @@ def buildReadProfileOfTranscripts( infiles, outfile ):
     
     statement = '''python %(scriptsdir)s/bam2geneprofile.py
                       --output-filename-pattern="%(outfile)s.%%s"
-                      --f
                       --reporter=transcript
                       --method=geneprofile 
                       --method=tssprofile 
@@ -1919,7 +1920,7 @@ def annotateIntervals( infile, outfile ):
     to_cluster = True
 
     annotation_file = os.path.join( PARAMS["annotations_dir"],
-                                    PARAMS_ANNOTATIONS["interface_geneset_all_gtf"] )
+                                    PARAMS_ANNOTATIONS["interface_annotation_gff"] )
 
     statement = """
     zcat < %(infile)s 

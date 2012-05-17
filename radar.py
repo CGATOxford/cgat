@@ -78,7 +78,7 @@ that the edit operations are called upon.
 import Experiment
 import IOTools
 import Genomics
-import Bio, Bio.Fasta
+import FastaIterator
 
 ##------------------------------------------------------------
 if __name__ == '__main__':
@@ -116,8 +116,7 @@ if __name__ == '__main__':
 
     (options, args) = Experiment.Start( parser )
     
-    parser = Bio.Fasta.RecordParser()
-    iterator = Bio.Fasta.Iterator( sys.stdin, parser)
+    iterator = FastaIterator.FastaIterator( sys.stdin)
 
     nseq = 0
 

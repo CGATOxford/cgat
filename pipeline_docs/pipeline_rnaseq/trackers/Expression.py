@@ -5,6 +5,34 @@ from SphinxReport.odict import OrderedDict as odict
 
 from RnaseqReport import *
 
+import numpy
+
+class TrackerGeneCounts( RnaseqTracker ):
+    '''tracker with gene counts.'''
+    pattern = "(\S+)_gene_counts$"
+    
+class TrackerRealEstate( TrackerGeneCounts ):
+    '''return proportion of reads mapped to genes stratified by expression level.'''
+    
+    slices = ( "anysense_unique_counts", "anysense_all_counts" )
+
+    def __call__(self, track, slice):
+        statement = '''
+        SELECT count(gene_id) AS ngenes,
+               %(slice)s * count(gene_id) AS reads_times_genes
+        FROM %(track)s_gene_counts 
+        GROUP BY %(slice)s
+        ORDER BY %(slice)s DESC'''
+        
+        data = self.getAll( statement )
+        r = numpy.array( data["reads_times_genes"], dtype= numpy.float )
+        data["reads_times_genes"] = r.cumsum() / r.sum() * 100.0
+
+        r = numpy.array( data["ngenes"], dtype=numpy.float )
+        data["ngenes"] = r.cumsum()
+        
+        return data
+
 class TrackerExpressionGeneset( RnaseqTracker ):
     min_fpkm = 1
     @property
@@ -22,7 +50,7 @@ class TrackerExpressionAbInitio( RnaseqTracker ):
 
 class TrackerExpressionReference( RnaseqTracker ):
     pattern = "(.*)_ref_genes$"
-    
+
 class ExpressionFPKM( TrackerExpressionGeneset ):
     def __call__(self, track, slice = None ):
         c = "%s_FPKM" % slice

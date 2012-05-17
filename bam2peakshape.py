@@ -51,6 +51,11 @@ histogram - a histogram of read depth within the interval.
    
    paired-endedness is not fully implemented.
 
+-c/--control-file
+   if given, two peakshapers are computed, one for the primary and one for the control
+   :term:`bam` file. The control file is centered around the same
+   base as the primary file and output in the same sort order as the primary profile.
+
 Usage
 -----
 
@@ -115,7 +120,20 @@ def main( argv = None ):
                               "[%default]" )
 
     parser.add_option( "-i", "--shift", dest="shift", type = "int",
-                       help = "shift for reads. Reads will be shifted upstream/downstream by this amount"
+                       help = "shift for reads. Reads will be shifted upstream/downstream by this amount. "
+                              "[%default]" )
+
+    parser.add_option( "-c", "--control-file", dest="control_file", type = "string",
+                       help = "control file "
+                              "[%default]" )
+
+    parser.add_option( "-r", "--random-shift", dest="random_shift", action="store_true",
+                       help = "shift intervals in random direction directly up/downstream of interval "
+                              "[%default]" )
+
+    parser.add_option( "-e", "--centring-method", dest="centring_method", type = "choice",
+                       choices = ("reads", "middle"),
+                       help = "centring method (reads=use reads to determine peak, middle=use middle of interval" 
                               "[%default]" )
 
     parser.set_defaults(
@@ -128,6 +146,8 @@ def main( argv = None ):
         window_size = 1000,
         sort = [],
         centring_method = "reads",
+        control_file = None,
+        random_shift = False,
         )
 
     ## add common options (-h/--help, ...) and parse command line 
@@ -140,6 +160,12 @@ def main( argv = None ):
 
     pysam_in = pysam.Samfile( bamfile, "rb" )
     shift = options.shift
+
+    if options.control_file:
+        E.info("using control file %s" % options.control_file)
+        pysam_control = pysam.Samfile( options.control_file, "rb" )
+    else:
+        pysam_control = None
 
     options.stdout.write( "\t".join( ("contig", 
                                       "start",
@@ -170,7 +196,29 @@ def main( argv = None ):
                                          bins = bins,
                                          only_interval = options.only_interval,
                                          centring_method = options.centring_method )
-        result.append( (features, bed) )
+
+        if pysam_control:
+            control = _bam2peakshape.countAroundPos(pysam_control, 
+                                                    bed.contig,
+                                                    features.peak_center,
+                                                    shift = shift,
+                                                    bins = features.bins )
+        else:
+            control = None
+
+        if options.random_shift:
+            direction = numpy.random.randint( 0, 2 )
+            if direction: pos = features.peak_center + 2 * bins[0]
+            else: pos = features.peak_center + 2 * bins[-1]
+            shifted = _bam2peakshape.countAroundPos(pysam_in, 
+                                                    bed.contig,
+                                                    pos,
+                                                    shift = shift,
+                                                    bins = features.bins )
+        else:
+            shifted = None
+
+        result.append( (features, bed, control, shifted) )
         c.added += 1
 
     E.info( "interval processing: %s" % c )
@@ -183,18 +231,30 @@ def main( argv = None ):
         outfile_matrix = E.openOutputFile( "matrix_%s.gz" % re.sub("-", "_", sort ) )            
         outfile_matrix.write( "name\t%s\n" % "\t".join( map(str, out_bins )))
         
+        if result[0][2] != None:
+            outfile_control = E.openOutputFile( "control_%s.gz" % re.sub("-", "_", sort ) )            
+            outfile_control.write( "name\t%s\n" % "\t".join( map(str, out_bins )))
+
+        if result[0][3] != None:
+            outfile_shift = E.openOutputFile( "shift_%s.gz" % re.sub("-", "_", sort ) )            
+            outfile_shift.write( "name\t%s\n" % "\t".join( map(str, out_bins )))
+            
         n = 0
-        for features, bed in result:
+        for features, bed, control, shifted in result:
             n += 1
             if "name" in bed: name = bed.name
             else:name = str(n)
             bins, counts = features[-2], features[-1]
             outfile_matrix.write( "%s\t%s\n" % (name, "\t".join(map(str,counts))) )
+            if control:
+                outfile_control.write( "%s\t%s\n" % (name, "\t".join(map(str,control.counts))) )
+            if shifted:
+                outfile_shift.write( "%s\t%s\n" % (name, "\t".join(map(str,shifted.counts))) )
 
         outfile_matrix.close()
 
     n = 0
-    for features, bed in result:
+    for features, bed, control, shifted in result:
         n += 1
         if "name" in bed: name = bed.name
         else: name = str(n)
@@ -210,6 +270,7 @@ def main( argv = None ):
     if not options.sort: writeMatrix( result, "unsorted" )
 
     for sort in options.sort: 
+
         if sort == "peak-height":
             result.sort( key = lambda x: x[0].peak_height )
             
@@ -220,8 +281,11 @@ def main( argv = None ):
             result.sort( key = lambda x: x[1].end - x[1].start )
 
         elif sort == "interval-score":
-            result.sort( key = lambda x: x[1].score )
-            
+            try:
+                result.sort( key = lambda x: x[1].score )
+            except IndexError:
+                E.warn("score field not present - no output" )
+
         writeMatrix( result, sort )
 
     ## write footer and output benchmark information.

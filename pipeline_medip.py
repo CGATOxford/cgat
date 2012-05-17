@@ -161,17 +161,16 @@ import PipelineTracks
 import PipelineMappingQC
 import PipelineMedip
 import Pipeline as P
+import Expression
 
 from rpy2.robjects import r as R
 import rpy2.robjects as ro
-
-USECLUSTER = True
 
 #########################################################################
 #########################################################################
 #########################################################################
 # load options from the config file
-P.getParameters( ["%s.ini" % __file__[:-len(".py")], 
+P.getParameters( ["%s/pipeline.ini" % __file__[:-len(".py")], 
                   "../pipeline.ini", 
                   "pipeline.ini" ] )
 
@@ -277,7 +276,7 @@ def makeTrackDirectories( infile, outfile ):
              r"\1.dir/\1.genome.bam")
 def mapReads(infiles, outfile):
     '''Map reads to the genome using BWA '''
-    to_cluster = USECLUSTER
+    to_cluster = True
     job_options= "-pe dedicated %i -R y" % PARAMS["bwa_threads"]
     m = PipelineMapping.BWA()
     statement = m.build((infiles,), outfile) 
@@ -299,7 +298,7 @@ def prepareBAMs( infile, outfile ):
     * quality score filtering - remove reads below a certain quality score.
 
     '''
-    to_cluster = USECLUSTER
+    to_cluster = True
     track = P.snip( outfile, ".bam" )
 
     tmpdir = P.getTempFilename()
@@ -453,16 +452,16 @@ def runMEDIPS( infile, outfile ):
     outputs methylation profiles.
     '''
 
-    to_cluster = USECLUSTER
+    to_cluster = True
 
-    job_options = "-l mem_free=32G"
+    job_options = "-l mem_free=23G"
 
     statement = '''
     cat %(infile)s 
     | python %(scriptsdir)s/bam2bed.py
           --merge-pairs
           --min-insert-size=%(medips_min_insert_size)i
-          --max-max-insert-size=%(medips_max_insert_size)i
+          --max-insert-size=%(medips_max_insert_size)i
           --log=%(outfile)s.log
           -
     | python %(scriptsdir)s/WrapperMEDIPS.py
@@ -491,7 +490,7 @@ def buildCoverageBed( infile, outfile ):
     Intervals containing only few reads (tiling_min_reads) are removed.
     '''
     
-    to_cluster = USECLUSTER
+    to_cluster = True
 
     statement = '''
     cat %(infile)s 
@@ -526,7 +525,7 @@ def buildVariableWidthTiles( infiles, outfile ):
     '''
     
     infiles = " ".join( infiles )
-    to_cluster = USECLUSTER
+    to_cluster = True
 
     statement = '''
     zcat %(infiles)s 
@@ -660,7 +659,7 @@ def buildBigBed( infile, outfile ):
     '''bed file with intervals that are covered by reads in any of the experiments.
     '''
     
-    to_cluster = USECLUSTER
+    to_cluster = True
     to_cluster = False
 
     tmpfile = P.getTempFilename()
@@ -682,7 +681,7 @@ def buildBigBed( infile, outfile ):
 def buildTiledReadCounts( infiles, outfile ):
     '''compute coverage of genome with reads.'''
 
-    to_cluster = USECLUSTER
+    to_cluster = True
 
     infile, tiles = infiles
 
@@ -696,10 +695,18 @@ def buildTiledReadCounts( infiles, outfile ):
     else:
         flag_filter = ""
 
-    statement = '''samtools view -b %(flag_filter)s -q %(deseq_min_mapping_quality)s %(infile)s 
-                   | coverageBed -abam stdin -b %(tiles)s 
-                   | sort -k1,1 -k2,2n
-                   | gzip > %(outfile)s '''
+    statement = '''
+    samtools view -b %(flag_filter)s -q %(deseq_min_mapping_quality)s %(infile)s 
+    | python %(scriptsdir)s/bam2bed.py
+          --merge-pairs
+          --min-insert-size=%(medips_min_insert_size)i
+          --max-insert-size=%(medips_max_insert_size)i
+           --log=%(outfile)s.log
+           - 
+    | coverageBed -a stdin -b %(tiles)s 
+    | sort -k1,1 -k2,2n
+    | gzip > %(outfile)s '''
+    
     P.run()
 
 @transform( prepareBAMs,
@@ -760,7 +767,7 @@ def aggregateTiledReadCounts( infiles, outfile ):
     found in any interval as the tag count.
     '''
     
-    to_cluster = USECLUSTER
+    to_cluster = True
 
     src = " ".join( [ '''<( zcat %s | awk '{printf("%%s:%%i-%%i\\t%%i\\n", $1,$2,$3,$4 );}' ) ''' % x for x in infiles] )
     tmpfile = P.getTempFilename( "." )
@@ -794,6 +801,7 @@ def loadMethylationData( infile, design_file ):
 
     '''
     
+    E.info( "reading data")
     R( '''counts_table = read.delim( '%(infile)s', header = TRUE, 
                                                    row.names = 1, 
                                                    stringsAsFactors = TRUE )''' % locals() )
@@ -817,9 +825,9 @@ def loadMethylationData( infile, design_file ):
     # Subset data & set conditions
     R('''includedSamples <- pheno2$include == '1' ''')
     R('''countsTable <- counts_table[ , includedSamples ]''')
-    R('''groups <- pheno2$group[ includedSamples ]''')
+    R('''groups <- factor(pheno2$group[ includedSamples ])''')
     R('''pairs = factor(pheno2$pair[ includedSamples ])''')
-
+    
     groups = R('''levels(groups)''')
     pairs = R('''levels(pairs)''')
 
@@ -829,7 +837,7 @@ def loadMethylationData( infile, design_file ):
 
 @follows( aggregateTiledReadCounts, mkdir( os.path.join( PARAMS["exportdir"], "diff_methylation")) )
 @files( [ ( (data, design), 
-            "diff_methylation/%s_%s.deseq" % (P.snip(os.path.basename(data),".counts.tsv.gz"),
+            "diff_methylation/%s_%s.deseq.gz" % (P.snip(os.path.basename(data),".counts.tsv.gz"),
                                    P.snip(os.path.basename(design),".tsv" ) ) ) \
               for data, design in itertools.product( 
                                                glob.glob("diff_methylation/*.counts.tsv.gz"),
@@ -841,134 +849,65 @@ def runDESeq( infiles, outfile ):
     it contains a similar output and similar fdr compared to cuffdiff.
     '''
 
+    to_cluster = True
     infile, design_file = infiles
     design = P.snip( os.path.basename(design_file), ".tsv")
     tiling = P.snip( os.path.basename( infile ), ".counts.tsv.gz" )
 
-    to_cluster = USECLUSTER
-    outdir = os.path.join( PARAMS["exportdir"], "diff_methylation" )
-    deseq_fdr = PARAMS["deseq_fdr"]
+    outdir = os.path.join( PARAMS["exportdir"], "diff_methylation", "%s_%s_" % (tiling, design) )
 
-    # load library 
-    R('''suppressMessages(library('DESeq'))''')
+    # --output-filename-pattern=%%DIR%%/%(outdir)s_
 
-    groups, pairs = loadMethylationData( infile, design_file )
+    # run on 
+    statement = '''zcat %(infile)s 
+              | %(cmd-farm)s
+                  --input-header 
+                  --output-header 
+                  --split-at-lines=1000000 
+                  --log=%(outfile)s.log
+                  --output-pattern=%(outdir)s_%%s
+                  --subdirs
+              "python %(scriptsdir)s/Expression.py
+              --method=deseq
+              --filename-tags=-
+              --filename-design=%(design_file)s
+              --output-filename-pattern=%%DIR%%/
+              --deseq-fit-type=%(deseq_fit_type)s
+              --deseq-dispersion-method=%(deseq_dispersion_method)s
+              --log=%(outfile)s.log
+              --fdr=%(deseq_fdr)f"
+              | grep -v "warnings"
+              | gzip
+              > %(outfile)s '''
 
-    # Remove windows with no data
-    R( '''max_counts = apply(counts_table,1,max)''' )
-    R( '''counts_table = counts_table[max_counts>0,]''')
-    E.info( "removed %i empty columns" % tuple( R('''sum(max_counts == 0)''') ) )
-    E.info( "trimmed data: %i observations for %i samples" % tuple( R('''dim(counts_table)''') ) )
-
-    # Test if replicates exist
-    min_reps = R('''min(table(groups)) ''')
-    no_replicates = False
-    if min_reps < 2:
-        no_replicates = True
-
-    ######## Run DESeq
-    # Create Count data object
-    E.info( "running DESeq" )
-    R('''cds <-newCountDataSet( countsTable, groups) ''')
-
-    # Estimate size factors
-    R('''cds <- estimateSizeFactors( cds )''')
-
-    # Estimate variance
-    if no_replicates:
-        R('''cds <- estimateVarianceFunctions( cds, method="blind" )''')
-    else:
-        R('''cds <- estimateVarianceFunctions( cds )''')
-
-    # Plot scvplot
-    size_factors = R('''sizeFactors( cds )''')
-    R.png( '''%(outdir)s/%(tiling)s_%(design)s_scvplot.png''' % locals() )
-    R('''scvPlot( cds, ylim = c(0,3))''')
-    R['dev.off']()
-
-    # Generate heatmap of variance stabilised data
-    R('''vsd <- getVarianceStabilizedData( cds )''' )
-    R('''dists <- dist( t( vsd ) )''')
-    R.png( '''%(outdir)s/%(tiling)s_%(design)s_heatmap.png''' % locals() )
-    R('''heatmap( as.matrix( dists ), symm=TRUE )''' )
-    R['dev.off']()
-
-    for group in groups:
-        if not no_replicates:
-            R.png( '''%(outdir)s/%(tiling)s_%(design)s_%(group)s_fit.png''' % locals() )
-            R('''diagForT <- varianceFitDiagnostics( cds, "%s" )''' % group )
-            R('''smoothScatter( log10(diagForT$baseMean), log10(diagForT$baseVar) )''')
-            R('''lines( log10(fittedBaseVar) ~ log10(baseMean), diagForT[ order(diagForT$baseMean), ], col="red" )''')
-            R['dev.off']()
-            R.png( '''%(outdir)s/%(tiling)s_%(design)s_%(group)s_residuals.png''' % locals()  )
-            R('''residualsEcdfPlot( cds, "%s" )''' % group )
-            R['dev.off']()
-
-    # Differential expression
-    L.info("calling differential expression")
-    R('''res <- nbinomTest( cds, '%s', '%s' )''' % (groups[0],groups[1]))
-
-    # Plot significance
-    R.png( '''%(outdir)s/%(tiling)s_%(design)s_significance.png''' % locals() )
-    R('''plot( res$baseMean, res$log2FoldChange, log="x", pch=20, cex=.1, 
-                    col = ifelse( res$padj < %(deseq_fdr)s, "red", "black" ) )''' % locals() )
-    R['dev.off']()
-
-    outf = IOTools.openFile( outfile, "w" )
-    isna = R["is.na"]
-
-    L.info("Generating output")
-    # Get column names from output and edit
-    names = None
-    if not names:
-        names = list(R['res'].names)
-        m = dict( [ (x,x) for x in names ])
-        m.update( dict(
-                pval = "pvalue", 
-                baseMeanA = "value1", 
-                baseMeanB = "value2",
-                id = "interval_id", 
-                log2FoldChange = "lfold") )
-        
-        header = [ m[x] for x in names ] 
-        outf.write( "Group1\tGroup2\t%s\tstatus\tsignificant\n" % "\t".join(header))
-    else:
-        if names != list(R['res'].names):
-            raise ValueError( "different column headers in DESeq output: %s vs %s" % (names, list(R['res'].names)))
-
-    # Parse results and parse to file
-    rtype = collections.namedtuple( "rtype", names )
-    for data in zip( *R['res']) :
-        d = rtype._make( data )
-        outf.write( "%s\t%s\t" % (groups[0],groups[1]))
-        # set significant flag
-        if d.padj <= deseq_fdr: signif = 1
-        else: signif = 0
-
-        # set lfold change to 0 if both are not expressed
-        if d.baseMeanA == 0.0 and d.baseMeanB == 0.0:
-            d = d._replace( foldChange = 0, log2FoldChange = 0 )
-
-        if isna( d.pval ): status = "OK"
-        else: status = "FAIL"
-
-        outf.write( "\t".join( map(str, d) ))
-        outf.write("\t%s\t%s\n" % (status, str(signif)))
-            
-    outf.close()
+    P.run()
 
 #########################################################################
-@transform( runDESeq, suffix(".deseq"), "_deseq.load" )
+def mergeDESeq( infile, outfile ):
+    '''merge overlapping windows.'''
+    
+    statement = '''
+    zcat %(infile)s
+    | perl -p -e "s/test_id/contig\\tstart\\tend/; s/:/\\t/; s/-/\\t/;"
+    | python %(scriptsdir)s/medip_merge_intervals.py
+    | gzip
+    > %(outfile)s
+    '''
+
+#########################################################################
+@jobs_limit(1)
+@transform( runDESeq, suffix(".deseq.gz"), "_deseq.load" )
 def loadDESeq( infile, outfile ):
     '''load differential expression results.'''
 
     tablename = P.toTable( outfile )
     statement = '''
-                cat %(infile)s
-                | perl -p -e "s/interval_id/contig\\tstart\\tend/; s/:/\\t/; s/-/\\t/;"
+                zcat %(infile)s
+                | perl -p -e "s/test_id/contig\\tstart\\tend/; s/:/\\t/; s/-/\\t/;"
                 | python %(scriptsdir)s/csv2db.py
                       --index=group1 --index=group2 --allow-empty
                       --table=%(tablename)s 
+                      --quick
                 > %(outfile)s
                 '''
     P.run()
@@ -978,7 +917,7 @@ def loadDESeq( infile, outfile ):
 #########################################################################
 @follows( aggregateTiledReadCounts, mkdir( os.path.join( PARAMS["exportdir"], "diff_methylation")) )
 @files( [ ( (data, design), 
-            "diff_methylation/%s_%s.edger" % (P.snip(os.path.basename(data),".counts.tsv.gz"),
+            "diff_methylation/%s_%s.edger.gz" % (P.snip(os.path.basename(data),".counts.tsv.gz"),
                                    P.snip(os.path.basename(design),".tsv" ) ) ) \
               for data, design in itertools.product( 
                                                glob.glob("diff_methylation/*.counts.tsv.gz"),
@@ -990,109 +929,56 @@ def runEdgeR( infiles, outfile ):
     the example in chapter 11 of the EdgeR manual.
     '''
 
+    to_cluster = True
+    
     infile, design_file = infiles
     design = P.snip( os.path.basename(design_file), ".tsv")
     tiling = P.snip( os.path.basename( infile ), ".counts.tsv.gz" )
 
-    to_cluster = USECLUSTER
-    outdir = os.path.join( PARAMS["exportdir"], "diff_methylation" )
-    deseq_fdr = PARAMS["deseq_fdr"]
+    outdir = os.path.join( PARAMS["exportdir"], "diff_methylation", "%s_%s_" % (tiling, design ) )
 
-    logf = IOTools.openFile( outfile + ".log", "w" )
-    
-    # load library 
-    R('''suppressMessages(library('edgeR'))''')
-    R('''suppressMessages(library('limma'))''')
+    statement = '''zcat %(infile)s 
+              | %(cmd-farm)s
+                  --input-header 
+                  --output-header 
+                  --split-at-lines=100000 
+                  --cluster-options="-l mem_free=8G"
+                  --log=%(outfile)s.log
+                  --output-pattern=%(outdir)s_%%s
+                  --subdirs
+              "python %(scriptsdir)s/Expression.py
+              --method=edger
+              --filename-tags=-
+              --filename-design=%(design_file)s
+              --output-filename-pattern=%%DIR%%/
+              --deseq-fit-type=%(deseq_fit_type)s
+              --deseq-dispersion-method=%(deseq_dispersion_method)s
+              --log=%(outfile)s.log
+              --fdr=%(edger_fdr)f"
+              | grep -v "warnings"
+              | gzip
+              > %(outfile)s '''
 
-    groups, pairs = loadMethylationData( infile, design_file )
-
-    # build DGEList object
-    R( '''countsTable = DGEList( countsTable, group = groups )''' )
-
-    # calculate normalisation factors
-    E.info( "calculating normalization factors" )
-    R('''countsTable = calcNormFactors( countsTable )''' )
-    E.info( "output")
-    # logf.write( str(R('''countsTable''')) + "\n" )
-
-    # Remove windows with few counts
-    R( '''countsTable = countsTable[rowSums( 
-             1e+06 * countsTable$counts / 
-             expandAsMatrix ( countsTable$samples$lib.size, dim(countsTable)) > 1 ) >= 2, ]''')
-
-    E.info( "trimmed data: %i observations for %i samples" % tuple( R('''dim(countsTable)''') ) )
-
-    # output MDS plot
-    R.png( '''%(outdir)s/%(tiling)s_%(design)s_mds.png''' % locals() )
-    R('''plotMDS( countsTable )''')
-    R['dev.off']()
-
-    # build design matrix
-    R('''design = model.matrix( ~pairs + countsTable$samples$group )''' )
-    R('''rownames(design) = rownames( countsTable$samples )''')
-    R('''colnames(design)[length(colnames(design))] = "CD4" ''' )
-    
-    # logf.write( R('''design''') + "\n" )
-
-    # estimate common dispersion
-    R('''countsTable = estimateGLMCommonDisp( countsTable, design )''')
-    
-    # fitting model to each tag
-    R('''fit = glmFit( countsTable, design, dispersion = countsTable$common.dispersion )''')
-
-    # perform LR test
-    R('''lrt = glmLRT( countsTable, fit)''' )
-
-    L.info("Generating output")
-
-    # compute adjusted P-Values
-    R('''padj = p.adjust( lrt$table$p.value, 'BH' )''' )
-
-    outf = IOTools.openFile( outfile, "w" )
-    isna = R["is.na"]
-
-    outf.write( "Group1\tGroup2\tinterval_id\tlogConc\tlfold\tLR\tpvalue\tpadj\tstatus\tsignificant\n" )
-    rtype = collections.namedtuple( "rtype", "logConc lfold LR pvalue" )
-    
-    # output differences between pairs
-    R.png( '''%(outdir)s/%(tiling)s_%(design)s_maplot.png''' % locals() )
-    R('''plotSmear( countsTable, pair=c('%s') )''' % "','".join( groups) )
-    R('''abline( h = c(-2,2), col = 'dodgerblue') ''' )
-    R['dev.off']()
-
-    # I am assuming that logFC is the base 2 logarithm foldchange.
-    # Parse results and parse to file
-    for interval, data, padj in zip( R('''rownames(lrt$table)'''),
-                                     zip( *R('''lrt$table''')), 
-                                     R('''padj''')) :
-        d = rtype._make( data )
-        
-        outf.write( "%s\t%s\t%s\t" % (groups[0],groups[1], interval))
-
-        # set significant flag
-        if padj <= deseq_fdr: signif = 1
-        else: signif = 0
-
-        if isna( d.pvalue ): status = "OK"
-        else: status = "FAIL"
-
-        outf.write( "\t".join( map(str, d) ))
-        outf.write("\t%f\t%s\t%s\n" % (padj, status, str(signif)))
-            
-    outf.close()
+    P.run()
 
 #########################################################################
-@transform( runEdgeR, suffix(".edger"), "_edger.load" )
+@jobs_limit(1)
+#@transform( runEdgeR, suffix(".edger.gz"), "_edger.load" )
+@transform( "diff_methylation/*.edger.gz", suffix(".edger.gz"), "_edger.load" )
 def loadEdgeR( infile, outfile ):
     '''load differential expression results.'''
 
     tablename = P.toTable( outfile )
     statement = '''
-                cat %(infile)s
-                | perl -p -e "s/interval_id/contig\\tstart\\tend/; s/:/\\t/; s/-/\\t/;"
+                zcat %(infile)s
+                | perl -p -e "s/test_id/contig\\tstart\\tend/; s/:/\\t/; s/-/\\t/;"
+                | sed -n '/contig/,$p'
                 | python %(scriptsdir)s/csv2db.py
-                      --index=group1 --index=group2 --allow-empty
+                      --index=group1 
+                      --index=group2 
+                      --allow-empty
                       --table=%(tablename)s 
+                      --quick
                 > %(outfile)s
                 '''
     P.run()
@@ -1119,16 +1005,20 @@ def buildEdgeRStats( infiles, outfile ):
 def loadEdgeRStats( infile, outfile ):
     P.load( infile, outfile )
 
-
 #########################################################################
 @transform( (runEdgeR, runDESeq), regex(  "(.*)\.(.*)"), r"\1_\2.dmr.bed.gz" )
 def buildDMRBed( infile, outfile ):
     '''output bed6 file with differentially methylated regions.
 
-    The score is the log fold change.
+    Overlapping/book-ended entries are merged.
+
+    The score is the average log fold change.
     '''
     
-    outf = IOTools.openFile( outfile, "w" )
+    to_cluster = True
+
+    tmpf = IOTools.getTempFile( "." )
+    
     c = E.Counter()
     for row in csv.DictReader( IOTools.openFile( infile ),
                                dialect = "excel-tab" ):
@@ -1137,11 +1027,17 @@ def buildDMRBed( infile, outfile ):
 
         contig, start, end = re.match("(.*):(\d+)-(\d+)", row["interval_id"] ).groups()
         c.output += 1
-        outf.write( "\t".join( (contig, start, end, str(c.input), row["lfold"] ) ) + "\n" )
-        
-    outf.close()
-    
+        tmpf.write( "\t".join( (contig, start, end, str(c.input), row["lfold"] ) ) + "\n" )
+
     E.info( "%s" % str(c) )
+        
+    tmpf.close()
+    tmpfname = tmpf.name
+
+    statement = '''mergeBed -i %(tmpfname)s -scores mean | gzip > %(outfile)s'''
+    P.run()
+
+    os.unlink( tmpf.name )
 
 @transform( (runEdgeR, runDESeq), regex(  "(.*)\.(.*)"), r"\1_\2.bed.gz" )
 def buildMRBed( infile, outfile ):

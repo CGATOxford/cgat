@@ -221,7 +221,7 @@ import PipelineMapping
 ###################################################
 import Pipeline as P
 P.getParameters( 
-    ["%s.ini" % __file__[:-len(".py")],
+    ["%s/pipeline.ini" % __file__[:-len(".py")],
      "../pipeline.ini",
      "pipeline.ini" ],
     defaults = {
@@ -283,20 +283,45 @@ def getAssociatedBAMFiles( track ):
        track1=120,200
 
     returns a list of BAM files and offsets.
+
+    Default tracks and offsets can be specified using a placeholder ``%``. The
+    following will associate all tracks with the same bam file::
+
+        [bams]
+        %=all.bam
+
+
     '''
     fn = track.asFile()
-    bamfiles = []
-    if "bams_%s" % fn.lower() in PARAMS:
-        for ff in P.asList( PARAMS["bams_%s" % fn.lower() ] ):
-            bamfiles.extend( glob.glob( ff ) )
-    else:
-        bamfiles = glob.glob( "%s.bam" % fn )
-        
-        
+    bamfiles = glob.glob( "%s.bam" % fn )
+
+    if bamfiles == []:
+        if "bams_%s" % fn.lower() in PARAMS:
+            for ff in P.asList( PARAMS["bams_%s" % fn.lower() ] ):
+                bamfiles.extend( glob.glob( ff ) )
+        else:
+            for pattern, value in P.CONFIG.items( "bams" ):
+                if "%" in pattern:
+                    p = re.sub( "%", "\S+", pattern )
+                    if re.search( p, fn ):
+                        bamfiles.extend( glob.glob( value ) )
+
+    offsets = []
     if "offsets_%s" % fn.lower() in PARAMS:
         offsets = map(int, P.asList( PARAMS["offsets_%s" % fn.lower() ] ))
     else:
+        for pattern, value in P.CONFIG.items( "offsets" ):
+            if "%" in pattern:
+                p = re.sub( "%", "\S+", pattern )
+                if re.search( p, fn ):
+                    offsets.extend( map( int, value.split(",") ) )
+
+    if offsets == []:
         offsets = [0] * len(bamfiles)
+
+    if len(bamfiles) != len(offsets):
+        raise ValueError("number of BAM files %s is not the same as number of offsets: %s" % (str(bamfiles), str(offsets)))
+
 
     return bamfiles, offsets
 
@@ -443,7 +468,7 @@ def indexIntervals( infile, outfile ):
     '''index intervals.
     '''
 
-    statement = '''zcat %(infile)s | bgzip > %(outfile)s; tabix -p bed %(outfile)s'''
+    statement = '''zcat %(infile)s | sort -k1,1 -k2,2n | bgzip > %(outfile)s; tabix -p bed %(outfile)s'''
     P.run()
 
 ############################################################
@@ -777,6 +802,9 @@ def buildIntervalProfileOfTranscripts( infiles, outfile ):
                       --reporter=transcript
                       --method=geneprofile 
                       --method=tssprofile 
+                      --normalize-profile=none
+                      --normalize-profile=area
+                      --normalize-profile=counts
                       %(bedfile)s %(gtffile)s
                    > %(outfile)s
                 '''
@@ -920,15 +948,16 @@ def exportMotifSequences( infile, outfile ):
     track = P.snip( infile, "_intervals.load" )
     dbhandle = connect()
         
+    p = P.substituteParameters( **locals() )
     nseq = PipelineMotifs.writeSequencesForIntervals( track, 
                                                       outfile,
                                                       dbhandle,
                                                       full = False,
-                                                      masker = PARAMS['motifs_masker'],
-                                                      halfwidth = int(PARAMS["motifs_halfwidth"]),
-                                                      maxsize = int(PARAMS["motifs_max_size"]),
-                                                      proportion = PARAMS["motifs_proportion"],
-                                                      min_sequences = PARAMS["motifs_min_sequences"] )
+                                                      masker = p['motifs_masker'],
+                                                      halfwidth = int(p["motifs_halfwidth"]),
+                                                      maxsize = int(p["motifs_max_size"]),
+                                                      proportion = p["motifs_proportion"],
+                                                      min_sequences = p["motifs_min_sequences"] )
 
     if nseq == 0:
         E.warn( "%s: no sequences - meme skipped" % outfile)
@@ -1293,8 +1322,11 @@ def loadGat( infile, outfile ):
 def summarizeGAT( infiles, outfile ):
     '''summarize GAT results.
 
-    outputs a log2fold and pvalue table for results that
-    pass an fdr < gat_fdr
+    outputs a log2fold and pvalue table for results.
+    
+    The results are filtered. Remove all rows that 
+       * have no significant results (fdr)
+       * expected overlap less than 1kb.
     '''
 
     col_headers = [ P.snip( os.path.basename(x), ".gat.tsv.gz") for x in infiles]
@@ -1311,15 +1343,31 @@ def summarizeGAT( infiles, outfile ):
 
     ncols = len(infiles)
     min_qvalue = PARAMS["gat_fdr"]
+    min_expected = PARAMS["gat_min_expected"]
 
     E.info( "read matrix with %i rows and %i columns" % qval_matrix.shape )
 
     # set all values to 1.0 that are above fdr threshold
     qval_matrix[numpy.where( qval_matrix > min_qvalue )] = 1.0
     s = numpy.sum( qval_matrix, 1 )
-    take = numpy.where( s != ncols )[0]
-    E.info( "taking %i rows" % len(take))
-    
+    take_qvalue = numpy.where( s != ncols )[0]
+    E.info( "taking %i rows after qvalue filtering" % len(take_qvalue))
+
+    # remove small results
+    expected_matrix, expected_row_headers = MatrixTools.buildMatrixFromTables( infiles, 
+                                                                               column = "expected",
+                                                                               column_header = "annotation",
+                                                                               default = 1.0 )
+
+    expected_matrix[numpy.where( expected_matrix < min_expected )] = 0
+    s = numpy.sum( expected_matrix, 1 )
+    take_expected = numpy.where( s != 0 )[0]
+    E.info( "taking %i rows after min_expected < % i filtering" % ( len(take_expected), min_expected))
+
+    take = sorted( list( set(take_qvalue).intersection( set(take_expected) )) )
+
+    E.info( "taking %i rows after filtering" % ( len(take)))
+
     for (column, default) in ( ("fold", 1.0), ( "pvalue", 1.0) ):
         # output single tables for fold and pvalue
         matrix, row_headers = MatrixTools.buildMatrixFromTables( infiles, 

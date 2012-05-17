@@ -105,14 +105,21 @@ class FastQCDetails( ReadqcTracker ):
         
         for track in tracks:
             
-            for x, fn in enumerate( glob.glob( os.path.join( EXPORTDIR, "fastqc", "%s*_fastqc" % track ) )):
+            files = glob.glob( os.path.join( EXPORTDIR, "fastqc", "%s*_fastqc" % track ) )
+            for x, fn in enumerate( sorted(files) ):
                 y = x + 1
                 
                 image = os.path.abspath(os.path.join( fn, "Images", "%s.png" % slice ))
                 if not os.path.exists( image ): continue
 
                 blocks.append( ResultBlock( text = block % locals(),
-                                            title = fn ) )
+                                            title = os.path.basename(fn) ) )
 
         return odict( (("rst", "\n".join( Utils.layoutBlocks( blocks, layout = "columns-2"))),))
 
+
+class FastqcSummary( ReadqcTracker ):
+    pattern = "(.*)_Basic_Statistics"
+    slices = ("File type", "Filename", "Encoding", "Total Sequences", "Sequence Length", "%GC" )
+    def __call__(self, track, slice ):
+        return self.getAll( "SELECT * FROM %(track)s_Basic_Statistics WHERE measure = '%(slice)s'" )

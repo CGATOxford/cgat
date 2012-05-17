@@ -57,33 +57,6 @@ DESeq Summary
    
    Summary of differential expression analysis
 
-DESeq Fitting overview
-======================
-
-The following section displays summary stats on the model
-fit.
-
-DESeq attempts to estimate the variance of expression levels
-for a gene from the mean expression level. As the number
-of replicates is usually low, the observed variance can vary
-widely around the estimate. The plots in this section examine
-the fit:
-
-Estimated per-gene variance versus model based estimated of variance.
-   Show are the estimated variance of a gene estimated from this gene alone
-   versus the estimated derived from the local fit for this gene through the base
-   level variances of all genes.
-
-Residual ECDF plot
-   cumulative distribution of residuals. These should follow
-   a straight line. The plot is stratified by :term:`base level`.
-   The expression level increases from red to blue.
-
-.. report:: DifferentialExpression.TrackerDESeqFit
-   :render: user
-   
-   Fitting overview
-
 Volcano plots
 =============
 
@@ -95,6 +68,17 @@ Volcano plots
 
    Volcano plots (log fold change against -log10 pvalue) 
    for all pairwise comparisons
+
+DESeq status 
+============
+
+.. report:: Tracker.TrackerImages
+   :render: gallery-plot
+   :tracker: export/deseq/*.png
+   :width: 200
+   :layout: column-3
+   
+   Various summary plots created by DESeq.
 
 DESeq Glossary
 ==============

@@ -66,7 +66,6 @@ from rpy2.robjects import r as R
 import rpy2.robjects as ro
 import rpy2.robjects.numpy2ri
 
-
 def readTable( lines,
                assign,
                separator = "\t",
@@ -605,7 +604,7 @@ title(main='%s');
                         print "could not plot %s versus %s: %s" % (headers[b], headers[a], msg)
 
         if options.hardcopy:
-            R.dev_off()
+            R['dev.off']()
 
     E.info( "matrix added as >matrix< in R.")
         

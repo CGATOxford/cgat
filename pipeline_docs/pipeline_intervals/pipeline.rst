@@ -16,6 +16,7 @@ Contents:
    pipeline/Intervals.rst
    pipeline/GenomicContext.rst 
    pipeline/Binding.rst
+   pipeline/Profiles.rst
    pipeline/TSS.rst 
    pipeline/Annotations.rst 
    pipeline/Meme.rst
