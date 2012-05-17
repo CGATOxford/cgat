@@ -765,9 +765,8 @@ def buildMapableRegions( infiles, outfile ):
     For the purpose of these tracks, a region is defined to be un-mapable
     if its maximum mapability score is less than 0.5. 
     
-    Unmapable regions than are less than half kmer size are mapable, as
+    Unmapable regions that are less than half kmer size are mapable, as
     reads from the left/right mapable positions will extend into the region.
-    
     '''
 
     infile, fastafile = infiles
@@ -824,6 +823,34 @@ def buildMapableRegions( infiles, outfile ):
             outf.write( "%s\t%i\t%i\n" % (contig, last_start, last_end ) )
 
     outf.close()
+
+############################################################
+############################################################
+############################################################
+## 
+############################################################
+@transform( buildMapableRegions, suffix( ".bed.gz"), ".filtered.bed.gz" )
+def filterMapableRegions( infile, outfile ):
+    '''remove small windows from a mapability track.
+
+    Too many fragmented regions will cause gat to fail as it
+    fragments the workspace into too many individual segments.
+
+    The filtering works by merging all segments that are
+    within mapability_merge_distance and removing all those
+    that are larger than mapabpility_min_segment_size
+    '''
+    
+    to_cluster = True
+
+    statement = '''
+    mergeBed -i %(infile)s -d %(mapability_merge_distance)i
+    | awk '$3 - $2 >= %(mapability_min_segment_size)i'
+    | gzip 
+    > %(outfile)s
+    '''
+
+    P.run()
 
 if 0:
     ############################################################
@@ -1281,7 +1308,8 @@ def promotors():
     '''build promotors.'''
     pass
 
-@follows( loadGOAssignments, )
+@follows( loadGOAssignments, 
+          buildGenomicFunctionalAnnotation)
 def ontologies():
     '''create and load ontologies'''
     pass

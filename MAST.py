@@ -181,13 +181,19 @@ def writeMast( outfile, logodds_matrix, alphabet ):
 
     outfile.write("\n")
 
-def writeTomTom( outfile, counts_matrix ):
+def writeTomTom( outfile, counts_matrix, header = False ):
     '''output counts matrix in tomtom format.
 
     output counts with columns as motif positions
     and rows as alphabet.
     '''
     
+    if header:
+        outfile.write( '--------------------------------------------------------------------------------\n')
+        outfile.write( '        Motif 1 position-specific probability matrix\n')
+        outfile.write( '--------------------------------------------------------------------------------\n')
+        outfile.write("letter-probability matrix: alength= %i w= %i nsites= 18 E= 1.0\n" % counts_matrix.shape)
+
     for row in numpy.transpose( counts_matrix ):
         outfile.write( " ".join( 
                 ["%6i" % x for x in row ] ) + "\n")

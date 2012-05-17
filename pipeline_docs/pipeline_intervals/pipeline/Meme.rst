@@ -17,15 +17,13 @@ The following table shows the number of sequences submitted for the motif search
 
    Meme results.
 
-The following table lists all the motifs found.
+To see an overview of all motifs found across all sets visit the
+:ref:`MemeGallery`.
 
-.. report:: Motifs.MemeResults
-   :render: table
-   :force:
+.. toctree::
+   :maxdepth: 2
 
-   Meme results, showing for each motif the width,
-   the number of times it is found, its evalue
-   and its information content.
+   MemeGallery
 
 .. Sequence composition
 .. ====================
@@ -39,12 +37,16 @@ The following table lists all the motifs found.
 
 ..    Distribution of G+C content in sequences used for motif discovery.
 
-Meme gallery
+============
+Tomtom
 ============
 
-A gallery with all MEME generated motifs.
+All meme generated motifs are run against reference motif database to
+check for similarity to known motifs.
 
-.. toctree::
-   :maxdepth: 2
+.. report:: Motifs.TomTomResults
+   :render: table
+   :force:
 
-   MemeGallery.rst
+   Meme results, showing for each set of motifs found by meme
+   a list of similar motifs.

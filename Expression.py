@@ -518,6 +518,14 @@ def loadTagData( tags_filename, design_filename ):
 
     return groups, pairs, has_replicates, has_pairs
 
+def plotHeatmap( outfile ):
+    '''plot a heatmap.'''
+    
+    R('''dists <- dist( t(as.matrix(countsTable)) )''')
+    R.png( outfile )
+    R('''heatmap( as.matrix( dists ), symm=TRUE )''' )
+    R['dev.off']()
+
 def runEdgeR( infile, 
               design_file, 
               outfile, 
@@ -551,8 +559,11 @@ def runEdgeR( infile,
 
     groups, pairs, has_replicates, has_pairs = loadTagData( infile, design_file )
 
+    # output heatmap plot
+    plotHeatmap( '%(outfile_prefix)sheatmap.png' % locals() )
+
     E.info('running EdgeR: groups=%s, pairs=%s, replicates=%s, pairs=%s' % \
-           (groups, pairs, has_replicates, has_pairs))
+               (groups, pairs, has_replicates, has_pairs))
 
     if has_pairs:
         # output difference between groups
@@ -708,12 +719,13 @@ def runEdgeR( infile,
             # if out of range set to 0
             fold = 0
             
+        # note that fold change is computed as second group divided by first
         results.append( GeneExpressionResult._make( ( \
                     interval,
-                    groups[0],
+                    groups[1],
                     d.logCPM,
                     0,
-                    groups[1],
+                    groups[0],
                     d.logCPM,
                     0,
                     d.pvalue,
@@ -837,12 +849,13 @@ def deseqParseResults( track1, track2, fdr):
 
         counts.output += 1
 
+        # note that fold change is computed as second group divided by first
         results.append( GeneExpressionResult._make( ( \
                     d.id,
-                    track1,
+                    track2,
                     d.baseMeanA,
                     0,
-                    track2,
+                    track1,
                     d.baseMeanB,
                     0,
                     d.pval,
@@ -935,6 +948,12 @@ def runDESeq( infile,
 
     # Estimate size factors
     R('''cds <- estimateSizeFactors( cds )''')
+    
+    no_size_factors = R('''is.na(sum(sizeFactors(cds)))''' )[0]
+    if no_size_factors:
+        E.warn( "no size factors - can not estimate - no output" )
+        return
+
     # Estimate variance
     if has_replicates:
         E.info("replicates - estimating variance from replicates" )

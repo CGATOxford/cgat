@@ -46,6 +46,7 @@ Implemented tasks are:
    * :meth:`removeContaminants` - remove contaminants from read sets
    * :meth:`trim` - trim reads by a certain amount
    * :meth:`filter` - filter reads by quality score
+   * :meth:`sample` - sample a certain proportion of reads
 
 Usage
 =====
@@ -179,15 +180,16 @@ P.getParameters(
      "pipeline.ini" ] )
 PARAMS = P.PARAMS
 
+INPUT_FORMATS = ("*.fastq.1.gz", "*.fastq.gz", "*.sra", "*.csfasta.gz")
+REGEX_FORMATS = regex( r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz)")
+
 #########################################################################
 #########################################################################
 #########################################################################
 @follows(mkdir(PARAMS["exportdir"]), mkdir(os.path.join(PARAMS["exportdir"], "fastqc")) )
-@transform( ("*.fastq.1.gz", 
-             "*.fastq.gz",
-             "*.sra",
-             "*.csfasta.gz"),
-            regex( r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz)"),
+
+@transform( INPUT_FORMATS,
+            REGEX_FORMATS,
             r"\1.fastqc")
 def runFastqc(infiles, outfile):
     '''convert sra files to fastq and check mapping qualities are in solexa format. 
@@ -349,6 +351,21 @@ def processReads( infiles, outfile ):
     if infile2:
         outfile2 = P.snip( outfile, ".fastq.1.gz") + ".fastq.2.gz"
 
+    if PARAMS["process_sample"] and infile2:
+        E.warn( "sampling can not be combined with other processing for paired ended reads")
+        statement = '''zcat %(infile)s
+        | python %(scriptsdir)s/fastq2fastq.py 
+                                   --sample=%(sample_proportion)f 
+                                   --pair=%(infile2)s 
+                                   --outfile-pair=%(outfile2)s 
+                                   --log=%(outfile)s_sample.log
+        | gzip 
+        > %(outfile)s
+        '''
+
+        P.run()
+        return
+
     # fastx does not like quality scores below 64 (Illumina 1.3 format)
     # need to detect the scores and convert
     format = Fastq.guessFormat( IOTools.openFile(infile ) , raises = False)
@@ -373,7 +390,7 @@ def processReads( infiles, outfile ):
     if PARAMS["process_artifacts"]:
         s.append( 'fastx_artifacts_filter -Q %(offset)i -v %(artifacts_options)s 2>> %(outfile)s_artifacts.log' )
         do_sth = True
-        
+
     if PARAMS["process_trim"]:
         s.append( 'fastx_trimmer -Q %(offset)i -v %(trim_options)s 2>> %(outfile)s_trim.log' )
         do_sth = True
@@ -381,6 +398,9 @@ def processReads( infiles, outfile ):
     if PARAMS["process_filter"]:
         s.append( 'fastq_quality_filter -Q %(offset)i -v %(filter_options)s 2>> %(outfile)s_filter.log')
         do_sth = True
+
+    if PARAMS["process_sample"]:
+        s.append( 'python %(scriptsdir)s/fastq2fast.py --sample=%(sample_proportion)f --log=%(outfile)s_sample.log' )
 
     if not do_sth:
         E.warn( "no filtering specified for %s - nothing done" % infile )
@@ -459,14 +479,14 @@ def summarizeProcessing( infile, outfile ):
             outf.write( "%s\t%s\t%i\t%i\t%i\n" % (track, step, x, v[0], v[1]) )
     
     outf.close()
-    
+
 @transform( summarizeProcessing,
             regex(r"processed.(\S+).fastq.*.gz.tsv"),
             r"\1_processed.load")
 def loadProcessingSummary( infile, outfile ):
     '''load filtering summary.'''
     P.load(infile, outfile )
-        
+
 #########################################################################
 #########################################################################
 #########################################################################

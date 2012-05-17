@@ -96,7 +96,8 @@ if __name__ == '__main__':
                       help="include utr in merged transcripts [default=%default]."  )
 
     parser.add_option("-t", "--merge-transcripts", dest="merge_transcripts", action="store_true",
-                      help="merge all transcripts within a gene. The entry will span the whole gene (exons and introns). The transcript does not include the UTR unless --with-utr is set. [default=%default]."  )
+                      help="merge all transcripts within a gene. The entry will span the whole gene (exons and introns). "
+                           "The transcript does not include the UTR unless --with-utr is set. [default=%default]."  )
 
     parser.add_option( "--intersect-transcripts", dest="intersect_transcripts", action="store_true",
                       help="intersect all transcripts within a gene. The entry will only span those bases "

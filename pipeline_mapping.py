@@ -887,6 +887,37 @@ def buildTophatStats( infiles, outfile ):
 def loadTophatStats( infile, outfile ):
     P.load( infile, outfile )
 
+############################################################
+############################################################
+############################################################
+@follows( mkdir("transcriptome.dir" ) )
+@transform( SEQUENCEFILES,
+            SEQUENCEFILES_REGEX,
+            add_inputs( buildReferenceTranscriptome ), 
+            r"transcriptome.dir/\1.trans.bam" )
+def mapReadsWithBowtieAgainstTranscriptome( infiles, outfile ):
+    '''map reads using bowtie against transcriptome data.
+    '''
+
+    # Mapping will permit up to one mismatches. This is sufficient
+    # as the downstream filter in rnaseq_bams2bam requires the
+    # number of mismatches less than the genomic number of mismatches.
+    # Change this, if the number of permitted mismatches for the genome
+    # increases.
+
+    # Output all valid matches in the best stratum. This will 
+    # inflate the file sizes due to matches to alternative transcripts
+    # but otherwise matches to paralogs will be missed (and such
+    # reads would be filtered out).
+    job_options= "-pe dedicated %i -R y" % PARAMS["bowtie_threads"]
+    to_cluster = True
+    m = PipelineMapping.BowtieTranscripts( executable = P.substituteParameters( **locals() )["bowtie_executable"] )
+    infile, reffile = infiles
+    prefix = P.snip( reffile, ".fa" )
+    bowtie_options = "%s --best --strata -a" % PARAMS["bowtie_transcriptome_options"] 
+    statement = m.build( (infile,), outfile ) 
+    P.run()
+
 ###################################################################
 ###################################################################
 ###################################################################
@@ -951,6 +982,7 @@ mapToMappingTargets = { 'tophat': mapReadsWithTophat,
                         'bowtie': mapReadsWithBowtie,
                         'bwa': mapReadsWithBWA,
                         'stampy': mapReadsWithStampy,
+                        'transcriptome': mapReadsWithBowtieAgainstTranscriptome,
                         }
 for x in P.asList( PARAMS["mappers"]):
     MAPPINGTARGETS.append( mapToMappingTargets[x] )
@@ -969,9 +1001,8 @@ def mapping(): pass
 ############################################################
 @transform( MAPPINGTARGETS,
             suffix(".bam" ),
-            add_inputs( buildReferenceTranscriptome ), 
             ".picard_inserts")
-def buildPicardInsertSize( infiles, outfile ):
+def buildPicardTranscriptomeInsertSize( infiles, outfile ):
     '''build alignment stats using picard.
 
     Note that picards counts reads but they are in fact alignments.
@@ -986,15 +1017,23 @@ def buildPicardInsertSize( infiles, outfile ):
 ############################################################
 ############################################################
 @transform( MAPPINGTARGETS,
-            suffix(".bam" ), ".picard_stats")
-def buildPicardStats( infile, outfile ):
+            suffix(".bam" ), 
+            add_inputs( buildReferenceTranscriptome ), 
+            ".picard_stats")
+def buildPicardStats( infiles, outfile ):
     '''build alignment stats using picard.
 
     Note that picards counts reads but they are in fact alignments.
     '''
-    PipelineMappingQC.buildPicardAlignmentStats( infile, outfile,
-                                                 os.path.join( PARAMS["bowtie_index_dir"],
-                                                               PARAMS["genome"] + ".fa" ) )
+    infile, reffile = infiles
+
+    if "transcriptome.dir" not in infile:
+        reffile = os.path.join( PARAMS["bowtie_index_dir"],
+                                PARAMS["genome"] + ".fa" )
+
+    PipelineMappingQC.buildPicardAlignmentStats( infile, 
+                                                 outfile,
+                                                 reffile )
 
 ############################################################
 ############################################################
@@ -1276,6 +1315,10 @@ def buildIntronLevelReadCounts( infiles, outfile ):
 
     infile, exons = infiles
 
+    if "transcriptome.dir" in infile:
+        P.touch(outfile)
+        return
+
     to_cluster = True
 
     statement = '''
@@ -1302,7 +1345,7 @@ def buildIntronLevelReadCounts( infiles, outfile ):
            suffix(".tsv.gz"),
            ".load" )
 def loadIntronLevelReadCounts( infile, outfile ):
-    P.load( infile, outfile, options="--index=gene_id" )
+    P.load( infile, outfile, options="--index=gene_id --allow-empty" )
 
 ###################################################################
 ###################################################################

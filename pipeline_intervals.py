@@ -207,6 +207,7 @@ import MatrixTools
 import pysam
 import numpy
 import gzip
+import xml.etree.ElementTree
 
 import PipelineChipseq as PipelineChipseq
 import PipelineMotifs as PipelineMotifs
@@ -1037,7 +1038,6 @@ def loadMemeSummary( infiles, outfile ):
     
     os.unlink( outf.name )
     
-
 ############################################################
 ############################################################
 ############################################################
@@ -1084,6 +1084,49 @@ def loadMotifInformation( infiles, outfile ):
     P.load( outf.name, outfile, "--allow-empty" )
     
     os.unlink( outf.name )
+
+############################################################
+############################################################
+############################################################
+## run against database of known motifs
+############################################################
+@transform( runMeme, suffix(".meme"), ".tomtom" )
+def runTomTom( infile, outfile ):
+    '''compare ab-initio motifs against tomtom.'''
+    PipelineMotifs.runTomTom( infile, outfile )
+
+@transform( runTomTom, suffix(".tomtom"), "_tomtom.load" )
+def loadTomTom( infile, outfile ):
+    '''load tomtom results'''
+
+    tablename = P.toTable( outfile )
+
+    # get the motif name from the xml file
+    resultsdir = os.path.join( os.path.abspath(PARAMS["exportdir"]), "tomtom", infile )
+    tree = xml.etree.ElementTree.ElementTree()
+    tree.parse( os.path.join( resultsdir, "tomtom.xml" ) )
+    motifs =  tree.find( "targets" )
+    name2alt = {}
+    for motif in motifs.getiterator( "motif" ):
+        name = motif.get("name")
+        alt = motif.get("alt")
+        name2alt[name] = alt
+
+    tmpfile = P.getTempFile(".")
+    
+    # parse the text file
+    for line in IOTools.openFile( infile ):
+        if line.startswith( "#Query"):
+            tmpfile.write( "target_name\tquery_id\ttarget_id\toptimal_offset\tpvalue\tevalue\tqvalue\tOverlap\tquery_consensus\ttarget_consensus\torientation\n" )
+            continue
+        data = line[:-1].split("\t" )
+        target_name = name2alt[data[1]]
+        tmpfile.write( "%s\t%s" % (target_name, line ) )
+    tmpfile.close()
+    
+    P.load( tmpfile.name, outfile )
+    
+    os.unlink( tmpfile.name )
 
 ############################################################
 ############################################################
@@ -1264,7 +1307,7 @@ def runGATOnGenomicAnnotations( infiles, outfile ):
                         os.path.join( PARAMS["annotations_dir"],
                                       PARAMS_ANNOTATIONS["interface_territories_gff"] ),
                         os.path.join( PARAMS["annotations_dir"],
-                                      PARAMS_ANNOTATIONS["interface_mapability_bed"] % PARAMS["gat_mapability"] ),
+                                      PARAMS_ANNOTATIONS["interface_mapability_filtered_bed"] % PARAMS["gat_mapability"] ),
                         os.path.join( PARAMS["annotations_dir"],
                                       PARAMS_ANNOTATIONS["interface_gc_profile_bed"] ), 
                         ),
@@ -1279,12 +1322,12 @@ def runGATOnGeneAnnotations( infiles, outfile ):
     analyses.
     '''
 
-    job_options = "-l mem_free=50G"
+    # requires a large amount of memory
+    job_options = "-l mem_free=20G"
     
     bedfile, annofile, descriptionfile, workspacefile, mapabilityfile, isochorefile = infiles    
 
     to_cluster = True
-    outdir = "annotations_gat.dir"
 
     statement = '''gatrun.py
          --segments=%(bedfile)s
@@ -1565,6 +1608,7 @@ def annotate_intervals(): pass
           annotate_withreads,
           runMeme,
           loadMemeSummary,
+          loadTomTom,
           loadMotifInformation,
           loadMast,
           loadMotifInformation,

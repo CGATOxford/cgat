@@ -11,12 +11,6 @@ Gene set
 The following sections summarize the contents from the final 
 gene sets. 
 
-.. toctree::
-   :maxdepth: 2
-
-   GeneModelsFinalSummary.rst
-   ReferenceCoverage.rst
-   TranscriptModelling.rst
 
 Intermediate results
 ====================
@@ -27,8 +21,4 @@ gene model building process.
 .. toctree::
    :maxdepth: 2
 
-   GeneModelsBenchmark.rst
-   GeneModelsTranscripts.rst
-   GeneModelsReproducibility.rst
-   GeneModelsSummary.rst
 

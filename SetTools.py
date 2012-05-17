@@ -38,6 +38,7 @@ Code
 '''
 
 import itertools
+import numpy
 
 def combinations( list_of_sets ):
     '''create all combinations of a list of sets
@@ -70,6 +71,24 @@ def writeSets( outfile, list_of_sets, labels = None ):
         outfile.write( "%s\t%s\n" % (i,
                                   "\t".join( map(str, [ [0,1][i in x] for x in list_of_sets ] ) ) ))
     
+def unionIntersectionMatrix( list_of_sets ):
+    '''build union and intersection of a list of sets.
+
+    return a matrix with the upper diagonal the union and the lower diagonal the intersection.
+    '''
+
+    l = len(list_of_sets)
+    matrix = numpy.zeros( (l, l), dtype = numpy.int )
+    for x in range( l ):
+        xx = list_of_sets[x]
+        for y in range( x ):
+            yy = list_of_sets[y]
+            union = xx.union( yy )
+            inter = xx.intersection( yy )
+            matrix[x][y] = len(union)
+            matrix[y][x] = len(inter)
+
+    return matrix
 
 #------------------------------------------------------------------------
 def CompareSets( set1, set2):

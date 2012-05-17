@@ -64,7 +64,10 @@ def buildDMRStats( tables, method, outfile ):
     outf.write( "\t".join( ("tileset", "design", "track1", "track2", "tested",
                             "\t".join( [ "status_%s" % x for x in keys_status ] ),
                             "significant",
-                            "twofold" ) ) + "\n" )
+                            "up", "down",
+                            "twofold",
+                            "twofold_up", "twofold_down",
+                            ) ) + "\n" )
 
     all_tables = set(Database.getTables( dbhandle ))
     outdir = os.path.join( PARAMS["exportdir"], "diff_methylation" )
@@ -93,19 +96,43 @@ def buildDMRStats( tables, method, outfile ):
                 """SELECT treatment_name, control_name, COUNT(*) FROM %(tablename)s 
                                 WHERE (l2fold >= 1 or l2fold <= -1) AND significant
                                 GROUP BY treatment_name,control_name,significant""" % locals() ).fetchall() )
+
+        up = toDict( Database.executewait( dbhandle,
+                                                """SELECT treatment_name, control_name, COUNT(*) FROM %(tablename)s 
+                                WHERE l2fold > 0 AND significant
+                                GROUP BY treatment_name,control_name,significant""" % locals() ).fetchall() )
+
+        down = toDict( Database.executewait( dbhandle,
+                                             """SELECT treatment_name, control_name, COUNT(*) FROM %(tablename)s 
+                                WHERE l2fold < 0 AND significant
+                                GROUP BY treatment_name,control_name,significant""" % locals() ).fetchall() )
+
+        fold2up = toDict( Database.executewait( dbhandle,
+                                           """SELECT treatment_name, control_name, COUNT(*) FROM %(tablename)s 
+                                WHERE l2fold > 1 AND significant
+                                GROUP BY treatment_name,control_name,significant""" % locals() ).fetchall() )
+
+        fold2down = toDict( Database.executewait( dbhandle,
+                                             """SELECT treatment_name, control_name, COUNT(*) FROM %(tablename)s 
+                                WHERE l2fold < -1 AND significant
+                                GROUP BY treatment_name,control_name,significant""" % locals() ).fetchall() )
         
         groups = tested.keys()
 
         for treatment_name, control_name in groups:
+            k = (treatment_name,control_name)
             outf.write( "\t".join(map(str, (
                             tileset,
                             design,
                             treatment_name,
                             control_name,
-                            tested[(treatment_name,control_name)],
+                            tested[k],
                             "\t".join( [ str(status[(treatment_name,control_name,x)]) for x in keys_status]),
-                            signif[(treatment_name,control_name)],
-                            fold2[(treatment_name,control_name)] ) ) ) + "\n" )
+                            signif[(k)],
+                            up[k], down[k],
+                            fold2[k],
+                            fold2up[k], fold2down[k] ) ) ) + "\n" )
+                            
 
         ###########################################
         ###########################################

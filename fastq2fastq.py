@@ -57,7 +57,7 @@ Code
 
 '''
 
-import os, sys, re, optparse, math, random
+import os, sys, re, optparse, math, random, itertools
 
 import IOTools
 import Experiment as E
@@ -86,6 +86,14 @@ def main( argv = None ):
     parser.add_option( "--sample", dest="sample", type="float",
                        help="sample a proportion of reads [default=%default]."  )
 
+    parser.add_option( "--pair", dest="pair", type="string",
+                       help="if data is paired, filename with second pair. "
+                       "Implemented for sampling [default=%default]."  )
+
+    parser.add_option( "--outfile-pair", dest="outfile_pair", type="string",
+                       help="if data is paired, filename for second pair. "
+                       "Implemented for sampling [default=%default]."  )
+
     parser.add_option( "--uniq", dest="uniq", action="store_true",
                        help="remove duplicate reads (by name) [default=%default]."  )
 
@@ -100,8 +108,10 @@ def main( argv = None ):
         guess_format = None,
         sample = None,
         trim3 = None,
+        pair = None,
         apply = None,
         uniq = False,
+        outfile_pair = None,
         )
 
     ## add common options (-h/--help, ...) and parse command line 
@@ -120,6 +130,20 @@ def main( argv = None ):
     elif options.sample:
         sample_threshold = min( 1.0, options.sample)
         
+        if options.pair:
+            if not options.outfile_pair:
+                raise ValueError( "please specify output filename for second pair (--outfile-pair)")
+
+            outfile1 = options.stdout
+            outfile2 = IOTools.openFile( options.outfile_pair, "w" )
+            
+            for record1, record2 in itertools.izip( Fastq.iterate( options.stdin ), Fastq.iterate( IOTools.openFile( options.pair) ) ):
+                c.input += 1
+                if random.random() <= sample_threshold:
+                    c.output += 1
+                    outfile1.write( "%s\n" % record1 )
+                    outfile2.write( "%s\n" % record2 )
+
         for record in Fastq.iterate( options.stdin ):
             c.input += 1
             if random.random() <= sample_threshold:

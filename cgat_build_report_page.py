@@ -113,7 +113,6 @@ def main( argv = None ):
     <link rel="stylesheet" href="pygments.css" type="text/css" />
     <link rel="shortcut icon" href="http://cgatwiki.anat.ox.ac.uk/favicon.ico">
     <script type="text/javascript" src="sorttable.js"></script>
-
 </head>
 
   <body>

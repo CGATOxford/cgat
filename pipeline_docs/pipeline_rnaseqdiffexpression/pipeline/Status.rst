@@ -15,7 +15,7 @@ for differential expression succeeded.
 .. report:: Status.ExpressionStatus
    :render: status        
 
-   Status of expression stage 
+   Error bars
 
 .. report:: Status.DifferentialExpressionStatus
    :render: status        

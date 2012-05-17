@@ -609,49 +609,6 @@ def buildTileStats( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@merge( buildTileStats,
-        "tileinfo.load" )
-def loadTileStats( infiles, outfile ):
-    '''load tiling stats into database.'''
-    prefix = P.snip(outfile, ".load")
-
-    files = " ".join( [ "%s.stats.tsv" % x for x in infiles ] )
-
-    tablename = P.snip( outfile, ".load" ) + "_stats" 
-
-    statement = """
-    python %(scriptsdir)s/combine_tables.py 
-           --cat=track 
-           --regex-filename="(.*).stats.stats.tsv" 
-           %(files)s
-    | python %(scriptsdir)s/csv2db.py 
-           %(csv2db_options)s
-           --index=track
-           --table=%(tablename)s 
-    > %(outfile)s"""
-    P.run()
-   
-    files = " ".join( [ "%s.hist.tsv" % x for x in infiles ] )
-
-    tablename = P.snip( outfile, ".load" ) + "_hist" 
-    
-    statement = """
-    python %(scriptsdir)s/combine_tables.py 
-           --regex-filename="(.*).stats.hist.tsv" 
-           --sort-keys=numeric
-           --use-file-prefix
-           %(files)s
-    | python %(scriptsdir)s/csv2db.py 
-           %(csv2db_options)s
-           --index=track
-           --table=%(tablename)s 
-    >> %(outfile)s"""
-
-    P.run()
-    
-#########################################################################
-#########################################################################
-#########################################################################
 @transform( buildTiles,
             suffix(".bed.gz"), 
             ".bigbed")
@@ -835,6 +792,45 @@ def loadMethylationData( infile, design_file ):
     
     return groups, pairs
 
+#########################################################################
+#########################################################################
+#########################################################################
+def runDE( infiles, outfile, method ):
+    '''run DESeq or EdgeR.'''
+
+    to_cluster = True
+    
+    infile, design_file = infiles
+    design = P.snip( os.path.basename(design_file), ".tsv")
+    tiling = P.snip( os.path.basename( infile ), ".counts.tsv.gz" )
+
+    outdir = os.path.join( PARAMS["exportdir"], "diff_methylation", "%s_%s_%s_" % (tiling, design, method ) )
+
+    statement = '''zcat %(infile)s 
+              | %(cmd-farm)s
+                  --input-header 
+                  --output-header 
+                  --split-at-lines=100000 
+                  --cluster-options="-l mem_free=8G"
+                  --log=%(outfile)s.log
+                  --output-pattern=%(outdir)s%%s
+                  --subdirs
+              "python %(scriptsdir)s/Expression.py
+              --method=%(method)s
+              --filename-tags=-
+              --filename-design=%(design_file)s
+              --output-filename-pattern=%%DIR%%/
+              --deseq-fit-type=%(deseq_fit_type)s
+              --deseq-dispersion-method=%(deseq_dispersion_method)s
+              --log=%(outfile)s.log
+              --fdr=%(edger_fdr)f"
+              | grep -v "warnings"
+              | gzip
+              > %(outfile)s '''
+
+    P.run()
+
+
 @follows( aggregateTiledReadCounts, mkdir( os.path.join( PARAMS["exportdir"], "diff_methylation")) )
 @files( [ ( (data, design), 
             "diff_methylation/%s_%s.deseq.gz" % (P.snip(os.path.basename(data),".counts.tsv.gz"),
@@ -849,68 +845,7 @@ def runDESeq( infiles, outfile ):
     it contains a similar output and similar fdr compared to cuffdiff.
     '''
 
-    to_cluster = True
-    infile, design_file = infiles
-    design = P.snip( os.path.basename(design_file), ".tsv")
-    tiling = P.snip( os.path.basename( infile ), ".counts.tsv.gz" )
-
-    outdir = os.path.join( PARAMS["exportdir"], "diff_methylation", "%s_%s_" % (tiling, design) )
-
-    # --output-filename-pattern=%%DIR%%/%(outdir)s_
-
-    # run on 
-    statement = '''zcat %(infile)s 
-              | %(cmd-farm)s
-                  --input-header 
-                  --output-header 
-                  --split-at-lines=1000000 
-                  --log=%(outfile)s.log
-                  --output-pattern=%(outdir)s_%%s
-                  --subdirs
-              "python %(scriptsdir)s/Expression.py
-              --method=deseq
-              --filename-tags=-
-              --filename-design=%(design_file)s
-              --output-filename-pattern=%%DIR%%/
-              --deseq-fit-type=%(deseq_fit_type)s
-              --deseq-dispersion-method=%(deseq_dispersion_method)s
-              --log=%(outfile)s.log
-              --fdr=%(deseq_fdr)f"
-              | grep -v "warnings"
-              | gzip
-              > %(outfile)s '''
-
-    P.run()
-
-#########################################################################
-def mergeDESeq( infile, outfile ):
-    '''merge overlapping windows.'''
-    
-    statement = '''
-    zcat %(infile)s
-    | perl -p -e "s/test_id/contig\\tstart\\tend/; s/:/\\t/; s/-/\\t/;"
-    | python %(scriptsdir)s/medip_merge_intervals.py
-    | gzip
-    > %(outfile)s
-    '''
-
-#########################################################################
-@jobs_limit(1)
-@transform( runDESeq, suffix(".deseq.gz"), "_deseq.load" )
-def loadDESeq( infile, outfile ):
-    '''load differential expression results.'''
-
-    tablename = P.toTable( outfile )
-    statement = '''
-                zcat %(infile)s
-                | perl -p -e "s/test_id/contig\\tstart\\tend/; s/:/\\t/; s/-/\\t/;"
-                | python %(scriptsdir)s/csv2db.py
-                      --index=group1 --index=group2 --allow-empty
-                      --table=%(tablename)s 
-                      --quick
-                > %(outfile)s
-                '''
-    P.run()
+    runDE( infiles, outfile, "deseq" )
 
 #########################################################################
 #########################################################################
@@ -918,7 +853,7 @@ def loadDESeq( infile, outfile ):
 @follows( aggregateTiledReadCounts, mkdir( os.path.join( PARAMS["exportdir"], "diff_methylation")) )
 @files( [ ( (data, design), 
             "diff_methylation/%s_%s.edger.gz" % (P.snip(os.path.basename(data),".counts.tsv.gz"),
-                                   P.snip(os.path.basename(design),".tsv" ) ) ) \
+                                                 P.snip(os.path.basename(design),".tsv" ) ) ) \
               for data, design in itertools.product( 
                                                glob.glob("diff_methylation/*.counts.tsv.gz"),
                                                P.asList(PARAMS["deseq_designs"]) ) ] )
@@ -929,84 +864,120 @@ def runEdgeR( infiles, outfile ):
     the example in chapter 11 of the EdgeR manual.
     '''
 
+    runDE( infiles, outfile, "edger" )
+
+#########################################################################
+@transform( (runDESeq, runEdgeR), suffix(".gz"), ".merged.gz" )
+def mergeDMRWindows( infile, outfile ):
+    '''merge overlapping windows.'''
+
     to_cluster = True
-    
-    infile, design_file = infiles
-    design = P.snip( os.path.basename(design_file), ".tsv")
-    tiling = P.snip( os.path.basename( infile ), ".counts.tsv.gz" )
 
-    outdir = os.path.join( PARAMS["exportdir"], "diff_methylation", "%s_%s_" % (tiling, design ) )
-
-    statement = '''zcat %(infile)s 
-              | %(cmd-farm)s
-                  --input-header 
-                  --output-header 
-                  --split-at-lines=100000 
-                  --cluster-options="-l mem_free=8G"
-                  --log=%(outfile)s.log
-                  --output-pattern=%(outdir)s_%%s
-                  --subdirs
-              "python %(scriptsdir)s/Expression.py
-              --method=edger
-              --filename-tags=-
-              --filename-design=%(design_file)s
-              --output-filename-pattern=%%DIR%%/
-              --deseq-fit-type=%(deseq_fit_type)s
-              --deseq-dispersion-method=%(deseq_dispersion_method)s
-              --log=%(outfile)s.log
-              --fdr=%(edger_fdr)f"
-              | grep -v "warnings"
-              | gzip
-              > %(outfile)s '''
+    statement = '''
+    zcat %(infile)s
+    | python %(scriptsdir)s/medip_merge_intervals.py
+          --log=%(outfile)s.log
+          --output-filename-pattern=%(outfile)s.%%s.bed.gz
+    | gzip
+    > %(outfile)s
+    '''
 
     P.run()
 
 #########################################################################
 @jobs_limit(1)
-#@transform( runEdgeR, suffix(".edger.gz"), "_edger.load" )
-@transform( "diff_methylation/*.edger.gz", suffix(".edger.gz"), "_edger.load" )
-def loadEdgeR( infile, outfile ):
-    '''load differential expression results.'''
+@transform( mergeDMRWindows, suffix(".merged.gz"), ".load" )
+def loadDMRWindows( infile, outfile ):
+    '''merge overlapping windows.'''
+    P.load( infile, outfile, options = "--quick" )
 
-    tablename = P.toTable( outfile )
+#########################################################################
+@collate( loadDMRWindows, regex( "(\S+)[.](\S+).load" ), r"\2_stats.tsv" )
+def buildDMRStats( infiles, outfile ):
+    '''compute differential methylation stats.'''
+    tablenames = [P.toTable( x ) for x in infiles ] 
+    method = P.snip( outfile, "_stats.tsv" )
+    PipelineMedip.buildDMRStats( tablenames, method, outfile )
+
+#########################################################################
+@transform( buildDMRStats, suffix(".tsv"), ".load" )
+def loadDMRStats( infile, outfile ):
+    '''load DMR stats into table.'''
+    P.load( infile, outfile )
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( mergeDMRWindows,
+            suffix(".merged.gz"),
+            ".stats")
+def buildDMRWindowStats( infile, outfile ):
+    '''compute tiling window size statistics from bed file.'''
+
+    to_cluster = True
+
     statement = '''
-                zcat %(infile)s
-                | perl -p -e "s/test_id/contig\\tstart\\tend/; s/:/\\t/; s/-/\\t/;"
-                | sed -n '/contig/,$p'
-                | python %(scriptsdir)s/csv2db.py
-                      --index=group1 
-                      --index=group2 
-                      --allow-empty
-                      --table=%(tablename)s 
-                      --quick
-                > %(outfile)s
-                '''
+    zcat %(infile)s
+    | grep -v 'contig'
+    | python %(scriptsdir)s/gff2histogram.py 
+                   --force
+                   --format=bed 
+                   --data=size
+                   --method=hist
+                   --method=stats
+                   --output-filename-pattern=%(outfile)s.%%s.tsv
+    > %(outfile)s
+    '''
     P.run()
 
 #########################################################################
-@merge( loadDESeq, "deseq_stats.tsv" )
-def buildDESeqStats( infiles, outfile ):
-    tablenames = [P.toTable( x ) for x in infiles ] 
-    PipelineMedip.buildDMRStats( tablenames, "deseq", outfile )
+#########################################################################
+#########################################################################
+@merge( (buildTileStats, buildDMRWindowStats),
+        "tileinfo.load" )
+def loadTileStats( infiles, outfile ):
+    '''load tiling stats into database.'''
+    prefix = P.snip(outfile, ".load")
+
+    files = " ".join( [ "%s.stats.tsv" % x for x in infiles ] )
+
+    tablename = P.snip( outfile, ".load" ) + "_stats" 
+
+    statement = """
+    python %(scriptsdir)s/combine_tables.py 
+           --cat=track 
+           --regex-filename="(.*).stats.stats.tsv" 
+           %(files)s
+    | python %(scriptsdir)s/csv2db.py 
+           %(csv2db_options)s
+           --index=track
+           --table=%(tablename)s 
+    > %(outfile)s"""
+    P.run()
+   
+    files = " ".join( [ "%s.hist.tsv" % x for x in infiles ] )
+
+    tablename = P.snip( outfile, ".load" ) + "_hist" 
+    
+    statement = """
+    python %(scriptsdir)s/combine_tables.py 
+           --regex-filename="(.*).stats.hist.tsv" 
+           --sort-keys=numeric
+           --use-file-prefix
+           %(files)s
+    | python %(scriptsdir)s/csv2db.py 
+           %(csv2db_options)s
+           --index=track
+           --table=%(tablename)s 
+    >> %(outfile)s"""
+
+    P.run()
+
 
 #########################################################################
-@transform( buildDESeqStats, suffix(".tsv"), ".load" )
-def loadDESeqStats( infile, outfile ):
-    P.load( infile, outfile )
-
 #########################################################################
-@merge( loadEdgeR, "edger_stats.tsv" )
-def buildEdgeRStats( infiles, outfile ):
-    tablenames = [P.toTable( x ) for x in infiles ] 
-    PipelineMedip.buildDMRStats( tablenames, "edger", outfile )
-
 #########################################################################
-@transform( buildEdgeRStats, suffix(".tsv"), ".load" )
-def loadEdgeRStats( infile, outfile ):
-    P.load( infile, outfile )
-
-#########################################################################
-@transform( (runEdgeR, runDESeq), regex(  "(.*)\.(.*)"), r"\1_\2.dmr.bed.gz" )
+@transform( mergeDMRWindows, regex(  "(.*)\.(.*).merged.gz"), r"\1_\2.dmr.bed.gz" )
 def buildDMRBed( infile, outfile ):
     '''output bed6 file with differentially methylated regions.
 
@@ -1017,29 +988,47 @@ def buildDMRBed( infile, outfile ):
     
     to_cluster = True
 
-    tmpf = IOTools.getTempFile( "." )
-    
-    c = E.Counter()
-    for row in csv.DictReader( IOTools.openFile( infile ),
-                               dialect = "excel-tab" ):
-        c.input += 1
-        if row["significant"] != "1": continue
+    statement = '''zcat %(infile)s
+    | python %(scriptsdir)s/csv_cut.py contig start end l2fold significant
+    | awk '$5 == "1" {printf("%%s\\t%%i\\t%%i\\t%%i\\t%%f\\n", $1,$2,$3,++a,$4)}'
+    | gzip > %(outfile)s'''
 
-        contig, start, end = re.match("(.*):(\d+)-(\d+)", row["interval_id"] ).groups()
-        c.output += 1
-        tmpf.write( "\t".join( (contig, start, end, str(c.input), row["lfold"] ) ) + "\n" )
+#    | mergeBed -i stdin -scores mean 
 
-    E.info( "%s" % str(c) )
-        
-    tmpf.close()
-    tmpfname = tmpf.name
-
-    statement = '''mergeBed -i %(tmpfname)s -scores mean | gzip > %(outfile)s'''
     P.run()
 
-    os.unlink( tmpf.name )
+@merge( buildDMRBed, "dmr_overlap.tsv.gz" )
+def computeDMROverlap( infiles, outfile ):
+    '''compute overlap between bed sets.'''
+    
+    to_cluster = True
 
-@transform( (runEdgeR, runDESeq), regex(  "(.*)\.(.*)"), r"\1_\2.bed.gz" )
+    if os.path.exists(outfile): 
+        # note: update does not work due to quoting
+        os.rename( outfile, "orig." + outfile )
+        options = "--update=orig.%s" % outfile
+    else:
+        options = ""
+    
+    infiles = " ".join( infiles )
+
+    # note: need to quote track names
+    statement = '''
+        python %(scriptsdir)s/diff_bed.py 
+              --pattern-id=".*/(.*).dmr.bed.gz"
+              --log=%(outfile)s.log 
+              %(options)s %(infiles)s 
+        | awk -v OFS="\\t" '!/^#/ { gsub( /-/,"_", $1); gsub(/-/,"_",$2); } {print}'
+        | gzip
+        > %(outfile)s
+        '''
+
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( mergeDMRWindows, regex(  "(.*)\.(.*).merged.gz"), r"\1_\2.bed.gz" )
 def buildMRBed( infile, outfile ):
     '''output bed6 file with methylated regions.
 
@@ -1072,8 +1061,9 @@ def buildMRBed( infile, outfile ):
 def mapping(): pass
 
 @follows( aggregateTiledReadCounts,
-          loadDESeqStats,
-          loadEdgeRStats)
+          loadDMRStats,
+          buildDMRBed,
+          computeDMROverlap)
 def callDMRs(): pass
 
 @follows( mapping, callDMRs) 
