@@ -655,7 +655,7 @@ class Tophat( Mapper ):
 class TopHat_fusion( Mapper ):
     
     # tophat can map colour space files directly
-    preserve_colourspace = True
+    preserve_colourspace = False
     
     def mapper( self, infiles, outfile ):
         '''build mapping statement on infiles.
@@ -674,7 +674,7 @@ class TopHat_fusion( Mapper ):
         # add options specific to data type
         data_options = []
         if self.datatype == "solid":
-            data_options.append( "--quals --integer-quals --color" )
+            data_options.append( "--bowtie1 --quals --integer-quals --color" )
             index_prefix = "%(bowtie_index_dir)s/%(genome)s_cs"
         else:
             index_prefix = "%(bowtie_index_dir)s/%(genome)s"
@@ -684,10 +684,10 @@ class TopHat_fusion( Mapper ):
         if nfiles == 1:
             infiles = ",".join( [ x[0] for x in infiles ] )
             statement = '''
-            module load tophatfusion;
+            module load bio/tophatfusion;
             tophat-fusion --output-dir %(tmpdir_tophat)s
                    --num-threads %%(tophat_threads)i
-                   --library-type %%(tophat_library_type)s
+                   --library-type %%(tophat_library_type)s                  
                    %(data_options)s
                    %%(tophat_options)s
                    %%(tophatfusion_options)s
@@ -703,9 +703,9 @@ class TopHat_fusion( Mapper ):
             infiles2 = ",".join( [ x[1] for x in infiles ] )
 
             statement = '''
-            module load tophatfusion;
+            module load bio/tophatfusion;
             tophat-fusion --output-dir %(tmpdir_tophat)s
-                   --mate-inner-dist %%(tophat_mate_inner_dist)i
+                    --mate-inner-dist %%(tophat_mate_inner_dist)i
                     --num-threads %%(tophat_threads)i
                    --library-type %%(tophat_library_type)s
                    %(data_options)s
@@ -756,10 +756,14 @@ class TopHat_fusion( Mapper ):
         if not os.path.exists('%s' % track):
             os.mkdir('%s' % track)
 
+        #statement = '''
+        #    mv -f %(tmpdir_tophat)s/* %(track)s/; 
+        #    samtools index %(outfile)s;
+        #    ''' % locals()
         statement = '''
-            mv -f %(tmpdir_tophat)s/* %(track)s/;  
+            mv -f %(tmpdir_tophat)s/* %(track)s/; 
+         
             ''' % locals()
-
         return statement
 
 class Bowtie( Mapper ):
