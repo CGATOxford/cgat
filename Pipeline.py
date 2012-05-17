@@ -1213,7 +1213,13 @@ def publish_report( prefix = "", patterns = [], project_id = None):
         dest = os.path.abspath( os.path.join( PARAMS["web_dir"], dest ) )
         if os.path.exists( dest ):
             os.remove(dest)
+        
         if os.path.exists( src ):
+            #IMS: check if base path of dest exists. This allows for prefix to be a 
+            #nested path structure e.g. project_id/
+            if not os.path.exists(os.path.dirname(os.path.abspath(dest))):
+                os.mkdir(os.path.dirname(os.path.abspath(dest)))
+
             os.symlink( os.path.abspath(src), dest )
 
     def _copy( src, dest ):
