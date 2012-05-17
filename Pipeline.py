@@ -1173,7 +1173,11 @@ def run_report( clean = True):
 
     run()
 
-def publish_report( prefix = "", patterns = [], project_id = None):
+def publish_report( prefix = "", 
+                    patterns = [], 
+                    project_id = None,
+                    prefix_project = "/ifs/projects",
+                    ):
     '''publish report into web directory.
 
     Links export directory into web directory.
@@ -1233,10 +1237,11 @@ def publish_report( prefix = "", patterns = [], project_id = None):
     # publish web pages by copying
     _copy( os.path.abspath("report/html"), dest_report ) 
 
-    # substitute links to export
+    # substitute links to export and report
     _patterns = [ (re.compile( src_export ), 
                    "http://www.cgat.org/downloads/%(project_id)s/%(dest_export)s" % locals() ), 
-                  ]
+                  (re.compile( '(%s)/report' % os.path.join( prefix_project, getProjectName() ) ),
+                   "http://www.cgat.org/downloads/%(project_id)s/%(dest_report)s" % locals() ) ]
     
     _patterns.extend( patterns )
     
