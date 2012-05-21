@@ -914,7 +914,8 @@ def mapReadsWithBowtieAgainstTranscriptome( infiles, outfile ):
     m = PipelineMapping.BowtieTranscripts( executable = P.substituteParameters( **locals() )["bowtie_executable"] )
     infile, reffile = infiles
     prefix = P.snip( reffile, ".fa" )
-    bowtie_options = "%s --best --strata -a" % PARAMS["bowtie_transcriptome_options"] 
+    #IMS: moved reporting options to ini
+    #bowtie_options = "%s --best --strata -a" % PARAMS["bowtie_transcriptome_options"] 
     statement = m.build( (infile,), outfile ) 
     P.run()
 
