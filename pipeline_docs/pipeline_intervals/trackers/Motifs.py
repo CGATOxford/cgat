@@ -639,16 +639,27 @@ class MemeResults( IntervalTracker ):
 class TomTomResults( IntervalTracker ):
     '''overview of tomtom results.'''
 
+
     pattern = "(.*)_tomtom$"
-    
+
     def __call__(self, track, slice = None ):
 
         data = self.getAll( """SELECT query_id, target_id, target_name,
                                optimal_offset,pvalue,qvalue,evalue, overlap, query_consensus,
                                target_consensus, orientation 
                                FROM %(track)s_tomtom""" % locals())
-
+        
+        resultsdir = os.path.abspath( os.path.join( EXPORTDIR, "tomtom", "%s.tomtom" % re.sub("_", "-", track ) ))
+        if not os.path.exists( resultsdir ): return []
+        
+        # format is: match_q_3_t_2_M01904
+        # q_3: query_id
+        # t_2: target database
+        # M01904: target_id
+        data['link'] = [ "`tomtom <%s/tomtom.html#match_q_%s_t_2_%s>`_" % (resultsdir, target_id, target_name)
+                         for target_id, target_name in zip( data['query_id'], data['target_id']) ]
         return data
+
 
 # class AnnotationsMatrix( DefaultTracker ):
 

@@ -954,7 +954,7 @@ def exportMotifSequences( infile, outfile ):
                                                       outfile,
                                                       dbhandle,
                                                       full = False,
-                                                      masker = p['motifs_masker'],
+                                                      masker = P.asList(p['motifs_masker']),
                                                       halfwidth = int(p["motifs_halfwidth"]),
                                                       maxsize = int(p["motifs_max_size"]),
                                                       proportion = p["motifs_proportion"],

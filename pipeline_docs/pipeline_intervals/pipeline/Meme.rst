@@ -37,16 +37,3 @@ To see an overview of all motifs found across all sets visit the
 
 ..    Distribution of G+C content in sequences used for motif discovery.
 
-============
-Tomtom
-============
-
-All meme generated motifs are run against reference motif database to
-check for similarity to known motifs.
-
-.. report:: Motifs.TomTomResults
-   :render: table
-   :force:
-
-   Meme results, showing for each set of motifs found by meme
-   a list of similar motifs.
