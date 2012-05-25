@@ -720,8 +720,9 @@ def aggregateTiledReadCounts( infiles, outfile ):
     For bed6: use column 7
     For bed12: use column 13
 
-    This method uses the maximum number of reads
-    found in any interval as the tag count.
+    This method uses the maximum number of reads found in any interval as the tag count.
+
+    Tiles with no counts will not be output.
     '''
     
     to_cluster = True
@@ -739,7 +740,8 @@ def aggregateTiledReadCounts( infiles, outfile ):
     for line in open( tmpfile, "r" ):
         data = line[:-1].split("\t")
         genes = list(set([ data[x] for x in range(0,len(data), 2 ) ]))
-        values = [ data[x] for x in range(1,len(data), 2 ) ]
+        values = [ int(data[x]) for x in range(1,len(data), 2 ) ]
+        if sum(values) == 0: continue
         assert len(genes) == 1, "paste command failed, wrong number of genes per line: '%s'" % line
         outf.write( "%s\t%s\n" % (genes[0], "\t".join(map(str, values) ) ) )
     
@@ -796,7 +798,11 @@ def loadMethylationData( infile, design_file ):
 #########################################################################
 #########################################################################
 def runDE( infiles, outfile, method ):
-    '''run DESeq or EdgeR.'''
+    '''run DESeq or EdgeR.
+
+    The job is split into smaller sections. The order of the input 
+    data is randomized in order to avoid any biases due to chromosomes.
+    '''
 
     to_cluster = True
     
@@ -807,6 +813,7 @@ def runDE( infiles, outfile, method ):
     outdir = os.path.join( PARAMS["exportdir"], "diff_methylation", "%s_%s_%s_" % (tiling, design, method ) )
 
     statement = '''zcat %(infile)s 
+              | perl %(scriptsdir)s/randomize_lines.pl -h
               | %(cmd-farm)s
                   --input-header 
                   --output-header 
