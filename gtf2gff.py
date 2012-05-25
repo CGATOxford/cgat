@@ -66,6 +66,13 @@ regulons
    upstream and downstream of a transciption start site. The options ``--upstream``
    and ``-downstream`` set the region width.
 
+tts-regulons
+   declare tts regulatory regions. tts-regulatory regions contain the region x kb of
+   upstream and downstream of a transciption termination site. The options ``--upstream``
+   and ``-downstream`` set the region width.
+
+
+
 Genome
 ++++++
 
@@ -538,7 +545,7 @@ def annotatePromoters( iterator, fasta, options ):
 
     E.info( "ngenes=%i, ntranscripts=%i, npromotors=%i" % (ngenes, ntranscripts, npromotors) )
 
-def annotateRegulons( iterator, fasta, options ):
+def annotateRegulons( iterator, fasta, tss, options ):
     """annotate regulons within iterator.
 
     Only protein_coding genes are annotated.
@@ -560,11 +567,19 @@ def annotateRegulons( iterator, fasta, options ):
 
             ntranscripts += 1
             mi, ma = min( [x.start for x in transcript ] ), max( [x.end for x in transcript ] )
-            # add range to both sides of tss
-            if is_negative_strand:
-                regulons.append( (max( 0, ma - options.downstream), min( lcontig, ma + options.upstream) ) )
+            if tss:
+                # add range to both sides of tss
+                if is_negative_strand:
+                    regulons.append( (max( 0, ma - options.downstream), min( lcontig, ma + options.upstream) ) )
+                else:
+                    regulons.append( (max( 0, mi - options.upstream), min( lcontig, mi + options.downstream) ) )
             else:
-                regulons.append( (max( 0, mi - options.upstream), min( lcontig, mi + options.downstream) ) )
+                # add range to both sides of tts
+                if is_negative_strand:
+                    regulons.append( (max( 0, mi - options.downstream), min( lcontig, mi + options.upstream) ) )
+                else:
+                    regulons.append( (max( 0, ma - options.upstream), min( lcontig, ma + options.downstream) ) )
+
             transcript_ids.append( transcript[0].transcript_id )
 
         if options.merge_promotors:
@@ -760,7 +775,8 @@ if __name__ == '__main__':
                       help="restrict input by source [default=%default]."  )
 
     parser.add_option("-m", "--method", dest="method", type="choice",
-                      choices=("full", "genome", "territories", "exons", "promotors", "tts", "regulons", "genes"),
+                      choices=("full", "genome", "territories", "exons", "promotors", "tts", 
+                               "regulons", "tts-regulons", "genes"),
                       help="method for defining segments [default=%default]."  )
 
     parser.add_option("-r", "--radius", dest="radius", type="int",
@@ -824,7 +840,9 @@ if __name__ == '__main__':
     elif options.method == "promotors":
         segmentor = annotatePromoters( iterator, fasta, options )
     elif options.method == "regulons":
-        segmentor = annotateRegulons( iterator, fasta, options )
+        segmentor = annotateRegulons( iterator, fasta, True, options )
+    elif options.method == "tts-regulons":
+        segmentor = annotateRegulons( iterator, fasta, False, options )
     elif options.method == "tts":
         segmentor = annotateTTS( iterator, fasta, options )
     elif options.method == "genes":
