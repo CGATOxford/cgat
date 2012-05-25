@@ -21,8 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-pdb_filter_residues.py - 
-======================================================
+pdb_filter_residues.py - filter out a list of residues from a pdb file
+=======================================================================
 
 :Author: Andreas Heger
 :Release: $Id$
@@ -56,14 +56,8 @@ Code
 ----
 
 '''
-USAGE = """filter out a list of residues from a
-pdb file.
-"""
-
 
 import sys, re, os, string, getopt
-
-import alignlib
 
 param_master = 0
 param_format = None

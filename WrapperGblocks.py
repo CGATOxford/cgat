@@ -39,7 +39,6 @@ import os, sys, string, re, tempfile
 """
 
 import Genomics
-import alignlib
 
 class Gblocks:
 
