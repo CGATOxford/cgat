@@ -1040,8 +1040,8 @@ def runDESeq( infile,
     # to output normalized data
     # R('''write.table( counts(cds, normalized=TRUE), file='%(outfile_prefix)scounts.tsv.gz', sep='\t') ''' % locals())
     # output counts
-    R('''write.table( counts(cds), file=gzfile('%(outfile_prefix)scounts.tsv.gz'), sep='\t') ''' % locals())    
-
+    R('''write.table( counts(cds), file=gzfile('%(outfile_prefix)scounts.tsv.gz'), sep='\t') ''' % locals())
+    
     # R.png( '''%(outfile_prefix)sscvplot.png''' % locals() )
     # R('''scvPlot( cds, ylim = c(0,3))''')
     # R['dev.off']()

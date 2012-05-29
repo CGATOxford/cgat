@@ -160,7 +160,7 @@ To run the example, simply unpack and untar::
 
    wget http://www.cgat.org/~andreas/sample_data/pipeline_annotations.tgz
    tar -xvzf pipeline_annotations.tgz
-   cd pipeline_annotations
+   cd pipeline_annotations.dir
    python <srcdir>/pipeline_annotations.py make full
 
 Code
@@ -1002,6 +1002,7 @@ def buildGenomicFunctionalAnnotation( infiles, outfiles ):
                 contig, start, end, strand = gene2region[gene_id]
             except KeyError:
                 c.notfound += 1
+                continue
             outf.write( "\t".join( map(str, (contig, start, end, "%s:%s" % (db, go_id), 1, strand))  ) + "\n" )
             term2description["%s:%s" % (db, go_id)] = description
     outf.close()

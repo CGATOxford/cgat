@@ -82,28 +82,11 @@ The sphinxreport report requires a :file:`conf.py` and :file:`sphinxreport.ini` 
 Input
 -----
 
-Reads
-++++++
+Intervals
++++++++++
 
-Input are :file:`.export.txt.gz`-formatted files from Illumina, :term:`fastq.gz` files,
-or :term:`csfasta.gz` files.
-
-
-The files should be labeled in the following way::
-
-   sample-condition-replicate.<suffix>.gz
-
-For example::
- 
-   GM00855-D3-R1.<suffix>.gz
-   GM00855-D3-R2.<suffix>.gz
-   GM00855-input-R1.<suffix>.gz
-   GM00855-unstim-R1.<suffix>.gz
-   GM00855-unstim-R2.<suffix>.gz
-
-Note that neither ``sample``, ``condition`` or ``replicate`` should contain 
-``_`` (underscore) and ``.`` (dot) characters as these are used by the pipeline
-to delineate tasks.
+Input are :term:`bed`-formatted files of intervals. Intervals should be at least 
+bed4 formatted, i.e., each interval should be labelled (uniquely).
 
 Optional inputs
 +++++++++++++++
@@ -568,7 +551,7 @@ def annotateIntervalsFull( infile, outfile ):
 
     statement = """
     zcat < %(infile)s 
-    | python %(scriptsdir)s/bed2gff.py --as-gtf 
+    | python %(scriptsdir)s/bed2gff.py --as-gtf
     | python %(scriptsdir)s/gtf2table.py 
 		--counter=position 
 		--counter=classifier-chipseq 

@@ -485,6 +485,10 @@ def plotGeneLevelReadExtension( infile, outfile ):
         scaled = R('''lscaled = t(scale(t(lraw), center=FALSE, scale=apply(lraw,1,max) ))''' )
         exons = R('''lraw[,1]''')
 
+        if len(utrs) == 0: 
+            E.warn( "no data for %s" % filename )
+            continue
+
         #######################################################
         #######################################################
         #######################################################

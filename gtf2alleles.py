@@ -155,7 +155,7 @@ class VariantGetterVCF( VariantGetter ):
         self.vcf.connect( filename )
 
         if sample not in self.vcf.getsamples():
-            raise KeyErorr( "sample %s not vcf file" )
+            raise KeyError( "sample %s not vcf file" % sample )
         
     def __call__(self, contig, start, end ):
         
@@ -862,6 +862,7 @@ def main( argv = None ):
     else:
         raise ValueError("please specify a source of variants." )
 
+    output_all = False
     if len(options.output) == 0 or "all" in options.output:
         output_all = True
 

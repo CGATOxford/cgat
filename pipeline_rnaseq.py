@@ -384,7 +384,7 @@ To run the example, simply unpack and untar::
 
    wget http://www.cgat.org/~andreas/sample_data/pipeline_rnaseq.tgz
    tar -xvzf pipeline_rnaseq.tgz
-   cd pipeline_rnaseq
+   cd pipeline_rnaseq.dir
    python <srcdir>/pipeline_rnaseq.py make full
 
 .. note:: 
@@ -924,10 +924,6 @@ def buildTerminalExons( infile, outfile ):
         outf1.write( "%s\t%i\t%i\t%s\t%i\t%s\n" % (contig, cut_exon[0], cut_exon[1], gene_id, 0, strand ) )
         
     outf1.close()
-
-    '''
-    zcat refcoding_terminal_exons.bed.gz | python ~/cgat/bed2gff.py --as-gtf | python ~/cgat/gtf2table.py --counter=read-coverage --bam-file=heart-library-R1.accepted.bam >& exon.coverage
-    '''
 
 #########################################################################
 #########################################################################
@@ -3938,6 +3934,9 @@ def runDESeq( infile, outfile ):
     # Estimate size factors
     R('''cds <- estimateSizeFactors( cds )''')
 
+    deseq_fit_type = PARAMS['deseq_fit_type']
+    deseq_dispersion_method = PARAMS['deseq_dispersion_method']
+
     # Estimate variance
     if no_replicates:
         E.info("no replicates - estimating variance with method='blind'" )
@@ -3946,7 +3945,9 @@ def runDESeq( infile, outfile ):
     else:
         E.info("replicates - estimating variance from replicates" )
         # old:R('''cds <- estimateVarianceFunctions( cds )''')
-        R('''cds <- estimateDispersions( cds )''')
+        R('''cds <- estimateDispersions( cds, 
+                                         method='%(deseq_dispersion_method)s',
+                                         fitType='%(deseq_fit_type)s' )''' % locals())
 
     R('''str( fitInfo( cds ) )''')
 
@@ -3959,7 +3960,6 @@ def runDESeq( infile, outfile ):
     Expression.deseqPlotPairs( build_filename0( section = "pairs", **locals() ) )
 
     L.info("calling differential expression")
-
 
     all_results = []
 
