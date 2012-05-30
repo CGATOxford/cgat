@@ -56,9 +56,9 @@ class allTranscriptsByBiotype(cpgTracker):
 
     def __call__(self, track, slice = None ):
 
-        data = self.getAll( """SELECT transcript_biotype, count(transcript_id) as transcripts
+        data = self.getAll( """SELECT gene_biotype, count(transcript_id) as transcripts
                                FROM annotations.transcript_info
-                               GROUP BY transcript_biotype
+                               GROUP BY gene_biotype
                                ORDER BY transcripts desc """ )
         return data
 

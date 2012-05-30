@@ -49,19 +49,6 @@ class genomeCompostionPerContig(cpgTracker):
         return data
 
 ##################################################################################
-class codingTranscriptTSSCount(cpgTracker):
-    """Number of Ensembl protein-coding genes"""
-
-    mPattern = "bam_stats"
-
-    def __call__(self, track, slice = None ):
-
-        data = self.getAll( """SELECT distinct contig, start
-                           FROM annotations.transcript_info
-                           WHERE transcript_biotype='protein_coding' """ )
-        return data
-
-##################################################################################
 class allTranscriptsByBiotype(cpgTracker):
     """Number of Ensembl transcripts by biotype"""
 
@@ -69,10 +56,10 @@ class allTranscriptsByBiotype(cpgTracker):
 
     def __call__(self, track, slice = None ):
 
-        data = self.getAll( """SELECT transcript_biotype, count(transcript_id) as transcripts
-                           FROM annotations.transcript_info
-                           GROUP BY transcript_biotype
-                           ORDER BY transcripts desc """ )
+        data = self.getAll( """SELECT gene_biotype, count(transcript_id) as transcripts
+                               FROM annotations.transcript_info
+                               GROUP BY gene_biotype
+                               ORDER BY transcripts desc """ )
         return data
 
 ##################################################################################

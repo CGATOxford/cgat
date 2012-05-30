@@ -115,7 +115,7 @@ import fileinput
 import Experiment as E
 import logging as L
 from ruffus import *
-
+from rpy2.robjects import r as R
 USECLUSTER = True
 
 ###################################################
@@ -131,8 +131,34 @@ PARAMS = P.PARAMS
 ###################################################################
 ###################################################################
 ###################################################################
-##
-############################################################
+@files( "pipeline.ini", PARAMS["orthology_groups"] )
+def getOrthologousGroups( infile, outfile ):
+    '''Export list of orthologous genes from all species from postgres database'''
+    statement = '''psql -h db -U andreas -d postgres -F "," -A -c "select s.set_id, m.schema, m.gene_id 
+                   from cgat_proj007_v2.ortholog_sets_members m, cgat_proj007_v2.ortholog_sets s 
+                   where m.set_id=s.set_id and s.nspecies=7;"
+                   | sed s/,/\\\\t/g > %(outfile)s ''' % locals()
+    P.run()
+
+    
+###################################################################
+@transform( getOrthologousGroups, regex(PARAMS["orthology_groups"]), "sevenway_ortholog_groups.load" )
+def loadOrthologousGroups( infile, outfile ):
+    '''Load list of orthologous genes into sqlite3 database'''
+
+    header="set_id,species,gene_id"
+    statement = '''cat %(infile)s
+                   | python %(scriptsdir)s/csv2db.py
+                       --index=set_id
+                       --index=species
+                       --index=gene_id
+                       --table=ortholog_groups 
+                   > %(outfile)s '''
+    P.run()
+
+###################################################################
+###################################################################    
+###################################################################
 @transform( "*.genelist", regex( r"(\S+).genelist"), r"\1.genelist.load" )
 def loadGeneLists( infile, outfile ):
     '''Load list of genes associated with feature from each species into sqlite3 database'''
@@ -147,18 +173,19 @@ def loadGeneLists( infile, outfile ):
     P.run()
 
 ############################################################
+@follows(loadOrthologousGroups)
 @transform( loadGeneLists, suffix( ".genelist.load"), ".genelist.stats" )
 def GeneListStats( infile, outfile ):
 
     track = P.snip( os.path.basename( infile), ".genelist.load" ).replace("-","_").replace(".","_")
     species = track[:2]
-    anno_base = PARAMS["annotations_dir"]
+    #anno_base = PARAMS["annotations_dir"]
     species_list = P.asList(PARAMS["species"])
-    genome_list = P.asList(PARAMS["genomes"])
-    ensembl_version = PARAMS["orthology_ensembl_version"]
-    species_lookup = dict(zip(species_list, genome_list))
-    species_genome = species_lookup[species]
-    species_db = anno_base + species_genome + "/" + PARAMS["database"]
+    anno_list = P.asList(PARAMS["annotations_db"])
+    #ensembl_version = PARAMS["orthology_ensembl_version"]
+    species_lookup = dict(zip(species_list, anno_list))
+    species_db = species_lookup[species]
+    #species_db = anno_base + species_genome + "/" + PARAMS["database"]
 
     # Connect to database and attach annotation databases
     dbhandle = sqlite3.connect( PARAMS["database"] )
@@ -257,20 +284,18 @@ def mergeGeneLists( infiles, outfile ):
     '''Merge gene lists into single table and load into SQLite.'''
 
     tablename = P.toTable( outfile )
-    anno_base = PARAMS["annotations_dir"]
     species_list = P.asList(PARAMS["species"])
-    genome_list = P.asList(PARAMS["genomes"])
-    db_name = PARAMS["database"]
-    ensembl_version = PARAMS["orthology_ensembl_version"]
-    species_lookup = dict(zip(species_list, genome_list))
+    anno_list = P.asList(PARAMS["annotations_db"])
+    species_lookup = dict(zip(species_list, anno_list))
 
     # Connect to database and attach annotation databases
     dbhandle = sqlite3.connect( PARAMS["database"] )
     for species in species_lookup.iterkeys():
-        species_genome = species_lookup[species]
-        species_db = anno_base + species_genome + "/" + db_name
+        species_db = species_lookup[species]
+        #species_db = anno_base + species_genome + "/" + db_name
         cc = dbhandle.cursor()
         statement = '''ATTACH DATABASE '%(species_db)s' as %(species)s''' % locals()
+        print statement
         cc.execute( statement )
         cc.close()
 
@@ -280,68 +305,142 @@ def mergeGeneLists( infiles, outfile ):
     for f in infiles:
         track = P.snip( os.path.basename( f), ".genelist.load" ).replace("-","_").replace(".","_")
         species = track[:2]
-        statement += pre + '''SELECT distinct t.gene_id, t.gene_name
+        genelist_id=PARAMS["genelist_id"]
+        statement += pre + '''SELECT distinct t.gene_id, t.gene_name, "%(species)s" AS species
                        FROM %(track)s_genelist g, %(species)s.transcript_info t
-                       WHERE g.gene_id=t.transcript_id and t.gene_biotype='protein_coding' ''' % locals()
+                       WHERE g.gene_id=t.%(genelist_id)s and t.gene_biotype='protein_coding' ''' % locals()
         pre = " UNION "
 
     print statement
     cc = dbhandle.cursor()
     cc.execute( "DROP TABLE IF EXISTS %(tablename)s" % locals() )
     cc.execute( statement )
-    cc,execute( '''CREATE INDEX "glm_idx1" ON "%s" ("gene_id" ASC) ''' % tablename )
+    cc.execute( '''CREATE INDEX "glm_idx1" ON "%s" ("gene_id" ASC) ''' % tablename )
+    cc.execute( '''CREATE INDEX "glm_idx2" ON "%s" ("species" ASC) ''' % tablename )
     cc.close()
 
     statement = "touch %s" % outfile
     P.run()
 
 ############################################################
-############################################################
-############################################################    
-@transform( "pipeline.ini", regex(r"pipeline.ini"), PARAMS["orthology_groups"] )
-def getOrthologousGroups( infile, outfile ):
-    '''Export list of orthologous genes from all species from postgres database'''
-    statement = '''psql -h db -U andreas -d postgres -F "," -A -c "select s.set_id, m.schema, m.gene_id 
-                   from cgat_proj007.ortholog_sets_members m, cgat_proj007.ortholog_sets s 
-                   where m.set_id=s.set_id and s.nspecies=7"
-                   | sed s/,/\\t/g
-                   > %(outfile)s '''
-    P.run()
+@follows(loadOrthologousGroups)
+@transform( mergeGeneLists, suffix( "genelists_merged.load"), "genelists_merged.stats" )
+def MergedGeneListStats( infile, outfile ):
+
+    species_list = P.asList(PARAMS["species"])
+    anno_list = P.asList(PARAMS["annotations_db"])
+    species_lookup = dict(zip(species_list, anno_list))
     
-###################################################################
-@transform( getOrthologousGroups, regex(PARAMS["orthology_groups"]), "ortholog_groups.load" )
-def loadOrthologousGroups( infile, outfile ):
-    '''Load list of orthologous genes into sqlite3 database'''
+    # Write to file
+    header = "species\tgenes_with_feature\ttotal_genes\ttotal_conserved_genes\tconserved_genes_with_feature\tproportion_with_feature\tproportion_conserved\tproportion_conserved_with_feature"
+    outs = open( outfile, "w")
+    outs.write( "%s\n" % (header) )
 
-    header="set_id,species,gene_id"
-    statement = '''cat %(infile)s
-                   | python %(scriptsdir)s/csv2db.py
-                       --header=%(header)s
-                       --index=set_id
+    # Connect to database and attach annotation databases
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    for species in species_lookup.iterkeys():
+        species_db = species_lookup[species]
+        #species_db = anno_base + species_genome + "/" + db_name
+        cc = dbhandle.cursor()
+        statement = '''ATTACH DATABASE '%(species_db)s' as %(species)s''' % locals()
+        print statement
+        cc.execute( statement )
+        cc.close()
+
+        # Extract data from db
+        cc = dbhandle.cursor()
+        statement = '''SELECT count(distinct t.gene_id) as genes
+                       FROM genelists_merged g, %(species)s.transcript_info t
+                       WHERE g.gene_id=t.gene_id 
+                       AND t.gene_biotype='protein_coding' ''' % locals()
+        cc.execute( statement )
+        result = cc.fetchall()
+        genes_with_feature = str(result[0][0])
+        cc.close()
+        #print track + " genes_with_feature=" + genes_with_feature + "\n"
+
+        cc = dbhandle.cursor()
+        statement = '''SELECT count(distinct gene_id) as genes
+                       FROM %(species)s.transcript_info where gene_biotype='protein_coding' ''' % locals()
+        cc.execute( statement )
+        result = cc.fetchall()
+        total_genes = str(result[0][0])
+        cc.close()
+        #print track + " total_protein_coding_genes =" + total_genes + "\n"
+
+        proportion_with_feature = (float(genes_with_feature)/float(total_genes))*100
+        #print track + " proportion_with_feature =" + str(proportion_with_feature) + "%\n"
+
+        cc = dbhandle.cursor()
+        statement = '''SELECT count(distinct set_id) as genes
+                       FROM ortholog_groups''' % locals()
+        cc.execute( statement )
+        result = cc.fetchall()
+        total_conserved_genes = str(result[0][0])
+        cc.close()
+        #print "total_conserved_genes =" + total_conserved_genes + "\n"
+
+        proportion_conserved = (float(total_conserved_genes)/float(total_genes))*100
+        #print track + " proportion_conserved =" + str(proportion_conserved) + "%\n"
+
+        cc = dbhandle.cursor()
+        statement = '''SELECT count(distinct t.gene_id) as genes
+                       FROM genelists_merged g, %(species)s.transcript_info t, ortholog_groups o
+                       WHERE g.gene_id=t.gene_id and t.gene_biotype='protein_coding' 
+                       AND o.gene_id=t.gene_id''' % locals()
+        cc.execute( statement )
+        result = cc.fetchall()
+        conserved_genes_with_feature = str(result[0][0])
+        cc.close()
+        #print track + " conserved_genes_with_feature=" + conserved_genes_with_feature + "\n"
+
+        proportion_conserved_with_feature = (float(conserved_genes_with_feature)/float(total_conserved_genes))*100
+        #print track + " proportion_conserved_with_feature =" + str(proportion_conserved_with_feature) + "%\n"
+        
+        outs.write( "%s\t%s\t%s\t%s\t%s\t%.2f\t%.2f\t%.2f\n" % (species, genes_with_feature, total_genes, total_conserved_genes, conserved_genes_with_feature, proportion_with_feature, proportion_conserved, proportion_conserved_with_feature) )
+        
+    outs.close()
+
+############################################################
+@transform( MergedGeneListStats, suffix("genelists_merged.stats"), "genelists_merged.stats.load" )
+def loadMergedGeneListStats( infile, outfile ):
+    '''Load into SQLite.'''
+    statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
                        --index=species
-                       --index=gene_id
-                       --table=ortholog_groups 
+                       --table=genelist_merged_stats 
                    > %(outfile)s '''
     P.run()
 
+############################################################
+@follows( mkdir("stats") )
+@transform(MergedGeneListStats, suffix("genelists_merged.stats"), "nmi_conservation")
+def nmiConservationFisherTest( infile, outfile ):
+    '''Plot heatmap of pairwise scores in R'''
+    scriptsdir = PARAMS["scriptsdir"]
+    R('''source("%(scriptsdir)s/R/proj007/proj007.R")'''  % locals() )
+    #print '''nmi_conservation(infile="%(infile)s", outfile="%(outfile)s") '''  % locals()
+    R('''nmi_conservation(infile="%(infile)s", outfile="%(outfile)s") '''  % locals() )       
+
+############################################################
+############################################################
 ############################################################
 @transform(mergeGeneLists, regex(r"(\S+).load"), "ortholog_groups_with_feature.load") 
 def orthologGroupsWithFeature( infile, outfile):
     '''Generate list of conserved genes associated with feature in all species '''
 
     tablename = "ortholog_groups_with_feature"
-    anno_base = PARAMS["annotations_dir"]
+    #nno_base = PARAMS["annotations_dir"]
     species_list = P.asList(PARAMS["species"])
-    genome_list = P.asList(PARAMS["genomes"])
-    db_name = PARAMS["database"]
-    ensembl_version = PARAMS["orthology_ensembl_version"]
-    species_lookup = dict(zip(species_list, genome_list))
+    anno_list = P.asList(PARAMS["annotations_db"])
+    #db_name = PARAMS["database"]
+    #ensembl_version = PARAMS["orthology_ensembl_version"]
+    species_lookup = dict(zip(species_list, anno_list))
 
     # Connect to database and attach annotation databases
     dbhandle = sqlite3.connect( PARAMS["database"] )
     for species in species_lookup.iterkeys():
-        species_genome = species_lookup[species]
-        species_db = anno_base + species_genome + "/" + db_name
+        species_db = species_lookup[species]
+        #species_db = anno_base + species_genome + "/" + db_name
         cc = dbhandle.cursor()
         statement = '''ATTACH DATABASE '%(species_db)s' as %(species)s''' % locals()
         cc.execute( statement )
@@ -351,10 +450,10 @@ def orthologGroupsWithFeature( infile, outfile):
     cc = dbhandle.cursor()
     cc.execute( "DROP TABLE IF EXISTS %(tablename)s" % locals() )
     statement = '''CREATE TABLE %(tablename)s AS 
-                   SELECT count(distinct o.species) as species_count, 
+                   SELECT count(distinct o.schema) as species_count, 
                    group_concat(o.gene_id,",") as gene_ids,
                    group_concat(g.gene_name,",") as gene_names,
-                   group_concat(o.species,",") as species_list, set_id
+                   group_concat(o.schema,",") as species_list, set_id
                    FROM genelists_merged g, ortholog_groups o
                    WHERE  g.gene_id=o.gene_id
                    GROUP BY set_id ''' % locals()
@@ -365,7 +464,7 @@ def orthologGroupsWithFeature( infile, outfile):
 
     statement = "touch %s" % outfile
     P.run()
-
+    
 ###################################################################
 ###################################################################
 ###################################################################
@@ -374,21 +473,20 @@ def orthologGroupsWithFeature( infile, outfile):
 def getPairwiseOrthologs( infile, outfile ):
     '''Export list of pairwise orthologous genes from all species comparisons from postgres database'''
     statement = '''psql -h db -U andreas -d postgres -F "," -A -c "select s.set_id, m.schema, m.gene_id, s.pattern 
-                   from cgat_proj007.ortholog_sets_members m, cgat_proj007.ortholog_sets s 
+                   from cgat_proj007_v2.ortholog_sets_members m, cgat_proj007_v2.ortholog_sets s 
                    where m.set_id=s.set_id and s.nspecies=2"
-                   | sed s/,/\\t/g
+                   | sed s/,/\\\\t/g
                    > %(outfile)s '''
     P.run()
     
 ###################################################################
+@follows( getPairwiseOrthologs )
 @files( PARAMS["orthology_pairwise"], "pairwise_ortholog_groups.load" )
 def loadPairwiseOrthologs( infile, outfile ):
     '''Load list of orthologous genes into sqlite3 database'''
-
     header="set_id,species,gene_id,pattern"
     statement = '''cat %(infile)s
                    | python %(scriptsdir)s/csv2db.py
-                       --header=%(header)s
                        --index=set_id
                        --index=species
                        --index=gene_id
@@ -396,7 +494,7 @@ def loadPairwiseOrthologs( infile, outfile ):
                        --table=pairwise_ortholog_groups 
                    > %(outfile)s '''
     P.run()
-    
+
 ###################################################################
 @transform( loadPairwiseOrthologs, regex(r"pairwise_ortholog_groups.load"), "pattern_lookup.load" )
 def loadPatternLookup( infile, outfile ):
@@ -407,7 +505,7 @@ def loadPatternLookup( infile, outfile ):
     statement = '''create table pattern_lookup as 
                    select a.pattern as pattern, group_concat(a.species,"-") as species_pair from 
                    (select c.pattern, c.species from 
-                   (SELECT distinct pattern, substr(species,6,2) as species FROM pairwise_ortholog_groups) c
+                   (SELECT distinct pattern, substr(schema,6,2) as species FROM pairwise_ortholog_groups) c
                    order by c.pattern asc,  c.species desc ) a
                    group by a.pattern'''
     cc.execute( "DROP TABLE IF EXISTS pattern_lookup" % locals() )
@@ -420,22 +518,19 @@ def loadPatternLookup( infile, outfile ):
     P.run()
     
 ###################################################################
+@follows( loadPatternLookup )
 @transform(mergeGeneLists, regex(r"(\S+).load"), "ortholog_pairs_with_feature.load") 
 def orthologPairsWithFeature( infile, outfile):
     '''Generate list of conserved genes associated with feature in all species '''
     tablename = "ortholog_pairs_with_feature"
-    anno_base = PARAMS["annotations_dir"]
     species_list = P.asList(PARAMS["species"])
-    genome_list = P.asList(PARAMS["genomes"])
-    db_name = PARAMS["database"]
-    ensembl_version = PARAMS["orthology_ensembl_version"]
-    species_lookup = dict(zip(species_list, genome_list))
+    anno_list = P.asList(PARAMS["annotations_db"])
+    species_lookup = dict(zip(species_list, anno_list))
 
     # Connect to database and attach annotation databases
     dbhandle = sqlite3.connect( PARAMS["database"] )
     for species in species_lookup.iterkeys():
-        species_genome = species_lookup[species]
-        species_db = anno_base + species_genome + "/" + db_name
+        species_db = species_lookup[species]
         cc = dbhandle.cursor()
         statement = '''ATTACH DATABASE '%(species_db)s' as %(species)s''' % locals()
         cc.execute( statement )
@@ -445,7 +540,7 @@ def orthologPairsWithFeature( infile, outfile):
     cc = dbhandle.cursor()
     cc.execute( "DROP TABLE IF EXISTS %(tablename)s" % locals() )
     statement = '''CREATE TABLE %(tablename)s AS 
-                   SELECT count(distinct o.species) as species_count, 
+                   SELECT count(distinct o.schema) as species_count, 
                    group_concat(o.gene_id,",") as gene_ids,
                    group_concat(g.gene_name,",") as gene_names,
                    set_id, p.pattern as pattern, p.species_pair as species_pair
@@ -461,26 +556,73 @@ def orthologPairsWithFeature( infile, outfile):
 ############################################################
 @transform( orthologPairsWithFeature, suffix( ".load"), ".stats" )
 def pairsStats( infile, outfile ):
-
+    '''Calculate conservation stats for each species pair '''
     dbhandle = sqlite3.connect( PARAMS["database"] )
     cc = dbhandle.cursor()
+    cc.execute( "DROP TABLE IF EXISTS pairwise_ortholog_stats" )
     statement = '''CREATE table pairwise_ortholog_stats AS
-                   SELECT a.species1, a.species2, a.species_pair,
-                   a.conserved_nmis, b.total_conserved_genes_with_nmi, 
-                   (2.0*a.conserved_nmis)/ b.total_conserved_genes_with_nmi as score from
+                   SELECT a.species1 as species1, a.species2 as species2, a.species_pair as species_pair, conserved_genes,
+                   conserved_nmis, conserved_genes_with_nmi_species1, conserved_genes_with_nmi_species2, 
+                   (2.0*a.conserved_nmis)/(b.conserved_genes_with_nmi_species1+b.conserved_genes_with_nmi_species2) as score
+                   FROM
                    (SELECT substr(species_pair,1,2) as species1, substr(species_pair,4,2) as species2, 
-                   species_pair, count(gene_ids) as conserved_nmis 
+                   species_pair, count(gene_ids) as conserved_nmis, pattern
                    FROM ortholog_pairs_with_feature 
                    WHERE species_count=2 group by species_pair) a,
-                   (SELECT count(o.gene_id) as total_conserved_genes_with_nmi, p.species_pair as species_pair, p.pattern
+                   (SELECT conserved_genes_with_nmi_species1, conserved_genes_with_nmi_species2, sp1.pattern as pattern FROM
+                   (SELECT count(o.gene_id) as conserved_genes_with_nmi_species1, substr(schema,6,2) as species, p.pattern
                    FROM genelists_merged g, pairwise_ortholog_groups o, pattern_lookup p
                    WHERE g.gene_id=o.gene_id AND p.pattern=o.pattern
-                   GROUP BY species_pair, p.pattern) b
-                   WHERE a.species_pair=b.species_pair
+                   AND substr(species_pair,1,2)=substr(schema,6,2)
+                   GROUP BY species, p.pattern) sp1,
+                   (SELECT count(o.gene_id) as conserved_genes_with_nmi_species2, substr(schema,6,2) as species, p.pattern
+                   FROM genelists_merged g, pairwise_ortholog_groups o, pattern_lookup p
+                   WHERE g.gene_id=o.gene_id AND p.pattern=o.pattern
+                   AND substr(species_pair,4,2)=substr(schema,6,2)
+                   GROUP BY species, p.pattern) sp2
+                   where sp1.pattern=sp2.pattern) b,
+                   (SELECT count(distinct set_id) as conserved_genes, pattern FROM pairwise_ortholog_groups
+                   GROUP BY pattern) c
+                   WHERE a.pattern=b.pattern
+                   AND b.pattern=c.pattern
                    order by score desc''' % locals()
     cc.execute( statement )
     cc.close()
     statement = "touch %s" % outfile
+    P.run()
+
+############################################################
+@transform( pairsStats, suffix( ".stats"), ".hypergeom" )
+def testGeneListOverlapSignificance( infile, outfile ):
+    '''Use hypergeometric test to establish significance of conservation of NMIs'''
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    cc = dbhandle.cursor()
+    statement = '''SELECT species_pair, conserved_genes,
+                   conserved_nmis, conserved_genes_with_nmi_species1, conserved_genes_with_nmi_species2
+                   FROM pairwise_ortholog_stats''' % locals()
+    cc.execute( statement )
+    
+    # Calculate probability of overlap and write to file
+    statement = '''printf "species_pair\\tconserved_genes\\tconserved_nmis\\tconserved_genes_with_nmi_species1\\tconserved_genes_with_nmi_species2\\tp-value\\n" > %(outfile)s;''' 
+    P.run()
+    for result in cc:
+        species_pair, conserved_genes, conserved_nmis, conserved_genes_with_nmi_species1, conserved_genes_with_nmi_species2 = result
+        statement = '''printf "%(species_pair)s\\t%(conserved_genes)s\\t%(conserved_nmis)s\\t%(conserved_genes_with_nmi_species1)s\\t%(conserved_genes_with_nmi_species2)s\\t" >> %(outfile)s; 
+                       python %(scriptsdir)s/list_overlap.py %(conserved_nmis)i %(conserved_genes)i %(conserved_genes_with_nmi_species1)i %(conserved_genes_with_nmi_species2)i >> %(outfile)s;''' 
+        P.run()
+    #statement = '''sed -i '{N;s/\\n/\\t/g}' %(outfile)s; '''
+    #P.run()
+    cc.close()
+
+############################################################
+@transform(testGeneListOverlapSignificance, suffix(".hypergeom"), ".hypergeom.load" )
+def loadGeneListOverlapSignificance( infile, outfile ):
+    ''' load p-value to database'''
+    statement = '''cat %(infile)s
+                   | python %(scriptsdir)s/csv2db.py
+                       --index=species_pair
+                       --table=pairwise_ortholog_overlaps_pval 
+                   > %(outfile)s '''
     P.run()
     
 ############################################################
@@ -497,7 +639,6 @@ def exportPairsScoreMatrix( infile, outfile ):
                         UNION SELECT species1 as species, score from pairwise_ortholog_stats where species2="%(species)s"
                         UNION SELECT "%(species)s" as species,  1.0 as score)
                         ORDER BY species desc''' % locals()
-        
         # If first write headers
         if first: 
             cc.execute( statement )
@@ -506,7 +647,6 @@ def exportPairsScoreMatrix( infile, outfile ):
                 outs.write("\t%s" % result[0] )
             outs.write("\n")
             first = False
-        
         cc.execute( statement )
         outs.write(species)
         for result in cc:
@@ -515,6 +655,20 @@ def exportPairsScoreMatrix( infile, outfile ):
         cc.close()
     outs.close()
 
+############################################################
+@follows( mkdir("plots") )
+@transform(exportPairsScoreMatrix, regex(r"(\S+).matrix"), r"plots/\1.pdf")
+def plotPairwiseScoreHeatmap( infile, outfile ):
+    '''Plot heatmap of pairwise scores in R'''
+    R('''library(RColorBrewer)''')
+    R('''library(gplots)''')
+    R('''x=read.table("%(infile)s", header=TRUE)''' % locals() )
+    R('''mat <- as.matrix(x[,2:dim(x)[2]])''')
+    R('''rownames(mat) <- x[,1]''')
+    R('''pdf("%(outfile)s", height=10, width=10)''' % locals() )
+    R('''heatmap.2(mat, Rowv=TRUE, Colv=TRUE, dendrogram=c("none"), distfun=dist, hclustfun=hclust, xlab="", ylab="", key=TRUE, keysize=2, trace="none", density.info=c("none"), margins=c(10, 8), col=rev(brewer.pal(10,"PiYG")) )''')
+    R('''dev.off()''')
+    
 ###################################################################
 ###################################################################
 ###################################################################
@@ -523,21 +677,19 @@ def exportPairsScoreMatrix( infile, outfile ):
 def getTripleOrthologs( infile, outfile ):
     '''Export list of orthologous genes from human, mouse and zebrafish from postgres database'''
     statement = '''psql -h db -U andreas -d postgres -F "," -A -c "select s.set_id, m.schema, m.gene_id 
-                   from cgat_proj007.ortholog_sets_members m, cgat_proj007.ortholog_sets s 
-                   where m.set_id=s.set_id and s.pattern=1100001"
-                   | sed s/,/\\t/g
+                   from cgat_proj007_v2.ortholog_sets_members m, cgat_proj007_v2.ortholog_sets s 
+                   where m.set_id=s.set_id and s.pattern='1100001'"
+                   | sed s/,/\\\\t/g
                    > %(outfile)s '''
     P.run()
     
 ###################################################################
+@follows( getTripleOrthologs )
 @files( PARAMS["orthology_triple"], "triple_ortholog_groups.load" )
 def loadTripleOrthologs( infile, outfile ):
     '''Load list of orthologous genes into sqlite3 database'''
-
-    header="set_id,species,gene_id"
     statement = '''cat %(infile)s
                    | python %(scriptsdir)s/csv2db.py
-                       --header=%(header)s
                        --index=set_id
                        --index=species
                        --index=gene_id
@@ -551,17 +703,17 @@ def loadTripleOrthologs( infile, outfile ):
 def orthologTripleWithFeature( infile, outfile):
     '''Generate list of conserved genes associated with feature in all species '''
     tablename = "ortholog_triple_with_feature"
-    anno_base = PARAMS["annotations_dir"]
+    #anno_base = PARAMS["annotations_dir"]
     species_list = P.asList(PARAMS["species"])
-    genome_list = P.asList(PARAMS["genomes"])
-    db_name = PARAMS["database"]
-    species_lookup = dict(zip(species_list, genome_list))
+    anno_list = P.asList(PARAMS["annotations_db"])
+    #db_name = PARAMS["database"]
+    species_lookup = dict(zip(species_list, anno_list))
 
     # Connect to database and attach annotation databases
     dbhandle = sqlite3.connect( PARAMS["database"] )
     for species in species_lookup.iterkeys():
-        species_genome = species_lookup[species]
-        species_db = anno_base + species_genome + "/" + db_name
+        species_db = species_lookup[species]
+        #species_db = anno_base + species_genome + "/" + db_name
         cc = dbhandle.cursor()
         statement = '''ATTACH DATABASE '%(species_db)s' as %(species)s''' % locals()
         cc.execute( statement )
@@ -571,10 +723,10 @@ def orthologTripleWithFeature( infile, outfile):
     cc = dbhandle.cursor()
     cc.execute( "DROP TABLE IF EXISTS %(tablename)s" % locals() )
     statement = '''CREATE TABLE %(tablename)s AS 
-                   SELECT count(distinct o.species) as species_count, 
+                   SELECT count(distinct o.schema) as species_count, 
                    group_concat(o.gene_id,",") as gene_ids,
                    group_concat(g.gene_name,",") as gene_names,
-                   group_concat(o.species,",") as species_list, set_id
+                   group_concat(o.schema,",") as species_list, set_id
                    FROM genelists_merged g, triple_ortholog_groups o
                    WHERE g.gene_id=o.gene_id
                    GROUP BY set_id ''' % locals()
@@ -589,6 +741,7 @@ def tripleStats( infile, outfile ):
 
     dbhandle = sqlite3.connect( PARAMS["database"] )
     cc = dbhandle.cursor()
+    cc.execute( "DROP TABLE IF EXISTS triple_ortholog_stats" )
     # conserved in all three species
     statement = '''CREATE table triple_ortholog_stats AS
                    SELECT replace(replace(species_list,"cgat_",""),"62","") as species_list, count(gene_ids) as conserved_nmis 
@@ -606,7 +759,48 @@ def tripleStats( infile, outfile ):
     cc.close()
     statement = "touch %s" % outfile
     P.run()
-        
+
+############################################################
+@follows( mkdir("plots") )
+@transform(tripleStats, regex(r"(\S+).stats"), r"plots/\1.pdf")
+def plotThreeWayVenn( infile, outfile):
+    '''Figure 3b: TSS profiles for CAPseq and non CAPseq genes'''
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    cc = dbhandle.cursor()
+    statement = '''SELECT distinct set_id FROM ortholog_triple_with_feature WHERE species_list like "%%dr%%"'''
+    cc.execute( statement )
+    dr = ""
+    pre = ""
+    for result in cc:
+        dr = dr+pre+str(result[0])
+        pre=","
+    statement = '''SELECT distinct set_id FROM ortholog_triple_with_feature WHERE species_list like "%%mm%%"'''
+    cc.execute( statement )
+    mm = ""
+    pre = ""
+    for result in cc:
+        mm = mm+pre+str(result[0])
+        pre=","
+    statement = '''SELECT distinct set_id FROM ortholog_triple_with_feature WHERE species_list like "%%hs%%"'''
+    cc.execute( statement )
+    hs = ""
+    pre = ""
+    for result in cc:
+        hs = hs+pre+str(result[0])
+        pre=","
+    cc.close()
+    euler = outfile.replace(".pdf",".euler.pdf")
+    R('''library(VennDiagram) ''')
+    R('''dr <- c(%(dr)s)''' % locals() )
+    R('''mm <- c(%(mm)s)''' % locals() )
+    R('''hs <- c(%(hs)s)''' % locals() )
+    R('''x <- list(Zebrafish=dr,Mouse=mm,Human=hs)''' )
+    # Non-scaled threeway venn
+    R('''pdf(file='%(outfile)s', height=8, width=8, onefile=TRUE, family='Helvetica', paper='A4', pointsize=12)''' % locals() )
+    R('''venn <- venn.diagram( x, filename=NULL, col="#58595B", alpha=0.75, cex=2.0, fontfamily="Helvetica", fontface="bold")''' )
+    R('''grid.draw(venn)''')
+    R('''dev.off()''')
+            
 ############################################################
 ############################################################    
 ############################################################
@@ -626,7 +820,7 @@ def exportConservedGeneListPerSpecies( infile, outfile):
                        FROM ortholog_groups g, ortholog_groups_with_feature f
                        WHERE f.set_id=g.set_id
                        AND f.species_count=6
-                       AND g.species="%(species)s%(ensembl_version)s"''' % locals()
+                       AND g.schema LIKE "cgat_%(species)s%%"''' % locals()
         cc.execute( statement )
         
         # Write to file
@@ -650,24 +844,54 @@ def exportConservedGeneListPerSpecies( infile, outfile):
 def exportConservedGeneBed( infile, outfile ):
     '''export bed file for each list of conserved CAPseq genes'''
     species_list = P.asList(PARAMS["species"])
-    genome_list = P.asList(PARAMS["genomes"])
-    species_lookup = dict(zip(species_list, genome_list))
+    gtf_list = P.asList(PARAMS["annotations_gtf"])
+    species_lookup = dict(zip(species_list, gtf_list))
     species = infile[0:2]
-    species_genome = species_lookup[species]
+    species_gtf = species_lookup[species]
     track = P.snip( os.path.basename(infile),".export")
     
-    gtffile = os.path.join( PARAMS["annotations_dir"], species_genome, PARAMS["annotations_gtf"] )
-    statement = '''zcat %(gtffile)s | python %(scriptsdir)s/gtf2gtf.py --filter=gene --apply=%(infile)s 
-                   | python %(scriptsdir)s/gtf2gtf.py --merge-transcripts --with-utr 
-                   | python %(scriptsdir)s/gff2bed.py --is-gtf --name=gene_id --track=feature > %(outfile)s;''' 
+    #gtffile = os.path.join( PARAMS["annotations_dir"], species_genome, PARAMS["annotations_gtf"] )
+    statement = '''zcat %(species_gtf)s | python %(scriptsdir)s/gtf2gtf.py --filter=gene --apply=%(infile)s --log=%(outfile)s.log
+                   | python %(scriptsdir)s/gtf2gtf.py --merge-transcripts --with-utr --log=%(outfile)s.log
+                   | python %(scriptsdir)s/gff2bed.py --is-gtf --name=gene_id --track=feature --log=%(outfile)s.log
+                   | grep -v track > %(outfile)s;''' 
     P.run()
 
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+## Plot GC content etc across species
+@follows( mkdir("plots") )
+@merge("/ifs/projects/proj007/web/capseq7/cpg/*testes-cap.replicated.cpg.export", ("plots/testes_capseq_cpg_obsexp.pdf","plots/testes_control_cpg_obsexp.pdf") )
+def plotFigure1cCpGObsExp( infiles, outfiles):
+    '''Figure 1c: density plots of CpG Observed / expected'''
+    capseq_out, control_out = outfiles
+    indir = os.path.dirname(infiles[0])
+    scriptsdir = PARAMS["scriptsdir"]
+    R('''source("%(scriptsdir)s/R/proj007/proj007.R") ''' % locals())
+    R('''speciesPlot(dir="%(indir)s", pattern="*testes-cap.replicated.cpg.export", main="Testes CAPseq", xlab="CpG Observed/Expected", filename="%(capseq_out)s", plotcol=2, xlimit=c(0,2), ylimit=c(0,5))''' % locals() )
+    R('''speciesPlot(dir="%(indir)s", pattern="*testes-cap.replicated.cpg.export", main="Testes Control", xlab="CpG Observed/Expected", filename="%(control_out)s", plotcol=3, xlimit=c(0,2), ylimit=c(0,5))''' % locals() )
+   
+############################################################
+@follows( mkdir("plots") )
+@merge("/ifs/projects/proj007/web/capseq7/gc/*testes-cap.replicated.gc.export", ("plots/testes_capseq_gc_content.pdf","plots/testes_control_gc_content.pdf") )
+def plotFigure1cGCContent( infiles, outfiles):
+    '''Figure 1c: density plots of GC content'''
+    capseq_out, control_out = outfiles
+    indir = os.path.dirname(infiles[0])
+    scriptsdir = PARAMS["scriptsdir"]
+    R('''source("%(scriptsdir)s/R/proj007/proj007.R") ''' % locals())
+    R('''speciesPlot(dir="%(indir)s", pattern="*testes-cap.replicated.gc.export", main="Testes CAPseq", xlab="GC Content", filename="%(capseq_out)s", plotcol=2, xlimit=c(0,1), ylimit=c(0,15))''' % locals() )
+    R('''speciesPlot(dir="%(indir)s", pattern="*testes-cap.replicated.gc.export", main="Testes Control", xlab="GC Content", filename="%(control_out)s", plotcol=3, xlimit=c(0,1), ylimit=c(0,15))''' % locals() )
+  
+  
 ############################################################
 ############################################################
 ############################################################
 ## Pipeline organisation
 @follows( loadGeneLists, mergeGeneLists,
-          GeneListStats, loadGeneListStats )
+          GeneListStats, loadGeneListStats,
+          MergedGeneListStats, loadMergedGeneListStats )
 def loadNMIgenes():
     '''Load NMI data into database'''
     pass
@@ -680,12 +904,15 @@ def allSpecies():
 
 @follows( getPairwiseOrthologs, loadPairwiseOrthologs, loadPatternLookup,
           orthologPairsWithFeature, pairsStats, 
-          exportPairsScoreMatrix)
+          testGeneListOverlapSignificance, loadGeneListOverlapSignificance,
+          exportPairsScoreMatrix, plotPairwiseScoreHeatmap)
 def orthologPairs():
     '''Find ortholog pairs with conserved features '''
     pass
     
-@follows( getTripleOrthologs, loadTripleOrthologs)
+@follows( getTripleOrthologs, loadTripleOrthologs,
+          orthologTripleWithFeature, tripleStats,
+          plotThreeWayVenn)
 def orthologTriple():
     '''Load all data into database'''
     pass    
@@ -693,6 +920,11 @@ def orthologTriple():
 @follows( exportConservedGeneListPerSpecies, exportConservedGeneBed)
 def export():
     '''Find orthologues genes with conserved features '''
+    pass
+    
+@follows( plotFigure1cGCContent, plotFigure1cCpGObsExp)
+def figures():
+    '''Plot featue composition across species'''
     pass
 
 @follows( loadNMIgenes, allSpecies, 
@@ -724,7 +956,13 @@ def update_report():
 def publish_report(infile, outfile):
     '''Copy report to web '''
     publish_dir = PARAMS["publish_dir"]
-    statement = '''cp -rf report/html/* %(publish_dir)s > %(outfile)s; ''' 
+    fig_dir = PARAMS["publish_figures"]
+    working_dir = os.getcwd()
+    statement = '''cp -rf report/html/* %(publish_dir)s 2>> %(outfile)s; ''' 
+    statement += '''cp -sf %(working_dir)s/plots/ortholog_pairs_with_feature.pdf %(fig_dir)s/Fig2 2>> %(outfile)s; ''' 
+    statement += '''cp -sf %(working_dir)s/plots/ortholog_triple_with_feature.pdf %(fig_dir)s/Fig2 2>> %(outfile)s; ''' 
+    statement += '''cp -sf %(working_dir)s/plots/*_gc_content.pdf %(fig_dir)s/Fig1 2>> %(outfile)s; '''
+    statement += '''cp -sf %(working_dir)s/plots/*_cpg_obsexp.pdf %(fig_dir)s/Fig1 2>> %(outfile)s; '''
     P.run()
     
 if __name__== "__main__":

@@ -1,13 +1,13 @@
 ===================================
-CAPseq Intervals >2.5kb in Length
+CAPseq Intervals >3kb in Length
 ===================================
 
-This sections lists CAPseq intervals > 2.5kb in length which overlap at least 10% of an Ensembl protein-coding gene model.
+This sections lists CAPseq intervals > 3kb in length which overlap an Ensembl protein-coding gene model (1pb).
 
-.. report:: macs_interval_lists.LongIntervals
+.. report:: macs_replicated_long_interval_genes.LongIntervals
    :render: table
    :groupby: track
    :force:
 
-   Intervals > 2.5kb in length
+   Genhes overlapped by CAPseq intervals > 3kb in length
 

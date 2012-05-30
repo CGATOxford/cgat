@@ -228,7 +228,7 @@ Transcript TSS
 
 .. report:: macs_replicated_interval_tss_distance.transcriptTSSProfile
    :render: gallery-plot
-   :tracker: tss-profile/*.transcript.all.tss-profile.png
+   :tracker: tss-profile/*.transcript.tss-profile.all.png
    :layout: column-2
 
    TSS profile for all transcript TSSs

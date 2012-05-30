@@ -31,6 +31,7 @@ class IntervalList( cpgTracker ):
     def __call__(self, track, slice = None ):
 
         statement = self.getSQLStatement( track, slice )
+        print statement
         data = self.get( statement  )
         ucsc_genome = UCSC_GENOME
         n = odict()
@@ -122,21 +123,23 @@ class LongIntervals( IntervalList ):
     def getSQLStatement( self, track, slice = None ):
         nresults = self.nresults
         ANNOTATIONS_NAME = P['annotations_name']
-        statement = '''SELECT distinct i.interval_id, i.contig, i.start, i.end, i.length, i.avgval, i.fold, t.gene_id, t.gene_name, o.genes_pover1, o.genes_pover2
-                       FROM %(track)s_replicated_intervals i, %(track)s_replicated_%(ANNOTATIONS_NAME)s_transcript_tss_distance s, %(track)s_replicated_%(ANNOTATIONS_NAME)s_overlap o, annotations.transcript_info t
-                       WHERE (substr(s.closest_id,1,18)=t.transcript_id
-                       or substr(s.closest_id,20,18)=t.transcript_id
-                       or substr(s.closest_id,39,18)=t.transcript_id
-                       or substr(s.closest_id,58,18)=t.transcript_id
-                       or substr(s.closest_id,77,18)=t.transcript_id)
-                       AND i.interval_id=s.gene_id
+        statement = '''SELECT distinct a.interval_id, a.contig, a.start, a.end, a.length, a.avgval, a.fold, b.gene_id, b.gene_name, a.genes_pover1, a.genes_pover2
+                       FROM (SELECT distinct s.closest_id, i.interval_id, i.contig, i.start, i.end, i.length, i.avgval, i.fold, o.genes_pover1, o.genes_pover2
+                       FROM %(track)s_replicated_intervals i, %(track)s_replicated_%(ANNOTATIONS_NAME)s_transcript_tss_distance s, 
+                       %(track)s_replicated_%(ANNOTATIONS_NAME)s_overlap o
+                       WHERE  i.interval_id=s.gene_id
                        AND o.gene_id=i.interval_id
-                       AND s.is_overlap > 0
-                       AND t.gene_biotype='protein_coding'
-                       AND i.length > 2500
-                       AND o.genes_pover2 > 10
+                       AND i.length > 3000
+                       AND o.genes_pover2 > 0
                        ORDER BY i.length desc
-                       LIMIT 350''' % locals()
+                       LIMIT 1000) a,
+                       (SELECT '%%%%' || transcript_id || '%%%%' as pattern, t.gene_id, t.gene_name, t.gene_biotype 
+                       FROM annotations.transcript_info t
+                       WHERE t.gene_biotype='protein_coding') b
+                       WHERE a.closest_id like b.pattern  
+                       ORDER BY a.length desc
+                       LIMIT 500''' % locals()
+        print statement
         return statement
 
 ##################################################################################

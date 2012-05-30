@@ -18,8 +18,10 @@ class noncodingOverlap(cpgTracker):
     def __call__(self, track, slice = None ):
         query = '''SELECT count(distinct n.gene_id) as Intervals, t.gene_biotype
                    FROM %(track)s_replicated_%(ANNOTATIONS_NAME)s_noncoding_tss_distance n, 
+                   %(track)s_replicated_%(ANNOTATIONS_NAME)s_interval_noncoding_mapping m, 
                    annotations.transcript_info t
-                   WHERE substr(n.closest_id,1,18)=t.gene_id
+                   WHERE m.gene_id=t.gene_id
+                   AND m.interval_id=n.gene_id
                    AND n.is_overlap = 1
                    AND t.gene_biotype != "protein_coding"
                    GROUP BY gene_biotype
@@ -37,8 +39,10 @@ class noncoding1kbDist(cpgTracker):
     def __call__(self, track, slice = None ):
         query = '''SELECT count(distinct n.gene_id) as Intervals, t.gene_biotype
                    FROM %(track)s_replicated_%(ANNOTATIONS_NAME)s_noncoding_tss_distance n, 
+                   %(track)s_replicated_%(ANNOTATIONS_NAME)s_interval_noncoding_mapping m, 
                    annotations.transcript_info t
-                   WHERE substr(n.closest_id,1,18)=t.gene_id
+                   WHERE m.gene_id=t.gene_id
+                   AND m.interval_id=n.gene_id
                    AND n.closest_dist < 1000
                    AND t.gene_biotype != "protein_coding"
                    GROUP BY gene_biotype
@@ -55,8 +59,10 @@ class noncoding5kbDist(cpgTracker):
     def __call__(self, track, slice = None ):
         query = '''SELECT count(distinct n.gene_id) as Intervals, t.gene_biotype
                    FROM %(track)s_replicated_%(ANNOTATIONS_NAME)s_noncoding_tss_distance n, 
+                   %(track)s_replicated_%(ANNOTATIONS_NAME)s_interval_noncoding_mapping m, 
                    annotations.transcript_info t
-                   WHERE substr(n.closest_id,1,18)=t.gene_id
+                   WHERE m.gene_id=t.gene_id
+                   AND m.interval_id=n.gene_id
                    AND n.closest_dist < 5000
                    AND t.gene_biotype != "protein_coding"
                    GROUP BY gene_biotype
@@ -82,9 +88,10 @@ class lncrnaOverlap(cpgTracker):
     mPattern = "_replicated_lncrna_tss_distance$"
 
     def __call__(self, track, slice = None ):
-        query = '''SELECT count(distinct n.gene_id) as Intervals, "lncRNA" as gene_biotype
-                   FROM %(track)s_replicated_lncrna_tss_distance n
-                   WHERE n.is_overlap = 1'''
+        query = '''SELECT count(distinct n.gene_id) as Intervals, count(distinct m.gene_id) as lncRNAs
+                   FROM %(track)s_replicated_lncrna_tss_distance n, %(track)s_replicated_interval_lncrna_mapping m
+                   WHERE m.interval_id=n.gene_id
+                   AND n.is_overlap = 1'''
         print query
         data = self.getAll(query)
         return data
@@ -95,9 +102,10 @@ class lncrna1kbDist(cpgTracker):
     mPattern = "_replicated_lncrna_tss_distance$"
 
     def __call__(self, track, slice = None ):
-        query = '''SELECT count(distinct n.gene_id) as Intervals, "lncRNA" as gene_biotype
-                   FROM %(track)s_replicated_lncrna_tss_distance n
-                   WHERE n.closest_dist < 1000'''
+        query = '''SELECT count(distinct n.gene_id) as Intervals, count(distinct m.gene_id) as lncRNAs
+                   FROM %(track)s_replicated_lncrna_tss_distance n, %(track)s_replicated_interval_lncrna_mapping m
+                   WHERE m.interval_id=n.gene_id
+                   AND n.closest_dist < 1000'''
         data = self.getAll(query)
         return data
 
@@ -107,9 +115,10 @@ class lncrna5kbDist(cpgTracker):
     mPattern = "_replicated_lncrna_tss_distance$"
 
     def __call__(self, track, slice = None ):
-        query = '''SELECT count(distinct n.gene_id) as Intervals, "lncRNA" as gene_biotype
-                   FROM %(track)s_replicated_lncrna_tss_distance n
-                   WHERE n.closest_dist < 5000'''
+        query = '''SELECT count(distinct n.gene_id) as Intervals, count(distinct m.gene_id) as lncRNAs
+                   FROM %(track)s_replicated_lncrna_tss_distance n, %(track)s_replicated_interval_lncrna_mapping m
+                   WHERE m.interval_id=n.gene_id
+                   AND n.closest_dist < 5000'''
         data = self.getAll(query)
         return data
 
@@ -171,3 +180,120 @@ class noncodingTSSClosestDownstream(noncodingTSSClosest):
     """for each interval, return peakval and the distance to the closest downstream TSS."""
     mColumn = "CASE WHEN is_overlap>0 THEN 0 WHEN dist3 is null THEN 1000000 ELSE dist3 END as dist3 "
 
+##################################################################################
+class noncodingCapseqOverlap(cpgTracker):
+    '''Summary table'''
+    ANNOTATIONS_NAME = P['annotations_name']
+    mPattern = "_replicated_"+ANNOTATIONS_NAME+"_noncoding_tss_distance$"
+
+    def __call__(self, track, slice = None ):
+        query = '''SELECT count(distinct t.gene_id) as genes, t.gene_biotype
+                   FROM %(track)s_replicated_%(ANNOTATIONS_NAME)s_noncoding_tss_distance n, 
+                   %(track)s_replicated_%(ANNOTATIONS_NAME)s_interval_noncoding_mapping m, 
+                   annotations.transcript_info t
+                   WHERE m.gene_id=t.gene_id
+                   AND m.interval_id=n.gene_id
+                   AND n.is_overlap = 1
+                   AND t.gene_biotype != "protein_coding"
+                   GROUP BY gene_biotype
+                   ORDER BY genes desc'''
+        #print query
+        data = self.getAll(query)
+        return data
+
+##################################################################################
+class noncodingCapseq1kbDist(cpgTracker):
+    '''Summary table'''
+    ANNOTATIONS_NAME = P['annotations_name']
+    mPattern = "_replicated_"+ANNOTATIONS_NAME+"_noncoding_tss_distance$"
+
+    def __call__(self, track, slice = None ):
+        query = '''SELECT count(distinct t.gene_id) as genes, t.gene_biotype
+                   FROM %(track)s_replicated_%(ANNOTATIONS_NAME)s_noncoding_tss_distance n, 
+                   %(track)s_replicated_%(ANNOTATIONS_NAME)s_interval_noncoding_mapping m, 
+                   annotations.transcript_info t
+                   WHERE m.gene_id=t.gene_id
+                   AND m.interval_id=n.gene_id
+                   AND n.closest_dist < 1000
+                   AND t.gene_biotype != "protein_coding"
+                   GROUP BY gene_biotype
+                   ORDER BY genes desc'''
+        #print query
+        data = self.getAll(query)
+        return data
+                
+##################################################################################
+class noncodingCapseq5kbDist(cpgTracker):
+    '''Summary table'''
+    ANNOTATIONS_NAME = P['annotations_name']
+    mPattern = "_replicated_"+ANNOTATIONS_NAME+"_noncoding_tss_distance$"
+
+    def __call__(self, track, slice = None ):
+        query = '''SELECT count(distinct t.gene_id) as genes, t.gene_biotype
+                   FROM %(track)s_replicated_%(ANNOTATIONS_NAME)s_noncoding_tss_distance n, 
+                   %(track)s_replicated_%(ANNOTATIONS_NAME)s_interval_noncoding_mapping m, 
+                   annotations.transcript_info t
+                   WHERE m.gene_id=t.gene_id
+                   AND m.interval_id=n.gene_id
+                   AND n.closest_dist < 5000
+                   AND t.gene_biotype != "protein_coding"
+                   GROUP BY gene_biotype
+                   ORDER BY genes desc'''
+        #print query
+        data = self.getAll(query)
+        return data
+
+##################################################################################
+##################################################################################
+class rnaseqCount(cpgTracker):
+    '''Summary table'''
+    mPattern = "rnaseq_bed$"
+
+    def __call__(self, track, slice = None ):
+        query = '''SELECT count(distinct id) as RNAseq_transcripts FROM rnaseq_bed'''
+        data = self.getAll(query)
+        return data
+        
+##################################################################################
+class rnaseqOverlap(cpgTracker):
+    '''Summary table'''
+    mPattern = "_replicated_rnaseq_tss_distance$"
+
+    def __call__(self, track, slice = None ):
+        query = '''SELECT count(distinct n.gene_id) as NMIs, count(distinct m.gene_id) as Transcripts
+                   FROM %(track)s_replicated_rnaseq_tss_distance n, 
+                   %(track)s_replicated_interval_rnaseq_mapping m
+                   WHERE m.interval_id=n.gene_id
+                   AND n.is_overlap = 1'''
+        #print query
+        data = self.getAll(query)
+        return data
+
+###################################################################################
+class rnaseq1kbDist(cpgTracker):
+    '''Summary table'''
+    mPattern = "_replicated_rnaseq_tss_distance$"
+
+    def __call__(self, track, slice = None ):
+        query = '''SELECT count(distinct n.gene_id) as NMIs, count(distinct m.gene_id) as Transcripts
+                   FROM %(track)s_replicated_rnaseq_tss_distance n, 
+                   %(track)s_replicated_interval_rnaseq_mapping m
+                   WHERE m.interval_id=n.gene_id
+                   AND n.closest_dist < 1000'''
+        data = self.getAll(query)
+        return data
+        
+###################################################################################
+class rnaseq5kbDist(cpgTracker):
+    '''Summary table'''
+    mPattern = "_replicated_rnaseq_tss_distance$"
+
+    def __call__(self, track, slice = None ):
+        query = '''SELECT count(distinct n.gene_id) as NMIs, count(distinct m.gene_id) as Transcripts
+                   FROM %(track)s_replicated_rnaseq_tss_distance n, 
+                   %(track)s_replicated_interval_rnaseq_mapping m
+                   WHERE m.interval_id=n.gene_id
+                   AND n.closest_dist < 5000'''
+        data = self.getAll(query)
+        return data        
+          

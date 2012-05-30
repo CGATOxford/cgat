@@ -530,7 +530,39 @@ def runMacsMerged( infile, outfile ):
                    >& ../../%(outfile)s;
                    cd ../..;''' 
     P.run() 
-        
+
+############################################################
+@follows( runMacsMerged )
+@transform( "macs/merged/*/treat/*.merged_treat_afterfiting_all.wig.gz", suffix(".wig.gz"), ".macs.norm.wig.gz" )
+def normaliseWig( infile, outfile ):
+    '''Run MACS for peakshifted wig generation'''
+    track = P.snip( os.path.basename(infile), ".merged_treat_afterfiting_all.wig.gz" )
+    to_cluster = USECLUSTER
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    cc = dbhandle.cursor()
+    query = '''SELECT sum(PF_HQ_ALIGNED_READS)
+               FROM picard_align_stats
+               WHERE track LIKE "%(track)s%%"''' % locals()
+    cc.execute( query )
+    total_aligned_reads = cc.fetchone()[0]
+    norm = total_aligned_reads/1e7
+    cc.close()
+    
+    # Read in wig and divide each value by norm
+    outs = gzip.open( outfile, "wb" )
+    ins = gzip.open( infile, "rb" )
+    for line in ins:
+        if re.match("^\d+", line):
+            p, s = line.split()
+            pos = int(p)
+            score = float(s)
+            norm_score = score/norm
+            outs.write("%i\t%0.2f\n" % (pos, norm_score) )
+        else:
+            outs.write(line)
+    ins.close()
+    outs.close()
+            
 ############################################################
 ############################################################
 ############################################################
@@ -994,6 +1026,43 @@ def exportReplicatedIntervalsAsBed( infile, outfile ):
     cc.close()
     outs.close()
     
+############################################################
+## Assess effect of altering fold change threshold
+@follows( mkdir("foldchange"), mkdir("foldchange/replicated") )
+@transform( loadReplicatedIntervals, regex(r"replicated_intervals/(\S+).rep.bed.load"), r"\1.replicated.foldchange" )
+def replicatedFoldChange(infile, outfile):
+    '''Assess interval overlap between conditions at different fold change thresholds '''
+
+    # Connect to DB
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+
+    # Make bed files for different fold change thresholds
+    track = P.snip( os.path.basename( infile ), ".rep.bed.load" ).replace("-","_")
+    macsdir = os.path.dirname(infile)
+    foldchange = [6,8,10,12]
+
+    if os.path.exists(outfile):
+        statement = '''rm %(outfile)s'''
+        P.run()
+
+    for fc in foldchange:
+        cc = dbhandle.cursor()
+        query = '''SELECT contig, start, end, interval_id, fold FROM %(track)s_replicated_intervals WHERE fold > %(fc)i ORDER by contig, start;''' % locals()
+        cc.execute( query )
+        outbed = "foldchange/replicated/" + track + ".fc" + str(fc) + ".bed"
+        outs = open( outbed, "w")
+
+        for result in cc:
+            contig, start, end, interval_id,fold = result
+            outs.write( "%s\t%i\t%i\t%s\t%i\n" % (contig, start, end, str(interval_id), fold) )
+        cc.close()
+        outs.close()
+
+        statement = '''echo %(fc)i >> %(outfile)s; cat %(outbed)s | wc -l >> %(outfile)s; '''
+        P.run()
+    
+    statement = '''sed -i '{N;s/\\n/\\t/}' %(outfile)s; '''
+    P.run()
 
 ############################################################
 ############################################################
@@ -1222,7 +1291,9 @@ def NormaliseBAMFiles():
     pass
     
 @follows( mergeReplicateBAMs,
-          getMergedBigWig )
+          getMergedBigWig,
+          runMacsMerged,
+          normaliseWig )
 def exportBigWigs():
     '''Export merged BAM files per replictae in bigwig format'''
     pass
@@ -1265,11 +1336,15 @@ def findReplicatedIntervals():
 
 @follows( pairwiseIntervals, loadPairwiseIntervals, 
           uniqueIntervals, loadUniqueIntervals, 
-          sharedIntervals, loadSharedIntervals,
-          uniqueReplicatedIntervals, loadUniqueReplicatedIntervals, 
+          sharedIntervals, loadSharedIntervals )
+def comparePeaks():
+    '''Compare intervals across tracks'''
+    pass
+    
+@follows( uniqueReplicatedIntervals, loadUniqueReplicatedIntervals, 
           sharedReplicatedIntervals, loadSharedReplicatedIntervals,
           exportCAPseqReplicatedLength )
-def comparePeaks():
+def compareReplicatedPeaks():
     '''Compare intervals across tracks'''
     pass
 
@@ -1282,9 +1357,23 @@ def comparePeaks():
           background,
           FoldChangeThreshold,
           findReplicatedIntervals,
+          compareReplicatedPeaks,
           comparePeaks )
 def full():
     '''run the full pipeline.'''
+    pass
+
+
+@follows( mapReads,
+          NormaliseBAMFiles,
+          buildIntervalsMacs,
+          buildIntervalsMacsNoControl,
+          mergePeaks,
+          background,
+          FoldChangeThreshold,
+          comparePeaks )
+def chipseq():
+    '''run the pipeline on chipseq data'''
     pass
 
 if __name__== "__main__":

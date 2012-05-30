@@ -164,8 +164,7 @@ def ReadTable( lines,
                as_rows = True,
                with_header = True,
                ignore_incomplete = False,
-               dialect = "excel-tab",
-               dictreader = csv.DictReader ):
+               dialect = "excel-tab" ):
     """read a table from infile
 
     returns table as rows or as columns.
@@ -189,29 +188,26 @@ def ReadTable( lines,
     nfields = len(fields)
     
     try:
-        reader = dictreader( lines.__iter__(), dialect = dialect )
+        reader = csv.reader( lines.__iter__(), 
+                             dialect = dialect )
     except TypeError:
-        reader = dictreader( lines.__iter__(), fields )
+        reader = csv.reader( lines.__iter__() )
 
-    if as_rows:
-        table = []
+    table = list(reader)
+    
+    if ignore_incomplete:
+        table = [ x for x in table if len(x) == nfields ]
     else:
-        table = [ [] for x in range(nfields) ]
+        for r, row in enumerate(table):
+            if len(row) != nfields:
+                if not ignore_incomplete:
+                    raise ValueError( "missing elements in line %s, received=%s, expected=%s" % \
+                                          (r, str(row),  str(fields)) )
+
+                raise ValueError
         
-    for row in reader:
-        if len(row) != nfields:
-            if ignore_incomplete:
-                continue
-            else:
-                raise ValueError( "missing elements in line %s, received=%s, expected=%s" % \
-                                      (str(row), str(row.keys()),  str(fields)) )
+    if not as_rows: table = zip( *table )
         
-        if as_rows:
-            table.append( row )
-        else:
-            for x in range(len(row)):
-                table[x].append( row[x] )
-            
     return fields, table
 
 ######################################################################################

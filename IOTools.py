@@ -34,7 +34,7 @@ Code
 
 '''
 
-import string, re, sys, os, collections, types, glob, stat, gzip
+import string, re, sys, os, collections, types, glob, stat, gzip, subprocess
 
 import numpy
 import numpy.ma
@@ -309,6 +309,17 @@ def readMatrix( infile, dtype = numpy.float ):
     return matrix, row_headers, col_headers
     
 ########################################################################
+def writeMatrix( outfile, matrix, row_headers, col_headers, row_header = "" ):
+    '''write a numpy matrix to outfile.
+
+    *row_header* gives the title of the rows
+    '''
+    
+    outfile.write( "%s\t%s\n" % (row_header, "\t".join( col_headers)))
+    for x, row in enumerate(matrix):
+        outfile.write("%s\t%s\n" % (row_headers[x], "\t".join(map(str, row))) )
+
+########################################################################
 def getInvertedDictionary( dict, make_unique = False ):
     """returns an inverted dictionary with keys and values swapped.
     """
@@ -341,30 +352,59 @@ def readSequence( file ):
     
     return description, "".join(s)
 
-def getLastLine( filename, read_size = 1024 ):
-  """return last line of a file.
-  """
+def getFirstLine( filename ):
+    f = open(filename, 'rU')    # U is to open it with Universal newline support
+    line = f.readline()
+    f.close()
+    return line
 
-  f = open(filename, 'rU')    # U is to open it with Universal newline support
-  offset = read_size
-  f.seek(0, 2)
-  file_size = f.tell()
-  if file_size == 0: return ""
-  while 1:
-    if file_size < offset:
-      offset = file_size
-    f.seek(-1*offset, 2)
-    read_str = f.read(offset)
-    # Remove newline at the end
-    if read_str[offset - 1] == '\n':
-      read_str = read_str[:-1]
-    lines = read_str.split('\n')
-    if len(lines) >= 2:
-        return lines[-1]
-    if offset == file_size:   # reached the beginning
-      return read_str
-    offset += read_size
-  f.close()
+def getLastLine( filename, nlines = 1, read_size = 1024 ):
+    """return last line of a file.
+    """
+
+    f = open(filename, 'rU')    # U is to open it with Universal newline support
+    offset = read_size
+    f.seek(0, 2)
+    file_size = f.tell()
+    if file_size == 0: return ""
+    while 1:
+        if file_size < offset:
+            offset = file_size
+        f.seek(-1*offset, 2)
+        read_str = f.read(offset)
+        # Remove newline at the end
+        if read_str[offset - 1] == '\n':
+            read_str = read_str[:-1]
+        lines = read_str.split('\n')
+        if len(lines) >= nlines + 1:
+            return "\n".join(lines[-nlines:])
+        if offset == file_size:   # reached the beginning
+            return read_str
+        offset += read_size
+    f.close()
+
+def getNumLines( filename, ignore_comments = True ):
+    '''get number of lines in filename.'''
+
+    if ignore_comments:
+        filter_cmd = '| grep -v "#" '
+    else:
+        filter_cmd = ""
+
+    # the implementation below seems to fastest
+    # see https://gist.github.com/0ac760859e614cd03652
+    # and http://stackoverflow.com/questions/845058/how-to-get-line-count-cheaply-in-python
+    if filename.endswith(".gz"):
+        cmd = "zcat %(filename)s %(filter_cmd)s | wc -l" % locals()
+    else:
+         cmd = "cat %(filename)s %(filter_cmd)s | wc -l" % locals()
+
+    out = subprocess.Popen( cmd,
+                            shell = True,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT
+                            ).communicate()[0]
+    return int(out.partition(b' ')[0])
 
 def ReadMap( *args, **kwargs ):
     """compatibility - see readMap."""
@@ -557,7 +597,7 @@ def prettyFloat( val, format = "%5.2f" ):
     """deprecated, use val2str"""
     return val2str( val, format )
 
-def prettyPercent( numerator, denominator, format = "%5.2f" ):
+def prettyPercent( numerator, denominator, format = "%5.2f", na="na" ):
     """output a percent value or "na" if not defined"""
     try:
         x = format % (100.0 * numerator / denominator )

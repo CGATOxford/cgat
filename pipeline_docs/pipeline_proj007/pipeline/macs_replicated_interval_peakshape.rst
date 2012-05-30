@@ -9,6 +9,19 @@ to increase the visibility of lower coverage tracks.
 
 The syntax for track names is ``<bam-files>.<bed-file>.peakshape``
 
+.. report:: peakshape.PeakShapeTrackerCentre
+   :render: matrixNP-plot
+   :slices: interval_score
+   :layout: column-2
+   :palette: Blues
+   :nolabel-cols:
+   :max-rows: 9
+   :nolabel-rows:
+   :max-cols: 0
+   :zrange: 0,0.5
+   
+   Heatmaps of merged liver and testes intervals sorted by tissue specificity then interval width (centred on peak middle)
+   
 .. report:: peakshape.PeakShapeTracker
    :render: matrixNP-plot
    :slices: interval_score
@@ -20,11 +33,11 @@ The syntax for track names is ``<bam-files>.<bed-file>.peakshape``
    :max-cols: 0
    :zrange: 0,0.5
    
-   Heatmaps of merged liver and testes intervals sorted by tissue specificity then interval width
+   Heatmaps of merged liver and testes intervals sorted by tissue specificity then interval width (centred on highest peak)
    
-.. report:: peakshape.PeakShapeTracker
+.. report:: peakshape.PeakShapeTrackerCentreNoScale
    :render: matrixNP-plot
-   :slices: interval_width
+   :slices: interval_score
    :layout: column-2
    :palette: Blues
    :nolabel-cols:
@@ -33,6 +46,6 @@ The syntax for track names is ``<bam-files>.<bed-file>.peakshape``
    :max-cols: 0
    :zrange: 0,0.5
    
-   Heatmaps of merged liver and testes intervals sorted by interval width
+   Heatmaps of merged liver and testes intervals sorted by tissue specificity then interval width (centred on peak middle) with no subsampling
    
    																												

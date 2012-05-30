@@ -11,17 +11,18 @@ from cpgReport import *
 ## peak shape
 class PeakShapeTracker( Tracker ):
     '''return peakshape data.  '''
-
+    pattern=".reads.peakshape.gz"
+    scale = 2000
+    
     def getTracks(self):
-        return [ os.path.basename( x )[:-len(".peakshape.gz")] for x in glob.glob( os.path.join( DATADIR , "liver_vs_testes", "*.liver.testes.merge.peakshape.gz" )) ]
+        pattern = self.pattern
+        return [ os.path.basename( x )[:-len(pattern)] for x in glob.glob( os.path.join( DATADIR , "liver_vs_testes", "*"+pattern )) ]
 
     slices = ["peak_height", "peak_width", "interval_score", "interval_width" ]
     
-    scale = 2000
-
     def __call__(self, track, slice = None):
-
-        fn = os.path.join( DATADIR, "liver_vs_testes/%(track)s.peakshape.gz.matrix_%(slice)s.gz" % locals() )
+        pattern = self.pattern
+        fn = os.path.join( DATADIR, "liver_vs_testes/%(track)s%(pattern)s.matrix_%(slice)s.gz" % locals() )
         if not os.path.exists( fn ): 
             return
         
@@ -39,6 +40,18 @@ class PeakShapeTracker( Tracker ):
                        ('rows', rownames),
                        ('columns', colnames)) )
 
+##################################################################################
+class PeakShapeTrackerCentre( PeakShapeTracker ):
+    '''return peakshape data.  '''
+    pattern=".centre.peakshape.gz"
+    scale=2000
+
+##################################################################################
+class PeakShapeTrackerCentreNoScale( PeakShapeTracker ):
+    '''return peakshape data.  '''
+    pattern=".centre.peakshape.gz"
+    scale=1000000
+        
 ##################################################################################        
 class PeakShapeSummary( Tracker ):
     '''summary information about peak shapes.'''

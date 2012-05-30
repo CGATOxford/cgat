@@ -14,4 +14,4 @@ from SphinxReport.odict import OrderedDict as odict
 ##################################################################################
 class chromatinProfileTracker(TrackerImages):
     """Chromatin profile per gene """
-    
+

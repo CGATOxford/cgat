@@ -17,15 +17,15 @@ class genesWithNMItranscript(cpgTracker):
 
     def __call__(self, track, slice = None ):
         query = '''SELECT a.nmi_genes, b.total_genes, round((a.nmi_genes+0.0)/b.total_genes, 2) as fraction_nmi
-                   FROM (SELECT count(distinct a.gene_id) as nmi_genes
-                   FROM %(track)s_replicated_%(ANNOTATIONS_NAME)s_transcript_tss_distance t, annotations.transcript_info a
-                   WHERE t.closest_dist < 1000
-                   AND (substr(t.closest_id,1,18)=a.transcript_id
-                   or substr(t.closest_id,20,18)=a.transcript_id
-                   or substr(t.closest_id,39,18)=a.transcript_id
-                   or substr(t.closest_id,58,18)=a.transcript_id
-                   or substr(t.closest_id,77,18)=a.transcript_id)
-                   AND a.gene_biotype='protein_coding') a,
+                   FROM (
+                   SELECT count(distinct t.gene_id) as nmi_genes
+                   FROM %(track)s_replicated_%(ANNOTATIONS_NAME)s_transcript_tss_distance d,
+                   %(track)s_replicated_%(ANNOTATIONS_NAME)s_interval_transcript_mapping m,
+                   annotations.transcript_info t
+                   WHERE t.gene_biotype='protein_coding'
+                   AND d.closest_dist < 1000
+                   AND t.transcript_id=m.transcript_id
+                   AND m.interval_id=d.gene_id) a,
                    (SELECT count(distinct gene_id) as total_genes 
                    FROM annotations.transcript_info
                    WHERE gene_biotype='protein_coding') b'''
@@ -40,18 +40,18 @@ class genesWithNMIGene(cpgTracker):
 
     def __call__(self, track, slice = None ):
         query = '''SELECT a.nmi_genes, b.total_genes, round((a.nmi_genes+0.0)/b.total_genes, 2) as fraction_nmi
-                   FROM (SELECT count(distinct t.closest_id) as nmi_genes
-                   FROM %(track)s_replicated_%(ANNOTATIONS_NAME)s_gene_tss_distance t, annotations.transcript_info a
-                   WHERE t.closest_dist < 1000
-                   AND (substr(t.closest_id,1,18)=a.gene_id
-                   or substr(t.closest_id,20,18)=a.gene_id
-                   or substr(t.closest_id,39,18)=a.gene_id
-                   or substr(t.closest_id,58,18)=a.gene_id
-                   or substr(t.closest_id,77,18)=a.gene_id)
-                   AND a.gene_biotype='protein_coding') a,
+                   FROM (
+                   SELECT count(distinct t.gene_id) as nmi_genes
+                   FROM %(track)s_replicated_%(ANNOTATIONS_NAME)s_gene_tss_distance d,
+                   %(track)s_replicated_%(ANNOTATIONS_NAME)s_interval_gene_mapping m,
+                   annotations.transcript_info t
+                   WHERE t.gene_biotype='protein_coding'
+                   AND d.closest_dist < 1000
+                   AND t.gene_id=m.gene_id
+                   AND m.interval_id=d.gene_id) a,
                    (SELECT count(distinct gene_id) as total_genes 
                    FROM annotations.transcript_info
-                   WHERE gene_biotype='protein_coding') b'''
+                   WHERE gene_biotype='protein_coding') b''
         data = self.getAll(query)
         return data
         

@@ -31,8 +31,19 @@ class conservedGenesAllSpecies( TrackerSQL ):
     def __call__(self, track, slice = None ):
         statement = '''SELECT set_id, gene_names
                        FROM ortholog_groups_with_feature
-                       WHERE species_count=6;'''
+                       WHERE species_count=7;'''
         return self.getAll( statement )
+
+##################################################################################
+class pairwiseStats( TrackerSQL ):
+
+    mPattern = "pairwise_ortholog_overlaps_pval"
+
+    def __call__(self, track, slice = None ):
+        statement = '''SELECT species_pair, conserved_genes, conserved_genes_with_nmi_species1, 
+                       conserved_genes_with_nmi_species2, conserved_nmis, abs(p_value) as pvalue
+                       FROM pairwise_ortholog_overlaps_pval;'''
+        return self.getAll( statement )        
 
 ##################################################################################
 class pairwiseHeatmap( Tracker ):
@@ -63,7 +74,7 @@ class pairwiseTable( Tracker ):
             return
             
         x = open( fn )
-        data = {}
+        data = odict()
         for line in x:
             temp = line.split()
             name = temp[0]

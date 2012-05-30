@@ -16,6 +16,11 @@ over the sum of the total conserved genes with an NMI in each species.
    :render: table
 
    Pairwise conservation of NMIs
+   
+.. report:: orthology.pairwiseStats
+   :render: table
+
+   Probability of NMIs gene lists overlap
 
 Threeway Conservation
 ======================

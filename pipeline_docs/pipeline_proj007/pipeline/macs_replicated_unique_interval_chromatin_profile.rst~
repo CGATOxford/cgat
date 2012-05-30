@@ -1,15 +1,15 @@
 ================================
-Long Interval Chromatin Profile
+Unique Interval H3K4Me3 Profile
 ================================
 
-Density of chromatin marks over tissue-specific CAPseq intervals.
+Density of H3K4Me3 chromatin marks over tissue-specific CAPseq intervals.
 
 .. report:: macs_replicated_unique_interval_chromatin_profile.chromatinProfileTracker
    :render: gallery-plot
-   :tracker: replicated_intervals/*.profile.png
+   :tracker: liver_vs_testes/*H3K4Me3*.png
    :layout: column-2
 
-   Density of chromatin mark reads over tissue-specific CAPseq intervals
+   Density of H3K4Me3 reads over tissue-specific CAPseq intervals
 
 
 

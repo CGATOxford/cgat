@@ -31,6 +31,7 @@ class IntervalList( cpgTracker ):
     def __call__(self, track, slice = None ):
 
         statement = self.getSQLStatement( track, slice )
+        print statement
         data = self.get( statement  )
         ucsc_genome = UCSC_GENOME
         n = odict()
@@ -108,36 +109,6 @@ class IntervalListLength( IntervalList ):
                        FROM %(track)s_macs_merged_intervals AS i
                        ORDER BY length DESC
                        LIMIT %(nresults)s''' % locals()
-        return statement
-
-##################################################################################
-class LongIntervals( IntervalList ):
-    '''list of intervals >3kb in length sorted by fold change'''
-
-    nresults = 1000
-    mColumnsFixed = ("pos", "length" )
-    mColumnsVariable= ( "avgval", "fold", "gene_id", "gene_name", "genes_pover1", "genes_pover2" )
-    mPattern = "_replicated_intervals$"
-    
-    def getSQLStatement( self, track, slice = None ):
-        nresults = self.nresults
-        ANNOTATIONS_NAME = P['annotations_name']
-        statement = '''SELECT distinct i.interval_id, i.contig, i.start, i.end, i.length, i.avgval, i.fold, t.gene_id, t.gene_name, o.genes_pover1, o.genes_pover2
-                       FROM %(track)s_replicated_intervals i, %(track)s_replicated_%(ANNOTATIONS_NAME)s_transcript_tss_distance s, 
-                       %(track)s_replicated_%(ANNOTATIONS_NAME)s_overlap o, annotations.transcript_info t
-                       WHERE (substr(s.closest_id,1,18)=t.transcript_id
-                       or substr(s.closest_id,20,18)=t.transcript_id
-                       or substr(s.closest_id,39,18)=t.transcript_id
-                       or substr(s.closest_id,58,18)=t.transcript_id
-                       or substr(s.closest_id,77,18)=t.transcript_id)
-                       AND i.interval_id=s.gene_id
-                       AND o.gene_id=i.interval_id
-                       AND s.is_overlap > 0
-                       AND t.gene_biotype='protein_coding'
-                       AND i.length > 2500
-                       AND o.genes_pover2 > 10
-                       ORDER BY i.length desc
-                       LIMIT 350''' % locals()
         return statement
 
 ##################################################################################

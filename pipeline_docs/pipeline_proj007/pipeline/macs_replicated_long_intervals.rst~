@@ -7,7 +7,6 @@ This sections lists CAPseq intervals > 2.5kb in length which overlap at least 10
 .. report:: macs_interval_lists.LongIntervals
    :render: table
    :groupby: track
-   :add_rowindex:
    :force:
 
    Intervals > 2.5kb in length

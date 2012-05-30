@@ -272,7 +272,42 @@ def loadCapseqGenesetOverlap( infile, outfile ):
                          --index=gene_id
                  > %(outfile)s; """
     P.run()
-        
+
+############################################################    
+@transform( copyCapseqReplicatedBedFiles, suffix(".bed"), ".genes_capseq_overlap" )
+def annotateGenesetCapseqOverlap( infile, outfile ):
+    '''classify intervals according to their base pair overlap with respect to different genomic features (genes, TSS, upstream/downstream flanks) '''
+    to_cluster = True
+    genes = PARAMS["geneset_genes"]
+    track = P.snip( os.path.basename(infile), ".bed")
+    statement = """
+                cat %(infile)s | python %(scriptsdir)s/bed2gff.py --as-gtf > %(track)s.gtf;
+                cat %(geneset_dir)s/%(genes)s 
+                | python %(scriptsdir)s/gtf2table.py
+		                --counter=overlap
+		                --counter=length
+		                --log=%(outfile)s.log
+		                --filename-gff=%(track)s.gtf
+		                --genome-file=%(genome_dir)s/%(genome)s
+                | sed s/nover/capseq_nover/g
+                | sed s/pover/capseq_pover/g
+                | sed s/min/length/
+                > %(outfile)s"""
+    P.run()
+
+############################################################
+@transform( annotateGenesetCapseqOverlap, suffix(".genes_capseq_overlap"), ".genes_capseq_overlap.load" )
+def loadGenesetCapseqOverlap( infile, outfile ):
+    '''load interval annotations: genome architecture '''
+    geneset_name = PARAMS["geneset_name"]
+    track= P.snip( os.path.basename(infile), ".genes_capseq_overlap").replace(".","_").replace("-","_")
+    statement = """cat %(infile)s | python ~/src/csv2db.py 
+                         --database=%(database)s
+                         --table=%(track)s_%(geneset_name)s_genes_capseq_overlap
+                         --index=gene_id
+                 > %(outfile)s; """
+    P.run()
+            
 ############################################################
 ############################################################
 ## Section 1b: Count overlap of CAPseq intervals with gene/transcript TSSs
@@ -362,7 +397,49 @@ def loadCapseqTranscriptTSSDistance( infile, outfile ):
                          --index=id3
                  > %(outfile)s; """
     P.run()
-    
+
+############################################################
+@transform( loadCapseqTranscriptTSSDistance, suffix(".transcript.tss.distance.load"), ".transcript.tss.distance.export" )
+def exportCapseqTSSTranscriptList( infile, outfile ):
+    '''Export list of transcripts closest to CAPseq intervals '''
+    track = P.snip( os.path.basename( infile ), ".transcript.tss.distance.load" ).replace("-","_").replace(".","_")
+    geneset_name = PARAMS["geneset_name"]
+    # Connect to DB
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    cc = dbhandle.cursor()
+    statement = "ATTACH DATABASE '%s' AS annotations; "  % (PARAMS["geneset_database"])
+    cc.execute(statement)
+    # Extract data from db
+    query = '''SELECT distinct gene_id, closest_id FROM %(track)s_%(geneset_name)s_transcript_tss_distance
+               WHERE closest_id is not null ''' % locals()
+    cc.execute( query )
+    E.info( query )
+    # Write to file
+    outs = open( outfile, "w")
+    outs.write("interval_id\ttranscript_id\n")
+    for result in cc:
+        pre = ""
+        interval_id,transcripts = result
+        transcript_list = transcripts.split(",")
+        for t in transcript_list:
+            outs.write("%s\t%s\n" % (interval_id, str(t)) )
+    cc.close()
+    outs.close()
+
+############################################################
+@transform( exportCapseqTSSTranscriptList, suffix( ".transcript.tss.distance.export"), ".transcript.tss.distance.export.load" )
+def loadCapseqTSSTranscriptList( infile, outfile ):
+    '''Load CAPseq interval annotations: distance to transcript transcription start sites '''
+    track = P.snip( os.path.basename( infile ), ".transcript.tss.distance.export" ).replace("-","_").replace(".","_")
+    geneset_name = PARAMS["geneset_name"]
+    statement = """cat %(infile)s | python %(scriptsdir)s/csv2db.py 
+                         --database=%(database)s
+                         --table=%(track)s_%(geneset_name)s_interval_transcript_mapping
+                         --index=transcript_id
+                         --index=interval_id
+                   > %(outfile)s; """
+    P.run()
+        
 ############################################################
 @transform( copyCapseqReplicatedBedFiles, suffix(".bed"), ".gene.tss.distance" )
 def annotateCapseqGeneTSSDistance( infile, outfile ):
@@ -395,6 +472,48 @@ def loadCapseqGeneTSSDistance( infile, outfile ):
                  > %(outfile)s; """
     P.run()
 
+############################################################
+@transform( loadCapseqGeneTSSDistance, suffix(".gene.tss.distance.load"), ".gene.tss.distance.export" )
+def exportCapseqTSSGeneList( infile, outfile ):
+    '''Export list of transcripts closest to CAPseq intervals '''
+    track = P.snip( os.path.basename( infile ), ".gene.tss.distance.load" ).replace("-","_").replace(".","_")
+    geneset_name = PARAMS["geneset_name"]
+    # Connect to DB
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    cc = dbhandle.cursor()
+    statement = "ATTACH DATABASE '%s' AS annotations; "  % (PARAMS["geneset_database"])
+    cc.execute(statement)
+    # Extract data from db
+    query = '''SELECT distinct gene_id, closest_id FROM %(track)s_%(geneset_name)s_gene_tss_distance
+               WHERE closest_id is not null''' % locals()
+    cc.execute( query )
+    E.info( query )
+    # Write to file
+    outs = open( outfile, "w")
+    outs.write("interval_id\tgene_id\n")
+    for result in cc:
+        pre = ""
+        interval_id,transcripts = result
+        transcript_list = transcripts.split(",")
+        for t in transcript_list:
+            outs.write("%s\t%s\n" % (interval_id, str(t)) )
+    cc.close()
+    outs.close()
+
+############################################################
+@transform( exportCapseqTSSGeneList, suffix( ".gene.tss.distance.export"), ".gene.tss.distance.export.load" )
+def loadCapseqTSSGeneList( infile, outfile ):
+    '''Load CAPseq interval annotations: distance to transcript transcription start sites '''
+    track = P.snip( os.path.basename( infile ), ".gene.tss.distance.export" ).replace("-","_").replace(".","_")
+    geneset_name = PARAMS["geneset_name"]
+    statement = """cat %(infile)s | python %(scriptsdir)s/csv2db.py 
+                         --database=%(database)s
+                         --table=%(track)s_%(geneset_name)s_interval_gene_mapping
+                         --index=gene_id
+                         --index=interval_id
+                   > %(outfile)s; """
+    P.run()
+    
 ############################################################
 ## Export bed files for CAPseq intervals overlapping TSS intervals
 @transform( loadCapseqTranscriptTSSDistance, suffix( ".transcript.tss.distance.load"), ".transcript.tss.bed" )
@@ -471,6 +590,50 @@ def loadCapseqNoncodingTSSDistance( infile, outfile ):
     P.run()
 
 ############################################################
+@transform( loadCapseqNoncodingTSSDistance, suffix(".noncoding.tss.distance.load"), ".noncoding.tss.distance.export" )
+def exportCapseqNoncodingTSSGeneList( infile, outfile ):
+    '''Export list of transcripts closest to CAPseq intervals '''
+    track = P.snip( os.path.basename( infile ), ".noncoding.tss.distance.load" ).replace("-","_").replace(".","_")
+    geneset_name = PARAMS["geneset_name"]
+    # Connect to DB
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    cc = dbhandle.cursor()
+    statement = "ATTACH DATABASE '%s' AS annotations; "  % (PARAMS["geneset_database"])
+    cc.execute(statement)
+    # Extract data from db
+    query = '''SELECT distinct gene_id, closest_id FROM %(track)s_%(geneset_name)s_noncoding_tss_distance
+               WHERE closest_id is not null''' % locals()
+    cc.execute( query )
+    E.info( query )
+    # Write to file
+    outs = open( outfile, "w")
+    outs.write("interval_id\tgene_id\n")
+    for result in cc:
+        pre = ""
+        interval_id,transcripts = result
+        transcript_list = transcripts.split(",")
+        for t in transcript_list:
+            outs.write("%s\t%s\n" % (interval_id, str(t)) )
+    cc.close()
+    outs.close()
+
+############################################################
+@transform( exportCapseqNoncodingTSSGeneList, suffix( ".noncoding.tss.distance.export"), ".noncoding.tss.distance.export.load" )
+def loadCapseqNoncodingTSSGeneList( infile, outfile ):
+    '''Load CAPseq interval annotations: distance to transcript transcription start sites '''
+    track = P.snip( os.path.basename( infile ), ".noncoding.tss.distance.export" ).replace("-","_").replace(".","_")
+    geneset_name = PARAMS["geneset_name"]
+    statement = """cat %(infile)s | python %(scriptsdir)s/csv2db.py 
+                         --database=%(database)s
+                         --table=%(track)s_%(geneset_name)s_interval_noncoding_mapping
+                         --index=gene_id
+                         --index=interval_id
+                   > %(outfile)s; """
+    P.run()
+
+############################################################    
+############################################################
+## External linCRNA datasets
 @files( PARAMS["geneset_lncrna_tss"], "lncrna.load" )
 def loadlncRNAs( infile, outfile ):
     '''Load external lncRNA dataset into db '''
@@ -515,7 +678,139 @@ def loadCapseqlncRNATSSDistance( infile, outfile ):
                          --index=id3
                  > %(outfile)s; """
     P.run()
-        
+
+############################################################
+@transform( loadCapseqlncRNATSSDistance, suffix(".lncrna.tss.distance.load"), ".lncrna.tss.distance.export" )
+def exportCapseqlncRNATSSGeneList( infile, outfile ):
+    '''Export list of transcripts closest to CAPseq intervals '''
+    track = P.snip( os.path.basename( infile ), ".lncrna.tss.distance.load" ).replace("-","_").replace(".","_")
+    geneset_name = PARAMS["geneset_name"]
+    # Connect to DB
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    cc = dbhandle.cursor()
+    statement = "ATTACH DATABASE '%s' AS annotations; "  % (PARAMS["geneset_database"])
+    cc.execute(statement)
+    # Extract data from db
+    query = '''SELECT distinct gene_id, closest_id FROM %(track)s_lncrna_tss_distance
+               WHERE closest_id is not null''' % locals()
+    cc.execute( query )
+    E.info( query )
+    # Write to file
+    outs = open( outfile, "w")
+    outs.write("interval_id\tgene_id\n")
+    for result in cc:
+        pre = ""
+        interval_id,transcripts = result
+        transcript_list = transcripts.split(",")
+        for t in transcript_list:
+            outs.write("%s\t%s\n" % (interval_id, str(t)) )
+    cc.close()
+    outs.close()
+
+############################################################
+@transform( exportCapseqlncRNATSSGeneList, suffix( ".lncrna.tss.distance.export"), ".lncrna.tss.distance.export.load" )
+def loadCapseqlncRNATSSGeneList( infile, outfile ):
+    '''Load CAPseq interval annotations: distance to transcript transcription start sites '''
+    track = P.snip( os.path.basename( infile ), ".lncrna.tss.distance.export" ).replace("-","_").replace(".","_")
+    geneset_name = PARAMS["geneset_name"]
+    statement = """cat %(infile)s | python %(scriptsdir)s/csv2db.py 
+                         --database=%(database)s
+                         --table=%(track)s_interval_lncrna_mapping
+                         --index=gene_id
+                         --index=interval_id
+                   > %(outfile)s; """
+    P.run()
+    
+############################################################
+############################################################
+## External RNAseq transcripts
+@files( PARAMS["geneset_rnaseq_tss"], "rnaseq.load" )
+def loadRNAseq( infile, outfile ):
+    '''Load external RNAseq dataset into db '''
+    header="contig,start,end,id,strand"
+    statement = """zcat %(infile)s 
+                   | awk 'OFS="\\t" {print $1,$2,$3,$4,$6}'
+                   | python ~/src/csv2db.py 
+                         --database=%(database)s
+                         --header=%(header)s
+                         --table=rnaseq_bed
+                         --index=contig,start
+                 > %(outfile)s; """
+    P.run()
+
+############################################################
+@transform(copyCapseqReplicatedBedFiles, suffix(".bed"), ".rnaseq.tss.distance" )
+def getCapseqRNAseqTSSDistance( infile, outfile ):
+    '''Calculate distance of CAPseq peaks to nearest lncRNA transcript TSS'''
+    to_cluster = True
+    annotation_file = os.path.join( PARAMS["geneset_dir"], PARAMS["geneset_rnaseq_tss"] )
+    statement = """cat < %(infile)s 
+                   | python %(scriptsdir)s/bed2gff.py --as-gtf 
+                   | python %(scriptsdir)s/gtf2table.py 
+		               --counter=distance-tss 
+		               --log=%(outfile)s.log 
+                       --filename-gff=%(annotation_file)s 
+                       --filename-format="bed" 
+                   > %(outfile)s"""
+    P.run()
+
+############################################################
+@transform( getCapseqRNAseqTSSDistance, suffix( ".rnaseq.tss.distance"), ".rnaseq.tss.distance.load" )
+def loadCapseqRNAseqTSSDistance( infile, outfile ):
+    '''Load interval annotations: distance to lncRNA transcription start sites '''
+    track= P.snip( os.path.basename(infile), ".rnaseq.tss.distance").replace(".","_").replace("-","_")
+    statement = """cat %(infile)s | python ~/src/csv2db.py 
+                         --database=%(database)s
+                         --table=%(track)s_rnaseq_tss_distance
+                         --index=gene_id
+                         --index=closest_id
+                         --index=id5
+                         --index=id3
+                 > %(outfile)s; """
+    P.run()
+
+############################################################
+@transform( loadCapseqRNAseqTSSDistance, suffix(".rnaseq.tss.distance.load"), ".rnaseq.tss.distance.export" )
+def exportCapseqRNAseqTSSGeneList( infile, outfile ):
+    '''Export list of transcripts closest to CAPseq intervals '''
+    track = P.snip( os.path.basename( infile ), ".rnaseq.tss.distance.load" ).replace("-","_").replace(".","_")
+    geneset_name = PARAMS["geneset_name"]
+    # Connect to DB
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    cc = dbhandle.cursor()
+    statement = "ATTACH DATABASE '%s' AS annotations; "  % (PARAMS["geneset_database"])
+    cc.execute(statement)
+    # Extract data from db
+    query = '''SELECT distinct gene_id, closest_id FROM %(track)s_rnaseq_tss_distance
+               WHERE closest_id is not null''' % locals()
+    cc.execute( query )
+    E.info( query )
+    # Write to file
+    outs = open( outfile, "w")
+    outs.write("interval_id\tgene_id\n")
+    for result in cc:
+        pre = ""
+        interval_id,transcripts = result
+        transcript_list = transcripts.split(",")
+        for t in transcript_list:
+            outs.write("%s\t%s\n" % (interval_id, str(t)) )
+    cc.close()
+    outs.close()
+
+############################################################
+@transform( exportCapseqRNAseqTSSGeneList, suffix( ".rnaseq.tss.distance.export"), ".rnaseq.tss.distance.export.load" )
+def loadCapseqRNAseqTSSGeneList( infile, outfile ):
+    '''Load CAPseq interval annotations: distance to transcript transcription start sites '''
+    track = P.snip( os.path.basename( infile ), ".rnaseq.tss.distance.export" ).replace("-","_").replace(".","_")
+    geneset_name = PARAMS["geneset_name"]
+    statement = """cat %(infile)s | python %(scriptsdir)s/csv2db.py 
+                         --database=%(database)s
+                         --table=%(track)s_interval_rnaseq_mapping
+                         --index=gene_id
+                         --index=interval_id
+                   > %(outfile)s; """
+    P.run()
+                
 ############################################################
 ############################################################
 ## Section 1d: Calculate pileup of CAPseq reads over TSS/TTS
@@ -545,7 +840,6 @@ def getReplicatedTranscriptTSSProfile(infile, outfile):
                        --output-filename-pattern=%(ofp)s
                        --reporter=transcript
                        --method=tssprofile
-                       --normalization=total-sum
                        --normalize-profile=area
                        --normalize-profile=counts
                        --normalize-profile=none'''
@@ -583,7 +877,6 @@ def getReplicatedTranscriptTSSProfileCapseq(infile,outfile):
                        --output-filename-pattern=%(ofp)s
                        --reporter=transcript
                        --method=tssprofile
-                       --normalization=total-sum
                        --normalize-profile=area
                        --normalize-profile=counts
                        --normalize-profile=none'''
@@ -621,7 +914,6 @@ def getReplicatedTranscriptTSSProfileNoCapseq(infile,outfile):
                        --output-filename-pattern=%(ofp)s
                        --reporter=transcript
                        --method=tssprofile
-                       --normalization=total-sum
                        --normalize-profile=area
                        --normalize-profile=counts
                        --normalize-profile=none'''
@@ -654,7 +946,6 @@ def getReplicatedGeneTSSProfile(infile, outfile):
                        --output-filename-pattern=%(ofp)s
                        --reporter=gene
                        --method=tssprofile
-                       --normalization=total-sum
                        --normalize-profile=area
                        --normalize-profile=counts
                        --normalize-profile=none'''
@@ -691,7 +982,6 @@ def getReplicatedGeneTSSProfileCapseq(infile,outfile):
                        --output-filename-pattern=%(ofp)s
                        --reporter=gene
                        --method=tssprofile
-                       --normalization=total-sum
                        --normalize-profile=area
                        --normalize-profile=counts
                        --normalize-profile=none'''
@@ -729,7 +1019,6 @@ def getReplicatedGeneTSSProfileNoCapseq(infile,outfile):
                        --output-filename-pattern=%(ofp)s
                        --reporter=gene
                        --method=tssprofile
-                       --normalization=total-sum
                        --normalize-profile=area
                        --normalize-profile=counts
                        --normalize-profile=none'''
@@ -809,8 +1098,8 @@ def getReplicatedGeneProfile(infile, outfile):
 ############################################################
 ############################################################
 ## Section 1f: Export lists of genes with TSS-associated CAPseq intervals
-@transform( loadCapseqTranscriptTSSDistance, suffix(".transcript.tss.distance.load"), ".tss_1kb.genelist")
-def exportCapseqTSSDistanceGeneList( infile, outfile):
+@transform( loadCapseqTranscriptTSSDistance, suffix(".transcript.tss.distance.load"), ".transcript.tss_distance_1kb.genelist")
+def exportCapseqTranscriptTSSDistanceTranscriptList( infile, outfile):
     '''Export list of genes where one or more transcript TSS is within 1kb of a replicated CAPseq interval'''
     max_gene_dist = 1000
     geneset_name = PARAMS["geneset_name"]
@@ -819,7 +1108,7 @@ def exportCapseqTSSDistanceGeneList( infile, outfile):
     track = P.snip( os.path.basename( infile ), ".transcript.tss.distance.load" ).replace("-","_").replace(".","_")
     # Extract data from db
     cc = dbhandle.cursor()
-    query = '''SELECT closest_id FROM %(track)s_%(geneset_name)s_transcript_tss_distance 
+    query = '''SELECT closest_id FROM %(track)s_%(geneset_name)s_transcript_tss_distance
                WHERE closest_dist < %(max_gene_dist)s ORDER BY closest_dist;''' % locals()
     cc.execute( query )
     # Write to file
@@ -833,13 +1122,13 @@ def exportCapseqTSSDistanceGeneList( infile, outfile):
     outs.close()
 
 ############################################################
-@transform( copyCapseqReplicatedBedFiles, suffix(".bed"), ".transcript.tss.genelist")
-def exportCapseqTranscriptTSSOverlapGeneList( infile, outfile):
-    '''Export list of genes where one or more extended transcript TSS overlaps a replicated CAPseq interval'''
+@transform( copyCapseqReplicatedBedFiles, suffix(".bed"), ".transcript.tss_overlap_1kb.genelist")
+def exportCapseqTranscriptTSSOverlapTranscriptList( infile, outfile):
+    '''Export list of genes where one or more extended transcript TSS overlaps a replicated CAPseq interval. Alternative method to above.'''
     # Currently outputs transcript list
-    transcript_tss_bed = PARAMS["geneset_transcript_tss"]
+    transcript_tss_bed = PARAMS["geneset_transcript_tss_extended"]
     geneset_dir = PARAMS["geneset_dir"]
-    statement = '''intersectBed -a %(geneset_dir)s/%(transcript_tss_bed)s -b %(infile)s -u | cut -f4 > %(outfile)s'''
+    statement = '''intersectBed -a %(geneset_dir)s/%(transcript_tss_bed)s -b %(infile)s -u | cut -f4 | sort -u > %(outfile)s'''
     P.run()
 
 ############################################################
@@ -901,7 +1190,6 @@ def loadGenomicFeaturesGAT(infile, outfile):
 @transform( copyCapseqReplicatedBedFiles, suffix(".bed"), ".capseq.composition" )
 def annotateCapseqComposition( infile, outfile ):
     '''Establish the nucleotide composition of intervals'''
-
     to_cluster = True
     statement = """cat %(infile)s 
                    | python %(scriptsdir)s/bed2gff.py --as-gtf 
@@ -916,7 +1204,6 @@ def annotateCapseqComposition( infile, outfile ):
 @transform( annotateCapseqComposition, suffix( ".composition"), ".composition.load" )
 def loadCapseqComposition( infile, outfile ):
     '''Load the nucleotide composition of intervals'''
-
     track= P.snip( os.path.basename(infile), ".composition").replace(".cleaned","").replace(".","_").replace("-","_")
     statement = """cat %(infile)s | python ~/src/csv2db.py
                          --database=%(database)s
@@ -929,11 +1216,9 @@ def loadCapseqComposition( infile, outfile ):
 @transform( copyCapseqReplicatedBedFiles, suffix(".bed"), ".control.composition" )
 def annotateControlComposition( infile, outfile ):
     '''Establish the nucleotide composition of control intervals'''
-
     to_cluster = True
     track= P.snip( os.path.basename(infile), ".bed")
     dirname= os.path.dirname(infile)
-
     statement = """cat %(infile)s | python %(scriptsdir)s/bed2bed.py -m shift -g %(genome_dir)s/%(genome)s --offset=-10000 -S %(track)s.control.bed;
                    cat %(track)s.control.bed
                    | python %(scriptsdir)s/bed2gff.py --as-gtf 
@@ -1027,16 +1312,16 @@ def loadFlankingCompositionRight( infile, outfile ):
 
 ############################################################
 ############################################################
-@transform( loadCapseqComposition, suffix(".replicated.composition.load"), ".replicated.gc.export" )
+@transform( loadCapseqComposition, suffix(".replicated.capseq.composition.load"), ".replicated.gc.export" )
 def exportCapseqGCProfiles( infile, outfile ):
     '''Export file of GC content '''
     # Connect to DB
     dbhandle = sqlite3.connect( PARAMS["database"] )
-    track = P.snip( os.path.basename( infile ), ".replicated.composition.load" ).replace("-","_").replace(".","_")
+    track = P.snip( os.path.basename( infile ), ".replicated.capseq.composition.load" ).replace("-","_").replace(".","_")
     # Extract data from db
     cc = dbhandle.cursor()
     query = '''SELECT c.gene_id, c.pGC, cc.pGC, c3.pGC, c5.pGC 
-               FROM %(track)s_replicated_composition c
+               FROM %(track)s_replicated_capseq_composition c
                left join %(track)s_replicated_composition_control cc on c.gene_id=cc.gene_id
                left join %(track)s_replicated_composition_flanking3 c3 on c.gene_id=c3.gene_id
                left join %(track)s_replicated_composition_flanking5 c5 on c.gene_id=c5.gene_id;''' % locals()
@@ -1054,16 +1339,16 @@ def exportCapseqGCProfiles( infile, outfile ):
     outs.close()
 
 ############################################################
-@transform( loadCapseqComposition, suffix(".replicated.composition.load"), ".replicated.cpg.export" )
+@transform( loadCapseqComposition, suffix(".replicated.capseq.composition.load"), ".replicated.cpg.export" )
 def exportCapseqCpGObsExp( infile, outfile ):
     '''Export file of GC content '''
     # Connect to DB
     dbhandle = sqlite3.connect( PARAMS["database"] )
-    track = P.snip( os.path.basename( infile ), ".replicated.composition.load" ).replace("-","_").replace(".","_")
+    track = P.snip( os.path.basename( infile ), ".replicated.capseq.composition.load" ).replace("-","_").replace(".","_")
     # Extract data from db
     cc = dbhandle.cursor()
     query = '''SELECT c.gene_id, c.CpG_ObsExp, cc.CpG_ObsExp, c3.CpG_ObsExp, c5.CpG_ObsExp 
-               FROM %(track)s_replicated_composition c
+               FROM %(track)s_replicated_capseq_composition c
                left join %(track)s_replicated_composition_control cc on c.gene_id=cc.gene_id
                left join %(track)s_replicated_composition_flanking3 c3 on c.gene_id=c3.gene_id
                left join %(track)s_replicated_composition_flanking5 c5 on c.gene_id=c5.gene_id;''' % locals()
@@ -1080,16 +1365,16 @@ def exportCapseqCpGObsExp( infile, outfile ):
     outs.close()
 
 ############################################################
-@transform( loadCapseqComposition, suffix(".replicated.composition.load"), ".replicated.cpg_density.export" )
+@transform( loadCapseqComposition, suffix(".replicated.capseq.composition.load"), ".replicated.cpg_density.export" )
 def exportCapseqCpGDensity( infile, outfile ):
     '''Export file of GC content '''
     # Connect to DB
     dbhandle = sqlite3.connect( PARAMS["database"] )
-    track = P.snip( os.path.basename( infile ), ".replicated.composition.load" ).replace("-","_").replace(".","_")
+    track = P.snip( os.path.basename( infile ), ".replicated.capseq.composition.load" ).replace("-","_").replace(".","_")
     # Extract data from db
     cc = dbhandle.cursor()
     query = '''SELECT c.gene_id, c.pCpG, cc.pCpG, c3.pCpG, c5.pCpG 
-               FROM %(track)s_replicated_composition c
+               FROM %(track)s_replicated_capseq_composition c
                left join %(track)s_replicated_composition_control cc on c.gene_id=cc.gene_id
                left join %(track)s_replicated_composition_flanking3 c3 on c.gene_id=c3.gene_id
                left join %(track)s_replicated_composition_flanking5 c5 on c.gene_id=c5.gene_id;''' % locals()
@@ -1105,7 +1390,7 @@ def exportCapseqCpGDensity( infile, outfile ):
     cc.close()
     outs.close()
 
-          
+
 ########################################################################################################################
 ########################################################################################################################
 ########################################################################################################################
@@ -1121,9 +1406,9 @@ def getCapseqCGIOverlapCount(infile, outfile):
         statement = '''rm %(outfile)s'''
         P.run()
     for dataset in CGI:
-       dataset_name =  P.snip( os.path.basename( dataset ), ".bed")
-       statement = '''echo %(dataset_name)s >> %(outfile)s; intersectBed -a %(infile)s -b %(dataset)s -u | wc -l >> %(outfile)s; '''
-       P.run()
+        dataset_name =  P.snip( os.path.basename( dataset ), ".bed")
+        statement = '''echo %(dataset_name)s >> %(outfile)s; intersectBed -a %(infile)s -b %(dataset)s -u | wc -l >> %(outfile)s; '''
+        P.run()
     statement = '''sed -i '{N;s/\\n/\\t/}' %(outfile)s; '''
     P.run()
 
@@ -1317,7 +1602,32 @@ def loadChromatinMarkIntervals(infile, outfile):
                       --allow-empty
                    > %(outfile)s '''
     P.run()
-        
+
+############################################################
+@transform(copyCapseqReplicatedBedFiles, suffix(".bed"), ".h3k4me1.bed" )
+def getH3K4Me1Overlap( infile, outfile ):
+    '''Calculate overlap of CAPseq peaks and h3k4me1 peaks (enhancer)'''
+    to_cluster = True
+    annotation_file = PARAMS["bed_h3k4me1"]
+    if len(annotation_file) > 0:
+        statement = """intersectBed -a %(infile)s -b %(annotation_file)s -u > %(outfile)s"""
+        P.run()
+
+############################################################
+@transform( getH3K4Me1Overlap, suffix( ".h3k4me1.bed"), ".h3k4me1.bed.load" )
+def loadH3K4Me1Overlap( infile, outfile ):
+    '''Load interval annotations: h3k4me1 overlap '''
+    track= P.snip( os.path.basename(infile), ".h3k4me1.bed").replace(".","_").replace("-","_")
+    header = "contig,start,end,interval_id"
+    statement = """cat %(infile)s | python ~/src/csv2db.py 
+                         --database=%(database)s
+                         --header=%(header)s
+                         --table=%(track)s_h3k4me1_intervals
+                         --index=interval_id
+                         --index=contig,start
+                 > %(outfile)s; """
+    P.run()
+          
 ############################################################
 ## Compare CAPseq intervals with ChIP-seq intervals
 @transform(copyCapseqReplicatedBedFiles, suffix(".bed"), ".chipseq")
@@ -1856,20 +2166,21 @@ def getLongIntervalGeneList( infile, outfile ):
     statement = "ATTACH DATABASE '%s' AS annotations; "  % (PARAMS["geneset_database"])
     cc.execute(statement)
     # Extract data from db
-    query = '''SELECT distinct t.gene_id
+    query = '''SELECT distinct b.gene_id
+               FROM (SELECT distinct s.closest_id, i.interval_id, i.contig, i.start, i.end, i.length, i.avgval, i.fold, o.genes_pover1, o.genes_pover2
                FROM %(track)s_replicated_intervals i, %(track)s_replicated_%(geneset_name)s_transcript_tss_distance s, 
-               %(track)s_replicated_%(geneset_name)s_overlap o, annotations.transcript_info t
-               WHERE (substr(s.closest_id,1,18)=t.transcript_id
-               or substr(s.closest_id,20,18)=t.transcript_id
-               or substr(s.closest_id,39,18)=t.transcript_id
-               or substr(s.closest_id,58,18)=t.transcript_id
-               or substr(s.closest_id,77,18)=t.transcript_id)
-               AND i.interval_id=s.gene_id
+               %(track)s_replicated_%(geneset_name)s_overlap o
+               WHERE  i.interval_id=s.gene_id
                AND o.gene_id=i.interval_id
-               AND t.gene_biotype='protein_coding'
                AND i.length > 3000
                AND o.genes_pover2 > 0
                ORDER BY i.length desc
+               LIMIT 1000) a,
+               (SELECT "%%" || transcript_id || "%%" as pattern, t.gene_id, t.gene_biotype 
+               FROM annotations.transcript_info t
+               WHERE t.gene_biotype='protein_coding') b
+               WHERE a.closest_id like b.pattern  
+               ORDER BY a.length desc
                LIMIT 500''' % locals()
     cc.execute( query )
     # Write to file
@@ -1882,7 +2193,48 @@ def getLongIntervalGeneList( infile, outfile ):
         outs.write("\n")
     cc.close()
     outs.close()
-    
+
+############################################################
+@follows( loadCapseqTranscriptTSSDistance, loadCapseqGenesetOverlap, mkdir("long_intervals") )
+@transform( copyCapseqReplicatedBedFiles, regex(r"(\S+).replicated.bed"), r"long_intervals/\1.gene_overlap.genelist" )
+def getGeneOverlapGeneList( infile, outfile ):
+    '''Generate bed file of top 500 longest intervals'''
+    # Connect to DB
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    track = P.snip( os.path.basename( infile ), ".replicated.bed" ).replace("-","_").replace(".","_")
+    geneset_name = PARAMS["geneset_name"]
+    cc = dbhandle.cursor()
+    statement = "ATTACH DATABASE '%s' AS annotations; "  % (PARAMS["geneset_database"])
+    cc.execute(statement)
+    # Extract data from db
+    query = '''SELECT distinct b.gene_id
+               FROM (SELECT distinct s.closest_id, i.interval_id, i.contig, i.start, i.end, i.length, i.avgval, i.fold, o.genes_pover1, o.genes_pover2
+               FROM %(track)s_replicated_intervals i, %(track)s_replicated_%(geneset_name)s_transcript_tss_distance s, 
+               %(track)s_replicated_%(geneset_name)s_overlap o
+               WHERE  i.interval_id=s.gene_id
+               AND o.gene_id=i.interval_id
+               AND i.length > 3000
+               AND o.genes_pover2 > 80
+               ORDER BY i.length desc
+               LIMIT 1000) a,
+               (SELECT "%%" || transcript_id || "%%" as pattern, t.gene_id, t.gene_biotype 
+               FROM annotations.transcript_info t
+               WHERE t.gene_biotype='protein_coding') b
+               WHERE a.closest_id like b.pattern  
+               ORDER BY a.length desc
+               LIMIT 500''' % locals()
+    cc.execute( query )
+    # Write to file
+    outs = open( outfile, "w")
+    for result in cc:
+        pre = ""
+        for r in result:
+            outs.write("%s%s" % (pre, str(r)) )
+            pre = "\t"
+        outs.write("\n")
+    cc.close()
+    outs.close()      
+      
 ############################################################
 @follows( loadCapseqTranscriptTSSDistance, loadCapseqGenesetOverlap, mkdir("long_intervals") )
 @transform( copyCapseqReplicatedBedFiles, regex(r"(\S+).replicated.bed"), r"long_intervals/\1.short.genelist" )
@@ -1896,19 +2248,18 @@ def getShortIntervalGeneList( infile, outfile ):
     statement = "ATTACH DATABASE '%s' AS annotations; "  % (PARAMS["geneset_database"])
     cc.execute(statement)
     # Extract data from db
-    query = '''SELECT distinct t.gene_id
+    query = '''SELECT distinct b.gene_id
+               FROM (SELECT distinct s.closest_id, i.interval_id, i.contig, i.start, i.end, i.length, i.avgval, i.fold, o.genes_pover1, o.genes_pover2
                FROM %(track)s_replicated_intervals i, %(track)s_replicated_%(geneset_name)s_transcript_tss_distance s, 
-               %(track)s_replicated_%(geneset_name)s_overlap o, annotations.transcript_info t
-               WHERE (substr(s.closest_id,1,18)=t.transcript_id
-               or substr(s.closest_id,20,18)=t.transcript_id
-               or substr(s.closest_id,39,18)=t.transcript_id
-               or substr(s.closest_id,58,18)=t.transcript_id
-               or substr(s.closest_id,77,18)=t.transcript_id)
-               AND i.interval_id=s.gene_id
+               %(track)s_replicated_%(geneset_name)s_overlap o
+               WHERE  i.interval_id=s.gene_id
                AND o.gene_id=i.interval_id
-               AND t.gene_biotype='protein_coding'
                AND i.length < 2000
-               AND o.genes_pover2 > 0
+               AND o.genes_pover2 > 0) a,
+               (SELECT "%%" || transcript_id || "%%" as pattern, t.gene_id, t.gene_biotype 
+               FROM annotations.transcript_info t
+               WHERE t.gene_biotype='protein_coding') b
+               WHERE a.closest_id like b.pattern  
                ORDER BY RANDOM()
                LIMIT 500''' % locals()
     cc.execute( query )
@@ -1924,7 +2275,7 @@ def getShortIntervalGeneList( infile, outfile ):
     outs.close()
 
 ############################################################
-@transform( (getLongIntervalGeneList, getShortIntervalGeneList), suffix(".genelist"), ".gtf.gz" )
+@transform( (getLongIntervalGeneList, getShortIntervalGeneList, getGeneOverlapGeneList), suffix(".genelist"), ".gtf.gz" )
 def getLongIntervalGeneGTF( infile, outfile ):
     '''Filter  GTF file using list of  gene ids associated with long CAPseq intervals '''
     gene_file = os.path.join( PARAMS["geneset_dir"], PARAMS["geneset_gene_profile"])
@@ -1952,7 +2303,26 @@ def longIntervalGeneCAPseqProfile(infile, outfile):
                            --reporter=gene
                            --method=geneprofile
                            --log=%(outfile)s
-                           --normalization=total-sum
+                           --normalize-profile=area
+                           --normalize-profile=counts
+                           --normalize-profile=none'''
+    P.run() 
+
+############################################################
+@follows(getLongIntervalGeneGTF)
+@transform( "../merged_bams/*.merge.bam", regex(r"../merged_bams/(\S+).merge.bam"), r"long_intervals/\1.gene_overlap.capseq_profile.log" )    
+def geneOverlapCAPseqProfile(infile, outfile):
+    '''plot CAPseq profiles over long intervals'''
+    track = P.snip( os.path.basename(infile), ".merge.bam" )
+    ofp = P.snip( outfile, ".log" )
+    capseq = "long_intervals/"+track+".gene_overlap.gtf.gz"
+    statement = '''python %(scriptsdir)s/bam2geneprofile.py 
+                           --bamfile=%(infile)s 
+                           --gtffile=%(capseq)s
+                           --output-filename-pattern=%(ofp)s
+                           --reporter=gene
+                           --method=geneprofile
+                           --log=%(outfile)s
                            --normalize-profile=area
                            --normalize-profile=counts
                            --normalize-profile=none'''
@@ -1973,12 +2343,72 @@ def shortIntervalGeneCAPseqProfile(infile, outfile):
                            --reporter=gene
                            --method=geneprofile
                            --log=%(outfile)s
-                           --normalization=total-sum
                            --normalize-profile=area
                            --normalize-profile=counts
                            --normalize-profile=none'''
     P.run() 
             
+############################################################
+## GO analysis    
+@follows( mkdir("long_intervals/go") )
+@transform( getLongIntervalGeneList, suffix(".long.genelist"), ".long.go" )
+def runGOLongGeneLists( infile, outfile ):
+    statement = """cat %(infile)s | sed "1igene_id\n" > %(infile)s.header"""
+    P.run()
+    track = os.path.basename(P.snip(infile,".long.genelist"))
+    PipelineGO.runGOFromFiles( outfile = outfile,
+                               outdir = "long_intervals/go/%s" % track,
+                               fg_file = infile+".header",
+                               bg_file = None,
+                               go_file = os.path.join(PARAMS["geneset_dir"], PARAMS["go_full"] ),
+                               ontology_file = os.path.join(PARAMS["geneset_dir"], PARAMS["go_full_obo"] ),
+                               minimum_counts = PARAMS["go_minimum_counts"] )
+
+############################################################
+@follows( runGOLongGeneLists, mkdir("long_intervals/goslim") )
+@transform( getLongIntervalGeneList, suffix(".long.genelist"), ".long.goslim" )
+def runGOSlimLongGeneLists( infile, outfile ):
+    track = os.path.basename(P.snip(infile,".long.genelist"))
+    PipelineGO.runGOFromFiles( outfile = outfile,
+                               outdir = "long_intervals/goslim/%s" % track,
+                               fg_file = infile+".header",
+                               bg_file = None,
+                               go_file = os.path.join(PARAMS["geneset_dir"], PARAMS["go_slim"] ),
+                               ontology_file = os.path.join(PARAMS["geneset_dir"], PARAMS["go_slim_obo"]),
+                               minimum_counts = PARAMS["go_minimum_counts"] )
+                               
+############################################################
+@transform( runGOLongGeneLists, suffix( ".long.go"), ".long.go.load" )
+def loadLongGeneGo( infile, outfile ):
+    '''Load GO results for overlapped genes into database'''
+    track = os.path.basename(P.snip(infile,".long.go"))
+    go_categories = ["biol_process","cell_location","mol_function"]
+    for category in go_categories:
+        results_file = "long_intervals/go/%(track)s/foreground.%(category)s.withgenes" % locals()
+        statement = """cat %(results_file)s | python ~/src/csv2db.py
+                         --database=%(database)s
+                         --table=%(track)s_long_go_%(category)s
+                         --index=fdr
+                         --index=goid
+                        > %(outfile)s; """
+        P.run()
+
+############################################################
+@transform( runGOSlimLongGeneLists, suffix( ".long.goslim"), ".long.goslim.load" )
+def loadLongGeneGoslim( infile, outfile ):
+    '''Load GO results for overlapped genes into database'''
+    track = os.path.basename(P.snip(infile,".long.goslim"))
+    go_categories = ["biol_process","cell_location"]
+    for category in go_categories:
+        results_file = "long_intervals/goslim/%(track)s/foreground.%(category)s.withgenes" % locals()
+        statement = """cat %(results_file)s | python %(scriptsdir)s/csv2db.py
+                         --database=%(database)s
+                         --table=%(track)s_long_goslim_%(category)s
+                         --index=fdr
+                         --index=goid
+                        > %(outfile)s; """
+        P.run()  
+
 ############################################################    
 ############################################################
 ## Analyse long and short CAPseq intervals
@@ -1998,7 +2428,6 @@ def longIntervalGeneChromatinProfile(infile, outfile):
                            --reporter=gene
                            --method=geneprofile
                            --log=%(outfile)s
-                           --normalization=total-sum
                            --normalize-profile=area
                            --normalize-profile=counts
                            --normalize-profile=none'''
@@ -2024,7 +2453,6 @@ def shortIntervalGeneChromatinProfile(infile, outfile):
                            --reporter=gene
                            --method=geneprofile
                            --log=%(outfile)s
-                           --normalization=total-sum
                            --normalize-profile=area
                            --normalize-profile=counts
                            --normalize-profile=none'''
@@ -2032,7 +2460,473 @@ def shortIntervalGeneChromatinProfile(infile, outfile):
     else:
         statement = '''touch %(outfile)s '''
         P.run()
+                
+############################################################
+## Intersection of H3K27Me3 intervals and long interval genes
+@transform( getLongIntervalGeneGTF, suffix(".gtf.gz"), ".H3K27Me3.log" )    
+def longGeneChromatinIntersection(infile, outfile):
+    '''calculate intersection of chromatin marks and CAPSeq overlapped genes'''
+    chromatin = P.asList(PARAMS["bed_h3k27me3"])
+    track = P.snip(os.path.basename(infile), ".gtf.gz")
+    for bed in chromatin:
+        chromatin_track = P.snip(os.path.basename(bed), ".bed")
+        statement = '''zcat %(infile)s | python %(scriptsdir)s/gff2bed.py --is-gtf > long_intervals/%(track)s.bed;
+                       cat long_intervals/%(track)s.bed %(bed)s | awk 'OFS="\\t" {print $1,$2,$3}'
+                       | mergeBed -i stdin | awk 'OFS="\\t" {print $1,$2,$3,"merged"NR}' > long_intervals/%(track)s_%(chromatin_track)s.merged.bed;
+                       echo "Track" > long_intervals/%(track)s_%(chromatin_track)s.counts; 
+                       echo "%(track)s" >> long_intervals/%(track)s_%(chromatin_track)s.counts; 
+                       echo "Chromatin_track" >> long_intervals/%(track)s_%(chromatin_track)s.counts; 
+                       echo "%(chromatin_track)s" >> long_intervals/%(track)s_%(chromatin_track)s.counts; 
+                       echo "Total_merged_intervals" >> long_intervals/%(track)s_%(chromatin_track)s.counts; 
+                       cat long_intervals/%(track)s_%(chromatin_track)s.merged.bed | wc -l >> long_intervals/%(track)s_%(chromatin_track)s.counts; 
+                       echo "track_and_chromatin_track" >> long_intervals/%(track)s_%(chromatin_track)s.counts; 
+                       intersectBed -a long_intervals/%(track)s_%(chromatin_track)s.merged.bed -b long_intervals/%(track)s.bed -u | intersectBed -a stdin -b %(bed)s -u > long_intervals/%(track)s_%(chromatin_track)s.shared.bed; 
+                       cat long_intervals/%(track)s_%(chromatin_track)s.shared.bed | wc -l >> long_intervals/%(track)s_%(chromatin_track)s.counts; 
+                       echo "chromatin_track_only" >> long_intervals/%(track)s_%(chromatin_track)s.counts; 
+                       intersectBed -a long_intervals/%(track)s_%(chromatin_track)s.merged.bed -b long_intervals/%(track)s.bed -v > long_intervals/%(track)s_%(chromatin_track)s.%(chromatin_track)s.unique.bed; 
+                       cat long_intervals/%(track)s_%(chromatin_track)s.%(chromatin_track)s.unique.bed | wc -l >> long_intervals/%(track)s_%(chromatin_track)s.counts; 
+                       echo "track_only" >> long_intervals/%(track)s_%(chromatin_track)s.counts; 
+                       intersectBed -a long_intervals/%(track)s_%(chromatin_track)s.merged.bed -b %(bed)s -v > long_intervals/%(track)s_%(chromatin_track)s.%(track)s.unique.bed; 
+                       cat long_intervals/%(track)s_%(chromatin_track)s.%(track)s.unique.bed | wc -l >> long_intervals/%(track)s_%(chromatin_track)s.counts;                   
+                       sed -i '{N;s/\\n/\\t/g}' long_intervals/%(track)s_%(chromatin_track)s.counts;
+                       touch %(outfile)s '''
+        P.run()
 
+############################################################
+@follows( longGeneChromatinIntersection )
+@merge( "long_intervals/*.counts", "long_intervals/h3k27me3.stats" )
+def longGeneChromatinIntersectionStats(infiles, outfile):
+    '''calculate intersection of chromatin marks and CAPSeq overlapped genes'''
+    first = True
+    header = ""
+    outs = open(outfile, "w")
+    for infile in infiles:
+        f = open(infile, "r")
+        names = []
+        values = []
+        for line in f:
+            name, value = line.split("\t")
+            names.append(name.strip())
+            values.append(value.strip())
+        header = "\t".join(names)+"\n"
+        outline = "\t".join(values)+"\n"
+        if first:
+            outs.write(header)
+            first = False
+        outs.write(outline)
+        f.close()
+    outs.close()
+    
+############################################################
+@transform( longGeneChromatinIntersectionStats, suffix(".stats"), ".stats.load" )
+def loadLongGeneChromatinIntersection(infile, outfile):
+    '''calculate intersection of chromatin marks and CAPSeq overlapped genes'''
+    statement = """cat %(infile)s | python %(scriptsdir)s/csv2db.py
+                         --database=%(database)s
+                         --table=long_intervals_h3k27me3_venn
+                    > %(outfile)s"""
+    P.run()
+    
+############################################################
+## Compare intervals to external bed files using GAT
+@follows( buildGATWorkspace, mkdir("long_intervals/gat/") )
+@merge( getLongIntervalGeneGTF, "long_intervals/gat/long_intervals_gat.tsv" )
+def runLongGenesGAT(infiles, outfile):
+    '''Run genome association tester on bed files '''
+    to_cluster = True
+    segfiles = ""
+    for x in infiles:
+        track = P.snip(os.path.basename(x), ".gtf.gz")
+        statement = """zcat %(x)s | awk 'OFS="\\t" {print $1,$4-1,$5-1,"%(track)s"}' > long_intervals/gat/%(track)s.bed; """
+        P.run()
+        segfiles += " --segment-file=long_intervals/gat/%s.bed " % track 
+
+    # External datasets
+    annofiles = ""
+    chromatin = P.asList(PARAMS["bed_h3k27me3"])
+    for y in chromatin:
+        track = P.snip(os.path.basename(y), ".bed")
+        statement = """cat %(y)s | awk 'OFS="\\t" {print $1,$2,$3,"%(track)s"}' > long_intervals/gat/%(track)s.bed; """
+        P.run()
+        annofiles +=  "--annotation-file=long_intervals/gat/%s.bed " % track
+    statement = """gatrun.py %(segfiles)s %(annofiles)s --workspace=gat/%(genome)s.bed.gz --num-samples=1000 --nbuckets=500000 --bucket-size=10 --force > %(outfile)s"""
+    P.run()
+
+############################################################
+@transform( runLongGenesGAT, suffix(".tsv"), ".tsv.load" )
+def loadLongGenesGAT(infile, outfile):
+    '''Load genome association tester results into database '''
+    statement = """cat %(infile)s | grep -v "^#" | python %(scriptsdir)s/csv2db.py
+                         --database=%(database)s
+                         --table=long_intervals_gat_results
+                    > %(outfile)s"""
+    P.run()
+       
+        
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+## Section 6b: Identify genes overlapped >90% by CAPseq intervals
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+@follows( mkdir("overlapped_genes") )
+@transform( loadGenesetCapseqOverlap, regex(r"(\S+).replicated.genes_capseq_overlap.load"), r"overlapped_genes/\1.overlapped_genes.genelist" )
+def getGenesetCapseqOverlapList( infile, outfile ):
+    '''Generate text file of all genes overlapped by >90% by CAPseq intervals'''
+    # Connect to DB
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    track = P.snip( os.path.basename( infile ), ".replicated.genes_capseq_overlap.load" ).replace("-","_").replace(".","_")
+    geneset_name = PARAMS["geneset_name"]
+    cc = dbhandle.cursor()
+    statement = "ATTACH DATABASE '%s' AS annotations; "  % (PARAMS["geneset_database"])
+    cc.execute(statement)
+    # Extract data from db
+    query = '''select distinct o.gene_id 
+               from %(track)s_replicated_%(geneset_name)s_genes_capseq_overlap o, annotations.transcript_info i
+               where capseq_pover1>90
+               and o.gene_id=i.gene_id
+               and o.length > 1000
+               order by length desc''' % locals()
+    cc.execute( query )
+    # Write to file
+    outs = open( outfile, "w")
+    for result in cc:
+        pre = ""
+        for r in result:
+            outs.write("%s%s" % (pre, str(r)) )
+            pre = "\t"
+        outs.write("\n")
+    cc.close()
+    outs.close()
+    
+############################################################
+@follows( mkdir("overlapped_genes") )
+@transform( loadGenesetCapseqOverlap, regex(r"(\S+).replicated.genes_capseq_overlap.load"), r"overlapped_genes/\1.overlapped_genes.control.genelist" )
+def getGenesetCapseqOverlapControlList( infile, outfile ):
+    '''Generate text file of all genes overlapped by <50% by CAPseq intervals'''
+    # Connect to DB
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    track = P.snip( os.path.basename( infile ), ".replicated.genes_capseq_overlap.load" ).replace("-","_").replace(".","_")
+    geneset_name = PARAMS["geneset_name"]
+    cc = dbhandle.cursor()
+    statement = "ATTACH DATABASE '%s' AS annotations; "  % (PARAMS["geneset_database"])
+    cc.execute(statement)
+    # Extract data from db
+    query = '''select distinct o.gene_id 
+               from %(track)s_replicated_%(geneset_name)s_genes_capseq_overlap o, annotations.transcript_info i
+               where capseq_pover1 >0
+               and capseq_pover1 < 10
+               and o.gene_id=i.gene_id
+               and o.length < 15000
+               and o.length > 1000
+               order by length desc''' % locals()
+    cc.execute( query )
+    # Write to file
+    outs = open( outfile, "w")
+    for result in cc:
+        pre = ""
+        for r in result:
+            outs.write("%s%s" % (pre, str(r)) )
+            pre = "\t"
+        outs.write("\n")
+    cc.close()
+    outs.close()
+
+############################################################
+@transform( (getGenesetCapseqOverlapList, getGenesetCapseqOverlapControlList), suffix(".genelist"), ".gtf.gz" )
+def getOverlappedGeneGTF( infile, outfile ):
+    '''Filter  GTF file using list of  gene ids associated with long CAPseq intervals '''
+    gene_file = os.path.join( PARAMS["geneset_dir"], PARAMS["geneset_gene_profile"])
+    statement = '''zcat %(gene_file)s 
+                   | python %(scriptsdir)s/gtf2gtf.py --filter=gene --apply=%(infile)s --log=%(outfile)s.log
+                   | python %(scriptsdir)s/gtf2gtf.py --join-exons --log=%(outfile)s.log
+                   | sed s/\\\\ttranscript\\\\t/\\\\texon\\\\t/g 
+                   | gzip > %(outfile)s; '''
+    P.run()
+
+############################################################
+## CAPseq profile over overlapped genes
+@follows(getOverlappedGeneGTF)
+@transform( "../merged_bams/*.merge.bam", regex(r"../merged_bams/(\S+).merge.bam"), r"overlapped_genes/\1.overlapped_genes.capseq_profile.log" )    
+def overlappedGeneCAPseqProfile(infile, outfile):
+    '''plot CAPseq profiles over long intervals'''
+    track = P.snip( os.path.basename(infile), ".merge.bam" )
+    ofp = P.snip( outfile, ".log" )
+    capseq = "overlapped_genes/"+track+".overlapped_genes.gtf.gz"
+    statement = '''python %(scriptsdir)s/bam2geneprofile.py 
+                           --bamfile=%(infile)s 
+                           --gtffile=%(capseq)s
+                           --output-filename-pattern=%(ofp)s
+                           --reporter=gene
+                           --method=geneprofile
+                           --log=%(outfile)s
+                           --normalize-profile=area
+                           --normalize-profile=counts
+                           --normalize-profile=none
+                           --scale_flank_length=1'''
+    P.run() 
+
+############################################################
+@follows(getOverlappedGeneGTF)
+@transform( "../merged_bams/*.merge.bam", regex(r"../merged_bams/(\S+).merge.bam"), r"overlapped_genes/\1.overlapped_genes.control.capseq_profile.log" )    
+def controlGeneCAPseqProfile(infile, outfile):
+    '''plot CAPseq profiles over long intervals'''
+    track = P.snip( os.path.basename(infile), ".merge.bam" )
+    ofp = P.snip( outfile, ".log" )
+    capseq = "overlapped_genes/"+track+".overlapped_genes.control.gtf.gz"
+    statement = '''python %(scriptsdir)s/bam2geneprofile.py 
+                           --bamfile=%(infile)s 
+                           --gtffile=%(capseq)s
+                           --output-filename-pattern=%(ofp)s
+                           --reporter=gene
+                           --method=geneprofile
+                           --log=%(outfile)s
+                           --normalize-profile=area
+                           --normalize-profile=counts
+                           --normalize-profile=none
+                           --scale_flank_length=1'''
+    P.run() 
+         
+############################################################
+## Chromatin profile over overlapped genes
+@transform( getOverlappedGeneGTF, suffix(".gtf.gz"), ".chromatin_profile.log" )    
+def overlappedGeneChromatinProfile(infile, outfile):
+    '''plot chromatin mark profiles over CAPSeq overlapped genes'''
+    chromatin = P.asList(PARAMS["bigwig_chromatin"])
+    track = P.snip( os.path.basename(infile), ".gtf.gz" )
+    if len(chromatin[0]) > 0:
+        for bw in chromatin:
+            chromatin_track = P.snip( os.path.basename(bw), ".bam" )
+            ofp = "overlapped_genes/" + track + "." + chromatin_track + ".profile"    
+            statement = '''python %(scriptsdir)s/bam2geneprofile.py 
+                           --bamfile=%(bw)s 
+                           --gtffile=%(infile)s
+                           --output-filename-pattern=%(ofp)s
+                           --reporter=gene
+                           --method=geneprofile
+                           --log=%(outfile)s
+                           --normalize-profile=area
+                           --normalize-profile=counts
+                           --normalize-profile=none
+                           --scale_flank_length=1'''
+            P.run() 
+    else:
+        statement = '''touch %(outfile)s '''
+        P.run()
+        
+############################################################
+## Chromatin profile over overlapped genes
+@transform( getOverlappedGeneGTF, suffix(".gtf.gz"), ".chromatin_profile.wide.log" )    
+def overlappedGeneChromatinProfileWide(infile, outfile):
+    '''plot chromatin mark profiles over CAPSeq overlapped genes'''
+    chromatin = P.asList(PARAMS["bigwig_chromatin"])
+    track = P.snip( os.path.basename(infile), ".gtf.gz" )
+    if len(chromatin[0]) > 0:
+        for bw in chromatin:
+            chromatin_track = P.snip( os.path.basename(bw), ".bam" )
+            ofp = "overlapped_genes/" + track + "." + chromatin_track + ".profile.wide"    
+            statement = '''python %(scriptsdir)s/bam2geneprofile.py 
+                           --bamfile=%(bw)s 
+                           --gtffile=%(infile)s
+                           --output-filename-pattern=%(ofp)s
+                           --reporter=gene
+                           --method=geneprofile
+                           --log=%(outfile)s
+                           --normalize-profile=area
+                           --normalize-profile=counts
+                           --normalize-profile=none
+                           --scale_flank_length=10'''
+            P.run() 
+    else:
+        statement = '''touch %(outfile)s '''
+        P.run()
+
+############################################################
+## GO analysis    
+@follows( mkdir("overlapped_genes/go") )
+@transform( getGenesetCapseqOverlapList, suffix(".overlapped_genes.genelist"), ".overlapped_genes.go" )
+def runGOOverlappedGeneLists( infile, outfile ):
+    statement = """cat %(infile)s | sed "1igene_id\n" > %(infile)s.header"""
+    P.run()
+    track = os.path.basename(P.snip(infile,".overlapped_genes.genelist"))
+    PipelineGO.runGOFromFiles( outfile = outfile,
+                               outdir = "overlapped_genes/go/%s" % track,
+                               fg_file = infile+".header",
+                               bg_file = None,
+                               go_file = os.path.join(PARAMS["geneset_dir"], PARAMS["go_full"] ),
+                               ontology_file = os.path.join(PARAMS["geneset_dir"], PARAMS["go_full_obo"] ),
+                               minimum_counts = PARAMS["go_minimum_counts"] )
+
+############################################################
+@follows( runGOOverlappedGeneLists, mkdir("overlapped_genes/goslim") )
+@transform( getGenesetCapseqOverlapList, suffix(".overlapped_genes.genelist"), ".overlapped_genes.goslim" )
+def runGOSlimOverlappedGeneLists( infile, outfile ):
+    track = os.path.basename(P.snip(infile,".overlapped_genes.genelist"))
+    PipelineGO.runGOFromFiles( outfile = outfile,
+                               outdir = "overlapped_genes/goslim/%s" % track,
+                               fg_file = infile+".header",
+                               bg_file = None,
+                               go_file = os.path.join(PARAMS["geneset_dir"], PARAMS["go_slim"] ),
+                               ontology_file = os.path.join(PARAMS["geneset_dir"], PARAMS["go_slim_obo"]),
+                               minimum_counts = PARAMS["go_minimum_counts"] )
+                               
+############################################################
+@transform( runGOOverlappedGeneLists, suffix( ".overlapped_genes.go"), ".overlapped_genes.go.load" )
+def loadOverlappedGeneGo( infile, outfile ):
+    '''Load GO results for overlapped genes into database'''
+    track = os.path.basename(P.snip(infile,".overlapped_genes.go"))
+    go_categories = ["biol_process","cell_location","mol_function"]
+    for category in go_categories:
+        results_file = "overlapped_genes/go/%(track)s/foreground.%(category)s.withgenes" % locals()
+        statement = """cat %(results_file)s | python ~/src/csv2db.py
+                         --database=%(database)s
+                         --table=%(track)s_overlapped_genes_go_%(category)s
+                         --index=fdr
+                         --index=goid
+                        > %(outfile)s; """
+        P.run()
+
+############################################################
+@transform( runGOSlimOverlappedGeneLists, suffix( ".overlapped_genes.goslim"), ".overlapped_genes.goslim.load" )
+def loadOverlappedGeneGoslim( infile, outfile ):
+    '''Load GO results for overlapped genes into database'''
+    track = os.path.basename(P.snip(infile,".overlapped_genes.goslim"))
+    go_categories = ["biol_process","cell_location"]
+    for category in go_categories:
+        results_file = "overlapped_genes/goslim/%(track)s/foreground.%(category)s.withgenes" % locals()
+        statement = """cat %(results_file)s | python %(scriptsdir)s/csv2db.py
+                         --database=%(database)s
+                         --table=%(track)s_overlapped_genes_goslim_%(category)s
+                         --index=fdr
+                         --index=goid
+                        > %(outfile)s; """
+        P.run()    
+
+############################################################
+@follows(runGOOverlappedGeneLists)
+@collate( "overlapped_genes/go/*/*.results", regex(r"overlapped_genes/go/(.*)/(.*)\.(.*).results"), r"overlapped_genes/go/\1/\3.revigo" )
+def clusterGOResults( infiles, outfile ):
+    '''Use revigo to cluster go terms'''
+    infiles = " ".join(infiles)
+    filename_go = os.path.join( PARAMS["geneset_dir"], PARAMS["go_full"])
+    filename_obo = os.path.join( PARAMS["geneset_dir"], PARAMS["go_full_obo_xml"])
+    to_cluster = True
+    track = P.snip( outfile, ".revigo" )
+    statement = '''cat %(infiles)s 
+                   | python %(scriptsdir)s/revigo.py 
+                      --filename-go=%(filename_go)s
+                      --filename-ontology=%(filename_obo)s
+                      --output-filename-pattern=%(track)s.%%s 
+                      --ontology=all 
+                      --max-similarity=0.5
+                      --reverse-palette
+                      --force 
+                      -v 2 
+                   > %(outfile)s'''
+    P.run()
+    
+############################################################
+## Intersection of H3K27Me3 intervals and overlapped genes
+@transform( getOverlappedGeneGTF, suffix(".gtf.gz"), ".H3K27Me3.log" )    
+def overlappedGeneChromatinIntersection(infile, outfile):
+    '''calculate intersection of chromatin marks and CAPSeq overlapped genes'''
+    chromatin = P.asList(PARAMS["bed_h3k27me3"])
+    track = P.snip(os.path.basename(infile), ".gtf.gz")
+    for bed in chromatin:
+        chromatin_track = P.snip(os.path.basename(bed), ".bed")
+        statement = '''zcat %(infile)s | python %(scriptsdir)s/gff2bed.py --is-gtf > overlapped_genes/%(track)s.bed;
+                       cat overlapped_genes/%(track)s.bed %(bed)s | awk 'OFS="\\t" {print $1,$2,$3}'
+                       | mergeBed -i stdin | awk 'OFS="\\t" {print $1,$2,$3,"merged"NR}' > overlapped_genes/%(track)s_%(chromatin_track)s.merged.bed;
+                       echo "Track" > overlapped_genes/%(track)s_%(chromatin_track)s.counts; 
+                       echo "%(track)s" >> overlapped_genes/%(track)s_%(chromatin_track)s.counts; 
+                       echo "Chromatin_track" >> overlapped_genes/%(track)s_%(chromatin_track)s.counts; 
+                       echo "%(chromatin_track)s" >> overlapped_genes/%(track)s_%(chromatin_track)s.counts; 
+                       echo "Total_merged_intervals" >> overlapped_genes/%(track)s_%(chromatin_track)s.counts; 
+                       cat overlapped_genes/%(track)s_%(chromatin_track)s.merged.bed | wc -l >> overlapped_genes/%(track)s_%(chromatin_track)s.counts; 
+                       echo "track_and_chromatin_track" >> overlapped_genes/%(track)s_%(chromatin_track)s.counts; 
+                       intersectBed -a overlapped_genes/%(track)s_%(chromatin_track)s.merged.bed -b overlapped_genes/%(track)s.bed -u | intersectBed -a stdin -b %(bed)s -u > overlapped_genes/%(track)s_%(chromatin_track)s.shared.bed; 
+                       cat overlapped_genes/%(track)s_%(chromatin_track)s.shared.bed | wc -l >> overlapped_genes/%(track)s_%(chromatin_track)s.counts; 
+                       echo "chromatin_track_only" >> overlapped_genes/%(track)s_%(chromatin_track)s.counts; 
+                       intersectBed -a overlapped_genes/%(track)s_%(chromatin_track)s.merged.bed -b overlapped_genes/%(track)s.bed -v > overlapped_genes/%(track)s_%(chromatin_track)s.%(chromatin_track)s.unique.bed; 
+                       cat overlapped_genes/%(track)s_%(chromatin_track)s.%(chromatin_track)s.unique.bed | wc -l >> overlapped_genes/%(track)s_%(chromatin_track)s.counts; 
+                       echo "track_only" >> overlapped_genes/%(track)s_%(chromatin_track)s.counts; 
+                       intersectBed -a overlapped_genes/%(track)s_%(chromatin_track)s.merged.bed -b %(bed)s -v > overlapped_genes/%(track)s_%(chromatin_track)s.%(track)s.unique.bed; 
+                       cat overlapped_genes/%(track)s_%(chromatin_track)s.%(track)s.unique.bed | wc -l >> overlapped_genes/%(track)s_%(chromatin_track)s.counts;                   
+                       sed -i '{N;s/\\n/\\t/g}' overlapped_genes/%(track)s_%(chromatin_track)s.counts;
+                       touch %(outfile)s '''
+        P.run()
+     
+############################################################
+@follows( overlappedGeneChromatinIntersection )
+@merge( "overlapped_genes/*.counts", "overlapped_genes/h3k27me3.stats" )
+def overlappedGeneChromatinIntersectionStats(infiles, outfile):
+    '''calculate intersection of chromatin marks and CAPSeq overlapped genes'''
+    first = True
+    header = ""
+    outs = open(outfile, "w")
+    for infile in infiles:
+        f = open(infile, "r")
+        names = []
+        values = []
+        for line in f:
+            name, value = line.split("\t")
+            names.append(name.strip())
+            values.append(value.strip())
+        header = "\t".join(names)+"\n"
+        outline = "\t".join(values)+"\n"
+        if first:
+            outs.write(header)
+            first = False
+        outs.write(outline)
+        f.close()
+    outs.close()
+    
+############################################################
+@transform( overlappedGeneChromatinIntersectionStats, suffix(".stats"), ".stats.load" )
+def loadOverlappedGeneChromatinIntersection(infile, outfile):
+    '''calculate intersection of chromatin marks and CAPSeq overlapped genes'''
+    statement = """cat %(infile)s | python %(scriptsdir)s/csv2db.py
+                         --database=%(database)s
+                         --table=overlapped_genes_h3k27me3_venn
+                    > %(outfile)s"""
+    P.run()
+    
+############################################################
+## Compare intervals to external bed files using GAT
+@follows( buildGATWorkspace, mkdir("overlapped_genes/gat/") )
+@merge( getOverlappedGeneGTF, "overlapped_genes/gat/overlapped_genes_gat.tsv" )
+def runOverlappedGenesGAT(infiles, outfile):
+    '''Run genome association tester on bed files '''
+    to_cluster = True
+    segfiles = ""
+    for x in infiles:
+        track = P.snip(os.path.basename(x), ".gtf.gz")
+        statement = """zcat %(x)s | awk 'OFS="\\t" {print $1,$4-1,$5-1,"%(track)s"}' > overlapped_genes/gat/%(track)s.bed; """
+        P.run()
+        segfiles += " --segment-file=overlapped_genes/gat/%s.bed " % track 
+
+    # External datasets
+    annofiles = ""
+    chromatin = P.asList(PARAMS["bed_h3k27me3"])
+    for y in chromatin:
+        track = P.snip(os.path.basename(y), ".bed")
+        statement = """cat %(y)s | awk 'OFS="\\t" {print $1,$2,$3,"%(track)s"}' > overlapped_genes/gat/%(track)s.bed; """
+        P.run()
+        annofiles +=  "--annotation-file=overlapped_genes/gat/%s.bed " % track
+    statement = """gatrun.py %(segfiles)s %(annofiles)s --workspace=gat/%(genome)s.bed.gz --num-samples=1000 --nbuckets=500000 --bucket-size=10 --force > %(outfile)s"""
+    P.run()
+
+############################################################
+@transform( runOverlappedGenesGAT, suffix(".tsv"), ".tsv.load" )
+def loadOverlappedGenesGAT(infile, outfile):
+    '''Load genome association tester results into database '''
+    statement = """cat %(infile)s | grep -v "^#" | python %(scriptsdir)s/csv2db.py
+                         --database=%(database)s
+                         --table=overlapped_genes_gat_results
+                    > %(outfile)s"""
+    P.run()
+        
 ########################################################################################################################
 ########################################################################################################################
 ########################################################################################################################
@@ -2041,7 +2935,7 @@ def shortIntervalGeneChromatinProfile(infile, outfile):
 ########################################################################################################################
 ########################################################################################################################
 @follows(copyCapseqReplicatedBedFiles, mkdir("liver_vs_testes") )
-@files( ("*liver*.replicated.bed", "*testes*.replicated.bed"), "liver_vs_testes/liver.testes.venn" )
+@files( (PARAMS["compare_liver_pattern"]+".replicated.bed", PARAMS["compare_testes_pattern"]+".replicated.bed"), "liver_vs_testes/liver.testes.venn" )
 def liverTestesVenn(infiles, outfile):
     '''identify interval overlap between liver and testes. Merge intervals first.'''
     liver, testes = infiles
@@ -2049,7 +2943,7 @@ def liverTestesVenn(infiles, outfile):
     testes_name = P.snip( os.path.basename(testes), ".bed" )
     to_cluster = True
     
-    statement = '''cat %(liver)s %(testes)s | mergeBed -i stdin | awk 'OFS="\\t" {print $1,$2,$3,"CAPseq"NR}' > liver_vs_testes/liver.testes.merge.bed;
+    statement = '''cat %(liver)s %(testes)s | mergeBed -i stdin | awk 'OFS="\\t" {print $1,$2,$3,"merged"NR}' > liver_vs_testes/liver.testes.merge.bed;
                    echo "Total merged intervals" > %(outfile)s; 
                    cat liver_vs_testes/liver.testes.merge.bed | wc -l >> %(outfile)s; 
                    echo "Liver & testes" >> %(outfile)s; 
@@ -2063,7 +2957,21 @@ def liverTestesVenn(infiles, outfile):
                    cat liver_vs_testes/%(liver_name)s.liver.testes.unique.bed | wc -l >> %(outfile)s;                   
                    sed -i '{N;s/\\n/\\t/g}' %(outfile)s; '''
     P.run()
+
+############################################################    
+@follows(copyCapseqReplicatedBedFiles, mkdir("liver_vs_testes") )
+@files( (PARAMS["compare_liver_pattern"]+".replicated.bed", PARAMS["compare_testes_pattern"]+".replicated.bed"), ("liver_vs_testes/liver_nmi.liver.testes.shared.bed", "liver_vs_testes/testes_nmi.liver.testes.shared.bed", "liver_vs_testes/liver_nmi.liver.testes.uniq.bed", "liver_vs_testes/testes_nmi.liver.testes.uniq.bed") )
+def liverTestesCompare(infiles, outfile):
+    '''identify interval overlap between liver and testes. Merge intervals first.'''
+    liver, testes = infiles
+    to_cluster = False
     
+    statement = '''intersectBed -a %(liver)s -b %(testes)s -u > liver_vs_testes/liver_nmi.liver.testes.shared.bed;
+                   intersectBed -a %(testes)s -b %(liver)s -u > liver_vs_testes/testes_nmi.liver.testes.shared.bed;
+                   intersectBed -a %(liver)s -b %(testes)s -v > liver_vs_testes/liver_nmi.liver.testes.uniq.bed;
+                   intersectBed -a %(testes)s -b %(liver)s -v > liver_vs_testes/testes_nmi.liver.testes.uniq.bed; ''' % locals()
+    P.run()
+        
 ############################################################    
 @transform( liverTestesVenn, suffix(".venn"), ".venn.load" )
 def loadLiverTestesVenn(infile, outfile):
@@ -2078,7 +2986,7 @@ def loadLiverTestesVenn(infile, outfile):
     
 ############################################################    
 @follows(copyCapseqReplicatedBedFiles, exportCapseqIntergenicBed)
-@files( ("*liver*.replicated.intergenic.bed", "*testes*.replicated.intergenic.bed"), "liver_vs_testes/liver.testes.intergenic.venn" )
+@files( (PARAMS["compare_liver_pattern"]+".replicated.intergenic.bed", PARAMS["compare_testes_pattern"]+".replicated.intergenic.bed"), "liver_vs_testes/liver.testes.intergenic.venn" )
 def liverTestesIntergenicVenn(infiles, outfile):
     '''identify interval overlap between liver and testes for non-TSS associated intervals. Merge intervals first.'''
     liver, testes = infiles
@@ -2263,7 +3171,51 @@ def loadLiverTestesMergedTranscriptTSSDistance( infile, outfile ):
                          --index=id3
                  > %(outfile)s; """
     P.run()
-    
+
+############################################################
+@transform( loadLiverTestesMergedTranscriptTSSDistance, suffix(".transcript.tss.distance.load"), ".transcript.tss.distance.export" )
+def exportLiverTestesTSSTranscriptList( infile, outfile ):
+    '''Export liver vs testes tissue specific CAPseq genes '''
+    track = P.snip( os.path.basename( infile ), ".transcript.tss.distance.load" ).replace("-","_").replace(".","_")
+    geneset_name = PARAMS["geneset_name"]
+    # Connect to DB
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    cc = dbhandle.cursor()
+    statement = "ATTACH DATABASE '%s' AS annotations; "  % (PARAMS["geneset_database"])
+    cc.execute(statement)
+    # Extract data from db
+    query = '''SELECT distinct t.gene_id, t.closest_id 
+               FROM liver_testes_merged_intervals i, 
+               liver_testes_merged_%(geneset_name)s_transcript_tss_distance t
+               WHERE i.interval_id=t.gene_id
+               AND t.closest_dist < 1000 ''' % locals()
+    cc.execute( query )
+    E.info( query )
+    # Write to file
+    outs = open( outfile, "w")
+    outs.write("interval_id\ttranscript_id\n")
+    for result in cc:
+        pre = ""
+        interval_id,transcripts = result
+        transcript_list = transcripts.split(",")
+        for t in transcript_list:
+            outs.write("%s\t%s\n" % (interval_id, str(t)) )
+    cc.close()
+    outs.close()
+
+############################################################
+@transform( exportLiverTestesTSSTranscriptList, suffix( ".transcript.tss.distance.export"), ".transcript.tss.distance.export.load" )
+def loadLiverTestesTSSTranscriptList( infile, outfile ):
+    '''Load CAPseq interval annotations: distance to transcript transcription start sites '''
+    geneset_name = PARAMS["geneset_name"]
+    statement = """cat %(infile)s | python %(scriptsdir)s/csv2db.py 
+                         --database=%(database)s
+                         --table=liver_testes_merged_%(geneset_name)s_interval_transcript_mapping
+                         --index=gene_id
+                         --index=interval_id
+                 > %(outfile)s; """
+    P.run()
+        
 ############################################################    
 @follows( liverTestesVenn )
 @files( "liver_vs_testes/liver.testes.merge.bed", "liver_vs_testes/liver.testes.merge.composition" )
@@ -2291,7 +3243,7 @@ def loadLiverTesteMergedComposition( infile, outfile ):
 
 ############################################################
 @follows(copyCapseqReplicatedBedFiles, exportCapseqTSSBed)
-@files( ("*liver*.replicated.transcript.tss.bed", "*testes*.replicated.transcript.tss.bed"), "liver_vs_testes/liver.testes.transcript.tss.venn" )
+@files( (PARAMS["compare_liver_pattern"]+".replicated.transcript.tss.bed", PARAMS["compare_testes_pattern"]+".replicated.transcript.tss.bed"), "liver_vs_testes/liver.testes.transcript.tss.venn" )
 def liverTestesTSSVenn(infiles, outfile):
     '''identify interval overlap between liver and testes for TSS associated intervals. Merge intervals first.'''
     liver, testes = infiles
@@ -2318,30 +3270,15 @@ def loadLiverTestesTSSVenn(infile, outfile):
 
 ############################################################    
 @follows( exportLiverTestesMergeWithSort )
-@transform( copyCapseqReplicatedBedFiles, regex(r"(\S+).replicated.bed"), r"liver_vs_testes/\1.replicated.liver.testes.merge.peakshape.gz" )
-def getPeakShapeLiverTestes(infile, outfile):
+@transform( copyCapseqReplicatedBedFiles, regex(r"(\S+).replicated.bed"), r"liver_vs_testes/\1.replicated.liver.testes.merge.reads.peakshape.gz" )
+def getPeakShapeLiverTestesReads(infile, outfile):
     '''Cluster intervals based on peak shape '''
     track = P.snip( os.path.basename( infile ), ".replicated.bed" )
-    expt_track = track + "-agg"
-    replicates = EXPERIMENTS[expt_track]
-    #ofp = "replicated_intervals/" + track + ".liver.testes.merge.peakshape"
     bedfile = "liver_vs_testes/liver.testes.merge.sort.bed"
-    samfiles, offsets = [], []
-    for t in replicates:
-        fn = "../bam/%s.norm.bam" % t.asFile()
-        assert os.path.exists( fn ), "could not find bamfile %s for track %s" % ( fn, str(t))
-        samfiles.append( fn )
-        fn = "../macs/with_input/%s.macs" % t.asFile()
-        if os.path.exists( fn ):
-            offsets.append( PIntervals.getPeakShiftFromMacs( fn ) )
-
-    bamfiles = " ".join( ("--bamfile=%s" % x) for x in samfiles )
-    shifts =  " ".join( ("--shift=%s" % y)  for y in offsets )
-    statement = '''python %(scriptsdir)s/bam2peakshape.py 
-                       %(bamfiles)s 
-                       --bedfile=%(bedfile)s
+    bamfile = "../merged_bams/%s.merge.bam" % track
+    assert os.path.exists( bamfile ), "could not find bamfile %s for track %s" % ( bamfile, track )
+    statement = '''python %(scriptsdir)s/bam2peakshape.py %(bamfile)s %(bedfile)s
                        --output-filename-pattern=%(outfile)s.%%s
-                       %(shifts)s
                        --sort=peak-width
                        --sort=peak-height
                        --sort=interval-width
@@ -2349,12 +3286,36 @@ def getPeakShapeLiverTestes(infile, outfile):
                        --window-size=3000
                        --bin-size=10
                        --normalization=sum
+                       --centring-method=reads
                        --force
                        --log=%(outfile)s.log
-                   | gzip
-                   > %(outfile)s '''
+                   | gzip > %(outfile)s '''
     P.run()
 
+############################################################    
+@follows( exportLiverTestesMergeWithSort )
+@transform( copyCapseqReplicatedBedFiles, regex(r"(\S+).replicated.bed"), r"liver_vs_testes/\1.replicated.liver.testes.merge.centre.peakshape.gz" )
+def getPeakShapeLiverTestesCentre(infile, outfile):
+    '''Cluster intervals based on peak shape '''
+    track = P.snip( os.path.basename( infile ), ".replicated.bed" )
+    bedfile = "liver_vs_testes/liver.testes.merge.sort.bed"
+    bamfile = "../merged_bams/%s.merge.bam" % track
+    assert os.path.exists( bamfile ), "could not find bamfile %s for track %s" % ( bamfile, track )
+    statement = '''python %(scriptsdir)s/bam2peakshape.py %(bamfile)s %(bedfile)s
+                       --output-filename-pattern=%(outfile)s.%%s
+                       --sort=peak-width
+                       --sort=peak-height
+                       --sort=interval-width
+                       --sort=interval-score
+                       --window-size=3000
+                       --bin-size=10
+                       --normalization=sum
+                       --centring-method=middle
+                       --force
+                       --log=%(outfile)s.log
+                   | gzip > %(outfile)s '''
+    P.run()
+    
 ############################################################
 @follows( liverTestesVenn )
 @files( "liver_vs_testes/*.liver.testes.unique.bed", "liver_vs_testes/liver.testes.chromatin.log" )    
@@ -2367,17 +3328,20 @@ def liverTestesUniqueChromatinProfile(infiles, outfile):
             outtemp = P.getTempFile()
             tmpfilename = outtemp.name
             for bw in chromatin:
-                # still need to normalise
-                chromatin_track = P.snip( os.path.basename(bw), ".bw" )
+                chromatin_track = P.snip( os.path.basename(bw), ".bam" )
                 ofp = "liver_vs_testes/" + track + "." + chromatin_track + ".profile"    
                 statement = '''cat %(infile)s | python %(scriptsdir)s/bed2gff.py --as-gtf | gzip > %(tmpfilename)s.gtf.gz;
                                python %(scriptsdir)s/bam2geneprofile.py 
                                --bamfile=%(bw)s 
                                --gtffile=%(tmpfilename)s.gtf.gz
                                --output-filename-pattern=%(ofp)s
-                               --reporter=interval
+                               --reporter=gene
                                --method=intervalprofile
-                               --log=%(outfile)s'''
+                               --log=%(outfile)s
+                               --normalization=total-sum
+                               --normalize-profile=area
+                               --normalize-profile=counts
+                               --normalize-profile=none'''
                 P.run() 
     else:
         statement = '''touch %(outfile)s '''
@@ -2386,8 +3350,8 @@ def liverTestesUniqueChromatinProfile(infiles, outfile):
 ############################################################
 ############################################################
 ## Export gene lists
-@follows(loadCapseqTranscriptTSSDistance)
-@transform( loadLiverTestesUnique, suffix(".liver.testes.unique.bed.load"), ".liver.testes.unique.genes.export" )
+@follows(loadLiverTestesTSSTranscriptList)
+@transform( loadLiverTestesUnique, suffix(".liver.testes.unique.bed.load"), ".liver.testes.unique.genelist" )
 def exportLiverTestesSpecificCAPseqGenes( infile, outfile ):
     '''Export liver vs testes tissue specific CAPseq genes '''
     track = P.snip( os.path.basename( infile ), ".liver.testes.unique.bed.load" ).replace("-","_").replace(".","_")
@@ -2398,13 +3362,17 @@ def exportLiverTestesSpecificCAPseqGenes( infile, outfile ):
     statement = "ATTACH DATABASE '%s' AS annotations; "  % (PARAMS["geneset_database"])
     cc.execute(statement)
     # Extract data from db
-    query = '''SELECT distinct a.gene_id
-               FROM %(track)s_liver_testes_unique_intervals u, 
-               %(track)s_%(geneset_name)s_transcript_tss_distance t, annotations.transcript_info a
-               WHERE u.interval_id=t.gene_id
-               AND t.closest_dist < 1000
-               AND t.closest_id=a.transcript_id
-               AND a.gene_biotype='protein_coding';''' % locals()
+    query = '''SELECT distinct a.gene_id 
+               FROM %(track)s_liver_testes_unique_intervals u, annotations.transcript_info a,
+               liver_testes_merged_%(geneset_name)s_transcript_tss_distance t, liver_testes_merged_intervals i,
+               liver_testes_merged_%(geneset_name)s_interval_transcript_mapping m
+               WHERE i.interval_id=t.gene_id
+               AND i.contig=u.contig
+               AND i.start=u.start
+               AND t.closest_dist < 1000 
+               AND a.gene_biotype='protein_coding'
+               AND m.interval_id=t.gene_id
+               AND a.transcript_id = m.transcript_id  ''' % locals()
     cc.execute( query )
     E.info( query )
     # Write to file
@@ -2420,16 +3388,79 @@ def exportLiverTestesSpecificCAPseqGenes( infile, outfile ):
     outs.close()
 
 ############################################################
+@follows(loadLiverTestesTSSTranscriptList)
+@transform(loadLiverTestesShared, suffix(".shared.bed.load"), ".shared.genelist")
+def exportLiverTestesSharedCAPseqGenes( infile, outfile ):
+    '''Export list of genes with TSS associated CAPseq intervals in both liver and testes'''
+    geneset_name = PARAMS["geneset_name"]
+    # Connect to DB
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    cc = dbhandle.cursor()
+    statement = "ATTACH DATABASE '%s' AS annotations; "  % (PARAMS["geneset_database"])
+    cc.execute(statement)
+    # Extract data from db
+    query = '''SELECT distinct a.gene_id 
+               FROM liver_testes_shared_intervals s, annotations.transcript_info a,
+               liver_testes_merged_%(geneset_name)s_transcript_tss_distance t, liver_testes_merged_intervals i,
+               liver_testes_merged_%(geneset_name)s_interval_transcript_mapping m
+               WHERE i.interval_id=t.gene_id
+               AND i.contig=s.contig
+               AND i.start=s.start
+               AND t.closest_dist < 1000 
+               AND a.gene_biotype='protein_coding'
+               AND m.interval_id=t.gene_id
+               AND a.transcript_id = m.transcript_id''' % locals()
+    cc.execute( query )
+    E.info( query )
+    # Write to file
+    outs = open( outfile, "w")
+    outs.write("gene_id\n")
+    for result in cc:
+        pre = ""
+        for r in result:
+          outs.write("%s%s" % (pre, str(r)) )
+          pre = "\t"
+        outs.write("\n")
+    cc.close()
+    outs.close()
+    
+############################################################
+@follows(liverTestesVenn)
+@transform( "liver_vs_testes/*.replicated.liver.testes.unique.bed", suffix(".bed"), ".length" )
+def exportLiverTestesUniqueLength( infile, outfile ):
+    '''Export length of CAPseq intervals'''
+    statement = '''cat %(infile)s | awk '{print $3-$2}' > %(outfile)s'''
+    P.run()
+
+############################################################
+@follows(liverTestesVenn)
+@transform( "liver_vs_testes/liver.testes.shared.bed", suffix(".bed"), ".length" )
+def exportLiverTestesSharedLength( infile, outfile ):
+    '''Export length of CAPseq intervals'''
+    statement = '''cat %(infile)s | awk '{print $3-$2}' > %(outfile)s'''
+    P.run()
+
+############################################################
+@merge(liverTestesCompare, "liver_testes_lengths.log")
+def exportLiverTestesIntervalLengths( infiles, outfile ):
+    '''Export list of genes with TSS associated CAPseq intervals in both liver and testes'''
+    for bed in infiles:
+        out = bed.replace(".bed",".length")
+        statement = '''cat %(bed)s | awk '{print $3-$2}' > %(out)s 2>> %(outfile)s '''
+        P.run()
+
+############################################################
 ############################################################
 ## GO analysis    
+@follows( mkdir("liver_vs_testes/go") )
 @transform( exportLiverTestesSpecificCAPseqGenes, suffix(".liver.testes.unique.genes.export"), ".liver.testes.unique.genes.go" )
 def runGOOnGeneLists( infile, outfile ):
     PipelineGO.runGOFromFiles( outfile = outfile,
-                               outdir = "go",
+                               outdir = "liver_vs_testes/go",
                                fg_file = infile,
                                bg_file = None,
-                               go_file = os.path.join(PARAMS["geneset_dir"], PARAMS_ANNOTATIONS["interface_go"] ),
-                               ontology_file = os.path.join(PARAMS["geneset_dir"], PARAMS_ANNOTATIONS["interface_go_obo"] ),
+                               go_file = os.path.join(PARAMS["geneset_dir"], PARAMS["go_full"] ),
+                               ontology_file = os.path.join(PARAMS["geneset_dir"], PARAMS["go_full_obo"] ),
                                minimum_counts = PARAMS["go_minimum_counts"] )
 
 ############################################################
@@ -2439,16 +3470,451 @@ def runGOSlimOnGeneLists( infile, outfile ):
                                outdir = "go",
                                fg_file = infile,
                                bg_file = None,
-                               go_file = os.path.join(PARAMS["geneset_dir"], PARAMS_ANNOTATIONS["interface_goslim"] ),
-                               ontology_file = os.path.join(PARAMS["geneset_dir"], PARAMS_ANNOTATIONS["interface_goslim_obo"]),
+                               go_file = os.path.join(PARAMS["geneset_dir"], PARAMS["go_slim"] ),
+                               ontology_file = os.path.join(PARAMS["geneset_dir"], PARAMS["go_slim_obo"]),
                                minimum_counts = PARAMS["go_minimum_counts"] )
 
+ 
+
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+## Section 8: Plot paper figures in R
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+@follows( mkdir("plots") )
+@transform(getCapseqCGIOverlapCount, regex(r"(\S+).cgi_overlap"), r"plots/\1.nmi.cgi.venn.pdf")
+def plotFigure1b( infile, outfile):
+    '''Figure 1b: Venn diagrams of CAPseq NMIs vs UCSC CGIs'''
+    track= P.snip( os.path.basename(infile), ".cgi_overlap").replace(".","_").replace("-","_")
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    cc = dbhandle.cursor()
+    statement = '''SELECT overlap FROM %(track)s_cgi_venn where track like "%%ucsc%%"''' % locals()
+    print statement
+    cc.execute( statement )
+    overlap=int(cc.fetchone()[0])
+    statement = '''SELECT intervals FROM external_interval_sets where bed like "%%ucsc%%"''' % locals()
+    print statement
+    cc.execute( statement )
+    cgi=int(cc.fetchone()[0])
+    statement = '''SELECT count(*) FROM %(track)s_intervals ''' % locals()
+    print statement
+    cc.execute( statement )
+    nmi=int(cc.fetchone()[0])
+    offset = cgi - overlap
+    nmi2 = offset+int(nmi)
+    R('''library(VennDiagram) ''')
+    R('''CGI <- seq(1,%(cgi)i)''' % locals() )
+    R('''NMI <- seq(%(offset)i,%(nmi2)i)''' % locals() )
+    R('''x <- list(CGI=CGI,NMI=NMI)''' )
+    R('''pdf(file='%(outfile)s', height=8, width=8, onefile=TRUE, family='Helvetica', paper='A4', pointsize=12)''' % locals() )
+    R('''venn <- venn.diagram( x, filename=NULL, col="#58595B", fill=c("#EC1C24","#69BC45"), alpha=0.75, label.col=c("darkred", "white", "darkgreen"), cex=2.0, fontfamily="Helvetica", fontface="bold")''' % locals() )
+    R('''grid.draw(venn)''')
+    R('''dev.off()''')
+
 ############################################################
-@transform( (runGOOnGeneLists, runGOSlimOnGeneLists), regex( "(.*)"), r"\1.load" )
-def loadGOResults( infile, outfile ):
-    '''load GO results.'''
-    P.load( os.path.join( "go", "all.biol_process.fold"), outfile )
+@follows( mkdir("plots"), getReplicatedTranscriptTSSProfileCapseq )
+@transform("tss-profile/*.replicated.transcript.tss-profile.capseq.counts.tsv.gz", regex(r"tss-profile/(\S+).replicated.transcript.tss-profile.capseq.counts.tsv.gz"), r"plots/\1.combined.tss-profile.pdf")
+def plotFigure2b( infile, outfile):
+    '''Figure 2b: TSS profiles for CAPseq and non CAPseq genes'''
+    capseq = infile
+    scriptsdir = PARAMS["scriptsdir"]
+    nocapseq = capseq.replace("capseq", "nocapseq")
+    R('''source("%(scriptsdir)s/R/proj007/proj007.R") ''' % locals() )
+    R('''combinedTSSPlot(capseqfile="%(capseq)s", nocapseqfile="%(nocapseq)s", outfile="%(outfile)s", ylimit=c(0,10), scale=1)''' % locals() )
     
+############################################################
+@follows( mkdir("plots"), getReplicatedTranscriptTSSProfileCapseq )
+@transform("tss-profile/*.replicated.gene.tss-profile.capseq.counts.tsv.gz", regex(r"tss-profile/(\S+).replicated.gene.tss-profile.capseq.counts.tsv.gz"), r"plots/\1.combined.gene.tss-profile.pdf")
+def plotFigure2bGene( infile, outfile):
+    '''Figure 2b: TSS profiles for CAPseq and non CAPseq genes'''
+    capseq = infile
+    scriptsdir = PARAMS["scriptsdir"]
+    nocapseq = capseq.replace("capseq", "nocapseq")
+    R('''source("%(scriptsdir)s/R/proj007/proj007.R") ''' % locals() )
+    R('''combinedTSSPlot(capseqfile="%(capseq)s", nocapseqfile="%(nocapseq)s", outfile="%(outfile)s", ylimit=c(0,10), scale=1)''' % locals() )
+
+############################################################
+@follows( mkdir("plots") )
+@transform(loadLiverTestesTSSVenn, regex(r"liver_vs_testes/(\S+).load"), r"plots/"+PARAMS["species"]+r"_\1.pdf")
+def plotFigure3bTSSVenn( infile, outfile):
+    '''Figure 3b: TSS profiles for CAPseq and non CAPseq genes'''
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    cc = dbhandle.cursor()
+    statement = '''SELECT * FROM liver_testes_tss_venn''' % locals()
+    print statement
+    cc.execute( statement )
+    total=int(cc.fetchone()[1])
+    liverAndTestes=int(cc.fetchone()[1])
+    testes=int(cc.fetchone()[1])
+    liver=int(cc.fetchone()[1])
+    cc.close()
+    liver_total = liver+liverAndTestes
+    R('''library(VennDiagram) ''')
+    R('''liver <- seq(1,%(liver_total)i)''' % locals() )
+    R('''testes <- seq(%(liver)i,%(total)i)''' % locals() )
+    R('''x <- list(Liver=liver,Testes=testes)''' )
+    R('''pdf(file='%(outfile)s', height=8, width=8, onefile=TRUE, family='Helvetica', paper='A4', pointsize=12)''' % locals() )
+    R('''venn <- venn.diagram( x, filename=NULL, col="#58595B", fill=c("#EC1C24","#69BC45"), alpha=0.75, label.col=c("darkred", "white", "darkgreen"), cex=2.0, fontfamily="Helvetica", fontface="bold")''' % locals() )
+    R('''grid.draw(venn)''')
+    R('''dev.off()''')
+
+############################################################
+@follows( mkdir("plots") )
+@transform(loadLiverTestesIntergenicVenn, regex(r"liver_vs_testes/(\S+).load"), r"plots/"+PARAMS["species"]+r"_\1.pdf")
+def plotFigure3bIntergenicVenn( infile, outfile):
+    '''Figure 3b: TSS profiles for CAPseq and non CAPseq genes'''
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    cc = dbhandle.cursor()
+    statement = '''SELECT * FROM liver_testes_intergenic_venn''' % locals()
+    print statement
+    cc.execute( statement )
+    total=int(cc.fetchone()[1])
+    liverAndTestes=int(cc.fetchone()[1])
+    testes=int(cc.fetchone()[1])
+    liver=int(cc.fetchone()[1])
+    cc.close()
+    liver_total = liver+liverAndTestes
+    R('''library(VennDiagram) ''')
+    R('''liver <- seq(1,%(liver_total)i)''' % locals() )
+    R('''testes <- seq(%(liver)i,%(total)i)''' % locals() )
+    R('''x <- list(Liver=liver,Testes=testes)''' )
+    R('''pdf(file='%(outfile)s', height=8, width=8, onefile=TRUE, family='Helvetica', paper='A4', pointsize=12)''' % locals() )
+    R('''venn <- venn.diagram( x, filename=NULL, col="#58595B", fill=c("#EC1C24","#69BC45"), alpha=0.75, label.col=c("darkred", "white", "darkgreen"), cex=2.0, fontfamily="Helvetica", fontface="bold")''' % locals() )
+    R('''grid.draw(venn)''')
+    R('''dev.off()''')
+    
+############################################################
+@follows( mkdir("plots"),exportLiverTestesIntervalLengths )
+@files(("liver_vs_testes/*nmi.liver.testes.shared.length","liver_vs_testes/*nmi.liver.testes.uniq.length"), "plots/"+PARAMS["species"]+".liver.testes.length.pdf")
+def plotFigure3Length( infiles, outfile):
+    '''Figure 3 supplementary: length of liver and testes unique intervals compared to shared'''
+    liver_shared, testes_shared, liver_uniq, testes_uniq = infiles
+    scriptsdir = PARAMS["scriptsdir"]
+    R('''source("%(scriptsdir)s/R/proj007/proj007.R") ''' % locals() )
+    R('''sharesVsUniqueLengthPlot(liver_shared="%(liver_shared)s", liver_unique="%(liver_uniq)s", testes_shared="%(testes_shared)s", testes_unique="%(testes_uniq)s", outfile="%(outfile)s")''' % locals() )
+
+############################################################
+@follows( liverTestesUniqueChromatinProfile, mkdir("plots") )
+@merge("liver_vs_testes/"+PARAMS["species"]+"_testes*H3K4Me3-1*profile.area.tsv.gz", r"plots/"+PARAMS["species"]+r"_testes_unique_intervals_H3K4Me3_profile.pdf")
+def plotFigure3cH3K4Me3Testes( infiles, outfile):
+    '''Figure 3c: Liver and testes H3K4Me3 reads over liver and testes unique intervals'''
+    if len(infiles) == 2:
+        inlist = "','".join(infiles)
+        inlist = "'"+inlist+"'"
+        scriptsdir = PARAMS["scriptsdir"]
+        R('''source("%(scriptsdir)s/R/proj007/proj007.R") ''' % locals() )
+        R('''infiles <- c(%(inlist)s) ''' % locals() )
+        R('''liverTestesChromatinPlot(infiles=infiles, outfile="%(outfile)s")''' % locals() )
+
+############################################################
+@follows( liverTestesUniqueChromatinProfile, mkdir("plots") )
+@merge("liver_vs_testes/"+PARAMS["species"]+"_liver*H3K4Me3-1*profile.area.tsv.gz", r"plots/"+PARAMS["species"]+r"_liver_unique_intervals_H3K4Me3_profile.pdf")
+def plotFigure3cH3K4Me3Liver( infiles, outfile):
+    '''Figure 3c: Liver and testes H3K4Me3 reads over liver and testes unique intervals'''
+    if len(infiles) == 2:
+        inlist = "','".join(infiles)
+        inlist = "'"+inlist+"'"
+        scriptsdir = PARAMS["scriptsdir"]
+        R('''source("%(scriptsdir)s/R/proj007/proj007.R") ''' % locals() )
+        R('''infiles <- c(%(inlist)s) ''' % locals() )
+        R('''liverTestesChromatinPlot(infiles=infiles, outfile="%(outfile)s")''' % locals() )
+
+############################################################
+@follows( exportLiverTestesSpecificCAPseqGenes, exportLiverTestesSharedCAPseqGenes, mkdir("plots") )
+@merge("liver_vs_testes/*unique.genelist", r"plots/"+PARAMS["species"]+r"_liver_testes_unique_interval_dx_scatter_rpkm.pdf")
+def plotFigure3dxScatterRPKM( infiles, outfile):
+    '''Figure 3: differential expression of genes with liver and testes specific NMIs'''
+    if len(infiles) == 2:
+        liver, testes = infiles
+        shared = "liver_vs_testes/liver.testes.shared.genelist"
+        scriptsdir = PARAMS["scriptsdir"]
+        rpkm = PARAMS["expression_rpkm"]
+        R('''source("%(scriptsdir)s/R/proj007/rpkm.R") ''' % locals() )
+        R('''plot_rpkm(liver="%(liver)s", testes="%(testes)s", shared="%(shared)s", rpkm="%(rpkm)s", outfile="%(outfile)s")''' % locals() )
+        
+############################################################
+@follows( exportLiverTestesSpecificCAPseqGenes, exportLiverTestesSharedCAPseqGenes, mkdir("plots") )
+@merge("liver_vs_testes/*unique.genelist", r"plots/"+PARAMS["species"]+r"_liver_testes_unique_interval_dx_2fold_rpkm.pdf")
+def plotFigure3TwoFolddxRPKM( infiles, outfile):
+    '''Figure 3: differential expression of genes with liver and testes specific NMIs'''
+    if len(infiles) == 2:
+        liver, testes = infiles
+        shared = "liver_vs_testes/liver.testes.shared.genelist"
+        scriptsdir = PARAMS["scriptsdir"]
+        rpkm = PARAMS["expression_rpkm"]
+        R('''source("%(scriptsdir)s/R/proj007/rpkm.R") ''' % locals() )
+        print '''foldchange_rpkm(liver="%(liver)s", testes="%(testes)s", shared="%(shared)s", rpkm="%(rpkm)s", outfile="%(outfile)s")''' % locals()
+        R('''foldchange_rpkm(liver="%(liver)s", testes="%(testes)s", shared="%(shared)s", rpkm="%(rpkm)s", outfile="%(outfile)s")''' % locals() )
+        
+############################################################
+@follows( exportLiverTestesSpecificCAPseqGenes, exportLiverTestesSharedCAPseqGenes, mkdir("plots") )
+@merge("liver_vs_testes/*unique.genelist", r"plots/"+PARAMS["species"]+r"_liver_testes_unique_interval_dx_density_rpkm.pdf")
+def plotFigure3dxRPKMDist( infiles, outfile):
+    '''Figure 3: differential expression of genes with liver and testes specific NMIs'''
+    if len(infiles) == 2:
+        liver, testes = infiles
+        shared = "liver_vs_testes/liver.testes.shared.genelist"
+        scriptsdir = PARAMS["scriptsdir"]
+        rpkm = PARAMS["expression_rpkm"]
+        R('''source("%(scriptsdir)s/R/proj007/rpkm.R") ''' % locals() )
+        R('''density_rpkm(liver="%(liver)s", testes="%(testes)s", shared="%(shared)s", rpkm="%(rpkm)s", outfile="%(outfile)s")''' % locals() )
+
+############################################################
+@follows( exportLiverTestesSpecificCAPseqGenes, exportLiverTestesSharedCAPseqGenes, mkdir("plots") )
+@merge("liver_vs_testes/*unique.genelist", r"plots/"+PARAMS["species"]+r"_liver_testes_unique_interval_dx_scatter_counts.pdf")
+def plotFigure3dxScatterReadCounts( infiles, outfile):
+    '''Figure 3: differential expression of genes with liver and testes specific NMIs'''
+    if len(infiles) == 2:
+        liver, testes = infiles
+        shared = "liver_vs_testes/liver.testes.shared.genelist"
+        scriptsdir = PARAMS["scriptsdir"]
+        counts = PARAMS["expression_counts"]
+        R('''source("%(scriptsdir)s/R/proj007/rpkm.R") ''' % locals() )
+        R('''plot_rpkm(liver="%(liver)s", testes="%(testes)s", shared="%(shared)s", rpkm="%(counts)s", outfile="%(outfile)s")''' % locals() )
+                
+############################################################
+@follows( exportLiverTestesSpecificCAPseqGenes, exportLiverTestesSharedCAPseqGenes, mkdir("plots") )
+@merge("liver_vs_testes/*unique.genelist", r"plots/"+PARAMS["species"]+r"_liver_testes_unique_interval_dx_boxplot_rpkm.pdf")
+def plotFigure3dxBoxplotRPKM( infiles, outfile):
+    '''Figure 3: differential expression of genes with liver and testes specific NMIs'''
+    if len(infiles) == 2:
+        liver, testes = infiles
+        shared = "liver_vs_testes/liver.testes.shared.genelist"
+        scriptsdir = PARAMS["scriptsdir"]
+        rpkm = PARAMS["expression_rpkm"]
+        R('''source("%(scriptsdir)s/R/proj007/rpkm.R") ''' % locals() )
+        R('''boxplot_rpkm(liver="%(liver)s", testes="%(testes)s", shared="%(shared)s", rpkm="%(rpkm)s", outfile="%(outfile)s")''' % locals() )        
+            
+############################################################
+@follows( overlappedGeneCAPseqProfile, controlGeneCAPseqProfile, mkdir("plots") )
+@merge("overlapped_genes/"+PARAMS["species"]+"_"+PARAMS["plots_fig4_tissue"]+"*.capseq_profile.counts.tsv.gz", "plots/"+PARAMS["species"]+"_"+PARAMS["plots_fig4_tissue"]+"_overlapped_genes_capseq_profile.pdf")
+def plotFigure4a( infiles, outfile):
+    '''Figure 4a: capseq profile over overlapped genes'''
+    overlapped,control = infiles
+    species = overlapped[0:2]
+    scriptsdir = PARAMS["scriptsdir"]
+    R('''source("%(scriptsdir)s/R/proj007/proj007.R") ''' % locals() )
+    R('''overlappedGenesProfilePlot(overlapped="%(overlapped)s", control="%(control)s", outfile="%(outfile)s", ylabel="NMIs")''' % locals() )
+
+############################################################
+@follows( overlappedGeneCAPseqProfile, controlGeneCAPseqProfile, mkdir("plots") )
+@merge("overlapped_genes/"+PARAMS["species"]+"_"+PARAMS["plots_fig4_tissue"]+"*.capseq_profile.counts.tsv.gz", "plots/"+PARAMS["species"]+"_"+PARAMS["plots_fig4_tissue"]+"_overlapped_genes_capseq_profile_smoothed.pdf")
+def plotFigure4aSmoothed( infiles, outfile):
+    '''Figure 4a: capseq profile over overlapped genes'''
+    overlapped,control = infiles
+    species = overlapped[0:2]
+    scriptsdir = PARAMS["scriptsdir"]
+    R('''source("%(scriptsdir)s/R/proj007/proj007.R") ''' % locals() )
+    R('''overlappedGenesSmoothedProfilePlot(overlapped="%(overlapped)s", control="%(control)s", outfile="%(outfile)s", ylabel="NMIs", smooth=0.5)''' % locals() )
+    
+############################################################
+@follows( overlappedGeneChromatinProfile, mkdir("plots") )
+@merge("overlapped_genes/"+PARAMS["species"]+"_"+PARAMS["plots_fig4_tissue"]+"*_"+PARAMS["plots_fig4_tissue"]+"*H3K27Me3*profile.counts.tsv.gz", "plots/"+PARAMS["species"]+"_"+PARAMS["plots_fig4_tissue"]+"_overlapped_genes_H3K27Me3_profile.pdf")
+def plotFigure4bK27( infiles, outfile):
+    '''Figure 4b: H3K27Me3 profile over overlapped genes'''
+    if len(infiles) > 0:
+        control,overlapped = infiles
+        scriptsdir = PARAMS["scriptsdir"]
+        R('''source("%(scriptsdir)s/R/proj007/proj007.R") ''' % locals() )
+        R('''overlappedGenesProfilePlot(overlapped="%(overlapped)s", control="%(control)s", outfile="%(outfile)s", ylabel="H3K27Me3")''' % locals() )
+
+############################################################
+@follows( overlappedGeneChromatinProfile, mkdir("plots") )
+@merge("overlapped_genes/"+PARAMS["species"]+"_"+PARAMS["plots_fig4_tissue"]+"*_"+PARAMS["plots_fig4_tissue"]+"*H3K27Me3*profile.counts.tsv.gz", "plots/"+PARAMS["species"]+"_"+PARAMS["plots_fig4_tissue"]+"_overlapped_genes_H3K27Me3_profile_smoothed.pdf")
+def plotFigure4bK27Smoothed( infiles, outfile):
+    '''Figure 4b: H3K27Me3 profile over overlapped genes'''
+    if len(infiles) > 0:
+        control,overlapped = infiles
+        scriptsdir = PARAMS["scriptsdir"]
+        R('''source("%(scriptsdir)s/R/proj007/proj007.R") ''' % locals() )
+        R('''overlappedGenesSmoothedProfilePlot(overlapped="%(overlapped)s", control="%(control)s", outfile="%(outfile)s", ylabel="H3K27Me3")''' % locals() )
+
+############################################################
+@follows( overlappedGeneChromatinProfileWide, mkdir("plots") )
+@merge("overlapped_genes/"+PARAMS["species"]+"_"+PARAMS["plots_fig4_tissue"]+"*_"+PARAMS["plots_fig4_tissue"]+"*H3K27Me3*profile.wide.counts.tsv.gz", "plots/"+PARAMS["species"]+"_"+PARAMS["plots_fig4_tissue"]+"_overlapped_genes_H3K27Me3_profile_wide_smoothed.pdf")
+def plotFigure4bK27WideSmoothed( infiles, outfile):
+    '''Figure 4b: H3K27Me3 profile over overlapped genes'''
+    if len(infiles) > 0:
+        control,overlapped = infiles
+        scriptsdir = PARAMS["scriptsdir"]
+        R('''source("%(scriptsdir)s/R/proj007/proj007.R") ''' % locals() )
+        R('''overlappedGenesSmoothedProfilePlot(overlapped="%(overlapped)s", control="%(control)s", outfile="%(outfile)s", ylabel="H3K27Me3")''' % locals() )
+        
+############################################################
+@follows( longIntervalGeneChromatinProfile, mkdir("plots") )
+@merge("long_intervals/"+PARAMS["species"]+"_"+PARAMS["plots_fig4_tissue"]+"*_"+PARAMS["plots_fig4_tissue"]+"*H3K27Me3*profile.counts.tsv.gz", "plots/"+PARAMS["species"]+"_"+PARAMS["plots_fig4_tissue"]+"_long_genes_H3K27Me3_profile.pdf")
+def plotFigure4bLongGenesK27( infiles, outfile):
+    '''Figure 4b: H3K27Me3 profile over overlapped genes'''
+    if len(infiles) > 0:
+        overlapped,longgenes,shortgenes = infiles
+        scriptsdir = PARAMS["scriptsdir"]
+        R('''source("%(scriptsdir)s/R/proj007/proj007.R") ''' % locals() )
+        R('''overlappedGenesProfilePlot(overlapped="%(longgenes)s", control="%(shortgenes)s", outfile="%(outfile)s", ylabel="H3K27Me3")''' % locals() )
+        
+############################################################
+@follows( overlappedGeneChromatinProfile, mkdir("plots") )
+@merge("overlapped_genes/"+PARAMS["species"]+"_"+PARAMS["plots_fig4_tissue"]+"*_"+PARAMS["plots_fig4_tissue"]+"-H3K4Me3*profile.counts.tsv.gz", "plots/"+PARAMS["species"]+"_"+PARAMS["plots_fig4_tissue"]+"_overlapped_genes_H3K4Me3_profile.pdf")
+def plotFigure4bK4( infiles, outfile):
+    '''Figure 4b: H3K4Me3 profile over overlapped genes'''
+    if len(infiles) > 0:
+        control,overlapped = infiles
+        scriptsdir = PARAMS["scriptsdir"]
+        R('''source("%(scriptsdir)s/R/proj007/proj007.R") ''' % locals() )
+        R('''overlappedGenesProfilePlot(overlapped="%(overlapped)s", control="%(control)s", outfile="%(outfile)s", ylabel="H3K4Me3")''' % locals() )
+
+############################################################
+@follows( overlappedGeneChromatinProfile, mkdir("plots") )
+@merge("overlapped_genes/"+PARAMS["species"]+"_"+PARAMS["plots_fig4_tissue"]+"*_"+PARAMS["plots_fig4_tissue"]+"-H3K4Me3*profile.counts.tsv.gz", "plots/"+PARAMS["species"]+"_"+PARAMS["plots_fig4_tissue"]+"_overlapped_genes_H3K4Me3_profile_smoothed.pdf")
+def plotFigure4bK4Smoothed( infiles, outfile):
+    '''Figure 4b: H3K4Me3 profile over overlapped genes'''
+    if len(infiles) > 0:
+        control,overlapped = infiles
+        scriptsdir = PARAMS["scriptsdir"]
+        R('''source("%(scriptsdir)s/R/proj007/proj007.R") ''' % locals() )
+        R('''overlappedGenesSmoothedProfilePlot(overlapped="%(overlapped)s", control="%(control)s", outfile="%(outfile)s", ylabel="H3K4Me3", smooth=0.3)''' % locals() )
+
+############################################################
+@follows( overlappedGeneChromatinProfile, mkdir("plots") )
+@merge("overlapped_genes/"+PARAMS["species"]+"_"+PARAMS["plots_fig4_tissue"]+"*_"+PARAMS["plots_fig4_tissue"]+"-H3K4Me3*profile.wide.counts.tsv.gz", "plots/"+PARAMS["species"]+"_"+PARAMS["plots_fig4_tissue"]+"_overlapped_genes_H3K4Me3_profile_wide_smoothed.pdf")
+def plotFigure4bK4WideSmoothed( infiles, outfile):
+    '''Figure 4b: H3K4Me3 profile over overlapped genes'''
+    if len(infiles) > 0:
+        control,overlapped = infiles
+        scriptsdir = PARAMS["scriptsdir"]
+        R('''source("%(scriptsdir)s/R/proj007/proj007.R") ''' % locals() )
+        R('''overlappedGenesSmoothedProfilePlot(overlapped="%(overlapped)s", control="%(control)s", outfile="%(outfile)s", ylabel="H3K4Me3")''' % locals() )
+
+############################################################
+@follows( longIntervalGeneChromatinProfile, mkdir("plots") )
+@merge("long_intervals/"+PARAMS["species"]+"_"+PARAMS["plots_fig4_tissue"]+"*_"+PARAMS["plots_fig4_tissue"]+"-H3K4Me3*profile.counts.tsv.gz", "plots/"+PARAMS["species"]+"_"+PARAMS["plots_fig4_tissue"]+"_long_genes_H3K4Me3_profile.pdf")
+def plotFigure4bLongGenesK4( infiles, outfile):
+    '''Figure 4b: H3K4Me3 profile over overlapped genes'''
+    if len(infiles) > 0:
+        overlapped,longgenes,shortgenes = infiles
+        scriptsdir = PARAMS["scriptsdir"]
+        R('''source("%(scriptsdir)s/R/proj007/proj007.R") ''' % locals() )
+        R('''overlappedGenesProfilePlot(overlapped="%(longgenes)s", control="%(shortgenes)s", outfile="%(outfile)s", ylabel="H3K4Me3")''' % locals() )
+                
+############################################################
+@follows( mkdir("plots") )
+@merge(getGenesetCapseqOverlapList, "plots/"+PARAMS["species"]+"_overlapped_genes_tissue_venn.pdf")
+def plotFigure4OverlappedGenesTissueVenn( infiles, outfile):
+    '''Figure 4: venn diagram of genes overlapped >90% in different tissues'''
+    inlist = "'"+"','".join(infiles)+"'"
+    print(inlist)
+    R('''library(VennDiagram) ''')
+    R('''inlist <- c(%(inlist)s)''' % locals() )
+    R('''x <- list()''' )
+    R('''listnames <- NULL''' )
+    R('''length(x) <- length(inlist)''')
+    R('''for ( i in 1:length(inlist)) { x[[i]] <- read.table(file=inlist[i], header=FALSE, stringsAsFactors=FALSE)[,1]; listnames <- c(listnames,inlist[i]); }''' % locals() )
+    R('''names(x) <- listnames''')
+    R('''pdf(file='%(outfile)s', height=8, width=8, onefile=TRUE, family='Helvetica', paper='A4', pointsize=12)''' % locals() )
+    R('''venn <- venn.diagram( x, filename=NULL, col="#58595B", alpha=0.75, cex=2.0, fontfamily="Helvetica", fontface="bold")''' % locals() )
+    R('''grid.draw(venn)''')
+    R('''dev.off()''')
+    
+    # Convert pdf to png for web
+    outfile2 = outfile.replace("pdf","png")
+    statement = '''convert %(outfile)s %(outfile2)s'''
+    P.run()
+
+############################################################
+@follows( mkdir("plots") )
+@merge(getLongIntervalGeneList, "plots/"+PARAMS["species"]+"_long_interval_genes_tissue_venn.pdf")
+def plotFigure4LongGenesTissueVenn( infiles, outfile):
+    '''Figure 4: venn diagram of genes overlapped >90% in different tissues'''
+    inlist = "'"+"','".join(infiles)+"'"
+    print(inlist)
+    R('''library(VennDiagram) ''')
+    R('''inlist <- c(%(inlist)s)''' % locals() )
+    R('''x <- list()''' )
+    R('''listnames <- NULL''' )
+    R('''length(x) <- length(inlist)''')
+    R('''for ( i in 1:length(inlist)) { x[[i]] <- read.table(file=inlist[i], header=FALSE, stringsAsFactors=FALSE)[,1]; listnames <- c(listnames,inlist[i]); }''' % locals() )
+    R('''names(x) <- listnames''')
+    R('''pdf(file='%(outfile)s', height=8, width=8, onefile=TRUE, family='Helvetica', paper='A4', pointsize=12)''' % locals() )
+    R('''venn <- venn.diagram( x, filename=NULL, col="#58595B", alpha=0.75, cex=2.0, fontfamily="Helvetica", fontface="bold")''' % locals() )
+    R('''grid.draw(venn)''')
+    R('''dev.off()''')
+    
+    # Convert pdf to png for web
+    outfile2 = outfile.replace("pdf","png")
+    statement = '''convert %(outfile)s %(outfile2)s'''
+    P.run()
+    
+############################################################
+@follows( mkdir("plots") )
+@transform(loadOverlappedGeneChromatinIntersection, regex(r"(\S+).stats.load"), "plots/"+PARAMS["species"]+"_overlapped_genes_h3k27me3_venn.log")
+def plotFigure4OverlappedGenesH3K27Me3Venn( infile, outfile):
+    '''Figure 4: venn diagram of genes overlapped >90% in different tissues'''
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    cc = dbhandle.cursor()
+    statement = '''select track, chromatin_track, total_merged_intervals, track_and_chromatin_track, track_only, chromatin_track_only
+                   from overlapped_genes_h3k27me3_venn''' % locals()
+    print statement
+    cc.execute( statement )
+    for venn in cc:
+        track, chromatin_track, total_merged_intervals, track_and_chromatin_track, track_only, chromatin_track_only = venn
+        track = track.replace("_",".").replace("-",".")
+        chromatin_track = chromatin_track.replace("_",".").replace("-",".")
+        track_total = int(track_and_chromatin_track)+int(track_only)
+        total_merged_intervals = int(total_merged_intervals)
+        track_only = int(track_only)
+        pdffile = "plots/"+track+"."+chromatin_track+".pdf"
+        R('''library(VennDiagram) ''')
+        R('''track <- seq(1,%(track_total)i)''' % locals() )
+        R('''chromatin_track <- seq(%(track_only)i,%(total_merged_intervals)i)''' % locals() )
+        R('''x <- list(%(track)s=track,%(chromatin_track)s=chromatin_track)'''  % locals() )
+        R('''pdf(file='%(pdffile)s', height=8, width=8, onefile=TRUE, family='Helvetica', paper='A4', pointsize=12)''' % locals() )
+        R('''venn <- venn.diagram( x, filename=NULL, col="#58595B", fill=c("#EC1C24","#69BC45"), alpha=0.75, label.col=c("darkred", "white", "darkgreen"), cex=2.0, fontfamily="Helvetica", fontface="bold")''' % locals() )
+        R('''grid.draw(venn)''')
+        R('''dev.off()''')
+    
+        # Convert pdf to png for web
+        pdffile2 = pdffile.replace("pdf","png")
+        statement = '''convert %(pdffile)s %(pdffile2)s'''
+        P.run()
+    statement = '''touch %(outfile)s'''
+    P.run()
+
+############################################################
+@follows( mkdir("plots") )
+@transform(loadLongGeneChromatinIntersection, regex(r"(\S+).stats.load"), "plots/"+PARAMS["species"]+"_long_interval_genes_h3k27me3_venn.log")
+def plotFigure4LongGenesH3K27Me3Venn( infile, outfile):
+    '''Figure 4: venn diagram of genes overlapped by NMIs ><3kb in length with H3K27Me3 intervals'''
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    cc = dbhandle.cursor()
+    statement = '''select track, chromatin_track, total_merged_intervals, track_and_chromatin_track, track_only, chromatin_track_only
+                   from long_intervals_h3k27me3_venn''' % locals()
+    print statement
+    cc.execute( statement )
+    for venn in cc:
+        track, chromatin_track, total_merged_intervals, track_and_chromatin_track, track_only, chromatin_track_only = venn
+        track = track.replace("_",".").replace("-",".")
+        chromatin_track = chromatin_track.replace("_",".").replace("-",".")
+        track_total = int(track_and_chromatin_track)+int(track_only)
+        total_merged_intervals = int(total_merged_intervals)
+        track_only = int(track_only)
+        pdffile = "plots/"+track+"."+chromatin_track+".pdf"
+        R('''library(VennDiagram) ''')
+        R('''track <- seq(1,%(track_total)i)''' % locals() )
+        R('''chromatin_track <- seq(%(track_only)i,%(total_merged_intervals)i)''' % locals() )
+        R('''x <- list(%(track)s=track,%(chromatin_track)s=chromatin_track)'''  % locals() )
+        R('''pdf(file='%(pdffile)s', height=8, width=8, onefile=TRUE, family='Helvetica', paper='A4', pointsize=12)''' % locals() )
+        R('''venn <- venn.diagram( x, filename=NULL, col="#58595B", fill=c("#EC1C24","#69BC45"), alpha=0.75, label.col=c("darkred", "white", "darkgreen"), cex=2.0, fontfamily="Helvetica", fontface="bold")''' % locals() )
+        R('''grid.draw(venn)''')
+        R('''dev.off()''')
+    
+        # Convert pdf to png for web
+        pdffile2 = pdffile.replace("pdf","png")
+        statement = '''convert %(pdffile)s %(pdffile2)s'''
+        P.run()
+    statement = '''touch %(outfile)s'''
+    P.run()
+                                    
 ############################################################
 ############################################################
 ############################################################
@@ -2485,50 +3951,81 @@ def publish_report(infile, outfile):
     cpg_density_dir = os.path.join(publish_dir, "cpg_density")
     length_dir = os.path.join(publish_dir, "length")
     long_interval_dir = os.path.join(publish_dir, "long_intervals")
+    liver_testes_dir = os.path.join(publish_dir, "liver_vs_testes")
+    fig_dir = os.path.join(publish_dir, "figures")
     working_dir = os.getcwd()
     capseq_dir = PARAMS["capseq_dir"]
     # create directories if they do not exist
     statement = '''[ -d %(report_dir)s ] || mkdir %(report_dir)s; 
                    [ -d %(bam_dir)s ] || mkdir %(bam_dir)s;
+                   [ -d %(bam_dir)s/merged ] || mkdir %(bam_dir)s/merged;
                    [ -d %(bed_dir)s ] || mkdir %(bed_dir)s;
                    [ -d %(bed_dir)s/no_input ] || mkdir %(bed_dir)s/no_input;
                    [ -d %(bed_dir)s/replicates ] || mkdir %(bed_dir)s/replicates;
                    [ -d %(bed_dir)s/tissue_specific ] || mkdir %(bed_dir)s/tissue_specific;
                    [ -d %(bed_dir)s/liver_vs_testes ] || mkdir %(bed_dir)s/liver_vs_testes;
                    [ -d %(wig_dir)s ] || mkdir %(wig_dir)s;
+                   [ -d %(wig_dir)s/merged ] || mkdir %(wig_dir)s/merged;
                    [ -d %(tss_dir)s ] || mkdir %(tss_dir)s;
                    [ -d %(tss_dist_dir)s ] || mkdir %(tss_dist_dir)s;
                    [ -d %(gc_dir)s ] || mkdir %(gc_dir)s;
                    [ -d %(cgi_dir)s ] || mkdir %(cgi_dir)s;
                    [ -d %(cpg_density_dir)s ] || mkdir %(cpg_density_dir)s;
                    [ -d %(length_dir)s ] || mkdir %(length_dir)s;
-                   [ -d %(long_interval_dir)s ] || mkdir %(long_interval_dir)s;'''
+                   [ -d %(long_interval_dir)s ] || mkdir %(long_interval_dir)s;
+                   [ -d %(liver_testes_dir)s ] || mkdir %(liver_testes_dir)s;
+                   [ -d %(fig_dir)s ] || mkdir %(fig_dir)s;
+                   [ -d %(fig_dir)s/Fig1 ] || mkdir %(fig_dir)s/Fig1;
+                   [ -d %(fig_dir)s/Fig2 ] || mkdir %(fig_dir)s/Fig2;
+                   [ -d %(fig_dir)s/Fig3 ] || mkdir %(fig_dir)s/Fig3;
+                   [ -d %(fig_dir)s/Fig4 ] || mkdir %(fig_dir)s/Fig4;'''
     statement += '''cp -rf report/html/* %(report_dir)s > %(outfile)s; '''
-    statement += '''cp -sn %(capseq_dir)s/bam/*.norm.bam %(bam_dir)s >> %(outfile)s;'''
-    statement += '''cp -sn %(capseq_dir)s/macs/with_input/*/*/*.wig.gz %(wig_dir)s >> %(outfile)s; '''
-    statement += '''cp -sn %(working_dir)s/*.replicated.bed %(bed_dir)s >> %(outfile)s;'''    
-    statement += '''cp -sn %(capseq_dir)s/intervals/*solo*.bed %(bed_dir)s/no_input >> %(outfile)s; ''' 
-    statement += '''cp -sn %(capseq_dir)s/intervals/*.merged.cleaned.bed %(bed_dir)s/replicates >> %(outfile)s; '''
-    statement += '''cp -sn %(capseq_dir)s/replicated_intervals/*.replicated.unique.bed %(bed_dir)s/tissue_specific >> %(outfile)s; '''
-    statement += '''cp -sn %(working_dir)s/tss-profile/*.tss-profile*.counts.tsv.gz %(tss_dir)s >> %(outfile)s; '''
-    statement += '''cp -sn %(working_dir)s/*.replicated.gc.export %(gc_dir)s >> %(outfile)s; ''' 
-    statement += '''cp -sn %(working_dir)s/tss/tss.gene.gc.export %(gc_dir)s/%(species)s.tss.gene.gc.export >> %(outfile)s; ''' 
-    statement += '''cp -sn %(working_dir)s/tss/tss.transcript.gc.export %(gc_dir)s/%(species)s.tss.transcript.gc.export >> %(outfile)s; '''
-    statement += '''cp -sn %(working_dir)s/cgi/cgi.gc.export %(gc_dir)s/%(species)s.cgi.gc.export >> %(outfile)s; ''' 
-    statement += '''cp -sn %(working_dir)s/*.replicated.cpg.export %(cgi_dir)s >> %(outfile)s; '''
-    statement += '''cp -sn %(working_dir)s/tss/tss.gene.cpg.export %(cgi_dir)s/%(species)s.tss.gene.cpg.export >> %(outfile)s; ''' 
-    statement += '''cp -sn %(working_dir)s/tss/tss.transcript.cpg.export %(cgi_dir)s/%(species)s.tss.transcript.cpg.export >> %(outfile)s; '''
-    statement += '''cp -sn %(working_dir)s/cgi/cgi.cpg.export %(cgi_dir)s/%(species)s.cgi.cpg.export >> %(outfile)s; ''' 
-    statement += '''cp -sn %(working_dir)s/*.replicated.cpg_density.export %(cpg_density_dir)s >> %(outfile)s; '''   
-    statement += '''cp -sn %(working_dir)s/tss/tss.gene.cpg_density.export %(cpg_density_dir)s/%(species)s.tss.gene.cpg_density.export >> %(outfile)s; ''' 
-    statement += '''cp -sn %(working_dir)s/tss/tss.transcript.cpg_density.export %(cpg_density_dir)s/%(species)s.tss.transcript.cpg_density.export >> %(outfile)s; '''
-    statement += '''cp -sn %(working_dir)s/cgi/cgi.cpg_density.export %(cpg_density_dir)s/%(species)s.cgi.cpg_density.export >> %(outfile)s; ''' 
-    statement += '''cp -sn %(working_dir)s/*.length %(length_dir)s >> %(outfile)s; ''' 
-    statement += '''cp -sn %(working_dir)s/*.gene.tss.distance %(tss_dist_dir)s >> %(outfile)s; '''     
-    statement += '''cp -sn %(working_dir)s/long_intervals/*.capseq_profile.counts.tsv.gz %(long_interval_dir)s >> %(outfile)s; '''
-    statement += '''cp -sn %(working_dir)s/long_intervals/*.profile.counts.tsv.gz %(long_interval_dir)s >> %(outfile)s; '''
-    statement += '''cp -sn %(working_dir)s/liver_vs_testes/*.liver.testes.unique.bed %(bed_dir)s/liver_vs_testes >> %(outfile)s; ''' 
- 
+    statement += '''cp -sf %(capseq_dir)s/bam/*.norm.bam* %(bam_dir)s >> %(outfile)s;'''
+    statement += '''cp -sf %(capseq_dir)s/merged_bams/*.merge.bam* %(bam_dir)s/merged >> %(outfile)s;'''
+    statement += '''cp -sf %(capseq_dir)s/macs/with_input/*/*/*.wig.gz %(wig_dir)s >> %(outfile)s; '''
+    statement += '''cp -sf %(capseq_dir)s/macs/merged/*/*/*.wig.gz %(wig_dir)s/merged >> %(outfile)s; '''
+    statement += '''cp -sf %(working_dir)s/*.replicated.bed %(bed_dir)s >> %(outfile)s;'''    
+    statement += '''cp -sf %(capseq_dir)s/intervals/*solo*.bed %(bed_dir)s/no_input >> %(outfile)s; ''' 
+    statement += '''cp -sf %(capseq_dir)s/intervals/*.merged.cleaned.bed %(bed_dir)s/replicates >> %(outfile)s; '''
+    statement += '''cp -sf %(capseq_dir)s/replicated_intervals/*.replicated.unique.bed %(bed_dir)s/tissue_specific >> %(outfile)s; '''
+    statement += '''cp -sf %(working_dir)s/tss-profile/*.tss-profile*.counts.tsv.gz %(tss_dir)s >> %(outfile)s; '''
+    statement += '''cp -sf %(working_dir)s/*.replicated.gc.export %(gc_dir)s >> %(outfile)s; ''' 
+    statement += '''cp -sf %(working_dir)s/tss/tss.gene.gc.export %(gc_dir)s/%(species)s.tss.gene.gc.export >> %(outfile)s; ''' 
+    statement += '''cp -sf %(working_dir)s/tss/tss.transcript.gc.export %(gc_dir)s/%(species)s.tss.transcript.gc.export >> %(outfile)s; '''
+    statement += '''cp -sf %(working_dir)s/cgi/cgi.gc.export %(gc_dir)s/%(species)s.cgi.gc.export >> %(outfile)s; ''' 
+    statement += '''cp -sf %(working_dir)s/*.replicated.cpg.export %(cgi_dir)s >> %(outfile)s; '''
+    statement += '''cp -sf %(working_dir)s/tss/tss.gene.cpg.export %(cgi_dir)s/%(species)s.tss.gene.cpg.export >> %(outfile)s; ''' 
+    statement += '''cp -sf %(working_dir)s/tss/tss.transcript.cpg.export %(cgi_dir)s/%(species)s.tss.transcript.cpg.export >> %(outfile)s; '''
+    statement += '''cp -sf %(working_dir)s/cgi/cgi.cpg.export %(cgi_dir)s/%(species)s.cgi.cpg.export >> %(outfile)s; ''' 
+    statement += '''cp -sf %(working_dir)s/*.replicated.cpg_density.export %(cpg_density_dir)s >> %(outfile)s; '''   
+    statement += '''cp -sf %(working_dir)s/tss/tss.gene.cpg_density.export %(cpg_density_dir)s/%(species)s.tss.gene.cpg_density.export >> %(outfile)s; ''' 
+    statement += '''cp -sf %(working_dir)s/tss/tss.transcript.cpg_density.export %(cpg_density_dir)s/%(species)s.tss.transcript.cpg_density.export >> %(outfile)s; '''
+    statement += '''cp -sf %(working_dir)s/cgi/cgi.cpg_density.export %(cpg_density_dir)s/%(species)s.cgi.cpg_density.export >> %(outfile)s; ''' 
+    statement += '''cp -sf %(working_dir)s/*.gene.tss.distance %(tss_dist_dir)s >> %(outfile)s; '''     
+    statement += '''cp -sf %(working_dir)s/long_intervals/*.capseq_profile.counts.tsv.gz %(long_interval_dir)s >> %(outfile)s; '''
+    statement += '''cp -sf %(working_dir)s/liver_vs_testes/*.liver.testes.unique.bed %(bed_dir)s/liver_vs_testes >> %(outfile)s; '''
+    statement += '''cp -sf %(working_dir)s/liver_vs_testes/*.length %(length_dir)s >> %(outfile)s; ''' 
+    # Export plots
+    statement += '''cp -sf %(working_dir)s/plots/*.nmi.cgi.venn.pdf %(fig_dir)s/Fig1 2>> %(outfile)s; '''
+    statement += '''cp -sf %(working_dir)s/plots/*.combined.*tss-profile.pdf %(fig_dir)s/Fig2 2>> %(outfile)s; '''
+    statement += '''cp -sf %(working_dir)s/plots/*.liver.testes.length.pdf %(fig_dir)s/Fig3 2>> %(outfile)s; '''
+    statement += '''cp -sf %(working_dir)s/plots/*liver.testes.intergenic.venn.pdf %(fig_dir)s/Fig3 2>> %(outfile)s; '''
+    statement += '''cp -sf %(working_dir)s/plots/*liver.testes.transcript.tss.venn.pdf %(fig_dir)s/Fig3 2>> %(outfile)s; '''
+    if len(PARAMS["bigwig_chromatin"]) > 0:
+        statement += '''cp -sf %(working_dir)s/plots/*unique_intervals_H3K4Me3_profile.pdf %(fig_dir)s/Fig3 2>> %(outfile)s; '''
+    if len(PARAMS["expression_rpkm"]) > 0:
+        statement += '''cp -sf %(working_dir)s/plots/*dx*.pdf %(fig_dir)s/Fig3 2>> %(outfile)s; '''
+    statement += '''cp -sf %(working_dir)s/plots/*overlapped_genes_capseq_profile*.pdf %(fig_dir)s/Fig4 2>> %(outfile)s; '''
+    if len(PARAMS["bigwig_chromatin"]) > 0:
+        statement += '''cp -sf %(working_dir)s/plots/*overlapped_genes_H3K27Me3_profile*.pdf %(fig_dir)s/Fig4 2>> %(outfile)s; '''
+        statement += '''cp -sf %(working_dir)s/plots/*overlapped_genes_H3K4Me3_profile*.pdf %(fig_dir)s/Fig4 2>> %(outfile)s; '''
+        statement += '''cp -sf %(working_dir)s/plots/*overlapped.genes*.pdf %(fig_dir)s/Fig4 2>> %(outfile)s; '''
+        
+    # species-specific datasets - chromatin plots
+    if len(PARAMS["bigwig_chromatin"]) > 0:
+        statement += '''cp -sf %(working_dir)s/liver_vs_testes/*H3K4Me3*profile*.tsv.gz %(liver_testes_dir)s 2>> %(outfile)s; '''
+        statement += '''cp -sf %(working_dir)s/long_intervals/*.profile.counts.tsv.gz %(long_interval_dir)s 2>> %(outfile)s; '''
+     
     P.run()
 
 ############################################################
@@ -2542,19 +4039,44 @@ def publish_report(infile, outfile):
          loadCapseqGeneTSSOverlapCount,
          annotateCapseqTranscriptTSSDistance,
          loadCapseqTranscriptTSSDistance,
+         exportCapseqTSSTranscriptList,
+         loadCapseqTSSTranscriptList,
          annotateCapseqGeneTSSDistance,
          loadCapseqGeneTSSDistance,
+         exportCapseqTSSGeneList,
+         loadCapseqTSSGeneList,
          exportCapseqTSSBed,
          exportCapseqIntergenicBed,
          getCapseqNoncodingTSSDistance,
          loadCapseqNoncodingTSSDistance,
-         exportCapseqTSSDistanceGeneList,
+         exportCapseqNoncodingTSSGeneList,
+         loadCapseqNoncodingTSSGeneList,
+         exportCapseqTranscriptTSSDistanceTranscriptList,
+         exportCapseqTranscriptTSSOverlapTranscriptList,
          runGenomicFeaturesGAT,
          loadGenomicFeaturesGAT )
 def capseqGeneset():
     '''Annoatate CAPseq intervals using a geneset specified in the ini file'''
     pass
 
+@follows( loadlncRNAs, 
+          getCapseqlncRNATSSDistance,
+          loadCapseqlncRNATSSDistance,
+          exportCapseqlncRNATSSGeneList,
+          loadCapseqlncRNATSSGeneList )
+def capseqlincRNA():
+    '''Annoatate CAPseq intervals using an external lincRNA bed file specified in the ini file'''
+    pass
+
+@follows( loadRNAseq,
+          getCapseqRNAseqTSSDistance,
+          loadCapseqRNAseqTSSDistance,
+          exportCapseqRNAseqTSSGeneList,
+          loadCapseqRNAseqTSSGeneList )    
+def capseqRNAseq():
+    '''Annoatate CAPseq intervals using an external RNAseq gtf specified in the ini file'''
+    pass
+    
 @follows(getReplicatedTranscriptTSSProfile,
          getReplicatedTranscriptTSSProfileCapseq,
          getReplicatedTranscriptTSSProfileNoCapseq,
@@ -2641,18 +4163,61 @@ def genesetTSSComposition():
     '''Annotate the nucleotide composition of the TSS of the supplied gene set'''
     pass
 
-# Section 6
+# Section 6a
 @follows( getLongIntervalGeneList,
          getShortIntervalGeneList,
          getLongIntervalGeneGTF,
          longIntervalGeneCAPseqProfile,
          shortIntervalGeneCAPseqProfile,
-         longIntervalGeneChromatinProfile, 
-         shortIntervalGeneChromatinProfile )
+         runGOLongGeneLists,
+         runGOSlimLongGeneLists,
+         loadLongGeneGo,
+         loadLongGeneGoslim )
 def longIntervals():
     '''Annotate long vs short CAPseq intervals'''
     pass
 
+# Section 6a - chromatin
+@follows( longIntervalGeneChromatinProfile, 
+         shortIntervalGeneChromatinProfile,
+         longGeneChromatinIntersection,
+         longGeneChromatinIntersectionStats,
+         loadLongGeneChromatinIntersection,
+         runLongGenesGAT,
+         loadLongGenesGAT )
+def longIntervalsChromatin():
+    '''Annotate long vs short CAPseq intervals'''
+    pass
+    
+# Section 6b
+@follows( annotateGenesetCapseqOverlap,
+         loadGenesetCapseqOverlap,
+         getGenesetCapseqOverlapList,
+         getGenesetCapseqOverlapControlList,
+         getOverlappedGeneGTF,
+         overlappedGeneCAPseqProfile,
+         controlGeneCAPseqProfile,
+         runGOOverlappedGeneLists,
+         runGOSlimOverlappedGeneLists,
+         loadOverlappedGeneGo,
+         loadOverlappedGeneGoslim,
+         clusterGOResults )
+def overlappedGenes():
+    '''Annotate long vs short CAPseq intervals'''
+    pass
+
+# Section 6b - chromatin
+@follows( overlappedGeneChromatinProfile,
+         overlappedGeneChromatinProfileWide,
+         overlappedGeneChromatinIntersection,
+         overlappedGeneChromatinIntersectionStats,
+         loadOverlappedGeneChromatinIntersection,
+         runOverlappedGenesGAT,
+         loadOverlappedGenesGAT )
+def overlappedGenesChromatin():
+    '''Annotate long vs short CAPseq intervals'''
+    pass
+        
 # Section 7
 @follows( liverTestesVenn,
          loadLiverTestesVenn,
@@ -2666,16 +4231,55 @@ def longIntervals():
          loadLiverTestesMergedGenesetOverlap,
          annotateLiverTestesMergedTranscriptTSSDistance,
          loadLiverTestesMergedTranscriptTSSDistance,
+         exportLiverTestesTSSTranscriptList,
+         loadLiverTestesTSSTranscriptList,
          annotateLiverTesteMergedComposition,
          loadLiverTesteMergedComposition,
          liverTestesTSSVenn,
          loadLiverTestesTSSVenn,
-         getPeakShapeLiverTestes,
+         getPeakShapeLiverTestesReads,
+         getPeakShapeLiverTestesCentre,
          liverTestesUniqueChromatinProfile,
-         exportLiverTestesSpecificCAPseqGenes )
+         exportLiverTestesSpecificCAPseqGenes,
+         exportLiverTestesSharedCAPseqGenes,
+         exportLiverTestesUniqueLength,
+         exportLiverTestesSharedLength )
 def liverTestes():
     '''Annotate liver vs testes specific CAPseq intervals'''
     pass
+
+# Section 8 
+@follows( plotFigure1b, 
+          plotFigure2b,
+          plotFigure3bTSSVenn, 
+          plotFigure3bIntergenicVenn,
+          plotFigure3Length, 
+          plotFigure3cH3K4Me3Testes,
+          plotFigure3cH3K4Me3Liver, 
+          plotFigure4a,
+          plotFigure4aSmoothed,
+          plotFigure4OverlappedGenesTissueVenn )
+def figures():
+    '''Plot paper figures in R'''
+    pass
+
+# Section 8 - histone plots
+@follows( plotFigure4bK27, 
+          plotFigure4bK27Smoothed,
+          plotFigure4bK4,
+          plotFigure4bK4Smoothed,
+          plotFigure4OverlappedGenesH3K27Me3Venn )
+def histoneFigures():
+    '''Plot paper figures in R'''
+    pass
+        
+# Section 8 - differential expression
+@follows( plotFigure3dxScatterRPKM, 
+          plotFigure3dxScatterReadCounts, 
+          plotFigure3dxBoxplotRPKM )
+def dxFigures():
+    '''Plot paper figures in R'''
+    pass    
 
 @follows( build_report, publish_report )
 def fullReport():
@@ -2683,6 +4287,7 @@ def fullReport():
     pass
 
 @follows( capseqGeneset,
+          capseqProfiles,
           capseqComposition,
           compareExternal,
           predictedCGIs,

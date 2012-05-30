@@ -361,6 +361,7 @@ class GeneCounter( IntervalsCounter ):
                  int resolution_downstream,
                  int extension_upstream = 0, 
                  int extension_downstream = 0,
+                 int scale_flanks = 0,
                  *args,
                  **kwargs ):
 
@@ -372,6 +373,7 @@ class GeneCounter( IntervalsCounter ):
         self.resolution_exons = resolution_exons
         self.resolution_upstream = resolution_upstream
         self.resolution_downstream = resolution_downstream
+        self.scale_flanks = scale_flanks
 
         for field, length in zip( 
             ("upstream", "exons", "downstream"),
@@ -389,6 +391,10 @@ class GeneCounter( IntervalsCounter ):
         contig = gtf[0].contig 
         exons = GTF.asRanges( gtf, "exon" )
         exon_start, exon_end = exons[0][0], exons[-1][1]
+        if self.scale_flanks > 0:
+            self.extension_downstream = (exon_end - exon_start)*self.scale_flanks
+            self.extension_upstream = (exon_end - exon_start)*self.scale_flanks
+            E.debug("scale flanks")
 
         upstream = [ ( max(0, exon_start - self.extension_upstream), exon_start ), ] 
         downstream = [ ( exon_end, exon_end + self.extension_downstream ), ]

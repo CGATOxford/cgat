@@ -212,7 +212,7 @@ Gene TSS
    :transform: histogram
    :groupby: all
    :xrange: 0,10000
-   :tf-range: 0,1000000,100
+   :tf-range: 1,1000000,100
    :tf-aggregate: normalized-total
    :yrange: 0,0.01
    :as-lines:

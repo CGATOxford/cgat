@@ -247,7 +247,7 @@ def loadGeneInformation( infile, outfile, only_proteincoding = False ):
     | python %(scriptsdir)s/gtf2gtf.py --sort=gene
     | python %(scriptsdir)s/gtf2tab.py --full --only-attributes -v 0
     | python %(toolsdir)s/csv_cut.py --remove exon_number transcript_id transcript_name protein_id
-    | hsort 1 | uniq 
+    | %(scriptsdir)s/hsort 1 | uniq 
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
               --index=gene_id 
               --index=gene_name 
@@ -503,6 +503,24 @@ def buildNonCodingExons( infile, outfile ):
     '''
     P.run()
 
+############################################################
+############################################################
+############################################################
+def buildLincRNAExons( infile, outfile ):
+    '''build a collection of transcripts from the LincRNA portion of the ENSEMBL gene set. All exons are kept '''
+
+    to_cluster = True
+    statement = '''
+    gunzip < %(infile)s 
+    | awk '$2 == "lincRNA"' 
+    | awk '$3 == "exon"' 
+    | grep -v "protein_coding"
+    | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
+    | python %(scriptsdir)s/gtf2gtf.py --remove-duplicates=gene --log=%(outfile)s.log 
+    | gzip > %(outfile)s
+    '''
+    P.run()
+    
 ############################################################
 ############################################################
 ############################################################
