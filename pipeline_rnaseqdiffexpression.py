@@ -495,7 +495,7 @@ def runCuffdiff( infiles, outfile ):
     else:
         mask_file = None
 
-    options = PARAMS["cuffdiff_options"] + "--library-type %s" % PARAMS["cufflinks_library_type"]
+    options = PARAMS["cuffdiff_options"] + " --library-type %s" % PARAMS["cufflinks_library_type"]
 
     Expression.runCuffdiff( bamfiles, 
                             design_file,

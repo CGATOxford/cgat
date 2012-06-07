@@ -936,7 +936,8 @@ def mapReadsWithBowtie( infiles, outfile ):
     to_cluster = True
     m = PipelineMapping.Bowtie( executable = P.substituteParameters( **locals() )["bowtie_executable"] )
     infile, reffile = infiles
-    bowtie_options = "%s --best --strata -a" % PARAMS["bowtie_options"] 
+    #IMS remove reporting options to the ini
+    #bowtie_options = "%s --best --strata -a" % PARAMS["bowtie_options"] 
     statement = m.build( (infile,), outfile ) 
     P.run()
 
@@ -1372,7 +1373,7 @@ def qc(): pass
 ###################################################################
 ## export targets
 ###################################################################
-@merge( (mapping, qc), "view_mapping.load" )
+@merge( (mapping, general_qc), "view_mapping.load" )
 def createViewMapping( infile, outfile ):
     '''create view in database for alignment stats.
 
@@ -1439,6 +1440,7 @@ def full(): pass
 def build_report():
     '''build report from scratch.'''
 
+    
     E.info( "starting documentation build process from scratch" )
     P.run_report( clean = True )
 
@@ -1448,7 +1450,8 @@ def build_report():
 @follows( mkdir( "report" ) )
 def update_report():
     '''update report.'''
-
+    
+       
     E.info( "updating documentation" )
     P.run_report( clean = False )
 
