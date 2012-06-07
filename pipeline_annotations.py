@@ -160,7 +160,7 @@ To run the example, simply unpack and untar::
 
    wget http://www.cgat.org/~andreas/sample_data/pipeline_annotations.tgz
    tar -xvzf pipeline_annotations.tgz
-   cd pipeline_annotations
+   cd pipeline_annotations.dir
    python <srcdir>/pipeline_annotations.py make full
 
 Code
@@ -184,6 +184,7 @@ import PipelineGeneset as PipelineGeneset
 import PipelineBiomart as PBiomart
 import PipelineDatabase as PDatabase
 import PipelineGO
+import Intervals
 
 ###################################################
 ###################################################
@@ -1001,6 +1002,7 @@ def buildGenomicFunctionalAnnotation( infiles, outfiles ):
                 contig, start, end, strand = gene2region[gene_id]
             except KeyError:
                 c.notfound += 1
+                continue
             outf.write( "\t".join( map(str, (contig, start, end, "%s:%s" % (db, go_id), 1, strand))  ) + "\n" )
             term2description["%s:%s" % (db, go_id)] = description
     outf.close()
@@ -1214,6 +1216,78 @@ def buildGenomeGCProfile( infile, outfile ):
     > %(outfile)s'''
     P.run()
 
+##################################################################
+##################################################################
+##################################################################
+## download GWAS data
+##################################################################
+if PARAMS["genome"].startswith("hg"):
+    @merge( None, "gwascatalog.txt" )
+    def downloadGWASCatalog( infile, outfile ):
+        '''download GWAS catalog.'''
+
+        if os.path.exists( outfile ):
+            os.path.remove(outfile)
+        statement = '''wget http://www.genome.gov/admin/gwascatalog.txt'''
+        P.run()
+        
+    @merge( downloadGWASCatalog, PARAMS["interface_gwas_bed"] )
+    def buildGWASTracks( infile, outfile ):
+        
+        reader = csv.DictReader( IOTools.openFile( infile ), dialect = "excel-tab" )
+        
+        tracks = collections.defaultdict( lambda : collections.defaultdict( list ) )
+
+        fasta = IndexedFasta.IndexedFasta( os.path.join( PARAMS["genome_dir"], PARAMS["genome"] + ".fasta" ) )
+        contigsizes = fasta.getContigSizes()
+        c = E.Counter()
+
+        for row in reader:
+            c.input += 1
+            contig, pos, snp, disease = row['Chr_id'], row['Chr_pos'], row['SNPs'], row['Disease/Trait'] 
+            if snp == "NR":             
+                c.skipped += 1
+                continue
+            
+            if pos == "":
+                c.no_pos += 1
+                continue
+
+            # translate chr23 to X
+            if contig == "23": contig = "X"
+
+            contig = "chr%s" % contig
+            
+            try:
+                tracks[disease][contig].append( int(pos) )
+            except ValueError:
+                print row
+            c.output += 1
+        
+        E.info( c )
+            
+        extension = PARAMS["gwas_extension"]
+
+        c = E.Counter()
+        outf = IOTools.openFile(outfile, "w" )
+        for disease, pp in tracks.iteritems():
+            
+            for contig, positions in pp.iteritems():
+                contigsize = contigsizes[contig]
+                regions = [ (max(0,x-extension), min( contigsize, x+extension)) for x in positions ]
+
+                regions = Intervals.combine( regions )
+                c[disease] += len(regions)
+
+                for start,end in regions:
+                    outf.write( "%s\t%i\t%i\t%s\n" % (contig, start, end, disease ) )
+                
+        outf.close()
+
+        outf = IOTools.openFile(outfile + ".log", "w" )
+        outf.write( "category\tcounts\n%s\n" % c.asTable() )
+        outf.close()
+        
 ##################################################################
 ##################################################################
 ##################################################################

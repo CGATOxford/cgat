@@ -119,13 +119,10 @@ class ExpressionHighestExpressedGenesDetailed( TrackerExpressionGeneset ):
         geneset = track[:track.index("_")]
         if c not in self.getColumns( table ): return None
         statement = '''SELECT tracking_id, gene_short_name, locus, source, class, sense, 
-                              %(slice)s_fpkm AS fpkm,
-                              mappability.median AS median_mappability
+                              %(slice)s_fpkm AS fpkm
                               FROM %(table)s,
-                              %(geneset)s_class AS class,
-                              %(geneset)s_mappability AS mappability
-                              WHERE tracking_id = class.transcript_id AND
-                                    tracking_id = mappability.transcript_id
+                              %(geneset)s_class AS class
+                              WHERE tracking_id = class.transcript_id 
                               ORDER BY %(slice)s_fpkm DESC LIMIT %(limit)i'''
         data = self.getAll( statement )
         data['tracking_id'] = [ linkToEnsembl( x ) for x in data["tracking_id"] ]

@@ -1260,7 +1260,7 @@ def clusterSimrelMatrix( matrix, terms, ancestors, p, counts, term2pvalue, go2in
             break
 
         nclusters = len(clusters)
-        if nclusters < options.max_clusters_threshold:
+        if nclusters <= options.min_clusters_threshold:
             E.debug("%i clusters reached at similarity %f - done" % (nclusters, simrel) )
             break
 
@@ -1360,7 +1360,7 @@ def main( argv ):
     parser = optparse.OptionParser( version = "%prog version: $Id$", 
                                     usage = globals()["__doc__"])
 
-    parser.add_option("-o", "--filename-ontology", dest="filename_ontology", type="string",
+    parser.add_option("-o", "--filename-ontology", dest="filename_obo", type="string",
                       help="filename with ontology information in obo-xml format. "
                       " The latest version can always be"
                       " retrieved at `wget http://archive.geneontology.org/latest-termdb/go_daily-termdb.obo-xml.gz`."
@@ -1387,8 +1387,8 @@ def main( argv ):
     parser.add_option( "--max-similarity", dest="max_simrel_threshold", type="float",
                       help="cluster until simrel threshold is achieved [default=%default]." )
 
-    parser.add_option( "--max-clusters", dest="max_clusters_threshold", type="float",
-                      help="cluster until at most # clusters remain [default=%default]." )
+    parser.add_option( "--min-clusters", dest="min_clusters_threshold", type="float",
+                      help="cluster only until at most # clusters remain [default=%default]." )
 
     parser.add_option( "--palette", dest="palette", type="choice",
                        choices=("rainbow", "gray", "blue-white-red",
@@ -1396,7 +1396,7 @@ def main( argv ):
                                 "hot", "hsv", "jet", "pink", "prism",
                                 "spring", "summer", "winter", "spectral",
                                 "RdBu", "RdGy", "BrBG", "BuGn", "Blues", "Greens", "Reds", "Oranges", "Greys" ),
-                       help="colour palette [default=%Default]")
+                       help="colour palette [default=%default]")
     
 
     parser.add_option( "--reverse-palette", dest="reverse_palette", action="store_true",
@@ -1416,7 +1416,7 @@ def main( argv ):
                          min_frequency = 0.05,
                          min_pvalue = 0.05,
                          min_child_threshold = 0.75,
-                         max_clusters_threshold = 10,
+                         min_clusters_threshold = 0,
                          palette = "RdBu",
                          reverse_palette = False,
                          )
@@ -1618,7 +1618,7 @@ def main( argv ):
         
         fn = buildFilename( test_ontology, "graph", "tsv.gz" )
         with IOTools.openFile( fn, "w") as outfile:
-            outfile.write("x\ty\tpvalue\tl2fold\tgoid\tdescription\n" )
+            outfile.write("goid\tx\ty\tpvalue\tl2fold\tdescription\n" )
             for term in terms:
                 outfile.write("%s\t%f\t%f\t%f\t%f\t%s\n" % \
                                   (term, 

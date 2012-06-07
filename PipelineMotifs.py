@@ -175,7 +175,7 @@ def writeSequencesForIntervals( track, filename,
                                 halfwidth = None,
                                 maxsize = None,
                                 proportion = None,
-                                masker = None,
+                                masker = [],
                                 offset = 0,
                                 shuffled = False,
                                 min_sequences = None ):
@@ -196,7 +196,7 @@ def writeSequencesForIntervals( track, filename,
     If proportion is set, only the top *proportion* intervals are output
     (sorted by peakval).
 
-    *masker* can be any of 
+    *masker* can be a combination of 
         * dust, dustmasker: apply dustmasker
         * softmask: mask softmasked genomic regions
 
@@ -231,7 +231,7 @@ def writeSequencesForIntervals( track, filename,
         cutoff = len(data)
         L.info( "writeSequencesForIntervals %s: using at most %i sequences for pattern finding" % (track, cutoff) )
 
-    L.info( "writeSequencesForIntervals %s: masker=%s" % (track,masker))
+    L.info( "writeSequencesForIntervals %s: masker=%s" % (track,str(masker)))
 
     fasta = IndexedFasta.IndexedFasta( os.path.join( PARAMS["genome_dir"], PARAMS["genome"]) )
 
@@ -267,7 +267,10 @@ def writeSequencesForIntervals( track, filename,
         
     c = E.Counter()
     outs = IOTools.openFile(filename, "w" )
-    for sequence, d in zip( maskSequences( sequences, masker ), data ):
+    for masker in masker:
+        sequences = maskSequences( sequences, masker )
+
+    for sequence, d in zip( sequences, data ):
         c.input += 1
         if len(sequence) == 0: 
             c.empty += 1 

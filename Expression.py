@@ -498,11 +498,39 @@ def loadTagData( tags_filename, design_filename ):
     R('''conds <- pheno2$group[ includedSamples ]''')
     R('''pairs = factor(pheno2$pair[ includedSamples ])''')
 
-    groups = R('''levels(groups)''')
-    pairs = R('''levels(pairs)''')
-
     E.info( "filtered data: %i observations for %i samples" % tuple( R('''dim(countsTable)''') ) )
 
+def filterTagData( min_sample_counts = 10):
+    '''filter tag data.'''
+    
+    # Remove windows with no data
+    R( '''max_counts = apply(countsTable,1,max)''' )
+    R( '''countsTable = countsTable[max_counts>0,]''')
+    E.info( "removed %i empty rows" % tuple( R('''sum(max_counts == 0)''') ) )
+    observations, samples = tuple( R('''dim(countsTable)'''))
+    E.info( "trimmed data: %i observations for %i samples" % (observations, samples ))
+
+    # remove samples without data
+    R('''max_counts = apply(countsTable,2,max)''' )
+    empty_samples = tuple(R('''max_counts < %i''' % min_sample_counts))
+    sample_names = R('''colnames(countsTable)''')
+    nempty_samples = sum( empty_samples)
+    if nempty_samples:
+        E.warn( "%i empty samples are being removed: %s" % \
+                    (nempty_samples, ",".join( [sample_names[x] for x,y in enumerate( empty_samples) if y]) ) )
+        R('''countsTable <- countsTable[, max_counts >= %i]''' % min_sample_counts)
+        R('''groups <- groups[max_counts >= %i]''' % min_sample_counts)
+        R('''pairs <- pairs[max_counts >= %i]''' % min_sample_counts)
+        observations, samples = tuple( R('''dim(countsTable)'''))
+
+    return observations, samples
+
+def groupTagData():
+    '''compute groups and pairs from tag data table.'''
+
+    groups = R('''levels(groups)''')
+    pairs = R('''levels(pairs)''')
+    
     # Test if replicates exist - at least to samples pre replicate
     min_per_group = R('''min(table(groups)) ''')[0]
     has_replicates = min_per_group >= 2
@@ -518,6 +546,7 @@ def loadTagData( tags_filename, design_filename ):
 
     return groups, pairs, has_replicates, has_pairs
 
+    
 def plotHeatmap( outfile ):
     '''plot a heatmap.'''
     
@@ -555,16 +584,33 @@ def runEdgeR( infile,
     
     # load library 
     R('''suppressMessages(library('edgeR'))''')
+
     to_cluster = True
 
-    groups, pairs, has_replicates, has_pairs = loadTagData( infile, design_file )
+    loadTagData( infile, design_file )
+
+    nobservations, nsamples = filterTagData()
+
+    if nobservations == 0:
+        E.warn( "no observations - no output" )
+        return
+
+    if nsamples == 0:
+        E.warn( "no samples remain after filtering - no output" )
+        return
+
+    groups, pairs, has_replicates, has_pairs = groupTagData()
+
+    sample_names = R('''colnames(countsTable)''')
+    E.info( "%i samples to test at %i observations: %s" % ( nsamples, nobservations,
+                                                            ",".join( sample_names)))
 
     # output heatmap plot
     plotHeatmap( '%(outfile_prefix)sheatmap.png' % locals() )
 
     E.info('running EdgeR: groups=%s, pairs=%s, replicates=%s, pairs=%s' % \
                (groups, pairs, has_replicates, has_pairs))
-
+    
     if has_pairs:
         # output difference between groups
         R.png( '''%(outfile_prefix)sbalance_groups.png''' % locals() )
@@ -590,6 +636,9 @@ def runEdgeR( infile,
             for g1, g2 in itertools.combinations(groups, 2 ):
                 key = "pair_%s_%s_vs_%s" % (pair, g1,g2)
                 legend.append( key )
+                print R('''colnames( countsTable) ''')
+                print R(''' pairs=='%s' ''' % pair)
+                print R(''' groups=='%s' ''' % g1)
                 R('''a = rowSums( countsTable[pairs == '%s' & groups == '%s'] ) ''' % (pair,g1) )
                 R('''b = rowSums( countsTable[pairs == '%s' & groups == '%s'] ) ''' % (pair,g2) )
                 R('''c = cumsum( sort(a - b) )''' )
@@ -615,7 +664,7 @@ def runEdgeR( infile,
                     
         R.ggsave( '''%(outfile_prefix)sbalance_pairs.png''' % locals() )
         R['dev.off']()
-    
+
     # build DGEList object
     R( '''countsTable = DGEList( countsTable, group = groups )''' )
 
@@ -627,13 +676,16 @@ def runEdgeR( infile,
     # Remove windows with few counts
     # R( '''countsTable = countsTable[rowSums( 
     #          1e+06 * countsTable$counts / 
-    #          expandAsMatrix ( countsTable$samples$lib.size, dim(countsTable)) > 1 ) >= 2, ]''')
+    #           expandAsMatrix ( countsTable$samples$lib.size, dim(countsTable)) > 1 ) >= 2, ]''')
 
     E.info( "trimmed data: %i observations for %i samples" % tuple( R('''dim(countsTable)''') ) )
 
     # output MDS plot
     R.png( '''%(outfile_prefix)smds.png''' % locals() )
-    R('''plotMDS( countsTable )''')
+    try:
+        R('''plotMDS( countsTable )''')
+    except rpy2.rinterface.RRuntimeError, msg:
+        E.warn( "can not plot mds: %s" % msg)
     R['dev.off']()
 
     # build design matrix
@@ -933,13 +985,23 @@ def runDESeq( infile,
     # load library 
     R('''suppressMessages(library('DESeq'))''')
 
-    groups, pairs, has_replicates, has_pairs = loadTagData( infile, design_file )
+    loadTagData( infile, design_file )
 
-    # Remove windows with no data
-    R( '''max_counts = apply(countsTable,1,max)''' )
-    R( '''countsTable = countsTable[max_counts>0,]''')
-    E.info( "removed %i empty rows" % tuple( R('''sum(max_counts == 0)''') ) )
-    E.info( "trimmed data: %i observations for %i samples" % tuple( R('''dim(countsTable)''') ) )
+    nobservations, nsamples = filterTagData()
+
+    if nobservations == 0:
+        E.warn( "no observations - no output" )
+        return
+
+    if nsamples == 0:
+        E.warn( "no samples remain after filtering - no output" )
+        return
+
+    groups, pairs, has_replicates, has_pairs = groupTagData()
+
+    sample_names = R('''colnames(countsTable)''')
+    E.info( "%i samples to test at %i observations: %s" % ( nsamples, nobservations,
+                                                            ",".join( sample_names)))
 
     ######## Run DESeq
     # Create Count data object
@@ -978,8 +1040,8 @@ def runDESeq( infile,
     # to output normalized data
     # R('''write.table( counts(cds, normalized=TRUE), file='%(outfile_prefix)scounts.tsv.gz', sep='\t') ''' % locals())
     # output counts
-    R('''write.table( counts(cds), file=gzfile('%(outfile_prefix)scounts.tsv.gz'), sep='\t') ''' % locals())    
-
+    R('''write.table( counts(cds), file=gzfile('%(outfile_prefix)scounts.tsv.gz'), sep='\t') ''' % locals())
+    
     # R.png( '''%(outfile_prefix)sscvplot.png''' % locals() )
     # R('''scvPlot( cds, ylim = c(0,3))''')
     # R['dev.off']()

@@ -392,7 +392,7 @@ def main():
 
         # remove columns that are completely empty
         if "pairs" in options.plot:
-            colsums = R.colSums( R.is_na(matrix ) )
+            colsums = R('''colSums( is.na(matrix ))''')
             take = [ x for x in range(len(colsums)) if colsums[x] != ndata ]
             if take:
                 E.warn( "removing empty columns %s before plotting" % str(take))

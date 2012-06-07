@@ -155,7 +155,7 @@ class VariantGetterVCF( VariantGetter ):
         self.vcf.connect( filename )
 
         if sample not in self.vcf.getsamples():
-            raise KeyError( "sample %s not in vcf file" )
+            raise KeyError( "sample %s not vcf file" % sample )
         
     def __call__(self, contig, start, end ):
         

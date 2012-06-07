@@ -149,7 +149,9 @@ import numpy
 import IndexedGenome
 import pysam
 
-def readIntervalsFromGFF( filename_gff, source, with_values = False, with_records = False, fasta = None, merge_genes = False, format = "gtf", use_strand = False ):
+def readIntervalsFromGFF( filename_gff, source, feature, 
+			  with_values = False, with_records = False, fasta = None, 
+			  merge_genes = False, format = "gtf", use_strand = False ):
     """read intervals from a file or list.
     """
 

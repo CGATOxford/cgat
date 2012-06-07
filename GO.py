@@ -412,7 +412,7 @@ class GOResult:
     mBackgroundCountsTotal = 0
     mProbabilityOverRepresentation = 0
     mProbabilityUnderRepresentation = 0
-    mPValue = 0
+    mPValue = 1.0
 
     def __init__(self, goid = None):
         self.mGOId = goid
@@ -1361,29 +1361,262 @@ def computeFDRs( go_results, options, test_ontology ):
         
     return fdrs, samples, method
 
+################################################################
+################################################################
+################################################################
 def getFileName( options, **kwargs ):
+    '''return a filename
+
+    Placeholders in filename are string-substituted with the 
+    dictionary in kwargs.
+    '''
     if options.output_filename_pattern:
         filename = options.output_filename_pattern % kwargs
         E.info( "output for section '%s' go to %s" % (kwargs.get("section", "unknown"), filename))
         outfile = IOTools.openFile(filename, "w", create_dir = True)
     else:
-        outfile = sys.stdout
+        outfile = options.stdout
 
     return outfile
 
-# output all significant results (if there is more than one gene set)
-def buildMatrix( results, valuef, dtype = numpy.float ):
-        
+################################################################
+################################################################
+################################################################
+def buildMatrix( results, valuef, dtype = numpy.float, default = 0 ):
+    '''build a matrix from a field in *results*
+
+    The value stored in the matrix is accessed via *valuef*.
+    '''
+
     row_headers = [ set( [x[0] for x in y ] ) for y in results ]
     row_headers = sorted( list( row_headers[0].union( *row_headers[1:] ) ) )
     map_row = dict( zip(row_headers, range(len(row_headers)) ) )
     matrix = numpy.zeros( (len(row_headers), len(results) ), dtype = dtype )
+    if default != 0: matrix[:] = default
+
     for col, pairs in enumerate(results):
         for row,v in pairs: 
             matrix[map_row[row]][col] = valuef( v )
 
     return matrix, row_headers
 
+################################################################
+################################################################
+################################################################
+def selectSignificantResults( pairs, fdrs, options ):
+    '''select a set of significant results.
+    '''
+
+    filtered_pairs = []
+    for k, v in pairs:
+
+        is_ok = False
+
+        pvalue = v.mPValue
+
+        if options.fdr:
+            (fdr, expfpos, pos) = fdrs[k]
+            if fdr < options.threshold: is_ok = True
+        else:
+            if pvalue < options.threshold: is_ok = True
+
+        if is_ok: filtered_pairs.append( (k,v) )
+
+    return filtered_pairs
+
+################################################################
+################################################################
+################################################################
+def outputMultipleGeneListResults( all_significant_results, 
+                                   all_genelists_with_results, 
+                                   test_ontology,
+                                   go2info,
+                                   options ):
+    '''select a set of significant results.
+    '''
+    
+    col_headers = all_genelists_with_results
+
+    assert len(col_headers) == len(all_significant_results)
+
+    # fold change matrix
+    matrix, row_headers = buildMatrix( all_significant_results, 
+                                       valuef = lambda x: math.log( x.mRatio + 0.00000001, 2 ),
+                                       dtype = numpy.float )
+
+    outfile = getFileName( options, 
+                           go = test_ontology,
+                           section = 'fold',
+                           set = 'all' )
+
+    IOTools.writeMatrix( outfile, matrix, row_headers, col_headers, row_header="category" )
+
+    outfile = getFileName( options, 
+                           go = test_ontology,
+                           section = 'fold',
+                           set = 'alldesc' )
+
+    IOTools.writeMatrix( outfile, matrix, 
+                         [ "%s:%s" % (x, go2info[x].mDescription) for x in row_headers], 
+                         col_headers, row_header="category" )
+
+    # pvalue matrix
+    matrix, row_headers = buildMatrix( all_significant_results, 
+                                       valuef = lambda x: int(-10 * math.log( x.mPValue,10)),
+                                       dtype = numpy.int )
+    outfile = getFileName( options, 
+                           go = test_ontology,
+                           section = 'pvalue',
+                           set = 'all' )
+    IOTools.writeMatrix( outfile, matrix, row_headers, col_headers, row_header="category" )
+
+    outfile = getFileName( options, 
+                           go = test_ontology,
+                           section = 'pvalue',
+                           set = 'alldesc' )
+    IOTools.writeMatrix( outfile, matrix,
+                         [ "%s:%s" % (x, go2info[x].mDescription) for x in row_headers], 
+                         col_headers, row_header="category" )
+
+
+def pairwiseGOEnrichment( results_per_genelist, labels, test_ontology, go2info, options ):
+    '''compute pairwise enrichment between sets.
+
+    The purpose of this method is to find if there are categories that are differently enriched
+    in a pair of gene lists.
+     
+    The appropriate test here is the Chi-Squared test. 
+
+    The assumption is that the background set is the same in all gene lists.
+
+    For each combination of two gene lists:
+        for each GO category:
+            get counts in foreground, total counts of foreground
+            compute chi-square enrichment output
+            save P-value
+        apply fdr - output significant differences.
+    '''
+    
+    dicts = [ dict(x) for x in results_per_genelist ]
+
+    PairResult = collections.namedtuple( "PairResult",
+                                         "goid set1 set2 counts1 total1 pvalue1 qvalue1 counts2 total2 pvalue2 qvalue2 pvalue qvalue description" )
+
+    outfile = getFileName( options, 
+                           go = test_ontology,
+                           section = 'summary',
+                           set = "pairs" )
+
+    outfile.write( "set1\tset2\ttotal1\ttotal2\tshared\tskipped\ttested\tsignificant\tinsignificant\n" )
+
+    results = []
+
+    total = len(dicts) * (len(dicts) -1) / 2 
+    
+    iteration = 0
+
+    min_observed_counts = options.pairs_min_observed_counts
+
+    for x, genelist1 in enumerate(dicts):
+        
+
+        x_go_categories = set( genelist1.keys() )
+        for y, genelist2 in enumerate( dicts[:x] ):
+
+            iteration += 1
+            if iteration % 10 == 0:
+                E.info( "iteration: %i/%i (%5.2f%%)" % (iteration, total, 100.0 * iteration / total) )
+
+            y_go_categories = set(genelist2.keys())
+            
+            shared = x_go_categories.intersection( y_go_categories )
+            
+            c = E.Counter()
+
+            for category in shared:
+                c.shared += 1
+                xx = genelist1[category]
+                yy = genelist2[category]
+
+                # discard all tests with few observations in the observed counts
+                if xx.mSampleCountsCategory < min_observed_counts and yy.mSampleCountsCategory < min_observed_counts:
+                    c.skipped += 1
+                    continue
+                
+                observed = (xx.mSampleCountsCategory, yy.mSampleCountsCategory)
+                fisher, pvalue = scipy.stats.fisher_exact( numpy.array( 
+                        ((xx.mSampleCountsCategory,
+                          yy.mSampleCountsCategory),
+                         (xx.mSampleCountsTotal - xx.mSampleCountsCategory,
+                          yy.mSampleCountsTotal - yy.mSampleCountsCategory  ))))
+                
+                if pvalue < 0.05:
+                    c.significant_pvalue += 1
+                else:
+                    c.insignificant_pvalue += 1
+
+                results.append( PairResult._make( (category,
+                                                   labels[x],
+                                                   labels[y],
+                                                   xx.mSampleCountsCategory, 
+                                                   xx.mSampleCountsTotal,
+                                                   xx.mPValue,
+                                                   xx.mQValue,
+                                                   yy.mSampleCountsCategory,
+                                                   yy.mSampleCountsTotal,
+                                                   yy.mPValue,
+                                                   yy.mQValue,
+                                                   pvalue,
+                                                   1.0,
+                                                   go2info[category].mDescription ) ) )
+
+            outfile.write( "\t".join( map(str,
+                                          (labels[x], labels[y],
+                                           len(x_go_categories),
+                                           len(y_go_categories),
+                                           c.shared,
+                                           c.skipped,
+                                           c.significant_pvalue,
+                                           c.insignicant_pvalue) ) ) + "\n" )
+    if options.output_filename_pattern:
+        outfile.close()
+
+    if options.fdr:
+        pvalues = [x.pvalue for x in results ]
+        
+        if options.qvalue_method == "storey":
+
+            # compute fdr via Storey's method
+            try:
+                fdr_data = Stats.doFDR( pvalues )
+
+            except ValueError, msg:
+                E.warn( "failure in q-value computation: %s" % msg )
+                E.warn( "reverting to Bonferroni correction" )
+                method = "bonf"
+                fdr_data = Stats.FDRResult()
+                l = float(len(pvalues))
+                fdr_data.mQValues = [ min(1.0, x * l) for x in pvalues ]
+
+            qvalues = fdr_data.mQValues 
+        else:
+            qvalues = R['p.adjust']( pvalues, method = options.qvalue_method )
+
+        # update qvalues
+        results = [ x._replace( qvalue = y ) for x,y in zip( results, qvalues ) ]
+
+    outfile = getFileName( options, 
+                           go = test_ontology,
+                           section = 'results',
+                           set = "pairs" )
+    
+    outfile.write( "\t".join( PairResult._fields) + "\n" )
+    for result in results:
+        outfile.write( "\t".join( map(str, result ) )+ "\n" )
+    
+    if options.output_filename_pattern:
+        outfile.close()
+    
 ##---------------------------------------------------------------------------    
 def main():
 
@@ -1482,6 +1715,7 @@ def main():
                          get_genes = None,
                          strict = False,
                          qvalue_method = "empirical",
+                         pairs_min_observed_counts = 3,
                          )
 
     (options, args) = E.Start( parser, add_mysql_options = True )
@@ -1588,7 +1822,8 @@ def main():
     ## get go categories for genes
     for test_ontology in options.ontology:
 
-        # store all significant results for aggregate output
+        # store results for aggregate output of multiple gene lists
+        all_results = []
         all_significant_results = []
         all_genelists_with_results = []
 
@@ -1751,35 +1986,39 @@ def main():
             ## calculate fdr for each hypothesis
             if options.fdr:
                 fdrs, samples, method  = computeFDRs( go_results, options, test_ontology )
+                for x,v in enumerate(pairs):
+                    v[1].mQValue = fdrs[v[0]][0]
             else:
                 fdrs, samples, method = {}, None
                 
             msgs.append( "fdr=%s" % method)
 
             if options.sort_order == "fdr":
-                pairs.sort( lambda x, y: cmp(fdrs[x[0]], fdrs[y[0]] ) )           
+                pairs.sort( lambda x, y: cmp(x[1].mQValue, y[1].mQValue))           
             elif options.sort_order == "ratio":
                 pairs.sort( lambda x, y: cmp(x[1].mRatio, y[1].mRatio))
             elif options.sort_order == "pvalue":
                 pairs.sort( lambda x, y: cmp(x[1].mPValue, y[1].mPValue))
 
             #############################################################
-            # output filtered results
-            filtered_pairs = []
+            #############################################################
+            #############################################################
+            ## output the full result
+            outfile = getFileName( options, 
+                                   go = test_ontology,
+                                   section = 'overall',
+                                   set = genelist_name )
 
-            for k, v in pairs:
+            outputResults( outfile, pairs, go2info, options, fdrs = fdrs, samples = samples )
 
-                is_ok = False
+            if options.output_filename_pattern:
+                outfile.close()
 
-                pvalue = v.mPValue
-
-                if options.fdr:
-                    (fdr, expfpos, pos) = fdrs[k]
-                    if fdr < options.threshold: is_ok = True
-                else:
-                    if pvalue < options.threshold: is_ok = True
-
-                if is_ok: filtered_pairs.append( (k,v) )
+            #############################################################
+            #############################################################
+            #############################################################
+            # filter significant results and output
+            filtered_pairs = selectSignificantResults( pairs, fdrs, options )
 
             nselected = len(filtered_pairs)
 
@@ -1799,23 +2038,15 @@ def main():
                 outfile.close()
 
             #############################################################
-            # add filtered results to full results
+            #############################################################
+            #############################################################
+            # save results for multi-gene-list analysis
+            all_results.append( pairs )
             all_significant_results.append( filtered_pairs )
             all_genelists_with_results.append( genelist_name )
 
             #############################################################
-            ## output the full result
-
-            outfile = getFileName( options, 
-                                   go = test_ontology,
-                                   section = 'overall',
-                                   set = genelist_name )
-
-            outputResults( outfile, pairs, go2info, options, fdrs = fdrs, samples = samples )
-
-            if options.output_filename_pattern:
-                outfile.close()
-
+            #############################################################
             #############################################################
             ## output parameters
             ngenes, ncategories, nmaps, counts_per_category = CountGO( gene2go )
@@ -1885,47 +2116,23 @@ def main():
                 outfile.close()
 
         if len(genelists) > 1:
-        
-            col_headers = all_genelists_with_results
 
-            assert len(col_headers) == len(all_significant_results)
+            ######################################################################
+            ######################################################################
+            ######################################################################
+            ## output various summary files
+            outputMultipleGeneListResults( all_significant_results, 
+                                           all_genelists_with_results, 
+                                           test_ontology, 
+                                           go2info,
+                                           options )
 
-            # fold change matrix
-            matrix, row_headers = buildMatrix( all_significant_results, 
-                                               valuef = lambda x: math.log( x.mRatio + 0.00000001, 2 ),
-                                               dtype = numpy.float )
 
-            outfile = getFileName( options, 
-                                   go = test_ontology,
-                                   section = 'fold',
-                                   set = 'all' )
-            IOTools.writeMatrix( outfile, matrix, row_headers, col_headers, row_header="category" )
-            
-            outfile = getFileName( options, 
-                                   go = test_ontology,
-                                   section = 'fold',
-                                   set = 'alldesc' )
-            IOTools.writeMatrix( outfile, matrix, 
-                                 [ "%s:%s" % (x, go2info[x].mDescription) for x in row_headers], 
-                                 col_headers, row_header="category" )
-
-            # pvalue matrix
-            matrix, row_headers = buildMatrix( all_significant_results, 
-                                               valuef = lambda x: int(-10 * math.log( x.mPValue,10)),
-                                               dtype = numpy.int )
-            outfile = getFileName( options, 
-                                   go = test_ontology,
-                                   section = 'pvalue',
-                                   set = 'all' )
-            IOTools.writeMatrix( outfile, matrix, row_headers, col_headers, row_header="category" )
-
-            outfile = getFileName( options, 
-                                   go = test_ontology,
-                                   section = 'pvalue',
-                                   set = 'alldesc' )
-            IOTools.writeMatrix( outfile, matrix,
-                                 [ "%s:%s" % (x, go2info[x].mDescription) for x in row_headers], 
-                                 col_headers, row_header="category" )
+            pairwiseGOEnrichment( all_results,
+                                  all_genelists_with_results,
+                                  test_ontology,
+                                  go2info,
+                                  options )
 
     E.Stop()
 

@@ -56,7 +56,6 @@ Code
 '''
 import os, sys, string, re, getopt, tempfile, optparse
 import Experiment
-import alignlib
 import AlignedPairs
 import Blat
 import FastaIterator

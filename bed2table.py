@@ -63,10 +63,6 @@ import Stats
 import SequenceProperties
 import Genomics
 import Intervals
-
-import bx.intervals.io
-import bx.intervals.intersection
-import alignlib
 import numpy
 import IndexedGenome
 import pysam

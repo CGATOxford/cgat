@@ -23,7 +23,7 @@ Context results
 
 The following table lists all genomic contexts that reads map to. 
 
-.. report:: Context.Summary
+.. report:: Context.ContextSummary
    :render: table
    :force:
 
@@ -37,14 +37,14 @@ until it is removed. The following plots and tables examine the number
 of intervals overlapping repetitive RNA. Repetetive RNA annotation is
 taken from the UCSC repeatmasker tracks.
 
-.. report:: Context.Summary
+.. report:: Context.ContextSummary
    :render: table
    :slices: total,RNA,rRNA,scRNA,snRNA,srpRNA,tRNA,ribosomal_coding
 
    Number of alignments that align to repetitive RNA annotations from 
    the UCSC repeatmasker track
 
-.. report:: Context.Summary
+.. report:: Context.ContextSummary
    :render: pie-plot
    :pie-first-is-total: notRNA
    :groupby: track
@@ -61,13 +61,13 @@ Protein coding genes
 The following plots list the number of alignments to protein coding and (protein coding) 
 pseudogene exons. The annotations are taken from the ENSEMBL gene set.
 
-.. report:: Context.Summary
+.. report:: Context.ContextSummary
    :render: table
    :slices: mapped,protein_coding,pseudogene
 
    Number of alignments that align to protein coding genes or pseudo genes.
 
-.. report:: Context.Summary
+.. report:: Context.ContextSummary
    :render: pie-plot
    :pie-first-is-total: genomic
    :groupby: track
