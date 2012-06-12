@@ -249,7 +249,7 @@ def getDirectoryNames(options_generator):
     get the names for the directories
     '''
     for options in options_generator:
-        yield "_".join(options.split(" "))
+        yield "_".join(options.split(" ")).replace("--", "")
 
 ###################################################################
 ###################################################################
@@ -259,7 +259,7 @@ def getLogFileNames(options_generator):
     get filenames for log files
     '''
     for options in options_generator:
-        yield "_".join(options.split(" ")) + ".log"
+        yield "_".join(options.split(" ")).replace("--", "") + ".log"
         
 ###################################################################
 ###################################################################
@@ -328,12 +328,16 @@ def createConfigFiles(infile, outfile):
     create all of the relevant .ini files in each working
     directory in order to execute the transcript building
     '''
-    # get the transcript building config file
-    transcript_build_ini = os.path.abspath(os.path.join(PARAMS["general_pipeline_rnaseqtranscripts_dir"],  "pipeline.ini"))
-
     # test options for cufflinks
-    cuff_options = " ".join(P.snip(infile, ".log").split("_"))
-
+    cuff_opts = P.snip(infile, ".log").split("_")
+    cuff_options = []
+    for opt in cuff_opts:
+        if len(opt)>4: # not ideal to do my length but all I can think of at the moment
+            cuff_options.append("--" + opt)
+        else:
+            cuff_options.append(opt)
+    cuff_options = " ".join(cuff_options)
+    
     # directory for output config
     outdir = P.snip(infile, ".log")
 
@@ -341,7 +345,7 @@ def createConfigFiles(infile, outfile):
     config_headers = []
     for line in open(glob.glob("*.ini")[0]).readlines():
         if line.find("[cufflinks]") != -1:
-            outf.write( "[cufflinks]\n\n# general cufflinks options\n\noptions=upper-quartile-norm %s\n" % cuff_options )
+            outf.write( "[cufflinks]\n\n# general cufflinks options\n\noptions=--upper-quartile-norm %s   \n" % cuff_options )
         else:
             outf.write(line)
     outf.close()
@@ -349,6 +353,7 @@ def createConfigFiles(infile, outfile):
 ###################################################################
 ###################################################################
 ###################################################################
+@follows(linkBamToWorkingDirs)
 @transform(createConfigFiles, regex(r"(\S+).ini"), r"\1.log")
 def executePipelineRnaseqTranscripts(infile, outfile):
     '''
@@ -359,13 +364,25 @@ def executePipelineRnaseqTranscripts(infile, outfile):
                    python %(scriptsdir)s/pipeline_rnaseqtranscripts.py -v5 -p10 make full'''
     P.run()
 
-#execute pipeline_rnaseqtranscripts.py in each of the directories
+###################################################################
+###################################################################
+###################################################################
+@files([os.path.join(PARAMS["general_pipeline_rnaseqtranscripts_dir"], x) for x in ["conf.py", "sphinxreport.ini"]]
+           , [os.path.join(directoryname, y) for directoryname, y in itertools.product (getDirectoryNames(options_generator(cufflinks_options)), ["conf.py", "sphinxreport.ini"])])
+def linkToPipelineRnaseqTranscriptsConfigFiles(infiles, outfiles):
+    '''
+    produces links to the configuration files for report building
+    '''
+    
+    
+    print infiles
+    print outfiles
 
 ###################################################################
 ###################################################################
 ###################################################################
-@files("in", "out")
-def full(infile, outfile):
+@follows(executePipelineRnaseqTranscripts)
+def full():
     pass
 
 if __name__== "__main__":

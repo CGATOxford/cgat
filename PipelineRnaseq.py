@@ -581,29 +581,29 @@ def filterAndMergeGTF( infile, outfile, remove_genes, merge = False ):
 
     if merge:
         statement = '''
-        %(main_scripts_dir)s/gff_sort pos < %(tmpfilename)s
+        %(scriptsdir)s/gff_sort pos < %(tmpfilename)s
         | python %(main_scripts_dir)s/gtf2gtf.py
             --unset-genes="NONC%%06i"
             --log=%(outfile)s.log
-        | python %(main_scripts_dir)s/gtf2gtf.py
+        | python %(scriptsdir)s/gtf2gtf.py
             --merge-genes
             --log=%(outfile)s.log
-        | python %(main_scripts_dir)s/gtf2gtf.py
+        | python %(scriptsdir)s/gtf2gtf.py
             --merge-exons
             --merge-exons-distance=5
             --log=%(outfile)s.log
-        | python %(main_scripts_dir)s/gtf2gtf.py
+        | python %(scriptsdir)s/gtf2gtf.py
             --renumber-genes="NONC%%06i"
             --log=%(outfile)s.log
-        | python %(main_scripts_dir)s/gtf2gtf.py
+        | python %(scriptsdir)s/gtf2gtf.py
             --renumber-transcripts="NONC%%06i"
             --log=%(outfile)s.log
-        | %(main_scripts_dir)s/gff_sort genepos 
+        | %(scriptsdir)s/gff_sort genepos 
         | gzip > %(outfile)s
         '''
     else:
         statement = '''
-        %(main_scripts_dir)s/gff_sort pos < %(tmpfilename)s
+        %(scriptsdir)s/gff_sort pos < %(tmpfilename)s
         | gzip > %(outfile)s
         '''
 
