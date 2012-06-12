@@ -149,15 +149,9 @@ import numpy
 import IndexedGenome
 import pysam
 
-def readIntervalsFromGFF( filename_gff, 
-                          source, 
-                          feature, 
-                          with_values = False, 
-                          with_records = False, 
-                          fasta = None, 
-                          merge_genes = False,
-                          format = "gtf",
-                          use_strand = False ):
+def readIntervalsFromGFF( filename_gff, source, feature, 
+			  with_values = False, with_records = False, fasta = None, 
+			  merge_genes = False, format = "gtf", use_strand = False ):
     """read intervals from a file or list.
     """
 
@@ -1425,6 +1419,484 @@ class ClassifierRNASeq(Counter):
     def __str__(self):
         return "\t".join( map(str, self.result) )
 
+##-----------------------------------------------------------------------------------
+class ClassifierRNASeqNew(Counter):
+    """This is IMSs new style transcript classifier. It aims to give classifications
+    that make more sense to biologist involved in splicing my using familier catagories.
+
+    classify RNASeq transcripts based on a reference annotation.
+
+    Transcripts are classified by checking overlap with all known
+    transcripts.
+
+    If multiple transcripts overlap, select the one that is best matching.
+
+    +--------------------+------------------------------------------------------------+
+    |*Labels*            |*Contents*                                                  |
+    +--------------------+------------------------------------------------------------+
+    |complete            |Intron chains in transcripts are identical                  |
+    |                    |                                                            |
+    +--------------------+------------------------------------------------------------+
+    |retained-intron     |All introns in test transcript are present in an existing   |
+    |                    |transcript , but not all introns between the start and end  |
+    |                    |co-ordinates of the test transcript are included            |
+    +--------------------+------------------------------------------------------------+
+    |extended            |Intron chain in the known transcripts is the same as the    |
+    |                    |predicted transcirpt between the strat and end of the       |
+    |                    |predicted transcript, but the first and/or last exon extends|
+    |                    |beyond the boundaries of the first/last included exon of the|
+    |                    |known transcirpt                                            |
+    +--------------------+------------------------------------------------------------+
+    |alternate-5prime    |All of the exon boundaries of the known transcirpt between  |
+    |alternate-3prime    |the start and end of the predicted transcirpt are shared    |
+    |novel-exon          |with the predicted transcript but the predicted transcript  |
+    |                    |contains extra boundaries                                   |
+    +--------------------+------------------------------------------------------------+
+    |skipped-exon        |All of the exon boundaries in the predicted transcript are  |
+    |                    |present in the known transcript, but the known transcript   |
+    |                    |contains boundaires that the predicted transcript does not  |
+    +--------------------+------------------------------------------------------------+
+    |alternative         |Known and predicted transcripts share at least one exon     |
+    |                    |boundary                                                    |
+    |                    |                                                            |
+    +--------------------+------------------------------------------------------------+
+    |unknown             |``predicted`` and ``known`` transcript overlap, but do not  |
+	|                    |fall in any of the above categories.                        |
+	|                    |                                                            |
+	+--------------------+------------------------------------------------------------+
+
+    Any of these forms can also exist as a -fragment. This means that the comparison
+	known and the predicted transcript did not make the criteria for a class, but the 
+	comparison of the predicted and the part of the known transcirpt bewteen the start and
+	end of the known transcript do. 
+
+	Furthermore, ``predicted`` transcripts that do not overlap the exons of a ``known`` 
+    transcript, but only introns, are classed as ``intronic``. All other transcripts
+    that overlap neither introns nor exons of a ``known`` transcript are labeled 
+    ``intergenic``.
+
+    If the ``known`` transcript is protein coding, the ``predicted`` transcript is further 
+    checked if it overlaps with the ``known`` UTR only. These transcripts are labelled ``utr5``
+    and ``utr3``.
+
+    Additionaly, the strandedness of the overlap is recorded as well (senes and antisense).
+
+    To decide, which transcript is the closest match, the resultant class are sorted as above 
+    in a priority list, where sense orientation has higher priority than anti-sense orientation.
+    For example, a ``predicted`` transcript will be rather labeled as ``sense intronic`` rather
+     than ``antisense fragment``.
+
+    """
+
+    header = [ "noverlap_transcripts", 
+               "noverlap_genes",
+               "match_transcript_id", "match_gene_id", "source", "class", "sense" ]
+
+    # number of residues that are permitted for negligible overlap
+    tolerance = 1
+
+    # size of flanking region
+    flank = 5000
+
+    # priority of classifications to select best match
+    priority = ( ( 's', "complete", ),
+				 ( 's', "fragment", ),
+				 ( 's', "extended", ),
+				 ( 's', "extended-fragment", ),
+				 ( 's', "retained-intron", ),
+				 ( 's', "retained-intron-fragment", ),
+				 ( 's', "skipped-exon" ,),
+				 ( 's', "novel-exon", ),
+				 ( 's', "alternate-5prime", ),
+				 ( 's', "alternate-3prime", ),
+				 ( 's', "alternate-exon", ),
+				 ( 's', "exon-boundary-change", ),
+				 ( 's', "skipped-exon-fragment", ),
+				 ( 's', "novel-exon-fragment", ),
+				 ( 's', "alternate-5prime-fragment", ),
+				 ( 's', "alternate-3prime-fragment", ),
+				 ( 's', "alternate-exon-fragment", ),
+				 ( 's', "exon-boundary-change-fragment", ),
+				 ( 's', "alternative", ),
+				 ( 's', "unknown", ),
+				 ( 's', "utr5", ),
+				 ( 's', "utr3", ),
+				 ( 's', "intronic", ),
+				 ( 's', "flank5", ),
+				 ( 's', "flank3", ),
+				 ( 's', "intergenic", ),
+				 ( 'n', "complete", ),
+				 ( 'n', "fragment", ),
+				 ( 'n', "extended-fragment", ),
+				 ( 'n', "retained-intron", ),
+				 ( 'n', "retained-intron-fragment", ),
+				 ( 'n', "skipped-exon" ,),
+				 ( 'n', "novel-exon", ),
+				 ( 'n', "alternate-5prime", ),
+				 ( 'n', "alternate-3prime", ),
+				 ( 'n', "alternate-exon", ),
+				 ( 'n', "exon-boundary-change", ),
+				 ( 'n', "skipped-exon-fragment", ),
+				 ( 'n', "novel-exon-fragment", ),
+				 ( 'n', "alternate-5prime-fragment", ),
+				 ( 'n', "alternate-3prime-fragment", ),
+				 ( 'n', "alternate-exon-fragment", ),
+				 ( 'n', "exon-boundary-change-fragment"),
+				 ( 'n', "alternative", ),
+				 ( 'n', "unknown", ),
+				 ( 'n', "utr5", ),
+				 ( 'n', "utr3", ),
+				 ( 'n', "intronic", ),
+				 ( 'n', "flank5", ),
+				 ( 'n', "flank3", ),
+				 ( 'n', "flank", ),
+				 ( 'n', "intergenic", ),
+				 ( 'a', "complete", ),
+				 ( 'a', "fragment", ),
+				 ( 'a', "extended-fragment", ),
+				 ( 'a', "retained-intron", ),
+				 ( 'a', "retained-intron-fragment", ),
+				 ( 'a', "skipped-exon" ,),
+				 ( 'a', "novel-exon", ),
+				 ( 'a', "alternate-5prime", ),
+				 ( 'a', "alternate-3prime", ),
+				 ( 'a', "alternate-exon", ),
+				 ( 'a', "exon-boundary-change", ),
+				 ( 'a', "skipped-exon-fragment", ),
+				 ( 'a', "novel-exon-fragment", ),
+				 ( 'a', "alternate-5prime-fragment", ),
+				 ( 'a', "alternate-3prime-fragment", ),
+				 ( 'a', "alternate-exon-fragment", ),
+				 ( 'a', "exon-boundary-change-fragment"),
+				 ( 'a', "alternative", ),
+				 ( 'a', "unknown", ),
+				 ( 'a', "utr5", ),
+				 ( 'a', "utr3", ),
+				 ( 'a', "intronic", ),
+				 ( 'a', "flank5", ),
+				 ( 'a', "flank3", ),     
+				 ( 'a', "intergenic", ) )
+
+    def __init__(self, filename_gff, *args, **kwargs ):
+
+        Counter.__init__(self, *args, **kwargs )
+
+        if len(filename_gff) != 1:
+            raise ValueError("expected only one gff file" )
+
+        E.info( "loading data from %s" % (filename_gff[0]) )
+
+        map_transcript2gene = {}
+        transcripts = {}
+        transcript_intervals = IndexedGenome.Quicksect()
+
+        f = IOTools.openFile( filename_gff[0]) 
+
+        for t in GTF.transcript_iterator(GTF.iterator( f )):
+            t.sort( key = lambda x: x.start )
+            transcript_id, gene_id = t[0].transcript_id, t[0].gene_id
+            map_transcript2gene[transcript_id] = gene_id
+            transcripts[transcript_id] = t
+            t = [x for x in t if x.feature == "exon"]
+            transcript_intervals.add( t[0].contig, t[0].start, t[-1].end, transcript_id )
+
+        f.close()
+
+        E.info( "loaded data from %s" % (filename_gff[0]) )
+
+        self.transcripts = transcripts
+        self.transcript_intervals = transcript_intervals
+        self.map_transcript2gene = map_transcript2gene
+        self.map_gene2transcripts = dict( [ (y,x) for x,y in map_transcript2gene.iteritems() ] )
+
+        self.mapClass2Priority = dict( [(y,x) for x,y in enumerate(self.priority) ] )
+
+    def get_sense( self, strand, transcript_strand):
+        '''encode sense as (s)ense, (a)ntisense and (n)ot available'''
+        
+        if strand == "." or transcript_strand == ".": sense = "n"
+        elif strand == transcript_strand: sense = "s"
+        else: sense = "a"
+        return sense
+
+
+    def classify_nonoverlap( self, exons ):
+        '''classify_nonoverlapping transcripts.'''
+        
+        contig = self.getContig()
+        strand = self.getStrand()
+        start, end = exons[0][0], exons[-1][1]
+
+        # get closest gene upstream and downstream
+        before = self.transcript_intervals.before( contig, start, end, num_intervals = 1, max_dist = self.flank )
+        after = self.transcript_intervals.after( contig, start, end, num_intervals = 1, max_dist = self.flank )
+
+        # convert to id, distance, is_before
+        associated = []
+        if before:
+            d = before[0]
+            associated.append( (d[2], start - d[1], True ) )
+            
+        if after:
+            d = after[0]
+            associated.append( (d[2], d[0] - end, False ) )
+                
+        results = []
+
+        for transcript_id, distance, is_before in associated:
+            transcript_strand = self.transcripts[transcript_id][0].strand
+            sense = self.get_sense( strand, transcript_strand )
+
+            if transcript_strand == "+":
+                if is_before: cls = "flank3"            
+                else: cls = "flank5"
+            elif transcript_strand == "-":
+                if is_before: cls = "flank5"
+                else: cls = "flank3"
+            else:
+                cls= "flank"
+                
+            results.append( (cls, sense, transcript_id ) )
+
+        if len(results) == 0:
+            results.append( ("intergenic", "n", "" ) )
+
+        return results
+
+    def classify_overlap( self, exons, transcript_id ):
+        '''classify overlapping transcripts.'''
+
+        introns = Intervals.complement( exons )
+        strand = self.getStrand()
+        lexons = Intervals.getLength( exons )
+
+        start, end = exons[0][0], exons[-1][1]
+
+        gtfs = self.transcripts[transcript_id]
+        transcript_strand = gtfs[0].strand
+        transcript_exons = [ (x.start, x.end) for x in gtfs if x.feature == "exon" ]
+        transcript_start, transcript_end = transcript_exons[0][0], transcript_exons[-1][1]
+        transcript_lexons = Intervals.getLength( transcript_exons )
+        transcript_introns = Intervals.complement( transcript_exons )
+        transcript_lintrons = Intervals.getLength( transcript_introns )
+
+        tolerance = self.tolerance
+
+        # check if transcript purely intronic
+        overlap_exons = Intervals.calculateOverlap( exons, transcript_exons )
+
+        if overlap_exons == 0: is_intronic = True
+        else: is_intronic = False
+
+        # determine sense-ness
+        # if no strand is given, set to sense 
+        if strand == "." or transcript_strand == ".": sense = True
+        else: sense = strand == transcript_strand
+
+        cls = "unclassified"
+
+        if is_intronic:
+            cls = "intronic"
+        else:
+            # count (exactly) shared introns
+            shared_introns = [ x for x in introns if x in transcript_introns ]
+
+            # count shared boundaries
+            boundaries = sorted([ (x[0] - tolerance, x[0] + tolerance) for x in introns ] + 
+                                [ (x[1] - tolerance, x[1] + tolerance) for x in introns ])
+            transcript_boundaries = sorted([ (x[0], x[0] + 1) for x in transcript_introns ] + 
+                                           [ (x[1], x[1] + 1) for x in transcript_introns ])
+            shared_boundaries = Intervals.intersect( boundaries, transcript_boundaries )
+        
+
+            # if there are no introns, matched_structure will be True
+            if len(exons) == 1 and len(transcript_exons) == 1:
+                matched_structure = approx_structure = True
+            elif len(exons) == 1:
+                matched_structure = False
+                approx_structure = False
+            else:
+				# IMS structure is an exact match if and only if all intron boundaries in both exons and 
+				# transcripts are shared. This allows extensions of the 3' or 5' UTRs.
+                matched_structure = len(shared_introns) == len(introns)
+                approx_structure = len(shared_boundaries) > 0
+             
+
+            included_exons = [x for x in transcript_exons if x[1] > start and x[0] < end ]
+            included_transcript_introns = [x for x in transcript_introns if x[0] > start and x[1] <= end]
+            included_boundaries = sorted([ (x[0], x[0] + 1) for x in included_transcript_introns ] + 
+										 [ (x[1], x[1] + 1) for x in included_transcript_introns ])
+            shared_included_boundaries = Intervals.intersect( boundaries, included_boundaries )
+            
+			# If there is a matched structure, i.e. all of the introns in the gene model are in an existing gene
+			# model, then either we have a fragment of the complete transcript or some sort of retain intron 
+			# (or both)
+            #if matched_structure and abs(overlap_exons - transcript_lexons) < tolerance:
+            if matched_structure and len(shared_introns) == len(transcript_introns):
+                cls = "complete"
+            elif matched_structure:
+                shared_included = [x for x in introns if x in included_transcript_introns]
+
+                cls = []
+
+                if not len(shared_included) == len(included_transcript_introns):   
+                    cls.append("retained-intron")
+                elif start < included_exons[0][0] or end > included_exons[-1][1]:
+                    cls.append("extended")
+                    
+                if (Intervals.calculateOverlap([boundaries[0]], transcript_boundaries[1:]) > 0 or
+                    Intervals.calculateOverlap([boundaries[-1]], transcript_boundaries[:-2]) > 0):
+                
+                    cls.append("fragment")
+                
+                cls = "-".join(cls)         
+                
+            #elif approx_structure and len(exons) > 1 and abs(overlap_exons - transcript_lexons) < tolerance:
+            #    cls = "complete"
+
+        
+            elif approx_structure and (len(shared_included_boundaries) == len(included_boundaries) and
+                  len(shared_included_boundaries) < len(boundaries)):
+                #there are boundaries present in the test model that are not present in the transcript 
+                #therefore there is a novel exon. Could be fragement or complete.
+                
+                if (Intervals.calculateOverlap([exons[0]],transcript_exons) == 0):
+                    cls = "alternate-5prime"
+                
+                    if len(Intervals.intersect([boundaries[-1]], transcript_boundaries[0:-1])) > 0 :
+                    # is a fragment if the final boundary is in the transcript but isn't its final one.
+                        cls = cls + "-fragment"
+                    if not len(boundaries) == len(shared_included_boundaries) + 1:
+                        cls = "alternative"
+                elif (Intervals.calculateOverlap([exons[-1]],transcript_exons) == 0):
+                    cls = "alternate-3prime"
+                    if len(Intervals.intersect([boundaries[-1]], transcript_boundaries[2:])) > 0:
+                        #is a fragment if the first boundary is in the transcript but is the first one.
+                        cls = cls + "-fragment"
+                    if not len(boundaries) == len(shared_included_boundaries) + 1:
+                        cls = "alternative"
+                elif len(shared_boundaries) == len(transcript_boundaries) and len(shared_boundaries) < len (boundaries):
+                    cls = "novel-exon"
+                else:
+                    cls = "novel-exon-fragment"
+                
+            elif approx_structure and (len(shared_included_boundaries) == len (boundaries) and 
+                  len(shared_included_boundaries) < len (included_boundaries)):
+                #there are boundaries in the transcript that are not in the test model. There for an exon has been 
+                #skipped. Could be fragment or complete.
+                if (Intervals.calculateOverlap([boundaries[0]],[transcript_boundaries[0]]) > 0 and
+                    Intervals.calculateOverlap([boundaries[-1]],[transcript_boundaries[-1]]) > 0):
+                    cls = "skipped-exon"
+                else:
+                    cls = "skipped-exon-fragment"
+                
+            elif approx_structure and (len(Intervals.combine(exons + included_exons)) == len(exons) and
+                  len(Intervals.combine(exons + included_exons)) == len(included_exons)):
+                #same exons exist in each (where two exons are the "same" exon if they overlap with each other, but
+                #only each other).
+                cls = "exon-boundary-change"
+                if not (len(Intervals.combine(exons + transcript_exons)) == len (exons) and
+                        len(Intervals.combine(exons + transcript_exons)) == len (transcript_exons)):
+                    cls = cls +"-fragment"
+
+            elif approx_structure and (len(Intervals.combine(exons + included_exons)) == len(exons) +1 and
+                                       len(Intervals.combine(exons + included_exons)) == len(included_exons)+1):
+                #there is exactly one exon in test model that is not in transcript and vice versa
+                cls = "alternate-"
+                if (Intervals.calculateOverlap([exons[0]], transcript_exons) == 0):
+                    if len(boundaries) == len(shared_boundaries) + 1:
+                        cls = cls + "5prime"
+                    else:
+                        cls = "alternative"
+
+                elif (Intervals.calculateOverlap([exons[-1]], transcript_exons) == 0):
+                    if len(boundaries) == len(shared_boundaries) +1:
+                        cls = cls + "3prime"
+                    else:
+                        cls = "alternative"
+                elif len(boundaries) == len(shared_boundaries) +2:
+                    cls = cls + "exon"
+                else:
+                    cls = "alternative"
+                    
+
+                if len(Intervals.intersect([boundaries[-1]], transcript_boundaries[0:-1])) > 0 :
+                    # is a fragment if the final boundary is in the transcript but isn't its final one.
+                    cls = cls + "-fragment"
+                elif len(Intervals.intersect([boundaries[-1]], transcript_boundaries[2:])) > 0:
+                    #is a fragment if the first boundary is in the transcript but is the first one.
+                    cls = cls + "-fragment"
+                if cls == "alternative-fragment":
+                    cls = "alternative"
+
+            elif approx_structure:
+                cls = "alternative"
+
+            elif overlap_exons == lexons:
+                cls = "fragment"
+            else:
+                cls = "unknown"
+
+        transcript_cds = [ (x.start, x.end) for x in gtfs if x.feature == "CDS" ]
+        transcript_lcds = Intervals.getLength( transcript_cds )
+        # intersect with CDS
+        if len(transcript_cds) > 0:
+            overlap_cds = Intervals.calculateOverlap( transcript_cds, exons )                
+            # if no overlap with CDS, check for UTR ovelap
+            if overlap_cds < tolerance:
+                utrs = Intervals.truncate( transcript_exons, transcript_cds )
+                cds_start,cds_end = transcript_cds[0][0], transcript_cds[-1][1]
+                utr5 = [ x for x in utrs if x[1] <= cds_start ]
+                utr3 = [ x for x in utrs if x[0] >= cds_end ]
+                if strand == "-": utr5, utr3= utr3, utr5
+                overlap_utr5 = Intervals.calculateOverlap( utr5, exons )
+                overlap_utr3 = Intervals.calculateOverlap( utr3, exons )
+                if overlap_utr5 > 0:
+                    cls = "utr5"
+                elif overlap_utr3 > 0:
+                    cls = "utr3"
+            
+        return cls, self.get_sense( strand, transcript_strand )
+
+    def count(self):
+
+        contig = self.getContig()
+        segments = self.getSegments()
+        introns = self.getIntrons()
+        try:
+            overlaps = list(self.transcript_intervals.get( contig, segments[0][0], segments[-1][1] ))
+        except KeyError, msg:
+            E.warn( "failed lookup of interval %s:%i-%i: '%s'" % (contig, segments[0][0], segments[-1][1], msg) )
+            self.skip = True
+            return
+
+        noverlap_transcripts = len(overlaps)
+        noverlap_genes = len( set( [self.map_transcript2gene[transcript_id] for start,end,transcript_id in overlaps] ) )
+
+        results = []
+        
+        if len(overlaps) == 0:
+            for cls, sense, transcript_id in self.classify_nonoverlap( segments ):
+                if transcript_id != "":
+                    source = self.transcripts[transcript_id][0].source
+                    gene_id = self.map_transcript2gene[transcript_id]
+                else:
+                    source, gene_id = "", ""
+                results.append( (self.mapClass2Priority[(sense,cls)], 
+                                 ( 0, 0, transcript_id, gene_id, source, cls, sense ) ) )
+        else:
+            for start, end, transcript_id in overlaps:
+                cls, sense = self.classify_overlap(segments, transcript_id) 
+                source = self.transcripts[transcript_id][0].source
+                gene_id = self.map_transcript2gene[transcript_id]
+                results.append( (self.mapClass2Priority[(sense,cls)], 
+                                 ( noverlap_transcripts, noverlap_genes, transcript_id, gene_id, source, cls, sense ) ) )
+        
+        results.sort()
+        self.result = results[0][1]
+
+    def __str__(self):
+        return "\t".join( map(str, self.result) )
 ##-----------------------------------------------------------------------------------
 class ClassifierIntervals(CounterOverlap):
     """classify transcripts based on a list of intervals.
@@ -3105,6 +3577,7 @@ def main( argv = None ):
                                "classifier", 
                                "classifier-chipseq",
                                "classifier-rnaseq",
+			       "classifier-rnaseq-new",
                                "overlap-stranded",
                                "overlap-transcripts",
                                "read-coverage", 
@@ -3300,7 +3773,10 @@ def main( argv = None ):
             counters.append( ClassifierRNASeq( filename_gff = options.filename_gff,
                                                fasta = fasta,
                                                options = options, prefix = prefix) )
-
+        elif c == "classifier-rnaseq-new":
+            counters.append( ClassifierRNASeqNew (filename_gff = options.filename_gff,
+				   		  fasta = fasta,
+				   		  options = options, prefix = prefix) )
         elif c == "classifier-polii":
             counters.append( ClassifierPolII( filename_gff = options.filename_gff,
                                               feature = None,
@@ -3356,3 +3832,6 @@ def main( argv = None ):
 
 if __name__ == "__main__":
 	sys.exit( main( sys.argv) )
+
+
+

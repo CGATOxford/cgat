@@ -65,7 +65,7 @@ print list of all transcripts within a gene.
 
 # add links between genes
 
-import Experiment
+import Experiment as E
 
 ##------------------------------------------------------------
 if __name__ == '__main__':
@@ -78,7 +78,7 @@ if __name__ == '__main__':
     parser.set_defaults( separator = "|",
                          restrict_quality = None )
 
-    options, args = Experiment.Start( parser )
+    options, args = E.Start( parser )
 
     if options.restrict_quality: options.restrict_quality = set(options.restrict_quality.split(","))
 
@@ -126,8 +126,7 @@ if __name__ == '__main__':
 
     print_lines( lines )
     
-    if options.loglevel >= 1:
-        options.stdlog.write( "# ninput=%i, noutput=%i, nskipped=%i, nerrors=%i\n" % (ninput, noutput, nskipped, nerrors) )
+    E.info( "ninput=%i, noutput=%i, nskipped=%i, nerrors=%i" % (ninput, noutput, nskipped, nerrors) )
 
-Experiment.Stop()
+    E.Stop()
 

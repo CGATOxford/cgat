@@ -50,23 +50,24 @@ class TrackerFastQC( ReadqcTracker ):
         link_text = []
         
         tracks = sorted( [x.asFile() for x in TRACKS ] )
-        
+        print tracks
+        print "hello"
         for track in tracks:
             
-            for x, fn in enumerate( glob.glob( os.path.join( EXPORTDIR, "fastqc", "%s*_fastqc" % track ) )):
+              for x, fn in enumerate( glob.glob( os.path.join( EXPORTDIR, "fastqc", "%s*_fastqc" % track ) )):
                 y = x + 1
                 toc_text.append( "* %(track)s-%(y)i_" % locals()) 
                 link_text.append( ".. _%(track)s-%(y)i: %(fn)s/fastqc_report.html" % locals() )
-            
+        
+        print toc_text
         toc_text = "\n".join(toc_text)
+        print toc_text
+        print link_text
         link_text =  "\n".join(link_text)
+        print link_text
+        rst_text = "\n%(toc_text)s\n\n%(link_text)s\n" % locals()
 
-        rst_text = '''
-%(toc_text)s
-
-%(link_text)s
-''' % locals()
-
+        print rst_text
         return odict( (("text", rst_text),) )
     
 
@@ -105,14 +106,15 @@ class FastQCDetails( ReadqcTracker ):
         
         for track in tracks:
             
-            for x, fn in enumerate( glob.glob( os.path.join( EXPORTDIR, "fastqc", "%s*_fastqc" % track ) )):
+            files = glob.glob( os.path.join( EXPORTDIR, "fastqc", "%s*_fastqc" % track ) )
+            for x, fn in enumerate( sorted(files) ):
                 y = x + 1
                 
                 image = os.path.abspath(os.path.join( fn, "Images", "%s.png" % slice ))
                 if not os.path.exists( image ): continue
 
                 blocks.append( ResultBlock( text = block % locals(),
-                                            title = fn ) )
+                                            title = os.path.basename(fn) ) )
 
         return odict( (("rst", "\n".join( Utils.layoutBlocks( blocks, layout = "columns-2"))),))
 

@@ -160,7 +160,7 @@ To run the example, simply unpack and untar::
 
    wget http://www.cgat.org/~andreas/sample_data/pipeline_annotations.tgz
    tar -xvzf pipeline_annotations.tgz
-   cd pipeline_annotations
+   cd pipeline_annotations.dir
    python <srcdir>/pipeline_annotations.py make full
 
 Code
@@ -184,6 +184,7 @@ import PipelineGeneset as PipelineGeneset
 import PipelineBiomart as PBiomart
 import PipelineDatabase as PDatabase
 import PipelineGO
+import Intervals
 
 ###################################################
 ###################################################
@@ -765,9 +766,8 @@ def buildMapableRegions( infiles, outfile ):
     For the purpose of these tracks, a region is defined to be un-mapable
     if its maximum mapability score is less than 0.5. 
     
-    Unmapable regions than are less than half kmer size are mapable, as
+    Unmapable regions that are less than half kmer size are mapable, as
     reads from the left/right mapable positions will extend into the region.
-    
     '''
 
     infile, fastafile = infiles
@@ -824,6 +824,34 @@ def buildMapableRegions( infiles, outfile ):
             outf.write( "%s\t%i\t%i\n" % (contig, last_start, last_end ) )
 
     outf.close()
+
+############################################################
+############################################################
+############################################################
+## 
+############################################################
+@transform( buildMapableRegions, suffix( ".bed.gz"), ".filtered.bed.gz" )
+def filterMapableRegions( infile, outfile ):
+    '''remove small windows from a mapability track.
+
+    Too many fragmented regions will cause gat to fail as it
+    fragments the workspace into too many individual segments.
+
+    The filtering works by merging all segments that are
+    within mapability_merge_distance and removing all those
+    that are larger than mapabpility_min_segment_size
+    '''
+    
+    to_cluster = True
+
+    statement = '''
+    mergeBed -i %(infile)s -d %(mapability_merge_distance)i
+    | awk '$3 - $2 >= %(mapability_min_segment_size)i'
+    | gzip 
+    > %(outfile)s
+    '''
+
+    P.run()
 
 if 0:
     ############################################################
@@ -974,6 +1002,7 @@ def buildGenomicFunctionalAnnotation( infiles, outfiles ):
                 contig, start, end, strand = gene2region[gene_id]
             except KeyError:
                 c.notfound += 1
+                continue
             outf.write( "\t".join( map(str, (contig, start, end, "%s:%s" % (db, go_id), 1, strand))  ) + "\n" )
             term2description["%s:%s" % (db, go_id)] = description
     outf.close()
@@ -1190,6 +1219,78 @@ def buildGenomeGCProfile( infile, outfile ):
 ##################################################################
 ##################################################################
 ##################################################################
+## download GWAS data
+##################################################################
+if PARAMS["genome"].startswith("hg"):
+    @merge( None, "gwascatalog.txt" )
+    def downloadGWASCatalog( infile, outfile ):
+        '''download GWAS catalog.'''
+
+        if os.path.exists( outfile ):
+            os.path.remove(outfile)
+        statement = '''wget http://www.genome.gov/admin/gwascatalog.txt'''
+        P.run()
+        
+    @merge( downloadGWASCatalog, PARAMS["interface_gwas_bed"] )
+    def buildGWASTracks( infile, outfile ):
+        
+        reader = csv.DictReader( IOTools.openFile( infile ), dialect = "excel-tab" )
+        
+        tracks = collections.defaultdict( lambda : collections.defaultdict( list ) )
+
+        fasta = IndexedFasta.IndexedFasta( os.path.join( PARAMS["genome_dir"], PARAMS["genome"] + ".fasta" ) )
+        contigsizes = fasta.getContigSizes()
+        c = E.Counter()
+
+        for row in reader:
+            c.input += 1
+            contig, pos, snp, disease = row['Chr_id'], row['Chr_pos'], row['SNPs'], row['Disease/Trait'] 
+            if snp == "NR":             
+                c.skipped += 1
+                continue
+            
+            if pos == "":
+                c.no_pos += 1
+                continue
+
+            # translate chr23 to X
+            if contig == "23": contig = "X"
+
+            contig = "chr%s" % contig
+            
+            try:
+                tracks[disease][contig].append( int(pos) )
+            except ValueError:
+                print row
+            c.output += 1
+        
+        E.info( c )
+            
+        extension = PARAMS["gwas_extension"]
+
+        c = E.Counter()
+        outf = IOTools.openFile(outfile, "w" )
+        for disease, pp in tracks.iteritems():
+            
+            for contig, positions in pp.iteritems():
+                contigsize = contigsizes[contig]
+                regions = [ (max(0,x-extension), min( contigsize, x+extension)) for x in positions ]
+
+                regions = Intervals.combine( regions )
+                c[disease] += len(regions)
+
+                for start,end in regions:
+                    outf.write( "%s\t%i\t%i\t%s\n" % (contig, start, end, disease ) )
+                
+        outf.close()
+
+        outf = IOTools.openFile(outfile + ".log", "w" )
+        outf.write( "category\tcounts\n%s\n" % c.asTable() )
+        outf.close()
+        
+##################################################################
+##################################################################
+##################################################################
 ## build gff summary
 ##################################################################
 @transform( (annotateGenome, 
@@ -1281,7 +1382,8 @@ def promotors():
     '''build promotors.'''
     pass
 
-@follows( loadGOAssignments, )
+@follows( loadGOAssignments, 
+          buildGenomicFunctionalAnnotation)
 def ontologies():
     '''create and load ontologies'''
     pass

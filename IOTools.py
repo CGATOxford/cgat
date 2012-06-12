@@ -302,7 +302,7 @@ def readMatrix( infile, dtype = numpy.float ):
     row_headers = []
 
     for row, l in enumerate(lines[1:]):
-        data = l.split("\t")
+        data = l[:-1].split("\t")
         row_headers.append( data[0] )
         matrix[row] = numpy.array(data[1:], dtype = dtype)
         

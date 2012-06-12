@@ -21,10 +21,10 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-table2bed.py
+script_template.py
 =============================================
 
-:Author: Nick Ilott
+:Author: 
 :Release: $Id$
 :Date: |today|
 :Tags: Python
@@ -32,18 +32,16 @@ table2bed.py
 Purpose
 -------
 
-Not generic. Takes a tab delimited table and converts to bed file
-
 Usage
 -----
 
 Example::
 
-   python table2bed.py --help
+   python script_template.py --help
 
 Type::
 
-   python table2bed.py --help
+   python script_template.py --help
 
 for command line help.
 
@@ -71,10 +69,9 @@ def main( argv = None ):
     parser = optparse.OptionParser( version = "%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
                                     usage = globals()["__doc__"] )
 
-    parser.add_option("-t", "--table", dest="table", type="string",
-                      help="supply input table name"  )
-    parser.add_option("-o", "--outfile", dest = "outfile", type = "string",
-                      help="supply output file name"
+    parser.add_option("-t", "--test", dest="test", type="string",
+                      help="supply help"  )
+
 
     ## add common options (-h/--help, ...) and parse command line 
     (options, args) = E.Start( parser, argv = argv )

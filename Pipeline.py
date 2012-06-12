@@ -57,17 +57,20 @@ class PipelineError( Exception ): pass
 # possible to use defaultdict, but then statements will
 # fail on execution if a parameter does not exists, and not
 # while building the statement. Hence, use dict.
+ROOT_DIR=os.path.dirname( __file__ )
+
 PARAMS= { 
-    'scriptsdir' : os.path.dirname( __file__ ),
-    'toolsdir' : os.path.dirname( __file__ ),
+    'scriptsdir' : ROOT_DIR,
+    'toolsdir' : ROOT_DIR,
     'cmd-farm' : """%s/farm.py 
                 --method=drmaa 
                 --cluster-priority=-10 
 		--cluster-queue=all.q 
 		--cluster-num-jobs=100 
-		--cluster-options="" """ % os.path.dirname( __file__ ),
+                --bashrc=%s/bashrc.cgat
+		--cluster-options="" """ % (ROOT_DIR,ROOT_DIR),
     'cmd-sql' : """sqlite3 -header -csv -separator $'\\t' """,
-    'cmd-run' : """%s/run.py""" % os.path.dirname( __file__ ),
+    'cmd-run' : """%s/run.py""" % ROOT_DIR
     }
 
 CONFIG = {}
@@ -84,7 +87,7 @@ def configToDictionary( config ):
         for key,value in config.items( section ):
             v = IOTools.convertValue( value )
             p["%s_%s" % (section,key)] = v
-            if section == "general":
+            if section in ( "general", "DEFAULT" ):
                 p["%s" % (key)] = v
                
     for key, value in config.defaults().iteritems():
@@ -119,6 +122,7 @@ def getParameters( filenames = ["pipeline.ini",],
     global CONFIG
 
     CONFIG = ConfigParser.ConfigParser()
+    
     CONFIG.read( filenames )
 
     p = configToDictionary( CONFIG )
@@ -375,8 +379,10 @@ def getProjectName():
     prefixes = len(PROJECT_ROOT.split("/"))
     return curdir.split( "/" )[prefixes]
 
-def load( infile, outfile = None, 
-          options = "", transpose = None,
+def load( infile, 
+          outfile = None, 
+          options = "", 
+          transpose = None,
           tablename = None):
     '''straight import from tab separated table.
 
@@ -414,15 +420,21 @@ def mergeAndLoad( infiles, outfile, suffix = None, columns=(0,1), regex = None )
 
     Columns denotes the columns to be taken.
 
-    The tables are merged and entered row-wise.
+    The tables are merged and entered row-wise. Each file is 
+    a row.
+
+    Filenames are stored in a ``track`` column. Directory names
+    are chopped off.
     '''
     if suffix:
-        header = ",".join( [ quote( snip( x, suffix)) for x in infiles] )
+        header = ",".join( [ os.path.basename( snip( x, suffix) ) for x in infiles] )
     elif regex:
-        header = ",".join( [ quote( "-".join(re.search( regex, x).groups())) for x in infiles] )        
+        header = ",".join( [ "-".join(re.search( regex, x).groups()) for x in infiles] )        
     else:
-        header = ",".join( infiles )
+        header = ",".join( [ os.path.basename( x ) for x in infiles] )
+
     columns = ",".join( map(str, [ x + 1 for x in columns ]))
+
     if infiles[0].endswith(".gz"):
         filenames = " ".join( [ "<( zcat %s | cut -f %s )" % (x,columns) for x in infiles ] )
     else:
@@ -444,15 +456,18 @@ def mergeAndLoad( infiles, outfile, suffix = None, columns=(0,1), regex = None )
             """
     run()
 
-def snip( filename, extension = None):
+def snip( filename, extension = None, alt_extension = None):
     '''return prefix of filename.
 
     If extension is given, make sure that filename has the extension.
     '''
     if extension: 
-        if not filename.endswith( extension ):
+        if filename.endswith( extension ):
+            return filename[:-len(extension)]
+        elif filename.endswith( alt_extension ):
+            return filename[:-len(alt_extension)]
+        else:
             raise ValueError("'%s' expected to end in '%s'" % (filename, extension))
-        return filename[:-len(extension)]
 
     root, ext = os.path.splitext( filename )
     return root
@@ -700,7 +715,7 @@ def run( **kwargs ):
         jobids, filenames = [], []
         for statement in statement_list:
             # create job script
-            tmpfile = tempfile.NamedTemporaryFile( dir = os.getcwd() , delete = False )
+            tmpfile = getTempFile( dir = os.getcwd() )
             tmpfile.write( "#!/bin/bash\n" ) #  -l -O expand_aliases\n" )
             tmpfile.write( 'echo "START--------------------------------" >> %s \n' % shellfile )
             # disabled - problems with quoting
@@ -761,7 +776,7 @@ def run( **kwargs ):
 
         if options.get( "dryrun", False ): return
 
-        tmpfile = tempfile.NamedTemporaryFile( dir = os.getcwd() , delete = False )
+        tmpfile = getTempFile( dir = os.getcwd() )
         tmpfile.write( "#!/bin/bash\n" ) #  -l -O expand_aliases\n" )
         tmpfile.write( 'echo "START--------------------------------" >> %s \n' % shellfile )
         # disabled - problems with quoting
@@ -1039,7 +1054,8 @@ def main( args = sys.argv ):
 
         except ruffus_exceptions.RethrownJobError, value:
             E.error("some tasks resulted in errors - error messages follow below" )
-            E.error( value )
+            # print value
+            # E.error( value )
             raise
 
     elif options.pipeline_action == "dump":
@@ -1114,7 +1130,8 @@ def run_report( clean = True):
     print dirname
 
     docdir = os.path.join( dirname, "pipeline_docs", snip( basename, ".py" ) )
-    print docdir
+    themedir = os.path.join( dirname, "pipeline_docs", "themes")
+
     relpath = os.path.relpath( docdir )
     trackerdir = os.path.join( docdir, "trackers" )
 
@@ -1145,6 +1162,7 @@ def run_report( clean = True):
     statement = '''
     %(clean)s
     ( export SPHINX_DOCSDIR=%(docdir)s; 
+      export SPHINX_THEMEDIR=%(themedir)s; 
     %(xvfb_command)s
     sphinxreport-build 
            --num-jobs=%(report_threads)s
@@ -1158,7 +1176,11 @@ def run_report( clean = True):
 
     run()
 
-def publish_report( prefix = "", patterns = [], project_id = None):
+def publish_report( prefix = "", 
+                    patterns = [], 
+                    project_id = None,
+                    prefix_project = "/ifs/projects",
+                    ):
     '''publish report into web directory.
 
     Links export directory into web directory.
@@ -1198,7 +1220,13 @@ def publish_report( prefix = "", patterns = [], project_id = None):
         dest = os.path.abspath( os.path.join( PARAMS["web_dir"], dest ) )
         if os.path.exists( dest ):
             os.remove(dest)
+        
         if os.path.exists( src ):
+            #IMS: check if base path of dest exists. This allows for prefix to be a 
+            #nested path structure e.g. project_id/
+            if not os.path.exists(os.path.dirname(os.path.abspath(dest))):
+                os.mkdir(os.path.dirname(os.path.abspath(dest)))
+
             os.symlink( os.path.abspath(src), dest )
 
     def _copy( src, dest ):
@@ -1212,10 +1240,11 @@ def publish_report( prefix = "", patterns = [], project_id = None):
     # publish web pages by copying
     _copy( os.path.abspath("report/html"), dest_report ) 
 
-    # substitute links to export
+    # substitute links to export and report
     _patterns = [ (re.compile( src_export ), 
                    "http://www.cgat.org/downloads/%(project_id)s/%(dest_export)s" % locals() ), 
-                  ]
+                  (re.compile( '(%s)/report' % os.path.join( prefix_project, getProjectName() ) ),
+                   "http://www.cgat.org/downloads/%(project_id)s/%(dest_report)s" % locals() ) ]
     
     _patterns.extend( patterns )
     

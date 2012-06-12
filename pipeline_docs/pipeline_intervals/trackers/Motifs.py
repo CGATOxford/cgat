@@ -321,52 +321,59 @@ class MastMotifEvalues( Mast ):
 
 #         return odict( n )
         
-# class MastMotifLocation( Mast ):
-#     '''plot median position of motifs versus the peak location.'''
-#     def __call__(self, track, slice = None ):
+class MastMotifLocation( Mast ):
+    '''plot median position of motifs versus the peak location.
 
-#         data = self.getValues( """SELECT (i.peakcenter - (m.start + (m.end - m.start) / 2)) / ((CAST(i.length AS FLOAT) - (m.end - m.start)) / 2)
-#                                  FROM %(track)s_mast as m, %(track)s_intervals as i 
-#                                  WHERE i.interval_id = m.id AND motif = '%(slice)s'
-#                                  AND m.nmatches = 1"""
-#                             % locals() )
+    The position is centered around 1kb.
+    '''
+    def __call__(self, track, slice = None ):
 
-#         return odict( (("distance", data),))
+        data = numpy.array ( self.getValues( """SELECT (i.peakcenter - (m.start + (m.end - m.start) / 2)) / 
+                                          500.0
+                                 FROM %(track)s_mast as m, %(track)s_intervals as i 
+                                 WHERE i.interval_id = m.id AND motif = '%(slice)s'
+                                 AND m.nmatches = 1"""
+                            % locals() ), numpy.float )
+        
+        data[ data < -1.0 ] = -1.0
+        data[ data > 1.0 ] = 1.0
+        
+        return odict( (("distance", data),))
 
-# class MastMotifLocationMiddle( Mast ):
-#     '''plot median position of motifs versus the center of the interval.'''
-#     def __call__(self, track, slice = None ):
+class MastMotifLocationMiddle( Mast ):
+    '''plot median position of motifs versus the center of the interval.'''
+    def __call__(self, track, slice = None ):
 
-#         # difference between
-#         #   middle of interval: i.start + i.length / 2
-#         #   middle of motif: m.start + (m.end - m.start) / 2
-#         # divide by (intervalsize - motifsize) / 2
-#         #
-#         # only take single matches (multiple matches need not be centered)
-#         data = self.getValues( """SELECT ((i.start + i.length / 2) - (m.start + (m.end - m.start) / 2)) 
-#                                          / ((CAST(i.length AS FLOAT) - (m.end - m.start))/2)
-#                                  FROM %(track)s_mast as m, %(track)s_intervals as i 
-#                                  WHERE i.interval_id = m.id AND motif = '%(slice)s'
-#                                  AND m.nmatches = 1"""
-#                             % locals() )
-#         return odict( (("distance", data),))
+        # difference between
+        #   middle of interval: i.start + i.length / 2
+        #   middle of motif: m.start + (m.end - m.start) / 2
+        # divide by (intervalsize - motifsize) / 2
+        #
+        # only take single matches (multiple matches need not be centered)
+        data = self.getValues( """SELECT ((i.start + i.length / 2) - (m.start + (m.end - m.start) / 2)) 
+                                         / ((CAST(i.length AS FLOAT) - (m.end - m.start))/2)
+                                 FROM %(track)s_mast as m, %(track)s_intervals as i 
+                                 WHERE i.interval_id = m.id AND motif = '%(slice)s'
+                                 AND m.nmatches = 1"""
+                               % locals() )
+        return odict( (("distance", data),))
 
-# class MastControlLocationMiddle( Mast ):
-#     '''plot median position of controls versus the center of the interval.'''
-#     def __call__(self, track, slice = None ):
+class MastControlLocationMiddle( Mast ):
+    '''plot median position of controls versus the center of the interval.'''
+    def __call__(self, track, slice = None ):
 
-#         data1 = self.getValues( """SELECT ( (m.r_length / 2) - (m.r_start + (m.r_end - m.r_start) / 2) ) / ((CAST( m.r_length as float) - (m.r_end - m.r_start))/2)
-#                                  FROM %(track)s_mast as m, %(track)s_intervals as i 
-#                                  WHERE i.interval_id = m.id AND motif = '%(slice)s'
-#                                  AND m.r_nmatches = 1"""
-#                             % locals() )
-#         data2 = self.getValues( """SELECT ( (m.l_length / 2) - (m.l_start + (m.l_end - m.l_start) / 2) ) / ((CAST( m.l_length as float) - (m.l_end - m.l_start))/2)
-#                                  FROM %(track)s_mast as m, %(track)s_intervals as i 
-#                                  WHERE i.interval_id = m.id AND motif = '%(slice)s'
-#                                  AND m.l_nmatches = 1"""
-#                             % locals() )
-
-#         return odict( (("distance", data1 + data2),))
+        data1 = self.getValues( """SELECT ( (m.r_length / 2) - (m.r_start + (m.r_end - m.r_start) / 2) ) / ((CAST( m.r_length as float) - (m.r_end - m.r_start))/2)
+                                 FROM %(track)s_mast as m, %(track)s_intervals as i 
+                                 WHERE i.interval_id = m.id AND motif = '%(slice)s'
+                                 AND m.r_nmatches = 1"""
+                            % locals() )
+        data2 = self.getValues( """SELECT ( (m.l_length / 2) - (m.l_start + (m.l_end - m.l_start) / 2) ) / ((CAST( m.l_length as float) - (m.l_end - m.l_start))/2)
+                                 FROM %(track)s_mast as m, %(track)s_intervals as i 
+                                 WHERE i.interval_id = m.id AND motif = '%(slice)s'
+                                 AND m.l_nmatches = 1"""
+                            % locals() )
+        
+        return odict( (("distance", data1 + data2),))
 
 class MastCurve( Mast ):
     """Summary stats of mast results.
@@ -572,13 +579,15 @@ class MemeRuns( IntervalTracker ):
     
     def __call__(self, track, slice = None ):
         
-        resultsdir = os.path.abspath( os.path.join( EXPORTDIR, "meme", "%s.meme" % track ) )
-        if not os.path.exists( resultsdir ): return None
+        memedir = os.path.abspath( os.path.join( EXPORTDIR, "meme", "%s.meme" % track ) )
+        if not os.path.exists( memedir ): return None
+
+        tomtomdir = os.path.abspath( os.path.join( EXPORTDIR, "tomtom", "%s.tomtom" % track ) )
 
         data = []
 
         tree = xml.etree.ElementTree.ElementTree()
-        tree.parse( os.path.join( resultsdir, "meme.xml" ) )
+        tree.parse( os.path.join( memedir, "meme.xml" ) )
         model =  tree.find( "model" )
         data.append( ("nsequences", int(model.find( "num_sequences" ).text) ) )
         data.append( ("nbases", int(model.find( "num_positions" ).text) ) )
@@ -589,7 +598,8 @@ class MemeRuns( IntervalTracker ):
             nmotifs += 1
 
         data.append( ("nmotifs", nmotifs ) )
-        data.append( ("link", "`meme_%s <%s/meme.html>`_" % (track, resultsdir) ) )
+        data.append( ("link", "`meme_%s <%s/meme.html>`_" % (track, memedir) ) )
+        data.append( ("tomtom", "`tomtom_%s <%s/tomtom.html>`_" % (track, tomtomdir) ) )
 
         return odict(data)
 
@@ -601,7 +611,6 @@ class MemeResults( IntervalTracker ):
     def __call__(self, track, slice = None ):
         
         resultsdir = os.path.abspath( os.path.join( EXPORTDIR, "meme", "%s.meme" % track ) )
-
         if not os.path.exists( resultsdir ): return []
 
         tree = xml.etree.ElementTree.ElementTree()
@@ -620,27 +629,37 @@ class MemeResults( IntervalTracker ):
                     ("evalue", motif.get("e_value" )),
                     ("information content",motif.get("ic")),
                     ("sites", motif.get("sites" )),
-                    ("link", "`meme_%s_%i <%s/meme.html#summary%i>`_" % (track, nmotif, resultsdir, nmotif)) ))
+                    ("link", "`meme_%s_%i <%s/meme.html#summary%i>`_" % (track, nmotif, resultsdir, nmotif)),
+                    ("img", ".. image:: %s/logo%i.png" % (resultsdir,nmotif)),
+                    ("rev", ".. image:: %s/logo_rc%i.png" % (resultsdir,nmotif)),
+                    ))
 
         return result
 
-# class TomTomResults( DefaultTracker ):
-#     pattern = "(.*)_tomtom$"
-    
-#     def __call__(self, track, slice = None ):
+class TomTomResults( IntervalTracker ):
+    '''overview of tomtom results.'''
 
-#         data = self.get( """SELECT query_id, target_id,
-#         optimal_offset,pvalue,qvalue,overlap,query_consensus,
-#         target_consensus, orientation FROM %(track)s_tomtom""" % locals())
 
-#         headers = ("query_id", "target_id",
-#                    "optimal_offset", "pvalue", "qvalue", "overlap", "query_consensus",
-#                    "target_consensus", "orientation")
+    pattern = "(.*)_tomtom$"
 
-#         result = odict()
-#         for x,y in enumerate(data):
-#             result[str(x)] = odict( zip( headers, y ))
-#         return result
+    def __call__(self, track, slice = None ):
+
+        data = self.getAll( """SELECT query_id, target_id, target_name,
+                               optimal_offset,pvalue,qvalue,evalue, overlap, query_consensus,
+                               target_consensus, orientation 
+                               FROM %(track)s_tomtom""" % locals())
+        
+        resultsdir = os.path.abspath( os.path.join( EXPORTDIR, "tomtom", "%s.tomtom" % re.sub("_", "-", track ) ))
+        if not os.path.exists( resultsdir ): return []
+        
+        # format is: match_q_3_t_2_M01904
+        # q_3: query_id
+        # t_2: target database
+        # M01904: target_id
+        data['link'] = [ "`tomtom <%s/tomtom.html#match_q_%s_t_2_%s>`_" % (resultsdir, target_id, target_name)
+                         for target_id, target_name in zip( data['query_id'], data['target_id']) ]
+        return data
+
 
 # class AnnotationsMatrix( DefaultTracker ):
 

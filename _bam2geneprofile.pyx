@@ -140,9 +140,9 @@ class RangeCounterBAM(RangeCounter):
 
 class RangeCounterBed(RangeCounter):
 
-    def __init__(self, bedfile, *args, **kwargs ):
+    def __init__(self, bedfiles, *args, **kwargs ):
         RangeCounter.__init__(self, *args, **kwargs )
-        self.bedfile = bedfile
+        self.bedfiles = bedfiles
         
     def count(self, contig, ranges ):
         
@@ -185,11 +185,10 @@ class RangeCounterBigWig(RangeCounter):
         
         # collect pileup profile in region bounded by start and end.
         cdef int i
-        cdef int rstart, rend, start, end
+        cdef int rstart, rend, start, end, tstart, tend
 
         if len(ranges) == 0: return
 
-        wigfile = self.wigfile
         counts = self.counts
 
         cdef int length

@@ -19,7 +19,9 @@ Contents:
    pipeline/Profiles.rst
    pipeline/TSS.rst 
    pipeline/Annotations.rst 
+   pipeline/Functions.rst
    pipeline/Meme.rst
+   pipeline/Tomtom.rst
    pipeline/Mast.rst
    pipeline/Peaks.rst
 

@@ -14,6 +14,8 @@ ReadQC pipeline
    pipeline/Summary.rst
    pipeline/FastQC.rst
    pipeline/BaseQuality.rst
+   pipeline/PerBaseNContent.rst
+   pipeline/SequenceDuplicationLevels.rst
    pipeline/Filtering.rst
    python/Trackers.rst
 

@@ -79,6 +79,7 @@ def buildPicardInsertSizeStats( infile, outfile, genome_file ):
     '''gather BAM file insert size statistics using Picard '''
 
     to_cluster = True
+    cluster_options = "-l mem_free=4G"
 
     if getNumReadsFromBAMFile(infile) == 0:
         E.warn( "no reads in %s - no metrics" % infile )
@@ -91,7 +92,7 @@ def buildPicardInsertSizeStats( infile, outfile, genome_file ):
                                        ASSUME_SORTED=true 
                                        OUTPUT=%(outfile)s 
                                        VALIDATION_STRINGENCY=SILENT 
-                   > %(outfile)s '''
+                   > %(outfile)s'''
 
     P.run()
 
@@ -99,19 +100,37 @@ def buildPicardAlignmentStats( infile, outfile, genome_file ):
     '''gather BAM file alignment statistics using Picard '''
 
     to_cluster = True
+    cluster_options = "-l mem_free=4G"
 
     if getNumReadsFromBAMFile(infile) == 0:
         E.warn( "no reads in %s - no metrics" % infile )
         P.touch( outfile )
         return
 
-    statement = '''CollectMultipleMetrics 
+    # Whether or not to remove reads without quality information.
+    # Reads without quality information might cause Picard to fail.
+    # The defaul is to remove.
+    remove_seqs_without_quality = True
+
+    if remove_seqs_without_quality:
+        statement = '''samtools view -h %(infile)s 
+                       | awk '$11 != "*"' 
+                       | CollectMultipleMetrics 
+                                       INPUT=/dev/stdin 
+                                       REFERENCE_SEQUENCE=%(genome_file)s
+                                       ASSUME_SORTED=true 
+                                       OUTPUT=%(outfile)s 
+                                       VALIDATION_STRINGENCY=SILENT 
+                       > %(outfile)s'''
+
+    else:
+        statement = '''CollectMultipleMetrics 
                                        INPUT=%(infile)s 
                                        REFERENCE_SEQUENCE=%(genome_file)s
                                        ASSUME_SORTED=true 
                                        OUTPUT=%(outfile)s 
                                        VALIDATION_STRINGENCY=SILENT 
-                   > %(outfile)s '''
+                   > %(outfile)s'''
 
     P.run()
 
@@ -131,7 +150,7 @@ def buildPicardGCStats( infile, outfile, genome_file ):
                                        VALIDATION_STRINGENCY=SILENT 
                                        CHART_OUTPUT=%(outfile)s.pdf 
                                        SUMMARY_OUTPUT=%(outfile)s.summary
-                   > %(outfile)s '''
+                   > %(outfile)s'''
 
     P.run()
 

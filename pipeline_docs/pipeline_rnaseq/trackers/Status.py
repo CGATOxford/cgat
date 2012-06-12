@@ -22,7 +22,9 @@ class MappingStatus( Status ):
         '''
 
         value = self.getValue( "SELECT reads_mapped/CAST( reads_in AS FLOAT) from view_mapping WHERE track = '%(track)s'" )
-        if value >= 0.6: status= "PASS"
+        if value == None:
+            value, status = 0, "NA"
+        elif value >= 0.6: status= "PASS"
         elif value >= 0.4: status= "WARNING"
         else: status= "FAIL"
 
@@ -53,8 +55,8 @@ class MappingStatus( Status ):
 
         '''
         
-        track = re.sub("-", "_", track)
-        value = self.getValue( "SELECT spliced/CAST(input AS FLOAT) from exon_validation WHERE track = '%(track)s_accepted'" )
+        # track = re.sub("-", "_", track)
+        value = self.getValue( "SELECT spliced/CAST(input AS FLOAT) from exon_validation WHERE track = '%(track)s.accepted'" )
         if value >= 0.15: status= "PASS"
         elif value >= 0.05: status= "WARNING"
         else: status= "FAIL"

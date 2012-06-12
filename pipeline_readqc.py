@@ -39,13 +39,14 @@ fastq and performs basic quality control steps:
 
 For further details see http://www.bioinformatics.bbsrc.ac.uk/projects/fastqc/
 
-The pipeline can also be used to pre-process reads (target ``process_reads``). 
+The pipeline can also be used to pre-process reads (target ``process``). 
 
 Implemented tasks are:
 
    * :meth:`removeContaminants` - remove contaminants from read sets
    * :meth:`trim` - trim reads by a certain amount
    * :meth:`filter` - filter reads by quality score
+   * :meth:`sample` - sample a certain proportion of reads
 
 Usage
 =====
@@ -179,16 +180,17 @@ P.getParameters(
      "pipeline.ini" ] )
 PARAMS = P.PARAMS
 
+INPUT_FORMATS = ("*.fastq.1.gz", "*.fastq.gz", "*.sra", "*.csfasta.gz")
+REGEX_FORMATS = regex( r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz)")
+
 #########################################################################
 #########################################################################
 #########################################################################
 @follows(mkdir(PARAMS["exportdir"]), mkdir(os.path.join(PARAMS["exportdir"], "fastqc")) )
-@transform( ("*.fastq.1.gz", 
-              "*.fastq.gz",
-              "*.sra",
-	      "*.csfasta.gz"),
-              regex( r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz)"),
-              r"\1.fastqc")
+
+@transform( INPUT_FORMATS,
+            REGEX_FORMATS,
+            r"\1.fastqc")
 def runFastqc(infiles, outfile):
     '''convert sra files to fastq and check mapping qualities are in solexa format. 
     Perform quality control checks on reads from .fastq files.'''
@@ -247,6 +249,8 @@ def loadFastqc( infile, outfile ):
 
         inf = cStringIO.StringIO( "\n".join( ["name\tstatus"] + ["\t".join( x ) for x in results ] ) + "\n" )
         csv2db.run( inf, options )
+
+    P.touch( outfile )
 
 #########################################################################
 #########################################################################
@@ -314,33 +318,62 @@ def removeContaminants( infiles, outfile ):
     '''
     P.run()
 
+def checkPairs( infile ):
+    '''check for paired read files'''
+    if infile.endswith( ".fastq.1.gz"):
+        infile2 = P.snip( infile, ".fastq.1.gz") + ".fastq.2.gz"
+        assert os.path.exists( infile2 ), "second part of read pair (%s) missing" % infile2
+    else:
+        infile2 = None
+        
+    return infile2
 
 #########################################################################
 #########################################################################
 #########################################################################
 @transform( [ x for x in \
-                  glob.glob("*.fastq.gz") + glob.glob("*.fastq.1.gz") + glob.glob("*.fastq.2.gz") \
+                  glob.glob("*.fastq.gz") + glob.glob("*.fastq.1.gz")
                   if not x.startswith("processed.")],
-	    regex( r"(\S+).(fastq.1.gz|fastq.gz|fastq.2.gz|csfasta.gz)"),
+	    regex( r"(\S+).(fastq.1.gz|fastq.gz|csfasta.gz)"),
 	    add_inputs(outputContaminants),
 	    r"processed.\1.\2")
 def processReads( infiles, outfile ):
     '''process reads.'''
-    
+
     infile, contaminant_file = infiles
 
     do_sth = False
     to_cluster = True
 
+    track = P.snip( outfile, ".fastq.1.gz")
+    infile2 = checkPairs( infile )
+
+    if infile2:
+        outfile2 = P.snip( outfile, ".fastq.1.gz") + ".fastq.2.gz"
+
+    if PARAMS["process_sample"] and infile2:
+        E.warn( "sampling can not be combined with other processing for paired ended reads")
+        statement = '''zcat %(infile)s
+        | python %(scriptsdir)s/fastq2fastq.py 
+                                   --sample=%(sample_proportion)f 
+                                   --pair=%(infile2)s 
+                                   --outfile-pair=%(outfile2)s 
+                                   --log=%(outfile)s_sample.log
+        | gzip 
+        > %(outfile)s
+        '''
+
+        P.run()
+        return
+
     # fastx does not like quality scores below 64 (Illumina 1.3 format)
     # need to detect the scores and convert
-    
     format = Fastq.guessFormat( IOTools.openFile(infile ) , raises = False)
     E.info( "%s: format guess: %s" % (infile, format))
     offset = Fastq.getOffset( format, raises = False )
 
     if PARAMS["process_remove_contaminants"]:
-        statement.append( '''
+        s.append( '''
         cutadapt 
               --discard
               %(adaptors)s
@@ -348,30 +381,111 @@ def processReads( infiles, outfile ):
               --format=fastq
               %(contamination_options)s
               <( zcat < %(infile)s )
-              2> %(outfile)s_contaminants.log
+              2>> %(outfile)s_contaminants.log
         ''' )
         do_sth = True
     else:
-        statement = ['zcat %(infile)s' ]
+        s = ['zcat %(infile)s' ]
 
     if PARAMS["process_artifacts"]:
-        statement.append( 'fastx_artifacts_filter -Q %(offset)i -v %(artifacts_options)s 2> %(outfile)s_artifacts.log' )
+        s.append( 'fastx_artifacts_filter -Q %(offset)i -v %(artifacts_options)s 2>> %(outfile)s_artifacts.log' )
         do_sth = True
-        
+
     if PARAMS["process_trim"]:
-        statement.append( 'fastx_trimmer -Q %(offset)i -v %(trim_options)s 2> %(outfile)s_trim.log' )
+        s.append( 'fastx_trimmer -Q %(offset)i -v %(trim_options)s 2>> %(outfile)s_trim.log' )
         do_sth = True
 
     if PARAMS["process_filter"]:
-        statement.append( 'fastq_quality_filter -Q %(offset)i -v %(filter_options)s 2> %(outfile)s_filter.log')
+        s.append( 'fastq_quality_filter -Q %(offset)i -v %(filter_options)s 2>> %(outfile)s_filter.log')
         do_sth = True
 
-    if do_sth:
-        statement.append( "gzip" )
-        statement = " | ".join( statement ) + " > %(outfile)s" 
+    if PARAMS["process_sample"]:
+        s.append( 'python %(scriptsdir)s/fastq2fast.py --sample=%(sample_proportion)f --log=%(outfile)s_sample.log' )
+
+    if not do_sth:
+        E.warn( "no filtering specified for %s - nothing done" % infile )
+        return
+
+    s.append( "gzip" )
+    if not infile2:
+        statement = " | ".join( s ) + " > %(outfile)s" 
         P.run()
     else:
-        E.warn( "no filtering specified for %s - nothing done" % infile )
+        tmpfile = P.getTempFilename(".")
+        tmpfile1 = tmpfile + ".fastq.1.gz"
+        tmpfile2 = tmpfile + ".fastq.2.gz"
+
+        E.warn( "processing first of pair")
+        # first read pair
+        statement = " | ".join( s ) + " > %(tmpfile1)s" 
+        P.run()
+
+        # second read pair        
+        E.warn( "processing second of pair")
+        infile = infile2
+        statement = " | ".join( s ) + " > %(tmpfile2)s" 
+        P.run()
+
+        # reconcile
+        E.info("starting reconciliation" )
+        statement = """python %(scriptsdir)s/fastqs2fastq.py
+                           --method=reconcile
+                           --output-pattern=%(track)s.fastq.%%i.gz
+                           %(tmpfile1)s %(tmpfile2)s
+                     > %(outfile)s_reconcile.log"""
+        
+        P.run()
+
+        os.unlink( tmpfile1 )
+        os.unlink( tmpfile2 )
+        os.unlink( tmpfile )
+
+@transform( processReads,
+            suffix(""),
+            ".tsv")
+def summarizeProcessing( infile, outfile ):
+    '''build processing summary.'''
+
+    def _parseLog( inf, step ):
+
+        inputs, outputs = [], []
+        if step == "reconcile":
+            for line in inf:
+                x = re.search( "first pair: (\d+) reads, second pair: (\d+) reads, shared: (\d+) reads", line )
+                if x:
+                    i1, i2, o = map(int, x.groups())
+                    inputs = [i1,i2]
+                    outputs = [o,o]
+                    break
+        else:
+            for line in inf:
+                if line.startswith( "Input:"):
+                    inputs.append( int( re.match( "Input: (\d+) reads.", line).groups()[0] ) )
+                elif line.startswith( "Output:"):
+                    outputs.append( int( re.match( "Output: (\d+) reads.", line).groups()[0] ) )
+
+        return zip(inputs, outputs)
+    
+    track = P.snip( infile, ".fastq.1.gz")
+    infile2 = checkPairs( infile )
+
+    outf = IOTools.openFile( outfile, "w")
+    outf.write( "track\tstep\tpair\tinput\toutput\n")
+
+    for step in "artifacts", "trim", "filter", "reconcile":
+        fn = infile + "_%s.log" % step
+        if not os.path.exists(fn): continue
+        for x, v in enumerate( _parseLog( IOTools.openFile( fn ), step)):
+            outf.write( "%s\t%s\t%i\t%i\t%i\n" % (track, step, x, v[0], v[1]) )
+    
+    outf.close()
+
+@transform( summarizeProcessing,
+            regex(r"processed.(\S+).fastq.*.gz.tsv"),
+            r"\1_processed.load")
+def loadProcessingSummary( infile, outfile ):
+    '''load filtering summary.'''
+    P.load(infile, outfile )
 
 #########################################################################
 #########################################################################
@@ -468,19 +582,25 @@ def replaceBaseWithN(infile, outfile):
 #########################################################################
 #########################################################################
 #########################################################################
+#########################################################################
+@follows( processReads )
+def process():
+    '''process (filter,trim) reads.'''
+    pass
+
+#########################################################################
+@follows( loadFastqc )
+def full(): pass
+
+#########################################################################
+@follows( loadFilteringSummary )
+def cleanData(): pass
+
+#########################################################################
 @follows() 
 def publish():
     '''publish files.'''
     P.publish_report()
-
-#########################################################################
-#########################################################################
-#########################################################################
-@follows( runFastqc )
-def full(): pass
-
-@follows( loadFilteringSummary )
-def cleanData(): pass
 
 @follows( mkdir( "report" ) )
 def build_report():

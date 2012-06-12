@@ -50,30 +50,30 @@ evalues within intervals compared to left/right of an interval.
 
    Distribution of Evalues.
 
-.. Location of motifs within intervals
-.. ===================================
+Location of motifs within intervals
+===================================
 
-.. Motifs should be located centrally within predicted binding intervals.
+Motifs should be located centrally within predicted binding intervals.
 
-.. The following plots show distance of motifs within intervals from the
-.. middle of an interval.
+The following plots show distance of motifs within intervals from the
+middle of an interval.
 
-.. A strong motif displays a sigmoidal curve, while a weak/unspecific
-.. motif creates a diagonal.
+A strong motif displays a sigmoidal curve, while a weak/unspecific
+motif creates a diagonal.
 
-.. .. report:: Motifs.MastMotifLocationMiddle
-..    :render: line-plot
-..    :transform: histogram
-..    :as-lines:
-..    :tf-aggregate: normalized-total,cumulative
-..    :layout: column-3
-..    :width: 200
+.. report:: Motifs.MastMotifLocationMiddle
+   :render: line-plot
+   :transform: histogram
+   :as-lines:
+   :tf-aggregate: normalized-total,cumulative
+   :layout: column-3
+   :width: 200
 
-..    Location of motifs within intervals. If several
-..    motifs are within an interval, the midpoint
-..    of all motifs is used. The x-axis shows the
-..    distance of the motif to the middle of the
-..    interval.
+   Location of motifs within intervals. If several
+   motifs are within an interval, the midpoint
+   of all motifs is used. The x-axis shows the
+   distance of the motif to the middle of the
+   interval.
 
 .. Control intervals
 .. +++++++++++++++++

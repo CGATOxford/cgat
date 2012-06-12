@@ -74,7 +74,11 @@ import Expression
 import Masker
 import Glam2Scan
 import fileinput
-import Motifs, nubiscan
+import Motifs
+
+try: import nubiscan
+except ImportError: pass
+
 import gff2annotator
 import Bioprospector
 

@@ -106,6 +106,11 @@ def Sparse2Matrix( outfile, matrix_id, lines, options, in_map_token2row = {}, in
         if not map_token2row or not map_token2col:
             row_tokens = map(lambda x: string.split(x[:-1], "\t")[0], lines )
             col_tokens = map(lambda x: string.split(x[:-1], "\t")[1], lines )
+
+            if options.input_format == "row-col-weight-weight":
+                # merge row and col tokens
+                row_tokens.extend(col_tokens)
+                col_tokens = row_tokens
             
             if options.is_numeric:
                 try:
@@ -140,6 +145,8 @@ def Sparse2Matrix( outfile, matrix_id, lines, options, in_map_token2row = {}, in
                     map_token2row[col_token] = len(map_token2row)            
             map_token2col = map_token2row
 
+            
+
         matrix = [ [ options.default for j in range(len(map_token2col))] for i in range(len(map_token2row)) ]
 
         if len(map_token2col) == len(map_token2row):
@@ -172,7 +179,7 @@ def Sparse2Matrix( outfile, matrix_id, lines, options, in_map_token2row = {}, in
             for line in lines:
                 row_token, col_token, weight1, weight2 = string.split(line[:-1], "\t")[:4]
                 matrix[map_token2row[row_token]][map_token2col[col_token]] = weight1
-                matrix[map_token2row[col_token]][map_token2col[row_token]] = weight2
+                matrix[map_token2col[col_token]][map_token2row[row_token]] = weight2
                 replicates[map_token2row[row_token]][map_token2col[col_token]] += 1                
                 replicates[map_token2row[col_token]][map_token2col[row_token]] += 1                
                     

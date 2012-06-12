@@ -21,8 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-get_genes.py - 
-======================================================
+get_genes.py - get genes from database and print in gff format
+===============================================================
 
 :Author: Andreas Heger
 :Release: $Id$
@@ -109,7 +109,6 @@ param_short_options="v:hb:e:p:g:E:P:G:i:a:S:nl"
 ## pattern for genomes, %s is substituted for the sbjct_token
 param_genome_file = "genome_%s.fasta"
 
-import alignlib
 import Experiment
 import Genomics
 import PredictionParser

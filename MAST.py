@@ -181,13 +181,19 @@ def writeMast( outfile, logodds_matrix, alphabet ):
 
     outfile.write("\n")
 
-def writeTomTom( outfile, counts_matrix ):
+def writeTomTom( outfile, counts_matrix, header = False ):
     '''output counts matrix in tomtom format.
 
     output counts with columns as motif positions
     and rows as alphabet.
     '''
     
+    if header:
+        outfile.write( '--------------------------------------------------------------------------------\n')
+        outfile.write( '        Motif 1 position-specific probability matrix\n')
+        outfile.write( '--------------------------------------------------------------------------------\n')
+        outfile.write("letter-probability matrix: alength= %i w= %i nsites= 18 E= 1.0\n" % counts_matrix.shape)
+
     for row in numpy.transpose( counts_matrix ):
         outfile.write( " ".join( 
                 ["%6i" % x for x in row ] ) + "\n")
@@ -226,6 +232,14 @@ def sequences2motif( outfile, sequences, background_frequencies = None, format =
             outfile.write( " ".join(
                 ["%5.3f" % (math.log( float(row_counts[x]) / nsequences / background_frequencies[x]) )
                  for x in range(lalphabet)] ) + "\n" )
+    elif format == "probability":
+        for r in range( 0, motif_width):
+            # use a pseudocount of 1
+            row_counts = [ 1 ] * lalphabet
+            for s in seqs: row_counts[char2index[s[r]]] += 1
+            outfile.write( " ".join(
+                ["%5.3f" % (float(row_counts[x]) / nsequences ) 
+                 for x in range(lalphabet) ] ) + "\n" )
                    
     elif format == "TOMTOM":
         counts = numpy.zeros( (motif_width, lalphabet) )

@@ -27,7 +27,6 @@ Wrapper for BaseML
 import os, sys, string, re, tempfile, subprocess
 
 import Genomics
-import alignlib
 
 class Error(Exception):
     """Base class for exceptions in this module."""

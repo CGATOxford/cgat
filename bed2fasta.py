@@ -122,6 +122,9 @@ if __name__ == "__main__":
     parser.add_option( "--extend-by", dest="extend_by", type="int",
                        help="extend by # bases [default=%default]" )
 
+    parser.add_option( "--use-strand", dest="ignore_strand", action="store_false",
+                       help="use strand information and return reverse complement [default=%default]" )
+
 
     parser.set_defaults(
         genome_file = None,
@@ -131,6 +134,7 @@ if __name__ == "__main__":
         max_length = 0,
         extend_at = None,
         extend_by = 100,
+        ignore_strand = True,
         )
 
     (options, args) = E.Start( parser )
@@ -138,6 +142,7 @@ if __name__ == "__main__":
     if options.genome_file:
         fasta = IndexedFasta.IndexedFasta( options.genome_file )
         contigs = fasta.getContigSizes()
+        fasta.setConverter( IndexedFasta.getConverter( "zero-both-open") )
 
     counter = E.Counter()
     ids, seqs = [], []
@@ -148,24 +153,30 @@ if __name__ == "__main__":
 
         lcontig = fasta.getLength( bed.contig )
 
+        if options.ignore_strand:
+            strand = "+"
+        else:
+            strand = bed.strand
+
         if options.mode == "intervals":
-            seqs.append( fasta.getSequence( bed.contig, "+", bed.start, bed.end) )
-            ids.append( "%s %s:%i..%i" % (bed.name, bed.contig, bed.start, bed.end) )
+            ids.append( "%s %s:%i..%i (%s)" % (bed.name, bed.contig, bed.start, bed.end, strand) )
+            seqs.append( fasta.getSequence( bed.contig, strand, bed.start, bed.end) )
+
         elif options.mode == "leftright":
             l = bed.end - bed.start
 
             start, end = max(0,bed.start-l), bed.end-l
-            ids.append( "%s_l %s:%i..%i" % (bed.name, bed.contig, start, end) )
-            seqs.append( fasta.getSequence( bed.contig, "+", start, end) )
+            ids.append( "%s_l %s:%i..%i (%s)" % (bed.name, bed.contig, start, end, strand) )
+            seqs.append( fasta.getSequence( bed.contig, strand, start, end) )
             
             start, end = bed.start+l, min(lcontig,bed.end+l)
-            ids.append( "%s_r %s:%i..%i" % (bed.name, bed.contig, start, end) )
-            seqs.append( fasta.getSequence( bed.contig, "+", start, end) )
+            ids.append( "%s_r %s:%i..%i (%s)" % (bed.name, bed.contig, start, end, strand) )
+            seqs.append( fasta.getSequence( bed.contig, strand, start, end) )
             
     E.info( "collected %i sequences" % len(seqs) )
 
     masked = maskSequences( seqs, options.masker )
-    options.stdout.write("\n".join( [ ">%s\n%s" % (x,y) for x,y in zip(ids, masked) ] ) )
+    options.stdout.write("\n".join( [ ">%s\n%s" % (x,y) for x,y in zip(ids, masked) ] ) + "\n" )
 
     E.info( "masked %i sequences" % len(seqs) )
 

@@ -57,7 +57,7 @@ Code
 
 '''
 import sys, string, re, os, optparse
-import Bio.Fasta
+import FastaIterator
 import IOTools
 import Experiment
 
@@ -101,7 +101,7 @@ class Files:
                 
         return open( filename, mode)
         
-    def Write( self, identifier, seq ):
+    def Write( self, identifier, sequence ):
 
         filename = files.GetFilename( identifier )
         
@@ -114,9 +114,9 @@ class Files:
             self.mFiles[filename] = self.OpenFile( filename, "a" )
 
         if self.mSkipIdentifiers:
-            self.mFiles[filename].write( "%s\n" % (seq.seq.tostring()))
+            self.mFiles[filename].write( "%s\n" % (sequence.sequence))
         else:
-            self.mFiles[filename].write( ">%s\n%s\n" % (seq.description, seq.seq.tostring()))
+            self.mFiles[filename].write( ">%s\n%s\n" % (sequence.title, sequence.sequence))
 
         if filename not in self.mCounts:
             self.mCounts[filename] = 0
@@ -190,7 +190,7 @@ if __name__ == "__main__":
     (options, args) = Experiment.Start( parser ) 
 
     if options.input_filename:
-        infile = open( options.input_filename, "r")
+        infile = IOTools.openFile( options.input_filename, "r")
     else:
         infile = sys.stdin
 
@@ -199,9 +199,6 @@ if __name__ == "__main__":
     else:
         map_id2filename = {}
         
-    it = Bio.Fasta.Iterator( infile, Bio.Fasta.SequenceParser())
-    seq = it.next()
-
     if options.num_sequences:
         files = FilesChunks( chunk_size = options.num_sequences,
                              output_pattern = options.output_pattern,
@@ -221,30 +218,27 @@ if __name__ == "__main__":
     identifier = None
     chunk = 0
     
-    while seq:
+    for seq in FastaIterator.iterate( infile ):
         
         ninput += 1
 
         if rx:
             try:
-                identifier = rx.search(seq.description).groups()[0]
+                identifier = rx.search(seq.title).groups()[0]
             except AttributeError:
-                print "# parsing error in description line %s" % (seq.description)
+                print "# parsing error in description line %s" % (seq.title)
         else:
-            identifier = seq.description
+            identifier = seq.title
 
         if map_id2filename:
             if identifier in map_id2filename:
                 identifier = map_id2filename[identifier]
             else:
-                seq = it.next()
                 continue
 
         files.Write( identifier, seq )
         noutput += 1
 
-        seq = it.next()
-        
     if options.input_filename:
         infile.close()
 

@@ -57,4 +57,18 @@ Overview
 Significance
 ============
 
+.. report:: Gat.GatLogFoldAnnotations
+   :render: interleaved-bar-plot
+   :groupby: track
+   :colour: colour
+   :layout: column-3
+   :width: 300
 
+   Fold change. Those that are significant (qvalue < 0.05) are shown
+   in red.
+
+.. report:: Gat.GatResultsAnnotations
+   :render: table
+   :force:
+
+   All GatResults

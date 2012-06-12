@@ -42,7 +42,6 @@ from Bio.Clustalw import do_alignment
 """
 
 import Genomics
-import alignlib
 
 class Clustal:
 

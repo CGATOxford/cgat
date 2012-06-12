@@ -231,3 +231,5 @@ def getOffset( format, raises = True ):
             raise ValueError("inconsistent offsets for multiple formats: %s" % offsets)
 
     return RANGES[format][0]
+
+

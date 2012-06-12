@@ -53,7 +53,6 @@ Code
 import sys, re, string, optparse, time, os, itertools, tempfile, subprocess, shutil
 
 import Experiment as E
-import alignlib
 import Stats
 import Blat
 import IndexedFasta, IOTools

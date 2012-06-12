@@ -211,7 +211,7 @@ def main( argv = None ):
             try:
                 overlap = list( exons.get( contig, start, end ) )
             except KeyError:
-                ovelap = []
+                overlap = []
 
             if len(overlap) == 0:
                 nunspliced_nooverlap += 1

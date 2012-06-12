@@ -21,9 +21,9 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 """
-===================
+=========================================
 Read Mapping parameter titration pipeline
-===================
+=========================================
 
 :Author: David Sims 
 :Release: $Id: mapping_titration.py 2900 2011-05-24 14:38:00Z david $

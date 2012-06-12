@@ -62,7 +62,6 @@ import sys, string, re, optparse
 import Experiment
 import IndexedFasta
 import Genomics
-import alignlib
 import Blat
 import Maq
 import bisect

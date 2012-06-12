@@ -175,7 +175,7 @@ def writeSequencesForIntervals( track, filename,
                                 halfwidth = None,
                                 maxsize = None,
                                 proportion = None,
-                                masker = None,
+                                masker = [],
                                 offset = 0,
                                 shuffled = False,
                                 min_sequences = None ):
@@ -196,7 +196,7 @@ def writeSequencesForIntervals( track, filename,
     If proportion is set, only the top *proportion* intervals are output
     (sorted by peakval).
 
-    *masker* can be any of 
+    *masker* can be a combination of 
         * dust, dustmasker: apply dustmasker
         * softmask: mask softmasked genomic regions
 
@@ -231,7 +231,7 @@ def writeSequencesForIntervals( track, filename,
         cutoff = len(data)
         L.info( "writeSequencesForIntervals %s: using at most %i sequences for pattern finding" % (track, cutoff) )
 
-    L.info( "writeSequencesForIntervals %s: masker=%s" % (track,masker))
+    L.info( "writeSequencesForIntervals %s: masker=%s" % (track,str(masker)))
 
     fasta = IndexedFasta.IndexedFasta( os.path.join( PARAMS["genome_dir"], PARAMS["genome"]) )
 
@@ -267,7 +267,10 @@ def writeSequencesForIntervals( track, filename,
         
     c = E.Counter()
     outs = IOTools.openFile(filename, "w" )
-    for sequence, d in zip( maskSequences( sequences, masker ), data ):
+    for masker in masker:
+        sequences = maskSequences( sequences, masker )
+
+    for sequence, d in zip( sequences, data ):
         c.input += 1
         if len(sequence) == 0: 
             c.empty += 1 
@@ -858,6 +861,15 @@ def runMEME( track, outfile, dbhandle ):
 
         shutil.copyfile( os.path.join(target_path, "meme.txt"), outfile)
 
+        # convert images to png
+        epsfiles = glob.glob( os.path.join( target_path, "*.eps" ) )
+        
+        for epsfile in epsfiles:
+            b, ext = os.path.splitext( epsfile )
+            pngfile = b + ".png" 
+            statement = '''convert %(epsfile) %(pngfile)s" '''
+            P.run()
+
 ############################################################
 ############################################################
 ############################################################
@@ -910,3 +922,36 @@ def runMEMEOnSequences( infile, outfile ):
     shutil.move( tmpdir, target_path )
 
     shutil.copyfile( os.path.join(target_path, "meme.txt"), outfile)
+
+############################################################
+############################################################
+############################################################
+def runTomTom( infile, outfile ):
+    '''compare ab-initio motifs against tomtom.'''
+
+    tmpdir = P.getTempDir( "." )
+    
+    to_cluster = True
+    databases = " ".join(P.asList( PARAMS["tomtom_databases"]))
+
+    target_path = os.path.join( os.path.abspath(PARAMS["exportdir"]), "tomtom", outfile )
+    
+    statement = '''
+           tomtom %(tomtom_options)s -oc %(tmpdir)s %(infile)s %(databases)s > %(outfile)s.log
+    '''
+
+    P.run()
+    
+    # copy over results
+    try:
+        os.makedirs( os.path.dirname( target_path ) )
+    except OSError: 
+        # ignore "file exists" exception
+        pass
+
+    if os.path.exists( target_path ): shutil.rmtree( target_path )
+    shutil.move( tmpdir, target_path )
+
+    shutil.copyfile( os.path.join(target_path, "tomtom.txt"), outfile)
+    
+

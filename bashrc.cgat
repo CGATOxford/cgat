@@ -1,0 +1,40 @@
+# .bashrc file for jobs running on the cluster nodes
+# echo ".bashrc"
+
+# Source global definitions
+if [ -f /etc/bashrc ]; then
+	. /etc/bashrc
+fi
+
+## architecture in cluster for Sun Grid Engine
+SGE_ARCH=lx24_x86
+export SGE_ARCH
+
+# make sure sort behaves
+LANG=C
+export LANG
+
+LC_ALL=C
+export LC_ALL
+
+# User specific environment and startup programs
+USER=`whoami`
+export USER
+
+# add CGAT path
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+PATH=$DIR:$PATH
+export PATH
+
+ulimit -S -c 0				# max size of core dumps
+ulimit -S -s unlimited			# max stack size (kbytes)
+ulimit -v 100000000                     # limit maximum amount of memory
+
+no_exit_on_failed_exec=1		# prevents dying from failing exec
+notify=1				# immediately warn exiting processes
+
+umask 002				# -rw-rw-r-
+
+module load apps/java apps/python apps/perl apps/graphlib bio/alignlib bio/all
+unset -f module

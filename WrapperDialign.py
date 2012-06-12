@@ -39,7 +39,6 @@ import os, sys, string, re, tempfile, subprocess
 """
 
 import Genomics
-import alignlib
 
 class Dialign:
 
