@@ -2031,10 +2031,10 @@ class CounterBindingPattern(CounterOverlap):
 
     headerTemplate = [ "pattern", "overlap" ] +\
         [ "%s_%s" % (x,y) for x,y in itertools.product( 
-		    ("cds", "first_exon", "exon", "utr5", "utr3", "first_intron", "middle_intron", "last_intron", "intron",) +\
+		    ("cds", "first_exon", "exon", "utr5", "utr3", "first_intron", "middle_intron", "last_intron", "intron" ) +\
 			    tuple( ["flank5_%05i" % x for x in range(0, 10000, 2000) ] ) +\
 			    tuple( ["flank3_%05i" % x for x in range(0, 10000, 2000) ] ),
-            ("overlap", "poverlap", "expect" ) ) ]
+            ("overlap", "poverlap" ) ) ]
 
 
     # do not use strand
