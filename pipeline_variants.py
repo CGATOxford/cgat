@@ -147,6 +147,7 @@ import PipelineEnrichment as PEnrichment
 import PipelineGO as PGO
 import PipelineBiomart as PBiomart
 import PipelineDatabase as PDatabase
+import PipelineUCSC
 import scipy.stats
 import Stats
 import pysam
@@ -448,7 +449,7 @@ if "refseq_filename_gtf" in PARAMS:
         outfile_gtf, outfile_pep, outfile_cdna, outfile_load = outfiles
 
         if not os.path.exists( outfile_gtf ):
-            PGeneset.importRefSeqFromUCSC( infile_gtf, outfile_gtf, remove_duplicates = True )
+            PipelineUCSC.importRefSeqFromUCSC( infile_gtf, outfile_gtf, remove_duplicates = True )
 
         for infile, outfile in ( (infile_pep, outfile_pep),
                                  (infile_cdna, outfile_cdna)):

@@ -2440,11 +2440,13 @@ class CounterDistance(Counter):
             self.mOverlaps = list(self.mIntervals.get(contig, start, end))
         except KeyError:
             # ignore unknown contigs
+            E.warn( "unknown contig %s" % contig )
             return
 
         if self.mOverlaps:
             # stop getting distance if there is overlap
             self.mDistance = 0
+	    self.mData = [x[2] for x in self.mOverlaps]
         else:
             if contig in self.startValues:
                 entry_before = bisect.bisect( self.endPoints[contig], start ) - 1
@@ -2463,7 +2465,7 @@ class CounterDistance(Counter):
                     self.strand3 = e.strand
                     self.mData3 = e 
                     has3 = True
-
+		    
             if has5 and has3:
                 if self.mDistance5 < self.mDistance3:
                     self.mDistance, self.mData = self.mDistance5, self.mData5
@@ -2524,6 +2526,8 @@ class CounterDistanceGenes(CounterDistance):
        CASE WHEN amin3 > 0 THEN '3' ELSE '5' END
 
     TODO: check if all is correct.
+
+    If the transcript overlaps a gene, the distance is set to 0
     """
 
     headerTemplate = ( "closest_id", "closest_dist", "closest_strand", "id5", "dist5", "strand5", "id3", "dist3", "strand3", "min5", "min3", "amin5", "amin3" )
@@ -2547,55 +2551,61 @@ class CounterDistanceGenes(CounterDistance):
     def __str__(self):
 
         id5, id3, d3, d5, m3, m5 = "na", "na", "na" , "na", "na", "na"
+	any3, any5 = "", ""
 
-        if self.mData5: 
-            id5 = self.mData5.gene_id
-        if self.mData3: 
-            id3 = self.mData3.gene_id
+	if self.mDistance == 0:
+	    closest_id = self.mData[0].gene_id
+            closest_dist = 0
+	    closest_strand = "."
+	else:
+		if self.mData5: 
+		    id5 = self.mData5.gene_id
+		if self.mData3: 
+		    id3 = self.mData3.gene_id
 
-        ## get distances to closest feature in 3' and 5' directions
-        d5, d3 = [], []
-        dist5, dist3, strand5, strand3 = self.mDistance5, self.mDistance3, self.strand5, self.strand3
+		## get distances to closest feature in 3' and 5' directions
+		d5, d3 = [], []
+		dist5, dist3, strand5, strand3 = self.mDistance5, self.mDistance3, self.strand5, self.strand3
 
-        if self.mIsNegativeStrand:
-            dist5, dist3 = dist3, dist5
-            strand5, strand3 = strand3, strand5
+		if self.mIsNegativeStrand:
+		    dist5, dist3 = dist3, dist5
+		    strand5, strand3 = strand3, strand5
 
-        if not Genomics.IsNegativeStrand(strand5):
-            d3.append( dist5 )
-        else:
-            d5.append( dist5 )
+		if not Genomics.IsNegativeStrand(strand5):
+		    d3.append( dist5 )
+		else:
+		    d5.append( dist5 )
 
-        if not Genomics.IsNegativeStrand(strand3):
-            d5.append( dist3 )
-        else:
-            d3.append( dist3 )
+		if not Genomics.IsNegativeStrand(strand3):
+		    d5.append( dist3 )
+		else:
+		    d3.append( dist3 )
 
-        # get minimum distance to 3' or 5' end of a gene
-        if d3: any3 = d3 = min(d3) 
-        else: any3 = d3 = "na"
-        if d5: any5 = d5 = min(d5)
-        else: any5 = d5 = "na"
-            
-        # record the closest distance to a gene in any direction
-        if any3 != "na" and any5 != "na":
-            if any3 < any5: any5 = "na"
-            elif any5 < any3: any3 = "na"
+		# get minimum distance to 3' or 5' end of a gene
+		if d3: any3 = d3 = min(d3) 
+		else: any3 = d3 = "na"
+		if d5: any5 = d5 = min(d5)
+		else: any5 = d5 = "na"
 
-        # record the shortest distance
-        if self.mDistance3 == None or self.mDistance5 == None:
-            if self.mDistance3 == None:
-                closest_id, closest_dist, closest_strand = self.mData5.gene_id, self.mDistance5, self.strand5
-            elif self.mDistance5 == None:
-                closest_id, closest_dist, closest_strand = self.mData3.gene_id, self.mDistance3, self.strand3
-            else:
-                closest_id, closest_dist, closest_strand = "na", "na", "na"
-        elif self.mDistance3 < self.mDistance5:
-            closest_id, closest_dist, closest_strand = self.mData3.gene_id, self.mDistance3, self.strand3
-        elif self.mDistance5 < self.mDistance3:
-            closest_id, closest_dist, closest_strand = self.mData5.gene_id, self.mDistance5, self.strand5
-        else:
-            closest_id, closest_dist, closest_strand = "na", "na", "na"
+		# record the closest distance to a gene in any direction
+		if any3 != "na" and any5 != "na":
+		    if any3 < any5: any5 = "na"
+		    elif any5 < any3: any3 = "na"
+
+		# record the shortest distance
+		if self.mDistance3 == None or self.mDistance5 == None:
+		    if self.mDistance3 == None:
+			closest_id, closest_dist, closest_strand = self.mData5.gene_id, self.mDistance5, self.strand5
+		    elif self.mDistance5 == None:
+			closest_id, closest_dist, closest_strand = self.mData3.gene_id, self.mDistance3, self.strand3
+		    else:
+			closest_id, closest_dist, closest_strand = "na", "na", "na"
+		elif self.mDistance3 < self.mDistance5:
+		    closest_id, closest_dist, closest_strand = self.mData3.gene_id, self.mDistance3, self.strand3
+		elif self.mDistance5 < self.mDistance3:
+		    closest_id, closest_dist, closest_strand = self.mData5.gene_id, self.mDistance5, self.strand5
+		else:
+		    closest_id, closest_dist, closest_strand = "na", "na", "na"
 
         return "\t".join( ( 
                 closest_id,

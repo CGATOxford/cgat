@@ -1134,7 +1134,7 @@ def buildPrunedGeneSet( infiles, outfile ):
     
     Only transfrags are kept that are:
 
-    1. observoed in at least 2 samples to remove partial transfrags that
+    1. observed in at least 2 samples to remove partial transfrags that
         are the result of low coverage observations in one sample
     
     see also: http://seqanswers.com/forums/showthread.php?t=3967
