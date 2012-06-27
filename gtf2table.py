@@ -2527,7 +2527,8 @@ class CounterDistanceGenes(CounterDistance):
 
     TODO: check if all is correct.
 
-    If the transcript overlaps a gene, the distance is set to 0
+    If the transcript overlaps a gene, the distance is set to 0. If it overlaps multiple genes,
+    only one (the first) is output.
     """
 
     headerTemplate = ( "closest_id", "closest_dist", "closest_strand", "id5", "dist5", "strand5", "id3", "dist3", "strand3", "min5", "min3", "amin5", "amin3" )
