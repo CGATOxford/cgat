@@ -582,7 +582,7 @@ def filterAndMergeGTF( infile, outfile, remove_genes, merge = False ):
     if merge:
         statement = '''
         %(scriptsdir)s/gff_sort pos < %(tmpfilename)s
-        | python %(scriptsdir)s/gtf2gtf.py
+        | python %(main_scripts_dir)s/gtf2gtf.py
             --unset-genes="NONC%%06i"
             --log=%(outfile)s.log
         | python %(scriptsdir)s/gtf2gtf.py

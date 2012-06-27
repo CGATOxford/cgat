@@ -862,9 +862,10 @@ def main( argv = None ):
     else:
         raise ValueError("please specify a source of variants." )
 
-    output_all = False
     if len(options.output) == 0 or "all" in options.output:
         output_all = True
+    else:
+        output_all = False
 
     if "cds" in options.output or output_all:
         outfile_cds = E.openOutputFile( "cds.fasta" )
