@@ -563,7 +563,8 @@ def pairsStats( infile, outfile ):
     statement = '''CREATE table pairwise_ortholog_stats AS
                    SELECT a.species1 as species1, a.species2 as species2, a.species_pair as species_pair, conserved_genes,
                    conserved_nmis, conserved_genes_with_nmi_species1, conserved_genes_with_nmi_species2, 
-                   (2.0*a.conserved_nmis)/(b.conserved_genes_with_nmi_species1+b.conserved_genes_with_nmi_species2) as score
+                   (2.0*a.conserved_nmis)/(b.conserved_genes_with_nmi_species1+b.conserved_genes_with_nmi_species2) as score,
+                   (1.0*a.conserved_nmis)/min(b.conserved_genes_with_nmi_species1,b.conserved_genes_with_nmi_species2) as score2
                    FROM
                    (SELECT substr(species_pair,1,2) as species1, substr(species_pair,4,2) as species2, 
                    species_pair, count(gene_ids) as conserved_nmis, pattern
@@ -608,8 +609,7 @@ def testGeneListOverlapSignificance( infile, outfile ):
     for result in cc:
         species_pair, conserved_genes, conserved_nmis, conserved_genes_with_nmi_species1, conserved_genes_with_nmi_species2 = result
         statement = '''printf "%(species_pair)s\\t%(conserved_genes)s\\t%(conserved_nmis)s\\t%(conserved_genes_with_nmi_species1)s\\t%(conserved_genes_with_nmi_species2)s\\t" >> %(outfile)s; 
-                       python %(scriptsdir)s/list_overlap.py %(conserved_nmis)i %(conserved_genes)i %(conserved_genes_with_nmi_species1)i %(conserved_genes_with_nmi_species2)i >> %(outfile)s;
-                       printf "\\n" >> %(outfile)s''' 
+                       python %(scriptsdir)s/list_overlap.py %(conserved_nmis)i %(conserved_genes)i %(conserved_genes_with_nmi_species1)i %(conserved_genes_with_nmi_species2)i >> %(outfile)s;''' 
         P.run()
     #statement = '''sed -i '{N;s/\\n/\\t/g}' %(outfile)s; '''
     #P.run()
@@ -657,6 +657,36 @@ def exportPairsScoreMatrix( infile, outfile ):
     outs.close()
 
 ############################################################
+@transform( pairsStats, suffix( ".stats"), ".matrix2" )
+def exportPairsScoreMatrix2( infile, outfile ):
+    species_list = P.asList(PARAMS["species"])
+    outs = open( outfile, "w")
+    first=True
+    for species in species_list:
+        dbhandle = sqlite3.connect( PARAMS["database"] )
+        cc = dbhandle.cursor()
+        statement = ''' SELECT species, score from (
+                        SELECT species2 as species, score2 as score from pairwise_ortholog_stats where species1="%(species)s"
+                        UNION SELECT species1 as species, score2 as score from pairwise_ortholog_stats where species2="%(species)s"
+                        UNION SELECT "%(species)s" as species,  1.0 as score)
+                        ORDER BY species desc''' % locals()
+        # If first write headers
+        if first: 
+            cc.execute( statement )
+            outs.write("species")
+            for result in cc:
+                outs.write("\t%s" % result[0] )
+            outs.write("\n")
+            first = False
+        cc.execute( statement )
+        outs.write(species)
+        for result in cc:
+            outs.write("\t%s" % result[1] )
+        outs.write("\n")
+        cc.close()
+    outs.close()
+
+############################################################
 @follows( mkdir("plots") )
 @transform(exportPairsScoreMatrix, regex(r"(\S+).matrix"), r"plots/\1.pdf")
 def plotPairwiseScoreHeatmap( infile, outfile ):
@@ -667,9 +697,23 @@ def plotPairwiseScoreHeatmap( infile, outfile ):
     R('''mat <- as.matrix(x[,2:dim(x)[2]])''')
     R('''rownames(mat) <- x[,1]''')
     R('''pdf("%(outfile)s", height=10, width=10)''' % locals() )
-    R('''heatmap.2(mat, Rowv=TRUE, Colv=TRUE, dendrogram=c("none"), distfun=dist, hclustfun=hclust, xlab="", ylab="", key=TRUE, keysize=2, trace="none", density.info=c("none"), margins=c(10, 8), col=rev(brewer.pal(10,"PiYG")) )''')
+    R('''heatmap.2(mat, Rowv=TRUE, Colv=TRUE, dendrogram=c("none"), distfun=dist, hclustfun=hclust, xlab="", ylab="", key=TRUE, keysize=2, trace="none", density.info=c("none"), margins=c(10, 8), breaks=seq(0.55,1,0.05), col=brewer.pal(9,"Blues") )''')
     R('''dev.off()''')
-    
+
+############################################################
+@follows( mkdir("plots") )
+@transform(exportPairsScoreMatrix2, regex(r"(\S+).matrix2"), r"plots/\1.score2.pdf")
+def plotPairwiseScoreHeatmap2( infile, outfile ):
+    '''Plot heatmap of pairwise scores in R'''
+    R('''library(RColorBrewer)''')
+    R('''library(gplots)''')
+    R('''x=read.table("%(infile)s", header=TRUE)''' % locals() )
+    R('''mat <- as.matrix(x[,2:dim(x)[2]])''')
+    R('''rownames(mat) <- x[,1]''')
+    R('''pdf("%(outfile)s", height=10, width=10)''' % locals() )
+    R('''heatmap.2(mat, Rowv=TRUE, Colv=TRUE, dendrogram=c("none"), distfun=dist, hclustfun=hclust, xlab="", ylab="", key=TRUE, keysize=2, trace="none", density.info=c("none"), margins=c(10, 8), breaks=seq(0.64,1,0.02), col=rev(heat.colors(18)),colsep=seq(1,7,1),rowsep=seq(1,7,1),sepcolor="white", sepwidth=c(0.01,0.01) )''')
+    R('''dev.off()''')
+        
 ###################################################################
 ###################################################################
 ###################################################################
@@ -960,7 +1004,7 @@ def publish_report(infile, outfile):
     fig_dir = PARAMS["publish_figures"]
     working_dir = os.getcwd()
     statement = '''cp -rf report/html/* %(publish_dir)s 2>> %(outfile)s; ''' 
-    statement += '''cp -sf %(working_dir)s/plots/ortholog_pairs_with_feature.pdf %(fig_dir)s/Fig2 2>> %(outfile)s; ''' 
+    statement += '''cp -sf %(working_dir)s/plots/ortholog_pairs_with_feature*.pdf %(fig_dir)s/Fig2 2>> %(outfile)s; ''' 
     statement += '''cp -sf %(working_dir)s/plots/ortholog_triple_with_feature.pdf %(fig_dir)s/Fig2 2>> %(outfile)s; ''' 
     statement += '''cp -sf %(working_dir)s/plots/*_gc_content.pdf %(fig_dir)s/Fig1 2>> %(outfile)s; '''
     statement += '''cp -sf %(working_dir)s/plots/*_cpg_obsexp.pdf %(fig_dir)s/Fig1 2>> %(outfile)s; '''

@@ -57,6 +57,28 @@ sharesVsUniqueLengthPlot <- function(liver_shared="", liver_unique="", testes_sh
     dev.off()
 }
 
+sharesVsUniqueCpgPlot <- function(liver_shared="", liver_unique="", testes_shared="", testes_unique="", outfile="shared_vs_unique_interval_cpg_obsexp.pdf", ylimit=c(0,1), xlimit=c(0,1.5), xlabel="CpG Observed/Expected")
+{
+    liver_shared <- read.table(file=liver_shared, header=FALSE)
+    testes_shared <- read.table(file=testes_shared, header=FALSE)
+    liver_unique <- read.table(file=liver_unique, header=FALSE)
+    testes_unique <- read.table(file=testes_unique, header=FALSE)
+    d1 <- density(liver_shared[,1], na.rm=TRUE)
+    d2 <- density(testes_shared[,1], na.rm=TRUE)
+    d3 <- density(liver_unique[,1], na.rm=TRUE)
+    d4 <- density(testes_unique[,1], na.rm=TRUE)
+    ymax <- max(d1[[2]],d2[[2]],d3[[2]],d4[[2]])*1.1
+    ylimit <- c(0,ymax)
+    leg <- c("Liver shared","Testes shared", "Liver unique", "Testes unique")
+    pdf(file=outfile, height=8, width=8, onefile=TRUE, family='Helvetica', paper='A4', pointsize=12, colormodel="cmyk")
+    plot(d1, ylim=ylimit, xlim=xlimit, xlab=xlabel, main="", col="1", lwd=3)
+    lines(d2, col=2, lwd=3)
+    lines(d3, col=3, lwd=3)
+    lines(d4, col=4, lwd=3)
+    legend("topright", legend=leg, col=c(1,2,3,4), lty=rep(1,4), bty="n", lwd=rep(3,4))
+    dev.off()
+}
+
 liverTestesChromatinPlot <- function(infiles=c("",""), outfile="liver_testes_unique_chromatin.pdf")
 {
     data <- list()

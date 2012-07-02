@@ -84,6 +84,59 @@ class replicatedAssociationsHierarchy(cpgTracker):
         return data
 
 ##################################################################################
+class replicatedAssociationsHierarchy3(cpgTracker):
+    """ """
+
+    pattern = "(.*)_replicated_intervals$"
+    
+    def __call__(self, track, slice = None ):
+
+        ANNOTATIONS_NAME = P['annotations_name']
+        statement =  """SELECT count(distinct interval_id) as NMIs, feature_class
+                        FROM (
+                        SELECT interval_id,
+                        CASE WHEN coding_tss > 0  THEN 'Protein-coding gene TSS'
+                        WHEN lincrna_tss > 0 THEN 'lncRNA gene TSS'
+                        WHEN short_rna_tss > 0 THEN 'short RNA TSS'
+                        WHEN enhancer >0 THEN 'Enhancer (H3K4Me1)'
+                        WHEN rnaseq >0 THEN 'Novel RNAseq transcript TSS'
+                        ELSE 'Intergenic'
+                        END AS feature_class FROM (
+                        SELECT i.interval_id, a.coding_tss, b.lincrna_tss, c.short_rna_tss, f.enhancer, g.rnaseq FROM %(track)s_replicated_intervals i 
+                        left join 
+                        (SELECT distinct gene_id, 1 as coding_tss 
+                        FROM %(track)s_replicated_%(ANNOTATIONS_NAME)s_overlap
+                        where (genes_nover>0 OR downstream_flank_nover>0 OR upstream_flank_nover>0) ) a 
+                        on a.gene_id=i.interval_id
+                        left join 
+                        (SELECT distinct gene_id, 1 as lincrna_tss 
+                        FROM %(track)s_replicated_lncrna_tss_distance
+                        where closest_dist < 1000) b 
+                        on i.interval_id=b.gene_id
+                        left join 
+                        (SELECT distinct n.gene_id as gene_id, 1 as short_rna_tss
+                        FROM %(track)s_replicated_%(ANNOTATIONS_NAME)s_noncoding_tss_distance n,
+                        annotations.transcript_info t, %(track)s_replicated_%(ANNOTATIONS_NAME)s_interval_noncoding_mapping m
+                        where n.gene_id=m.interval_id
+                        AND m.gene_id=t.gene_id
+                        AND t.gene_biotype IN ("miRNA","snRNA","snoRNA","rRNA")
+                        AND n.closest_dist < 1000) c
+                        on i.interval_id=c.gene_id
+                        left join 
+                        (SELECT distinct interval_id, 1 as enhancer 
+                        FROM %(track)s_replicated_h3k4me1_intervals) f
+                        on i.interval_id=f.interval_id
+                        left join 
+                        (SELECT distinct gene_id, 1 as rnaseq 
+                        FROM %(track)s_replicated_rnaseq_tss_distance
+                        WHERE closest_dist < 1000) g
+                        on i.interval_id=g.gene_id))
+                        group by feature_class
+                        order by feature_class asc;""" % locals()
+        data = self.getAll(statement)
+        return data
+        
+##################################################################################
 class replicatedAssociationsHierarchy2(cpgTracker):
     """ """
 

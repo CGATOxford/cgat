@@ -63,6 +63,23 @@ class pairwiseHeatmap( Tracker ):
                        ('columns', colnames)) )
 
 ##################################################################################
+class pairwiseHeatmap2( Tracker ):
+
+    def getTracks(self):
+        return [ "ortholog_pairs_with_feature.matrix2", ]
+        
+    def __call__(self, track, slice = None ):
+        fn = "ortholog_pairs_with_feature.matrix2"
+        if not os.path.exists( fn ): 
+            return
+            
+        x = IOTools.openFile( fn )
+        matrix, rownames, colnames = IOTools.readMatrix( x )
+        return odict( (('matrix', matrix),
+                       ('rows', rownames),
+                       ('columns', colnames)) )
+                       
+##################################################################################
 class pairwiseTable( Tracker ):
 
     def getTracks(self):
@@ -81,7 +98,27 @@ class pairwiseTable( Tracker ):
             scores = temp[1:]
             data[name] = scores
         return data
-                       
+
+##################################################################################
+class pairwiseTable2( Tracker ):
+
+    def getTracks(self):
+        return [ "ortholog_pairs_with_feature.matrix2", ]
+        
+    def __call__(self, track, slice = None ):
+        fn = "ortholog_pairs_with_feature.matrix2"
+        if not os.path.exists( fn ): 
+            return
+            
+        x = open( fn )
+        data = odict()
+        for line in x:
+            temp = line.split()
+            name = temp[0]
+            scores = temp[1:]
+            data[name] = scores
+        return data
+                                            
 ##################################################################################
 class threewayVenn( TrackerSQL ):
 

@@ -13,7 +13,7 @@ from SphinxReport.odict import OrderedDict as odict
 class genesCoveredByNMI(cpgTracker):
     ''''''
     ANNOTATIONS_NAME = P['annotations_name']
-    mPattern = "_replicated_"+ANNOTATIONS_NAME+"genes_capseq_overlap$"
+    mPattern = "_replicated_"+ANNOTATIONS_NAME+"_genes_capseq_overlap$"
     
     def __call__(self, track, slice = None ):
         query = '''select distinct o.gene_id, i.gene_name, capseq_nover, length, capseq_pover1, capseq_pover2 
@@ -30,7 +30,7 @@ class genesCoveredByNMI(cpgTracker):
 class genesWithNMI(cpgTracker):
     ''''''
     ANNOTATIONS_NAME = P['annotations_name']
-    mPattern = "_replicated_"+ANNOTATIONS_NAME+"genes_capseq_overlap$"
+    mPattern = "_replicated_"+ANNOTATIONS_NAME+"_genes_capseq_overlap$"
     def __call__(self, track, slice = None ):
         query = '''select distinct o.gene_id, i.gene_name, capseq_nover, length, capseq_pover1, capseq_pover2 
                    from %(track)s_replicated_%(ANNOTATIONS_NAME)s_genes_capseq_overlap o, annotations.transcript_info i
@@ -48,7 +48,7 @@ class overlappedGenesGOAnalysisBP(cpgTracker):
     '''GO analysis biological process'''
     mPattern = "_overlapped_genes_go_biol_process$"
     def __call__(self, track, slice = None ):
-        query = '''select distinct goid, description, scount as genes, spercent as percent_of_list, fdr
+        query = '''select distinct goid, description, scount as genes, bcount as genes_with_term, spercent as percent_of_list, ratio as Enrichment, fdr
                    from %(track)s_overlapped_genes_go_biol_process
                    where fdr < 0.05
                    order by fdr asc, scount desc ''' 
@@ -60,7 +60,7 @@ class overlappedGenesGOAnalysisCL(cpgTracker):
     '''GO analysis '''
     mPattern = "_overlapped_genes_go_cell_location$"
     def __call__(self, track, slice = None ):
-        query = '''select distinct goid, description, scount as genes, spercent as percent_of_list, fdr 
+        query = '''select distinct goid, description, scount as genes, bcount as genes_with_term, spercent as percent_of_list, ratio as Enrichment, fdr 
                    from %(track)s_overlapped_genes_go_cell_location
                    where fdr < 0.05
                    order by fdr asc, scount desc ''' 
@@ -72,7 +72,7 @@ class overlappedGenesGOAnalysisMF(cpgTracker):
     '''GO analysis '''
     mPattern = "_overlapped_genes_go_mol_function$"
     def __call__(self, track, slice = None ):
-        query = '''select distinct goid, description, scount as genes, spercent as percent_of_list, fdr 
+        query = '''select distinct goid, description, scount as genes, bcount as genes_with_term, spercent as percent_of_list, ratio as Enrichment, fdr 
                    from %(track)s_overlapped_genes_go_mol_function
                    where fdr < 0.05
                    order by fdr asc, scount desc ''' 
@@ -84,7 +84,7 @@ class overlappedGenesGOSlimAnalysisBP(cpgTracker):
     '''GO slim analysis '''
     mPattern = "_overlapped_genes_goslim_biol_process$"
     def __call__(self, track, slice = None ):
-        query = '''select distinct goid, description, scount as genes, spercent as percent_of_list, fdr
+        query = '''select distinct goid, description, scount as genes, bcount as genes_with_term, spercent as percent_of_list, ratio as Enrichment, fdr
                    from %(track)s_overlapped_genes_goslim_biol_process
                    where fdr < 0.05
                    order by fdr asc, scount desc ''' 

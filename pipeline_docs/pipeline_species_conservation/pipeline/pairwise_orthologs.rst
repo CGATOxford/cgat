@@ -21,7 +21,25 @@ over the sum of the total conserved genes with an NMI in each species.
    :render: table
 
    Probability of NMIs gene lists overlap
+   
+Pairwise Conservation Alternative Score
+========================================
 
+This heatmap indicates the conservation of NMIs in each species pair. 
+The score is calculated as the total number of conserved genes that have an NMI in both species
+over the minimum number of conserved genes with an NMI in either species.
+
+.. report:: orthology.pairwiseHeatmap2
+   :render: matrixNP-plot
+   :zrange: 0,1
+
+   Pairwise conservation of NMIs
+
+.. report:: orthology.pairwiseTable2
+   :render: table
+
+   Pairwise conservation of NMIs
+   
 Threeway Conservation
 ======================
 

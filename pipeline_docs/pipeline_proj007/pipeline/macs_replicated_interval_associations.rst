@@ -7,7 +7,11 @@ Association was performed hierarchically as follows:
 
 Extended Hierarchy
 
-coding TSS > lncRNA > other noncoding TSS > enhancer > RNAseq transcript > intergenic
+coding TSS > lncRNA > short RNA TSS > pseudogene > processed transcript > enhancer > RNAseq transcript > intergenic
+
+intermediate Hierarchy
+
+coding TSS > lncRNA > short RNA TSS > enhancer > RNAseq transcript > intergenic
 
 Reduced Hierarchy
 
@@ -16,8 +20,13 @@ coding TSS > noncoding TSS > intergenic
 .. report:: macs_replicated_interval_associations.replicatedAssociationsHierarchy
    :render: table
 
-   CAPseq intervals assoctaed with different genomic features (hierarchical)
-   
+   CAPseq intervals assoctaed with different genomic features (extended hierarchy)
+
+.. report:: macs_replicated_interval_associations.replicatedAssociationsHierarchy3
+   :render: table
+
+   CAPseq intervals assoctaed with different genomic features (intermediate hierarchy)
+      
 .. report:: macs_replicated_interval_associations.replicatedAssociationsHierarchy2
    :render: table
 

@@ -2736,7 +2736,7 @@ def overlappedGeneChromatinProfileWide(infile, outfile):
                            --normalize-profile=area
                            --normalize-profile=counts
                            --normalize-profile=none
-                           --scale_flank_length=10'''
+                           --scale_flank_length=3'''
             P.run() 
     else:
         statement = '''touch %(outfile)s '''
@@ -2891,6 +2891,51 @@ def loadOverlappedGeneChromatinIntersection(infile, outfile):
                          --table=overlapped_genes_h3k27me3_venn
                     > %(outfile)s"""
     P.run()
+
+############################################################
+@transform( overlappedGeneChromatinIntersectionStats, suffix(".stats"), ".stats.contingency_table" )
+def OverlappedGeneChromatinIntersectionContingencyTable(infile, outfile):
+    '''calculate intersection of chromatin marks and CAPSeq overlapped genes'''
+    chromatin_track = PARAMS["plots_h3k27_track"]
+    track = PARAMS["plots_fig4_tissue"]
+    species = PARAMS["species"]
+    # Connect to DB
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    tracks = []
+    # Extract data from db
+    cc = dbhandle.cursor()
+    query = ''' SELECT "Canonical" as interval_type, track_and_chromatin_track as H3K27Me3, track_only as no_H3K27Me3
+                FROM overlapped_genes_h3k27me3_venn
+                WHERE chromatin_track="%(chromatin_track)s"
+                AND track="%(species)s_%(track)s-cap.overlapped_genes.control"
+                UNION
+                SELECT "Broad" as interval_type, track_and_chromatin_track as H3K27Me3, track_only as no_H3K27Me3
+                FROM overlapped_genes_h3k27me3_venn
+                WHERE chromatin_track="%(chromatin_track)s"
+                AND track="%(species)s_%(track)s-cap.overlapped_genes"''' % locals()
+    E.info( query )
+    cc.execute( query )
+    # Write to file
+    outs = open( outfile, "w")
+    outs.write("interval_type\tH3K27Me3\tno_H3K27Me3\n")
+    for result in cc:
+        pre = ""
+        for r in result:
+            outs.write("%s%s" % (pre, str(r)) )
+            pre = "\t"
+        outs.write("\n")
+    cc.close()
+    outs.close()
+
+############################################################
+@transform( OverlappedGeneChromatinIntersectionContingencyTable, regex(r"overlapped_genes/(\S+).stats.contingency_table"), r"overlapped_genes/"+PARAMS["species"]+r"_\1.stats.fisher.test.tsv" )
+def OverlappedGeneChromatinIntersectionFisherTest(infile, outfile):
+    '''calculate intersection of chromatin marks and CAPSeq overlapped genes'''
+    R('''x <- read.table(file='%(infile)s', header=TRUE, stringsAsFactors=FALSE, row.names=1)''' % locals() )
+    R('''res <- fisher.test(x)''')
+    R('''fisher_result <- data.frame(res[3]$estimate,res[1]$p.value,res[2]$conf.int[1],res[2]$conf.int[2])''')
+    R('''colnames(fisher_result) <- c("odds.ratio","p.value","conf.int.low","conf.int.high") ''')
+    R('''write.table(fisher_result, file="%(outfile)s", sep="\t", row.names=F) ''' % locals() )
     
 ############################################################
 ## Compare intervals to external bed files using GAT
@@ -3450,6 +3495,201 @@ def exportLiverTestesIntervalLengths( infiles, outfile ):
         P.run()
 
 ############################################################
+@transform(loadLiverTestesUnique, suffix(".unique.bed.load"), ".shared.cpg_obsexp")
+def exportLiverTestesSharedCpGObsExp( infile, outfile ):
+    '''Export list of genes with TSS associated CAPseq intervals in both liver and testes'''
+    track = P.snip( os.path.basename( infile ), ".liver.testes.unique.bed.load" ).replace(".","_").replace("-","_")
+    geneset_name = PARAMS["geneset_name"]
+    # Connect to DB
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    cc = dbhandle.cursor()
+    # Extract data from db
+    query = '''SELECT CpG_ObsExp
+                FROM %(track)s_capseq_composition 
+                EXCEPT
+                SELECT CpG_ObsExp
+                FROM %(track)s_capseq_composition c, %(track)s_intervals i, 
+                %(track)s_liver_testes_unique_intervals s
+                WHERE c.gene_id=i.interval_id
+                AND i.contig=s.contig
+                AND i.start=s.start''' % locals()
+    cc.execute( query )
+    E.info( query )
+    # Write to file
+    outs = open( outfile, "w")
+    #outs.write("gene_id\n")
+    for result in cc:
+        pre = ""
+        for r in result:
+            outs.write("%s%s" % (pre, str(r)) )
+            pre = "\t"
+        outs.write("\n")
+    cc.close()
+    outs.close()
+
+###########################################################
+@transform(loadLiverTestesUnique, suffix(".bed.load"), ".cpg_obsexp")
+def exportLiverTestesUniqueCpGObsExp( infile, outfile ):
+    '''Export list of genes with TSS associated CAPseq intervals in both liver and testes'''
+    track = P.snip( os.path.basename( infile ), ".liver.testes.unique.bed.load" ).replace(".","_").replace("-","_")
+    geneset_name = PARAMS["geneset_name"]
+    # Connect to DB
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    cc = dbhandle.cursor()
+    statement = "ATTACH DATABASE '%s' AS annotations; "  % (PARAMS["geneset_database"])
+    cc.execute(statement)
+    # Extract data from db
+    query = '''SELECT CpG_ObsExp
+                FROM %(track)s_capseq_composition c, %(track)s_intervals i, 
+                %(track)s_liver_testes_unique_intervals s
+                WHERE c.gene_id=i.interval_id
+                AND i.contig=s.contig
+                AND i.start=s.start''' % locals()
+    cc.execute( query )
+    E.info( query )
+    # Write to file
+    outs = open( outfile, "w")
+    #outs.write("gene_id\n")
+    for result in cc:
+        pre = ""
+        for r in result:
+            outs.write("%s%s" % (pre, str(r)) )
+            pre = "\t"
+        outs.write("\n")
+    cc.close()
+    outs.close()
+
+############################################################
+@transform(loadLiverTestesUnique, suffix(".unique.bed.load"), ".shared.gc_content")
+def exportLiverTestesSharedGC( infile, outfile ):
+    '''Export list of genes with TSS associated CAPseq intervals in both liver and testes'''
+    track = P.snip( os.path.basename( infile ), ".liver.testes.unique.bed.load" ).replace(".","_").replace("-","_")
+    geneset_name = PARAMS["geneset_name"]
+    # Connect to DB
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    cc = dbhandle.cursor()
+    # Extract data from db
+    query = '''SELECT pGC
+                FROM %(track)s_capseq_composition 
+                EXCEPT
+                SELECT pGC
+                FROM %(track)s_capseq_composition c, %(track)s_intervals i, 
+                %(track)s_liver_testes_unique_intervals s
+                WHERE c.gene_id=i.interval_id
+                AND i.contig=s.contig
+                AND i.start=s.start''' % locals()
+    cc.execute( query )
+    E.info( query )
+    # Write to file
+    outs = open( outfile, "w")
+    #outs.write("gene_id\n")
+    for result in cc:
+        pre = ""
+        for r in result:
+            outs.write("%s%s" % (pre, str(r)) )
+            pre = "\t"
+        outs.write("\n")
+    cc.close()
+    outs.close()
+
+###########################################################
+@transform(loadLiverTestesUnique, suffix(".bed.load"), ".gc_content")
+def exportLiverTestesUniqueGC( infile, outfile ):
+    '''Export list of genes with TSS associated CAPseq intervals in both liver and testes'''
+    track = P.snip( os.path.basename( infile ), ".liver.testes.unique.bed.load" ).replace(".","_").replace("-","_")
+    geneset_name = PARAMS["geneset_name"]
+    # Connect to DB
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    cc = dbhandle.cursor()
+    statement = "ATTACH DATABASE '%s' AS annotations; "  % (PARAMS["geneset_database"])
+    cc.execute(statement)
+    # Extract data from db
+    query = '''SELECT pGC
+                FROM %(track)s_capseq_composition c, %(track)s_intervals i, 
+                %(track)s_liver_testes_unique_intervals s
+                WHERE c.gene_id=i.interval_id
+                AND i.contig=s.contig
+                AND i.start=s.start''' % locals()
+    cc.execute( query )
+    E.info( query )
+    # Write to file
+    outs = open( outfile, "w")
+    #outs.write("gene_id\n")
+    for result in cc:
+        pre = ""
+        for r in result:
+            outs.write("%s%s" % (pre, str(r)) )
+            pre = "\t"
+        outs.write("\n")
+    cc.close()
+    outs.close()
+
+############################################################
+@transform(loadLiverTestesUnique, suffix(".unique.bed.load"), ".shared.cpg_density")
+def exportLiverTestesSharedCpGDensity( infile, outfile ):
+    '''Export list of genes with TSS associated CAPseq intervals in both liver and testes'''
+    track = P.snip( os.path.basename( infile ), ".liver.testes.unique.bed.load" ).replace(".","_").replace("-","_")
+    geneset_name = PARAMS["geneset_name"]
+    # Connect to DB
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    cc = dbhandle.cursor()
+    # Extract data from db
+    query = '''SELECT pCpG
+                FROM %(track)s_capseq_composition 
+                EXCEPT
+                SELECT pCpG
+                FROM %(track)s_capseq_composition c, %(track)s_intervals i, 
+                %(track)s_liver_testes_unique_intervals s
+                WHERE c.gene_id=i.interval_id
+                AND i.contig=s.contig
+                AND i.start=s.start''' % locals()
+    cc.execute( query )
+    E.info( query )
+    # Write to file
+    outs = open( outfile, "w")
+    #outs.write("gene_id\n")
+    for result in cc:
+        pre = ""
+        for r in result:
+            outs.write("%s%s" % (pre, str(r)) )
+            pre = "\t"
+        outs.write("\n")
+    cc.close()
+    outs.close()
+
+###########################################################
+@transform(loadLiverTestesUnique, suffix(".bed.load"), ".cpg_density")
+def exportLiverTestesUniqueCpGDensity( infile, outfile ):
+    '''Export list of genes with TSS associated CAPseq intervals in both liver and testes'''
+    track = P.snip( os.path.basename( infile ), ".liver.testes.unique.bed.load" ).replace(".","_").replace("-","_")
+    geneset_name = PARAMS["geneset_name"]
+    # Connect to DB
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    cc = dbhandle.cursor()
+    statement = "ATTACH DATABASE '%s' AS annotations; "  % (PARAMS["geneset_database"])
+    cc.execute(statement)
+    # Extract data from db
+    query = '''SELECT pCpG
+                FROM %(track)s_capseq_composition c, %(track)s_intervals i, 
+                %(track)s_liver_testes_unique_intervals s
+                WHERE c.gene_id=i.interval_id
+                AND i.contig=s.contig
+                AND i.start=s.start''' % locals()
+    cc.execute( query )
+    E.info( query )
+    # Write to file
+    outs = open( outfile, "w")
+    #outs.write("gene_id\n")
+    for result in cc:
+        pre = ""
+        for r in result:
+            outs.write("%s%s" % (pre, str(r)) )
+            pre = "\t"
+        outs.write("\n")
+    cc.close()
+    outs.close()
+        
+############################################################
 ############################################################
 ## GO analysis    
 @follows( mkdir("liver_vs_testes/go") )
@@ -3596,6 +3836,36 @@ def plotFigure3Length( infiles, outfile):
     R('''sharesVsUniqueLengthPlot(liver_shared="%(liver_shared)s", liver_unique="%(liver_uniq)s", testes_shared="%(testes_shared)s", testes_unique="%(testes_uniq)s", outfile="%(outfile)s")''' % locals() )
 
 ############################################################
+@follows( mkdir("plots"),exportLiverTestesUniqueCpGObsExp,exportLiverTestesSharedCpGObsExp )
+@files("liver_vs_testes/*.cpg_obsexp", "plots/"+PARAMS["species"]+".liver.testes.cpg_obsexp.pdf")
+def plotFigure3CpGObsExp( infiles, outfile):
+    '''Figure 3 supplementary: CpG Obs/Exp of liver and testes unique intervals compared to shared'''
+    liver_shared, liver_uniq, testes_shared, testes_uniq = infiles
+    scriptsdir = PARAMS["scriptsdir"]
+    R('''source("%(scriptsdir)s/R/proj007/proj007.R") ''' % locals() )
+    R('''sharesVsUniqueCpgPlot(liver_shared="%(liver_shared)s", liver_unique="%(liver_uniq)s", testes_shared="%(testes_shared)s", testes_unique="%(testes_uniq)s", outfile="%(outfile)s")''' % locals() )
+
+############################################################
+@follows( mkdir("plots"),exportLiverTestesUniqueGC,exportLiverTestesSharedGC )
+@files("liver_vs_testes/*.gc_content", "plots/"+PARAMS["species"]+".liver.testes.gc_content.pdf")
+def plotFigure3GC( infiles, outfile):
+    '''Figure 3 supplementary: CpG Obs/Exp of liver and testes unique intervals compared to shared'''
+    liver_shared, liver_uniq, testes_shared, testes_uniq = infiles
+    scriptsdir = PARAMS["scriptsdir"]
+    R('''source("%(scriptsdir)s/R/proj007/proj007.R") ''' % locals() )
+    R('''sharesVsUniqueCpgPlot(liver_shared="%(liver_shared)s", liver_unique="%(liver_uniq)s", testes_shared="%(testes_shared)s", testes_unique="%(testes_uniq)s", outfile="%(outfile)s", xlabel="GC content", xlimit=c(0,1))''' % locals() )
+    
+############################################################
+@follows( mkdir("plots"),exportLiverTestesUniqueCpGDensity,exportLiverTestesSharedCpGDensity )
+@files("liver_vs_testes/*.cpg_density", "plots/"+PARAMS["species"]+".liver.testes.cpg_density.pdf")
+def plotFigure3CpGDensity( infiles, outfile):
+    '''Figure 3 supplementary: CpG density of liver and testes unique intervals compared to shared'''
+    liver_shared, liver_uniq, testes_shared, testes_uniq = infiles
+    scriptsdir = PARAMS["scriptsdir"]
+    R('''source("%(scriptsdir)s/R/proj007/proj007.R") ''' % locals() )
+    R('''sharesVsUniqueCpgPlot(liver_shared="%(liver_shared)s", liver_unique="%(liver_uniq)s", testes_shared="%(testes_shared)s", testes_unique="%(testes_uniq)s", outfile="%(outfile)s", xlabel="CpG Density", xlimit=c(0,0.3))''' % locals() )
+            
+############################################################
 @follows( liverTestesUniqueChromatinProfile, mkdir("plots") )
 @merge("liver_vs_testes/"+PARAMS["species"]+"_testes*H3K4Me3-1*profile.area.tsv.gz", r"plots/"+PARAMS["species"]+r"_testes_unique_intervals_H3K4Me3_profile.pdf")
 def plotFigure3cH3K4Me3Testes( infiles, outfile):
@@ -3740,7 +4010,7 @@ def plotFigure4bK27WideSmoothed( infiles, outfile):
         control,overlapped = infiles
         scriptsdir = PARAMS["scriptsdir"]
         R('''source("%(scriptsdir)s/R/proj007/proj007.R") ''' % locals() )
-        R('''overlappedGenesSmoothedProfilePlot(overlapped="%(overlapped)s", control="%(control)s", outfile="%(outfile)s", ylabel="H3K27Me3")''' % locals() )
+        R('''overlappedGenesSmoothedProfilePlot(overlapped="%(overlapped)s", control="%(control)s", outfile="%(outfile)s", ylabel="H3K27Me3", smooth=0.5)''' % locals() )
         
 ############################################################
 @follows( longIntervalGeneChromatinProfile, mkdir("plots") )
@@ -4011,6 +4281,9 @@ def publish_report(infile, outfile):
     statement += '''cp -sf %(working_dir)s/plots/*.liver.testes.length.pdf %(fig_dir)s/Fig3 2>> %(outfile)s; '''
     statement += '''cp -sf %(working_dir)s/plots/*liver.testes.intergenic.venn.pdf %(fig_dir)s/Fig3 2>> %(outfile)s; '''
     statement += '''cp -sf %(working_dir)s/plots/*liver.testes.transcript.tss.venn.pdf %(fig_dir)s/Fig3 2>> %(outfile)s; '''
+    statement += '''cp -sf %(working_dir)s/plots/*cpg_obsexp.pdf %(fig_dir)s/Fig3 2>> %(outfile)s; '''
+    statement += '''cp -sf %(working_dir)s/plots/*cpg_density.pdf %(fig_dir)s/Fig3 2>> %(outfile)s; '''
+    statement += '''cp -sf %(working_dir)s/plots/*gc_content.pdf %(fig_dir)s/Fig3 2>> %(outfile)s; '''
     if len(PARAMS["bigwig_chromatin"]) > 0:
         statement += '''cp -sf %(working_dir)s/plots/*unique_intervals_H3K4Me3_profile.pdf %(fig_dir)s/Fig3 2>> %(outfile)s; '''
     if len(PARAMS["expression_rpkm"]) > 0:
@@ -4020,6 +4293,7 @@ def publish_report(infile, outfile):
         statement += '''cp -sf %(working_dir)s/plots/*overlapped_genes_H3K27Me3_profile*.pdf %(fig_dir)s/Fig4 2>> %(outfile)s; '''
         statement += '''cp -sf %(working_dir)s/plots/*overlapped_genes_H3K4Me3_profile*.pdf %(fig_dir)s/Fig4 2>> %(outfile)s; '''
         statement += '''cp -sf %(working_dir)s/plots/*overlapped.genes*.pdf %(fig_dir)s/Fig4 2>> %(outfile)s; '''
+        statement += '''cp -sf %(working_dir)s/overlapped_genes/*.fisher.test.tsv %(fig_dir)s/Fig4 2>> %(outfile)s; '''
         
     # species-specific datasets - chromatin plots
     if len(PARAMS["bigwig_chromatin"]) > 0:
@@ -4243,7 +4517,13 @@ def overlappedGenesChromatin():
          exportLiverTestesSpecificCAPseqGenes,
          exportLiverTestesSharedCAPseqGenes,
          exportLiverTestesUniqueLength,
-         exportLiverTestesSharedLength )
+         exportLiverTestesSharedLength,
+         exportLiverTestesSharedCpGObsExp,
+         exportLiverTestesUniqueCpGObsExp,
+         exportLiverTestesSharedGC,
+         exportLiverTestesUniqueGC,
+         exportLiverTestesSharedCpGDensity,
+         exportLiverTestesUniqueCpGDensity)
 def liverTestes():
     '''Annotate liver vs testes specific CAPseq intervals'''
     pass
@@ -4254,6 +4534,9 @@ def liverTestes():
           plotFigure3bTSSVenn, 
           plotFigure3bIntergenicVenn,
           plotFigure3Length, 
+          plotFigure3CpGObsExp, 
+          plotFigure3GC,
+          plotFigure3CpGDensity,
           plotFigure3cH3K4Me3Testes,
           plotFigure3cH3K4Me3Liver, 
           plotFigure4a,

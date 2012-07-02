@@ -173,40 +173,8 @@ foldchange_rpkm <- function(liver="", testes="", shared="", rpkm="", outfile="rp
     dev.off()
 }
 
-tags_filename <- "mm_ens57_counts.tsv"
-design_filename <- "mm_design_table.tsv"
-outfile <- "mm_deseq"
-log2foldchange=2
-liver="/ifs/projects/proj007/capseq7/mm9/ensembl66/liver_vs_testes/mm_liver-cap.replicated.liver.testes.unique.genelist"
-testes="/ifs/projects/proj007/capseq7/mm9/ensembl66/liver_vs_testes/mm_testes-cap.replicated.liver.testes.unique.genelist"
-shared="/ifs/projects/proj007/capseq7/mm9/ensembl66/liver_vs_testes/liver.testes.shared.genelist"
 
-tags_filename <- "hs_ens57_counts.tsv"
-design_filename <- "hs_design_table.tsv"
-outfile <- "hs_deseq"
-log2foldchange=2
-liver="/ifs/projects/proj007/capseq7/hg19/ensembl66/liver_vs_testes/hs_liver-cap.replicated.liver.testes.unique.genelist"
-testes="/ifs/projects/proj007/capseq7/hg19/ensembl66/liver_vs_testes/hs_testes-cap.replicated.liver.testes.unique.genelist"
-shared="/ifs/projects/proj007/capseq7/hg19/ensembl66/liver_vs_testes/liver.testes.shared.genelist"
-
-tags_filename <- "oa_ens57_counts.tsv"
-design_filename <- "oa_design_table.tsv"
-outfile <- "oa_deseq"
-log2foldchange=2
-liver="/ifs/projects/proj007/capseq7/ornAna1/rnaseq/liver_vs_testes/oa_male_liver-cap.replicated.liver.testes.unique.genelist"
-testes="/ifs/projects/proj007/capseq7/ornAna1/rnaseq/liver_vs_testes/oa_testes-cap.replicated.liver.testes.unique.genelist"
-shared="/ifs/projects/proj007/capseq7/ornAna1/rnaseq/liver_vs_testes/liver.testes.shared.genelist"
-
-tags_filename <- "gg_ens57_counts.tsv"
-design_filename <- "gg_design_table.tsv"
-outfile <- "gg_deseq"
-log2foldchange=2
-liver="/ifs/projects/proj007/capseq7/galGal3/rnaseq/liver_vs_testes/gg_liver-cap.replicated.liver.testes.unique.genelist"
-testes="/ifs/projects/proj007/capseq7/galGal3/rnaseq/liver_vs_testes/gg_testes-cap.replicated.liver.testes.unique.genelist"
-shared="/ifs/projects/proj007/capseq7/galGal3/rnaseq/liver_vs_testes/liver.testes.shared.genelist"
-
-#diff_exp <- function(tags_filename='', design_filename='', liver="", testes="", shared="", outfile="", log2foldchange=2) {
-
+diff_exp <- function(tags_filename='', design_filename='', outfile="") {
     # Load data
     counts_table = read.delim( tags_filename, header = TRUE, row.names = 1, stringsAsFactors = TRUE, comment.char = '#' )
     pheno = read.delim( design_filename, header = TRUE, stringsAsFactors = TRUE, comment.char = '#')
@@ -277,6 +245,9 @@ shared="/ifs/projects/proj007/capseq7/galGal3/rnaseq/liver_vs_testes/liver.teste
     # Run Differential expression test
     res <- nbinomTest( cds, "liver", "testes" )
     
+    # Save deseq result
+    write.table( res, file=paste(outfile, ".deseq_results.tsv", sep="") )
+    
     # Plot significance
     png( file=paste(outfile,".significance.png",sep=""))
     plot( res$baseMean, res$log2FoldChange, log="x", pch=20, cex=.1, col = ifelse( res$padj < 0.05, "red", "black" ) )
@@ -304,14 +275,20 @@ shared="/ifs/projects/proj007/capseq7/galGal3/rnaseq/liver_vs_testes/liver.teste
     print( a, vp = viewport( layout.pos.row = 1, layout.pos.col = 1 ) )
     print( b, vp = viewport( layout.pos.row = 2, layout.pos.col = 1 ) )
     dev.off()
-    
+}
+
+de_plot <- function(deseq_result="", liver="", testes="", shared="", outfile="", log2foldchange=2) {
+    res = read.table( deseq_result, header = TRUE, row.names = 1, stringsAsFactors = TRUE, comment.char = '#' )
+    attach(res)
     # Get diff exp genes (>2 fold change, adjusted p-value < 0.05)
     # Overexpressed in Liver
-    liver_up <- res[(res$padj < 0.05 & res$log2FoldChange < -0.585),]
+    liver_up <- res[(res$padj < 0.05 & res$log2FoldChange <= -log2foldchange),]
     # Overexpressed in Testes
-    testes_up <- res[(res$padj < 0.05 & res$log2FoldChange > 0.585),]
+    testes_up <- res[(res$padj < 0.05 & res$log2FoldChange >= log2foldchange),]
     # Unchanged
-    unchanged <- res[res$padj > 0.05,]
+    unchanged <- res[res$padj >= 0.05,]
+    unchanged2 <- res[(res$padj < 0.05 & (res$log2FoldChange > -log2foldchange | res$log2FoldChange < log2foldchange )), ]
+    unchanged <- rbind(unchanged, unchanged2)
     
     # Load liver and testes specific NMI gene lists
     l <- read.table(file=liver, stringsAsFactors=FALSE, header=TRUE)
@@ -342,37 +319,109 @@ shared="/ifs/projects/proj007/capseq7/galGal3/rnaseq/liver_vs_testes/liver.teste
     fisher_result <- rbind(fisher_result,c(testes_nmi_result[3]$estimate,testes_nmi_result[1]$p.value,testes_nmi_result[2]$conf.int[1],testes_nmi_result[2]$conf.int[2]) )
     colnames(fisher_result) <- c("odds.ratio","p.value","conf.int.low","conf.int.high")
     rownames(fisher_result) <- c("liver","testes")
-    write.table(fisher_result, file=paste(outfile,".fisher.test.tsv",sep=""), sep="\t")
-    
-    # Plot results
-    pdf(file=paste(outfile,".scatter.pdf",sep=""), height=8, width=8, onefile=TRUE, family='Helvetica', paper='A4', pointsize=12)
-    plot(shared_nmi_unchanged[,4],shared_nmi_unchanged[,3],type="p",col="grey",xlab="Testes Mean", ylab="Liver Mean", main="", log="xy")
-    points(shared_nmi_liver_up[,4],shared_nmi_liver_up[,3],col="grey")
-    points(shared_nmi_testes_up[,4],shared_nmi_testes_up[,3],col="grey")
-    points(liver_nmi_up[,4],liver_nmi_up[,3],col="red")
-    points(liver_nmi_unchanged[,4],liver_nmi_unchanged[,3],col="red")
-    points(testes_nmi_up[,4],testes_nmi_up[,3],col="green")
-    points(testes_nmi_unchanged[,4],testes_nmi_unchanged[,3],col="green")
-    abline(0,1,col=4,lty=2)
-    abline(2,1,col=4,lty=2)
-    abline(-2,1,col=4,lty=2)
-    leg=c("Shared","Liver-specific","Testes-specific")
-    legend("topleft", legend=leg, col=c("grey",2,3), pch=c(1,1,1), bty="n")
-    dev.off()   
+    write.table(fisher_result, file=paste(outfile,".fisher.test.tsv",sep=""), sep="\t") 
     
     # MA plot
     pdf(file=paste(outfile,".maplot.pdf",sep=""), height=8, width=8, onefile=TRUE, family='Helvetica', paper='A4', pointsize=12)
-    plot(log2(shared_nmi_unchanged[,2]),shared_nmi_unchanged[,6],type="p",col="grey",xlab="log2(Mean Expression)", ylab="log ratio", main="")
-    points(log2(shared_nmi_liver_up[,2]),shared_nmi_liver_up[,6],col="grey")
-    points(log2(shared_nmi_testes_up[,2]),shared_nmi_testes_up[,6],col="grey")
-    points(log2(liver_nmi_up[,2]),liver_nmi_up[,6],col="red")
-    points(log2(liver_nmi_unchanged[,2]),liver_nmi_unchanged[,6],col="red")
-    points(log2(testes_nmi_up[,2]),testes_nmi_up[,6],col="green")
-    points(log2(testes_nmi_unchanged[,2]),testes_nmi_unchanged[,6],col="green")
-    abline(h=c(-1,1),col=4,lty=2)
+    plot(log2(shared_nmi_unchanged[,2]),shared_nmi_unchanged[,6],type="p", col=rgb(153,153,153,254,maxColorValue=255),xlab="log2(Mean Expression)", ylab="log ratio", main="", xlim=c(1,25), ylim=c(-15,15))
+    points(log2(shared_nmi_liver_up[,2]),shared_nmi_liver_up[,6],pch=16,col=rgb(0,0,0,254,maxColorValue=255))
+    points(log2(shared_nmi_testes_up[,2]),shared_nmi_testes_up[,6],pch=16,col=rgb(0,0,0,254,maxColorValue=255))
+    points(log2(liver_nmi_unchanged[,2]),liver_nmi_unchanged[,6],col=rgb(153,0,0,254,maxColorValue=255))
+    points(log2(liver_nmi_up[,2]),liver_nmi_up[,6],pch=16,col=rgb(255,0,0,254,maxColorValue=255))
+    points(log2(testes_nmi_unchanged[,2]),testes_nmi_unchanged[,6],col=rgb(0,0,153,254,maxColorValue=255))
+    points(log2(testes_nmi_up[,2]),testes_nmi_up[,6],pch=16,col=rgb(0,0,255,254,maxColorValue=255))
     abline(h=c(-2,2),col=4,lty=2)
-    leg=c("Shared","Liver-specific","Testes-specific")
-    legend("topleft", legend=leg, col=c("grey",2,3), pch=c(1,1,1), bty="n")
-    dev.off() 
+    leg=c("Shared NMI unchanged","Shared NMI differentially expressed","Liver-specific NMI unchanged","Liver-specific NMI overexpressed in liver","Testes-specific NMI unchanged","Testes-specific NMI overexpressed in testes")
+    legend("topleft", legend=leg, col=c(rgb(153,153,153,254,maxColorValue=255),rgb(0,0,0,254,maxColorValue=255),rgb(153,0,0,254,maxColorValue=255),rgb(255,0,0,254,maxColorValue=255),rgb(0,0,153,254,maxColorValue=255),rgb(0,0,255,254,maxColorValue=255)), pch=c(1,16,1,16,1,16), bty="n")
+    dev.off()
+    
 }
  
+#diff_exp(tags_filename="mm_ens57_counts.tsv", design_filename="mm_design_table.tsv", outfile="mm_deseq", log2foldchange=2, liver="/ifs/projects/proj007/capseq7/mm9/ensembl66/liver_vs_testes/mm_liver-cap.replicated.liver.testes.unique.genelist", testes="/ifs/projects/proj007/capseq7/mm9/ensembl66/liver_vs_testes/mm_testes-cap.replicated.liver.testes.unique.genelist", shared="/ifs/projects/proj007/capseq7/mm9/ensembl66/liver_vs_testes/liver.testes.shared.genelist")
+#de_plot(deseq_result="mm_deseq.deseq_results.tsv", outfile="mm_deseq", log2foldchange=2, liver="/ifs/projects/proj007/capseq7/mm9/ensembl66/liver_vs_testes/mm_liver-cap.replicated.liver.testes.unique.genelist", testes="/ifs/projects/proj007/capseq7/mm9/ensembl66/liver_vs_testes/mm_testes-cap.replicated.liver.testes.unique.genelist", shared="/ifs/projects/proj007/capseq7/mm9/ensembl66/liver_vs_testes/liver.testes.shared.genelist")
+tags_filename="mm_ens57_counts.tsv"
+design_filename="mm_design_table.tsv"
+outfile="mm_deseq"
+log2foldchange=2
+liver="/ifs/projects/proj007/capseq7/mm9/ensembl66/liver_vs_testes/mm_liver-cap.replicated.liver.testes.unique.genelist"
+testes="/ifs/projects/proj007/capseq7/mm9/ensembl66/liver_vs_testes/mm_testes-cap.replicated.liver.testes.unique.genelist"
+shared="/ifs/projects/proj007/capseq7/mm9/ensembl66/liver_vs_testes/liver.testes.shared.genelist"
+deseq_result="mm_deseq.deseq_results.tsv"
+
+#diff_exp(tags_filename="hs_ens57_counts.tsv", design_filename="hs_design_table.tsv", outfile="hs_deseq")
+#de_plot(deseq_result="hs_deseq.deseq_results.tsv", outfile="hs_deseq", log2foldchange=2, liver="/ifs/projects/proj007/capseq7/hg19/ensembl66/liver_vs_testes/hs_liver-cap.replicated.liver.testes.unique.genelist", testes="/ifs/projects/proj007/capseq7/hg19/ensembl66/liver_vs_testes/hs_testes-cap.replicated.liver.testes.unique.genelist", shared="/ifs/projects/proj007/capseq7/hg19/ensembl66/liver_vs_testes/liver.testes.shared.genelist")
+
+#diff_exp(tags_filename="oa_ens57_counts.tsv", design_filename="oa_design_table.tsv", outfile="oa_deseq")
+#de_plot(deseq_result="oa_deseq.deseq_results.tsv", outfile="oa_deseq", log2foldchange=2, liver="/ifs/projects/proj007/capseq7/ornAna1/rnaseq2/liver_vs_testes/oa_male_liver-cap.replicated.liver.testes.unique.genelist", testes="/ifs/projects/proj007/capseq7/ornAna1/rnaseq2/liver_vs_testes/oa_testes-cap.replicated.liver.testes.unique.genelist", shared="/ifs/projects/proj007/capseq7/ornAna1/rnaseq2/liver_vs_testes/liver.testes.shared.genelist")
+
+#de_plot(deseq_result="gg_deseq.deseq_results.tsv", outfile="gg_deseq", log2foldchange=2, liver="/ifs/projects/proj007/capseq7/galGal3/rnaseq/liver_vs_testes/gg_liver-cap.replicated.liver.testes.unique.genelist", testes="/ifs/projects/proj007/capseq7/galGal3/rnaseq/liver_vs_testes/gg_testes-cap.replicated.liver.testes.unique.genelist", shared="/ifs/projects/proj007/capseq7/galGal3/rnaseq/liver_vs_testes/liver.testes.shared.genelist")
+#diff_exp(tags_filename="gg_ens57_counts.tsv", design_filename="gg_design_table.tsv", outfile="gg_deseq")
+
+de_plot2 <- function(deseq_result="", liver="", testes="", shared="", outfile="", log2foldchange=2) {
+    res = read.table( deseq_result, header = TRUE, row.names = 1, stringsAsFactors = TRUE, comment.char = '#' )
+    attach(res)
+    # Get diff exp genes (>2 fold change, adjusted p-value < 0.05)
+    # Overexpressed in Liver
+    liver_up <- res[(res$padj < 0.05 & res$log2FoldChange <= -log2foldchange),]
+    # Overexpressed in Testes
+    testes_up <- res[(res$padj < 0.05 & res$log2FoldChange >= log2foldchange),]
+    # Unchanged
+    unchanged <- res[res$padj >= 0.05,]
+    unchanged2 <- res[(res$padj < 0.05 & (res$log2FoldChange > -log2foldchange | res$log2FoldChange < log2foldchange )), ]
+    unchanged <- rbind(unchanged, unchanged2)
+    
+    # Load liver and testes specific NMI gene lists
+    l <- read.table(file=liver, stringsAsFactors=FALSE, header=TRUE)
+    t <- read.table(file=testes, stringsAsFactors=FALSE, header=TRUE)
+    s <- read.table(file=shared, stringsAsFactors=FALSE, header=TRUE)
+    
+    # Make contingency table
+    liver_nmi_up <- liver_up[!is.na(match(liver_up[,1],l[,1])),]
+    shared_nmi_liver_up <- liver_up[!is.na(match(liver_up[,1],s[,1])),]
+    testes_nmi_up <- testes_up[!is.na(match(testes_up[,1],t[,1])),]
+    shared_nmi_testes_up <- testes_up[!is.na(match(testes_up[,1],s[,1])),]
+    liver_nmi_unchanged <- unchanged[!is.na(match(unchanged[,1],l[,1])),]
+    testes_nmi_unchanged <- unchanged[!is.na(match(unchanged[,1],t[,1])),]
+    shared_nmi_unchanged <- unchanged[!is.na(match(unchanged[,1],s[,1])),]
+    # Fisher test
+    liver_test <- matrix(c(dim(liver_nmi_up)[1], dim(liver_nmi_unchanged)[1], dim(shared_nmi_liver_up)[1], dim(shared_nmi_unchanged)[1]), nrow=2, ncol=2)
+    rownames(liver_test) <- c("Overexpressed in liver vs testes","Unchanged in liver vs Testes")
+    colnames(liver_test) <- c("liver-specific NMI","Shared NMI")
+    liver_nmi_result <- fisher.test(liver_test)
+    testes_test <- matrix(c(dim(testes_nmi_up)[1], dim(testes_nmi_unchanged)[1], dim(shared_nmi_testes_up)[1], dim(shared_nmi_unchanged)[1]), nrow=2, ncol=2)
+    rownames(testes_test) <- c("Overexpressed in liver vs testes","Unchanged in liver vs Testes")
+    colnames(testes_test) <- c("testes-specific NMI","Shared NMI")
+    testes_nmi_result <- fisher.test(testes_test)
+    # Output results
+    write.table(liver_test, file=paste(outfile,".liver.contingency-table.tsv",sep=""), sep="\t")
+    write.table(testes_test, file=paste(outfile,".testes.contingency-table.tsv",sep=""), sep="\t")
+    fisher_result <- data.frame(liver_nmi_result[3]$estimate,liver_nmi_result[1]$p.value,liver_nmi_result[2]$conf.int[1],liver_nmi_result[2]$conf.int[2])
+    fisher_result <- rbind(fisher_result,c(testes_nmi_result[3]$estimate,testes_nmi_result[1]$p.value,testes_nmi_result[2]$conf.int[1],testes_nmi_result[2]$conf.int[2]) )
+    colnames(fisher_result) <- c("odds.ratio","p.value","conf.int.low","conf.int.high")
+    rownames(fisher_result) <- c("liver","testes")
+    write.table(fisher_result, file=paste(outfile,".fisher.test.tsv",sep=""), sep="\t") 
+    
+    # MA plot
+    pdf(file=paste(outfile,".maplot.pdf",sep=""), height=8, width=8, onefile=TRUE, family='Helvetica', paper='A4', pointsize=12)
+    plot(log2(shared_nmi_unchanged[,2]),shared_nmi_unchanged[,6],type="p", col=rgb(153,153,153,254,maxColorValue=255),xlab="log2(Mean Expression)", ylab="log ratio", main="", xlim=c(1,25), ylim=c(-15,15))
+    points(log2(shared_nmi_liver_up[,2]),shared_nmi_liver_up[,6],pch=1,col=rgb(153,153,153,254,maxColorValue=255))
+    points(log2(shared_nmi_testes_up[,2]),shared_nmi_testes_up[,6],pch=1,col=rgb(153,153,153,254,maxColorValue=255))
+    points(log2(liver_nmi_unchanged[,2]),liver_nmi_unchanged[,6],col=rgb(255,0,0,254,maxColorValue=255))
+    points(log2(liver_nmi_up[,2]),liver_nmi_up[,6],pch=1,col=rgb(255,0,0,254,maxColorValue=255))
+    points(log2(testes_nmi_unchanged[,2]),testes_nmi_unchanged[,6],col=rgb(0,0,255,254,maxColorValue=255))
+    points(log2(testes_nmi_up[,2]),testes_nmi_up[,6],pch=1,col=rgb(0,0,255,254,maxColorValue=255))
+    abline(h=c(-2,2),col=4,lty=2)
+    leg=c("Shared NMI","Liver-specific NMI","Testes-specific NMI")
+    legend("topleft", legend=leg, col=c(rgb(153,153,153,254,maxColorValue=255),rgb(255,0,0,254,maxColorValue=255),rgb(0,0,255,254,maxColorValue=255)), pch=c(1,1,1), bty="n")
+    dev.off()
+    
+}
+
+de_plot2(deseq_result="gg_deseq.deseq_results.tsv", outfile="gg_3color", log2foldchange=2, liver="/ifs/projects/proj007/capseq7/galGal3/rnaseq/liver_vs_testes/gg_liver-cap.replicated.liver.testes.unique.genelist", testes="/ifs/projects/proj007/capseq7/galGal3/rnaseq/liver_vs_testes/gg_testes-cap.replicated.liver.testes.unique.genelist", shared="/ifs/projects/proj007/capseq7/galGal3/rnaseq/liver_vs_testes/liver.testes.shared.genelist")
+
+de_plot2(deseq_result="oa_deseq.deseq_results.tsv", outfile="oa_3color", log2foldchange=2, liver="/ifs/projects/proj007/capseq7/ornAna1/rnaseq2/liver_vs_testes/oa_male_liver-cap.replicated.liver.testes.unique.genelist", testes="/ifs/projects/proj007/capseq7/ornAna1/rnaseq2/liver_vs_testes/oa_testes-cap.replicated.liver.testes.unique.genelist", shared="/ifs/projects/proj007/capseq7/ornAna1/rnaseq2/liver_vs_testes/liver.testes.shared.genelist")
+
+de_plot2(deseq_result="hs_deseq.deseq_results.tsv", outfile="hs_3color", log2foldchange=2, liver="/ifs/projects/proj007/capseq7/hg19/ensembl66/liver_vs_testes/hs_liver-cap.replicated.liver.testes.unique.genelist", testes="/ifs/projects/proj007/capseq7/hg19/ensembl66/liver_vs_testes/hs_testes-cap.replicated.liver.testes.unique.genelist", shared="/ifs/projects/proj007/capseq7/hg19/ensembl66/liver_vs_testes/liver.testes.shared.genelist")
+
+de_plot2(deseq_result="mm_deseq.deseq_results.tsv", outfile="mm_3color", log2foldchange=2, liver="/ifs/projects/proj007/capseq7/mm9/ensembl66/liver_vs_testes/mm_liver-cap.replicated.liver.testes.unique.genelist", testes="/ifs/projects/proj007/capseq7/mm9/ensembl66/liver_vs_testes/mm_testes-cap.replicated.liver.testes.unique.genelist", shared="/ifs/projects/proj007/capseq7/mm9/ensembl66/liver_vs_testes/liver.testes.shared.genelist")
+

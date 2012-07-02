@@ -39,7 +39,7 @@ class genesWithNMI(cpgTracker):
                    and o.gene_id=i.gene_id
                    and o.length > 1000
                    and o.length < 15000
-                   order by length desc ''' 
+                   order by length desc '''
         data = self.getAll(query)
         return data
         
@@ -48,10 +48,10 @@ class overlappedGenesGOAnalysisBP(cpgTracker):
     '''GO analysis biological process'''
     mPattern = "_overlapped_genes_go_biol_process$"
     def __call__(self, track, slice = None ):
-        query = '''select distinct goid, description, scount as genes, spercent as percent_of_list, fdr
+        query = '''select distinct goid, description, scount as genes, bcount as genes_with_term, spercent as percent_of_list, ratio as Enrichment, fdr
                    from %(track)s_overlapped_genes_go_biol_process
                    where fdr < 0.05
-                   order by fdr asc, scount desc ''' 
+                   order by fdr asc, scount desc '''
         data = self.getAll(query)
         return data
 
@@ -60,10 +60,10 @@ class overlappedGenesGOAnalysisCL(cpgTracker):
     '''GO analysis '''
     mPattern = "_overlapped_genes_go_cell_location$"
     def __call__(self, track, slice = None ):
-        query = '''select distinct goid, description, scount as genes, spercent as percent_of_list, fdr 
+        query = '''select distinct goid, description, scount as genes, bcount as genes_with_term, spercent as percent_of_list, ratio as Enrichment, fdr 
                    from %(track)s_overlapped_genes_go_cell_location
                    where fdr < 0.05
-                   order by fdr asc, scount desc ''' 
+                   order by fdr asc, scount desc '''
         data = self.getAll(query)
         return data
         
@@ -72,10 +72,10 @@ class overlappedGenesGOAnalysisMF(cpgTracker):
     '''GO analysis '''
     mPattern = "_overlapped_genes_go_mol_function$"
     def __call__(self, track, slice = None ):
-        query = '''select distinct goid, description, scount as genes, spercent as percent_of_list, fdr 
+        query = '''select distinct goid, description, scount as genes, bcount as genes_with_term, spercent as percent_of_list, ratio as Enrichment, fdr 
                    from %(track)s_overlapped_genes_go_mol_function
                    where fdr < 0.05
-                   order by fdr asc, scount desc ''' 
+                   order by fdr asc, scount desc '''
         data = self.getAll(query)
         return data
 
@@ -84,10 +84,10 @@ class overlappedGenesGOSlimAnalysisBP(cpgTracker):
     '''GO slim analysis '''
     mPattern = "_overlapped_genes_goslim_biol_process$"
     def __call__(self, track, slice = None ):
-        query = '''select distinct goid, description, scount as genes, spercent as percent_of_list, fdr
+        query = '''select distinct goid, description, scount as genes, bcount as genes_with_term, spercent as percent_of_list, ratio as Enrichment, fdr
                    from %(track)s_overlapped_genes_goslim_biol_process
                    where fdr < 0.05
-                   order by fdr asc, scount desc ''' 
+                   order by fdr asc, scount desc '''
         data = self.getAll(query)
         return data
         
