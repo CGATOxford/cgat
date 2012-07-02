@@ -120,26 +120,32 @@ PARAMS = P.PARAMS
 ###################################################
 ###################################################        
 ###################################################
-## Parse transcripts from GTF file
-@transform( "*.txt", regex(r"(\S+).txt"), r"\1.gtf" )
-def convertTxtToGtf( infile, outfile ):
-    '''Convert  txt to Gtf'''
-    track = P.snip( os.path.basename(infile), ".txt" )
-    statement = '''cat %(infile)s 
-                   | awk 'OFS="\\t" {print "chr"$3,"rnaseq","exon",$4,$5,0,substr($6,0,1),".","transcript_id \\""$1"\\"; gene_id \\""$1"\\"; exon_number \\""substr($2,20,2)"\\"; "}' 
-                   | sed s/0\\\\t1\\\\t\./0\\\\t+\\\\t\./g | sed s/chrUltra/Ultra/ | sed s/chrContig/Contig/ > %(outfile)s'''
-    P.run()
-    
-###################################################
-@transform( convertTxtToGtf, regex(r"(\S+).gtf"), r"\1.transcripts.gtf" )
+@transform( "*.gtf.gz", regex(r"(\S+).gtf.gz"), r"\1.transcripts.gtf" )
 def getGtfStrandedTranscripts( infile, outfile ):
     '''join exons to get transcripts from GTF file'''
-    track = P.snip( os.path.basename(infile), ".gtf" )
-    statement = '''cat %(infile)s | python %(scriptsdir)s/gtf2gtf.py --join-exons | sort -k1,1 -k4,4n > %(outfile)s'''
+    statement = '''zcat %(infile)s | awk '$3 == "transcript"' | awk '$7 != "."' | sort -k1,1 -k4,4n > %(outfile)s'''
+    P.run()
+
+###################################################
+@follows( getGtfStrandedTranscripts )
+@merge( "*.transcripts.gtf", "oa_merged.transcripts.gtf" )
+def mergeTranscriptGTFs( infiles, outfile ):
+    '''Merge GTF from different tssies and experiments'''
+    inlist = " ".join(infiles)
+    statement = '''cat %(inlist)s | sort -k1,1 -k4,4n > %(outfile)s'''
     P.run()
     
 ###################################################
-@transform( getGtfStrandedTranscripts, suffix(".gtf"), ".coding.gtf")
+@transform( mergeTranscriptGTFs, regex(r"(\S+).transcripts.gtf"), r"\1.transcripts.dedup.gtf" )
+def removeDuplicateTranscripts( infile, outfile ):
+    '''Remove duplicate entries from GTF file'''
+    statement = '''cat %(infile)s | 
+                   python %(scriptsdir)s/gtf2gtf.py --remove-duplicates=coordinates --log=%(outfile)s.log 
+                   > %(outfile)s'''
+    P.run()
+    
+###################################################
+@transform( removeDuplicateTranscripts, suffix(".gtf"), ".coding.gtf")
 def getEnsemblCodingGeneset( infile, outfile ):
     '''identify transcrpts that overlap an ensembl coding gene '''
     ensembl_genes = PARAMS["ensembl_genes"]
@@ -214,7 +220,7 @@ def renameNoncodingTranscripts( infile, outfile ):
 @transform(renameNoncodingTranscripts, suffix(".gtf"), ".ensg.gtf" )
 def annotateNoncodingTranscripts( infile, outfile ):
     ''' Add ensembl gene id to GTF file'''
-    ensembl_noncoding = PARAMS["ensembl_noncoding"]
+    ensembl_noncoding = PARAMS["ensembl_noncoding_genes"]
     statement = '''intersectBed -a %(infile)s  -b %(ensembl_noncoding)s -wa -wb -s 
                    | awk -F "\\t" 'OFS="\\t" {print $1,$2,$3,$4,$5,$6,$7,$8,"gene_id \\""$13"\\"; "$9}' > known_noncoding_exons.gtf;  
                    intersectBed -a %(infile)s -b %(ensembl_noncoding)s -v -s
@@ -472,7 +478,7 @@ def updateGeneName( infile, outfile ):
 ############################################################
 ############################################################
 
-@follows( convertTxtToGtf, getGtfStrandedTranscripts,
+@follows( getGtfStrandedTranscripts,
           getEnsemblCodingGeneset, renameTranscripts, annotateTranscripts,
           addMissingEnsemblTranscripts, renameTranscriptToExon )
 def transcripts():

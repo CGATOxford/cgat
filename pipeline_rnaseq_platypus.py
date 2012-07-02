@@ -2,7 +2,7 @@
 #
 #   MRC FGU Computational Genomics Group
 #
-#   $Id: pipeline_xtev.py 2900 2012-03-38 14:38:00Z david $
+#   $Id: pipeline_rnaseq_geneset.py 2900 2012-03-38 14:38:00Z david $
 #
 #   Copyright (C) 2012 David Sims
 #
@@ -22,15 +22,15 @@
 #################################################################################
 """
 ========================
-Xtev Pipeline
+RNAseq Geneset Pipeline
 ========================
 
 :Author: David Sims 
-:Release: $Id: pipeline_xtev.py 2900 2012-03-28 14:38:00Z david $
+:Release: $Id: pipeline_rnaseq_genesst.py 2900 2012-03-28 14:38:00Z david $
 :Date: |today|
 :Tags: Python
 
-The xtev pipeline parses a single Bed12 files derived from TSS analysis project and generates a geneset
+The RNAseq geneset pipeline parses multiple GTF files derived from RNAseq experiments in different tissues and produces a consensus geneset
 
 Usage
 =====
@@ -57,7 +57,7 @@ The sphinxreport report requires a :file:`conf.py` and :file:`sphinxreport.ini` 
 Input
 -----
 
-Input are BED12-formatted files. 
+Input are GTF-formatted files. 
 
 Requirements
 ------------
@@ -118,90 +118,131 @@ PARAMS = P.PARAMS
 #PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["geneset_dir"],"pipeline_annotations.py" )
 
 ###################################################
-## Parse BED12 file
-@follows( mkdir("exons") )
-@transform( "*.bed.gz", regex(r"(\S+)_xenTro2.bed.gz"), r"exons/\1.xenTro2.exon.bed" )
-def bed12ToBed6( infile, outfile ):
-    '''Convert bed12 inpout file to bed6'''
-    track = P.snip( os.path.basename(infile), ".bed.gz" )
-    statement = '''zcat %(infile)s | bed12ToBed6 -i stdin > %(outfile)s'''
-    P.run()
-
-###################################################
-@transform( bed12ToBed6, regex(r"exons/(\S+).xenTro2.exon.bed"), r"exons/\1.xenTro3.exon.bed" )
-def updateGenomeBuild( infile, outfile ):
-    '''Convert xenTro2 input file to xenTro3'''
-    statement = '''liftOver %(infile)s /ifs/mirror/ucsc/xenTro2/liftOver/xenTro2ToXenTro3.over.chain.gz %(outfile)s exons/xenTro3.exons.unmapped.bed'''
-    P.run()
-   
-###################################################
-@transform( updateGenomeBuild, suffix(".xenTro3.exon.bed"), ".xenTro3.exon.bed.load" )
-def loadExons( infile, outfile ):
-    '''load BED file into database '''
-    headers = "contig,start,end,transcript_id,score,strand"
-    statement = """cat %(infile)s | python ~/src/csv2db.py 
-                         --header=%(headers)s
-                         --database=%(database)s
-                         --table=xtev_exons
-                         --index=contig,start
-                         --index=transcript_id
-                 > %(outfile)s; """
-    P.run()
-
-###################################################
 ###################################################        
 ###################################################
-## Parse transcripts from BED12 file
-@follows( mkdir("transcripts") )
-@transform( "*.bed.gz", regex(r"(\S+)_xenTro2.bed.gz"), r"transcripts/\1.xenTro2.transcript.bed" )
-def getTranscriptsBed( infile, outfile ):
-    '''get transcripts from BED12 file'''
-    statement = '''zcat %(infile)s | awk 'OFS="\\t" {print $1,$2,$3,$4,$5,$6}' | grep -v browser | grep -v track > %(outfile)s'''
+@transform( "*.gtf.gz", regex(r"(\S+).gtf.gz"), r"\1.transcripts.gtf" )
+def getGtfStrandedTranscripts( infile, outfile ):
+    '''join exons to get transcripts from GTF file'''
+    statement = '''zcat %(infile)s | awk '$3 == "transcript"' | awk '$7 != "."' | sort -k1,1 -k4,4n > %(outfile)s'''
+    P.run()
+
+###################################################
+@follows( getGtfStrandedTranscripts )
+@merge( "*.transcripts.gtf", "oa_merged.transcripts.gtf" )
+def mergeTranscriptGTFs( infiles, outfile ):
+    '''Merge GTF from different tssies and experiments'''
+    inlist = " ".join(infiles)
+    statement = '''cat %(inlist)s | sort -k1,1 -k4,4n > %(outfile)s'''
     P.run()
     
 ###################################################
-@transform( getTranscriptsBed, regex(r"transcripts/(\S+).xenTro2.transcript.bed"), r"transcripts/\1.xenTro3.transcript.bed" )
-def updateTranscriptGenomeBuild( infile, outfile ):
-    '''Convert xenTro2 input file to xenTro3'''
-    statement = '''liftOver %(infile)s /ifs/mirror/ucsc/xenTro2/liftOver/xenTro2ToXenTro3.over.chain.gz %(outfile)s transcripts/xenTro3.transcripts.unmapped.bed'''
+@transform( mergeTranscriptGTFs, regex(r"(\S+).transcripts.gtf"), r"\1.transcripts.dedup.gtf" )
+def removeDuplicateTranscripts( infile, outfile ):
+    '''Remove duplicate entries from GTF file'''
+    statement = '''cat %(infile)s | 
+                   python %(scriptsdir)s/gtf2gtf.py --remove-duplicates=coordinates --log=%(outfile)s.log 
+                   > %(outfile)s'''
     P.run()
     
 ###################################################
-@transform( updateTranscriptGenomeBuild, suffix(".bed"), ".coding.bed")
+@transform( removeDuplicateTranscripts, suffix(".gtf"), ".coding.gtf")
 def getEnsemblCodingGeneset( infile, outfile ):
     '''identify transcrpts that overlap an ensembl coding gene '''
     ensembl_genes = PARAMS["ensembl_genes"]
-    statement = '''cat %(infile)s | intersectBed -a stdin -b %(ensembl_genes)s -u -s > %(outfile)s;
+    ensembl_noncoding = PARAMS["ensembl_noncoding"]
+    # need to remove transcripts that overlap 100% with noncoding transcripts
+    statement = '''cat %(infile)s | intersectBed -a stdin -b %(ensembl_genes)s -u -s 
+                   | intersectBed -a stdin -b %(ensembl_noncoding)s -v -s -f 1 -r
+                   | sort -k1,1 -k4,4n > %(outfile)s;
                    echo "transcripts with ensembl coding overlap: " > %(outfile)s.count; 
-                   cat %(outfile)s | wc -l >> %(outfile)s.count;
-                   echo "Total transcripts: " >> %(outfile)s.count;
-                   cat %(infile)s | wc -l >> %(outfile)s.count;'''
+                   cat %(outfile)s | wc -l >> %(outfile)s.count;'''
     P.run()
 
 ###################################################
-@transform(getEnsemblCodingGeneset, suffix(".bed"), ".ensg.gtf" )
+@transform( getEnsemblCodingGeneset, suffix(".gtf"), ".rename.gtf")
+def renameTranscripts( infile, outfile ):
+    '''systematically rename transcripts to remove duplicate cuffdiff names '''
+    statement = '''cat %(infile)s | awk 'OFS="\\t" {print $1,$2,$3,$4,$5,$6,$7,$8,"transcript_id \\"rnaseq_coding_transcript_"NR"\\"; "}' > %(outfile)s;'''
+    P.run()
+    
+###################################################
+@transform(renameTranscripts, suffix(".gtf"), ".ensg.gtf" )
 def annotateTranscripts( infile, outfile ):
     ''' Add ensembl gene id to GTF file'''
     ensembl_genes = PARAMS["ensembl_genes"]
     statement = '''cat %(infile)s 
                    | intersectBed -a stdin -b %(ensembl_genes)s -wa -wb -s 
-                   | awk 'FS="\\t", OFS="\\t" {print $1,"xtev","transcript",$2+1,$3+1,$5,$6,".","gene_id \\""$10"\\"; transcript_id \\""$4"\\";"}'
-                   > %(outfile)s;'''
+                   | awk -F "\\t" 'OFS="\\t" {print $1,$2,$3,$4,$5,$6,$7,$8,"gene_id \\""$13"\\"; "$9}'
+                   | sort -k1,1 -k4,4n > %(outfile)s;'''
     P.run()
     
 ###################################################
-@transform(annotateTranscripts, regex(r"transcripts/(\S+).ensg.gtf"), r"transcripts/all_transcripts.gtf" )
+@transform(annotateTranscripts, regex(r"(\S+).ensg.gtf"), r"all_transcripts.gtf" )
 def addMissingEnsemblTranscripts( infile, outfile ):
     ''' Add ensembl gene id to GTF file'''
-    ensembl_transcripts_gtf = PARAMS["ensembl_transcripts_gtf"]
+    ensembl_transcripts = PARAMS["ensembl_transcripts_gtf"]
     statement = '''cat %(infile)s 
-                   | intersectBed -a %(ensembl_transcripts_gtf)s -b stdin -v -s -f 1 -r
-                   > transcripts/missing_ensembl_transcripts.gtf;
-                   cat %(infile)s transcripts/missing_ensembl_transcripts.gtf | sort -k1,1 -k4,4n
+                   | intersectBed -a %(ensembl_transcripts)s -b stdin -v -s -f 1 -r > missing_ensembl_transcripts.gtf;
+                   cat %(infile)s missing_ensembl_transcripts.gtf | sort -k1,1 -k4,4n
                    > %(outfile)s;'''
     P.run()
 
 ###################################################
+@follows( mkdir("geneset") )
+@transform( addMissingEnsemblTranscripts, regex(r"all_transcripts.gtf"), "geneset/transcripts.gtf.gz" )
+def renameTranscriptToExon( infile, outfile ):
+    '''reformat transcript file for use in proj007 pipeline '''
+    statement = """cat %(infile)s | sed s/\\\\ttranscript\\\\t/\\\\texon\\\\t/g
+                 | gzip > %(outfile)s; """
+    P.run()
+    
+###################################################
+###################################################    
+###################################################
+## Non-coding
+@transform( getGtfStrandedTranscripts, suffix(".gtf"), ".noncoding.gtf")
+def getNoncodingGeneset( infile, outfile ):
+    '''Assume that all transcripts the do not overlap with ensembl coding geneset are noncoding '''
+    ensembl_transcripts = PARAMS["ensembl_transcripts"]
+    statement = '''cat %(infile)s | intersectBed -a stdin -b %(ensembl_transcripts)s -v -s > %(outfile)s;
+                   echo "transcripts without ensembl coding overlap: " > %(outfile)s.count; 
+                   cat %(outfile)s | wc -l >> %(outfile)s.count;'''
+    P.run()
+    
+###################################################
+@transform( getNoncodingGeneset, suffix(".gtf"), ".rename.gtf")
+def renameNoncodingTranscripts( infile, outfile ):
+    '''systematically rename transcripts to remove duplicate cuffdiff names '''
+    statement = '''cat %(infile)s | awk 'OFS="\\t" {print $1,$2,$3,$4,$5,$6,$7,$8,"transcript_id \\"rnaseq_noncoding_transcript_"NR"\\"; "}' > %(outfile)s;'''
+    P.run()
+    
+###################################################
+@transform(renameNoncodingTranscripts, suffix(".gtf"), ".ensg.gtf" )
+def annotateNoncodingTranscripts( infile, outfile ):
+    ''' Add ensembl gene id to GTF file'''
+    ensembl_noncoding = PARAMS["ensembl_noncoding_genes"]
+    statement = '''intersectBed -a %(infile)s  -b %(ensembl_noncoding)s -wa -wb -s 
+                   | awk -F "\\t" 'OFS="\\t" {print $1,$2,$3,$4,$5,$6,$7,$8,"gene_id \\""$13"\\"; "$9}' > known_noncoding_exons.gtf;  
+                   intersectBed -a %(infile)s -b %(ensembl_noncoding)s -v -s
+                   | awk -F "\\t" 'OFS="\\t" {print $1,$2,$3,$4,$5,$6,$7,$8,"gene_id \\"novel_gene_"NR"\\"; "$9}' > novel_noncoding_transcripts.gtf; 
+                   cat known_noncoding_exons.gtf novel_noncoding_transcripts.gtf | sort -k1,1 -k4,4n
+                   > %(outfile)s;'''
+    P.run()
+    
+###################################################
+@transform(annotateNoncodingTranscripts, regex(r"(\S+).ensg.gtf"), r"all_noncoding_transcripts.gtf" )
+def addMissingNoncodingTranscripts( infile, outfile ):
+    ''' Add ensembl gene id to GTF file'''
+    ensembl_noncoding = PARAMS["ensembl_noncoding_gtf"]
+    statement = '''intersectBed -a %(ensembl_noncoding)s -b %(infile)s  -v -s -f 1 -r > missing_ensembl_noncoding_transcripts.gtf;
+                   cat %(infile)s missing_ensembl_noncoding_transcripts.gtf | sort -k1,1 -k4,4n
+                   > %(outfile)s;'''
+    P.run()
+
+###################################################
+###################################################
+###################################################
+## Load transcript_info table to database
 @transform( addMissingEnsemblTranscripts, suffix(".gtf"), ".tab" )
 def transcriptGtfToTab( infile, outfile ):
     '''Copy replicated Bed files generated by capseq pipline to geneset-specific output directory'''
@@ -209,7 +250,7 @@ def transcriptGtfToTab( infile, outfile ):
     P.run()
 
 ###################################################
-@files( PARAMS["ensembl_noncoding_gtf"], "transcripts/noncoding.tab" )
+@transform( addMissingNoncodingTranscripts, suffix(".gtf"), ".tab" )
 def noncodingGtfToTab( infile, outfile ):
     '''Copy replicated Bed files generated by capseq pipline to geneset-specific output directory'''
     statement = '''cat %(infile)s | python %(scriptsdir)s/gtf2tab.py -f --log=%(outfile)s.log | awk '{if (NR==1) {print $0"\\tgene_biotype\\tgene_name"} else {print $0"\\tnoncoding\\tunknown"}}' > %(outfile)s'''
@@ -217,17 +258,18 @@ def noncodingGtfToTab( infile, outfile ):
 
 ###################################################
 @follows(transcriptGtfToTab, noncodingGtfToTab)
-@merge( "transcripts/*.tab", "transcripts/transcript_info.tab" )
+@merge( "*.tab", "transcript_info.tab" )
 def mergeTranscriptInfo( infiles, outfile ):
     '''Copy replicated Bed files generated by capseq pipline to geneset-specific output directory'''
     inlist = " ".join(infiles)
     statement = '''cat %(inlist)s | awk '{if (NR==1 || $1 != "contig") {print $0}}' > %(outfile)s'''
     P.run()
-    
+            
 ###################################################
 @transform( mergeTranscriptInfo, suffix(".tab"), ".tab.load" )
 def loadTranscripts( infile, outfile ):
     '''load GTF file into database '''
+    headers = "contig,source,feature,start,end,score,strand,frame,gene_id,transcript_id,gene_biotype"
     statement = """cat %(infile)s | python ~/src/csv2db.py 
                          --database=%(database)s
                          --table=transcript_info
@@ -236,57 +278,35 @@ def loadTranscripts( infile, outfile ):
                          --index=transcript_id
                  > %(outfile)s; """
     P.run()
-
-###################################################
-@files( "xtevToEnsembl.txt", "xtevToEnsembl.txt.load" )
-def loadTranscriptEnsemblMapping( infile, outfile ):
-    '''load mapping file into database '''
-    headers = "contig,start,end,transcript_id,score,strand"
-    statement = """cat %(infile)s | python ~/src/csv2db.py 
-                         --database=%(database)s
-                         --table=xtev_ensembl_transcript
-                         --index=transcript_id
-                 > %(outfile)s; """
-    P.run()
-    
-###################################################
-@follows( mkdir("geneset") )
-@transform( addMissingEnsemblTranscripts, regex(r"transcripts/(\S+).gtf"), "geneset/transcripts.gtf.gz" )
-def renameTranscriptToExon( infile, outfile ):
-    '''reformat transcript file for use in proj007 pipeline '''
-    statement = """cat %(infile)s | sed s/\\\\ttranscript\\\\t/\\\\texon\\\\t/g
-                 | gzip > %(outfile)s; """
-    P.run()
-    
+        
 ###################################################
 ###################################################
 ###################################################
 ## create input files for CAPseq interval annotation pipeline
 @follows( mkdir("geneset") )
-@transform(getEnsemblCodingGeneset, regex(r"transcripts/(\S+).xenTro3.transcript.coding.bed"), r"geneset/\1.ensembl.coding.genes.bed" )
+@transform(getEnsemblCodingGeneset, regex(r"(\S+).coding.gtf"), r"geneset/\1.genes.bed" )
 def buildGeneIntervals( infile, outfile ):
     ''' Merge all transcripts per gene (including utr) to get start and stop 
         coordinates for every protein-coding gene and store in a GTF file'''
-    ensembl_genes = PARAMS["ensembl_genes"]
-    statement = '''cat %(infile)s  %(ensembl_genes)s
-                   | mergeBed -i stdin -s -n 
+    ensembl_genes = PARAMS["ensembl_genes_gtf"]
+    statement = '''cat %(ensembl_genes)s %(infile)s | mergeBed -i stdin -s -n 
                    | awk 'OFS="\\t" {print $1,$2,$3,"gene"NR,$4,$5 }'
-                   | sort -k1,1 -k2,2n
-                   > %(outfile)s;'''
+                   | python %(scriptsdir)s/bed2bed.py --method=filter-genome --genome-file=%(genome_dir)s/%(genome)s --log %(outfile)s.log
+                   | sort -k1,1 -k2,2n > %(outfile)s;'''
     P.run()
 
 ###################################################
-@transform(buildGeneIntervals, regex(r"geneset/(\S+).genes.bed"), os.path.join("geneset", PARAMS['interface_genic_bed']) )
+@transform(buildGeneIntervals, regex(r"geneset/(\S+).genes.bed"), r"geneset/genes.bed" )
 def annotateGeneIntervals( infile, outfile ):
     ''' Add ensembl gene id to GTF file'''
     ensembl_genes = PARAMS["ensembl_genes"]
     statement = '''cat %(infile)s 
                    | intersectBed -a stdin -b %(ensembl_genes)s -wa -wb -s 
-                   | awk 'OFS="\\t" {print $1,$2,$3,$10,$5,$6}'
-                   > %(outfile)s;'''
+                   | awk 'OFS="\\t" {print $1,$2,$3,$10,$5,$6}' 
+                   | sort -k1,1 -k2,2n > %(outfile)s;'''
     P.run()
 
-############################################################
+###################################################
 @transform(annotateGeneIntervals, regex(PARAMS['interface_genic_bed']), PARAMS['interface_upstream_flank_bed'] )
 def buildUpstreamFlankBed( infile, outfile ):
     ''' build interval upstream of gene start for each entry in bed file'''
@@ -296,7 +316,7 @@ def buildUpstreamFlankBed( infile, outfile ):
                    | python %(scriptsdir)s/bed2bed.py --method=filter-genome --genome-file=%(genome_dir)s/%(genome)s --log %(outfile)s.log > %(outfile)s'''
     P.run()
 
-############################################################
+###################################################
 @transform(annotateGeneIntervals, regex(PARAMS['interface_genic_bed']), PARAMS['interface_downstream_flank_bed'] )
 def buildDownstreamFlankBed( infile, outfile ):
     ''' build interval downstream of gene start for each entry in bed file'''
@@ -306,15 +326,16 @@ def buildDownstreamFlankBed( infile, outfile ):
                    | python %(scriptsdir)s/bed2bed.py --method=filter-genome --genome-file=%(genome_dir)s/%(genome)s --log %(outfile)s.log > %(outfile)s'''
     P.run()
 
-############################################################
+###################################################
 @merge((annotateGeneIntervals, buildUpstreamFlankBed, buildDownstreamFlankBed), os.path.join("geneset",PARAMS['interface_intergenic_bed']) )
 def buildIntergenicBed( infiles, outfile ):
     ''' Genomic regions not associated with any other features'''
     inlist = " ".join(infiles)
-    statement = '''cat %(inlist)s | complementBed -i stdin -g %(faidx)s > %(outfile)s'''
+    statement = '''cat %(inlist)s | complementBed -i stdin -g %(faidx)s 
+                   | python %(scriptsdir)s/bed2bed.py --method=filter-genome --genome-file=%(genome_dir)s/%(genome)s --log %(outfile)s.log > %(outfile)s'''
     P.run()
 
-############################################################
+###################################################
 @transform((annotateGeneIntervals,buildUpstreamFlankBed,buildDownstreamFlankBed,buildIntergenicBed), suffix(".bed"), ".gtf" )
 def convertBedToGtf( infile, outfile ):
     ''' convert bed files to GTF'''
@@ -325,7 +346,7 @@ def convertBedToGtf( infile, outfile ):
 ############################################################
 ############################################################
 ## TRANSCRIPTION START SITES
-@transform(addMissingEnsemblTranscripts, regex(r"transcripts/all_transcripts.gtf"), os.path.join("geneset",PARAMS["interface_tss_bed"]) )
+@transform(addMissingEnsemblTranscripts, regex(r"all_transcripts.gtf"), os.path.join("geneset",PARAMS["interface_tss_bed"]) )
 def buildTranscriptTSS( infile, outfile ):
     '''annotate transcription start sites from reference gene set.
     Similar to promotors, except that the witdth is set to 1. '''
@@ -339,7 +360,7 @@ def buildTranscriptTSS( infile, outfile ):
         > %(outfile)s """
     P.run()
 
-############################################################
+###################################################
 @follows( convertBedToGtf )
 @files( "geneset/genes.gtf", os.path.join("geneset", PARAMS["interface_tss_gene_bed"]) )
 def buildGeneTSS( infile, outfile ):
@@ -354,8 +375,8 @@ def buildGeneTSS( infile, outfile ):
         > %(outfile)s """
     P.run()
     
-############################################################
-@transform( addMissingEnsemblTranscripts, regex(r"transcripts/all_transcripts.gtf"), os.path.join("geneset",PARAMS["interface_tss_gene_interval_bed"]) )
+###################################################
+@transform( addMissingEnsemblTranscripts, regex(r"all_transcripts.gtf"), os.path.join("geneset",PARAMS["interface_tss_gene_interval_bed"]) )
 def buildGeneTSSInterval( infile, outfile ):
     '''create a single interval that encompasses all annotated TSSs for a given gene'''
     statement = """
@@ -370,8 +391,22 @@ def buildGeneTSSInterval( infile, outfile ):
         > %(outfile)s """
     P.run()
     
-############################################################
-@transform( (buildTranscriptTSS, buildGeneTSS, buildGeneTSSInterval), suffix(".bed.gz"), ".extended.bed.gz" )
+###################################################
+@transform( addMissingNoncodingTranscripts, regex(r"(\S+).gtf"), os.path.join("geneset",PARAMS["interface_tss_gene_noncoding_bed"]) )
+def buildNoncodingGeneTSS( infile, outfile ):
+    '''Assign a TSS for each non-coding gene'''
+    statement = """
+        cat < %(infile)s 
+        | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
+        | python %(scriptsdir)s/gtf2gff.py --method=promotors --promotor=1 --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
+        | python %(scriptsdir)s/gff2bed.py --is-gtf --name=gene_id --log=%(outfile)s.log 
+        | python %(scriptsdir)s/bed2bed.py --method=filter-genome --genome-file=%(genome_dir)s/%(genome)s --log %(outfile)s.log
+        | gzip
+        > %(outfile)s """
+    P.run()
+    
+###################################################
+@transform( (buildTranscriptTSS, buildGeneTSS, buildGeneTSSInterval, buildNoncodingGeneTSS), suffix(".bed.gz"), ".extended.bed.gz" )
 def ExtendRegion( infile, outfile ):
     '''convert bed to gtf'''
     statement = """gunzip < %(infile)s 
@@ -380,15 +415,15 @@ def ExtendRegion( infile, outfile ):
                    > %(outfile)s """
     P.run()
     
-############################################################
-@transform( (buildTranscriptTSS, buildGeneTSS, buildGeneTSSInterval, ExtendRegion), suffix(".bed.gz"), ".gtf" )
+###################################################
+@transform( (buildTranscriptTSS, buildGeneTSS, buildGeneTSSInterval, buildNoncodingGeneTSS, ExtendRegion), suffix(".bed.gz"), ".gtf" )
 def convertToGTF( infile, outfile ):
     '''convert bed to gtf'''
     statement = """gunzip < %(infile)s 
                    | python %(scriptsdir)s/bed2gff.py --as-gtf  --log=%(outfile)s.log 
                    > %(outfile)s """
     P.run()
-        
+
 ############################################################
 ############################################################
 ############################################################
@@ -397,9 +432,11 @@ def convertToGTF( infile, outfile ):
 def copyEnsembl( infile, outfile ):
     '''convert bed to gtf'''
     ensembl_dir = PARAMS["ensembl_dir"]
-    statement = """cp %(ensembl_dir)s/repeats.gtf geneset/ &> %(outfile)s;
-                   cp %(ensembl_dir)s/tss.gene.noncoding.extended.gtf geneset/ &>> %(outfile)s; 
-                   cp %(ensembl_dir)s/tss.gene.noncoding.bed.gz geneset/ &>> %(outfile)s"""
+    statement = """cp %(ensembl_dir)s/repeats.gtf geneset/ 2> %(outfile)s;
+                   cp %(ensembl_dir)s/go.tsv.gz geneset/ 2> %(outfile)s;
+                   cp %(ensembl_dir)s/goslim.tsv.gz geneset/ 2> %(outfile)s;
+                   cp %(ensembl_dir)s/go_ontology.obo geneset/ 2> %(outfile)s;
+                   cp %(ensembl_dir)s/goslim.obo geneset/ 2> %(outfile)s;"""
     P.run()
 
 ############################################################
@@ -422,7 +459,7 @@ def copyEnsemblDb( infile, outfile ):
     
 ############################################################
 @transform( loadTranscripts, regex(r"(\S+).load"), "gene_name.update.log" )
-def updatGeneName( infile, outfile ):
+def updateGeneName( infile, outfile ):
     '''update gene name from ensembl database'''
     dbhandle = sqlite3.connect( PARAMS["database"] )
     cc = dbhandle.cursor()
@@ -436,44 +473,47 @@ def updatGeneName( infile, outfile ):
     cc.close()
     statement = """touch %(outfile)s;"""
     P.run()
-              
+                
 ############################################################
 ############################################################
 ############################################################
 
-@follows( bed12ToBed6, updateGenomeBuild, loadExons )
-def exons():
-    '''build all targets.'''
-    pass
-
-@follows( getTranscriptsBed, updateTranscriptGenomeBuild,
-          getEnsemblCodingGeneset, annotateTranscripts, 
-          addMissingEnsemblTranscripts, transcriptGtfToTab, 
-          loadTranscripts, loadTranscriptEnsemblMapping,
-          renameTranscriptToExon )
+@follows( getGtfStrandedTranscripts, mergeTranscriptGTFs, removeDuplicateTranscripts,
+          getEnsemblCodingGeneset, renameTranscripts, annotateTranscripts,
+          addMissingEnsemblTranscripts, renameTranscriptToExon )
 def transcripts():
     '''build all targets.'''
     pass
     
-@follows( buildGeneIntervals, annotateGeneIntervals, 
-          buildUpstreamFlankBed, buildDownstreamFlankBed, 
-          buildIntergenicBed, convertBedToGtf )
+@follows( getNoncodingGeneset, renameNoncodingTranscripts,
+          annotateNoncodingTranscripts, addMissingNoncodingTranscripts )
+def noncoding():
+    '''build all targets.'''
+    pass
+
+@follows( transcriptGtfToTab, noncodingGtfToTab, mergeTranscriptInfo, loadTranscripts )
+def loadTranscriptInfo():
+    '''build all targets.'''
+    pass
+    
+@follows( buildGeneIntervals, annotateGeneIntervals, buildUpstreamFlankBed,
+          buildDownstreamFlankBed, buildIntergenicBed, convertBedToGtf )
 def genes():
     '''build all targets.'''
     pass  
 
-@follows( buildTranscriptTSS, buildGeneTSS, buildGeneTSSInterval,
+@follows( buildTranscriptTSS, buildGeneTSS, buildNoncodingGeneTSS,
           ExtendRegion, convertToGTF )
 def tss():
     '''build all targets.'''
     pass 
-    
-@follows( copyEnsembl, copyEnsemblDb, updatGeneName )
+
+@follows( copyEnsembl, copyEnsemblDb, updateGeneName )
 def ensembl():
     '''build all targets.'''
-    pass
+    pass 
 
-@follows( exons, transcripts, genes, tss, ensembl )
+@follows( transcripts, noncoding, loadTranscriptInfo, genes, tss, ensembl )
 def full():
     '''build all targets.'''
     pass 
