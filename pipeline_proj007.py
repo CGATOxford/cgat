@@ -1785,6 +1785,82 @@ def loadCGIComposition( infile, outfile ):
     P.run()
 
 ############################################################
+@follows( loadUCSCPredictedCGIIntervals )
+@files( PARAMS["bed_ucsc_cgi"], "cgi/cgi.transcript.tss.distance" )
+def getCGITSSDistance( infile, outfile ):
+    '''Calculate distance of predicted CGIs to nearest non-coding transcript TSS'''
+    to_cluster = False
+    annotation_file = os.path.join( PARAMS["geneset_dir"], PARAMS["geneset_transcript_tss"] )
+    statement = """cat < %(infile)s 
+                   | awk '{print $1,$2,$3,$4NR}'
+                   | python %(scriptsdir)s/bed2gff.py --as-gtf 
+	               | python %(scriptsdir)s/gtf2table.py 
+		                   --counter=distance-tss 
+		                   --log=%(outfile)s.log 
+                       --filename-gff=%(annotation_file)s 
+                       --filename-format="bed" 
+                   > %(outfile)s"""
+    P.run()
+
+############################################################
+@transform( getCGITSSDistance, suffix( ".transcript.tss.distance"), ".transcript.tss.distance.load" )
+def loadCGITSSDistance( infile, outfile ):
+    '''Load interval annotations: distance to non-coding transcription start sites '''
+    track= P.snip( os.path.basename(infile), ".transcript.tss.distance").replace(".","_").replace("-","_")
+    geneset_name = PARAMS["geneset_name"]
+    statement = """cat %(infile)s | python ~/src/csv2db.py 
+                         --database=%(database)s
+                         --table=%(track)s_%(geneset_name)s_transcript_tss_distance
+                         --index=gene_id
+                         --index=closest_id
+                         --index=id5
+                         --index=id3
+                 > %(outfile)s; """
+    P.run()
+    
+############################################################
+@transform( loadCGITSSDistance, suffix(".transcript.tss.distance.load"), ".transcript.tss.distance.export" )
+def exportCGITSSTranscriptList( infile, outfile ):
+    '''Export list of transcripts closest to CAPseq intervals '''
+    track = P.snip( os.path.basename( infile ), ".transcript.tss.distance.load" ).replace("-","_").replace(".","_")
+    geneset_name = PARAMS["geneset_name"]
+    # Connect to DB
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    cc = dbhandle.cursor()
+    statement = "ATTACH DATABASE '%s' AS annotations; "  % (PARAMS["geneset_database"])
+    cc.execute(statement)
+    # Extract data from db
+    query = '''SELECT distinct gene_id, closest_id FROM %(track)s_%(geneset_name)s_transcript_tss_distance
+               WHERE closest_id is not null ''' % locals()
+    cc.execute( query )
+    E.info( query )
+    # Write to file
+    outs = open( outfile, "w")
+    outs.write("interval_id\ttranscript_id\n")
+    for result in cc:
+        pre = ""
+        interval_id,transcripts = result
+        transcript_list = transcripts.split(",")
+        for t in transcript_list:
+            outs.write("%s\t%s\n" % (interval_id, str(t)) )
+    cc.close()
+    outs.close()
+
+############################################################
+@transform( exportCGITSSTranscriptList, suffix( ".transcript.tss.distance.export"), ".transcript.tss.distance.export.load" )
+def loadCGITSSTranscriptList( infile, outfile ):
+    '''Load CAPseq interval annotations: distance to transcript transcription start sites '''
+    track = P.snip( os.path.basename( infile ), ".transcript.tss.distance.export" ).replace("-","_").replace(".","_")
+    geneset_name = PARAMS["geneset_name"]
+    statement = """cat %(infile)s | python %(scriptsdir)s/csv2db.py 
+                         --database=%(database)s
+                         --table=%(track)s_%(geneset_name)s_interval_transcript_mapping
+                         --index=transcript_id
+                         --index=interval_id
+                   > %(outfile)s; """
+    P.run()
+    
+############################################################
 @transform( loadCGIComposition, suffix("cgi.composition.load"), "cgi.gc.export" )
 def exportCGIGCProfiles( infile, outfile ):
     '''Export file of GC content '''
