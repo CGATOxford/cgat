@@ -223,7 +223,7 @@ def runTest( infile, outfile, update = False ):
             shutil.rmtree( "%s.dir" % test_name )
         except OSError: pass
         os.mkdir( "%s.dir" % test_name )
-        statement = '''ln -s %(infile)s/* %(test_name)s.dir'''
+        statement = '''ln -s %(infile)s.dir/* %(test_name)s.dir'''
         P.run()
     
     statement = '''

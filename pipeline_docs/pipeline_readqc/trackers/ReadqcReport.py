@@ -69,7 +69,6 @@ class TrackerFastQC( ReadqcTracker ):
 
         print rst_text
         return odict( (("text", rst_text),) )
-    
 
 ##########################################################
 ##########################################################

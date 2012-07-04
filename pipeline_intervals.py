@@ -1192,7 +1192,7 @@ def exportMotifLocations( infiles, outfile ):
             add_inputs( os.path.join( PARAMS["annotations_dir"],
                                       PARAMS_ANNOTATIONS["interface_genomic_context_bed"] ),
                         os.path.join( PARAMS["annotations_dir"],
-                                      PARAMS_ANNOTATIONS["interface_mapability_bed"] % PARAMS["gat_mapability"] ),
+                                      PARAMS_ANNOTATIONS["interface_mapability_filtered_bed"] % PARAMS["gat_mapability"] ),
                         os.path.join( PARAMS["annotations_dir"],
                                       PARAMS_ANNOTATIONS["interface_gc_profile_bed"] ),
                         ),
@@ -1239,7 +1239,7 @@ def runGATOnGenomicContext( infiles, outfile ):
             add_inputs( os.path.join( PARAMS["annotations_dir"],
                                       PARAMS_ANNOTATIONS["interface_annotation_gff"] ),
                         os.path.join( PARAMS["annotations_dir"],
-                                      PARAMS_ANNOTATIONS["interface_mapability_bed"] % PARAMS["gat_mapability"] ),
+                                      PARAMS_ANNOTATIONS["interface_mapability_filtered_bed"] % PARAMS["gat_mapability"] ),
                         os.path.join( PARAMS["annotations_dir"],
                                       PARAMS_ANNOTATIONS["interface_gc_profile_bed"] ), 
                         ),
@@ -1422,7 +1422,6 @@ def summarizeGAT( infiles, outfile ):
     
 @follows( loadGat )
 def gat(): pass
-
 
 ############################################################
 ############################################################

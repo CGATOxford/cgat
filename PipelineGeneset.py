@@ -11,6 +11,8 @@ import Pipeline as P
 import Experiment as E
 import GTF, GFF, IndexedFasta
 
+import PipelineUCSC
+
 # for UCSC import
 import MySQLdb
 

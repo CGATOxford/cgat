@@ -176,14 +176,12 @@ from bx.bbi.bigwig_file import BigWigFile
 
 import sqlite3
 
-# for UCSC import
-import MySQLdb
-
 import IndexedFasta, IOTools, GFF, GTF
 import PipelineGeneset as PipelineGeneset
 import PipelineBiomart as PBiomart
 import PipelineDatabase as PDatabase
 import PipelineGO
+import PipelineUCSC
 import Intervals
 
 ###################################################
@@ -373,11 +371,17 @@ def buildCDSTranscripts( infile, outfile ):
 def buildExonTranscripts( infile, outfile ):
     '''build a collection of transcripts from the protein-coding
     section of the ENSEMBL gene set.
-
-    Only CDS exons are parts of exons are output - UTR's are not removed.
     
     '''
     PipelineGeneset.buildExons( infile, outfile )
+
+############################################################
+############################################################
+############################################################
+@files( buildExonTranscripts, "exon_stats.load" )
+def loadExonStats( infile, outfile ):
+    '''load the transcript set stats.'''
+    PipelineGeneset.loadTranscriptStats( infile, outfile )
 
 ############################################################
 ############################################################
@@ -392,7 +396,7 @@ def loadCDSTranscripts( infile, outfile ):
 ############################################################
 @files( buildCDSTranscripts, "cds_stats.load" )
 def loadCDSStats( infile, outfile ):
-    '''load the transcript set.'''
+    '''load the transcript set stats.'''
 
     PipelineGeneset.loadTranscriptStats( infile, outfile )
 
@@ -627,70 +631,6 @@ def buildTTSRegions( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-## UCSC tracks
-############################################################
-def connectToUCSC():
-    dbhandle = MySQLdb.Connect( host = PARAMS["ucsc_host"],
-                                user = PARAMS["ucsc_user"] )
-
-    cc = dbhandle.cursor()
-    cc.execute( "USE %s " %  PARAMS["ucsc_database"] )
-
-    return dbhandle
-
-def getRepeatsFromUCSC( dbhandle, repclasses, outfile ):
-    '''select repeats from UCSC and write to *outfile* in gff format.
-    '''
-
-    # Repeats are either stored in a single ``rmsk`` table (hg19) or in
-    # individual ``rmsk`` tables (mm9) like chr1_rmsk, chr2_rmsk, ....
-    # In order to do a single statement, the ucsc mysql database is 
-    # queried for tables that end in rmsk.
-    cc = dbhandle.cursor()
-    cc.execute("SHOW TABLES LIKE '%rmsk'")
-    tables = [ x[0] for x in cc.fetchall()]
-    if len(tables) == 0:
-        raise ValueError( "could not find any `rmsk` tables" )
-
-    # now collect repeats
-    tmpfile = P.getTempFile(".")
-    
-    for table in tables:
-
-        cc = dbhandle.cursor()
-        sql = """SELECT genoName, 'repeat', 'exon', genoStart+1, genoEnd, strand, '.', '.', 
-                      CONCAT('class \\"', repClass, '\\"; family \\"', repFamily, '\\";')
-               FROM %(table)s
-               WHERE repClass in ('%(repclasses)s') """ % locals() 
-        E.debug( "executing sql statement: %s" % sql )
-        cc.execute( sql )
-        for data in cc.fetchall():
-            tmpfile.write( "\t".join(map(str,data)) + "\n" )
-
-    tmpfile.close()
-
-    to_cluster = True
-
-    # sort gff and make sure that names are correct
-    tmpfilename = tmpfile.name
-
-    statement = '''cat %(tmpfilename)s
-        | %(scriptsdir)s/gff_sort pos 
-        | python %(scriptsdir)s/gff2gff.py 
-            --sanitize=genome 
-            --skip-missing 
-            --genome-file=%(genome_dir)s/%(genome)s
-            --log=%(outfile)s.log 
-        | gzip
-        > %(outfile)s
-    '''
-    P.run()
-
-    os.unlink( tmpfilename)
-
-############################################################
-############################################################
-############################################################
 @files( ((None, PARAMS["interface_rna_gff"] ), ) )
 def importRNAAnnotationFromUCSC( infile, outfile ):
     '''import repetetive RNA from a UCSC formatted file.
@@ -701,8 +641,8 @@ def importRNAAnnotationFromUCSC( infile, outfile ):
     '''
 
     repclasses="','".join(PARAMS["ucsc_rnatypes"].split(",") )
-    dbhandle = connectToUCSC()
-    getRepeatsFromUCSC( dbhandle, repclasses, outfile )
+    dbhandle = PipelineUCSC.connectToUCSC()
+    PipelineUCSC.getRepeatsFromUCSC( dbhandle, repclasses, outfile )
 
 ############################################################
 ############################################################
@@ -715,8 +655,22 @@ def importRepeatsFromUCSC( infile, outfile ):
     '''
 
     repclasses="','".join(PARAMS["ucsc_repeattypes"].split(","))
-    dbhandle = connectToUCSC()
-    getRepeatsFromUCSC( dbhandle, repclasses, outfile )
+    dbhandle = PipelineUCSC.connectToUCSC()
+    PipelineUCSC.getRepeatsFromUCSC( dbhandle, repclasses, outfile )
+
+############################################################
+############################################################
+############################################################
+@files( ((None, PARAMS["interface_allrepeats_gff"] ), ) )
+def importAllRepeatsFromUCSC( infile, outfile ):
+    '''import repeats from a UCSC formatted file.
+
+    The repeats are stored as a :term:`gff` formatted file.
+    '''
+
+    repclasses = None
+    dbhandle = PipelineUCSC.connectToUCSC()
+    PipelineUCSC.getRepeatsFromUCSC( dbhandle, repclasses, outfile )
 
 ############################################################
 ############################################################
@@ -1352,6 +1306,8 @@ def genome():
           loadCDSTranscripts,
           loadTranscriptInformation,
           loadGeneStats,
+          loadCDSStats,
+          loadExonStats,
           loadGeneInformation,
           loadTranscriptSynonyms,
           buildExonTranscripts,
