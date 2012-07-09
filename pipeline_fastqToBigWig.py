@@ -167,8 +167,23 @@ PARAMS = P.PARAMS
 # load all tracks - exclude input/control tracks
 Sample = PipelineTracks.Sample3
 
-TRACKS = PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( [x for x in glob.glob( "*.fastq.gz" ) if PARAMS["tracks_control"] not in x], "(\S+).fastq.gz" )
-              
+#TRACKS = PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( [x for x in glob.glob( "*.fastq.gz" ) if PARAMS["tracks_control"] not in x], "(\S+).fastq.gz" )
+TRACKS = PipelineTracks.Tracks( Sample ).loadFromDirectory( 
+    [ x.replace("../","") for x in glob.glob( "*.export.txt.gz" ) if PARAMS["tracks_control"] not in x ],
+      "(\S+).export.txt.gz" ) +\
+      PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
+          [ x.replace("../","") for x in glob.glob( "*.sra" ) if PARAMS["tracks_control"] not in x ], 
+          "(\S+).sra" ) +\
+          PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
+              [x.replace("../","") for x in glob.glob( "*.fastq.gz" ) if PARAMS["tracks_control"] not in x], 
+              "(\S+).fastq.gz" ) +\
+              PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
+                  [x.replace("../","") for x in glob.glob( "*.fastq.1.gz" ) if PARAMS["tracks_control"] not in x], 
+                  "(\S+).fastq.1.gz" ) +\
+                  PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
+                      [ x.replace("../","") for x in glob.glob( "*.csfasta.gz" ) if PARAMS["track_control"] not in x], 
+                        "(\S+).csfasta.gz" )
+                                      
 for X in TRACKS:
     print "TRACK=", X, "\n"
 
