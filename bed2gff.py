@@ -49,7 +49,6 @@ Code
 import sys, re, string, optparse, time, os, itertools, tempfile, subprocess, shutil
 
 import Experiment as E
-import Alignlib
 import Stats
 import GFF, GTF, Bed
 import IndexedFasta, IOTools

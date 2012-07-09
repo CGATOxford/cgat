@@ -7,19 +7,21 @@
 ReadQC pipeline
 ===============
 
-Contents:
-
 .. toctree::
    :maxdepth: 2
 
    pipeline/Methods.rst
+   pipeline/Summary.rst
    pipeline/FastQC.rst
    pipeline/BaseQuality.rst
+   pipeline/PerBaseNContent.rst
+   pipeline/SequenceDuplicationLevels.rst
    pipeline/Filtering.rst
+   pipeline/SequenceLength.rst
    python/Trackers.rst
- 
+
 .. errorlist::
-  
+
 Indices and tables
 ==================
 

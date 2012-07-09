@@ -62,7 +62,6 @@ from Bio.Nexus.Nodes import Node
 
 import Experiment
 import BlastAlignments
-import alignlib
 import Genomics
 
 param_loglevel = 1

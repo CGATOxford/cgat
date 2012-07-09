@@ -64,6 +64,8 @@ from rpy2.robjects import r as R
 import rpy2.robjects as ro
 import rpy2.robjects.vectors as rovectors
 import rpy2.rinterface as ri
+import rpy2.robjects.numpy2ri
+rpy2.robjects.numpy2ri.activate()
 
 import Pipeline as P
 
@@ -483,6 +485,10 @@ def plotGeneLevelReadExtension( infile, outfile ):
         scaled = R('''lscaled = t(scale(t(lraw), center=FALSE, scale=apply(lraw,1,max) ))''' )
         exons = R('''lraw[,1]''')
 
+        if len(utrs) == 0: 
+            E.warn( "no data for %s" % filename )
+            continue
+
         #######################################################
         #######################################################
         #######################################################
@@ -576,7 +582,7 @@ def filterAndMergeGTF( infile, outfile, remove_genes, merge = False ):
     if merge:
         statement = '''
         %(scriptsdir)s/gff_sort pos < %(tmpfilename)s
-        | python %(scriptsdir)s/gtf2gtf.py
+        | python %(main_scripts_dir)s/gtf2gtf.py
             --unset-genes="NONC%%06i"
             --log=%(outfile)s.log
         | python %(scriptsdir)s/gtf2gtf.py

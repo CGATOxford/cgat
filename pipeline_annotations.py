@@ -85,7 +85,7 @@ csvdb
 
 annotation_gff.gz
    A :term:`gff` formatted file annotating the genome with respect to the geneset.
-   Annotations are non-overlapping.
+   Annotations are non-overlapping and are based only on protein coding transcripts.
 
 geneset_all.gtf.gz
    The full gene set after reconciling with assembly. Chromosomes names are
@@ -148,6 +148,10 @@ goslim.tsv.gz
 territories.gff.gz
    A :term:`gff` formatted file of non-overlapping gene territories.
 
+gc_segmentation.bed.gz
+   A :term:`bed` formatted file with the genome segmented in regions
+   of different G+C content.
+
 Example
 =======
 
@@ -156,7 +160,7 @@ To run the example, simply unpack and untar::
 
    wget http://www.cgat.org/~andreas/sample_data/pipeline_annotations.tgz
    tar -xvzf pipeline_annotations.tgz
-   cd pipeline_annotations
+   cd pipeline_annotations.dir
    python <srcdir>/pipeline_annotations.py make full
 
 Code
@@ -164,21 +168,20 @@ Code
 
 """
 import sys, tempfile, optparse, shutil, itertools, csv, math, random, re, glob, os, shutil, collections
-
 import Experiment as E
 import Pipeline as P
 from ruffus import *
-
+from bx.bbi.bigwig_file import BigWigFile
 import sqlite3
-
 # for UCSC import
 import MySQLdb
-
-import IndexedFasta, IOTools, GFF, Bed
-import PipelineGeneset as PGeneset
+import IndexedFasta, IOTools, GFF, GTF
+import PipelineGeneset as PipelineGeneset
 import PipelineBiomart as PBiomart
 import PipelineDatabase as PDatabase
 import PipelineGO
+import PipelineUCSC
+import Intervals
 
 ###################################################
 ###################################################
@@ -186,13 +189,25 @@ import PipelineGO
 ## Pipeline configuration
 ###################################################
 PARAMS = P.getParameters( 
-    ["%s.ini" % __file__[:-len(".py")],
+    ["%s/pipeline.ini" % __file__[:-len(".py")],
      "../pipeline.ini",
      "pipeline.ini" ] )
 
 if os.path.exists("pipeline_conf.py"):
     E.info( "reading additional configuration from pipeline_conf.py" )
     execfile("pipeline_conf.py")
+
+###################################################################
+###################################################################
+###################################################################
+def connect():
+    '''connect to database.
+
+    This method also attaches to helper databases.
+    '''
+
+    dbh = sqlite3.connect( PARAMS["database"] )
+    return dbh
 
 ############################################################
 ############################################################
@@ -204,7 +219,7 @@ if os.path.exists("pipeline_conf.py"):
 @files( os.path.join( PARAMS["genome_dir"], PARAMS["genome"] + ".fasta"), 
         PARAMS['interface_contigs'] )
 def buildContigSizes( infile, outfile ):
-    '''output contig sizes
+    '''output contig sizes.
     '''
     prefix = P.snip( infile, ".fasta" )
     fasta = IndexedFasta.IndexedFasta( prefix )
@@ -212,6 +227,23 @@ def buildContigSizes( infile, outfile ):
 
     for contig, size in fasta.getContigSizes( with_synonyms = False ).iteritems():
         outs.write( "%s\t%i\n" % ( contig,size) )
+
+    outs.close()
+
+############################################################
+############################################################
+############################################################
+@files( os.path.join( PARAMS["genome_dir"], PARAMS["genome"] + ".fasta"), 
+        PARAMS['interface_contigs_bed'] )
+def buildContigBed( infile, outfile ):
+    '''output bed file with contigs
+    '''
+    prefix = P.snip( infile, ".fasta" )
+    fasta = IndexedFasta.IndexedFasta( prefix )
+    outs = IOTools.openFile(outfile, "w" )
+
+    for contig, size in fasta.getContigSizes( with_synonyms = False ).iteritems():
+        outs.write( "%s\t%i\t%i\n" % ( contig,0,size) )
 
     outs.close()
 
@@ -342,19 +374,26 @@ def buildGeneSet( infile, outfile ):
 ############################################################
 ############################################################
 @files( PARAMS["ensembl_filename_gtf"], PARAMS['interface_annotation_gff'] )
-def buildGeneRegions( infile, outfile ):
+def annotateGenome( infile, outfile ):
     '''annotate genomic regions with reference gene set.
 
-    Only considers protein coding genes. In case of overlapping
-    genes, only take the longest (in genomic coordinates).
+    Only considers protein coding genes. 
+    Processed_transcripts tend to cover larger genomic regions
+    and often overlap between adjacent protein coding genes.
+
+    In case of overlapping genes, only take the longest 
+    (in genomic coordinates).
+
     Genes not on UCSC contigs are removed.
     '''
-    PGeneset.buildGeneRegions( infile, outfile )
+    PipelineGeneset.annotateGenome( infile, 
+                                    outfile,
+                                    only_proteincoding = True )
 
 ############################################################
 ############################################################
 ############################################################
-@follows( buildGeneRegions )
+@follows( annotateGenome )
 @files( PARAMS["ensembl_filename_gtf"], PARAMS['interface_geneset_flat_gtf'] )
 def buildFlatGeneSet( infile, outfile ):
     '''build a flattened gene set.
@@ -363,7 +402,7 @@ def buildFlatGeneSet( infile, outfile ):
 
     *infile* is an ENSEMBL gtf file.
     '''
-    PGeneset.buildFlatGeneSet( infile, outfile )
+    PipelineGeneset.buildFlatGeneSet( infile, outfile )
 
 ############################################################
 ############################################################
@@ -371,7 +410,7 @@ def buildFlatGeneSet( infile, outfile ):
 @files( PARAMS["ensembl_filename_gtf"], "gene_info.load" )
 def loadGeneInformation( infile, outfile ):
     '''load the transcript set.'''
-    PGeneset.loadGeneInformation( infile, outfile )
+    PipelineGeneset.loadGeneInformation( infile, outfile )
 
 ############################################################
 ############################################################
@@ -379,8 +418,7 @@ def loadGeneInformation( infile, outfile ):
 @files( buildFlatGeneSet, "gene_stats.load" )
 def loadGeneStats( infile, outfile ):
     '''load the transcript set.'''
-
-    PGeneset.loadGeneStats( infile, outfile )
+    PipelineGeneset.loadGeneStats( infile, outfile )
 
 ############################################################
 ############################################################
@@ -393,7 +431,7 @@ def buildCDSTranscripts( infile, outfile ):
 
     Only CDS exons are parts of exons are output - UTR's are removed.
     '''
-    PGeneset.buildCDS( infile, outfile )
+    PipelineGeneset.buildCDS( infile, outfile )
 
 ############################################################
 ############################################################
@@ -401,9 +439,17 @@ def buildCDSTranscripts( infile, outfile ):
 @files( PARAMS["ensembl_filename_gtf"], 
         PARAMS["interface_geneset_exons_gtf"] )
 def buildExonTranscripts( infile, outfile ):
-    '''build a collection of transcripts from the ENSEMBL gene set.'''
-    PGeneset.buildExons( infile, outfile )
+    '''build a collection of transcripts from the protein-coding
+    section of the ENSEMBL gene set. '''
+    PipelineGeneset.buildExons( infile, outfile )
 
+############################################################
+############################################################
+############################################################
+@files( buildExonTranscripts, "exon_stats.load" )
+def loadExonStats( infile, outfile ):
+    '''load the transcript set stats.'''
+    PipelineGeneset.loadTranscriptStats( infile, outfile )
 
 ############################################################
 ############################################################
@@ -441,16 +487,16 @@ def buildLincRNAExonTranscripts( infile, outfile ):
 @transform( buildCDSTranscripts, suffix(".gtf.gz"), "_gtf.load" )
 def loadCDSTranscripts( infile, outfile ):
     '''load the transcript set.'''
-    PGeneset.loadTranscripts( infile, outfile )
+    PipelineGeneset.loadTranscripts( infile, outfile )
 
 ############################################################
 ############################################################
 ############################################################
 @files( buildCDSTranscripts, "cds_stats.load" )
 def loadCDSStats( infile, outfile ):
-    '''load the transcript set.'''
+    '''load the transcript set stats.'''
 
-    PGeneset.loadTranscriptStats( infile, outfile )
+    PipelineGeneset.loadTranscriptStats( infile, outfile )
 
 ############################################################
 ############################################################
@@ -459,7 +505,7 @@ def loadCDSStats( infile, outfile ):
 def loadTranscriptInformation( infile, outfile ):
     '''load transcript information.'''
     
-#    PGeneset.loadTranscriptInformation( infile, 
+#    PipelineGeneset.loadTranscriptInformation( infile, 
 #                                        outfile,
 #                                       only_proteincoding = PARAMS["ensembl_only_proteincoding"] )
 
@@ -480,13 +526,40 @@ def loadTranscriptInformation( infile, outfile ):
 
     data = PBiomart.biomart_iterator( columns.keys()
                                       , biomart = "ensembl"
-                                      , dataset = PARAMS["ensembl_biomart_dataset"]  )
-
+                                      , dataset = PARAMS["ensembl_biomart_dataset"] )
+    
     PDatabase.importFromIterator( outfile
                                   , tablename
                                   , data
                                   , columns = columns 
                                   , indices = ("gene_id", "transcript_id", "protein_id", "gene_name", "transcript_name") )
+
+
+############################################################
+############################################################
+############################################################
+@files( PARAMS["ensembl_filename_gtf"], "transcript_synonyms.load" )
+def loadTranscriptSynonyms( infile, outfile ):
+    '''load table with synonyms for transcript identifiers.'''
+    
+    tablename = P.toTable( outfile )
+
+    columns = {
+        "ensembl_transcript_id" : "transcript_id",
+        "external_transcript_id" : "transcript_name",
+        "refseq_mrna" : "refseq_id",
+        }
+
+    data = PBiomart.biomart_iterator( columns.keys()
+                                      , biomart = "ensembl"
+                                      , dataset = PARAMS["ensembl_biomart_dataset"] )
+    
+    PDatabase.importFromIterator( outfile
+                                  , tablename
+                                  , data
+                                  , columns = columns 
+                                  , indices = ("transcript_id", "transcript_name", "refseq_id") )
+
 
 ###################################################################
 ###################################################################
@@ -498,7 +571,7 @@ def buildPeptideFasta( infile, outfile ):
     
     *infile* is an ENSEMBL .pep.all.fa.gz file.
     '''
-    PGeneset.buildPeptideFasta( infile, outfile )
+    PipelineGeneset.buildPeptideFasta( infile, outfile )
 
 ###################################################################
 ###################################################################
@@ -510,7 +583,7 @@ def buildCDNAFasta( infile, outfile ):
     
     *infile* is an ENSEMBL .cdna.all.fa.gz file.
     '''
-    PGeneset.buildCDNAFasta( infile, outfile )
+    PipelineGeneset.buildCDNAFasta( infile, outfile )
 
 ###################################################################
 ###################################################################
@@ -522,7 +595,7 @@ def buildCDSFasta( infile, outfile ):
     *infile* is an ENSEMBL .cdna.all.fa.gz file.
     '''
 
-    PGeneset.buildCDSFasta( infile, outfile )
+    PipelineGeneset.buildCDSFasta( infile, outfile )
 
 ############################################################
 ############################################################
@@ -531,7 +604,7 @@ def buildCDSFasta( infile, outfile ):
 def loadProteinStats( infile, outfile ):
     '''load the transcript set.'''
 
-    PGeneset.loadProteinStats( infile, outfile )
+    PipelineGeneset.loadProteinStats( infile, outfile )
 
 ############################################################
 ############################################################
@@ -541,7 +614,7 @@ def loadProteinStats( infile, outfile ):
         PARAMS["interface_pseudogenes_gtf"] )
 def buildPseudogenes( infile, outfile ):
     '''build set of pseudogenes.'''
-    PGeneset.buildPseudogenes( infile, outfile )
+    PipelineGeneset.buildPseudogenes( infile, outfile )
 
 ############################################################
 ############################################################
@@ -550,7 +623,7 @@ def buildPseudogenes( infile, outfile ):
         PARAMS["interface_numts_gtf"] )
 def buildNUMTs( infile, outfile ):
     '''build list of NUMTs.'''
-    PGeneset.buildNUMTs( infile, outfile )
+    PipelineGeneset.buildNUMTs( infile, outfile )
 
 ############################################################
 ############################################################
@@ -823,70 +896,6 @@ def buildGeneTTS( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-## UCSC tracks
-############################################################
-def connectToUCSC():
-    dbhandle = MySQLdb.Connect( host = PARAMS["ucsc_host"],
-                                user = PARAMS["ucsc_user"] )
-
-    cc = dbhandle.cursor()
-    cc.execute( "USE %s " %  PARAMS["ucsc_database"] )
-
-    return dbhandle
-
-def getRepeatsFromUCSC( dbhandle, repclasses, outfile ):
-    '''select repeats from UCSC and write to *outfile* in gff format.
-    '''
-
-    # Repeats are either stored in a single ``rmsk`` table (hg19) or in
-    # individual ``rmsk`` tables (mm9) like chr1_rmsk, chr2_rmsk, ....
-    # In order to do a single statement, the ucsc mysql database is 
-    # queried for tables that end in rmsk.
-    cc = dbhandle.cursor()
-    cc.execute("SHOW TABLES LIKE '%rmsk'")
-    tables = [ x[0] for x in cc.fetchall()]
-    if len(tables) == 0:
-        raise ValueError( "could not find any `rmsk` tables" )
-
-    # now collect repeats
-    tmpfile = P.getTempFile(".")
-    
-    for table in tables:
-
-        cc = dbhandle.cursor()
-        sql = """SELECT genoName, 'repeat', 'exon', genoStart+1, genoEnd, strand, '.', '.', 
-                      CONCAT('class \\"', repClass, '\\"; family \\"', repFamily, '\\";')
-               FROM %(table)s
-               WHERE repClass in ('%(repclasses)s') """ % locals() 
-        E.debug( "executing sql statement: %s" % sql )
-        cc.execute( sql )
-        for data in cc.fetchall():
-            tmpfile.write( "\t".join(map(str,data)) + "\n" )
-
-    tmpfile.close()
-
-    to_cluster = True
-
-    # sort gff and make sure that names are correct
-    tmpfilename = tmpfile.name
-
-    statement = '''cat %(tmpfilename)s
-        | %(scriptsdir)s/gff_sort pos 
-        | python %(scriptsdir)s/gff2gff.py 
-            --sanitize=genome 
-            --skip-missing 
-            --genome-file=%(genome_dir)s/%(genome)s
-            --log=%(outfile)s.log 
-        | gzip
-        > %(outfile)s
-    '''
-    P.run()
-
-    os.unlink( tmpfilename)
-
-############################################################
-############################################################
-############################################################
 @files( ((None, PARAMS["interface_rna_gff"] ), ) )
 def importRNAAnnotationFromUCSC( infile, outfile ):
     '''import repetetive RNA from a UCSC formatted file.
@@ -897,8 +906,8 @@ def importRNAAnnotationFromUCSC( infile, outfile ):
     '''
 
     repclasses="','".join(PARAMS["ucsc_rnatypes"].split(",") )
-    dbhandle = connectToUCSC()
-    getRepeatsFromUCSC( dbhandle, repclasses, outfile )
+    dbhandle = PipelineUCSC.connectToUCSC()
+    PipelineUCSC.getRepeatsFromUCSC( dbhandle, repclasses, outfile )
 
 ############################################################
 ############################################################
@@ -911,8 +920,8 @@ def importRepeatsFromUCSC( infile, outfile ):
     '''
 
     repclasses="','".join(PARAMS["ucsc_repeattypes"].split(","))
-    dbhandle = connectToUCSC()
-    getRepeatsFromUCSC( dbhandle, repclasses, outfile )
+    dbhandle = PipelineUCSC.connectToUCSC()
+    PipelineUCSC.getRepeatsFromUCSC( dbhandle, repclasses, outfile )
 
 #############################################################
 @transform( importRepeatsFromUCSC, suffix(".gff.gz"), ".gff.gz.load" )
@@ -946,6 +955,151 @@ def countTotalRepeatLength( infile, outfile):
 ############################################################
 ############################################################
 ############################################################
+@files( ((None, PARAMS["interface_allrepeats_gff"] ), ) )
+def importAllRepeatsFromUCSC( infile, outfile ):
+    '''import repeats from a UCSC formatted file.
+
+    The repeats are stored as a :term:`gff` formatted file.
+    '''
+
+    repclasses = None
+    dbhandle = PipelineUCSC.connectToUCSC()
+    PipelineUCSC.getRepeatsFromUCSC( dbhandle, repclasses, outfile )
+
+############################################################
+############################################################
+############################################################
+
+############################################################
+############################################################
+############################################################
+## build bed files with mappable regions
+############################################################
+@transform( os.path.join( PARAMS["ucsc_dir"], 
+                      "gbdb",
+                      PARAMS["ucsc_database"],
+                      "bbi",
+                      "*rgMapability*.bw"),
+            regex( ".*rgMapabilityAlign(\d+)mer.bw" ),
+            add_inputs( os.path.join( PARAMS["genome_dir"],
+                                      PARAMS["genome"] + ".fasta" ) ),
+            r"mapability_\1.bed.gz" )
+def buildMapableRegions( infiles, outfile ): 
+    '''build bed files with mappable regions.
+
+    Convert bigwig tracks with mappability information to a
+    bed-formatted file that contains only mappable regions of the
+    genome.
+
+    A mapable region is more permissive than a mapable position.
+
+    This method assumes that files use the ``CRG Alignability
+    tracks``.
+
+    UCSC says:
+ 
+      The CRG Alignability tracks display how uniquely k-mer sequences
+      align to a region of the genome. To generate the data, the
+      GEM-mappability program has been employed. The method is
+      equivalent to mapping sliding windows of k-mers (where k has been
+      set to 36, 40, 50, 75 or 100 nts to produce these tracks) back to
+      the genome using the GEM mapper aligner (up to 2 mismatches were
+      allowed in this case). For each window, a mapability score was
+      computed (S = 1/(number of matches found in the genome): S=1 means
+      one match in the genome, S=0.5 is two matches in the genome, and
+      so on). The CRG Alignability tracks were generated independently
+      of the ENCODE project, in the framework of the GEM (GEnome
+      Multitool) project.
+
+    For the purpose of these tracks, a region is defined to be un-mapable
+    if its maximum mapability score is less than 0.5. 
+    
+    Unmapable regions that are less than half kmer size are mapable, as
+    reads from the left/right mapable positions will extend into the region.
+    '''
+
+    infile, fastafile = infiles
+    fasta = IndexedFasta.IndexedFasta( P.snip( fastafile, ".fasta" ) )
+    contigs = fasta.getContigSizes( with_synonyms = False )
+    
+    kmersize = int(re.search( ".*Align(\d+)mer.bw", infile ).groups()[0])
+    
+    E.info( "creating mapable regions bed files for kmer size of %i" % kmersize )
+
+    max_distance = kmersize // 2
+
+    f = open(infile)
+    bw = BigWigFile(file=f)
+    
+    def _iter_mapable_regions( bw, contig, size ):
+        
+        min_score = PARAMS["ucsc_min_mappability"]
+
+        # there is no iterator access, results are returned as list
+        # thus proceed window-wise in 10Mb windows
+        window_size = 10000000
+        last_start, start = None, None
+
+        for window_start in xrange(0, size, window_size):
+            values = bw.get( contig, window_start, window_start + window_size )
+            if values == None: continue
+
+            for this_start, this_end, value in values:
+                if value < min_score:
+                    if start: yield start, this_start
+                    start = None
+                else:
+                    if start == None: 
+                        start = this_start
+
+        if start != None:
+            yield start, this_end
+                
+    outf = IOTools.openFile( outfile, "w" )
+
+    for contig, size in contigs.iteritems():
+
+        last_start, last_end = None, None
+        for start, end in _iter_mapable_regions( bw, contig, size ):
+            if last_start == None: last_start, last_end = start, end
+            if start - last_end >= max_distance:
+                outf.write( "%s\t%i\t%i\n" % (contig, last_start, last_end ) )
+                last_start = start
+
+            last_end = end
+
+        if last_start != None:
+            outf.write( "%s\t%i\t%i\n" % (contig, last_start, last_end ) )
+
+    outf.close()
+
+############################################################
+############################################################
+############################################################
+## 
+############################################################
+@transform( buildMapableRegions, suffix( ".bed.gz"), ".filtered.bed.gz" )
+def filterMapableRegions( infile, outfile ):
+    '''remove small windows from a mapability track.
+
+    Too many fragmented regions will cause gat to fail as it
+    fragments the workspace into too many individual segments.
+
+    The filtering works by merging all segments that are
+    within mapability_merge_distance and removing all those
+    that are larger than mapabpility_min_segment_size
+    '''
+    
+    to_cluster = True
+
+    statement = '''
+    mergeBed -i %(infile)s -d %(mapability_merge_distance)i
+    | awk '$3 - $2 >= %(mapability_min_segment_size)i'
+    | gzip 
+    > %(outfile)s
+    '''
+
+    P.run()
 
 if 0:
     ############################################################
@@ -991,11 +1145,9 @@ if 0:
             if tablename in tables:
                 E.info( "skipping %(tablename)s - already exists" % locals())
                 continue            
-
+            
             E.info( "importing %(tablename)s" % locals() )
             P.run()
-
-
 
     ############################################################
     ############################################################
@@ -1053,6 +1205,65 @@ def loadGOAssignments( infile, outfile ):
     > %(outfile)s
     '''
     P.run()
+
+############################################################
+############################################################
+############################################################
+@merge( (buildGeneTerritories, loadGOAssignments),
+        ( PARAMS["interface_genomic_function_bed"],
+          PARAMS["interface_genomic_function_tsv"],
+          ) )
+def buildGenomicFunctionalAnnotation( infiles, outfiles ):
+    '''output a bed file with genomic regions with functional annotations.
+
+    Each bed entry is a gene territory. Bed entries are labeled
+    by functional annotations associated with a gene.
+
+    Ambiguities in territories are resolved by outputting 
+    annotations for all genes within a territory.
+
+    The output file contains annotations for both GO and GOSlim. These
+    are prefixed by ``go:`` and ``goslim:``.
+    '''
+    
+    to_cluster = True
+
+    territories_file = infiles[0]
+
+    outfile_bed, outfile_tsv = outfiles
+
+    gene2region = {}
+    for gtf in GTF.iterator( IOTools.openFile(territories_file, "r")):
+        gid = gtf.gene_id.split(":")
+        for g in gid:
+            gene2region[g] = (gtf.contig, gtf.start, gtf.end, gtf.strand)
+        
+    dbh = connect()
+    cc = dbh.cursor()
+    
+    outf = P.getTempFile( "." )
+    c = E.Counter()
+    term2description = {}
+    for db in ('go', 'goslim'):
+        for gene_id, go_id, description in cc.execute("SELECT gene_id, go_id, description FROM %s_assignments" % db):
+            try:
+                contig, start, end, strand = gene2region[gene_id]
+            except KeyError:
+                c.notfound += 1
+                continue
+            outf.write( "\t".join( map(str, (contig, start, end, "%s:%s" % (db, go_id), 1, strand))  ) + "\n" )
+            term2description["%s:%s" % (db, go_id)] = description
+    outf.close()
+    tmpfname = outf.name
+    statement = '''sort -k1,1 -k2,2n  < %(tmpfname)s | uniq | gzip > %(outfile_bed)s'''
+
+    P.run()
+
+    outf = IOTools.openFile( outfile_tsv, "w" )
+    outf.write("term\tdescription\n" )
+    for term, description in term2description.iteritems():
+        outf.write("%s\t%s\n" % (term, description))
+    outf.close()
 
 ############################################################
 ############################################################
@@ -1267,9 +1478,196 @@ def convertBedToGtf( infile, outfile ):
 ##################################################################
 ##################################################################
 ##################################################################
+## build G+C segmentation
+##################################################################
+@files( os.path.join( PARAMS["genome_dir"], PARAMS["genome"]) + ".fasta",
+        PARAMS["interface_gc_segmentation_bed"] )
+def buildGenomeGCSegmentation( infile, outfile ):
+    '''segment the genome into windows according to G+C content.'''
+
+    to_cluster = True
+    
+    statement = '''
+    python %(scriptsdir)s/fasta2bed.py 
+        --method=fixed-width-windows-gc
+        --window-size=%(segmentation_window_size)i 
+        --log=%(outfile)s.log 
+    < %(infile)s 
+    | python %(scriptsdir)s/bed2bed.py 
+        --method=bins 
+        --num-bins=%(segmentation_num_bins)s 
+        --binning-method=%(segmentation_method)s 
+        --log=%(outfile)s.log 
+    | bgzip
+    > %(outfile)s'''
+
+    P.run()
+
+@files( os.path.join( PARAMS["genome_dir"], 
+                      PARAMS["genome"]) + ".fasta",
+        "gcprofile.bed.gz" )
+def runGenomeGCProfile( infile, outfile ):
+    '''segment the genome into windows according to G+C content.'''
+
+    # on some cgat109 I got libstc++ error:
+    # error while loading shared libraries: libstdc++.so.5
+    # cannot open shared object file: No such file or directory
+    to_cluster = False
+    
+    statement = '''
+    cat %(infile)s
+    | python %(scriptsdir)s/fasta2bed.py 
+        --verbose=2
+        --method=GCProfile
+        --min-length=%(segmentation_min_length)i
+        --halting-parameter=%(segmentation_halting_parameter)i
+        --log=%(outfile)s.log
+    | bgzip
+    > %(outfile)s
+    '''
+    P.run()
+
+@merge( runGenomeGCProfile, PARAMS["interface_gc_profile_bed"] )
+def buildGenomeGCProfile( infile, outfile ):
+    '''aggregate windows with similar G+C content into bins.
+    '''
+    statement = '''
+    zcat %(infile)s
+    | python %(scriptsdir)s/bed2bed.py 
+        --method=bins 
+        --num-bins=%(segmentation_num_bins)s 
+        --binning-method=%(segmentation_method)s 
+        --log=%(outfile)s.log 
+    | bgzip
+    > %(outfile)s'''
+    P.run()
+
+##################################################################
+##################################################################
+##################################################################
+## download GWAS data
+##################################################################
+if PARAMS["genome"].startswith("hg"):
+    @merge( None, "gwascatalog.txt" )
+    def downloadGWASCatalog( infile, outfile ):
+        '''download GWAS catalog.'''
+
+        if os.path.exists( outfile ):
+            os.path.remove(outfile)
+        statement = '''wget http://www.genome.gov/admin/gwascatalog.txt'''
+        P.run()
+        
+    @merge( downloadGWASCatalog, PARAMS["interface_gwas_bed"] )
+    def buildGWASTracks( infile, outfile ):
+        
+        reader = csv.DictReader( IOTools.openFile( infile ), dialect = "excel-tab" )
+        
+        tracks = collections.defaultdict( lambda : collections.defaultdict( list ) )
+
+        fasta = IndexedFasta.IndexedFasta( os.path.join( PARAMS["genome_dir"], PARAMS["genome"] + ".fasta" ) )
+        contigsizes = fasta.getContigSizes()
+        c = E.Counter()
+
+        for row in reader:
+            c.input += 1
+            contig, pos, snp, disease = row['Chr_id'], row['Chr_pos'], row['SNPs'], row['Disease/Trait'] 
+            if snp == "NR":             
+                c.skipped += 1
+                continue
+            
+            if pos == "":
+                c.no_pos += 1
+                continue
+
+            # translate chr23 to X
+            if contig == "23": contig = "X"
+
+            contig = "chr%s" % contig
+            
+            try:
+                tracks[disease][contig].append( int(pos) )
+            except ValueError:
+                print row
+            c.output += 1
+        
+        E.info( c )
+            
+        extension = PARAMS["gwas_extension"]
+
+        c = E.Counter()
+        outf = IOTools.openFile(outfile, "w" )
+        for disease, pp in tracks.iteritems():
+            
+            for contig, positions in pp.iteritems():
+                contigsize = contigsizes[contig]
+                regions = [ (max(0,x-extension), min( contigsize, x+extension)) for x in positions ]
+
+                regions = Intervals.combine( regions )
+                c[disease] += len(regions)
+
+                for start,end in regions:
+                    outf.write( "%s\t%i\t%i\t%s\n" % (contig, start, end, disease ) )
+                
+        outf.close()
+
+        outf = IOTools.openFile(outfile + ".log", "w" )
+        outf.write( "category\tcounts\n%s\n" % c.asTable() )
+        outf.close()
+        
+##################################################################
+##################################################################
+##################################################################
+## build gff summary
+##################################################################
+@transform( (annotateGenome, 
+             buildGeneTerritories, 
+             importRNAAnnotationFromUCSC,
+             importRepeatsFromUCSC ),
+            suffix(".gff.gz"), ".summary.tsv.gz" )
+def buildGFFSummary( infile, outfile ):
+    '''summarize genomic coverage of gff file.'''
+    tocluster = True
+    statement = '''zcat %(infile)s 
+                | python %(scriptsdir)s/gff2coverage.py 
+                      --genome-file=%(genome_dir)s/%(genome)s
+                | gzip > %(outfile)s
+                '''
+    P.run()
+
+##################################################################
+##################################################################
+##################################################################
+## build bed summary
+##################################################################
+@transform( (buildContigBed,
+             buildPromotorRegions,
+             buildTSSRegions,
+             buildMapableRegions,
+             buildGenomicContext,
+             buildGenomeGCSegmentation ),
+            suffix(".bed.gz"), ".summary.tsv.gz" )
+def buildBedSummary( infile, outfile ):
+    '''summarize genomic coverage of bed file.'''
+    tocluster = True
+    statement = '''zcat %(infile)s 
+                | python %(scriptsdir)s/bed2gff.py 
+                | python %(scriptsdir)s/gff2coverage.py 
+                      --genome-file=%(genome_dir)s/%(genome)s
+                | gzip > %(outfile)s
+                '''
+    P.run()
+
+@transform( (buildGFFSummary, buildBedSummary), suffix(".tsv.gz"), ".load" )
+def loadIntervalSummary( infile, outfile ):
+    P.load(infile, outfile)
+
+##################################################################
+##################################################################
+##################################################################
 ## Primary targets
 ##################################################################
 @follows( buildContigSizes,
+          buildContigBed,
           loadGenomeInformation )
 def genome():
     '''import information on geneset.'''
@@ -1280,7 +1678,10 @@ def genome():
           loadCDSTranscripts,
           loadTranscriptInformation,
           loadGeneStats,
+          loadCDSStats,
+          loadExonStats,
           loadGeneInformation,
+          loadTranscriptSynonyms,
           buildExonTranscripts,
           buildCodingExonTranscripts,
           buildNonCodingExonTranscripts,
@@ -1323,7 +1724,8 @@ def promotors():
     '''build promotors.'''
     pass
 
-@follows( loadGOAssignments, )
+@follows( loadGOAssignments, 
+          buildGenomicFunctionalAnnotation)
 def ontologies():
     '''create and load ontologies'''
     pass
@@ -1337,6 +1739,12 @@ def ontologies():
 def GenicBedFiles():
     '''build genic bed files.'''
     pass
+
+@follows( loadIntervalSummary )
+def summary():
+    '''summary targets.'''
+    pass
+
 
 @follows( calculateMappability, countMappableBases,
           loadMappableBases, splitMappabiliyFileByContig,
@@ -1380,3 +1788,4 @@ def publish_report():
 
 if __name__== "__main__":
     sys.exit( P.main(sys.argv) )
+    

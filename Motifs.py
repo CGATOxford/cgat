@@ -124,3 +124,4 @@ def regex2iupac( pattern ):
         a.append( regexdict[x] )
     return "".join( a )
                    
+

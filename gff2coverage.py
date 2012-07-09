@@ -31,7 +31,7 @@ Purpose
 -------
 
 This script computes the genomic coverage of intervals 
-in a :term:`gff` formatted file. The coverage is compute
+in a :term:`gff` formatted file. The coverage is computed
 per feature.
 
 Usage
@@ -55,7 +55,7 @@ Code
 
 '''
 
-import sys, string, re, optparse, time, os, shutil, tempfile, math
+import sys, string, re, optparse, time, os, shutil, tempfile, math, collections
 
 import Experiment
 import GFF
@@ -114,20 +114,19 @@ def processChunk( contig, chunk, options, fasta = None ):
         window_size = int(math.floor( float(contig_length) / options.num_bins))
         num_bins = options.num_bins
     else:
-        raise "please specify a window size of provide genomic sequence with number of bins."
+        raise ValueError("please specify a window size of provide genomic sequence with number of bins.")
 
     values = [ [] for x in range(num_bins) ]
 
     ## do several parses for each feature, slow, but easier to code
     ## alternatively: sort by feature and location.
     for feature in options.features:
-
         total = 0
         bin = 0
         end = window_size
         for entry in chunk:
             if entry.feature != feature: continue
-            
+
             while end < entry.start:
                 values[bin].append( total )
                 bin += 1
@@ -171,36 +170,66 @@ if __name__ == "__main__":
         num_bins = 1000,
         value_format = "%6.4f",
         features = [],
+        method = "genomic",
         )
 
     (options, args) = Experiment.Start( parser )
-
-    if len(options.features) == 0:
-        raise ValueError("please specify at least one feature.")
 
     if options.genome_file:
         fasta = IndexedFasta.IndexedFasta( options.genome_file )
     else:
         fasta = None
         
-    gff = GFF.readFromFile( sys.stdin )
+    if options.method == "histogram":
 
-    gff.sort( lambda x,y: cmp( (x.contig, x.start), (y.contig, y.start) ) )
+        gff = GFF.readFromFile( sys.stdin )
 
-    chunk = []
-    last_contig = None
+        gff.sort( lambda x,y: cmp( (x.contig, x.start), (y.contig, y.start) ) )
 
-    for entry in gff:
+        chunk = []
+        last_contig = None
 
-        if last_contig != entry.contig:
-            processChunk( last_contig, chunk, options, fasta )
-            last_contig = entry.contig
-            chunk = []
+        for entry in gff:
+
+            if last_contig != entry.contig:
+                processChunk( last_contig, chunk, options, fasta )
+                last_contig = entry.contig
+                chunk = []
+
+            chunk.append( entry )
+
+        processChunk( last_contig, chunk, options, fasta )
+
+    elif options.method == "genomic":
+        intervals = collections.defaultdict( int )
+        bases = collections.defaultdict( int )
+        total = 0
+        for entry in GFF.iterator( sys.stdin ):
+            intervals[ (entry.contig, entry.source, entry.feature) ] += 1
+            bases[ (entry.contig, entry.source, entry.feature) ] += entry.end - entry.start
+            total += entry.end - entry.start
+
+        options.stdout.write( "contig\tsource\tfeature\tintervals\tbases" )
+        if fasta:
+            options.stdout.write( "\tpercent_coverage\ttotal_percent_coverage\n" )
+        else:
+            options.stdout.write( "\n" )
+
+        total_genome_size = sum( fasta.getContigSizes( with_synonyms = False ).values() )
+
+        for key in sorted (intervals.keys() ):
+            nbases = bases[key]
+            nintervals = intervals[key]
+            contig, source, feature = key
+            options.stdout.write( "\t".join( ( "\t".join(key),
+                                     str(nintervals),
+                                     str(nbases) ) ) )
+            if fasta: 
+                options.stdout.write( "\t%f" % ( 100.0 * float(nbases) / fasta.getLength( contig )))
+                options.stdout.write( "\t%f\n" % ( 100.0 * float(nbases) / total_genome_size ))
+            else: options.stdout.write( "\n" )
+                                     
             
-        chunk.append( entry )
-            
-    processChunk( last_contig, chunk, options, fasta )
-
     Experiment.Stop()
 
 

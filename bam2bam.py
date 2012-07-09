@@ -32,7 +32,8 @@ bam2bam.py - modify bam files
 Purpose
 -------
 
-This script modifies bam files by going through the whole file.
+This script modifies a bam file by going through the whole file
+and updating each line.
 
 .. note::
    You need to redirect logging information to a file or turn it off
@@ -63,7 +64,6 @@ Documentation
 
 --remove-better: remove alignments that are worse than alignments in the :term:`bam`
    formatted file ``--filter-bam``. 
-  
 
 Code
 ----

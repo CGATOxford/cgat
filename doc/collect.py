@@ -7,7 +7,7 @@ upper case characters are put into :file:`modules`.
 """
 
 TEMPLATE_RST='''
-.. automodule:: %(name)s
+.. automodule:: %(prefix)s
    :members:
    :inherited-members:
    :show-inheritance:

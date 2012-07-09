@@ -4,15 +4,15 @@ Alignment statistics
 
 This section brings together various alignment statistics.
 
-Bamstats
-========
+.. Bamstats
+.. ========
 
-The following list presents links to the results of the :term:`bamstats` tool.
+.. The following list presents links to the results of the :term:`bamstats` tool.
 
-.. report:: Mapping.BamReport
-   :render: user
+.. .. report:: Mapping.BamReport
+..    :render: user
 
-   bamstats results
+..    bamstats results
 
 FastQC
 ======

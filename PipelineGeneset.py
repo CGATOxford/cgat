@@ -11,10 +11,25 @@ import Pipeline as P
 import Experiment as E
 import GTF, GFF, IndexedFasta
 
+import PipelineUCSC
+
+# for UCSC import
+import MySQLdb
+
 try:
     PARAMS = P.getParameters()
 except IOError:
     pass
+
+def connectToUCSC():
+    '''connect to UCSC mysql database.'''
+    dbhandle = MySQLdb.Connect( host = PARAMS["ucsc_host"],
+                                user = PARAMS["ucsc_user"] )
+
+    cc = dbhandle.cursor()
+    cc.execute( "USE %s " %  PARAMS["ucsc_database"] )
+
+    return dbhandle
 
 def importRefSeqFromUCSC( infile, outfile, remove_duplicates = True ):
     '''import gene set from UCSC database
@@ -126,7 +141,7 @@ def importRefSeqFromUCSC( infile, outfile, remove_duplicates = True ):
 ############################################################
 ############################################################
 ############################################################
-def buildGeneRegions( infile, outfile, only_proteincoding = False ):
+def annotateGenome( infile, outfile, only_proteincoding = False ):
     '''annotate genomic regions with reference gene set.
 
     *infile* is an ENSEMBL gtf file.
@@ -281,7 +296,7 @@ def loadTranscriptInformation( infile, outfile,
     | python %(scriptsdir)s/gtf2gtf.py --sort=gene
     | python %(scriptsdir)s/gtf2tab.py --full --only-attributes -v 0
     | python %(toolsdir)s/csv_cut.py --remove exon_number 
-    | hsort 1 | uniq 
+    | %(scriptsdir)s/hsort 1 | uniq 
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
               --index=transcript_id 
               --index=gene_id 

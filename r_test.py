@@ -55,8 +55,8 @@ Code
 
 '''
 import os, sys, string, re, optparse, time, random
-from rpy import r as R
-import rpy
+import rpy2
+from rpy2.robjects import r as R
 import Experiment as E
 import IOTools
 import Stats

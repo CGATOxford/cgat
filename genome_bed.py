@@ -53,6 +53,7 @@ import logging as L
 import Experiment as E
 import sys, os, re, shutil, itertools, math, glob, time, gzip, collections, random, optparse
 import GTF, IOTools, IndexedFasta
+import Bed
 
 def main( argv = None ):
     """script main.
@@ -86,32 +87,26 @@ def main( argv = None ):
 
     # Open input file
     E.info("Opening input file: %s" % options.genome_file)
-    faidx = open(options.genome_file, "r" )
+    fasta = IndexedFasta.IndexedFasta( options.genome_file )
+    contigs = fasta.getContigSizes( with_synonyms = False )
 
     # Open output file
     bed = options.stdout
+    shift = options.shift
 
     # Loop over input files and convert to soft clipped
     nwindows = 0
     ncontigs = 0
-    for line in faidx:
-        contig, stop = line.split()[0:2]
-        stop = int(stop)
+    for contig, stop in contigs.iteritems():
         ncontigs += 1
         i=0
         while (i < stop):
-            if stop >= i+options.window:
-                j=i+options.window
-            else:
-                j=stop
+            j = min( i+options.window, stop )
             #bed.write( """%(contig)s\t%(i)i\t%(j)i\t%(contig)s:%(i)i..%(j)i\n""" % locals() )
             bed.write( """%(contig)s\t%(i)i\t%(j)i\n""" % locals() )
             nwindows += 1
-            i = i+options.shift
+            i += shift
         
-    # close all files
-    faidx.close()
-                        
     # Report statistics
     E.info( "ncontigs=%i, nwindows=%i" % (ncontigs,nwindows) )
 

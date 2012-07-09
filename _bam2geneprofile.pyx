@@ -140,15 +140,15 @@ class RangeCounterBAM(RangeCounter):
 
 class RangeCounterBed(RangeCounter):
 
-    def __init__(self, bedfile, *args, **kwargs ):
+    def __init__(self, bedfiles, *args, **kwargs ):
         RangeCounter.__init__(self, *args, **kwargs )
-        self.bedfile = bedfile
+        self.bedfiles = bedfiles
         
     def count(self, contig, ranges ):
         
         # collect pileup profile in region bounded by start and end.
         cdef int i
-        cdef int xstart, xend, rstart, rend, start, end, tstart, tend
+        cdef int xstart, xend, rstart, rend, start, end
 
         if len(ranges) == 0: return
 
@@ -164,10 +164,11 @@ class RangeCounterBed(RangeCounter):
             for start, end in ranges:
                 length = end - start
                 try:
-                    for bed in bedfile.fetch( contig, max(0,start), end, parser = pysam.asBed() ):
+
+                    for bed in bedfile.fetch( contig, max(0, start), end, parser = pysam.asBed() ):
                         # truncate to range of interest
-                        tstart = max(0, bed.start - start) + current_offset
-                        tend = min( length, bed.end - start) + current_offset
+                        rstart = max(0, bed.start - start) + current_offset
+                        rend = min( length, bed.end - start) + current_offset
                         for i from rstart <= i < rend: counts[i] += 1
                 except ValueError:
                     # contig not present
@@ -185,13 +186,11 @@ class RangeCounterBigWig(RangeCounter):
         
         # collect pileup profile in region bounded by start and end.
         cdef int i
-        cdef int rstart, rend, start, end
+        cdef int rstart, rend, start, end, tstart, tend
 
         if len(ranges) == 0: return
 
-        wigfiles = self.wigfiles
         counts = self.counts
-
         cdef int length
         cdef int current_offset
 

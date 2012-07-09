@@ -83,7 +83,7 @@ are two lines:
 
 .. report:: Motifs.MastPeakValWithMotif
    :render: line-plot
-   :groupby: slice
+   :groupby: track
    :as-lines:
    :layout: column-3
    :width: 200

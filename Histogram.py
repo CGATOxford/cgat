@@ -133,7 +133,7 @@ def Calculate( values,
     """
 
     if len(values) == 0:
-        raise "calculate a histogram with WHAT data?"
+        return []
 
     if not intervals:
         

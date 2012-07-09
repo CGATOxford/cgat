@@ -84,6 +84,11 @@ class Bed(object):
     def __getattr__(self, key ):
         return self.mFields[self.map_key2field[key]]
 
+    @property
+    def columns(self):
+        '''return number of columns in bed-entry.'''
+        return 3 + len(self.mFields)
+
 class Track(object):
     '''bed track information.'''
     def __init__(self, line ):
@@ -131,6 +136,14 @@ def iterator( infile ):
 # for compatibility, remove
 def bed_iterator( infile ):
     return iterator( infile )
+
+def setName( iterator ):
+    '''yield bed entries in which name is set if unset.
+    '''
+    for i, bed in enumerate(iterator):
+        if "name" not in bed:
+            bed.name = str(i)
+        yield bed
 
 def grouped_iterator( iterator ):
     '''yield bed results grouped by track.'''

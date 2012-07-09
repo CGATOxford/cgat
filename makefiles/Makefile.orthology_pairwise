@@ -991,9 +991,9 @@ step7.pairs: step6.pairs.gz
 	grep -v '#' |\
 	python $(DIR_SCRIPTS_GENEPREDICTION)analyze_pairs.py \
 	$(PYTHON_OPTIONS) \
-	--fields="aligned,identical,transitions,transversions,jc69,t92" \
-	--filter="all,codon3,d4" |\
-	perl -p -e "s/ \S+ \S+//g" \
+	--fields='aligned,identical,transitions,transversions,jc69,t92' \
+	--filter='all,codon3,d4' |\
+	perl -p -e 's/ \S+ \S+//g' \
 	> $@"
 	$(EPILOG)
 

@@ -697,7 +697,7 @@ class IndexedFasta:
     def setConverter( self, converter ):
         """set converter from coordinate system to 0-based, both strand, open/closed
         coordinate system."""
-        self.mConverter = None
+        self.mConverter = converter
 
     def getSequence( self,
                      contig, 
@@ -712,7 +712,8 @@ class IndexedFasta:
         contig, strand, start, end.
 
         The converter function supplied translated these coordinates
-        into 0-based coordinates.
+        into 0-based coordinates. By default, start and end are assumed
+        to be pythonic coordinates and are forward/reverse coordinates.
 
         If as_array is set to true, return the AString object. This might
         be beneficial for large sequence chunks. If as_array is set to False,
@@ -752,7 +753,7 @@ class IndexedFasta:
             first_pos, last_pos = start, end
             if str(strand) in ("-", "0", "-1"):
                 first_pos, last_pos = lsequence - last_pos, lsequence - first_pos
-                
+
         if first_pos == last_pos: return ""
 
         assert first_pos < last_pos, "first position %i is larger than last position %i " % (first_pos, last_pos)
@@ -870,6 +871,7 @@ def __one_both_open(x, y, c = None, l = None):
      Parameters are from, to, is_positive_strand, length of contig.
     """
     return x - 1, y - 1
+
 def __zero_both_open(x, y, c = None, l = None):
     """convert coordinates to zero-based, both strand, open/closed coordinates.
     
@@ -887,7 +889,12 @@ def getConverter( format ):
     and l being the length of the contig.
 
     Format is a "-" separated combination of the keywords
-    "one", "zero", "forward", "both", "open", "closed"
+    "one", "zero", "forward", "both", "open", "closed":
+
+    zero/one: zero or one-based coordinates
+    forward/both: forward coordinates or forward/reverse coordinates
+    open/closed: half-open intervals (pythonic) or closed intervals
+
     """
 
     data = set(format.split("-"))

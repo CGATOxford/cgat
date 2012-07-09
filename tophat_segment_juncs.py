@@ -39,7 +39,7 @@ and calls :file:`segment_juncs` for contig separately and in parallel.
 
 Other than renaming the original executable :file:`segment_juncs` to
 :file:`segment_juncs.original` and linking to this script as
-:file:`segment_juncs` instead no modification of the tophat pipeline
+:file:`segment_juncs` no modification of the tophat pipeline
 is required.
 
 This script uses 8 threads.
@@ -62,17 +62,17 @@ Code
 
 '''
 
-import os, sys, re, optparse, threadpool, subprocess, signal, glob
+import os, sys, re, optparse, subprocess, signal, glob
+import argparse
+
+import multiprocessing.pool
 
 import Experiment as E
 import IOTools
 
 # If true, the original segment_juncs will be called without splitting
 # the input data.
-DISABLE = True
-
-# number of threads to use
-THREADS = 8
+DISABLE = False
 
 def subprocess_setup():
     # Python installs a SIGPIPE handler by default, which causes
@@ -84,8 +84,9 @@ def die(msg=None):
         print >> sys.stderr, msg
         sys.exit(1)
 
-def runCommand( cmd, logfile ):
-    
+def runCommand( args ):
+
+    cmd, logfile = args
     log = open(logfile, "w" )
     log.write("# %s" % " ".join(cmd))
     retcode = subprocess.call( cmd,
@@ -112,11 +113,19 @@ def main( argv = None ):
     E.Start( no_parsing = True )
 
     # collect arguments
+    parser = argparse.ArgumentParser(description='Process tophat options.')
+    parser.add_argument('-p', '--num-threads', metavar='N', type=int, dest='nthreads',
+                         help='number of threads')
+    options, args = parser.parse_known_args( argv[1:] )
+
+    E.info( "parallelizing segment juncs with %i threads" % options.nthreads )
+    
     x = argv.index("--ium-reads") + 1
     
-    options = argv[1:x]
+    all_options = argv[1:x]
 
-    (input_missing_reads, input_genome, output_junctions, 
+    (input_missing_reads, input_genome, 
+     output_junctions, 
      output_insertions, output_deletions,
      input_left_all_reads,
      input_left_all_map,
@@ -148,9 +157,16 @@ def main( argv = None ):
     for filename in files_to_split:
         if filename == "": continue
         E.info("splitting %s" % filename )
-
-        infile = IOTools.openFile( filename )
         base, ext = os.path.splitext( filename )
+
+        f = glob.glob( "%s.input.*%s" % (filename, ext) )
+        if f:
+            E.info("files already exist - skipping" )
+            keys.update( [ re.match("%s.input.(\S+)%s" % (filename,ext), x ).groups()[0] for x in f ] )
+            continue
+        
+        infile = IOTools.openFile( filename )
+
         outfiles = IOTools.FilePool( filename + ".input.%s" + ext )
 
         for line in infile:
@@ -160,13 +176,16 @@ def main( argv = None ):
 
         outfiles.close()
 
-    keys = set( ["chr1", "chr2", "chr3", "chr4", "chr5",
-                 "chr6", "chr7", "chr8", "chr9", "chr10",
-                 "chr11", "chr12", "chr13", "chr14", "chr15",
-                 "chr16", "chr17", "chr18", "chr19", "chr20",
-                 "chr21", "chr22", "chrX", "chrY", "chrM" ] )
+    # keys = set( ["chr1", "chr2", "chr3", "chr4", "chr5",
+    #              "chr6", "chr7", "chr8", "chr9", "chr10",
+    #              "chr11", "chr12", "chr13", "chr14", "chr15",
+    #              "chr16", "chr17", "chr18", "chr19", "chr20",
+    #              "chr21", "chr22", "chrX", "chrY", "chrM" ] )
 
-    pool = threadpool.ThreadPool( THREADS )
+    E.info( "working on %i contigs: %s" % (len(keys), list(keys)))
+
+    pool = multiprocessing.pool.ThreadPool( options.nthreads )
+    #pool = threadpool.ThreadPool( THREADS )
 
     tmpdir = os.path.dirname( input_left_all_reads )
     logdir = os.path.join( tmpdir[:-len("tmp")], "logs" )
@@ -174,6 +193,7 @@ def main( argv = None ):
     if not os.path.exists(logdir):
         raise IOError( "can not find logdir %s" % logdir )
 
+    args = []
     for key in keys:
 
         def modout( old, key ):
@@ -195,8 +215,8 @@ def main( argv = None ):
                 raise ValueError( "can not find chromoseme file %s" % new )
             return new
 
-        cmd = ["segment_juncs.original"] +\
-            options +\
+        cmd = ["segment_juncs"] +\
+            all_options +\
             [input_missing_reads,  \
                  modgenome(input_genome,key), \
                  modout(output_junctions,key),\
@@ -211,14 +231,13 @@ def main( argv = None ):
 
 
         logfile = os.path.join(logdir, "segment_juncs_%s.log" % key )
-        args = (cmd,logfile)
-        request = threadpool.WorkRequest( runCommand, 
-                                          args = args )
+        args.append( (cmd,logfile) )
 
-        pool.putRequest( request )
+    E.info( "submitting %i jobs" % len(keys) )
 
-    E.info( "submitted %i jobs" % len(keys) )
-    pool.wait()
+    pool.map( runCommand, args, chunksize = 1 )
+    pool.close()
+    pool.join()
 
     E.info("all jobs finished successfully" )
 

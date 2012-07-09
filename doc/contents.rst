@@ -32,10 +32,13 @@ complete list:
    scripts/pipeline_liftover.rst
    scripts/pipeline_readqc.rst
    scripts/pipeline_rnaseq.rst
-   scripts/pipeline_transcriptome.rst
    scripts/pipeline_variants.rst
    scripts/pipeline_benchmark_rnaseqmappers.rst
    scripts/pipeline_testing.rst
+   scripts/pipeline_mapping.rst
+   scripts/pipeline_rnaseqtranscripts.rst
+   scripts/pipeline_transcriptome.rst
+   scripts/pipeline_rnaseqdiffexpression.rst
 
 Help on installing, using and building pipelines is below:
 

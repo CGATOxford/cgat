@@ -1127,6 +1127,8 @@ def run_report( clean = True):
     '''run sphinxreport.'''
 
     dirname, basename = os.path.split( getCaller().__file__ )
+    print dirname
+
     docdir = os.path.join( dirname, "pipeline_docs", snip( basename, ".py" ) )
     themedir = os.path.join( dirname, "pipeline_docs", "themes")
     relpath = os.path.relpath( docdir )
@@ -1173,7 +1175,11 @@ def run_report( clean = True):
 
     run()
 
-def publish_report( prefix = "", patterns = [], project_id = None):
+def publish_report( prefix = "", 
+                    patterns = [], 
+                    project_id = None,
+                    prefix_project = "/ifs/projects",
+                    ):
     '''publish report into web directory.
 
     Links export directory into web directory.
@@ -1213,7 +1219,13 @@ def publish_report( prefix = "", patterns = [], project_id = None):
         dest = os.path.abspath( os.path.join( PARAMS["web_dir"], dest ) )
         if os.path.exists( dest ):
             os.remove(dest)
+        
         if os.path.exists( src ):
+            #IMS: check if base path of dest exists. This allows for prefix to be a 
+            #nested path structure e.g. project_id/
+            if not os.path.exists(os.path.dirname(os.path.abspath(dest))):
+                os.mkdir(os.path.dirname(os.path.abspath(dest)))
+
             os.symlink( os.path.abspath(src), dest )
 
     def _copy( src, dest ):
@@ -1227,10 +1239,11 @@ def publish_report( prefix = "", patterns = [], project_id = None):
     # publish web pages by copying
     _copy( os.path.abspath("report/html"), dest_report ) 
 
-    # substitute links to export
+    # substitute links to export and report
     _patterns = [ (re.compile( src_export ), 
                    "http://www.cgat.org/downloads/%(project_id)s/%(dest_export)s" % locals() ), 
-                  ]
+                  (re.compile( '(%s)/report' % os.path.join( prefix_project, getProjectName() ) ),
+                   "http://www.cgat.org/downloads/%(project_id)s/%(dest_report)s" % locals() ) ]
     
     _patterns.extend( patterns )
     

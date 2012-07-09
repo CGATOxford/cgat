@@ -155,7 +155,7 @@ class VariantGetterVCF( VariantGetter ):
         self.vcf.connect( filename )
 
         if sample not in self.vcf.getsamples():
-            raise KeyErorr( "sample %s not vcf file" )
+            raise KeyError( "sample %s not vcf file" % sample )
         
     def __call__(self, contig, start, end ):
         
@@ -864,6 +864,8 @@ def main( argv = None ):
 
     if len(options.output) == 0 or "all" in options.output:
         output_all = True
+    else:
+        output_all = False
 
     if "cds" in options.output or output_all:
         outfile_cds = E.openOutputFile( "cds.fasta" )

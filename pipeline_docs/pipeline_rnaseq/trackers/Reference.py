@@ -80,8 +80,7 @@ class CoverageVsFPKM(ReferenceData):
     
     def __call__(self, track, slice ):
 
-        data = self.get( """SELECT 
-                             f.%(track)s_fpkm,
+        data = self.get( """SELECT f.%(track)s_fpkm,
                              c.coverage_anysense_pcovered >= %(slice)s
                        FROM %(track)s_transcript_counts as c, 
                             %(reference)s_cuffdiff_isoform_levels as f 

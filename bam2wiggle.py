@@ -74,16 +74,24 @@ def main( argv = None ):
     parser = optparse.OptionParser( version = "%prog version: $Id: bam2wiggle.py 2832 2009-11-24 16:11:06Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option("-o", "--output-format", dest="output_format", type="choice",
-                      choices=("bedgraph", "wiggle", "bigbed", "bigwig"),
+                      choices=("bedgraph", "wiggle", "bigbed", "bigwig", "bed"),
                       help="output format [default=%default]" )
 
     parser.add_option("-b", "--output-filename", dest="output_filename", type="string",
                       help="filename for output [default=%default]" )
 
+    parser.add_option( "-s", "--shift", dest="shift", type = "int",
+                       help = "shift reads by a certain amount (ChIP-Seq) [%default]" )
+
+    parser.add_option( "-e", "--extend", dest="extend", type = "int",
+                       help = "extend reads by a certain amount (ChIP-Seq) [%default]" )
+
     parser.set_defaults(
         samfile = None,
         output_format = "wiggle",
         output_filename = None,
+        shift = 0,
+        extend = 0,
         )
 
     ## add common options (-h/--help, ...) and parse command line 
@@ -101,6 +109,10 @@ def main( argv = None ):
     samfile = pysam.Samfile( options.samfile, "rb" )
 
     contig_sizes = dict( zip( samfile.references, samfile.lengths) )
+
+    if options.shift or options.extend:
+        if options.output_format != "bigwig":
+            raise ValueError( "shift and extend only available for bigwig output" )
 
     if options.output_format in ("bigwig", "bigbed"):
         
@@ -145,52 +157,94 @@ def main( argv = None ):
         # bed is 0-based, open-closed
         outf = lambda outfile, contig, start, end, val: outfile.write("%s\t%i\t%i\t%i\n" % (contig, start, end,val))
 
+    output_filename = os.path.abspath( options.output_filename )
+
     ninput, nskipped, ncontigs = 0, 0, 0
 
-    for contig in samfile.references:
-        E.debug("output for %s" % contig )
-        lcontig = contig_sizes[contig]
-        
-        if options.output_format in ("wiggle", "bigwig"):
-            outfile.write( "variableStep chrom=%s span=1\n" % contig )
+    if options.shift > 0 or options.extend > 0:
 
-        for val, iter in itertools.groupby( enumerate( samfile.pileup(contig) ), lambda x: x[1].n ):
-            l = list(iter)
-            start,end,val = l[0][1].pos,l[-1][1].pos+1,l[0][1].n
-            # patch: there was a problem with bam files and reads overextending at the end.
-            # These are usually Ns, but need to check as otherwise wigToBigWig fails.
-            if lcontig <= end: 
-                E.warn( "read extending beyond contig: %s: %i > %i" % (contig, end, lcontig))
-                end = lcontig 
-                if start >= end: continue
+        # create bed file with shifted tags
+        shift, extend = options.shift, options.extend
+        shift_extend = shift + extend
 
-            if val > 0: outf( outfile, contig, start, end, val)
-        ncontigs += 1
+        for contig in samfile.references:
+            E.debug("output for %s" % contig )
+            lcontig = contig_sizes[contig]
+            
+            for read in samfile.fetch( contig ):
+                pos = read.pos
+                if read.is_reverse:
+                    start = max(0, read.pos + read.alen - shift_extend )
+                else: 
+                    start = max(0, read.pos + shift)
 
-    E.info( "finished output" )
+                # intervals extending beyond contig are removed
+                if start >= lcontig: continue
 
-    E.info( "ninput=%i, ncontigs=%i, nskipped=%i" % (ninput, ncontigs, nskipped) )
-
-    if options.output_format in ("bigwig", "bigbed"):
+                end = min( lcontig, start + extend )
+                outfile.write( "%s\t%i\t%i\n" % (contig, start, end))
+                
         outfile.close()
 
-        E.info( "starting %s conversion" % executable )
-        try:
-            retcode = subprocess.call( " ".join( (executable,
-                                                  tmpfile_wig,
-                                                  tmpfile_sizes,
-                                                  os.path.abspath( options.output_filename )), ),
-                                       shell=True)
-            if retcode != 0:
-                E.warn( "%s terminated with signal: %i" % (executable, -retcode))
-                return -retcode
-        except OSError, msg:
-            E.warn( "Error while executing bigwig: %s" % e)
-            return 1
+        tmpfile_bed = os.path.join( tmpdir, "bed" )
+        E.info("computing coverage")
+        # calculate coverage - format is bedgraph
+        statement = "genomeCoverageBed -bg -i %(tmpfile_wig)s -g %(tmpfile_sizes)s > %(tmpfile_bed)s" % locals()
+        E.run( statement )
         
+        E.info("converting to bigwig" )
+
+        tmpfile_sorted = os.path.join( tmpdir, "sorted" )
+        statement = "sort -k 1,1 -k2,2n %(tmpfile_bed)s > %(tmpfile_sorted)s; bedGraphToBigWig %(tmpfile_sorted)s %(tmpfile_sizes)s %(output_filename)s" % locals()
+        E.run( statement)
+
         shutil.rmtree( tmpdir )
-        
-        E.info( "finished bigwig conversion" )
+
+    else:
+        for contig in samfile.references:
+            E.debug("output for %s" % contig )
+            lcontig = contig_sizes[contig]
+
+            if options.output_format in ("wiggle", "bigwig"):
+                outfile.write( "variableStep chrom=%s span=1\n" % contig )
+
+            for val, iter in itertools.groupby( enumerate( samfile.pileup(contig) ), lambda x: x[1].n ):
+                l = list(iter)
+                start,end,val = l[0][1].pos,l[-1][1].pos+1,l[0][1].n
+                # patch: there was a problem with bam files and reads overextending at the end.
+                # These are usually Ns, but need to check as otherwise wigToBigWig fails.
+                if lcontig <= end: 
+                    E.warn( "read extending beyond contig: %s: %i > %i" % (contig, end, lcontig))
+                    end = lcontig 
+                    if start >= end: continue
+
+                if val > 0: outf( outfile, contig, start, end, val)
+            ncontigs += 1
+
+        E.info( "finished output" )
+
+        E.info( "ninput=%i, ncontigs=%i, nskipped=%i" % (ninput, ncontigs, nskipped) )
+
+        if options.output_format in ("bigwig", "bigbed"):
+            outfile.close()
+
+            E.info( "starting %s conversion" % executable )
+            try:
+                retcode = subprocess.call( " ".join( (executable,
+                                                      tmpfile_wig,
+                                                      tmpfile_sizes,
+                                                      output_filename )),
+                                           shell=True)
+                if retcode != 0:
+                    E.warn( "%s terminated with signal: %i" % (executable, -retcode))
+                    return -retcode
+            except OSError, msg:
+                E.warn( "Error while executing bigwig: %s" % e)
+                return 1
+
+            shutil.rmtree( tmpdir )
+
+            E.info( "finished bigwig conversion" )
 
     E.Stop()
 

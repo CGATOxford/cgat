@@ -28,8 +28,8 @@ class GeneModelsBenchmark( TrackerGenemodels ):
                       locuslevel_sp, locuslevel_sn,
                       100.0 * missedexons_counts / missedexons_total AS missed_exons,
                       100.0 * missedloci_counts / missedloci_total AS missed_loci,
-                      100.0 * wrongexons_counts / wrongexons_total AS wrong_exons,
-                      100.0 * wrongloci_counts / wrongloci_total AS wrong_loci
+                      100.0 * novelexons_counts / novelexons_total AS wrong_exons,
+                      100.0 * novelloci_counts / novelloci_total AS wrong_loci
                       FROM %(name)s WHERE track = '%(track)s' AND contig = '%(slice)s'
                """ % self.members(locals()))
 
@@ -101,12 +101,12 @@ class TransfragReproducibility2( RnaseqTracker ):
     '''return proportion of transfrags present in a pair of replicates.
     '''
 
-    mPattern = "_reproducibility"
+    pattern = "(.*)_reproducibility"
  
     def getSlices( self, subset = None ):
         return tuple("=cjeiopruxs.*")
    
-    def __call__(self, track, slice = None ):
+    def __call__(self, track, slice ):
         data = self.getAll( """SELECT track1, track2, 
                                       ROUND( CAST( not_null AS FLOAT) / (pairs-both_null),2) AS pcalled,
                                       ROUND( coeff, 2) as correlation
@@ -163,14 +163,14 @@ class TranscriptClassCounts( RnaseqTracker ):
 
 class TranscriptClassCountsSummaryBySource( RnaseqTracker ):
     '''return number of transcripts within each class.'''
-    pattern = "(.*)_class"
+    pattern = "(.*)_class$"
     
     def __call__( self, track, slice = None ):
         return self.getDict( '''SELECT source, COUNT(*) AS ntranscripts FROM %(track)s_class GROUP BY source''')
 
 class TranscriptClassCountsSummaryByClass( RnaseqTracker ):
     '''return number of transcripts within each class.'''
-    pattern = "(.*)_class"
+    pattern = "(.*)_class$"
     
     def __call__( self, track, slice = None ):
         return self.getDict( '''SELECT class, COUNT(*) AS ntranscripts FROM %(track)s_class GROUP BY class''')

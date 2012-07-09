@@ -32,8 +32,83 @@ gtf2table.py - annotate genes/transrcipts
 Purpose
 -------
 
-compute sequence properties for genes of given by a gtf file and output them in 
-tabular format.
+compute properties of genes of given in a gtf file and output them in 
+tabular format. 
+
+The following methods are available:
+
+position
+   output genomic coordinates of gene
+
+length
+   output length summary of gene
+
+splice
+   output splicing summary of gene
+
+quality
+   output base-quality information summary of gene. Needs quality scores.
+
+overrun
+   output intron overrun
+
+read-coverage
+   output read coverage summary of gene
+
+read-extension
+
+read-counts
+
+bigwig-counts
+
+splice-comparison
+
+composition-na
+   output nucleotide composition of gene
+
+composition-cgp
+   output cpg composition of gene
+
+overlap
+
+overlap-stranded
+
+proximity
+
+proximity-exclusive
+
+proximity-lengthmatched
+
+neighbours
+
+territories
+
+distance
+
+distance-genes
+
+distance-tss
+
+coverage
+
+classifier
+
+classifier-chipseq
+   classify chipseq intervals
+
+classifier-rnaseq
+   classify rnaseq transcripts
+
+classifier-polii
+   classify according to PolII transcripts. A gene/transcript is transcribed, if it is covered
+   by large PolII intervals over 80% of its length. A gene/transript is primed if its promotor/UTR
+   is covered by 50% of its length, while the rest of the gene body isn't.
+
+binding-pattern
+   given a list of intervals, determine the binding pattern within and surrounding the gene. For each
+   gene, intervals overlapping the CDS, introns, UTRs and the flank are collected and recorded. The binding
+   is summarized with a binding pattern, a binary pattern indicating overlap/no overlap with
+   5' flank, 5' UTR, CDS, Introns, 3' UTR, 3' flank.
 
 Usage
 -----
@@ -74,21 +149,27 @@ import numpy
 import IndexedGenome
 import pysam
 
-def readIntervalsFromGFF( filename_gff, 
-                          source, 
-                          feature, 
-                          with_values = False, 
-                          with_records = False, 
-                          fasta = None, 
-                          merge_genes = False,
-                          format = "gtf",
-                          use_strand = False ):
+def readIntervalsFromGFF( filename_gff, source, feature, 
+			  with_values = False, with_records = False, fasta = None, 
+			  merge_genes = False, format = "gtf", use_strand = False ):
     """read intervals from a file or list.
     """
 
     assert not (with_values and with_records), "both with_values and with_records are true."
 
     ninput = 0
+
+    if format == None:
+        if type(filename_gff) == types.StringType:
+            fn = filename_gff
+            if fn.endswith( ".gtf" ) or fn.endswith( ".gtf.gz"):
+                format = "gtf"
+            elif fn.endswith( ".gff" ) or fn.endswith( ".gff.gz"):
+                format = "gff"
+            elif fn.endswith( ".bed" ) or fn.endswith( ".bed.gz"):
+                format = "bed"
+        else:
+            format = "gff"
 
     if format in ("gtf", "gff"):
         infile = None
@@ -212,7 +293,9 @@ class Counter:
         self.strand = self.getStrand()
 
     def getContig(self):
-        return self.mGFFs[0].contig
+        contig = self.mGFFs[0].contig
+        if self.fasta: contig = self.fasta.getToken( contig)
+        return contig
 
     def getStrand(self):
         return self.mGFFs[0].strand
@@ -244,6 +327,14 @@ class Counter:
         return Intervals.combineAtDistance( ranges,
                                             self.mMinIntronSize )
 
+    def getCDS( self ):
+        """merge small introns into single exons. The following features are aggregated
+        as exons: exon, CDS, UTR, UTR3, UTR5
+        """
+        ranges = GTF.asRanges( self.mGFFs, feature = ( "CDS", ) )
+        return Intervals.combineAtDistance( ranges,
+                                            self.mMinIntronSize )
+
     def getIntrons( self ):
         exons = self.getExons()
         assert len(exons) > 0, "no exons in gene"
@@ -261,6 +352,25 @@ class Counter:
             return self.getIntrons()
         else:
             return self.getExons()
+
+    def getUTRs( self ):
+        '''return a tuple with 5' and 3' UTRs.'''
+        exons = self.getExons()
+        cds = self.getCDS()
+        utr3, utr5 = [], []
+        if len(cds) == 0: return utr5, utr3
+        strand = self.getStrand()
+        cds_start, cds_end = cds[0][0], cds[-1][1]
+        midpoint = ( cds_end - cds_start ) / 2 + cds_start
+        for start, end in Intervals.truncate( exons, cds ):
+            if end - start > 3:
+                if start < midpoint:
+                    utr5.append( (start,end) )
+                else:
+                    utr3.append( (start,end) )
+        if strand == "-":
+            utr5, utr3 = utr3, utr5
+        return utr5, utr3
 
 class CounterIntronsExons(Counter):
     """count number of introns and exons.
@@ -979,7 +1089,6 @@ class ClassifierChIPSeq(Classifier):
             h.append( str(self.mCounters[key]) )
         return "\t".join( h )
 
-
 ##-----------------------------------------------------------------------------------
 class ClassifierRNASeq(Counter):
     """classify RNASeq transcripts based on a reference annotation.
@@ -1056,10 +1165,10 @@ class ClassifierRNASeq(Counter):
                  ( 's', "extension", ),
                  ( 's', "alternative", ),
                  ( 's', "unknown", ),
-                 ( 's', "intronic", ),
                  ( 's', "utr5", ),
                  ( 's', "utr3", ),
-                 ( 's', "flank5", ),
+                 ( 's', "intronic", ),
+		 ( 's', "flank5", ),
                  ( 's', "flank3", ),
                  ( 'n', "complete", ),
                  ( 'n', "fragment", ),
@@ -1068,9 +1177,9 @@ class ClassifierRNASeq(Counter):
                  ( 'n', "extension", ),
                  ( 'n', "alternative", ),
                  ( 'n', "unknown", ),
-                 ( 'n', "intronic", ),
                  ( 'n', "utr5", ),
                  ( 'n', "utr3", ),
+		 ( 'n', "intronic", ),
                  ( 'n', "flank5", ),
                  ( 'n', "flank3", ),
                  ( 'a', "complete", ),
@@ -1080,10 +1189,10 @@ class ClassifierRNASeq(Counter):
                  ( 'a', "extension", ),
                  ( 'a', "alternative", ),
                  ( 'a', "unknown", ),
-                 ( 'a', "intronic", ),
-                 ( 'a', "utr5", ),
+		 ( 'a', "utr5", ),
                  ( 'a', "utr3", ),
-                 ( 'a', "flank5", ),
+		 ( 'a', "intronic", ),
+		 ( 'a', "flank5", ),
                  ( 'a', "flank3", ),
                  ( 'n', "flank", ),
                  ( 'n', "intergenic" ) )
@@ -1311,6 +1420,804 @@ class ClassifierRNASeq(Counter):
         return "\t".join( map(str, self.result) )
 
 ##-----------------------------------------------------------------------------------
+class ClassifierRNASeqNew(Counter):
+    """This is IMSs new style transcript classifier. It aims to give classifications
+    that make more sense to biologist involved in splicing my using familier catagories.
+
+    classify RNASeq transcripts based on a reference annotation.
+
+    Transcripts are classified by checking overlap with all known
+    transcripts.
+
+    If multiple transcripts overlap, select the one that is best matching.
+
+    +--------------------+------------------------------------------------------------+
+    |*Labels*            |*Contents*                                                  |
+    +--------------------+------------------------------------------------------------+
+    |complete            |Intron chains in transcripts are identical                  |
+    |                    |                                                            |
+    +--------------------+------------------------------------------------------------+
+    |retained-intron     |All introns in test transcript are present in an existing   |
+    |                    |transcript , but not all introns between the start and end  |
+    |                    |co-ordinates of the test transcript are included            |
+    +--------------------+------------------------------------------------------------+
+    |extended            |Intron chain in the known transcripts is the same as the    |
+    |                    |predicted transcirpt between the strat and end of the       |
+    |                    |predicted transcript, but the first and/or last exon extends|
+    |                    |beyond the boundaries of the first/last included exon of the|
+    |                    |known transcirpt                                            |
+    +--------------------+------------------------------------------------------------+
+    |alternate-5prime    |All of the exon boundaries of the known transcirpt between  |
+    |alternate-3prime    |the start and end of the predicted transcirpt are shared    |
+    |novel-exon          |with the predicted transcript but the predicted transcript  |
+    |                    |contains extra boundaries                                   |
+    +--------------------+------------------------------------------------------------+
+    |skipped-exon        |All of the exon boundaries in the predicted transcript are  |
+    |                    |present in the known transcript, but the known transcript   |
+    |                    |contains boundaires that the predicted transcript does not  |
+    +--------------------+------------------------------------------------------------+
+    |alternative         |Known and predicted transcripts share at least one exon     |
+    |                    |boundary                                                    |
+    |                    |                                                            |
+    +--------------------+------------------------------------------------------------+
+    |unknown             |``predicted`` and ``known`` transcript overlap, but do not  |
+	|                    |fall in any of the above categories.                        |
+	|                    |                                                            |
+	+--------------------+------------------------------------------------------------+
+
+    Any of these forms can also exist as a -fragment. This means that the comparison
+	known and the predicted transcript did not make the criteria for a class, but the 
+	comparison of the predicted and the part of the known transcirpt bewteen the start and
+	end of the known transcript do. 
+
+	Furthermore, ``predicted`` transcripts that do not overlap the exons of a ``known`` 
+    transcript, but only introns, are classed as ``intronic``. All other transcripts
+    that overlap neither introns nor exons of a ``known`` transcript are labeled 
+    ``intergenic``.
+
+    If the ``known`` transcript is protein coding, the ``predicted`` transcript is further 
+    checked if it overlaps with the ``known`` UTR only. These transcripts are labelled ``utr5``
+    and ``utr3``.
+
+    Additionaly, the strandedness of the overlap is recorded as well (senes and antisense).
+
+    To decide, which transcript is the closest match, the resultant class are sorted as above 
+    in a priority list, where sense orientation has higher priority than anti-sense orientation.
+    For example, a ``predicted`` transcript will be rather labeled as ``sense intronic`` rather
+     than ``antisense fragment``.
+
+    """
+
+    header = [ "noverlap_transcripts", 
+               "noverlap_genes",
+               "match_transcript_id", "match_gene_id", "source", "class", "sense" ]
+
+    # number of residues that are permitted for negligible overlap
+    tolerance = 1
+
+    # size of flanking region
+    flank = 5000
+
+    # priority of classifications to select best match
+    priority = ( ( 's', "complete", ),
+				 ( 's', "fragment", ),
+				 ( 's', "extended", ),
+				 ( 's', "extended-fragment", ),
+				 ( 's', "retained-intron", ),
+				 ( 's', "retained-intron-fragment", ),
+				 ( 's', "skipped-exon" ,),
+				 ( 's', "novel-exon", ),
+				 ( 's', "alternate-5prime", ),
+				 ( 's', "alternate-3prime", ),
+				 ( 's', "alternate-exon", ),
+				 ( 's', "exon-boundary-change", ),
+				 ( 's', "skipped-exon-fragment", ),
+				 ( 's', "novel-exon-fragment", ),
+				 ( 's', "alternate-5prime-fragment", ),
+				 ( 's', "alternate-3prime-fragment", ),
+				 ( 's', "alternate-exon-fragment", ),
+				 ( 's', "exon-boundary-change-fragment", ),
+				 ( 's', "alternative", ),
+				 ( 's', "unknown", ),
+				 ( 's', "utr5", ),
+				 ( 's', "utr3", ),
+				 ( 's', "intronic", ),
+				 ( 's', "flank5", ),
+				 ( 's', "flank3", ),
+				 ( 's', "intergenic", ),
+				 ( 'n', "complete", ),
+				 ( 'n', "fragment", ),
+				 ( 'n', "extended-fragment", ),
+				 ( 'n', "retained-intron", ),
+				 ( 'n', "retained-intron-fragment", ),
+				 ( 'n', "skipped-exon" ,),
+				 ( 'n', "novel-exon", ),
+				 ( 'n', "alternate-5prime", ),
+				 ( 'n', "alternate-3prime", ),
+				 ( 'n', "alternate-exon", ),
+				 ( 'n', "exon-boundary-change", ),
+				 ( 'n', "skipped-exon-fragment", ),
+				 ( 'n', "novel-exon-fragment", ),
+				 ( 'n', "alternate-5prime-fragment", ),
+				 ( 'n', "alternate-3prime-fragment", ),
+				 ( 'n', "alternate-exon-fragment", ),
+				 ( 'n', "exon-boundary-change-fragment"),
+				 ( 'n', "alternative", ),
+				 ( 'n', "unknown", ),
+				 ( 'n', "utr5", ),
+				 ( 'n', "utr3", ),
+				 ( 'n', "intronic", ),
+				 ( 'n', "flank5", ),
+				 ( 'n', "flank3", ),
+				 ( 'n', "flank", ),
+				 ( 'n', "intergenic", ),
+				 ( 'a', "complete", ),
+				 ( 'a', "fragment", ),
+				 ( 'a', "extended-fragment", ),
+				 ( 'a', "retained-intron", ),
+				 ( 'a', "retained-intron-fragment", ),
+				 ( 'a', "skipped-exon" ,),
+				 ( 'a', "novel-exon", ),
+				 ( 'a', "alternate-5prime", ),
+				 ( 'a', "alternate-3prime", ),
+				 ( 'a', "alternate-exon", ),
+				 ( 'a', "exon-boundary-change", ),
+				 ( 'a', "skipped-exon-fragment", ),
+				 ( 'a', "novel-exon-fragment", ),
+				 ( 'a', "alternate-5prime-fragment", ),
+				 ( 'a', "alternate-3prime-fragment", ),
+				 ( 'a', "alternate-exon-fragment", ),
+				 ( 'a', "exon-boundary-change-fragment"),
+				 ( 'a', "alternative", ),
+				 ( 'a', "unknown", ),
+				 ( 'a', "utr5", ),
+				 ( 'a', "utr3", ),
+				 ( 'a', "intronic", ),
+				 ( 'a', "flank5", ),
+				 ( 'a', "flank3", ),     
+				 ( 'a', "intergenic", ) )
+
+    def __init__(self, filename_gff, *args, **kwargs ):
+
+        Counter.__init__(self, *args, **kwargs )
+
+        if len(filename_gff) != 1:
+            raise ValueError("expected only one gff file" )
+
+        E.info( "loading data from %s" % (filename_gff[0]) )
+
+        map_transcript2gene = {}
+        transcripts = {}
+        transcript_intervals = IndexedGenome.Quicksect()
+
+        f = IOTools.openFile( filename_gff[0]) 
+
+        for t in GTF.transcript_iterator(GTF.iterator( f )):
+            t.sort( key = lambda x: x.start )
+            transcript_id, gene_id = t[0].transcript_id, t[0].gene_id
+            map_transcript2gene[transcript_id] = gene_id
+            transcripts[transcript_id] = t
+            t = [x for x in t if x.feature == "exon"]
+            transcript_intervals.add( t[0].contig, t[0].start, t[-1].end, transcript_id )
+
+        f.close()
+
+        E.info( "loaded data from %s" % (filename_gff[0]) )
+
+        self.transcripts = transcripts
+        self.transcript_intervals = transcript_intervals
+        self.map_transcript2gene = map_transcript2gene
+        self.map_gene2transcripts = dict( [ (y,x) for x,y in map_transcript2gene.iteritems() ] )
+
+        self.mapClass2Priority = dict( [(y,x) for x,y in enumerate(self.priority) ] )
+
+    def get_sense( self, strand, transcript_strand):
+        '''encode sense as (s)ense, (a)ntisense and (n)ot available'''
+        
+        if strand == "." or transcript_strand == ".": sense = "n"
+        elif strand == transcript_strand: sense = "s"
+        else: sense = "a"
+        return sense
+
+
+    def classify_nonoverlap( self, exons ):
+        '''classify_nonoverlapping transcripts.'''
+        
+        contig = self.getContig()
+        strand = self.getStrand()
+        start, end = exons[0][0], exons[-1][1]
+
+        # get closest gene upstream and downstream
+        before = self.transcript_intervals.before( contig, start, end, num_intervals = 1, max_dist = self.flank )
+        after = self.transcript_intervals.after( contig, start, end, num_intervals = 1, max_dist = self.flank )
+
+        # convert to id, distance, is_before
+        associated = []
+        if before:
+            d = before[0]
+            associated.append( (d[2], start - d[1], True ) )
+            
+        if after:
+            d = after[0]
+            associated.append( (d[2], d[0] - end, False ) )
+                
+        results = []
+
+        for transcript_id, distance, is_before in associated:
+            transcript_strand = self.transcripts[transcript_id][0].strand
+            sense = self.get_sense( strand, transcript_strand )
+
+            if transcript_strand == "+":
+                if is_before: cls = "flank3"            
+                else: cls = "flank5"
+            elif transcript_strand == "-":
+                if is_before: cls = "flank5"
+                else: cls = "flank3"
+            else:
+                cls= "flank"
+                
+            results.append( (cls, sense, transcript_id ) )
+
+        if len(results) == 0:
+            results.append( ("intergenic", "n", "" ) )
+
+        return results
+
+    def classify_overlap( self, exons, transcript_id ):
+        '''classify overlapping transcripts.'''
+
+        introns = Intervals.complement( exons )
+        strand = self.getStrand()
+        lexons = Intervals.getLength( exons )
+
+        start, end = exons[0][0], exons[-1][1]
+
+        gtfs = self.transcripts[transcript_id]
+        transcript_strand = gtfs[0].strand
+        transcript_exons = [ (x.start, x.end) for x in gtfs if x.feature == "exon" ]
+        transcript_start, transcript_end = transcript_exons[0][0], transcript_exons[-1][1]
+        transcript_lexons = Intervals.getLength( transcript_exons )
+        transcript_introns = Intervals.complement( transcript_exons )
+        transcript_lintrons = Intervals.getLength( transcript_introns )
+
+        tolerance = self.tolerance
+
+        # check if transcript purely intronic
+        overlap_exons = Intervals.calculateOverlap( exons, transcript_exons )
+
+        if overlap_exons == 0: is_intronic = True
+        else: is_intronic = False
+
+        # determine sense-ness
+        # if no strand is given, set to sense 
+        if strand == "." or transcript_strand == ".": sense = True
+        else: sense = strand == transcript_strand
+
+        cls = "unclassified"
+
+        if is_intronic:
+            cls = "intronic"
+        else:
+            # count (exactly) shared introns
+            shared_introns = [ x for x in introns if x in transcript_introns ]
+
+            # count shared boundaries
+            boundaries = sorted([ (x[0] - tolerance, x[0] + tolerance) for x in introns ] + 
+                                [ (x[1] - tolerance, x[1] + tolerance) for x in introns ])
+            transcript_boundaries = sorted([ (x[0], x[0] + 1) for x in transcript_introns ] + 
+                                           [ (x[1], x[1] + 1) for x in transcript_introns ])
+            shared_boundaries = Intervals.intersect( boundaries, transcript_boundaries )
+        
+
+            # if there are no introns, matched_structure will be True
+            if len(exons) == 1 and len(transcript_exons) == 1:
+                matched_structure = approx_structure = True
+            elif len(exons) == 1:
+                matched_structure = False
+                approx_structure = False
+            else:
+				# IMS structure is an exact match if and only if all intron boundaries in both exons and 
+				# transcripts are shared. This allows extensions of the 3' or 5' UTRs.
+                matched_structure = len(shared_introns) == len(introns)
+                approx_structure = len(shared_boundaries) > 0
+             
+
+            included_exons = [x for x in transcript_exons if x[1] > start and x[0] < end ]
+            included_transcript_introns = [x for x in transcript_introns if x[0] > start and x[1] <= end]
+            included_boundaries = sorted([ (x[0], x[0] + 1) for x in included_transcript_introns ] + 
+										 [ (x[1], x[1] + 1) for x in included_transcript_introns ])
+            shared_included_boundaries = Intervals.intersect( boundaries, included_boundaries )
+            
+			# If there is a matched structure, i.e. all of the introns in the gene model are in an existing gene
+			# model, then either we have a fragment of the complete transcript or some sort of retain intron 
+			# (or both)
+            #if matched_structure and abs(overlap_exons - transcript_lexons) < tolerance:
+            if matched_structure and len(shared_introns) == len(transcript_introns):
+                cls = "complete"
+            elif matched_structure:
+                shared_included = [x for x in introns if x in included_transcript_introns]
+
+                cls = []
+
+                if not len(shared_included) == len(included_transcript_introns):   
+                    cls.append("retained-intron")
+                elif start < included_exons[0][0] or end > included_exons[-1][1]:
+                    cls.append("extended")
+                    
+                if (Intervals.calculateOverlap([boundaries[0]], transcript_boundaries[1:]) > 0 or
+                    Intervals.calculateOverlap([boundaries[-1]], transcript_boundaries[:-2]) > 0):
+                
+                    cls.append("fragment")
+                
+                cls = "-".join(cls)         
+                
+            #elif approx_structure and len(exons) > 1 and abs(overlap_exons - transcript_lexons) < tolerance:
+            #    cls = "complete"
+
+        
+            elif approx_structure and (len(shared_included_boundaries) == len(included_boundaries) and
+                  len(shared_included_boundaries) < len(boundaries)):
+                #there are boundaries present in the test model that are not present in the transcript 
+                #therefore there is a novel exon. Could be fragement or complete.
+                
+                if (Intervals.calculateOverlap([exons[0]],transcript_exons) == 0):
+                    cls = "alternate-5prime"
+                
+                    if len(Intervals.intersect([boundaries[-1]], transcript_boundaries[0:-1])) > 0 :
+                    # is a fragment if the final boundary is in the transcript but isn't its final one.
+                        cls = cls + "-fragment"
+                    if not len(boundaries) == len(shared_included_boundaries) + 1:
+                        cls = "alternative"
+                elif (Intervals.calculateOverlap([exons[-1]],transcript_exons) == 0):
+                    cls = "alternate-3prime"
+                    if len(Intervals.intersect([boundaries[-1]], transcript_boundaries[2:])) > 0:
+                        #is a fragment if the first boundary is in the transcript but is the first one.
+                        cls = cls + "-fragment"
+                    if not len(boundaries) == len(shared_included_boundaries) + 1:
+                        cls = "alternative"
+                elif len(shared_boundaries) == len(transcript_boundaries) and len(shared_boundaries) < len (boundaries):
+                    cls = "novel-exon"
+                else:
+                    cls = "novel-exon-fragment"
+                
+            elif approx_structure and (len(shared_included_boundaries) == len (boundaries) and 
+                  len(shared_included_boundaries) < len (included_boundaries)):
+                #there are boundaries in the transcript that are not in the test model. There for an exon has been 
+                #skipped. Could be fragment or complete.
+                if (Intervals.calculateOverlap([boundaries[0]],[transcript_boundaries[0]]) > 0 and
+                    Intervals.calculateOverlap([boundaries[-1]],[transcript_boundaries[-1]]) > 0):
+                    cls = "skipped-exon"
+                else:
+                    cls = "skipped-exon-fragment"
+                
+            elif approx_structure and (len(Intervals.combine(exons + included_exons)) == len(exons) and
+                  len(Intervals.combine(exons + included_exons)) == len(included_exons)):
+                #same exons exist in each (where two exons are the "same" exon if they overlap with each other, but
+                #only each other).
+                cls = "exon-boundary-change"
+                if not (len(Intervals.combine(exons + transcript_exons)) == len (exons) and
+                        len(Intervals.combine(exons + transcript_exons)) == len (transcript_exons)):
+                    cls = cls +"-fragment"
+
+            elif approx_structure and (len(Intervals.combine(exons + included_exons)) == len(exons) +1 and
+                                       len(Intervals.combine(exons + included_exons)) == len(included_exons)+1):
+                #there is exactly one exon in test model that is not in transcript and vice versa
+                cls = "alternate-"
+                if (Intervals.calculateOverlap([exons[0]], transcript_exons) == 0):
+                    if len(boundaries) == len(shared_boundaries) + 1:
+                        cls = cls + "5prime"
+                    else:
+                        cls = "alternative"
+
+                elif (Intervals.calculateOverlap([exons[-1]], transcript_exons) == 0):
+                    if len(boundaries) == len(shared_boundaries) +1:
+                        cls = cls + "3prime"
+                    else:
+                        cls = "alternative"
+                elif len(boundaries) == len(shared_boundaries) +2:
+                    cls = cls + "exon"
+                else:
+                    cls = "alternative"
+                    
+
+                if len(Intervals.intersect([boundaries[-1]], transcript_boundaries[0:-1])) > 0 :
+                    # is a fragment if the final boundary is in the transcript but isn't its final one.
+                    cls = cls + "-fragment"
+                elif len(Intervals.intersect([boundaries[-1]], transcript_boundaries[2:])) > 0:
+                    #is a fragment if the first boundary is in the transcript but is the first one.
+                    cls = cls + "-fragment"
+                if cls == "alternative-fragment":
+                    cls = "alternative"
+
+            elif approx_structure:
+                cls = "alternative"
+
+            elif overlap_exons == lexons:
+                cls = "fragment"
+            else:
+                cls = "unknown"
+
+        transcript_cds = [ (x.start, x.end) for x in gtfs if x.feature == "CDS" ]
+        transcript_lcds = Intervals.getLength( transcript_cds )
+        # intersect with CDS
+        if len(transcript_cds) > 0:
+            overlap_cds = Intervals.calculateOverlap( transcript_cds, exons )                
+            # if no overlap with CDS, check for UTR ovelap
+            if overlap_cds < tolerance:
+                utrs = Intervals.truncate( transcript_exons, transcript_cds )
+                cds_start,cds_end = transcript_cds[0][0], transcript_cds[-1][1]
+                utr5 = [ x for x in utrs if x[1] <= cds_start ]
+                utr3 = [ x for x in utrs if x[0] >= cds_end ]
+                if strand == "-": utr5, utr3= utr3, utr5
+                overlap_utr5 = Intervals.calculateOverlap( utr5, exons )
+                overlap_utr3 = Intervals.calculateOverlap( utr3, exons )
+                if overlap_utr5 > 0:
+                    cls = "utr5"
+                elif overlap_utr3 > 0:
+                    cls = "utr3"
+            
+        return cls, self.get_sense( strand, transcript_strand )
+
+    def count(self):
+
+        contig = self.getContig()
+        segments = self.getSegments()
+        introns = self.getIntrons()
+        try:
+            overlaps = list(self.transcript_intervals.get( contig, segments[0][0], segments[-1][1] ))
+        except KeyError, msg:
+            E.warn( "failed lookup of interval %s:%i-%i: '%s'" % (contig, segments[0][0], segments[-1][1], msg) )
+            self.skip = True
+            return
+
+        noverlap_transcripts = len(overlaps)
+        noverlap_genes = len( set( [self.map_transcript2gene[transcript_id] for start,end,transcript_id in overlaps] ) )
+
+        results = []
+        
+        if len(overlaps) == 0:
+            for cls, sense, transcript_id in self.classify_nonoverlap( segments ):
+                if transcript_id != "":
+                    source = self.transcripts[transcript_id][0].source
+                    gene_id = self.map_transcript2gene[transcript_id]
+                else:
+                    source, gene_id = "", ""
+                results.append( (self.mapClass2Priority[(sense,cls)], 
+                                 ( 0, 0, transcript_id, gene_id, source, cls, sense ) ) )
+        else:
+            for start, end, transcript_id in overlaps:
+                cls, sense = self.classify_overlap(segments, transcript_id) 
+                source = self.transcripts[transcript_id][0].source
+                gene_id = self.map_transcript2gene[transcript_id]
+                results.append( (self.mapClass2Priority[(sense,cls)], 
+                                 ( noverlap_transcripts, noverlap_genes, transcript_id, gene_id, source, cls, sense ) ) )
+        
+        results.sort()
+        self.result = results[0][1]
+
+    def __str__(self):
+        return "\t".join( map(str, self.result) )
+##-----------------------------------------------------------------------------------
+class ClassifierIntervals(CounterOverlap):
+    """classify transcripts based on a list of intervals.
+    """
+
+    header = [ "is_known", "is_unknown", "is_ambiguous", 
+               "is_pc", "is_pseudo", "is_npc", "is_utr", 
+               "is_intronic", "is_assoc", "is_intergenic" ] 
+
+    # do not use strand
+    mUseStrand = False
+
+    def __init__(self, *args, **kwargs ):
+
+        CounterOverlap.__init__(self, *args, **kwargs )
+
+##-----------------------------------------------------------------------------------
+class ClassifierPolII(ClassifierIntervals):
+    """classify transcripts based on PolII annotation.
+    
+    The input is a list of PolII intervals.
+    
+    An interval is classified as:
+    
+    is_transcribed: 
+        the longest interval covers *threshold_min_coverage* of the 
+        gene body.
+
+    """
+
+    headerTemplate = [ "is_transcribed", "is_primed", "noverlap", 
+                       "largest_size", "largest_overlap", "largest_coverage",
+                       "promotor_overlap", "promotor_coverage" ]
+
+    # minimum coverage of a transcript to accept
+    threshold_min_coverage_transcript = 80
+
+    # minimum coverage of a promotor to be accepted
+    threshold_min_coverage_promotor = 50
+
+    # size of promotor - 1kb upstream of tss
+    promotor_upstream = 200
+    
+    # size of promotor - 1kb downstream of tss
+    promotor_downstream = 200
+
+    def count(self):
+
+        self.is_transcribed = False
+        self.is_primed = False
+        self.noverlap = 0
+        self.largest = 0
+        self.largest_interval = 0
+        self.largest_overlap = 0
+        self.largest_coverage = 0
+        self.promotor_overlap = 0
+        self.promotor_coverage = 0
+
+        contig = self.getContig()
+
+        if contig not in self.mIntersectors: return
+        
+        # count overlap over full gene body
+        segments = self.getExons()
+        start, end = segments[0][0], segments[-1][1]
+        
+        promotor_max = max( self.promotor_upstream, self.promotor_downstream )
+
+        r = list(self.mIntersectors[contig].find( start - promotor_max, end + promotor_max ))
+        if len(r) == 0: return
+        self.noverlap = len(r)
+
+        r.sort( key = lambda x: x.end-x.start )
+
+        largest_start, largest_end = r[-1].start, r[-1].end
+        self.largest_interval = largest_end - largest_start
+        self.largest_overlap = min( largest_end, end) - max(largest_start, start)
+        self.largest_coverage = 100.0 * float( self.largest_overlap ) / (end - start)
+
+        strand = self.getStrand()
+        if strand == "+":
+            promotor_start, promotor_end = start - self.promotor_upstream, start + self.promotor_downstream
+        else:
+            promotor_start, promotor_end = end - self.promotor_downstream, end + self.promotor_upstream
+            
+        self.promotor_overlap = Intervals.calculateOverlap( [ (x.start, x.end) for x in r ],
+                                                            [ (promotor_start, promotor_end), ] )
+
+        self.promotor_coverage = 100.0 * float( self.promotor_overlap ) / (promotor_end - promotor_start)
+
+        if self.largest_coverage >= self.threshold_min_coverage_transcript:
+            self.is_transcribed = True
+        elif self.promotor_coverage >= self.threshold_min_coverage_promotor:
+            self.is_primed = True
+
+    def __str__(self):
+
+        def to( v ):
+            if v: return "1" 
+            else: return "0"
+
+        h = [ to(x) for x in (self.is_transcribed, 
+                              self.is_primed ) ]
+        h.extend( [ "%i" % self.noverlap,
+                    "%i" % self.largest_interval,
+                    "%i" % self.largest_overlap,
+                    "%5.2f" % self.largest_coverage,
+                    "%i" % self.promotor_overlap,
+                    "%5.2f" % self.promotor_coverage ] )
+        
+        return "\t".join( h )
+
+##-----------------------------------------------------------------------------------
+class CounterBindingPattern(CounterOverlap):
+    """compute overlaps between gene and various tracks given
+    by one or more gff files.
+
+    pattern
+       a binding pattern.
+    overlap
+       number of intervals overlapping the genic region
+    
+    Single exon genes have no intron.
+    Genes with one intron have only a first intron.
+    Genes with two introns have a first and a middle intron.
+
+    This method also computes the expected number of times 
+    an interval would overlap with a certain feature. The 
+    probability is only exact if it is assumed that the 
+    intervals are point features.
+    """
+
+    headerTemplate = [ "pattern", "overlap" ] +\
+        [ "%s_%s" % (x,y) for x,y in itertools.product( 
+		    ("cds", "first_exon", "exon", "utr5", "utr3", "first_intron", "middle_intron", "last_intron", "intron" ) +\
+			    tuple( ["flank5_%05i" % x for x in range(0, 10000, 2000) ] ) +\
+			    tuple( ["flank3_%05i" % x for x in range(0, 10000, 2000) ] ),
+            ("overlap", "poverlap" ) ) ]
+
+
+    # do not use strand
+    mUseStrand = False
+
+    mWithValues = False
+    
+    mWithRecords = False
+
+    # size of flank, make sure the headers are updated above.
+    flank = 10000
+
+    # number of bins in the flank
+    flank_bins = 5
+
+    def __init__(self, *args, **kwargs ):
+        CounterOverlap.__init__(self, *args, **kwargs )
+            
+    def count( self ):
+
+        self.overlap_intron = 0
+        self.overlap_exon = 0
+        self.overlap_utr5 = 0
+        self.overlap_utr3 = 0
+        self.overlap_cds = 0
+
+        self.overlap_first_intron = 0
+	self.overlap_last_intron = 0
+	self.overlap_middle_intron = 0
+        self.overlap_first_exon = 0
+        self.overlap_flank5 = [0] * self.flank_bins
+        self.overlap_flank3 = [0] * self.flank_bins
+
+        self.poverlap_intron = 0
+        self.poverlap_exon = 0
+        self.poverlap_utr5 = 0
+        self.poverlap_utr3 = 0
+        self.poverlap_cds = 0
+
+        self.poverlap_first_intron = 0
+        self.poverlap_last_intron = 0
+	self.poverlap_middle_intron = 0
+        self.poverlap_first_exon = 0
+        self.poverlap_flank5 = [0] * self.flank_bins
+        self.poverlap_flank3 = [0] * self.flank_bins
+        self.overlap = 0
+
+        # pattern takes only first bin for flank5 and flank3
+        self.pattern = "0" * 6
+
+        contig = self.getContig()
+        strand = self.getStrand()
+        if contig not in self.mIntersectors: return
+
+        ######################################
+        ## build sub-intervals to count
+        utr5, utr3 = self.getUTRs()
+        cds = self.getCDS()
+        exons = self.getExons()
+        introns = self.getIntrons()
+        start, end = exons[0][0], exons[-1][1]
+
+        ######################################
+        ## get overlapping intervals
+        extended_start, extended_end = start - self.flank, end + self.flank
+        overlaps = list(self.mIntersectors[contig].find( extended_start, extended_end ))
+        if len(overlaps) == 0 : return 
+        intervals = [(x.start, x.end) for x in overlaps ]
+
+        self.overlap = len(intervals )
+
+        ######################################
+        ## build special sets
+        first_intron, first_exon = [], []
+	last_intron, middle_intron = [], []
+        flank_increment = self.flank // self.flank_bins
+
+        # flank is ordered such that indices move away from the tss or tes
+        if strand == "+":
+            flank5 = [ [(x-flank_increment, x)] for x in range(start, start - self.flank, -flank_increment) ]
+            flank3 = [ [(x,x+flank_increment)] for x in range(end, end + self.flank, flank_increment) ]
+            if introns: 
+                first_intron = [introns[0]]
+		if len(introns) > 1:
+			last_intron = [introns[-1]]
+		if len(introns) > 2:
+			middle_intron = [introns[len(introns) // 2 ] ] 
+            first_exon = [exons[0]]
+            del exons[0]
+        else:
+            flank3 = [ [(x-flank_increment, x)] for x in range(start, start - self.flank, -flank_increment) ]
+            flank5 = [ [(x,x+flank_increment)] for x in range(end, end + self.flank, flank_increment) ]
+            if introns: 
+                first_intron = [introns[-1]]
+		if len(introns) > 1:
+			last_intron = [introns[0]]
+		if len(introns) > 2:
+			middle_intron = [introns[len(introns) // 2 ] ] 
+
+            first_exon = [exons[-1]]
+            del exons[-1]
+
+        #######################################
+        ## calculate overlap
+        self.overlap_intron = Intervals.calculateOverlap( introns, intervals )
+        self.overlap_exon = Intervals.calculateOverlap( exons, intervals )
+        self.overlap_utr5 = Intervals.calculateOverlap( utr5, intervals )
+        self.overlap_utr3 = Intervals.calculateOverlap( utr3, intervals )
+        self.overlap_cds = Intervals.calculateOverlap( cds, intervals )
+        self.overlap_first_exon = Intervals.calculateOverlap( first_exon, intervals )
+        self.overlap_first_intron = Intervals.calculateOverlap( first_intron, intervals )
+        self.overlap_last_intron = Intervals.calculateOverlap( last_intron, intervals )
+        self.overlap_middle_intron = Intervals.calculateOverlap( middle_intron, intervals )
+
+        for x, i in enumerate( flank5):
+            self.overlap_flank5[x] = Intervals.calculateOverlap( i, intervals )
+        for x, i in enumerate( flank3):
+            self.overlap_flank3[x] = Intervals.calculateOverlap( i, intervals )
+        
+        #######################################
+        ## calculate percent overlap
+        pp = IOTools.prettyPercent
+        self.poverlap_intron = pp( self.overlap_intron, Intervals.getLength( introns ), na = 0)
+        self.poverlap_exon = pp(self.overlap_exon, Intervals.getLength( exons ), na = 0)
+        self.poverlap_cds = pp(self.overlap_cds, Intervals.getLength( cds ), na = 0)
+        self.poverlap_utr5 = pp( self.overlap_utr5, Intervals.getLength( utr5 ), na = 0)
+        self.poverlap_utr3 = pp( self.overlap_utr3, Intervals.getLength( utr3 ), na = 0)
+        self.poverlap_first_exon = pp( self.overlap_first_exon, Intervals.getLength( first_exon ), na = 0)
+        self.poverlap_first_intron = pp( self.overlap_first_intron, Intervals.getLength( first_intron ), na = 0)
+        self.poverlap_middle_intron = pp( self.overlap_middle_intron, Intervals.getLength( middle_intron ), na = 0)
+        self.poverlap_last_intron = pp( self.overlap_last_intron, Intervals.getLength( last_intron ), na = 0)
+
+        for x, v in enumerate( self.overlap_flank5 ):
+            self.poverlap_flank5[x] = pp( v, Intervals.getLength( flank5[x] ), na = 0)
+            
+        for x, v in enumerate( self.overlap_flank3 ):
+            self.poverlap_flank3[x] = pp( v, Intervals.getLength( flank3[x] ), na = 0)
+
+        #######################################
+        ## build binding pattern
+        pattern = []
+        for x in ( self.overlap_flank5[0], self.overlap_utr5, self.overlap_cds, 
+                   self.overlap_intron, self.overlap_utr3, self.overlap_flank3[0]):
+            if x: pattern.append("1")
+            else: pattern.append("0")
+
+        self.pattern = "".join(pattern)
+
+    def __str__(self):
+        
+        data = [ self.pattern,
+                 self.overlap,
+                 self.overlap_cds,
+                 self.poverlap_cds,
+                 self.overlap_first_exon,
+                 self.poverlap_first_exon,
+                 self.overlap_exon,
+                 self.poverlap_exon,
+                 self.overlap_utr5,
+                 self.poverlap_utr5,
+                 self.overlap_utr3,
+                 self.poverlap_utr3,
+                 self.overlap_first_intron,
+                 self.poverlap_first_intron,
+                 self.overlap_middle_intron,
+                 self.poverlap_middle_intron,
+                 self.overlap_last_intron,
+                 self.poverlap_last_intron,
+                 self.overlap_intron,
+                 self.poverlap_intron,
+		 ]
+
+        for x in range(len(self.overlap_flank5)):
+            data.append( self.overlap_flank5[x] )
+            data.append( self.poverlap_flank5[x] )
+
+        for x in range(len(self.overlap_flank3)):
+            data.append( self.overlap_flank3[x] )
+            data.append( self.poverlap_flank3[x] )
+
+        return "\t".join( map(str, data ) )
+
+##-----------------------------------------------------------------------------------
 class CounterOverrun(Counter):
     """count intron overrun. 
     
@@ -1423,17 +2330,29 @@ class CounterOverrun(Counter):
 
 ##-----------------------------------------------------------------------------------
 class CounterDistance(Counter):
-    """counter for computing the distance to features.
+    """counter for computing the distance to features on either side 
+    of a feature.
+
+    The strand of a feature is taken into account.
 
     The columns output are:
-    distance: distance to closest feature in any direction
-    id: id of closest feature *(
-    dist5: distance to closest feature in 5' direction
-    strand5: strand of feature in 5' direction
-    id5: id of feature in 5' direction
-    dist3: distance to closest feature in 3' direction
-    strand3: strand of feature in 3' direction
-    id3: id of feature in 5' direction
+
+    distance
+       distance to closest feature in any direction
+    id
+       id of closest feature 
+    dist5
+       distance to closest feature in 5' direction
+    strand5
+       strand of feature in 5' direction
+    id5
+       id of feature in 5' direction
+    dist3
+       distance to closest feature in 3' direction
+    strand3
+       strand of feature in 3' direction
+    id3
+       id of feature in 5' direction
 
     This counter outputs the gene_id of the closest feature.
 
@@ -1521,11 +2440,13 @@ class CounterDistance(Counter):
             self.mOverlaps = list(self.mIntervals.get(contig, start, end))
         except KeyError:
             # ignore unknown contigs
+            E.warn( "unknown contig %s" % contig )
             return
 
         if self.mOverlaps:
             # stop getting distance if there is overlap
             self.mDistance = 0
+	    self.mData = [x[2] for x in self.mOverlaps]
         else:
             if contig in self.startValues:
                 entry_before = bisect.bisect( self.endPoints[contig], start ) - 1
@@ -1544,7 +2465,7 @@ class CounterDistance(Counter):
                     self.strand3 = e.strand
                     self.mData3 = e 
                     has3 = True
-
+		    
             if has5 and has3:
                 if self.mDistance5 < self.mDistance3:
                     self.mDistance, self.mData = self.mDistance5, self.mData5
@@ -1605,6 +2526,9 @@ class CounterDistanceGenes(CounterDistance):
        CASE WHEN amin3 > 0 THEN '3' ELSE '5' END
 
     TODO: check if all is correct.
+
+    If the transcript overlaps a gene, the distance is set to 0. If it overlaps multiple genes,
+    only one (the first) is output.
     """
 
     headerTemplate = ( "closest_id", "closest_dist", "closest_strand", "id5", "dist5", "strand5", "id3", "dist3", "strand3", "min5", "min3", "amin5", "amin3" )
@@ -1628,55 +2552,61 @@ class CounterDistanceGenes(CounterDistance):
     def __str__(self):
 
         id5, id3, d3, d5, m3, m5 = "na", "na", "na" , "na", "na", "na"
+	any3, any5 = "", ""
 
-        if self.mData5: 
-            id5 = self.mData5.gene_id
-        if self.mData3: 
-            id3 = self.mData3.gene_id
+	if self.mDistance == 0:
+	    closest_id = self.mData[0].gene_id
+            closest_dist = 0
+	    closest_strand = "."
+	else:
+		if self.mData5: 
+		    id5 = self.mData5.gene_id
+		if self.mData3: 
+		    id3 = self.mData3.gene_id
 
-        ## get distances to closest feature in 3' and 5' directions
-        d5, d3 = [], []
-        dist5, dist3, strand5, strand3 = self.mDistance5, self.mDistance3, self.strand5, self.strand3
+		## get distances to closest feature in 3' and 5' directions
+		d5, d3 = [], []
+		dist5, dist3, strand5, strand3 = self.mDistance5, self.mDistance3, self.strand5, self.strand3
 
-        if self.mIsNegativeStrand:
-            dist5, dist3 = dist3, dist5
-            strand5, strand3 = strand3, strand5
+		if self.mIsNegativeStrand:
+		    dist5, dist3 = dist3, dist5
+		    strand5, strand3 = strand3, strand5
 
-        if not Genomics.IsNegativeStrand(strand5):
-            d3.append( dist5 )
-        else:
-            d5.append( dist5 )
+		if not Genomics.IsNegativeStrand(strand5):
+		    d3.append( dist5 )
+		else:
+		    d5.append( dist5 )
 
-        if not Genomics.IsNegativeStrand(strand3):
-            d5.append( dist3 )
-        else:
-            d3.append( dist3 )
+		if not Genomics.IsNegativeStrand(strand3):
+		    d5.append( dist3 )
+		else:
+		    d3.append( dist3 )
 
-        # get minimum distance to 3' or 5' end of a gene
-        if d3: any3 = d3 = min(d3) 
-        else: any3 = d3 = "na"
-        if d5: any5 = d5 = min(d5)
-        else: any5 = d5 = "na"
-            
-        # record the closest distance to a gene in any direction
-        if any3 != "na" and any5 != "na":
-            if any3 < any5: any5 = "na"
-            elif any5 < any3: any3 = "na"
+		# get minimum distance to 3' or 5' end of a gene
+		if d3: any3 = d3 = min(d3) 
+		else: any3 = d3 = "na"
+		if d5: any5 = d5 = min(d5)
+		else: any5 = d5 = "na"
 
-        # record the shortest distance
-        if self.mDistance3 == None or self.mDistance5 == None:
-            if self.mDistance3 == None:
-                closest_id, closest_dist, closest_strand = self.mData5.gene_id, self.mDistance5, self.strand5
-            elif self.mDistance5 == None:
-                closest_id, closest_dist, closest_strand = self.mData3.gene_id, self.mDistance3, self.strand3
-            else:
-                closest_id, closest_dist, closest_strand = "na", "na", "na"
-        elif self.mDistance3 < self.mDistance5:
-            closest_id, closest_dist, closest_strand = self.mData3.gene_id, self.mDistance3, self.strand3
-        elif self.mDistance5 < self.mDistance3:
-            closest_id, closest_dist, closest_strand = self.mData5.gene_id, self.mDistance5, self.strand5
-        else:
-            closest_id, closest_dist, closest_strand = "na", "na", "na"
+		# record the closest distance to a gene in any direction
+		if any3 != "na" and any5 != "na":
+		    if any3 < any5: any5 = "na"
+		    elif any5 < any3: any3 = "na"
+
+		# record the shortest distance
+		if self.mDistance3 == None or self.mDistance5 == None:
+		    if self.mDistance3 == None:
+			closest_id, closest_dist, closest_strand = self.mData5.gene_id, self.mDistance5, self.strand5
+		    elif self.mDistance5 == None:
+			closest_id, closest_dist, closest_strand = self.mData3.gene_id, self.mDistance3, self.strand3
+		    else:
+			closest_id, closest_dist, closest_strand = "na", "na", "na"
+		elif self.mDistance3 < self.mDistance5:
+		    closest_id, closest_dist, closest_strand = self.mData3.gene_id, self.mDistance3, self.strand3
+		elif self.mDistance5 < self.mDistance3:
+		    closest_id, closest_dist, closest_strand = self.mData5.gene_id, self.mDistance5, self.strand5
+		else:
+		    closest_id, closest_dist, closest_strand = "na", "na", "na"
 
         return "\t".join( ( 
                 closest_id,
@@ -1695,33 +2625,37 @@ class CounterDistanceGenes(CounterDistance):
 
 ##-----------------------------------------------------------------------------------
 class CounterDistanceTranscriptionStartSites(CounterDistance):
-    """counter for computing the distance to transcription start sites.
+    """compute the distance to transcription start sites.
 
-    There are two distances of interest:
-    1. distances towards the closest tss.
-    2. distances towards the closest promoter 5' or 3' end
-       
-    The columns output are:
-    closest_id: id of closest feature
-    closest_dist: distance to closest feature
-    closest_strand: strand of closest feature
-    id5: gene_id of 5' tss 
-    dist5: minimum distance to 5' end of a tss
-    id3: gene_id of 3' tss
-    dist3: minimum distance to 3' end of a tss
+    Assumes that the intervals supplied are transcription start sites.
 
-    If the interval overlaps with a tss, the distances are set
-    towards the closest end and the flag ``is_overlap`` is set.
+    An interval is associated with various tss:
 
-    In order to check if gene is closer to 5' or 3' end of a gene, use::
+       * the closest tss overall (prefix = closest)
+       * the closest tss for which this interval is upstream of (prefix=upstream)
+       * the closest tss for which this interval is downstream of (prefix=downstream)
 
-       CASE WHEN amin3 > 0 THEN '3' ELSE '5' END
+    Note that if the tss is upstream to two genes (on either side), then
+    there will no downstream entry (and vice versa).
 
-    TODO: check if all is correct.
+    For each of these tss', the following features are output:
+       * id: the transcript identifier of this tss
+       * dist: the distance to the tss
+       * strand: the strand of the tss
+
+    If the interval overlaps with a tss, the flag ``is_overlap`` is set and
+    the distance is set to 0.
+
+    For closest_tss_dist, the distances are positive if the interval is downstream of
+    the tss. It is negative for upstream distances.
     """
 
 
-    headerTemplate = ( "closest_id", "closest_dist", "closest_strand", "id5", "dist5", "id3", "dist3", "is_overlap" )
+    headerTemplate = ( "closest_id", "closest_dist",                        
+                       "closest_strand", 
+                       "upstream_id", "upstream_dist",
+                       "downstream_id", "downstream_dist",
+                       "is_overlap" )
 
     ## do not save value for intervals
     mWithValues = False
@@ -1744,65 +2678,73 @@ class CounterDistanceTranscriptionStartSites(CounterDistance):
     def __str__(self):
 
         closest_id, closest_dist, closest_strand = ["na"] * 3
-        d5_id, d5_dist, d3_id, d3_dist = ["na"] * 4
+        upstream_id, upstream_dist, downstream_id, downstream_dist = ["na"] * 4
 
         overlaps = self.mOverlaps
         if overlaps:
             gene_ids = set([ x[2].gene_id for x in overlaps ])
             is_overlap = str(len(gene_ids))
             closest_id, closest_dist, closest_strand = ",".join( gene_ids), 0, "."            
+            closest_id, closest_dist, closest_strand = list(gene_ids)[0], 0, "."
         else:
             is_overlap = "0"
 
             ## get distances to closest features depending which
             ## direction they are pointing.
-            ## The distance is modified, such that always the
-            ## distance towards the 5' end is recorded.
-            d5, d3 = [], []
+
+            ## distance is always distance to 5' end
+
+            upstream, downstream = [], []
             # 5'-----[ this ] ----- 3'
 
+            # feature closest in 5' direction of this feature
             if self.mData5:
                 if Genomics.IsPositiveStrand(self.strand5):
                     # 5'->3'-----[this] 
                     # feature points in same direction
-                    d3.append( (self.mDistance5 + (self.mData5.end - self.mData5.start), self.mData5.gene_id, self.strand5) )
+                    downstream.append( (self.mDistance5 + (self.mData5.end - self.mData5.start), 
+                                        self.mData5.gene_id, self.strand5) )
                 else:
                     # 3'<-5'-----[this] 
                     # feature points in different direction
-                    d5.append( (self.mDistance5, self.mData5.gene_id, self.strand5) )
+                    upstream.append( (self.mDistance5, self.mData5.gene_id, self.strand5) )
 
             if self.mData3:
                 if Genomics.IsPositiveStrand(self.strand3):
                     # [this]-----5'->3'
-                    d5.append( (self.mDistance3, self.mData3.gene_id, self.strand3) )
+                    upstream.append( (self.mDistance3, self.mData3.gene_id, self.strand3) )
                 else:
                     # [this]-----3'<-5'
-                    d3.append( (self.mDistance3 + (self.mData3.end - self.mData3.start), self.mData3.gene_id, self.strand3) )
+                    downstream.append( (self.mDistance3 + (self.mData3.end - self.mData3.start), self.mData3.gene_id, self.strand3) )
 
             # get minimum distance to 3' or 5' end of a gene
-            if d3: d3 = min(d3) 
-            else: d3 = []
-            if d5: d5 = min(d5)
-            else: d5 = []
+            if downstream: downstream = min(downstream) 
+            else: downstream = []
+            if upstream: upstream = min(upstream)
+            else: upstream = []
 
-            if d3 and d5:
-                closest_dist, closest_id, closest_strand = min( d3, d5 )
-            elif d3:
-                closest_dist, closest_id, closest_strand = d3
-            elif d5:
-                closest_dist, closest_id, closest_strand = d5
+            if downstream and upstream:
+                if downstream < upstream:
+                    closest_dist, closest_id, closest_strand = downstream
+                else:
+                    closest_dist, closest_id, closest_strand = upstream
+                    closest_dist *= -1
+            elif downstream:
+                closest_dist, closest_id, closest_strand = downstream
+            elif upstream:
+                closest_dist, closest_id, closest_strand = upstream
 
-            if d3: d3_dist, d3_id = d3[:2]
-            if d5: d5_dist, d5_id = d5[:2]
+            if downstream: downstream_dist, downstream_id = downstream[:2]
+            if upstream: upstream_dist, upstream_id = upstream[:2]
 
         return "\t".join( ( 
                 closest_id,
                 str(closest_dist),
                 str(closest_strand),
-                d5_id,
-                str(d5_dist),
-                d3_id,
-                str(d3_dist),
+                upstream_id,
+                str(upstream_dist),
+                downstream_id,
+                str(downstream_dist),
                 is_overlap) )    
 
 ##--------------------------------------------------------------------------------------------
@@ -2304,8 +3246,6 @@ class CounterReadExtension(Counter):
     This method requires a gff-file describing each gene's territory
     to avoid miscounting reads from genes in close proximity.
 
-
-
     Returns the coverage distribution in the territory, the median
     distance and the cumulative distribution every 1kb starting
     from the gene's end.
@@ -2370,6 +3310,7 @@ class CounterReadExtension(Counter):
     def count(self):
         
         segments = self.getSegments()
+
         first_exon_start, last_exon_end = segments[0][0], segments[-1][1]
         first_exon_end, last_exon_start = segments[0][1], segments[-1][0]
         gene_id = self.mGFFs[0].gene_id
@@ -2389,7 +3330,9 @@ class CounterReadExtension(Counter):
 
         # sanity check - is gene within territory?
         assert first_exon_start >= territory_start
-        assert last_exon_end <= territory_end
+        assert last_exon_end <= territory_end, "assertion failed for %s: exon %i > territory %i" % (self.gene_id,
+                                                                                                    last_exon_end,
+                                                                                                    territory_end)
         assert contig == territory_contig
 
         # truncate territory
@@ -2645,6 +3588,7 @@ def main( argv = None ):
                                "classifier", 
                                "classifier-chipseq",
                                "classifier-rnaseq",
+			       "classifier-rnaseq-new",
                                "overlap-stranded",
                                "overlap-transcripts",
                                "read-coverage", 
@@ -2655,7 +3599,9 @@ def main( argv = None ):
                                "proximity", "proximity-exclusive", "proximity-lengthmatched",
                                "position", "territories", "splice-comparison", 
                                "distance", "distance-genes", "distance-tss",
-                               "coverage", "quality", "overrun" ),
+                               "coverage", "quality", "overrun",
+                               "classifier-polii",
+                               "binding-pattern" ),
                       help="select counters to apply [default=%default]."  )
 
     parser.add_option( "--add-gtf-source", dest="add_gtf_source", action="store_true",
@@ -2674,7 +3620,7 @@ def main( argv = None ):
         sections = [],
         counters = [],
         filename_gff = [],
-        filename_format = "gtf",
+        filename_format = None,
         gff_features = [],
         gff_sources = [],
         add_gtf_source = False,
@@ -2723,8 +3669,6 @@ def main( argv = None ):
 
     if not options.gff_sources: options.gff_sources.append( None )
     if not options.gff_features: options.gff_features.append( None )
-
-        
 
     cc = E.Counter()
 
@@ -2785,7 +3729,10 @@ def main( argv = None ):
                     "proximity", "proximity-exclusive", "proximity-lengthmatched",
                     "neighbours",
                     "territories", 
-                    "distance", "distance-genes", "distance-tss",
+                    "distance", 
+                    "distance-genes", 
+                    "distance-tss",
+                    "binding-pattern",
                     "coverage" ):
             if c == "overlap":
                 template = CounterOverlap
@@ -2811,6 +3758,8 @@ def main( argv = None ):
                 template = CounterDistanceTranscriptionStartSites
             elif c == "coverage":
                 template = CounterCoverage
+            elif c == "binding-pattern":
+                template = CounterBindingPattern
 
             for section in options.sections:
                 for source in options.gff_sources:
@@ -2835,6 +3784,22 @@ def main( argv = None ):
             counters.append( ClassifierRNASeq( filename_gff = options.filename_gff,
                                                fasta = fasta,
                                                options = options, prefix = prefix) )
+        elif c == "classifier-rnaseq-new":
+            counters.append( ClassifierRNASeqNew (filename_gff = options.filename_gff,
+				   		  fasta = fasta,
+				   		  options = options, prefix = prefix) )
+        elif c == "classifier-polii":
+            counters.append( ClassifierPolII( filename_gff = options.filename_gff,
+                                              feature = None,
+                                              source = None,
+                                              fasta = fasta,
+                                              options = options, prefix = prefix) )
+        elif c == "binding-pattern":
+            counters.append( CounterBindingPattern( filename_gff = options.filename_gff,
+                                                    feature = None,
+                                                    source = None,
+                                                    fasta = fasta,
+                                                    options = options, prefix = prefix) )
 
     if options.reporter == "genes":
         iterator = GTF.flat_gene_iterator
@@ -2877,4 +3842,7 @@ def main( argv = None ):
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
+	sys.exit( main( sys.argv) )
+
+
+

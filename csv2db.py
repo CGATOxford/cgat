@@ -71,6 +71,7 @@ import os, sys, string, re, time, optparse, tempfile, subprocess, types
 
 import Experiment as E
 import csv, CSV
+import sqlite3
 
 def executewait( dbhandle, statement, error, retry = False, wait=5):
     '''execute sql statement.
@@ -119,8 +120,11 @@ def quoteRow( row, take,
 
 def quoteTableName( name, quote_char = "_", backend="sqlite" ):
     if backend == "sqlite":
+        # no special characters. Column names can not start with a number.
+        if name[0] in "0123456789": name = "_" + name
         return re.sub( "[-(),\[\].]", "_", name )
     elif backend in ("mysql","pg"):
+        if name[0] in "0123456789": name = "_" + name
         return re.sub( "[-(),\[\]]", "_", name )
 
 def createTable( dbhandle, error, options, rows = None, headers = None,
@@ -142,7 +146,8 @@ def createTable( dbhandle, error, options, rows = None, headers = None,
         ignored = 0
 
     columns_to_ignore = set( [ x.lower() for x in options.ignore_columns] )
-    
+    columns_to_rename = dict( [x.lower().split(":") for x in options.rename_columns ] )
+
     take = []
     ## associate headers to field names
     columns = []
@@ -178,8 +183,11 @@ def createTable( dbhandle, error, options, rows = None, headers = None,
             t = "TEXT"
 
         # remove special characters from column names
+        if hh == "": raise ValueError("column '%s' without header " % h )
+        hh = columns_to_rename.get( hh, hh )
         hh = re.sub( '''['"]''', "", hh)
-        hh = re.sub( "[,;.:\-\+/ ()]", "_", hh)
+        hh = re.sub( "[,;.:\-\+/ ()%]", "_", hh)
+        if hh[0] in "0123456789": hh = "_" + hh
         columns.append( "%s %s" % (hh, t))
 
     # delete old table if it exists
@@ -190,6 +198,10 @@ def createTable( dbhandle, error, options, rows = None, headers = None,
             dbhandle.commit()
             cc.close()
             E.info("existing table %s deleted" % options.tablename )
+        except sqlite3.OperationalError, msg:
+            E.warn( msg )
+            time.sleep(5)
+            continue
         except error, msg:
             E.warn( "could not delete existing table %s: %s" % (options.tablename, str(msg) ))
             dbhandle.rollback()
@@ -230,7 +242,7 @@ def createTable( dbhandle, error, options, rows = None, headers = None,
     
     return take, map_column2type, ignored
 
-def run( options, args ):
+def run( infile, options ):
 
     options.tablename = quoteTableName( options.tablename, backend = options.backend )
     
@@ -267,12 +279,6 @@ def run( options, args ):
         existing_tables = set( [ x[0] for x in cc ] )
         cc.close()
 
-    if options.from_zipped:
-        import gzip
-        infile = gzip.GzipFile( fileobj= options.stdin, mode='r')
-    else:
-        infile = options.stdin
-
     if options.header != None:
         options.header = [x.strip() for x in options.header.split(",")]
 
@@ -285,6 +291,9 @@ def run( options, args ):
 
     rows = []
     for row in reader:
+        if None in row: 
+            raise ValueError( "undefined columns in input file at row: %s" % row )
+        
         try:
             rows.append( CSV.ConvertDictionary( row , map=options.map ))
         except TypeError, msg:
@@ -446,7 +455,7 @@ def run( options, args ):
 
     dbhandle.commit()
 
-def main( argv = sys.argv ):
+def buildParser( ):
 
     parser = optparse.OptionParser( version = "%prog version: $Id: csv2db.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
 
@@ -479,6 +488,9 @@ def main( argv = sys.argv ):
 
     parser.add_option("--ignore-column", dest="ignore_columns", type="string", action="append",
                       help="ignore columns [default=%default]." )
+
+    parser.add_option("--rename-column", dest="rename_columns", type="string", action="append",
+                      help="rename columns [default=%default]." )
     
     parser.add_option("-e", "--ignore-empty", dest="ignore_empty", action="store_true",
                       help="ignore columns which are all empty [default=%default]." )
@@ -514,6 +526,7 @@ def main( argv = sys.argv ):
         ignore_empty = False,
         insert_many = False,
         ignore_columns = [],
+        rename_columns = [],
         header = None,
         replace_header = False,
         guess_size = 1000,
@@ -525,10 +538,22 @@ def main( argv = sys.argv ):
         allow_empty = False,
         retry = False,
         )
+    
+    return parser
+
+def main( argv = sys.argv ):
+
+    parser = buildParser()
 
     (options, args) = E.Start( parser, argv = argv, add_psql_options = True )
 
-    run( options, args )
+    if options.from_zipped:
+        import gzip
+        infile = gzip.GzipFile( fileobj= options.stdin, mode='r')
+    else:
+        infile = options.stdin
+
+    run( infile, options )
 
     E.Stop()
 

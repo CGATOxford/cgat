@@ -298,7 +298,6 @@ def transcript_iterator(gff_iterator, strict = True ):
             found.add( this )
             last = this
         matches.append( gff )
-
     if last: yield matches
 
 def gene_iterator( gff_iterator, strict = True ):

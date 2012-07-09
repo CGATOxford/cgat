@@ -9,7 +9,8 @@ This section summarizes results of the read mapping process.
 Overview
 ========
 
-The following table summarizes the number of reads input, mapped and filtered.
+The following table summarizes the number of reads input, mapped and
+filtered. 
 
 +---------------------------------------+--------------------------------------------------+
 |*Column*                               |*Contents*                                        |

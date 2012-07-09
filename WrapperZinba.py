@@ -54,6 +54,7 @@ import os, sys, re, optparse, tempfile, shutil, subprocess
 import collections
 
 import Experiment as E
+import IOTools
 
 ## for zinba
 from rpy2.robjects import r as R
@@ -154,6 +155,22 @@ def main( argv = None ):
     parser.add_option("-a", "--alignability-threshold", dest="alignability_threshold", type="int",
                       help="alignability threshold [default=%default]."  )
 
+    parser.add_option("-p", "--per-contig", dest="per_contig", action = "store_true",
+                      help="run analysis per chromosome [default=%default]")
+
+    parser.add_option("-w", "--temp-dir", dest="tempdir", type="string",
+                      help="use existing directory as temporary directory [default=%default]."  )
+
+    parser.add_option( "--keep-temp", dest="keep_temp", action = "store_true",
+                      help="keep temporary directory [default=%default]")
+
+    parser.add_option( "--action", dest="action", type="choice",
+                       choices=("full", "count", "predict", "model"),
+                       help="action to perform [default=%default]")
+
+    parser.add_option( "--improvement", dest="improvement", type="float",
+                       help="relative improvement of likelihood until convergence [default=%default]")
+    
     parser.set_defaults(
         input_format = "bed",
         fragment_size = 200,
@@ -162,6 +179,16 @@ def main( argv = None ):
         alignability_threshold = 1,
         bit_filename = None,
         fdr_threshold = 0.05,
+        tempdir = None,
+        winsize = 250,
+        offset = 125,
+        cnvWinSize = 1e+05,
+        cnvOffset = 2500,
+        per_contig = False,
+        keep_temp = False,
+        filelist = "files.list",
+        action = "full",
+        improvement = 0.00001,
         )
 
 
@@ -177,50 +204,249 @@ def main( argv = None ):
     # load Zinba
     R.library( 'zinba' )
 
-    tmpdir = tempfile.mkdtemp( )
+    if not options.tempdir:
+        tmpdir = tempfile.mkdtemp( )
+    else:
+        tmpdir = options.tempdir
 
     E.debug( "temporary files are in %s" % tmpdir )
 
     if options.input_format == "bam":
         E.info( "converting bam files to bed" )
-        filename_sample = bamToBed( filename_sample, os.path.join( tmpdir, "sample.bed" ) )
+        if not os.path.exists( os.path.join( tmpdir, "sample.bed")):
+            filename_sample = bamToBed( filename_sample, os.path.join( tmpdir, "sample.bed" ) )
+        else:
+            E.info("using existing file %(tmpdir)s/sample.bed" % locals() )
+            filename_sample = os.path.join( tmpdir, "sample.bed")
         if filename_control:
-            filename_control = bamToBed( filename_control, os.path.join( tmpdir, "control.bed" ) )
+            if not os.path.exists( os.path.join( tmpdir, "control.bed")):
+                filename_control = bamToBed( filename_control, os.path.join( tmpdir, "control.bed" ) )
+            else:
+                E.info("using existing file %(tmpdir)s/control.bed" % locals() )
+                filename_control = os.path.join( os.path.join( tmpdir, "control.bed"))
 
     fragment_size = options.fragment_size
     threads = options.threads
     bit_filename = options.bit_filename
     mappability_dir = options.mappability_dir
     fdr_threshold = options.fdr_threshold
+    tol = options.improvement
 
-    E.info( "computing counts" )
-    R( '''basealigncount( inputfile='%(filename_sample)s', 
-                          outputfile='%(tmpdir)s/basecount', 
-                          extension=%(fragment_size)i, 
-                          filetype='bed', 
+    contigs = E.run( "twoBitInfo %(bit_filename)s %(tmpdir)s/contig_sizes" % locals() )
+    contig2size = dict( [x.split() for x in IOTools.openFile( os.path.join( tmpdir, "contig_sizes")) ] )
+
+    outdir = filename_output + "_files" 
+    if not os.path.exists( outdir ):
+        os.mkdir( outdir )
+        
+    filelist = os.path.join( outdir, filename_output + ".list")
+    modelfile = os.path.join( outdir, filename_output + ".model")
+    winfile = os.path.join( outdir, filename_output + ".wins")
+    winSize=250
+    offset=125
+    cnvWinSize=100000
+    cnvOffset=0
+    winGap = 0
+    peakconfidence = 1.0 - fdr_threshold
+
+    if not os.path.exists( os.path.join( tmpdir, "basecount")):
+        E.info( "computing counts" )
+
+        R( '''basealigncount( inputfile='%(filename_sample)s',
+                          outputfile='%(tmpdir)s/basecount',
+                          extension=%(fragment_size)i,
+                          filetype='bed',
                           twoBitFile='%(bit_filename)s' )
                           '''  % locals() )
-    
-    E.info( "computing peaks" )
+    else:
+        E.info( "using existing counts" )
 
-    R( '''zinba( refinepeaks=1, 
-                 seq='%(filename_sample)s', 
-                 input='%(filename_control)s', 
-                 filetype='bed',  
-                 align='%(mappability_dir)s',
-                 twoBit='%(bit_filename)s', 
-                 outfile='%(filename_output)s', 
-                 extension=%(fragment_size)s, 
-                 basecountfile='%(tmpdir)s/basecount', 
-                 numProc=%(threads)i, 
-                 threshold=%(fdr_threshold)f, 
-                 broad=FALSE, 
-                 printFullOut=0, 
-                 interaction=FALSE, 
-                 mode='peaks', 
-                 FDR=TRUE) '''  % locals() )
+    # tried incremental updates
+    # for contig, size in contig2size.iteritems():
+    #     for size in 
+    #     fn = os.path.join( tmpdir, "sample_%(contig)s_win%(size)ibp_offset(offset)ibp.txt" % locals() )
+    if options.action == "count":
+
+        E.info("computing window counts only - saving results in %s" % outdir )
+        R('''buildwindowdata(
+                     seq='%(filename_sample)s', 
+                     align='%(mappability_dir)s',
+                     input='%(filename_control)s', 
+                     twoBit='%(bit_filename)s', 
+                     winSize=%(winSize)i,
+                     offset=%(offset)i,
+                     cnvWinSize=%(cnvWinSize)i,
+                     cnvOffset=%(cnvOffset)i,
+                     filelist='%(filelist)s',
+                     filetype='bed',  
+                     extension=%(fragment_size)s,
+                     outdir='%(outdir)s/') ''' % locals() )
+
+    elif options.action == "model":
+
+        # The important option is buildwin = 0
+        # parameterized for broad == FALSE and input present
+        # see zinba.R
+        # model selection only on chr19.
+        R('''run.zinba( 
+                filelist='%(filelist)s',
+                formula=NULL,formulaE=NULL,formulaZ=NULL,
+                outfile='%(filename_output)s',
+                seq='%(filename_sample)s', 
+                input='%(filename_control)s', 
+                filetype='bed',  
+                align='%(mappability_dir)s',
+                twoBit='%(bit_filename)s', 
+                extension=%(fragment_size)s, 
+                winSize=%(winSize)i,
+                offset=%(offset)i,
+                cnvWinSize=%(cnvWinSize)i,
+                cnvOffset=%(cnvOffset)i,
+                basecountfile='%(tmpdir)s/basecount',
+                buildwin=0,
+                threshold=%(fdr_threshold)f,
+                pquant=1,
+                peakconfidence=%(peakconfidence)f,
+                winGap=%(winGap)i,
+                tol=%(tol)f,
+                initmethod="count",
+                method="mixture",
+                numProc=%(threads)i,
+                printFullOut=1,
+                interaction=FALSE,
+                selectmodel=TRUE,
+                selectchr='chr19',
+                selectcovs=c("input_count"),
+                selecttype="complete",
+                FDR=TRUE)''' % locals())
+
+    elif options.action == "predict":
     
-    shutil.rmtree( tmpdir )
+        # The important option is buildwin = 0 and selectmodel = FALSE
+        # parameterized for broad == FALSE and input present
+        # see zinba.R
+        # model selection only on chr19.
+        if not os.path.exists( modelfile ):
+            raise OSError( "model file %s does not exist" )
+
+        E.info( "reading model from %s" % modelfile )
+
+        R('''
+        final=read.table('%(modelfile)s', header=T, sep="\t")
+        final=final[final$fail==0,]
+        bestBIC=which.min(final$BIC)
+        formula=as.formula(paste("exp_count~",final$formula[bestBIC]))
+        formulaE=as.formula(paste("exp_count~",final$formulaE[bestBIC]))
+        formulaZ=as.formula(paste("exp_count~",final$formulaZ[bestBIC]))
+        cat("Background formula is:\n\t")
+        print(formula)
+        cat("Enrichment formula is:\n\t")
+        print(formulaE)
+        cat("Zero-inflated formula is:\n\t")
+        print(formulaE)
+        ''' % locals() )
+
+        E.info( "predicting peaks" )
+
+        R('''run.zinba(
+                filelist='%(filelist)s',
+                outfile='%(filename_output)s',
+                seq='%(filename_sample)s',
+                input='%(filename_control)s',
+                filetype='bed',
+                align='%(mappability_dir)s',
+                twoBit='%(bit_filename)s',
+                extension=%(fragment_size)s,
+                winSize=%(winSize)i,
+                offset=%(offset)i,
+                cnvWinSize=%(cnvWinSize)i,
+                cnvOffset=%(cnvOffset)i,
+                basecountfile='%(tmpdir)s/basecount',
+                buildwin=0,
+                threshold=%(fdr_threshold)f,
+                pquant=1,
+                winGap=%(winGap)i,
+                initmethod="count",
+                tol=%(tol)f,
+                method="mixture",
+                numProc=%(threads)i,
+                printFullOut=1,
+                interaction=FALSE,
+                selectmodel=FALSE,
+                formula=formula,
+                formulaE=formulaE,
+                formulaZ=formulaZ,
+                peakconfidence=%(peakconfidence)f,
+                FDR=TRUE)''' % locals())
+
+    elif options.action == "per_contig":
+
+        E.info("processing per chromosome" )
+        for contig, size in contig2size.iteritems():
+            if contig not in ("chr16",): continue
+
+            E.info("processing contig %s" % contig)
+            filename_sample_contig = filename_sample + "_%s" % contig
+            filename_control_contig = filename_control + "_%s" % contig
+            if not os.path.exists( filename_output + "_files" ):
+                os.mkdir( filename_output + "_files" )
+            filename_output_contig = os.path.join( filename_output + "_files", contig )
+            filename_basecounts_contig = os.path.join( tmpdir, "basecount_%s" % contig)
+
+            E.run( "grep %(contig)s < %(filename_sample)s > %(filename_sample_contig)s" % locals() )
+            E.run( "grep %(contig)s < %(filename_control)s > %(filename_control_contig)s" % locals() )
+
+            if not os.path.exists( filename_basecounts_contig ):
+                E.info( "computing counts" )
+
+                R( '''basealigncount( inputfile='%(filename_sample_contig)s',
+                                  outputfile='%(filename_basecounts_contig)s',
+                                  extension=%(fragment_size)i,
+                                  filetype='bed',
+                                  twoBitFile='%(bit_filename)s' )
+                                  '''  % locals() )
+            else:
+                E.info( "using existing counts" )
+
+            # run zinba, do not build window data
+            R( '''zinba( refinepeaks=1,
+                     seq='%(filename_sample_contig)s',
+                     input='%(filename_control_contig)s',
+                     filetype='bed',
+                     align='%(mappability_dir)s',
+                     twoBit='%(bit_filename)s',
+                     outfile='%(filename_output_contig)s',
+                     extension=%(fragment_size)s,
+                     basecountfile='%(filename_basecounts_contig)s',
+                     numProc=%(threads)i,
+                     threshold=%(fdr_threshold)f,
+                     broad=FALSE,
+                     printFullOut=0,
+                     interaction=FALSE,
+                     mode='peaks',
+                     FDR=TRUE) '''  % locals() )
+    elif options.action == "full":
+
+        # run zinba, do not build window data
+        R( '''zinba( refinepeaks=1,
+                     seq='%(filename_sample)s',
+                     input='%(filename_control)s',
+                     filetype='bed',
+                     align='%(mappability_dir)s',
+                     twoBit='%(bit_filename)s',
+                     outfile='%(filename_output)s',
+                     extension=%(fragment_size)s,
+                     basecountfile='%(tmpdir)s/basecount',
+                     numProc=%(threads)i,
+                     threshold=%(fdr_threshold)f,
+                     broad=FALSE,
+                     printFullOut=0,
+                     interaction=FALSE,
+                     mode='peaks',
+                     FDR=TRUE) '''  % locals() )
+
+    if not (options.tempdir or options.keep_temp):
+        shutil.rmtree( tmpdir )
 
     ## write footer and output benchmark information.
     E.Stop()

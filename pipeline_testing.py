@@ -152,7 +152,7 @@ import Database
 # load options from the config file
 import Pipeline as P
 P.getParameters( 
-    ["%s.ini" % __file__[:-len(".py")],
+    ["%s/pipeline.ini" % __file__[:-len(".py")],
      "../pipeline.ini",
      "pipeline.ini" ] )
 
@@ -223,7 +223,7 @@ def runTest( infile, outfile, update = False ):
             shutil.rmtree( "%s.dir" % test_name )
         except OSError: pass
         os.mkdir( "%s.dir" % test_name )
-        statement = '''ln -s %(infile)s/* %(test_name)s.dir'''
+        statement = '''ln -s %(infile)s.dir/* %(test_name)s.dir'''
         P.run()
     
     statement = '''

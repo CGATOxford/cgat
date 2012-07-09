@@ -182,7 +182,7 @@ def main( argv = None ):
         sequence = re.sub(" ", "", cur_record.sequence).upper()
 
         if len(sequence) == 0:
-            raise "empty sequence %s" % cur_record.title
+            raise ValueError( "empty sequence %s" % cur_record.title )
 
         id = rx.search( cur_record.title ).groups()[0]
 

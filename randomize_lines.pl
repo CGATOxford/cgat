@@ -4,13 +4,30 @@
 # randomize_lines.pl < IN > OUT
 #
 # randomize lines from STDIN
+#
+# If the -h option (header) is given, the first line is kept in place.
+# The default is to randomize all lines.
+#
 use strict;
+use Getopt::Std;
+
+my %opts = ();
+getopts('h', \%opts);
+
+my $param_keep_header = $opts{'h'} || 0;
 
 my (@lines) = <STDIN>;
 
+# output header
+if ($param_keep_header)
+{ 
+    print $lines[0];
+    delete $lines[0];
+}
+
+# randomize
 srand();
 fisher_yates_shuffle( \@lines );    # permutes @array in place
-
 
 for (@lines) { print $_; };
 

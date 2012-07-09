@@ -21,20 +21,16 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-script_template.py - template for CGAT scipts
+script_template.py
 =============================================
 
-:Author: Andreas Heger
+:Author: 
 :Release: $Id$
 :Date: |today|
 :Tags: Python
 
 Purpose
 -------
-
-.. todo::
-   
-   describe purpose of the script.
 
 Usage
 -----
@@ -73,30 +69,15 @@ def main( argv = None ):
     parser = optparse.OptionParser( version = "%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
                                     usage = globals()["__doc__"] )
 
-    parser.add_option("-i", "--test-option", dest="test_option", type="string",
-                      help="test option [default=%default]."  )
+    parser.add_option("-t", "--test", dest="test", type="string",
+                      help="supply help"  )
 
-    parser.set_defaults(
-        test_option = "test"
-        )
 
     ## add common options (-h/--help, ...) and parse command line 
     (options, args) = E.Start( parser, argv = argv )
 
-    ## do sth
-    ninput, nskipped, noutput = 0, 0, 0
-
-    for line in options.stdin:
-        ninput += 1
-        if line.startswith( "#" ): continue
-        options.stdout.write( line )
-        noutput += 1
-
-    E.info( "ninput=%i, noutput=%i, nskipped=%i" % (ninput, noutput,nskipped) )
-    
     ## write footer and output benchmark information.
     E.Stop()
-    
 
 if __name__ == "__main__":
     sys.exit( main( sys.argv) )

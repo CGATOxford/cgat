@@ -79,7 +79,6 @@ import Genomics
 import Exons
 import Intervalls
 import PredictionParser
-import alignlib
 import pgdb
 
 param_long_options=["verbose=", "help", "exon-identity", "overlap=",

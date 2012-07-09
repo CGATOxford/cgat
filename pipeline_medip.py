@@ -151,7 +151,7 @@ from ruffus import *
 import Experiment as E
 import logging as L
 import Database
-import sys, os, re, shutil, itertools, math, glob, time, gzip, collections, random
+import sys, os, re, shutil, itertools, math, glob, time, gzip, collections, random, csv
 import numpy, sqlite3
 import GTF, IOTools, IndexedFasta
 import PipelineGeneset
@@ -159,25 +159,23 @@ import PipelineMapping
 import Stats
 import PipelineTracks
 import PipelineMappingQC
+import PipelineMedip
 import Pipeline as P
+import Expression
 
 from rpy2.robjects import r as R
 import rpy2.robjects as ro
-
-USECLUSTER = True
 
 #########################################################################
 #########################################################################
 #########################################################################
 # load options from the config file
-P.getParameters( ["%s.ini" % __file__[:-len(".py")], 
+P.getParameters( ["%s/pipeline.ini" % __file__[:-len(".py")], 
                   "../pipeline.ini", 
                   "pipeline.ini" ] )
 
 PARAMS = P.PARAMS
 
-<<<<<<< local
-=======
 PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],
                                        "pipeline_annotations.py" )
 
@@ -237,15 +235,11 @@ def connect():
 
     return dbh
 
->>>>>>> other
 ###################################################################
 ###################################################################
 ###################################################################
 ## TRIM READS
-<<<<<<< local
-=======
 ## this should go elsewhere, the readqc pipeline?
->>>>>>> other
 @follows(mkdir("trim"))
 @transform( "*.gz", regex( r"(\S+).gz"), r"trim/\1.gz" )
 def trimReads( infile, outfile ):
@@ -260,7 +254,6 @@ def trimReads( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-## Map reads to genome using BWA
 @transform( ("*.fastq.1.gz", 
              "*.fastq.gz",
              "*.sra"),
@@ -283,31 +276,16 @@ def makeTrackDirectories( infile, outfile ):
              r"\1.dir/\1.genome.bam")
 def mapReads(infiles, outfile):
     '''Map reads to the genome using BWA '''
-    to_cluster = USECLUSTER
-<<<<<<< local
-    track = P.snip( os.path.basename(outfile), ".bam" )
-    try: os.mkdir( track )
-    except OSError: pass
-    try: os.mkdir( '''%(track)s/bam''' % locals() )
-    except OSError: pass
-=======
->>>>>>> other
+    to_cluster = True
     job_options= "-pe dedicated %i -R y" % PARAMS["bwa_threads"]
-<<<<<<< local
-    m = PipelineMapping.bwa()
-=======
     m = PipelineMapping.BWA()
->>>>>>> other
     statement = m.build((infiles,), outfile) 
     P.run()
 
 #########################################################################
-<<<<<<< local
-=======
 #########################################################################
 #########################################################################
 #@transform( "*CD4*/bam/*.genome.bam",
->>>>>>> other
 @transform( mapReads,
             suffix(".genome.bam"),
             ".prep.bam" )
@@ -320,7 +298,7 @@ def prepareBAMs( infile, outfile ):
     * quality score filtering - remove reads below a certain quality score.
 
     '''
-    to_cluster = USECLUSTER
+    to_cluster = True
     track = P.snip( outfile, ".bam" )
 
     tmpdir = P.getTempFilename()
@@ -349,11 +327,6 @@ def prepareBAMs( infile, outfile ):
             statement.append( '''samtools rmdup - - ''' )
 
         elif dedup_method == 'picard':
-<<<<<<< local
-            statement = '''MarkDuplicates INPUT=%(infiles)s  ASSUME_SORTED=true OUTPUT=%(outfile)s METRICS_FILE=%(track)s.dupstats REMOVE_DUPLICATES=TRUE VALIDATION_STRINGENCY=SILENT; ''' % locals()
-        statement += '''samtools index %(outfile)s; ''' % locals()
-        P.run()
-=======
             statement.append('''MarkDuplicates INPUT=%(current_file)s
                                                OUTPUT=%(next_file)s
                                                ASSUME_SORTED=true 
@@ -373,35 +346,23 @@ def prepareBAMs( infile, outfile ):
     P.run()
 
     os.unlink( tmpdir )
->>>>>>> other
 
 #########################################################################
-<<<<<<< local
-@merge( dedup, "picard_duplicate_stats.load" )
-=======
 #########################################################################
 #########################################################################
 @merge( prepareBAMs, "picard_duplicates.load" )
->>>>>>> other
 def loadPicardDuplicateStats( infiles, outfile ):
     '''Merge Picard duplicate stats into single table and load into SQLite.
     '''
     PipelineMappingQC.loadPicardDuplicateStats( infiles, outfile )
 
 #########################################################################
-<<<<<<< local
-@transform( dedup, 
-            regex( r"(\S+)/bam/(\S+).bam"),
-            r"\1/bam/\2.alignstats" )
-def buildPicardAlignStats( infile, outfile ):
-=======
 #########################################################################
 #########################################################################
 @transform( (mapReads, prepareBAMs), 
             suffix(".bam"),
-            ".alignstats")
+            ".picard_stats")
 def buildPicardAlignmentStats( infile, outfile ):
->>>>>>> other
     '''Gather BAM file alignment statistics using Picard '''
 
     PipelineMappingQC.buildPicardAlignmentStats( infile, outfile, 
@@ -409,15 +370,10 @@ def buildPicardAlignmentStats( infile, outfile ):
                                                                PARAMS["genome"] + ".fa" ) )
 
 ############################################################
-<<<<<<< local
-@merge( buildPicardAlignStats, "picard_align_stats.load" )
-def loadPicardAlignStats( infiles, outfile ):
-=======
 ############################################################
 ############################################################
 @merge( buildPicardAlignmentStats, "picard_stats.load" )
 def loadPicardAlignmentStats( infiles, outfile ):
->>>>>>> other
     '''Merge Picard alignment stats into single table and load into SQLite.'''
 
     PipelineMappingQC.loadPicardAlignmentStats( infiles, outfile )
@@ -436,26 +392,10 @@ def buildPicardGCStats( infile, outfile ):
 
 
 #########################################################################
-<<<<<<< local
-@transform( dedup, 
-            regex( r"(\S+)/bam/(\S+).bam"),
-            r"\1/bam/\2.isizestats" )
-def buildPicardInsertSizeStats( infile, outfile ):
-    '''Gather BAM file insert size statistics using Picard '''
-    to_cluster = USECLUSTER
-    track = P.snip( os.path.basename(infile), ".bam" )
-    statement = '''CollectInsertSizeMetrics INPUT=%(infile)s REFERENCE_SEQUENCE=%%(bwa_index_dir)s/%%(genome)s.fa ASSUME_SORTED=true OUTPUT=%(outfile)s HISTOGRAM_FILE=%(outfile)s.pdf VALIDATION_STRINGENCY=SILENT ''' % locals()
-    P.run()
-
-############################################################
-@merge( buildPicardInsertSizeStats, "picard_isize_stats.load" )
-def loadPicardInsertSizeStats( infiles, outfile ):
-=======
 #########################################################################
 #########################################################################
 @merge( buildPicardGCStats, "picard_gcbias_stats.load" )
 def loadPicardGCStats( infiles, outfile ):
->>>>>>> other
     '''Merge Picard insert size stats into single table and load into SQLite.'''
     
     tablename = P.toTable( outfile )
@@ -485,47 +425,7 @@ def loadPicardGCStats( infiles, outfile ):
     os.unlink( tmpfilename )
 
 #########################################################################
-@transform( dedup, 
-            regex( r"(\S+)/bam/(\S+).bam"),
-            r"\1/bam/\2.gcstats" )
-def buildPicardGCStats( infile, outfile ):
-    '''Gather BAM file GC bias stats using Picard '''
-    to_cluster = USECLUSTER
-    track = P.snip( os.path.basename(infile), ".bam" )
-    statement = '''CollectGcBiasMetrics INPUT=%(infile)s REFERENCE_SEQUENCE=%%(bwa_index_dir)s/%%(genome)s.fa 
-                   ASSUME_SORTED=true OUTPUT=%(outfile)s CHART_OUTPUT=%(outfile)s.pdf SUMMARY_OUTPUT=%(outfile)s.summary VALIDATION_STRINGENCY=SILENT ''' % locals()
-    P.run()
-
-############################################################
-@merge( buildPicardGCStats, "picard_gcbias_stats.load" )
-def loadPicardGCStats( infiles, outfile ):
-    '''Merge Picard insert size stats into single table and load into SQLite.'''
-
-    tablename = P.toTable( outfile )
-    outf = P.getTempFile()
-
-    first = True
-    for f in infiles:
-        track = P.snip( os.path.basename(f), ".dedup.gcstats" )
-        if not os.path.exists( f ): 
-            E.warn( "File %s missing" % f )
-            continue
-        lines = [ x for x in open( f, "r").readlines() if not x.startswith("#") and x.strip() ]
-        if first: outf.write( "%s\t%s" % ("track", lines[0] ) )
-        first = False
-        outf.write( "%s\t%s" % (track,lines[1] ))
-    outf.close()
-    tmpfilename = outf.name
-
-    statement = '''cat %(tmpfilename)s
-                   | python %(scriptsdir)s/csv2db.py
-                      --index=track
-                      --table=%(tablename)s 
-                   > %(outfile)s '''
-    P.run()
-
-    os.unlink( tmpfilename )
-
+#########################################################################
 #########################################################################
 @transform( (mapReads, prepareBAMs),
             suffix(".bam"),
@@ -534,6 +434,8 @@ def buildBAMStats( infile, outfile ):
     '''Count number of reads mapped, duplicates, etc. '''
     PipelineMappingQC.buildBAMStats( infile, outfile )
 
+#########################################################################
+#########################################################################
 #########################################################################
 @merge( buildBAMStats, "bam_stats.load" )
 def loadBAMStats( infiles, outfile ):
@@ -550,14 +452,16 @@ def runMEDIPS( infile, outfile ):
     outputs methylation profiles.
     '''
 
-    to_cluster = USECLUSTER
+    to_cluster = True
 
-    job_options = "-l mem_free=32G"
+    job_options = "-l mem_free=23G"
 
     statement = '''
     cat %(infile)s 
     | python %(scriptsdir)s/bam2bed.py
-          --merge-pairs=%(medips_fragment_length)i
+          --merge-pairs
+          --min-insert-size=%(medips_min_insert_size)i
+          --max-insert-size=%(medips_max_insert_size)i
           --log=%(outfile)s.log
           -
     | python %(scriptsdir)s/WrapperMEDIPS.py
@@ -583,15 +487,17 @@ def runMEDIPS( infile, outfile ):
 def buildCoverageBed( infile, outfile ):
     '''build bed file with regions covered by reads.
 
-    Intervals containing only a single read are removed.
+    Intervals containing only few reads (tiling_min_reads) are removed.
     '''
     
-    to_cluster = USECLUSTER
+    to_cluster = True
 
     statement = '''
     cat %(infile)s 
     | python %(scriptsdir)s/bam2bed.py
-          --merge-pairs=%(medips_fragment_length)i
+          --merge-pairs
+          --min-insert-size=%(medips_min_insert_size)i
+          --max-insert-size=%(medips_max_insert_size)i
           --log=%(outfile)s.log
           -
     | sort -k1,1 -k2,2n
@@ -613,15 +519,13 @@ def buildCoverageBed( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-<<<<<<< local
-=======
 @merge( buildCoverageBed, "tiles_variable_width.bed.gz" )
 def buildVariableWidthTiles( infiles, outfile ):
     '''bed file with intervals that are covered by reads in any of the experiments.
     '''
     
     infiles = " ".join( infiles )
-    to_cluster = USECLUSTER
+    to_cluster = True
 
     statement = '''
     zcat %(infiles)s 
@@ -638,50 +542,61 @@ def buildVariableWidthTiles( infiles, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
->>>>>>> other
 ## Run DESeq to identify differentially methylated regions
-<<<<<<< local
-@files(PARAMS["samtools_genome"]+".fai", PARAMS["deseq_genome_tiling_file"])
-def buildGenomeTilingBed( infile, outfile ):
-=======
-@files(PARAMS["samtools_genome"]+".fai", "tiles_fixed_width.bed.gz" )
-def buildFixedWidthTiles( infile, outfile ):
->>>>>>> other
+@files( (( None, "tiles_fixednonovl.bed.gz"),) )
+def buildNonoverlappingFixedWidthTiles( infile, outfile ):
     '''Build bed file segmenting entire genome using window x and shift y'''
 
-    deseq_window = PARAMS["deseq_window"]
-    deseq_shift = PARAMS["deseq_shift"]
-
+    shift = PARAMS["tiling_nonoverlapping_window"]
     statement = '''python %(scriptsdir)s/genome_bed.py
-                      -g %(infile)s
-<<<<<<< local
-                      -w %%(deseq_window)s
-                      -s %%(deseq_shift)s
-                      -o %(outfile)s '''
-=======
-                      -w %(deseq_window)s
-                      -s %(deseq_shift)s
+                      -g %(genome_dir)s/%(genome)s
+                      --window=%(tiling_nonoverlapping_window)i
+                      --shift=%(shift)i
+                      --log=%(outfile)s.log
+                | awk '$1 !~ /%(tiling_remove_contigs)s/'
                 | gzip
                 > %(outfile)s'''
->>>>>>> other
     P.run()
 
+@files( (( None, "tiles_fixedovl.bed.gz"),) )
+def buildOverlappingFixedWidthTiles( infile, outfile ):
+    '''Build bed file segmenting entire genome using window x and shift y'''
+    assert PARAMS["tiling_overlapping_window"] % 2 == 0
+    shift = PARAMS["tiling_overlapping_window"] // 2
+
+    statement = '''python %(scriptsdir)s/genome_bed.py
+                      -g %(genome_dir)s/%(genome)s
+                      --window=%(tiling_overlapping_window)i
+                      --shift=%(shift)i
+                      --log=%(outfile)s.log
+                | awk '$1 !~ /%(tiling_remove_contigs)s/'
+                | gzip
+                > %(outfile)s'''
+    P.run()
+
+@transform( (buildNonoverlappingFixedWidthTiles,
+             buildOverlappingFixedWidthTiles,
+             buildVariableWidthTiles ), 
+            suffix(".bed.gz"), 
+            ".bed.gz")
+def buildTiles( infile, outfile ):
+    pass
+
 #########################################################################
-<<<<<<< local
-@follows(buildGenomeTilingBed)
-@transform( dedup, regex(r"(\S+)/bam/(\S+).dedup.bam"), r"\1/bam/\2.counts.bed.gz" )
-def buildTiledReadCounts( infile, outfile ):
-=======
 #########################################################################
 #########################################################################
-@transform( (buildFixedWidthTiles, buildVariableWidthTiles),
+@transform( buildTiles,
             suffix(".bed.gz"),
             ".stats")
 def buildTileStats( infile, outfile ):
     '''compute tiling window size statistics from bed file.'''
+
+    use_cluster = True
+
     statement = '''
     zcat %(infile)s
     | python %(scriptsdir)s/gff2histogram.py 
+                   --force
                    --format=bed 
                    --data=size
                    --method=hist
@@ -694,7 +609,338 @@ def buildTileStats( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@merge( buildTileStats,
+@transform( buildTiles,
+            suffix(".bed.gz"), 
+            ".bigbed")
+def buildBigBed( infile, outfile ):
+    '''bed file with intervals that are covered by reads in any of the experiments.
+    '''
+    
+    to_cluster = True
+    to_cluster = False
+
+    tmpfile = P.getTempFilename()
+
+    contig_sizes = os.path.join( PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_contigs"] )
+
+    statement = '''
+    zcat %(infile)s > %(tmpfile)s;
+    bedToBigBed %(tmpfile)s %(contig_sizes)s %(outfile)s;
+    rm -f %(tmpfile)s
+    '''
+    P.run()
+
+    try: os.unlink( tmpfile )
+    except OSError: pass
+
+#########################################################################
+# add_inputs( buildGenomeTilingBed ),
+def buildTiledReadCounts( infiles, outfile ):
+    '''compute coverage of genome with reads.'''
+
+    to_cluster = True
+
+    infile, tiles = infiles
+
+    # note: needs to set flags appropriately for
+    # single-end/paired-end data sets
+    # set filter options
+    # for example, only properly paired reads
+    paired = True
+    if paired:
+        flag_filter = "-f 0x2"
+    else:
+        flag_filter = ""
+
+    statement = '''
+    samtools view -b %(flag_filter)s -q %(deseq_min_mapping_quality)s %(infile)s 
+    | python %(scriptsdir)s/bam2bed.py
+          --merge-pairs
+          --min-insert-size=%(medips_min_insert_size)i
+          --max-insert-size=%(medips_max_insert_size)i
+           --log=%(outfile)s.log
+           - 
+    | coverageBed -a stdin -b %(tiles)s 
+    | sort -k1,1 -k2,2n
+    | gzip > %(outfile)s '''
+    
+    P.run()
+
+@transform( prepareBAMs,
+            suffix(".bam"), 
+            add_inputs( buildVariableWidthTiles ),
+            r".variablewidth.tilecounts.bed.gz" )
+def buildTiledReadCountsVariableWidth(infiles, outfile ):
+    '''build read counds for variable width windows.'''
+    buildTiledReadCounts( infiles, outfile )
+
+@transform( prepareBAMs,
+            suffix(".bam"), 
+            add_inputs( buildNonoverlappingFixedWidthTiles ),
+            r".fixedwidthnoovl.tilecounts.bed.gz" )
+def buildTiledReadCountsFixedWidthNoOverlap(infiles, outfile ): 
+    '''build read counds for fixed width windows.'''
+    buildTiledReadCounts( infiles, outfile )
+
+@transform( prepareBAMs,
+            suffix(".bam"), 
+            add_inputs( buildOverlappingFixedWidthTiles ),
+            r".fixedwidthovl.tilecounts.bed.gz" )
+def buildTiledReadCountsFixedWidthOverlap(infiles, outfile ):
+    '''build read counds for fixed width windows.'''
+    buildTiledReadCounts( infiles, outfile )
+
+@transform( (buildTiledReadCountsVariableWidth,
+             buildTiledReadCountsFixedWidthNoOverlap,
+             buildTiledReadCountsFixedWidthOverlap),
+            suffix(".bed.gz"),
+            ".bed.gz" )
+def buildAllTiledReadCounts( infile, outfile ):
+    pass
+
+#########################################################################
+@follows( mkdir( "diff_methylation" ) )
+@collate( buildAllTiledReadCounts,
+          regex( ".*\.([^.]+).tilecounts.bed.gz"),
+          r"diff_methylation/\1.counts.tsv.gz")
+def aggregateTiledReadCounts( infiles, outfile ):
+    '''aggregate tag counts for each window.
+
+    coverageBed outputs the following columns:
+    1) Contig
+    2) Start
+    3) Stop
+    4) Name
+    5) The number of features in A that overlapped (by at least one base pair) the B interval.
+    6) The number of bases in B that had non-zero coverage from features in A.
+    7) The length of the entry in B.
+    8) The fraction of bases in B that had non-zero coverage from features in A.
+
+    For bed: use column 5
+    For bed6: use column 7
+    For bed12: use column 13
+
+    This method uses the maximum number of reads found in any interval as the tag count.
+
+    Tiles with no counts will not be output.
+    '''
+    
+    to_cluster = True
+
+    src = " ".join( [ '''<( zcat %s | awk '{printf("%%s:%%i-%%i\\t%%i\\n", $1,$2,$3,$4 );}' ) ''' % x for x in infiles] )
+    tmpfile = P.getTempFilename( "." )
+    statement = '''paste %(src)s > %(tmpfile)s'''
+    P.run()
+    
+    tracks = [ re.sub( "\..*", '', os.path.basename(x) ) for x in infiles ]
+
+    outf = IOTools.openFile( outfile, "w")
+    outf.write( "interval_id\t%s\n" % "\t".join( tracks ) )
+    
+    for line in open( tmpfile, "r" ):
+        data = line[:-1].split("\t")
+        genes = list(set([ data[x] for x in range(0,len(data), 2 ) ]))
+        values = [ int(data[x]) for x in range(1,len(data), 2 ) ]
+        if sum(values) == 0: continue
+        assert len(genes) == 1, "paste command failed, wrong number of genes per line: '%s'" % line
+        outf.write( "%s\t%s\n" % (genes[0], "\t".join(map(str, values) ) ) )
+    
+    outf.close()
+
+    os.unlink(tmpfile)
+
+#########################################################################
+def loadMethylationData( infile, design_file ):
+    '''load methylation data for deseq/edger analysis.
+    
+    This method creates various R objects:
+
+    countsTable : data frame with counts. 
+    groups : vector with groups
+
+    '''
+    
+    E.info( "reading data")
+    R( '''counts_table = read.delim( '%(infile)s', header = TRUE, 
+                                                   row.names = 1, 
+                                                   stringsAsFactors = TRUE )''' % locals() )
+
+    E.info( "read data: %i observations for %i samples" % tuple(R('''dim(counts_table)''')))
+
+    # Load comparisons from file
+    R('''pheno = read.delim( '%(design_file)s', header = TRUE, stringsAsFactors = TRUE )''' % locals() )
+
+    # Make sample names R-like - substitute - for . and add the .prep suffix
+    R('''pheno[,1] = gsub('-', '.', pheno[,1]) ''')
+    
+    # Ensure pheno rows match count columns 
+    R('''pheno2 = pheno[match(colnames(counts_table),pheno[,1]),,drop=FALSE]''' ) 
+
+    # Subset data & set conditions
+    R('''includedSamples <- pheno2$include == '1' ''')
+    R('''countsTable <- counts_table[ , includedSamples ]''')
+    R('''conds <- pheno2$group[ includedSamples ]''')
+
+    # Subset data & set conditions
+    R('''includedSamples <- pheno2$include == '1' ''')
+    R('''countsTable <- counts_table[ , includedSamples ]''')
+    R('''groups <- factor(pheno2$group[ includedSamples ])''')
+    R('''pairs = factor(pheno2$pair[ includedSamples ])''')
+    
+    groups = R('''levels(groups)''')
+    pairs = R('''levels(pairs)''')
+
+    E.info( "filtered data: %i observations for %i samples" % tuple( R('''dim(countsTable)''') ) )
+    
+    return groups, pairs
+
+#########################################################################
+#########################################################################
+#########################################################################
+def runDE( infiles, outfile, method ):
+    '''run DESeq or EdgeR.
+
+    The job is split into smaller sections. The order of the input 
+    data is randomized in order to avoid any biases due to chromosomes.
+    '''
+
+    to_cluster = True
+    
+    infile, design_file = infiles
+    design = P.snip( os.path.basename(design_file), ".tsv")
+    tiling = P.snip( os.path.basename( infile ), ".counts.tsv.gz" )
+
+    outdir = os.path.join( PARAMS["exportdir"], "diff_methylation", "%s_%s_%s_" % (tiling, design, method ) )
+
+    statement = '''zcat %(infile)s 
+              | perl %(scriptsdir)s/randomize_lines.pl -h
+              | %(cmd-farm)s
+                  --input-header 
+                  --output-header 
+                  --split-at-lines=100000 
+                  --cluster-options="-l mem_free=8G"
+                  --log=%(outfile)s.log
+                  --output-pattern=%(outdir)s%%s
+                  --subdirs
+              "python %(scriptsdir)s/Expression.py
+              --method=%(method)s
+              --filename-tags=-
+              --filename-design=%(design_file)s
+              --output-filename-pattern=%%DIR%%/
+              --deseq-fit-type=%(deseq_fit_type)s
+              --deseq-dispersion-method=%(deseq_dispersion_method)s
+              --log=%(outfile)s.log
+              --fdr=%(edger_fdr)f"
+              | grep -v "warnings"
+              | gzip
+              > %(outfile)s '''
+
+    P.run()
+
+
+@follows( aggregateTiledReadCounts, mkdir( os.path.join( PARAMS["exportdir"], "diff_methylation")) )
+@files( [ ( (data, design), 
+            "diff_methylation/%s_%s.deseq.gz" % (P.snip(os.path.basename(data),".counts.tsv.gz"),
+                                   P.snip(os.path.basename(design),".tsv" ) ) ) \
+              for data, design in itertools.product( 
+                                               glob.glob("diff_methylation/*.counts.tsv.gz"),
+                                               P.asList(PARAMS["deseq_designs"]) ) ] )
+def runDESeq( infiles, outfile ):
+    '''estimate differential expression using DESeq.
+
+    The final output is a table. It is slightly edited such that
+    it contains a similar output and similar fdr compared to cuffdiff.
+    '''
+
+    runDE( infiles, outfile, "deseq" )
+
+#########################################################################
+#########################################################################
+#########################################################################
+@follows( aggregateTiledReadCounts, mkdir( os.path.join( PARAMS["exportdir"], "diff_methylation")) )
+@files( [ ( (data, design), 
+            "diff_methylation/%s_%s.edger.gz" % (P.snip(os.path.basename(data),".counts.tsv.gz"),
+                                                 P.snip(os.path.basename(design),".tsv" ) ) ) \
+              for data, design in itertools.product( 
+                                               glob.glob("diff_methylation/*.counts.tsv.gz"),
+                                               P.asList(PARAMS["deseq_designs"]) ) ] )
+def runEdgeR( infiles, outfile ):
+    '''estimate differential methylation using EdgeR
+    
+    This method applies a paired test. The analysis follows
+    the example in chapter 11 of the EdgeR manual.
+    '''
+
+    runDE( infiles, outfile, "edger" )
+
+#########################################################################
+@transform( (runDESeq, runEdgeR), suffix(".gz"), ".merged.gz" )
+def mergeDMRWindows( infile, outfile ):
+    '''merge overlapping windows.'''
+
+    to_cluster = True
+
+    statement = '''
+    zcat %(infile)s
+    | python %(scriptsdir)s/medip_merge_intervals.py
+          --log=%(outfile)s.log
+          --output-filename-pattern=%(outfile)s.%%s.bed.gz
+    | gzip
+    > %(outfile)s
+    '''
+
+    P.run()
+
+#########################################################################
+@jobs_limit(1)
+@transform( mergeDMRWindows, suffix(".merged.gz"), ".load" )
+def loadDMRWindows( infile, outfile ):
+    '''merge overlapping windows.'''
+    P.load( infile, outfile, options = "--quick" )
+
+#########################################################################
+@collate( loadDMRWindows, regex( "(\S+)[.](\S+).load" ), r"\2_stats.tsv" )
+def buildDMRStats( infiles, outfile ):
+    '''compute differential methylation stats.'''
+    tablenames = [P.toTable( x ) for x in infiles ] 
+    method = P.snip( outfile, "_stats.tsv" )
+    PipelineMedip.buildDMRStats( tablenames, method, outfile )
+
+#########################################################################
+@transform( buildDMRStats, suffix(".tsv"), ".load" )
+def loadDMRStats( infile, outfile ):
+    '''load DMR stats into table.'''
+    P.load( infile, outfile )
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( mergeDMRWindows,
+            suffix(".merged.gz"),
+            ".stats")
+def buildDMRWindowStats( infile, outfile ):
+    '''compute tiling window size statistics from bed file.'''
+
+    to_cluster = True
+
+    statement = '''
+    zcat %(infile)s
+    | grep -v 'contig'
+    | python %(scriptsdir)s/gff2histogram.py 
+                   --force
+                   --format=bed 
+                   --data=size
+                   --method=hist
+                   --method=stats
+                   --output-filename-pattern=%(outfile)s.%%s.tsv
+    > %(outfile)s
+    '''
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@merge( (buildTileStats, buildDMRWindowStats),
         "tileinfo.load" )
 def loadTileStats( infiles, outfile ):
     '''load tiling stats into database.'''
@@ -733,492 +979,84 @@ def loadTileStats( infiles, outfile ):
     >> %(outfile)s"""
 
     P.run()
-    
+
+
 #########################################################################
 #########################################################################
 #########################################################################
-@transform( (buildVariableWidthTiles, buildFixedWidthTiles), 
-            suffix(".bed.gz"), 
-            ".bigbed")
-def buildBigBed( infile, outfile ):
-    '''bed file with intervals that are covered by reads in any of the experiments.
+@transform( mergeDMRWindows, regex(  "(.*)\.(.*).merged.gz"), r"\1_\2.dmr.bed.gz" )
+def buildDMRBed( infile, outfile ):
+    '''output bed6 file with differentially methylated regions.
+
+    Overlapping/book-ended entries are merged.
+
+    The score is the average log fold change.
     '''
     
-    to_cluster = USECLUSTER
-    to_cluster = False
+    to_cluster = True
 
-    tmpfile = P.getTempFilename()
+    statement = '''zcat %(infile)s
+    | python %(scriptsdir)s/csv_cut.py contig start end l2fold significant
+    | awk '$5 == "1" {printf("%%s\\t%%i\\t%%i\\t%%i\\t%%f\\n", $1,$2,$3,++a,$4)}'
+    | gzip > %(outfile)s'''
 
-    contig_sizes = os.path.join( PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_contigs"] )
+#    | mergeBed -i stdin -scores mean 
 
+    P.run()
+
+@merge( buildDMRBed, "dmr_overlap.tsv.gz" )
+def computeDMROverlap( infiles, outfile ):
+    '''compute overlap between bed sets.'''
+    
+    to_cluster = True
+
+    if os.path.exists(outfile): 
+        # note: update does not work due to quoting
+        os.rename( outfile, "orig." + outfile )
+        options = "--update=orig.%s" % outfile
+    else:
+        options = ""
+    
+    infiles = " ".join( infiles )
+
+    # note: need to quote track names
     statement = '''
-    zcat %(infile)s > %(tmpfile)s;
-    bedToBigBed %(tmpfile)s %(contig_sizes)s %(outfile)s;
-    rm -f %(tmpfile)s
-    '''
+        python %(scriptsdir)s/diff_bed.py 
+              --pattern-id=".*/(.*).dmr.bed.gz"
+              --log=%(outfile)s.log 
+              %(options)s %(infiles)s 
+        | awk -v OFS="\\t" '!/^#/ { gsub( /-/,"_", $1); gsub(/-/,"_",$2); } {print}'
+        | gzip
+        > %(outfile)s
+        '''
+
     P.run()
 
-    try: os.unlink( tmpfile )
-    except OSError: pass
-
 #########################################################################
-# add_inputs( buildGenomeTilingBed ),
-def buildTiledReadCounts( infiles, outfile ):
->>>>>>> other
-    '''compute coverage of genome with reads.'''
-
-    to_cluster = USECLUSTER
-
-<<<<<<< local
-    genome_bed = PARAMS["deseq_genome_tiling_file"]
-    deseq_min_mapping_quality = PARAMS["deseq_min_mapping_quality"]
-=======
-    infile, tiles = infiles
-
-    E.warn( "truncated to chr22!!!")
->>>>>>> other
-
-    # note: needs to set flags appropriately for
-    # single-end/paired-end data sets
-    # set filter options
-    # for example, only properly paired reads
-    paired = True
-    if paired:
-        flag_filter = "-f 0x2"
-    else:
-        flag_filter = ""
-
-<<<<<<< local
-    statement = '''samtools view -b %(flag_filter)s -q %(deseq_min_mapping_quality)s %(infile)s
-                   | coverageBed -abam stdin -b %(genome_bed)s 
-=======
-    statement = '''samtools view -b %(flag_filter)s -q %(deseq_min_mapping_quality)s %(infile)s chr22
-                   | coverageBed -abam stdin -b %(tiles)s 
->>>>>>> other
-                   | sort -k1,1 -k2,2n
-<<<<<<< local
-=======
-                   | grep chr22
->>>>>>> other
-                   | gzip > %(outfile)s '''
-    P.run()
-
-@transform( prepareBAMs,
-            suffix(".bam"), 
-            add_inputs( buildVariableWidthTiles ),
-            r".variablewidth.tilecounts.bed.gz" )
-def buildTiledReadCountsVariableWidth(infiles, outfile ):
-    '''build read counds for variable width windows.'''
-    buildTiledReadCounts( infiles, outfile )
-
-@transform( prepareBAMs,
-            suffix(".bam"), 
-            add_inputs( buildFixedWidthTiles ),
-            r".fixedwidth.tilecounts.bed.gz" )
-def buildTiledReadCountsFixedWidth(infiles, outfile ):
-    '''build read counds for fixed width windows.'''
-    buildTiledReadCounts( infiles, outfile )
-
-
-
 #########################################################################
-@follows( mkdir( "deseq" ) )
-<<<<<<< local
-@collate(buildTiledReadCounts, regex(r"(\S+)/bam/(\S+).counts.bed.gz"), r"deseq/all.counts.tsv")
-=======
-@collate( (buildTiledReadCountsVariableWidth,
-           buildTiledReadCountsFixedWidth), 
-          regex( ".*\.([^.]+)width.tilecounts.bed.gz"),
-          r"deseq/\1.counts.tsv.gz")
->>>>>>> other
-def aggregateTiledReadCounts( infiles, outfile ):
-    '''aggregate tag counts for each window.
+#########################################################################
+@transform( mergeDMRWindows, regex(  "(.*)\.(.*).merged.gz"), r"\1_\2.bed.gz" )
+def buildMRBed( infile, outfile ):
+    '''output bed6 file with methylated regions.
 
-    coverageBed outputs the following columns:
-    1) Contig
-    2) Start
-    3) Stop
-    4) Name
-    5) The number of features in A that overlapped (by at least one base pair) the B interval.
-    6) The number of bases in B that had non-zero coverage from features in A.
-    7) The length of the entry in B.
-    8) The fraction of bases in B that had non-zero coverage from features in A.
+    All regions are output, even the insignificant ones.
 
-    For bed: use column 5
-    For bed6: use column 7
-    For bed12: use column 13
-
-    This method uses the maximum number of reads
-    found in any interval as the tag count.
+    The score is the log fold change.
     '''
     
-    to_cluster = USECLUSTER
-
-<<<<<<< local
-    # aggregate not necessary for bed12 files, but kept in
-    src = " ".join( [ "<( zcat %s | cut -f 4,5 )" % x for x in infiles] )
-    tmpfile = "deseq/agg.txt"
-=======
-    src = " ".join( [ '''<( zcat %s | awk '{printf("%%s:%%i-%%i\\t%%i\\n", $1,$2,$3,$4 );}' ) ''' % x for x in infiles] )
-    tmpfile = P.getTempFilename( "." )
->>>>>>> other
-    statement = '''paste %(src)s > %(tmpfile)s'''
-    P.run()
-<<<<<<< local
-
-    tracks = [P.snip(os.path.basename(x), ".counts.bed.gz" ) for x in infiles ]
-=======
-    
-    tracks = [ re.sub( "\..*", '', os.path.basename(x) ) for x in infiles ]
->>>>>>> other
-
-    outf = IOTools.openFile( outfile, "w")
-    outf.write( "interval\t%s\n" % "\t".join( tracks ) )
-    
-    for line in open( tmpfile, "r" ):
-        data = line[:-1].split("\t")
-        genes = list(set([ data[x] for x in range(0,len(data), 2 ) ]))
-        values = [ data[x] for x in range(1,len(data), 2 ) ]
-        assert len(genes) == 1, "paste command failed, wrong number of genes per line: '%s'" % line
-        outf.write( "%s\t%s\n" % (genes[0], "\t".join(map(str, values) ) ) )
-    
-    outf.close()
-
-<<<<<<< local
-=======
-    os.unlink(tmpfile)
-
->>>>>>> other
-#########################################################################
-<<<<<<< local
-@follows(aggregateTiledReadCounts)
-@files( [ (("deseq/all.counts.tsv", x), "deseq/"+P.snip(os.path.basename(x),".tsv")+".deseq") for x in P.asList(PARAMS["deseq_comparisons"]) ] )
-=======
-@follows( aggregateTiledReadCounts)
-@files( [ ( (data, design), 
-            "deseq/%s_%s.deseq" % (P.snip(os.path.basename(data),".counts.tsv.gz"),
-                                   P.snip(os.path.basename(design),".tsv" ) ) ) \
-              for data, design in itertools.product( 
-                                               glob.glob("deseq/*.counts.tsv.gz"),
-                                               P.asList(PARAMS["deseq_designs"]) ) ] )
->>>>>>> other
-def runDESeq( infiles, outfile ):
-    '''estimate differential expression using DESeq.
-
-    The final output is a table. It is slightly edited such that
-    it contains a similar output and similar fdr compared to cuffdiff.
-    '''
-
-    infile, comp = infiles
-    to_cluster = USECLUSTER
-    outdir = "deseq"
-    deseq_fdr = PARAMS["deseq_fdr"]
-
-    # load library 
-    R('''suppressMessages(library('DESeq'))''')
-<<<<<<< local
-=======
-
-    # load count data
-    E.info( "loading data" )
-
-    R( '''counts_table = read.delim( '%(infile)s', header = TRUE, row.names = 1, stringsAsFactors = TRUE )''' % locals() )
-    E.info( "read data: %i observations for %i samples" % tuple(R('''dim(counts_table)''')))
-
-    # Remove windows with no data
-    R( '''max_counts = apply(counts_table,1,max)''' )
-    R( '''counts_table = counts_table[max_counts>0,]''')
-    E.info( "removed %i empty columns" % tuple( R('''sum(max_counts == 0)''') ) )
-    E.info( "trimmed data: %i observations for %i samples" % tuple( R('''dim(counts_table)''') ) )
-
-    # Load comparisons from file
-    comp_name = P.snip( os.path.basename(comp), ".tsv")
-    R('''pheno = read.delim( '%(comp)s', header = TRUE, stringsAsFactors = TRUE )''' % locals() )
-
-    # Make sample names R-like - substitute - for . and add the .prep suffix
-    R('''pheno[,1] = gsub('-', '.', pheno[,1]) ''')
-    
-    # Ensure pheno rows match count columns 
-    R('''pheno2 = pheno[match(colnames(counts_table),pheno[,1]),,drop=FALSE]''' ) 
->>>>>>> other
-
-<<<<<<< local
-    # load count data
-    R( '''counts_table <- read.delim( '%(infile)s', header = TRUE, row.names = 1, stringsAsFactors = TRUE )''' % locals() )
-    counts = R('''dim(counts_table)[1]''')
-    print "Total windows: "+counts
-=======
-    # Subset data & set conditions
-    R('''includedSamples <- pheno2$include == '1' ''')
-    R('''countsTable <- counts_table[ , includedSamples ]''')
-    R('''conds <- pheno2$group[ includedSamples ]''')
->>>>>>> other
-
-<<<<<<< local
-    # Remove windows with no data
-    R( '''max_counts <- apply(counts_table,1,max)''' )
-    R( '''counts_table_trimmed <- counts_table[max_counts>0,]''')
-    no_counts = R('''sum(max_counts == 0)''')
-    print "Empty windows: "+no_counts
-=======
-    # Test if replicates exist
-    min_reps = R('''min(table(conds)) ''')
-    no_replicates = False
-    if min_reps < 2:
-        no_replicates = True
->>>>>>> other
-
-<<<<<<< local
-    # Load comparisons from file
-    comp_name = P.snip( os.path.basename(comp), ".tsv")
-    R('''pheno <- read.delim( '%(comp)s', header = TRUE, stringsAsFactors = TRUE )''' % locals() )
-=======
-    ######## Run DESeq
-    # Create Count data object
-    E.info( "running DESeq" )
-    R('''cds <-newCountDataSet( countsTable, conds) ''')
->>>>>>> other
-
-<<<<<<< local
-    # Make sample names R-like
-    R('''pheno[,1] <- gsub('-', '.', pheno[,1])''')
-
-    # Ensure pheno rows match count columns 
-    R('''pheno2 <- pheno[match(colnames(counts_table),pheno[,1]),,drop=FALSE]''' ) 
-    p = R('''pheno2''')
-    print p
-
-    # Subset data & set conditions
-    R('''includedSamples <- pheno2$include == '1' ''')
-    R('''countsTable <- counts_table[ , includedSamples ]''')
-    R('''conds <- pheno2$group[ includedSamples ]''')
-
-    # Test if replicates exist
-    min_reps = R('''min(table(conds)) ''')
-    no_replicates = False
-    if min_reps < 2:
-        no_replicates = True
-
-    ######## Run DESeq
-    # Create Count data object
-    R('''cds <-newCountDataSet( countsTable, conds) ''')
-
-=======
->>>>>>> other
-    # Estimate size factors
-    R('''cds <- estimateSizeFactors( cds )''')
-
-    # Estimate variance
-    if no_replicates:
-        R('''cds <- estimateVarianceFunctions( cds, method="blind" )''')
-    else:
-        R('''cds <- estimateVarianceFunctions( cds )''')
-
-    # Plot scvplot
-    size_factors = R('''sizeFactors( cds )''')
-    R.png( '''%(outdir)s/%(comp_name)s_scvplot.png''' % locals() )
-    R('''scvPlot( cds, ylim = c(0,3))''')
-    R['dev.off']()
-
-    # Generate heatmap of variance stabilised data
-    R('''vsd <- getVarianceStabilizedData( cds )''' )
-    R('''dists <- dist( t( vsd ) )''')
-    R.png( '''%(outdir)s/%(comp_name)s_heatmap.png''' % locals() )
-    R('''heatmap( as.matrix( dists ), symm=TRUE )''' )
-    R['dev.off']()
-
-    conditions = R('''levels(conds)''')
-    for condition in conditions:
-        if not no_replicates:
-            R.png( '''%(outdir)s/%(comp_name)s_%(condition)s_fit.png''' % locals() )
-            R('''diagForT <- varianceFitDiagnostics( cds, "%s" )''' % condition )
-            R('''smoothScatter( log10(diagForT$baseMean), log10(diagForT$baseVar) )''')
-            R('''lines( log10(fittedBaseVar) ~ log10(baseMean), diagForT[ order(diagForT$baseMean), ], col="red" )''')
-            R['dev.off']()
-            R.png( '''%(outdir)s/%(comp_name)s_%(condition)s_residuals.png''' % locals()  )
-            R('''residualsEcdfPlot( cds, "%s" )''' % condition )
-            R['dev.off']()
-
-    # Differential expression
-    L.info("calling differential expression")
-    R('''res <- nbinomTest( cds, '%s', '%s' )''' % (conditions[0],conditions[1]))
-
-    # Plot significance
-    R.png( '''%(outdir)s/%(comp_name)s_significance.png''' % locals() )
-    R('''plot( res$baseMean, res$log2FoldChange, log="x", pch=20, cex=.1, col = ifelse( res$padj < %(deseq_fdr)s, "red", "black" ) )''' % locals() )
-    R['dev.off']()
-
     outf = IOTools.openFile( outfile, "w" )
-    isna = R["is.na"]
+    c = E.Counter()
+    for row in csv.DictReader( IOTools.openFile( infile ),
+                               dialect = "excel-tab" ):
+        c.input += 1
 
-    L.info("Generating output")
-    # Get column names from output and edit
-    names = None
-    if not names:
-        names = list(R['res'].names)
-        m = dict( [ (x,x) for x in names ])
-        m.update( dict(
-                pval = "pvalue", 
-                baseMeanA = "value1", 
-                baseMeanB = "value2",
-                id = "test_id", 
-                log2FoldChange = "lfold") )
+        contig, start, end = re.match("(.*):(\d+)-(\d+)", row["interval_id"] ).groups()
+        c.output += 1
+        outf.write( "\t".join( (contig, start, end, str(c.input), row["lfold"] ) ) + "\n" )
         
-        header = [ m[x] for x in names ] 
-        outf.write( "Group1\tGroup2\t%s\tstatus\tsignificant\n" % "\t".join(header))
-    else:
-        if names != list(R['res'].names):
-            raise ValueError( "different column headers in DESeq output: %s vs %s" % (names, list(R['res'].names)))
-
-    # Parse results and parse to file
-    rtype = collections.namedtuple( "rtype", names )
-    for data in zip( *R['res']) :
-        d = rtype._make( data )
-        outf.write( "%s\t%s\t" % (conditions[0],conditions[1]))
-        # set significant flag
-        if d.padj <= deseq_fdr: signif = 1
-        else: signif = 0
-
-        # set lfold change to 0 if both are not expressed
-        if d.baseMeanA == 0.0 and d.baseMeanB == 0.0:
-            d = d._replace( foldChange = 0, log2FoldChange = 0 )
-
-        if isna( d.pval ): status = "OK"
-        else: status = "FAIL"
-
-        outf.write( "\t".join( map(str, d) ))
-        outf.write("\t%s\t%s\n" % (status, str(signif)))
-            
     outf.close()
-
-#########################################################################
-@transform( runDESeq, suffix(".deseq"), "_deseq.load" )
-def loadDESeq( infile, outfile ):
-    '''load differential expression results.'''
-<<<<<<< local
-    # add gene level follow convention "<level>_diff"
     
-    # if one expression value is 0, the log fc is inf or -inf.
-    # substitute with 10
-
-    tablename = P.snip( outfile, ".load") + "_gene_diff" 
-    statement = '''cat %(infile)s
-                   | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-                       --allow-empty
-                       --index=group1
-                       --index=group2
-                       --index=test_id
-                       --table=%(tablename)s 
-                   > %(outfile)s '''
-    P.run()
-=======
-    P.load( infile, outfile, "--index=group1 --index=group2 --index=test_id --allow-empty" )
->>>>>>> other
-
-#########################################################################
-<<<<<<< local
-=======
-#########################################################################
-#########################################################################
-def buildExpressionStats( tables, method, outfile ):
-    '''build expression summary statistics.
-    
-    Creates some diagnostic plots in
-
-    <exportdir>/<method> directory.
-    '''
-
-    dbhandle = sqlite3.connect( PARAMS["database"] )
-
-    def togeneset( tablename ):
-        return re.match("([^_]+)_", tablename ).groups()[0]
-
-    keys_status = "OK", "NOTEST", "FAIL", "NOCALL"
-
-    outf = IOTools.openFile( outfile, "w" )
-    outf.write( "\t".join( ("geneset", "level", "track1", "track2", "tested",
-                            "\t".join( [ "status_%s" % x for x in keys_status ] ),
-                            "significant",
-                            "twofold" ) ) + "\n" )
-
-    all_tables = set(Database.getTables( dbhandle ))
-    outdir = os.path.join( PARAMS["exportdir"], method )
-
-    for level in CUFFDIFF_LEVELS:
-
-        for tablename in tables:
-
-            tablename_diff = "%s_%s_diff" % (tablename, level)
-            tablename_levels = "%s_%s_diff" % (tablename, level )
-            geneset = togeneset( tablename_diff )
-            if tablename_diff not in all_tables: continue
-
-            def toDict( vals, l = 2 ):
-                return collections.defaultdict( int, [ (tuple( x[:l]), x[l]) for x in vals ] )
-            
-            tested = toDict( Database.executewait( dbhandle,
-                                               """SELECT track1, track2, COUNT(*) FROM %(tablename_diff)s 
-                                    GROUP BY track1,track2""" % locals() ).fetchall() )
-            status = toDict( Database.executewait( dbhandle,
-                                                   """SELECT track1, track2, status, COUNT(*) FROM %(tablename_diff)s 
-                                    GROUP BY track1,track2,status""" % locals() ).fetchall(), 3 )
-            signif = toDict( Database.executewait( dbhandle,
-                                                   """SELECT track1, track2, COUNT(*) FROM %(tablename_diff)s 
-                                    WHERE significant
-                                    GROUP BY track1,track2""" % locals() ).fetchall() )
-            fold2 = toDict( Database.executewait( dbhandle,
-                    """SELECT track1, track2, COUNT(*) FROM %(tablename_diff)s 
-                                    WHERE (lfold >= 1 or lfold <= -1) AND significant
-                                    GROUP BY track1,track2,significant""" % locals() ).fetchall() )
-            
-            for track1, track2 in itertools.combinations( EXPERIMENTS, 2 ):
-                outf.write( "\t".join(map(str, (
-                                geneset,
-                                level,
-                                track1,
-                                track2,
-                                tested[(track1,track2)],
-                                "\t".join( [ str(status[(track1,track2,x)]) for x in keys_status]),
-                                signif[(track1,track2)],
-                                fold2[(track1,track2)] ) ) ) + "\n" )
-                
-            ###########################################
-            ###########################################
-            ###########################################
-            # plot length versus P-Value
-            data = Database.executewait( dbhandle, 
-                                         '''SELECT i.sum, pvalue 
-                                 FROM %(tablename_diff)s, 
-                                 %(geneset)s_geneinfo as i 
-                                 WHERE i.gene_id = test_id AND significant'''% locals() ).fetchall()
-
-            # require at least 10 datapoints - otherwise smooth scatter fails
-            if len(data) > 10:
-                data = zip(*data)
-
-                pngfile = "%(outdir)s/%(geneset)s_%(method)s_%(level)s_pvalue_vs_length.png" % locals()
-                R.png( pngfile )
-                R.smoothScatter( R.log10( ro.FloatVector(data[0]) ),
-                                 R.log10( ro.FloatVector(data[1]) ),
-                                 xlab = 'log10( length )',
-                                 ylab = 'log10( pvalue )',
-                                 log="x", pch=20, cex=.1 )
-
-                R['dev.off']()
-
-    outf.close()
-
-#########################################################################
->>>>>>> other
-@merge( loadDESeq, "deseq_stats.tsv" )
-def buildDESeqStats( infiles, outfile ):
-    tablenames = [P.toTable( x ) for x in infiles ] 
-    buildExpressionStats( tablenames, "deseq", outfile )
-
-#########################################################################
-@transform( buildDESeqStats, suffix(".tsv"), ".load" )
-def loadDESeqStats( infile, outfile ):
-    P.load( infile, outfile )
+    E.info( "%s" % str(c) )
 
 #########################################################################
 #########################################################################
@@ -1227,31 +1065,20 @@ def loadDESeqStats( infile, outfile ):
           loadPicardAlignmentStats,
           loadPicardGCStats,
           loadBAMStats )
-<<<<<<< local
-def mapreads(): pass
-=======
 def mapping(): pass
->>>>>>> other
 
-<<<<<<< local
-@follows( buildTiledReadCounts,
-          aggregateTiledReadCounts,
-=======
 @follows( aggregateTiledReadCounts,
->>>>>>> other
-          runDESeq,
-          loadDESeq,
-          buildDESeqStats,
-          loadDESeqStats )
+          loadDMRStats,
+          buildDMRBed,
+          computeDMROverlap)
 def callDMRs(): pass
 
-<<<<<<< local
-##########################################################################
-=======
+@follows( mapping, callDMRs) 
+def full(): pass
+
 ###################################################################
 ###################################################################
 ###################################################################
->>>>>>> other
 @follows( mkdir( "report" ) )
 def build_report():
     '''build report from scratch.'''

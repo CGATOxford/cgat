@@ -85,6 +85,7 @@ import Intervals
 from peptides2cds import getMapPeptide2Cds
 import alignlib
 import GTF
+import IOTools
 
 def buildGeneMap( identifiers, separator = "|" ):
     """build map of predictions to genes.
@@ -581,11 +582,17 @@ if __name__ == '__main__':
 sequences will be aligned to the cds sequences. This produces better coordinates."""  )
 
     parser.add_option("--output", dest="output", type="choice", action="append",
-                      choices=("final_aa", "final_na", "aligned_aa", "aligned_na", "all", "unaligned_aa", "unaligned_na" ),
-                      help="which alignment to output: aligned=aligned sequences, but before untangling exons; final=final multiple alignment; unaligned=unaligned sequences." )
+                      choices=("final_aa", "final_na", "aligned_aa", "aligned_na", "all", "unaligned_aa", "unaligned_na", "coords" ),
+                      help="which alignment to output: aligned=aligned sequences, but before untangling exons; "
+                           " final=final multiple alignment; unaligned=unaligned sequences; "
+                           " coords=genomic coordinates (corresponding to 'final_na')." )
     
     parser.add_option("--output-filename-pattern", dest="output_filename_pattern", type="string",
-                      help="filename pattern for output files. If no --output option is given, stdout is used." )
+                      help="filename pattern for multiple alignment output files. "
+                           " If no --output option is given, stdout is used." )
+
+    parser.add_option("--output-filename-coords", dest="output_filename_coords", type="string",
+                      help="filename to output coordinates to." )
 
     parser.add_option("--output-format", dest="output_format", type="choice",
                       choices=("fasta", "stockholm", "clustal", "plain-fasta") ,
@@ -618,6 +625,7 @@ sequences will be aligned to the cds sequences. This produces better coordinates
         filename_cds = None,
         force_map = False,
         output_filename_pattern="%s.fasta",
+        output_filename_coords="coords.tsv.gz",
         output = [],
         output_format = "fasta",
         max_percent_gaps = 0.1,
@@ -629,7 +637,7 @@ sequences will be aligned to the cds sequences. This produces better coordinates
 
     ########################################################
     if "all" in options.output:
-        options.output = ["final_aa", "final_na", "aligned_aa", "aligned_na", "unaligned_aa", "unaligned_na"]
+        options.output = ["final_aa", "final_na", "aligned_aa", "aligned_na", "unaligned_aa", "unaligned_na", "coords"]
 
     ########################################################
     ########################################################
@@ -747,6 +755,12 @@ sequences will be aligned to the cds sequences. This produces better coordinates
                 
             nmissing, ndifferences, nstop_codons, ndeleted_empty, nunmappable = 0, 0, 0, 0, 0
             
+            # minimum genomic coordinates and strands for a gene
+            genome_starts = {}
+            # maps of cds sequence to genomic coordinates. These are
+            # zeroed and increasing for both forward and reverse strand
+            map_cds2genome = {}
+            
             for key, ee in exons.items():
 
                 if key not in map_peptide2cds:
@@ -765,7 +779,7 @@ sequences will be aligned to the cds sequences. This produces better coordinates
                     
                 if ee[-1].mPeptideTo != map_p2c.getColTo():
 
-                    E.debug( "%s\n" % str(ee[-1]) )
+                    E.debug( "%s" % str(ee[-1]) )
                     E.warn( "%s of length %i: peptide and exon do not correspond: %i <> %i" %\
                                 (key, len(input[key]), ee[-1].mPeptideTo, map_peptide2cds[key].getColTo()) )
                     ndifferences += 1
@@ -794,6 +808,15 @@ sequences will be aligned to the cds sequences. This produces better coordinates
                                  (key, old_peptide_end, ee[-1].mPeptideTo,
                                   old_genome_end, ee[-1].mGenomeTo ) )
 
+                is_negative_strand = ee[0].mSbjctStrand == "-"
+                # note that exon coordinates are already inverted
+                # and negative strand coordinates are negative
+                # Thus the following works for both forward and reverse strand
+                genome_start = ee[0].mGenomeFrom
+                genome_starts[key] = (is_negative_strand, genome_start)
+
+                map_c2g = alignlib.makeAlignmentBlocks()
+
                 for e in ee:
                     # map boundaries
                     # note: map_p2c is in 1 based coordinates
@@ -808,11 +831,16 @@ sequences will be aligned to the cds sequences. This produces better coordinates
                                      e.mPeptideTo, peptide_to))
                         E.debug("%s" %str(alignlib.AlignmentFormatEmissions( map_p2c )) )
                         nunmappable += 1
-                    else:
-                        e.mCdsFrom = e.mPeptideFrom
-                        e.mCdsTo = e.mPeptideTo
-                        e.mPeptideFrom = peptide_from
-                        e.mPeptideTo = peptide_to
+                        continue
+
+                    e.mCdsFrom = e.mPeptideFrom
+                    e.mCdsTo = e.mPeptideTo
+                    e.mPeptideFrom = peptide_from
+                    e.mPeptideTo = peptide_to
+
+                    # build map of cds to genomic sequence
+                    map_c2g.addDiagonal( e.mCdsFrom, e.mCdsTo, e.mGenomeFrom - genome_start - e.mCdsFrom ) 
+                    map_cds2genome[key] = map_c2g
 
             E.info("checked exon boundaries against cds: missing=%i, differences=%i, fixed_stops=%i, deleted_empty=%i, nunmappable=%i" %\
                                      (nmissing, ndifferences, nstop_codons, ndeleted_empty, nunmappable))
@@ -1003,6 +1031,12 @@ sequences will be aligned to the cds sequences. This produces better coordinates
         Experiment.Stop()
         sys.exit(0)
 
+    ##########################################################################
+    ##########################################################################
+    ##########################################################################
+    ## output the packed alignment as nucleotides 
+    ## The output does not contain any frameshifts that might have been
+    ## present in the original sequences
     if "aligned_na" in options.output:
 
         aligned_cds = Mali.Mali()
@@ -1028,7 +1062,7 @@ sequences will be aligned to the cds sequences. This produces better coordinates
     ##########################################################################
     ##########################################################################
     ##########################################################################
-    ## unpack the alignment
+    ## unpack the protein level alignment
     ## columns stay the same, but alignments with multiple transcripts per gene
     ## are unpacked.
     ##########################################################################        
@@ -1198,13 +1232,12 @@ sequences will be aligned to the cds sequences. This produces better coordinates
 
                 val.mString = "".join(s)
 
-            if nchanged > 0 and options.loglevel >= 1:
-                options.stdlog.write("# %s: fixed %i split codons.\n" % (key, nchanged) )
-                options.stdlog.flush()
+            if nchanged > 0:
+                E.info( "%s: fixed %i split codons." % (key, nchanged) )
 
             # if more substitutions made than exon boundaries
             # it is likely a programming error
-            # should be >=, but was to strict for one fly sequence, so I relaxed it.
+            # should be >=, but was too strict for one fly sequence, so I relaxed it.
             if nchanged > len( exons[key] ):
                 raise ValueError("more codons fixed than intron-exon boundaries in sequence %s: %i>=%i" % (key, nchanged, len(exons[key])))
             
@@ -1237,39 +1270,80 @@ sequences will be aligned to the cds sequences. This produces better coordinates
     else:
         if "final_aa" in options.output:
             writeToFile( unpacked, "final_aa", options )
-        if "final_na" in options.output:
-            ## map alignment to original cds
 
+        if "final_na" in options.output:
+
+            ## map alignment to original cds
+            ## frameshifts in the original cdna are ignored
+            ## output table with coordinates
             unpacked_cds = Mali.Mali()
             
-            for id in unpacked.getIdentifiers():
+            info, all_coords = [], []
+            
+            for key in unpacked.getIdentifiers():
 
-                entry = unpacked.getEntry(id)
+                entry = unpacked.getEntry(key)
                 
-                p = unpacked[id]
-                c = cds_sequences[id]
+                p = unpacked[key]
+                c = cds_sequences[key]
+                
+                ###############################
+                # build map of cds to alignment position (map_cds2pos)
                 try:
-                    E.debug("building map for %s" % id)
-                    map_p2c = getMapPeptide2Cds( p, c,
-                                                 options )
+                    E.debug("building map for %s" % key)
+                    map_pos2cds = getMapPeptide2Cds( p, c,
+                                                     options )
 
                 except ValueError, msg:
-                    E.warn("final alignment not mappable for %s -skipped" % id )
+                    E.warn("final alignment not mappable for %s -skipped" % key )
                     nskipped += 1
                     continue
 
-                alignatum = alignlib.makeAlignatum( cds_sequences[id] )
 
-                map_p2c.switchRowCol()
-                alignatum.mapOnAlignment( map_p2c, len(p) * 3 )
+                #################################
+                # map alignment pos to genome
+                map_c2g = map_cds2genome[key]
+                map_pos2genome = alignlib.makeAlignmentBlocks()
+                alignlib.combineAlignment( map_pos2genome, map_pos2cds, map_c2g, alignlib.CR )
+
+                coords = []            
+                is_negative_strand, start = genome_starts[key]
+                for x in range( len(p) * 3 ):
+                    y = map_pos2genome.mapRowToCol(x)
+                    if y < 0:
+                        coords.append( "" )
+                    else:
+                        if is_negative_strand:
+                            coords.append( 0 - (start + y) )
+                        else:
+                            coords.append( start + y )
+                all_coords.append( coords )
+                info.append( ( key, exons[key][0].mSbjctToken, exons[key][0].mSbjctStrand ) )
+
+                ################################
+                # create threaded alignment string
+                map_pos2cds.switchRowCol()
+                map_cds2pos = map_pos2cds
+
+                alignatum = alignlib.makeAlignatum( cds_sequences[key] )
+
+                alignatum.mapOnAlignment( map_cds2pos, len(p) * 3 )
                 s = alignatum.getString()
                 if len(s) != len(p) * 3:
-                    raise ValueError("incomplete aligned string for %s: %s, cds=%s" % (id, s, c ))
+                    raise ValueError("incomplete aligned string for %s: %s, cds=%s" % (key, s, c ))
                 
-                unpacked_cds.addSequence( id, 0, len(c), s )
-            
+                unpacked_cds.addSequence( key, 0, len(c), s )
+
             writeToFile( unpacked_cds, "final_na", options )
-     
+
+            if "coords" in options.output:
+                E.info("output genomic coordinates to %s" % options.output_filename_coords)
+                with IOTools.openFile( options.output_filename_coords, "w") as outfile:
+                    outfile.write( "position\t%s\n" % "\t".join( [ "|".join( map(str,i) ) for i in info ] ) )
+                    all_coords = zip( *all_coords )
+                    for x, c in enumerate( all_coords ):
+                        outfile.write("%i\t%s\n" % (x, "\t".join(map(str, c) ) ) )
+                    
     E.info( "ninput=%i, noutput=%i, nskipped=%i, nwarnings_length=%i, nwarnings_sequences=%i, npseudogenes=%i, nsubstitutions=%i" % \
                 (input.getLength(),
                  unpacked.getLength(),

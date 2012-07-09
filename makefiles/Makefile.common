@@ -59,7 +59,7 @@ PARAM_QUEUE_LOCAL?=local_jobs.q
 PARAM_NUM_JOBS?=100
 
 ## .bashrc to use for running jobs on the cluster
-PARAM_BASHRC?=~/.bashrc
+PARAM_BASHRC?=~/.bashrc_cluster
 
 ## additional cluster options, for example
 ## -l mem=3000

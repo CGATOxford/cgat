@@ -177,7 +177,7 @@ def main( argv = None ):
     parser.add_option("--extension_outward", dest="extension_outward", type = "int",
                        help = "extension outward from a TSS start site in bp"
                               "[%default]" )
-                              
+                       
     parser.add_option("--scale_flank_length", dest="scale_flanks", type = "int",
                        help = "scale flanks to (integer multiples of) gene length"
                               "[%default]" )
@@ -241,13 +241,15 @@ def main( argv = None ):
                                                               shifts = options.shifts, 
                                                               extends = options.extends )
         elif options.infiles[0].endswith( ".bed.gz" ):
-            bamfiles = [ pysam.Tabixfile( x ) for x in options.infiles ]
+            bedfiles = [ pysam.Tabixfile( x ) for x in options.infiles ]
             format = "bed"
-            range_counter = _bam2geneprofile.RangeCounterBed( bamfiles )
+            range_counter = _bam2geneprofile.RangeCounterBed( bedfiles )
+
         elif options.infiles[0].endswith( ".bw" ):
-            bamfiles = [ BigWigFile(file=open(options.infiles[0]))]
+            wigfiles = [ BigWigFile(file=open(x)) for x in options.infiles ]
             format = "bigwig"
-            range_counter = _bam2geneprofile.RangeCounterBigWig( bamfiles )
+            range_counter = _bam2geneprofile.RangeCounterBigWig( wigfiles )
+
         else:
             raise NotImplementedError( "can't determine file type for %s" % bamfile )
 
@@ -270,7 +272,6 @@ def main( argv = None ):
                                                            options.extension_upstream,
                                                            options.extension_downstream,
                                                            options.scale_flanks ) )
-
 
         elif method == "tssprofile":
             counters.append( _bam2geneprofile.TSSCounter( range_counter, 

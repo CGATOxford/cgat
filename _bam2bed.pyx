@@ -5,16 +5,17 @@ import Experiment as E
 
 def merge_pairs( Samfile input_samfile,
                  outfile,
+                 min_insert_size = 0,
                  max_insert_size = 400 ):
-
     '''merge paired ended data.
 
     For speed reasons, the aligned region is only approximated using
     the read length. Indels within reads are ignored. Thus bed coordinates
     might be a few residues off.
 
-    The strand is always set to '+'
+    The strand is always set to '+'.
 
+    Pairs with a maximum insert size larger than *max_insert_size* are removed.
     '''
 
     cdef int ninput = 0
@@ -27,6 +28,7 @@ def merge_pairs( Samfile input_samfile,
 
     cdef AlignedRead read
     cdef int c_max_insert_size = max_insert_size
+    cdef int c_min_insert_size = min_insert_size
     cdef int start, end
 
     for read in input_samfile:
@@ -52,7 +54,7 @@ def merge_pairs( Samfile input_samfile,
             nremoved_contig += 1
             continue
 
-        if read.isize > c_max_insert_size:
+        if (c_max_insert_size and read.isize > c_max_insert_size) or (read.isize < c_min_insert_size) :
             nremoved_insert += 1
             continue
 
