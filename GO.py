@@ -1616,7 +1616,7 @@ def pairwiseGOEnrichment( results_per_genelist, labels, test_ontology, go2info, 
 
     outfile = getFileName( options, 
                            go = test_ontology,
-                           section = 'results',
+                           section = 'pairs',
                            set = "pairs" )
     
     outfile.write( "\t".join( PairResult._fields) + "\n" )
