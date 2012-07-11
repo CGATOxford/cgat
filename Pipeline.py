@@ -37,20 +37,27 @@ API
 ----
 
 '''
-import os, sys, re, subprocess, optparse, stat, tempfile, time, random, inspect, types
+import os, sys, re, subprocess, optparse, stat, tempfile
+import time, random, inspect, types, multiprocessing
 import logging, collections, shutil, glob, gzip
 import ConfigParser
 
 import drmaa
 from ruffus import *
+
+# use threading instead of multiprocessing
+from multiprocessing.pool import ThreadPool
+task.Pool = ThreadPool
+
 import logging as L
 import Experiment as E
 import IOTools
 
-global_options, global_args = None, None
+# global options and arguments
+GLOBAL_OPTIONS, GLOBAL_ARGS = None, None
 
-# dictionary mapping process ids (pids) to drmaa sessions
-global_sessions = {}
+# global drmaa session
+GLOBAL_SESSION = None
 
 class PipelineError( Exception ): pass
 
@@ -678,10 +685,10 @@ def run( **kwargs ):
         jt.jobEnvironment = { 'BASH_ENV' : '~/.bashrc' }
         jt.args = []
         jt.nativeSpecification = "-V -q %s -p %i -N %s %s" % \
-            (options.get("job_queue", global_options.cluster_queue ),
-             options.get("job_priority", global_options.cluster_priority ),
+            (options.get("job_queue", GLOBAL_OPTIONS.cluster_queue ),
+             options.get("job_priority", GLOBAL_OPTIONS.cluster_priority ),
              "_" + re.sub( "[:]", "_", os.path.basename(options.get("outfile", "ruffus" ))),
-             options.get("job_options", global_options.cluster_options))
+             options.get("job_options", GLOBAL_OPTIONS.cluster_options))
 
         # keep stdout and stderr separate
         jt.joinFiles=False
@@ -689,6 +696,38 @@ def run( **kwargs ):
         return jt
 
     shellfile = os.path.join( os.getcwd(), "shell.log" )
+
+    pid = os.getpid()
+    L.debug( 'task: pid = %i' % pid )
+
+    # connect to global session 
+    session = GLOBAL_SESSION
+    L.debug( 'task: pid %i: sge session = %s' % (pid, str(session)))
+
+    def buildJobScript( statement ):
+        '''build job script from statement.
+
+        returns (name_of_script, stdout_path, stderr_path)
+        '''
+        
+        tmpfile = getTempFile( dir = os.getcwd() )
+        tmpfile.write( "#!/bin/bash\n" ) #  -l -O expand_aliases\n" )
+        tmpfile.write( 'echo "START--------------------------------" >> %s \n' % shellfile )
+        # disabled - problems with quoting
+        # tmpfile.write( '''echo 'statement=%s' >> %s\n''' % (shellquote(statement), shellfile) )
+        tmpfile.write( "set &>> %s\n" % shellfile)
+        tmpfile.write( "module list &>> %s\n" % shellfile )
+        tmpfile.write( 'echo "END----------------------------------" >> %s \n' % shellfile )
+        tmpfile.write( expandStatement( statement ) + "\n" )
+        tmpfile.close()
+
+        job_path = os.path.abspath( tmpfile.name )
+        stdout_path = job_path + ".stdout" 
+        stderr_path = job_path + ".stderr" 
+
+        os.chmod( job_path, stat.S_IRWXG | stat.S_IRWXU )
+
+        return (job_path, stdout_path, stderr_path)
     
     # run multiple jobs
     if options.get( "statements" ):
@@ -700,36 +739,12 @@ def run( **kwargs ):
             
         if options.get( "dryrun", False ): return
 
-        # get session for process - only one is permitted
-        pid = os.getpid()
-        if pid not in global_sessions: 
-
-            L.debug( "creating new drmaa session for pid %i" % pid )
-            global_sessions[pid]=drmaa.Session()            
-            global_sessions[pid].initialize()
-
-        session = global_sessions[pid]
-        
         jt = setupJob( session )
         
         jobids, filenames = [], []
         for statement in statement_list:
-            # create job script
-            tmpfile = getTempFile( dir = os.getcwd() )
-            tmpfile.write( "#!/bin/bash\n" ) #  -l -O expand_aliases\n" )
-            tmpfile.write( 'echo "START--------------------------------" >> %s \n' % shellfile )
-            # disabled - problems with quoting
-            # tmpfile.write( '''echo 'statement=%s' >> %s\n''' % (shellquote(statement), shellfile) )
-            tmpfile.write( "set &>> %s\n" % shellfile)
-            tmpfile.write( "module list &>> %s\n" % shellfile )
-            tmpfile.write( 'echo "END----------------------------------" >> %s \n' % shellfile )
-            tmpfile.write( expandStatement(statement) + "\n" )
-            tmpfile.close()
 
-            # build paths
-            job_path = os.path.abspath( tmpfile.name )
-            stdout_path = job_path + ".stdout" 
-            stderr_path = job_path + ".stderr" 
+            job_path, stdout_path, stderr_path = buildJobScript( statement )
 
             jt.remoteCommand = job_path
             jt.outputPath=":"+ stdout_path
@@ -770,40 +785,17 @@ def run( **kwargs ):
         session.deleteJobTemplate(jt)
 
     # run a single parallel job
-    elif (options.get( "job_queue" ) or options.get( "to_cluster" )) and not global_options.without_cluster:
+    elif (options.get( "job_queue" ) or options.get( "to_cluster" )) \
+            and not GLOBAL_OPTIONS.without_cluster:
 
         statement = buildStatement( **options )
 
         if options.get( "dryrun", False ): return
 
-        tmpfile = getTempFile( dir = os.getcwd() )
-        tmpfile.write( "#!/bin/bash\n" ) #  -l -O expand_aliases\n" )
-        tmpfile.write( 'echo "START--------------------------------" >> %s \n' % shellfile )
-        # disabled - problems with quoting
-        # tmpfile.write( '''echo 'statement=%s' >> %s\n''' % (shellquote(statement), shellfile) )
-        tmpfile.write( "set &>> %s\n" % shellfile)
-        tmpfile.write( "module list &>> %s\n" % shellfile )
-        tmpfile.write( 'echo "END----------------------------------" >> %s \n' % shellfile )
-        tmpfile.write( expandStatement( statement ) + "\n" )
-        tmpfile.close()
-
-        job_path = os.path.abspath( tmpfile.name )
-        stdout_path = job_path + ".stdout" 
-        stderr_path = job_path + ".stderr" 
-
-        os.chmod( job_path, stat.S_IRWXG | stat.S_IRWXU )
-
-        # get session for process - only one is permitted
-        pid = os.getpid()
-        if pid not in global_sessions:
-            L.debug( "creating new drmaa session for pid %i" % pid )
-            global_sessions[pid]=drmaa.Session()            
-            global_sessions[pid].initialize()
-
-        session = global_sessions[pid]
+        job_path, stdout_path, stderr_path = buildJobScript( statement )
 
         jt = setupJob( session )
-
+        
         jt.remoteCommand = job_path
         # later: allow redirection of stdout and stderr to files; can even be across hosts?
         jt.outputPath=":"+ stdout_path
@@ -881,7 +873,8 @@ class MultiLineFormatter(logging.Formatter):
         return s
 
 def clonePipeline( srcdir ):
-    '''clone a pipeline.'''
+    '''clone a pipeline from srcdir into the current directory.
+    '''
     
     destdir = os.path.curdir
 
@@ -933,148 +926,7 @@ def writeConfigFiles( path ):
         shutil.copyfile( src, dest )
         L.info( "created new configuration file `%s` " % dest )
 
-USAGE = '''
-usage: %prog [OPTIONS] [CMD] [target]
 
-Execute pipeline %prog.
-
-Commands can be any of the following
-
-make <target>
-   run all tasks required to build *target*
-
-show <target>
-   show tasks required to build *target* without executing them
-
-plot <target>
-   plot image (using inkscape) of pipeline state for *target*
-
-config
-   write new configuration files pipeline.ini, sphinxreport.ini and conf.py
-   with default values
-
-dump
-   write pipeline configuration to stdout
-
-touch
-   touch files only, do not run
-
-'''
-
-def main( args = sys.argv ):
-
-    parser = optparse.OptionParser( version = "%prog version: $Id: Pipeline.py 2799 2009-10-22 13:40:13Z andreas $",
-                                    usage = USAGE )
-    
-    parser.add_option( "--pipeline-action", dest="pipeline_action", type="choice",
-                       choices=("make", "show", "plot", "dump", "config", "clone" ),
-                       help="action to take [default=%default]." )
-
-    parser.add_option( "--pipeline-format", dest="pipeline_format", type="choice",
-                      choices=( "dot", "jpg", "svg", "ps", "png" ),
-                      help="pipeline format [default=%default]." )
-
-    parser.add_option( "-n", "--dry-run", dest="dry_run", action="store_true",
-                      help="perform a dry run (do not execute any shell commands) [default=%default]." )
-
-    parser.add_option( "-l", "--local", dest="without_cluster", action="store_true",
-                      help="execute all jobs locally [default=%default]." )
-
-    parser.add_option( "-p", "--multiprocess", dest="multiprocess", type="int",
-                       help="number of parallel processes to use (different from number of jobs to use for cluster jobs) [default=%default]." ) 
-
-    parser.set_defaults(
-        pipeline_action = None,
-        pipeline_format = "svg",
-        pipeline_targets = [],
-        multiprocess = 2,
-        logfile = "pipeline.log",
-        dry_run = False,
-        without_cluster = False,
-        )
-
-    (options, args) = E.Start( parser, 
-                               add_cluster_options = True )
-
-    global global_options
-    global global_args
-    global_options, global_args = options, args
-    PARAMS["dryrun"] = options.dry_run
-    
-    version, _ = execute( "hg identify %s" % PARAMS["scriptsdir"] )
-
-    if args: 
-        options.pipeline_action = args[0]
-        if len(args) > 1:
-            options.pipeline_targets.extend( args[1:] )
-
-    if options.pipeline_action in ("make", "show", "svg", "plot", "touch" ):
-
-        try:
-            if options.pipeline_action == "make":
-
-                # set up extra file logger
-                handler = logging.FileHandler( filename = options.logfile, 
-                                               mode = "a" )
-                handler.setFormatter( MultiLineFormatter( '%(asctime)s %(levelname)s %(module)s.%(funcName)s.%(lineno)d %(message)s' ) )
-                logger = logging.getLogger()
-                logger.addHandler( handler )
-                
-                L.info( E.GetHeader() )
-                L.info( "code location: %s" % PARAMS["scriptsdir"] )
-                L.info( "code version: %s" % version[:-1] )
-
-                pipeline_run( options.pipeline_targets, 
-                              multiprocess = options.multiprocess, 
-                              logger = logger,
-                              verbose = options.loglevel )
-
-                L.info( E.GetFooter() )
-
-            elif options.pipeline_action == "show":
-                pipeline_printout( options.stdout, options.pipeline_targets, verbose = options.loglevel )
-
-            elif options.pipeline_action == "touch":
-                pipeline_run( options.pipeline_targets, 
-                              touch_files_only = True,
-                              verbose = options.loglevel )
-
-            elif options.pipeline_action == "svg":
-                pipeline_printout_graph( options.stdout, 
-                                         options.pipeline_format,
-                                         options.pipeline_targets )
-
-            elif options.pipeline_action == "plot":
-                outf, filename = tempfile.mkstemp()
-                pipeline_printout_graph( os.fdopen(outf,"w"),
-                                         options.pipeline_format,
-                                         options.pipeline_targets )
-                execute( "inkscape %s" % filename ) 
-                os.unlink( filename )
-
-        except ruffus_exceptions.RethrownJobError, value:
-            E.error("some tasks resulted in errors - error messages follow below" )
-            # print value
-            # E.error( value )
-            raise
-
-    elif options.pipeline_action == "dump":
-        # convert to normal dictionary (not defaultdict) for parsing purposes
-        print "dump = %s" % str(dict(PARAMS))
-
-    elif options.pipeline_action == "config":
-        f = sys._getframe(1)
-        caller = inspect.getargvalues(f).locals["__file__"]
-        prefix = os.path.splitext(caller)[0]
-        writeConfigFiles( prefix )
-
-    elif options.pipeline_action == "clone":
-        clonePipeline( options.pipeline_targets[0] )
-
-    else:
-        raise ValueError("unknown pipeline action %s" % options.pipeline_action )
-
-    E.Stop()
 
 def clean( patterns, dry_run = False ):
     '''clean up files given by glob *patterns*.
@@ -1262,6 +1114,168 @@ def publish_report( prefix = "",
 
     E.info( "report has been published at http://www.cgat.org/downloads/%(project_id)s/%(dest_report)s" % locals())
 
+USAGE = '''
+usage: %prog [OPTIONS] [CMD] [target]
+
+Execute pipeline %prog.
+
+Commands can be any of the following
+
+make <target>
+   run all tasks required to build *target*
+
+show <target>
+   show tasks required to build *target* without executing them
+
+plot <target>
+   plot image (using inkscape) of pipeline state for *target*
+
+config
+   write new configuration files pipeline.ini, sphinxreport.ini and conf.py
+   with default values
+
+dump
+   write pipeline configuration to stdout
+
+touch
+   touch files only, do not run
+
+clone <source>
+   create a clone of a pipeline in <source> in the current directory. The cloning
+   process aims to use soft linking to files (not directories) as much as possible. 
+   Time stamps are preserved. Cloning is useful if a pipeline needs to be re-run
+   from a certain point but the original pipeline should be preserved.
+
+'''
+
+def main( args = sys.argv ):
+
+    parser = optparse.OptionParser( version = "%prog version: $Id: Pipeline.py 2799 2009-10-22 13:40:13Z andreas $",
+                                    usage = USAGE )
+    
+    parser.add_option( "--pipeline-action", dest="pipeline_action", type="choice",
+                       choices=("make", "show", "plot", "dump", "config", "clone" ),
+                       help="action to take [default=%default]." )
+
+    parser.add_option( "--pipeline-format", dest="pipeline_format", type="choice",
+                      choices=( "dot", "jpg", "svg", "ps", "png" ),
+                      help="pipeline format [default=%default]." )
+
+    parser.add_option( "-n", "--dry-run", dest="dry_run", action="store_true",
+                      help="perform a dry run (do not execute any shell commands) [default=%default]." )
+
+    parser.add_option( "-l", "--local", dest="without_cluster", action="store_true",
+                      help="execute all jobs locally [default=%default]." )
+
+    parser.add_option( "-p", "--multiprocess", dest="multiprocess", type="int",
+                       help="number of parallel processes to use (different from number of jobs to use for cluster jobs) [default=%default]." ) 
+
+    parser.set_defaults(
+        pipeline_action = None,
+        pipeline_format = "svg",
+        pipeline_targets = [],
+        multiprocess = 2,
+        logfile = "pipeline.log",
+        dry_run = False,
+        without_cluster = False,
+        )
+
+    (options, args) = E.Start( parser, 
+                               add_cluster_options = True )
+
+    global GLOBAL_OPTIONS
+    global GLOBAL_ARGS
+    global GLOBAL_SESSION
+    
+    GLOBAL_OPTIONS, GLOBAL_ARGS = options, args
+    PARAMS["dryrun"] = options.dry_run
+    
+    version, _ = execute( "hg identify %s" % PARAMS["scriptsdir"] )
+
+    if args: 
+        options.pipeline_action = args[0]
+        if len(args) > 1:
+            options.pipeline_targets.extend( args[1:] )
+
+    if options.pipeline_action in ("make", "show", "svg", "plot", "touch" ):
+
+        try:
+            if options.pipeline_action == "make":
+
+                # create the session proxy
+                GLOBAL_SESSION = drmaa.Session()
+                GLOBAL_SESSION.initialize()
+                
+                #
+                #   make sure we are not logging at the same time in different processes
+                #
+                #session_mutex = manager.Lock()
+
+                # set up extra file logger
+                handler = logging.FileHandler( filename = options.logfile, 
+                                               mode = "a" )
+                handler.setFormatter( MultiLineFormatter( '%(asctime)s %(levelname)s %(module)s.%(funcName)s.%(lineno)d %(message)s' ) )
+                logger = logging.getLogger()
+                logger.addHandler( handler )
+                
+                L.info( E.GetHeader() )
+                L.info( "code location: %s" % PARAMS["scriptsdir"] )
+                L.info( "code version: %s" % version[:-1] )
+
+                pipeline_run( options.pipeline_targets, 
+                              multiprocess = options.multiprocess, 
+                              logger = logger,
+                              verbose = options.loglevel )
+
+                L.info( E.GetFooter() )
+
+                GLOBAL_SESSION.exit()
+
+            elif options.pipeline_action == "show":
+                pipeline_printout( options.stdout, options.pipeline_targets, verbose = options.loglevel )
+
+            elif options.pipeline_action == "touch":
+                pipeline_run( options.pipeline_targets, 
+                              touch_files_only = True,
+                              verbose = options.loglevel )
+
+            elif options.pipeline_action == "svg":
+                pipeline_printout_graph( options.stdout, 
+                                         options.pipeline_format,
+                                         options.pipeline_targets )
+
+            elif options.pipeline_action == "plot":
+                outf, filename = tempfile.mkstemp()
+                pipeline_printout_graph( os.fdopen(outf,"w"),
+                                         options.pipeline_format,
+                                         options.pipeline_targets )
+                execute( "inkscape %s" % filename ) 
+                os.unlink( filename )
+
+        except ruffus_exceptions.RethrownJobError, value:
+            E.error("some tasks resulted in errors - error messages follow below" )
+            # print value
+            # E.error( value )
+            raise
+
+    elif options.pipeline_action == "dump":
+        # convert to normal dictionary (not defaultdict) for parsing purposes
+        print "dump = %s" % str(dict(PARAMS))
+
+    elif options.pipeline_action == "config":
+        f = sys._getframe(1)
+        caller = inspect.getargvalues(f).locals["__file__"]
+        prefix = os.path.splitext(caller)[0]
+        writeConfigFiles( prefix )
+
+    elif options.pipeline_action == "clone":
+        clonePipeline( options.pipeline_targets[0] )
+
+    else:
+        raise ValueError("unknown pipeline action %s" % options.pipeline_action )
+
+    E.Stop()
+
 if __name__ == "__main__":
 
     main()
@@ -1270,9 +1284,9 @@ if __name__ == "__main__":
 
     #(options, args) = E.Start( parser, add_cluster_options = True )
 
-    #global global_options
-    #global global_args
-    #global_options, global_args = options, args
+    #global GLOBAL_OPTIONS
+    #global GLOBAL_ARGS
+    #GLOBAL_OPTIONS, GLOBAL_ARGS = options, args
 
     #L.info("in main")
 
