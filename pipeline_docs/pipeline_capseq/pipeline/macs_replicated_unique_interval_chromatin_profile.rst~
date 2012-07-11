@@ -1,0 +1,35 @@
+==========================
+Chromatin Profile
+==========================
+
+Density of chromatin marks over tissue-specific CAPseq intervals.
+
+Transcript TSS
+--------------
+
+.. report:: macs_replicated_unique_interval_chromatin_profile.chromatinProfileTracker
+   :render: gallery-plot
+   :tracker: replicated_intervals/*.profile.png
+   :layout: column-2
+
+   Density of chromatin mark reads over tissue-specific CAPseq intervals
+
+
+.. report:: macs_replicated_interval_tss_distance.transcriptTSSProfileCapseq
+   :render: gallery-plot
+   :tracker: replicated_intervals/*.transcript.tss-profile.capseq.png
+   :layout: column-2
+
+   TSS profile for transcript TSSs with overlapping CAPseq interval
+
+.. report:: macs_replicated_interval_tss_distance.transcriptTSSProfileNoCapseq
+   :render: gallery-plot
+   :tracker: replicated_intervals/*.transcript.tss-profile.nocapseq.png
+   :layout: column-2
+
+   TSS profile for transcript TSSs with no overlapping CAPseq interval
+   
+
+
+
+

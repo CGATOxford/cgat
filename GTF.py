@@ -274,7 +274,7 @@ def chunk_iterator( gff_iterator ):
 
     return entries as single element lists
     """
-    for gff in gffs_iterator:
+    for gff in gff_iterator:
         yield [gff,]
 
 def transcript_iterator(gff_iterator, strict = True ):

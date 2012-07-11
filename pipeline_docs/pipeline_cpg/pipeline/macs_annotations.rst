@@ -1,6 +1,6 @@
-===================
-Genomic Annotations
-===================
+=========================
+MACS Genomic Annotations
+=========================
 
 Intervals are annotated using a reference gene set. Briefly, transcripts 
 of all ENSEMBL protein coding genes are merged per gene. If two genes 

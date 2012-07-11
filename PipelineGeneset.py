@@ -474,6 +474,68 @@ def buildExons( infile, outfile ):
     '''
     P.run()
 
+
+############################################################
+############################################################
+############################################################
+def buildCodingExons( infile, outfile ):
+    '''build a collection of transcripts from the protein-coding portion of the ENSEMBL gene set.
+
+    All exons are kept
+    '''
+
+    to_cluster = True
+
+    statement = '''
+    gunzip < %(infile)s 
+    | awk '$2 == "protein_coding"' 
+    | awk '$3 == "exon"' 
+    | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
+    | python %(scriptsdir)s/gtf2gtf.py --remove-duplicates=gene --log=%(outfile)s.log 
+    | gzip > %(outfile)s
+    '''
+    P.run()
+
+############################################################
+############################################################
+############################################################
+def buildNonCodingExons( infile, outfile ):
+    '''build a collection of transcripts from the non-coding portion of the ENSEMBL gene set.
+
+    All exons are kept
+    '''
+
+    to_cluster = True
+
+    statement = '''
+    gunzip < %(infile)s 
+    | awk '$2 != "protein_coding"' 
+    | awk '$3 == "exon"' 
+    | grep -v "protein_coding"
+    | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
+    | python %(scriptsdir)s/gtf2gtf.py --remove-duplicates=gene --log=%(outfile)s.log 
+    | gzip > %(outfile)s
+    '''
+    P.run()
+
+############################################################
+############################################################
+############################################################
+def buildLincRNAExons( infile, outfile ):
+    '''build a collection of transcripts from the LincRNA portion of the ENSEMBL gene set. All exons are kept '''
+
+    to_cluster = True
+    statement = '''
+    gunzip < %(infile)s 
+    | awk '$2 == "lincRNA"' 
+    | awk '$3 == "exon"' 
+    | grep -v "protein_coding"
+    | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
+    | python %(scriptsdir)s/gtf2gtf.py --remove-duplicates=gene --log=%(outfile)s.log 
+    | gzip > %(outfile)s
+    '''
+    P.run()
+    
 ############################################################
 ############################################################
 ############################################################
@@ -903,3 +965,6 @@ def sortGTF( infile, outfile,order = "contig+gene" ):
 
     P.run()
     
+
+
+

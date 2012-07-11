@@ -1,0 +1,25 @@
+x <- read.table(file="mm_liver-cap.overlapped_genes.capseq_profile.none.tsv.gz", na.string="None", header=TRUE, stringsAsFactors=F)
+y <- read.table(file="mm_liver-cap.overlapped_genes.control.capseq_profile.none.tsv.gz", na.string="None", header=TRUE, stringsAsFactors=F)
+plot(x[,1],x[,2], col=1, lwd=3, xlim=c(0,3000), ylim=c(0,3), xlab="Distance", ylab="CAPseq", main="NMI Overlapped Genes")
+plot(x[,1],x[,2], col=1, lwd=3, xlim=c(0,3000), ylim=c(0,3), xlab="Distance", ylab="CAPseq", main="NMI Overlapped Genes", type="l")
+lines(x[,1]+1000,x[,3],col=1, lwd=3)
+lines(x[,1]+2000,x[,4],col=1, lwd=3)
+lines(y[,1]+2000,y[,4],col=2, lwd=3)
+lines(y[,1]+1000,y[,3],col=2, lwd=3)
+lines(y[,1],y[,2],col=2, lwd=3)
+abline(v=c(1000,2000), lwd=1, col=3, lty=2)
+
+pdf(file='mm_liver_overlapped_genes.pdf', height=8, width=8, onefile=TRUE, family='Helvetica', paper='A4', pointsize=12)
+x <- read.table(file="mm_liver-cap.overlapped_genes.capseq_profile.area.tsv.gz", na.string="None", header=TRUE, stringsAsFactors=F)
+y <- read.table(file="mm_liver-cap.overlapped_genes.control.capseq_profile.area.tsv.gz", na.string="None", header=TRUE, stringsAsFactors=F)
+plot(x[,1],x[,2]*1000, col=1, lwd=3, xlim=c(0,3000), ylim=c(0,2.5), xlab="Distance", ylab="CAPseq", main="NMI Overlapped Genes", type="l")
+lines(x[,1]+1000,x[,3]*1000,col=1, lwd=3)
+lines(x[,1]+2000,x[,4]*1000,col=1, lwd=3)
+lines(y[,1]+2000,y[,4]*1000,col=2, lwd=3)
+lines(y[,1]+1000,y[,3]*1000,col=2, lwd=3)
+lines(y[,1],y[,2]*1000,col=2, lwd=3)
+abline(v=c(1000,2000), lwd=1, col=3, lty=2)
+dev.off()
+
+
+

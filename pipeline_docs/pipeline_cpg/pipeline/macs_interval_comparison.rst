@@ -34,6 +34,27 @@ The following table presents the number of intervals that overlap between each d
 
    Number of Overlapping intervals for each pair of datasets
 
+The following plots show how the overlap chnages as the fold chnage threshold is increased.
+
+.. report:: macs_interval_comparison.IntervalOverlapFoldChange
+   :render: line-plot
+   :groupby: track
+   :layout: column-2
+
+   Number of Overlapping intervals for each pair of datasets at different fold chnage threshold
+
+External Datasets
+====================
+
+This table lists the number of intervals found in external datasets used for comparison.
+
+.. report:: macs_interval_comparison.ExternalIntervalLists
+   :render: table
+   :force:
+
+   Number of intervals in external datasets
+
+
 Overlap with Predicted CGIs
 ===========================
 

@@ -135,6 +135,11 @@ def main( argv = None ):
                        choices = ("reads", "middle"),
                        help = "centring method (reads=use reads to determine peak, middle=use middle of interval" 
                               "[%default]" )
+                              
+    parser.add_option( "-n", "--normalization", dest="normalization", type = "choice",
+                       choices = ("none", "sum" ),
+                       help = "normalisation to perform. "
+                              "[%default]" )                                 
 
     parser.set_defaults(
         remove_rna = False,
@@ -266,27 +271,50 @@ def main( argv = None ):
         options.stdout.write( "\t%s" % ",".join( map(str, counts)))
         options.stdout.write( "\n" )
 
+    norm_result = []
+    if options.normalization == "sum":
+        E.info("Starting sum normalization")
+        # get total counts across all intervals
+        norm = 0.0
+        for features, bed, control, shifted in result:
+            counts = features[-1]
+            norm += sum(counts)
+        norm /= 1000000
+        E.info("norm = %i" % norm)
+        
+        # normalise
+        for features, bed, control, shifted in result:
+            counts = features[-1]
+            norm_counts = []
+            for c in counts:
+                norm_counts.append( c/(norm) )
+            new_features = features._replace( counts=norm_counts )
+            norm_result.append( (new_features, bed, control, shifted) )
+    else:
+        E.info("No normalization performed")
+        norm_result = result
+        
     # output sorted matrices
-    if not options.sort: writeMatrix( result, "unsorted" )
+    if not options.sort: writeMatrix( norm_result, "unsorted" )
 
     for sort in options.sort: 
 
         if sort == "peak-height":
-            result.sort( key = lambda x: x[0].peak_height )
+            norm_result.sort( key = lambda x: x[0].peak_height )
             
         elif sort == "peak-width":
-            result.sort( key = lambda x: x[0].peak_width )
+            norm_result.sort( key = lambda x: x[0].peak_width )
 
         elif sort == "interval-width":
-            result.sort( key = lambda x: x[1].end - x[1].start )
+            norm_result.sort( key = lambda x: x[1].end - x[1].start )
 
         elif sort == "interval-score":
             try:
-                result.sort( key = lambda x: x[1].score )
+                norm_result.sort( key = lambda x: x[1].score )
             except IndexError:
                 E.warn("score field not present - no output" )
 
-        writeMatrix( result, sort )
+        writeMatrix( norm_result, sort )
 
     ## write footer and output benchmark information.
     E.Stop()
@@ -294,4 +322,4 @@ def main( argv = None ):
 if __name__ == "__main__":
     sys.exit( main( sys.argv) )
 
-    
+

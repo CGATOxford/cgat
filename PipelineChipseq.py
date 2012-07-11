@@ -164,6 +164,28 @@ def getExonLocations(filename):
 ############################################################
 ############################################################
 ############################################################
+def getBedLocations(filename):
+    '''return a list of regions as (contig,start,end) tuples
+    from a bed file'''
+    fh = open(filename,"r")
+    region_list = []
+    n_regions = 0
+
+    for line in fh:
+        if line.strip() != "" and line[0] !="#":
+            fields = line.split("\t")
+            contig, start, end = fields[0], int(fields[1]), int(fields[2])
+            region_list.append((contig,start,end))
+            n_regions +=1
+
+    fh.close()
+
+    #E.info("Read in %i regions from %s" % ( n_regions, filename) )
+    return (region_list)
+
+############################################################
+############################################################
+############################################################
 def buildQuicksectMask(bed_file):
     '''return Quicksect object containing the regions specified
        takes a bed file listing the regions to mask 
@@ -459,6 +481,30 @@ def exportIntervalsAsBed( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
+def exportMacsIntervalsAsBed( infile, outfile, foldchange ):
+    '''export sequences for all intervals.'''
+
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+
+    track = P.toTable(os.path.basename( infile ) )
+    assert track.endswith("_macs")
+    track = track[:-len("_macs")]
+
+    cc = dbhandle.cursor()
+    statement = "SELECT contig, start, end, interval_id, fold FROM %(track)s_macs_intervals where fold >= %(foldchange)s ORDER by contig, start" % locals()
+    cc.execute( statement )
+
+    outs = open( outfile, "w")
+
+    for result in cc:
+        contig, start, end, interval_id,fold = result
+        outs.write( "%s\t%i\t%i\t%s\t%d\n" % (contig, start, end, str(interval_id), fold) )
+    cc.close()
+    outs.close()
+
+############################################################
+############################################################
+############################################################
 def exportPeaksAsBed( infile, outfile ):
     '''export peaks as bed files.'''
 
@@ -510,6 +556,49 @@ def mergeBedFiles( infiles, outfile ):
         ''' 
 
     P.run()
+
+############################################################
+############################################################
+############################################################
+def mergeIntervalsWithScores( infile, outfile, dist, method ):
+    '''merge adjacent intervals (within dist) and integrate scores (using method) from merged peaks.
+       Assume bed file sorted by position and score in column 5.
+       Methods: mean, max, length weighted mean'''
+
+    intervals = open( infile, "r")
+    merged = open( outfile, "w")
+
+    topline = intervals.readline()
+    last_contig, last_start, last_end, last_id, last_score = topline[:-1].split("\t")[:5]
+    last_start = int(last_start)
+    last_end = int(last_end)
+    last_score = int(last_score)
+    for line in intervals:
+        data = line[:-1].split("\t")
+        contig, start, end, interval_id, score = data[:5]
+        start = int(start)
+        end = int(end)
+        score = int(score)
+        if (contig == last_contig) and ((last_end+dist) >= start):
+            if method == "mean":
+                newscore = (score + last_score) / 2
+            elif method == "length_weighted_mean":
+                length1 = end - start
+                length2 = last_end - last_start
+                newscore = ((score*length1)+(last_score*length2))/(length1+length2)
+            elif method == "max":
+                newscore = max(last_score, score)
+            last_end=end
+            last_score=newscore
+        else:
+            merged.write("%(last_contig)s\t%(last_start)i\t%(last_end)i\t%(last_id)s\t%(last_score)s\n" % locals())
+            data = line[:-1].split("\t")
+            last_contig, last_start, last_end, last_id, last_score = data[:5]
+            last_start = int(last_start)
+            last_end = int(last_end)
+            last_score = int(last_score)
+    intervals.close()
+    merged.close()
 
 ############################################################
 ############################################################
@@ -726,10 +815,19 @@ def loadMACS( infile, outfile, bamfile, tablename = None ):
 
     track = P.snip( os.path.basename(infile), ".macs" )
     folder = os.path.dirname(infile)
-    infilename = infile + "_peaks.xls.gz"
-    filename_diag = infile + "_diag.xls"
-    filename_r = infile + "_model.r"
-    
+    if len(folder) > 0:
+        infilename =  folder + "/" + track + "_peaks.xls"
+        filename_diag = folder + "/" + track + "_diag.xls"
+        filename_r = folder + "/" + track + "_model.r"
+        filename_rlog = folder + "/" + track + ".r.log"
+        filename_pdf = track + "_model.pdf"
+    else: 
+        infilename =  track + "_peaks.xls"
+        filename_diag = track + "_diag.xls"
+        filename_r = track + "_model.r"
+        filename_rlog = track + ".r.log"
+        filename_pdf = track + "_model.pdf"
+
     if not os.path.exists(infilename):
         E.warn("could not find %s" % infilename )
         P.touch( outfile )
@@ -737,24 +835,12 @@ def loadMACS( infile, outfile, bamfile, tablename = None ):
 
     # create plot by calling R
     if os.path.exists( filename_r ):
-
-        target_path = os.path.join( os.getcwd(), "export", "MACS" )
-        try:
-            os.makedirs( target_path )
-        except OSError: 
-            # ignore "file exists" exception
-            pass
-
-        statement = '''
-        R --vanilla < %(track)s.macs_model.r > %(outfile)s
-        '''
-        
+        if len(folder) > 0:
+            statement = '''R --vanilla < %(filename_r)s > %(filename_rlog)s; mv %(filename_pdf)s %(folder)s/%(filename_pdf)s; '''
+        else:
+            statement = '''R --vanilla < %(filename_r)s > %(filename_rlog)s; '''
         P.run()
 
-        shutil.copyfile(
-            "%s.macs_model.pdf" % track,
-            os.path.join( target_path, "%s_model.pdf" % track) )
-        
     # filter peaks
     shift = getPeakShiftFromMacs( infile )
     assert shift != None, "could not determine peak shift from MACS file %s" % infile
@@ -784,7 +870,6 @@ def loadMACS( infile, outfile, bamfile, tablename = None ):
     max_qvalue = float(PARAMS["macs_max_qvalue"])
     # min, as it is -10log10
     min_pvalue = float(PARAMS["macs_min_pvalue"])
-    min_fold = float(PARAMS["macs_min_fold"])
     
     counter = E.Counter()
     with IOTools.openFile( infilename, "r" ) as ins:
@@ -796,14 +881,10 @@ def loadMACS( infile, outfile, bamfile, tablename = None ):
             elif peak.pvalue < min_pvalue:
                 counter.removed_pvalue += 1
                 continue
-            elif peak.fold < min_fold:
-                counter.removed_fold += 1
-                continue
 
             assert peak.start < peak.end
 
-            npeaks, peakcenter, length, avgval, peakval, nreads = countPeaks( peak.contig, peak.start, peak.end, 
-                                                                              samfiles, offsets )
+            npeaks, peakcenter, length, avgval, peakval, nreads = countPeaks( peak.contig, peak.start, peak.end, samfiles, offsets )
 
             outtemp.write ( "\t".join( map(str, ( \
                             id, peak.contig, peak.start, peak.end, 
@@ -828,38 +909,29 @@ def loadMACS( infile, outfile, bamfile, tablename = None ):
 
     # load data into table
     if tablename == None:
-        tablename = "%s_intervals" % track
-
-    statement = '''
-    python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
-              --allow-empty
-              --index=interval_id 
-              --index=contig,start
-              --table=%(tablename)s 
-    < %(tmpfilename)s 
-    > %(outfile)s
-    '''
-
+        tablename = "%s_macs_intervals" % track
+    statement = '''python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
+                       --allow-empty
+                       --index=interval_id 
+                       --index=contig,start
+                       --table=%(tablename)s 
+                   < %(tmpfilename)s > %(outfile)s '''
     P.run()
+    os.unlink( tmpfilename )
 
     # load diagnostic data
     if os.path.exists( filename_diag ):
 
         tablename = "%s_macsdiag" % track
-
         statement = '''
         cat %(filename_diag)s 
         | sed "s/FC range.*/fc\\tnpeaks\\tp90\\tp80\\tp70\\tp60\\tp50\\tp40\\tp30\\tp20/" 
         | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
                   --map=fc:str 
                   --table=%(tablename)s 
-        > %(outfile)s
+        >> %(outfile)s
         '''
-
-        P.run()
-
-
-    os.unlink( tmpfilename )
+        P.run()        
 
 ############################################################
 ############################################################

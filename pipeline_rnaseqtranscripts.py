@@ -1453,10 +1453,14 @@ def classifyTranscripts( infiles, outfile ):
     
     infile, reference = infiles
 
+
+    #IMS: changed to allow different classifiers
+    counter = PARAMS['gtf2table_classifier']
+
     statement = '''
     zcat %(infile)s
     | python %(scriptsdir)s/gtf2table.py
-           --counter=classifier-rnaseq 
+           --counter=%(counter)s  
            --reporter=transcripts
            --filename-gff=%(reference)s
            --log=%(outfile)s.log
@@ -1479,10 +1483,13 @@ def classifyTranscriptsCuffcompare( infiles, outfile ):
     
     infile, reference = infiles
 
+    #IMS: change to allow different classifiers
+    counter = PARAMS['gtf2table_classifier']
+
     statement = '''
     zcat %(infile)s.combined.gtf.gz
     | python %(scriptsdir)s/gtf2table.py
-           --counter=classifier-rnaseq 
+           --counter=%(counter)s 
            --reporter=transcripts
            --filename-gff=%(reference)s
            --log=%(outfile)s.log

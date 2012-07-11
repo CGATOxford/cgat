@@ -168,14 +168,13 @@ Code
 
 """
 import sys, tempfile, optparse, shutil, itertools, csv, math, random, re, glob, os, shutil, collections
-
 import Experiment as E
 import Pipeline as P
 from ruffus import *
 from bx.bbi.bigwig_file import BigWigFile
-
 import sqlite3
-
+# for UCSC import
+import MySQLdb
 import IndexedFasta, IOTools, GFF, GTF
 import PipelineGeneset as PipelineGeneset
 import PipelineBiomart as PBiomart
@@ -262,7 +261,7 @@ def buildGenomeInformation( infile, outfile ):
     cat %(infile)s
     | python %(scriptsdir)s/fasta2table.py 
         --section=length
-        --section=na
+        --section=cpg
     | gzip
     > %(outfile)s
     '''
@@ -275,18 +274,90 @@ def buildGenomeInformation( infile, outfile ):
 def loadGenomeInformation( infile, outfile ):
     '''load genome information.'''
     P.load( infile, outfile )
+    
+    
+############################################################
+############################################################
+############################################################
+## Mappability
+@files( os.path.join(PARAMS["gem_dir"],PARAMS["genome"]+".gem"),  PARAMS["genome"]+".mappability" )
+def calculateMappability( infile, outfile ):
+    '''Calculate mappability using GEM '''
+    index = P.snip(infile, ".gem")
+    to_cluster = True
+    window_size = PARAMS["gem_window_size"]
+    threads = PARAMS["gem_threads"]
+    mismatches = PARAMS["gem_mismatches"]
+    max_indel_length = PARAMS["gem_max_indel_length"]
+    statement = '''gem-mappability -t %(threads)s -m %(mismatches)s --max-indel-length %(max_indel_length)s -l %(window_size)s -I %(index)s -o %(outfile)s ''' % locals()
+    P.run()
 
 ###################################################################
+@transform( calculateMappability, suffix(".mappability"), ".mappability.count" )
+def countMappableBases( infile, outfile ):
+    '''Count mappable bases in genome'''
+    to_cluster = True
+    statement = '''cat %(infile)s | tr -cd ! | wc -c > %(outfile)s''' % locals()
+    P.run()
+    
 ###################################################################
+@transform( countMappableBases, suffix(".count"), ".count.load" )
+def loadMappableBases( infile, outfile ):
+    '''load count of mappable bases in genome'''
+    to_cluster = True
+    header = "total_mappable_bases"
+    statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
+                      --table=total_mappable_bases
+                      --header=%(header)s
+                   > %(outfile)s '''
+    P.run()
+
 ###################################################################
+@transform( calculateMappability, suffix(".mappability"), ".split.log" )
+def splitMappabiliyFileByContig( infile, outfile ):
+    '''Count mappable bases in genome'''
+    to_cluster = True
+    track = P.snip( os.path.basename(infile), ".mappability" )
+    statement = '''mkdir contigs; 
+                   csplit -k -f contigs/contig %(infile)s '/^~[a-zA-Z]/' {100000} > %(outfile)s;
+                   rm contigs/contig00;''' % locals()
+    P.run()
+
+###################################################################
+@follows( splitMappabiliyFileByContig )
+@merge( "contigs/contig*", PARAMS["genome"]+"_mappability_per_contig.tsv" )
+def countMappableBasesPerContig( infiles, outfile ):
+    '''Count mappable bases for each contig'''
+    for infile in infiles:
+        statement = '''grep '~' %(infile)s | sed s/~//g >> %(outfile)s; cat %(infile)s | tr -cd ! | wc -c >> %(outfile)s'''
+        P.run()
+    
+    statement = '''sed -i '{N;s/\\n/\\t/g}' %(outfile)s;'''
+    P.run()
+
+###################################################################
+@transform( countMappableBasesPerContig, suffix(".tsv"), ".tsv.load" )
+def loadMappableBasesPerContig( infile, outfile ):
+    '''load count of mappable bases per contig '''
+    to_cluster = True
+    header = "contig,mappable_bases"
+    statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
+                      --table=mappable_bases_per_contig
+                      --header=%(header)s
+                   > %(outfile)s '''
+    P.run()
+
+
+############################################################
+############################################################
+############################################################
 ## gene set section
 ############################################################
 ############################################################
 ############################################################
 @files( PARAMS["ensembl_filename_gtf"], PARAMS['interface_geneset_all_gtf'] )
 def buildGeneSet( infile, outfile ):
-    '''build a gene set - reconciles chromosome names.
-    '''
+    '''build a gene set - reconciles chromosome names. '''
     to_cluster = True
 
     statement = '''zcat %(infile)s
@@ -347,7 +418,6 @@ def loadGeneInformation( infile, outfile ):
 @files( buildFlatGeneSet, "gene_stats.load" )
 def loadGeneStats( infile, outfile ):
     '''load the transcript set.'''
-
     PipelineGeneset.loadGeneStats( infile, outfile )
 
 ############################################################
@@ -370,9 +440,7 @@ def buildCDSTranscripts( infile, outfile ):
         PARAMS["interface_geneset_exons_gtf"] )
 def buildExonTranscripts( infile, outfile ):
     '''build a collection of transcripts from the protein-coding
-    section of the ENSEMBL gene set.
-    
-    '''
+    section of the ENSEMBL gene set. '''
     PipelineGeneset.buildExons( infile, outfile )
 
 ############################################################
@@ -383,6 +451,36 @@ def loadExonStats( infile, outfile ):
     '''load the transcript set stats.'''
     PipelineGeneset.loadTranscriptStats( infile, outfile )
 
+############################################################
+############################################################
+############################################################
+@files( PARAMS["ensembl_filename_gtf"], 
+        PARAMS["interface_geneset_coding_exons_gtf"] )
+def buildCodingExonTranscripts( infile, outfile ):
+    '''build a collection of transcripts from the protein-coding
+    section of the ENSEMBL gene set. '''
+    PGeneset.buildCodingExons( infile, outfile )
+
+############################################################
+############################################################
+############################################################
+@files( PARAMS["ensembl_filename_gtf"], 
+        PARAMS["interface_geneset_noncoding_exons_gtf"] )
+def buildNonCodingExonTranscripts( infile, outfile ):
+    '''build a collection of transcripts from the protein-coding
+    section of the ENSEMBL gene set. '''
+    PGeneset.buildNonCodingExons( infile, outfile )
+
+############################################################
+############################################################
+############################################################
+@files( PARAMS["ensembl_filename_gtf"], 
+        PARAMS["interface_geneset_lincrna_exons_gtf"] )
+def buildLincRNAExonTranscripts( infile, outfile ):
+    '''build a collection of transcripts from the protein-coding
+    section of the ENSEMBL gene set. '''
+    PGeneset.buildLincRNAExons( infile, outfile )
+    
 ############################################################
 ############################################################
 ############################################################
@@ -578,52 +676,219 @@ def buildGeneTerritories( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-@merge( buildCDSTranscripts, PARAMS["interface_promotors_bed"] )
+@merge( buildCodingExonTranscripts, PARAMS["interface_promotors_bed"] )
 def buildPromotorRegions( infile, outfile ):
     '''annotate promotor regions from reference gene set.'''
     statement = """
         gunzip < %(infile)s 
-        | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing 
-                                           --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
-        | python %(scriptsdir)s/gtf2gff.py --method=promotors --promotor=%(geneset_promotor_size)s
-                              --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
+        | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
+        | python %(scriptsdir)s/gtf2gff.py --method=promotors --promotor=%(geneset_promotor_size)s --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
         | python %(scriptsdir)s/gff2bed.py --is-gtf --name=transcript_id --log=%(outfile)s.log 
         | gzip 
         > %(outfile)s
     """
 
     P.run()
-
+    
 ############################################################
-############################################################
-############################################################
-@merge( buildCDSTranscripts, PARAMS["interface_tss_bed"] )
-def buildTSSRegions( infile, outfile ):
-    '''annotate transcription start sites from reference gene set.
-
-    Similar to promotors, except that the witdth is set to 1.
-    '''
+## TRANSCRIPTS
+@merge( buildCodingExonTranscripts, PARAMS["interface_transcripts_gtf"] )
+def buildTranscripts( infile, outfile ):
+    '''annotate transcripts from reference gene set. '''
     statement = """
         gunzip < %(infile)s 
         | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
-        | python %(scriptsdir)s/gtf2gff.py --method=promotors --promotor=1 --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
-        | python %(scriptsdir)s/gff2bed.py --is-gtf --name=transcript_id --log=%(outfile)s.log 
-        | gzip
-        > %(outfile)s
-    """
-
+        | python %(scriptsdir)s/gtf2gtf.py --join-exons --log=%(outfile)s.log 
+        > %(outfile)s """
     P.run()
 
 ############################################################
+@follows( buildTranscripts )
+@merge( PARAMS["interface_transcripts_gtf"], PARAMS["interface_transcripts_bed"] )
+def buildTranscriptsBed( infile, outfile ):
+    '''annotate transcripts from reference gene set. '''
+    statement = """
+        cat %(infile)s
+        | python %(scriptsdir)s/gff2bed.py --is-gtf --name=transcript_id --log=%(outfile)s.log 
+        | python %(scriptsdir)s/bed2bed.py --method=filter-genome --genome-file=%(genome_dir)s/%(genome)s --log %(outfile)s.log
+        | gzip
+        > %(outfile)s """
+    P.run() 
+        
+############################################################
+## NON-CODING TRANSCRIPTS
+@merge( buildNonCodingExonTranscripts, PARAMS["interface_noncoding_gtf"] )
+def buildNoncodingTranscripts( infile, outfile ):
+    '''annotate transcripts from reference gene set. '''
+    statement = """
+        gunzip < %(infile)s 
+        | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
+        | python %(scriptsdir)s/gtf2gtf.py --join-exons --log=%(outfile)s.log 
+        > %(outfile)s """
+    P.run()
+
+############################################################
+@follows(buildNoncodingTranscripts)
+@merge( PARAMS["interface_noncoding_gtf"], PARAMS["interface_noncoding_bed"] )
+def buildNoncodingTranscriptsBed( infile, outfile ):
+    '''annotate transcripts from reference gene set. '''
+    statement = """
+        cat < %(infile)s 
+        | python %(scriptsdir)s/gff2bed.py --is-gtf --name=transcript_id --log=%(outfile)s.log 
+        | python %(scriptsdir)s/bed2bed.py --method=filter-genome --genome-file=%(genome_dir)s/%(genome)s --log %(outfile)s.log
+        | gzip
+        > %(outfile)s """
+    P.run()
+    
+############################################################
+@follows(buildNoncodingTranscripts)
+@merge( PARAMS["interface_noncoding_gtf"], PARAMS["interface_noncoding_genes_bed"] )
+def buildNoncodingGenesBed( infile, outfile ):
+    '''annotate transcripts from reference gene set. '''
+    statement = """
+        cat < %(infile)s 
+        | python %(scriptsdir)s/gff2bed.py --is-gtf --name=gene_id --log=%(outfile)s.log 
+        | python %(scriptsdir)s/bed2bed.py --method=filter-genome --genome-file=%(genome_dir)s/%(genome)s --log %(outfile)s.log
+        | gzip
+        > %(outfile)s """
+    P.run()    
+
+############################################################
+@merge( buildLincRNAExonTranscripts, PARAMS["interface_lincrna_gtf"] )
+def buildLincRNATranscripts( infile, outfile ):
+    '''annotate transcripts from reference gene set. '''
+    statement = """
+        gunzip < %(infile)s 
+        | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
+        | python %(scriptsdir)s/gtf2gtf.py --join-exons --log=%(outfile)s.log 
+        > %(outfile)s """
+    P.run()
+
+############################################################
+@follows(buildLincRNATranscripts)
+@merge( PARAMS["interface_lincrna_gtf"], PARAMS["interface_lincrna_bed"] )
+def buildLincRNATranscriptsBed( infile, outfile ):
+    '''annotate transcripts from reference gene set. '''
+    statement = """
+        cat < %(infile)s 
+        | python %(scriptsdir)s/gff2bed.py --is-gtf --name=transcript_id --log=%(outfile)s.log 
+        | python %(scriptsdir)s/bed2bed.py --method=filter-genome --genome-file=%(genome_dir)s/%(genome)s --log %(outfile)s.log
+        | gzip
+        > %(outfile)s """
+    P.run()
+            
 ############################################################
 ############################################################
-@merge( buildCDSTranscripts, PARAMS["interface_tts_bed"] )
-def buildTTSRegions( infile, outfile ):
+############################################################
+## TRANSCRIPTION START SITES
+@merge( buildCodingExonTranscripts, PARAMS["interface_tss_bed"] )
+def buildTranscriptTSS( infile, outfile ):
+    '''annotate transcription start sites from reference gene set.
+
+    Similar to promotors, except that the witdth is set to 1. '''
+    statement = """
+        gunzip < %(infile)s 
+        | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
+        | python %(scriptsdir)s/gtf2gtf.py --join-exons --log=%(outfile)s.log 
+        | python %(scriptsdir)s/gtf2gff.py --method=promotors --promotor=1 --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
+        | python %(scriptsdir)s/gff2bed.py --is-gtf --name=transcript_id --log=%(outfile)s.log 
+        | python %(scriptsdir)s/bed2bed.py --method=filter-genome --genome-file=%(genome_dir)s/%(genome)s --log %(outfile)s.log
+        | gzip
+        > %(outfile)s """
+    P.run()
+
+############################################################
+@merge( buildCodingExonTranscripts, PARAMS["interface_tss_gene_bed"] )
+def buildGeneTSS( infile, outfile ):
+    '''create a single TSS for each gene'''
+    statement = """
+        gunzip < %(infile)s 
+        | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
+        | python %(scriptsdir)s/gtf2gtf.py --merge-transcripts --with-utr --log=%(outfile)s.log 
+        | python %(scriptsdir)s/gtf2gff.py --method=promotors --promotor=1 --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
+        | python %(scriptsdir)s/gff2bed.py --is-gtf --name=gene_id --log=%(outfile)s.log 
+        | python %(scriptsdir)s/bed2bed.py --method=filter-genome --genome-file=%(genome_dir)s/%(genome)s --log %(outfile)s.log
+        | gzip
+        > %(outfile)s """
+    P.run()
+
+############################################################
+@merge( buildCodingExonTranscripts, PARAMS["interface_tss_gene_interval_bed"] )
+def buildGeneTSSInterval( infile, outfile ):
+    '''create a single interval that encompasses all annotated TSSs for a given gene'''
+    statement = """
+        gunzip < %(infile)s 
+        | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
+        | python %(scriptsdir)s/gtf2gtf.py --join-exons --log=%(outfile)s.log
+        | python %(scriptsdir)s/gtf2gff.py --method=promotors --promotor=1 --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
+        | sed s/transcript/exon/g | sed s/exon_id/transcript_id/g 
+        | python %(scriptsdir)s/gtf2gtf.py --merge-transcripts --log=%(outfile)s.log 
+        | python %(scriptsdir)s/gff2bed.py --is-gtf --name=transcript_id --log=%(outfile)s.log 
+        | python %(scriptsdir)s/bed2bed.py --method=filter-genome --genome-file=%(genome_dir)s/%(genome)s --log %(outfile)s.log
+        | gzip
+        > %(outfile)s """
+    P.run()
+    
+############################################################
+@merge( buildNonCodingExonTranscripts, PARAMS["interface_tss_gene_noncoding_bed"] )
+def buildNoncodingGeneTSS( infile, outfile ):
+    '''Assign a TSS for each non-coding gene'''
+    statement = """
+        gunzip < %(infile)s 
+        | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
+        | python %(scriptsdir)s/gtf2gtf.py --merge-transcripts --with-utr --log=%(outfile)s.log 
+        | python %(scriptsdir)s/gtf2gff.py --method=promotors --promotor=1 --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
+        | python %(scriptsdir)s/gff2bed.py --is-gtf --name=gene_id --log=%(outfile)s.log 
+        | python %(scriptsdir)s/bed2bed.py --method=filter-genome --genome-file=%(genome_dir)s/%(genome)s --log %(outfile)s.log
+        | gzip
+        > %(outfile)s """
+    P.run()
+    
+############################################################
+@transform( (buildTranscriptTSS, buildGeneTSS, buildGeneTSSInterval, buildNoncodingGeneTSS), suffix(".bed.gz"), ".extended.bed.gz" )
+def ExtendRegion( infile, outfile ):
+    '''convert bed to gtf'''
+    statement = """gunzip < %(infile)s 
+                   | slopBed -i stdin -g %(faidx)s -b 1000  
+                   | gzip
+                   > %(outfile)s """
+    P.run()
+    
+############################################################
+@transform( (buildTranscriptTSS, buildGeneTSS, buildGeneTSSInterval, buildNoncodingGeneTSS, ExtendRegion), suffix(".bed.gz"), ".gtf" )
+def convertToGTF( infile, outfile ):
+    '''convert bed to gtf'''
+    statement = """gunzip < %(infile)s 
+                   | python %(scriptsdir)s/bed2gff.py --as-gtf  --log=%(outfile)s.log 
+                   > %(outfile)s """
+    P.run()
+
+
+############################################################
+############################################################
+############################################################
+## Transcription termination sites
+@merge( buildCodingExonTranscripts, PARAMS["interface_tts_bed"] )
+def buildTranscriptTTS( infile, outfile ):
     '''annotate transcription termination sites from reference gene set. '''
     statement = """gunzip < %(infile)s 
                    | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
+                   | python %(scriptsdir)s/gtf2gtf.py --join-exons --log=%(outfile)s.log 
                    | python %(scriptsdir)s/gtf2gff.py --method=tts --promotor=1 --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
                    | python %(scriptsdir)s/gff2bed.py --is-gtf --name=transcript_id --log=%(outfile)s.log 
+                   | gzip
+                   > %(outfile)s"""
+    P.run()
+
+############################################################
+@merge( buildCodingExonTranscripts, PARAMS["interface_tts_gene_bed"] )
+def buildGeneTTS( infile, outfile ):
+    '''annotate transcription termination sites from reference gene set. '''
+    statement = """gunzip < %(infile)s 
+                   | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
+                   | python %(scriptsdir)s/gtf2gtf.py --merge-transcripts --log=%(outfile)s.log 
+                   | python %(scriptsdir)s/gtf2gff.py --method=tts --promotor=1 --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
+                   | python %(scriptsdir)s/gff2bed.py --is-gtf --name=gene_id --log=%(outfile)s.log 
                    | gzip
                    > %(outfile)s"""
     P.run()
@@ -657,6 +922,35 @@ def importRepeatsFromUCSC( infile, outfile ):
     repclasses="','".join(PARAMS["ucsc_repeattypes"].split(","))
     dbhandle = PipelineUCSC.connectToUCSC()
     PipelineUCSC.getRepeatsFromUCSC( dbhandle, repclasses, outfile )
+
+#############################################################
+@transform( importRepeatsFromUCSC, suffix(".gff.gz"), ".gff.gz.load" )
+def loadRepeats( infile, outfile ):
+    '''load total repeats length'''
+
+    #statement = """zcat %(infile)s | awk '{print $5-$4}' | awk '{ sum+=$1} END {print sum}' > %(outfile)s; """
+
+    headers = "contig,start,stop,class"
+    statement = """zcat %(infile)s | python %(scriptsdir)s/gff2bed.py --name=class | grep -v "#" | cut -f1,2,3,4
+                   | python %(scriptsdir)s/csv2db.py 
+                         --table=repeats
+                         --header=%(headers)s
+                         --index=
+                 > %(outfile)s; """
+    P.run()
+
+#############################################################
+@transform( loadRepeats, suffix(".gff.gz.load"), ".counts.load" )
+def countTotalRepeatLength( infile, outfile):
+    ''' Count total repeat length and add to database '''
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    cc = dbhandle.cursor()
+    statement = """create table repeat_length as SELECT sum(stop-start) as total_repeat_length from repeats"""
+    cc.execute( statement )
+    cc.close()
+    
+    statement = "touch %(outfile)s"
+    P.run()
 
 ############################################################
 ############################################################
@@ -1103,6 +1397,84 @@ def buildGenomicContextStats( infile, outfile ):
     
     shutil.rmtree( tmpdir )
 
+############################################################
+############################################################
+############################################################
+## BED feature files for genes, TSS intervals, 5'/3' flanks and intergenic regions
+@files( PARAMS["ensembl_filename_gtf"], PARAMS['interface_genic_gtf'] )
+def buildGeneIntervals( infile, outfile ):
+    ''' Merge all transcripts per gene (including utr) to get start and stop 
+        coordinates for every protein-coding gene and store in a GTF file'''
+
+    if infile.endswith(".gz"):
+        uncompress = "zcat"
+    else:
+        uncompress = "cat"
+
+    statement = '''%(uncompress)s %(infile)s 
+                   | awk '$2 == "protein_coding"' 
+                   | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log
+                   | python %(scriptsdir)s/gtf2gtf.py --merge-transcripts --with-utr --log=%(outfile)s.log
+                   | grep -v "#" > %(outfile)s;'''
+    P.run()
+
+############################################################
+@transform(buildGeneIntervals, regex(PARAMS['interface_genic_gtf']), PARAMS['interface_genic_bed'])
+def buildGeneBed( infile, outfile ):
+    ''' Convert genic GTF to BED'''
+
+    if infile.endswith(".gz"):
+        uncompress = "zcat"
+    else:
+        uncompress = "cat"
+
+    statement = '''%(uncompress)s %(infile)s 
+                   | python %(scriptsdir)s/gff2bed.py --is-gtf --name=gene_id --log=%(outfile)s.log
+                   | grep -v "#" 
+                   | python %(scriptsdir)s/bed2bed.py --method=filter-genome --genome-file=%(genome_dir)s/%(genome)s --log %(outfile)s.log > %(outfile)s'''
+    P.run()
+
+############################################################
+@transform(buildGeneBed, regex(PARAMS['interface_genic_bed']), PARAMS['interface_upstream_flank_bed'] )
+def buildUpstreamFlankBed( infile, outfile ):
+    ''' build interval upstream of gene start for each entry in bed file'''
+
+    window=PARAMS["geneset_flank"]
+    faidx=PARAMS["faidx"]
+
+    statement = '''flankBed -i %(infile)s -g %(faidx)s -l %(window)s -r 0 -s 
+                   | python %(scriptsdir)s/bed2bed.py --method=filter-genome --genome-file=%(genome_dir)s/%(genome)s --log %(outfile)s.log > %(outfile)s'''
+    P.run()
+
+############################################################
+@transform(buildGeneBed, regex(PARAMS['interface_genic_bed']), PARAMS['interface_downstream_flank_bed'] )
+def buildDownstreamFlankBed( infile, outfile ):
+    ''' build interval downstream of gene start for each entry in bed file'''
+
+    window=PARAMS["geneset_flank"]
+    faidx=PARAMS["faidx"]
+
+    statement = '''flankBed -i %(infile)s -g %(faidx)s -l 0 -r %(window)s -s 
+                   | python %(scriptsdir)s/bed2bed.py --method=filter-genome --genome-file=%(genome_dir)s/%(genome)s --log %(outfile)s.log > %(outfile)s'''
+    P.run()
+
+############################################################
+@merge((buildGeneBed, buildUpstreamFlankBed, buildDownstreamFlankBed), PARAMS['interface_intergenic_bed'] )
+def buildIntergenicBed( infiles, outfile ):
+    ''' Genomic regions not associated with any other features'''
+    inlist = " ".join(infiles)
+
+    statement = '''cat %(inlist)s | complementBed -i stdin -g %(faidx)s > %(outfile)s'''
+    P.run()
+
+############################################################
+@transform((buildUpstreamFlankBed,buildDownstreamFlankBed,buildIntergenicBed), suffix(".bed"), ".gtf" )
+def convertBedToGtf( infile, outfile ):
+    ''' convert bed files to GTF'''
+
+    statement = '''cat %(infile)s | python %(scriptsdir)s/bed2gff.py --as-gtf | grep -v "#" > %(outfile)s'''
+    P.run()
+
 ##################################################################
 ##################################################################
 ##################################################################
@@ -1311,16 +1683,23 @@ def genome():
           loadGeneInformation,
           loadTranscriptSynonyms,
           buildExonTranscripts,
+          buildCodingExonTranscripts,
+          buildNonCodingExonTranscripts,
           buildPseudogenes,
-          buildNUMTs,
-          buildSelenoList)
+          buildSelenoList,
+          buildTranscripts,
+          buildTranscriptsBed,
+          buildNoncodingTranscripts,
+          buildNoncodingTranscriptsBed)
 def geneset():
     '''import information on geneset.'''
     pass
 
 @follows( importRepeatsFromUCSC,
           importRNAAnnotationFromUCSC,
-          buildGenomicContext )
+          buildGenomicContext,
+          loadRepeats,
+          countTotalRepeatLength )
 def repeats():
     '''import repeat annotations.'''
     pass
@@ -1332,8 +1711,15 @@ def fasta():
     '''build fasta files.'''
     pass
 
-@follows( buildPromotorRegions,
-          buildTSSRegions )
+@follows( buildTranscriptTSS, buildGeneTSS,
+          buildGeneTSSInterval, buildNoncodingGeneTSS,
+          ExtendRegion, convertToGTF,
+          buildTranscriptTTS, buildGeneTTS )
+def tss():
+    '''build promotors.'''
+    pass
+    
+@follows( buildPromotorRegions )
 def promotors():
     '''build promotors.'''
     pass
@@ -1344,12 +1730,30 @@ def ontologies():
     '''create and load ontologies'''
     pass
 
+@follows( buildGeneIntervals,
+          buildGeneBed,
+          buildUpstreamFlankBed,
+          buildDownstreamFlankBed,
+          buildIntergenicBed,
+          convertBedToGtf )
+def GenicBedFiles():
+    '''build genic bed files.'''
+    pass
+
 @follows( loadIntervalSummary )
 def summary():
     '''summary targets.'''
     pass
 
-@follows( geneset, fasta, promotors, repeats, genome, ontologies, summary )
+
+@follows( calculateMappability, countMappableBases,
+          loadMappableBases, splitMappabiliyFileByContig,
+          countMappableBasesPerContig, loadMappableBasesPerContig )
+def gemMappability():
+    '''Count mappable bases in genome'''
+    pass
+
+@follows( genome, geneset, repeats, fasta, tss, promotors, ontologies, GenicBedFiles, gemMappability )
 def full():
     '''build all targets.'''
     pass
@@ -1384,3 +1788,4 @@ def publish_report():
 
 if __name__== "__main__":
     sys.exit( P.main(sys.argv) )
+    

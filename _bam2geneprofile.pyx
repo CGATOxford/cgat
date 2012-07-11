@@ -160,9 +160,11 @@ class RangeCounterBed(RangeCounter):
 
         for bedfile in self.bedfiles:
             current_offset = 0
+
             for start, end in ranges:
                 length = end - start
                 try:
+
                     for bed in bedfile.fetch( contig, max(0, start), end, parser = pysam.asBed() ):
                         # truncate to range of interest
                         rstart = max(0, bed.start - start) + current_offset
@@ -189,7 +191,6 @@ class RangeCounterBigWig(RangeCounter):
         if len(ranges) == 0: return
 
         counts = self.counts
-
         cdef int length
         cdef int current_offset
 
@@ -359,6 +360,7 @@ class GeneCounter( IntervalsCounter ):
                  int resolution_downstream,
                  int extension_upstream = 0, 
                  int extension_downstream = 0,
+                 int scale_flanks = 0,
                  *args,
                  **kwargs ):
 
@@ -370,6 +372,7 @@ class GeneCounter( IntervalsCounter ):
         self.resolution_exons = resolution_exons
         self.resolution_upstream = resolution_upstream
         self.resolution_downstream = resolution_downstream
+        self.scale_flanks = scale_flanks
 
         for field, length in zip( 
             ("upstream", "exons", "downstream"),
@@ -387,6 +390,10 @@ class GeneCounter( IntervalsCounter ):
         contig = gtf[0].contig 
         exons = GTF.asRanges( gtf, "exon" )
         exon_start, exon_end = exons[0][0], exons[-1][1]
+        if self.scale_flanks > 0:
+            self.extension_downstream = (exon_end - exon_start)*self.scale_flanks
+            self.extension_upstream = (exon_end - exon_start)*self.scale_flanks
+            E.debug("scale flanks")
 
         upstream = [ ( max(0, exon_start - self.extension_upstream), exon_start ), ] 
         downstream = [ ( exon_end, exon_end + self.extension_downstream ), ]
@@ -522,7 +529,7 @@ class RegionCounter( GeneCounter ):
 
         # substitute field name 'exons' with 'exon'
         assert self.fields[1] == "exons"
-        self.fields[1] = "exon"
+        self.fields[1] = "interval"
 
     def count( self, gtf ):
         '''count intervals.'''
