@@ -21,8 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-csvs2csv.py - join tables
-=========================
+combine_tables.py - join tables
+===============================
 
 :Author: Andreas Heger
 :Release: $Id$
@@ -32,11 +32,7 @@ csvs2csv.py - join tables
 Purpose
 -------
 
-This script reads several tab-separated tables and joins them.
-
-.. note:: 
-   Working with multiple columns per table and sorting is
-   not implemented correctly and likely to fail.
+This script reads several tab-separated tables and joins them into a single one.
 
 Usage
 -----
@@ -148,6 +144,8 @@ def joinTables( outfile, options, args ):
         # tables with max 100 columns
         take = None
 
+    E.debug("joining on columns %s and taking columns %s" % (options.columns, options.take))
+
     for nindex, filename in enumerate(options.filenames):
 
         E.info( "processing %s (%i/%i)" % (filename, nindex+1, len(options.filenames) ))
@@ -176,10 +174,18 @@ def joinTables( outfile, options, args ):
                 if x in options.columns or (take and x not in take): continue
                 ncolumns += 1
                 if options.add_file_prefix:
-                    p = re.search( options.regex_filename, prefix).groups()[0]
+                    try:
+                        p = re.search( options.regex_filename, prefix).groups()[0]
+                    except AttributeError:
+                        E.warn( "can't extract title from filename %s" % prefix )
+                        p = "unknown"
                     titles.append( "%s_%s" % ( p, data[x] ) )
                 elif options.use_file_prefix:
-                    p = re.search( options.regex_filename, prefix).groups()[0]
+                    try:
+                        p = re.search( options.regex_filename, prefix).groups()[0]
+                    except:
+                        E.warn( "can't extract title from filename %s" % prefix )
+                        p = "unknown"
                     titles.append( "%s" % p )
                 else:
                     titles.append( data[x] )
@@ -349,7 +355,7 @@ if __name__ == '__main__':
                       help="entry to use for missing values."  )
 
     parser.add_option( "--headers", dest="headers", type="string",
-                      help="add headers for files."  )
+                      help="add headers for files as a ,-separated list [%default]."  )
 
     parser.add_option( "-c", "--columns", dest="columns", type="string",
                       help="columns to use for joining. Multiple columns can be specified as a comma-separated list [default=%default]."  )
@@ -367,7 +373,7 @@ if __name__ == '__main__':
                       help="simply merge tables without matching up rows. [default=%default]." )
 
     parser.add_option("-a", "--cat", dest="cat", type="string",
-                      help="simply concatenate tables. Adds an additional column # with the filename "
+                      help="simply concatenate tables. Adds an additional column called X with the filename "
                            " [default=%default]." )
 
     parser.add_option( "--sort-keys", dest="sort_keys", type="choice",
@@ -381,10 +387,10 @@ if __name__ == '__main__':
                       help="ignore empty tables - this is the default [%default]." )
 
     parser.add_option( "--add-file-prefix", dest="add_file_prefix", action="store_true",
-                      help="add file prefix to columns headers in multi-column tables [default=%default]" )
+                      help="add file prefix to columns headers. Suitable for multi-column tables [default=%default]" )
 
     parser.add_option( "--use-file-prefix", dest="use_file_prefix", action="store_true",
-                      help="use file prefix as columns headers [default=%default]" )
+                      help="use file prefix as column headers. Suitable for two-column tables [default=%default]" )
 
     parser.add_option( "--regex-filename", dest="regex_filename", type="string",
                       help="pattern to apply to filename to build prefix [default=%default]" )
