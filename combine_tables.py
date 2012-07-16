@@ -341,7 +341,7 @@ def joinTables( outfile, options, args ):
             outfile.write("\n")
 
 ##---------------------------------------------------------------------------------------------------------        
-if __name__ == '__main__':
+def main( argv = sys.argv ):
 
     parser = optparse.OptionParser( version = "%prog version: $Id: combine_tables.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
 
@@ -421,7 +421,7 @@ if __name__ == '__main__':
         regex_filename = "(.*)"
         )
 
-    (options, args) = E.Start( parser )
+    (options, args) = E.Start( parser, argv = argv )
 
     if options.headers: 
         if "," in options.headers:
@@ -454,8 +454,8 @@ if __name__ == '__main__':
     E.info( "combining %i tables" % len(options.filenames) )
 
     if len(options.filenames) == 1:
-        for line in IOTools.openFile(options.filenames[0]):
-            options.stdout.write( line )
+        lines = readTable( options.filenames[0], options )
+        options.stdout.write( "".join( lines ))
         E.Stop()
         sys.exit(0)
         
@@ -468,3 +468,5 @@ if __name__ == '__main__':
     E.Stop()
 
 
+if __name__ == '__main__':
+    sys.exit( main( sys.argv ) )
