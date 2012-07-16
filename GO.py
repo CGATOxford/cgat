@@ -1673,8 +1673,7 @@ def main():
                        choices=("fdr", "pvalue", "ratio" ),
                        help="output sort order [default=%default]." )
 
-    parser.add_option( "--ontology", dest="ontology", type="choice", action="append",
-                       choices=("biol_process","cell_location","mol_function", "mgi" ),
+    parser.add_option( "--ontology", dest="ontology", type="string", action="append",
                        help="go ontologies to analyze. Ontologies are tested separately."
                        " [default=%default]." )
 
