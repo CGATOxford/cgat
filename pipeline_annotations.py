@@ -1214,8 +1214,9 @@ def importKEGGAssignments(infile,outfile):
     from bioconductor in future releases '''
 
     biomart_dataset = PARAMS["KEGG_dataset"]
+    mart = PARAMS["KEGG_mart"]
 
-    PipelineKEGG.importKEGGAssignments(outfile, biomart_dataset)
+    PipelineKEGG.importKEGGAssignments(outfile, mart, biomart_dataset)
 
 @transform(importKEGGAssignments, suffix(".tsv.gz"),"_assignments.load")
 def loadKEGGAssignments(infile, outfile):
