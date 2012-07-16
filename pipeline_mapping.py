@@ -1195,7 +1195,7 @@ def loadContextStats( infiles, outfile ):
                       --missing=0
                       --skip-titles
                    %(filenames)s
-                | perl -p -e "s/bin/track/; s/\?/Q/g"
+                | perl -p -e "s/(bin|category)/track/; s/\?/Q/g"
                 | python %(scriptsdir)s/table2table.py --transpose
                 | python %(scriptsdir)s/csv2db.py
                       --index=track
