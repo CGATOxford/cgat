@@ -181,6 +181,7 @@ import PipelineBiomart as PBiomart
 import PipelineDatabase as PDatabase
 import PipelineGO
 import PipelineUCSC
+import PipelineKEGG
 import Intervals
 
 ###################################################
@@ -1204,6 +1205,17 @@ def loadGOAssignments( infile, outfile ):
     > %(outfile)s
     '''
     P.run()
+
+@files(None,PARAMS['interface_kegg'])
+def importKEGGAssignments(infile,outfile):
+    ''' import the KEGG annotations from the R KEGG.db 
+    annotations package. Note that since KEGG is no longer
+    publically availible, this is not up-to-date and maybe removed
+    from bioconductor in future releases '''
+
+    biomart_dataset = PARAMS["KEGG_dataset"]
+
+    PipelineKEGG.importKEGGAssignments(outfile, biomart_dataset)
 
 ############################################################
 ############################################################
