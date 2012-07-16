@@ -2029,12 +2029,7 @@ class CounterBindingPattern(CounterOverlap):
     intervals are point features.
     """
 
-    headerTemplate = [ "pattern", "overlap" ] +\
-        [ "%s_%s" % (x,y) for x,y in itertools.product( 
-		    ("cds", "first_exon", "exon", "utr5", "utr3", "first_intron", "middle_intron", "last_intron", "intron" ) +\
-			    tuple( ["flank5_%05i" % x for x in range(0, 10000, 2000) ] ) +\
-			    tuple( ["flank3_%05i" % x for x in range(0, 10000, 2000) ] ),
-            ("overlap", "poverlap" ) ) ]
+    headerTemplate = [ "pattern", "overlap" ]
 
 
     # do not use strand
@@ -2048,11 +2043,20 @@ class CounterBindingPattern(CounterOverlap):
     flank = 10000
 
     # number of bins in the flank
-    flank_bins = 5
+    flank_bins = 10
 
     def __init__(self, *args, **kwargs ):
         CounterOverlap.__init__(self, *args, **kwargs )
-            
+
+        increment = self.flank // self.flank_bins
+	
+	self.headerTemplate.extend( 
+		[ "%s_%s" % (x,y) for x,y in itertools.product( 
+				("cds", "first_exon", "exon", "utr5", "utr3", "first_intron", "middle_intron", "last_intron", "intron" ) +\
+					tuple( ["flank5_%05i" % x for x in range(0, self.flank, increment) ] ) +\
+					tuple( ["flank3_%05i" % x for x in range(0, self.flank, increment) ] ),
+				("overlap", "poverlap" ) ) ] )
+
     def count( self ):
 
         self.overlap_intron = 0
