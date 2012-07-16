@@ -1217,6 +1217,12 @@ def importKEGGAssignments(infile,outfile):
 
     PipelineKEGG.importKEGGAssignments(outfile, biomart_dataset)
 
+@transform(importKEGGAssignments, suffix(".tsv.gz"),"_assignments.load")
+def loadKEGGAssignments(infile, outfile):
+
+    P.load(infile,outfile, options = "-i gene_id -i KEGG_ID")
+
+
 ############################################################
 ############################################################
 ############################################################
@@ -1737,6 +1743,7 @@ def promotors():
     pass
 
 @follows( loadGOAssignments, 
+          loadKEGGAssignments,
           buildGenomicFunctionalAnnotation)
 def ontologies():
     '''create and load ontologies'''
