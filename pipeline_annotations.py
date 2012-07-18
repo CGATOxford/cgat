@@ -181,6 +181,7 @@ import PipelineBiomart as PBiomart
 import PipelineDatabase as PDatabase
 import PipelineGO
 import PipelineUCSC
+import PipelineKEGG
 import Intervals
 
 ###################################################
@@ -1205,6 +1206,24 @@ def loadGOAssignments( infile, outfile ):
     '''
     P.run()
 
+@files(None,PARAMS['interface_kegg'])
+def importKEGGAssignments(infile,outfile):
+    ''' import the KEGG annotations from the R KEGG.db 
+    annotations package. Note that since KEGG is no longer
+    publically availible, this is not up-to-date and maybe removed
+    from bioconductor in future releases '''
+
+    biomart_dataset = PARAMS["KEGG_dataset"]
+    mart = PARAMS["KEGG_mart"]
+
+    PipelineKEGG.importKEGGAssignments(outfile, mart, biomart_dataset)
+
+@transform(importKEGGAssignments, suffix(".tsv.gz"),"_assignments.load")
+def loadKEGGAssignments(infile, outfile):
+
+    P.load(infile,outfile, options = "-i gene_id -i KEGG_ID")
+
+
 ############################################################
 ############################################################
 ############################################################
@@ -1725,6 +1744,7 @@ def promotors():
     pass
 
 @follows( loadGOAssignments, 
+          loadKEGGAssignments,
           buildGenomicFunctionalAnnotation)
 def ontologies():
     '''create and load ontologies'''

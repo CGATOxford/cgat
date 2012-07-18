@@ -455,6 +455,8 @@ def main( argv = sys.argv ):
 
     if len(options.filenames) == 1:
         lines = readTable( options.filenames[0], options )
+        data = lines[0][:-1].split("\t")
+        lines[0] = "\t".join( [data[0]] + options.headers ) + "\n"
         options.stdout.write( "".join( lines ))
         E.Stop()
         sys.exit(0)
