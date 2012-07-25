@@ -460,7 +460,6 @@ def loadTagData( tags_filename, design_filename ):
     groups : vector with groups
     pairs  : vector with pairs
 
-    It returns (groups,pairs)
     '''
 
     E.info( "loading tag data from %s" % tags_filename)
@@ -1112,8 +1111,20 @@ def readDesignFile( design_file ):
 def plotTagStats( infile, design_file, outfile ):
     '''provide summary plots for tag data.'''
 
-    groups, pairs, has_replicates, has_pairs = loadTagData( infile, design_file )
-    
+    loadTagData( infile, design_file )
+
+    nobservations, nsamples = filterTagData()
+
+    if nobservations == 0:
+        E.warn( "no observations - no output" )
+        return
+
+    if nsamples == 0:
+        E.warn( "no samples remain after filtering - no output" )
+        return
+
+    groups, pairs, has_replicates, has_pairs = groupTagData() 
+
     # import rpy2.robjects.lib.ggplot2 as ggplot2
 
     R('''library('ggplot2')''')
