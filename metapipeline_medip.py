@@ -219,7 +219,41 @@ def buildSummaryCalledDMRs( infiles, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-@transform( (buildSummaryCalledDMRs, buildSummaryMapping), suffix(".tsv"), ".load")
+@merge( None, "cpg_coverage.tsv" )
+def buildSummaryCpGCoverage( infiles, outfile ):
+    '''build summary of differentially methylated regions.'''
+    
+    dbh = connect()
+    cc = dbh.cursor()
+
+    outf = IOTools.openFile( outfile, "w" )
+    outf.write("metatrack\ttrack\tcoverage\tncovered\tpcovered\n" )
+
+    for track in TRACKS:
+
+        tables = [x[0] for x in cc.execute( """SELECT name FROM medip_%s.sqlite_master 
+            WHERE type='table' and name LIKE '%%coveredpos%%' """ % track
+                                            ).fetchall()]
+        
+
+        for table in tables:
+            
+            statement = """SELECT '%(track)s' as metatrack,
+                         '%(table)s' as track,
+                         coverage, ncovered, pcovered FROM medip_%(track)s.%(table)s"""
+
+            for x in cc.execute(statement % locals()):
+                outf.write( "\t".join(map(str,x))+ "\n" )
+
+    outf.close()
+
+###################################################################
+###################################################################
+###################################################################
+@transform( (buildSummaryCalledDMRs, 
+             buildSummaryMapping,
+             buildSummaryCpGCoverage), 
+            suffix(".tsv"), ".load")
 def loadSummary( infile, outfile ):
     '''load all summary tables.'''
     P.load( infile, outfile)
