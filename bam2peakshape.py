@@ -52,7 +52,7 @@ histogram - a histogram of read depth within the interval.
    paired-endedness is not fully implemented.
 
 -c/--control-file
-   if given, two peakshapers are computed, one for the primary and one for the control
+   if given, two peakshapes are computed, one for the primary and one for the control
    :term:`bam` file. The control file is centered around the same
    base as the primary file and output in the same sort order as the primary profile.
 

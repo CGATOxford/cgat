@@ -1546,7 +1546,7 @@ def pairwiseGOEnrichment( results_per_genelist, labels, test_ontology, go2info, 
             iteration += 1
             if iteration % 10 == 0:
                 E.info( "iteration: %i/%i (%5.2f%%)" % (iteration, total, 100.0 * iteration / total) )
-
+                
             y_go_categories = set(genelist2.keys())
             
             shared = x_go_categories.intersection( y_go_categories )
@@ -1564,12 +1564,21 @@ def pairwiseGOEnrichment( results_per_genelist, labels, test_ontology, go2info, 
                     continue
                 
                 observed = (xx.mSampleCountsCategory, yy.mSampleCountsCategory)
-                fisher, pvalue = scipy.stats.fisher_exact( numpy.array( 
-                        ((xx.mSampleCountsCategory,
-                          yy.mSampleCountsCategory),
-                         (xx.mSampleCountsTotal - xx.mSampleCountsCategory,
-                          yy.mSampleCountsTotal - yy.mSampleCountsCategory  ))))
+
+                aa, bb, cc, dd = \
+                    (xx.mSampleCountsCategory,
+                     yy.mSampleCountsCategory,
+                     xx.mSampleCountsTotal - xx.mSampleCountsCategory,
+                     yy.mSampleCountsTotal - yy.mSampleCountsCategory )
+
+                if cc == dd == 0:
+                    c.skipped += 1
+                    continue
                 
+                fisher, pvalue = scipy.stats.fisher_exact( numpy.array( 
+                        ((aa, bb),
+                         (cc, dd))))
+                               
                 if pvalue < 0.05:
                     c.significant_pvalue += 1
                 else:
@@ -1627,7 +1636,7 @@ def pairwiseGOEnrichment( results_per_genelist, labels, test_ontology, go2info, 
 
     outfile = getFileName( options, 
                            go = test_ontology,
-                           section = 'results',
+                           section = 'pairs',
                            set = "pairs" )
     
     outfile.write( "\t".join( PairResult._fields) + "\n" )
@@ -1664,8 +1673,7 @@ def main():
                        choices=("fdr", "pvalue", "ratio" ),
                        help="output sort order [default=%default]." )
 
-    parser.add_option( "--ontology", dest="ontology", type="choice", action="append",
-                       choices=("biol_process","cell_location","mol_function", "mgi" ),
+    parser.add_option( "--ontology", dest="ontology", type="string", action="append",
                        help="go ontologies to analyze. Ontologies are tested separately."
                        " [default=%default]." )
 
