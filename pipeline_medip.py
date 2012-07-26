@@ -483,6 +483,32 @@ def runMEDIPS( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
+@transform( runMEDIPS, suffix(".medips"), "_medips.load")
+def loadMEDIPS( infile, outfile ):
+    '''load medips results'''
+
+    table_prefix = re.sub( "_prep", "", P.toTable( outfile ))
+    
+    table = table_prefix + "_coveredpos" 
+
+    statement = """
+    cat %(infile)s_saturation_coveredpos.csv
+    | tail -n 3 
+    | perl -p -e 's/\\"//g; s/[,;]/\\t/g; '
+    | python %(scriptsdir)s/table2table.py --transpose
+    | python %(scriptsdir)s/csv2db.py 
+           %(csv2db_options)s
+           --table=%(table)s
+           --replace-header
+           --header=coverage,ncovered,pcovered
+    >> %(outfile)s
+    """
+    
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
 @transform( prepareBAMs, suffix(".bam"), ".covered.bed.gz" )
 def buildCoverageBed( infile, outfile ):
     '''build bed file with regions covered by reads.

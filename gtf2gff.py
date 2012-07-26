@@ -570,16 +570,20 @@ def annotateRegulons( iterator, fasta, tss, options ):
             if tss:
                 # add range to both sides of tss
                 if is_negative_strand:
-                    regulons.append( (max( 0, ma - options.downstream), min( lcontig, ma + options.upstream) ) )
+                    interval = ma - options.downstream, ma + options.upstream
                 else:
-                    regulons.append( (max( 0, mi - options.upstream), min( lcontig, mi + options.downstream) ) )
+                    interval = mi - options.upstream, mi + options.downstream
             else:
                 # add range to both sides of tts
                 if is_negative_strand:
-                    regulons.append( (max( 0, mi - options.downstream), min( lcontig, mi + options.upstream) ) )
+                    interval = mi - options.downstream, mi + options.upstream
                 else:
-                    regulons.append( (max( 0, ma - options.upstream), min( lcontig, ma + options.downstream) ) )
+                    interval = ma - options.upstream, ma + options.downstream
 
+            interval = ( min( lcontig, max( 0, interval[0] ) ),
+                         min( lcontig, max( 0, interval[1] ) ) )
+            
+            regulons.append( interval )
             transcript_ids.append( transcript[0].transcript_id )
 
         if options.merge_promotors:

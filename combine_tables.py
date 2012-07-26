@@ -453,12 +453,6 @@ def main( argv = sys.argv ):
 
     E.info( "combining %i tables" % len(options.filenames) )
 
-    if len(options.filenames) == 1:
-        lines = readTable( options.filenames[0], options )
-        options.stdout.write( "".join( lines ))
-        E.Stop()
-        sys.exit(0)
-        
     if options.cat:
         concatenateTables( options.stdout, options, args )
     else:
