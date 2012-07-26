@@ -1221,7 +1221,7 @@ def importKEGGAssignments(infile,outfile):
 @transform(importKEGGAssignments, suffix(".tsv.gz"),"_assignments.load")
 def loadKEGGAssignments(infile, outfile):
 
-    P.load(infile,outfile, options = "-i gene_id -i KEGG_ID")
+    P.load(infile,outfile, options = "-i gene_id -i kegg_id")
 
 
 ############################################################

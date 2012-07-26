@@ -131,8 +131,9 @@ def main( argv = None ):
             start = read.pos
             if read.is_reverse: strand = "-"
             else: strand = "+"
+            # IMS: converted rname to reference name
             outfile.write("%s\t%d\t%d\t%s\t%d\t%c\n" %\
-                          ( read.rname,
+                          ( samfile.getrname(read.rname),
                             read.pos,
                             read.pos+t,
                             read.qname,

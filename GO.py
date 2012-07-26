@@ -1007,7 +1007,9 @@ def ReadGeneLists( filename_genes, gene_pattern = None ):
 
     if filename_genes != "-": infile.close()
 
+    
     all_genes = table[0]
+        
     # if there is only a single column, add a dummy column
     if len(table) == 1:
         table.append( [1] * len( table[0]) )
@@ -1697,7 +1699,7 @@ def main():
                         help="pattern with output filename pattern (should contain: %(go)s and %(section)s ) [default=%default]")
 
     parser.add_option ( "--fdr", dest="fdr", action="store_true",
-                        help="calculate and filter by FDR [default=%default]." )
+                        help="calculate and filter by FDR [ReadGene2GOFromFiledefault=%default]." )
     
     parser.add_option ( "--go2goslim", dest="go2goslim", action="store_true",
                         help="convert go assignments in STDIN to goslim assignments and write to STDOUT [default=%default]." )
