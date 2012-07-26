@@ -762,6 +762,69 @@ def summarizeMACS( infiles, outfile ):
 ############################################################
 ############################################################
 ############################################################
+def summarizeMACSsolo( infiles, outfile ):
+    '''run MACS for peak detection.'''
+    def __get( line, stmt ):
+        x = line.search(stmt )
+        if x: return x.groups() 
+
+    map_targets = [
+        ("total tags in treatment: (\d+)", "tag_treatment_total",()),
+        ("#2 number of paired peaks: (\d+)", "paired_peaks",()),
+        ("#2   min_tags: (\d+)","min_tags", ()),
+        ("#2   d: (\d+)", "shift", ()),
+        ("#2   scan_window: (\d+)", "scan_window", ()),
+        ("#3 Total number of candidates: (\d+)", "ncandidates",("positive",) ),
+        ("#3 Finally, (\d+) peaks are called!",  "called", ("positive",) ) ]
+
+    mapper, mapper_header = {}, {}
+    for x,y,z in map_targets: 
+        mapper[y] = re.compile( x )
+        mapper_header[y] = z
+
+    keys = [ x[1] for x in map_targets ]
+
+    outs = open(outfile,"w")
+
+    headers = []
+    for k in keys:
+        if mapper_header[k]:
+            headers.extend( ["%s_%s" % (k,x) for x in mapper_header[k] ])
+        else:
+            headers.append( k )
+    outs.write("track\t%s" % "\t".join(headers) + "\n" )
+
+    for infile in infiles:
+        results = collections.defaultdict(list)
+        with open( infile ) as f:
+            for line in f:
+                if "diag:" in line: break
+                for x,y in mapper.items():
+                    s = y.search( line )
+                    if s: 
+                        results[x].append( s.groups()[0] )
+                        break
+
+        row = [ P.snip( os.path.basename(infile), ".macs" ) ]
+        for key in keys:
+            val = results[key]
+            if len(val) == 0: v = "na"
+            else: 
+                c = len(mapper_header[key])
+                if c >= 1: assert len(val) == c, "key=%s, expected=%i, got=%i, val=%s, c=%s" %\
+                   (key,
+                    len(val),
+                    c,
+                    str(val), mapper_header[key])
+                v = "\t".join( val )
+            row.append(v)
+        outs.write("\t".join(row) + "\n" )
+
+    outs.close()
+    
+############################################################
+############################################################
+############################################################
 def summarizeMACSFDR( infiles, outfile ):
     '''compile table with peaks that would remain after filtering
     by fdr.

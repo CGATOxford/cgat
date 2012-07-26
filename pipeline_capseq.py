@@ -36,8 +36,6 @@ performs the following tasks:
    * Align reads to the genome using Bowtie
    * Call peaks using MACS
    * Compare intervals across tracks
-   * Compare intervals with external bed files 
-   * Annotate intervals with respect to a reference gene set (Ensembl or RNAseq-derived)
 
 Usage
 =====
