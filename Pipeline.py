@@ -422,13 +422,14 @@ def load( infile,
 
     run()
 
-def mergeAndLoad( infiles, outfile, suffix = None, columns=(0,1), regex = None ):
+def mergeAndLoad( infiles, outfile, suffix = None, columns=(0,1), regex = None, row_wise = True ):
     '''load categorical tables into a database.
 
     Columns denotes the columns to be taken.
 
-    The tables are merged and entered row-wise. Each file is 
-    a row.
+    The tables are merged and entered row-wise, i.e each file is 
+    a row unless row_wise is set to False. This is useful if 
+    histograms are being merged.
 
     Filenames are stored in a ``track`` column. Directory names
     are chopped off.
@@ -449,13 +450,18 @@ def mergeAndLoad( infiles, outfile, suffix = None, columns=(0,1), regex = None )
 
     tablename = toTable( outfile )
 
+    if row_wise:
+        transform = """| perl -p -e "s/bin/track/" | python %(scriptsdir)s/table2table.py --transpose""" % PARAMS
+    else:
+        transform = ""
+
     statement = """python %(scriptsdir)s/combine_tables.py
                       --headers=%(header)s
+                      --skip-titles
                       --missing=0
                       --ignore-empty
                    %(filenames)s
-                | perl -p -e "s/bin/track/" 
-                | python %(scriptsdir)s/table2table.py --transpose
+                %(transform)s
                 | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
                       --index=track
                       --table=%(tablename)s 
