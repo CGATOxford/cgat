@@ -49,6 +49,7 @@ Below are detailed results from the mapping process. It reports summary statisti
    :maxdepth: 2
 
    MappingAlignmentStatistics.rst
+   CpGCoverage.rst
 
 There are various alignment files created in the mapping process:
 
@@ -57,7 +58,7 @@ There are various alignment files created in the mapping process:
 +---------------------------------------+--------------------------------------------------+
 |:term:`track`.genome.bam               |Alignments of reads mapped on the chromosome      |
 +---------------------------------------+--------------------------------------------------+
-|:term:`track`.trans.bam                |Alignments of reads after filtering               |
+|:term:`track`.prep.bam                 |Alignments of reads after filtering               |
 +---------------------------------------+--------------------------------------------------+
 
 .. note::

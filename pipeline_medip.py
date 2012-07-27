@@ -545,6 +545,49 @@ def buildCoverageBed( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
+@transform( prepareBAMs, 
+            suffix(".bam"), 
+            add_inputs( os.path.join( PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_cpg_bed"] ) ),
+            ".cpg_coverage.gz" )
+def buildCpGCoverage( infiles, outfile ):
+    '''count number times certain CpG are covered by reads.
+
+    Reads are processed in the same way as by buildCoverageBed.
+    '''
+    
+    infile, cpg_file = infiles
+    to_cluster = True
+
+    job_options = "-l mem_free=10G"
+
+    statement = '''
+    cat %(infile)s 
+    | python %(scriptsdir)s/bam2bed.py
+          --merge-pairs
+          --min-insert-size=%(medips_min_insert_size)i
+          --max-insert-size=%(medips_max_insert_size)i
+          --log=%(outfile)s.log
+          -
+    | coverageBed -a stdin -b %(cpg_file)s -counts
+    | cut -f 6
+    | python %(scriptsdir)s/data2histogram.py
+    | gzip
+    > %(outfile)s
+    '''
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@merge( buildCpGCoverage, "cpg_coverage.load" )
+def loadCpGCoverage( infiles, outfile ):
+    '''load cpg coverag data.'''
+    P.mergeAndLoad( infiles, outfile, regex="/(.*).prep.cpg_coverage.gz",
+                    row_wise = False )
+
+#########################################################################
+#########################################################################
+#########################################################################
 @merge( buildCoverageBed, "tiles_variable_width.bed.gz" )
 def buildVariableWidthTiles( infiles, outfile ):
     '''bed file with intervals that are covered by reads in any of the experiments.
