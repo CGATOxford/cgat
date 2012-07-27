@@ -56,6 +56,34 @@ EXECUTABLE="GCProfile"
 
 import FastaIterator
 
+def segmentWithCpG( infile, options ):
+    '''segment a fasta file, output intervals containing a CpG.'''
+
+    ninput, nskipped, noutput = 0, 0, 0
+    
+    iterator = FastaIterator.FastaIterator( infile )
+
+    segments = []
+    
+    while 1:
+        try:
+            cur_record = iterator.next()
+        except StopIteration:
+            break
+
+        if cur_record is None: break
+        ninput += 1
+        contig = re.sub("\s.*", "", cur_record.title )
+        last = None
+        for pos, this in enumerate( cur_record.sequence.upper()):
+            if last == "C" and this == "G":
+                segments.append( (contig, pos - 1, pos + 1, 1.0))
+            last = this
+
+    E.info( "ninput=%i, noutput=%i, nskipped=%i" % (ninput, noutput,nskipped) )
+
+    return segments
+
 def segmentWithGCProfile( infile, options ):
     '''segment a fasta file with GCProfile.'''
 
@@ -130,6 +158,7 @@ def segmentWithGCProfile( infile, options ):
     # shutil.rmtree( tmpdir )
     
     return segments
+
 
 def segmentWithIsoplotter( infile, options ):
     '''segment a fasta file with GCProfile.'''
@@ -271,7 +300,8 @@ def main( argv = None ):
 
     parser.add_option("-m", "--method", dest="method", type="choice",
                       choices = ("GCProfile", 
-                                 "fixed-width-windows-gc" ),
+                                 "fixed-width-windows-gc",
+                                 "cpg" ),
                       help="Method to use for segmentation [default=%default]" )
 
     parser.add_option( "-w", "--window-size=", dest="window_size", type="int",
@@ -292,6 +322,8 @@ def main( argv = None ):
 
     if options.method == "GCProfile":
         segments = segmentWithGCProfile( options.stdin, options )
+    elif options.method == "cpg":
+        segments = segmentWithCpG( options.stdin, options )
     elif options.method == "Isoplotter":
         segments = segmentWithIsoplotter( options.stdin, options )
     elif options.method == "fixed-width-windows-gc":
