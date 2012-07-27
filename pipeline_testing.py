@@ -238,7 +238,7 @@ def runTest( infile, outfile, update = False ):
 ###################################################################
 ## general tests
 ###################################################################
-@files( [ (os.path.join( PARAMS["data_dir"], x), x + ".log" ) for x in
+@files( [ (os.path.join( PARAMS["data_dir"], x + ".dir"), x + ".log" ) for x in
              P.asList(PARAMS["prerequisites"]) ] )
 def prepareTests( infile, outfile ):
     '''run pre-requisite pipelines.'''
