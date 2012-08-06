@@ -32,6 +32,8 @@ The script currently implements the following methods:
    
 4. filter-genome: remove all intervals on unknown contigs or extending beyond 
    contigs.
+5. extend: extend the start and end of each interval by a specified distance.
+   Note: currently this method does not check that new interval is outside the confines of the contig
 
 Usage
 -----
@@ -56,6 +58,7 @@ bins
    equal-base, equal-intervals.
    This options requires the fifth field of the bed input file to be
    present.
+
 
 Code
 ----
@@ -218,13 +221,36 @@ def shiftIntervals( iterator, contigs, offset ):
     E.info( "ninput=%i, noutput=%i, nskipped_contig=%i, nskipped_range=%i" % \
                 (ninput, noutput, nskipped_contig, nskipped_range) )
 
+#IMS: new method: extend intervals by set amount
+def extendInterval(iterator, distance):
+
+    ninput, noutput, nskipped = 0, 0, 0
+    for bed in iterator:
+        ninput += 1
+        newstart = bed.start - distance
+        newend = bed.end + distance
+
+        if newstart < 0:
+            nskipped += 1
+            continue
+
+        bed.start = newstart
+        bed.end = newend
+
+        noutput += 1
+        yield bed
+
+    E.info("ninput = %i, noutput=%i, nskipped=%i" % (ninput,noutput,nskipped))
+
+
 def main( argv = sys.argv ):
 
     parser = optparse.OptionParser( version = "%prog version: $Id: bed2bed.py 2861 2010-02-23 17:36:32Z andreas $", 
                                     usage = globals()["__doc__"] )
 
+    #IMS: new method: extend intervals by set amount
     parser.add_option( "-m", "--method", dest="methods", type="choice", action="append",
-                       choices=("merge", "filter-genome", "bins", "block", "sanitize-genome", "shift" ),
+                       choices=("merge", "filter-genome", "bins", "block", "sanitize-genome", "shift", "extend" ),
                        help="method to apply [default=%default]"  )
 
     parser.add_option( "--num-bins", dest="num_bins", type="int",
@@ -254,6 +280,9 @@ def main( argv = sys.argv ):
 
     parser.add_option("-b", "--bam-file", dest="bam_file", type="string",
                       help="bam-formatted filename with genome."  )
+    #IMS: new method: extend intervals by set amount
+    parser.add_option("--extend-distance",dest="extend_distance", type="int",
+                      help = "distance by which to extend intervals on either side for method=extend [default=%default]")
 
     parser.set_defaults( methods = [],
                          merge_distance = 0,
@@ -264,7 +293,8 @@ def main( argv = sys.argv ):
                          merge_min_intervals = 1,
                          bin_edges = None,
                          offset = 10000,
-                         test = None )
+                         test = None,
+                         extend_distance=1000)
     
     (options, args) = E.Start( parser, add_pipe_options = True )
 
@@ -304,6 +334,9 @@ def main( argv = sys.argv ):
             processor = Bed.blocked_iterator( processor )
         elif method == "shift":
             processor = shiftIntervals( processor, contigs, offset=options.offset )
+        #IMS: new method: extend intervals by set amount
+        elif method == "extend":
+            processor = extendInterval( processor, options.extend_distance )
             
     noutput = 0
     for bed in processor:
