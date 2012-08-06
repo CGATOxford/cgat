@@ -32,9 +32,20 @@ gff2stats.py - count features, etc. in gff file
 Purpose
 -------
 
-This script computes the number of entries for each feature,
+This script computes the number of intervals per feature,
 source, gene_id and transcript_id in one or more :term:`gff` 
 or :term:`gtf` formatted files.
+
+For a gff file, the implemented counters are:
+
+1. number of intervals per contig, strand, feature and source
+
+For a gtf file, the additional implemented counters are:
+
+1. number of genes, transcripts, single exon transcripts
+2. summary statistics for exon numbers, exon sizes, intron sizes and transcript sizes
+
+The output is a tab-separated table.
 
 Usage
 -----

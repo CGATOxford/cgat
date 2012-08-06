@@ -98,7 +98,8 @@ class Counter:
                 intervals = list(idx[this.contig].find( max(0, this.start), this.end ))
             except KeyError:
                 continue
-            
+            except Exception, msg:
+                raise Exception( "error while processing %s, msg=%s" % (filename, msg ) )
             if len(intervals) == 0: 
                 continue
 

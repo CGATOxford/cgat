@@ -152,6 +152,9 @@ gc_segmentation.bed.gz
    A :term:`bed` formatted file with the genome segmented in regions
    of different G+C content.
 
+cpg.bed.gz
+   A list of all CpGs in the genome sequence
+
 Example
 =======
 
@@ -459,7 +462,7 @@ def loadExonStats( infile, outfile ):
 def buildCodingExonTranscripts( infile, outfile ):
     '''build a collection of transcripts from the protein-coding
     section of the ENSEMBL gene set. '''
-    PGeneset.buildCodingExons( infile, outfile )
+    PipelineGeneset.buildCodingExons( infile, outfile )
 
 ############################################################
 ############################################################
@@ -469,7 +472,7 @@ def buildCodingExonTranscripts( infile, outfile ):
 def buildNonCodingExonTranscripts( infile, outfile ):
     '''build a collection of transcripts from the protein-coding
     section of the ENSEMBL gene set. '''
-    PGeneset.buildNonCodingExons( infile, outfile )
+    PipelineGeneset.buildNonCodingExons( infile, outfile )
 
 ############################################################
 ############################################################
@@ -479,7 +482,7 @@ def buildNonCodingExonTranscripts( infile, outfile ):
 def buildLincRNAExonTranscripts( infile, outfile ):
     '''build a collection of transcripts from the protein-coding
     section of the ENSEMBL gene set. '''
-    PGeneset.buildLincRNAExons( infile, outfile )
+    PipelineGeneset.buildLincRNAExons( infile, outfile )
     
 ############################################################
 ############################################################
@@ -1563,6 +1566,32 @@ def buildGenomeGCProfile( infile, outfile ):
 ##################################################################
 ##################################################################
 ##################################################################
+## build a bed file with locations of CpGs
+##################################################################
+@files( os.path.join( PARAMS["genome_dir"], PARAMS["genome"] + ".fasta"), 
+        PARAMS['interface_cpg_bed'] )
+def buildCpGBed( infile, outfile ):
+    '''bulid bed file with CpG locations.'''
+
+    statement = ''' 
+    python %(scriptsdir)s/fasta2bed.py 
+        --method=cpg
+        --log=%(outfile)s.log 
+    < %(infile)s 
+    | bgzip
+    > %(outfile)s
+    '''
+    
+    P.run()
+
+    statement = '''
+    tabix -p bed %(outfile)s
+    '''
+    P.run()
+
+##################################################################
+##################################################################
+##################################################################
 ## download GWAS data
 ##################################################################
 if PARAMS["genome"].startswith("hg"):
@@ -1773,7 +1802,8 @@ def gemMappability():
     '''Count mappable bases in genome'''
     pass
 
-@follows( genome, geneset, repeats, fasta, tss, promotors, ontologies, GenicBedFiles, gemMappability )
+# taken out gemMappability as not fully configured
+@follows( genome, geneset, repeats, fasta, tss, promotors, ontologies, GenicBedFiles )
 def full():
     '''build all targets.'''
     pass

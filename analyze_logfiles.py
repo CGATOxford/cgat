@@ -170,10 +170,14 @@ if __name__ == "__main__":
                        choices = ("file", "node" ),
                        help="analysis mode [%default]." )
 
+    parser.add_option( "-r", "--recursive", action="store_true"
+                       help="recursively look for logfiles from current directory [%default]." )
+
     parser.set_defaults(
         truncate_sites_list = 0,
         glob_pattern = "*.log",
         mode = "file",
+        recursive = False,
         )
 
     (options, args) = Experiment.Start( parser )
@@ -199,7 +203,7 @@ if __name__ == "__main__":
             else:
                 infile = open(filename, "r" )
 
-            subtotals = LogfileData()
+            subtotals = LogFileData()
             for line in infile:
                 subtotals.add( line )
 
