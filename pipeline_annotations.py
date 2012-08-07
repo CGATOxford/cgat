@@ -848,17 +848,20 @@ def buildNoncodingGeneTSS( infile, outfile ):
     P.run()
     
 ############################################################
-@transform( (buildTranscriptTSS, buildGeneTSS, buildGeneTSSInterval, buildNoncodingGeneTSS), suffix(".bed.gz"), ".extended.bed.gz" )
-def ExtendRegion( infile, outfile ):
+@follows( buildContigSizes )
+@transform( (buildTranscriptTSS, buildGeneTSS, buildGeneTSSInterval, buildNoncodingGeneTSS), 
+            suffix(".bed.gz"), 
+            ".extended.bed.gz" )
+def extendRegion( infile, outfile ):
     '''convert bed to gtf'''
     statement = """gunzip < %(infile)s 
-                   | slopBed -i stdin -g %(faidx)s -b 1000  
+                   | slopBed -i stdin -g %(interface_contigs)s -b 1000  
                    | gzip
                    > %(outfile)s """
     P.run()
     
 ############################################################
-@transform( (buildTranscriptTSS, buildGeneTSS, buildGeneTSSInterval, buildNoncodingGeneTSS, ExtendRegion), suffix(".bed.gz"), ".gtf" )
+@transform( (buildTranscriptTSS, buildGeneTSS, buildGeneTSSInterval, buildNoncodingGeneTSS, extendRegion), suffix(".bed.gz"), ".gtf" )
 def convertToGTF( infile, outfile ):
     '''convert bed to gtf'''
     statement = """gunzip < %(infile)s 
@@ -1456,36 +1459,33 @@ def buildGeneBed( infile, outfile ):
     P.run()
 
 ############################################################
+@follows( buildContigSizes )
 @transform(buildGeneBed, regex(PARAMS['interface_genic_bed']), PARAMS['interface_upstream_flank_bed'] )
 def buildUpstreamFlankBed( infile, outfile ):
     ''' build interval upstream of gene start for each entry in bed file'''
 
-    window=PARAMS["geneset_flank"]
-    faidx=PARAMS["faidx"]
-
-    statement = '''flankBed -i %(infile)s -g %(faidx)s -l %(window)s -r 0 -s 
+    statement = '''flankBed -i %(infile)s -g %(interface_contigs)s -l %(geneset_flank)i -r 0 -s 
                    | python %(scriptsdir)s/bed2bed.py --method=filter-genome --genome-file=%(genome_dir)s/%(genome)s --log %(outfile)s.log > %(outfile)s'''
     P.run()
 
 ############################################################
+@follows( buildContigSizes )
 @transform(buildGeneBed, regex(PARAMS['interface_genic_bed']), PARAMS['interface_downstream_flank_bed'] )
 def buildDownstreamFlankBed( infile, outfile ):
     ''' build interval downstream of gene start for each entry in bed file'''
 
-    window=PARAMS["geneset_flank"]
-    faidx=PARAMS["faidx"]
-
-    statement = '''flankBed -i %(infile)s -g %(faidx)s -l 0 -r %(window)s -s 
+    statement = '''flankBed -i %(infile)s -g %(interface_contigs)s -l 0 -r %(geneset_flank)i -s 
                    | python %(scriptsdir)s/bed2bed.py --method=filter-genome --genome-file=%(genome_dir)s/%(genome)s --log %(outfile)s.log > %(outfile)s'''
     P.run()
 
 ############################################################
+@follows( buildContigSizes )
 @merge((buildGeneBed, buildUpstreamFlankBed, buildDownstreamFlankBed), PARAMS['interface_intergenic_bed'] )
 def buildIntergenicBed( infiles, outfile ):
     ''' Genomic regions not associated with any other features'''
     inlist = " ".join(infiles)
 
-    statement = '''cat %(inlist)s | complementBed -i stdin -g %(faidx)s > %(outfile)s'''
+    statement = '''cat %(inlist)s | complementBed -i stdin -g %(interface_contigs)s > %(outfile)s'''
     P.run()
 
 ############################################################
@@ -1761,7 +1761,7 @@ def fasta():
 
 @follows( buildTranscriptTSS, buildGeneTSS,
           buildGeneTSSInterval, buildNoncodingGeneTSS,
-          ExtendRegion, convertToGTF,
+          extendRegion, convertToGTF,
           buildTranscriptTTS, buildGeneTTS )
 def tss():
     '''build promotors.'''
