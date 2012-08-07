@@ -384,7 +384,7 @@ class Counter( Mapper ):
         statement = []
         for f in infiles:
             x = " ".join( f )
-            statement.append( '''zcat %(x)s | awk '{n+=1;} END {printf("nreads\\t%%%%i\\n",n/4);}' >& %(outfile)s;''' % locals() )
+            statement.append( '''zcat %(x)s | awk '{n+=1;} END {printf("nreads\\t%%%%i\\n",n/4);}' >> %(outfile)s;''' % locals() )
         return " ".join( statement )
 
 class BWA( Mapper ):
@@ -771,6 +771,8 @@ class Bowtie( Mapper ):
 
     # bowtie can map colour space files directly
     preserve_colourspace = True
+
+    executable = "bowtie"
 
     def mapper( self, infiles, outfile ):
         '''build mapping statement on infiles.
