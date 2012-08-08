@@ -121,7 +121,10 @@ def iterator( infile ):
         if line.startswith("track"):
             track = Track( line )
             continue
+        # ignore comments
         if line.startswith("#"): continue
+        # ignore empty lines (in order to parse pseudo bed files)
+        if line.strip() == "": continue
 
         b = Bed()
         data = line[:-1].split()
