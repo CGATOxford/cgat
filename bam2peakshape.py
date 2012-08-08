@@ -310,7 +310,7 @@ def main( argv = None ):
 
         elif sort == "interval-score":
             try:
-                norm_result.sort( key = lambda x: x[1].score )
+                norm_result.sort( key = lambda x: float(x[1].score) )
             except IndexError:
                 E.warn("score field not present - no output" )
 
