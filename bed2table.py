@@ -170,6 +170,7 @@ class CounterPeaks(Counter):
             # if offsets are given, shift tags. 
             for samfile, offset in zip(bamfiles,offsets):
 
+                if offset == 0: E.warn("0 offset will result in no data!" )
                 shift = offset / 2
                 # for peak counting I follow the MACS protocoll,
                 # see the function def __tags_call_peak in PeakDetect.py

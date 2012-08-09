@@ -45,14 +45,14 @@ class SummaryCalledDMRs( MetaMedipTracker ):
     table = "called_dmrs"
 
     def getTracks(self):
-        return self.getValues( "SELECT DISTINCT track FROM %s" % self.table )
+        return self.getValues( "SELECT DISTINCT metatrack FROM %s" % self.table )
 
     def getSlices(self):
         return self.getValues( "SELECT DISTINCT test FROM %s" % self.table )
     
     def __call__(self, track, slice ):
         data = self.getAll( """SELECT ntested, nok, nsignificant, n2fold FROM %(table)s 
-                                  WHERE track = '%(track)s' AND 
+                                  WHERE metatrack = '%(track)s' AND 
                                         test = '%(slice)s' """ )
         return data
 
