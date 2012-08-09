@@ -39,15 +39,22 @@ Overview
 pipeline_peakcalling takes as input reads aligned to genomic sequence as :term:`bam` formatted files
 and calls peaks. The pipeline implements several peak callers:
 
-macs
-   
-spp
+macs_
+   Model-based Analysis of ChIP-Seq (MACS), for identifying transcript factor binding sites. MACS captures the influence of genome complexity to evaluate the significance of enriched ChIP regions, and MACS improves the spatial resolution of binding sites through combining the information of both sequencing tag position and orientation. MACS can be easily used for ChIP-Seq data alone, or with control sample with the increase of specificity.
 
-zinba
+spp_
+   SPP is a R package especially designed for the analysis of Chip-Seq data from Illummina platform. The package was developed by Peter Park's group from Harvard Medical School.
 
-sicer
+zinba_
+   ZINBA (Zero Inflated Negative Binomial Algorithm) is a computational and statistical framework used to call regions of the genome enriched for sequencing reads originating from a diverse array of biological experiments. We collectively refer to the sequencing data derived from these experiments as DNA-seq, including FAIRE-seq, ChIP-seq, and DNAase-seq experiments
 
-peakranger
+sicer_
+    A clustering approach for identification of enriched domains from histone modification ChIP-Seq data.
+
+peakranger_
+    PeakRanger is a multi-purpose, ultrafast ChIP Seq peak caller. It is used in the modENCODE project and included in the iPlant pipeline system.
+    PeakRanger v1.02 was developed in Dr.Lincoln Stein's lab at OICR and is now in continual development at Dr.Helen Hobbs's lab of the McDermott Center of UT Southwestern.
+
 
 Peak callers have different strengths and weaknesses. Some might work well on broad peaks such as some histone
 marks, others work better for narrow, sharp peaks. Many callers these days attempt to call both types of peaks.
@@ -116,7 +123,15 @@ path:
 +--------------------+-------------------+------------------------------------------------+
 |*Program*           |*Version*          |*Purpose*                                       |
 +--------------------+-------------------+------------------------------------------------+
-|bamstats_           |>=1.22             |from CGR, Liverpool                             |
+|spp_                |1.11               |R package                                       |
++--------------------+-------------------+------------------------------------------------+
+|macs_               |>1.4               |                                                |
++--------------------+-------------------+------------------------------------------------+
+|zinba_              |2.02.03            |R package                                       |
++--------------------+-------------------+------------------------------------------------+
+|peakranger          |1.15               |                                                |
++--------------------+-------------------+------------------------------------------------+
+|sicer               |1.1                |                                                |
 +--------------------+-------------------+------------------------------------------------+
 
 Pipeline output
@@ -130,7 +145,40 @@ called:
 
 Each of these tables contains the following columns:
 
-
++------------------+--------------------------------------------------------------+
+|*Column*          |*Content*                                                     |
++------------------+--------------------------------------------------------------+
+|avgval            |Average read depth in interval                                |
++------------------+--------------------------------------------------------------+
+|contig            |Contig                                                        |
++------------------+--------------------------------------------------------------+
+|control_avgval    |Average read depth in control within inter val                |
+|                  |                                                              |
++------------------+--------------------------------------------------------------+
+|control_length    |Interval length                                               |
++------------------+--------------------------------------------------------------+
+|control_npeaks    |Number of peaks in control                                    |
++------------------+--------------------------------------------------------------+
+|control_nreads    |Number of control reads in interval                           |
++------------------+--------------------------------------------------------------+
+|control_peakcenter|Peak center of control                                        |
++------------------+--------------------------------------------------------------+
+|control_peakval   |Number of reads at peak in control                            |
++------------------+--------------------------------------------------------------+
+|end               |End coordinate of interval                                    |
++------------------+--------------------------------------------------------------+
+|length            |Length of interval                                            |
++------------------+--------------------------------------------------------------+
+|npeaks            |Number of peaks in interval                                   |
++------------------+--------------------------------------------------------------+
+|nreads            |Number of reads in interval                                   |
++------------------+--------------------------------------------------------------+
+|peakcenter        |Peak center in interval                                       |
++------------------+--------------------------------------------------------------+
+|peakval           |Number of reads at peak                                       |
++------------------+--------------------------------------------------------------+
+|start             |246251                                                        |
++------------------+--------------------------------------------------------------+
 
 The unprocessed output files created by the peak callers are in individual subdirectories
 for each caller (:file:`macs.dir`, :file:`zinba.dir`, etc.).
@@ -149,22 +197,11 @@ To run the example, simply unpack and untar::
 .. note:: 
    For the pipeline to run, install the :doc:`pipeline_annotations` as well.
 
-Glossary
-========
-
-.. glossary::
-
-   tophat
-      tophat_ - a read mapper to detect splice-junctions
-
-   bowtie
-      bowtie_ - a read mapper
-
-
-   
-.. _tophat: http://tophat.cbcb.umd.edu/
-.. _bowtie: http://bowtie-bio.sourceforge.net/index.shtml
-.. _bamstats: http://www.agf.liv.ac.uk/454/sabkea/samStats_13-01-2011
+.. _macs: http://liulab.dfci.harvard.edu/MACS/00README.html
+.. _spp: http://compbio.med.harvard.edu/Supplements/ChIP-seq/tutorial.html
+.. _sicer: http://home.gwu.edu/~wpeng/Software.htm
+.. _zinba: http://code.google.com/p/zinba/
+.. _peakranger: http://ranger.sourceforge.net/
 
 Code
 ====

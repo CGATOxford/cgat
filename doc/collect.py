@@ -46,6 +46,7 @@ if __name__ == "__main__":
                 nskipped += 1
                 continue
 
+            E.debug( "adding %s" % filename )
             outfile = open( filename, "w" )
             outfile.write( TEMPLATE_RST % locals() )
             outfile.close()
