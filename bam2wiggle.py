@@ -151,11 +151,13 @@ def main( argv = None ):
         E.info( "starting output to stdout" )        
 
     if options.output_format in ("wiggle", "bigwig"):
-        # wiggle is one-based, so add 1
-        outf = lambda outfile, contig, start, end, val: outfile.write("%i\t%i\n" % (start+1, val) )
+        # wiggle is one-based, so add 1, also step-size is 1, so need to output all bases
+        outf = lambda outfile, contig, start, end, val: \
+            outfile.write( "".join( [ "%i\t%i\n" % (x, val) for x in xrange(start+1,end+1) ] ) )
     elif options.output_format in ("bed", "bigbed"):
         # bed is 0-based, open-closed
-        outf = lambda outfile, contig, start, end, val: outfile.write("%s\t%i\t%i\t%i\n" % (contig, start, end,val))
+        outf = lambda outfile, contig, start, end, val: \
+            outfile.write("%s\t%i\t%i\t%i\n" % (contig, start, end,val))
 
     output_filename = os.path.abspath( options.output_filename )
 
@@ -202,15 +204,17 @@ def main( argv = None ):
 
     else:
         for contig in samfile.references:
+            if contig != "chrX": continue
             E.debug("output for %s" % contig )
             lcontig = contig_sizes[contig]
 
             if options.output_format in ("wiggle", "bigwig"):
                 outfile.write( "variableStep chrom=%s span=1\n" % contig )
 
-            for val, iter in itertools.groupby( enumerate( samfile.pileup(contig) ), lambda x: x[1].n ):
+            for v, iter in itertools.groupby( samfile.pileup(contig), lambda x: x.n ):
                 l = list(iter)
-                start,end,val = l[0][1].pos,l[-1][1].pos+1,l[0][1].n
+                # print l[0].pos, l[-1].pos, l[0].n
+                start, end, val = l[0].pos,l[-1].pos+1,l[0].n
                 # patch: there was a problem with bam files and reads overextending at the end.
                 # These are usually Ns, but need to check as otherwise wigToBigWig fails.
                 if lcontig <= end: 
@@ -218,7 +222,8 @@ def main( argv = None ):
                     end = lcontig 
                     if start >= end: continue
 
-                if val > 0: outf( outfile, contig, start, end, val)
+                if val > 0: 
+                    outf( outfile, contig, start, end, val)
             ncontigs += 1
 
         E.info( "finished output" )
