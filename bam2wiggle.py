@@ -64,6 +64,91 @@ import Experiment as E
 import pysam
 import IOTools
 
+class SpanWriter(object):
+    '''output values within spans.
+    
+    values are collected according to a span and an average is
+    output.
+    '''
+    def __init__(self,span):
+        self.span = span
+
+        self.laststart = 0
+        self.lastend = None
+        self.val = 0
+
+        self.lastout = None
+
+    def __call__( self, outfile, contig, start, end, val ):
+        
+        # deal with previous window
+        if self.lastend:
+            last_window_start = self.lastend - self.lastend % self.span
+            last_window_end = last_window_start + self.span
+        else:
+            last_window_start = start - start % self.span
+            last_window_end = start + self.span
+
+        # print start, end, val, last_window_start, last_window_end
+
+        if self.lastend and start > last_window_end:
+            # no overlap, output previous span
+            assert self.lastout != last_window_start, \
+                "start=%i, end=%i, laststart=%i, lastend=%i, last_window_start=%i" % \
+                (start, end, self.laststart, self.lastend, last_window_start)
+            self.lastout = last_window_start
+            v = self.val / float(self.span)
+            outfile.write( "%i\t%f\n" % (last_window_start, v ) )
+            self.val = 0
+
+            last_window_start = start - start % self.span
+            last_window_end = start + self.span
+
+        if end < last_window_end:
+            # window too small to output, simply add values
+            self.val += val * (end - start)
+            self.lastend = max( end, self.lastend )
+        else:
+            # output first window
+            v = self.val + val * (self.span - start % self.span) / float(self.span)
+            
+            s = last_window_start
+            assert self.lastout != s, \
+                    "start=%i, end=%i, laststart=%i, lastend=%i, s=%i" % \
+                    (start, end, self.laststart, self.lastend, s)
+            outfile.write( "%i\t%f\n" % (s, v ) )
+            self.lastout = s
+            self.val = 0
+
+            # Output middle windows
+            for x in range( start + self.span - start % self.span, end - self.span, self.span ):
+                assert self.lastout != x
+                outfile.write( "%i\t%f\n" % (x, val ) )
+                self.lastout = x
+
+            if end % self.span:
+                # save rest
+                self.lastend = end 
+                self.val = val * end % self.span
+            elif end - self.span != last_window_start:
+                # special case, end ends on window
+                assert self.lastout != end - self.span, \
+                    "start=%i, end=%i, laststart=%i, lastend=%i" % \
+                    (start, end, self.laststart, self.lastend)
+                self.lastout = end - self.span
+                outfile.write( "%i\t%f\n" % (end - self.span, val ) )
+                self.lastend = None
+            else:
+                # special case, end ends on window and only single window - already
+                # output as start
+                self.lastend = None
+
+
+    def flush( self, outfile ):
+        if self.lastend:
+            outfile.write( "%i\t%f\n" % (self.lastend - self.lastend % self.span, 
+                                         self.val / (self.lastend % self.span) ) )
+
 def main( argv = None ):
     """script main.
     """
@@ -86,12 +171,16 @@ def main( argv = None ):
     parser.add_option( "-e", "--extend", dest="extend", type = "int",
                        help = "extend reads by a certain amount (ChIP-Seq) [%default]" )
 
+    parser.add_option( "-p", "--span", dest="span", type = "int",
+                       help = "span of a window in wiggle tracks [%default]" )
+
     parser.set_defaults(
         samfile = None,
         output_format = "wiggle",
         output_filename = None,
         shift = 0,
         extend = 0,
+        span = 1,
         )
 
     ## add common options (-h/--help, ...) and parse command line 
@@ -152,8 +241,12 @@ def main( argv = None ):
 
     if options.output_format in ("wiggle", "bigwig"):
         # wiggle is one-based, so add 1, also step-size is 1, so need to output all bases
-        outf = lambda outfile, contig, start, end, val: \
-            outfile.write( "".join( [ "%i\t%i\n" % (x, val) for x in xrange(start+1,end+1) ] ) )
+        if options.span == 1:
+            outf = lambda outfile, contig, start, end, val: \
+                outfile.write( "".join( [ "%i\t%i\n" % (x, val) for x in xrange(start+1,end+1) ] ) )
+        else:
+            outf = SpanWriter( options.span )
+
     elif options.output_format in ("bed", "bigbed"):
         # bed is 0-based, open-closed
         outf = lambda outfile, contig, start, end, val: \
@@ -203,18 +296,31 @@ def main( argv = None ):
         shutil.rmtree( tmpdir )
 
     else:
+
+        def column_iter( iterator ):
+            
+            start = None
+            end = 0
+            for t in iterator:
+                if t.pos - end > 1 or n != t.n: 
+                    if start != None: yield start, end, n
+                    start = t.pos
+                    end = t.pos
+                    n = t.n
+                end = t.pos
+            yield start, end, n
+
         for contig in samfile.references:
             # if contig != "chrX": continue
             E.debug("output for %s" % contig )
             lcontig = contig_sizes[contig]
 
             if options.output_format in ("wiggle", "bigwig"):
-                outfile.write( "variableStep chrom=%s span=1\n" % contig )
+                outfile.write( "variableStep chrom=%s span=%i\n" % (contig, options.span) )
 
-            for v, iter in itertools.groupby( samfile.pileup(contig), lambda x: x.n ):
-                l = list(iter)
-                # print l[0].pos, l[-1].pos, l[0].n
-                start, end, val = l[0].pos,l[-1].pos+1,l[0].n
+                
+            for start, end, val in column_iter( samfile.pileup(contig)):
+
                 # patch: there was a problem with bam files and reads overextending at the end.
                 # These are usually Ns, but need to check as otherwise wigToBigWig fails.
                 if lcontig <= end: 
@@ -225,6 +331,9 @@ def main( argv = None ):
                 if val > 0: 
                     outf( outfile, contig, start, end, val)
             ncontigs += 1
+
+        if type(outf) == type(SpanWriter):
+            outf.flush(outfile)
 
         E.info( "finished output" )
 
