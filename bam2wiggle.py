@@ -204,7 +204,7 @@ def main( argv = None ):
 
     else:
         for contig in samfile.references:
-            if contig != "chrX": continue
+            # if contig != "chrX": continue
             E.debug("output for %s" % contig )
             lcontig = contig_sizes[contig]
 
