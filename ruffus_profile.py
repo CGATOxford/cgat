@@ -50,8 +50,10 @@ class Counter(object):
             self._calls[source] += 1
             self._started[source] = dt
         else:
-            raise ValueError("inconsistent time points for %s, has_started=%s, is_started=%s" % (source,
-                                                                                                 self._started[source], started))
+            raise ValueError("""inconsistent time points for %s, has_started=%s, is_started=%s.
+Possibly two pipelines have been running concurrently.
+""" % (source,
+       self._started[source], started))
 
     def reset( self, source = None):
         '''reset last event.'''
