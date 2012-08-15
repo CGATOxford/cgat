@@ -42,7 +42,11 @@ import time, random, inspect, types, multiprocessing
 import logging, collections, shutil, glob, gzip
 import ConfigParser
 
+# talking to a cluster
 import drmaa
+# talking to mercurial
+import hgapi
+
 from ruffus import *
 
 # use threading instead of multiprocessing
@@ -1169,6 +1173,9 @@ def main( args = sys.argv ):
     parser.add_option( "-n", "--dry-run", dest="dry_run", action="store_true",
                       help="perform a dry run (do not execute any shell commands) [default=%default]." )
 
+    parser.add_option( "-f", "--force", dest="force", action="store_true",
+                      help="force running the pipeline even if there are uncommited changes in the repository [default=%default]." )
+
     parser.add_option( "-l", "--local", dest="without_cluster", action="store_true",
                       help="execute all jobs locally [default=%default]." )
 
@@ -1183,6 +1190,7 @@ def main( args = sys.argv ):
         logfile = "pipeline.log",
         dry_run = False,
         without_cluster = False,
+        force = False,
         )
 
     (options, args) = E.Start( parser, 
@@ -1194,8 +1202,17 @@ def main( args = sys.argv ):
     
     GLOBAL_OPTIONS, GLOBAL_ARGS = options, args
     PARAMS["dryrun"] = options.dry_run
+
+    # get mercurial version
+    repo = hgapi.Repo( PARAMS["scriptsdir"] )
+    version = repo.hg_id()
     
-    version, _ = execute( "hg identify %s" % PARAMS["scriptsdir"] )
+    status = repo.hg_status()
+    if status["M"] or status["A"]:
+        if not options.force:
+            raise ValueError( "uncommitted change in code repository at '%s'. Either commit or use --force" % PARAMS["scriptsdir"])
+        else:
+            E.warn( "uncommitted changes in code repository - ignored ")
 
     if args: 
         options.pipeline_action = args[0]
