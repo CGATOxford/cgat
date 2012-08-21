@@ -274,6 +274,11 @@ CONDITIONS = PipelineTracks.Aggregate( TRACKS, labels = ("condition", ) )
 TISSUES = PipelineTracks.Aggregate( TRACKS, labels = ("tissue", ) )
 
 ###################################################################
+## Global flags
+###################################################################
+SPLICED_MAPPING = "tophat" in P.asList( PARAMS["mappers" ] )
+
+###################################################################
 ###################################################################
 ###################################################################
 def connect():
@@ -427,6 +432,7 @@ def mergeAndFilterGTF( infile, outfile, logfile ):
 #########################################################################
 #########################################################################
 #########################################################################
+@active_if( SPLICED_MAPPING )
 @merge( os.path.join( PARAMS["annotations_dir"], 
                       PARAMS_ANNOTATIONS["interface_geneset_all_gtf"]),
         "reference.gtf.gz" )
@@ -534,6 +540,7 @@ def buildReferenceGeneSet( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
+@active_if( SPLICED_MAPPING )
 @transform( buildReferenceGeneSet, 
             suffix("reference.gtf.gz"),
             "refcoding.gtf.gz" )
@@ -557,6 +564,7 @@ def buildCodingGeneSet( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
+@active_if( SPLICED_MAPPING )
 @merge( os.path.join(PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_geneset_flat_gtf"]),
         "introns.gtf.gz" )
 def buildIntronGeneModels(infile, outfile ):
@@ -602,6 +610,7 @@ def buildIntronGeneModels(infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
+@active_if( SPLICED_MAPPING )
 @transform( buildCodingGeneSet,
             suffix(".gtf.gz"),
             "_transcript2gene.load" )
@@ -611,6 +620,7 @@ def loadGeneInformation( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
+@active_if( SPLICED_MAPPING )
 @merge( os.path.join( PARAMS["annotations_dir"], 
                       PARAMS_ANNOTATIONS["interface_geneset_all_gtf"]),
         "coding_exons.gtf.gz" )
@@ -634,6 +644,7 @@ def buildCodingExons( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
+@active_if( SPLICED_MAPPING )
 @transform( buildCodingGeneSet, suffix(".gtf.gz"), ".fa")
 def buildReferenceTranscriptome( infile, outfile ):
     '''build reference transcriptome. 
@@ -679,6 +690,7 @@ def buildReferenceTranscriptome( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
+@active_if( SPLICED_MAPPING )
 @transform( buildCodingGeneSet, suffix(".gtf.gz"), ".junctions")
 def buildJunctions( infile, outfile ):
     '''build file with splice junctions from gtf file.
@@ -770,6 +782,7 @@ def loadReadCounts( infiles, outfile ):
 #########################################################################
 ## Map reads with tophat
 #########################################################################
+@active_if( SPLICED_MAPPING )
 @follows( mkdir("tophat.dir" ) )
 @transform( SEQUENCEFILES,
             SEQUENCEFILES_REGEX,
@@ -813,6 +826,7 @@ def mapReadsWithTophat( infiles, outfile ):
 ############################################################
 ############################################################
 ############################################################
+@active_if( SPLICED_MAPPING )
 @merge( mapReadsWithTophat, "tophat_stats.tsv" )
 def buildTophatStats( infiles, outfile ):
 
@@ -883,6 +897,7 @@ def buildTophatStats( infiles, outfile ):
 ############################################################
 ############################################################
 ############################################################
+@active_if( SPLICED_MAPPING )
 @transform( buildTophatStats, suffix(".tsv"), ".load" )
 def loadTophatStats( infile, outfile ):
     P.load( infile, outfile )
@@ -890,6 +905,7 @@ def loadTophatStats( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
+@active_if( SPLICED_MAPPING )
 @follows( mkdir("transcriptome.dir" ) )
 @transform( SEQUENCEFILES,
             SEQUENCEFILES_REGEX,
@@ -1001,6 +1017,7 @@ def mapping(): pass
 ############################################################
 ############################################################
 ############################################################
+@active_if( SPLICED_MAPPING )
 @transform( MAPPINGTARGETS,
             suffix(".bam" ),
             ".picard_inserts")
@@ -1020,7 +1037,8 @@ def buildPicardTranscriptomeInsertSize( infiles, outfile ):
 ############################################################
 @transform( MAPPINGTARGETS,
             suffix(".bam" ), 
-            add_inputs( buildReferenceTranscriptome ), 
+            add_inputs( os.path.join( PARAMS["bowtie_index_dir"],
+                                PARAMS["genome"] + ".fa" ) ), 
             ".picard_stats")
 def buildPicardStats( infiles, outfile ):
     '''build alignment stats using picard.
@@ -1029,9 +1047,10 @@ def buildPicardStats( infiles, outfile ):
     '''
     infile, reffile = infiles
 
-    if "transcriptome.dir" not in infile:
-        reffile = os.path.join( PARAMS["bowtie_index_dir"],
-                                PARAMS["genome"] + ".fa" )
+    # patch for mapping against transcriptome - switch genomic reference
+    # to transcriptomic sequences
+    if "transcriptome.dir" in infile:
+        reffile = "refcoding.fa"
 
     PipelineMappingQC.buildPicardAlignmentStats( infile, 
                                                  outfile,
@@ -1221,6 +1240,7 @@ def loadContextStats( infiles, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
+@active_if( SPLICED_MAPPING )
 @transform( MAPPINGTARGETS,
             suffix(".bam"),
             add_inputs( buildCodingExons ),
@@ -1247,6 +1267,7 @@ def buildExonValidation( infiles, outfile ):
 ############################################################
 ############################################################
 ############################################################
+@active_if( SPLICED_MAPPING )
 @merge( buildExonValidation, "exon_validation.load" )
 def loadExonValidation( infiles, outfile ):
     '''merge alignment stats into single tables.'''
@@ -1260,6 +1281,7 @@ def loadExonValidation( infiles, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
+@active_if( SPLICED_MAPPING )
 @transform( MAPPINGTARGETS, 
             suffix(".bam"),
             add_inputs( buildCodingGeneSet ),
@@ -1298,6 +1320,7 @@ def buildTranscriptLevelReadCounts( infiles, outfile):
 #########################################################################
 #########################################################################
 #########################################################################
+@active_if( SPLICED_MAPPING )
 @transform( buildTranscriptLevelReadCounts,
             suffix(".tsv.gz"),
             ".load" )
@@ -1307,6 +1330,7 @@ def loadTranscriptLevelReadCounts( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
+@active_if( SPLICED_MAPPING )
 @transform( MAPPINGTARGETS,
             suffix(".bam"),
             add_inputs( buildIntronGeneModels ),
@@ -1343,6 +1367,7 @@ def buildIntronLevelReadCounts( infiles, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
+@active_if( SPLICED_MAPPING )
 @transform(buildIntronLevelReadCounts,
            suffix(".tsv.gz"),
            ".load" )
@@ -1358,6 +1383,7 @@ def loadIntronLevelReadCounts( infile, outfile ):
           loadContextStats )
 def general_qc(): pass
 
+@active_if( SPLICED_MAPPING )
 @follows( loadTophatStats, 
           loadExonValidation,
           loadGeneInformation,
