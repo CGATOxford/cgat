@@ -966,7 +966,7 @@ def peekParameters( workingdir, pipeline ):
     assert os.path.exists( pipeline ), "can't find pipeline source %s" % pipeline
     assert os.path.exists( workingdir ), "can't find working dir %s" % workingdir
     
-    process = subprocess.Popen(  "python %s -v 0 dump" % pipeline,
+    process = subprocess.Popen(  "python %s -f -v 0 dump" % pipeline,
                                  cwd = workingdir, 
                                  shell = True,
                                  stdin = subprocess.PIPE,
