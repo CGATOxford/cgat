@@ -255,6 +255,59 @@ def buildContigBed( infile, outfile ):
 ############################################################
 ############################################################
 @files( os.path.join( PARAMS["genome_dir"], PARAMS["genome"] + ".fasta"), 
+        (PARAMS['interface_contigs_ungapped_bed'],
+         PARAMS['interface_gaps_bed'],
+         ))
+def buildUngappedContigBed( infile, outfiles ):
+    '''output bed file with contigs. 
+
+    Genomic regions with gaps are excluded.
+    '''
+    prefix = P.snip( infile, ".fasta" )
+    fasta = IndexedFasta.IndexedFasta( prefix )
+    outs_nogap = IOTools.openFile(outfiles[0], "w" )
+    outs_gap = IOTools.openFile(outfiles[1], "w" )
+    min_gap_size = PARAMS["gaps_min_size"]
+
+    for contig, size in fasta.getContigSizes( with_synonyms = False ).iteritems():
+
+        seq = fasta.getSequence( contig )
+
+        def gapped_regions( seq ):
+            is_gap = seq[0] == "N"
+            last = 0
+            for x,c in enumerate(seq):
+                if c == "N":
+                    if not is_gap:
+                        last = x
+                        is_gap = True
+                else:
+                    if is_gap:
+                        yield( last, x )
+                        last = x
+                        is_gap = False
+            if is_gap:
+                yield last, size
+                
+        last_end = 0
+        for start, end in gapped_regions(seq):
+            if end - start < min_gap_size: continue
+            
+            if last_end != 0:
+                outs_nogap.write( "%s\t%i\t%i\n" % ( contig,last_end,start) )
+            outs_gap.write( "%s\t%i\t%i\n" % ( contig,start,end) )
+            last_end = end
+
+        if last_end < size:
+            outs_nogap.write( "%s\t%i\t%i\n" % ( contig,last_end,size) )
+
+    outs_nogap.close()
+    outs_gap.close()
+
+############################################################
+############################################################
+############################################################
+@files( os.path.join( PARAMS["genome_dir"], PARAMS["genome"] + ".fasta"), 
         PARAMS["interface_genome_tsv"])
 def buildGenomeInformation( infile, outfile ):
     '''compute genome composition information.'''
@@ -525,18 +578,50 @@ def loadTranscriptInformation( infile, outfile ):
         "transcript_status" : "transcript_status",
         "external_gene_id" : "gene_name",
         "external_transcript_id" : "transcript_name",
+        "uniprot_sptrembl": "uniprot_id",
+        "uniprot_genename": "uniprot_name",
         }
 
     data = PBiomart.biomart_iterator( columns.keys()
                                       , biomart = "ensembl"
                                       , dataset = PARAMS["ensembl_biomart_dataset"] )
     
+    # The full list of genes from this table is too extensive. The following are removed:
+    # 1. Some genes are present as LRGxxx identifiers
+    # """LRG stands for Locus Reference Genomic. An LRG is a fixed sequence, 
+    # independent of the genome, specifically created for the diagnostic community 
+    # to record DNA sequence variation on a fixed framework"""
+    # These are removed below:
+    data = filter( lambda x: not x['ensembl_gene_id'].startswith( "LRG"), data )
+
+    # 2. Some genes are present on artificial chromosomes such as
+    # ENSG00000265928 on HG271_PATCH.
+    # To filter these out, the gene ids are cross-checked against those in
+    # the ensembl gtf file.
+    gene_ids = set()
+    with IOTools.openFile( infile ) as inf:
+        for gtf in GTF.iterator(inf):
+            gene_ids.add( gtf.gene_id )
+
+    data = filter( lambda x: x['ensembl_gene_id'] in gene_ids, data )
+
     PDatabase.importFromIterator( outfile
                                   , tablename
                                   , data
                                   , columns = columns 
-                                  , indices = ("gene_id", "transcript_id", "protein_id", "gene_name", "transcript_name") )
+                                  , indices = ("gene_id", "transcript_id", "protein_id", "gene_name", "transcript_name", "uniprot_id") )
 
+    # validate: 1:1 mapping between gene_ids and gene_names
+    dbh = connect()
+    cc = dbh.cursor()
+    data = cc.execute( """SELECT gene_name, count(distinct gene_id) from %(tablename)s 
+                        GROUP BY gene_name HAVING count(distinct gene_id) > 1""" % locals())
+    l = data.fetchall()
+    if len(l) > 0:
+        E.warn( "there are %i gene_names mapped to different gene_ids" % len(l))
+    for gene_name, counts in l:
+        E.info( "ambiguous mapping: %s->%i" % (gene_name, counts))
+        
 
 ############################################################
 ############################################################
@@ -1184,7 +1269,7 @@ if 0:
 @files( [ (None, PARAMS["interface_go"] ), ] )
 def createGO( infile, outfile ):
     '''get GO assignments from ENSEMBL'''
-    PipelineGO.createGO( infile, outfile )
+    PipelineGO.createGOFromENSEMBL( infile, outfile )
 
 ############################################################
 @transform( createGO, 
@@ -1192,7 +1277,7 @@ def createGO( infile, outfile ):
             PARAMS["interface_goslim"])
 def createGOSlim( infile, outfile ):
     '''get GO assignments from ENSEMBL'''
-    PipelineGO.createGOSlim( infile, outfile )
+    PipelineGO.createGOSlimFromENSEMBL( infile, outfile )
 
 ############################################################
 @transform( (createGO, createGOSlim), 
@@ -1211,6 +1296,24 @@ def loadGOAssignments( infile, outfile ):
     > %(outfile)s
     '''
     P.run()
+
+############################################################
+############################################################
+############################################################
+@transform( createGO, suffix( ".tsv.gz"), ".paths" )
+def buildGOPaths( infile, outfile ):
+    '''compute a file with paths of each GO term to the ancestral node.'''
+    infile = P.snip( infile, ".tsv.gz") + "_ontology.obo"
+    PipelineGO.buildGOPaths( infile, outfile )
+
+############################################################
+############################################################
+############################################################
+@transform( createGO, suffix( ".tsv.gz"), ".desc.tsv" )
+def buildGOTable( infile, outfile ):
+    '''build a simple table with GO descriptions in obo.'''
+    infile = P.snip( infile, ".tsv.gz") + "_ontology.obo"
+    PipelineGO.buildGOTable( infile, outfile )
 
 @files(None,PARAMS['interface_kegg'])
 def importKEGGAssignments(infile,outfile):
@@ -1233,6 +1336,23 @@ def loadKEGGAssignments(infile, outfile):
 ############################################################
 ############################################################
 ############################################################
+@follows( loadTranscriptInformation, loadGOAssignments )
+@files( [ (None, PARAMS["interface_go_geneontology"]), ] )
+def createGOFromGeneOntology( infile, outfile ):
+    '''get GO assignments from ENSEMBL'''
+    PipelineGO.createGOFromGeneOntology( infile, outfile )
+
+############################################################
+@transform( createGOFromGeneOntology, 
+            suffix( ".tsv.gz"), 
+            add_inputs(buildGOPaths),
+            ".imputed.tsv.gz")
+def imputeGO( infiles, outfile ):
+    PipelineGO.imputeGO( infiles[0], infiles[1], outfile )
+
+############################################################
+############################################################
+############################################################
 @merge( (buildGeneTerritories, loadGOAssignments),
         ( PARAMS["interface_genomic_function_bed"],
           PARAMS["interface_genomic_function_tsv"],
@@ -1249,45 +1369,10 @@ def buildGenomicFunctionalAnnotation( infiles, outfiles ):
     The output file contains annotations for both GO and GOSlim. These
     are prefixed by ``go:`` and ``goslim:``.
     '''
-    
-    to_cluster = True
 
     territories_file = infiles[0]
 
-    outfile_bed, outfile_tsv = outfiles
-
-    gene2region = {}
-    for gtf in GTF.iterator( IOTools.openFile(territories_file, "r")):
-        gid = gtf.gene_id.split(":")
-        for g in gid:
-            gene2region[g] = (gtf.contig, gtf.start, gtf.end, gtf.strand)
-        
-    dbh = connect()
-    cc = dbh.cursor()
-    
-    outf = P.getTempFile( "." )
-    c = E.Counter()
-    term2description = {}
-    for db in ('go', 'goslim'):
-        for gene_id, go_id, description in cc.execute("SELECT gene_id, go_id, description FROM %s_assignments" % db):
-            try:
-                contig, start, end, strand = gene2region[gene_id]
-            except KeyError:
-                c.notfound += 1
-                continue
-            outf.write( "\t".join( map(str, (contig, start, end, "%s:%s" % (db, go_id), 1, strand))  ) + "\n" )
-            term2description["%s:%s" % (db, go_id)] = description
-    outf.close()
-    tmpfname = outf.name
-    statement = '''sort -k1,1 -k2,2n  < %(tmpfname)s | uniq | gzip > %(outfile_bed)s'''
-
-    P.run()
-
-    outf = IOTools.openFile( outfile_tsv, "w" )
-    outf.write("term\tdescription\n" )
-    for term, description in term2description.iteritems():
-        outf.write("%s\t%s\n" % (term, description))
-    outf.close()
+    PipelineGO.buildGenomicFunctionalAnnotation( territories_file, dbh )
 
 ############################################################
 ############################################################

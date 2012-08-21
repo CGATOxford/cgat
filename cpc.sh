@@ -154,7 +154,7 @@ input_seq_size=`stat -Lc "%s" $arg_input_seq`;
 
 # local version
 echo "running blast"
-(cat $arg_input_seq | $APP_BLAST $blast_opts | tee $arg_working_dir/blastx.bls | perl $APP_BLAST2TAB | tee $arg_working_dir/blastx.table | perl $c_extract_blast_feat ) > $arg_working_dir/blastx.feat1 &
+(cat $arg_input_seq | $APP_FARM $APP_BLAST $blast_opts | tee $arg_working_dir/blastx.bls | perl $APP_BLAST2TAB | tee $arg_working_dir/blastx.table | perl $c_extract_blast_feat ) > $arg_working_dir/blastx.feat1 &
 
 echo "running framefinder"
 (cat $arg_input_seq | $APP_FF $ff_opts | tee $arg_working_dir/ff.fa1 | perl $c_extract_ff_feat ) > $arg_working_dir/ff.feat &

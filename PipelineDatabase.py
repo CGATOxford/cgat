@@ -30,7 +30,7 @@ def importFromIterator(
         
     for row in iterator:
         if not columns:
-            keys = row[x].keys()
+            keys = row[0].keys()
             values = keys
             columns = keys
             tmpfile.write( "\t".join( values) + "\n" )

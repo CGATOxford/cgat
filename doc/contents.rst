@@ -39,6 +39,7 @@ complete list:
    scripts/pipeline_rnaseqtranscripts.rst
    scripts/pipeline_transcriptome.rst
    scripts/pipeline_rnaseqdiffexpression.rst
+   scripts/pipeline_peakcalling.rst
 
 Help on installing, using and building pipelines is below:
 

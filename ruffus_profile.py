@@ -50,8 +50,10 @@ class Counter(object):
             self._calls[source] += 1
             self._started[source] = dt
         else:
-            raise ValueError("inconsistent time points for %s, has_started=%s, is_started=%s" % (source,
-                                                                                                 self._started[source], started))
+            raise ValueError("""inconsistent time points for %s, has_started=%s, is_started=%s.
+Possibly two pipelines have been running concurrently.
+""" % (source,
+       self._started[source], started))
 
     def reset( self, source = None):
         '''reset last event.'''
@@ -94,6 +96,9 @@ def main( argv = sys.argv ):
     parser.add_option( "-f", "--filter", dest="filter", type="choice",
                        choices=("unfinished", "running", "completed", "all" ),
                        help="apply filter to output [default=%default]" )
+
+    parser.add_option( "-i", "--ignore-errors", dest="ignore_errors", action="store_true",
+                       help="ignore errors [default=%default]" )
 
     parser.set_defaults( sections = [],
                          logfile = "pipeline.log",
@@ -150,16 +155,20 @@ def main( argv = sys.argv ):
         else:
             continue
 
-        if started_task:
-            counts["task"][started_task].add( True, dt, started_task )
-        elif completed_task:
-            counts["task"][completed_task].add( False, dt, completed_task )
-        elif started_job:
-            counts["job"][started_job].add( True, dt, started_job )
-        elif completed_job:
-            counts["job"][completed_job].add( False, dt, completed_job )
-        else:
-            raise ValueError( "unknown action")
+        try:
+            if started_task:
+                counts["task"][started_task].add( True, dt, started_task )
+            elif completed_task:
+                counts["task"][completed_task].add( False, dt, completed_task )
+            elif started_job:
+                counts["job"][started_job].add( True, dt, started_job )
+            elif completed_job:
+                counts["job"][completed_job].add( False, dt, completed_job )
+            else:
+                raise ValueError( "unknown action")
+        except ValueError, msg:
+            if not options.ignore_errors:
+                raise 
 
     if options.time == "milliseconds":
         f = lambda d: d.seconds + d.microseconds / 1000

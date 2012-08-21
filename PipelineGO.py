@@ -66,7 +66,7 @@ except IOError:
 ############################################################
 ############################################################
 ## get GO assignments
-def createGO( infile, outfile ):
+def createGOFromENSEMBL( infile, outfile ):
     '''get GO assignments from ENSEMBL'''
     
     statement = '''
@@ -78,6 +78,155 @@ def createGO( infile, outfile ):
                      --port=%(go_port)i > %(outfile)s.log
         '''
 
+    P.run()
+
+############################################################
+############################################################
+############################################################
+## get go assignments
+def createGOFromGeneOntology( infile, outfile ):
+    '''get GO assignments from Geneontology.org
+
+    GO terms are mapped to ensembl gene names via uniprot identifiers.
+    '''
+
+    filename = "geneontology.goa.gz"
+    if not os.path.exists( filename ):
+        statement = '''
+    wget -O %(filename)s http://cvsweb.geneontology.org/cgi-bin/cvsweb.cgi/go/gene-associations/gene_association.goa_%(go_geneontology_species)s.gz?rev=HEAD
+    '''
+    
+        P.run()
+
+    # see http://www.geneontology.org/gene-associations/readme/goa.README
+    Data = collections.namedtuple( "Data", "db db_object_id db_object_symbol qualifier goid dbreference evidence "
+                                   " with_id aspect "
+                                   " db_object_name synonym db_object_type "
+                                   " taxon_id date assigned_by "
+                                   " annotation_extension"
+                                   " gene_product_form_id" )
+
+    dbh = sqlite3.connect( PARAMS["database"] )
+    cc = dbh.cursor()
+    map_uniprot2ensembl = dict( cc.execute( "SELECT DISTINCT gene_name, gene_id FROM transcript_info" ).fetchall() )
+    map_goid2description = dict( cc.execute( "SELECT DISTINCT go_id, description FROM go_assignments" ).fetchall() )
+
+    aspect2name = { "P": "biol_process",
+                    "F": "mol_function",
+                    "C": "cell_location" }
+    
+    c = E.Counter()
+    found_uniprot, found_genes, notfound_uniprot = set(), set(), set()
+    outf = IOTools.openFile( outfile, "w" )
+    outf.write("go_type\tgene_id\tgo_id\tdescription\tevidence\n" )
+    for line in IOTools.openFile( filename ):
+        if line.startswith("!"): continue
+        c.input += 1
+        data = Data._make( line[:-1].split("\t") )
+
+        if data.db_object_symbol in map_uniprot2ensembl:
+            gene_id = map_uniprot2ensembl[data.db_object_symbol]
+            found_uniprot.add( data.db_object_symbol )
+            found_genes.add( gene_id )
+            outf.write( "%s\t%s\t%s\t%s\t%s\n" % \
+                            (aspect2name[data.aspect],
+                             gene_id,
+                             data.goid,
+                             map_goid2description.get(data.goid, ""),
+                             data.evidence) )
+            c.output += 1
+                    
+        else:
+            c.notfound += 1
+            notfound_uniprot.add( data.db_object_symbol )
+
+    c.found_genes = len(found_genes)
+    c.found_uniprot = len(found_uniprot)
+    c.notfound_uniprot = len(notfound_uniprot)
+
+    E.info( "%s" % str(c))
+    E.info( "not found=%s" % str(notfound_uniprot))
+    outf.close()
+
+############################################################
+############################################################
+############################################################
+## get GO descriptions
+############################################################
+def imputeGO( infile_go, infile_paths, outfile ):
+    '''impute GO accessions.
+
+    Infile is a file with GO assocations and a file
+    with paths of term to ancester (see go2fmt.pl).
+    '''
+
+    c = E.Counter()
+
+    term2ancestors = collections.defaultdict( set )
+    with IOTools.openFile( infile_paths) as inf:
+        for line in inf:
+            parts = line[:-1].split()
+            term = parts[0]
+            ancestors=[ parts[x] for x in range(2, len(parts), 2) ]
+            # there can be multiple paths
+            term2ancestors[term].update( ancestors )
+            
+    goid2description = {}
+    gene2goids = collections.defaultdict( list )
+    goid2type = {}
+    with IOTools.openFile( infile_go) as inf:
+        for line in inf:
+            if line.startswith( "go_type"): continue
+            go_type, gene_id, goid, description, evidence = line[:-1].split("\t")
+            gene2goids[gene_id].append(goid)
+            goid2description[goid] = description
+            goid2type[goid] = go_type
+
+    outf = IOTools.openFile( outfile, "w ")
+    for gene_id, in_goids in gene2goids.iteritems():
+        c.genes += 1
+        out_goids = set(in_goids)
+        for goid in in_goids:
+            out_goids.update( term2ancestors[goid] )
+        if len(in_goids) != len(out_goids):
+            c.increased += 1
+        else:
+            c.complete += 1
+
+        for goid in out_goids:
+            outf.write( "\t".join( (goid2type.get(goid, ""), gene_id, goid, goid2description.get(goid, ""), "NA") ) + "\n" )
+            c.assocations += 1
+
+    outf.close()
+
+    E.info( "%s" % str(c) )
+
+            
+            
+
+############################################################
+def buildGOPaths( infile, outfile ):
+    '''output file with paths of terms to root.
+
+    infile is an ontology obo file.
+    '''
+    use_cluster = True
+    statement = '''
+    go2fmt.pl -w pathlist %(infile)s > %(outfile)s
+    '''
+    P.run()
+
+############################################################
+def buildGOTable( infile, outfile ):
+    '''output file with paths of terms to root.
+
+    infile is an ontology obo file.
+    '''
+    use_cluster = True
+    statement = '''
+    echo -e "go_id\tdescription\tlong_description\ttext\n" > %(outfile)s;
+    go2fmt.pl -w tbl %(infile)s >> %(outfile)s
+    '''
     P.run()
 
 ############################################################
@@ -105,7 +254,7 @@ def getGODescriptions( infile ):
 ############################################################
 ## get GO Slim assignments
 ############################################################
-def createGOSlim( infile, outfile ):
+def createGOSlimFromENSEMBL( infile, outfile ):
     '''get GO assignments from ENSEMBL'''
     
     statement = '''wget %(go_url_goslim)s --output-document=goslim.obo'''

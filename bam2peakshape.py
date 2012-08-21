@@ -130,7 +130,7 @@ def main( argv = None ):
     parser.add_option( "-r", "--random-shift", dest="random_shift", action="store_true",
                        help = "shift intervals in random direction directly up/downstream of interval "
                               "[%default]" )
-
+ 
     parser.add_option( "-e", "--centring-method", dest="centring_method", type = "choice",
                        choices = ("reads", "middle"),
                        help = "centring method (reads=use reads to determine peak, middle=use middle of interval" 
@@ -139,10 +139,12 @@ def main( argv = None ):
     parser.add_option( "-n", "--normalization", dest="normalization", type = "choice",
                        choices = ("none", "sum" ),
                        help = "normalisation to perform. "
-                              "[%default]" )
-    parser.add_option( "--stranded", dest = "stranded", action="store_true",
-                       help = "reverse the order of bases for intervals on the reverse strand [%default]" )
+                              "[%default]" )                                 
 
+    parser.add_option( "--use-strand", dest="strand_specific", action="store_true",
+                       help = "use strand information in intervals. Intervals on the negative strand are flipped "
+                              "[%default]" )
+ 
     parser.set_defaults(
         remove_rna = False,
         ignore_pairs = False,
@@ -154,8 +156,7 @@ def main( argv = None ):
         sort = [],
         centring_method = "reads",
         control_file = None,
-        random_shift = False,
-        stranded = False
+        random_shift = False,        strand_specific = False,
         )
 
     ## add common options (-h/--help, ...) and parse command line 
@@ -188,6 +189,8 @@ def main( argv = None ):
                               options.bin_size )        
         
     contigs = set(pysam_in.references)
+
+    strand_specifc = options.strand_specific
 
     result =[]
     c = E.Counter()
@@ -228,6 +231,11 @@ def main( argv = None ):
         else:
             shifted = None
 
+        if strand_specific and bed.strand == "-":
+            features._replace( hist=hist[::-1] )
+            if control: control._replace( hist=hist[::-1] )
+            if shifted: shift._replace( hist=hist[::-1] )
+
         result.append( (features, bed, control, shifted) )
         c.added += 1
 
@@ -255,23 +263,11 @@ def main( argv = None ):
             if "name" in bed: name = bed.name
             else:name = str(n)
             bins, counts = features[-2], features[-1]
-            #IMS: reverse counts for features on the minus strand if stranded is set
-            if options.stranded and bed.strand == "-":
-                counts = counts[::-1]
             outfile_matrix.write( "%s\t%s\n" % (name, "\t".join(map(str,counts))) )
-
             if control:
-                #IMS: reverse counts for features on the minus strand if stranded is set
-                if options.stranded and bed.strand == "-":
-                    outfile_control.write( "%s\t%s\n" % (name, "\t".join(map(str,control.counts[::-1]))) )
-                else:
-                    outfile_control.write( "%s\t%s\n" % (name, "\t".join(map(str,control.counts))) )
+                outfile_control.write( "%s\t%s\n" % (name, "\t".join(map(str,control.counts))) )
             if shifted:
-                #IMS: reverse counts for features on the minus strand if stranded is set
-                if options.stranded and bed.strand == "-":
-                    outfile_shift.write( "%s\t%s\n" % (name, "\t".join(map(str,shifted.counts[::-1]))) )
-                else:
-                    outfile_shift.write( "%s\t%s\n" % (name, "\t".join(map(str,shifted.counts))) )
+                outfile_shift.write( "%s\t%s\n" % (name, "\t".join(map(str,shifted.counts))) )
 
         outfile_matrix.close()
 
