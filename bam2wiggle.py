@@ -37,6 +37,15 @@ convert a bam file to a bigwig or bedgraph file.
 The script requires the executables :file:`wigToBigWig` and 
 :file:`bedToBigBed` to be in the user's PATH.
 
+If no --shift or --extend option are given, the coverage is computed directly on reads. 
+Counting can be performed at a certain resolution.
+The counting currently is not aware of spliced reads, i.e., an inserted intron will be 
+included in the coverage.
+
+If --shift or --extend are given, the coverage is computed by shifting read
+alignment positions upstream for positive strand reads or downstream for negative
+strand reads and extend them by a fixed amount. 
+
 Usage
 -----
 
@@ -317,7 +326,6 @@ def main( argv = None ):
 
             if options.output_format in ("wiggle", "bigwig"):
                 outfile.write( "variableStep chrom=%s span=%i\n" % (contig, options.span) )
-
                 
             for start, end, val in column_iter( samfile.pileup(contig)):
 

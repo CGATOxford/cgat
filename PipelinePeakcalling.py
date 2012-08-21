@@ -274,6 +274,8 @@ def buildBAMforPeakCalling( infiles, outfile, dedup, mask):
     num_reads = 0
     nfiles = 0
 
+    use_cluster = True
+
     statement = []
     
     tmpfile = P.getTempFilename()

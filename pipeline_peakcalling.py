@@ -103,10 +103,14 @@ Mapped reads are imported by placing files are linking to files in the :term:`wo
 
 The default file format assumes the following convention:
 
-   <sample>-<condition>-<replicate>.bam
+   <sample>-<condition>-<replicate>.genome.bam
 
 ``sample`` and ``condition`` make up an :term:`experiment`, while ``replicate`` denotes
 the :term:`replicate` within an :term:`experiment`. 
+
+Please not the suffix ``genome.bam`` which is required to distinguish the input :term:`bam`
+formatted files from those that are created in the pipeline after duplication removal (``.prep.bam``
+and ``.call.bam``)
 
 Optional inputs
 +++++++++++++++

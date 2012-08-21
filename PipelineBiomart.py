@@ -1,4 +1,13 @@
 '''utility tasks for importing data from biomart.
+
+
+In order to find out about datasets, filters and attributes, use the
+
+listDatasets( mart )
+listFilters( mart )
+listAttributes( mart )
+
+functions.
 '''
 
 from rpy2.robjects import r as R
