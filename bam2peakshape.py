@@ -139,7 +139,9 @@ def main( argv = None ):
     parser.add_option( "-n", "--normalization", dest="normalization", type = "choice",
                        choices = ("none", "sum" ),
                        help = "normalisation to perform. "
-                              "[%default]" )                                 
+                              "[%default]" )
+    parser.add_option( "--stranded", dest = "stranded", action="store_true",
+                       help = "reverse the order of bases for intervals on the reverse strand [%default]" )
 
     parser.set_defaults(
         remove_rna = False,
@@ -153,6 +155,7 @@ def main( argv = None ):
         centring_method = "reads",
         control_file = None,
         random_shift = False,
+        stranded = False
         )
 
     ## add common options (-h/--help, ...) and parse command line 
@@ -201,6 +204,7 @@ def main( argv = None ):
                                          bins = bins,
                                          only_interval = options.only_interval,
                                          centring_method = options.centring_method )
+     
 
         if pysam_control:
             control = _bam2peakshape.countAroundPos(pysam_control, 
@@ -208,6 +212,7 @@ def main( argv = None ):
                                                     features.peak_center,
                                                     shift = shift,
                                                     bins = features.bins )
+       
         else:
             control = None
 
@@ -250,11 +255,23 @@ def main( argv = None ):
             if "name" in bed: name = bed.name
             else:name = str(n)
             bins, counts = features[-2], features[-1]
+            #IMS: reverse counts for features on the minus strand if stranded is set
+            if options.stranded and bed.strand == "-":
+                counts = counts[::-1]
             outfile_matrix.write( "%s\t%s\n" % (name, "\t".join(map(str,counts))) )
+
             if control:
-                outfile_control.write( "%s\t%s\n" % (name, "\t".join(map(str,control.counts))) )
+                #IMS: reverse counts for features on the minus strand if stranded is set
+                if options.stranded and bed.strand == "-":
+                    outfile_control.write( "%s\t%s\n" % (name, "\t".join(map(str,control.counts[::-1]))) )
+                else:
+                    outfile_control.write( "%s\t%s\n" % (name, "\t".join(map(str,control.counts))) )
             if shifted:
-                outfile_shift.write( "%s\t%s\n" % (name, "\t".join(map(str,shifted.counts))) )
+                #IMS: reverse counts for features on the minus strand if stranded is set
+                if options.stranded and bed.strand == "-":
+                    outfile_shift.write( "%s\t%s\n" % (name, "\t".join(map(str,shifted.counts[::-1]))) )
+                else:
+                    outfile_shift.write( "%s\t%s\n" % (name, "\t".join(map(str,shifted.counts))) )
 
         outfile_matrix.close()
 
