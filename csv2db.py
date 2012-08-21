@@ -269,7 +269,11 @@ def run( infile, options ):
     elif options.backend == "sqlite":
         import sqlite3
         dbhandle = sqlite3.connect( options.database )
-        os.chmod( options.database, 0664 )
+        try:
+            os.chmod( options.database, 0664 )
+        except OSError, msg:
+            E.warn("could not change permissions of database: %s" % msg )
+
         error = sqlite3.OperationalError
         options.insert_many = True  # False
         options.null = None # "NULL" 
