@@ -966,5 +966,57 @@ def sortGTF( infile, outfile,order = "contig+gene" ):
     P.run()
     
 
+def buildGenomicFunctionalAnnotation( gtffile, dbh ):
+    '''output a bed file with genomic regions with functional annotations.
 
+    The regions for each gene are given in the gtf file.
+
+    Each bed entry is a gene territory. Bed entries are labeled
+    by functional annotations associated with a gene.
+
+    Ambiguities in territories are resolved by outputting 
+    annotations for all genes within a territory.
+
+    The output file contains annotations for both GO and GOSlim. These
+    are prefixed by ``go:`` and ``goslim:``.
+    '''
+    
+    to_cluster = True
+
+    territories_file = infiles[0]
+
+    outfile_bed, outfile_tsv = outfiles
+
+    gene2region = {}
+    for gtf in GTF.iterator( IOTools.openFile( gtffile, "r")):
+        gid = gtf.gene_id.split(":")
+        for g in gid:
+            gene2region[g] = (gtf.contig, gtf.start, gtf.end, gtf.strand)
+        
+    dbh = connect()
+    cc = dbh.cursor()
+    
+    outf = P.getTempFile( "." )
+    c = E.Counter()
+    term2description = {}
+    for db in ('go', 'goslim'):
+        for gene_id, go_id, description in cc.execute("SELECT gene_id, go_id, description FROM %s_assignments" % db):
+            try:
+                contig, start, end, strand = gene2region[gene_id]
+            except KeyError:
+                c.notfound += 1
+                continue
+            outf.write( "\t".join( map(str, (contig, start, end, "%s:%s" % (db, go_id), 1, strand))  ) + "\n" )
+            term2description["%s:%s" % (db, go_id)] = description
+    outf.close()
+    tmpfname = outf.name
+    statement = '''sort -k1,1 -k2,2n  < %(tmpfname)s | uniq | gzip > %(outfile_bed)s'''
+
+    P.run()
+
+    outf = IOTools.openFile( outfile_tsv, "w" )
+    outf.write("term\tdescription\n" )
+    for term, description in term2description.iteritems():
+        outf.write("%s\t%s\n" % (term, description))
+    outf.close()
 
