@@ -156,8 +156,7 @@ def main( argv = None ):
         sort = [],
         centring_method = "reads",
         control_file = None,
-        random_shift = False,
-        strand_specific = False,
+        random_shift = False,        strand_specific = False,
         )
 
     ## add common options (-h/--help, ...) and parse command line 
@@ -208,6 +207,7 @@ def main( argv = None ):
                                          bins = bins,
                                          only_interval = options.only_interval,
                                          centring_method = options.centring_method )
+     
 
         if pysam_control:
             control = _bam2peakshape.countAroundPos(pysam_control, 
@@ -215,6 +215,7 @@ def main( argv = None ):
                                                     features.peak_center,
                                                     shift = shift,
                                                     bins = features.bins )
+       
         else:
             control = None
 
