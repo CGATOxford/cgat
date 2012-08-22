@@ -8,7 +8,7 @@ import Intervals
 import Genomics
 import GFF
 import IndexedGenome
-import fastgtf
+import pysam
 
 class Error(Exception):
     """Base class for exceptions in this module."""
@@ -177,7 +177,7 @@ class Entry:
     def copy( self, other ):
         """fill from other entry.
         works both if other is :class:`GTF.Entry` or 
-        :class:`fastgtf.GTFProxy`
+        :class:`pysam.GTFProxy`
         """
         self.contig = other.contig
         self.source = other.source
@@ -261,13 +261,13 @@ def asRanges( gffs, feature = None ):
 def readFromFile( infile ):
     """read gtf from file."""
     result = []
-    for gff in fastgtf.iterator( infile ):
+    for gff in pysam.tabix_iterator( infile ):
         result.append( gff )
     return result
 
 def iterator( infile ):
     """return a simple iterator over all entries in a file."""
-    return fastgtf.iterator(infile)
+    return pysam.tabix_iterator(infile)
 
 def chunk_iterator( gff_iterator ):
     """iterate over the contents of a gff file.

@@ -1277,7 +1277,7 @@ def main( args = sys.argv ):
         except ruffus_exceptions.RethrownJobError, value:
             E.error("some tasks resulted in errors - error messages follow below" )
             # print value
-            # E.error( value )
+            E.error( value )
             raise
 
     elif options.pipeline_action == "dump":

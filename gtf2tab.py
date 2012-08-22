@@ -61,7 +61,7 @@ Code
 
 '''
 import os, sys, string, re, optparse
-import GFF, GTF, fastgtf
+import GFF, GTF
 import Experiment as E
 
 def main():
@@ -213,7 +213,7 @@ def main():
             attributes = []
             for a in gtf.keys():
                 if a in ("gene_id", "transcript_id"): continue
-                attributes.append( '%s %s' % (a, fastgtf.quote(gtf[a])) )
+                attributes.append( '%s %s' % (a, GFF.quote(gtf[a])) )
 
             attributes = "; ".join( attributes )
             
@@ -222,7 +222,7 @@ def main():
                                                        gtf.feature,
                                                        gtf.start,
                                                        gtf.end,
-                                                       fastgtf.toDot( gtf.score ),
+                                                       GFF.toDot( gtf.score ),
                                                        gtf.strand,
                                                        gtf.frame,
                                                        gtf.gene_id,
