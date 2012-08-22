@@ -37,8 +37,19 @@ Currently GFF and GTF is handled separately. Should be merged.
 """
 
 import string, sys, re, types, collections
-import fastgtf
 import IndexedGenome
+
+def toDot( v ):
+    '''convert value to '.' if None'''
+    if v == None: return "." 
+    else: return str(v)
+
+def quote( v ):
+    '''return a quoted attribute.'''
+    if type(v) in types.StringTypes:
+        return '"%s"' % v
+    else: 
+        return str(v)
 
 class Entry:
     """read/write gff formatted entry.

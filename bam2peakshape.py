@@ -52,7 +52,7 @@ histogram - a histogram of read depth within the interval.
    paired-endedness is not fully implemented.
 
 -c/--control-file
-   if given, two peakshapers are computed, one for the primary and one for the control
+   if given, two peakshapes are computed, one for the primary and one for the control
    :term:`bam` file. The control file is centered around the same
    base as the primary file and output in the same sort order as the primary profile.
 
@@ -130,12 +130,21 @@ def main( argv = None ):
     parser.add_option( "-r", "--random-shift", dest="random_shift", action="store_true",
                        help = "shift intervals in random direction directly up/downstream of interval "
                               "[%default]" )
-
+ 
     parser.add_option( "-e", "--centring-method", dest="centring_method", type = "choice",
                        choices = ("reads", "middle"),
                        help = "centring method (reads=use reads to determine peak, middle=use middle of interval" 
                               "[%default]" )
+                              
+    parser.add_option( "-n", "--normalization", dest="normalization", type = "choice",
+                       choices = ("none", "sum" ),
+                       help = "normalisation to perform. "
+                              "[%default]" )                                 
 
+    parser.add_option( "--use-strand", dest="strand_specific", action="store_true",
+                       help = "use strand information in intervals. Intervals on the negative strand are flipped "
+                              "[%default]" )
+ 
     parser.set_defaults(
         remove_rna = False,
         ignore_pairs = False,
@@ -147,7 +156,7 @@ def main( argv = None ):
         sort = [],
         centring_method = "reads",
         control_file = None,
-        random_shift = False,
+        random_shift = False,        strand_specific = False,
         )
 
     ## add common options (-h/--help, ...) and parse command line 
@@ -181,6 +190,8 @@ def main( argv = None ):
         
     contigs = set(pysam_in.references)
 
+    strand_specifc = options.strand_specific
+
     result =[]
     c = E.Counter()
     for bed in Bed.iterator( IOTools.openFile( bedfile ) ):
@@ -196,6 +207,7 @@ def main( argv = None ):
                                          bins = bins,
                                          only_interval = options.only_interval,
                                          centring_method = options.centring_method )
+     
 
         if pysam_control:
             control = _bam2peakshape.countAroundPos(pysam_control, 
@@ -203,6 +215,7 @@ def main( argv = None ):
                                                     features.peak_center,
                                                     shift = shift,
                                                     bins = features.bins )
+       
         else:
             control = None
 
@@ -217,6 +230,11 @@ def main( argv = None ):
                                                     bins = features.bins )
         else:
             shifted = None
+
+        if strand_specific and bed.strand == "-":
+            features._replace( hist=hist[::-1] )
+            if control: control._replace( hist=hist[::-1] )
+            if shifted: shift._replace( hist=hist[::-1] )
 
         result.append( (features, bed, control, shifted) )
         c.added += 1
@@ -266,27 +284,50 @@ def main( argv = None ):
         options.stdout.write( "\t%s" % ",".join( map(str, counts)))
         options.stdout.write( "\n" )
 
+    norm_result = []
+    if options.normalization == "sum":
+        E.info("Starting sum normalization")
+        # get total counts across all intervals
+        norm = 0.0
+        for features, bed, control, shifted in result:
+            counts = features[-1]
+            norm += sum(counts)
+        norm /= 1000000
+        E.info("norm = %i" % norm)
+        
+        # normalise
+        for features, bed, control, shifted in result:
+            counts = features[-1]
+            norm_counts = []
+            for c in counts:
+                norm_counts.append( c/(norm) )
+            new_features = features._replace( counts=norm_counts )
+            norm_result.append( (new_features, bed, control, shifted) )
+    else:
+        E.info("No normalization performed")
+        norm_result = result
+        
     # output sorted matrices
-    if not options.sort: writeMatrix( result, "unsorted" )
+    if not options.sort: writeMatrix( norm_result, "unsorted" )
 
     for sort in options.sort: 
 
         if sort == "peak-height":
-            result.sort( key = lambda x: x[0].peak_height )
+            norm_result.sort( key = lambda x: x[0].peak_height )
             
         elif sort == "peak-width":
-            result.sort( key = lambda x: x[0].peak_width )
+            norm_result.sort( key = lambda x: x[0].peak_width )
 
         elif sort == "interval-width":
-            result.sort( key = lambda x: x[1].end - x[1].start )
+            norm_result.sort( key = lambda x: x[1].end - x[1].start )
 
         elif sort == "interval-score":
             try:
-                result.sort( key = lambda x: x[1].score )
+                norm_result.sort( key = lambda x: float(x[1].score) )
             except IndexError:
                 E.warn("score field not present - no output" )
 
-        writeMatrix( result, sort )
+        writeMatrix( norm_result, sort )
 
     ## write footer and output benchmark information.
     E.Stop()
@@ -294,4 +335,4 @@ def main( argv = None ):
 if __name__ == "__main__":
     sys.exit( main( sys.argv) )
 
-    
+

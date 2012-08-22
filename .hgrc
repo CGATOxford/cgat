@@ -1,0 +1,6 @@
+[ui]
+merge = emacs
+
+[merge-tools]
+emacs.args = -q --eval "(ediff-merge-with-ancestor \"$local\" \"$other\" \"$base\" nil \"$output\")"
+

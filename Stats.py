@@ -1324,7 +1324,6 @@ def getPerformance( values,
 def doMannWhitneyUTest( xvals, yvals ):
     '''apply the Mann-Whitney U test to test for the difference of medians.'''
 
-
     r_result = R.wilcox_test( xvals, yvals, paired = False )
 
     result = Result().fromR( 
@@ -1335,4 +1334,89 @@ def doMannWhitneyUTest( xvals, yvals ):
 
     return result
 
+
+###################################################################
+###################################################################
+###################################################################
+## adjust P-Value
+###################################################################
+def adjustPValues( pvalues, method = 'fdr', n = None ):
+    '''returns an array of adjusted pvalues
+    
+    Reimplementation of p.adjust in the R package.
+
+    p: numeric vector of p-values (possibly with 'NA's).  Any other
+    R is coerced by 'as.numeric'.
+
+    method: correction method. Valid values are:
+
+    n: number of comparisons, must be at least 'length(p)'; only set
+    this (to non-default) when you know what you are doing
+    
+    For more information, see the documentation of the
+    p.adjust method in R.
+    '''
+
+    if n == None: n = len(pvalues)
+
+    if method == "fdr": method = "BH"
+
+    # optional, remove NA values
+    p = numpy.array( pvalues, dtype = numpy.float )
+    lp = len(p)
+    
+    assert n <= lp
+
+    if n <= 1:
+        return p
+    if n == 2 and method == "hommel":
+        method = "hochberg"
+    if method == "bonferroni":
+        p0 = n * p 
+    elif method == "holm":
+        i = numpy.arange( lp )
+        o = numpy.argsort( p )
+        ro = numpy.argsort( o )
+        m = numpy.maximum.accumulate( (n - i) * p[o] )
+        p0 = m[ro]
+    elif method == "hommel":
+    #     if (n > lp) p <- c(p, rep.int(1, n - lp))
+        i = numpy.arange( n )
+        o = numpy.argsort( p )
+        p = p[o]
+        ro = numpy.argsort( o )
+        raise NotImplementedError( "hommel method not fully implemented" )
+    #     q <- pa <- rep.int(min(n * p/i), n)
+    #     for (j in (n - 1):2) {
+    #         ij <- seq_len(n - j + 1)
+    #         i2 <- (n - j + 2):n
+    #         q1 <- min(j * p[i2]/(2:j))
+    #         q[ij] <- pmin(j * p[ij], q1)
+    #         q[i2] <- q[n - j + 1]
+    #         pa <- pmax(pa, q)
+    #     }
+    #     pmax(pa, p)[if (lp < n) ro[1:lp] else ro]
+    elif method == "hochberg":
+        i = numpy.arange( 0, lp)[::-1] 
+        o = numpy.argsort(1-p)
+        ro = numpy.argsort( o )
+        m = numpy.minimum.accumulate( (n - i) * p[o] )
+        p0 = m[ro]
+    elif method == "BH":
+        i = numpy.arange( 1, lp + 1)[::-1] 
+        o = numpy.argsort(1-p)
+        ro = numpy.argsort( o )
+        m = numpy.minimum.accumulate( float(n) / i * p[o] )
+        p0 = m[ro]
+    elif method == "BY":
+        i = numpy.arange( 1, lp + 1)[::-1] 
+        o = numpy.argsort(1-p)
+        ro = numpy.argsort( o )
+        q = numpy.sum( 1.0 / numpy.arange( 1, n + 1) )
+        m = numpy.minimum.accumulate( q * float(n) / i * p[o])
+        p0 = m[ro]
+    elif method == "none":
+        p0 = p
+
+    return numpy.minimum( p0, numpy.ones( len(p0) ) )
 

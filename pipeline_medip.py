@@ -483,6 +483,32 @@ def runMEDIPS( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
+@transform( runMEDIPS, suffix(".medips"), "_medips.load")
+def loadMEDIPS( infile, outfile ):
+    '''load medips results'''
+
+    table_prefix = re.sub( "_prep", "", P.toTable( outfile ))
+    
+    table = table_prefix + "_coveredpos" 
+
+    statement = """
+    cat %(infile)s_saturation_coveredpos.csv
+    | tail -n 3 
+    | perl -p -e 's/\\"//g; s/[,;]/\\t/g; '
+    | python %(scriptsdir)s/table2table.py --transpose
+    | python %(scriptsdir)s/csv2db.py 
+           %(csv2db_options)s
+           --table=%(table)s
+           --replace-header
+           --header=coverage,ncovered,pcovered
+    >> %(outfile)s
+    """
+    
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
 @transform( prepareBAMs, suffix(".bam"), ".covered.bed.gz" )
 def buildCoverageBed( infile, outfile ):
     '''build bed file with regions covered by reads.
@@ -515,6 +541,49 @@ def buildCoverageBed( infile, outfile ):
     > %(outfile)s
     '''
     P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( prepareBAMs, 
+            suffix(".bam"), 
+            add_inputs( os.path.join( PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_cpg_bed"] ) ),
+            ".cpg_coverage.gz" )
+def buildCpGCoverage( infiles, outfile ):
+    '''count number times certain CpG are covered by reads.
+
+    Reads are processed in the same way as by buildCoverageBed.
+    '''
+    
+    infile, cpg_file = infiles
+    to_cluster = True
+
+    job_options = "-l mem_free=10G"
+
+    statement = '''
+    cat %(infile)s 
+    | python %(scriptsdir)s/bam2bed.py
+          --merge-pairs
+          --min-insert-size=%(medips_min_insert_size)i
+          --max-insert-size=%(medips_max_insert_size)i
+          --log=%(outfile)s.log
+          -
+    | coverageBed -a stdin -b %(cpg_file)s -counts
+    | cut -f 6
+    | python %(scriptsdir)s/data2histogram.py
+    | gzip
+    > %(outfile)s
+    '''
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@merge( buildCpGCoverage, "cpg_coverage.load" )
+def loadCpGCoverage( infiles, outfile ):
+    '''load cpg coverag data.'''
+    P.mergeAndLoad( infiles, outfile, regex="/(.*).prep.cpg_coverage.gz",
+                    row_wise = False )
 
 #########################################################################
 #########################################################################

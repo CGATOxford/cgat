@@ -1,7 +1,7 @@
 """Alignlib convenience functions.
 """
 import sys, re, os, tempfile
-import alignlib
+#import alignlib
 
 def writePairAlignment( row, col, map_row2col ):
     """wrapper around writePairAlignment."""

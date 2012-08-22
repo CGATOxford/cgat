@@ -286,7 +286,12 @@ def main( argv = None ):
         R('''MEDIPS.plotCoverage(cr.control)''')
         R('''dev.off()''')
 
+        # three rows
         R('''write.csv( cr.control$coveredPos, file ='%s' )'''% E.getOutputFile( "saturation_coveredpos.csv" ) )
+        # coverage threshold
+        # number of CpG covered
+        # percentage of CpG covered
+
         R('''write.csv( cr.control$matrix, file ='%s' )'''% E.getOutputFile( "saturation_matrix.csv" ) )
 
         # R('''er.control = MEDIPS.CpGenrich(data = CONTROL.SET)''')

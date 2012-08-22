@@ -111,6 +111,40 @@ class IntervalListLength( IntervalList ):
         return statement
 
 ##################################################################################
+class LongIntervals( IntervalList ):
+    '''list of intervals >10kb in length sorted by fold change'''
+
+    def getSQLStatement( self, track, slice = None ):
+        nresults = self.nresults
+
+        statement = '''SELECT i.interval_id, i.contig, i.start, i.end, i.length, i.peakval, round(i.avgval,2), i.fold
+                       FROM %(track)s_macs_intervals AS i
+                       WHERE i.length > 10000
+                       ORDER BY fold DESC''' % locals()
+        return statement
+
+##################################################################################
+class IntervalListLowGC( IntervalList ):
+    '''list of intervals with pGC <0.5 and pCpG <0.6 sorted by fold change'''
+
+    nresults = 100
+    mColumnsFixed = ("pos", "length" )
+    mColumnsVariable= ( "peakval", "avgval", "fold", "pGC", "CpG_ObsExp2" )
+
+    def getSQLStatement( self, track, slice = None ):
+        nresults = self.nresults
+
+        statement = '''SELECT i.interval_id, i.contig, i.start, i.end, i.length, i.peakval, round(i.avgval,2), i.fold, 
+                       round(c.pGC,2), round(c.CpG_ObsExp2,2)
+                       FROM %(track)s_macs_intervals AS i, %(track)s_composition AS c
+                       WHERE i.interval_id=c.gene_id
+                       AND c.CpG_ObsExp2 < 0.6
+                       AND c.pGC < 0.5
+                       ORDER BY i.fold DESC
+                       LIMIT %(nresults)s''' % locals()
+        return statement
+
+##################################################################################
 class IntervalListCDS( IntervalList ):
     '''list of intervals overlapping CDS.'''
     nresults = 100

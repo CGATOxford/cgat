@@ -78,6 +78,9 @@ if __name__ == '__main__':
     parser.add_option("-m", "--merge-exons", dest="merge_exons", action="store_true",
                       help="merge overlapping exons of all transcripts within a gene [default=%default]."  )
 
+    parser.add_option("-j", "--join-exons", dest="join_exons", action="store_true",
+                      help="join all exons per transcript [default=%default]."  )
+
     parser.add_option( "--merge-exons-distance", dest="merge_exons_distance", type="int",
                       help="distance to merge exons over [default=%default]."  )
 
@@ -176,13 +179,14 @@ if __name__ == '__main__':
                        help="permit duplicate genes (on different chromosomes, ...) [default=%default]" )
 
     parser.add_option( "--remove-duplicates", dest="remove_duplicates", type="choice",
-                       choices=("gene", "transcript", "ucsc"),
+                       choices=("gene", "transcript", "ucsc","coordinates"),
                        help="remove duplicates by gene/transcript. If ``ucsc`` is chosen, transcripts ending on _dup# are removed" 
                        " this is necessary to remove duplicate entries that are next to each other in the sort order [%default]" )
 
     parser.set_defaults(
         sort = None,
         merge_exons = False,
+        join_exons = False,
         merge_exons_distance = 0,
         merge_transcripts = False,
         set_score2distance = False,
@@ -261,11 +265,14 @@ if __name__ == '__main__':
                 gffs = GTF.gene_iterator(GTF.iterator(options.stdin), strict = False )
                 f = lambda x: x[0][0].gene_id
                 outf = lambda x: "\n".join( [ "\n".join( [ str(y) for y in xx] ) for xx in x] )
-
             elif options.remove_duplicates == "transcript":
                 gffs = GTF.transcript_iterator(GTF.iterator(options.stdin), strict = False)
                 f = lambda x: x[0].transcript_id
                 outf = lambda x: "\n".join( [ str(y) for y in x] )
+            elif options.remove_duplicates == "coordinates":
+                gffs = GTF.chunk_iterator(GTF.iterator(options.stdin) )
+                f = lambda x: x[0].contig+"_"+str(x[0].start)+"-"+str(x[0].end)
+                outf = lambda x: "\n".join( [ str(y) for y in x] )    
 
             store = []
 
@@ -275,14 +282,28 @@ if __name__ == '__main__':
                 id = f(entry)
                 counts[id] += 1
 
-            for entry in store:
-                id = f(entry)
-                if counts[id] == 1:
-                    options.stdout.write( outf(entry) + "\n" )
-                    noutput += 1
-                else:
-                    ndiscarded += 1
-                    E.info("discarded duplicates for %s: %i" % (id, counts[id]))
+            # Assumes GTF file sorted by contig then start
+            last_id = ""
+            if options.remove_duplicates == "coordinates":
+                for entry in store:
+                    id = f(entry)
+                    if id == last_id:
+                        ndiscarded += 1
+                        E.info("discarded duplicates for %s: %i" % (id, counts[id]))
+                    else:
+                        options.stdout.write( outf(entry) + "\n" )
+                        noutput += 1
+                    last_id = id
+                        
+            else:
+                for entry in store:
+                    id = f(entry)
+                    if counts[id] == 1:
+                        options.stdout.write( outf(entry) + "\n" )
+                        noutput += 1
+                    else:
+                        ndiscarded += 1
+                        E.info("discarded duplicates for %s: %i" % (id, counts[id]))
 
     elif options.sort:
 
@@ -349,6 +370,27 @@ if __name__ == '__main__':
             nfeatures += 1
         
         E.info("transcripts removed due to missing protein ids: %i" % len(missing))
+
+    elif options.join_exons:
+
+        for exons in GTF.transcript_iterator( GTF.iterator(options.stdin) ):
+            ninput += 1
+            strand = Genomics.convertStrand( exons[0].strand )
+            contig = exons[0].contig
+            transid = exons[0].transcript_id
+            geneid = exons[0].gene_id
+            biotype = exons[0].source
+            all_start, all_end = min( [ x.start for x in exons ] ), max( [x.end for x in exons ] )
+            y = GTF.Entry()
+            y.contig = contig
+            y.source = biotype
+            y.feature = "transcript"
+            y.start = all_start
+            y.end = all_end
+            y.strand = strand
+            y.transcript_id = transid
+            y.gene_id = geneid
+            options.stdout.write( "%s\n" % str(y ) )
 
     elif options.merge_genes:
         # merges overlapping genes

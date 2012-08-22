@@ -111,7 +111,7 @@ def main( argv = None ):
                        help = "counters to use. "
                               "[%default]" )
 
-    parser.add_option( "-b", "--bamfile", "--bedfile", dest="infiles", type = "string", action = "append",
+    parser.add_option( "-b", "--bamfile", "--bedfile", "--bigwigfile", dest="infiles", type = "string", action = "append",
                        help = "BAM/bed/bigwig files to use. Do not mix different types"
                               "[%default]" )
 
@@ -177,6 +177,10 @@ def main( argv = None ):
     parser.add_option("--extension_outward", dest="extension_outward", type = "int",
                        help = "extension outward from a TSS start site in bp"
                               "[%default]" )
+                       
+    parser.add_option("--scale_flank_length", dest="scale_flanks", type = "int",
+                       help = "scale flanks to (integer multiples of) gene length"
+                              "[%default]" )
 
     parser.set_defaults(
         remove_rna = False,
@@ -204,6 +208,7 @@ def main( argv = None ):
         gtffile = None,
         profile_normalizations = [],
         normalization = None,
+        scale_flanks = 0,
         )
 
     ## add common options (-h/--help, ...) and parse command line 
@@ -239,10 +244,12 @@ def main( argv = None ):
             bedfiles = [ pysam.Tabixfile( x ) for x in options.infiles ]
             format = "bed"
             range_counter = _bam2geneprofile.RangeCounterBed( bedfiles )
+
         elif options.infiles[0].endswith( ".bw" ):
             wigfiles = [ BigWigFile(file=open(x)) for x in options.infiles ]
             format = "bigwig"
             range_counter = _bam2geneprofile.RangeCounterBigWig( wigfiles )
+
         else:
             raise NotImplementedError( "can't determine file type for %s" % bamfile )
 
@@ -263,8 +270,8 @@ def main( argv = None ):
                                                            options.resolution_cds,
                                                            options.resolution_downstream,
                                                            options.extension_upstream,
-                                                           options.extension_downstream ) )
-
+                                                           options.extension_downstream,
+                                                           options.scale_flanks ) )
 
         elif method == "tssprofile":
             counters.append( _bam2geneprofile.TSSCounter( range_counter, 

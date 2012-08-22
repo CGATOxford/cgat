@@ -111,7 +111,7 @@ def main( argv = None ):
     outfiles = IOTools.FilePool( options.output_filename_pattern )
     
     def read():
-
+        
         # filter any of the DESeq/EdgeR message that end up at the top of the output file
         keep = False
         invert = False
@@ -167,6 +167,8 @@ def main( argv = None ):
         while 1:
             d = data.next()
             if d == None: break
+            if d.contig == last.contig and d.start < last.start:
+                raise ValueError( "error not sorted by start" )
 
             if ( (d.contig != last.contig) or
                  (d.start - last.end > distance) or
@@ -185,9 +187,14 @@ def main( argv = None ):
 
     options.stdout.write( "\t".join( DATA._fields ) + "\n" )
 
-    for group in grouper( read(), distance = options.min_overlap ):
+    # need to sort by coordinate
+    all_data = list( read() )
+    all_data.sort( key = lambda x: (x.contig, x.start) )
+
+    for group in grouper( iter(all_data), distance = options.min_overlap ):
 
         start, end = group[0].start, group[-1].end
+        assert start < end, 'start > end: %s' % str(group)
         n = float(len(group))
         counter.input += n
 

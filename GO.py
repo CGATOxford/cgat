@@ -786,7 +786,7 @@ def GetGOStatement( go_type, database, species ):
         AND xref.external_db_id = 1000
         """ % locals()
 
-        else:
+        elif version <=66:
             go_database = "ensembl_ontology_%s" % version
             go_field = "accession"
 
@@ -807,6 +807,26 @@ def GetGOStatement( go_type, database, species ):
         AND xref.external_db_id = 1000
         """ % locals()
 
+        else:
+
+            go_database = "ensembl_ontology_%s" % version
+            go_field = "accession"
+
+            statement = """SELECT DISTINCTROW
+        gene.stable_id, xref.dbprimary_acc, go.name, 'NA'
+        FROM gene, transcript, translation, 
+        object_xref as o, xref,
+        %(go_database)s.term AS go,
+        %(go_database)s.ontology AS ontology
+        WHERE gene.gene_id = transcript.gene_id
+        AND transcript.transcript_id = translation.transcript_id
+        AND translation.translation_id = o.ensembl_id
+        AND xref.xref_id = o.xref_id
+        AND go.%(go_field)s = xref.dbprimary_acc
+        AND go.ontology_id = ontology.ontology_id 
+        AND ontology.namespace = '%(go_type)s'
+        AND xref.external_db_id = 1000
+        """ % locals()
     else:
         raise "unknown ensmart version %s" % database
 
@@ -987,7 +1007,9 @@ def ReadGeneLists( filename_genes, gene_pattern = None ):
 
     if filename_genes != "-": infile.close()
 
+    
     all_genes = table[0]
+        
     # if there is only a single column, add a dummy column
     if len(table) == 1:
         table.append( [1] * len( table[0]) )
@@ -1526,7 +1548,7 @@ def pairwiseGOEnrichment( results_per_genelist, labels, test_ontology, go2info, 
             iteration += 1
             if iteration % 10 == 0:
                 E.info( "iteration: %i/%i (%5.2f%%)" % (iteration, total, 100.0 * iteration / total) )
-
+                
             y_go_categories = set(genelist2.keys())
             
             shared = x_go_categories.intersection( y_go_categories )
@@ -1544,12 +1566,21 @@ def pairwiseGOEnrichment( results_per_genelist, labels, test_ontology, go2info, 
                     continue
                 
                 observed = (xx.mSampleCountsCategory, yy.mSampleCountsCategory)
-                fisher, pvalue = scipy.stats.fisher_exact( numpy.array( 
-                        ((xx.mSampleCountsCategory,
-                          yy.mSampleCountsCategory),
-                         (xx.mSampleCountsTotal - xx.mSampleCountsCategory,
-                          yy.mSampleCountsTotal - yy.mSampleCountsCategory  ))))
+
+                aa, bb, cc, dd = \
+                    (xx.mSampleCountsCategory,
+                     yy.mSampleCountsCategory,
+                     xx.mSampleCountsTotal - xx.mSampleCountsCategory,
+                     yy.mSampleCountsTotal - yy.mSampleCountsCategory )
+
+                if cc == dd == 0:
+                    c.skipped += 1
+                    continue
                 
+                fisher, pvalue = scipy.stats.fisher_exact( numpy.array( 
+                        ((aa, bb),
+                         (cc, dd))))
+                               
                 if pvalue < 0.05:
                     c.significant_pvalue += 1
                 else:
@@ -1607,7 +1638,7 @@ def pairwiseGOEnrichment( results_per_genelist, labels, test_ontology, go2info, 
 
     outfile = getFileName( options, 
                            go = test_ontology,
-                           section = 'results',
+                           section = 'pairs',
                            set = "pairs" )
     
     outfile.write( "\t".join( PairResult._fields) + "\n" )
@@ -1644,8 +1675,7 @@ def main():
                        choices=("fdr", "pvalue", "ratio" ),
                        help="output sort order [default=%default]." )
 
-    parser.add_option( "--ontology", dest="ontology", type="choice", action="append",
-                       choices=("biol_process","cell_location","mol_function", "mgi" ),
+    parser.add_option( "--ontology", dest="ontology", type="string", action="append",
                        help="go ontologies to analyze. Ontologies are tested separately."
                        " [default=%default]." )
 
@@ -1669,7 +1699,7 @@ def main():
                         help="pattern with output filename pattern (should contain: %(go)s and %(section)s ) [default=%default]")
 
     parser.add_option ( "--fdr", dest="fdr", action="store_true",
-                        help="calculate and filter by FDR [default=%default]." )
+                        help="calculate and filter by FDR [ReadGene2GOFromFiledefault=%default]." )
     
     parser.add_option ( "--go2goslim", dest="go2goslim", action="store_true",
                         help="convert go assignments in STDIN to goslim assignments and write to STDOUT [default=%default]." )

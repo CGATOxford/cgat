@@ -18,10 +18,10 @@ Summary of the number of peaks (binding intervals) called by MACS.
 
    Table of MACS summary statistics (no control)
 
-Filtered Intervals
+MACS Intervals
 ==================
 
-The following table presents the number of intervals per dataset after filtering with FDR <1% and fold change >=4:
+The following table presents the number of intervals per dataset after filtering with FDR <1%:
 
 .. report:: macs.MacsIntervalsSummary
    :render: table

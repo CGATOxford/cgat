@@ -1,0 +1,238 @@
+#AnoCar
+#liver length
+liver.all <- read.table(file="ac_liver-cap.replicated.length")
+
+# liver shared
+liver.shared <- read.table(file="ac_liver-cap.replicated.shared.length")
+
+#liver unique
+liver.unique <- read.table(file="ac_liver-cap.replicated.unique.length")
+
+#testes length
+testes.all <- read.table(file="ac_testes-cap.replicated.length")
+
+# testes shared
+testes.shared <- read.table(file="ac_testes-cap.replicated.shared.length")
+
+#testes unique
+testes.unique <- read.table(file="ac_testes-cap.replicated.unique.length")
+
+d1 <- density(liver.all[,1], na.rm=TRUE)
+d2 <- density(liver.shared[,1], na.rm=TRUE)
+d3 <- density(liver.unique[,1], na.rm=TRUE)
+d4 <- density(testes.all[,1], na.rm=TRUE)
+d5 <- density(testes.shared[,1], na.rm=TRUE)
+d6 <- density(testes.unique[,1], na.rm=TRUE)
+leg <- c("Liver all", "Liver shared", "Liver unique", "Testes all", "Testes shared", "Testes unique")
+
+pdf(file='ac_lengthdistribution_26022012.pdf', height=6, width=6, onefile=TRUE, family='Helvetica', paper='A4', pointsize=12, colormodel="cmyk")
+
+plot(d1, xlim=c(0,8000), ylim=c(0,0.004), xlab="Length (bp)", main="", col="1", lwd=3)
+lines(d2, col=2, lwd=3)
+lines(d3, col=3, lwd=3)
+lines(d4, col=4, lwd=3)
+lines(d5, col=5, lwd=3)
+lines(d6, col=6, lwd=3)
+legend("topright", legend=leg, col=c(1,2,3,4,5,6), lty=rep(1,5), bty="n", lwd=rep(3,5))
+dev.off
+
+##########################################
+
+#DanRer
+#liver length
+liver.all <- read.table(file="dr_liver-cap.replicated.length")
+
+# liver shared
+liver.shared <- read.table(file="dr_liver-cap.replicated.shared.length")
+
+#liver unique
+liver.unique <- read.table(file="dr_liver-cap.replicated.unique.length")
+
+#testes length
+testes.all <- read.table(file="dr_testes-cap.replicated.length")
+
+# testes shared
+testes.shared <- read.table(file="dr_testes-cap.replicated.shared.length")
+
+#testes unique
+testes.unique <- read.table(file="dr_testes-cap.replicated.unique.length")
+
+d1 <- density(liver.all[,1], na.rm=TRUE)
+d2 <- density(liver.shared[,1], na.rm=TRUE)
+d3 <- density(liver.unique[,1], na.rm=TRUE)
+d4 <- density(testes.all[,1], na.rm=TRUE)
+d5 <- density(testes.shared[,1], na.rm=TRUE)
+d6 <- density(testes.unique[,1], na.rm=TRUE)
+leg <- c("Liver all", "Liver shared", "Liver unique", "Testes all", "Testes shared", "Testes unique")
+
+pdf(file='dr_lengthdistribution_26022012.pdf', height=6, width=6, onefile=TRUE, family='Helvetica', paper='A4', pointsize=12, colormodel="cmyk")
+
+plot(d1, xlim=c(0,8000), ylim=c(0,0.004), xlab="Length (bp)", main="", col="1", lwd=3)
+lines(d2, col=2, lwd=3)
+lines(d3, col=3, lwd=3)
+lines(d4, col=4, lwd=3)
+lines(d5, col=5, lwd=3)
+lines(d6, col=6, lwd=3)
+legend("topright", legend=leg, col=c(1,2,3,4,5,6), lty=rep(1,5), bty="n", lwd=rep(3,5))
+dev.off
+##########################################
+
+#galGal3
+#liver length
+liver.all <- read.table(file="gg_liver-cap.replicated.length")
+
+# liver shared
+liver.shared <- read.table(file="gg_liver-cap.replicated.shared.length")
+
+#liver unique
+liver.unique <- read.table(file="gg_liver-cap.replicated.unique.length")
+
+#testes length
+testes.all <- read.table(file="gg_testes-cap.replicated.length")
+
+# testes shared
+testes.shared <- read.table(file="gg_testes-cap.replicated.shared.length")
+
+#testes unique
+testes.unique <- read.table(file="gg_testes-cap.replicated.unique.length")
+
+d1 <- density(liver.all[,1], na.rm=TRUE)
+d2 <- density(liver.shared[,1], na.rm=TRUE)
+d3 <- density(liver.unique[,1], na.rm=TRUE)
+d4 <- density(testes.all[,1], na.rm=TRUE)
+d5 <- density(testes.shared[,1], na.rm=TRUE)
+d6 <- density(testes.unique[,1], na.rm=TRUE)
+leg <- c("Liver all", "Liver shared", "Liver unique", "Testes all", "Testes shared", "Testes unique")
+
+pdf(file='gg_lengthdistribution_26022012.pdf', height=6, width=6, onefile=TRUE, family='Helvetica', paper='A4', pointsize=12, colormodel="cmyk")
+
+plot(d1, xlim=c(0,8000), ylim=c(0,0.004), xlab="Length (bp)", main="", col="1", lwd=3)
+lines(d2, col=2, lwd=3)
+lines(d3, col=3, lwd=3)
+lines(d4, col=4, lwd=3)
+lines(d5, col=5, lwd=3)
+lines(d6, col=6, lwd=3)
+legend("topright", legend=leg, col=c(1,2,3,4,5,6), lty=rep(1,5), bty="n", lwd=rep(3,5))
+dev.off
+
+##########################################
+
+#Hs
+#liver length
+liver.all <- read.table(file="hs_liver-cap.replicated.length")
+
+# liver shared
+liver.shared <- read.table(file="hs_liver-cap.replicated.shared.length")
+
+#liver unique
+liver.unique <- read.table(file="hs_liver-cap.replicated.unique.length")
+
+#testes length
+testes.all <- read.table(file="hs_testes-cap.replicated.length")
+
+# testes shared
+testes.shared <- read.table(file="hs_testes-cap.replicated.shared.length")
+
+#testes unique
+testes.unique <- read.table(file="hs_testes-cap.replicated.unique.length")
+
+d1 <- density(liver.all[,1], na.rm=TRUE)
+d2 <- density(liver.shared[,1], na.rm=TRUE)
+d3 <- density(liver.unique[,1], na.rm=TRUE)
+d4 <- density(testes.all[,1], na.rm=TRUE)
+d5 <- density(testes.shared[,1], na.rm=TRUE)
+d6 <- density(testes.unique[,1], na.rm=TRUE)
+leg <- c("Liver all", "Liver shared", "Liver unique", "Testes all", "Testes shared", "Testes unique")
+
+pdf(file='hs_lengthdistribution_26022012.pdf', height=6, width=6, onefile=TRUE, family='Helvetica', paper='A4', pointsize=12, colormodel="cmyk")
+
+plot(d1, xlim=c(0,8000), ylim=c(0,0.004), xlab="Length (bp)", main="", col="1", lwd=3)
+lines(d2, col=2, lwd=3)
+lines(d3, col=3, lwd=3)
+lines(d4, col=4, lwd=3)
+lines(d5, col=5, lwd=3)
+lines(d6, col=6, lwd=3)
+legend("topright", legend=leg, col=c(1,2,3,4,5,6), lty=rep(1,5), bty="n", lwd=rep(3,5))
+dev.off
+
+##########################################
+
+#Mm
+#liver length
+liver.all <- read.table(file="mm_liver-cap.replicated.length")
+
+# liver shared
+liver.shared <- read.table(file="mm_liver-cap.replicated.shared.length")
+
+#liver unique
+liver.unique <- read.table(file="mm_liver-cap.replicated.unique.length")
+
+#testes length
+testes.all <- read.table(file="mm_testes-cap.replicated.length")
+
+# testes shared
+testes.shared <- read.table(file="mm_testes-cap.replicated.shared.length")
+
+#testes unique
+testes.unique <- read.table(file="mm_testes-cap.replicated.unique.length")
+
+d1 <- density(liver.all[,1], na.rm=TRUE)
+d2 <- density(liver.shared[,1], na.rm=TRUE)
+d3 <- density(liver.unique[,1], na.rm=TRUE)
+d4 <- density(testes.all[,1], na.rm=TRUE)
+d5 <- density(testes.shared[,1], na.rm=TRUE)
+d6 <- density(testes.unique[,1], na.rm=TRUE)
+leg <- c("Liver all", "Liver shared", "Liver unique", "Testes all", "Testes shared", "Testes unique")
+
+pdf(file='mm_lengthdistribution_26022012.pdf', height=6, width=6, onefile=TRUE, family='Helvetica', paper='A4', pointsize=12, colormodel="cmyk")
+
+plot(d1, xlim=c(0,8000), ylim=c(0,0.004), xlab="Length (bp)", main="", col="1", lwd=3)
+lines(d2, col=2, lwd=3)
+lines(d3, col=3, lwd=3)
+lines(d4, col=4, lwd=3)
+lines(d5, col=5, lwd=3)
+lines(d6, col=6, lwd=3)
+legend("topright", legend=leg, col=c(1,2,3,4,5,6), lty=rep(1,5), bty="n", lwd=rep(3,5))
+dev.off
+
+##########################################
+
+#Xt
+#liver length
+liver.all <- read.table(file="xt_liver-cap.replicated.length")
+
+# liver shared
+liver.shared <- read.table(file="xt_liver-cap.replicated.shared.length")
+
+#liver unique
+liver.unique <- read.table(file="xt_liver-cap.replicated.unique.length")
+
+#testes length
+testes.all <- read.table(file="xt_testes-cap.replicated.length")
+
+# testes shared
+testes.shared <- read.table(file="xt_testes-cap.replicated.shared.length")
+
+#testes unique
+testes.unique <- read.table(file="xt_testes-cap.replicated.unique.length")
+
+d1 <- density(liver.all[,1], na.rm=TRUE)
+d2 <- density(liver.shared[,1], na.rm=TRUE)
+d3 <- density(liver.unique[,1], na.rm=TRUE)
+d4 <- density(testes.all[,1], na.rm=TRUE)
+d5 <- density(testes.shared[,1], na.rm=TRUE)
+d6 <- density(testes.unique[,1], na.rm=TRUE)
+leg <- c("Liver all", "Liver shared", "Liver unique", "Testes all", "Testes shared", "Testes unique")
+
+pdf(file='xt_lengthdistribution_26022012.pdf', height=6, width=6, onefile=TRUE, family='Helvetica', paper='A4', pointsize=12, colormodel="cmyk")
+
+plot(d1, xlim=c(0,8000), ylim=c(0,0.004), xlab="Length (bp)", main="", col="1", lwd=3)
+lines(d2, col=2, lwd=3)
+lines(d3, col=3, lwd=3)
+lines(d4, col=4, lwd=3)
+lines(d5, col=5, lwd=3)
+lines(d6, col=6, lwd=3)
+legend("topright", legend=leg, col=c(1,2,3,4,5,6), lty=rep(1,5), bty="n", lwd=rep(3,5))
+dev.off
+
+

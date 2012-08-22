@@ -50,7 +50,7 @@ gene
     Redundant annotations will be merged.
 
 territories
-   build territories around gene set.
+   build gene territories around gene set.
 
 exons
    annotate exons. Exonic segments are classified according 
@@ -70,8 +70,6 @@ tts-regulons
    declare tts regulatory regions. tts-regulatory regions contain the region x kb of
    upstream and downstream of a transciption termination site. The options ``--upstream``
    and ``-downstream`` set the region width.
-
-
 
 Genome
 ++++++
@@ -144,13 +142,31 @@ Territories
 +++++++++++
 
 If ``--method=territories``, the gene set is used to define gene territories. 
-Territories are segments around genes.
+Territories are segments around genes and are non-overlapping. Exons in a gene
+are merged and the resulting the region is enlarged by --radius. Overlapping
+territories are divided at the midpoint between the two genes.
 
 .. note::
    The gtf file has to be sorted first by contig and then by position.
 
 .. note::
    Genes should already have been merged (gtf2gtf --merge-transcripts)
+
+GREAT-Domains
++++++++++++++
+
+Define GREAT regulatory domains. Each TSS in a gene is associated with a 
+basal region. The basal region is then extended upstream to the basal region 
+of the closest gene, but at most to --radius. In the case of overlapping genes,
+the extension is towards the next non-overlapping gene. 
+
+This is the "basal plus extension" rule in GERAT. Commonly used are 5+1 with 1 Mb extension. 
+To achieve this, set
+
+``--method=great-domains --upstream=5000 --downstream=1000 --radius=1000000``
+
+If there are a multiple TSS in a transcript, the basal region extends from the
+first to the last TSS plus the upstream/downstream flank.
 
 Exons
 +++++
@@ -228,6 +244,7 @@ import Experiment as E
 import IndexedFasta
 import Genomics
 import Intervals
+import IOTools
 
 def addSegment( feature, start, end, template, options ):
     """add a generic segment of type *feature*.
@@ -570,16 +587,20 @@ def annotateRegulons( iterator, fasta, tss, options ):
             if tss:
                 # add range to both sides of tss
                 if is_negative_strand:
-                    regulons.append( (max( 0, ma - options.downstream), min( lcontig, ma + options.upstream) ) )
+                    interval = ma - options.downstream, ma + options.upstream
                 else:
-                    regulons.append( (max( 0, mi - options.upstream), min( lcontig, mi + options.downstream) ) )
+                    interval = mi - options.upstream, mi + options.downstream
             else:
                 # add range to both sides of tts
                 if is_negative_strand:
-                    regulons.append( (max( 0, mi - options.downstream), min( lcontig, mi + options.upstream) ) )
+                    interval = mi - options.downstream, mi + options.upstream
                 else:
-                    regulons.append( (max( 0, ma - options.upstream), min( lcontig, ma + options.downstream) ) )
+                    interval = ma - options.upstream, ma + options.downstream
 
+            interval = ( min( lcontig, max( 0, interval[0] ) ),
+                         min( lcontig, max( 0, interval[1] ) ) )
+            
+            regulons.append( interval )
             transcript_ids.append( transcript[0].transcript_id )
 
         if options.merge_promotors:
@@ -589,7 +610,7 @@ def annotateRegulons( iterator, fasta, tss, options ):
             
         gtf = GTF.Entry()
         gtf.fromGFF( gene[0][0], gene[0][0].gene_id, gene[0][0].gene_id )
-        gtf.source = "promotor"
+        gtf.source = "regulon"
 
         x = 0
         for start, end in regulons:
@@ -601,6 +622,140 @@ def annotateRegulons( iterator, fasta, tss, options ):
 
     E.info( "ngenes=%i, ntranscripts=%i, nregulons=%i" % (ngenes, ntranscripts, nregulons) )
 
+####################################################################
+####################################################################
+####################################################################
+def annotateGREATDomains( iterator, fasta, options ):
+    """build great domains
+
+    extend from TSS a basal region.
+
+    """
+
+    gene_iterator = GTF.gene_iterator( iterator )
+
+    counter = E.Counter()
+
+    upstream, downstream = options.upstream, options.downstream
+    radius = options.radius
+    outfile = options.stdout
+
+    regions = []
+    ####################################################################
+    # define basal regions for each gene
+    # take all basal regions per transcript and merge them
+    # Thus, the basal region of a gene might be larger than the sum
+    # of options.upstream + options.downstream
+    for gene in gene_iterator:
+        counter.genes += 1
+        is_negative_strand = Genomics.IsNegativeStrand( gene[0][0].strand )
+
+        lcontig = fasta.getLength( gene[0][0].contig )
+        regulons = []
+        transcript_ids = []
+
+        # collect every basal region per transcript
+        for transcript in gene:
+            counter.transcripts += 1
+            mi, ma = min( [x.start for x in transcript ] ), max( [x.end for x in transcript ] )
+            # add range to both sides of tss
+            if is_negative_strand:
+                interval = ma - options.downstream, ma + options.upstream
+            else:
+                interval = mi - options.upstream, mi + options.downstream
+
+            interval = ( min( lcontig, max( 0, interval[0] ) ),
+                         min( lcontig, max( 0, interval[1] ) ) )
+            
+            regulons.append( interval )
+            transcript_ids.append( transcript[0].transcript_id )
+
+        # take first/last entry 
+        start, end = min( x[0] for x in regulons), max(x[1] for x in regulons )
+        
+        gtf = GTF.Entry()
+        gtf.fromGFF( gene[0][0], gene[0][0].gene_id, gene[0][0].gene_id )
+        gtf.source = "greatdomain"
+        gtf.start, gtf.end = start, end
+        regions.append( gtf )
+
+    regions.sort( key = lambda x: (x.contig, x.start ) )
+
+    outf = IOTools.openFile( "test.gff", "w")
+    for x in regions:
+        outf.write( str(x) + "\n" )
+    outf.close()
+
+    ####################################################################
+    # extend basal regions
+    regions.sort( key = lambda x: (x.contig, x.start ) )
+
+    # iterate within groups of overlapping basal regions
+    groups = list( GFF.iterator_overlaps( iter(regions) ))
+    counter.groups = len(groups)
+
+    last_end = 0
+    reset = False
+
+    for region_id, group in enumerate(groups):
+
+        # collect basal intervals in group
+        intervals = [ (x.start, x.end) for x in group ]
+
+        def overlapsBasalRegion( pos ):
+            for start,end in intervals:
+                if start == pos or end == pos: continue
+                if start <= pos < end:
+                    return True
+                if start > pos: return False
+            return False
+
+        # deal with boundary cases - end of contig
+        if region_id < len(groups) - 1:
+            nxt = groups[region_id+1]
+            if nxt[0].contig == group[0].contig:
+                next_start = min( [x.start for x in nxt] )
+            else:
+                next_start = fasta.getLength(group[0].contig)
+                reset = True
+        else:
+            next_start = fasta.getLength(group[0].contig)
+            reset = True
+
+        # last_end = basal extension of previous group
+        # next_start = basal_extension of next group
+
+        # extend region to previous/next group
+        # always extend dowstream, but upstream only extend if basal region of an interval is not already 
+        # overlapping another basal region within the group
+        save_end = 0
+        for gtf in group:
+            save_end = max(save_end, gtf.end)
+            if gtf.strand == "+":
+                if not overlapsBasalRegion( gtf.start ):
+                    gtf.start = max( gtf.start - radius, last_end )
+                # always extend downstream    
+                gtf.end = min( gtf.end + radius, next_start )
+            else:
+                # always extend downstream
+                gtf.start = max( gtf.start - radius, last_end )
+                if not overlapsBasalRegion( gtf.end ):
+                    gtf.end = min( gtf.end + radius, next_start )
+            outfile.write( str(gtf) + "\n" )
+            counter.regulons += 1
+
+        if len(group) > 1: 
+            counter.overlaps += len(group)
+        else:
+            counter.nonoverlaps += 1
+
+        if reset:
+            last_end = 0
+            reset = False
+        else:
+            last_end = save_end
+        
+    E.info( "%s" % str(counter) )
 
 def annotateTTS( iterator, fasta, options ):
     """annotate termination sites within iterator.
@@ -776,7 +931,9 @@ if __name__ == '__main__':
 
     parser.add_option("-m", "--method", dest="method", type="choice",
                       choices=("full", "genome", "territories", "exons", "promotors", "tts", 
-                               "regulons", "tts-regulons", "genes"),
+                               "regulons", "tts-regulons", "genes",
+                               "great-domains",
+                               ),
                       help="method for defining segments [default=%default]."  )
 
     parser.add_option("-r", "--radius", dest="radius", type="int",
@@ -847,6 +1004,8 @@ if __name__ == '__main__':
         segmentor = annotateTTS( iterator, fasta, options )
     elif options.method == "genes":
         segmentor = annotateGenes( iterator, fasta, options )
+    elif options.method == "great-domains":
+        segmentor = annotateGREATDomains( iterator, fasta, options )
 
 
     E.Stop()

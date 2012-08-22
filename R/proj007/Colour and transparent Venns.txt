@@ -1,0 +1,32 @@
+library(VennDiagram)
+# Figure Test_NMIvsCGI_numbers
+venn.diagram(
+	x = list(
+		NMI = 1:40375,
+		CGI = 40046:45962
+		),
+	filename = "Test_NMIvsCGI_numbers.tiff",
+col = "#58595B",
+fill = c("#EC1C24", "#69BC45"),
+	alpha = 0.75,
+	label.col = c("darkred", "white", "darkgreen"),
+	cex = 2.0,
+	fontfamily = "arial",
+	fontface = "bold",
+	);
+
+# Figure Test_NMIvsCGI_transparent
+venn.diagram(
+	x = list(NMI = 1:40375,CGI = 40046:45962),
+	filename = "Test_NMIvsCGI_line.tiff",
+col = "#58595B",
+	fill = c("transparent"),
+	alpha = 0.75,
+	cex = 0.0,
+	cat.cex = 0.0,
+	ext.line.lty = "dotted",
+	ext.line.lwd = 2,
+	ext.pos = 12,
+	ext.dist = -0.12,
+	ext.l = 0.0
+);

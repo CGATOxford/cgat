@@ -223,7 +223,7 @@ def runTest( infile, outfile, update = False ):
             shutil.rmtree( "%s.dir" % test_name )
         except OSError: pass
         os.mkdir( "%s.dir" % test_name )
-        statement = '''ln -s %(infile)s/* %(test_name)s.dir'''
+        statement = '''ln -s %(infile)s.dir/* %(test_name)s.dir'''
         P.run()
     
     statement = '''
@@ -238,7 +238,7 @@ def runTest( infile, outfile, update = False ):
 ###################################################################
 ## general tests
 ###################################################################
-@files( [ (os.path.join( PARAMS["data_dir"], x), x + ".log" ) for x in
+@files( [ (os.path.join( PARAMS["data_dir"], x + ".dir"), x + ".log" ) for x in
              P.asList(PARAMS["prerequisites"]) ] )
 def prepareTests( infile, outfile ):
     '''run pre-requisite pipelines.'''

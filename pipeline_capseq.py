@@ -36,8 +36,6 @@ performs the following tasks:
    * Align reads to the genome using Bowtie
    * Call peaks using MACS
    * Compare intervals across tracks
-   * Compare intervals with external bed files 
-   * Annotate intervals with respect to a reference gene set (Ensembl or RNAseq-derived)
 
 Usage
 =====
@@ -376,7 +374,10 @@ def loadBAMStats( infiles, outfile ):
         P.run()
 
 #########################################################################
-@transform( buildBAM, suffix( ".bam"), ".dedup.bam")
+
+#IMS: Don't leave this like this.
+@follows(buildBAM)
+@transform( "bam/*-*-R?.bam", suffix( ".bam"), ".dedup.bam")
 def dedup(infiles, outfile):
         '''Remove duplicate alignments from BAM files.'''
         to_cluster = USECLUSTER
@@ -470,8 +471,8 @@ def normaliseBAMs( infiles, outfile ):
 
 ############################################################
 @follows(normaliseBAMs, mkdir("merged_bams"))
-@files( [( [ "bam/%s.norm.bam" % y for y in EXPERIMENTS[x]], 
-           "merged_bams/%s.merge.bam" % str(x).replace("-agg","")) for x in EXPERIMENTS ] )
+@files( [( [ "bam/%s.norm.bam" % y for y in EXPERIMENTS[x] ], 
+           "merged_bams/%s.merge.bam" % str(x).replace("-agg","")) for x in EXPERIMENTS if len(EXPERIMENTS[x]) > 1] )
 def mergeReplicateBAMs( infiles, outfile ):
     '''Merge normalised BAM files for all replicates, then sort and index. '''
     track = P.snip( outfile, ".merge.bam" )
@@ -516,7 +517,7 @@ def getMergedBigWigPeakShift( infiles, outfile ):
 ############################################################
 @follows( mergeReplicateBAMs, mkdir("macs"), mkdir("macs/merged") )
 @files( [ ("merged_bams/%s.merge.bam" % str(x).replace("-agg",""), 
-           "macs/merged/%s.merged.macs" % str(x).replace("-agg","") ) for x in EXPERIMENTS ] )
+           "macs/merged/%s.merged.macs" % str(x).replace("-agg","") ) for x in EXPERIMENTS if len(EXPERIMENTS[x]) > 1 ] )
 def runMacsMerged( infile, outfile ):
     '''Run MACS for peakshifted wig generation'''
     to_cluster = USECLUSTER
@@ -915,8 +916,8 @@ def loadSharedIntervalsFoldChangeThreshold(infile, outfile):
 ############################################################
 ## Calculate replicated intervals
 @follows( sanitiseIntervals, mkdir("replicated_intervals") )
-@files( [( [ "intervals/%s.merged.cleaned.bed" % y for y in EXPERIMENTS[x]], 
-           "replicated_intervals/%s.rep.bed" % str(x).replace("-agg","")) for x in EXPERIMENTS ] )
+@files( [( [ "intervals/%s.merged.cleaned.bed" % y for y in EXPERIMENTS[x] ], 
+           "replicated_intervals/%s.rep.bed" % str(x).replace("-agg","")) for x in EXPERIMENTS if len(EXPERIMENTS[x]) > 1] )
 def replicatedIntervals( infiles, outfile ):
     '''Combine replicates between experiments.
        First all intervals are merged across replicates 

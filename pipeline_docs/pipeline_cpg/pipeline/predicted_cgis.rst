@@ -2,13 +2,13 @@
 Predicted CGIs
 ===================
 
-Compuytationally predicted CpG islands are annotated using a reference gene set. Briefly, transcripts 
-of all ENSEMBL protein coding genes are merged per gene. If two genes 
-overlap, the longer one is taken. With the resultant list of exons, 
-genomic segments are annotated as exon, CDS, UTR and flank, intronic, intergenic. Next,
+Computationally predicted CpG islands were annotated using a reference gene set. Briefly, transcripts 
+of all ENSEMBL protein coding genes were merged per gene. If two genes 
+overlap, the longer one is taken. With the resultant list, 
+genomic segments are annotated as exon, CDS, UTR and flank, intronic or intergenic. Next,
 intervals are classified according to their overlap with these segments. As intervals
-are usually much longer than the expected binding site, the overlap for most
-classes is only required to be partial. The classes are:
+are frequently much longer than genomic segments, the overlap for most
+classes is only required to be partial. The classes definitions are:
 
 +---------------+---------------------------------------------------------------------------------+
 |Term           | Definition                                                                      |

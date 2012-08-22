@@ -32,19 +32,28 @@ bed2table.py - annotate intervals
 Purpose
 -------
 
-compute sequence properties for genes of given by a gtf file and output them in 
-tabular format.
+This script takes a bed-formatted file as input and annotates each interval.
+Possible annotators are (see option '--counter'):
+
+overlap
+    compute overlap with intervals in other bed file. If the other bed 
+    file contains tracks, the overlap is computed per track.
+
+peaks
+    compute peak location in intervals. Requires one or more bam-files. This
+    counter can also count within an secondary set of bam-files (--control-bam-file)
+    and add this to the output.
 
 Usage
 -----
 
 Example::
 
-   python gtf2table.py --help
+   python bed2table.py --help
 
 Type::
 
-   python gtf2table.py --help
+   python bed2table.py --help
 
 for command line help.
 
@@ -121,6 +130,110 @@ class CounterOverlap( Counter ):
 
         return "\t".join(r)
 
+##-----------------------------------------------------------------------------------
+CounterPeaksResult = collections.namedtuple( "CounterPeaksResult", ("length nreads avgval peakval npeaks peakcenter" ) )
+class CounterPeaks(Counter):
+    '''compute number of extent of peaks in an interval.'''
+
+    headers = None
+
+    def __init__(self, 
+                 bamfiles, 
+                 offsets, 
+                 control_bamfiles, 
+                 control_offsets, *args, **kwargs ):
+        Counter.__init__(self, *args, **kwargs )
+        if not bamfiles: raise ValueError("supply --bam-file options for readcoverage")
+
+        assert len(offsets) == 0 or len(bamfiles) == len(offsets), "number of bamfiles not the same as number of offsets"
+        assert len(control_offsets) == 0 or len(control_bamfiles) == len(control_offsets), "number of control bamfiles not the same as number of offsets"
+
+        self.bamfiles = bamfiles
+        self.offsets = offsets
+        self.control_bamfiles = control_bamfiles
+        self.control_offsets = control_offsets
+
+        self.headers = list(CounterPeaksResult._fields)
+        if self.control_bamfiles:
+            self.headers.extend( ["control_%s" % x for x in CounterPeaksResult._fields] )
+
+    def count( self, bed, bamfiles, offsets ):
+        '''count reads in bed interval.'''
+
+        contig, start, end = bed.contig, bed.start, bed.end
+
+        length = end - start
+        counts = numpy.zeros( length )
+        nreads = 0
+
+        if offsets:
+            # if offsets are given, shift tags. 
+            for samfile, offset in zip(bamfiles,offsets):
+
+                if offset == 0: E.warn("0 offset will result in no data!" )
+                shift = offset / 2
+                # for peak counting I follow the MACS protocoll,
+                # see the function def __tags_call_peak in PeakDetect.py
+                # In words
+                # Only take the start of reads (taking into account the strand)
+                # add d/2=offset to each side of peak and start accumulate counts.
+                # for counting, extend reads by offset
+                # on + strand shift tags upstream
+                # i.e. look at the downstream window
+                xstart, xend = max(0, start - shift), max(0, end + shift)
+
+                for read in samfile.fetch( contig, xstart, xend ):
+                    nreads += 1
+                    pos = read.pos
+                    if read.is_reverse:
+                        # offset = 2 * shift
+                        rstart = read.pos + read.alen - offset
+                    else: 
+                        rstart = read.pos + shift
+
+                    rend = rstart + shift
+                    rstart = max( 0, rstart - start )
+                    rend = min( length, rend - start )
+                    counts[ rstart:rend ] += 1
+
+        else:
+            for samfile in bamfiles:
+                for read in samfile.fetch( contig, start, end ):
+                    nreads += 1
+                    rstart = max( 0, read.pos - start )
+                    rend = min( length, read.pos - start + read.rlen ) 
+                    counts[ rstart:rend ] += 1
+                    
+        length = end - start            
+        avgval = numpy.mean( counts )
+        peakval = max(counts)
+
+        # set other peak parameters
+        peaks = numpy.array( range(0,length) )[ counts >= peakval ]
+        npeaks = len( peaks )
+        # peakcenter is median coordinate between peaks
+        # such that it is a valid peak in the middle
+        peakcenter = start + peaks[npeaks//2] 
+
+        return CounterPeaksResult( length, nreads, avgval, peakval, npeaks, peakcenter )
+
+    def update( self, bed ):
+        '''count reads per position.
+        
+        If offsets are given, shift tags by offset / 2 and extend
+        by offset / 2.
+        '''
+
+        self.result = self.count( bed, self.bamfiles, self.offsets )
+        if self.control_bamfiles:
+            self.control = self.count( bed, self.control_bamfiles, self.control_offsets )
+
+    def __str__(self):
+        if self.control_bamfiles:
+            return "\t".join( map(str, self.result + self.control ) )
+        else:
+            return "\t".join( map(str, self.result ) )
+
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
@@ -129,56 +242,37 @@ if __name__ == '__main__':
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genome [default=%default]."  )
 
-    parser.add_option("-q", "--quality-file", dest="quality_file", type="string",
-                      help="filename with genomic base quality information [default=%default]."  )
-
     parser.add_option("-b", "--bam-file", dest="bam_files", type="string",
                       help="filename with read mapping information. Multiple files can be submitted in a comma-separated list [default=%default]."  )
 
-    parser.add_option("-f", "--filename-bed", dest="filename_bed", type="string",
-                      help="filename with extra bed file (for counter: overlap) [default=%default]."  )
-
-    parser.add_option( "--filename-format", dest="filename_format", type="choice",
-                       choices=("bed", "gff", "gtf" ),
-                       help="format of secondary stream [default=%default]."  )
-
-    parser.add_option( "--gff-source", dest="gff_sources", type="string", action="append",
-                      help="restrict to this source in extra gff file (for counter: overlap) [default=%default]."  )
-
-    parser.add_option( "--gff-feature", dest="gff_features", type="string", action="append",
-                      help="restrict to this feature in extra gff file (for counter: overlap) [default=%default]."  )
-
-    parser.add_option("-r", "--reporter", dest="reporter", type="choice",
-                      choices=("genes", "transcripts" ),
-                      help="report results for 'genes' or 'transcripts' [default=%default]."  )
-
-    parser.add_option("-s", "--section", dest="sections", type="choice", action="append",
-                      choices=("exons", "introns" ),
-                      help="select range on which counters will operate [default=%default]."  )
+    parser.add_option( "--control-bam-file", dest="control_bam_files", type="string",
+                      help="filename with read mapping information for input/control. Multiple files can be submitted in a comma-separated list [default=%default]."  )
 
     parser.add_option("-c", "--counter", dest="counters", type="choice", action="append",
-                      choices=( "overlap", ),
+                      choices=( "overlap", "peaks", ),
                       help="select counters to apply [default=%default]."  )
 
-    parser.add_option( "--add-gtf-source", dest="add_gtf_source", action="store_true",
-                      help="add gtf field of source to output [default=%default]."  )
+    parser.add_option("-o", "--offset", dest="offsets", type="int", action="append",
+                      help="tag offsets for tag counting - supply as many as there are bam-files [default=%default]."  )
 
-    parser.add_option( "--proximal-distance", dest="proximal_distance", type="int",
-                      help="distance to be considered proximal to an interval [default=%default]."  )
+    parser.add_option( "--control-offset", dest="control_offsets", type="int", action="append",
+                      help="control tag offsets for tag counting - supply as many as there are bam-files [default=%default]."  )
+
+    parser.add_option("-a", "--all-fields", dest="all_fields", action = "store_true",
+                      help="output all fields in original bed file, by default only the first 4 are output [default=%default]."  )
+
+    parser.add_option("--bed-headers", dest="bed_headers", type="string",
+                      help="supply ',' separated list of headers for bed component [default=%default]."  )
 
     parser.set_defaults(
         genome_file = None,
-        reporter = "genes",
-        with_values = True,
-        sections = [],
         counters = [],
-        filename_gff = None,
-        filename_format = "gtf",
-        gff_features = [],
-        gff_sources = [],
-        add_gtf_source = False,
-        proximal_distance = 10000, 
         bam_files = None,
+        offsets = [],
+        control_bam_files = None,
+        control_offsets = [],
+        all_fields = False,
+        bed_headers = "contig,start,end,name",
         )
 
     (options, args) = E.Start( parser )
@@ -189,11 +283,19 @@ if __name__ == '__main__':
     else:
         fasta = None
 
-    if options.quality_file:
-        quality = IndexedFasta.IndexedFasta( options.quality_file )
-        quality.setTranslator( IndexedFasta.TranslatorBytes() )
+    if options.bam_files:
+        bam_files = []
+        for bamfile in options.bam_files.split(","):
+            bam_files.append( pysam.Samfile(bamfile, "rb" ) )
     else:
-        quality = None
+        bam_files = None
+
+    if options.control_bam_files:
+        control_bam_files = []
+        for bamfile in options.control_bam_files.split(","):
+            control_bam_files.append( pysam.Samfile(bamfile, "rb" ) )
+    else:
+        control_bam_files = None
 
     counters = []
 
@@ -202,18 +304,26 @@ if __name__ == '__main__':
             counters.append( CounterOverlap( filename = options.filename_bed,
                                              fasta=fasta,
                                              options = options) )
-            
+        elif c == "peaks":
+            counters.append( CounterPeaks( bam_files,
+                                           options.offsets,
+                                           control_bam_files,
+                                           options.control_offsets,
+                                           options = options ) )
 
-    options.stdout.write( "\t".join( [ "contig", "start", "end", "name" ] ) )
+    options.stdout.write( "\t".join( [x.strip() for x in options.bed_headers.split(",") ] ) )
     for counter in counters: 
         options.stdout.write("\t%s" % "\t".join( counter.headers ) )
     options.stdout.write("\n")
 
     for bed in Bed.iterator(options.stdin):
-        options.stdout.write( "\t".join( (bed.contig, 
-                                          str(bed.start), 
-                                          str(bed.end), 
-                                          bed.mFields[0]) ) )
+        if options.all_fields:
+            options.stdout.write( str(bed) )
+        else:
+            options.stdout.write( "\t".join( (bed.contig, 
+                                              str(bed.start), 
+                                              str(bed.end), 
+                                              bed.mFields[0]) ) )
         for counter in counters: 
             counter.update(bed)
             options.stdout.write("\t%s" % str(counter) )
