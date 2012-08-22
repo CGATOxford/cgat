@@ -56,12 +56,7 @@ A reference non-coding set of transcripts is built by filtering a provided ensem
 reference set (usually a set that is built from the transcript building pipeline) for 
 transcripts that do not belong to one of the following biotypes
 
-protein_coding
-Ambiguous_orf
-Retained_intron
-Sense_intronic
-antisense
-Sense_overlapping
+protein_coding\nAmbiguous_orf\nRetained_intron\nSense_intronic\nantisense\nSense_overlapping
 
 
 This set of non-coding transcripts is required in the filtering of the ab initio geneset 
@@ -90,13 +85,58 @@ to support their existence.
 
 * In order to assess expression levels between genes within samples i.e. protein coding vs. lncRNA, it
 is required that the FPKM estimation be made on a complete geneset. Therefore the lncRNA geneset is 
-concatenated to the protein coding gene set for FPKM estimation.
+concatenated to the protein coding gene set for use in downstream analysis.
 
-* Differential expression analysis is performed on the resulting geneset using both cuffdiff and DESeq
+
+Usage
+=====
+
+See :ref:`PipelineSettingUp` and :ref:`PipelineRunning` on general information how to use CGAT pipelines.
+
+Configuration
+-------------
+
+The pipeline requires a configured :file:`pipeline.ini` file. 
+
+The sphinxreport report requires a :file:`conf.py` and :file:`sphinxreport.ini` file 
+(see :ref:`PipelineDocumenation`)
+
+
+input
+-----
+
+The pipeline generally assumes that transcripts have been assembled using the pipeline_rnaseqtranscripts.py
+pipeline using cufflinks.
+
+Files are supplied in the working directory. They are specified in the configuration file
+and refer to:
+
+A coding geneset that id the output from a cufflinks transcript assembly
+
+abinitio_coding = <name>.gtf.gz 
+
+An abinitio geneset that is the output from a cufflinks transcript assembly. This is to be used
+for lncRNA prediction. (note that this may be different to the abinitio_coding geneset). 
+
+abinitio_lncrna = <name>.gtf.gz
+
+A reference geneset containing known protein coding transcripts. This is used for comparisons in the
+report.
+
+refcoding = <name>.gtf.gz
+
+A reference geneset from ensembl with all known expressed transcripts
+
+reference = <name>.gtf.gz
+
+An optional geneset containing previously identified lncRNA. If this is not supplied then the pipeline uses
+a reference non-codihng set from the ensembl reference.
+
+previous = <name>.gtf.gz
 
 
 Pipeline output
-================
+----------------
 
 The pipeline produces three main files of interest:
 
