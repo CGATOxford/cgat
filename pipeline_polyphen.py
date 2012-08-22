@@ -68,7 +68,8 @@ import pysam
 ###################################################################
 ###################################################################
 ## read global options from configuration file
-P.getParameters()
+P.getParameters( 
+    defaults = { 'polyphen_modes' : "" } )
 
 P.PARAMS.update( 
     { "transcripts" :"transcripts.gtf.gz",

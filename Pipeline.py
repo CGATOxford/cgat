@@ -962,13 +962,14 @@ def peekParameters( workingdir, pipeline ):
     '''
     
     dirname = os.path.dirname( __file__ )
+    # special case: pipeline called in source directory
+    if dirname == "": dirname = os.path.abspath(".")
     pipeline = os.path.join( dirname, pipeline )
     assert os.path.exists( pipeline ), "can't find pipeline source %s" % pipeline
-    if workingdir == "":
-        return {}
+    if workingdir == "": workingdir = os.path.abspath(".")
 
     assert os.path.exists( workingdir ), "can't find working dir %s" % workingdir
-    
+
     process = subprocess.Popen(  "python %s -f -v 0 dump" % pipeline,
                                  cwd = workingdir, 
                                  shell = True,

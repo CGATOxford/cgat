@@ -32,8 +32,6 @@ search.
 
 import os, sys, array, string, re, types, optparse, time, struct, hashlib, base64, shutil, subprocess
 import glob, random
-import psyco
-psyco.full()
 
 ##------------------------------------------------------------
 def getHID ( sequence ):

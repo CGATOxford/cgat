@@ -33,30 +33,26 @@ Code
 ----
 
 '''
-from Pairsdb import *
-
 import sys
 import os
 import string
 import re
 
-from RSDB2PLOT import RSDB2PLOT
-import GraphXY
-import Plot
+from Rsdb2Plot import Rsdb2Plot
 
-class RSDB2PLOT_test( RSDB2PLOT):
+class Rsdb2Plot_test( Rsdb2Plot):
 
     def __init__( self, grap ):
-        RSDB2PLOT.__init__( self, graph )
+        Rsdb2Plot.__init__( self, graph )
 
     def ParseColumns( self, columns ):
         return columns
     
     
-class RSDB2PLOT_clustering ( RSDB2PLOT ):
+class Rsdb2Plot_clustering ( Rsdb2Plot ):
 
     def __init__( self, graph, columns ):
-        RSDB2PLOT.__init__( self, graph )
+        Rsdb2Plot.__init__( self, graph )
         self.mColumns = columns
 
     def ParseHeader( self, line ):
