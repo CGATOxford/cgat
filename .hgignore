@@ -10,3 +10,6 @@ conf.py
 *.c
 *.pyxbldc
 *.orig
+*.pyc
+*~
+
