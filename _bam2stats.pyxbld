@@ -7,10 +7,10 @@ def make_ext(modname, pyxfilename):
     return Extension(name = modname,
                      sources=[pyxfilename],
                      #library_dirs + libraries does not work as it would require csamtools.so to start with lib
-                     #library_dirs = ['/ifs/devel/pysam/pysam-0.4/build/lib.linux-x86_64-2.7'],
+                     #library_dirs = ['/ifs/devel/pysam-0.4/build/lib.linux-x86_64-2.7'],
                      #libraries= ['csamtools'],
                      extra_link_args=[ os.path.join( dirname, "csamtools.so")],
-                     include_dirs = ['/ifs/devel/pysam/pysam/samtools', 
-                                     '/ifs/devel/pysam/pysam/pysam',
+                     include_dirs = ['/ifs/devel/pysam/samtools', 
+                                     '/ifs/devel/pysam/pysam',
                                      ] )
 

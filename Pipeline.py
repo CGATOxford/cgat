@@ -964,6 +964,9 @@ def peekParameters( workingdir, pipeline ):
     dirname = os.path.dirname( __file__ )
     pipeline = os.path.join( dirname, pipeline )
     assert os.path.exists( pipeline ), "can't find pipeline source %s" % pipeline
+    if workingdir == "":
+        return {}
+
     assert os.path.exists( workingdir ), "can't find working dir %s" % workingdir
     
     process = subprocess.Popen(  "python %s -f -v 0 dump" % pipeline,
