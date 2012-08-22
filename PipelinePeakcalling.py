@@ -274,7 +274,7 @@ def buildBAMforPeakCalling( infiles, outfile, dedup, mask):
     num_reads = 0
     nfiles = 0
 
-    use_cluster = True
+    to_cluster = True
 
     statement = []
     
@@ -522,7 +522,7 @@ def exportIntervalsAsBed( infile, outfile ):
 
     if compress:
         E.info( "compressing and indexing %s" % outfile )
-        use_cluster = True
+        to_cluster = True
         statement = 'bgzip -f %(track)s.bed; tabix -f -p bed %(outfile)s'
         P.run()
 
@@ -1313,6 +1313,7 @@ def runSICER( infile, outfile, controlfile = None ):
                     %(sicer_evalue_threshold)f
                     >& ../%(outfile)s''' )
 
+    statement.append( 'rm -f foreground.bed background.bed' )
     statement = '; '.join( statement )
 
     P.run() 
