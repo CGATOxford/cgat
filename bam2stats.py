@@ -32,10 +32,77 @@ bam2stats.py - compute stats from a bam-file
 Purpose
 -------
 
-.. todo::
-   
-   paired-read libraries need to be treated correctly. Currently
-   the second read is ignored to avoid over-counting.
+This script takes a bam file as input and computes a few metrics:
+
+
++------------------------+----------------------------------------------------------------+
+|*Category*              |*Content*                                                       |
++------------------------+----------------------------------------------------------------+
+|total                   |total number of alignments in bam file                          |
++------------------------+----------------------------------------------------------------+
+|mapped                  |alignments mapped to a chromosome (bam flag)                    |
++------------------------+----------------------------------------------------------------+
+|unmapped                |alignments unmapped (bam flag)                                  |
++------------------------+----------------------------------------------------------------+
+|qc_fail                 |alignments failing QC (bam flag)                                |
++------------------------+----------------------------------------------------------------+
+|mate_unmapped           |alignments in which the mate is unmapped (bam flag)             |
++------------------------+----------------------------------------------------------------+
+|reverse                 |alignments in which read maps to reverse strand (bam flag)      |
+|                        |                                                                |
++------------------------+----------------------------------------------------------------+
+|mate_reverse            |alignments in which mate maps to reverse strand (bam flag)      |
++------------------------+----------------------------------------------------------------+
+|proper_pair             |alignments in which both pairs have been mapped properly ly     |
+|                        |(according to the mapper) (bam flag)                            |
++------------------------+----------------------------------------------------------------+
+|read1                   |alignments    for 1st read of pair (bam flag)                   |
++------------------------+----------------------------------------------------------------+
+|paired                  |alignments of reads that are paired (bam flag)                  |
++------------------------+----------------------------------------------------------------+
+|duplicate               |read is PCR or optical duplicate (bam flag)                     |
++------------------------+----------------------------------------------------------------+
+|read2                   |alignment is for 2nd read of pair (bam flag)                    |
++------------------------+----------------------------------------------------------------+
+|secondary               |alignment is not primary alignment                              |
++------------------------+----------------------------------------------------------------+
+|rna                     |          alignments mapping to regions of repetitive RNA       |
++------------------------+----------------------------------------------------------------+
+|no_rna                  |alignments mapping not to regions of repetitive RNA (if --remove|
+|                        |-rna has been set, otherwise equal to mapped)                   |
++------------------------+----------------------------------------------------------------+
+|duplicates              |number of alignments mapping to the same location               |
++------------------------+----------------------------------------------------------------+
+|unique                  |number of alignments mapping to unique locations                |
++------------------------+----------------------------------------------------------------+
+|reads_total             |number of reads in file. Either given via --input-reads or deduc|
+|                        |ed as the sum of mappend and unmapped reads                     |
++------------------------+----------------------------------------------------------------+
+|reads_mapped            |number of reads mapping in file. Derived from the total number o|
+|                        |f alignments and removing counts for multiple matches. Requires |
+|                        |the NH flag to be set correctly.                                |
++------------------------+----------------------------------------------------------------+
+|reads_unmapped          |number of reads unmapped in file. Assumes that there is only one|
+|                        | entry per unmapped read.                                       |
++------------------------+----------------------------------------------------------------+
+|reads_missing           |number of reads missing, if number of reads given by --input-rea|
+|                        |ds. Otherwise 0.                                                |
++------------------------+----------------------------------------------------------------+
+|reads_norna             |reads not mapping to repetetive RNA regions.                    |
++------------------------+----------------------------------------------------------------+
+|pairs_total             |number of total pairs - this is the number of reads_total divide|
+|                        |d by two. If there were no pairs, pairs_total will be 0.        |
++------------------------+----------------------------------------------------------------+
+|pairs_mapped            |number of mapped pairs - this is the same as the number of prope|
+|                        |r pairs.                                                        |
++------------------------+----------------------------------------------------------------+
+
+Additionally, the script outputs histograms for the following tags and scores. These 
+histograms are only computed for alignments not within regions of repetetive RNA.
+
+* NM: number of mismatches in alignments.
+* NH: number of hits of reads.
+* mapq: mapping quality of alignments.
 
 Usage
 -----
@@ -208,6 +275,17 @@ def main( argv = None ):
             outs.write( "reads_norna_unique\t%i\t%5.2f\treads_norna\n" % (nh[1], 100.0 * nh[1] / nreads_norna ) )
 
     pysam_in.close()
+
+    # output paired end data
+    if flags_counts["read2"] > 0:
+        pairs_total = nreads_total // 2
+        pairs_mappend = flag_counts["proper_pair"]
+        outs.write( "pairs_total\t%i\t%5.2f\tpairs_total\n" % (pairs_total, 100.0))
+        outs.write( "pairs_mapped\t%i\t%f5.2f\tpairs_total\n" % (pairs_mapped, 100.0 * pairs_mapped / pairs_total))
+    else:
+        pairs_total = pairs_mapped = 0
+        outs.write( "pairs_total\t%i\t%5.2f\tpairs_total\n" % (pairs_total,0.0))
+        outs.write( "pairs_mapped\t%i\t%5.2f\tpairs_total\n" % (pairs_mapped, 0.0))
 
     if options.force_output or len(nm) > 0:
         outfile = E.openOutputFile( "nm", "w" )
