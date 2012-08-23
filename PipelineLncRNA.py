@@ -244,19 +244,20 @@ def buildFilteredLncRNAGeneSet(flagged_gtf, refnoncoding_gtf, outfile, geneset_p
                         outf.write("%s\n" % str(gtf))
                     
         # check for single exon status
-        elif entry.exon_status == "s":
-            if refnoncoding.contains(entry.contig, entry.start, entry.end):                               
+        elif gene[0].exon_status == "s":
+            for gtf in gene:
+                if refnoncoding.contains(gtf.contig, gtf.start, gtf.end):                               
                 
-                # retain strandedness
-                for gtf in refnoncoding.get(entry.contig, entry.start, entry.end):                               
-                    if entry.strand == gtf[2][0]:
-                        keep.add(gtf[2][1])
+                    # retain strandedness
+                    for gtf2 in refnoncoding.get(gtf.contig, gtf.start, gtf.end):                               
+                        if gtf.strand == gtf2[2][0]:
+                            keep.add(gtf2[2][1])
                         
-            # if geneset is not included then this won't be used
-            elif previous.contains(entry.contig, entry.start, entry.end):                                     
-                for gtf in previous.get(entry.contig, entry.start, entry.end):                                
-                    if entry.strand == gtf[2][0]:
-                        keep.add(gtf[2][1])
+                # if geneset is not included then this won't be used
+                elif previous.contains(gtf.contig, gft.start, gtf.end):                                     
+                    for gtf2 in previous.get(gtf.contig, gtf.start, gtf.end):                                
+                        if gtf.strand == gtf2[2][0]:
+                            keep.add(gtf2[2][1])
 
     # write out ones to keep
     if geneset_previous:
