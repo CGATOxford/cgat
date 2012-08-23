@@ -180,9 +180,10 @@ def buildFilteredLncRNAGeneSet(flagged_gtf, refnoncoding_gtf, outfile, geneset_p
     a previously identified lincRNA
     '''
     previous = IndexedGenome.IndexedGenome()
+    previous_all = IndexedGenome.IndexedGenome()
     if geneset_previous:
         for transcript in GTF.transcript_iterator( GTF.iterator(IOTools.openFile(geneset_previous)) ):
-
+            previous.add()
             # only use if single exon
             if len(transcript) == 1:
                 previous.add(transcript[0].contig, transcript[0].start, transcript[0].end, [transcript[0].strand, transcript[0].transcript_id])

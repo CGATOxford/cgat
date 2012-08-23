@@ -261,13 +261,13 @@ def asRanges( gffs, feature = None ):
 def readFromFile( infile ):
     """read gtf from file."""
     result = []
-    for gff in pysam.tabix_iterator( infile ):
+    for gff in pysam.tabix_iterator( infile, pysam.asGTF() ):
         result.append( gff )
     return result
 
 def iterator( infile ):
     """return a simple iterator over all entries in a file."""
-    return pysam.tabix_iterator(infile)
+    return pysam.tabix_iterator(infile, pysam.asGTF())
 
 def chunk_iterator( gff_iterator ):
     """iterate over the contents of a gff file.
