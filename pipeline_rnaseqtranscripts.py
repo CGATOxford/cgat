@@ -343,7 +343,7 @@ def connect():
 def writePrunedGTF( infile, outfile ):
     '''remove various gene models from a gtf file.
     '''
-    to_cluster = True
+#    to_cluster = True
 
     cmds = []
 
@@ -621,13 +621,32 @@ def buildReferenceGeneSet( infile, outfile ):
             "refnoncoding.gtf.gz" )
 def buildNoncodingGeneSet( infile, outfile ):
     '''build a new gene set without protein coding 
-    transcripts.'''
+    transcripts. 
     
-    to_cluster = True
-    statement = '''
-    zcat %(infile)s | awk '$2 == "lincRNA" || $2 == "processed_transcript"' | gzip > %(outfile)s
+    # Nick
+    Also remove transcripts that are ambiguous in
+    biotype in terms of their non-codingness
+
+    filter the refnoncoding geneset for things that are described in ensembl
+    as being:
+    Ambiguous_orf
+    Retained_intron
+    Sense_intronic
+    antisense
+    Sense_overlapping
+    Processed transcript
     '''
+
+    # Nick - changed the filters for refnoncoding set
+    to_cluster = True
+    statement = '''zcat %(infile)s 
+                   | awk '$2 == "lincRNA" || $2 == "non_coding" || $2 == "3prime_overlapping_ncrna" || $2 == "ncRNA_host"' | gzip > %(outfile)s'''                                                                                                                                             
     P.run()
+
+    # statement = '''
+    # zcat %(infile)s | awk '$2 == "lincRNA" || $2 == "processed_transcript"' | gzip > %(outfile)s
+    # '''
+    # P.run()
 
 #########################################################################
 #########################################################################
@@ -738,7 +757,7 @@ def buildTranscriptsWithCufflinks(infiles, outfile):
 
     to_cluster = True    
     job_options= "-pe dedicated %i -R y" % PARAMS["cufflinks_threads"]
-
+    
     track = os.path.basename( P.snip( outfile, ".gtf.gz" ) )
 
     tmpfilename = P.getTempFilename( "." )
@@ -811,7 +830,7 @@ def runCuffCompare( infiles, outfile, reffile ):
     Will create a .tmap and .refmap input file for each input file.
     '''
 
-    to_cluster = True
+#    to_cluster = True
 
     tmpdir = P.getTempDir( "." )
     
@@ -1347,6 +1366,101 @@ def buildLincRNAGeneSet( infiles, outfile ):
 
     P.run()
 
+#########################################################################
+#########################################################################
+#########################################################################
+@merge( (buildPrunedGeneSet, buildReferenceGeneSet, buildNoncodingGeneSet,
+         os.path.join(PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_pseudogenes_gtf"] ),
+         os.path.join(PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_numts_gtf"] ),
+         ), "abinitio_lincrna.gtf.gz" )
+def buildAbinitioLincRNAGeneSet( infiles, outfile ):
+    '''
+    build ab initio lincRNA gene set. 
+    In contrast to the buildLincRNAGeneSet this lincRNA set does not contain
+    the reference noncoding gene set. It is transcripts in the abinitio (pruned) set that
+    do not overlap at any protein coding, processed or pseudogene transcripts 
+    (exons+introns) in the reference gene set.
+
+    Transcripts overlapping protein coding transcripts on opposite transcripts are retained.
+    It also does not filter out repeats as LincRNA transcripts seem to be found in such regions on occasion
+    '''
+    
+    infile_abinitio, reference_gtf, refnoncoding_gtf, pseudogenes_gtf, numts_gtf = infiles
+
+    E.info( "indexing geneset for filtering" )
+
+    input_sections = ("protein_coding", 
+                      "processed_pseudogene",
+                      "unprocessed_pseudogene",
+                      "nonsense_mediated_decay",
+                      "retained_intron")
+                    
+    indices = {}
+    for section in input_sections:
+        indices[section] = GTF.readAndIndex( 
+            GTF.iterator_filtered(  GTF.merged_gene_iterator(GTF.iterator( IOTools.openFile( reference_gtf ) )),
+                                   source = section ),
+            with_value = True )
+        
+    E.info( "built indices for %i features" % len(indices))
+
+    indices["numts"] = GTF.readAndIndex( GTF.iterator( IOTools.openFile( numts_gtf) ), with_value = True )
+
+    E.info( "added index for numts" )
+
+    indices["pseudogenes"] = GTF.readAndIndex( GTF.iterator( IOTools.openFile( pseudogenes_gtf) ), with_value = True )
+
+    E.info( "added index for pseudogenes" )
+
+    noncoding = {}
+    noncoding["noncoding"] = GTF.readAndIndex(GTF.iterator(IOTools.openFile(refnoncoding_gtf)), with_value = True)
+
+    E.info("created index for known noncoding exons to avoid filtering")
+
+    sections = indices.keys()
+
+    total_transcripts, remove_transcripts = set(), collections.defaultdict( set )
+    transcript_length = collections.defaultdict( int )
+    inf = GTF.iterator( IOTools.openFile( infile_abinitio ) )
+
+    E.info( "collecting genes to remove" )
+
+    min_length = int(PARAMS["lincrna_min_length"])
+
+    for gtfs in GTF.transcript_iterator( inf ): 
+        l = sum([x.end-x.start for x in gtfs])
+        if l < min_length:
+            remove_transcripts[gtfs[0].transcript_id].add("length")
+
+        for section in sections:
+            for gtf in gtfs:
+                transcript_id = gtf.transcript_id   
+                total_transcripts.add( transcript_id )
+                
+                # only filter on things that don't overlap in the known non-coding set
+                # this was a problem originally because of the biotype descriptions e.g. MALAT1 was both lincRNA and processed transcript
+                if not noncoding["noncoding"].contains(gtf.contig, gtf.start, gtf.end): 
+                    if indices[section].contains( gtf.contig, gtf.start, gtf.end):                    
+
+                    # retain antisense transcripts
+                        for gtf2 in indices[section].get(gtf.contig, gtf.start, gtf.end):
+                            if gtf.strand == gtf2[2].strand:
+                                remove_transcripts[transcript_id].add( section )
+                    
+    E.info( "removing %i out of %i transcripts" % (len(remove_transcripts), len(total_transcripts)) )
+    
+    outf = open("lincrna_removed.tsv", "w")
+    outf.write("transcript_id" + "\t" + "removed" + "\n" )
+    for x, y in remove_transcripts.iteritems():
+        outf.write("%s\t%s\n" % (x, ",".join(y)))
+
+    # write out transcripts that are not in removed set
+    outf = gzip.open(outfile, "w")
+    for entry in GTF.iterator(IOTools.openFile(infile_abinitio)):
+        if entry.transcript_id in remove_transcripts: continue
+        outf.write("%s\n" % str(entry))
+    outf.close()
+
 ###################################################################
 ##################################################################
 ##################################################################
@@ -1355,7 +1469,8 @@ mapToGenesetTargets = { 'full': buildFullGeneSet,
                         'pruned': buildPrunedGeneSet,
                         'novel': buildNovelGeneSet,
                         'lincrna': buildLincRNAGeneSet,
-                        }
+                        'abinitio_lincrna': buildAbinitioLincRNAGeneSet}
+                        
 for x in P.asList( PARAMS["genesets"]):
     GENESETTARGETS.append( mapToGenesetTargets[x] )
 
@@ -1677,7 +1792,8 @@ def buildReproducibility( infile, outfile ):
 @transform( buildReproducibility, suffix(".reproducibility"), "_reproducibility.load" )
 def loadReproducibility( infile, outfile ):
     '''load reproducibility results.'''
-    P.load( infile, outfile )
+    tablename = P.asTable(infile)
+    statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s --log=%(outfile)s.log --allow-empty=True < %(infile)s'''
 
 #########################################################################
 #########################################################################

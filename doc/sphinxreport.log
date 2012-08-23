@@ -1,0 +1,86 @@
+2012-08-22 15:05:32,983 INFO initialising plugins
+2012-08-22 15:05:34,192 DEBUG found plugins: 3 capabilites and 46 plugins
+2012-08-22 15:06:17,978 INFO report_directive: starting: /ifs/home/nicki/src/doc/pipelines/CompareTranscripts.rst:362
+2012-08-22 15:06:17,979 DEBUG report_directive.run: profile: started: rst: /ifs/home/nicki/src/doc/pipelines/CompareTranscripts.rst:362
+2012-08-22 15:06:17,980 DEBUG report_directive.run: arguments=[u'Trackers.MakefileParameters'], options={'tracks': 'Makefile.compare_transcripts', 'transpose': u'', 'render': 'glossary'}, lineno=362, content=[u'Overview of pipeline parameters.'], document=/ifs/home/nicki/src/doc/pipelines/CompareTranscripts.rst
+2012-08-22 15:06:17,980 DEBUG report_directive.run: plotdir=Trackers.MakefileParameters, basename=Trackers, ext=.MakefileParameters, fname=Trackers.MakefileParameters, rstdir=/ifs/home/nicki/src/doc/pipelines, srcdir=/ifs/home/nicki/src/doc, builddir=/ifs/home/nicki/src/doc
+2012-08-22 15:06:17,980 DEBUG report_directive.run: reference=Trackers.MakefileParameters, basedir=, rst2src=../_static/report_directive/, root2build=../_static/report_directive/, outdir=_static/report_directive/, codename=Trackers.MakefileParameters.code
+2012-08-22 15:06:17,996 DEBUG report_directive.run: options={'tracks': 'Makefile.compare_transcripts', 'transpose': u'', 'render': 'glossary'}
+2012-08-22 15:06:17,997 DEBUG report_directive.run: renderer options: {'transpose': u''}
+2012-08-22 15:06:17,997 DEBUG report_directive.run: transformer options: {}
+2012-08-22 15:06:17,997 DEBUG report_directive.run: dispatcher options: {'tracks': 'Makefile.compare_transcripts'}
+2012-08-22 15:06:17,997 DEBUG report_directive.run: tracker options: {}
+2012-08-22 15:06:17,997 DEBUG report_directive.run: display options: {'render': 'glossary'}
+2012-08-22 15:06:17,997 DEBUG report_directive.run: options_hash=2ad4a53939ccd9bcef6cbf111375a2e7
+2012-08-22 15:06:17,998 DEBUG report_directive.run: checking for changed files.
+2012-08-22 15:06:17,999 DEBUG report_directive.run: /ifs/home/nicki/src/doc/pipelines/CompareTranscripts.rst:362: no check performed: _static/report_directive/Trackers.MakefileParameters@glossary@2ad4a53939ccd9bcef6cbf111375a2e7.txt missing
+2012-08-22 15:06:17,999 DEBUG report_directive.run: collecting tracker Trackers.MakefileParameters with options {} 
+2012-08-22 15:06:17,999 DEBUG instantiating class MakefileParameters
+2012-08-22 15:06:17,999 DEBUG entered getModule with `Trackers`
+2012-08-22 15:06:17,999 DEBUG searching for module name=Trackers at path=None
+2012-08-22 15:06:18,004 DEBUG loading module: Trackers: <open file '/ifs/home/nicki/src/doc/python/Trackers.py', mode 'U' at 0xc8d2c90>, /ifs/home/nicki/src/doc/python/Trackers.py, ('.py', 'U', 1)
+2012-08-22 15:06:18,098 WARNING could not load module Trackers
+2012-08-22 15:06:18,098 WARNING report_directive.run: exception caught at /ifs/home/nicki/src/doc/pipelines/CompareTranscripts.rst:362 - see document
+2012-08-22 15:06:18,103 WARNING report_directive.layoutBlocks: missing title
+2012-08-22 15:06:18,106 DEBUG report_directive.run: profile: finished: rst: /ifs/home/nicki/src/doc/pipelines/CompareTranscripts.rst:362
+2012-08-22 15:06:18,309 INFO report_directive: starting: /ifs/home/nicki/src/doc/pipelines/MapTranscripts454.rst:55
+2012-08-22 15:06:18,310 DEBUG report_directive.run: profile: started: rst: /ifs/home/nicki/src/doc/pipelines/MapTranscripts454.rst:55
+2012-08-22 15:06:18,310 DEBUG report_directive.run: arguments=[u'Trackers.MakefileParameters'], options={'tracks': 'Makefile.map_transcripts_454', 'transpose': u'', 'render': 'glossary'}, lineno=55, content=[u'Overview of pipeline parameters.'], document=/ifs/home/nicki/src/doc/pipelines/MapTranscripts454.rst
+2012-08-22 15:06:18,310 DEBUG report_directive.run: plotdir=Trackers.MakefileParameters, basename=Trackers, ext=.MakefileParameters, fname=Trackers.MakefileParameters, rstdir=/ifs/home/nicki/src/doc/pipelines, srcdir=/ifs/home/nicki/src/doc, builddir=/ifs/home/nicki/src/doc
+2012-08-22 15:06:18,310 DEBUG report_directive.run: reference=Trackers.MakefileParameters, basedir=, rst2src=../_static/report_directive/, root2build=../_static/report_directive/, outdir=_static/report_directive/, codename=Trackers.MakefileParameters.code
+2012-08-22 15:06:18,311 DEBUG report_directive.run: options={'tracks': 'Makefile.map_transcripts_454', 'transpose': u'', 'render': 'glossary'}
+2012-08-22 15:06:18,311 DEBUG report_directive.run: renderer options: {'transpose': u''}
+2012-08-22 15:06:18,311 DEBUG report_directive.run: transformer options: {}
+2012-08-22 15:06:18,311 DEBUG report_directive.run: dispatcher options: {'tracks': 'Makefile.map_transcripts_454'}
+2012-08-22 15:06:18,311 DEBUG report_directive.run: tracker options: {}
+2012-08-22 15:06:18,311 DEBUG report_directive.run: display options: {'render': 'glossary'}
+2012-08-22 15:06:18,311 DEBUG report_directive.run: options_hash=fdccf2c3a3af6a09abbd046bcbb2f87c
+2012-08-22 15:06:18,312 DEBUG report_directive.run: checking for changed files.
+2012-08-22 15:06:18,312 DEBUG report_directive.run: /ifs/home/nicki/src/doc/pipelines/MapTranscripts454.rst:55: no check performed: _static/report_directive/Trackers.MakefileParameters@glossary@fdccf2c3a3af6a09abbd046bcbb2f87c.txt missing
+2012-08-22 15:06:18,312 DEBUG report_directive.run: collecting tracker Trackers.MakefileParameters with options {} 
+2012-08-22 15:06:18,312 DEBUG instantiating class MakefileParameters
+2012-08-22 15:06:18,312 DEBUG entered getModule with `Trackers`
+2012-08-22 15:06:18,312 DEBUG searching for module name=Trackers at path=None
+2012-08-22 15:06:18,314 DEBUG loading module: Trackers: <open file '/ifs/home/nicki/src/doc/python/Trackers.py', mode 'U' at 0xcd12f60>, /ifs/home/nicki/src/doc/python/Trackers.py, ('.py', 'U', 1)
+2012-08-22 15:06:18,316 WARNING could not load module Trackers
+2012-08-22 15:06:18,316 WARNING report_directive.run: exception caught at /ifs/home/nicki/src/doc/pipelines/MapTranscripts454.rst:55 - see document
+2012-08-22 15:06:18,317 WARNING report_directive.layoutBlocks: missing title
+2012-08-22 15:06:18,338 DEBUG report_directive.run: profile: finished: rst: /ifs/home/nicki/src/doc/pipelines/MapTranscripts454.rst:55
+2012-08-22 15:07:34,851 INFO reading additional configuration from conf.py
+2012-08-22 15:07:39,205 INFO reading additional configuration from conf.py
+2012-08-22 15:22:28,731 INFO initialising plugins
+2012-08-22 15:22:29,891 DEBUG found plugins: 3 capabilites and 46 plugins
+2012-08-22 15:23:30,836 INFO initialising plugins
+2012-08-22 15:23:31,947 DEBUG found plugins: 3 capabilites and 46 plugins
+2012-08-22 15:24:05,371 INFO report_directive: starting: /ifs/home/nicki/src/doc/pipelines/CompareTranscripts.rst:362
+2012-08-22 15:24:05,372 DEBUG report_directive.run: profile: started: rst: /ifs/home/nicki/src/doc/pipelines/CompareTranscripts.rst:362
+2012-08-22 15:24:05,373 DEBUG report_directive.run: arguments=[u'Trackers.MakefileParameters'], options={'tracks': 'Makefile.compare_transcripts', 'transpose': u'', 'render': 'glossary'}, lineno=362, content=[u'Overview of pipeline parameters.'], document=/ifs/home/nicki/src/doc/pipelines/CompareTranscripts.rst
+2012-08-22 15:24:05,373 DEBUG report_directive.run: plotdir=Trackers.MakefileParameters, basename=Trackers, ext=.MakefileParameters, fname=Trackers.MakefileParameters, rstdir=/ifs/home/nicki/src/doc/pipelines, srcdir=/ifs/home/nicki/src/doc, builddir=/ifs/home/nicki/src/doc
+2012-08-22 15:24:05,373 DEBUG report_directive.run: reference=Trackers.MakefileParameters, basedir=, rst2src=../_static/report_directive/, root2build=../_static/report_directive/, outdir=_static/report_directive/, codename=Trackers.MakefileParameters.code
+2012-08-22 15:24:05,373 DEBUG report_directive.run: options={'tracks': 'Makefile.compare_transcripts', 'transpose': u'', 'render': 'glossary'}
+2012-08-22 15:24:05,374 DEBUG report_directive.run: renderer options: {'transpose': u''}
+2012-08-22 15:24:05,374 DEBUG report_directive.run: transformer options: {}
+2012-08-22 15:24:05,374 DEBUG report_directive.run: dispatcher options: {'tracks': 'Makefile.compare_transcripts'}
+2012-08-22 15:24:05,374 DEBUG report_directive.run: tracker options: {}
+2012-08-22 15:24:05,374 DEBUG report_directive.run: display options: {'render': 'glossary'}
+2012-08-22 15:24:05,374 DEBUG report_directive.run: options_hash=2ad4a53939ccd9bcef6cbf111375a2e7
+2012-08-22 15:24:05,375 DEBUG report_directive.run: checking for changed files.
+2012-08-22 15:24:05,376 DEBUG report_directive.run: /ifs/home/nicki/src/doc/pipelines/CompareTranscripts.rst:362: checking for []
+2012-08-22 15:24:05,376 INFO report_directive.run: /ifs/home/nicki/src/doc/pipelines/CompareTranscripts.rst:362: noredo: all files are present
+2012-08-22 15:24:05,542 INFO report_directive: starting: /ifs/home/nicki/src/doc/pipelines/MapTranscripts454.rst:55
+2012-08-22 15:24:05,542 DEBUG report_directive.run: profile: started: rst: /ifs/home/nicki/src/doc/pipelines/MapTranscripts454.rst:55
+2012-08-22 15:24:05,543 DEBUG report_directive.run: arguments=[u'Trackers.MakefileParameters'], options={'tracks': 'Makefile.map_transcripts_454', 'transpose': u'', 'render': 'glossary'}, lineno=55, content=[u'Overview of pipeline parameters.'], document=/ifs/home/nicki/src/doc/pipelines/MapTranscripts454.rst
+2012-08-22 15:24:05,543 DEBUG report_directive.run: plotdir=Trackers.MakefileParameters, basename=Trackers, ext=.MakefileParameters, fname=Trackers.MakefileParameters, rstdir=/ifs/home/nicki/src/doc/pipelines, srcdir=/ifs/home/nicki/src/doc, builddir=/ifs/home/nicki/src/doc
+2012-08-22 15:24:05,543 DEBUG report_directive.run: reference=Trackers.MakefileParameters, basedir=, rst2src=../_static/report_directive/, root2build=../_static/report_directive/, outdir=_static/report_directive/, codename=Trackers.MakefileParameters.code
+2012-08-22 15:24:05,543 DEBUG report_directive.run: options={'tracks': 'Makefile.map_transcripts_454', 'transpose': u'', 'render': 'glossary'}
+2012-08-22 15:24:05,543 DEBUG report_directive.run: renderer options: {'transpose': u''}
+2012-08-22 15:24:05,543 DEBUG report_directive.run: transformer options: {}
+2012-08-22 15:24:05,544 DEBUG report_directive.run: dispatcher options: {'tracks': 'Makefile.map_transcripts_454'}
+2012-08-22 15:24:05,544 DEBUG report_directive.run: tracker options: {}
+2012-08-22 15:24:05,544 DEBUG report_directive.run: display options: {'render': 'glossary'}
+2012-08-22 15:24:05,544 DEBUG report_directive.run: options_hash=fdccf2c3a3af6a09abbd046bcbb2f87c
+2012-08-22 15:24:05,544 DEBUG report_directive.run: checking for changed files.
+2012-08-22 15:24:05,545 DEBUG report_directive.run: /ifs/home/nicki/src/doc/pipelines/MapTranscripts454.rst:55: checking for []
+2012-08-22 15:24:05,545 INFO report_directive.run: /ifs/home/nicki/src/doc/pipelines/MapTranscripts454.rst:55: noredo: all files are present
+2012-08-22 15:24:59,134 INFO reading additional configuration from conf.py
+2012-08-22 15:25:00,530 INFO reading additional configuration from conf.py
