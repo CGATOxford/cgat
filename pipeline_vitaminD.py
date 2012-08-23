@@ -89,9 +89,8 @@ import PipelineMotifs as PipelineMotifs
 import PipelineGeneset as PGeneset
 import time
 
-if not os.path.exists("conf.py"):
-    raise IOError( "could not find configuration file conf.py" )
-execfile("conf.py")
+if os.path.exists("conf.py"):
+    execfile("conf.py")
 
 TARGET_ANNOTATION= 'ensembl_regions.gff'
 TARGET_GENESET= 'ensembl.gtf'

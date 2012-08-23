@@ -170,7 +170,7 @@ if __name__ == "__main__":
                        choices = ("file", "node" ),
                        help="analysis mode [%default]." )
 
-    parser.add_option( "-r", "--recursive", action="store_true"
+    parser.add_option( "-r", "--recursive", action="store_true",
                        help="recursively look for logfiles from current directory [%default]." )
 
     parser.set_defaults(

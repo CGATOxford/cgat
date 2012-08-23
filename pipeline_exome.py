@@ -145,7 +145,7 @@ USECLUSTER = True
 #########################################################################
 #########################################################################
 # load options from the config file
-P.getParameters( ["%s/pipeline.ini" % __file__[:-len(".py")], "../exome.ini", "exome.ini" ] )
+P.getParameters( ["%s/pipeline.ini" % os.path.splitext(__file__)[0], "../exome.ini", "exome.ini" ] )
 PARAMS = P.PARAMS
 
 #########################################################################

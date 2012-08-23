@@ -153,9 +153,9 @@ import Stats
 # load options from the config file
 import Pipeline as P
 P.getParameters( 
-    #["%s/pipeline.ini" % __file__[:-len(".py")],
-     #"../pipeline.ini",
-     ["pipeline.ini" ],
+    ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
+     "../pipeline.ini",
+     "pipeline.ini" ],
     defaults = {
         'annotations_dir' : "",
         'paired_end' : False } )

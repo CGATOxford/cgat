@@ -59,7 +59,8 @@ import os, sys, string, re, optparse, math, time, tempfile, subprocess
 
 
 import Experiment
-import Bio, Bio.Fasta
+import Bio
+import FastaIterator
 
 ##------------------------------------------------------------
 if __name__ == '__main__':
@@ -70,8 +71,7 @@ if __name__ == '__main__':
 
     (options, args) = Experiment.Start( parser )
     
-    parser = Bio.Fasta.RecordParser()
-    iterator = Bio.Fasta.Iterator( sys.stdin, parser)
+    iterator = FastaIterator.FastaIterator( sys.stdin )
 
     sequences = []
     

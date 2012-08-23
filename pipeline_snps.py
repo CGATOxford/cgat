@@ -78,7 +78,7 @@ from rpy2.robjects import r as R
 ###################################################################
 ## read global options from configuration file
 P.getParameters( 
-    ["%s/pipeline.ini" % __file__[:-len(".py")],
+    ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
      "../pipeline.ini",
      "pipeline.ini" ] )
 
