@@ -187,7 +187,13 @@ import Pipeline as P
 # get parameters
 P.getParameters( 
     ["%s.ini" % __file__[:-len(".py")]
-     ,"pipeline.ini"])
+     ,"pipeline.ini"],
+    defaults = {"annotations_annotations_dir": "",
+                "genesets_abinitio_coding": "pruned.gtf.gz",
+                "genesets_abinitio_lncrna": "pruned.gtf.gz",
+                "genesets_reference": "reference.gtf.gz",
+                "genesets_refcoding": "refcoding.gtf.gz",
+                "genesets_previous": ""})
 
 PARAMS = P.PARAMS
 PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_annotations_dir"],
