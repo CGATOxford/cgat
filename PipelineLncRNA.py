@@ -183,7 +183,9 @@ def buildFilteredLncRNAGeneSet(flagged_gtf, refnoncoding_gtf, outfile, geneset_p
     previous_all = IndexedGenome.IndexedGenome()
     if geneset_previous:
         for transcript in GTF.transcript_iterator( GTF.iterator(IOTools.openFile(geneset_previous)) ):
-            previous.add()
+            # use an indexed genome to assess novelty of lncRNA
+            for gtf in transcript:
+                previous_all.add(gtf.contig, gtf.start, gtf.end, gtf.strand)
             # only use if single exon
             if len(transcript) == 1:
                 previous.add(transcript[0].contig, transcript[0].start, transcript[0].end, [transcript[0].strand, transcript[0].transcript_id])
@@ -191,18 +193,56 @@ def buildFilteredLncRNAGeneSet(flagged_gtf, refnoncoding_gtf, outfile, geneset_p
 
     # same for refnoncoding geneset        
     refnoncoding = IndexedGenome.IndexedGenome()
+    refnoncoding_all = IndexedGenome.IndexedGenome()
     for transcript in GTF.transcript_iterator( GTF.iterator(IOTools.openFile(refnoncoding_gtf)) ):
-
+        # use an indexed genome to assess novelty of lncRNA
+        for gtf in transcript:
+            refnoncoding_all.add(gtf.contig, gtf.start, gtf.end, gtf.strand)
         # only use if single exon
         if len(transcript) == 1:
             refnoncoding.add(transcript[0].contig, transcript[0].start, transcript[0].end, [transcript[0].strand, transcript[0].transcript_id])
 
     outf = gzip.open(outfile, "w")
     keep = set()
-    for entry in GTF.iterator(IOTools.openFile(flagged_gtf)):
-        if entry.exon_status == "m":
-            outf.write("%s\n" % str(entry))
-
+    for gene in GTF.flat_gene_iterator(GTF.iterator(IOTools.openFile(flagged_gtf))):
+        gene_id = gene[0].gene_id
+        if gene[0].exon_status == "m":
+            # check if there is overlap in the known sets
+            for gtf in gene:
+                if previous:
+                    if refnoncoding_all.contains(gtf.contig, gtf.start, gtf.end):
+                        for gtf2 in refnoncoding_all.get(gtf.contig, gtf.start, gtf.end):
+                            if gtf.strand == gtf[2]:
+                                # add novelty flag
+                                gtf.setAttribute("gene_status", "known")
+                                outf.write("%s\n" % str(gtf))
+                            else:
+                                gtf.setAttribute("gene_status", "novel")
+                                outf.write("%s\n" % str(gtf))
+                    
+                    elif previous_all.contains(gtf.contig, gtf.start, gtf.end):
+                        for gtf2 in previous_all.get(gtf.contig, gtf.start, gtf.end):
+                            if gtf.strand == gtf[2]:
+                                # add novelty flag
+                                gtf.setAttribute("gene_status", "known")
+                                outf.write("%s\n" % str(gtf))
+                    else:
+                        gtf.setAttribute("gene_status", "novel")
+                        outf.write("%s\n" % str(gtf))
+                else:
+                    if refnoncoding_all.contains(gtf.contig, gtf.start, gtf.end):
+                        for gtf2 in refnoncoding_all.get(gtf.contig, gtf.start, gtf.end):
+                            if gtf.strand == gtf[2]:
+                                # add novelty flag
+                                gtf.setAttribute("gene_status", "known")
+                                outf.write("%s\n" % str(gtf))
+                            else:
+                                gtf.setAttribute("gene_status", "novel")
+                                outf.write("%s\n" % str(gtf))
+                    else:
+                        gtf.setAttribute("gene_status", "novel")
+                        outf.write("%s\n" % str(gtf))
+                    
         # check for single exon status
         elif entry.exon_status == "s":
             if refnoncoding.contains(entry.contig, entry.start, entry.end):                               
