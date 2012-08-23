@@ -22,7 +22,7 @@
 #################################################################################
 '''
 ==============================
-pipeline_rnaseqLncRNA.py
+Long non-coding RNA pipeline
 ==============================
 
 
@@ -55,7 +55,12 @@ of the pipeline are as follows:
    reference set (usually a set that is built from the transcript building pipeline) for 
    transcripts that do not belong to one of the following biotypes
 
-   protein_coding\nAmbiguous_orf\nRetained_intron\nSense_intronic\nantisense\nSense_overlapping
+   protein_coding\n
+   ambiguous_orf\n
+   retained_intron\n
+   sense_intronic\n
+   antisense\n
+   sense_overlapping\n
 
 
    This set of non-coding transcripts is required in the filtering of the ab initio geneset 
@@ -69,20 +74,22 @@ of the pipeline are as follows:
    filtering is performed on the level of the transcript - although there may be multiple isoform
    predictions per lncRNA, at this point the sensitivity of lncRNA prediction is increased. 
    Antisense transcripts overlapping protein coding transcripts are retained.
-
-* Due to many fragments being produced from RNA-seq data, putative single exon lncRNA are flagged
-  with in the lncRNA gtf file so it is easy to filter for the more reliable multi-exonic lncRNA. 
-
-* Although many single exon lncRNA are likely to be artifacts, we assess the overlap of putative
+   
+* Filter putative lncRNA gene set
+   Due to many fragments being produced from RNA-seq data, putative single exon lncRNA are flagged
+   with in the lncRNA gtf file so it is easy to filter for the more reliable multi-exonic lncRNA. 
+   Although many single exon lncRNA are likely to be artifacts, we assess the overlap of putative
    single exon lncRNA with sets of lncRNA that have been previously identified. If an overlap is
    found with a transcript in the reference set then the reference is added to the lncRNA gene set.
    This means that true single exon lncRNA are still picked up - as long as there is previous evidence
    to support their existence.
 
-* The putative set of lncRNA are assessed for coding potential using the coding potential calculator
+* Build final lncRNA gene set
+   The putative set of lncRNA are assessed for coding potential using the coding potential calculator
    (CPC). Any lncRNA that are annotated as 'coding' in this analysis are removed from downstream analysis.
 
-* In order to assess expression levels between genes within samples i.e. protein coding vs. lncRNA, it
+* Combine coding and non-coding gene sets
+   In order to assess expression levels between genes within samples i.e. protein coding vs. lncRNA, it
    is required that the FPKM estimation be made on a complete geneset. Therefore the lncRNA geneset is 
    concatenated to the protein coding gene set for use in downstream analysis.
 
@@ -110,28 +117,27 @@ pipeline using cufflinks.
 Files are supplied in the working directory. They are specified in the configuration file
 and refer to:
 
-* A coding geneset that id the output from a cufflinks transcript assembly
+* A coding geneset that is the output from a cufflinks transcript assembly.
 
-   abinitio_coding = :file:`<name>.gtf.gz` 
+    abinitio_coding = :file:`<name>.gtf.gz` 
 
-* An abinitio geneset that is the output from a cufflinks transcript assembly. This is to be used
-   for lncRNA prediction. (note that this may be different to the abinitio_coding geneset). 
+* An abinitio geneset that is the output from a cufflinks transcript assembly. This is to be used for lncRNA prediction. 
+  (note that this may be different to the abinitio_coding geneset). 
 
-   abinitio_lncrna = :file:`<name>.gtf.gz`
+    abinitio_lncrna = :file:`<name>.gtf.gz`
 
-* A reference geneset containing known protein coding transcripts. This is used for comparisons in the
-   report.
+* A reference geneset containing known protein coding transcripts. This is used for comparisons in the report.
 
-   refcoding = :file:`<name>.gtf.gz`
+    refcoding = :file:`<name>.gtf.gz`
 
 * A reference geneset from ensembl with all known expressed transcripts
 
-   reference = :file:`<name>.gtf.gz`
+    reference = :file:`<name>.gtf.gz`
 
 * An optional geneset containing previously identified lncRNA. If this is not supplied then the pipeline uses
-  a reference non-codihng set from the ensembl reference.
+  a reference non-coding set from the ensembl reference.
 
-   previous = :file:`<name>.gtf.gz`
+    previous = :file:`<name>.gtf.gz`
 
 
 Pipeline output
@@ -139,24 +145,25 @@ Pipeline output
 
 The pipeline produces three main files of interest:
 
-
-+--------------------------+--------------------------------------------------+
-|                          |Ab initio set of lncRNA transcripts filtered for  |
-|lncrna_final.class.gtf.gz |single exon status (excl.previously observed) and |
-|                          |calssified relative to protein coding transcripts |
-+--------------------------+--------------------------------------------------+
-|                          |Ab inito assembled protein coding transcipts - for|
-|abinitio_coding.gtf.gz    |a comparable set to lncRNA transcripts            |
-|                          |                                                  |
-+--------------------------+--------------------------------------------------+
-|                          |Combined set from the two sets above. to be used  |
-|transcripts.gtf.gz        |for downstream FPKM estimation and differential   |
-|                          |expression analysis                               |
-+--------------------------+--------------------------------------------------+
++------------------------------------+--------------------------------------------------+
+|           Filename                 |             Description                          |
++------------------------------------+--------------------------------------------------+
+|                                    |Ab initio set of lncRNA transcripts filtered for  |
+|:file:`lncrna_final.class.gtf.gz`   |single exon status (excl.previously observed) and |
+|                                    |classified relative to protein coding transcripts |
++------------------------------------+--------------------------------------------------+
+|                                    |Ab inito assembled protein coding transcipts - for|
+|:file:`<name>_coding.gtf.gz`        |a comparable set to lncRNA transcripts            |
+|                                    |                                                  |
++------------------------------------+--------------------------------------------------+
+|                                    |Combined set from the two sets above. to be used  |
+|:file:`transcripts.gtf.gz`          |for downstream FPKM estimation and differential   |
+|                                    |expression analysis                               |
++------------------------------------+--------------------------------------------------+
 
 
 code
------
+=====
 '''
 
 ##########################################################

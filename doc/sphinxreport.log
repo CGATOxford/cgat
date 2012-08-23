@@ -200,3 +200,24 @@
 2012-08-23 10:39:16,766 DEBUG report_directive.run: checking for changed files.
 2012-08-23 10:39:16,767 DEBUG report_directive.run: /ifs/home/nicki/src/doc/pipelines/MapTranscripts454.rst:55: checking for []
 2012-08-23 10:39:16,767 INFO report_directive.run: /ifs/home/nicki/src/doc/pipelines/MapTranscripts454.rst:55: noredo: all files are present
+2012-08-23 10:40:10,988 INFO reading additional configuration from conf.py
+2012-08-23 10:40:15,029 INFO no previous lncRNA set provided: Using refnoncoding set
+2012-08-23 10:40:16,408 INFO reading additional configuration from conf.py
+2012-08-23 10:44:22,140 INFO initialising plugins
+2012-08-23 10:44:23,291 DEBUG found plugins: 3 capabilites and 46 plugins
+2012-08-23 10:44:27,099 INFO no previous lncRNA set provided: Using refnoncoding set
+2012-08-23 10:47:53,764 INFO initialising plugins
+2012-08-23 10:47:54,914 DEBUG found plugins: 3 capabilites and 46 plugins
+2012-08-23 10:47:58,762 INFO no previous lncRNA set provided: Using refnoncoding set
+2012-08-23 10:50:00,883 INFO initialising plugins
+2012-08-23 10:50:01,999 DEBUG found plugins: 3 capabilites and 46 plugins
+2012-08-23 10:50:05,829 INFO no previous lncRNA set provided: Using refnoncoding set
+2012-08-23 10:51:02,165 INFO initialising plugins
+2012-08-23 10:51:03,244 DEBUG found plugins: 3 capabilites and 46 plugins
+2012-08-23 10:51:07,027 INFO no previous lncRNA set provided: Using refnoncoding set
+2012-08-23 10:53:58,716 INFO initialising plugins
+2012-08-23 10:53:59,873 DEBUG found plugins: 3 capabilites and 46 plugins
+2012-08-23 10:54:03,648 INFO no previous lncRNA set provided: Using refnoncoding set
+2012-08-23 10:55:27,207 INFO initialising plugins
+2012-08-23 10:55:28,327 DEBUG found plugins: 3 capabilites and 46 plugins
+2012-08-23 10:55:32,106 INFO no previous lncRNA set provided: Using refnoncoding set
