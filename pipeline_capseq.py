@@ -215,6 +215,8 @@ def getControl( track ):
 EXPERIMENTS = PipelineTracks.Aggregate( TRACKS, labels = ("condition", "tissue") )
 # aggregate per condition
 CONDITIONS = PipelineTracks.Aggregate( TRACKS, labels = ("condition",) )
+# aggregate over tissues and replicates
+SAMPLES = PipelineTracks.Aggregate (TRACKS, labels = ("tissue","replicate"))
 # aggregate per tissue
 TISSUES = PipelineTracks.Aggregate( TRACKS, labels = ("tissue",) )
 # compound targets : all experiments
@@ -433,41 +435,38 @@ def removeUnmapped(infile, outfile):
 
 ############################################################
 @follows( removeUnmapped )
-@files( [ (("bam/%s.dedup.mapped.bam" % x, 
-            "bam/%s.dedup.mapped.bam" % getControl(x)), 
-            "bam/%s.norm.bam" % x ) for x in TRACKS ] )
-def normaliseBAMs( infiles, outfile ):
-    '''Sample reads from larger of two BAM files so CAP and control samples have aprox same aligned read number.'''
-    infile, controlfile = infiles
-    controlfilenorm = controlfile.replace(".dedup.mapped",".norm")
+@files( [ (["bam/%s.dedup.mapped.bam" % x for x in SAMPLES[y]]+["bam/%s.dedup.mapped.bam" % [getControl(x) for x in SAMPLES[y]][0]], 
+           [ "bam/%s.norm.bam" % x for x in SAMPLES[y]]+["bam/%s.norm.bam" % [getControl(x) for x in SAMPLES[y]][0]]
+           ) for y in SAMPLES])
+def normaliseBAMs( infiles, outfiles ):
+    '''Within each "sample" where a sample represents a biological object in real life and a combination of
+    tissue and replicate labels in the pipeline, Sample reads from the BAM for each track such that all have the same
+    number of reads.'''
     to_cluster = True
 
     # Count reads in chip file
-    countfile1 = infile.replace(".bam",".count")
-    statement= ''' samtools idxstats %s | awk '{s+=$3} END {print s}' > %s ''' % ( infile,countfile1 )
-    P.run()
-    fh = open(countfile1,"r")
-    chip_reads = int(fh.read())
-    fh.close()
+    countfile = {}
+    reads = {}
 
-    # Count reads in input file
-    countfile2 = controlfile.replace(".bam",".count")
-    statement= ''' samtools idxstats %s | awk '{s+=$3} END {print s}' > %s ''' % ( controlfile,countfile2 )
-    P.run()
-    fh = open(countfile2,"r")
-    input_reads = int(fh.read())
-    fh.close()
-
-    # If chip > input then sample chip reads
-    if chip_reads > input_reads:
-        PIntervals.buildSimpleNormalizedBAM( (infile,countfile1), outfile, input_reads)
-        statement = '''cp %(controlfile)s %(controlfilenorm)s; cp %(controlfile)s.bai %(controlfilenorm)s.bai; '''
+    for infile in infiles:
+        
+        countfile[infile] = infile.replace(".bam",".count")
+        statement= ''' samtools idxstats %s | awk '{s+=$3} END {print s}' > %s ''' % ( infile,countfile[infile] )
+        print statement
         P.run()
-    else:
-        PIntervals.buildSimpleNormalizedBAM( (controlfile,countfile2), controlfilenorm, chip_reads)
-        statement = '''cp %(infile)s %(outfile)s; cp %(infile)s.bai %(outfile)s.bai; '''
-        P.run()
+        fh = open(countfile[infile],"r")
+        reads[infile] = int(fh.read())
+        fh.close()
+    
+    smallest_bam = [x for x in reads if reads[x] == min(reads.values())][0]
 
+    for infile in infiles:
+        if infile == smallest_bam:
+            smallest_bam_out = "%s.sample_norm.bam" % P.snip(smallest_bam,".dedup.mapped.bam")
+            statement = ''' cp %(smallest_bam)s %(smallest_bam_out)s; cp %(smallest_bam)s.bai %(smallest_bam_out)s.bai ''' % locals()
+            P.run()
+        else:
+            PIntervals.buildSimpleNormalizedBAM( (infile, countfile[infile]), "%s.sample_norm.bam" % P.snip(infile,".dedup.mapped.bam"), reads[smallest_bam])
 
 ############################################################
 @follows(normaliseBAMs, mkdir("merged_bams"))
