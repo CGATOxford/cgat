@@ -14,9 +14,9 @@ from SphinxReport.odict import OrderedDict as odict
 ###################################################################
 ## parameterization
 
-EXPORTDIR=P['chipseq_exportdir']
-DATADIR=P['chipseq_datadir']
-DATABASE=P['chipseq_backend']
+EXPORTDIR=P['calling_exportdir']
+DATADIR=P['calling_datadir']
+DATABASE=P['calling_backend']
 
 ###################################################################
 # cf. pipeline_chipseq.py
