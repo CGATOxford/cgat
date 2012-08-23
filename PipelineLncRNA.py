@@ -254,7 +254,7 @@ def buildFilteredLncRNAGeneSet(flagged_gtf, refnoncoding_gtf, outfile, geneset_p
                             keep.add(gtf2[2][1])
                         
                 # if geneset is not included then this won't be used
-                elif previous.contains(gtf.contig, gft.start, gtf.end):                                     
+                elif previous.contains(gtf.contig, gtf.start, gtf.end):                                     
                     for gtf2 in previous.get(gtf.contig, gtf.start, gtf.end):                                
                         if gtf.strand == gtf2[2][0]:
                             keep.add(gtf2[2][1])
