@@ -462,11 +462,11 @@ def normaliseBAMs( infiles, outfiles ):
 
     for infile in infiles:
         if infile == smallest_bam:
-            smallest_bam_out = "%s.sample_norm.bam" % P.snip(smallest_bam,".dedup.mapped.bam")
+            smallest_bam_out = "%s.norm.bam" % P.snip(smallest_bam,".dedup.mapped.bam")
             statement = ''' cp %(smallest_bam)s %(smallest_bam_out)s; cp %(smallest_bam)s.bai %(smallest_bam_out)s.bai ''' % locals()
             P.run()
         else:
-            PIntervals.buildSimpleNormalizedBAM( (infile, countfile[infile]), "%s.sample_norm.bam" % P.snip(infile,".dedup.mapped.bam"), reads[smallest_bam])
+            PIntervals.buildSimpleNormalizedBAM( (infile, countfile[infile]), "%s.norm.bam" % P.snip(infile,".dedup.mapped.bam"), reads[smallest_bam])
 
 ############################################################
 @follows(normaliseBAMs, mkdir("merged_bams"))
