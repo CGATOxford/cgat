@@ -212,7 +212,7 @@ def buildFilteredLncRNAGeneSet(flagged_gtf, refnoncoding_gtf, outfile, geneset_p
                 if previous:
                     if refnoncoding_all.contains(gtf.contig, gtf.start, gtf.end):
                         for gtf2 in refnoncoding_all.get(gtf.contig, gtf.start, gtf.end):
-                            if gtf.strand == gtf[2]:
+                            if gtf.strand == gtf2[2]:
                                 # add novelty flag
                                 gtf.setAttribute("gene_status", "known")
                                 outf.write("%s\n" % str(gtf))
@@ -222,7 +222,7 @@ def buildFilteredLncRNAGeneSet(flagged_gtf, refnoncoding_gtf, outfile, geneset_p
                     
                     elif previous_all.contains(gtf.contig, gtf.start, gtf.end):
                         for gtf2 in previous_all.get(gtf.contig, gtf.start, gtf.end):
-                            if gtf.strand == gtf[2]:
+                            if gtf.strand == gtf2[2]:
                                 # add novelty flag
                                 gtf.setAttribute("gene_status", "known")
                                 outf.write("%s\n" % str(gtf))
@@ -232,7 +232,7 @@ def buildFilteredLncRNAGeneSet(flagged_gtf, refnoncoding_gtf, outfile, geneset_p
                 else:
                     if refnoncoding_all.contains(gtf.contig, gtf.start, gtf.end):
                         for gtf2 in refnoncoding_all.get(gtf.contig, gtf.start, gtf.end):
-                            if gtf.strand == gtf[2]:
+                            if gtf.strand == gtf2[2]:
                                 # add novelty flag
                                 gtf.setAttribute("gene_status", "known")
                                 outf.write("%s\n" % str(gtf))
