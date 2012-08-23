@@ -487,6 +487,8 @@ def mergeReplicateBAMs( infiles, outfile ):
 def getMergedBigWig( infile, outfile ):
     '''Merge multiple BAM files per replicate to produce a single non peak-shifted bigwig file'''
 
+    to_cluster = True
+    job_options += " -l mem_free=2G"
     statement = '''python %(scriptsdir)s/bam2wiggle.py --output-format=bigwig %(infile)s %(outfile)s '''
     P.run()
     
