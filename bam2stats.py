@@ -279,7 +279,7 @@ def main( argv = None ):
     # output paired end data
     if flags_counts["read2"] > 0:
         pairs_total = nreads_total // 2
-        pairs_mappend = flags_counts["proper_pair"]
+        pairs_mapped = flags_counts["proper_pair"]
         outs.write( "pairs_total\t%i\t%5.2f\tpairs_total\n" % (pairs_total, 100.0))
         outs.write( "pairs_mapped\t%i\t%f5.2f\tpairs_total\n" % (pairs_mapped, 100.0 * pairs_mapped / pairs_total))
     else:
