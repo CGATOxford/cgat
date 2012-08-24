@@ -123,12 +123,12 @@ def linkToUCSC( contig, start, end ):
 ###########################################################################
 ## Trackers
 ###########################################################################
-class ChipseqTracker( TrackerSQL ):
+class CallingTracker( TrackerSQL ):
     '''Define convenience tracks for plots'''
     def __init__(self, *args, **kwargs ):
         TrackerSQL.__init__(self, *args, backend = DATABASE, **kwargs )
 
-class DefaultTracker( ChipseqTracker ):
+class DefaultTracker( CallingTracker ):
     '''Define convenience tracks for plots'''
     # def __init__(self, *args, **kwargs ):
     #     ChipseqTracker.__init__(self, *args, **kwargs)

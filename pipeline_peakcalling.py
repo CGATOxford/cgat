@@ -698,15 +698,15 @@ mapToCallingTargets = { 'macs': loadMACS,
                         'spp': loadSPP,
                         }
 
-mapToSummaryTargets = { 'macs': loadMACSSummary,
-                        'sicer': loadSICERSummary,
-                        'spp' : loadSPPSummary,
+mapToSummaryTargets = { 'macs': [loadMACSSummary, loadMACSSummaryFDR],
+                        'sicer': [loadSICERSummary],
+                        'spp' : [loadSPPSummary],
                         }
 
 for x in P.asList( PARAMS["peakcallers"]):
     CALLINGTARGETS.append( mapToCallingTargets[x] )
     if x in mapToSummaryTargets:
-        SUMMARYTARGETS.append( mapToSummaryTargets[x] )
+        SUMMARYTARGETS.extend( mapToSummaryTargets[x] )
 
 ###################################################################
 ###################################################################
