@@ -70,6 +70,15 @@ try:
 except IOError:
     pass
 
+def getNumReadsFromReadsFile( infile ):
+    '''get number of reads from a .nreads file.'''
+    with IOTools.openFile( infile ) as inf:
+        line = inf.readline()
+        if not line.startswith( "nreads" ):
+            raise ValueError( "parsing error in file '%s': expected first line to start with 'nreads'")
+        nreads = int( line[:-1].split("\t")[1] )
+    return nreads
+
 def getNumReadsFromBAMFile( infile ):
     '''count number of reads in bam file.'''
     read_info = pysam.idxstats( infile )
