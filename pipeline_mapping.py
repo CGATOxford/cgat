@@ -1090,13 +1090,16 @@ def loadPicardStats( infiles, outfile ):
 #             """
 #     P.run()
 
+
 ############################################################
 ############################################################
 ############################################################
+@follows( countReads )
 @transform( MAPPINGTARGETS,
-            suffix(".bam"),
-            ".readstats" )
-def buildBAMStats( infile, outfile ):
+            regex("(.*)/(.*)\.(.*).bam"),
+            add_inputs( r"\2.nreads" ),
+            r"\1/\2.\3.readstats" )
+def buildBAMStats( infiles, outfile ):
     '''count number of reads mapped, duplicates, etc.
     '''
 
@@ -1105,13 +1108,18 @@ def buildBAMStats( infile, outfile ):
     rna_file = os.path.join( PARAMS["annotations_dir"],
                              PARAMS_ANNOTATIONS["interface_rna_gff"] )
 
+    bamfile, readsfile = infiles
+
+    nreads = PipelineMappingQC.getNumReadsFromReadsFile( readsfile )
+
     statement = '''python
     %(scriptsdir)s/bam2stats.py
          --force
          --filename-rna=%(rna_file)s
          --remove-rna
+         --input-reads=%(nreads)i
          --output-filename-pattern=%(outfile)s.%%s
-    < %(infile)s
+    < %(bamfile)s
     > %(outfile)s
     '''
 
@@ -1420,8 +1428,7 @@ def createViewMapping( infile, outfile ):
     tablename = P.toTable( outfile )
     view_type = "TABLE"
 
-    tables = (( "reads_summary", "track", ),
-              ( "bam_stats", "track", ),
+    tables = (( "bam_stats", "track", ),
               ( "context_stats", "track", ),
               ( "picard_stats_alignment_summary_metrics", "track" ), )
 
