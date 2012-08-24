@@ -524,7 +524,7 @@ def createView( dbhandle, tables, tablename, outfile, view_type = "TABLE" ):
 
     E.info( "created view_mapping with %i rows" % nrows )
 
-    P.touch( outfile )
+    touch( outfile )
 
 def snip( filename, extension = None, alt_extension = None):
     '''return prefix of filename.
