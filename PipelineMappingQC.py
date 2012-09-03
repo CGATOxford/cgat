@@ -105,7 +105,7 @@ def buildPicardInsertSizeStats( infile, outfile, genome_file ):
                                        ASSUME_SORTED=true 
                                        OUTPUT=%(outfile)s 
                                        VALIDATION_STRINGENCY=SILENT 
-                   > %(outfile)s'''
+                   >& %(outfile)s'''
 
     P.run()
 
@@ -134,7 +134,7 @@ def buildPicardAlignmentStats( infile, outfile, genome_file ):
                                        ASSUME_SORTED=true 
                                        OUTPUT=%(outfile)s 
                                        VALIDATION_STRINGENCY=SILENT 
-                       > %(outfile)s'''
+                       >& %(outfile)s'''
 
     else:
         statement = '''CollectMultipleMetrics 
@@ -143,7 +143,7 @@ def buildPicardAlignmentStats( infile, outfile, genome_file ):
                                        ASSUME_SORTED=true 
                                        OUTPUT=%(outfile)s 
                                        VALIDATION_STRINGENCY=SILENT 
-                   > %(outfile)s'''
+                   >& %(outfile)s'''
 
     P.run()
 
@@ -163,7 +163,7 @@ def buildPicardGCStats( infile, outfile, genome_file ):
                                        VALIDATION_STRINGENCY=SILENT 
                                        CHART_OUTPUT=%(outfile)s.pdf 
                                        SUMMARY_OUTPUT=%(outfile)s.summary
-                   > %(outfile)s'''
+                   >& %(outfile)s'''
 
     P.run()
 
