@@ -489,7 +489,7 @@ def buildBAMStats( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-def exportIntervalsAsBed( infile, outfile ):
+def exportIntervalsAsBed( infile, outfile, tablename ):
     '''export macs peaks as bed files.
     '''
 
@@ -502,23 +502,20 @@ def exportIntervalsAsBed( infile, outfile ):
         compress = False
         track = P.snip( outfile, ".bed" )
 
-    tablename = "%s_intervals" % P.quote(track)
-
     cc = dbhandle.cursor()
-    statement = "SELECT contig, start, end, interval_id FROM %s ORDER by contig, start" % tablename
+    statement = "SELECT contig, start, end, interval_id, peakval FROM %s ORDER by contig, start" % tablename
     cc.execute( statement )
 
-    outs = IOTools.openFile( "%s.bed" % track, "w")
+    with IOTools.openFile( "%s.bed" % track, "w") as outs:
 
-    for result in cc:
-        contig, start, end, interval_id,peakval = result
-        # peakval is truncated at a 1000 as this is the maximum permitted
-        # score in a bed file.
-        peakval = int(min(peakval,1000))
-        outs.write( "%s\t%i\t%i\t%s\t%i\n" % (contig, start, end, str(interval_id) ) )
+        for result in cc:
+            contig, start, end, interval_id, peakval = result
+            # peakval is truncated at a 1000 as this is the maximum permitted
+            # score in a bed file.
+            peakval = int(min(peakval,1000))
+            outs.write( "%s\t%i\t%i\t%s\t%i\n" % (contig, start, end, str(interval_id), peakval ) )
 
-    cc.close()
-    outs.close()
+        cc.close()
 
     if compress:
         E.info( "compressing and indexing %s" % outfile )
@@ -1346,9 +1343,13 @@ def loadSICER( infile, outfile, bamfile, controlfile = None ):
 
     tablename = P.toTable( outfile ) + "_regions" 
 
-    headers="contig,start,end,chip_reads,control_reads,pvalue,fold,fdr"
+    headers="contig,start,end,interval_id,chip_reads,control_reads,pvalue,fold,fdr"
 
-    statement = '''python %(scriptsdir)s/bed2table.py 
+    # add new interval id at fourth column
+    statement = '''cat < %(bedfile)s
+               | awk '{printf("%%s\\t%%s\\t%%s\\t%%i", $1,$2,$3,++a); 
+                          for (x = 4; x <= NF; ++x) {printf("\\t%%s", $x)}; printf("\\n" ); }' 
+               | python %(scriptsdir)s/bed2table.py 
                            --counter=peaks
                            --bam-file=%(bamfile)s
                            --offset=%(offset)i
@@ -1356,7 +1357,6 @@ def loadSICER( infile, outfile, bamfile, controlfile = None ):
                            --all-fields 
                            --bed-header=%(headers)s
                            --log=%(outfile)s
-                < %(bedfile)s
                 | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
                        --index=contig,start
                        --index=interval_id
