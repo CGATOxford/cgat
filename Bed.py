@@ -82,23 +82,8 @@ class Bed(object):
         return self.mFields[self.map_key2field[key]]
 
     def __getattr__(self, key ):
-        try:
-            return self.mFields[self.map_key2field[key]]
-        except IndexError:
-            print "Key = %s" % key
-            print "mFields = " + str(self.mFields)
-            print "Bed = " + str(self)
-            raise
-
-    def __setattr__self, key, value ):
-        #IMS overwrite the standard set attr so that if we add a name, strand or score
-        #to a Bed object without one, it gets stored in the right place. 
-
-        #first check if the key is a standard one
-        if key in self.map_key2field:
-            mFields[self.map_key2field[key]] = value
-        else:
-            self.__dict__[key] = value
+        return self.mFields[self.map_key2field[key]]
+        
 
     @property
     def columns(self):
