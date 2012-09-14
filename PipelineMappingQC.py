@@ -81,10 +81,19 @@ def getNumReadsFromReadsFile( infile ):
 
 def getNumReadsFromBAMFile( infile ):
     '''count number of reads in bam file.'''
-    read_info = pysam.idxstats( infile )
+    # by-passes a problem with pysam, which was reading in stdout as the first elements in list data
+    tmpf = P.getTempFile( ".")
+    tmpfile_name = tmpf.name
+    statement = '''samtools idxstats %(infile)s > %(tmpfile_name)s'''
+    
+    P.run()
+
+    read_info = IOTools.openFile( tmpfile_name ).readlines()
+    os.unlink( tmpfile_name )
 
     try:
         data = sum( map(int, [ x.split("\t")[2] for x in read_info if not x.startswith("#")]  ) )
+
     except IndexError, msg:
         raise IndexError( "can't get number of reads from bamfile, msg=%s, data=%s" % (msg, read_info))
     return data
