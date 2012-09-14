@@ -16,11 +16,12 @@ Contents:
    :maxdepth: 2
 
    pipeline/Methods.rst
+   pipeline/Status.rst
    pipeline/IntervalsRegions.rst
    pipeline/IntervalsPeaks.rst
    pipeline/Callers.rst
 
-..   pipeline/Status.rst
+
 ..   pipeline/Mapping.rst
 ..   pipeline/Reproducibility.rst
 ..   pipeline/Peaks.rst	

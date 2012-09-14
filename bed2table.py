@@ -185,6 +185,10 @@ class CounterPeaks(Counter):
                 for read in samfile.fetch( contig, xstart, xend ):
                     nreads += 1
                     pos = read.pos
+                    # some reads are assigned to a contig and position, but
+                    # are flagged as unmapped - these might not have an alen attribute.
+                    if read.is_unmapped: continue
+
                     if read.is_reverse:
                         # offset = 2 * shift
                         rstart = read.pos + read.alen - offset

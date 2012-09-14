@@ -491,6 +491,44 @@ def loadMACS( infile, outfile ):
     '''load macs results.'''
     bamfile, controlfile = getBamFiles( infile, ".macs" )
     PipelinePeakcalling.loadMACS( infile, outfile, bamfile, controlfile )
+
+############################################################
+############################################################
+############################################################
+@follows( mkdir(os.path.join( PARAMS["exportdir"], "macs" ) ) )
+@transform( callPeaksWithMACS,
+            regex(r"(.*)/(.*).macs"),
+            add_inputs( os.path.join( PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_contigs"] ) ),
+            (os.path.join( PARAMS["exportdir"], "macs", r"\2.macs.treat.bw" ) ,
+            os.path.join( PARAMS["exportdir"], "macs", r"\2.macs.control.bw" ) ) )
+def cleanMACS( infiles, outfiles ):
+    '''clean up MACS - build bigwig file and remove wig files.'''
+    
+    to_cluster = True
+    infile, contigfile = infiles
+    outdir = os.path.join( PARAMS["exportdir"], "macs" )
+
+    for indir, outfile in zip( 
+        ( os.path.join( infile + "_MACS_wiggle", "treat" ),
+          os.path.join( infile + "_MACS_wiggle", "control" )),
+        outfiles ):
+
+        if os.path.exists( indir ):
+
+            statement = '''
+        zcat %(indir)s/*.wig.gz 
+        | awk '/track/ { if (skip) {next} skip=1; } { print }'
+        | python %(scriptsdir)s/wig2wig.py 
+                --method=sanitize-genome
+                --log=%(outfile)s.log
+                --genome=%(genome_dir)s/%(genome)s
+        | wigToBigWig /dev/stdin %(contigfile)s %(outfile)s'''
+            
+            P.run()
+        
+            # shutil.rmtree( indir )
+
+    
         
 ############################################################
 ############################################################
@@ -698,15 +736,15 @@ mapToCallingTargets = { 'macs': loadMACS,
                         'spp': loadSPP,
                         }
 
-mapToSummaryTargets = { 'macs': loadMACSSummary,
-                        'sicer': loadSICERSummary,
-                        'spp' : loadSPPSummary,
+mapToSummaryTargets = { 'macs': [loadMACSSummary, loadMACSSummaryFDR],
+                        'sicer': [loadSICERSummary],
+                        'spp' : [loadSPPSummary],
                         }
 
 for x in P.asList( PARAMS["peakcallers"]):
     CALLINGTARGETS.append( mapToCallingTargets[x] )
     if x in mapToSummaryTargets:
-        SUMMARYTARGETS.append( mapToSummaryTargets[x] )
+        SUMMARYTARGETS.extend( mapToSummaryTargets[x] )
 
 ###################################################################
 ###################################################################
@@ -717,13 +755,28 @@ def calling(): pass
 ############################################################
 ############################################################
 ############################################################
-@transform( CALLINGTARGETS, regex(".load"), ".bed.gz" )
-def exportIntervalsAsBed( infile, outfile ):
+@follows( mkdir( os.path.join( PARAMS["exportdir"], "bedfiles" ) ) )
+@transform( CALLINGTARGETS, regex("(.*)/(.*).load"), 
+            (os.path.join( PARAMS["exportdir"], "bedfiles", r"\2.regions.bed" ),
+             os.path.join( PARAMS["exportdir"], "bedfiles", r"\2.summits.bed" ) ) )
+def exportIntervalsAsBed( infile, outfiles ):
     '''export all intervals as bed files.'''
-    PipelinePeakcalling.exportIntervalsAsBed( infile, outfile )
+
+    outfile_regions, outfile_summits = outfiles
+    track = P.snip( os.path.basename(infile), ".load" ) 
+
+    PipelinePeakcalling.exportIntervalsAsBed( infile, outfile_regions, "%s_regions" % P.quote(track) )
+
+    dbh = connect()
+    tablename = "%s_summits" % P.quote(track) 
+    if tablename in Database.getTables( dbh ):
+        PipelinePeakcalling.exportIntervalsAsBed( infile, outfile_summits, tablename )
+    else:
+        E.warn( "no table %s - empty bed file output" % tablename )
+        P.touch( outfile_summits )
 
 ###################################################################
-@follows( calling )
+@follows( calling, exportIntervalsAsBed )
 def full(): pass
 
 ###################################################################

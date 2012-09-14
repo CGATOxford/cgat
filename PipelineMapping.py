@@ -213,10 +213,31 @@ class Mapper( object ):
             elif infile.endswith( ".sra"):
                 # sneak preview to determine if paired end or single end
                 outdir = P.getTempDir()
-                P.execute( "fastq-dump --gzip -X 1000 --outdir %(outdir)s %(infile)s" % locals() )
-                f = glob.glob( os.path.join( outdir, "*.fastq.gz" ) )
-                if len(f) == 3:
-                    f = glob.glob( os.path.join( outdir, "*_[12].fastq.gz" ) )
+                # --split-files is present in fastq-dump 2.1.7
+                P.execute( "fastq-dump --split-files --gzip -X 1000 --outdir %(outdir)s %(infile)s" % locals() )
+                # --split-files will create files called prefix_#.fastq.gz
+                # where # is the read number. 
+                # The following cases are:
+
+                # * file cotains paired end data: output = prefix_1.fastq.gz, prefix_2.fastq.gz
+                #    * special case: unpaired reads in a paired end run end up in prefix.fastq.gz
+                #    * special case: if paired reads are stored in a single read, fastq-dump will split.
+                #       There might be a joining sequence. The output would thus be:
+                #       prefix_1.fastq.gz, prefix_2.fastq.gz and prefix_3.fastq.gz
+                #      You want files 1 and 3.
+                f = sorted(glob.glob( os.path.join( outdir, "*.fastq.gz" ) ))
+                ff = [ os.path.basename(x) for x in f ]
+                if len(f) == 1: 
+                    # sra file contains one read: output = prefix.fastq.gz
+                    pass
+                elif len(f) == 2:
+                    # sra file contains read pairs: output = prefix_1.fastq.gz, prefix_2.fastq.gz
+                    assert ff[0].endswith( "_1.fastq.gz") and ff[1].endswith( "_2.fastq.gz" )
+                elif len(f) == 3:
+                    if ff[2].endswith( "_3.fastq.gz"):
+                        f = glob.glob( os.path.join( outdir, "*_[13].fastq.gz" ) )
+                    else:
+                        f = glob.glob( os.path.join( outdir, "*_[13].fastq.gz" ) )
                 E.info("sra file contains the following files: %s" % f )
                 shutil.rmtree( outdir )
                 fastqfiles.append( [ "%s/%s" % (tmpdir_fastq, os.path.basename( x )) for x in sorted(f) ] )

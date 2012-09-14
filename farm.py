@@ -521,7 +521,7 @@ def runCommand( data ):
         else:
             E.info("%s: submitting command: %s" % (filename, c))
 
-        infile = IOtolos.openFile( filename, "r" )
+        infile = IOTools.openFile( filename, "r" )
         outfile = IOTools.openFile( filename + ".out", "w")
         errfile = IOTools.openFile( filename + ".err", "a")
 
@@ -675,9 +675,15 @@ def runDRMAA( data, environment ):
 
     for jobid, job_path, filename, cmd, logfile in jobids:
 
-        retval = session.wait(jobid, drmaa.Session.TIMEOUT_WAIT_FOREVER)
+        try:
+            retval = session.wait(jobid, drmaa.Session.TIMEOUT_WAIT_FOREVER)
+        except Exception, msg:
+            # ignore message 24 in PBS
+            # code 24: drmaa: Job finished but resource usage information and/or termination status could not be provided.":
+            if not msg.message.startswith("code 24"): raise
+            retval = None
 
-        if retval.exitStatus != 0:
+        if retval and retval.exitStatus != 0:
             raise OSError( "Child was terminated by signal %i: \n%s\n" % \
                                (retval.exitStatus, cmd))
         
@@ -807,7 +813,7 @@ def getOptionParser():
         renumber_column = [],
         resubmit = 5, 
         collect = None, 
-        method = "multiprocessing",
+        method = "drmaa",
         max_files = None,
         max_lines = None,
         binary = False,

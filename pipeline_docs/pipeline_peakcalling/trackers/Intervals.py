@@ -277,7 +277,7 @@ class IntervalListFoldChange( FoldChangeTracker, IntervalList ):
 ##################################################################################
 ## correlations
 ##################################################################################
-class Correlations( ChipseqTracker ):
+class Correlations( CallingTracker ):
     """Correlation between all sets.
     """
 
