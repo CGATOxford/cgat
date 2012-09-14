@@ -38,7 +38,7 @@ This pipeline works on a single genome.
 Overview
 ========
 
-The pipeline assumes the data derive from multiple tissues/conditions (:term:`experiment`) 
+h_The pipeline assumes the data derive from multiple tissues/conditions (:term:`experiment`) 
 with one or more biological and/or technical replicates (:term:`replicate`). A :term:`replicate`
 within each :term:`experiment` is a :term:`track`.
 

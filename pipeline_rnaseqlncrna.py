@@ -343,7 +343,6 @@ def buildLncRNAGeneSet(infiles, outfile):
     (exons) in a reference gene set.
     
     Transcripts need to have a length of at least 200 bp.
-
     '''
     PipelineLncRNA.buildLncRNAGeneSet( infiles[0], infiles[1], infiles[2], infiles[3], infiles[4], outfile, PARAMS["lncrna_min_length"] )        
                
@@ -363,7 +362,7 @@ def flagExonStatus(infile, outfile):
 ##########################################################################
 if PARAMS["genesets_previous"]:
     @transform(flagExonStatus, regex(r"(\S+)_flag.gtf.gz")
-               , add_inputs([PARAMS["genesets_previous"], "refnoncoding.gtf.gz"]), r"\1_filtered.gtf.gz")
+               , add_inputs([PARAMS["genesets_previous"], buildRefnoncodingGeneSet]), r"\1_filtered.gtf.gz")
     def buildFilteredLncRNAGeneSet(infiles, outfile):
         '''
         Creates a filtered lncRNA geneset. 
@@ -383,8 +382,19 @@ else:
 ##########################################################################
 ##########################################################################
 ##########################################################################
+@transform(buildFilteredLncRNAGeneSet, suffix(".gtf.gz"),add_inputs(PARAMS["genesets_refcoding"]), ".class.gtf.gz")
+def classifyFilteredLncRNA(infiles, outfile):
+    '''
+    classifies all lincRNA before cpc filtering to define any classes that
+    are represented in the coding set that are  filtered
+    '''
+    PipelineLncRNA.classifyLncRNAGenes(infiles[0], infiles[1], outfile, dist = PARAMS["lncrna_dist"])
+
+##########################################################################
+##########################################################################
+##########################################################################
 @follows(mkdir("fasta"))
-@transform(buildFilteredLncRNAGeneSet, regex(r"(\S+).gtf.gz"), r"fasta/\1.fasta")
+@transform(buildFilteredLncRNAGeneSet, regex(r"gtfs/(\S+).gtf.gz"), r"fasta/\1.fasta")
 def buildLncRNAFasta(infile, outfile):
     '''
     create fasta file from lncRNA geneset for testing coding
@@ -397,10 +407,10 @@ def buildLncRNAFasta(infile, outfile):
 ##########################################################################
 ##########################################################################
 ##########################################################################
-@transform(buildLncRNAFasta, regex(r"(\S+).fasta"), r"cpc/\1.cpc.result")
+@transform(buildLncRNAFasta, regex(r"fasta/(\S+).fasta"), r"cpc/\1.cpc.result")
 def runCPC(infile, outfile):
     '''
-    run coding potential calculations on lincRNA geneset
+    run coding potential calculations on lncRNA geneset
     '''
     result_table = P.snip(infile, ".fasta") + ".result"
     result_evidence = P.snip(outfile, ".result") + ".evidence"
@@ -419,12 +429,14 @@ def loadCPCResults(infile, outfile):
     load the results of the cpc analysis
     '''
     tablename = filenameToTablename(os.path.basename(infile))
-    statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s --log=%(outfile)s.log --header=transcript_id,feature,C_NC,CP_score --index=transcript_id < %(infile)s > %(outfile)s'''
+    statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s --log=%(outfile)s.log 
+                   --header=transcript_id,feature,C_NC,CP_score --index=transcript_id < %(infile)s > %(outfile)s'''
     P.run()
 
 ##########################################################################
 ##########################################################################
 ##########################################################################
+@follows(loadCPCResults)
 @transform(buildFilteredLncRNAGeneSet, regex(r"(\S+)_filtered.gtf.gz"), r"\1_final.gtf.gz")
 def buildFinalLncRNAGeneSet(infile, outfile):
     '''
@@ -504,14 +516,12 @@ def classifyLncRNA(infiles, outfile):
     antisense_downstream - transcript < 2kb from gene end on opposite strand
     sense_upstream - transcript < 2kb from tss on same strand
     sense_downstream - transcript < 2kb from gene end on same strand
-    antisense_span - start and end of transcript span and extend beyond protein coding gene on opposite strand
-    sense_span - start and end of transcript span and extend beyond protein coding gene on same strand
-    intergenic - >2kb from anyt protein coding gene
+     intergenic - >2kb from anyt protein coding gene
     intronic - overlaps protein coding gene intron on same strand
     antisense_intronic - overlaps protein coding intron on opposite strand
     '''
     
-    PipelineLncRNA.classifyLncRNA(infiles[0], infiles[1], outfile)
+    PipelineLncRNA.classifyLncRNAGenes(infiles[0], infiles[1], outfile, dist = PARAMS["lncrna_dist"])
 
 ##########################################################################
 ##########################################################################

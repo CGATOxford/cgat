@@ -8,31 +8,59 @@ expression.
 All comparisons are on the gene level, which might not be the best choice
 for all methods, for example :term:`cuffdiff`.
 
-.. Shared genes
-.. ============
+Shared genes
+============
 
-.. The following table lists the number of shared predictions in each
-.. gene set.
+The following table lists the number of shared predictions in each
+gene set.
 
-.. .. report:: DifferentialExpression.DifferentialExpressionOverlap
-..    :render: table
-..    :groupby: all
+.. report:: DifferentialExpression.DifferentialExpressionOverlap
+   :render: table
+   :groupby: all
 
-..    Number of shared predictions between different methods.
+   Number of shared predictions between different methods.
 
-.. Fold change
-.. ===========
+Fold change
+===========
 
-.. .. report:: DifferentialExpression.DifferentialExpressionCorrelationFoldChange
-..    :render: r-smooth-scatter-plot
+.. report:: DifferentialExpression.DifferentialExpressionCorrelationFoldChangeCuffdiffDeseq
+   :render: r-smooth-scatter-plot
    
-..    Scatter-plots of fold change estimates
+   Scatter-plots of fold change estimates Cuffdiff vs. DESeq
 
-.. P-values
-.. ===========
 
-.. .. report:: DifferentialExpression.DifferentialExpressionCorrelationPValue
-..    :render: r-smooth-scatter-plot
+.. report:: DifferentialExpression.DifferentialExpressionCorrelationFoldChangeCuffdiffEdger
+   :render: r-smooth-scatter-plot
    
-..    Scatter-plots of p-value estimates
+   Scatter-plots of fold change estimates Cuffdiff vs. EdgeR
+
+.. report:: DifferentialExpression.DifferentialExpressionCorrelationFoldChangeDeseqEdger
+   :render: r-smooth-scatter-plot
+   
+   Scatter-plots of fold change estimates DESeq vs. EdgeR
+
+
+P-values
+===========
+
+
+.. report:: DifferentialExpression.DifferentialExpressionCorrelationPValueCuffdiffDeseq
+   :render: r-smooth-scatter-plot
+   
+   Scatter-plots of fold change estimates Cuffdiff vs. DESeq
+
+
+.. report:: DifferentialExpression.DifferentialExpressionCorrelationPValueCuffdiffEdger
+   :render: r-smooth-scatter-plot
+   
+   Scatter-plots of fold change estimates Cuffdiff vs. EdgeR
+
+.. report:: DifferentialExpression.DifferentialExpressionCorrelationPValueDeseqEdger
+   :render: r-smooth-scatter-plot
+   
+   Scatter-plots of fold change estimates DESeq vs. EdgeR
+
+
+
+
 
