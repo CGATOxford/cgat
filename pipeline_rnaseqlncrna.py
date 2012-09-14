@@ -531,7 +531,7 @@ def loadLncRNAClass(infile, outfile):
     '''
     load the lncRNA classifications
     '''
-    tablename = filenameToTablename(P.snip(infile, ".gtf.gz"))
+    tablename = os.path.basename(filenameToTablename(P.snip(infile, ".gtf.gz")))
     
     # just load each transcript with its classification
     temp = P.getTempFile()
@@ -569,6 +569,7 @@ def buildFullGeneSet(infiles, outfile):
          , buildRefnoncodingGeneSet
          , buildFinalLncRNAGeneSet
          , loadGeneSetStats
+         , loadLncRNAClass
          , classifyLncRNA
          , buildFullGeneSet)
 def GeneSets():
