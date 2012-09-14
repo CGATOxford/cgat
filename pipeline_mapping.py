@@ -969,10 +969,11 @@ def mapReadsWithBowtie( infiles, outfile ):
 def mapReadsWithBWA( infile, outfile ):
     '''map reads with bwa'''
 
+
     job_options= "-pe dedicated %i -R y -l mem_free=%s" % (PARAMS["bwa_threads"],
                                                            PARAMS["bwa_memory"] )
     to_cluster = True
-    m = PipelineMapping.BWA()
+    m = PipelineMapping.BWA( remove_unique = PARAMS["bwa_remove_non_unique"] )
     statement = m.build( (infile,), outfile ) 
     P.run()
 
@@ -1142,7 +1143,7 @@ def loadBAMStats( infiles, outfile ):
                       --ignore-empty
                       --take=2
                    %(filenames)s
-                | perl -p -e "s/bin/track/"
+                | perl -p -e "s/(bin|category)/track/"
                 | perl -p -e "s/unique/unique_alignments/"
                 | python %(scriptsdir)s/table2table.py --transpose
                 | python %(scriptsdir)s/csv2db.py
@@ -1211,7 +1212,8 @@ def buildContextStats( infiles, outfile ):
 @follows( loadBAMStats )
 @merge( buildContextStats, "context_stats.load" )
 def loadContextStats( infiles, outfile ):
-    """load context mapping statistics."""
+    """
+load context mapping statistics."""
 
     header = ",".join( [os.path.basename( P.snip( x, ".contextstats") ) for x in infiles] )
     filenames = " ".join( infiles  )

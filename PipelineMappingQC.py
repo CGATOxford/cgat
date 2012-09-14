@@ -82,11 +82,13 @@ def getNumReadsFromReadsFile( infile ):
 def getNumReadsFromBAMFile( infile ):
     '''count number of reads in bam file.'''
     read_info = pysam.idxstats( infile )
+
     try:
         data = sum( map(int, [ x.split("\t")[2] for x in read_info if not x.startswith("#")]  ) )
     except IndexError, msg:
         raise IndexError( "can't get number of reads from bamfile, msg=%s, data=%s" % (msg, read_info))
     return data
+
 
 def buildPicardInsertSizeStats( infile, outfile, genome_file ):
     '''gather BAM file insert size statistics using Picard '''

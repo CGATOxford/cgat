@@ -412,8 +412,14 @@ class BWA( Mapper ):
     '''run bwa to map reads against genome.
 
     * colour space not implemented
+    
+    if remove_unique is true, a filtering step is included in postprocess,
+    which removes reads that don't have tag X0:i:1 (i.e. have > 1 best hit)
     '''
 
+    def __init__(self, remove_unique = False, *args, **kwargs):
+        self.remove_unique = remove_unique
+    
     def mapper( self, infiles, outfile ):
         '''build mapping statement on infiles.'''
 
@@ -486,10 +492,16 @@ class BWA( Mapper ):
         track = P.snip( os.path.basename(outfile), ".bam" )
         outf = P.snip( outfile, ".bam" )
         tmpdir = self.tmpdir
-        
-        statement = '''
-            samtools view -buS %(tmpdir)s/%(track)s.sam | samtools sort - %(outf)s 2>>%(outfile)s.bwa.log; 
-            samtools index %(outfile)s;''' % locals()
+
+        if self.remove_unique: 
+            statement = '''
+                samtools view -hS %(tmpdir)s/%(track)s.sam | awk '$1 ~ /^@/ || /\sX0:i:1\s/'| samtools view -bS - | samtools sort - %(outf)s 2>>%(outfile)s.bwa.log; 
+                samtools index %(outfile)s;''' % locals()
+
+        else:
+            statement = '''
+                samtools view -buS %(tmpdir)s/%(track)s.sam | samtools sort - %(outf)s 2>>%(outfile)s.bwa.log; 
+                samtools index %(outfile)s;''' % locals()
 
         return statement
 
@@ -988,7 +1000,6 @@ class BowtieTranscripts( Mapper ):
              samtools sort %(tmpdir_fastq)s/out.bam %(track)s;
              samtools index %(outfile)s;
              ''' % locals()
-
         return statement
 
 class BowtieJunctions( BowtieTranscripts ):
