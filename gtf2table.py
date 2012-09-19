@@ -1550,6 +1550,7 @@ class ClassifierRNASeqNew(Counter):
 		 ( 'n', "intronic", ),
 		 ( 'n', "flank5", ),
 		 ( 'n', "flank3", ),
+		 ( 'n', "flank", ),
 		 ( 'n', "intergenic", ),
 		 ( 'a', "complete", ),
 		 ( 'a', "fragment", ),
