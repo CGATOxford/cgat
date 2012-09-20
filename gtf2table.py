@@ -1726,8 +1726,7 @@ class ClassifierRNASeqNew(Counter):
 
             included_exons = [x for x in transcript_exons if x[1] > start and x[0] < end ]
             included_transcript_introns = [x for x in transcript_introns if x[0] > start and x[1] <= end]
-            included_boundaries = sorted([ (x[0], x[0] + 1) for x in included_transcript_introns ] + 
-										 [ (x[1], x[1] + 1) for x in included_transcript_introns ])
+            included_boundaries = sorted([x for x in transcript_boundaries if x[1] > start and x[0] <= end  ])
             shared_included_boundaries = Intervals.intersect( boundaries, included_boundaries )
             
 			# If there is a matched structure, i.e. all of the introns in the gene model are in an existing gene
@@ -1762,9 +1761,14 @@ class ClassifierRNASeqNew(Counter):
                 #there are boundaries present in the test model that are not present in the transcript 
                 #therefore there is a novel exon. Could be fragement or complete.
                 
+                #print exons[0]
+		#print transcript_exons
+		#print Intervals.calculateOverlap([exons[0]],transcript_exons)
+
                 if (Intervals.calculateOverlap([exons[0]],transcript_exons) == 0):
+                    print "hello"
                     cls = "alternate-5prime"
-                
+                        
                     if len(Intervals.intersect([boundaries[-1]], transcript_boundaries[0:-1])) > 0 :
                     # is a fragment if the final boundary is in the transcript but isn't its final one.
                         cls = cls + "-fragment"
