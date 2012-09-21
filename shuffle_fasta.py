@@ -58,7 +58,7 @@ import os, sys, string, re, getopt, time, optparse, math, tempfile, random
 import Experiment
 import Genomics
 import Bio
-import Bio.Fasta
+import FastaIterator
 import IOTools
 
 if __name__ == "__main__":
@@ -92,8 +92,7 @@ if __name__ == "__main__":
 
     (options, args) = Experiment.Start( parser, add_pipe_options = True )
 
-    parser = Bio.Fasta.RecordParser()
-    iterator = Bio.Fasta.Iterator( sys.stdin, parser)
+    iterator = FastaIterator.FastaIterator( sys.stdin )
 
     ## get map of amino acids to codons
     map_aa2codons = Genomics.GetMapAA2Codons()

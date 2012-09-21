@@ -2,44 +2,39 @@ import os, sys, re, types, itertools, math, numpy
 
 from PeakcallingReport import *
 
-class MappingStatus( Status ):
+class PeakCallingStatus( Status ):
     '''status information for mapping stage.'''
 
-    def getTracks(self ):
-        d = self.get( "SELECT DISTINCT track FROM bam_stats WHERE track LIKE '%%.genome'" )
-        return tuple( [re.sub(".genome", "", x[0]) for x in d ] )
-
-    def testMapping( self, track ):
-        '''proportion of reads mapped.
+    def testCalling( self, track ):
+        '''number of peaks called. The number of peaks expected in a sample
+        will of course vary wildly.
         
-        PASS : >=60% reads mapped
-        WARN : >=40% reads mapped
-        FAIL : < 40% reads mapped
-
-        '''
-        value = self.getValue( """SELECT reads_mapped/CAST( reads_total AS FLOAT) 
-                                         FROM bam_stats 
-                                         WHERE track = '%(track)s.genome'""" )
-        if value >= 0.6: status= "PASS"
-        elif value >= 0.4: status= "WARNING"
-        else: status= "FAIL"
-
-        return status, "%5.2f%%" % (100.0 * value)
-
-    def testPairing( self, track ):
-        '''proportion of reads mapped.
-
-        PASS : >=95% reads in proper pairs
-        WARN : >=80% reads in proper pairs
-        FAIL : < 80% reads in proper pairs
+        PASS : >1000 peaks called
+        WARN : >100 peaks called
+        FAIL : <100 peaks called
 
         '''
 
-        value = self.getValue( """SELECT proper_pair/CAST( mapped AS FLOAT) 
-                                         FROM bam_stats 
-                                         WHERE track = '%(track)s.genome'""" )
-        if value >= 0.95: status= "PASS"
-        elif value >= 0.8: status= "WARNING"
+        suffix = re.sub( "^[^_]*_", "", self.pattern )
+        value = self.getValue( """SELECT COUNT(*) FROM %(track)s_%(suffix)s""" )
+        if value >= 1000: status= "PASS"
+        elif value >= 100: status= "WARNING"
         else: status= "FAIL"
 
-        return status, "%5.2f%%" % (100.0 * value)
+        return status, "%i" % value
+
+class PeakCallingStatusMACS( PeakCallingStatus ):
+    pattern = ("(.*)_macs_regions" )
+
+class PeakCallingStatusSPP( PeakCallingStatus ):
+    pattern = ("(.*)_spp_regions" )
+
+class PeakCallingStatusSICER( PeakCallingStatus ):
+    pattern = ("(.*)_sicer_regions" )
+
+class PeakCallingStatusZinba( PeakCallingStatus ):
+    pattern = ("(.*)_zinba_regions" )
+
+class PeakCallingStatusPeakRanger( PeakCallingStatus ):
+    pattern = ("(.*)_peakranger_regions" )
+

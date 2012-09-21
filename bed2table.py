@@ -163,7 +163,10 @@ class CounterPeaks(Counter):
         contig, start, end = bed.contig, bed.start, bed.end
 
         length = end - start
-        counts = numpy.zeros( length )
+        try:
+            counts = numpy.zeros( length )
+        except ValueError, msg:
+            raise ValueError( "Error negative length obtained: message=%s contig=%s, start=%s, end=%s" %(msg, contig, start, end))
         nreads = 0
 
         if offsets:
@@ -185,9 +188,17 @@ class CounterPeaks(Counter):
                 for read in samfile.fetch( contig, xstart, xend ):
                     nreads += 1
                     pos = read.pos
+                    # some reads are assigned to a contig and position, but
+                    # are flagged as unmapped - these might not have an alen attribute.
+                    if read.is_unmapped: continue
+
                     if read.is_reverse:
-                        # offset = 2 * shift
-                        rstart = read.pos + read.alen - offset
+#                        rstart = read.pos + read.alen - offset
+                       # offset = 2 * shift
+                        try:
+                            rstart = read.pos + read.alen - offset
+                        except TypeError, msg:
+                            raise TypeError("Error message =", msg, "read.pos =", read.pos, "read.alen =", read.alen, "offset =", offset, "query name =", read.qname, "length of read =", read.rlen)
                     else: 
                         rstart = read.pos + shift
 

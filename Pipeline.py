@@ -41,6 +41,7 @@ import os, sys, re, subprocess, optparse, stat, tempfile
 import time, random, inspect, types, multiprocessing
 import logging, collections, shutil, glob, gzip
 import ConfigParser
+import Database
 
 # talking to a cluster
 import drmaa
@@ -472,6 +473,58 @@ def mergeAndLoad( infiles, outfile, suffix = None, columns=(0,1), regex = None, 
                 > %(outfile)s
             """
     run()
+
+def createView( dbhandle, tables, tablename, outfile, view_type = "TABLE" ):
+    '''create a view in database for tables.
+
+    Tables should be a list of tuples. Each tuple
+    should contain the name of a table and the field
+    to join with the first table.
+
+    For example::
+       tables = ("reads_summary", "track",
+                 "bam_stats", "track",
+                 "context_stats", "track",
+                 "picard_stats_alignment_summary_metrics", "track" )
+
+    view_type 
+       type of view. If a view is to be created across multiple database,
+       use "TABLE", otherwise, use "VIEW"
+
+    '''
+
+    Database.executewait( dbhandle, "DROP %(view_type)s IF EXISTS %(tablename)s" % locals() )
+
+    tracks = []
+    tablenames = [ x[0] for x in tables ]
+    for t in tables:
+        d = Database.executewait( dbhandle,"SELECT COUNT(DISTINCT %s) FROM %s" % (t[1],t[0]))
+        tracks.append( d.fetchone()[0] )
+    
+    E.info( "creating %s from the following tables: %s" % (tablename, str(zip( tablenames, tracks ))))
+    if min( tracks) != max(tracks):
+        raise ValueError("number of rows not identical - will not create view" )
+
+    from_statement = " , ".join( [ "%s as t%i" % (y[0],x) for x,y in enumerate(tables) ] )
+    f = tables[0][1]
+    where_statement = " AND ".join( ["t0.%s = t%i.%s" % (f,x+1,y[1]) for x,y in enumerate(tables[1:]) ] )
+
+
+    statement = '''CREATE %(view_type)s %(tablename)s AS SELECT t0.track, * 
+                   FROM %(from_statement)s
+                   WHERE %(where_statement)s
+    ''' % locals()
+    
+    Database.executewait( dbhandle, statement )
+
+    nrows = Database.executewait( dbhandle, "SELECT COUNT(*) FROM view_mapping" ).fetchone()[0]
+    
+    if nrows == 0:
+        raise ValueError( "empty view mapping, check statement = %s" % (statement % locals()) )
+
+    E.info( "created view_mapping with %i rows" % nrows )
+
+    touch( outfile )
 
 def snip( filename, extension = None, alt_extension = None):
     '''return prefix of filename.
@@ -962,10 +1015,14 @@ def peekParameters( workingdir, pipeline ):
     '''
     
     dirname = os.path.dirname( __file__ )
+    # special case: pipeline called in source directory
+    if dirname == "": dirname = os.path.abspath(".")
     pipeline = os.path.join( dirname, pipeline )
     assert os.path.exists( pipeline ), "can't find pipeline source %s" % pipeline
+    if workingdir == "": workingdir = os.path.abspath(".")
+
     assert os.path.exists( workingdir ), "can't find working dir %s" % workingdir
-    
+
     process = subprocess.Popen(  "python %s -f -v 0 dump" % pipeline,
                                  cwd = workingdir, 
                                  shell = True,
@@ -1277,7 +1334,8 @@ def main( args = sys.argv ):
         except ruffus_exceptions.RethrownJobError, value:
             E.error("some tasks resulted in errors - error messages follow below" )
             # print value
-            # E.error( value )
+            E.error( value )
+            E.error( "end of error messages" )
             raise
 
     elif options.pipeline_action == "dump":

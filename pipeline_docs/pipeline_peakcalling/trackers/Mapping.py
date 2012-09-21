@@ -9,10 +9,10 @@ from PeakcallingReport import *
 
 from SphinxReport.Tracker import *
 
-class MappingSummary( ChipseqTracker, SingleTableTrackerRows ):
+class MappingSummary( CallingTracker, SingleTableTrackerRows ):
     table = "view_mapping"
 
-class BamSummary( ChipseqTracker, SingleTableTrackerRows ):
+class BamSummary( CallingTracker, SingleTableTrackerRows ):
     table = "bam_stats"
 
 class TrackerReadStats( Tracker ):

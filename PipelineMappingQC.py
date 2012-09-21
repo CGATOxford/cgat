@@ -70,10 +70,34 @@ try:
 except IOError:
     pass
 
+def getNumReadsFromReadsFile( infile ):
+    '''get number of reads from a .nreads file.'''
+    with IOTools.openFile( infile ) as inf:
+        line = inf.readline()
+        if not line.startswith( "nreads" ):
+            raise ValueError( "parsing error in file '%s': expected first line to start with 'nreads'")
+        nreads = int( line[:-1].split("\t")[1] )
+    return nreads
+
 def getNumReadsFromBAMFile( infile ):
     '''count number of reads in bam file.'''
-    read_info = pysam.idxstats( infile )
-    return sum( map(int, [ x.split("\t")[2] for x in read_info]  ) )
+    # by-passes a problem with pysam, which was reading in stdout as the first elements in list data
+    tmpf = P.getTempFile( ".")
+    tmpfile_name = tmpf.name
+    statement = '''samtools idxstats %(infile)s > %(tmpfile_name)s'''
+    
+    P.run()
+
+    read_info = IOTools.openFile( tmpfile_name ).readlines()
+    os.unlink( tmpfile_name )
+
+    try:
+        data = sum( map(int, [ x.split("\t")[2] for x in read_info if not x.startswith("#")]  ) )
+
+    except IndexError, msg:
+        raise IndexError( "can't get number of reads from bamfile, msg=%s, data=%s" % (msg, read_info))
+    return data
+
 
 def buildPicardInsertSizeStats( infile, outfile, genome_file ):
     '''gather BAM file insert size statistics using Picard '''
@@ -92,7 +116,7 @@ def buildPicardInsertSizeStats( infile, outfile, genome_file ):
                                        ASSUME_SORTED=true 
                                        OUTPUT=%(outfile)s 
                                        VALIDATION_STRINGENCY=SILENT 
-                   > %(outfile)s'''
+                   >& %(outfile)s'''
 
     P.run()
 
@@ -121,7 +145,7 @@ def buildPicardAlignmentStats( infile, outfile, genome_file ):
                                        ASSUME_SORTED=true 
                                        OUTPUT=%(outfile)s 
                                        VALIDATION_STRINGENCY=SILENT 
-                       > %(outfile)s'''
+                       >& %(outfile)s'''
 
     else:
         statement = '''CollectMultipleMetrics 
@@ -130,7 +154,7 @@ def buildPicardAlignmentStats( infile, outfile, genome_file ):
                                        ASSUME_SORTED=true 
                                        OUTPUT=%(outfile)s 
                                        VALIDATION_STRINGENCY=SILENT 
-                   > %(outfile)s'''
+                   >& %(outfile)s'''
 
     P.run()
 
@@ -150,7 +174,7 @@ def buildPicardGCStats( infile, outfile, genome_file ):
                                        VALIDATION_STRINGENCY=SILENT 
                                        CHART_OUTPUT=%(outfile)s.pdf 
                                        SUMMARY_OUTPUT=%(outfile)s.summary
-                   > %(outfile)s'''
+                   >& %(outfile)s'''
 
     P.run()
 
