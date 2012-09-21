@@ -379,6 +379,9 @@ class FastQc( Mapper ):
 
     compress = True
 
+    def __init__( self, nogroup = False, *args, **kwargs ):
+        self.nogroup = nogroup
+
     def mapper( self, infiles, outfile ):
         '''build mapping statement on infiles.
         
@@ -389,7 +392,10 @@ class FastQc( Mapper ):
         for f in infiles:
             for i, x in enumerate(f):
                 track = os.path.basename(  re.sub(".fastq.*", "", x) )
-                statement.append( '''fastqc --outdir=%%(exportdir)s/fastqc %(x)s >& %(outfile)s;''' % locals() )
+                if self.nogroup:
+                    statement.append( '''fastqc --outdir=%%(exportdir)s/fastqc --nogroup %(x)s >& %(outfile)s;''' % locals() )
+                else:
+                    statement.append( '''fastqc --outdir=%%(exportdir)s/fastqc %(x)s >& %(outfile)s;''' % locals() )
         return " ".join( statement )
 
 class Counter( Mapper ):
