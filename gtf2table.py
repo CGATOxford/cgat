@@ -1508,12 +1508,14 @@ class ClassifierRNASeqNew(Counter):
 		 ( 's', "exon-boundary-change", ),
 		 ( 's', "alternate-5prime", ),
 		 ( 's', "alternate-3prime", ),
+		 ( 's', "novel-intron",),
 		 ( 's', "skipped-exon" ,),
 		 ( 's', "novel-exon", ),
 		 ( 's', "alternate-exon", ),
 		 ( 's', "exon-boundary-change-fragment", ),
 		 ( 's', "alternate-5prime-fragment", ),
 		 ( 's', "alternate-3prime-fragment", ),
+		 ( 's', "novel-intron-fragment",),
 		 ( 's', "skipped-exon-fragment", ),
 		 ( 's', "novel-exon-fragment", ),
 		 ( 's', "alternate-exon-fragment", ),
@@ -1534,12 +1536,14 @@ class ClassifierRNASeqNew(Counter):
 		 ( 'n', "exon-boundary-change", ),
 		 ( 'n', "alternate-5prime", ),
 		 ( 'n', "alternate-3prime", ),
+		 ( 'n', "novel-intron",),
 		 ( 'n', "skipped-exon" ,),
 		 ( 'n', "novel-exon", ),
 		 ( 'n', "alternate-exon", ),
 		 ( 'n', "exon-boundary-change-fragment", ),
 		 ( 'n', "alternate-5prime-fragment", ),
 		 ( 'n', "alternate-3prime-fragment", ),
+		 ( 'n', "novel-intron-fragment",),
 		 ( 'n', "skipped-exon-fragment", ),
 		 ( 'n', "novel-exon-fragment", ),
 		 ( 'n', "alternate-exon-fragment", ),
@@ -1561,12 +1565,14 @@ class ClassifierRNASeqNew(Counter):
 		 ( 'a', "exon-boundary-change", ),
 		 ( 'a', "alternate-5prime", ),
 		 ( 'a', "alternate-3prime", ),
+		 ( 'a', "novel-intron",),
 		 ( 'a', "skipped-exon" ,),
 		 ( 'a', "novel-exon", ),
 		 ( 'a', "alternate-exon", ),
 		 ( 'a', "exon-boundary-change-fragment", ),
 		 ( 'a', "alternate-5prime-fragment", ),
 		 ( 'a', "alternate-3prime-fragment", ),
+		 ( 'a', "novel-intron-fragment",),
 		 ( 'a', "skipped-exon-fragment", ),
 		 ( 'a', "novel-exon-fragment", ),
 		 ( 'a', "alternate-exon-fragment", ),
@@ -1726,7 +1732,7 @@ class ClassifierRNASeqNew(Counter):
 
             included_exons = [x for x in transcript_exons if x[1] > start and x[0] < end ]
             included_transcript_introns = [x for x in transcript_introns if x[0] > start and x[1] <= end]
-            included_boundaries = sorted([x for x in transcript_boundaries if x[1] > start and x[0] <= end  ])
+            included_boundaries = sorted([x for x in transcript_boundaries if x[1] > boundaries[0][0] and x[0] <= boundaries[-1][1]  ])
             shared_included_boundaries = Intervals.intersect( boundaries, included_boundaries )
             
 			# If there is a matched structure, i.e. all of the introns in the gene model are in an existing gene
@@ -1766,7 +1772,7 @@ class ClassifierRNASeqNew(Counter):
 		#print Intervals.calculateOverlap([exons[0]],transcript_exons)
 
                 if (Intervals.calculateOverlap([exons[0]],transcript_exons) == 0):
-                    print "hello"
+                    #print "hello"
                     cls = "alternate-5prime"
                         
                     if len(Intervals.intersect([boundaries[-1]], transcript_boundaries[0:-1])) > 0 :
@@ -1781,10 +1787,23 @@ class ClassifierRNASeqNew(Counter):
                         cls = cls + "-fragment"
                     if not len(boundaries) == len(shared_included_boundaries) + 1:
                         cls = "alternative"
-                elif len(shared_boundaries) == len(transcript_boundaries) and len(shared_boundaries) < len (boundaries):
-                    cls = "novel-exon"
+                elif (len(shared_boundaries) == len(transcript_boundaries) and 
+		      len(shared_boundaries) < len (boundaries) ):
+                    
+		    novel_exons = [exon for exon in exons if Intervals.calculateOverlap([exon],transcript_exons) ==0]
+		    if len(novel_exons) == 1:
+			cls = "novel-exon"
+		    elif len(novel_exons) == 0:
+			cls = "novel-intron"
+
                 else:
-                    cls = "novel-exon-fragment"
+		    
+		    novel_exons = [exon for exon in exons if Intervals.calculateOverlap([exon],transcript_exons) ==0]
+		    if len(novel_exons) == 1:
+			cls = "novel-exon-fragment"
+		    elif len(novel_exons) == 0:
+			cls = "novel-intron-fragment"
+         
                 
             elif approx_structure and (len(shared_included_boundaries) == len (boundaries) and 
                   len(shared_included_boundaries) < len (included_boundaries)):
