@@ -1732,7 +1732,7 @@ class ClassifierRNASeqNew(Counter):
 
             included_exons = [x for x in transcript_exons if x[1] > start and x[0] < end ]
             included_transcript_introns = [x for x in transcript_introns if x[0] > start and x[1] <= end]
-            included_boundaries = sorted([x for x in transcript_boundaries if x[1] > boundaries[0][0] and x[0] <= boundaries[-1][1]  ])
+            included_boundaries = sorted([x for x in transcript_boundaries if x[1] > exons[0][1]  and x[1] < exons[-1][0]  ])
             shared_included_boundaries = Intervals.intersect( boundaries, included_boundaries )
             
 			# If there is a matched structure, i.e. all of the introns in the gene model are in an existing gene
@@ -1795,7 +1795,8 @@ class ClassifierRNASeqNew(Counter):
 			cls = "novel-exon"
 		    elif len(novel_exons) == 0:
 			cls = "novel-intron"
-
+		    else:
+			cls = "alternative"
                 else:
 		    
 		    novel_exons = [exon for exon in exons if Intervals.calculateOverlap([exon],transcript_exons) ==0]
@@ -1803,7 +1804,8 @@ class ClassifierRNASeqNew(Counter):
 			cls = "novel-exon-fragment"
 		    elif len(novel_exons) == 0:
 			cls = "novel-intron-fragment"
-         
+		    else:
+			cls = "alternative"
                 
             elif approx_structure and (len(shared_included_boundaries) == len (boundaries) and 
                   len(shared_included_boundaries) < len (included_boundaries)):
@@ -1914,9 +1916,8 @@ class ClassifierRNASeqNew(Counter):
                 cls, sense = self.classify_overlap(segments, transcript_id) 
                 source = self.transcripts[transcript_id][0].source
                 gene_id = self.map_transcript2gene[transcript_id]
-                results.append( (self.mapClass2Priority[(sense,cls)], 
-                                 ( noverlap_transcripts, noverlap_genes, transcript_id, gene_id, source, cls, sense ) ) )
-        
+		results.append( (self.mapClass2Priority[(sense,cls)], 
+				 ( noverlap_transcripts, noverlap_genes, transcript_id, gene_id, source, cls, sense ) ) )
         results.sort()
         self.result = results[0][1]
 
@@ -3851,8 +3852,10 @@ def main( argv = None ):
 
     for gffs in iterator( GTF.iterator(options.stdin) ):
         cc.input += 1
-        for counter in counters: counter(gffs)
 
+	for counter in counters: counter(gffs)
+	
+	    
         skip = len( [x for x in counters if x.skip] ) == len(counters)
         if skip:
             cc.skipped += 1
