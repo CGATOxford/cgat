@@ -156,7 +156,8 @@ def main( argv = None ):
         sort = [],
         centring_method = "reads",
         control_file = None,
-        random_shift = False,        strand_specific = False,
+        random_shift = False,
+        strand_specific = False,
         )
 
     ## add common options (-h/--help, ...) and parse command line 
@@ -190,10 +191,11 @@ def main( argv = None ):
         
     contigs = set(pysam_in.references)
 
-    strand_specifc = options.strand_specific
+    strand_specific = options.strand_specific
 
     result =[]
     c = E.Counter()
+    c.input = 0
     for bed in Bed.iterator( IOTools.openFile( bedfile ) ):
         c.input += 1
 
@@ -240,6 +242,11 @@ def main( argv = None ):
         c.added += 1
 
     E.info( "interval processing: %s" % c )
+
+    if c.input == 0:
+        E.warn( "no data - no output" )
+        E.Stop()
+        return
 
     # center bins
     out_bins = bins[:-1] + options.bin_size
