@@ -17,9 +17,7 @@ class TranscriptClassificationProportion(TrackerSQL):
               , "antisense_downstream"
               , "sense_upstream"
               , "sense_downstream"
-              , "intergenic" 
-              , "sense_intronic" 
-              , "antisense_intronic"]
+              , "intergenic"]
 
 
     def __call__(self, track, slice = None):
@@ -49,13 +47,11 @@ class GeneClassificationProportion(TranscriptClassificationProportion):
         
         # done in a hierarchy so that the 'most important' classification is maintained
         hierarchy = [ "antisense"
-                     , "antisense_upstream"
-                     , "antisense_downstream"
-                     , "sense_upstream"
-                     , "sense_downstream"
-                     , "intergenic" 
-                     , "sense_intronic" 
-                     , "antisense_intronic" ]
+                      , "antisense_upstream"
+                      , "antisense_downstream"
+                      , "sense_upstream"
+                      , "sense_downstream"
+                      , "intergenic" ]
 
         result = collections.defaultdict(set)
         for data in self.execute("SELECT gene_id, class FROM %s" % track + "_class").fetchall():

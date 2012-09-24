@@ -313,6 +313,7 @@ def main( argv = None ):
             
             start = None
             end = 0
+            n = None
             for t in iterator:
                 if t.pos - end > 1 or n != t.n: 
                     if start != None: yield start, end, n

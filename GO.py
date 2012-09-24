@@ -1815,8 +1815,10 @@ def main():
     #############################################################
     ## get background
     if options.filename_background:
-        input_background = ReadGeneList( options.filename_background, 
-                                         gene_pattern = options.gene_pattern )
+        
+        # nick - bug fix: background is the first tuple element from ReadGeneLists
+        input_background = ReadGeneLists( options.filename_background, 
+                                         gene_pattern = options.gene_pattern )[0]
 
         E.info( "read %i genes for background" % len(input_background) )
     else:
@@ -1898,9 +1900,11 @@ def main():
             if input_background == None:
                 background = list(gene2go.keys())
             else:
-                background = input_background 
+                background = list(input_background)
 
-            missing = set(foreground).difference( set(background))
+            # nick - bug-fix backgorund included the foreground in a tuple. 
+            # background is the first tuple element 
+            missing = foreground.difference(set(background))
 
             if options.strict:
                 assert len(missing) == 0, \
@@ -1909,7 +1913,8 @@ def main():
                 if len(missing) != 0:
                     E.warn( "%i genes in foreground that are not in background - added to background of %i" %\
                                 (len(missing), len(background)) )
-                background.extend( missing )
+
+                background.extend(missing)
 
             E.info( "(unfiltered) foreground=%i, background=%i" % (len(foreground), len(background)))
 
@@ -1998,7 +2003,7 @@ def main():
                                    section = 'background',
                                    set = genelist_name )
 
-            outfile.write ("gene_id\n%s\n" % ("\n".join( sorted( background) ) ) )
+            outfile.write ("gene_id\n%s\n" % ("\n".join( sorted( background[0]) ) ) )
             if options.output_filename_pattern:
                 outfile.close()
 

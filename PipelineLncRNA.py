@@ -39,7 +39,7 @@ def buildCodingGeneSet(abinitio_coding, reference, outfile):
                                                                         , source="protein_coding" )
                                                                         , with_value = False  )
 
-    for gtf in GTF.iterator(inf):
+    for gtf in GTF.iterator(IOTools.openFile(inf)):
         if coding["protein_coding"].contains(gtf.contig, gtf.start, gtf.end):
             if gtf.class_code == "=":
                 outf.write("%s\n" % str(gtf))
@@ -175,62 +175,117 @@ def buildLncRNAGeneSet( abinitio_lincrna, reference, refnoncoding, pseudogenes_g
 #-------------------------------------------------------------------------------
 def buildFilteredLncRNAGeneSet(flagged_gtf, refnoncoding_gtf, outfile, geneset_previous = None):
     '''
-    creates a final lincRNA geneset. This geneset will not include any
+    creates a filtered lincRNA geneset. This geneset will not include any
     single exon lincRNA unless they have been seen previously i.e. it overlaps
     a previously identified lincRNA
+    
+    At this point we add a flag for whether the gene is a novel lncRNA or not
+    NB this is a large function and should be modified in the future
     '''
     previous = IndexedGenome.IndexedGenome()
     previous_all = IndexedGenome.IndexedGenome()
     if geneset_previous:
         for transcript in GTF.transcript_iterator( GTF.iterator(IOTools.openFile(geneset_previous)) ):
-            previous.add()
+            # use an indexed genome to assess novelty of lncRNA
+            for gtf in transcript:
+                previous_all.add(gtf.contig, gtf.start, gtf.end, gtf.strand)
             # only use if single exon
             if len(transcript) == 1:
                 previous.add(transcript[0].contig, transcript[0].start, transcript[0].end, [transcript[0].strand, transcript[0].transcript_id])
 
-
     # same for refnoncoding geneset        
     refnoncoding = IndexedGenome.IndexedGenome()
+    refnoncoding_all = IndexedGenome.IndexedGenome()
     for transcript in GTF.transcript_iterator( GTF.iterator(IOTools.openFile(refnoncoding_gtf)) ):
-
+        # use an indexed genome to assess novelty of lncRNA
+        for gtf in transcript:
+            refnoncoding_all.add(gtf.contig, gtf.start, gtf.end, gtf.strand)
         # only use if single exon
         if len(transcript) == 1:
             refnoncoding.add(transcript[0].contig, transcript[0].start, transcript[0].end, [transcript[0].strand, transcript[0].transcript_id])
 
     outf = gzip.open(outfile, "w")
     keep = set()
-    for entry in GTF.iterator(IOTools.openFile(flagged_gtf)):
-        if entry.exon_status == "m":
-            outf.write("%s\n" % str(entry))
+    known = set()
+    novel = set()
 
-        # check for single exon status
-        elif entry.exon_status == "s":
-            if refnoncoding.contains(entry.contig, entry.start, entry.end):                               
-                
-                # retain strandedness
-                for gtf in refnoncoding.get(entry.contig, entry.start, entry.end):                               
-                    if entry.strand == gtf[2][0]:
-                        keep.add(gtf[2][1])
+    for transcript in GTF.transcript_iterator(GTF.iterator(IOTools.openFile(flagged_gtf))):
+        gene_id = transcript[0].gene_id
+        # check if there is overlap in the known sets in order to add gene_status attribute
+        for gtf in transcript:
+            if gtf.exon_status == "m":
+                if previous:
+                    # start with the refnoncoding set
+                    if refnoncoding_all.contains(gtf.contig, gtf.start, gtf.end):
+                        for gtf2 in refnoncoding_all.get(gtf.contig, gtf.start, gtf.end):
+                            if gtf.strand == gtf2[2]:
+                                known.add(gene_id)
+                            else:
+                                novel.add(gene_id)
+                    
+                    elif previous_all.contains(gtf.contig, gtf.start, gtf.end):
+                        for gtf2 in previous_all.get(gtf.contig, gtf.start, gtf.end):
+                            if gtf.strand == gtf2[2]:
+                                known.add(gene_id)
+                            else:
+                                novel.add(gene_id)
+                    else:
+                        novel.add(gene_id)
+                elif refnoncoding_all.contains(gtf.contig, gtf.start, gtf.end):
+                        for gtf2 in refnoncoding_all.get(gtf.contig, gtf.start, gtf.end):
+                            if gtf.strand == gtf2[2]:
+                                known.add(gene_id)
+                            else:
+                                novel.add(gene_id)
+                else:
+                    novel.add(gene_id)
                         
-            # if geneset is not included then this won't be used
-            elif previous.contains(entry.contig, entry.start, entry.end):                                     
-                for gtf in previous.get(entry.contig, entry.start, entry.end):                                
-                    if entry.strand == gtf[2][0]:
-                        keep.add(gtf[2][1])
+            # check for single exon status
+            elif gtf.exon_status == "s":
+                if previous:
+                    if refnoncoding.contains(gtf.contig, gtf.start, gtf.end):                               
+                        # retain strandedness
+                        for gtf2 in refnoncoding.get(gtf.contig, gtf.start, gtf.end):                               
+                            if gtf.strand == gtf2[2][0]:
+                                keep.add(gtf2[2][1])
+                        
+                    # if geneset is not included then this won't be used
+                    elif previous.contains(gtf.contig, gtf.start, gtf.end):                                     
+                        for gtf2 in previous.get(gtf.contig, gtf.start, gtf.end):                                
+                            if gtf.strand == gtf2[2][0]:
+                                keep.add(gtf2[2][1])
+                else:
+                    if refnoncoding.contains(gtf.contig, gtf.start, gtf.end):                               
+                        # retain strandedness
+                        for gtf2 in refnoncoding.get(gtf.contig, gtf.start, gtf.end):                               
+                            if gtf.strand == gtf2[2][0]:
+                                keep.add(gtf2[2][1])
 
-    # write out ones to keep
+    # write out ones to keep from data
+    for gtf in GTF.iterator(IOTools.openFile(flagged_gtf)):
+        if gtf.gene_id in known and gtf.exon_status == "m":
+            gtf.setAttribute("gene_status", "known")
+            outf.write("%s\n" % gtf)
+        elif gtf.gene_id in novel and gtf.exon_status == "m":
+            gtf.setAttribute("gene_status", "novel")
+            outf.write("%s\n" % gtf)
+
+    # write out ones to keep - from previous evidence
     if geneset_previous:
         for gtf in GTF.iterator(IOTools.openFile(geneset_previous)):
             if gtf.transcript_id in keep:
+                gtf.setAttribute("gene_status", "known")
                 outf.write("%s\n" % gtf)
+            
         for gtf in GTF.iterator(IOTools.openFile(refnoncoding_gtf)):
             if gtf.transcript_id in keep:
+                gtf.setAttribute("gene_status", "known")
                 outf.write("%s\n" % gtf)
     else:
         for gtf in GTF.iterator(IOTools.openFile(refnoncoding_gtf)):
             if gtf.transcript_id in keep:
+                gtf.setAttribute("gene_status", "known")
                 outf.write("%s\n" % gtf)
-
     outf.close()
 #-------------------------------------------------------------------------------
 def buildFinalLncRNAGeneSet(filteredLncRNAGeneSet, cpc_table, outfile):
@@ -246,15 +301,26 @@ def buildFinalLncRNAGeneSet(filteredLncRNAGeneSet, cpc_table, outfile):
         coding_set.add(transcript_id[0])
 
     remove = set()
+    outf_coding = gzip.open("gtfs/cpc_removed.gtf.gz", "w")
     for gtf in GTF.iterator(IOTools.openFile(filteredLncRNAGeneSet)):
         if gtf.transcript_id in coding_set:
             remove.add(gtf.gene_id)
-
-    outf = gzip.open(outfile, "w")
+            outf_coding.write("%s\n" % gtf)
+    outf_coding.close()
+    
+    # get temporary file
+    temp = P.getTempFile()
+    
     for gtf in GTF.iterator(IOTools.openFile(filteredLncRNAGeneSet)):
         if gtf.gene_id in remove: continue
-        outf.write("%s\n" % gtf)
-    outf.close()
+        temp.write("%s\n" % gtf)
+    temp.close()
+
+    filename = temp.name
+    statement = '''cat %(filename)s | python %(scriptsdir)s/gtf2gtf.py --sort=transcript | 
+                     python %(scriptsdir)s/gtf2gtf.py --renumber-genes=NONCO%%i 
+                    --log=%(outfile)s.log | python %(scriptsdir)s/gtf2gtf.py --sort=gene --log=%(outfile)s.log | gzip > %(outfile)s'''
+    P.run()
 
 ########################################################
 # counter classes
@@ -355,7 +421,7 @@ class CounterMultiExonGenes(CounterExons):
     
     def count(self):
         
-        # note that this approach work swhen there are also single
+        # note that this approach works when there are also single
         # exon gtf entries from the same gene (doesn't work to use flat_gene_iterator)
         gene_ids = set()
         for transcript in GTF.transcript_iterator(self.gtffile):
@@ -382,7 +448,8 @@ def flagExonStatus(gtffile, outfile):
                 outf.write("%s\n" % gtf)
 
 #############################################################
-# classifying lincRNA relative to protein coding transcripts
+# classifying lincRNA TRANSCRIPT level relative to protein 
+# coding transcripts
 #############################################################
 
 def classifyLncRNA(lincRNA_gtf, reference, outfile, dist = 2):
@@ -416,12 +483,13 @@ def classifyLncRNA(lincRNA_gtf, reference, outfile, dist = 2):
     minus_up =  IndexedGenome.IndexedGenome()
     minus_down = IndexedGenome.IndexedGenome()
 
-
-    # iterate over reference transcripts
+    # iterate over reference transcripts and create intervals in memory
+    outf = open("introns.bed", "w")
     for transcript in GTF.transcript_iterator(GTF.iterator(IOTools.openFile(reference))):
         start = transcript[0].end
         for i in range(1,len(transcript)):
             intron.add( transcript[i].contig, start, transcript[i].start, transcript[i].strand)
+            start = transcript[i].end
 
         # create up and downstream intervals on plus strand
         if transcript[0].strand == "+":
@@ -432,78 +500,75 @@ def classifyLncRNA(lincRNA_gtf, reference, outfile, dist = 2):
         elif transcript[0].strand == "-":
             minus_up.add(transcript[0].contig, transcript[len(transcript) - 1].end,  transcript[len(transcript) - 1].end + (dist*1000), transcript[0].strand)
             minus_down.add(transcript[0].contig, transcript[0].start - (dist*1000), transcript[0].start, transcript[0].strand)
-
         else:
-            print "no strand specified for %s" % transcript[0].transcript_id
-
+            print "WARNING: no strand specified for %s" % transcript[0].transcript_id
+            
     # iterate over lincRNA transcripts
     transcript_class = {}
     for transcript in GTF.transcript_iterator(GTF.iterator(IOTools.openFile(lincRNA_gtf))):
         transcript_id = transcript[0].transcript_id
         for gtf in transcript:
-            
+
             # antisense to protein coding gene
             if ref["ref"].contains(gtf.contig, gtf.start, gtf.end):
                 for gtf2 in ref["ref"].get(gtf.contig, gtf.start, gtf.end):
                     if gtf.strand != gtf2[2].strand:
-                        if transcript_id not in transcript_class:
-                            transcript_class[transcript_id] = "antisense"
+                        transcript_class[transcript_id] = "antisense"
     
             # upstream sense and antisense - if up or downstream of a protein 
             # coding gene then that classification is prioritised over intronic
             # classification. upstream is prioritised over downstream
             # sense upstream is prioritised over antisense upstream
-            elif plus_up.contains(gtf.contig, gtf.start, gtf.end):
+            elif plus_up.contains(transcript[0].contig, transcript[0].start, transcript[len(transcript) -1].end) and not intron.contains(transcript[0].contig, transcript[0].start, transcript[len(transcript) -1].end):
                 for gtf2 in plus_up.get(gtf.contig, gtf.start, gtf.end):
                     if gtf.strand == gtf2[2]:
-                        if transcript_id not in transcript_class:
-                            transcript_class[transcript_id] = "sense_upstream"
+                        transcript_class[transcript_id] = "sense_upstream"
                     elif gtf.strand != gtf2[2]:
-                        if transcript_id not in transcript_class:
-                            transcript_class[transcript_id] = "antisense_upstream"
+                        transcript_class[transcript_id] = "antisense_upstream"
             
-            elif minus_up.contains(gtf.contig, gtf.start, gtf.end):
+            elif minus_up.contains(transcript[0].contig, transcript[0].start, transcript[len(transcript) -1].end) :# and not intron.contains(transcript[0].contig, transcript[0].start, transcript[len(transcript) -1].end):
                 for gtf2 in minus_up.get(gtf.contig, gtf.start, gtf.end):
                     if gtf.strand == gtf2[2]:
-                        if transcript_id not in transcript_class:
-                            transcript_class[transcript_id] = "sense_upstream"
+                        transcript_class[transcript_id] = "sense_upstream"
                     elif gtf.strand != gtf2[2]:
-                        if transcript_id not in transcript_class:
-                            transcript_class[transcript_id] = "antisense_upstream"
+                        transcript_class[transcript_id] = "antisense_upstream"
             
             # downstream sense and antisense - downstream antisense is prioritised as
             # less likely to be part of the coding transcript
-            elif plus_down.contains(gtf.contig, gtf.start, gtf.end):
+            elif plus_down.contains(transcript[0].contig, transcript[0].start, transcript[len(transcript) -1].end) and not intron.contains(transcript[0].contig, transcript[0].start, transcript[len(transcript) -1].end):
                 for gtf2 in plus_down.get(gtf.contig, gtf.start, gtf.end):
                     if gtf.strand != gtf2[2]:
-                        if transcript_id not in transcript_class:
-                            transcript_class[transcript_id] = "antisense_downstream"
+                        transcript_class[transcript_id] = "antisense_downstream"
                     elif gtf.strand == gtf2[2]:
-                        if transcript_id not in transcript_class:
-                            transcript_class[transcript_id] = "sense_downstream"
-
-            elif minus_down.contains(gtf.contig, gtf.start, gtf.end):
+                        transcript_class[transcript_id] = "sense_downstream"
+                            
+            elif minus_down.contains(transcript[0].contig, transcript[0].start, transcript[len(transcript) -1].end) and not intron.contains(transcript[0].contig, transcript[0].start, transcript[len(transcript) -1].end):
                 for gtf2 in minus_down.get(gtf.contig, gtf.start, gtf.end):
                     if gtf.strand != gtf2[2]:
-                        if transcript_id not in transcript_class:
-                            transcript_class[transcript_id] = "antisense_downstream"
-                            
+                        transcript_class[transcript_id] = "antisense_downstream"
                     elif gtf.strand == gtf2[2]:
-                        if transcript_id not in transcript_class:
-                            transcript_class[transcript_id] = "sense_downstream"
+                        transcript_class[transcript_id] = "sense_downstream"
 
             # intronic sense and antisense - intronic antisense is prioritised
-            elif intron.contains(gtf.contig, gtf.start, gtf.end):
+            elif intron.contains(transcript[0].contig, transcript[0].start, transcript[len(transcript) -1].end):
                 for gtf2 in intron.get(gtf.contig, gtf.start, gtf.end):
                     if gtf.strand != gtf2[2]:
-                        if transcript_id not in transcript_class:
-                            transcript_class[transcript_id] = "antisense_intronic"
+                        transcript_class[transcript_id] = "antisense_intronic"
+                    
                     elif gtf.strand == gtf2[2]:
-                        if transcript_id not in transcript_class:
-                            transcript_class[transcript_id] = "sense_intronic"
-            
-            elif transcript_id not in transcript_class:
-                transcript_class[transcript_id] = "intergenic"
+                        transcript_class[transcript_id] = "sense_intronic"
+
+            # we have known lncRNA that overlap protein coding exons so 
+            # classify these as well
+            elif ref["ref"].contains(gtf.contig, gtf.start, gtf.end):
+                if gtf.gene_status == "known":
+                    transcript_class[transcript_id] = "sense_protein_coding"
+
+        # catch intergenic transcripts - based on the 
+        # assumption that anything not falling into the above classes
+        # is intergenic
+        if transcript_id not in transcript_class:
+            transcript_class[transcript_id] = "intergenic"
 
     outf = gzip.open(outfile, "w")
     outf_unclassified = gzip.open("lncrna_unclassified.gtf.gz", "w")
@@ -512,11 +577,123 @@ def classifyLncRNA(lincRNA_gtf, reference, outfile, dist = 2):
             gtf.source = transcript_class[gtf.transcript_id]
             outf.write("%s\n" % gtf)
         else:
-             outf_unclassified.write("%s\n" % gtf)
+            outf_unclassified.write("%s\n" % gtf)
     outf.close()
         
+#############################################################
+# classifying lincRNA GENE level relative to protein coding 
+# transcripts
+#############################################################
 
+def classifyLncRNAGenes(lincRNA_gtf, reference, outfile, dist = 2):
+
+      # index the reference geneset
+    ref = {}
+    ref["ref"] = GTF.readAndIndex(GTF.iterator(IOTools.openFile(reference)), with_value = True)
+
+    # create index for intronic intervals
+    intron = IndexedGenome.IndexedGenome()
     
+    # create index for up and downstream intervals
+    plus_up = IndexedGenome.IndexedGenome()
+    plus_down = IndexedGenome.IndexedGenome()
+    minus_up =  IndexedGenome.IndexedGenome()
+    minus_down = IndexedGenome.IndexedGenome()
+
+    # iterate over reference transcripts and create intervals in memory
+    for transcript in GTF.transcript_iterator(GTF.iterator(IOTools.openFile(reference))):
+        start = transcript[0].end
+        for i in range(1,len(transcript)):
+            intron.add( transcript[i].contig, start, transcript[i].start, transcript[i].strand)
+            start = transcript[i].end
+
+        # create up and downstream intervals on plus strand
+        if transcript[0].strand == "+":
+            plus_up.add(transcript[0].contig, transcript[0].start - (dist*1000), transcript[0].start, transcript[0].strand)
+            plus_down.add(transcript[0].contig, transcript[len(transcript) - 1].end,  transcript[len(transcript) - 1].end + (dist*1000), transcript[0].strand)
+
+        # create up and downstream intervals on minus strand
+        elif transcript[0].strand == "-":
+            minus_up.add(transcript[0].contig, transcript[len(transcript) - 1].end,  transcript[len(transcript) - 1].end + (dist*1000), transcript[0].strand)
+            minus_down.add(transcript[0].contig, transcript[0].start - (dist*1000), transcript[0].start, transcript[0].strand)
+        else:
+            print "WARNING: no strand specified for %s" % transcript[0].transcript_id
+    
+    # iterate over lincRNA genes
+    outf_introns = gzip.open("sense_intronic_removed.gtf.gz", "w")
+    gene_class = {}
+
+    for gtf in GTF.merged_gene_iterator(GTF.iterator(IOTools.openFile(lincRNA_gtf))):
+        gene_id = gtf.gene_id
+
+        # the first classification resolves any gene
+        # that overlaps a gene. We don't mind whether it
+        # overlaps protein coding gene exons or introns
+        if ref["ref"].contains(gtf.contig, gtf.start, gtf.end):
+            for gtf2 in ref["ref"].get(gtf.contig, gtf.start, gtf.end):
+                if gtf.strand != gtf2[2]:
+                    gene_class[gene_id] = "antisense"
+                else:
+                    gene_class[gene_id] = "sense"
+                    
+        # remove intronic sense transcripts at this point
+        elif intron.contains(gtf.contig, gtf.start, gtf.end):
+            for gtf2 in intron.get(gtf.contig, gtf.start, gtf.end):
+                if gtf.strand == gtf2[2]:
+                    outf_introns.write("%s\n" % gtf)
+                else:
+                    gene_class[gene_id] = "antisense"
+        
+        # the second classification resolves sense and antisense genes up and
+        # downstream of protein coding genes - nb having some problems with the
+        # merged gene iterator
+        elif plus_up.contains(gtf.contig, gtf.start, gtf.end):
+            for gtf2 in plus_up.get(gtf.contig, gtf.start, gtf.end):
+                if gtf.strand != gtf2[2]:
+                    if gene_id in gene_class: continue
+                    gene_class[gene_id] = "antisense_upstream"
+                else:
+                    if gene_id in gene_class: continue
+                    gene_class[gene_id] = "sense_upstream"
+        elif minus_up.contains(gtf.contig, gtf.start, gtf.end):
+            for gtf2 in minus_up.get(gtf.contig, gtf.start, gtf.end):
+                if gtf.strand != gtf2[2]:
+                    if gene_id in gene_class: continue
+                    gene_class[gene_id] = "antisense_upstream"
+                else:
+                    if gene_id in gene_class: continue
+                    gene_class[gene_id] = "sense_upstream"
+        elif plus_down.contains(gtf.contig, gtf.start, gtf.end):
+            for gtf2 in plus_down.get(gtf.contig, gtf.start, gtf.end):
+                if gtf.strand != gtf2[2]:
+                    if gene_id in gene_class: continue
+                    gene_class[gene_id] = "antisense_downstream"
+                else:
+                    if gene_id in gene_class: continue
+                    gene_class[gene_id] = "sense_downstream"
+        elif minus_down.contains(gtf.contig, gtf.start, gtf.end):
+            for gtf2 in minus_down.get(gtf.contig, gtf.start, gtf.end):
+                if gtf.strand != gtf2[2]:
+                    if gene_id in gene_class: continue
+                    gene_class[gene_id] = "antisense_downstream"
+                else:
+                    if gene_id in gene_class: continue
+                    gene_class[gene_id] = "sense_downstream"
+
+        # the third classification assumes all genes have been classified leaving
+        # intergenic genes
+        else:
+            gene_class[gene_id] = "intergenic"
+
+    outf = gzip.open(outfile, "w")
+    for gtf in GTF.iterator(IOTools.openFile(lincRNA_gtf)):
+        if gtf.gene_id in gene_class:
+            gtf.source = gene_class[gtf.gene_id]
+            outf.write("%s\n" % gtf)
+    outf.close()
+
+                
+
 
 
 

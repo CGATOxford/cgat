@@ -20,10 +20,9 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
-
 '''
 ==============================
-pipeline_rnaseqLncRNA.py
+Long non-coding RNA pipeline
 ==============================
 
 
@@ -46,46 +45,53 @@ downstream comparisons are made to a reference non-coding gene set. The main fea
 of the pipeline are as follows:
 
 * Build a coding gene set based on an ab initio assembly.
-The ab initio assembly is filtered for protein coding genes. In this step only genes 
-that are compatible with an annotated protein coding transcript are kept - this will
-reduce noise that is associated with a large number of incomplete transfrags. The 
-filtering is based on output from cuffcompare (class code "=").
+   The ab initio assembly is filtered for protein coding genes. In this step only genes 
+   that are compatible with an annotated protein coding transcript are kept - this will
+   reduce noise that is associated with a large number of incomplete transfrags. The 
+   filtering is based on output from cuffcompare (class code "=").
 
 * build a non-coding gene set.
-A reference non-coding set of transcripts is built by filtering a provided ensembl
-reference set (usually a set that is built from the transcript building pipeline) for 
-transcripts that do not belong to one of the following biotypes
+   A reference non-coding set of transcripts is built by filtering a provided ensembl
+   reference set (usually a set that is built from the transcript building pipeline) for 
+   transcripts that do not belong to one of the following biotypes
 
-protein_coding\nAmbiguous_orf\nRetained_intron\nSense_intronic\nantisense\nSense_overlapping
+   protein_coding\n
+   ambiguous_orf\n
+   retained_intron\n
+   sense_intronic\n
+   antisense\n
+   sense_overlapping\n
 
 
-This set of non-coding transcripts is required in the filtering of the ab initio geneset 
-for LncRNA prediction. This is because many putative lncRNA have multiple associated
-biotypes. For example MALAT1 is described as both a lncRNA and a processed transcript. To 
-avoid removing known ncRNA we therefore check for existence of putative transcripts in this
-set.
+   This set of non-coding transcripts is required in the filtering of the ab initio geneset 
+   for LncRNA prediction. This is because many putative lncRNA have multiple associated
+   biotypes. For example MALAT1 is described as both a lncRNA and a processed transcript. To 
+   avoid removing known ncRNA we therefore check for existence of putative transcripts in this
+   set.
 
 * Build a putative lncRNA gene set.
-The ab initio set of lncRNA are filtered to remove overlapping protein coding exons. This 
-filtering is performed on the level of the transcript - although there may be multiple isoform
-predictions per lncRNA, at this point the sensitivity of lncRNA prediction is increased. 
-Antisense transcripts overlapping protein coding transcripts are retained.
+   The ab initio set of lncRNA are filtered to remove overlapping protein coding exons. This 
+   filtering is performed on the level of the transcript - although there may be multiple isoform
+   predictions per lncRNA, at this point the sensitivity of lncRNA prediction is increased. 
+   Antisense transcripts overlapping protein coding transcripts are retained.
+   
+* Filter putative lncRNA gene set
+   Due to many fragments being produced from RNA-seq data, putative single exon lncRNA are flagged
+   with in the lncRNA gtf file so it is easy to filter for the more reliable multi-exonic lncRNA. 
+   Although many single exon lncRNA are likely to be artifacts, we assess the overlap of putative
+   single exon lncRNA with sets of lncRNA that have been previously identified. If an overlap is
+   found with a transcript in the reference set then the reference is added to the lncRNA gene set.
+   This means that true single exon lncRNA are still picked up - as long as there is previous evidence
+   to support their existence.
 
-* Due to many fragments being produced from RNA-seq data, putative single exon lncRNA are flagged
-with in the lncRNA gtf file so it is easy to filter for the more reliable multi-exonic lncRNA. 
+* Build final lncRNA gene set
+   The putative set of lncRNA are assessed for coding potential using the coding potential calculator
+   (CPC). Any lncRNA that are annotated as 'coding' in this analysis are removed from downstream analysis.
 
-* Although many single exon lncRNA are likely to be artifacts, we assess the overlap of putative
-single exon lncRNA with sets of lncRNA that have been previously identified. If an overlap is
-found with a transcript in the reference set then the reference is added to the lncRNA gene set.
-This means that true single exon lncRNA are still picked up - as long as there is previous evidence
-to support their existence.
-
-* The putative set of lncRNA are assessed for coding potential using the coding potential calculator
-(CPC). Any lncRNA that are annotated as 'coding' in this analysis are removed from downstream analysis.
-
-* In order to assess expression levels between genes within samples i.e. protein coding vs. lncRNA, it
-is required that the FPKM estimation be made on a complete geneset. Therefore the lncRNA geneset is 
-concatenated to the protein coding gene set for use in downstream analysis.
+* Combine coding and non-coding gene sets
+   In order to assess expression levels between genes within samples i.e. protein coding vs. lncRNA, it
+   is required that the FPKM estimation be made on a complete geneset. Therefore the lncRNA geneset is 
+   concatenated to the protein coding gene set for use in downstream analysis.
 
 
 Usage
@@ -111,28 +117,27 @@ pipeline using cufflinks.
 Files are supplied in the working directory. They are specified in the configuration file
 and refer to:
 
-A coding geneset that id the output from a cufflinks transcript assembly
+* A coding geneset that is the output from a cufflinks transcript assembly.
 
-abinitio_coding = <name>.gtf.gz 
+    abinitio_coding = :file:`<name>.gtf.gz` 
 
-An abinitio geneset that is the output from a cufflinks transcript assembly. This is to be used
-for lncRNA prediction. (note that this may be different to the abinitio_coding geneset). 
+* An abinitio geneset that is the output from a cufflinks transcript assembly. This is to be used for lncRNA prediction. 
+  (note that this may be different to the abinitio_coding geneset). 
 
-abinitio_lncrna = <name>.gtf.gz
+    abinitio_lncrna = :file:`<name>.gtf.gz`
 
-A reference geneset containing known protein coding transcripts. This is used for comparisons in the
-report.
+* A reference geneset containing known protein coding transcripts. This is used for comparisons in the report.
 
-refcoding = <name>.gtf.gz
+    refcoding = :file:`<name>.gtf.gz`
 
-A reference geneset from ensembl with all known expressed transcripts
+* A reference geneset from ensembl with all known expressed transcripts
 
-reference = <name>.gtf.gz
+    reference = :file:`<name>.gtf.gz`
 
-An optional geneset containing previously identified lncRNA. If this is not supplied then the pipeline uses
-a reference non-codihng set from the ensembl reference.
+* An optional geneset containing previously identified lncRNA. If this is not supplied then the pipeline uses
+  a reference non-coding set from the ensembl reference.
 
-previous = <name>.gtf.gz
+    previous = :file:`<name>.gtf.gz`
 
 
 Pipeline output
@@ -140,22 +145,25 @@ Pipeline output
 
 The pipeline produces three main files of interest:
 
++------------------------------------+--------------------------------------------------+
+|           Filename                 |             Description                          |
++------------------------------------+--------------------------------------------------+
+|                                    |Ab initio set of lncRNA transcripts filtered for  |
+|:file:`lncrna_final.class.gtf.gz`   |single exon status (excl.previously observed) and |
+|                                    |classified relative to protein coding transcripts |
++------------------------------------+--------------------------------------------------+
+|                                    |Ab inito assembled protein coding transcipts - for|
+|:file:`<name>_coding.gtf.gz`        |a comparable set to lncRNA transcripts            |
+|                                    |                                                  |
++------------------------------------+--------------------------------------------------+
+|                                    |Combined set from the two sets above. to be used  |
+|:file:`transcripts.gtf.gz`          |for downstream FPKM estimation and differential   |
+|                                    |expression analysis                               |
++------------------------------------+--------------------------------------------------+
 
-+--------------------------+--------------------------------------------------+
-|                          |Ab initio set of lncRNA transcripts filtered for  |
-|lncrna_final.class.gtf.gz |single exon status (excl.previously observed) and |
-|                          |calssified relative to protein coding transcripts |
-+--------------------------+--------------------------------------------------+
-|                          |Ab inito assembled protein coding transcipts - for|
-|abinitio_coding.gtf.gz    |a comparable set to lncRNA transcripts            |
-|                          |                                                  |
-+--------------------------+--------------------------------------------------+
-|                          |Combined set from the two sets above. to be used  |
-|transcripts.gtf.gz        |for downstream FPKM estimation and differential   |
-|                          |expression analysis                               |
-+--------------------------+--------------------------------------------------+
 
-
+code
+=====
 '''
 
 ##########################################################
@@ -187,7 +195,13 @@ import Pipeline as P
 # get parameters
 P.getParameters( 
     ["%s.ini" % __file__[:-len(".py")]
-     ,"pipeline.ini"])
+     ,"pipeline.ini"],
+    defaults = {"annotations_annotations_dir": "",
+                "genesets_abinitio_coding": "pruned.gtf.gz",
+                "genesets_abinitio_lncrna": "pruned.gtf.gz",
+                "genesets_reference": "reference.gtf.gz",
+                "genesets_refcoding": "refcoding.gtf.gz",
+                "genesets_previous": ""})
 
 PARAMS = P.PARAMS
 PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_annotations_dir"],
@@ -329,7 +343,6 @@ def buildLncRNAGeneSet(infiles, outfile):
     (exons) in a reference gene set.
     
     Transcripts need to have a length of at least 200 bp.
-
     '''
     PipelineLncRNA.buildLncRNAGeneSet( infiles[0], infiles[1], infiles[2], infiles[3], infiles[4], outfile, PARAMS["lncrna_min_length"] )        
                
@@ -349,7 +362,7 @@ def flagExonStatus(infile, outfile):
 ##########################################################################
 if PARAMS["genesets_previous"]:
     @transform(flagExonStatus, regex(r"(\S+)_flag.gtf.gz")
-               , add_inputs([PARAMS["genesets_previous"], "refnoncoding.gtf.gz"]), r"\1_filtered.gtf.gz")
+               , add_inputs([PARAMS["genesets_previous"], buildRefnoncodingGeneSet]), r"\1_filtered.gtf.gz")
     def buildFilteredLncRNAGeneSet(infiles, outfile):
         '''
         Creates a filtered lncRNA geneset. 
@@ -369,8 +382,19 @@ else:
 ##########################################################################
 ##########################################################################
 ##########################################################################
+@transform(buildFilteredLncRNAGeneSet, suffix(".gtf.gz"),add_inputs(PARAMS["genesets_refcoding"]), ".class.gtf.gz")
+def classifyFilteredLncRNA(infiles, outfile):
+    '''
+    classifies all lincRNA before cpc filtering to define any classes that
+    are represented in the coding set that are  filtered
+    '''
+    PipelineLncRNA.classifyLncRNAGenes(infiles[0], infiles[1], outfile, dist = PARAMS["lncrna_dist"])
+
+##########################################################################
+##########################################################################
+##########################################################################
 @follows(mkdir("fasta"))
-@transform(buildFilteredLncRNAGeneSet, regex(r"(\S+).gtf.gz"), r"fasta/\1.fasta")
+@transform(buildFilteredLncRNAGeneSet, regex(r"gtfs/(\S+).gtf.gz"), r"fasta/\1.fasta")
 def buildLncRNAFasta(infile, outfile):
     '''
     create fasta file from lncRNA geneset for testing coding
@@ -383,10 +407,10 @@ def buildLncRNAFasta(infile, outfile):
 ##########################################################################
 ##########################################################################
 ##########################################################################
-@transform(buildLncRNAFasta, regex(r"(\S+).fasta"), r"cpc/\1.cpc.result")
+@transform(buildLncRNAFasta, regex(r"fasta/(\S+).fasta"), r"cpc/\1.cpc.result")
 def runCPC(infile, outfile):
     '''
-    run coding potential calculations on lincRNA geneset
+    run coding potential calculations on lncRNA geneset
     '''
     result_table = P.snip(infile, ".fasta") + ".result"
     result_evidence = P.snip(outfile, ".result") + ".evidence"
@@ -405,12 +429,14 @@ def loadCPCResults(infile, outfile):
     load the results of the cpc analysis
     '''
     tablename = filenameToTablename(os.path.basename(infile))
-    statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s --log=%(outfile)s.log --header=transcript_id,feature,C_NC,CP_score --index=transcript_id < %(infile)s > %(outfile)s'''
+    statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s --log=%(outfile)s.log 
+                   --header=transcript_id,feature,C_NC,CP_score --index=transcript_id < %(infile)s > %(outfile)s'''
     P.run()
 
 ##########################################################################
 ##########################################################################
 ##########################################################################
+@follows(loadCPCResults)
 @transform(buildFilteredLncRNAGeneSet, regex(r"(\S+)_filtered.gtf.gz"), r"\1_final.gtf.gz")
 def buildFinalLncRNAGeneSet(infile, outfile):
     '''
@@ -490,14 +516,12 @@ def classifyLncRNA(infiles, outfile):
     antisense_downstream - transcript < 2kb from gene end on opposite strand
     sense_upstream - transcript < 2kb from tss on same strand
     sense_downstream - transcript < 2kb from gene end on same strand
-    antisense_span - start and end of transcript span and extend beyond protein coding gene on opposite strand
-    sense_span - start and end of transcript span and extend beyond protein coding gene on same strand
-    intergenic - >2kb from anyt protein coding gene
+     intergenic - >2kb from anyt protein coding gene
     intronic - overlaps protein coding gene intron on same strand
     antisense_intronic - overlaps protein coding intron on opposite strand
     '''
     
-    PipelineLncRNA.classifyLncRNA(infiles[0], infiles[1], outfile)
+    PipelineLncRNA.classifyLncRNAGenes(infiles[0], infiles[1], outfile, dist = PARAMS["lncrna_dist"])
 
 ##########################################################################
 ##########################################################################
@@ -507,7 +531,7 @@ def loadLncRNAClass(infile, outfile):
     '''
     load the lncRNA classifications
     '''
-    tablename = filenameToTablename(P.snip(infile, ".gtf.gz"))
+    tablename = os.path.basename(filenameToTablename(P.snip(infile, ".gtf.gz")))
     
     # just load each transcript with its classification
     temp = P.getTempFile()
@@ -545,6 +569,7 @@ def buildFullGeneSet(infiles, outfile):
          , buildRefnoncodingGeneSet
          , buildFinalLncRNAGeneSet
          , loadGeneSetStats
+         , loadLncRNAClass
          , classifyLncRNA
          , buildFullGeneSet)
 def GeneSets():

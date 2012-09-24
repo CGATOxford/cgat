@@ -19,6 +19,7 @@ Contents:
    pipeline/LncRNACount.rst
    pipeline/Cpc.rst
    pipeline/Classification.rst   
+   pipeline/Novelty.rst
 
 Errors:
 
