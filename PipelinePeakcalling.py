@@ -1376,6 +1376,7 @@ def summarizeSICER( infiles, outfile ):
 
     map_targets = [
         ("Window average: (\d+)", "window_mean",()),
+        ("Fragment size: (\d+) ", "fragment_size", ()),
         ("Minimum num of tags in a qualified window:  (\d+)", "window_min",()),
         ("The score threshold is:  (\d+)", "score_threshold",()),
         ("Total number of islands:  (\d+)","total_islands", ()),
@@ -1385,21 +1386,27 @@ def summarizeSICER( infiles, outfile ):
         ("Total number of control reads on islands is:  (\d+)", "control_island_reads", ()),
         ("Given significance 0.01 ,  there are (\d+) significant islands",  "significant_islands", ()) ]
 
-    mapper, mapper_header = {}, {}
+    # map regex to column
+    mapper, mapper_header, mapper2pos = {}, {}, {}
     for x,y,z in map_targets: 
         mapper[y] = re.compile( x )
         mapper_header[y] = z
+        # positions are +1 as first column in row is track
+        mapper2pos[y] = len(mapper_header)
 
     keys = [ x[1] for x in map_targets ]
 
     outs = IOTools.openFile(outfile,"w")
 
+    # build headers
     headers = []
     for k in keys:
         if mapper_header[k]:
             headers.extend( ["%s_%s" % (k,x) for x in mapper_header[k] ])
         else:
             headers.append( k )
+    headers.append("shift")
+
     outs.write("track\t%s" % "\t".join(headers) + "\n" )
 
     for infile in infiles:
@@ -1426,10 +1433,12 @@ def summarizeSICER( infiles, outfile ):
                     str(val), mapper_header[key])
                 v = "\t".join( val )
             row.append(v)
-        outs.write("\t".join(row) + "\n" )
+        fragment_size = int(row[mapper2pos["fragment_size"]])
+        shift = fragment_size / 2
+        
+        outs.write("%s\t%i\n" % ("\t".join(row), shift) )
 
     outs.close()
-
 
 ############################################################
 ############################################################
@@ -1515,6 +1524,77 @@ def loadPeakRanger( infile, outfile, bamfile, controlfile = None ):
                 > %(outfile)s'''
     
     P.run()
+
+
+############################################################
+def summarizePeakRanger( infiles, outfile ):
+    '''summarize peakranger results.'''
+
+    def __get( line, stmt ):
+        x = line.search(stmt )
+        if x: return x.groups() 
+
+    map_targets = [
+        ("# FDR cut off:\s*(\S+)", "fdr_cutoff",()),
+        ("# P value cut off:\s*(\S+)", "pvalue_cutoff",()),
+        ("# Read extension length:\s*(\d+)", "fragment_size", () ),
+        ("# Smoothing bandwidth:\s*(\d+)", "smoothing_bandwidth", () ),
+        ]
+
+    # map regex to column
+    mapper, mapper_header, mapper2pos = {}, {}, {}
+    for x,y,z in map_targets: 
+        mapper[y] = re.compile( x )
+        mapper_header[y] = z
+        # positions are +1 as first column in row is track
+        mapper2pos[y] = len(mapper_header)
+
+    keys = [ x[1] for x in map_targets ]
+
+    outs = IOTools.openFile(outfile,"w")
+
+    # build headers
+    headers = []
+    for k in keys:
+        if mapper_header[k]:
+            headers.extend( ["%s_%s" % (k,x) for x in mapper_header[k] ])
+        else:
+            headers.append( k )
+    headers.append("shift")
+
+    outs.write("track\t%s" % "\t".join(headers) + "\n" )
+
+    for infile in infiles:
+        results = collections.defaultdict(list)
+        with IOTools.openFile( infile + "_details" ) as f:
+            for line in f:
+                if "#region_chr" in line: break
+                for x,y in mapper.items():
+                    s = y.search( line )
+                    if s: 
+                        results[x].append( s.groups()[0] )
+                        break
+                
+        row = [ P.snip( os.path.basename(infile), ".peakranger" ) ]
+        for key in keys:
+            val = results[key]
+            if len(val) == 0: v = "na"
+            else: 
+                c = len(mapper_header[key])
+                if c >= 1: assert len(val) == c, "key=%s, expected=%i, got=%i, val=%s, c=%s" %\
+                   (key,
+                    len(val),
+                    c,
+                    str(val), mapper_header[key])
+                v = "\t".join( val )
+            row.append(v)
+        fragment_size = int(row[mapper2pos["fragment_size"]])
+        shift = fragment_size / 2
+        
+        outs.write("%s\t%i\n" % ("\t".join(row), shift) )
+
+    outs.close()
+
 
 ############################################################
 ############################################################

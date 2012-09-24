@@ -55,11 +55,9 @@ peakranger_
     PeakRanger is a multi-purpose, ultrafast ChIP Seq peak caller. It is used in the modENCODE project and included in the iPlant pipeline system.
     PeakRanger v1.02 was developed in Dr.Lincoln Stein's lab at OICR and is now in continual development at Dr.Helen Hobbs's lab of the McDermott Center of UT Southwestern.
 
-
 Peak callers have different strengths and weaknesses. Some might work well on broad peaks such as some histone
 marks, others work better for narrow, sharp peaks. Many callers these days attempt to call both types of peaks.
 This pipeline implements the following nomenclature for peaks:
-
 
 .. glossary::
 
@@ -77,6 +75,9 @@ This pipeline implements the following nomenclature for peaks:
       
    peak
       Within a :term:`region` or :term:`summit` the position with the highest base coverage.
+
+The pipeline computes some basic measures to validate peak calling. In order to fully annotate
+peaks, use :doc:`pipeline_intervals`.
 
 Usage
 =====
@@ -305,7 +306,7 @@ def getBamFiles( infile, suffix ):
     '''return associated bamfiles with infiles.'''
     track = P.snip( os.path.basename(infile), suffix)
     bamfile = P.snip( os.path.basename(infile), suffix ) + ".call.bam"
-    assert os.path.exists( bamfile )
+    assert os.path.exists( bamfile ), "bamfile %s does not exist" % bamfile
 
     controlfile = "%s.call.bam" % getControl(Sample(track)).asFile()
     if not os.path.exists( controlfile ):
@@ -682,6 +683,22 @@ def loadPeakRanger( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
+@merge( callPeaksWithPeakRanger, "peakranger.summary" )
+def summarizePeakRanger( infiles, outfile ):
+    '''summarize peakranger results.'''
+    PipelinePeakcalling.summarizePeakRanger( infiles, outfile )
+
+############################################################
+############################################################
+############################################################
+@transform( summarizePeakRanger, suffix(".summary"), "_summary.load" )
+def loadPeakRangerSummary( infile, outfile ):
+    '''load sicer summary.'''
+    P.load( infile, outfile, "--index=track" )
+
+############################################################
+############################################################
+############################################################
 ## PeakRanger
 ############################################################
 @follows( mkdir("spp.dir"), normalizeBAM )
@@ -739,6 +756,7 @@ mapToCallingTargets = { 'macs': loadMACS,
 mapToSummaryTargets = { 'macs': [loadMACSSummary, loadMACSSummaryFDR],
                         'sicer': [loadSICERSummary],
                         'spp' : [loadSPPSummary],
+                        'peakranger' : [loadPeakRangerSummary],
                         }
 
 for x in P.asList( PARAMS["peakcallers"]):
@@ -757,8 +775,8 @@ def calling(): pass
 ############################################################
 @follows( mkdir( os.path.join( PARAMS["exportdir"], "bedfiles" ) ) )
 @transform( CALLINGTARGETS, regex("(.*)/(.*).load"), 
-            (os.path.join( PARAMS["exportdir"], "bedfiles", r"\2.regions.bed" ),
-             os.path.join( PARAMS["exportdir"], "bedfiles", r"\2.summits.bed" ) ) )
+            (os.path.join( PARAMS["exportdir"], "bedfiles", r"\2.regions.bed.gz" ),
+             os.path.join( PARAMS["exportdir"], "bedfiles", r"\2.summits.bed.gz" ) ) )
 def exportIntervalsAsBed( infile, outfiles ):
     '''export all intervals as bed files.'''
 
@@ -774,6 +792,72 @@ def exportIntervalsAsBed( infile, outfiles ):
     else:
         E.warn( "no table %s - empty bed file output" % tablename )
         P.touch( outfile_summits )
+
+###################################################################
+###################################################################
+###################################################################
+# Targets for the annotation of intervals.
+###################################################################
+@split( exportIntervalsAsBed, os.path.join( PARAMS["exportdir"], "bedfiles", "*.bed.gz" ) )
+def flattenBedFiles( infile, outfile ):
+    '''dummy target - merge all files in exportIntervalsAsBed'''
+
+
+def getPeakShift( track, method ):
+    '''return peak shift for track and method.'''
+    dbh = connect()
+    result = Database.executewait( dbh, "SELECT shift FROM %(method)s_summary where track = '%(track)s'" % locals())
+    return result.fetchone()[0]
+
+###################################################################
+###################################################################
+###################################################################
+@follows( mkdir( "peakshapes.dir" ) )
+@transform( flattenBedFiles,
+            regex(".*/(.*).bed.gz"),
+            r"peakshapes.dir/\1.peakshape.tsv.gz" )
+def buildPeakShapeTable( infile, outfile ):
+    '''build a table with peak shape parameters.'''
+    
+    to_cluster = True
+
+    # compute suffix (includes method name)
+    track, method, section = re.match( "(.*)_(.*)\.(.*).bed.gz", os.path.basename(infile) ).groups()
+    
+    suffix = "_%s.%s.bed.gz" % (method, section)
+    bamfile, controlfile = getBamFiles( infile, suffix )
+   
+    shift = getPeakShift( track, method )
+
+    if shift:
+        E.info( "applying read shift %i for track %s" % (shift, track ) )
+
+    options = []
+    if controlfile:
+        options.append( "--control-file=%s" % controlfile )
+    options = " ".join( options )
+
+    statement = '''python %(scriptsdir)s/bam2peakshape.py
+                      --window-size=%(peakshape_window_size)i
+                      --bin-size=%(peakshape_bin_size)i
+                      --output-filename-pattern="%(outfile)s.%%s"
+                      --force
+                      --shift=%(shift)i
+                      --sort=peak-height
+                      --sort=peak-width
+                      %(options)s
+                      --log=%(outfile)s.log
+                      %(bamfile)s %(infile)s
+                   | gzip
+                   > %(outfile)s
+                '''
+    P.run()
+
+###################################################################
+@transform( buildPeakShapeTable, suffix(".tsv.gz"), ".load" )
+def loadPeakShapeTable( infile, outfile ):
+    '''load peak shape information.'''
+    P.load( infile, outfile, "--ignore-column=bins --ignore-column=counts --allow-empty" )
 
 ###################################################################
 @follows( calling, exportIntervalsAsBed )

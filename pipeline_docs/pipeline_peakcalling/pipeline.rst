@@ -18,13 +18,13 @@ Contents:
    pipeline/Methods.rst
    pipeline/Status.rst
    pipeline/IntervalsRegions.rst
-   pipeline/IntervalsPeaks.rst
+   pipeline/IntervalsSummits.rst
    pipeline/Callers.rst
-
+   pipeline/Peaks.rst	
 
 ..   pipeline/Mapping.rst
 ..   pipeline/Reproducibility.rst
-..   pipeline/Peaks.rst	
+
 ..   pipeline/Binding.rst
 ..   pipeline/IntervalLists.rst
 ..   pipeline/Correlations.rst

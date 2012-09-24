@@ -46,6 +46,9 @@ If --shift or --extend are given, the coverage is computed by shifting read
 alignment positions upstream for positive strand reads or downstream for negative
 strand reads and extend them by a fixed amount. 
 
+For RNASEQ data it might be best to run genomeCoverageBed directly on the 
+bam file.
+
 Usage
 -----
 
