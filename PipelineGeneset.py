@@ -983,7 +983,7 @@ def buildGenomicFunctionalAnnotation( gtffile, dbh ):
     
     to_cluster = True
 
-    territories_file = infiles[0]
+    territories_file = gtffile
 
     outfile_bed, outfile_tsv = outfiles
 
