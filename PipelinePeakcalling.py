@@ -1103,7 +1103,9 @@ def loadMACS( infile, outfile, bamfile, controlfile = None ):
 
     if controlfile:
         control = "--control-bam-file=%(controlfile)s --control-offset=%(shift)i" % locals()
-        
+    else:
+        control = ""
+
     statement = '''python %(scriptsdir)s/bed2table.py 
                            --counter=peaks
                            --bam-file=%(bamfile)s
@@ -1449,7 +1451,9 @@ def runPeakRanger( infile, outfile, controlfile):
     
     assert controlfile != None, "peakranger requires a control"
 
-    statement = '''ranger --data %(infile)s 
+    statement = '''peakranger 
+               %(peakranger_mode)s
+              --data %(infile)s 
               --control %(controlfile)s
               --output %(outfile)s
               --format bam
@@ -1458,8 +1462,7 @@ def runPeakRanger( infile, outfile, controlfile):
               --ext_length %(peakranger_extension_length)i
               --delta %(peakranger_delta)f
               --bandwidth %(peakranger_bandwidth)i
-              --mode %(peakranger_mode)s
-              -t %(peakranger_threads)i
+              --thread %(peakranger_threads)i
               %(peakranger_options)s
               >& %(outfile)s
     '''
@@ -1483,7 +1486,7 @@ def loadPeakRanger( infile, outfile, bamfile, controlfile = None ):
         control = "--control-bam-file=%(controlfile)s --control-offset=%(offset)i" % locals()
         
     bedfile = infile + "_details"
-    headers="contig,start,end,interval_id,summits,pvalue,qvalue,strand"
+    headers="contig,start,end,nearby_genes,interval_id,summits,pvalue,qvalue,strand,treads,creads"
     tablename = P.toTable( outfile ) + "_regions"
     statement = '''python %(scriptsdir)s/bed2table.py 
                            --counter=peaks
