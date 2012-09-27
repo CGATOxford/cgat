@@ -153,6 +153,8 @@ path:
 +--------------------+-------------------+------------------------------------------------+
 |tophat_             |>=1.4.0            |read mapping                                    |
 +--------------------+-------------------+------------------------------------------------+
+|gsnap_              |>=2012.07.20       |read mapping                                    |
++--------------------+-------------------+------------------------------------------------+
 |samtools            |>=0.1.16           |bam/sam files                                   |
 +--------------------+-------------------+------------------------------------------------+
 |bedtools            |                   |working with intervals                          |
@@ -195,10 +197,10 @@ Glossary
    bowtie
       bowtie_ - a read mapper
 
-
    
 .. _tophat: http://tophat.cbcb.umd.edu/
 .. _bowtie: http://bowtie-bio.sourceforge.net/index.shtml
+.. _gsnap: http://research-pub.gene.com/gmap/
 .. _bamstats: http://www.agf.liv.ac.uk/454/sabkea/samStats_13-01-2011
 
 Code
@@ -730,6 +732,20 @@ def buildJunctions( infile, outfile ):
                    rm -f %(outfile)s.tmp; '''
     P.run()
 
+#########################################################################
+#########################################################################
+#########################################################################
+@active_if( SPLICED_MAPPING )
+@transform( buildCodingGeneSet, suffix(".gtf.gz"), ".splicesites.iit")
+def buildGSNAPSpliceSites( infile, outfile ):
+    '''build file with know splice sites for GSNAP.
+    '''
+    
+    outfile = P.snip( outfile, ".iit" )
+    statement = '''
+    zcat %(infile)s | gtf_splicesites | iit_store -o %(outfile)s > %(outfile)s.log'''
+    
+    P.run()
 
 #########################################################################
 #########################################################################
@@ -906,6 +922,32 @@ def loadTophatStats( infile, outfile ):
 ############################################################
 ############################################################
 @active_if( SPLICED_MAPPING )
+@follows( mkdir("gsnap.dir" ) )
+@transform( SEQUENCEFILES,
+            SEQUENCEFILES_REGEX,
+            add_inputs( buildGSNAPSpliceSites ), 
+            r"gsnap.dir/\1.gsnap.bam" )
+def mapReadsWithGSNAP( infiles, outfile ):
+    '''map reads from .fastq or .sra files.
+
+    '''
+
+    infile, infile_splices = infiles
+    job_options= "-pe dedicated %i -R y" % PARAMS["gsnap_threads"]
+
+    to_cluster = True
+    m = PipelineMapping.GSNAP( executable = P.substituteParameters( **locals() )["gsnap_executable"] )
+    
+    if PARAMS["gsnap_include_known_splice_sites"]:
+        gsnap_options = PARAMS["gsnap_options"] + " --use-splicing=%(infile_splices)s " % locals()
+
+    statement = m.build( (infile,), outfile ) 
+    P.run()
+
+############################################################
+############################################################
+############################################################
+@active_if( SPLICED_MAPPING )
 @follows( mkdir("transcriptome.dir" ) )
 @transform( SEQUENCEFILES,
             SEQUENCEFILES_REGEX,
@@ -1002,6 +1044,7 @@ mapToMappingTargets = { 'tophat': mapReadsWithTophat,
                         'bwa': mapReadsWithBWA,
                         'stampy': mapReadsWithStampy,
                         'transcriptome': mapReadsWithBowtieAgainstTranscriptome,
+                        'gsnap' : mapReadsWithGSNAP,
                         }
 for x in P.asList( PARAMS["mappers"]):
     MAPPINGTARGETS.append( mapToMappingTargets[x] )
@@ -1139,6 +1182,7 @@ def loadBAMStats( infiles, outfile ):
     E.info( "loading bam stats - summary" )
     statement = """python %(scriptsdir)s/combine_tables.py
                       --headers=%(header)s
+                      --skip-titles
                       --missing=0
                       --ignore-empty
                       --take=2
@@ -1159,7 +1203,7 @@ def loadBAMStats( infiles, outfile ):
         tname = "%s_%s" % (tablename, suffix)
         
         statement = """python %(scriptsdir)s/combine_tables.py
-                      --header=%(header)s
+                      --headers=%(header)s
                       --skip-titles
                       --missing=0
                       --ignore-empty
