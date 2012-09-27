@@ -110,7 +110,7 @@ def getRepeatsFromUCSC( dbhandle, repclasses, outfile ):
     for table in tables:
 
         cc = dbhandle.cursor()
-        sql = """SELECT genoName, 'repeat', 'exon', genoStart+1, genoEnd, strand, '.', '.', 
+        sql = """SELECT genoName, 'repeat', 'exon', genoStart+1, genoEnd, '.', strand, '.', 
                       CONCAT('class \\"', repClass, '\\"; family \\"', repFamily, '\\"; repName \\"', repName, '\\";' )
                FROM %(table)s"""
         

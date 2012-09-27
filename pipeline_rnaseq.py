@@ -2537,11 +2537,11 @@ def classifyTranscripts( infiles, outfile ):
     to_cluster = USECLUSTER
     
     infile, reference = infiles
-
+    classifier=PARAMS['gtf2table_classifier']
     statement = '''
     zcat %(infile)s
     | python %(scriptsdir)s/gtf2table.py
-           --counter=classifier-rnaseq 
+           --counter=%(classifier)s 
            --reporter=transcripts
            --filename-gff=%(reference)s
            --log=%(outfile)s.log
@@ -2563,11 +2563,11 @@ def classifyTranscriptsCuffcompare( infiles, outfile ):
     to_cluster = USECLUSTER
     
     infile, reference = infiles
-
+    classifier=PARAMS['gtf2table_classifier']
     statement = '''
     zcat %(infile)s.combined.gtf.gz
     | python %(scriptsdir)s/gtf2table.py
-           --counter=classifier-rnaseq 
+           --counter=%(classifier)s 
            --reporter=transcripts
            --filename-gff=%(reference)s
            --log=%(outfile)s.log
