@@ -502,7 +502,7 @@ def createView( dbhandle, tables, tablename, outfile, view_type = "TABLE" ):
         tracks.append( d.fetchone()[0] )
     
     E.info( "creating %s from the following tables: %s" % (tablename, str(zip( tablenames, tracks ))))
-    if min( tracks) != max(tracks):
+    if min(tracks) != max(tracks):
         raise ValueError("number of rows not identical - will not create view" )
 
     from_statement = " , ".join( [ "%s as t%i" % (y[0],x) for x,y in enumerate(tables) ] )

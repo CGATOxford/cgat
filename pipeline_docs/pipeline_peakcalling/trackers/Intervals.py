@@ -343,8 +343,8 @@ class PeakShapeTracker( Tracker ):
     Only 1000 rows are returned.
     '''
     
-    tracks = [ os.path.basename( x )[:-len(".peakshape.tsv.gz")] \
-                   for x in glob.glob( os.path.join( DATADIR , "peakshapes.dir", "*.regions.peakshape.tsv.gz" )) ][28]
+    tracks = [ os.path.basename( x )[:-len(".peakshape.tsv.gz")] 
+                   for x in glob.glob( os.path.join( DATADIR , "peakshapes.dir", "*.regions.peakshape.tsv.gz" )) ]
     slices = ["peak_height", "peak_width" ]
     
     def __call__(self, track, slice = None):
@@ -355,13 +355,15 @@ class PeakShapeTracker( Tracker ):
         matrix, rownames, colnames = IOTools.readMatrix( IOTools.openFile( fn ))
 
         nrows = len(rownames)
-        if nrows == 0: return
+        if nrows < 2: return
 
         if nrows > 1000:
             take = numpy.array( numpy.floor( numpy.arange( 0, nrows, nrows / 1000 ) ), dtype = int )
             rownames = [ rownames[x] for x in take ]
             matrix = matrix[ take ]
             
+        
+
         return odict( (('matrix', matrix),
                        ('rows', rownames),
                        ('columns', colnames)) )

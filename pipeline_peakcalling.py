@@ -464,6 +464,38 @@ else:
 ####################################################################
 ## Peak calling
 ####################################################################
+@follows( normalizeBAM )
+@files( [ ("%s.call.bam" % (x.asFile()), 
+           "%s.data_quality" % x.asFile() ) for x in TRACKS ] )
+def checkDataQuality( infile, outfile ):
+    '''uses peakranger to check data quality.'''
+    
+    controlfile = "%s.call.bam" % getControl(Sample(track)).asFile()
+
+    if not os.path.exists( controlfile ):
+        L.warn( "controlfile '%s' for track '%s' not found " % (controlfile, track ) )
+        P.touch( outfile )
+        return
+
+    to_cluster = True
+    statement = '''peakranger nr --format bam %(infile)s %(controlfile)s > %(outfile)s'''
+    P.run()
+
+@follows( normalizeBAM )
+@files( [ ("%s.call.bam" % (x.asFile()), 
+           "%s.library_complexity" % x.asFile() ) for x in TRACKS ] )
+def checkLibraryComplexity( infile, outfile ):
+    '''uses peakranger to check library complexity.'''
+    
+    to_cluster = True
+    statement = '''peakranger lc --format bam %(infile)s > %(outfile)s'''
+    P.run()
+
+####################################################################
+####################################################################
+####################################################################
+## Peak calling
+####################################################################
 @follows( mkdir("macs.dir"), normalizeBAM )
 @files( [ ("%s.call.bam" % (x.asFile()), 
            "macs.dir/%s.macs" % x.asFile() ) for x in TRACKS ] )
@@ -477,7 +509,7 @@ def callPeaksWithMACS( infile, outfile ):
     controlfile = "%s.call.bam" % getControl(Sample(track)).asFile()
 
     if not os.path.exists( controlfile ):
-        L.warn( "no controlfile '%s' for track '%s' not found " % (controlfile, track ) )
+        L.warn( "controlfile '%s' for track '%s' not found " % (controlfile, track ) )
         controlfile = None
 
     PipelinePeakcalling.runMACS( infile, outfile, controlfile)
