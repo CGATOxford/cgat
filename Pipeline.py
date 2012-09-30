@@ -502,7 +502,7 @@ def createView( dbhandle, tables, tablename, outfile, view_type = "TABLE" ):
         tracks.append( d.fetchone()[0] )
     
     E.info( "creating %s from the following tables: %s" % (tablename, str(zip( tablenames, tracks ))))
-    if min( tracks) != max(tracks):
+    if min(tracks) != max(tracks):
         raise ValueError("number of rows not identical - will not create view" )
 
     from_statement = " , ".join( [ "%s as t%i" % (y[0],x) for x,y in enumerate(tables) ] )
@@ -534,7 +534,7 @@ def snip( filename, extension = None, alt_extension = None):
     if extension: 
         if filename.endswith( extension ):
             return filename[:-len(extension)]
-        elif filename.endswith( alt_extension ):
+        elif alt_extension and filename.endswith( alt_extension ):
             return filename[:-len(alt_extension)]
         else:
             raise ValueError("'%s' expected to end in '%s'" % (filename, extension))
@@ -1046,7 +1046,6 @@ def run_report( clean = True):
     '''run sphinxreport.'''
 
     dirname, basename = os.path.split( getCaller().__file__ )
-    print dirname
 
     docdir = os.path.join( dirname, "pipeline_docs", snip( basename, ".py" ) )
     themedir = os.path.join( dirname, "pipeline_docs", "themes")

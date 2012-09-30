@@ -37,6 +37,10 @@ This script reads several tab-separated tables and joins them into a single one.
 Usage
 -----
 
+The option ``--headers`` sets the column titles explicitely. Add ``--skip-titles`` if you want to avoid
+echoing the original title in the input files.
+
+
 Example::
 
    python combine_tables.py --help

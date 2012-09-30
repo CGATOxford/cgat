@@ -83,6 +83,7 @@ class Bed(object):
 
     def __getattr__(self, key ):
         return self.mFields[self.map_key2field[key]]
+        
 
     @property
     def columns(self):

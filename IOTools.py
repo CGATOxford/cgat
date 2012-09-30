@@ -288,6 +288,7 @@ def readTable( file,
 
     return matrix, headers
 
+########################################################################
 def readMatrix( infile, dtype = numpy.float ):
     '''read a numpy matrix from infile.
 

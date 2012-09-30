@@ -195,7 +195,7 @@ def runFastqc(infiles, outfile):
     '''convert sra files to fastq and check mapping qualities are in solexa format. 
     Perform quality control checks on reads from .fastq files.'''
     to_cluster = USECLUSTER
-    m = PipelineMapping.FastQc()
+    m = PipelineMapping.FastQc(nogroup = PARAMS["readqc_no_group"] )
     statement = m.build((infiles,), outfile) 
     P.run()
 

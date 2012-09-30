@@ -1500,82 +1500,90 @@ class ClassifierRNASeqNew(Counter):
 
     # priority of classifications to select best match
     priority = ( ( 's', "complete", ),
-				 ( 's', "fragment", ),
-				 ( 's', "extended", ),
-				 ( 's', "extended-fragment", ),
-				 ( 's', "retained-intron", ),
-				 ( 's', "retained-intron-fragment", ),
-				 ( 's', "skipped-exon" ,),
-				 ( 's', "novel-exon", ),
-				 ( 's', "alternate-5prime", ),
-				 ( 's', "alternate-3prime", ),
-				 ( 's', "alternate-exon", ),
-				 ( 's', "exon-boundary-change", ),
-				 ( 's', "skipped-exon-fragment", ),
-				 ( 's', "novel-exon-fragment", ),
-				 ( 's', "alternate-5prime-fragment", ),
-				 ( 's', "alternate-3prime-fragment", ),
-				 ( 's', "alternate-exon-fragment", ),
-				 ( 's', "exon-boundary-change-fragment", ),
-				 ( 's', "alternative", ),
-				 ( 's', "unknown", ),
-				 ( 's', "utr5", ),
-				 ( 's', "utr3", ),
-				 ( 's', "intronic", ),
-				 ( 's', "flank5", ),
-				 ( 's', "flank3", ),
-				 ( 's', "intergenic", ),
-				 ( 'n', "complete", ),
-				 ( 'n', "fragment", ),
-				 ( 'n', "extended-fragment", ),
-				 ( 'n', "retained-intron", ),
-				 ( 'n', "retained-intron-fragment", ),
-				 ( 'n', "skipped-exon" ,),
-				 ( 'n', "novel-exon", ),
-				 ( 'n', "alternate-5prime", ),
-				 ( 'n', "alternate-3prime", ),
-				 ( 'n', "alternate-exon", ),
-				 ( 'n', "exon-boundary-change", ),
-				 ( 'n', "skipped-exon-fragment", ),
-				 ( 'n', "novel-exon-fragment", ),
-				 ( 'n', "alternate-5prime-fragment", ),
-				 ( 'n', "alternate-3prime-fragment", ),
-				 ( 'n', "alternate-exon-fragment", ),
-				 ( 'n', "exon-boundary-change-fragment"),
-				 ( 'n', "alternative", ),
-				 ( 'n', "unknown", ),
-				 ( 'n', "utr5", ),
-				 ( 'n', "utr3", ),
-				 ( 'n', "intronic", ),
-				 ( 'n', "flank5", ),
-				 ( 'n', "flank3", ),
-				 ( 'n', "flank", ),
-				 ( 'n', "intergenic", ),
-				 ( 'a', "complete", ),
-				 ( 'a', "fragment", ),
-				 ( 'a', "extended-fragment", ),
-				 ( 'a', "retained-intron", ),
-				 ( 'a', "retained-intron-fragment", ),
-				 ( 'a', "skipped-exon" ,),
-				 ( 'a', "novel-exon", ),
-				 ( 'a', "alternate-5prime", ),
-				 ( 'a', "alternate-3prime", ),
-				 ( 'a', "alternate-exon", ),
-				 ( 'a', "exon-boundary-change", ),
-				 ( 'a', "skipped-exon-fragment", ),
-				 ( 'a', "novel-exon-fragment", ),
-				 ( 'a', "alternate-5prime-fragment", ),
-				 ( 'a', "alternate-3prime-fragment", ),
-				 ( 'a', "alternate-exon-fragment", ),
-				 ( 'a', "exon-boundary-change-fragment"),
-				 ( 'a', "alternative", ),
-				 ( 'a', "unknown", ),
-				 ( 'a', "utr5", ),
-				 ( 'a', "utr3", ),
-				 ( 'a', "intronic", ),
-				 ( 'a', "flank5", ),
-				 ( 'a', "flank3", ),     
-				 ( 'a', "intergenic", ) )
+		 ( 's', "fragment", ),
+		 ( 's', "extended", ),
+		 ( 's', "extended-fragment", ),
+		 ( 's', "retained-intron", ),
+		 ( 's', "retained-intron-fragment", ),
+		 ( 's', "exon-boundary-change", ),
+		 ( 's', "alternate-5prime", ),
+		 ( 's', "alternate-3prime", ),
+		 ( 's', "novel-intron",),
+		 ( 's', "skipped-exon" ,),
+		 ( 's', "novel-exon", ),
+		 ( 's', "alternate-exon", ),
+		 ( 's', "exon-boundary-change-fragment", ),
+		 ( 's', "alternate-5prime-fragment", ),
+		 ( 's', "alternate-3prime-fragment", ),
+		 ( 's', "novel-intron-fragment",),
+		 ( 's', "skipped-exon-fragment", ),
+		 ( 's', "novel-exon-fragment", ),
+		 ( 's', "alternate-exon-fragment", ),
+		 ( 's', "alternative", ),
+		 ( 's', "unknown", ),
+		 ( 's', "utr5", ),
+		 ( 's', "utr3", ),
+		 ( 's', "intronic", ),
+		 ( 's', "flank5", ),
+		 ( 's', "flank3", ),
+		 ( 's', "intergenic", ),
+		 ( 'n', "complete", ),
+		 ( 'n', "fragment", ),
+		 ( 'n', "extended", ),
+		 ( 'n', "extended-fragment", ),
+		 ( 'n', "retained-intron", ),
+		 ( 'n', "retained-intron-fragment", ),
+		 ( 'n', "exon-boundary-change", ),
+		 ( 'n', "alternate-5prime", ),
+		 ( 'n', "alternate-3prime", ),
+		 ( 'n', "novel-intron",),
+		 ( 'n', "skipped-exon" ,),
+		 ( 'n', "novel-exon", ),
+		 ( 'n', "alternate-exon", ),
+		 ( 'n', "exon-boundary-change-fragment", ),
+		 ( 'n', "alternate-5prime-fragment", ),
+		 ( 'n', "alternate-3prime-fragment", ),
+		 ( 'n', "novel-intron-fragment",),
+		 ( 'n', "skipped-exon-fragment", ),
+		 ( 'n', "novel-exon-fragment", ),
+		 ( 'n', "alternate-exon-fragment", ),
+		 ( 'n', "alternative", ),
+		 ( 'n', "unknown", ),
+		 ( 'n', "utr5", ),
+		 ( 'n', "utr3", ),
+		 ( 'n', "intronic", ),
+		 ( 'n', "flank5", ),
+		 ( 'n', "flank3", ),
+		 ( 'n', "flank", ),
+		 ( 'n', "intergenic", ),
+		 ( 'a', "complete", ),
+		 ( 'a', "fragment", ),
+		 ( 'a', "extended", ),
+		 ( 'a', "extended-fragment", ),
+		 ( 'a', "retained-intron", ),
+		 ( 'a', "retained-intron-fragment", ),
+		 ( 'a', "exon-boundary-change", ),
+		 ( 'a', "alternate-5prime", ),
+		 ( 'a', "alternate-3prime", ),
+		 ( 'a', "novel-intron",),
+		 ( 'a', "skipped-exon" ,),
+		 ( 'a', "novel-exon", ),
+		 ( 'a', "alternate-exon", ),
+		 ( 'a', "exon-boundary-change-fragment", ),
+		 ( 'a', "alternate-5prime-fragment", ),
+		 ( 'a', "alternate-3prime-fragment", ),
+		 ( 'a', "novel-intron-fragment",),
+		 ( 'a', "skipped-exon-fragment", ),
+		 ( 'a', "novel-exon-fragment", ),
+		 ( 'a', "alternate-exon-fragment", ),
+		 ( 'a', "alternative", ),
+		 ( 'a', "unknown", ),
+		 ( 'a', "utr5", ),
+		 ( 'a', "utr3", ),
+		 ( 'a', "intronic", ),
+		 ( 'a', "flank5", ),
+		 ( 'a', "flank3", ),
+		 ( 'a', "intergenic", )	 )
 
     def __init__(self, filename_gff, *args, **kwargs ):
 
@@ -1724,8 +1732,7 @@ class ClassifierRNASeqNew(Counter):
 
             included_exons = [x for x in transcript_exons if x[1] > start and x[0] < end ]
             included_transcript_introns = [x for x in transcript_introns if x[0] > start and x[1] <= end]
-            included_boundaries = sorted([ (x[0], x[0] + 1) for x in included_transcript_introns ] + 
-										 [ (x[1], x[1] + 1) for x in included_transcript_introns ])
+            included_boundaries = sorted([x for x in transcript_boundaries if x[1] > exons[0][1]  and x[1] < exons[-1][0]  ])
             shared_included_boundaries = Intervals.intersect( boundaries, included_boundaries )
             
 			# If there is a matched structure, i.e. all of the introns in the gene model are in an existing gene
@@ -1760,9 +1767,14 @@ class ClassifierRNASeqNew(Counter):
                 #there are boundaries present in the test model that are not present in the transcript 
                 #therefore there is a novel exon. Could be fragement or complete.
                 
+                #print exons[0]
+		#print transcript_exons
+		#print Intervals.calculateOverlap([exons[0]],transcript_exons)
+
                 if (Intervals.calculateOverlap([exons[0]],transcript_exons) == 0):
+                    #print "hello"
                     cls = "alternate-5prime"
-                
+                        
                     if len(Intervals.intersect([boundaries[-1]], transcript_boundaries[0:-1])) > 0 :
                     # is a fragment if the final boundary is in the transcript but isn't its final one.
                         cls = cls + "-fragment"
@@ -1775,10 +1787,25 @@ class ClassifierRNASeqNew(Counter):
                         cls = cls + "-fragment"
                     if not len(boundaries) == len(shared_included_boundaries) + 1:
                         cls = "alternative"
-                elif len(shared_boundaries) == len(transcript_boundaries) and len(shared_boundaries) < len (boundaries):
-                    cls = "novel-exon"
+                elif (len(shared_boundaries) == len(transcript_boundaries) and 
+		      len(shared_boundaries) < len (boundaries) ):
+                    
+		    novel_exons = [exon for exon in exons if Intervals.calculateOverlap([exon],transcript_exons) ==0]
+		    if len(novel_exons) == 1:
+			cls = "novel-exon"
+		    elif len(novel_exons) == 0:
+			cls = "novel-intron"
+		    else:
+			cls = "alternative"
                 else:
-                    cls = "novel-exon-fragment"
+		    
+		    novel_exons = [exon for exon in exons if Intervals.calculateOverlap([exon],transcript_exons) ==0]
+		    if len(novel_exons) == 1:
+			cls = "novel-exon-fragment"
+		    elif len(novel_exons) == 0:
+			cls = "novel-intron-fragment"
+		    else:
+			cls = "alternative"
                 
             elif approx_structure and (len(shared_included_boundaries) == len (boundaries) and 
                   len(shared_included_boundaries) < len (included_boundaries)):
@@ -1889,9 +1916,8 @@ class ClassifierRNASeqNew(Counter):
                 cls, sense = self.classify_overlap(segments, transcript_id) 
                 source = self.transcripts[transcript_id][0].source
                 gene_id = self.map_transcript2gene[transcript_id]
-                results.append( (self.mapClass2Priority[(sense,cls)], 
-                                 ( noverlap_transcripts, noverlap_genes, transcript_id, gene_id, source, cls, sense ) ) )
-        
+		results.append( (self.mapClass2Priority[(sense,cls)], 
+				 ( noverlap_transcripts, noverlap_genes, transcript_id, gene_id, source, cls, sense ) ) )
         results.sort()
         self.result = results[0][1]
 
@@ -3826,8 +3852,10 @@ def main( argv = None ):
 
     for gffs in iterator( GTF.iterator(options.stdin) ):
         cc.input += 1
-        for counter in counters: counter(gffs)
 
+	for counter in counters: counter(gffs)
+	
+	    
         skip = len( [x for x in counters if x.skip] ) == len(counters)
         if skip:
             cc.skipped += 1
