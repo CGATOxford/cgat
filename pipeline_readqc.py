@@ -163,6 +163,7 @@ import Pipeline as P
 import Fastq
 import csv2db
 import cStringIO
+import string
 
 USECLUSTER = True
 
@@ -257,28 +258,53 @@ def loadFastqc( infile, outfile ):
 #########################################################################
 ## adapter trimming
 #########################################################################
-# see http://intron.ccam.uchc.edu/groups/tgcore/wiki/013c0/Solexa_Library_Primer_Sequences.html
-ILLUMINA_ADAPTORS = { "Genomic/ChIPSeq-Adapters1-1" : "GATCGGAAGAGCTCGTATGCCGTCTTCTGCTTG",
-		      "Genomic/ChIPSeq-Adapters1-2" : "ACACTCTTTCCCTACACGACGCTCTTCCGATCT",
-		      "Genomic/ChIPSeq-PCR-1" : "AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCT",
-		      "Genomic/ChIPSeq-PCR-2" : "CAAGCAGAAGACGGCATACGAGCTCTTCCGATCT",
-		      "Genomic/ChIPSeq-Adapters1-Genomic" : "ACACTCTTTCCCTACACGACGCTCTTCCGATCT",
-		      "Paired-End-Adapters-1" : "GATCGGAAGAGCGGTTCAGCAGGAATGCCGAG",
-		      "Paired-End-Adapters-2" : "ACACTCTTTCCCTACACGACGCTCTTCCGATCT",
-		      "Paired-End-PCR-1" : "AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCT",
-		      "Paired-End-PCR-2" : "CAAGCAGAAGACGGCATACGAGATCGGTCTCGGCATTCCTGCTGAACCGCTCTTCCGATCT",
-		      "Paired-End-Sequencing-1" : "ACACTCTTTCCCTACACGACGCTCTTCCGATCT",
-		      "Paired-End-Sequencing-2" : "CGGTCTCGGCATTCCTGCTGAACCGCTCTTCCGATCT" }
+# these are the adapters and PCR primers for used in various illumina libarary preps
+# see https://cgatwiki.anat.ox.ac.uk/xwiki/bin/view/CGAT/Illumina+Sequencing#HIlluminaAdapters.html
+# currently included are primers/adapters from:
+# TruSeq DNA HT and RNA HT Sample Prep Kits; TruSeq DNA v1/v2/LT RNA v1/v2/LT and ChIP Sample Prep Kits;
+# Oligonucleotide Sequences for TruSeq Small RNA Sample Prep Kits; Oligonucleotide Sequences for Genomic DNA;
+# Oligonucleotide Sequences for the v1 and v1.5 Small RNA Sample Prep Kits; 
+# Paired End DNA Oligonucleotide Sequences; Script Seq Adapters;
+# Oligonucleotide Sequences for the Multiplexing Sample Prep Oligo Only Kits.
+ILLUMINA_ADAPTORS = { "Genomic-DNA-Adapter" : "GATCGGAAGAGCTCGTATGCCGTCTTCTGCTTG",
+                      "Genomic/Paired-End/Oligo-Only-Adapter" : "ACACTCTTTCCCTACACGACGCTCTTCCGATCT",
+                      "Genomic/TruSeq-Universal/PE/OO/ScriptSeq-Adapter/PCR-Primer" : "AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCT",
+                      "Genomic-PCR-Primer" : "CAAGCAGAAGACGGCATACGAGCTCTTCCGATCT",
+                      "Paired-End-Adapter" : "GATCGGAAGAGCGGTTCAGCAGGAATGCCGAG",
+                      "Paired-End-PCR-Primer" : "CAAGCAGAAGACGGCATACGAGATCGGTCTCGGCATTCCTGCTGAACCGCTCTTCCGATCT",
+                      "TruSeq-HT-Adapter-I5" : "AATGATACGGCGACCACCGAGATCTACACNNNNNACACTCTTTCCCTACACGACGCTCTTCCGATCT",
+                      "TruSeq-HT-Adapter-I7" : "GATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNNATCTCGTATGCCGTCTTCTGCTTG",
+                      "TruSeq-LT-Adapter-I6" : "GATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNATCTCGTATGCCGTCTTCTGCTTG",
+                      "TruSeq-Small-RNA-Adapter" : "TGGAATTCTCGGGTGCCAAGG",
+                      "TruSeq-Small-RNA-RT-Primer" : "GCCTTGGCACCCGAGAATTCCA",
+                      "TruSeq-Small-RNA-PCR-Primer" : "AATGATACGGCGACCACCGAGATCTACACGTTCAGAGTTCTACAGTCCGA",
+                      "TruSeq-Small-RNA-PCR-Primer-I6" : "CAAGCAGAAGACGGCATACGAGATNNNNNNGTGACTGGAGTTCCTTGGCACCCGAGAATTCCA",
+                      "Oligo-Only-Adapter" : "GATCGGAAGAGCACACGTCT",
+                      "Oligo-Only-PCR-Primer" : "GTGACTGGAGTTCAGACGTGTGCTCTTCCGATCT",
+                      "Oligo-Only-PCR-Primer-I7" : "CAAGCAGAAGACGGCATACGAGATNNNNNNNTGACTGGAGTTC",
+                      "Small-RNA-v1-RT-Primer" : "CAAGCAGAAGACGGCATACGA",
+                      "Small-RNA-PCR-Primer" : "AATGATACGGCGACCACCGACAGGTTCAGAGTTCTACAGTCCGA",
+                      "ScriptSeq-Adapter-I6" : "CAAGCAGAAGACGGCATACGAGATNNNNNNGTGACTGGAGTTCAGACGTGTGCTCTTCCGATCT" }
 
 #########################################################################
 #########################################################################
 #########################################################################
 @merge( None, "contaminants.fasta" )
 def outputContaminants( infile, outfile ):
-    '''output file with contaminants.'''
+    '''output file with contaminants.
+    if contamination_reverse_complement is selected, then the reverse
+    complement of each sequence is also written to the outfile. 
+    '''
     outf = IOTools.openFile( outfile, "w")
-    for key, value in ILLUMINA_ADAPTORS.iteritems():
+    for key, value in ILLUMINA_ADAPTORS.iteritems(): 
         outf.write(">%s\n%s\n" % (key, value) )
+        if PARAMS[contamination_reverse_complement]:
+            key_rc = key + "_rc"
+            value_rc = value[::-1]
+            value_rc = value_rc.translate(string.maketrans("ACTGN", "TGACN"))
+            outf.write(">%s\n%s\n" % (key_rc, value_rc) )
+        else: 
+            continue
     outf.close()
 
 #########################################################################
@@ -307,7 +333,7 @@ def removeContaminants( infiles, outfile ):
 
     statement = '''
     cutadapt 
-    --discard
+    %(contamination_trim_type)s
     %(adaptors)s
     --overlap=%(contamination_min_overlap_length)i
     --format=fastq
