@@ -256,35 +256,35 @@ def loadFastqc( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-## adapter trimming
+## adaptor trimming
 #########################################################################
-# these are the adapters and PCR primers for used in various illumina libarary preps
-# see https://cgatwiki.anat.ox.ac.uk/xwiki/bin/view/CGAT/Illumina+Sequencing#HIlluminaAdapters.html
-# currently included are primers/adapters from:
+# these are the adaptors and PCR primers for used in various illumina libarary preps
+# see https://cgatwiki.anat.ox.ac.uk/xwiki/bin/view/CGAT/Illumina+Sequencing#HIlluminaAdaptors.html
+# currently included are primers/adaptors from:
 # TruSeq DNA HT and RNA HT Sample Prep Kits; TruSeq DNA v1/v2/LT RNA v1/v2/LT and ChIP Sample Prep Kits;
 # Oligonucleotide Sequences for TruSeq Small RNA Sample Prep Kits; Oligonucleotide Sequences for Genomic DNA;
 # Oligonucleotide Sequences for the v1 and v1.5 Small RNA Sample Prep Kits; 
-# Paired End DNA Oligonucleotide Sequences; Script Seq Adapters;
+# Paired End DNA Oligonucleotide Sequences; Script Seq Adaptors;
 # Oligonucleotide Sequences for the Multiplexing Sample Prep Oligo Only Kits.
-ILLUMINA_ADAPTORS = { "Genomic-DNA-Adapter" : "GATCGGAAGAGCTCGTATGCCGTCTTCTGCTTG",
-                      "Genomic/Paired-End/Oligo-Only-Adapter" : "ACACTCTTTCCCTACACGACGCTCTTCCGATCT",
-                      "Genomic/TruSeq-Universal/PE/OO/ScriptSeq-Adapter/PCR-Primer" : "AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCT",
+ILLUMINA_ADAPTORS = { "Genomic-DNA-Adaptor" : "GATCGGAAGAGCTCGTATGCCGTCTTCTGCTTG",
+                      "Genomic/Paired-End/Oligo-Only-Adaptor" : "ACACTCTTTCCCTACACGACGCTCTTCCGATCT",
+                      "Genomic/TruSeq-Universal/PE/OO/ScriptSeq-Adaptor/PCR-Primer" : "AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCT",
                       "Genomic-PCR-Primer" : "CAAGCAGAAGACGGCATACGAGCTCTTCCGATCT",
-                      "Paired-End-Adapter" : "GATCGGAAGAGCGGTTCAGCAGGAATGCCGAG",
+                      "Paired-End-Adaptor" : "GATCGGAAGAGCGGTTCAGCAGGAATGCCGAG",
                       "Paired-End-PCR-Primer" : "CAAGCAGAAGACGGCATACGAGATCGGTCTCGGCATTCCTGCTGAACCGCTCTTCCGATCT",
-                      "TruSeq-HT-Adapter-I5" : "AATGATACGGCGACCACCGAGATCTACACNNNNNACACTCTTTCCCTACACGACGCTCTTCCGATCT",
-                      "TruSeq-HT-Adapter-I7" : "GATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNNATCTCGTATGCCGTCTTCTGCTTG",
-                      "TruSeq-LT-Adapter-I6" : "GATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNATCTCGTATGCCGTCTTCTGCTTG",
-                      "TruSeq-Small-RNA-Adapter" : "TGGAATTCTCGGGTGCCAAGG",
+                      "TruSeq-HT-Adaptor-I5" : "AATGATACGGCGACCACCGAGATCTACACNNNNNACACTCTTTCCCTACACGACGCTCTTCCGATCT",
+                      "TruSeq-HT-Adaptor-I7" : "GATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNNATCTCGTATGCCGTCTTCTGCTTG",
+                      "TruSeq-LT-Adaptor-I6" : "GATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNATCTCGTATGCCGTCTTCTGCTTG",
+                      "TruSeq-Small-RNA-Adaptor" : "TGGAATTCTCGGGTGCCAAGG",
                       "TruSeq-Small-RNA-RT-Primer" : "GCCTTGGCACCCGAGAATTCCA",
                       "TruSeq-Small-RNA-PCR-Primer" : "AATGATACGGCGACCACCGAGATCTACACGTTCAGAGTTCTACAGTCCGA",
                       "TruSeq-Small-RNA-PCR-Primer-I6" : "CAAGCAGAAGACGGCATACGAGATNNNNNNGTGACTGGAGTTCCTTGGCACCCGAGAATTCCA",
-                      "Oligo-Only-Adapter" : "GATCGGAAGAGCACACGTCT",
+                      "Oligo-Only-Adaptor" : "GATCGGAAGAGCACACGTCT",
                       "Oligo-Only-PCR-Primer" : "GTGACTGGAGTTCAGACGTGTGCTCTTCCGATCT",
                       "Oligo-Only-PCR-Primer-I7" : "CAAGCAGAAGACGGCATACGAGATNNNNNNNTGACTGGAGTTC",
                       "Small-RNA-v1-RT-Primer" : "CAAGCAGAAGACGGCATACGA",
                       "Small-RNA-PCR-Primer" : "AATGATACGGCGACCACCGACAGGTTCAGAGTTCTACAGTCCGA",
-                      "ScriptSeq-Adapter-I6" : "CAAGCAGAAGACGGCATACGAGATNNNNNNGTGACTGGAGTTCAGACGTGTGCTCTTCCGATCT" }
+                      "ScriptSeq-Adaptor-I6" : "CAAGCAGAAGACGGCATACGAGATNNNNNNGTGACTGGAGTTCAGACGTGTGCTCTTCCGATCT" }
 
 #########################################################################
 #########################################################################
@@ -298,7 +298,7 @@ def outputContaminants( infile, outfile ):
     outf = IOTools.openFile( outfile, "w")
     for key, value in ILLUMINA_ADAPTORS.iteritems(): 
         outf.write(">%s\n%s\n" % (key, value) )
-        if PARAMS[contamination_reverse_complement]:
+        if PARAMS["contamination_reverse_complement"]:
             key_rc = key + "_rc"
             value_rc = value[::-1]
             value_rc = value_rc.translate(string.maketrans("ACTGN", "TGACN"))
@@ -306,6 +306,14 @@ def outputContaminants( infile, outfile ):
         else: 
             continue
     outf.close()
+
+def listAdaptors(infile): 
+    adaptors = []
+    for entry in FastaIterator.FastaIterator( IOTools.openFile( infile) ):
+        adaptors.append("%s %s" % (PARAMS["contamination_trim_type"], entry.sequence) )
+    adaptors = " ".join(adaptors)
+
+    return adaptors
 
 #########################################################################
 #########################################################################
@@ -324,16 +332,11 @@ def removeContaminants( infiles, outfile ):
     
     infile, contaminant_file = infiles
 
-    adaptors = []
-    for entry in FastaIterator.FastaIterator( IOTools.openFile( contaminant_file ) ):
-        adaptors.append( "-a %s" % entry.sequence )
-        
-    adaptors= " ".join(adaptors)
+    adaptors = listAdaptors(contaminant_file)
     to_cluster = USECLUSTER
-
+#    %(contamination_trim_type)s
     statement = '''
     cutadapt 
-    %(contamination_trim_type)s
     %(adaptors)s
     --overlap=%(contamination_min_overlap_length)i
     --format=fastq
@@ -399,16 +402,17 @@ def processReads( infiles, outfile ):
     offset = Fastq.getOffset( format, raises = False )
 
     if PARAMS["process_remove_contaminants"]:
-        s.append( '''
+        adaptors = listAdaptors(contaminant_file)
+#              %(contamination_trim_type)s
+        s = [ '''
         cutadapt 
-              --discard
               %(adaptors)s
               --overlap=%(contamination_min_overlap_length)i
               --format=fastq
               %(contamination_options)s
               <( zcat < %(infile)s )
               2>> %(outfile)s_contaminants.log
-        ''' )
+        ''' ]
         do_sth = True
     else:
         s = ['zcat %(infile)s' ]
