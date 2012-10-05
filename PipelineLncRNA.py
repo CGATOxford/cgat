@@ -12,6 +12,7 @@ import IndexedGenome
 import Pipeline as P
 import Experiment as E
 import sqlite3
+import Experiment as E
 
 ########################################################
 # gene set building
@@ -173,7 +174,7 @@ def buildLncRNAGeneSet( abinitio_lincrna, reference, refnoncoding, pseudogenes_g
     outf.close()
 
 #-------------------------------------------------------------------------------
-def buildFilteredLncRNAGeneSet(flagged_gtf, refnoncoding_gtf, outfile, geneset_previous = None):
+def buildFilteredLncRNAGeneSet(flagged_gtf, outfile, genesets_previous):
     '''
     creates a filtered lincRNA geneset. This geneset will not include any
     single exon lincRNA unless they have been seen previously i.e. it overlaps
@@ -181,85 +182,53 @@ def buildFilteredLncRNAGeneSet(flagged_gtf, refnoncoding_gtf, outfile, geneset_p
     
     At this point we add a flag for whether the gene is a novel lncRNA or not
     NB this is a large function and should be modified in the future
+
+    note genesets_previous provided as a list - priority is
+    placed on the first in the list
     '''
-    previous = IndexedGenome.IndexedGenome()
-    previous_all = IndexedGenome.IndexedGenome()
-    if geneset_previous:
-        for transcript in GTF.transcript_iterator( GTF.iterator(IOTools.openFile(geneset_previous)) ):
+    # keep single and multi exonic lncRNA separate
+    previous_single = IndexedGenome.IndexedGenome()
+    previous_multi = IndexedGenome.IndexedGenome()
+
+    E.info("indexing previously identified lncRNA")
+    for prev in genesets_previous:
+        inf = IOTools.openFile(prev)
+        for transcript in GTF.transcript_iterator( GTF.iterator(inf) ):
             # use an indexed genome to assess novelty of lncRNA
             for gtf in transcript:
-                previous_all.add(gtf.contig, gtf.start, gtf.end, gtf.strand)
-            # only use if single exon
-            if len(transcript) == 1:
-                previous.add(transcript[0].contig, transcript[0].start, transcript[0].end, [transcript[0].strand, transcript[0].transcript_id])
+                previous_multi.add(gtf.contig, gtf.start, gtf.end, gtf.strand)
+                # add single exons
+                if len(transcript) == 1:
+                    previous_single.add(transcript[0].contig, transcript[0].start, transcript[0].end, [transcript[0].strand, transcript[0].gene_id])
 
-    # same for refnoncoding geneset        
-    refnoncoding = IndexedGenome.IndexedGenome()
-    refnoncoding_all = IndexedGenome.IndexedGenome()
-    for transcript in GTF.transcript_iterator( GTF.iterator(IOTools.openFile(refnoncoding_gtf)) ):
-        # use an indexed genome to assess novelty of lncRNA
-        for gtf in transcript:
-            refnoncoding_all.add(gtf.contig, gtf.start, gtf.end, gtf.strand)
-        # only use if single exon
-        if len(transcript) == 1:
-            refnoncoding.add(transcript[0].contig, transcript[0].start, transcript[0].end, [transcript[0].strand, transcript[0].transcript_id])
-
+    # create sets for keeping and discarding genes
     outf = gzip.open(outfile, "w")
     keep = set()
     known = set()
     novel = set()
 
+    # iterate over the flagged GTF - flagged for exon status
+    E.info("checking for overlap with previously identified sets")
     for transcript in GTF.transcript_iterator(GTF.iterator(IOTools.openFile(flagged_gtf))):
         gene_id = transcript[0].gene_id
         # check if there is overlap in the known sets in order to add gene_status attribute
         for gtf in transcript:
             if gtf.exon_status == "m":
-                if previous:
-                    # start with the refnoncoding set
-                    if refnoncoding_all.contains(gtf.contig, gtf.start, gtf.end):
-                        for gtf2 in refnoncoding_all.get(gtf.contig, gtf.start, gtf.end):
-                            if gtf.strand == gtf2[2]:
-                                known.add(gene_id)
-                            else:
-                                novel.add(gene_id)
-                    
-                    elif previous_all.contains(gtf.contig, gtf.start, gtf.end):
-                        for gtf2 in previous_all.get(gtf.contig, gtf.start, gtf.end):
-                            if gtf.strand == gtf2[2]:
-                                known.add(gene_id)
-                            else:
-                                novel.add(gene_id)
-                    else:
-                        novel.add(gene_id)
-                elif refnoncoding_all.contains(gtf.contig, gtf.start, gtf.end):
-                        for gtf2 in refnoncoding_all.get(gtf.contig, gtf.start, gtf.end):
-                            if gtf.strand == gtf2[2]:
-                                known.add(gene_id)
-                            else:
-                                novel.add(gene_id)
+                E.info("checking multi-exonic lncRNA for known status")
+                if previous_multi.contains(gtf.contig, gtf.start, gtf.end):
+                    known.add(gtf.gene_id)
                 else:
-                    novel.add(gene_id)
-                        
-            # check for single exon status
+                    novel.add(gtf.gene_id)
             elif gtf.exon_status == "s":
-                if previous:
-                    if refnoncoding.contains(gtf.contig, gtf.start, gtf.end):                               
-                        # retain strandedness
-                        for gtf2 in refnoncoding.get(gtf.contig, gtf.start, gtf.end):                               
-                            if gtf.strand == gtf2[2][0]:
-                                keep.add(gtf2[2][1])
-                        
-                    # if geneset is not included then this won't be used
-                    elif previous.contains(gtf.contig, gtf.start, gtf.end):                                     
-                        for gtf2 in previous.get(gtf.contig, gtf.start, gtf.end):                                
-                            if gtf.strand == gtf2[2][0]:
-                                keep.add(gtf2[2][1])
-                else:
-                    if refnoncoding.contains(gtf.contig, gtf.start, gtf.end):                               
-                        # retain strandedness
-                        for gtf2 in refnoncoding.get(gtf.contig, gtf.start, gtf.end):                               
-                            if gtf.strand == gtf2[2][0]:
-                                keep.add(gtf2[2][1])
+                if previous_single.contains(gtf.contig, gtf.start, gtf.end):
+                    for gtf2 in previous_single.get(gtf.contig, gtf.start, gtf.end):                               
+                        if gtf.strand == gtf2[2][0]:
+                            keep.add(gtf2[2][1])
+    
+    E.info("writing filtered lncRNA geneset")
+    E.info("writing %i known" % len(known))
+    E.info("writing %i novel" % len(novel))
+    E.info("writing %i single exon" % len(keep))
 
     # write out ones to keep from data
     for gtf in GTF.iterator(IOTools.openFile(flagged_gtf)):
@@ -271,21 +240,17 @@ def buildFilteredLncRNAGeneSet(flagged_gtf, refnoncoding_gtf, outfile, geneset_p
             outf.write("%s\n" % gtf)
 
     # write out ones to keep - from previous evidence
-    if geneset_previous:
-        for gtf in GTF.iterator(IOTools.openFile(geneset_previous)):
-            if gtf.transcript_id in keep:
+    # create a set - if the gene is in the first known
+    # set then it won't be added again from the following sets
+    check = set()
+    for prev in genesets_previous:
+        inf = IOTools.openFile(prev)
+        for gtf in GTF.iterator(inf):
+            if gene_id in check: continue
+            if gtf.gene_id in keep:
                 gtf.setAttribute("gene_status", "known")
                 outf.write("%s\n" % gtf)
-            
-        for gtf in GTF.iterator(IOTools.openFile(refnoncoding_gtf)):
-            if gtf.transcript_id in keep:
-                gtf.setAttribute("gene_status", "known")
-                outf.write("%s\n" % gtf)
-    else:
-        for gtf in GTF.iterator(IOTools.openFile(refnoncoding_gtf)):
-            if gtf.transcript_id in keep:
-                gtf.setAttribute("gene_status", "known")
-                outf.write("%s\n" % gtf)
+                check.add(gtf.gene_id)
     outf.close()
 #-------------------------------------------------------------------------------
 def buildFinalLncRNAGeneSet(filteredLncRNAGeneSet, cpc_table, outfile):
