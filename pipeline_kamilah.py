@@ -68,7 +68,8 @@ if os.path.exists("conf.py"):
 else:
     EXPERIMENTAL_TRACKS = []
 
-PARAMS = P.getParameters()
+PARAMS = P.getParameters(
+    defaults = { 'ancestral_repeats_filename': None } )
 
 PARAMS.update( {
     "annotation" : "regions.gff",

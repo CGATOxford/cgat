@@ -277,7 +277,7 @@ class IntervalListFoldChange( FoldChangeTracker, IntervalList ):
 ##################################################################################
 ## correlations
 ##################################################################################
-class Correlations( ChipseqTracker ):
+class Correlations( CallingTracker ):
     """Correlation between all sets.
     """
 
@@ -343,27 +343,35 @@ class PeakShapeTracker( Tracker ):
     Only 1000 rows are returned.
     '''
     
-    tracks = [ os.path.basename( x )[:-len(".peakshape.tsv.gz")] for x in glob.glob( os.path.join( DATADIR , "*.peakshape.tsv.gz" )) ]
+    tracks = [ os.path.basename( x )[:-len(".peakshape.tsv.gz")] 
+                   for x in glob.glob( os.path.join( DATADIR , "peakshapes.dir", "*.regions.peakshape.tsv.gz" )) ]
     slices = ["peak_height", "peak_width" ]
     
     def __call__(self, track, slice = None):
-        fn = os.path.join( DATADIR, "%(track)s.peakshape.tsv.gz.matrix_%(slice)s.gz" % locals() )
-        if not os.path.exists( fn ): 
-            return
-        
+
+        fn = os.path.join( DATADIR, "peakshapes.dir", "%(track)s.peakshape.tsv.gz.matrix_%(slice)s.gz" % locals() )
+        if not os.path.exists( fn ): return
+
         matrix, rownames, colnames = IOTools.readMatrix( IOTools.openFile( fn ))
+
         nrows = len(rownames)
-        if nrows == 0: return
+        if nrows < 2: return
 
         if nrows > 1000:
             take = numpy.array( numpy.floor( numpy.arange( 0, nrows, nrows / 1000 ) ), dtype = int )
             rownames = [ rownames[x] for x in take ]
             matrix = matrix[ take ]
             
+        
+
         return odict( (('matrix', matrix),
                        ('rows', rownames),
                        ('columns', colnames)) )
         
         
+class PeakShapeSummary( Tracker ):
+    '''summary information about peak shapes.'''
+    pattern = "(.*)_peakshape"
+
 
         

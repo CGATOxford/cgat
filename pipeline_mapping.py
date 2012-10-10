@@ -153,6 +153,8 @@ path:
 +--------------------+-------------------+------------------------------------------------+
 |tophat_             |>=1.4.0            |read mapping                                    |
 +--------------------+-------------------+------------------------------------------------+
+|gsnap_              |>=2012.07.20       |read mapping                                    |
++--------------------+-------------------+------------------------------------------------+
 |samtools            |>=0.1.16           |bam/sam files                                   |
 +--------------------+-------------------+------------------------------------------------+
 |bedtools            |                   |working with intervals                          |
@@ -195,10 +197,10 @@ Glossary
    bowtie
       bowtie_ - a read mapper
 
-
    
 .. _tophat: http://tophat.cbcb.umd.edu/
 .. _bowtie: http://bowtie-bio.sourceforge.net/index.shtml
+.. _gsnap: http://research-pub.gene.com/gmap/
 .. _bamstats: http://www.agf.liv.ac.uk/454/sabkea/samStats_13-01-2011
 
 Code
@@ -240,7 +242,7 @@ import Stats
 # load options from the config file
 import Pipeline as P
 P.getParameters( 
-    ["%s/pipeline.ini" % __file__[:-len(".py")],
+    ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
      "../pipeline.ini",
      "pipeline.ini" ],
     defaults = {
@@ -730,6 +732,20 @@ def buildJunctions( infile, outfile ):
                    rm -f %(outfile)s.tmp; '''
     P.run()
 
+#########################################################################
+#########################################################################
+#########################################################################
+@active_if( SPLICED_MAPPING )
+@transform( buildCodingGeneSet, suffix(".gtf.gz"), ".splicesites.iit")
+def buildGSNAPSpliceSites( infile, outfile ):
+    '''build file with know splice sites for GSNAP.
+    '''
+    
+    outfile = P.snip( outfile, ".iit" )
+    statement = '''
+    zcat %(infile)s | gtf_splicesites | iit_store -o %(outfile)s > %(outfile)s.log'''
+    
+    P.run()
 
 #########################################################################
 #########################################################################
@@ -906,6 +922,32 @@ def loadTophatStats( infile, outfile ):
 ############################################################
 ############################################################
 @active_if( SPLICED_MAPPING )
+@follows( mkdir("gsnap.dir" ) )
+@transform( SEQUENCEFILES,
+            SEQUENCEFILES_REGEX,
+            add_inputs( buildGSNAPSpliceSites ), 
+            r"gsnap.dir/\1.gsnap.bam" )
+def mapReadsWithGSNAP( infiles, outfile ):
+    '''map reads from .fastq or .sra files.
+
+    '''
+
+    infile, infile_splices = infiles
+    job_options= "-pe dedicated %i -R y" % PARAMS["gsnap_threads"]
+
+    to_cluster = True
+    m = PipelineMapping.GSNAP( executable = P.substituteParameters( **locals() )["gsnap_executable"] )
+    
+    if PARAMS["gsnap_include_known_splice_sites"]:
+        gsnap_options = PARAMS["gsnap_options"] + " --use-splicing=%(infile_splices)s " % locals()
+
+    statement = m.build( (infile,), outfile ) 
+    P.run()
+
+############################################################
+############################################################
+############################################################
+@active_if( SPLICED_MAPPING )
 @follows( mkdir("transcriptome.dir" ) )
 @transform( SEQUENCEFILES,
             SEQUENCEFILES_REGEX,
@@ -969,10 +1011,11 @@ def mapReadsWithBowtie( infiles, outfile ):
 def mapReadsWithBWA( infile, outfile ):
     '''map reads with bwa'''
 
+
     job_options= "-pe dedicated %i -R y -l mem_free=%s" % (PARAMS["bwa_threads"],
                                                            PARAMS["bwa_memory"] )
     to_cluster = True
-    m = PipelineMapping.BWA()
+    m = PipelineMapping.BWA( remove_unique = PARAMS["bwa_remove_non_unique"] )
     statement = m.build( (infile,), outfile ) 
     P.run()
 
@@ -1001,6 +1044,7 @@ mapToMappingTargets = { 'tophat': mapReadsWithTophat,
                         'bwa': mapReadsWithBWA,
                         'stampy': mapReadsWithStampy,
                         'transcriptome': mapReadsWithBowtieAgainstTranscriptome,
+                        'gsnap' : mapReadsWithGSNAP,
                         }
 for x in P.asList( PARAMS["mappers"]):
     MAPPINGTARGETS.append( mapToMappingTargets[x] )
@@ -1090,13 +1134,16 @@ def loadPicardStats( infiles, outfile ):
 #             """
 #     P.run()
 
+
 ############################################################
 ############################################################
 ############################################################
+@follows( countReads )
 @transform( MAPPINGTARGETS,
-            suffix(".bam"),
-            ".readstats" )
-def buildBAMStats( infile, outfile ):
+            regex("(.*)/(.*)\.(.*).bam"),
+            add_inputs( r"\2.nreads" ),
+            r"\1/\2.\3.readstats" )
+def buildBAMStats( infiles, outfile ):
     '''count number of reads mapped, duplicates, etc.
     '''
 
@@ -1105,13 +1152,18 @@ def buildBAMStats( infile, outfile ):
     rna_file = os.path.join( PARAMS["annotations_dir"],
                              PARAMS_ANNOTATIONS["interface_rna_gff"] )
 
+    bamfile, readsfile = infiles
+
+    nreads = PipelineMappingQC.getNumReadsFromReadsFile( readsfile )
+
     statement = '''python
     %(scriptsdir)s/bam2stats.py
          --force
          --filename-rna=%(rna_file)s
          --remove-rna
+         --input-reads=%(nreads)i
          --output-filename-pattern=%(outfile)s.%%s
-    < %(infile)s
+    < %(bamfile)s
     > %(outfile)s
     '''
 
@@ -1130,11 +1182,12 @@ def loadBAMStats( infiles, outfile ):
     E.info( "loading bam stats - summary" )
     statement = """python %(scriptsdir)s/combine_tables.py
                       --headers=%(header)s
+                      --skip-titles
                       --missing=0
                       --ignore-empty
                       --take=2
                    %(filenames)s
-                | perl -p -e "s/bin/track/"
+                | perl -p -e "s/(bin|category)/track/"
                 | perl -p -e "s/unique/unique_alignments/"
                 | python %(scriptsdir)s/table2table.py --transpose
                 | python %(scriptsdir)s/csv2db.py
@@ -1150,7 +1203,7 @@ def loadBAMStats( infiles, outfile ):
         tname = "%s_%s" % (tablename, suffix)
         
         statement = """python %(scriptsdir)s/combine_tables.py
-                      --header=%(header)s
+                      --headers=%(header)s
                       --skip-titles
                       --missing=0
                       --ignore-empty
@@ -1203,7 +1256,8 @@ def buildContextStats( infiles, outfile ):
 @follows( loadBAMStats )
 @merge( buildContextStats, "context_stats.load" )
 def loadContextStats( infiles, outfile ):
-    """load context mapping statistics."""
+    """
+load context mapping statistics."""
 
     header = ",".join( [os.path.basename( P.snip( x, ".contextstats") ) for x in infiles] )
     filenames = " ".join( infiles  )
@@ -1415,36 +1469,16 @@ def createViewMapping( infile, outfile ):
     
     '''
 
+    dbh = connect()
+
     tablename = P.toTable( outfile )
-    # can not create views across multiple database, so use table
     view_type = "TABLE"
-    
-    dbhandle = connect()
-    Database.executewait( dbhandle, "DROP %(view_type)s IF EXISTS %(tablename)s" % locals() )
 
-    statement = '''
-    CREATE %(view_type)s %(tablename)s AS
-    SELECT b.track, *
-    FROM  reads_summary AS r,
-          bam_stats AS b,
-          context_stats AS c,          
-          picard_stats_alignment_summary_metrics AS a
-    WHERE 
-      b.track = c.track
-      AND b.track = a.track
-      AND substr( b.track, 1, LENGTH( r.track )) = r.track
-    ''' % locals()
+    tables = (( "bam_stats", "track", ),
+              ( "context_stats", "track", ),
+              ( "picard_stats_alignment_summary_metrics", "track" ), )
 
-    Database.executewait( dbhandle, statement )
-
-    nrows = Database.executewait( dbhandle, "SELECT COUNT(*) FROM view_mapping" ).fetchone()[0]
-    
-    if nrows == 0:
-        raise ValueError( "empty view mapping, check statement = %s" % (statement % locals()) )
-
-    E.info( "created view_mapping with %i rows" % nrows )
-
-    P.touch( outfile )
+    P.createView( dbh, tables, tablename, outfile, view_type )
 
 ###################################################################
 ###################################################################

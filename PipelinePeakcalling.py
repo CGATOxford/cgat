@@ -274,7 +274,7 @@ def buildBAMforPeakCalling( infiles, outfile, dedup, mask):
     num_reads = 0
     nfiles = 0
 
-    use_cluster = True
+    to_cluster = True
 
     statement = []
     
@@ -489,7 +489,7 @@ def buildBAMStats( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-def exportIntervalsAsBed( infile, outfile ):
+def exportIntervalsAsBed( infile, outfile, tablename ):
     '''export macs peaks as bed files.
     '''
 
@@ -502,27 +502,24 @@ def exportIntervalsAsBed( infile, outfile ):
         compress = False
         track = P.snip( outfile, ".bed" )
 
-    tablename = "%s_intervals" % P.quote(track)
-
     cc = dbhandle.cursor()
-    statement = "SELECT contig, start, end, interval_id FROM %s ORDER by contig, start" % tablename
+    statement = "SELECT contig, start, end, interval_id, peakval FROM %s ORDER by contig, start" % tablename
     cc.execute( statement )
 
-    outs = IOTools.openFile( "%s.bed" % track, "w")
+    with IOTools.openFile( "%s.bed" % track, "w") as outs:
 
-    for result in cc:
-        contig, start, end, interval_id,peakval = result
-        # peakval is truncated at a 1000 as this is the maximum permitted
-        # score in a bed file.
-        peakval = int(min(peakval,1000))
-        outs.write( "%s\t%i\t%i\t%s\t%i\n" % (contig, start, end, str(interval_id) ) )
+        for result in cc:
+            contig, start, end, interval_id, peakval = result
+            # peakval is truncated at a 1000 as this is the maximum permitted
+            # score in a bed file.
+            peakval = int(min(peakval,1000))
+            outs.write( "%s\t%i\t%i\t%s\t%i\n" % (contig, start, end, str(interval_id), peakval ) )
 
-    cc.close()
-    outs.close()
+        cc.close()
 
     if compress:
         E.info( "compressing and indexing %s" % outfile )
-        use_cluster = True
+        to_cluster = True
         statement = 'bgzip -f %(track)s.bed; tabix -f -p bed %(outfile)s'
         P.run()
 
@@ -1106,7 +1103,9 @@ def loadMACS( infile, outfile, bamfile, controlfile = None ):
 
     if controlfile:
         control = "--control-bam-file=%(controlfile)s --control-offset=%(shift)i" % locals()
-        
+    else:
+        control = ""
+
     statement = '''python %(scriptsdir)s/bed2table.py 
                            --counter=peaks
                            --bam-file=%(bamfile)s
@@ -1313,6 +1312,7 @@ def runSICER( infile, outfile, controlfile = None ):
                     %(sicer_evalue_threshold)f
                     >& ../%(outfile)s''' )
 
+    statement.append( 'rm -f foreground.bed background.bed' )
     statement = '; '.join( statement )
 
     P.run() 
@@ -1345,9 +1345,13 @@ def loadSICER( infile, outfile, bamfile, controlfile = None ):
 
     tablename = P.toTable( outfile ) + "_regions" 
 
-    headers="contig,start,end,chip_reads,control_reads,pvalue,fold,fdr"
+    headers="contig,start,end,interval_id,chip_reads,control_reads,pvalue,fold,fdr"
 
-    statement = '''python %(scriptsdir)s/bed2table.py 
+    # add new interval id at fourth column
+    statement = '''cat < %(bedfile)s
+               | awk '{printf("%%s\\t%%s\\t%%s\\t%%i", $1,$2,$3,++a); 
+                          for (x = 4; x <= NF; ++x) {printf("\\t%%s", $x)}; printf("\\n" ); }' 
+               | python %(scriptsdir)s/bed2table.py 
                            --counter=peaks
                            --bam-file=%(bamfile)s
                            --offset=%(offset)i
@@ -1355,7 +1359,6 @@ def loadSICER( infile, outfile, bamfile, controlfile = None ):
                            --all-fields 
                            --bed-header=%(headers)s
                            --log=%(outfile)s
-                < %(bedfile)s
                 | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
                        --index=contig,start
                        --index=interval_id
@@ -1375,6 +1378,7 @@ def summarizeSICER( infiles, outfile ):
 
     map_targets = [
         ("Window average: (\d+)", "window_mean",()),
+        ("Fragment size: (\d+) ", "fragment_size", ()),
         ("Minimum num of tags in a qualified window:  (\d+)", "window_min",()),
         ("The score threshold is:  (\d+)", "score_threshold",()),
         ("Total number of islands:  (\d+)","total_islands", ()),
@@ -1384,21 +1388,27 @@ def summarizeSICER( infiles, outfile ):
         ("Total number of control reads on islands is:  (\d+)", "control_island_reads", ()),
         ("Given significance 0.01 ,  there are (\d+) significant islands",  "significant_islands", ()) ]
 
-    mapper, mapper_header = {}, {}
+    # map regex to column
+    mapper, mapper_header, mapper2pos = {}, {}, {}
     for x,y,z in map_targets: 
         mapper[y] = re.compile( x )
         mapper_header[y] = z
+        # positions are +1 as first column in row is track
+        mapper2pos[y] = len(mapper_header)
 
     keys = [ x[1] for x in map_targets ]
 
     outs = IOTools.openFile(outfile,"w")
 
+    # build headers
     headers = []
     for k in keys:
         if mapper_header[k]:
             headers.extend( ["%s_%s" % (k,x) for x in mapper_header[k] ])
         else:
             headers.append( k )
+    headers.append("shift")
+
     outs.write("track\t%s" % "\t".join(headers) + "\n" )
 
     for infile in infiles:
@@ -1425,10 +1435,12 @@ def summarizeSICER( infiles, outfile ):
                     str(val), mapper_header[key])
                 v = "\t".join( val )
             row.append(v)
-        outs.write("\t".join(row) + "\n" )
+        fragment_size = int(row[mapper2pos["fragment_size"]])
+        shift = fragment_size / 2
+        
+        outs.write("%s\t%i\n" % ("\t".join(row), shift) )
 
     outs.close()
-
 
 ############################################################
 ############################################################
@@ -1439,7 +1451,9 @@ def runPeakRanger( infile, outfile, controlfile):
     
     assert controlfile != None, "peakranger requires a control"
 
-    statement = '''ranger --data %(infile)s 
+    statement = '''peakranger 
+               %(peakranger_mode)s
+              --data %(infile)s 
               --control %(controlfile)s
               --output %(outfile)s
               --format bam
@@ -1448,8 +1462,7 @@ def runPeakRanger( infile, outfile, controlfile):
               --ext_length %(peakranger_extension_length)i
               --delta %(peakranger_delta)f
               --bandwidth %(peakranger_bandwidth)i
-              --mode %(peakranger_mode)s
-              -t %(peakranger_threads)i
+              --thread %(peakranger_threads)i
               %(peakranger_options)s
               >& %(outfile)s
     '''
@@ -1473,7 +1486,7 @@ def loadPeakRanger( infile, outfile, bamfile, controlfile = None ):
         control = "--control-bam-file=%(controlfile)s --control-offset=%(offset)i" % locals()
         
     bedfile = infile + "_details"
-    headers="contig,start,end,interval_id,summits,pvalue,qvalue,strand"
+    headers="contig,start,end,nearby_genes,interval_id,summits,pvalue,qvalue,strand,treads,creads"
     tablename = P.toTable( outfile ) + "_regions"
     statement = '''python %(scriptsdir)s/bed2table.py 
                            --counter=peaks
@@ -1514,6 +1527,77 @@ def loadPeakRanger( infile, outfile, bamfile, controlfile = None ):
                 > %(outfile)s'''
     
     P.run()
+
+
+############################################################
+def summarizePeakRanger( infiles, outfile ):
+    '''summarize peakranger results.'''
+
+    def __get( line, stmt ):
+        x = line.search(stmt )
+        if x: return x.groups() 
+
+    map_targets = [
+        ("# FDR cut off:\s*(\S+)", "fdr_cutoff",()),
+        ("# P value cut off:\s*(\S+)", "pvalue_cutoff",()),
+        ("# Read extension length:\s*(\d+)", "fragment_size", () ),
+        ("# Smoothing bandwidth:\s*(\d+)", "smoothing_bandwidth", () ),
+        ]
+
+    # map regex to column
+    mapper, mapper_header, mapper2pos = {}, {}, {}
+    for x,y,z in map_targets: 
+        mapper[y] = re.compile( x )
+        mapper_header[y] = z
+        # positions are +1 as first column in row is track
+        mapper2pos[y] = len(mapper_header)
+
+    keys = [ x[1] for x in map_targets ]
+
+    outs = IOTools.openFile(outfile,"w")
+
+    # build headers
+    headers = []
+    for k in keys:
+        if mapper_header[k]:
+            headers.extend( ["%s_%s" % (k,x) for x in mapper_header[k] ])
+        else:
+            headers.append( k )
+    headers.append("shift")
+
+    outs.write("track\t%s" % "\t".join(headers) + "\n" )
+
+    for infile in infiles:
+        results = collections.defaultdict(list)
+        with IOTools.openFile( infile + "_details" ) as f:
+            for line in f:
+                if "#region_chr" in line: break
+                for x,y in mapper.items():
+                    s = y.search( line )
+                    if s: 
+                        results[x].append( s.groups()[0] )
+                        break
+                
+        row = [ P.snip( os.path.basename(infile), ".peakranger" ) ]
+        for key in keys:
+            val = results[key]
+            if len(val) == 0: v = "na"
+            else: 
+                c = len(mapper_header[key])
+                if c >= 1: assert len(val) == c, "key=%s, expected=%i, got=%i, val=%s, c=%s" %\
+                   (key,
+                    len(val),
+                    c,
+                    str(val), mapper_header[key])
+                v = "\t".join( val )
+            row.append(v)
+        fragment_size = int(row[mapper2pos["fragment_size"]])
+        shift = fragment_size / 2
+        
+        outs.write("%s\t%i\n" % ("\t".join(row), shift) )
+
+    outs.close()
+
 
 ############################################################
 ############################################################

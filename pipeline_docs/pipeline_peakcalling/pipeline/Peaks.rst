@@ -1,9 +1,12 @@
-==========
-Peak shape
-==========
+===========
+Peak shapes
+===========
+
+This page plots the read density under peaks.
 
 .. report:: Intervals.PeakShapeTracker
    :render: matrixNP-plot
+   :width: 300
    :nolabel-cols:
    :nolabel-rows:
    :slices: peak_height
@@ -15,6 +18,7 @@ Peak shape
 
 .. report:: Intervals.PeakShapeTracker
    :render: matrixNP-plot
+   :width: 300
    :nolabel-cols:
    :nolabel-rows:
    :slices: peak_width

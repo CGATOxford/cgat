@@ -53,6 +53,9 @@ class MappingStatus( Status ):
 
         '''
         
+        if not self.hasTable( 'exon_validation'):
+            return "NA", 0
+
         value = self.getValue( "SELECT spliced/CAST(input AS FLOAT) from exon_validation WHERE track = '%(track)s'" )
         if value >= 0.15: status= "PASS"
         elif value >= 0.05: status= "WARNING"

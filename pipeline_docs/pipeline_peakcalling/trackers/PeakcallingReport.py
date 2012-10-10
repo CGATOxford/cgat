@@ -14,9 +14,9 @@ from SphinxReport.odict import OrderedDict as odict
 ###################################################################
 ## parameterization
 
-EXPORTDIR=P['chipseq_exportdir']
-DATADIR=P['chipseq_datadir']
-DATABASE=P['chipseq_backend']
+EXPORTDIR=P['calling_exportdir']
+DATADIR=P['calling_datadir']
+DATABASE=P['calling_backend']
 
 ###################################################################
 # cf. pipeline_chipseq.py
@@ -123,12 +123,12 @@ def linkToUCSC( contig, start, end ):
 ###########################################################################
 ## Trackers
 ###########################################################################
-class ChipseqTracker( TrackerSQL ):
+class CallingTracker( TrackerSQL ):
     '''Define convenience tracks for plots'''
     def __init__(self, *args, **kwargs ):
         TrackerSQL.__init__(self, *args, backend = DATABASE, **kwargs )
 
-class DefaultTracker( ChipseqTracker ):
+class DefaultTracker( CallingTracker ):
     '''Define convenience tracks for plots'''
     # def __init__(self, *args, **kwargs ):
     #     ChipseqTracker.__init__(self, *args, **kwargs)

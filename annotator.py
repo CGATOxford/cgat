@@ -69,7 +69,6 @@ Version: $Id: annotator.py 2861 2010-02-23 17:36:32Z andreas $
 
 import Experiment as E
 import GFF, GTF
-import rtree
 import numpy
 import Stats
 

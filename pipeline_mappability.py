@@ -35,7 +35,7 @@ import logging as L
 from ruffus import *
 import Pipeline as P
 
-P.getParameters(  ["%s.ini" % __file__[:-len(".py")],  "pipeline.ini" ] )
+P.getParameters(  ["%s.ini" % os.path.splitext(__file__)[0],  "pipeline.ini" ] )
 PARAMS = P.PARAMS
 USECLUSTER = True
 

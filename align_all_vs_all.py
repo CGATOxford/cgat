@@ -63,8 +63,7 @@ import os, sys, string, re, getopt, time, optparse, math, tempfile
 import Experiment
 
 import alignlib
-import Bio
-import Bio.Fasta
+import FastaIterator
 
 """ program $Id: align_all_vs_all.py 2782 2009-09-10 11:40:29Z andreas $
 """
@@ -88,8 +87,7 @@ if __name__ == "__main__":
     else:
         infile = sys.stdin
 
-    parser = Bio.Fasta.RecordParser()
-    iterator = Bio.Fasta.Iterator( infile, parser)
+    parser = FastaIterator.FastaIterator( infile )
 
     sequences = []
     while 1:

@@ -213,14 +213,35 @@ class Mapper( object ):
             elif infile.endswith( ".sra"):
                 # sneak preview to determine if paired end or single end
                 outdir = P.getTempDir()
-                P.execute( "fastq-dump --gzip -X 1000 --outdir %(outdir)s %(infile)s" % locals() )
-                f = glob.glob( os.path.join( outdir, "*.fastq.gz" ) )
-                if len(f) == 3:
-                    f = glob.glob( os.path.join( outdir, "*_[12].fastq.gz" ) )
+                # --split-files is present in fastq-dump 2.1.7
+                P.execute( "fastq-dump --split-files --gzip -X 1000 --outdir %(outdir)s %(infile)s" % locals() )
+                # --split-files will create files called prefix_#.fastq.gz
+                # where # is the read number. 
+                # The following cases are:
+
+                # * file cotains paired end data: output = prefix_1.fastq.gz, prefix_2.fastq.gz
+                #    * special case: unpaired reads in a paired end run end up in prefix.fastq.gz
+                #    * special case: if paired reads are stored in a single read, fastq-dump will split.
+                #       There might be a joining sequence. The output would thus be:
+                #       prefix_1.fastq.gz, prefix_2.fastq.gz and prefix_3.fastq.gz
+                #      You want files 1 and 3.
+                f = sorted(glob.glob( os.path.join( outdir, "*.fastq.gz" ) ))
+                ff = [ os.path.basename(x) for x in f ]
+                if len(f) == 1: 
+                    # sra file contains one read: output = prefix.fastq.gz
+                    pass
+                elif len(f) == 2:
+                    # sra file contains read pairs: output = prefix_1.fastq.gz, prefix_2.fastq.gz
+                    assert ff[0].endswith( "_1.fastq.gz") and ff[1].endswith( "_2.fastq.gz" )
+                elif len(f) == 3:
+                    if ff[2].endswith( "_3.fastq.gz"):
+                        f = glob.glob( os.path.join( outdir, "*_[13].fastq.gz" ) )
+                    else:
+                        f = glob.glob( os.path.join( outdir, "*_[13].fastq.gz" ) )
                 E.info("sra file contains the following files: %s" % f )
                 shutil.rmtree( outdir )
                 fastqfiles.append( [ "%s/%s" % (tmpdir_fastq, os.path.basename( x )) for x in sorted(f) ] )
-                statement.append( "fastq-dump --gzip --outdir %(tmpdir_fastq)s %(infile)s" % locals() )
+                statement.append( "fastq-dump --split-files --gzip --outdir %(tmpdir_fastq)s %(infile)s" % locals() )
                 
             elif infile.endswith( ".fastq.gz" ):
                 format = Fastq.guessFormat( IOTools.openFile( infile, "r"), raises = False)
@@ -326,8 +347,8 @@ class Mapper( object ):
 
     def cleanup( self, outfile ):
         '''clean up.'''
-        #statement = '''rm -rf %s;''' % (self.tmpdir_fastq)
-        statement = ""
+        statement = '''rm -rf %s;''' % (self.tmpdir_fastq)
+        # statement = ""
 
         return statement
 
@@ -358,6 +379,9 @@ class FastQc( Mapper ):
 
     compress = True
 
+    def __init__( self, nogroup = False, *args, **kwargs ):
+        self.nogroup = nogroup
+
     def mapper( self, infiles, outfile ):
         '''build mapping statement on infiles.
         
@@ -368,7 +392,10 @@ class FastQc( Mapper ):
         for f in infiles:
             for i, x in enumerate(f):
                 track = os.path.basename(  re.sub(".fastq.*", "", x) )
-                statement.append( '''fastqc --outdir=%%(exportdir)s/fastqc %(x)s >& %(outfile)s;''' % locals() )
+                if self.nogroup:
+                    statement.append( '''fastqc --outdir=%%(exportdir)s/fastqc --nogroup %(x)s >& %(outfile)s;''' % locals() )
+                else:
+                    statement.append( '''fastqc --outdir=%%(exportdir)s/fastqc %(x)s >& %(outfile)s;''' % locals() )
         return " ".join( statement )
 
 class Counter( Mapper ):
@@ -391,8 +418,14 @@ class BWA( Mapper ):
     '''run bwa to map reads against genome.
 
     * colour space not implemented
+    
+    if remove_unique is true, a filtering step is included in postprocess,
+    which removes reads that don't have tag X0:i:1 (i.e. have > 1 best hit)
     '''
 
+    def __init__(self, remove_unique = False, *args, **kwargs):
+        self.remove_unique = remove_unique
+    
     def mapper( self, infiles, outfile ):
         '''build mapping statement on infiles.'''
 
@@ -465,10 +498,16 @@ class BWA( Mapper ):
         track = P.snip( os.path.basename(outfile), ".bam" )
         outf = P.snip( outfile, ".bam" )
         tmpdir = self.tmpdir
-        
-        statement = '''
-            samtools view -buS %(tmpdir)s/%(track)s.sam | samtools sort - %(outf)s 2>>%(outfile)s.bwa.log; 
-            samtools index %(outfile)s;''' % locals()
+
+        if self.remove_unique: 
+            statement = '''
+                samtools view -hS %(tmpdir)s/%(track)s.sam | awk '$1 ~ /^@/ || /\sX0:i:1\s/'| samtools view -bS - | samtools sort - %(outf)s 2>>%(outfile)s.bwa.log; 
+                samtools index %(outfile)s;''' % locals()
+
+        else:
+            statement = '''
+                samtools view -buS %(tmpdir)s/%(track)s.sam | samtools sort - %(outf)s 2>>%(outfile)s.bwa.log; 
+                samtools index %(outfile)s;''' % locals()
 
         return statement
 
@@ -766,6 +805,92 @@ class TopHat_fusion( Mapper ):
             ''' % locals()
         return statement
 
+class GSNAP( Mapper ):
+
+    # tophat can map colour space files directly
+    preserve_colourspace = True
+
+    # newer versions of tophat can work of compressed files
+    compress = True
+    
+    executable = "gsnap"
+
+    def __init__(self, *args, **kwargs ):
+        Mapper.__init__(self, *args, **kwargs)
+
+    def mapper( self, infiles, outfile ):
+        '''build mapping statement on infiles.
+        '''
+
+        track = P.snip( os.path.basename(outfile), ".bam" )
+
+        executable = self.executable
+
+        num_files = [ len( x ) for x in infiles ]
+        
+        if max(num_files) != min(num_files):
+            raise ValueError("mixing single and paired-ended data not possible." )
+        
+        nfiles = max(num_files)
+
+        tmpdir = self.tmpdir_fastq
+
+        # add options specific to data type
+        # index_dir set by environment variable
+        index_prefix = "%(genome)s"
+        
+        if nfiles == 1:
+            infiles = ",".join( [ x[0] for x in infiles ] )
+            statement = '''
+            zcat %(infiles)s 
+            | %(executable)s 
+                   --nthreads %%(gsnap_threads)i
+                   --format=sam
+                   --db=%(index_prefix)s
+                   %%(gsnap_options)s
+                   >> %(outfile)s.log 2>&1 ;
+            ''' % locals() 
+
+        elif nfiles == 2:
+            # this section works both for paired-ended fastq files
+            # and single-end color space mapping (separate quality file)
+            infiles1 = ",".join( [ x[0] for x in infiles ] )
+            infiles2 = ",".join( [ x[1] for x in infiles ] )
+
+            # patch for compressed files
+            if infiles[0][0].endswith( ".gz" ):
+                files = "<( zcat %(infiles1)s ) <( zcat %(infiles2)s )" % locals()
+            else:
+                files = "%(infiles1)s %(infiles2)s" % locals()
+
+            statement = '''
+            %(executable)s 
+                   --nthreads %%(gsnap_threads)i
+                   --format=sam
+                   --db=%(index_prefix)s
+                   %%(gsnap_options)s
+                   %(files)s
+                   > %(tmpdir)s/%(track)s.sam >& %(outfile)s.log ;
+            ''' % locals() 
+
+        else:
+            raise ValueError( "unexpected number reads to map: %i " % nfiles )
+
+        return statement
+    
+    def postprocess( self, infiles, outfile ):
+        '''collect output data and postprocess.'''
+
+        track = P.snip( os.path.basename(outfile), ".bam" )
+        outf = P.snip( outfile, ".bam" )
+        tmpdir = self.tmpdir_fastq
+
+        statement = '''
+                samtools view -buS %(tmpdir)s/%(track)s.sam | samtools sort - %(outf)s 2>>%(outfile)s.bwa.log; 
+                samtools index %(outfile)s;''' % locals()
+
+        return statement
+
 class Bowtie( Mapper ):
     '''map with bowtie against genome.'''
 
@@ -967,7 +1092,6 @@ class BowtieTranscripts( Mapper ):
              samtools sort %(tmpdir_fastq)s/out.bam %(track)s;
              samtools index %(outfile)s;
              ''' % locals()
-
         return statement
 
 class BowtieJunctions( BowtieTranscripts ):

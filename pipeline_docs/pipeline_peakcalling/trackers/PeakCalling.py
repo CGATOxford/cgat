@@ -36,7 +36,7 @@ class MacsSummary( DefaultTracker ):
 
         return result
 
-class MacsDiagnostics(ChipseqTracker):
+class MacsDiagnostics(CallingTracker):
     """summary of macs diagnostics data."""
 
     pattern = "(.*)_macs_diagnostics"
@@ -54,11 +54,10 @@ class MacsDiagnostics(ChipseqTracker):
             
         return result
 
-class MacsFiltering(ChipseqTracker, SingleTableTrackerColumns ):
+class MacsFiltering(CallingTracker, SingleTableTrackerColumns ):
     '''summary of filtering.'''
     column = "fdr"
     table = "macs_fdr"
-
 
 class SPPSummary( DefaultTracker, SingleTableTrackerRows ):
     '''summary information from spp.'''
