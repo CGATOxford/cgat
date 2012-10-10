@@ -966,7 +966,7 @@ def sortGTF( infile, outfile,order = "contig+gene" ):
     P.run()
     
 
-def buildGenomicFunctionalAnnotation( gtffile, dbh ):
+def buildGenomicFunctionalAnnotation( gtffile, outfiles ):
     '''output a bed file with genomic regions with functional annotations.
 
     The regions for each gene are given in the gtf file.
