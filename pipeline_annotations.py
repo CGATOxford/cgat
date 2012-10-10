@@ -1372,6 +1372,7 @@ def buildGenomicFunctionalAnnotation( infiles, outfiles ):
 
     territories_file = infiles[0]
     
+    dbh = connect()
 
     PipelineGeneset.buildGenomicFunctionalAnnotation( territories_file, dbh, outfiles )
 
