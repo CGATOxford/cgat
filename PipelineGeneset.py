@@ -966,7 +966,7 @@ def sortGTF( infile, outfile,order = "contig+gene" ):
     P.run()
     
 
-def buildGenomicFunctionalAnnotation( gtffile, outfiles ):
+def buildGenomicFunctionalAnnotation( gtffile, dbh, outfiles ):
     '''output a bed file with genomic regions with functional annotations.
 
     The regions for each gene are given in the gtf file.
@@ -992,8 +992,9 @@ def buildGenomicFunctionalAnnotation( gtffile, outfiles ):
         gid = gtf.gene_id.split(":")
         for g in gid:
             gene2region[g] = (gtf.contig, gtf.start, gtf.end, gtf.strand)
-        
-    dbh = connect()
+
+    #IMS: connect is not in this module. dbh needs to be passed from caller    
+    #dbh = connect()
     cc = dbh.cursor()
     
     outf = P.getTempFile( "." )

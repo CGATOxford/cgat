@@ -1373,7 +1373,7 @@ def buildGenomicFunctionalAnnotation( infiles, outfiles ):
     territories_file = infiles[0]
     
 
-    PipelineGeneset.buildGenomicFunctionalAnnotation( territories_file, outfiles )
+    PipelineGeneset.buildGenomicFunctionalAnnotation( territories_file, dbh, outfiles )
 
 ############################################################
 ############################################################
