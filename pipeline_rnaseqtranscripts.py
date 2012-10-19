@@ -921,62 +921,98 @@ def loadTranscriptComparison( infile, outfile ):
 
     <track>_tracking 
     '''
-    tracks, result = Tophat.parseTranscriptComparison( IOTools.openFile( infile ))
-    tracks = [ P.snip( os.path.basename(x), ".gtf.gz" ) for x in tracks ]
-
+    
     tmpfile = P.getTempFilename()
     tmpfile2 = P.getTempFilename()
     tmpfile3 = P.getTempFilename()
 
-    outf = open( tmpfile, "w") 
-    outf.write( "track\n" )
-    outf.write( "\n".join( tracks ) + "\n" )
-    outf.close()
+    
+    #cuffcompare doesn't output stats if there are too many input files
+    #this will cause parseTranscriptComparision to fall over
+    #test if parseTranscriptComparison fails get track names from PipelineTracks.
+    try:
+        tracks, result = Tophat.parseTranscriptComparison( IOTools.openFile( infile ))
 
-    #########################################################
-    ## load tracks
-    #########################################################
-    tablename = P.toTable(outfile) + "_tracks"
+        tracks = [ P.snip( os.path.basename(x), ".gtf.gz" ) for x in tracks ]
 
-    statement = '''cat %(tmpfile)s
-    | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+        outf = open( tmpfile, "w") 
+        outf.write( "track\n" )
+        outf.write( "\n".join( tracks ) + "\n" )
+        outf.close()
+
+        #########################################################
+        ## load tracks
+        #########################################################
+        tablename = P.toTable(outfile) + "_tracks"
+
+        statement = '''cat %(tmpfile)s
+        | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --allow-empty
               --index=track
               --table=%(tablename)s 
-    > %(outfile)s
-    '''
+        > %(outfile)s
+        '''
 
-    P.run()
+        P.run()
 
-    L.info( "loaded %s" % tablename )
+        L.info( "loaded %s" % tablename )
 
-    #########################################################
-    ## load benchmarking data
-    #########################################################
-    outf = open( tmpfile, "w")
-    outf.write( "track\tcontig\t%s\n" % "\t".join( Tophat.CuffCompareResult.getHeaders() ) )
+        #########################################################
+        ## load benchmarking data
+        #########################################################
+        outf = open( tmpfile, "w")
+        outf.write( "track\tcontig\t%s\n" % "\t".join( Tophat.CuffCompareResult.getHeaders() ) )
 
-    for track, vv in result.iteritems():
-        track = P.snip( os.path.basename(track), ".gtf.gz" )
-        for contig, v in vv.iteritems():
-            if v.is_empty: continue
-            outf.write( "%s\t%s\t%s\n" % (P.quote( track ), contig, str(v) ) )
-    outf.close()
-
-    tablename = P.toTable( outfile ) + "_benchmark"
-
-    statement = '''cat %(tmpfile)s
-    | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+        for track, vv in result.iteritems():
+            track = P.snip( os.path.basename(track), ".gtf.gz" )
+            for contig, v in vv.iteritems():
+                if v.is_empty: continue
+                outf.write( "%s\t%s\t%s\n" % (P.quote( track ), contig, str(v) ) )
+                outf.close()
+                
+                tablename = P.toTable( outfile ) + "_benchmark"
+                
+        statement = '''cat %(tmpfile)s
+            | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --allow-empty
               --index=track
               --index=contig
               --table=%(tablename)s 
-    > %(outfile)s
-    '''
+            >  %(outfile)s
+        '''
 
-    P.run()
+        P.run()
 
-    L.info( "loaded %s" % tablename )
+        L.info( "loaded %s" % tablename )
+
+    except UnboundLocalError:
+
+        tracks = [t for t in PipelineTracks.Aggregate(TRACKS, track = P.snip(infile, ".cuffcompare"))[P.snip(infile, ".cuffcompare")]]
+
+        outf = open( tmpfile, "w") 
+        outf.write( "track\n" )
+        outf.write( "\n".join( tracks ) + "\n" )
+        outf.close()
+
+        #########################################################
+        ## load tracks
+        #########################################################
+        tablename = P.toTable(outfile) + "_tracks"
+
+        statement = '''cat %(tmpfile)s
+        | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+              --allow-empty
+              --index=track
+              --table=%(tablename)s 
+        > %(outfile)s
+        '''
+
+        P.run()
+
+        L.info( "loaded %s" % tablename )
+        tablename = P.toTable( outfile ) + "_benchmark"
+        L.info( "WARNING %s not loaded: No data in input file")
+
 
     #########################################################
     ## load tracking and transcripts information
