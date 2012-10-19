@@ -987,7 +987,7 @@ def loadTranscriptComparison( infile, outfile ):
 
     except UnboundLocalError:
 
-        tracks = [t for t in PipelineTracks.Aggregate(TRACKS, track = PipelineTracks.Sample3(P.snip(infile, ".cuffcompare")))[P.snip(infile, ".cuffcompare")]]
+        tracks = [str(t) for t in PipelineTracks.Aggregate(TRACKS, track = PipelineTracks.Sample3(P.snip(infile, ".cuffcompare")))[P.snip(infile, ".cuffcompare")]]
 
         outf = open( tmpfile, "w") 
         outf.write( "track\n" )
