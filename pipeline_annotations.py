@@ -1821,6 +1821,7 @@ def genome():
           buildCodingExonTranscripts,
           buildNonCodingExonTranscripts,
           buildPseudogenes,
+          buildNUMTs,
           buildSelenoList,
           buildTranscripts,
           buildTranscriptsBed,
