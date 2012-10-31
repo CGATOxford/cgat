@@ -2018,7 +2018,8 @@ def buildReproducibility( infile, outfile ):
 @transform( buildReproducibility, suffix(".reproducibility"), "_reproducibility.load" )
 def loadReproducibility( infile, outfile ):
     '''load reproducibility results.'''
-    tablename = P.toTable(infile)
+    #IMS: toTable needs .load so changed P.toTable(infile) to P.toTable(outfile)
+    tablename = P.toTable(outfile)
     statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s --log=%(outfile)s.log --allow-empty=True < %(infile)s'''
 
 #########################################################################
