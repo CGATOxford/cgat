@@ -1325,7 +1325,9 @@ def buildLincRNAGeneSet( infiles, outfile ):
     min_length = int(PARAMS["lincrna_min_length"])
 
     for gtfs in GTF.transcript_iterator( inf ):
+
         gene_id = gtfs[0].gene_id 
+
         total_genes.add( gene_id )
 
         l = sum( [ x.end - x.start for x in gtfs ] )

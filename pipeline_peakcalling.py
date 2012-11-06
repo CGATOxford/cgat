@@ -230,6 +230,7 @@ import PipelineMotifs as PipelineMotifs
 import PipelineGeneset as PGeneset
 import PipelineTracks
 import PipelineMapping
+import PipelineMappingQC
 
 ###################################################
 ###################################################
@@ -396,6 +397,15 @@ def prepareBAMForPeakCalling(infiles, outfile):
 
     PipelinePeakcalling.buildBAMforPeakCalling(bam_file,outfile,PARAMS["calling_deduplicate"], mask )
 
+@merge( prepareBAMForPeakCalling, "preparation_stats.load" )
+def loadDuplicationStats( infiles, outfile ):
+    '''load output from Picard Deduplication step.'''
+    
+    PipelineMappingQC.loadPicardMetrics( infiles, outfile, 
+                                         pipeline_suffix = ".prep.bam",
+                                         suffix = ".picard_metrics" )
+    
+
 ############################################################
 ############################################################
 ############################################################
@@ -448,8 +458,8 @@ if PARAMS["calling_normalize"]==True:
         minreads = int(fh.read())
         fh.close
         PipelinePeakcalling.buildSimpleNormalizedBAM( infiles, 
-                                                  outfile,
-                                                  minreads)
+                                                      outfile,
+                                                      minreads)
 else:
     @transform(prepareBAMForPeakCalling,
                suffix(".prep.bam"),
@@ -458,6 +468,38 @@ else:
         P.clone( infile, outfile )
         P.clone( infile + ".bai", outfile + ".bai" )
 
+
+####################################################################
+####################################################################
+####################################################################
+@follows( mkdir("readstats.dir") )
+@transform( normalizeBAM,
+            regex("(.*).bam"),
+            r"readstats.dir/\1.readstats" )
+def buildBAMStats( infile, outfile ):
+    '''count number of reads mapped, duplicates, etc.
+    '''
+
+    to_cluster = True
+
+    statement = '''python
+    %(scriptsdir)s/bam2stats.py
+         --force
+         --output-filename-pattern=%(outfile)s.%%s
+    < %(infile)s
+    > %(outfile)s
+    '''
+
+    P.run()
+
+####################################################################
+####################################################################
+####################################################################
+@merge( buildBAMStats, "bam_stats.load" )
+def loadBAMStats( infiles, outfile ):
+    '''import bam statisticis.'''
+    
+    PipelineMappingQC.loadBAMStats( infiles, outfile )
 
 ####################################################################
 ####################################################################
@@ -559,7 +601,7 @@ def cleanMACS( infiles, outfiles ):
             
             P.run()
         
-            # shutil.rmtree( indir )
+            shutil.rmtree( indir )
 
     
         

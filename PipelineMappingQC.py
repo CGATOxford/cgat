@@ -304,6 +304,9 @@ def buildBAMStats( infile, outfile ):
     P.run()
 
 
+###########################################################
+###########################################################
+###########################################################
 def loadBAMStats( infiles, outfile ):
     '''load bam2stats.py output into sqlite database.'''
 
@@ -344,4 +347,5 @@ def loadBAMStats( infiles, outfile ):
                       --allow-empty
                 >> %(outfile)s """
         P.run()
+
 
