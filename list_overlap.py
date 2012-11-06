@@ -62,24 +62,34 @@ True
     mmax = min(n1, n2)
     return ss.hypergeom.cdf(mmax, n, n1, n2) - ss.hypergeom.cdf(mmin, n, n1, n2)
 
-def with_genes(fftot, ffa, ffb):
+def with_genes(fftot, ffa, ffb, asfile=True):
     """
-given 3 genelists, calculate the p-value of the shared
-genes between fa and fb that are drawn from ftot.
-"""
+    given 3 genelists, calculate the p-value of the shared
+    genes between fa and fb that are drawn from ftot.
+    """
 
-    ftot = frozenset(f.strip() for f in open(fftot) if f.strip())
-    fa = frozenset(f.strip() for f in open(ffa) if f.strip())
-    fb = frozenset(f.strip() for f in open(ffb) if f.strip())
-
+    if asfile:
+        ftot = frozenset(f.strip() for f in open(fftot) if f.strip())
+        fa = frozenset(f.strip() for f in open(ffa) if f.strip())
+        fb = frozenset(f.strip() for f in open(ffb) if f.strip())
+    else:
+        fa, fb, ftot = frozenset(ffa), frozenset(ffb), frozenset(fftot)
+    
     n1, n2 = len(fa), len(fb)
     m = len(fa.intersection(fb))
     n = len(ftot)
 
-    print "A : %-32s:%-5i" % (ffa, n1)
-    print "B : %-32s:%-5i" % (ffb, n2)
-    print "total : %-32s:%-5i" % (fftot, n)
-    print "shared: %-32s:%-5i" % (' ', m)
+    if asfile:
+        print "A : %-32s:%-5i" % (ffa, n1)
+        print "B : %-32s:%-5i" % (ffb, n2)
+        print "total : %-32s:%-5i" % (fftot, n)
+        print "shared: %-32s:%-5i" % (' ', m)
+    else:
+        print "A : %-32s:%-5i" % ("set A", n1)
+        print "B : %-32s:%-5i" % ("set B", n2)
+        print "total : %-32s:%-5i" % ("total", n)
+        print "shared: %-32s:%-5i" % (' ', m)
+   
     return hypergeom(m, n, n1, n2)
 
 

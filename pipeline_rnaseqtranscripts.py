@@ -1794,7 +1794,7 @@ def buildReproducibility( infile, outfile ):
 @transform( buildReproducibility, suffix(".reproducibility"), "_reproducibility.load" )
 def loadReproducibility( infile, outfile ):
     '''load reproducibility results.'''
-    tablename = P.asTable(infile)
+    tablename = P.toTable(infile)
     statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s --log=%(outfile)s.log --allow-empty=True < %(infile)s'''
 
 #########################################################################

@@ -206,9 +206,8 @@ P.getParameters(
 PARAMS = P.PARAMS
 PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_annotations_dir"],
                                        "pipeline_annotations.py" )
-
-
-
+PREVIOUS = P.asList(PARAMS["genesets_previous"])
+print PREVIOUS
 #########################################################################
 #########################################################################
 #########################################################################
@@ -360,9 +359,43 @@ def flagExonStatus(infile, outfile):
 ##########################################################################
 ##########################################################################
 ##########################################################################
+@follows(flagExonStatus)
+@transform(PREVIOUS, regex(r"(\S+)/(\S+).gtf.gz"), r"\2.gtf.gz")
+def renameTranscriptsInPreviousSets(infile, outfile):
+    '''
+    transcripts need to be renamed because they may use the same
+    cufflinks identifiers as we use in the analysis - don't do if they
+    have an ensembl id - sort by transcript
+    '''
+    inf = IOTools.openFile(infile)
+    for gtf in GTF.iterator(inf):
+        if gtf.gene_id.find("ENSG") != -1:
+            statement = '''zcat %(infile)s | grep -v "#"
+                        | python %(scriptsdir)s/gtf2gtf.py 
+                        --sort=gene
+                        --log=%(outfile)s.log
+                        | gzip > %(outfile)s'''
+        else:
+            gene_pattern = "GEN" + P.snip(outfile, ".gtf.gz")
+            transcript_pattern = gene_pattern.replace("GEN", "TRAN")
+            statement = '''zcat %(infile)s | python %(scriptsdir)s/gtf2gtf.py 
+                           --renumber-genes=%(gene_pattern)s%%i 
+                           | python %(scriptsdir)s/gtf2gtf.py
+                           --renumber-transcripts=%(transcript_pattern)s%%i 
+                           | python %(scriptsdir)s/gtf2gtf.py
+                           --sort=gene 
+                           --log=%(outfile)s.log
+                          | gzip > %(outfile)s'''
+
+    P.run()
+
+##########################################################################
+##########################################################################
+##########################################################################
 if PARAMS["genesets_previous"]:
     @transform(flagExonStatus, regex(r"(\S+)_flag.gtf.gz")
-               , add_inputs([PARAMS["genesets_previous"], buildRefnoncodingGeneSet]), r"\1_filtered.gtf.gz")
+               , add_inputs( renameTranscriptsInPreviousSets )
+               , r"\1_filtered.gtf.gz")
     def buildFilteredLncRNAGeneSet(infiles, outfile):
         '''
         Creates a filtered lncRNA geneset. 
@@ -370,15 +403,19 @@ if PARAMS["genesets_previous"]:
         unless it has been seen previously i.e. it overlaps
         a previously identified lncRNA
         '''
-        PipelineLncRNA.buildFilteredLncRNAGeneSet(infiles[0], infiles[1][1], outfile, geneset_previous = infiles[1][0])
+        PipelineLncRNA.buildFilteredLncRNAGeneSet(infiles[0], outfile, infiles[1:len(infiles)])
 else:
     E.info("no previous lncRNA set provided: Using refnoncoding set")
     @transform(flagExonStatus, regex(r"(\S+)_flag.gtf.gz")
-               , add_inputs(["refnoncoding.gtf.gz"]), r"\1_filtered.gtf.gz")
+               , r"\1_filtered.gtf.gz")
      
-    def buildFilteredLncRNAGeneSet(infiles, outfile):
-        PipelineLncRNA.buildFilteredLncRNAGeneSet(infiles[0],infiles[1][0], outfile)
-    
+    def buildFilteredLncRNAGeneSet(infile, outfile):
+        '''
+        won't perform a filtering at this point
+        '''
+        statement = '''ln -s %(infile)s %(outfile)s'''
+        P.run()
+
 ##########################################################################
 ##########################################################################
 ##########################################################################
@@ -428,9 +465,10 @@ def loadCPCResults(infile, outfile):
     '''
     load the results of the cpc analysis
     '''
+    inf = infile.replace(".cpc", "")
     tablename = filenameToTablename(os.path.basename(infile))
     statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s --log=%(outfile)s.log 
-                   --header=transcript_id,feature,C_NC,CP_score --index=transcript_id < %(infile)s > %(outfile)s'''
+                   --header=transcript_id,feature,C_NC,CP_score --index=transcript_id < %(inf)s > %(outfile)s'''
     P.run()
 
 ##########################################################################
@@ -554,11 +592,11 @@ def buildFullGeneSet(infiles, outfile):
     between protein coding and lncRNA transcripts
     '''
     # change the source to be in keeping with classification 
-    # of trnscripts
+    # of transcripts - f coming from cufflinks assembly
 
-    inf = " ".join(infiles)
-    statement = '''zcat %(inf)s | sed "s/Cufflinks/protein_coding/g" 
-                   | python %(scriptsdir)s/gtf2gtf.py --sort=position --log=%(outfile)s.log | gzip  > %(outfile)s''' 
+    infs = " ".join(infiles)
+    statement = '''zcat %(infs)s | sed "s/Cufflinks/protein_coding/g"
+                   | python %(scriptsdir)s/gtf2gtf.py --sort=gene --log=%(outfile)s.log | gzip  > %(outfile)s''' 
     P.run()
 
 ##########################################################################
