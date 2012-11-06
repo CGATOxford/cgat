@@ -1042,7 +1042,7 @@ def aggregateExonLevelReadCounts( infiles, outfile ):
     to_cluster = True
 
     # aggregate not necessary for bed12 files, but kept in
-    src = " ".join( [ "<( zcat %s | sort -k4,4 | groupBy -i stdin -g 4 -c 7 -o %(counting_aggregate)s | sort -k1,1)" % x for x in infiles ] )
+    src = " ".join( [ "<( zcat %s | sort -k4,4 | groupBy -i stdin -g 4 -c 7 -o %s | sort -k1,1)" % (x,PARAMS['counting_aggregate']) for x in infiles ] )
 
     tmpfile = P.getTempFilename( "." )
     
