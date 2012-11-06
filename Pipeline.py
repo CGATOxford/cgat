@@ -134,7 +134,6 @@ def getParameters( filenames = ["pipeline.ini",],
     global CONFIG
 
     CONFIG = ConfigParser.ConfigParser()
-    
     CONFIG.read( filenames )
 
     p = configToDictionary( CONFIG )

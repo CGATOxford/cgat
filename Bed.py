@@ -128,7 +128,8 @@ def iterator( infile ):
         if line.strip() == "": continue
 
         b = Bed()
-        data = line[:-1].split()
+        # split at tab (Bed standard, do not split at space as this will split the name field)
+        data = line[:-1].split("\t")
         try:
             b.contig, b.start, b.end = data[0], int(data[1]), int(data[2])
         except IndexError:

@@ -848,7 +848,8 @@ class GSNAP( Mapper ):
                    --format=sam
                    --db=%(index_prefix)s
                    %%(gsnap_options)s
-                   >> %(outfile)s.log 2>&1 ;
+                   > %(tmpdir)s/%(track)s.sam
+                   2> %(outfile)s.log;
             ''' % locals() 
 
         elif nfiles == 2:
@@ -870,7 +871,8 @@ class GSNAP( Mapper ):
                    --db=%(index_prefix)s
                    %%(gsnap_options)s
                    %(files)s
-                   > %(tmpdir)s/%(track)s.sam >& %(outfile)s.log ;
+                   > %(tmpdir)s/%(track)s.sam 
+                   2> %(outfile)s.log ;
             ''' % locals() 
 
         else:
@@ -886,7 +888,7 @@ class GSNAP( Mapper ):
         tmpdir = self.tmpdir_fastq
 
         statement = '''
-                samtools view -buS %(tmpdir)s/%(track)s.sam | samtools sort - %(outf)s 2>>%(outfile)s.bwa.log; 
+                samtools view -buS %(tmpdir)s/%(track)s.sam | samtools sort - %(outf)s 2>>%(outfile)s.log; 
                 samtools index %(outfile)s;''' % locals()
 
         return statement

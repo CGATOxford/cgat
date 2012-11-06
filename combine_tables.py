@@ -34,6 +34,10 @@ Purpose
 
 This script reads several tab-separated tables and joins them into a single one.
 
+.. todo::
+
+   Rename to tables2table.py
+
 Usage
 -----
 
@@ -201,7 +205,10 @@ def joinTables( outfile, options, args ):
         n = 0
         for line in lines:
             data = string.split(line[:-1], "\t")
-            row_keys = [ data[x] for x in options.columns ]
+            try:
+                row_keys = [ data[x] for x in options.columns ]
+            except IndexError, msg:
+                raise IndexError( "error while parsing %s: %s" % (filename, msg))
             if options.sort_keys: 
                 if options.sort_keys == "numeric":
                     row_keys.sort( lambda x,y: cmp(float(x), float(y)) )

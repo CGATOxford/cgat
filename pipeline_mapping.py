@@ -933,8 +933,8 @@ def mapReadsWithGSNAP( infiles, outfile ):
     '''
 
     infile, infile_splices = infiles
-    job_options= "-pe dedicated %i -R y" % PARAMS["gsnap_threads"]
-
+    job_options= "-pe dedicated %i -R y -l mem_free=%s" % (PARAMS["gsnap_threads"],
+                                                           PARAMS["gsnap_memory"])
     to_cluster = True
     m = PipelineMapping.GSNAP( executable = P.substituteParameters( **locals() )["gsnap_executable"] )
     
@@ -1174,48 +1174,8 @@ def buildBAMStats( infiles, outfile ):
 @merge( buildBAMStats, "bam_stats.load" )
 def loadBAMStats( infiles, outfile ):
     '''import bam statisticis.'''
-
-    header = ",".join( [ os.path.basename(P.snip( x, ".readstats")) for x in infiles] )
-    # filenames = " ".join( [ "<( cut -f 1,2 < %s)" % x for x in infiles ] )
-    filenames = " ".join( infiles )
-    tablename = P.toTable( outfile )
-    E.info( "loading bam stats - summary" )
-    statement = """python %(scriptsdir)s/combine_tables.py
-                      --headers=%(header)s
-                      --skip-titles
-                      --missing=0
-                      --ignore-empty
-                      --take=2
-                   %(filenames)s
-                | perl -p -e "s/(bin|category)/track/"
-                | perl -p -e "s/unique/unique_alignments/"
-                | python %(scriptsdir)s/table2table.py --transpose
-                | python %(scriptsdir)s/csv2db.py
-                      --index=track
-                      --table=%(tablename)s 
-                > %(outfile)s
-            """
-    P.run()
-
-    for suffix in ("nm", "nh"):
-        E.info( "loading bam stats - %s" % suffix )
-        filenames = " ".join( [ "%s.%s" % (x, suffix) for x in infiles ] )
-        tname = "%s_%s" % (tablename, suffix)
-        
-        statement = """python %(scriptsdir)s/combine_tables.py
-                      --headers=%(header)s
-                      --skip-titles
-                      --missing=0
-                      --ignore-empty
-                   %(filenames)s
-                | perl -p -e "s/bin/%(suffix)s/"
-                | python %(scriptsdir)s/csv2db.py
-                      --allow-empty
-                      --table=%(tname)s 
-                >> %(outfile)s
-                """
     
-        P.run()
+    PipelineMappingQC.loadBAMStats( infiles, outfile )
 
 ############################################################
 ############################################################
