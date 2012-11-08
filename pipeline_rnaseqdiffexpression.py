@@ -1227,6 +1227,7 @@ def diff_expression(): pass
 ###################################################################
 ###################################################################
 ###################################################################
+@jobs_limit(1,"R")
 @follows( mkdir("tagplots.dir"), aggregateExonLevelReadCounts )
 @files( [ (x, os.path.join( "tagplots.dir", y)) for x, y in TARGETS_DE ] )
 def plotRNASEQTagData( infiles, outfile ):
@@ -1245,6 +1246,7 @@ mapToQCTargets = { 'cuffdiff': runCuffdiff,
                    }
 QCTARGETS = [ mapToQCTargets[x] for x in P.asList( PARAMS["methods"] ) ]
 
+@jobs_limit(1,"R")
 @transform( QCTARGETS,
             suffix(".diff"),
             ".plots" )
