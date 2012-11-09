@@ -85,6 +85,11 @@ PARAMS= {
     'cmd-run' : """%s/run.py""" % ROOT_DIR
     }
 
+hostname = os.uname()[0]
+# PATH for FGU
+if hostname.startswith("node") or hostname.startswith("fgu"):
+    pass
+
 CONFIG = {}
 
 PROJECT_ROOT = '/ifs/projects'
@@ -1237,6 +1242,9 @@ def main( args = sys.argv ):
     parser.add_option( "-p", "--multiprocess", dest="multiprocess", type="int",
                        help="number of parallel processes to use (different from number of jobs to use for cluster jobs) [default=%default]." ) 
 
+    parser.add_option( "-t", "--tempdir", dest="tempdir", type="string",
+                       help="temporary directory to use [default=%default].")
+
     parser.set_defaults(
         pipeline_action = None,
         pipeline_format = "svg",
@@ -1246,6 +1254,7 @@ def main( args = sys.argv ):
         dry_run = False,
         without_cluster = False,
         force = False,
+        tempdir=TMPDIR,
         )
 
     (options, args) = E.Start( parser, 
@@ -1254,9 +1263,12 @@ def main( args = sys.argv ):
     global GLOBAL_OPTIONS
     global GLOBAL_ARGS
     global GLOBAL_SESSION
-    
+    global TMPDIR
+
     GLOBAL_OPTIONS, GLOBAL_ARGS = options, args
     PARAMS["dryrun"] = options.dry_run
+    
+    TMPDIR = options.tempdir
 
     # get mercurial version
     repo = hgapi.Repo( PARAMS["scriptsdir"] )
