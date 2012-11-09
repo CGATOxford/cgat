@@ -1219,6 +1219,11 @@ clone <source>
 
 def main( args = sys.argv ):
 
+    global GLOBAL_OPTIONS
+    global GLOBAL_ARGS
+    global GLOBAL_SESSION
+    global TMPDIR
+
     parser = optparse.OptionParser( version = "%prog version: $Id: Pipeline.py 2799 2009-10-22 13:40:13Z andreas $",
                                     usage = USAGE )
     
@@ -1260,10 +1265,6 @@ def main( args = sys.argv ):
     (options, args) = E.Start( parser, 
                                add_cluster_options = True )
 
-    global GLOBAL_OPTIONS
-    global GLOBAL_ARGS
-    global GLOBAL_SESSION
-    global TMPDIR
 
     GLOBAL_OPTIONS, GLOBAL_ARGS = options, args
     PARAMS["dryrun"] = options.dry_run
