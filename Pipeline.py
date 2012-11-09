@@ -1222,7 +1222,6 @@ def main( args = sys.argv ):
     global GLOBAL_OPTIONS
     global GLOBAL_ARGS
     global GLOBAL_SESSION
-    global TMPDIR
 
     parser = optparse.OptionParser( version = "%prog version: $Id: Pipeline.py 2799 2009-10-22 13:40:13Z andreas $",
                                     usage = USAGE )
@@ -1259,7 +1258,6 @@ def main( args = sys.argv ):
         dry_run = False,
         without_cluster = False,
         force = False,
-        tempdir=TMPDIR,
         )
 
     (options, args) = E.Start( parser, 
@@ -1269,8 +1267,6 @@ def main( args = sys.argv ):
     GLOBAL_OPTIONS, GLOBAL_ARGS = options, args
     PARAMS["dryrun"] = options.dry_run
     
-    TMPDIR = options.tempdir
-
     # get mercurial version
     repo = hgapi.Repo( PARAMS["scriptsdir"] )
     version = repo.hg_id()

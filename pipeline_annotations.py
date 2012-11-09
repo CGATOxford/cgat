@@ -1464,7 +1464,7 @@ def buildGenomicContext( infiles, outfile ):
         --log=%(outfile)s.log
     | python %(scriptsdir)s/gff2bed.py 
         --log=%(outfile)s.log
-    | awk -v OFS="\t" '{$4 = "ribosomal_coding"; print}'
+    | awk -v OFS="\\t" '{$4 = "ribosomal_coding"; print}'
     | sort -k1,1 -k2,2n
     | python %(scriptsdir)s/bed2bed.py --method=merge --merge-by-name --merge-distance=%(distance)i --log=%(outfile)s.log
     > %(tmpfile)s_4

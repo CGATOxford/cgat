@@ -295,7 +295,7 @@ def buildBAMforPeakCalling( infiles, outfile, dedup, mask):
                                        OUTPUT=@OUT@
                                        METRICS_FILE=%(outfile)s.picardmetrics
                                        VALIDATION_STRINGENCY=SILENT 
-                   > %(outfile)s.picardlog ''' )
+                   >& %(outfile)s.picardlog ''' )
 
     if mask:
         statement.append( '''intersectBed -abam @IN@ -b %(mask)s -wa -v > @OUT@''' )
