@@ -1465,7 +1465,7 @@ def runPeakRanger( infile, outfile, controlfile):
               --thread %(peakranger_threads)i
               %(peakranger_options)s
               >& %(outfile)s
-    '''
+    ''' 
     
     P.run()
 
