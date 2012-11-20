@@ -200,6 +200,26 @@ def joinTables( outfile, options, args ):
                 
             del lines[0]
         else:
+
+            #IMS: We might still want filename titles even if the input columns don't have titles.
+            if options.add_file_prefix:
+                if not titles:
+                    titles = ["ID"]
+                try:
+                    p = re.search( options.regex_filename, prefix).groups()[0]
+                except AttributeError:
+                    E.warn( "can't extract title from filename %s" % prefix )
+                    p = "unknown"
+                titles.append( "%s_%s" % ( p, data[x] ) )
+            elif options.use_file_prefix:
+                if not titles:
+                    titles = ["ID"]
+                try:
+                    p = re.search( options.regex_filename, prefix).groups()[0]
+                except:
+                    E.warn( "can't extract title from filename %s" % prefix )
+                    p = "unknown"
+                titles.append( "%s" % p )
             ncolumns = 1
 
         n = 0
@@ -265,7 +285,7 @@ def joinTables( outfile, options, args ):
 
         order = range(0, len(tables)+1)
 
-        if options.titles:
+        if options.titles or (options.use_file_prefix or options.add_file_prefix):
 
             if options.sort:
                 sort_order = []
@@ -300,7 +320,7 @@ def joinTables( outfile, options, args ):
 
             outfile.write( "\t".join( map(lambda x: titles[order[x]], range(len(titles)))))
             outfile.write("\n")
-
+        
         if options.sort_keys:
             if options.sort_keys: 
                 if options.sort_keys == "numeric":
