@@ -74,9 +74,8 @@ def getFixedWidthWindows( map_contig2size, options ):
     else:
         raise ValueError( "could not parse window size '%s': should be size[,increment]" % options.fixed_width_windows )
 
-    windows = []
-
     for contig, size in map_contig2size.items():
+        E.info("processing %s" % contig)
         for x in range(0, size, window_increment):
             if x + window_size > size: continue
             gff = GFF.Entry()
@@ -85,9 +84,7 @@ def getFixedWidthWindows( map_contig2size, options ):
             gff.contig = contig
             gff.start = x
             gff.end = min(size, x + window_size)
-            windows.append( gff )
-
-    return windows
+            yield gff
 
 if __name__ == "__main__":
 
@@ -119,7 +116,7 @@ if __name__ == "__main__":
 
     if options.genome_file:
         fasta = IndexedFasta.IndexedFasta( options.genome_file )
-        map_contig2size = fasta.getContigSizes()
+        map_contig2size = fasta.getContigSizes( with_synonyms = False )
     else:
         fasta = None
 
@@ -141,18 +138,20 @@ if __name__ == "__main__":
 
     if options.fixed_width_windows:
         windows = getFixedWidthWindows( map_contig2size, options )
-        
+    
+    noutput = 0
     if options.output_format == "gff":
         for g in windows:
             options.stdout.write( str(g) + "\n" )
-            
+    
     elif options.output_format == "bed":
         for g in windows:
+            noutput += 1
             options.stdout.write("\t".join(map(str, 
                                                (g.contig, 
                                                g.start,
                                                g.end )) ) + "\n" )
 
-    E.info( "noutput=%i\n" % (len(windows) ))
+    E.info( "noutput=%i\n" % (noutput ))
 
     E.Stop()
