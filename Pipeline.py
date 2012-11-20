@@ -1067,7 +1067,8 @@ def run_report( clean = True):
     xvfb_command = which("xvfb-run" )
 
     # permit multiple servers using -a option
-    if xvfb_command: xvfb_command+= " -a "
+    if xvfb_command: xvfb_command += " -a "
+    else: xvfb_command = ""
 
     # if there is no DISPLAY variable set, xvfb runs, but
     # exits with error when killing process. Thus, ignore return
