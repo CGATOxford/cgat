@@ -431,8 +431,42 @@ def load( infile,
 
     run()
 
+def concatenateAndLoad( infiles, outfile, regex_filename = None, header = None ):
+    '''concatenate categorical tables and load into a database.
+
+    Concatenation assumes that the header is the same in all files.
+    The first file will be taken in completion, headers
+    in other files will be removed.
+    '''
+    
+    infiles = " ".join(infiles)
+
+    tablename = toTable( outfile )
+
+    load_options,options = [], []
+
+    if regex_filename:
+        options.append( '--regex-filename="%s"' % regex_filename )
+
+    if header:
+        load_options.append( "--header=%s" % header )
+
+    options = " ".join(options)
+    load_options = " ".join(load_options)
+    statement = '''python %(scriptsdir)s/combine_tables.py
+                     --cat=track
+                     --no-titles
+                     %(options)s
+                   %(infiles)s
+                   | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+                      --index=track
+                      --table=%(tablename)s 
+                      %(load_options)s
+                   > %(outfile)s'''
+    run()
+
 def mergeAndLoad( infiles, outfile, suffix = None, columns=(0,1), regex = None, row_wise = True ):
-    '''load categorical tables into a database.
+    '''merge categorical tables and load into a database.
 
     Columns denotes the columns to be taken.
 

@@ -287,6 +287,7 @@ def buildBAMforPeakCalling( infiles, outfile, dedup, mask):
         statement.append( '''samtools sort @IN@ @OUT@''')
 
     if dedup:
+        job_options = "-l mem_free=16G"
         statement.append( '''MarkDuplicates
                                        INPUT=@IN@
                                        ASSUME_SORTED=true 
@@ -1666,7 +1667,7 @@ def loadSPP( infile, outfile, bamfile, controlfile = None ):
     P.run()
     
     bedfile = infile + ".narrowpeak.txt"
-    headers="contig,start,end,interval_id,peakval,qvalue,peakpos"
+    headers="contig,start,end,interval_id,peakval1,qvalue,peakpos"
     tablename = P.toTable( outfile ) + "_summits"
     statement = '''awk '{printf("%%s\\t%%i\\t%%i\\t%%s\\t%%f\\t%%f\\t%%i\\n", $1,$2,$3,++a,$7,$9,$1+$10);}' 
                 < %(bedfile)s
@@ -1936,3 +1937,30 @@ def loadIntervalsFromBed( bedfile, track, outfile,
 
     L.info( "%s\n" % str(c) )
 
+
+def makeReproducibility( infiles, outfile ):
+    '''compute overlap between intervals.
+
+    Note the exon percentages are approximations assuming that there are
+    not more than one intervals in one set overlapping one in the other set.
+    '''
+
+    if os.path.exists(outfile): 
+        # note: update does not work due to quoting
+        os.rename( outfile, outfile + ".orig" )
+        options = "--update=%s.orig" % outfile
+    else:
+        options = ""
+
+    infiles = " ".join( infiles )
+
+    # note: need to quote track names
+    statement = '''
+        python %(scriptsdir)s/diff_bed.py %(options)s %(infiles)s 
+        | awk -v OFS="\\t" '!/^#/ { gsub( /-/,"_", $1); gsub(/-/,"_",$2); } {print}'
+        > %(outfile)s
+        '''
+
+    P.run()
+
+    

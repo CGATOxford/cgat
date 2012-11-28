@@ -79,6 +79,21 @@ This pipeline implements the following nomenclature for peaks:
 The pipeline computes some basic measures to validate peak calling. In order to fully annotate
 peaks, use :doc:`pipeline_intervals`.
 
+.. note::
+   The pipeline currently expects that mulit-mapping reads (reads mapping to multiple locations)
+   have been removed.
+
+QC
+---
+
+The pipeline implements the following QC measures. See :pmid:`22955991`.
+
+NSC
+   normalized strand coefficient.
+
+RSC
+  relative strand correlacion.
+
 Usage
 =====
 
@@ -397,6 +412,9 @@ def prepareBAMForPeakCalling(infiles, outfile):
 
     PipelinePeakcalling.buildBAMforPeakCalling(bam_file,outfile,PARAMS["calling_deduplicate"], mask )
 
+############################################################
+############################################################
+############################################################
 @merge( prepareBAMForPeakCalling, "preparation_stats.load" )
 def loadDuplicationStats( infiles, outfile ):
     '''load output from Picard Deduplication step.'''
@@ -510,8 +528,12 @@ def loadBAMStats( infiles, outfile ):
 @files( [ ("%s.call.bam" % (x.asFile()), 
            "%s.data_quality" % x.asFile() ) for x in TRACKS ] )
 def checkDataQuality( infile, outfile ):
-    '''uses peakranger to check data quality.'''
+    '''uses peakranger to check data quality.
+
+    nr is the signal/noise ratio.
+    '''
     
+    track = P.snip( infile, ".call.bam" )
     controlfile = "%s.call.bam" % getControl(Sample(track)).asFile()
 
     if not os.path.exists( controlfile ):
@@ -520,9 +542,22 @@ def checkDataQuality( infile, outfile ):
         return
 
     to_cluster = True
-    statement = '''peakranger nr --format bam %(infile)s %(controlfile)s > %(outfile)s'''
+    statement = '''peakranger nr --format bam %(infile)s %(controlfile)s 
+                   | awk -v FS=":" '/Estimated noise rate/ { printf("estimated_noise_rate\\n%%f\\n", $2) }' > %(outfile)s'''
     P.run()
 
+####################################################################
+####################################################################
+####################################################################
+@merge( checkDataQuality, "data_quality.load" )
+def loadDataQuality( infiles, outfile ):
+    '''load data quality information.'''
+
+    P.concatenateAndLoad( infiles, outfile, regex_filename = "(.*).data_quality" )
+
+####################################################################
+####################################################################
+####################################################################
 @follows( normalizeBAM )
 @files( [ ("%s.call.bam" % (x.asFile()), 
            "%s.library_complexity" % x.asFile() ) for x in TRACKS ] )
@@ -532,6 +567,8 @@ def checkLibraryComplexity( infile, outfile ):
     to_cluster = True
     statement = '''peakranger lc --format bam %(infile)s > %(outfile)s'''
     P.run()
+
+
 
 ####################################################################
 ####################################################################
@@ -819,6 +856,35 @@ def loadSPPSummary( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
+@follows( mkdir( os.path.join( PARAMS["exportdir"], "quality" ) ),
+          mkdir( "spp.dir" ) )
+@files( [ ("%s.call.bam" % (x.asFile()), 
+           "spp.dir/%s.qual" % x.asFile() ) for x in TRACKS ] )
+def estimateSPPQualityMetrics( infile, outfile ):
+    
+    executable = P.which( "run_spp.R" )
+    if executable == None:
+        raise ValueError( "could not find run_spp.R" )
+
+    statement = '''
+    Rscript %(executable)s -c=%(infile)s -rf -savp -out=%(outfile)s
+    >& %(outfile)s.log'''
+    
+    P.run()
+
+    if os.path.exists( infile + ".pdf" ):
+        shutil.move( infile + ".pdf", os.path.join( PARAMS["exportdir"], "quality" ))
+
+@merge( estimateSPPQualityMetrics, "spp_quality.load" )
+def loadSPPQualityMetrics( infiles, outfile ):
+    '''load spp quality metrics.'''
+    P.concatenateAndLoad( infiles, outfile,
+                          regex_filename = "spp.dir/(.*).qual",
+                          header = "track,bamfile,mapped_reads,estFragLen,corr_estFragLen,phantomPeak,corr_phantomPeak,argmin_corr,min_corr,nsc,rsc,quality")
+    
+############################################################
+############################################################
+############################################################
 CALLINGTARGETS, SUMMARYTARGETS = [], []
 mapToCallingTargets = { 'macs': loadMACS,
                         'zinba': loadZinba,
@@ -933,8 +999,67 @@ def loadPeakShapeTable( infile, outfile ):
     '''load peak shape information.'''
     P.load( infile, outfile, "--ignore-column=bins --ignore-column=counts --allow-empty" )
 
+############################################################
+############################################################
+############################################################
+## targets to do with the analysis of replicates
+############################################################
+# dummy task - flatten the nested list of result files created
+# by exportIntervalsAsBed
+@split( exportIntervalsAsBed, os.path.join( PARAMS["exportdir"], "bedfiles", "*.bed.gz" ) )
+def allIntervalsAsBed( infile, outfile ): pass
+
+############################################################
+############################################################
+############################################################
+@follows( mkdir( "reproducibility.dir"))
+@collate( allIntervalsAsBed,
+          regex( os.path.join( PARAMS["exportdir"], "bedfiles", r"(.+)_(.+)\.(.+).bed.gz" )),
+          r"reproducibility.dir/\1.\3.reproducibility")
+def makeReproducibilityOfMethods( infiles, outfile ):
+    '''compute overlap between intervals.
+
+    Note the exon percentages are approximations assuming that there are
+    not more than one intervals in one set overlapping one in the other set.
+    '''
+    PipelinePeakcalling.makeReproducibility( infiles, outfile )
+
+############################################################
+############################################################
+############################################################
+@follows( mkdir( "reproducibility.dir"))
+@collate( allIntervalsAsBed, 
+          regex( os.path.join( PARAMS["exportdir"], "bedfiles", r"(.+)-[^-]+_(.+)\.(.+).bed.gz" )),
+          r"reproducibility.dir/\1-\2.\3.reproducibility")
+def makeReproducibilityOfReplicates( infiles, outfile ):
+    '''compute overlap between intervals.
+
+    Note the exon percentages are approximations assuming that there are
+    not more than one intervals in one set overlapping one in the other set.
+    '''
+    PipelinePeakcalling.makeReproducibility( infiles, outfile )
+
+############################################################
+############################################################
+############################################################
+@transform( (makeReproducibilityOfMethods, makeReproducibilityOfReplicates), suffix(".reproducibility"), "_reproducibility.load" )
+def loadReproducibility( infile, outfile ):
+    '''load Reproducibility results
+    '''
+    P.load( infile, outfile, options="--allow-empty" )
+
+############################################################
+############################################################
+############################################################
+@follows( loadReproducibility )
+def reproducibility(): pass
+    
 ###################################################################
-@follows( calling, exportIntervalsAsBed )
+@follows( loadBAMStats, loadDuplicationStats, loadSPPQualityMetrics )
+def qc(): pass
+
+###################################################################
+@follows( calling, exportIntervalsAsBed, qc )
 def full(): pass
 
 ###################################################################
@@ -956,7 +1081,6 @@ def update_report():
 
     E.info( "updating documentation" )
     P.run_report( clean = False )
-
 
 ###################################################################
 ###################################################################
