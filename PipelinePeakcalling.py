@@ -1941,9 +1941,11 @@ def loadIntervalsFromBed( bedfile, track, outfile,
 def makeReproducibility( infiles, outfile ):
     '''compute overlap between intervals.
 
-    Note the exon percentages are approximations assuming that there are
-    not more than one intervals in one set overlapping one in the other set.
+    Compute pairwise overlap between all sets in a group
+    of :term:`bed` formatted files.
     '''
+
+    to_cluster = True
 
     if os.path.exists(outfile): 
         # note: update does not work due to quoting
@@ -1956,7 +1958,7 @@ def makeReproducibility( infiles, outfile ):
 
     # note: need to quote track names
     statement = '''
-        python %(scriptsdir)s/diff_bed.py %(options)s %(infiles)s 
+        python %(scriptsdir)s/diff_bed.py --pattern-id='([^/]+).bed.gz' %(options)s %(infiles)s 
         | awk -v OFS="\\t" '!/^#/ { gsub( /-/,"_", $1); gsub(/-/,"_",$2); } {print}'
         > %(outfile)s
         '''

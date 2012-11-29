@@ -22,10 +22,9 @@ Contents:
    pipeline/Mapping.rst
    pipeline/Callers.rst
    pipeline/Peaks.rst	
+   pipeline/Reproducibility.rst
 
 ..   pipeline/Mapping.rst
-..   pipeline/Reproducibility.rst
-
 ..   pipeline/Binding.rst
 ..   pipeline/IntervalLists.rst
 ..   pipeline/Correlations.rst

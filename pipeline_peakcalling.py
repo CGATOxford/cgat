@@ -94,6 +94,9 @@ NSC
 RSC
   relative strand correlacion.
 
+The pipeline will also do and IDR analysis (see https://sites.google.com/site/anshulkundaje/projects/idr)
+for spp called peaks. 
+
 Usage
 =====
 
@@ -202,6 +205,11 @@ Each of these tables contains the following columns:
 
 The unprocessed output files created by the peak callers are in individual subdirectories
 for each caller (:file:`macs.dir`, :file:`zinba.dir`, etc.).
+
+IDR analysis
+------------
+
+The output of the IDR analysis is in the :file:`idr.dir` directory.
 
 Example
 =======
@@ -810,7 +818,7 @@ def loadPeakRangerSummary( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-## PeakRanger
+## SPP
 ############################################################
 @follows( mkdir("spp.dir"), normalizeBAM )
 @files( [ ("%s.call.bam" % (x.asFile()), 
@@ -857,7 +865,8 @@ def loadSPPSummary( infile, outfile ):
 ############################################################
 ############################################################
 @follows( mkdir( os.path.join( PARAMS["exportdir"], "quality" ) ),
-          mkdir( "spp.dir" ) )
+          mkdir( "spp.dir" ),
+          normalizeBAM )
 @files( [ ("%s.call.bam" % (x.asFile()), 
            "spp.dir/%s.qual" % x.asFile() ) for x in TRACKS ] )
 def estimateSPPQualityMetrics( infile, outfile ):
@@ -882,6 +891,54 @@ def loadSPPQualityMetrics( infiles, outfile ):
                           regex_filename = "spp.dir/(.*).qual",
                           header = "track,bamfile,mapped_reads,estFragLen,corr_estFragLen,phantomPeak,corr_phantomPeak,argmin_corr,min_corr,nsc,rsc,quality")
     
+
+############################################################
+############################################################
+############################################################
+## SPP
+############################################################
+@follows( mkdir("idr.dir"), normalizeBAM )
+@files( [ ("%s.call.bam" % (x.asFile()), 
+           "idr.dir/%s.spp" % x.asFile() ) for x in TRACKS ] )
+def callPeaksWithSPPForIDR( infile, outfile ):
+    '''run SICER for peak detection.'''
+    track = P.snip( infile, ".call.bam" )
+    controlfile = "%s.call.bam" % getControl(Sample(track)).asFile()
+
+    if not os.path.exists( controlfile ):
+        L.warn( "no controlfile '%s' for track '%s' not found " % (controlfile, track ) )
+        raise ValueError( "idr analysis requires a control")
+
+    executable = P.which( "run_spp.R" )
+    if executable == None:
+        raise ValueError( "could not find run_spp.R" )
+
+    statement = '''
+    Rscript %(executable)s -c=%(infile)s -i=%(controlfile)s -npeak=%(idr_npeaks)s 
+            -odir=idr.dir -rf -savp -savr -savp -rf -out=%(outfile)s
+    >& %(outfile)s.log'''
+    
+    P.run()
+    
+
+@collate( callPeaksWithSPPForIDR, 
+          regex( r"idr.dir/(.+)-[^-]+.spp" ),
+          r"idr.dir/\1.idr")
+def applyIDR( infiles, outfile ):
+    '''apply IDR analysis.'''
+
+    for infile1, infile2 in itertools.combinations( infiles ):
+        basename1 = os.path.basename( infile1 )
+        basename2 = os.path.basename( infile2 )
+        statement = '''
+          Rscript /ifs/apps/src/idrCode/batch-consistency-analysis.r 
+                  %(infile1)s %(infile2)s
+                  -l idr.dir/%(basename1)_vs_%(basename2)s
+                  0 F signal.value 
+          >> %(outfile)s.log '''
+
+        P.run()
+
 ############################################################
 ############################################################
 ############################################################
