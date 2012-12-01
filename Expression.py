@@ -1141,7 +1141,7 @@ def plotTagStats( infile, design_file, outfile ):
     R('''gp = ggplot(d)''')
     R('''pp = gp + \
         geom_boxplot(aes(x=sample,y=value,color=sample,fill=sample),size=0.3,alpha=I(1/3)) + 
-        opts( axis_text_x = theme_text( angle=90, hjust=1, size=8 ) )''')
+        opts( axis.text.x = themetext( angle=90, hjust=1, size=8 ) )''')
 
     R.ggsave( outfile + ".boxplots.png" )
     R['dev.off']()
@@ -1200,7 +1200,7 @@ def plotDETagStats( infile, outfile ):
                          fill=factor(significant)),
                          size=0.3,
                          alpha=I(1/3)) +\
-        opts( axis_text_x = theme_text( angle=90, hjust=1, size=8 ) )''')
+        opts( axis.text.x = theme_text( angle=90, hjust=1, size=8 ) )''')
 
     fn = outfile + ".boxplots.png" 
     R.png( fn )
