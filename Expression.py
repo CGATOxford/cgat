@@ -712,7 +712,7 @@ def runEdgeR( infile,
         R('''fit = glmFit( countsTable, design, dispersion = %f )''' % dispersion )
 
     # perform LR test
-    R('''lrt = glmLRT( countsTable, fit)''' )
+    R('''lrt = glmLRT(fit)''' )
 
     E.info("Generating output")
 
