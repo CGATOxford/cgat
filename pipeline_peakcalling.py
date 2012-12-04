@@ -919,7 +919,6 @@ def callPeaksWithSPPForIDR( infile, outfile ):
     >& %(outfile)s.log'''
     
     P.run()
-    
 
 @collate( callPeaksWithSPPForIDR, 
           regex( r"idr.dir/(.+)-[^-]+.spp" ),
@@ -927,13 +926,22 @@ def callPeaksWithSPPForIDR( infile, outfile ):
 def applyIDR( infiles, outfile ):
     '''apply IDR analysis.'''
 
-    for infile1, infile2 in itertools.combinations( infiles ):
+    for infile1, infile2 in itertools.combinations( infiles, 2 ):
+        E.info( "applyIDR: processing %s and %s" % (infile1,infile2))
+
         basename1 = os.path.basename( infile1 )
         basename2 = os.path.basename( infile2 )
+
+        track1 = P.snip( basename1, ".spp" )
+        control1 = getControl(Sample(track1)).asFile()
+        track2 = P.snip( basename2, ".spp" )
+        control2 = getControl(Sample(track2)).asFile()
+
         statement = '''
           Rscript /ifs/apps/src/idrCode/batch-consistency-analysis.r 
-                  %(infile1)s %(infile2)s
-                  -l idr.dir/%(basename1)_vs_%(basename2)s
+                  idr.dir/%(track1)s.call_VS_%(control1)s.call.regionPeak.gz 
+                  idr.dir/%(track2)s.call_VS_%(control2)s.call.regionPeak.gz 
+                  -l idr.dir/%(track1)s_vs_%(track2)s
                   0 F signal.value 
           >> %(outfile)s.log '''
 

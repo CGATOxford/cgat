@@ -1,11 +1,11 @@
 .. Test documentation master file, created by
    sphinx-quickstart on Mon Mar 23 15:27:57 2009.
 
-.. _chipseqpipeline:
+.. _peakcallingpipeline:
 
-=================
-ChIP-Seq pipeline
-=================
+======================
+Peak calling pipeline
+======================
 
 The following pages contain automatically created tables and 
 plots from the ChIP-Seq pipeline.
