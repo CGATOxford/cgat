@@ -287,7 +287,7 @@ def buildBAMforPeakCalling( infiles, outfile, dedup, mask):
         statement.append( '''samtools sort @IN@ @OUT@''')
 
     if dedup:
-        job_options = "-l mem_free=16G"
+        job_options = "-l mem_free=16G -l picard=1"
         statement.append( '''MarkDuplicates
                                        INPUT=@IN@
                                        ASSUME_SORTED=true 
