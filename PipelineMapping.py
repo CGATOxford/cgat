@@ -500,13 +500,18 @@ class BWA( Mapper ):
         tmpdir = self.tmpdir
 
         if self.remove_unique: 
+            # \s does not work - not a recognized escape in awk regex?
             statement = '''
-                samtools view -hS %(tmpdir)s/%(track)s.sam | awk '$1 ~ /^@/ || /\sX0:i:1\s/'| samtools view -bS - | samtools sort - %(outf)s 2>>%(outfile)s.bwa.log; 
+                samtools view -hS %(tmpdir)s/%(track)s.sam 
+                         | awk '$1 ~ /^@/ || /\\tX0:i:1\\t/'
+                         | samtools view -bS - 
+                         | samtools sort - %(outf)s 2>>%(outfile)s.bwa.log; 
                 samtools index %(outfile)s;''' % locals()
 
         else:
             statement = '''
-                samtools view -buS %(tmpdir)s/%(track)s.sam | samtools sort - %(outf)s 2>>%(outfile)s.bwa.log; 
+                samtools view -buS %(tmpdir)s/%(track)s.sam 
+                         | samtools sort - %(outf)s 2>>%(outfile)s.bwa.log; 
                 samtools index %(outfile)s;''' % locals()
 
         return statement
