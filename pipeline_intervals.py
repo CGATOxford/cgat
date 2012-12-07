@@ -1212,7 +1212,7 @@ def runGATOnGenomicContext( infiles, outfile ):
     to_cluster = True
     outdir = "context_gat.dir"
 
-    statement = '''gatrun.py
+    statement = '''gat-run.py
          --segments=%(bedfile)s
          --annotations=%(annofile)s
          --workspace=%(workspacefile)s
@@ -1259,7 +1259,7 @@ def runGATOnGenomicAnnotations( infiles, outfile ):
     to_cluster = True
     outdir = "annotations_gat.dir"
 
-    statement = '''gatrun.py
+    statement = '''gat-run.py
          --segments=%(bedfile)s
          --annotations=<(zcat %(annofile)s | awk '{printf("%%s\\t%%i\\t%%i\\t%%s\\n",$1,$4,$5,$3);}')
          --workspace=%(workspacefile)s
@@ -1312,7 +1312,7 @@ def runGATOnGeneAnnotations( infiles, outfile ):
 
     to_cluster = True
 
-    statement = '''gatrun.py
+    statement = '''gat-run.py
          --segments=%(bedfile)s
          --annotations=%(annofile)s
          --workspace=<(zcat %(workspacefile)s | awk '{printf("%%s\\t%%i\\t%%i\\n",$1,$4,$5);}')

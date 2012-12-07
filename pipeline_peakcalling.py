@@ -870,20 +870,31 @@ def loadSPPSummary( infile, outfile ):
 @files( [ ("%s.call.bam" % (x.asFile()), 
            "spp.dir/%s.qual" % x.asFile() ) for x in TRACKS ] )
 def estimateSPPQualityMetrics( infile, outfile ):
+
+    controlfile = "%s.call.bam" % getControl(Sample(track)).asFile()
+
+    if not os.path.exists( controlfile ):
+        L.warn( "no controlfile '%s' for track '%s' not found " % (controlfile, track ) )
+        raise ValueError( "idr analysis requires a control")
     
     executable = P.which( "run_spp.R" )
     if executable == None:
         raise ValueError( "could not find run_spp.R" )
 
     statement = '''
-    Rscript %(executable)s -c=%(infile)s -rf -savp -out=%(outfile)s
+    Rscript %(executable)s -c=%(infile)s -i=%(controlfile)s -rf -savp -out=%(outfile)s
     >& %(outfile)s.log'''
     
     P.run()
 
-    if os.path.exists( infile + ".pdf" ):
+    track = P.snip(infile, ".bam" )
+
+    if os.path.exists( track + ".pdf" ):
         shutil.move( infile + ".pdf", os.path.join( PARAMS["exportdir"], "quality" ))
 
+############################################################
+############################################################
+############################################################
 @merge( estimateSPPQualityMetrics, "spp_quality.load" )
 def loadSPPQualityMetrics( infiles, outfile ):
     '''load spp quality metrics.'''
@@ -895,9 +906,9 @@ def loadSPPQualityMetrics( infiles, outfile ):
 ############################################################
 ############################################################
 ############################################################
-## SPP
+## IDR analysis with SPP
 ############################################################
-@follows( mkdir("idr.dir"), normalizeBAM )
+@follows( mkdir("idr.dir"), normalizeBAM, mkdir( os.path.join( PARAMS["exportdir"], "idr" ) ) )
 @files( [ ("%s.call.bam" % (x.asFile()), 
            "idr.dir/%s.spp" % x.asFile() ) for x in TRACKS ] )
 def callPeaksWithSPPForIDR( infile, outfile ):
@@ -915,16 +926,27 @@ def callPeaksWithSPPForIDR( infile, outfile ):
 
     statement = '''
     Rscript %(executable)s -c=%(infile)s -i=%(controlfile)s -npeak=%(idr_npeaks)s 
-            -odir=idr.dir -rf -savp -savr -savp -rf -out=%(outfile)s
+            -odir=idr.dir -savr -savp -rf -out=%(outfile)s
     >& %(outfile)s.log'''
     
     P.run()
 
+    track = P.snip(infile, ".bam" )
+
+    if os.path.exists( track + ".pdf" ):
+        shutil.move( infile + ".pdf", os.path.join( PARAMS["exportdir"], "idr" ))
+
+############################################################
+############################################################
+############################################################
 @collate( callPeaksWithSPPForIDR, 
           regex( r"idr.dir/(.+)-[^-]+.spp" ),
           r"idr.dir/\1.idr")
 def applyIDR( infiles, outfile ):
     '''apply IDR analysis.'''
+
+    to_cluster = True
+    chromosome_table = os.path.join(PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_contigs"])
 
     for infile1, infile2 in itertools.combinations( infiles, 2 ):
         E.info( "applyIDR: processing %s and %s" % (infile1,infile2))
@@ -936,16 +958,42 @@ def applyIDR( infiles, outfile ):
         control1 = getControl(Sample(track1)).asFile()
         track2 = P.snip( basename2, ".spp" )
         control2 = getControl(Sample(track2)).asFile()
-
+        
         statement = '''
-          Rscript /ifs/apps/src/idrCode/batch-consistency-analysis.r 
-                  idr.dir/%(track1)s.call_VS_%(control1)s.call.regionPeak.gz 
-                  idr.dir/%(track2)s.call_VS_%(control2)s.call.regionPeak.gz 
-                  -l idr.dir/%(track1)s_vs_%(track2)s
-                  0 F signal.value 
-          >> %(outfile)s.log '''
+          python %(scriptsdir)s/WrapperIDR.py 
+                 --action=run
+                 --output-prefix=%(track1)s_vs_%(track2)s.idr
+                 --chromosome-table=%(chromosome_table)s
+                 idr.dir/%(track1)s.call_VS_%(control1)s.call.regionPeak.gz 
+                 idr.dir/%(track2)s.call_VS_%(control2)s.call.regionPeak.gz 
+          >> %(outfile)s'''
 
         P.run()
+
+############################################################
+############################################################
+############################################################
+@follows(mkdir( os.path.join( PARAMS["exportdir"], "idr" ) ) )
+@transform( applyIDR, 
+            suffix(".idr"),
+            ".plot")
+def plotIDR( infile, outfile ):
+    '''plot IDR results.'''
+
+    to_cluster = True
+
+    track = P.snip( infile, ".idr")
+    files = glob.glob( track + "*.idr-em.sav" )
+    files = " ".join([ P.snip(x, "-em.sav" ) for x in files ])
+    output_prefix = os.path.join( PARAMS["exportdir"], "idr", os.path.basename(track ) )
+    statement = '''
+    python %(scriptsdir)s/WrapperIDR.py
+               --action=plot
+               --output-prefix=%(output_prefix)s
+               %(files)s
+    > %(outfile)s'''
+
+    P.run()
 
 ############################################################
 ############################################################

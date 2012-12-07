@@ -23,6 +23,8 @@ Contents:
    pipeline/Callers.rst
    pipeline/Peaks.rst	
    pipeline/Reproducibility.rst
+   pipeline/IDR.rst
+   pipeline/Encode.rst
 
 ..   pipeline/Mapping.rst
 ..   pipeline/Binding.rst
