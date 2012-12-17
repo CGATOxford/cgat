@@ -944,6 +944,157 @@ def runMACS( infile, outfile, controlfile = None ):
 ############################################################
 ############################################################
 ############################################################
+def summarizeMACS2( infiles, outfile ):
+    '''run MACS2 for peak detection.
+
+    This script parses the MACS2 logfile to extract 
+    peak calling parameters and results.
+
+    TODO: doesn't report peak numbers...
+    '''
+
+    def __get( line, stmt ):
+        x = line.search(stmt )
+        if x: return x.groups() 
+
+    # mapping patternts to values.
+    # tuples of pattern, label, subgroups
+    map_targets = [
+        ("fragments after filtering in treatment: (\d+)", "fragment_treatment_filtered",()),
+        ("total fragments in treatment: (\d+)", "fragment_treatment_total",()),
+        ("fragments after filtering in control: (\d+)", "fragment_control_filtered",()),
+        ("total fragments in control: (\d+)", "fragment_control_total",()),
+        ("#2   Use 0 as shiftsize, (\d+)","fragment_length", ()),
+# Number of peaks doesn't appear to be reported!.
+#        ("#3 Total number of candidates: (\d+)", "ncandidates",("positive", "negative") ),
+#        ("#3 Finally, (\d+) peaks are called!",  "called", ("positive", "negative") ) 
+        ]
+
+
+    mapper, mapper_header = {}, {}
+    for x,y,z in map_targets: 
+        mapper[y] = re.compile( x )
+        mapper_header[y] = z
+
+    keys = [ x[1] for x in map_targets ]
+
+    outs = IOTools.openFile(outfile,"w")
+
+    headers = []
+    for k in keys:
+        if mapper_header[k]:
+            headers.extend( ["%s_%s" % (k,x) for x in mapper_header[k] ])
+        else:
+            headers.append( k )
+    outs.write("track\t%s" % "\t".join(headers) + "\n" )
+
+    for infile in infiles:
+        results = collections.defaultdict(list)
+        with IOTools.openFile( infile ) as f:
+            for line in f:
+                if "diag:" in line: break
+                for x,y in mapper.items():
+                    s = y.search( line )
+                    if s: 
+                        results[x].append( s.groups()[0] )
+                        break
+                
+        row = [ P.snip( os.path.basename(infile), ".macs" ) ]
+        for key in keys:
+            val = results[key]
+            if len(val) == 0: v = "na"
+            else: 
+                c = len(mapper_header[key])
+                # append missing data (no negative peaks without control files)
+                v = "\t".join( map(str, val + ["na"] * (c - len(val)) ))
+            row.append(v)
+            # assert len(row) -1 == len( headers )
+        outs.write("\t".join(row) + "\n" )
+
+    outs.close()
+
+############################################################
+############################################################
+############################################################
+def summarizeMACS2FDR( infiles, outfile ):
+    '''compile table with peaks that would remain after filtering
+    by fdr.
+    '''
+    fdr_threshold =  PARAMS["macs2_max_qvalue"] #numpy.arange( 0, 1.05, 0.05 )
+
+    outf = IOTools.openFile( outfile, "w")
+    outf.write( "track\t%s\n" % "\t".join( map(str, fdr_thresholds) ) )
+
+    for infile in infiles:
+        called = []
+        track = P.snip( os.path.basename(infile), ".macs" )
+        infilename = infile + "_peaks.xls.gz"
+        inf = IOTools.openFile( infilename )
+        peaks = list( WrapperMACS.iteratePeaks(inf) )
+        
+        for threshold in fdr_thresholds:
+            called.append( len( [ x for x in peaks if x.fdr <= threshold ] ) )
+            
+        outf.write( "%s\t%s\n" % (track, "\t".join( map(str, called ) ) ) )
+
+    outf.close()
+
+
+
+############################################################
+############################################################
+############################################################
+def runMACS2( infile, outfile, controlfile = None ):
+    '''run MACS for peak detection from BAM files.
+
+    The output bed files contain the P-value as their score field.
+    Output bed files are compressed and indexed.
+    '''
+    to_cluster = True
+
+    if controlfile: control = "--control=%s" % controlfile
+    else: control = ""
+
+# example statement: macs2 callpeak -t R1-paupar-R1.call.bam -c R1-lacZ-R1.call.bam -f BAMPE -g 2.39e9 --verbose 5 --bw 150 -q 0.01 -m 10 100000 --name test
+
+    statement = '''
+                    macs2 callpeak 
+                    -t %(infile)s 
+                    -c %(control)s 
+                    --diag
+                    --verbose=10 
+                    --name=%(outfile)s 
+                    --format=BAMPE
+                    --qvalue=%(macs2_max_qvalue)s
+                    %(macs2_options)s 
+                    >& %(outfile)s
+                ''' 
+    
+    P.run() 
+    
+    # compress macs bed files and index with tabix
+    for suffix in ('peaks', 'summits'):
+        statement = '''
+        bgzip -f %(outfile)s_%(suffix)s.bed; 
+        tabix -f -p bed %(outfile)s_%(suffix)s.bed.gz
+        '''
+        P.run()
+        
+    for suffix in ('peaks.xls'):
+        statement = '''grep -v "^$" 
+                       < %(outfile)s_%(suffix)s 
+                       | bgzip > %(outfile)s_%(suffix)s.gz;
+                       tabix -f -p bed %(outfile)s_%(suffix)s.gz;
+                       checkpoint;
+                       rm -f %(outfile)s_%(suffix)s
+                    '''
+        P.run()
+
+
+
+############################################################
+############################################################
+############################################################
 def runZinba( infile, outfile, controlfile, action = "full" ):
     '''run Zinba for peak detection.'''
 
@@ -1277,7 +1428,7 @@ def loadZinba( infile, outfile, bamfile,
 ############################################################
 ############################################################
 ############################################################
-def runSICER( infile, outfile, controlfile = None ):
+def runSICER( infile, outfile, controlfile = None, mode = "narrow" ):
     '''run sicer on infile.'''
     
     to_cluster = True
@@ -1290,26 +1441,35 @@ def runSICER( infile, outfile, controlfile = None ):
     statement = ['bamToBed -i %(infile)s > %(workdir)s/foreground.bed']
     
     outfile = os.path.basename( outfile )
-    
+
+    if mode == "narrow":
+            window_size = PARAMS["sicer_narrow_window_size"]
+            gap_size = PARAMS["sicer_narrow_gap_size"]
+    elif mode == "broad":
+            window_size = PARAMS["sicer_broad_window_size"]
+            gap_size = PARAMS["sicer_broad_gap_size"]
+    else:
+            raise ValueError("SICER mode unrecognised")
+
     if controlfile:
         statement.append( 'bamToBed -i %(controlfile)s > %(workdir)s/control.bed' )
         statement.append( 'cd %(workdir)s' )
         statement.append( '''SICER.sh . foreground.bed control.bed . %(genome)s 
                     %(sicer_redundancy_threshold)i
-                    %(sicer_window_size)i
+                    %(window_size)i
                     %(sicer_fragment_size)i
                     %(sicer_effective_genome_fraction)f
-                    %(sicer_gap_size)i
+                    %(gap_size)i
                     %(sicer_fdr_threshold)f
                     >& ../%(outfile)s''' )
     else:
         statement.append( 'cd %(workdir)s' )
         statement.append( '''SICER-rb.sh . foreground.bed . %(genome)s 
                     %(sicer_redundancy_threshold)i
-                    %(sicer_window_size)i
+                    %(window_size)i
                     %(sicer_fragment_size)i
                     %(sicer_effective_genome_fraction)f
-                    %(sicer_gap_size)i
+                    %(gap_size)i
                     %(sicer_evalue_threshold)f
                     >& ../%(outfile)s''' )
 
@@ -1452,8 +1612,7 @@ def runPeakRanger( infile, outfile, controlfile):
     
     assert controlfile != None, "peakranger requires a control"
 
-    statement = '''peakranger 
-               %(peakranger_mode)s
+    statement = '''peakranger ranger
               --data %(infile)s 
               --control %(controlfile)s
               --output %(outfile)s
@@ -1476,7 +1635,7 @@ def runPeakRanger( infile, outfile, controlfile):
 ############################################################
 ############################################################
 ############################################################
-def loadPeakRanger( infile, outfile, bamfile, controlfile = None ):
+def loadPeakRanger( infile, outfile, bamfile, mode, controlfile = None ):
     '''load peakranger results.'''
     
     to_cluster = True
@@ -1506,7 +1665,6 @@ def loadPeakRanger( infile, outfile, bamfile, controlfile = None ):
                 > %(outfile)s'''
     
     P.run()
-
     
     bedfile = infile + "_summit.bed"
     headers="contig,start,end,interval_id,qvalue,strand"
@@ -1599,6 +1757,35 @@ def summarizePeakRanger( infiles, outfile ):
 
     outs.close()
 
+############################################################
+############################################################
+############################################################
+def runPeakRangerCCAT( infile, outfile, controlfile):
+    '''run peak ranger
+    '''
+    
+    assert controlfile != None, "peakranger requires a control"
+
+    statement = '''peakranger ccat
+              --data %(infile)s 
+              --control %(controlfile)s
+              --output %(outfile)s
+              --format bam
+              --FDR %(peakranger_fdr_threshold)f
+              --ext_length %(peakranger_extension_length)i
+              --win_size %(ccat_winsize)i
+              --win_step %(ccat_winstep)i
+              --min_count %(ccat_mincount)i
+              --min_score %(ccat_minscore)i
+              --thread %(peakranger_threads)i
+              %(peakranger_options)s
+              >& %(outfile)s
+    ''' 
+    
+    P.run()
+
+    # usually there is no output
+    P.touch(outfile)
 
 ############################################################
 ############################################################
