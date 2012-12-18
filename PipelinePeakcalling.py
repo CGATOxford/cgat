@@ -1033,8 +1033,8 @@ def summarizeMACS2FDR( infiles, outfile ):
         peaks = list( WrapperMACS.iterateMacs2Peaks(inf) )
         
         #for threshold in fdr_thresholds:
-        called.append( len( [ x for x in peaks if x.fdr <= threshold ] ) )
-            
+        called.append( len( [ x for x in peaks if x.fdr <= fdr_threshold ] ) )
+
         outf.write( "%s\t%s\n" % (track, "\t".join( map(str, called ) ) ) )
 
     outf.close()
