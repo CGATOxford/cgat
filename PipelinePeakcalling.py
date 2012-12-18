@@ -1023,7 +1023,7 @@ def summarizeMACS2FDR( infiles, outfile ):
     fdr_threshold =  PARAMS["macs2_max_qvalue"] #numpy.arange( 0, 1.05, 0.05 )
 
     outf = IOTools.openFile( outfile, "w")
-    outf.write( "track\t%s\n" % "\t".join( map(str, fdr_threshold) ) )
+    outf.write( "track\t%s\n" % str(fdr_threshold) )
 
     for infile in infiles:
         called = []
