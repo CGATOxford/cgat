@@ -886,7 +886,7 @@ def summarizeMACSFDR( infiles, outfile ):
         track = P.snip( os.path.basename(infile), ".macs" )
         infilename = infile + "_peaks.xls.gz"
         inf = IOTools.openFile( infilename )
-        peaks = list( WrapperMACS.iteratePeaks(inf) )
+        peaks = list( WrapperMACS.iterateMacsPeaks(inf) )
         
         for threshold in fdr_thresholds:
             called.append( len( [ x for x in peaks if x.fdr <= threshold ] ) )
@@ -999,7 +999,7 @@ def summarizeMACS2( infiles, outfile ):
                         results[x].append( s.groups()[0] )
                         break
                 
-        row = [ P.snip( os.path.basename(infile), ".macs" ) ]
+        row = [ P.snip( os.path.basename(infile), ".macs2" ) ]
         for key in keys:
             val = results[key]
             if len(val) == 0: v = "na"
@@ -1023,17 +1023,17 @@ def summarizeMACS2FDR( infiles, outfile ):
     fdr_threshold =  PARAMS["macs2_max_qvalue"] #numpy.arange( 0, 1.05, 0.05 )
 
     outf = IOTools.openFile( outfile, "w")
-    outf.write( "track\t%s\n" % "\t".join( map(str, fdr_thresholds) ) )
+    outf.write( "track\t%s\n" % "\t".join( map(str, fdr_threshold) ) )
 
     for infile in infiles:
         called = []
-        track = P.snip( os.path.basename(infile), ".macs" )
+        track = P.snip( os.path.basename(infile), ".macs2" )
         infilename = infile + "_peaks.xls.gz"
         inf = IOTools.openFile( infilename )
-        peaks = list( WrapperMACS.iteratePeaks(inf) )
+        peaks = list( WrapperMACS.iterateMacs2Peaks(inf) )
         
-        for threshold in fdr_thresholds:
-            called.append( len( [ x for x in peaks if x.fdr <= threshold ] ) )
+        #for threshold in fdr_thresholds:
+        called.append( len( [ x for x in peaks if x.fdr <= threshold ] ) )
             
         outf.write( "%s\t%s\n" % (track, "\t".join( map(str, called ) ) ) )
 
@@ -1061,7 +1061,6 @@ def runMACS2( infile, outfile, controlfile = None ):
                     macs2 callpeak 
                     -t %(infile)s 
                     -c %(control)s 
-                    --diag
                     --verbose=10 
                     --name=%(outfile)s 
                     --format=BAMPE
@@ -1080,15 +1079,15 @@ def runMACS2( infile, outfile, controlfile = None ):
         '''
         P.run()
         
-    for suffix in ('peaks.xls'):
-        statement = '''grep -v "^$" 
-                       < %(outfile)s_%(suffix)s 
-                       | bgzip > %(outfile)s_%(suffix)s.gz;
-                       tabix -f -p bed %(outfile)s_%(suffix)s.gz;
-                       checkpoint;
-                       rm -f %(outfile)s_%(suffix)s
-                    '''
-        P.run()
+    suffix = 'peaks.xls'
+    statement = '''grep -v "^$" 
+                   < %(outfile)s_%(suffix)s 
+                   | bgzip > %(outfile)s_%(suffix)s.gz;
+                   tabix -f -p bed %(outfile)s_%(suffix)s.gz;
+                   checkpoint;
+                   rm -f %(outfile)s_%(suffix)s
+                '''
+    P.run()
 
 
 
@@ -1201,7 +1200,7 @@ def loadMACS( infile, outfile, bamfile, controlfile = None ):
     
     counter = E.Counter()
     with IOTools.openFile( filename_bed, "r" ) as ins:
-        for peak in WrapperMACS.iteratePeaks( ins ):
+        for peak in WrapperMACS.iterateMacsPeaks( ins ):
 
             if peak.fdr > max_qvalue:
                 counter.removed_qvalue += 1
@@ -1251,7 +1250,7 @@ def loadMACS( infile, outfile, bamfile, controlfile = None ):
             "pvalue", "fold", "qvalue",
             "macs_summit", "macs_nprobes" ) )
 
-    tablename = P.toTable( outfile ) + "_regions"
+    tablename = P.toTable( outfile ) + "_peaks"
 
     if controlfile:
         control = "--control-bam-file=%(controlfile)s --control-offset=%(shift)i" % locals()
@@ -1328,6 +1327,184 @@ def loadMACS( infile, outfile, bamfile, controlfile = None ):
 ############################################################
 ############################################################
 ############################################################
+def loadMACS2( infile, outfile, bamfile, controlfile = None ):
+    '''load MACS 2 results in *tablename*
+
+    This method loads only positive peaks. It filters peaks by p-value,
+    q-value and fold change and loads the diagnostic data and
+    re-calculates peakcenter, peakval, ... using the supplied bamfile.
+
+    If *tablename* is not given, it will be :file:`<track>_intervals`
+    where track is derived from ``infile`` and assumed to end
+    in :file:`.macs`.
+
+    This method creates two optional additional files:
+
+    * if the file :file:`<track>_diag.xls` is present, load MACS 
+    diagnostic data into the table :file:`<track>_macsdiag`.
+    
+    * if the file :file:`<track>_model.r` is present, call R to
+    create a MACS peak-shift plot and save it as :file:`<track>_model.pdf`
+    in the :file:`export/MACS` directory.
+
+    This method creates :file:`<outfile>.tsv.gz` with the results
+    of the filtering.
+    '''
+    track = P.snip( os.path.basename(infile), ".macs2" )
+    filename_bed = infile + "_peaks.xls.gz"
+
+    filename_diag = infile + "_diag.xls"
+    filename_subpeaks = P.snip( infile, ".macs2", ) + ".subpeaks.macs_peaks.bed" 
+
+
+    if not os.path.exists(filename_bed):
+        E.warn("could not find %s" % infilename )
+        P.touch( outfile )
+        return
+
+    ###############################################################
+    # filter peaks - this isn't needed...
+    ## get thresholds
+    max_qvalue = float(PARAMS["macs_max_qvalue"])
+    # min, as it is -10log10
+    min_pvalue = float(PARAMS["macs_min_pvalue"])
+
+    outtemp = P.getTempFile( "." )
+    tmpfilename = outtemp.name
+
+    id = 0
+    
+    counter = E.Counter()
+    with IOTools.openFile( filename_bed, "r" ) as ins:
+        for peak in WrapperMACS.iterateMacs2Peaks( ins ):
+
+            if peak.fdr > max_qvalue:
+                counter.removed_qvalue += 1
+                continue
+            elif peak.pvalue < min_pvalue:
+                counter.removed_pvalue += 1
+                continue
+
+            assert peak.start < peak.end
+
+            #deliberately not writing out the macs2 assigned peak name...
+            outtemp.write ( "\t".join( map(str, ( \
+                            peak.contig, peak.start, peak.end, 
+                            id,
+                            peak.pvalue, peak.fold, peak.fdr,
+                            peak.start + peak.summit - 1, 
+                            peak.pileup) ) ) + "\n" )
+            id += 1                        
+            counter.output += 1
+
+    outtemp.close()
+
+    ###################################################################
+    # output filtering summary
+    outf = IOTools.openFile( "%s.tsv.gz" % outfile, "w" )
+    outf.write( "category\tcounts\n" )
+    outf.write( "%s\n" % counter.asTable() )
+    outf.close()
+
+    E.info( "%s filtering: %s" % (track, str(counter)))
+    if counter.output == 0:
+        E.warn( "%s: no peaks found" % track )
+
+    ###############################################################
+    # load peaks
+    shift = getPeakShiftFromMacs( infile ) 
+    assert shift != None, "could not determine peak shift from MACS file %s" % infile
+
+    E.info( "%s: found peak shift of %i" % (track, shift ))
+
+    offset = shift * 2
+
+    to_cluster = True
+
+    headers = ",".join( (
+            "contig", "start", "end",
+            "interval_id", 
+            "pvalue", "fold", "qvalue",
+            "macs_summit", "macs_nprobes" ) )
+
+    tablename = P.toTable( outfile ) + "_peaks"
+
+    if controlfile:
+        control = "--control-bam-file=%(controlfile)s --control-offset=%(shift)i" % locals()
+    else:
+        control = ""
+
+    statement = '''python %(scriptsdir)s/bed2table.py 
+                           --counter=peaks
+                           --bam-file=%(bamfile)s
+                           --offset=%(shift)i
+                           %(control)s
+                           --all-fields 
+                           --bed-header=%(headers)s
+                           --log=%(outfile)s
+                < %(tmpfilename)s
+                | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
+                       --index=contig,start
+                       --index=interval_id
+                       --table=%(tablename)s
+                       --allow-empty 
+                > %(outfile)s'''
+    
+    P.run()
+
+    os.unlink( tmpfilename )
+
+    ############################################################
+    if os.path.exists( filename_subpeaks ):
+
+        headers = ",".join( (
+                "contig", "start", "end",
+                "interval_id",
+                "Height", 
+                "SummitPosition" ))
+
+        tablename = P.toTable( outfile ) + "_summits"
+
+        # add a peak identifier and remove header
+        statement = '''
+                    awk '/Chromosome/ {next; } {printf("%%s\\t%%i\\t%%i\\t%%i\\t%%i\\t%%i\\n", $1,$2,$3,++a,$4,$5)}'
+                    < %(filename_subpeaks)s
+                    | python %(scriptsdir)s/bed2table.py 
+                               --counter=peaks
+                               --bam-file=%(bamfile)s
+                               --offset=%(shift)i
+                               %(control)s
+                               --all-fields 
+                               --bed-header=%(headers)s
+                               --log=%(outfile)s
+                    | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
+                           --index=contig,start
+                           --index=interval_id
+                           --table=%(tablename)s
+                           --allow-empty 
+                    > %(outfile)s'''
+    
+        P.run()
+    
+    ############################################################
+    # load diagnostic data
+    if os.path.exists( filename_diag ):
+
+        tablename = P.toTable( outfile ) + "_diagnostics"
+        statement = '''
+        cat %(filename_diag)s 
+        | sed "s/FC range.*/fc\\tnpeaks\\tp90\\tp80\\tp70\\tp60\\tp50\\tp40\\tp30\\tp20/" 
+        | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
+                  --map=fc:str 
+                  --table=%(tablename)s 
+        >> %(outfile)s
+        '''
+        P.run()        
+
+
+############################################################
+############################################################
+############################################################
 def loadZinba( infile, outfile, bamfile, 
                tablename = None,
                controlfile = None ):
@@ -1378,7 +1555,8 @@ def loadZinba( infile, outfile, bamfile,
         if controlfile:
             control = "--control-bam-file=%(controlfile)s --control-offset=%(offset)i" % locals()
 
-        tablename = P.toTable( outfile ) + "_regions" 
+        # Steve - Guessing these are actually "peak calls"
+        tablename = P.toTable( outfile ) + "_peaks" 
 
         headers="contig,start,end,sig,maxloc,maxval,median,qvalue"
 
@@ -1481,16 +1659,16 @@ def runSICER( infile, outfile, controlfile = None, mode = "narrow" ):
 ############################################################
 ############################################################
 ############################################################
-def loadSICER( infile, outfile, bamfile, controlfile = None ):
-    '''load licer results.'''
+def loadSICER( infile, outfile, bamfile, controlfile = None, mode = "narrow" ):
+    '''load Sicer results.'''
 
     to_cluster = True
 
     # build filename of input bedfile
     track = P.snip( os.path.basename(infile), ".sicer" )
     sicerdir = infile + ".dir"
-    window = PARAMS["sicer_window_size"]
-    gap = PARAMS["sicer_gap_size"]
+    window = PARAMS["sicer_"+mode+"_window_size"]
+    gap = PARAMS["sicer_"+mode+"_gap_size"]
     fdr = "%8.6f" % PARAMS["sicer_fdr_threshold"]
     offset = PARAMS["sicer_fragment_size"]
 
@@ -1635,7 +1813,7 @@ def runPeakRanger( infile, outfile, controlfile):
 ############################################################
 ############################################################
 ############################################################
-def loadPeakRanger( infile, outfile, bamfile, mode, controlfile = None ):
+def loadPeakRanger( infile, outfile, bamfile, controlfile = None, table_suffix = "peaks"):
     '''load peakranger results.'''
     
     to_cluster = True
@@ -1644,10 +1822,13 @@ def loadPeakRanger( infile, outfile, bamfile, mode, controlfile = None ):
 
     if controlfile:
         control = "--control-bam-file=%(controlfile)s --control-offset=%(offset)i" % locals()
-        
-    bedfile = infile + "_details"
-    headers="contig,start,end,nearby_genes,interval_id,summits,pvalue,qvalue,strand,treads,creads"
-    tablename = P.toTable( outfile ) + "_regions"
+
+    # Steve - This was set to _details, but _details = regions (peaks) + summits. Hence changed. 
+    # AFAIK, Peakranger ranger is optimised to detect peaks arising from point source binding
+    # where as Peakranger ccat is optimised to detect regions arising from more diffuse binding events.
+    bedfile = infile + "_region.bed"
+    headers="contig,start,end,interval_id,qvalue,strand"
+    tablename = P.toTable( outfile ) + "_" + table_suffix
     statement = '''python %(scriptsdir)s/bed2table.py 
                            --counter=peaks
                            --bam-file=%(bamfile)s
@@ -1663,7 +1844,6 @@ def loadPeakRanger( infile, outfile, bamfile, mode, controlfile = None ):
                        --table=%(tablename)s
                        --allow-empty 
                 > %(outfile)s'''
-    
     P.run()
     
     bedfile = infile + "_summit.bed"
@@ -1829,33 +2009,37 @@ def loadSPP( infile, outfile, bamfile, controlfile = None ):
 
     if controlfile:
         control = "--control-bam-file=%(controlfile)s --control-offset=%(offset)i" % locals()
-        
-    bedfile = infile + ".broadpeak.txt"
-    headers="contig,start,end,interval_id"
-    tablename = P.toTable( outfile ) + "_regions"
-    statement = '''
-                awk '{printf("%%s\\t%%i\\t%%i\\t%%s\\n", $1,$2,$3,++a);}' 
-                < %(bedfile)s
-                | python %(scriptsdir)s/bed2table.py 
-                           --counter=peaks
-                           --bam-file=%(bamfile)s
-                           --offset=%(offset)i
-                           %(control)s
-                           --all-fields 
-                           --bed-header=%(headers)s
-                           --log=%(outfile)s
-                | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
-                       --index=contig,start
-                       --index=interval_id
-                       --table=%(tablename)s
-                       --allow-empty 
-                > %(outfile)s'''
-    
-    P.run()
+
+    #      
+    # Now commented out - the broadpeaks file records arbitrary broad regions of enrichment
+    # not controlled by p or q value, it is a preprocessing step in the spp pipeline.
+    #
+    #bedfile = infile + ".broadpeak.txt"
+    #headers="contig,start,end,interval_id"
+    #tablename = P.toTable( outfile ) + "_regions"
+    #statement = '''
+    #            awk '{printf("%%s\\t%%i\\t%%i\\t%%s\\n", $1,$2,$3,++a);}' 
+    #            < %(bedfile)s
+    #            | python %(scriptsdir)s/bed2table.py 
+    #                       --counter=peaks
+    #                       --bam-file=%(bamfile)s
+    #                       --offset=%(offset)i
+    #                       %(control)s
+    #                       --all-fields 
+    #                       --bed-header=%(headers)s
+    #                       --log=%(outfile)s
+    #            | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
+    #                   --index=contig,start
+    #                   --index=interval_id
+    #                   --table=%(tablename)s
+    #                   --allow-empty 
+    #            > %(outfile)s'''
+    #
+    #P.run()
     
     bedfile = infile + ".narrowpeak.txt"
     headers="contig,start,end,interval_id,peakval1,qvalue,peakpos"
-    tablename = P.toTable( outfile ) + "_summits"
+    tablename = P.toTable( outfile ) + "_peaks"
     statement = '''awk '{printf("%%s\\t%%i\\t%%i\\t%%s\\t%%f\\t%%f\\t%%i\\n", $1,$2,$3,++a,$7,$9,$1+$10);}' 
                 < %(bedfile)s
                 | python %(scriptsdir)s/bed2table.py 
@@ -1872,6 +2056,30 @@ def loadSPP( infile, outfile, bamfile, controlfile = None ):
                        --table=%(tablename)s
                        --allow-empty 
                 > %(outfile)s'''
+
+    #
+    #  TODO - spp does calculate summit positions, these should be loaded
+    #
+    #bedfile = infile + ".summits.txt"
+    #headers="contig,start,end,interval_id,peakval1,qvalue,peakpos"
+    #tablename = P.toTable( outfile ) + "_peaks"
+    #statement = '''awk '{printf("%%s\\t%%i\\t%%i\\t%%s\\t%%f\\t%%f\\t%%i\\n", $1,$2,$3,++a,$7,$9,$1+$10);}' 
+    #            < %(bedfile)s
+    #            | python %(scriptsdir)s/bed2table.py 
+    #                       --counter=peaks
+    #                       --bam-file=%(bamfile)s
+    #                       --offset=%(offset)i
+    #                       %(control)s
+    #                       --all-fields 
+    #                       --bed-header=%(headers)s
+    #                       --log=%(outfile)s
+    #            | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
+    #                   --index=contig,start
+    #                   --index=interval_id
+    #                   --table=%(tablename)s
+    #                   --allow-empty 
+    #            > %(outfile)s'''
+
     
     P.run()
 
