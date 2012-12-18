@@ -17,6 +17,7 @@ Contents:
 
    pipeline/Methods.rst
    pipeline/Status.rst
+   pipeline/IntervalsPeaks.rst
    pipeline/IntervalsRegions.rst
    pipeline/IntervalsSummits.rst
    pipeline/Mapping.rst
