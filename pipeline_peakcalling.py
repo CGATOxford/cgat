@@ -998,6 +998,8 @@ def loadSPPSummary( infile, outfile ):
            "spp.dir/%s.qual" % x.asFile() ) for x in TRACKS ] )
 def estimateSPPQualityMetrics( infile, outfile ):
 
+    track = P.snip(infile, ".bam" )
+
     controlfile = "%s.call.bam" % getControl(Sample(track)).asFile()
 
     if not os.path.exists( controlfile ):
@@ -1014,10 +1016,10 @@ def estimateSPPQualityMetrics( infile, outfile ):
     
     P.run()
 
-    track = P.snip(infile, ".bam" )
-
     if os.path.exists( track + ".pdf" ):
         shutil.move( infile + ".pdf", os.path.join( PARAMS["exportdir"], "quality" ))
+
+
 
 ############################################################
 ############################################################
