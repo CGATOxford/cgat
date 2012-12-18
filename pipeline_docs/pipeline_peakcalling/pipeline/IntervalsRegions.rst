@@ -2,12 +2,11 @@
 Regions
 =======
 
-This page summarizes the :term:`peak` that have been called with the
-various peak callers. 
+This page summarizes the :term:`regions` that have been called with the
+various region callers. 
 
-``Regions`` are larger areas in the genome with higher read density
-than expected as opposed to ``peaks``, which are smaller summits
-within regions.
+``Regions`` are broader areas of enrichment in the genome, arising from more diffuse signals, such as chromatin marks.
+
 
 Number of intervals
 ===================
