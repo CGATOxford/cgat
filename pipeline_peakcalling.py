@@ -1017,7 +1017,7 @@ def estimateSPPQualityMetrics( infile, outfile ):
     P.run()
 
     if os.path.exists( track + ".pdf" ):
-        shutil.move( infile + ".pdf", os.path.join( PARAMS["exportdir"], "quality" ))
+        shutil.move( track + ".pdf", os.path.join( PARAMS["exportdir"], "quality" ))
 
 
 
