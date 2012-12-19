@@ -29,14 +29,15 @@ class SummitsIntervals:
 ##################################################################################
 ##################################################################################
 ##################################################################################
-## Annotation of bases with SNPs
+## Summarise intervals as a table
 ##################################################################################
-class IntervalsSummary( DefaultTracker ):
+class IntervalsSummaryTable( DefaultTracker ):
     """Summary stats of intervals called by the peak finder.
     """
     def __call__(self, track, slice):
         table = "%s_%s_%s" % (track,slice,self.suffix)
-        print "TABLE is called %s" % table
+
+        #Get the column containing the recorded qvalues
         fdr_col_headings = ("fdr","qvalue","FDR")
         for name in fdr_col_headings:
             try:
@@ -45,12 +46,38 @@ class IntervalsSummary( DefaultTracker ):
             except:
                 pass
 
-        data = self.getFirstRow( "SELECT COUNT(*), ROUND(AVG(end-start)), ROUND(MIN(end-start)), ROUND(MAX(end-start)), ROUND(MAX(%(fdr_col_head)s)) FROM %(table)s"  )
-        return odict( zip( ("nintervals", "avg(length)", "min(length)", "max(length)", "max reported %s" % fdr_col_head ), data) )
+        data = self.getFirstRow( "SELECT COUNT(*), ROUND(AVG(end-start),2), MIN(end-start), MAX(end-start), MAX(%(fdr_col_head)s) as VARCHAR FROM %(table)s"  )
+
+        #Formatting for prettiness
+        if isinstance(data[4],float):
+            fdr_value = "%.3g" % data[4]
+        else:
+            fdr_value = "%s" % data[4]
+        fdata = map(str,data[0:4]) + [fdr_value]
+
+        return odict( zip( ("nintervals", "avg(length)", "min(length)", "max(length)", "max reported %s" % fdr_col_head ), fdata) )
+
+class PeaksSummaryTable( PeaksIntervals, IntervalsSummaryTable): pass
+class RegionsSummaryTable( RegionsIntervals, IntervalsSummaryTable): pass
+class SummitsSummaryTable( SummitsIntervals, IntervalsSummaryTable): pass
+
+##################################################################################
+##################################################################################
+##################################################################################
+## Summarise intervals 
+##################################################################################
+class IntervalsSummary( DefaultTracker ):
+    """Summary stats of intervals called by the peak finder.
+    """
+    def __call__(self, track, slice):
+        table = "%s_%s_%s" % (track,slice,self.suffix)
+        data = self.getFirstRow( "SELECT COUNT(*), AVG(end-start), MIN(end-start), MAX(end-start) as VARCHAR FROM %(table)s"  )
+        return odict( zip( ("nintervals", "avg(length)", "min(length)", "max(length)"), data) )
 
 class PeaksSummary( PeaksIntervals, IntervalsSummary): pass
 class RegionsSummary( RegionsIntervals, IntervalsSummary): pass
 class SummitsSummary( SummitsIntervals, IntervalsSummary): pass
+
 
 ##################################################################################
 ##################################################################################
