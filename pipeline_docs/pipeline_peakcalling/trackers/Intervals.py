@@ -34,10 +34,19 @@ class SummitsIntervals:
 class IntervalsSummary( DefaultTracker ):
     """Summary stats of intervals called by the peak finder.
     """
-
     def __call__(self, track, slice):
-        data = self.getFirstRow( "SELECT COUNT(*), AVG(end-start), MIN(end-start), MAX(end-start) FROM %(track)s_%(slice)s_%(suffix)s"  )
-        return odict( zip( ("nintervals", "avg(length)", "min(length)", "max(length)" ), data) )
+        table = "%s_%s_%s" % (track,slice,self.suffix)
+        print "TABLE is called %s" % table
+        fdr_col_headings = ("fdr","qvalue","FDR")
+        for name in fdr_col_headings:
+            try:
+                test = self.getFirstRow("SELECT MAX(%s) FROM %s" % (name,table) )
+                fdr_col_head = name
+            except:
+                pass
+
+        data = self.getFirstRow( "SELECT COUNT(*), ROUND(AVG(end-start)), ROUND(MIN(end-start)), ROUND(MAX(end-start)), ROUND(MAX(%(fdr_col_head)s)) FROM %(table)s"  )
+        return odict( zip( ("nintervals", "avg(length)", "min(length)", "max(length)", "max reported %s" % fdr_col_head ), data) )
 
 class PeaksSummary( PeaksIntervals, IntervalsSummary): pass
 class RegionsSummary( RegionsIntervals, IntervalsSummary): pass
