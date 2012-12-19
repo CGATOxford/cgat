@@ -14,6 +14,10 @@ class FoldChangeTracker( TrackerSQL ):
 ##################################################################################
 ##################################################################################
 ##################################################################################
+class PeaksIntervals:
+    pattern = "(.*)_(.*)_peaks$"
+    suffix = "peaks"
+
 class RegionsIntervals:
     pattern = "(.*)_(.*)_regions$"
     suffix = "regions"
@@ -25,18 +29,55 @@ class SummitsIntervals:
 ##################################################################################
 ##################################################################################
 ##################################################################################
-## Annotation of bases with SNPs
+## Summarise intervals as a table
+##################################################################################
+class IntervalsSummaryTable( DefaultTracker ):
+    """Summary stats of intervals called by the peak finder.
+    """
+    def __call__(self, track, slice):
+        table = "%s_%s_%s" % (track,slice,self.suffix)
+
+        #Get the column containing the recorded qvalues
+        fdr_col_headings = ("fdr","qvalue","FDR")
+        for name in fdr_col_headings:
+            try:
+                test = self.getFirstRow("SELECT MAX(%s) FROM %s" % (name,table) )
+                fdr_col_head = name
+            except:
+                pass
+
+        data = self.getFirstRow( "SELECT COUNT(*), ROUND(AVG(end-start),2), MIN(end-start), MAX(end-start), MAX(%(fdr_col_head)s) as VARCHAR FROM %(table)s"  )
+
+        #Formatting for prettiness
+        if isinstance(data[4],float):
+            fdr_value = "%.3g" % data[4]
+        else:
+            fdr_value = "%s" % data[4]
+        fdata = map(str,data[0:4]) + [fdr_value]
+
+        return odict( zip( ("nintervals", "avg(length)", "min(length)", "max(length)", "max reported %s" % fdr_col_head ), fdata) )
+
+class PeaksSummaryTable( PeaksIntervals, IntervalsSummaryTable): pass
+class RegionsSummaryTable( RegionsIntervals, IntervalsSummaryTable): pass
+class SummitsSummaryTable( SummitsIntervals, IntervalsSummaryTable): pass
+
+##################################################################################
+##################################################################################
+##################################################################################
+## Summarise intervals 
 ##################################################################################
 class IntervalsSummary( DefaultTracker ):
     """Summary stats of intervals called by the peak finder.
     """
-
     def __call__(self, track, slice):
-        data = self.getFirstRow( "SELECT COUNT(*), AVG(end-start), MIN(end-start), MAX(end-start) FROM %(track)s_%(slice)s_%(suffix)s"  )
-        return odict( zip( ("nintervals", "avg(length)", "min(length)", "max(length)" ), data) )
+        table = "%s_%s_%s" % (track,slice,self.suffix)
+        data = self.getFirstRow( "SELECT COUNT(*), AVG(end-start), MIN(end-start), MAX(end-start) as VARCHAR FROM %(table)s"  )
+        return odict( zip( ("nintervals", "avg(length)", "min(length)", "max(length)"), data) )
 
+class PeaksSummary( PeaksIntervals, IntervalsSummary): pass
 class RegionsSummary( RegionsIntervals, IntervalsSummary): pass
 class SummitsSummary( SummitsIntervals, IntervalsSummary): pass
+
 
 ##################################################################################
 ##################################################################################
@@ -50,6 +91,7 @@ class IntervalLengths( DefaultTracker ):
         data = self.getValues( "SELECT length FROM %(track)s_%(slice)s_%(suffix)s" )
         return { "length" : data }
 
+class PeaksLengths( PeaksIntervals, IntervalLengths): pass
 class RegionsLengths( RegionsIntervals, IntervalLengths ): pass
 class SummitsLengths( SummitsIntervals, IntervalLengths ): pass
 
@@ -65,6 +107,7 @@ class IntervalPeakValues( DefaultTracker ):
         data = self.getValues( "SELECT peakval FROM %(track)s_%(slice)s_%(suffix)s" )
         return { "peakval" : data }
 
+class PeaksPeakValues( PeaksIntervals, IntervalPeakValues): pass
 class RegionsPeakValues( RegionsIntervals, IntervalPeakValues ): pass
 class SummitsPeakValues( SummitsIntervals, IntervalPeakValues ): pass
 
@@ -81,6 +124,7 @@ class IntervalAverageValues( DefaultTracker ):
         data = self.getValues( "SELECT avgval FROM %(track)s_%(slice)s_%(suffix)s" )
         return { "avgval" : data }
 
+class PeaksAverageValues( PeaksIntervals, IntervalAverageValues ): pass
 class RegionsAverageValues( RegionsIntervals, IntervalAverageValues ): pass
 class SummitsAverageValues( SummitsIntervals, IntervalAverageValues ): pass
 
@@ -96,6 +140,7 @@ class PeakLocation( DefaultTracker ):
         data2 = self.getValues( "SELECT (end - PeakCenter) / CAST( Length as FLOAT) - 0.5 FROM %(track)s_%(slice)s_%(suffix)s" )
         return { "distance" : data1 + data2 }
 
+class PeaksPeakLocation( PeaksIntervals, PeakLocation): pass
 class RegionsPeakLocation( RegionsIntervals, PeakLocation ): pass
 class SummitsPeakLocation( SummitsIntervals, PeakLocation ): pass
 
@@ -111,6 +156,7 @@ class PeakDistance( DefaultTracker ):
         data2 = self.getValues( "SELECT end - PeakCenter FROM %(track)s_%(slice)s_%(suffix)s" )
         return { "distance" : data1 + data2 }
 
+class PeaksPeakDistance( PeaksIntervals, PeakDistance): pass
 class RegionsPeakDistance( RegionsIntervals, PeakDistance): pass
 class SummitsPeakDistance( SummitsIntervals, PeakDistance ): pass
 
@@ -127,6 +173,7 @@ class LengthVsAverageValue( DefaultTracker ):
         data = self.get( "SELECT length, avgval FROM %(track)s_%(slice)s_%(suffix)s" )
         return odict( zip( ("length", "avgval"), zip(*data) ) )
 
+class PeaksLengthVsAverageValue( PeaksIntervals, LengthVsAverageValue ): pass
 class RegionsLengthVsAverageValue( RegionsIntervals, LengthVsAverageValue ): pass
 class SummitsLengthVsAverageValue( SummitsIntervals, LengthVsAverageValue ): pass
 
@@ -143,6 +190,7 @@ class LengthVsPeakValue( DefaultTracker ):
         data = self.get( "SELECT length, peakval FROM %(track)s_%(slice)s_%(suffix)s" )
         return odict( zip( ("length", "peakval"), zip(*data) ) )
 
+class PeaksLengthVsPeakValue( PeaksIntervals, LengthVsPeakValue ): pass
 class RegionsLengthVsPeakValue( RegionsIntervals, LengthVsPeakValue ): pass
 class SummitsLengthVsPeakValue( SummitsIntervals, LengthVsPeakValue ): pass
 

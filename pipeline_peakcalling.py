@@ -42,18 +42,30 @@ and calls peaks. The pipeline implements several peak callers:
 macs_
    Model-based Analysis of ChIP-Seq (MACS), for identifying transcript factor binding sites. MACS captures the influence of genome complexity to evaluate the significance of enriched ChIP regions, and MACS improves the spatial resolution of binding sites through combining the information of both sequencing tag position and orientation. MACS can be easily used for ChIP-Seq data alone, or with control sample with the increase of specificity.
 
+macs2_
+   MACS 2 is the new release of the MACS peak caller. Among other improvements it adds support for handling paired end reads.
+
 spp_
    SPP is a R package especially designed for the analysis of Chip-Seq data from Illummina platform. The package was developed by Peter Park's group from Harvard Medical School.
 
 zinba_
    ZINBA (Zero Inflated Negative Binomial Algorithm) is a computational and statistical framework used to call regions of the genome enriched for sequencing reads originating from a diverse array of biological experiments. We collectively refer to the sequencing data derived from these experiments as DNA-seq, including FAIRE-seq, ChIP-seq, and DNAase-seq experiments
 
-sicer_
+sicer_narrow_
     A clustering approach for identification of enriched domains from histone modification ChIP-Seq data.
+    The types of region called by the sicer alogrithm reflect the paramaters it is run with. In this pipeline sicer is run by default with two different parameter sets, to allow the simultaneous detection of narrower and broader regions of enrichmnet.
 
-peakranger_
+sicer_broad_
+    (See above)
+
+peakranger_ranger_
     PeakRanger is a multi-purpose, ultrafast ChIP Seq peak caller. It is used in the modENCODE project and included in the iPlant pipeline system.
     PeakRanger v1.02 was developed in Dr.Lincoln Stein's lab at OICR and is now in continual development at Dr.Helen Hobbs's lab of the McDermott Center of UT Southwestern.
+    PeakRanger can run two separate algorithms for peak detection, "ranger" for point-source binding event detection and "ccat" for the detection of broader regions of enrichment. In this pipeline, both alorighms are presented as separate peak callers for convience.
+
+peakranger_ccat_
+    PeakRanger is here run using the CCAT alogorithm (See: Xu, H., L. Handoko, et al. (2010).A signal-noise model for significance analysis of ChIP-seq with negative control.Bioinformatics 26(9): 1199-1204)
+
 
 Peak callers have different strengths and weaknesses. Some might work well on broad peaks such as some histone
 marks, others work better for narrow, sharp peaks. Many callers these days attempt to call both types of peaks.
@@ -391,7 +403,7 @@ def makeMask(infile,outfile):
         P.touch(outfile)
 
 ############################################################
-############o################################################
+############################################################
 ############################################################
 @transform( "*.genome.bam", suffix(".genome.bam"), add_inputs( makeMask), ".prep.bam")
 def prepareBAMForPeakCalling(infiles, outfile):
@@ -495,9 +507,13 @@ else:
         P.clone( infile + ".bai", outfile + ".bai" )
 
 
-####################################################################
-####################################################################
-####################################################################
+######################################################################
+######################################################################
+##                                                                  ##
+##                 Statistics and QC Functions                      ## 
+##                                                                  ##
+######################################################################
+######################################################################
 @follows( mkdir("readstats.dir") )
 @transform( normalizeBAM,
             regex("(.*).bam"),
@@ -519,19 +535,14 @@ def buildBAMStats( infile, outfile ):
     P.run()
 
 ####################################################################
-####################################################################
-####################################################################
 @merge( buildBAMStats, "bam_stats.load" )
 def loadBAMStats( infiles, outfile ):
     '''import bam statisticis.'''
     
     PipelineMappingQC.loadBAMStats( infiles, outfile )
 
-####################################################################
-####################################################################
-####################################################################
-## Peak calling
-####################################################################
+
+######################################################################
 @follows( normalizeBAM )
 @files( [ ("%s.call.bam" % (x.asFile()), 
            "%s.data_quality" % x.asFile() ) for x in TRACKS ] )
@@ -555,16 +566,12 @@ def checkDataQuality( infile, outfile ):
     P.run()
 
 ####################################################################
-####################################################################
-####################################################################
 @merge( checkDataQuality, "data_quality.load" )
 def loadDataQuality( infiles, outfile ):
     '''load data quality information.'''
 
     P.concatenateAndLoad( infiles, outfile, regex_filename = "(.*).data_quality" )
 
-####################################################################
-####################################################################
 ####################################################################
 @follows( normalizeBAM )
 @files( [ ("%s.call.bam" % (x.asFile()), 
@@ -577,12 +584,23 @@ def checkLibraryComplexity( infile, outfile ):
     P.run()
 
 
+######################################################################
+######################################################################
+##                                                                  ##
+##                    **** Call Peaks ****                          ## 
+##                                                                  ##
+######################################################################
+######################################################################
 
-####################################################################
-####################################################################
-####################################################################
-## Peak calling
-####################################################################
+
+######################################################################
+######################################################################
+##                                                                  ##
+##                            MACS1.4                               ## 
+##                                                                  ##
+######################################################################
+######################################################################
+
 @follows( mkdir("macs.dir"), normalizeBAM )
 @files( [ ("%s.call.bam" % (x.asFile()), 
            "macs.dir/%s.macs" % x.asFile() ) for x in TRACKS ] )
@@ -602,8 +620,6 @@ def callPeaksWithMACS( infile, outfile ):
     PipelinePeakcalling.runMACS( infile, outfile, controlfile)
 
 ############################################################
-############################################################
-############################################################
 @transform( callPeaksWithMACS,
             regex(r"(.*).macs"),
             r"\1_macs.load" )
@@ -613,8 +629,6 @@ def loadMACS( infile, outfile ):
     PipelinePeakcalling.loadMACS( infile, outfile, bamfile, controlfile )
 
 ############################################################
-############################################################
-############################################################
 @follows( mkdir(os.path.join( PARAMS["exportdir"], "macs" ) ) )
 @transform( callPeaksWithMACS,
             regex(r"(.*)/(.*).macs"),
@@ -623,7 +637,7 @@ def loadMACS( infile, outfile ):
             os.path.join( PARAMS["exportdir"], "macs", r"\2.macs.control.bw" ) ) )
 def cleanMACS( infiles, outfiles ):
     '''clean up MACS - build bigwig file and remove wig files.'''
-    
+  
     to_cluster = True
     infile, contigfile = infiles
     outdir = os.path.join( PARAMS["exportdir"], "macs" )
@@ -647,11 +661,7 @@ def cleanMACS( infiles, outfiles ):
             P.run()
         
             shutil.rmtree( indir )
-
-    
         
-############################################################
-############################################################
 ############################################################
 @merge( callPeaksWithMACS, "macs.summary" )
 def summarizeMACS( infiles, outfile ):
@@ -659,15 +669,11 @@ def summarizeMACS( infiles, outfile ):
     PipelinePeakcalling.summarizeMACS( infiles, outfile )
 
 ############################################################
-############################################################
-############################################################
 @merge( callPeaksWithMACS, "macs_fdr.summary" )
 def summarizeMACSFDR( infiles, outfile ):
     '''summarize MACS results.''' 
     PipelinePeakcalling.summarizeMACSFDR( infiles, outfile )
 
-############################################################
-############################################################
 ############################################################
 @transform( summarizeMACS,
             suffix(".summary"),
@@ -677,8 +683,6 @@ def loadMACSSummary( infile, outfile ):
     P.load( infile, outfile, "--index=track" )
 
 ############################################################
-############################################################
-############################################################
 @transform( summarizeMACSFDR,
             suffix("_fdr.summary"),
             "_fdr.load" )
@@ -686,15 +690,77 @@ def loadMACSSummaryFDR( infile, outfile ):
     '''load macs summary.'''
     P.load( infile, outfile, "--index=track", transpose="fdr" )
 
-############################################################
-############################################################
-############################################################
-## Zinba
-############################################################
+
+######################################################################
+######################################################################
+##                                                                  ##
+##                          MACS version 2                          ## 
+##                                                                  ##
+######################################################################
+######################################################################
+
+@follows( mkdir("macs2.dir"), normalizeBAM )
+@files( [ ("%s.call.bam" % (x.asFile()), 
+           "macs2.dir/%s.macs2" % x.asFile() ) for x in TRACKS ] )
+def callPeaksWithMACS2( infile, outfile ):
+    '''run MACS 2 for peak detection.
+    output bed files are compressed and indexed.
+    '''
+    track = P.snip( infile, ".call.bam" )
+
+    controlfile = "%s.call.bam" % getControl(Sample(track)).asFile()
+
+    if not os.path.exists( controlfile ):
+        L.warn( "controlfile '%s' for track '%s' not found " % (controlfile, track ) )
+        controlfile = None
+
+    PipelinePeakcalling.runMACS2( infile, outfile, controlfile)
 
 ############################################################
+@transform( callPeaksWithMACS2,
+            regex(r"(.*).macs2"),
+            r"\1_macs2.load" )
+def loadMACS2( infile, outfile ):
+    '''load macs results.'''
+    bamfile, controlfile = getBamFiles( infile, ".macs2" )
+    PipelinePeakcalling.loadMACS2( infile, outfile, bamfile, controlfile )
+
 ############################################################
+@merge( callPeaksWithMACS2, "macs2.summary" )
+def summarizeMACS2( infiles, outfile ):
+    '''summarize MACS results.''' 
+    PipelinePeakcalling.summarizeMACS2( infiles, outfile )
+
 ############################################################
+@merge( callPeaksWithMACS2, "macs2_fdr.summary" )
+def summarizeMACS2FDR( infiles, outfile ):
+    '''summarize MACS results.''' 
+    PipelinePeakcalling.summarizeMACS2FDR( infiles, outfile )
+
+############################################################
+@transform( summarizeMACS2,
+            suffix(".summary"),
+            "_summary.load" )
+def loadMACS2Summary( infile, outfile ):
+    '''load macs2 summary.'''
+    P.load( infile, outfile, "--index=track" )
+
+############################################################
+@transform( summarizeMACS2FDR,
+            suffix("_fdr.summary"),
+            "_fdr.load" )
+def loadMACS2SummaryFDR( infile, outfile ):
+    '''load macs2 summary.'''
+    P.load( infile, outfile, "--index=track", transpose="fdr" )
+
+######################################################################
+######################################################################
+##                                                                  ##
+##                              Zinba                               ## 
+##                                                                  ##
+######################################################################
+######################################################################
+
 @follows( mkdir("zinba.dir"), normalizeBAM )
 @files( [ (("%s.call.bam" % (x.asFile()), 
             "%s.call.bam" % (getControl(x).asFile())), 
@@ -711,8 +777,6 @@ def callPeaksWithZinba( infiles, outfile ):
         PipelinePeakcalling.runZinba( infile, outfile, controlfile, action = "full" )
         
 ############################################################
-############################################################
-############################################################
 @transform( callPeaksWithZinba,
             suffix( ".zinba" ),
             "_zinba.load" )
@@ -724,15 +788,18 @@ def loadZinba( infile, outfile ):
                                    bamfile, 
                                    controlfile = controlfile )
 
-############################################################
-############################################################
-############################################################
-## SICER
-############################################################
-@follows( mkdir("sicer.dir"), normalizeBAM )
+
+######################################################################
+######################################################################
+##                                                                  ##
+##                       (SICER) Narrower                           ## 
+##                                                                  ##
+######################################################################
+######################################################################
+@follows( mkdir("sicer.narrow.dir"), normalizeBAM )
 @files( [ ("%s.call.bam" % (x.asFile()), 
-           "sicer.dir/%s.sicer" % x.asFile() ) for x in TRACKS ] )
-def callPeaksWithSICER( infile, outfile ):
+           "sicer.narrow.dir/%s.narrow.sicer" % x.asFile() ) for x in TRACKS ] )
+def callNarrowerPeaksWithSICER( infile, outfile ):
     '''run SICER for peak detection.'''
     track = P.snip( infile, ".call.bam" )
 
@@ -742,43 +809,70 @@ def callPeaksWithSICER( infile, outfile ):
         L.warn( "no controlfile '%s' for track '%s' not found " % (controlfile, track ) )
         controlfile = None
 
-    PipelinePeakcalling.runSICER( infile, outfile, controlfile)
+    PipelinePeakcalling.runSICER( infile, outfile, controlfile, "narrow")
 
-############################################################
-############################################################
-############################################################
-@transform( callPeaksWithSICER, suffix(".sicer"), "_sicer.load" )
+
+######################################################################
+######################################################################
+##                                                                  ##
+##                       (SICER) Broader                            ## 
+##                                                                  ##
+######################################################################
+######################################################################
+@follows( mkdir("sicer.broad.dir"), normalizeBAM )
+@files( [ ("%s.call.bam" % (x.asFile()), 
+           "sicer.broad.dir/%s.broad.sicer" % x.asFile() ) for x in TRACKS ] )
+def callBroaderPeaksWithSICER( infile, outfile ):
+    '''run SICER for peak detection.'''
+    track = P.snip( infile, ".call.bam" )
+
+    controlfile = "%s.call.bam" % getControl(Sample(track)).asFile()
+
+    if not os.path.exists( controlfile ):
+        L.warn( "no controlfile '%s' for track '%s' not found " % (controlfile, track ) )
+        controlfile = None
+
+    PipelinePeakcalling.runSICER( infile, outfile, controlfile, "broad")
+
+######################################################################
+######################################################################
+##                                                                  ##
+##                  SICER Narrower + Broader                        ## 
+##                                                                  ##
+######################################################################
+######################################################################
+#@transform( [ callNarrowerPeaksWithSICER, callBroaderPeaksWithSICER ], suffix(".sicer"), "_sicer.load" )
+@transform( [ callNarrowerPeaksWithSICER, callBroaderPeaksWithSICER ], regex(r"(sicer.)(.*)(.dir/)([^.]*).([^.]*).sicer"), r"\1\2\3\4_\5Sicer.load" )
 def loadSICER(infile, outfile ):
     '''load sicer results.'''
-    bamfile, controlfile = getBamFiles( infile, ".sicer" )
-    PipelinePeakcalling.loadSICER( infile, outfile, bamfile, controlfile )
+    mode = infile.split(".")[1]
+    bamfile, controlfile = getBamFiles( infile, "."+mode+".sicer" )
+    PipelinePeakcalling.loadSICER( infile, outfile, bamfile, controlfile, mode)
 
 ############################################################
-############################################################
-############################################################
-@merge( callPeaksWithSICER, "sicer.summary" )
+@merge( [ callNarrowerPeaksWithSICER, callBroaderPeaksWithSICER ], "sicer.summary" )
 def summarizeSICER( infiles, outfile ):
     '''summarize SICER results.'''
     PipelinePeakcalling.summarizeSICER( infiles, outfile )
 
 ############################################################
-############################################################
-############################################################
-@transform( summarizeSICER, suffix(".summary"), "_summary.load" )
+@transform( summarizeSICER, regex(r"(sicer.)(.*)(.summary)"), r"\1_\2_summary.load" )
 def loadSICERSummary( infile, outfile ):
     '''load sicer summary.'''
     P.load( infile, outfile, "--index=track" )
 
-############################################################
-############################################################
-############################################################
-## PeakRanger
-############################################################
-@follows( mkdir("peakranger.dir"), normalizeBAM )
+######################################################################
+######################################################################
+##                                                                  ##
+##                       (PeakRanger) Ranger                        ## 
+##                                                                  ##
+######################################################################
+######################################################################
+@follows( mkdir("peakranger.ranger.dir/"), normalizeBAM )
 @files( [ ("%s.call.bam" % (x.asFile()), 
-           "peakranger.dir/%s.peakranger" % x.asFile() ) for x in TRACKS ] )
+           "peakranger.ranger.dir/%s.peakranger" % x.asFile() ) for x in TRACKS ] )
 def callPeaksWithPeakRanger( infile, outfile ):
-    '''run SICER for peak detection.'''
+    '''run PeakRanger Ranger for peak detection.'''
     track = P.snip( infile, ".call.bam" )
     controlfile = "%s.call.bam" % getControl(Sample(track)).asFile()
 
@@ -788,38 +882,78 @@ def callPeaksWithPeakRanger( infile, outfile ):
 
     PipelinePeakcalling.runPeakRanger( infile, outfile, controlfile)
 
-############################################################
-############################################################
-############################################################
 @transform( callPeaksWithPeakRanger,
             regex(r"(.*).peakranger"),
             r"\1_peakranger.load" )
 def loadPeakRanger( infile, outfile ):
-    '''load macs results.'''
-    bamfile, controlfile = getBamFiles( infile, ".peakranger" )
-    PipelinePeakcalling.loadPeakRanger( infile, outfile, bamfile, controlfile )
+    '''load macs results.''' 
+    bamfile,controlfile = getBamFiles( infile,".peakranger")
+    PipelinePeakcalling.loadPeakRanger( infile, outfile, bamfile, controlfile ,"peaks")
 
 ############################################################
-############################################################
-############################################################
-@merge( callPeaksWithPeakRanger, "peakranger.summary" )
-def summarizePeakRanger( infiles, outfile ):
+@merge( callPeaksWithPeakRanger, "peakranger.ranger.summary" )
+def summarizePeakRanger( infiles, outfiles ):
     '''summarize peakranger results.'''
-    PipelinePeakcalling.summarizePeakRanger( infiles, outfile )
+    PipelinePeakcalling.summarizePeakRanger( infiles, outfiles )
 
-############################################################
-############################################################
 ############################################################
 @transform( summarizePeakRanger, suffix(".summary"), "_summary.load" )
 def loadPeakRangerSummary( infile, outfile ):
-    '''load sicer summary.'''
+    '''load Peakranger summarys.'''
     P.load( infile, outfile, "--index=track" )
 
+######################################################################
+######################################################################
+##                                                                  ##
+##                       (PeakRanger) CCAT                          ## 
+##                                                                  ##
+######################################################################
+######################################################################
+
+@follows( mkdir("peakranger.ccat.dir/"), normalizeBAM )
+@files( [ ("%s.call.bam" % (x.asFile()), 
+           "peakranger.ccat.dir/%s.ccat" % x.asFile() ) for x in TRACKS ] )
+def callPeaksWithPeakRangerCCAT( infile, outfile ):
+
+    '''run Peak Ranger CCAT for broad peak detection.'''
+    track = P.snip( infile, ".call.bam" )
+    controlfile = "%s.call.bam" % getControl(Sample(track)).asFile()
+
+    if not os.path.exists( controlfile ):
+        L.warn( "no controlfile '%s' for track '%s' not found " % (controlfile, track ) )
+        controlfile = None
+
+    PipelinePeakcalling.runPeakRangerCCAT( infile, outfile, controlfile)
+
+##########################################################
+@transform( callPeaksWithPeakRangerCCAT,
+            regex(r"(.*).ccat"),
+            r"\1_ccat.load" )
+def loadPeakRangerCCAT( infile, outfile ):
+    '''load macs results.''' 
+    bamfile,controlfile = getBamFiles( infile,".ccat")
+    PipelinePeakcalling.loadPeakRanger( infile, outfile, bamfile, controlfile , "regions")
+
 ############################################################
+@merge( callPeaksWithPeakRangerCCAT, "peakranger.ccat.summary" )
+def summarizePeakRangerCCAT( infiles, outfiles ):
+    '''summarize peakranger results.'''
+    PipelinePeakcalling.summarizePeakRanger( infiles, outfiles )
+
 ############################################################
-############################################################
-## SPP
-############################################################
+@transform( summarizePeakRanger, suffix(".summary"), "_summary.load" )
+def loadPeakRangerSummaryCCAT( infile, outfile ):
+    '''load Peakranger summarys.'''
+    P.load( infile, outfile, "--index=track" )
+
+######################################################################
+######################################################################
+##                                                                  ##
+##                              SPP                                 ## 
+##                                                                  ##
+######################################################################
+######################################################################
+
 @follows( mkdir("spp.dir"), normalizeBAM )
 @files( [ ("%s.call.bam" % (x.asFile()), 
            "spp.dir/%s.spp" % x.asFile() ) for x in TRACKS ] )
@@ -835,8 +969,6 @@ def callPeaksWithSPP( infile, outfile ):
     PipelinePeakcalling.runSPP( infile, outfile, controlfile)
 
 ############################################################
-############################################################
-############################################################
 @transform( callPeaksWithSPP,
             regex(r"(.*).spp"),
             r"\1_spp.load" )
@@ -846,15 +978,11 @@ def loadSPP( infile, outfile ):
     PipelinePeakcalling.loadSPP( infile, outfile, bamfile, controlfile )
 
 ############################################################
-############################################################
-############################################################
 @merge( callPeaksWithSPP, "spp.summary" )
 def summarizeSPP( infiles, outfile ):
     '''summarize SPP results.'''
     PipelinePeakcalling.summarizeSPP( infiles, outfile )
 
-############################################################
-############################################################
 ############################################################
 @transform( summarizeSPP, suffix(".summary"), "_summary.load" )
 def loadSPPSummary( infile, outfile ):
@@ -863,13 +991,14 @@ def loadSPPSummary( infile, outfile ):
 
 ############################################################
 ############################################################
-############################################################
 @follows( mkdir( os.path.join( PARAMS["exportdir"], "quality" ) ),
           mkdir( "spp.dir" ),
           normalizeBAM )
 @files( [ ("%s.call.bam" % (x.asFile()), 
            "spp.dir/%s.qual" % x.asFile() ) for x in TRACKS ] )
 def estimateSPPQualityMetrics( infile, outfile ):
+
+    track = P.snip(infile, ".bam" )
 
     controlfile = "%s.call.bam" % getControl(Sample(track)).asFile()
 
@@ -887,10 +1016,10 @@ def estimateSPPQualityMetrics( infile, outfile ):
     
     P.run()
 
-    track = P.snip(infile, ".bam" )
-
     if os.path.exists( track + ".pdf" ):
-        shutil.move( infile + ".pdf", os.path.join( PARAMS["exportdir"], "quality" ))
+        shutil.move( track + ".pdf", os.path.join( PARAMS["exportdir"], "quality" ))
+
+
 
 ############################################################
 ############################################################
@@ -903,12 +1032,14 @@ def loadSPPQualityMetrics( infiles, outfile ):
                           header = "track,bamfile,mapped_reads,estFragLen,corr_estFragLen,phantomPeak,corr_phantomPeak,argmin_corr,min_corr,nsc,rsc,quality")
     
 
-############################################################
-############################################################
-############################################################
-## IDR analysis with SPP
-############################################################
-@follows( mkdir("idr.dir"), normalizeBAM, mkdir( os.path.join( PARAMS["exportdir"], "idr" ) ) )
+######################################################################
+######################################################################
+##                                                                  ##
+##        IDR Analysis (using relaxed SPP peak calling)             ## 
+##                                                                  ##
+######################################################################
+######################################################################
+@follows( mkdir("idr.dir"), normalizeBAM )
 @files( [ ("%s.call.bam" % (x.asFile()), 
            "idr.dir/%s.spp" % x.asFile() ) for x in TRACKS ] )
 def callPeaksWithSPPForIDR( infile, outfile ):
@@ -936,8 +1067,6 @@ def callPeaksWithSPPForIDR( infile, outfile ):
     if os.path.exists( track + ".pdf" ):
         shutil.move( infile + ".pdf", os.path.join( PARAMS["exportdir"], "idr" ))
 
-############################################################
-############################################################
 ############################################################
 @collate( callPeaksWithSPPForIDR, 
           regex( r"idr.dir/(.+)-[^-]+.spp" ),
@@ -971,8 +1100,6 @@ def applyIDR( infiles, outfile ):
         P.run()
 
 ############################################################
-############################################################
-############################################################
 @follows(mkdir( os.path.join( PARAMS["exportdir"], "idr" ) ) )
 @transform( applyIDR, 
             suffix(".idr"),
@@ -996,20 +1123,32 @@ def plotIDR( infile, outfile ):
     P.run()
 
 ############################################################
-############################################################
-############################################################
+
+
+######################################################################
+######################################################################
+##                                                                  ##
+##            ___ Collate peak calling results ___                  ## 
+##                                                                  ##
+######################################################################
+######################################################################
+
 CALLINGTARGETS, SUMMARYTARGETS = [], []
 mapToCallingTargets = { 'macs': loadMACS,
+                        'macs2' : loadMACS2,
                         'zinba': loadZinba,
                         'sicer': loadSICER,
                         'peakranger': loadPeakRanger,
+                        'ccat' : loadPeakRangerCCAT ,
                         'spp': loadSPP,
                         }
 
 mapToSummaryTargets = { 'macs': [loadMACSSummary, loadMACSSummaryFDR],
+                        'macs2': [loadMACS2Summary, loadMACS2SummaryFDR],
                         'sicer': [loadSICERSummary],
                         'spp' : [loadSPPSummary],
                         'peakranger' : [loadPeakRangerSummary],
+                        'ccat' : [loadPeakRangerSummaryCCAT],
                         }
 
 for x in P.asList( PARAMS["peakcallers"]):
@@ -1028,15 +1167,32 @@ def calling(): pass
 ############################################################
 @follows( mkdir( os.path.join( PARAMS["exportdir"], "bedfiles" ) ) )
 @transform( CALLINGTARGETS, regex("(.*)/(.*).load"), 
-            (os.path.join( PARAMS["exportdir"], "bedfiles", r"\2.regions.bed.gz" ),
+            (os.path.join( PARAMS["exportdir"], "bedfiles", r"\2.peaks.bed.gz" ),
+             os.path.join( PARAMS["exportdir"], "bedfiles", r"\2.regions.bed.gz" ),
              os.path.join( PARAMS["exportdir"], "bedfiles", r"\2.summits.bed.gz" ) ) )
 def exportIntervalsAsBed( infile, outfiles ):
     '''export all intervals as bed files.'''
 
-    outfile_regions, outfile_summits = outfiles
+    outfile_peaks, outfile_regions, outfile_summits = outfiles
     track = P.snip( os.path.basename(infile), ".load" ) 
 
-    PipelinePeakcalling.exportIntervalsAsBed( infile, outfile_regions, "%s_regions" % P.quote(track) )
+    #PipelinePeakcalling.exportIntervalsAsBed( infile, outfile_regions, "%s_regions" % P.quote(track) )
+
+    dbh = connect()
+    tablename = "%s_peaks" % P.quote(track) 
+    if tablename in Database.getTables( dbh ):
+        PipelinePeakcalling.exportIntervalsAsBed( infile, outfile_peaks, tablename )
+    else:
+        E.warn( "no table %s - empty bed file output" % tablename )
+        P.touch( outfile_peaks )
+
+    dbh = connect()
+    tablename = "%s_regions" % P.quote(track) 
+    if tablename in Database.getTables( dbh ):
+        PipelinePeakcalling.exportIntervalsAsBed( infile, outfile_regions, tablename )
+    else:
+        E.warn( "no table %s - empty bed file output" % tablename )
+        P.touch( outfile_regions )
 
     dbh = connect()
     tablename = "%s_summits" % P.quote(track) 

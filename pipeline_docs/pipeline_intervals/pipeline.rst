@@ -18,6 +18,7 @@ Contents:
    pipeline/Binding.rst
    pipeline/Profiles.rst
    pipeline/TSS.rst 
+   pipeline/Nucleotide.rst
    pipeline/Annotations.rst 
    pipeline/Functions.rst
    pipeline/Meme.rst

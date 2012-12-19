@@ -451,7 +451,6 @@ def loadIntervals( infile, outfile ):
 def indexIntervals( infile, outfile ):
     '''index intervals.
     '''
-
     statement = '''zcat %(infile)s | sort -k1,1 -k2,2n | bgzip > %(outfile)s; tabix -p bed %(outfile)s'''
     P.run()
 
@@ -737,6 +736,31 @@ def annotateRepeats( infile, outfile ):
     P.run()
 
 ############################################################
+############################################################
+############################################################
+@transform( TRACKS_BEDFILES,
+            suffix(".bed.gz"),
+            ".nuc" )
+def annotateNucleotides( infile, outfile ):
+    '''get the nucleotide composition of the intervals'''
+
+    to_cluster = True
+
+#    statement = '''zcat %s | cut -f1,2,3 | python %s/bed2fasta.py -g %s/%s 
+#                   | sed 's/[0-9]*\s\(chr[^:]*\):\([0-9]*\)..\([0-9]*\)\s(+)/\\1|\\2|\\3/g' 
+#                   | python %s/fasta2table.py -s na | sed 's/id/contig|start|end/g' | tr '|' '\\t' > %s''' \
+#        % (infile,PARAMS["scriptsdir"],PARAMS["genome_dir"],PARAMS["genome"],PARAMS["scriptsdir"],outfile)
+
+    #The bed file is cut to ensure each entry is assigned a unique name from bed2gff - possibly it would be better to validate interval files at the start of the pipeline and assign unique identifiers.
+    statement = '''zcat %(infile)s | cut -f1,2,3
+                   | python %(scriptsdir)s/bed2gff.py --as-gtf
+                   | python %(scriptsdir)s/gtf2table.py --counter=position --counter=composition-na --counter=composition-cpg \
+                   --genome-file=%(genome_dir)s/%(genome)s > %(outfile)s
+                   '''          
+    P.run()
+
+
+############################################################
 @transform( (annotateIntervalsFull, annotateIntervalsPeak), suffix(".annotations"), "_annotations.load" )
 def loadAnnotations( infile, outfile ):
     '''load interval annotations: genome architecture
@@ -763,6 +787,15 @@ def loadRepeats( infile, outfile ):
     '''load interval annotations: repeats
     '''
     P.load( infile, outfile, "--index=gene_id --allow-empty" )
+
+############################################################
+@transform( annotateNucleotides, suffix(".nuc"), "_nuc.load" )
+def loadNucleotides( infile, outfile ):
+    '''load interval annotations: nucleotide composition
+    '''
+
+    P.load( infile, outfile, "--index=gene_id --allow-empty" )
+
 
 ###################################################################
 ###################################################################
@@ -793,6 +826,124 @@ def buildIntervalProfileOfTranscripts( infiles, outfile ):
                    > %(outfile)s
                 '''
     P.run()
+
+
+###################################################################
+###################################################################
+###################################################################
+@follows( mkdir( "transcriptprofiles" ) )
+@split( TRACKS_BEDFILES,
+            regex("(.*).bed.gz"),
+            [r"transcriptprofiles/\1.withoverlap.gtf.gz",r"transcriptprofiles/\1.woutoverlap.gtf.gz",r"\1.tss.withoverlap.gtf.gz",r"\1.tss.woutoverlap.gtf.gz"] )
+
+def prepareGTFsByOverlapWithIntervals( infile, outfiles ):
+    '''Prepare GTF file of overlapping and non-overlapping genes for profile plots'''
+    
+    to_cluster = True
+
+    track = TRACKS.factory( filename = infile[:-len(".bed.gz")] )
+    track = Sample( filename = P.snip( infile, ".bed.gz") )
+
+    out1, out2, out3, out4 = outfiles
+    geneset = PARAMS_ANNOTATIONS["interface_geneset_all_gtf"]
+
+    statement = '''
+                  intersectBed -u -a %(annotations_dir)s/%(geneset)s -b %(track)s.bed.gz  | 
+                  python %(scriptsdir)s/gff2bed.py --is-gtf -v 0 | cut -f4 | sort | uniq > %(track)s_overlapping_genes; 
+                  checkpoint;
+                  zgrep -f %(track)s_overlapping_genes %(annotations_dir)s/%(geneset)s | gzip > %(out1)s; checkpoint;
+                  zgrep -v -f %(track)s_overlapping_genes %(annotations_dir)s/%(geneset)s | gzip > %(out2)s; checkpoint;
+                  zgrep -f %(track)s_overlapping_genes %(annotations_dir)s/tss.gene.gtf | gzip > %(out3)s; checkpoint;
+                  zgrep -v -f %(track)s_overlapping_genes %(annotations_dir)s/tss.gene.gtf | gzip > %(out4)s; checkpoint;
+                '''
+    P.run()
+
+############################################################
+############################################################
+############################################################
+@transform( prepareGTFsByOverlapWithIntervals,
+            regex("(.*tss.*).gtf.gz"),
+            r"\1.nuc" )
+def annotateTSSNucleotides( infile, outfile ):
+    '''get the nucleotide composition of the intervals'''
+    to_cluster = True
+    #statement = '''zcat %s | awk '{OFS="\\t"}{print $1,$4-50,$5+50}' 
+    #               | python %s/bed2fasta.py -g %s/%s 
+    #               | sed 's/[0-9]*\s\(chr[^:]*\):\([0-9]*\)..\([0-9]*\)\s(+)/\\1|\\2|\\3/g' 
+    #               | python %s/fasta2table.py -s na | sed 's/id/contig|start|end/g' 
+    #               | tr '|' '\\t' > %s''' % (infile,PARAMS["scriptsdir"],PARAMS["genome_dir"],PARAMS["genome"],PARAMS["scriptsdir"],outfile)
+
+    statement = '''zcat %(infile)s | slopBed -b 50 -g %(genome_dir)s/%(genome)s.fasta.fai
+                   | python %(scriptsdir)s/gtf2table.py --counter=position --counter=composition-na --counter=composition-cpg \
+                   --genome-file=%(genome_dir)s/%(genome)s > %(outfile)s
+                   '''          
+    P.run()
+
+############################################################
+@transform( annotateTSSNucleotides, suffix(".nuc"), "_nuc.load" )
+def loadTSSNucleotides( infile, outfile ):
+    '''load interval annotations: nucleotide composition
+    '''
+    P.load( infile, outfile, "--index=gene_id --allow-empty" )
+
+###################################################################
+###################################################################
+###################################################################
+@transform( prepareGTFsByOverlapWithIntervals,
+            regex("(transcriptprofiles.*).gtf.gz"),
+            r"\1.tsv.gz" )
+
+def buildGenesByIntervalsProfiles( infile, outfile ):
+    '''Make gene profile plots.'''
+    
+    to_cluster = True
+
+    track = TRACKS.factory( filename = infile[len("transcriptprofiles/"):-len(".withoverlap.tsv.gz")] )   
+
+    bamfiles, offsets = getAssociatedBAMFiles( track )
+    geneset = PARAMS_ANNOTATIONS["interface_geneset_all_gtf"]
+
+    if bamfiles:
+        E.info( "%s: associated bamfiles = %s" % (track, bamfiles))
+    else:
+        E.warn( "%s: no bamfiles associated - target skipped" % (track))
+        P.touch( outfile )
+        return
+
+    if len(bamfiles) > 1:
+        raise NotImplementedError( "peakshape with multiple bamfiles not implement" )
+    bamfile=bamfiles[0]
+
+    outpat = outfile[:-len(".tsv.gz")]
+    statement = '''
+
+    python %(scriptsdir)s/bam2geneprofile.py
+                      --output-filename-pattern="%(outpat)s.%%s"
+                      --force
+                      --reporter=transcript
+                      --method=geneprofile 
+                      --method=tssprofile 
+                      --normalize-profile=none
+                      --normalize-profile=area
+                      --normalize-profile=counts
+                      %(bamfile)s <(zcat %(infile)s)
+                   > %(outfile)s ;
+                '''
+    P.run()
+
+############################################################
+@transform( buildGenesByIntervalsProfiles,
+            suffix(".tsv.gz"),
+            r"\1.geneprofile.counts.load" )
+
+def loadByIntervalProfiles( infile, outfile ):
+    '''load interval annotations: nucleotide composition
+    '''
+    countsfile = infile[:-len(".tsv.gz")]+".geneprofile.counts.tsv.gz"
+    print "hello"
+    print countsfile
+    P.load( countsfile, outfile, "--index=gene_id --allow-empty" )
+
     
 ############################################################
 ############################################################
@@ -1497,7 +1648,7 @@ def viewIntervals( infiles, outfiles ):
 def annotate_withreads():
     pass
 
-@follows( loadAnnotations, loadTSS, loadRepeats, loadContextStats, loadBinding )
+@follows( loadAnnotations, loadTSS, loadRepeats, loadContextStats, loadBinding, loadNucleotides, loadTSSNucleotides )
 def annotate_intervals(): pass
 
 # @follows( mapping,
@@ -1597,6 +1748,7 @@ def annotate_intervals(): pass
 ###################################################################
 @follows( annotate_intervals, 
           annotate_withreads,
+          loadByIntervalProfiles,
           runMeme,
           loadMemeSummary,
           loadTomTom,
