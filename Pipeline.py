@@ -378,6 +378,8 @@ def getProjectId():
     if not curdir.startswith( PROJECT_ROOT ):
         raise ValueError( "method getProjectId no called within %s" % PROJECT_ROOT )
     prefixes = len(PROJECT_ROOT.split("/"))
+    # patch for projects in mini directory
+    if "/mini/" in curdir: prefixes += 1
     rootdir = "/" + os.path.join( *(curdir.split( "/" )[:prefixes+1]) )
     f = os.path.join( rootdir, "sftp", "web" )
     if not os.path.exists(f):
