@@ -1824,6 +1824,8 @@ def loadPeakRanger( infile, outfile, bamfile, controlfile = None, table_suffix =
         control = "--control-bam-file=%(controlfile)s --control-offset=%(offset)i" % locals()
 
     # Steve - This was set to _details, but _details = regions (peaks) + summits. Hence changed. 
+    # Note that Peak ranger reports peaks even when the given fdr cut-off has failed and labels them
+    # "fdrFailed" - here, such peaks are explicitely not loaded.
     # AFAIK, Peakranger ranger is optimised to detect peaks arising from point source binding
     # where as Peakranger ccat is optimised to detect regions arising from more diffuse binding events.
     bedfile = infile + "_region.bed"
@@ -1837,7 +1839,7 @@ def loadPeakRanger( infile, outfile, bamfile, controlfile = None, table_suffix =
                            --all-fields 
                            --bed-header=%(headers)s
                            --log=%(outfile)s
-                < %(bedfile)s
+                < grep -v "fdrFailed" %(bedfile)s
                 | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
                        --index=contig,start
                        --index=interval_id
@@ -1857,7 +1859,7 @@ def loadPeakRanger( infile, outfile, bamfile, controlfile = None, table_suffix =
                            --all-fields 
                            --bed-header=%(headers)s
                            --log=%(outfile)s
-                < %(bedfile)s
+                < grep -v "fdrFailed" %(bedfile)s
                 | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
                        --index=contig,start
                        --index=interval_id
