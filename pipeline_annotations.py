@@ -155,6 +155,12 @@ gc_segmentation.bed.gz
 cpg.bed.gz
    A list of all CpGs in the genome sequence
 
+gwas_catalog.bed.gz
+   Bed intervals with GWAS intervals from the gwas catalog.
+
+gwas_distild.bed.gz
+   Bed intervals with GWAS intervals from the DistiLD database.
+
 Example
 =======
 
@@ -1691,7 +1697,7 @@ if PARAMS["genome"].startswith("hg"):
         statement = '''wget http://www.genome.gov/admin/gwascatalog.txt'''
         P.run()
         
-    @merge( downloadGWASCatalog, PARAMS["interface_gwas_bed"] )
+    @merge( downloadGWASCatalog, PARAMS["interface_gwas_catalog_bed"] )
     def buildGWASTracks( infile, outfile ):
         
         reader = csv.DictReader( IOTools.openFile( infile ), dialect = "excel-tab" )
@@ -1747,7 +1753,58 @@ if PARAMS["genome"].startswith("hg"):
         outf = IOTools.openFile(outfile + ".log", "w" )
         outf.write( "category\tcounts\n%s\n" % c.asTable() )
         outf.close()
+
+    @merge( None, "gwas_distild.log" )
+    def downloadDistiLD( infile, outfile ):
+        '''download GWAS data from distild database.'''
+
+        track = P.snip( outfile, ".log" )
+        of = track + "_snps.tsv.gz"
+        if os.path.exists( of ): os.path.remove(of)
+        statement = '''wget http://distild.jensenlab.org/snps.tsv.gz -O %(of)s'''
+        P.run()
+
+        of = track + "_lds.tsv.gz"
+        if os.path.exists( of ): os.path.remove(of)
+        statement = '''wget http://distild.jensenlab.org/lds.tsv.gz -O %(of)s'''
+        P.run()
+
+        P.touch( outfile )
         
+    
+    @merge( downloadGWASCatalog, PARAMS["interface_gwas_distild_bed"] )
+    def buildDistiLDTracks( infile, outfile ):
+        '''build bed tracks from DistiLD database.'''
+        
+        track = P.snip( infile, ".log" )
+        intervals = []
+        c = E.Counter()
+        for line in IOTools.openFile( track + "_snps.tsv.gz" ):
+            pubmed_id, rs, pvalue, block, ensgenes, short, icd10 = line[:-1].split("\t")
+            c.input += 1
+            try:
+                contig, start, end = re.match( "(\S+):(\d+)-(\d+)", block ).groups()
+            except AttributeError:
+                E.warn( "parsing error for %s" % block )
+                c.errors += 1
+                continue
+            intervals.append( (contig, int(start), int(end), short) )
+            c.parsed += 1
+
+        intervals.sort()
+        outf = IOTools.openFile( outfile, "w" )
+        cc = E.Counter()
+        for k, x in itertools.groupby( intervals, key = lambda x: x ):
+            outf.write( "%s\t%i\t%i\t%s\n" % k )
+            c.output += 1
+            cc[k[3]] += 1
+        outf.close()
+        E.info( c )
+
+        outf = IOTools.openFile(outfile + ".log", "w" )
+        outf.write( "category\tcounts\n%s\n" % cc.asTable() )
+        outf.close()
+
 ##################################################################
 ##################################################################
 ##################################################################

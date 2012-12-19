@@ -278,7 +278,8 @@ TISSUES = PipelineTracks.Aggregate( TRACKS, labels = ("tissue", ) )
 ###################################################################
 ## Global flags
 ###################################################################
-SPLICED_MAPPING = "tophat" in P.asList( PARAMS["mappers" ] )
+MAPPERS = P.asList( PARAMS["mappers" ] )
+SPLICED_MAPPING = "tophat" in MAPPERS or "gsnap" in MAPPERS
 
 ###################################################################
 ###################################################################
@@ -1039,15 +1040,15 @@ def mapReadsWithStampy( infile, outfile ):
     P.run()
 
 MAPPINGTARGETS = []
-mapToMappingTargets = { 'tophat': mapReadsWithTophat,
-                        'bowtie': mapReadsWithBowtie,
-                        'bwa': mapReadsWithBWA,
-                        'stampy': mapReadsWithStampy,
-                        'transcriptome': mapReadsWithBowtieAgainstTranscriptome,
-                        'gsnap' : mapReadsWithGSNAP,
+mapToMappingTargets = { 'tophat': (mapReadsWithTophat, loadTophatStats),
+                        'bowtie': (mapReadsWithBowtie,),
+                        'bwa': (mapReadsWithBWA,),
+                        'stampy': (mapReadsWithStampy,),
+                        'transcriptome': (mapReadsWithBowtieAgainstTranscriptome,),
+                        'gsnap' : (mapReadsWithGSNAP,),
                         }
 for x in P.asList( PARAMS["mappers"]):
-    MAPPINGTARGETS.append( mapToMappingTargets[x] )
+    MAPPINGTARGETS.extend( mapToMappingTargets[x] )
         
 @follows( *MAPPINGTARGETS )
 def mapping(): pass
@@ -1398,8 +1399,7 @@ def loadIntronLevelReadCounts( infile, outfile ):
 def general_qc(): pass
 
 @active_if( SPLICED_MAPPING )
-@follows( loadTophatStats, 
-          loadExonValidation,
+@follows( loadExonValidation,
           loadGeneInformation,
           loadTranscriptLevelReadCounts,
           loadIntronLevelReadCounts )

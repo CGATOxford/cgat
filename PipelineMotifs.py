@@ -936,6 +936,11 @@ def runTomTom( infile, outfile ):
 
     target_path = os.path.join( os.path.abspath(PARAMS["exportdir"]), "tomtom", outfile )
     
+    if IOTools.isEmpty( infile ):
+        E.warn( "input is empty - no computation performed" )
+        P.touch( outfile )
+        return
+
     statement = '''
            tomtom %(tomtom_options)s -oc %(tmpdir)s %(infile)s %(databases)s > %(outfile)s.log
     '''

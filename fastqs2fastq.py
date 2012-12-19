@@ -101,18 +101,27 @@ def main( argv = None ):
         def getIds( infile ):
             '''return ids in infile.'''
             aread = infile.readline
+            chop = None
             while True:
                 l = [aread().rstrip("\r\n") for i in range(4)]
                 if not l[0]: break
-                yield l[0].split()[0]
+                r = l[0].split()[0]
+                # decide if to chop read number off
+                if chop == None: chop = r[-1] in '12'
+                if chop:  yield r[:-1]
+                else: yield r
 
         def write( outfile, infile, take ):
             '''filter fastq files with ids in take.'''
             aread = infile.readline
+            chop = None
             while True:
                 l = [aread().rstrip("\r\n") for i in range(4)]
                 if not l[0]: break
-                if (l[0].split()[0]) not in take: continue
+                r = l[0].split()[0]
+                if chop == None: chop = r[-1] in '12'
+                if chop: r = r[:-1]
+                if r not in take: continue
                 outfile.write("\n".join(l) + "\n" )
 
         E.info( "reading first in pair" )

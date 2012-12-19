@@ -1235,10 +1235,18 @@ def loadTomTom( infile, outfile ):
 
     tablename = P.toTable( outfile )
 
-    # get the motif name from the xml file
     resultsdir = os.path.join( os.path.abspath(PARAMS["exportdir"]), "tomtom", infile )
+    xml_file = os.path.join( resultsdir, "tomtom.xml" ) 
+
+    if not os.path.exists( xml_file ):
+        E.warn( "no tomtom output - skipped loading " )
+        P.touch( outfile )
+        return
+
+    # get the motif name from the xml file
+
     tree = xml.etree.ElementTree.ElementTree()
-    tree.parse( os.path.join( resultsdir, "tomtom.xml" ) )
+    tree.parse( xml_file )
     motifs =  tree.find( "targets" )
     name2alt = {}
     for motif in motifs.getiterator( "motif" ):

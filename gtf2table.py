@@ -216,11 +216,11 @@ def readIntervalsFromGFF( filename_gff, source, feature,
         if with_values:
             for bed in iterator:
                 ninput += 1
-                e[bed.contig].append( (bed.start,bed.end,bed.mFields[0]) )
+                e[bed.contig].append( (bed.start,bed.end,bed.fields[0]) )
         elif with_records:
             for bed in iterator:
                 ninput += 1
-                bed.gene_id = bed.mFields[0]
+                bed.gene_id = bed.fields[0]
                 bed.transcript_id = bed.gene_id
                 e[bed.contig].append( (bed.start,bed.end,bed) )
         else:

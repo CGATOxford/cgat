@@ -284,7 +284,9 @@ ILLUMINA_ADAPTORS = { "Genomic-DNA-Adaptor" : "GATCGGAAGAGCTCGTATGCCGTCTTCTGCTTG
                       "Oligo-Only-PCR-Primer-I7" : "CAAGCAGAAGACGGCATACGAGATNNNNNNNTGACTGGAGTTC",
                       "Small-RNA-v1-RT-Primer" : "CAAGCAGAAGACGGCATACGA",
                       "Small-RNA-PCR-Primer" : "AATGATACGGCGACCACCGACAGGTTCAGAGTTCTACAGTCCGA",
-                      "ScriptSeq-Adaptor-I6" : "CAAGCAGAAGACGGCATACGAGATNNNNNNGTGACTGGAGTTCAGACGTGTGCTCTTCCGATCT" }
+                      "ScriptSeq-Adaptor-I6" : "CAAGCAGAAGACGGCATACGAGATNNNNNNGTGACTGGAGTTCAGACGTGTGCTCTTCCGATCT",
+                      "SmartIIA": "AAGCAGTGGTATCAACGCAGAGTAC",
+                      }
 
 #########################################################################
 #########################################################################
@@ -470,6 +472,61 @@ def processReads( infiles, outfile ):
         os.unlink( tmpfile2 )
         os.unlink( tmpfile )
 
+##################################################################
+##################################################################
+##################################################################
+def parseCutadapt( lines ):
+    '''parse cutadapt output.
+
+    Multiple cutadapt outputs are joined.
+    '''
+
+    def _chunker( inf ):
+        chunk = []
+        for line in inf:
+            if line.startswith("==="):
+                if chunk: yield chunk
+                chunk = []
+            chunk.append( line )
+        
+    assert lines[0].startswith("cutadapt")
+    results = {}
+
+    del lines[0]
+    for x, line in enumerate(lines):
+        if not line.strip(): continue
+        if ":" in line:
+            if line.strip().startswith("Command"): continue
+            param, value = line[:-1].split(":")
+            param = re.sub( " ", "_", param.strip()).lower()
+            value = re.sub( "[a-zA-Z ].*", "", value.strip() )
+            try:
+                value = int(value)
+            except ValueError:
+                try:
+                    value = float(value)
+                except:
+                    pass
+            results[param] = value
+        else:
+            break
+
+    del lines[:x]
+    results["unchanged_reads"] = int(results["processed_reads"]) - int(results["trimmed_reads"])
+    headers = results.keys()
+    
+    adapters = {}
+    for chunk in _chunker(lines):        
+        adapter = re.search("=== (.*) ===", chunk[0]).groups()[0]
+        length, removed = re.search( "Adapter '.*', length (\d+), was trimmed (\d+) times", chunk[2]).groups()
+
+        adapters[adapter] = length, removed
+
+    return results, adapters
+
+##################################################################
+##################################################################
+##################################################################
 @transform( processReads,
             suffix(""),
             ".tsv")
@@ -487,6 +544,14 @@ def summarizeProcessing( infile, outfile ):
                     inputs = [i1,i2]
                     outputs = [o,o]
                     break
+        elif step == "contaminants":
+            lines = inf.readlines()
+            assert lines[0].startswith("cutadapt")
+            lines = "@@@".join( lines )
+            for part in lines.split("cutadapt")[1:]:
+                results, adapters = parseCutadapt( ("cutadapt" + part).split("@@@") )
+                inputs.append( results["processed_reads"] )
+                outputs.append( results["unchanged_reads" ] )
         else:
             for line in inf:
                 if line.startswith( "Input:"):
@@ -502,14 +567,17 @@ def summarizeProcessing( infile, outfile ):
     outf = IOTools.openFile( outfile, "w")
     outf.write( "track\tstep\tpair\tinput\toutput\n")
 
-    for step in "artifacts", "trim", "filter", "reconcile":
+    for step in "contaminants", "artifacts", "trim", "filter", "reconcile":
         fn = infile + "_%s.log" % step
         if not os.path.exists(fn): continue
         for x, v in enumerate( _parseLog( IOTools.openFile( fn ), step)):
             outf.write( "%s\t%s\t%i\t%i\t%i\n" % (track, step, x, v[0], v[1]) )
-    
+
     outf.close()
 
+#########################################################################
+#########################################################################
+#########################################################################
 @transform( summarizeProcessing,
             regex(r"processed.(\S+).fastq.*.gz.tsv"),
             r"\1_processed.load")
@@ -520,50 +588,64 @@ def loadProcessingSummary( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
+@merge( summarizeProcessing, "processing_summary.tsv" )
+def summarizeAllProcessing( infiles, outfile ):
+    '''summarize processing information.'''
+
+    outf = IOTools.openFile( outfile, "w" )
+    data = []
+    for infile in infiles:
+        inf = IOTools.openFile( infile )
+        for line in inf:
+            track, step, pair, ninput, noutput = line[:-1].split("\t")
+            if track == "track": continue
+            data.append( (track, step, pair, ninput, noutput) )
+            
+    # sort by track, pair, input
+    data.sort( key = lambda x: (x[0], x[2], -int(x[3])))
+    first = True
+    for key, v in itertools.groupby( data, lambda x: (x[0], x[2])):
+        vals = list(v)
+        track,pair = key
+        ninput = int(vals[0][3])
+        outputs = [int(x[4]) for x in vals]
+        if first:
+            outf.write( "track\tpair\tninput\t%s\t%s\t%s\t%s\n" % ("\t".join( [x[1] for x in vals] ),
+                                                                   "noutput",
+                                                                   "\t".join( ["percent_%s" % x[1] for x in vals] ),
+                                                                   "percent_output" ))
+            first = False
+        outf.write( "%s\t%s\t%i\t%s\t%i\t%s\t%s\n" % ( track, pair, ninput, 
+                                                       "\t".join( map(str,outputs)),
+                                                       outputs[-1], 
+                                                       "\t".join( [ "%5.2f" % (100.0 * x / ninput) for x in outputs ] ),
+                                                       "%5.2f" % (100.0 * outputs[-1] / ninput)))
+    outf.close()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( summarizeAllProcessing, suffix(".tsv"), ".load" )
+def loadAllProcessingSummary( infile, outfile ):
+    P.load( infile, outfile )
+
+#########################################################################
+#########################################################################
+#########################################################################
 @merge( removeContaminants, "filtering.summary.tsv.gz" )
 def summarizeFiltering( infiles, outfile ):
     '''collect summary output from filtering stage.'''
 
     tracks = {}
     adapters = {}
-    def _chunker( inf ):
-        chunk = []
-        for line in inf:
-            if line.startswith("==="):
-                if chunk: yield chunk
-                chunk = []
-            chunk.append( line )
-            
+
     for f in infiles:
         track = f[len("nocontaminants."):]
         track = re.sub( "[.].*", "", track )
-        results = {}
-        lines = IOTools.openFile( f + ".log" ).readlines()
-        del lines[0]
-        for x, line in enumerate(lines):
-            if not line.strip(): continue
-            if ":" in line:
-                if line.strip().startswith("Command"): continue
-                param, value = line[:-1].split(":")
-                param = re.sub( " ", "_", param.strip()).lower()
-                value = re.sub( "[a-zA-Z ].*", "", value.strip() )
-                results[param] = value
-            else:
-                break
-            
-        del lines[:x]
-        results["unchanged_reads"] = int(results["processed_reads"]) - int(results["trimmed_reads"])
-        headers = results.keys()
-        tracks[track] = results
-        
-        results = {}
-        for chunk in _chunker(lines):        
-            adapter = re.search("=== (.*) ===", chunk[0]).groups()[0]
-            length, removed = re.search( "Adapter '.*', length (\d+), was trimmed (\d+) times", chunk[2]).groups()
-                
-            results[adapter] = length, removed
-        
-        adapters[track] = results
+        result, adapter = parseCutadapt( IOTools.openFile( f + ".log" ) )
+        tracks[track] = result
+        adapters[track] = adapter
+        header = result.keys()
 
     outf = IOTools.openFile( outfile, "w" )
     outf.write( "track\t%s\n" % "\t".join(headers))
@@ -572,13 +654,13 @@ def summarizeFiltering( infiles, outfile ):
         outf.write("%s\t%s\n" % (track, "\t".join( str(results[x]) for x in headers ) ) )
     outf.close()
 
+##################################################################
 @transform( summarizeFiltering,
             suffix(".summary.tsv.gz"),
             "_summary.load")
 def loadFilteringSummary( infile, outfile ):
     '''load filtering summary.'''
     P.load(infile, outfile )
-
 
 #########################################################################
 #########################################################################
@@ -613,7 +695,7 @@ def replaceBaseWithN(infile, outfile):
 #########################################################################
 #########################################################################
 #########################################################################
-@follows( processReads )
+@follows( loadProcessingSummary, loadAllProcessingSummary )
 def process():
     '''process (filter,trim) reads.'''
     pass
