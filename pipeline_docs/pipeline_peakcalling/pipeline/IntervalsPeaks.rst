@@ -22,7 +22,7 @@ The following figure shows the number of intervals per set:
 The following table presents the number of intervals and 
 the average interval width per set:
 
-.. report:: Intervals.PeaksSummary
+.. report:: Intervals.PeaksSummaryTable
    :render: table
 
    Number of intervals and lengths of intervals in
