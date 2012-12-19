@@ -56,7 +56,7 @@ sicer_narrow_
     The types of region called by the sicer alogrithm reflect the paramaters it is run with. In this pipeline sicer is run by default with two different parameter sets, to allow the simultaneous detection of narrower and broader regions of enrichmnet.
 
 sicer_broad_
-    See above.
+    (See above)
 
 peakranger_ranger_
     PeakRanger is a multi-purpose, ultrafast ChIP Seq peak caller. It is used in the modENCODE project and included in the iPlant pipeline system.
