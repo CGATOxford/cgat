@@ -334,7 +334,7 @@ if __name__ == '__main__':
             options.stdout.write( "\t".join( (bed.contig, 
                                               str(bed.start), 
                                               str(bed.end), 
-                                              bed.mFields[0]) ) )
+                                              bed.fields[0]) ) )
         for counter in counters: 
             counter.update(bed)
             options.stdout.write("\t%s" % str(counter) )

@@ -1,4 +1,4 @@
-################################################################################
+ ################################################################################
 #
 #   MRC FGU Computational Genomics Group
 #
@@ -274,7 +274,7 @@ def main( argv = None ):
     
     if output == "name":
         outfile.write( "name1\tname2\n" )
-        outf = lambda x: x.mFields[0]
+        outf = lambda x: x.fields[0]
     else:
         outf = str
         
