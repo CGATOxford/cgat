@@ -281,7 +281,7 @@ def main( argv = None ):
         pairs_total = nreads_total // 2
         pairs_mapped = flags_counts["proper_pair"]
         outs.write( "pairs_total\t%i\t%5.2f\tpairs_total\n" % (pairs_total, 100.0))
-        outs.write( "pairs_mapped\t%i\t%f5.2f\tpairs_total\n" % (pairs_mapped, 100.0 * pairs_mapped / pairs_total))
+        outs.write( "pairs_mapped\t%i\t%5.2f\tpairs_total\n" % (pairs_mapped, 100.0 * pairs_mapped / pairs_total))
     else:
         pairs_total = pairs_mapped = 0
         outs.write( "pairs_total\t%i\t%5.2f\tpairs_total\n" % (pairs_total,0.0))
