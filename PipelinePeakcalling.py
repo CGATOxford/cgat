@@ -1839,7 +1839,7 @@ def loadPeakRanger( infile, outfile, bamfile, controlfile = None, table_suffix =
                            --all-fields 
                            --bed-header=%(headers)s
                            --log=%(outfile)s
-                < grep -v "fdrFailed" %(bedfile)s
+                <( grep -v "fdrFailed" %(bedfile)s )
                 | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
                        --index=contig,start
                        --index=interval_id
@@ -1859,7 +1859,7 @@ def loadPeakRanger( infile, outfile, bamfile, controlfile = None, table_suffix =
                            --all-fields 
                            --bed-header=%(headers)s
                            --log=%(outfile)s
-                < grep -v "fdrFailed" %(bedfile)s
+                <( grep -v "fdrFailed" %(bedfile)s )
                 | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
                        --index=contig,start
                        --index=interval_id
