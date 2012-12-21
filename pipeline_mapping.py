@@ -1,5 +1,5 @@
 ###############################################################################
-#
+   #
 #   MRC FGU Computational Genomics Group
 #
 #   $Id$
@@ -1109,7 +1109,33 @@ def loadPicardStats( infiles, outfile ):
     '''merge alignment stats into single tables.'''
 
     PipelineMappingQC.loadPicardAlignmentStats( infiles, outfile )
-        
+
+############################################################
+############################################################
+############################################################
+@transform( MAPPINGTARGETS,
+            suffix(".bam" ), 
+            ".picard_stats.duplication_metrics")
+def buildPicardDuplicationStats( infile, outfile ):
+    '''Get duplicate stats from picard MarkDuplicates.
+    Pair duplication is properly handled, including inter-chromosomal cases. SE data is also handled.
+    These stats also contain a histogram that estimates the return from additional sequecing.
+    No marked bam files are retained (/dev/null...)
+    Note that picards counts reads but they are in fact alignments.
+    '''
+    PipelineMappingQC.buildPicardDuplicationStats( infile,outfile )
+
+############################################################
+############################################################
+############################################################
+@merge( buildPicardDuplicationStats, "picard_duplication_stats.load" )
+def loadPicardDuplicationStats( infiles, outfile ):
+    '''merge alignment stats into single tables.'''
+    #separate load function while testing
+
+    PipelineMappingQC.loadPicardDuplicationStats( infiles, outfile )
+
+     
 # ############################################################
 # ############################################################
 # ############################################################
