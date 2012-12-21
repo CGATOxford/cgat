@@ -133,7 +133,7 @@ def buildPicardAlignmentStats( infile, outfile, genome_file ):
 
     # Whether or not to remove reads without quality information.
     # Reads without quality information might cause Picard to fail.
-    # The defaul is to remove.
+    # The default is to remove.
     remove_seqs_without_quality = True
 
     if remove_seqs_without_quality:
@@ -156,6 +156,26 @@ def buildPicardAlignmentStats( infile, outfile, genome_file ):
                                        VALIDATION_STRINGENCY=SILENT 
                    >& %(outfile)s'''
 
+    P.run()
+
+def buildPicardDuplicationStats( infile, outfile ):
+    '''Record duplicate metrics using Picard, the marked records are discarded'''
+
+    to_cluster = True
+    cluster_options = "-l mem_free=4G -l picard=1"
+
+    if getNumReadsFromBAMFile(infile) == 0:
+        E.warn( "no reads in %s - no metrics" % infile )
+        P.touch( outfile )
+        return
+
+    statement = '''MarkDuplicates
+                                   INPUT=%(infile)s 
+                                   ASSUME_SORTED=true 
+                                   METRICS_FILE=%(outfile)s
+                                   OUTPUT=/dev/null 
+                                   VALIDATION_STRINGENCY=SILENT 
+                 '''
     P.run()
 
 def buildPicardGCStats( infile, outfile, genome_file ):
@@ -288,12 +308,27 @@ def loadPicardAlignmentStats( infiles, outfile ):
     for suffix, column in histograms:
         loadPicardHistogram( infiles, outfile, suffix, column )
 
+
+def loadPicardDuplicationStats( infiles, outfile ):
+    # SNS: added to enable naming consistency
+    '''load picard duplicate filtering stats.'''
+
+    suffix = "duplication_metrics"
+
+    # the loading functions expect "infile_name.pipeline_suffix" as the infile names.
+    infiles = [ x[ 0 : -len( "." + suffix ) ] for x in infiles]
+    
+    loadPicardMetrics( infiles, outfile, suffix )
+    loadPicardHistogram( infiles, outfile, suffix, "coverage_multiple" )
+
+
 def loadPicardDuplicateStats( infiles, outfile ):
     '''load picard duplicate filtering stats.'''
 
     loadPicardMetrics( infiles, outfile, "duplicate_metrics", pipeline_suffix = ".bam" )
     loadPicardHistogram( infiles, outfile, "duplicate_metrics", "duplicates", pipeline_suffix = ".bam" )
     
+
 def buildBAMStats( infile, outfile ):
     '''Count number of reads mapped, duplicates, etc. '''
     to_cluster = True
