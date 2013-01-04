@@ -540,6 +540,66 @@ class RegionCounter( GeneCounter ):
         g.end = gtf[-1].end
         
         return GeneCounter.count( self, [ g ] )
+
+class MidpointCounter( GeneCounter ):
+    '''count in complete region given by gene/transcript.'''
+
+    name = "midpointprofile"
+    
+    def __init__(self, counter, 
+                 int resolution_upstream,
+                 int resolution_downstream,
+                 int extension_upstream = 0, 
+                 int extension_downstream = 0,
+                 int scale_flanks = 0,
+                 *args,
+                 **kwargs ):
+
+        IntervalsCounter.__init__(self, *args, **kwargs )
+
+        self.counter = counter
+        self.extension_upstream = extension_upstream
+        self.extension_downstream = extension_downstream 
+        self.resolution_upstream = resolution_upstream
+        self.resolution_downstream = resolution_downstream
+
+        for field, length in zip( 
+            ("upstream", "downstream"),
+            (resolution_upstream,
+             resolution_downstream ) ):
+            self.add( field, length )
+        
+    def count( self, gtf ):
+        '''build ranges to be analyzed from a gene model.
+
+        Returns a tuple with ranges for exons, upstream, downstream.
+        '''
+
+        contig = gtf[0].contig 
+        exons = GTF.asRanges( gtf, "exon" )
+        exon_start, exon_end = exons[0][0], exons[-1][1]
+        midpoint = (exon_end - exon_start) // 2 + exon_start
+
+        upstream = [ ( max(0, midpoint - self.extension_upstream), midpoint ), ] 
+        downstream = [ ( midpoint, midpoint + self.extension_downstream ), ]
+        
+        E.debug("counting upstream" )
+        self.counts_upstream = self.counter.getCounts( contig, upstream, self.resolution_upstream ) 
+        E.debug("counting downstream" )
+        self.counts_downstream = self.counter.getCounts( contig, downstream, self.resolution_downstream )
+
+        E.debug("counting finished" )
+
+        ## revert for negative strand
+        if gtf[0].strand == "-":
+            self.counts_upstream, self.counts_downstream = self.counts_downstream[::-1], self.counts_upstream[::-1]
+            
+        self.addLengths( upstream, downstream )
+
+        self.aggregate( self.counts_upstream,
+                        self.counts_downstream )
+
+        return 1
         
 class TSSCounter( IntervalsCounter ):
     '''count profile at transcription start/end site.
