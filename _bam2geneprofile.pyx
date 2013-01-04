@@ -52,11 +52,16 @@ class RangeCounter:
 
 class RangeCounterBAM(RangeCounter):
 
-    def __init__(self, samfiles, shifts, extends, *args, **kwargs ):
+    def __init__(self, samfiles, shifts, extends, merge_pairs, min_insert_size, max_insert_size, 
+                 *args, **kwargs ):
         RangeCounter.__init__(self, *args, **kwargs )
         self.samfiles = samfiles
+        self.merge_pairs = merge_pairs
+        self.min_insert_size = min_insert_size
+        self.max_insert_size = max_insert_size
 
         self.shifts, self.extends = [], []
+
         for x in xrange(max( (len(shifts), len(extends), len(samfiles)) )):
             if x >= len(shifts):
                 shift = 0
@@ -110,6 +115,10 @@ class RangeCounterBAM(RangeCounter):
         cdef int extend
         cdef int shift
         cdef Samfile samfile
+        cdef bint merge_pairs = self.merge_pairs
+        cdef int min_insert_size = self.min_insert_size
+        cdef int max_insert_size = self.max_insert_size
+
         for samfile, shift, extend in zip( self.samfiles, self.shifts, self.extends):
 
             current_offset = 0
@@ -117,7 +126,33 @@ class RangeCounterBAM(RangeCounter):
 
             for start, end in ranges:
                 length = end - start
-                if shift_extend > 0:
+                if merge_pairs:
+                    xstart, xend = max(0, start - shift_extend), max(0, end + shift_extend)
+
+                    for read in samfile.fetch( contig, xstart, xend ):
+                        flag = read._delegate.core.flag 
+                        # remove unmapped reads
+                        if flag & 4: continue
+                        # remove unpaired
+                        if not flag & 2: continue
+                        # this is second pair of read - skip to avoid double counting
+                        if flag & 128: continue
+                        # remove reads on different contigs
+                        if read.tid != read.mrnm: continue
+                        # remove if insert size too large
+                        if (read.isize > max_insert_size) or (read.isize < min_insert_size) : continue
+                        if read.pos < read.mpos:
+                            rstart = max( start, read.pos)
+                            rend = min( end, read.mpos + read.rlen )
+                        else:
+                            rstart = max( start, read.mpos)
+                            rend = min( end, read.pos + read.rlen )
+
+                        rstart += -start + current_offset
+                        rend += -start + current_offset
+                        for i from rstart <= i < rend: counts[i] += 1
+  
+                elif shift_extend > 0:
                     # collect reads including the regions left/right of interval
                     xstart, xend = max(0, start - shift_extend), max(0, end + shift_extend)
 

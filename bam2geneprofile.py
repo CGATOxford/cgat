@@ -71,6 +71,9 @@ formatted file is supplied, it must be compressed with and indexed with :file:`t
                 upstream - EXON - downstream
    midpointprofile - aggregate over midpoint of gene model. The areas are:
                 upstream - downstream
+
+-a/--merge-pairs
+   merge pairs in paired-ended data.
    
 Usage
 -----
@@ -150,6 +153,10 @@ def main( argv = None ):
                        help = "shift reads in :term:`bam` formatted file before computing densities (ChIP-Seq). "
                               "[%default]" )
 
+    parser.add_option( "-a", "--merge-pairs", dest="merge_pairs", action = "store_true",
+                       help = "merge pairs in :term:`bam` formatted file before computing densities (ChIP-Seq). "
+                              "[%default]" )
+
     parser.add_option( "-e", "--extend", dest="extends", type = "int", action = "append",
                        help = "extend reads in :term:`bam` formatted file (ChIP-Seq). "
                               "[%default]" )
@@ -221,6 +228,8 @@ def main( argv = None ):
         profile_normalizations = [],
         normalization = None,
         scale_flanks = 0,
+        min_insert_size = 0,
+        max_insert_size = 1000,
         )
 
     ## add common options (-h/--help, ...) and parse command line 
@@ -251,7 +260,11 @@ def main( argv = None ):
             format = "bam"
             range_counter = _bam2geneprofile.RangeCounterBAM( bamfiles, 
                                                               shifts = options.shifts, 
-                                                              extends = options.extends )
+                                                              extends = options.extends,
+                                                              merge_pairs = options.merge_pairs,
+                                                              min_insert_size = options.min_insert_size,
+                                                              max_insert_size = options.max_insert_size )
+                                                              
         elif options.infiles[0].endswith( ".bed.gz" ):
             bedfiles = [ pysam.Tabixfile( x ) for x in options.infiles ]
             format = "bed"
