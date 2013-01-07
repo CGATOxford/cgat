@@ -723,8 +723,8 @@ class TopHat_fusion( Mapper ):
         if nfiles == 1:
             infiles = ",".join( [ x[0] for x in infiles ] )
             statement = '''
-            module load bio/tophatfusion;
-            tophat-fusion --output-dir %(tmpdir_tophat)s
+           
+            tophat2 --output-dir %(tmpdir_tophat)s
                    --num-threads %%(tophat_threads)i
                    --library-type %%(tophat_library_type)s                  
                    %(data_options)s
@@ -742,8 +742,8 @@ class TopHat_fusion( Mapper ):
             infiles2 = ",".join( [ x[1] for x in infiles ] )
 
             statement = '''
-            module load bio/tophatfusion;
-            tophat-fusion --output-dir %(tmpdir_tophat)s
+         
+            tophat2 --output-dir %(tmpdir_tophat)s
                     --mate-inner-dist %%(tophat_mate_inner_dist)i
                     --num-threads %%(tophat_threads)i
                    --library-type %%(tophat_library_type)s
@@ -764,8 +764,8 @@ class TopHat_fusion( Mapper ):
             infiles4 = ",".join( [ x[3] for x in infiles ] )
 
             statement = '''
-            module load bio/tophatfusion;
-            tophat-fusion --output-dir %(tmpdir_tophat)s
+            
+            tophat2 --output-dir %(tmpdir_tophat)s
                    --mate-inner-dist %%(tophat_mate_inner_dist)i
                    --num-threads %%(tophat_threads)i
                    --library-type %%(tophat_library_type)s
