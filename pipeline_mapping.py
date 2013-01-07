@@ -164,6 +164,8 @@ path:
 |picard              |>=1.42             |bam/sam files. The .jar files need to be in your|
 |                    |                   | CLASSPATH environment variable.                |
 +--------------------+-------------------+------------------------------------------------+
+|star                |>=2.2.0c           |read mapping                                    |
++--------------------+-------------------+------------------------------------------------+
 |bamstats_           |>=1.22             |from CGR, Liverpool                             |
 +--------------------+-------------------+------------------------------------------------+
 
@@ -197,11 +199,15 @@ Glossary
    bowtie
       bowtie_ - a read mapper
 
+   star
+      star_ - a read mapper for RNASEQ data
+
    
 .. _tophat: http://tophat.cbcb.umd.edu/
 .. _bowtie: http://bowtie-bio.sourceforge.net/index.shtml
 .. _gsnap: http://research-pub.gene.com/gmap/
 .. _bamstats: http://www.agf.liv.ac.uk/454/sabkea/samStats_13-01-2011
+.. _star - http://code.google.com/p/rna-star/
 
 Code
 ====
@@ -279,7 +285,7 @@ TISSUES = PipelineTracks.Aggregate( TRACKS, labels = ("tissue", ) )
 ## Global flags
 ###################################################################
 MAPPERS = P.asList( PARAMS["mappers" ] )
-SPLICED_MAPPING = "tophat" in MAPPERS or "gsnap" in MAPPERS
+SPLICED_MAPPING = "tophat" in MAPPERS or "gsnap" in MAPPERS or "star" in MAPPERS
 
 ###################################################################
 ###################################################################
@@ -949,6 +955,63 @@ def mapReadsWithGSNAP( infiles, outfile ):
 ############################################################
 ############################################################
 @active_if( SPLICED_MAPPING )
+@follows( mkdir("star.dir" ) )
+@transform( SEQUENCEFILES,
+            SEQUENCEFILES_REGEX,
+            r"star.dir/\1.star.bam" )
+def mapReadsWithSTAR( infile, outfile ):
+    '''map reads from .fastq or .sra files.
+
+    '''
+
+    job_options= "-pe dedicated %i -R y -l mem_free=%s" % (PARAMS["star_threads"],
+                                                           PARAMS["star_memory"])
+    to_cluster = True
+    m = PipelineMapping.STAR( executable = P.substituteParameters( **locals() )["star_executable"] )
+    
+    statement = m.build( (infile,), outfile ) 
+    P.run()
+
+############################################################
+############################################################
+############################################################
+@active_if( SPLICED_MAPPING )
+@merge( mapReadsWithSTAR, "star_stats.tsv" )
+def buildSTARStats( infiles, outfile ):
+    '''load stats from STAR run.'''
+
+    data = collections.defaultdict( list )
+    for infile in infiles:
+        fn = infile + ".final.log"
+        if not os.path.exists ( fn ):
+            raise ValueError( "incomplete run: %s" % infile )
+        
+        for line in IOTools.openFile( fn ):
+            if not "|" in line: continue
+            header, value = line.split("|")
+            data[header.strip()].append( value.strip() )
+    
+    keys = data.keys()
+    outf = IOTools.openFile( outfile, "w" )
+    outf.write( "track\t%s\n" % "\t".join(keys) )
+    for x, infile in enumerate(infiles):
+        track = P.snip( os.path.basename( infile ), ".bam" )
+        outf.write( "%s\t%s\n" % (track, [ data[key][x] for key in keys ] ) )
+    outf.close()
+
+############################################################
+############################################################
+############################################################
+@active_if( SPLICED_MAPPING )
+@transform( buildSTARStats, suffix(".tsv"), ".load")
+def loadSTARStats( infile, outfile ):
+    '''load stats from STAR run.'''
+    P.load( infile, outfile )
+    
+############################################################
+############################################################
+############################################################
+@active_if( SPLICED_MAPPING )
 @follows( mkdir("transcriptome.dir" ) )
 @transform( SEQUENCEFILES,
             SEQUENCEFILES_REGEX,
@@ -1046,6 +1109,7 @@ mapToMappingTargets = { 'tophat': (mapReadsWithTophat, loadTophatStats),
                         'stampy': (mapReadsWithStampy,),
                         'transcriptome': (mapReadsWithBowtieAgainstTranscriptome,),
                         'gsnap' : (mapReadsWithGSNAP,),
+                        'star' : (mapReadsWithSTAR,),
                         }
 for x in P.asList( PARAMS["mappers"]):
     MAPPINGTARGETS.extend( mapToMappingTargets[x] )
@@ -1132,9 +1196,7 @@ def buildPicardDuplicationStats( infile, outfile ):
 def loadPicardDuplicationStats( infiles, outfile ):
     '''merge alignment stats into single tables.'''
     #separate load function while testing
-
     PipelineMappingQC.loadPicardDuplicationStats( infiles, outfile )
-
      
 # ############################################################
 # ############################################################
@@ -1268,7 +1330,7 @@ load context mapping statistics."""
     
     cc = Database.executewait( dbhandle, '''ALTER TABLE %(tablename)s ADD COLUMN mapped INTEGER''' % locals())
     statement = '''UPDATE %(tablename)s SET mapped = 
-                                       (SELECT b.mapped FROM bam_stats AS b 
+                                       (SELECT b.alignments_mapped FROM bam_stats AS b 
                                             WHERE %(tablename)s.track = b.track)''' % locals()
 
     cc = Database.executewait( dbhandle, statement )
@@ -1330,6 +1392,8 @@ def loadExonValidation( infiles, outfile ):
 def buildTranscriptLevelReadCounts( infiles, outfile):
     '''count reads falling into transcripts of protein coding 
        gene models.
+       
+    Data is not computed for tracks in transcripts.dir.
 
     .. note::
        In paired-end data sets each mate will be counted. Thus
@@ -1339,6 +1403,10 @@ def buildTranscriptLevelReadCounts( infiles, outfile):
     '''
     infile, geneset = infiles
     
+    if "transcriptome.dir" in infile:
+        P.touch()
+        return
+
     to_cluster = True
 
     statement = '''
@@ -1366,7 +1434,7 @@ def buildTranscriptLevelReadCounts( infiles, outfile):
             suffix(".tsv.gz"),
             ".load" )
 def loadTranscriptLevelReadCounts( infile, outfile ):
-    P.load( infile, outfile, options="--index=transcript_id" )
+    P.load( infile, outfile, options="--index=transcript_id --allow-empty" )
 
 #########################################################################
 #########################################################################
@@ -1434,12 +1502,15 @@ def spliced_qc(): pass
 @follows( general_qc, spliced_qc )
 def qc(): pass
 
+@follows( loadPicardDuplicationStats )
+def duplication(): pass
+
 ###################################################################
 ###################################################################
 ###################################################################
 ## export targets
 ###################################################################
-@merge( (mapping, general_qc), "view_mapping.load" )
+@merge( (loadBAMStats, loadPicardStats, loadContextStats), "view_mapping.load" )
 def createViewMapping( infile, outfile ):
     '''create view in database for alignment stats.
 

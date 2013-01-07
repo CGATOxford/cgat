@@ -103,7 +103,7 @@ def buildPicardInsertSizeStats( infile, outfile, genome_file ):
     '''gather BAM file insert size statistics using Picard '''
 
     to_cluster = True
-    cluster_options = "-l mem_free=4G -l picard=1"
+    job_options = "-l mem_free=4G -l picard=1"
 
     if getNumReadsFromBAMFile(infile) == 0:
         E.warn( "no reads in %s - no metrics" % infile )
@@ -124,7 +124,7 @@ def buildPicardAlignmentStats( infile, outfile, genome_file ):
     '''gather BAM file alignment statistics using Picard '''
 
     to_cluster = True
-    cluster_options = "-l mem_free=4G -l picard=1"
+    job_options = "-l mem_free=4G -l picard=1"
 
     if getNumReadsFromBAMFile(infile) == 0:
         E.warn( "no reads in %s - no metrics" % infile )
@@ -162,7 +162,7 @@ def buildPicardDuplicationStats( infile, outfile ):
     '''Record duplicate metrics using Picard, the marked records are discarded'''
 
     to_cluster = True
-    cluster_options = "-l mem_free=4G -l picard=1"
+    job_options = "-l mem_free=4G -l picard=1"
 
     if getNumReadsFromBAMFile(infile) == 0:
         E.warn( "no reads in %s - no metrics" % infile )
@@ -182,7 +182,7 @@ def buildPicardGCStats( infile, outfile, genome_file ):
     '''Gather BAM file GC bias stats using Picard '''
     to_cluster = True
 
-    cluster_options = "-l mem_free=4G -l picard=1"
+    job_options = "-l mem_free=4G -l picard=1"
 
     if getNumReadsFromBAMFile(infile) == 0:
         E.warn( "no reads in %s - no metrics" % infile )
@@ -237,7 +237,15 @@ def loadPicardMetrics( infiles, outfile, suffix, pipeline_suffix = ".picard_stat
         if len(lines) == 0:
             E.warn("no lines in %s: %s" % (track,f))
             continue
-        if first: outf.write( "%s\t%s" % ("track", lines[0] ) )
+        if first: 
+            outf.write( "%s\t%s" % ("track", lines[0] ) )
+            fields = lines[0][:-1].split("\t")
+        else:
+            f = lines[0][:-1].split("\t")
+            if f != fields:
+                raise ValueError("file %s has different fields: expected %s, got %s" % \
+                                     (filename, fields, f ))
+
         first = False
         for i in range(1, len(lines)):
             outf.write( "%s\t%s" % (track,lines[i] ))
@@ -310,8 +318,8 @@ def loadPicardAlignmentStats( infiles, outfile ):
 
 
 def loadPicardDuplicationStats( infiles, outfile ):
-    # SNS: added to enable naming consistency
     '''load picard duplicate filtering stats.'''
+    # SNS: added to enable naming consistency
 
     suffix = "duplication_metrics"
 
@@ -321,13 +329,11 @@ def loadPicardDuplicationStats( infiles, outfile ):
     loadPicardMetrics( infiles, outfile, suffix )
     loadPicardHistogram( infiles, outfile, suffix, "coverage_multiple" )
 
-
 def loadPicardDuplicateStats( infiles, outfile ):
     '''load picard duplicate filtering stats.'''
 
     loadPicardMetrics( infiles, outfile, "duplicate_metrics", pipeline_suffix = ".bam" )
     loadPicardHistogram( infiles, outfile, "duplicate_metrics", "duplicates", pipeline_suffix = ".bam" )
-    
 
 def buildBAMStats( infile, outfile ):
     '''Count number of reads mapped, duplicates, etc. '''

@@ -20,8 +20,10 @@ class MappingStatus( Status ):
         FAIL : < 40% reads mapped
 
         '''
+        print "SELECT reads_mapped/CAST( reads_total AS FLOAT) from view_mapping WHERE track = '%(track)s'" % locals()        
 
         value = self.getValue( "SELECT reads_mapped/CAST( reads_total AS FLOAT) from view_mapping WHERE track = '%(track)s'" )
+
         if value >= 0.6: status= "PASS"
         elif value >= 0.4: status= "WARNING"
         else: status= "FAIL"

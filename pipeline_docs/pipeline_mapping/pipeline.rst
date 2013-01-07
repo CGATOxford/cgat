@@ -20,6 +20,7 @@ Contents:
    pipeline/MappingAlignmentStatistics.rst
    pipeline/MappingComplexity.rst
    pipeline/MappingTophat.rst
+   pipeline/MappingStar.rst
    pipeline/Validation.rst
    python/Trackers.rst
  

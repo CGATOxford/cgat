@@ -4,7 +4,7 @@ Complexity
 
 This section looks at library duplication levels and estimated complexity using metrics from the Picard function MarkDuplicates.
 
-Please run the pipeline with "make loadDuplicationStats" to enable this report.
+Please run the pipeline with _make duplication_ to enable this report.
 
 Picard MarkDuplicates metrics for each BAM file for each :term:`track`. See the 
 `Picard metrics <http://picard.sourceforge.net/picard-metric-definitions.shtml#AlignmentSummaryMetrics>`_
@@ -40,3 +40,5 @@ Individual plots
    :yrange: 0,
    :groupby: track
    :ytitle: additional actual coverage
+   :layout: column-3
+   :width: 200
