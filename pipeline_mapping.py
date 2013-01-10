@@ -1109,7 +1109,7 @@ mapToMappingTargets = { 'tophat': (mapReadsWithTophat, loadTophatStats),
                         'stampy': (mapReadsWithStampy,),
                         'transcriptome': (mapReadsWithBowtieAgainstTranscriptome,),
                         'gsnap' : (mapReadsWithGSNAP,),
-                        'star' : (mapReadsWithSTAR,),
+                        'star' : (mapReadsWithSTAR,loadSTARStats),
                         }
 for x in P.asList( PARAMS["mappers"]):
     MAPPINGTARGETS.extend( mapToMappingTargets[x] )
@@ -1306,7 +1306,7 @@ def buildContextStats( infiles, outfile ):
 @merge( buildContextStats, "context_stats.load" )
 def loadContextStats( infiles, outfile ):
     """
-load context mapping statistics."""
+    load context mapping statistics."""
 
     header = ",".join( [os.path.basename( P.snip( x, ".contextstats") ) for x in infiles] )
     filenames = " ".join( infiles  )

@@ -793,6 +793,7 @@ def buildTranscripts( infile, outfile ):
         gunzip < %(infile)s 
         | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
         | python %(scriptsdir)s/gtf2gtf.py --join-exons --log=%(outfile)s.log 
+        | gzip
         > %(outfile)s """
     P.run()
 
@@ -802,7 +803,7 @@ def buildTranscripts( infile, outfile ):
 def buildTranscriptsBed( infile, outfile ):
     '''annotate transcripts from reference gene set. '''
     statement = """
-        cat %(infile)s
+        zcat %(infile)s
         | python %(scriptsdir)s/gff2bed.py --is-gtf --name=transcript_id --log=%(outfile)s.log 
         | python %(scriptsdir)s/bed2bed.py --method=filter-genome --genome-file=%(genome_dir)s/%(genome)s --log %(outfile)s.log
         | gzip
@@ -818,6 +819,7 @@ def buildNoncodingTranscripts( infile, outfile ):
         gunzip < %(infile)s 
         | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
         | python %(scriptsdir)s/gtf2gtf.py --join-exons --log=%(outfile)s.log 
+        | gzip
         > %(outfile)s """
     P.run()
 
@@ -855,6 +857,7 @@ def buildLincRNATranscripts( infile, outfile ):
         gunzip < %(infile)s 
         | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
         | python %(scriptsdir)s/gtf2gtf.py --join-exons --log=%(outfile)s.log 
+        | gzip
         > %(outfile)s """
     P.run()
 
@@ -1532,7 +1535,8 @@ def buildGeneIntervals( infile, outfile ):
                    | awk '$2 == "protein_coding"' 
                    | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log
                    | python %(scriptsdir)s/gtf2gtf.py --merge-transcripts --with-utr --log=%(outfile)s.log
-                   | grep -v "#" > %(outfile)s;'''
+                   | gzip 
+                   > %(outfile)s;'''
     P.run()
 
 ############################################################
@@ -1548,7 +1552,12 @@ def buildGeneBed( infile, outfile ):
     statement = '''%(uncompress)s %(infile)s 
                    | python %(scriptsdir)s/gff2bed.py --is-gtf --name=gene_id --log=%(outfile)s.log
                    | grep -v "#" 
-                   | python %(scriptsdir)s/bed2bed.py --method=filter-genome --genome-file=%(genome_dir)s/%(genome)s --log %(outfile)s.log > %(outfile)s'''
+                   | python %(scriptsdir)s/bed2bed.py 
+                                  --method=filter-genome 
+                                  --genome-file=%(genome_dir)s/%(genome)s 
+                                  --log %(outfile)s.log 
+                   | gzip
+                   > %(outfile)s'''
     P.run()
 
 ############################################################
@@ -1558,7 +1567,11 @@ def buildUpstreamFlankBed( infile, outfile ):
     ''' build interval upstream of gene start for each entry in bed file'''
 
     statement = '''flankBed -i %(infile)s -g %(interface_contigs)s -l %(geneset_flank)i -r 0 -s 
-                   | python %(scriptsdir)s/bed2bed.py --method=filter-genome --genome-file=%(genome_dir)s/%(genome)s --log %(outfile)s.log > %(outfile)s'''
+                   | python %(scriptsdir)s/bed2bed.py --method=filter-genome 
+                             --genome-file=%(genome_dir)s/%(genome)s 
+                             --log %(outfile)s.log 
+                   | gzip
+                   > %(outfile)s'''
     P.run()
 
 ############################################################
@@ -1568,7 +1581,11 @@ def buildDownstreamFlankBed( infile, outfile ):
     ''' build interval downstream of gene start for each entry in bed file'''
 
     statement = '''flankBed -i %(infile)s -g %(interface_contigs)s -l 0 -r %(geneset_flank)i -s 
-                   | python %(scriptsdir)s/bed2bed.py --method=filter-genome --genome-file=%(genome_dir)s/%(genome)s --log %(outfile)s.log > %(outfile)s'''
+                   | python %(scriptsdir)s/bed2bed.py --method=filter-genome 
+                                 --genome-file=%(genome_dir)s/%(genome)s 
+                                 --log %(outfile)s.log 
+                   | gzip
+                   > %(outfile)s'''
     P.run()
 
 ############################################################
@@ -1578,15 +1595,21 @@ def buildIntergenicBed( infiles, outfile ):
     ''' Genomic regions not associated with any other features'''
     inlist = " ".join(infiles)
 
-    statement = '''cat %(inlist)s | complementBed -i stdin -g %(interface_contigs)s > %(outfile)s'''
+    statement = '''zcat %(inlist)s | complementBed -i stdin -g %(interface_contigs)s 
+                   | gzip 
+                   > %(outfile)s'''
     P.run()
 
 ############################################################
-@transform((buildUpstreamFlankBed,buildDownstreamFlankBed,buildIntergenicBed), suffix(".bed"), ".gtf" )
+@transform((buildUpstreamFlankBed,buildDownstreamFlankBed,buildIntergenicBed), suffix(".bed.gz"), ".gtf.gz" )
 def convertBedToGtf( infile, outfile ):
     ''' convert bed files to GTF'''
 
-    statement = '''cat %(infile)s | python %(scriptsdir)s/bed2gff.py --as-gtf | grep -v "#" > %(outfile)s'''
+    statement = '''zcat %(infile)s 
+                  | python %(scriptsdir)s/bed2gff.py --as-gtf 
+                  | grep -v "#" 
+                  | gzip 
+                  > %(outfile)s'''
     P.run()
 
 ##################################################################
