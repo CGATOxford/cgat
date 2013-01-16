@@ -901,6 +901,44 @@ def compareTranscriptsBetweenExperiments( infiles, outfile ):
     reffile = "refcoding.gtf.gz"
     runCuffCompare( infiles, outfile, reffile )
 
+@merge (METHODTARGET,"%s.merged" % ALL.asFile())
+def mergeUsingCuffmerge(infiles,outfile):
+    ''' use cuffmerge to reassemble transcripts from independent assemblies
+    on each sample '''
+
+ 
+    to_cluster = True
+    
+    tmpdir = P.getTempDir( "." )
+    
+    cmd_extract = "; ".join( [ "gunzip < %s > %s/%s" % (x,tmpdir,x) for x in infiles ] )
+    inf = "\n".join( ["%s/%s" % (tmpdir,x) for x in infiles] )
+
+    tmp = P.getTempFile()
+    tmp.write(inf)
+    tmp.close()
+    tmp = tmp.name
+
+    genome = os.path.join ( PARAMS["bowtie_index_dir"], PARAMS["genome"]) + ".fa"
+    genome = os.path.abspath( genome )
+    job_options= "-pe dedicated %i -R y" % PARAMS["cufflinks_threads"]
+
+    # note: cuffcompare adds \0 bytes to gtf file - replace with '.'
+    statement = '''
+        %(cmd_extract)s;
+       cuffmerge    -o %(outfile)s.dir
+                    -s %(genome)s
+                    -p %(cufflinks_threads)i
+                    %(tmp)s
+        >& %(outfile)s.log;
+        checkpoint;
+        perl -p -e "s/\\0/./g" < %(outfile)s.dir/merged.gtf | gzip > %(outfile)s.gtf.gz;
+        checkpoint;
+        rm -f %(outfile)s.dir;
+        '''
+    P.run()
+
+    shutil.rmtree( tmpdir )
 #########################################################################
 #########################################################################
 #########################################################################
