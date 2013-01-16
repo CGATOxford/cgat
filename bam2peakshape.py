@@ -61,11 +61,11 @@ Usage
 
 Example::
 
-   python script_template.py --help
+   python bam2peakshape.py bamfile bedfile
 
 Type::
 
-   python script_template.py --help
+   python bam2peakshape.py --help
 
 for command line help.
 

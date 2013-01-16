@@ -500,13 +500,18 @@ class BWA( Mapper ):
         tmpdir = self.tmpdir
 
         if self.remove_unique: 
+            # \s does not work - not a recognized escape in awk regex?
             statement = '''
-                samtools view -hS %(tmpdir)s/%(track)s.sam | awk '$1 ~ /^@/ || /\sX0:i:1\s/'| samtools view -bS - | samtools sort - %(outf)s 2>>%(outfile)s.bwa.log; 
+                samtools view -hS %(tmpdir)s/%(track)s.sam 
+                         | awk '$1 ~ /^@/ || /\\tX0:i:1\\t/'
+                         | samtools view -bS - 
+                         | samtools sort - %(outf)s 2>>%(outfile)s.bwa.log; 
                 samtools index %(outfile)s;''' % locals()
 
         else:
             statement = '''
-                samtools view -buS %(tmpdir)s/%(track)s.sam | samtools sort - %(outf)s 2>>%(outfile)s.bwa.log; 
+                samtools view -buS %(tmpdir)s/%(track)s.sam 
+                         | samtools sort - %(outf)s 2>>%(outfile)s.bwa.log; 
                 samtools index %(outfile)s;''' % locals()
 
         return statement
@@ -893,6 +898,107 @@ class GSNAP( Mapper ):
 
         return statement
 
+class STAR( Mapper ):
+
+    # tophat can map colour space files directly
+    preserve_colourspace = True
+
+    # newer versions of tophat can work of compressed files
+    compress = True
+    
+    executable = "star"
+
+    def __init__(self, *args, **kwargs ):
+        Mapper.__init__(self, *args, **kwargs)
+
+    def mapper( self, infiles, outfile ):
+        '''build mapping statement on infiles.
+        '''
+
+        track = P.snip( os.path.basename(outfile), ".bam" )
+
+        executable = self.executable
+
+        num_files = [ len( x ) for x in infiles ]
+        
+        if max(num_files) != min(num_files):
+            raise ValueError("mixing single and paired-ended data not possible." )
+        
+        nfiles = max(num_files)
+
+        tmpdir = self.tmpdir_fastq
+
+        # add options specific to data type
+        # index_dir set by environment variable
+        index_prefix = "%(genome)s"
+        
+        if nfiles == 1:
+            infiles = "<( zcat %s )" % " ".join( [ x[0] for x in infiles ] )
+            statement = '''
+            %(executable)s 
+                   --runMode alignReads
+                   --runThreadN %%(star_threads)i
+                   --genomeLoad LoadAndRemove
+                   --genomeDir %%(star_index_dir)s/%%(genome)s.dir
+                   --outFileNamePrefix %(tmpdir)s/
+                   --outStd SAM
+                   --outSAMunmapped Within
+                   %%(star_options)s
+                   --readFilesIn %(infiles)s
+                   > %(tmpdir)s/%(track)s.sam 
+                   2> %(outfile)s.log;
+            ''' % locals() 
+
+        elif nfiles == 2:
+            # this section works both for paired-ended fastq files
+            # and single-end color space mapping (separate quality file)
+            infiles1 = " ".join( [ x[0] for x in infiles ] )
+            infiles2 = " ".join( [ x[1] for x in infiles ] )
+
+            # patch for compressed files
+            if infiles[0][0].endswith( ".gz" ):
+                files = "<( zcat %(infiles1)s ) <( zcat %(infiles2)s )" % locals()
+            else:
+                files = "%(infiles1)s %(infiles2)s" % locals()
+
+            statement = '''
+            %(executable)s 
+                   --runMode alignReads
+                   --runThreadN %%(star_threads)i
+                   --genomeLoad LoadAndRemove
+                   --genomeDir %%(star_index_dir)s/%%(genome)s.dir
+                   --outFileNamePrefix %(tmpdir)s/
+                   --outStd SAM
+                   --outSAMunmapped Within
+                   %%(star_options)s
+                   --readFilesIn %(files)s
+                   > %(tmpdir)s/%(track)s.sam 
+                   2> %(outfile)s.log;
+            ''' % locals() 
+
+        else:
+            raise ValueError( "unexpected number reads to map: %i " % nfiles )
+
+        return statement
+    
+    def postprocess( self, infiles, outfile ):
+        '''collect output data and postprocess.'''
+
+        track = P.snip( os.path.basename(outfile), ".bam" )
+        outf = P.snip( outfile, ".bam" )
+        tmpdir = self.tmpdir_fastq
+
+        statement = '''
+                cp %(tmpdir)s/Log.std.out %(outfile)s.std.log;
+                cp %(tmpdir)s/Log.final.out %(outfile)s.final.log;
+                cp %(tmpdir)s/SJ.out.tab %(outfile)s.junctions;
+                cat %(tmpdir)s/Log.out >> %(outfile)s.log;
+                cp %(tmpdir)s/Log.progress.out %(outfile)s.progress;
+                samtools view -buS %(tmpdir)s/%(track)s.sam | samtools sort - %(outf)s 2>>%(outfile)s.log; 
+                samtools index %(outfile)s;''' % locals()
+
+        return statement
+
 class Bowtie( Mapper ):
     '''map with bowtie against genome.'''
 
@@ -992,8 +1098,9 @@ class Bowtie( Mapper ):
         track = P.snip( outfile, ".bam" )
         tmpdir_fastq = self.tmpdir_fastq
 
-        statement = '''
-             samtools sort %(tmpdir_fastq)s/out.bam %(track)s;
+        statement = '''cat %(tmpdir_fastq)s/out.bam
+             | python %%(scriptsdir)s/bam2bam.py --set-nh --log=%(outfile)s.log
+             | samtools sort - %(track)s;
              samtools index %(outfile)s;
              ''' % locals()
 

@@ -56,10 +56,10 @@ expand-table
    that all values have space.
 
 flatten-table
-   Output a table with column,value pairs.
+   Output a table as row/column/value tuples.
 
-compress
-
+as-column
+   Output table as a single column. Colums in the original table are appended and output.
 
 Methods for numerical columns
 ++++++++++++++++++++++++++++
@@ -126,6 +126,15 @@ import CSV
 import Stats
 import scipy.stats
 
+def getColumns( fields, columns = "all" ):
+    '''return columns to take.'''
+    if columns == "all":
+        return list(range( len(fields) ))
+    elif columns == "all-but-first":
+        return list(range( 1, len(fields) ))
+    else:
+        return map( lambda x: int(x) - 1, columns.split(","))
+
 ##########################################################
 ##########################################################
 ##########################################################
@@ -170,12 +179,7 @@ def readAndGroupTable( infile, options ):
     
     fields, table  = CSV.ReadTable( infile, with_header = options.has_headers, as_rows = True )
 
-    if options.columns == "all":
-        options.columns = range( len(fields) )
-    elif options.columns == "all-but-first":
-        options.columns = range( 1, len(fields) )
-    else:
-        options.columns = map( lambda x: int(x) - 1, options.columns.split(","))
+    options.columns = getColumns( fields, options.columns )
 
     converter = float
     if options.group_function == "min":
@@ -401,6 +405,9 @@ if __name__ == "__main__":
     parser.add_option("--flatten-table", dest="flatten_table", action="store_true",
                       help="flatten table."  )
 
+    parser.add_option("--as-column", dest="as_column", action="store_true",
+                      help="output table as a single column."  )
+
     parser.add_option("--split-fields", dest="split_fields", action="store_true",
                       help="split fields."  )
 
@@ -433,6 +440,7 @@ if __name__ == "__main__":
         join_column = None,
         join_column_name = None,
         compute_fdr = None,
+        as_column = False,
         fdr_method= "BH",
         )
     
@@ -465,14 +473,25 @@ if __name__ == "__main__":
     elif options.flatten_table:
         
         fields, table  = CSV.ReadTable( options.stdin, with_header = options.has_headers, as_rows = True )
-        
 
+        options.columns = getColumns( fields, options.columns )
 
-        options.stdout.write( "field\tvalue\n" )
+        options.stdout.write( "row\tcolumn\tvalue\n" )
         
-        for row in table:
-            for x in f:
-                options.stdout.write( "%s\t%s\n" % (fields[x], row[x] ))
+        for x, row in enumerate(table):
+            for y in options.columns:
+                options.stdout.write( "%i\t%s\t%s\n" % (fields[y], row[y] ))
+
+    elif options.as_column:
+        
+        fields, table  = CSV.ReadTable( options.stdin, with_header = options.has_headers, as_rows = True )
+        options.columns = getColumns( fields, options.columns )
+        table = zip( *table )
+        
+        options.stdout.write( "value\n" )
+        
+        for column in options.columns:
+            options.stdout.write("\n".join( table[column] ) + "\n" )
 
     elif options.split_fields:
 
@@ -481,8 +500,8 @@ if __name__ == "__main__":
                                         with_header = options.has_headers, 
                                         as_rows = True )
         
+
         options.stdout.write( "%s\n" % ("\t".join(fields)))
-        f = len(fields)
 
         for row in table:
             row = [ x.split(options.separator) for x in row ]
@@ -513,12 +532,7 @@ if __name__ == "__main__":
 
         E.info( "processing table with %i rows and %i columns" % (nrows, ncols) )
 
-        if options.columns == "all":
-            options.columns = range( len(fields) )
-        elif options.columns == "all-but-first":
-            options.columns = range( 1, len(fields) )
-        else:
-            options.columns = map( lambda x: int(x) - 1, options.columns.split(","))
+        options.columns = getColumns( fields, options.columns )
         
         ## convert all values to float
         for c in options.columns:

@@ -1924,7 +1924,7 @@ elif PARAMS["method"] == "bed-macs-replicate":
         # convert to SAM
         for x,b in enumerate( Bed.iterator( gzip.open( infile ) )):
             l = b.end - b.start
-            strand = b.mFields[2]
+            strand = b.fields[2]
             if strand == "+": flag = "0"
             elif strand == "-": flag = "16"
             else: raise ValueError("unknown strand in %s" % str(b))
@@ -2286,7 +2286,7 @@ def exportReferenceAsBed( infile, outfile ):
     with open(infile, "r") as inf:
         for gff in GTF.iterator( infile ):
             bed.contig, bed.start, bed.end = gff.contig, gff.start, gff.end
-            bed.mFields = [ gff.gene_id ]
+            bed.fields = [ gff.gene_id ]
             outfile.write( "%s\n" % str(bed) )
     outfile.close()
 
@@ -4766,7 +4766,7 @@ def viewExpressionDifferences( infiles, outfile ):
             if contig == "chrMT": contig = "chrM"
             bed = Bed.Bed()
             bed.contig, bed.start, bed.end = contig, start, end
-            bed.mFields = [ probeset ]
+            bed.fields = [ probeset ]
             outs.write( "%s\n" % str(bed) )
 
     outs.close()

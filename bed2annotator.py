@@ -153,7 +153,7 @@ if __name__ == "__main__":
 
     if options.section in ("annotations"):
         contigs = set()
-        it = itertools.groupby( Bed.iterator( options.stdin ), key=lambda x: x.mTrack["name"])
+        it = itertools.groupby( Bed.iterator( options.stdin ), key=lambda x: x.track["name"])
 
         map_track2segments = {}
         for track, beds in it:

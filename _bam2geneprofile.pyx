@@ -52,11 +52,16 @@ class RangeCounter:
 
 class RangeCounterBAM(RangeCounter):
 
-    def __init__(self, samfiles, shifts, extends, *args, **kwargs ):
+    def __init__(self, samfiles, shifts, extends, merge_pairs, min_insert_size, max_insert_size, 
+                 *args, **kwargs ):
         RangeCounter.__init__(self, *args, **kwargs )
         self.samfiles = samfiles
+        self.merge_pairs = merge_pairs
+        self.min_insert_size = min_insert_size
+        self.max_insert_size = max_insert_size
 
         self.shifts, self.extends = [], []
+
         for x in xrange(max( (len(shifts), len(extends), len(samfiles)) )):
             if x >= len(shifts):
                 shift = 0
@@ -110,6 +115,10 @@ class RangeCounterBAM(RangeCounter):
         cdef int extend
         cdef int shift
         cdef Samfile samfile
+        cdef bint merge_pairs = self.merge_pairs
+        cdef int min_insert_size = self.min_insert_size
+        cdef int max_insert_size = self.max_insert_size
+
         for samfile, shift, extend in zip( self.samfiles, self.shifts, self.extends):
 
             current_offset = 0
@@ -117,7 +126,33 @@ class RangeCounterBAM(RangeCounter):
 
             for start, end in ranges:
                 length = end - start
-                if shift_extend > 0:
+                if merge_pairs:
+                    xstart, xend = max(0, start - shift_extend), max(0, end + shift_extend)
+
+                    for read in samfile.fetch( contig, xstart, xend ):
+                        flag = read._delegate.core.flag 
+                        # remove unmapped reads
+                        if flag & 4: continue
+                        # remove unpaired
+                        if not flag & 2: continue
+                        # this is second pair of read - skip to avoid double counting
+                        if flag & 128: continue
+                        # remove reads on different contigs
+                        if read.tid != read.mrnm: continue
+                        # remove if insert size too large
+                        if (read.isize > max_insert_size) or (read.isize < min_insert_size) : continue
+                        if read.pos < read.mpos:
+                            rstart = max( start, read.pos)
+                            rend = min( end, read.mpos + read.rlen )
+                        else:
+                            rstart = max( start, read.mpos)
+                            rend = min( end, read.pos + read.rlen )
+
+                        rstart += -start + current_offset
+                        rend += -start + current_offset
+                        for i from rstart <= i < rend: counts[i] += 1
+  
+                elif shift_extend > 0:
                     # collect reads including the regions left/right of interval
                     xstart, xend = max(0, start - shift_extend), max(0, end + shift_extend)
 
@@ -540,6 +575,66 @@ class RegionCounter( GeneCounter ):
         g.end = gtf[-1].end
         
         return GeneCounter.count( self, [ g ] )
+
+class MidpointCounter( GeneCounter ):
+    '''count in complete region given by gene/transcript.'''
+
+    name = "midpointprofile"
+    
+    def __init__(self, counter, 
+                 int resolution_upstream,
+                 int resolution_downstream,
+                 int extension_upstream = 0, 
+                 int extension_downstream = 0,
+                 int scale_flanks = 0,
+                 *args,
+                 **kwargs ):
+
+        IntervalsCounter.__init__(self, *args, **kwargs )
+
+        self.counter = counter
+        self.extension_upstream = extension_upstream
+        self.extension_downstream = extension_downstream 
+        self.resolution_upstream = resolution_upstream
+        self.resolution_downstream = resolution_downstream
+
+        for field, length in zip( 
+            ("upstream", "downstream"),
+            (resolution_upstream,
+             resolution_downstream ) ):
+            self.add( field, length )
+        
+    def count( self, gtf ):
+        '''build ranges to be analyzed from a gene model.
+
+        Returns a tuple with ranges for exons, upstream, downstream.
+        '''
+
+        contig = gtf[0].contig 
+        exons = GTF.asRanges( gtf, "exon" )
+        exon_start, exon_end = exons[0][0], exons[-1][1]
+        midpoint = (exon_end - exon_start) // 2 + exon_start
+
+        upstream = [ ( max(0, midpoint - self.extension_upstream), midpoint ), ] 
+        downstream = [ ( midpoint, midpoint + self.extension_downstream ), ]
+        
+        E.debug("counting upstream" )
+        self.counts_upstream = self.counter.getCounts( contig, upstream, self.resolution_upstream ) 
+        E.debug("counting downstream" )
+        self.counts_downstream = self.counter.getCounts( contig, downstream, self.resolution_downstream )
+
+        E.debug("counting finished" )
+
+        ## revert for negative strand
+        if gtf[0].strand == "-":
+            self.counts_upstream, self.counts_downstream = self.counts_downstream[::-1], self.counts_upstream[::-1]
+            
+        self.addLengths( upstream, downstream )
+
+        self.aggregate( self.counts_upstream,
+                        self.counts_downstream )
+
+        return 1
         
 class TSSCounter( IntervalsCounter ):
     '''count profile at transcription start/end site.
