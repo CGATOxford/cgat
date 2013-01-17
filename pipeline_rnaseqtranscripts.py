@@ -904,7 +904,8 @@ def compareTranscriptsBetweenExperiments( infiles, outfile ):
 @merge (METHODTARGET,"%s.merged" % ALL.asFile())
 def mergeUsingCuffmerge(infiles,outfile):
     ''' use cuffmerge to reassemble transcripts from independent assemblies
-    on each sample '''
+    on each sample
+    CURRENTLY THIS IS NOT WIRED INTO THE MAIN PIPELINE FLOW '''
 
  
     to_cluster = True
@@ -914,7 +915,7 @@ def mergeUsingCuffmerge(infiles,outfile):
     cmd_extract = "; ".join( [ "gunzip < %s > %s/%s" % (x,tmpdir,x) for x in infiles ] )
     inf = "\n".join( ["%s/%s" % (tmpdir,x) for x in infiles] )
 
-    tmp = P.getTempFile()
+    tmp = P.getTempFile(".")
     tmp.write(inf)
     tmp.close()
     tmp = tmp.name
@@ -1943,6 +1944,7 @@ def hasReplicates( track ):
     replicates = PipelineTracks.getSamplesInTrack( track, TRACKS )
     return len(replicates) > 1
 
+@jobs_limit(1,"R")
 @follows( loadTranscriptComparison, mkdir( os.path.join( PARAMS["exportdir"], "cuffcompare" ) ) )
 @files( [ ("%s.cuffcompare" % x.asFile(), "%s.reproducibility" % x.asFile() )
           for x in EXPERIMENTS if hasReplicates( x )] )
