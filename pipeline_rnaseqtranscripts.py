@@ -930,7 +930,7 @@ def mergeUsingCuffmerge(infiles,outfile):
        cuffmerge    -o %(outfile)s.dir
                     -s %(genome)s
                     -p %(cufflinks_threads)i
-                    -r refcoding.gtf.gz
+                    -g refcoding.gtf.gz
                     %(tmp)s
         >& %(outfile)s.log;
         checkpoint;
