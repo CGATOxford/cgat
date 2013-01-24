@@ -363,7 +363,7 @@ def loadIntervals( infile, outfile ):
 
     tmpfile = P.getTempFile()
 
-    headers = ("avgval","disttostart","genelist","length","peakcenter","peakval","position","interval_id","npeaks","nprobes", "contig","start","end" )
+    headers = ("avgval","disttostart","genelist","length","peakcenter","peakval","position","interval_id","npeaks","nprobes", "contig","start","end","score" )
 
     tmpfile.write( "\t".join(headers) + "\n" )
 
@@ -391,6 +391,18 @@ def loadIntervals( infile, outfile ):
 
         if "name" not in bed:
             bed.name = c.input
+
+        # The fifth field of a bed file can be used to supply a score. Our iterator returns 
+        # the optional fields as a "fields array". The first of these is the interval name, 
+        # and the second the score. The score may be more is better or less is better.
+        if len(bed.fields)>1:
+            value = bed.fields[1]
+            if value != "":
+                score = value
+            else:
+                score = 1
+        else:
+            score = 1
             
         if samfiles:
             npeaks, peakcenter, length, avgval, peakval, nprobes = \
@@ -416,7 +428,7 @@ def loadIntervals( infile, outfile ):
         tmpfile.write( "\t".join( map( str, (avgval,disttostart,genelist,length,
                                              peakcenter,peakval,position, bed.name,
                                              npeaks,nprobes, 
-                                             bed.contig,bed.start,bed.end) )) + "\n" )
+                                             bed.contig,bed.start,bed.end,score) )) + "\n" )
 
     if c.output == 0:
         E.warn( "%s - no aggregate intervals" )
@@ -908,6 +920,7 @@ def buildGenesByIntervalsProfiles( infile, outfile ):
     else:
         E.warn( "%s: no bamfiles associated - target skipped" % (track))
         P.touch( outfile )
+        P.touch( outfile[:-len(".tsv.gz")]+".geneprofile.counts.tsv.gz" )
         return
 
     if len(bamfiles) > 1:
@@ -940,8 +953,6 @@ def loadByIntervalProfiles( infile, outfile ):
     '''load interval annotations: nucleotide composition
     '''
     countsfile = infile[:-len(".tsv.gz")]+".geneprofile.counts.tsv.gz"
-    print "hello"
-    print countsfile
     P.load( countsfile, outfile, "--index=gene_id --allow-empty" )
 
     

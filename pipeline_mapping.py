@@ -164,7 +164,7 @@ path:
 |picard              |>=1.42             |bam/sam files. The .jar files need to be in your|
 |                    |                   | CLASSPATH environment variable.                |
 +--------------------+-------------------+------------------------------------------------+
-|star                |>=2.2.0c           |read mapping                                    |
+|star_               |>=2.2.0c           |read mapping                                    |
 +--------------------+-------------------+------------------------------------------------+
 |bamstats_           |>=1.22             |from CGR, Liverpool                             |
 +--------------------+-------------------+------------------------------------------------+
@@ -996,7 +996,7 @@ def buildSTARStats( infiles, outfile ):
     outf.write( "track\t%s\n" % "\t".join(keys) )
     for x, infile in enumerate(infiles):
         track = P.snip( os.path.basename( infile ), ".bam" )
-        outf.write( "%s\t%s\n" % (track, [ data[key][x] for key in keys ] ) )
+        outf.write( "%s\t%s\n" % (track, "\t".join( [ data[key][x] for key in keys ] ) ) )
     outf.close()
 
 ############################################################
@@ -1518,11 +1518,8 @@ def createViewMapping( infile, outfile ):
 
     The table is built from the following tracks:
 
-    always present:
-       reads_summary
        context_stats
        bam_stats
-       picard_stats_alignment_summary_metrics
     
     '''
 
@@ -1532,8 +1529,10 @@ def createViewMapping( infile, outfile ):
     view_type = "TABLE"
 
     tables = (( "bam_stats", "track", ),
-              ( "context_stats", "track", ),
-              ( "picard_stats_alignment_summary_metrics", "track" ), )
+              ( "context_stats", "track", ) )
+
+    # do not use: ( "picard_stats_alignment_summary_metrics", "track" ), )
+    # as there are multiple rows per track for paired-ended data.
 
     P.createView( dbh, tables, tablename, outfile, view_type )
 
@@ -1592,7 +1591,7 @@ def publish():
 
     # directory, files
     exportfiles = {
-        "bamfiles" : glob.glob( "*.accepted.bam" ) + glob.glob( "*.accepted.bam.bai" ),
+        "bamfiles" : glob.glob( "*/*.bam" ) + glob.glob( "*/*.bam.bai" ),
         "genesets": [ "lincrna.gtf.gz", "abinitio.gtf.gz" ],
         "classification": glob.glob("*.class.tsv.gz") ,
         "differential_expression" : glob.glob( "*.cuffdiff.dir" ),
@@ -1602,12 +1601,15 @@ def publish():
 
     for targetdir, filenames in exportfiles.iteritems():
         for src in filenames:
-            dest = "%s/%s/%s" % (web_dir, targetdir, src)
+            dest = "%s/%s/%s" % (web_dir, targetdir, os.path.basename(src))
             if dest.endswith( ".bam"): bams.append( dest )
             dest = os.path.abspath( dest )
             if not os.path.exists( dest ):
-                os.symlink( os.path.abspath(src), dest )
-    
+                try:
+                    os.symlink( os.path.abspath(src), dest )
+                except OSError, msg:
+                    E.warn( "could not create symlink to %s: %s" % (dest, msg))
+
     # output ucsc links
     for bam in bams: 
         filename = os.path.basename( bam )

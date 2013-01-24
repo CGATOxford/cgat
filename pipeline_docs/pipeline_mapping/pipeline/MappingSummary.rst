@@ -2,13 +2,18 @@
 Mapping summary
 ===============
 
-This section gives an overview over the mapping process. 
+This section gives an overview over the mapping results.
+
+Please be aware that there is a difference between :term:`read` and :term:`alignment`
+counts. A single :term:`read` might map to several genomic positions and give rise
+to several alignments. Only if the mapper employs unique-ness filtering will 
+:term:`read` and :term:`alignment` counts be the same.
 
 Alignment summary
 =================
 
-The following table present an overview of the alignments in the 
-BAM files for each :term:`track`.
+This section presents an overview of the :term:`alignments` in the 
+BAM files for each :term:`track`. Note that a read can have multiple alignments.
 
 .. report:: Mapping.BamSummary
    :render: table
@@ -25,31 +30,36 @@ BAM files for each :term:`track`.
 .. report:: Mapping.MappingFlagsMismatches
    :render: line-plot
    :as-lines:
-   :layout: column-2
+   :layout: column-3
+   :width: 200
+   :split-at: 10
 
    Number of alignments per number of mismatches in alignment.
 
 Reads summary
 =============
 
-The following table 
+This section presents an overview of the mapping results in terms 
+of :term:`reads`.
 
 .. report:: Mapping.BamSummary
    :render: table
-   :slices: reads_mapped,reads_norna,reads_norna_unique_alignments
+   :slices: reads_total,reads_mapped,reads_norna,reads_norna_unique_alignments
 
    Mapping summary
 
 .. report:: Mapping.BamSummary
    :render: interleaved-bar-plot
-   :slices: reads_mapped,reads_norna,reads_norna_unique_alignments
+   :slices: reads_total,reads_mapped,reads_norna,reads_norna_unique_alignments
 
    Mapping summary
 
 .. report:: Mapping.MappingFlagsHits
    :render: line-plot
    :as-lines:
-   :layout: column-2
+   :layout: column-3
+   :width: 200
+   :xrange: 0,10
+   :split-at: 10
 
    Number of reads per number of alignments (hits) per read.
-

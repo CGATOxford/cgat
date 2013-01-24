@@ -205,17 +205,26 @@ def writeSequencesForIntervals( track, filename,
     fasta = IndexedFasta.IndexedFasta( os.path.join( PARAMS["genome_dir"], PARAMS["genome"] ) )
 
     cc = dbhandle.cursor()
-        
+
+    if PARAMS["score"] == "peakval":
+        orderby = " ORDER BY peakval DESC"
+    elif PARAMS["score"] == "max":
+        orderby = " ORDER BY score DESC"
+    elif PARAMS["score"] == "min":
+        orderby = " ORDER BY score ASC"
+    else:
+        raise ValueError("Unknown value passed as score parameter, check your ini file")
+         
     tablename = "%s_intervals" % P.quote( track )
     if full:
         statement = '''SELECT start, end, interval_id, contig 
                        FROM %(tablename)s 
-                       ORDER BY peakval DESC''' % locals()
+                       ''' % locals() + orderby
     elif halfwidth:
         statement = '''SELECT peakcenter - %(halfwidth)s, peakcenter + %(halfwidth)s,
                        interval_id, contig 
                        FROM %(tablename)s 
-                       ORDER BY peakval DESC''' % locals()
+                       ''' % locals() + orderby
     else:
         raise ValueError("either specify full or halfwidth" )
     
@@ -805,6 +814,37 @@ def runGLAM2( infile, outfile, dbhandle ):
 ############################################################
 ############################################################
 ############################################################
+def collectMEMEResults( tmpdir, target_path ):
+    '''collect output from a MEME run in tmpdir
+    and copy all over to target_path
+
+    convert images output by MEME (.eps files) to 
+    .png files.'''
+
+    # copy over results
+    try:
+        os.makedirs( os.path.dirname( target_path ) )
+    except OSError: 
+        # ignore "file exists" exception
+        pass
+
+    if os.path.exists( target_path ): shutil.rmtree( target_path )
+    shutil.move( tmpdir, target_path )
+
+    shutil.copyfile( os.path.join(target_path, "meme.txt"), outfile)
+
+    # convert images to png
+    epsfiles = glob.glob( os.path.join( target_path, "*.eps" ) )
+
+    for epsfile in epsfiles:
+        b, ext = os.path.splitext( epsfile )
+        pngfile = b + ".png" 
+        statement = '''convert %(epsfile) %(pngfile)s" '''
+        P.run()
+    
+############################################################
+############################################################
+############################################################
 def runMEME( track, outfile, dbhandle ):
     '''run MEME to find motifs.
 
@@ -849,26 +889,7 @@ def runMEME( track, outfile, dbhandle ):
         '''
         P.run()
 
-        # copy over results
-        try:
-            os.makedirs( os.path.dirname( target_path ) )
-        except OSError: 
-            # ignore "file exists" exception
-            pass
-
-        if os.path.exists( target_path ): shutil.rmtree( target_path )
-        shutil.move( tmpdir, target_path )
-
-        shutil.copyfile( os.path.join(target_path, "meme.txt"), outfile)
-
-        # convert images to png
-        epsfiles = glob.glob( os.path.join( target_path, "*.eps" ) )
-        
-        for epsfile in epsfiles:
-            b, ext = os.path.splitext( epsfile )
-            pngfile = b + ".png" 
-            statement = '''convert %(epsfile) %(pngfile)s" '''
-            P.run()
+        collectMEMEResults( tmpdir, target_path )
 
 ############################################################
 ############################################################
@@ -911,17 +932,7 @@ def runMEMEOnSequences( infile, outfile ):
 
     P.run()
 
-    # copy over results
-    try:
-        os.makedirs( os.path.dirname( target_path ) )
-    except OSError: 
-        # ignore "file exists" exception
-        pass
-
-    if os.path.exists( target_path ): shutil.rmtree( target_path )
-    shutil.move( tmpdir, target_path )
-
-    shutil.copyfile( os.path.join(target_path, "meme.txt"), outfile)
+    collectMEMEResults( tmpdir, target_path )
 
 ############################################################
 ############################################################

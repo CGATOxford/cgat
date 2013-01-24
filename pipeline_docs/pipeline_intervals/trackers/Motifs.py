@@ -612,7 +612,7 @@ class MemeResults( IntervalTracker ):
         
         resultsdir = os.path.abspath( os.path.join( EXPORTDIR, "meme", "%s.meme" % track ) )
         if not os.path.exists( resultsdir ): return []
-
+        
         tree = xml.etree.ElementTree.ElementTree()
         tree.parse( os.path.join( resultsdir, "meme.xml" ) )
         model =  tree.find( "model" )
@@ -624,14 +624,20 @@ class MemeResults( IntervalTracker ):
         result = odict()
         for motif in motifs.getiterator( "motif" ):
             nmotif += 1
+            motif_img = "%s/logo%i.png" % (resultsdir,nmotif)
+            motif_rc_img = "%s/logo_rc%i.png" % (resultsdir,nmotif)
+            img, rc_img = "na", "na"
+            if os.path.exists(motif_img): img = ".. image:: %s" % motif_img
+            if os.path.exists(motif_rc_img): rc_img = ".. image:: %s" % motif_rc_img
+
             result[str(nmotif)] = odict( (\
                     ("width", motif.get("width" )),
                     ("evalue", motif.get("e_value" )),
                     ("information content",motif.get("ic")),
                     ("sites", motif.get("sites" )),
                     ("link", "`meme_%s_%i <%s/meme.html#summary%i>`_" % (track, nmotif, resultsdir, nmotif)),
-                    ("img", ".. image:: %s/logo%i.png" % (resultsdir,nmotif)),
-                    ("rev", ".. image:: %s/logo_rc%i.png" % (resultsdir,nmotif)),
+                    ("img", img ),
+                    ("rev", rc_img),
                     ))
 
         return result
