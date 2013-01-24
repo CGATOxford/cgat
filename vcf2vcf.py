@@ -26,7 +26,7 @@ Usage
 
 Type::
 
-   python bed2bed.py --help
+   python vcf2vcf.py --help
 
 for command line usage.
 
