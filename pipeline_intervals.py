@@ -908,6 +908,7 @@ def buildGenesByIntervalsProfiles( infile, outfile ):
     else:
         E.warn( "%s: no bamfiles associated - target skipped" % (track))
         P.touch( outfile )
+        P.touch( outfile[:-len(".tsv.gz")]+".geneprofile.counts.tsv.gz" )
         return
 
     if len(bamfiles) > 1:
@@ -940,8 +941,6 @@ def loadByIntervalProfiles( infile, outfile ):
     '''load interval annotations: nucleotide composition
     '''
     countsfile = infile[:-len(".tsv.gz")]+".geneprofile.counts.tsv.gz"
-    print "hello"
-    print countsfile
     P.load( countsfile, outfile, "--index=gene_id --allow-empty" )
 
     
