@@ -580,6 +580,8 @@ def createView( dbhandle, tables, tablename, outfile, view_type = "TABLE",
     
     if nrows == 0:
         raise ValueError( "empty view mapping, check statement = %s" % (statement % locals()) )
+    if nrows != min(tracks):
+        E.warn( "view creates duplicate rows, got %i, expected %i" % (nrows, min(tracks)))
 
     E.info( "created view_mapping with %i rows" % nrows )
 
@@ -1182,12 +1184,14 @@ def publish_report( prefix = "",
         prefix = PARAMS.get( "report_prefix", "" )
 
     web_dir = PARAMS["web_dir"]
-    if project_id == None:
+    if project_id == None: 
         project_id = getProjectId()
 
     src_export = os.path.abspath( "export" )
     dest_report = prefix + "report"
     dest_export = prefix + "export"
+
+    curdir = os.path.abspath( os.getcwd() )
 
     def _link( src, dest ):
         '''create links. 
@@ -1223,10 +1227,12 @@ def publish_report( prefix = "",
     _patterns = [ (re.compile( src_export ), 
                    "http://www.cgat.org/downloads/%(project_id)s/%(dest_export)s" % locals() ), 
                   (re.compile( '(%s)/report' % os.path.join( prefix_project, getProjectName() ) ),
-                   "http://www.cgat.org/downloads/%(project_id)s/%(dest_report)s" % locals() ) ]
+                   "http://www.cgat.org/downloads/%(project_id)s/%(dest_report)s" % locals() ),
+                  (re.compile( '(%s)/_static' % curdir),
+                   "http://www.cgat.org/downloads/%(project_id)s/%(dest_report)s/_static" % locals() )]
     
     _patterns.extend( patterns )
-    
+
     for root, dirs, files in os.walk(os.path.join( web_dir, dest_report)):
         for f in files:
             fn = os.path.join( root, f )
