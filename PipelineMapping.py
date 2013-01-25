@@ -939,7 +939,7 @@ class STAR( Mapper ):
                    --runMode alignReads
                    --runThreadN %%(star_threads)i
                    --genomeLoad LoadAndRemove
-                   --genomeDir %%(star_index_dir)s/%%(genome)s.dir
+                   --genomeDir %%(star_index_dir)s/%%(star_genome)s.dir
                    --outFileNamePrefix %(tmpdir)s/
                    --outStd SAM
                    --outSAMunmapped Within

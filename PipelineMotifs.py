@@ -205,17 +205,26 @@ def writeSequencesForIntervals( track, filename,
     fasta = IndexedFasta.IndexedFasta( os.path.join( PARAMS["genome_dir"], PARAMS["genome"] ) )
 
     cc = dbhandle.cursor()
-        
+
+    if PARAMS["score"] == "peakval":
+        orderby = " ORDER BY peakval DESC"
+    elif PARAMS["score"] == "max":
+        orderby = " ORDER BY score DESC"
+    elif PARAMS["score"] == "min":
+        orderby = " ORDER BY score ASC"
+    else:
+        raise ValueError("Unknown value passed as score parameter, check your ini file")
+         
     tablename = "%s_intervals" % P.quote( track )
     if full:
         statement = '''SELECT start, end, interval_id, contig 
                        FROM %(tablename)s 
-                       ORDER BY peakval DESC''' % locals()
+                       ''' % locals() + orderby
     elif halfwidth:
         statement = '''SELECT peakcenter - %(halfwidth)s, peakcenter + %(halfwidth)s,
                        interval_id, contig 
                        FROM %(tablename)s 
-                       ORDER BY peakval DESC''' % locals()
+                       ''' % locals() + orderby
     else:
         raise ValueError("either specify full or halfwidth" )
     
