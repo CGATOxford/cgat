@@ -1,6 +1,6 @@
 #cimport csamtools
 
-from csamtools cimport *
+from pysam.csamtools cimport *
 
 import collections, array, struct
 import Experiment as E

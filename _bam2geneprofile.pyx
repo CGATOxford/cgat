@@ -1,6 +1,6 @@
 #cimport csamtools
 
-from csamtools cimport *
+from pysam.csamtools cimport *
 import pysam
 
 import collections, array, struct, sys, itertools
