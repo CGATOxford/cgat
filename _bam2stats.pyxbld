@@ -3,16 +3,10 @@ def make_ext(modname, pyxfilename):
     from distutils.extension import Extension
     import pysam, os
     dirname = os.path.dirname( pysam.__file__ )
-    includename = os.path.join( dirname[:-len("pysam")], "include")
-    return Extension(name = modname,
-                     sources=[pyxfilename],
-                     # library_dirs + libraries does not work as it would require csamtools.so to start with lib
-                     # (libcsamtools), hence use extra_link_targets
-		     #library_dirs = [ dirname ],
-                     #libraries= [ 'csamtools' ],
-                     extra_link_args=[ os.path.join( dirname, "csamtools.so")],
-                     include_dirs = [ dirname, 
-                                      os.path.join( includename, "pysam"),
-                                      os.path.join( includename, "samtools"),
-                                      ] )
+    return Extension( name = modname,      
+                      sources = [pyxfilename],
+                      extra_link_args=[ os.path.join( dirname, "csamtools.so")],
+                      include_dirs =  pysam.get_include(),
+                      define_macros = pysam.get_defines() )
+
 
