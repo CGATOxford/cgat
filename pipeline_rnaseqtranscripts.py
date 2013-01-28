@@ -920,6 +920,8 @@ def mergeUsingCuffmerge(infiles,outfile):
     tmp.close()
     tmp = tmp.name
 
+    tmp2 = P.getTempFilename(".")
+
     genome = os.path.join ( PARAMS["bowtie_index_dir"], PARAMS["genome"]) + ".fa"
     genome = os.path.abspath( genome )
     job_options= "-pe dedicated %i -R y" % PARAMS["cufflinks_threads"]
@@ -927,16 +929,18 @@ def mergeUsingCuffmerge(infiles,outfile):
     # note: cuffcompare adds \0 bytes to gtf file - replace with '.'
     statement = '''
         %(cmd_extract)s;
+       gunzip -c refcoding.gtf.gz > %(tmp2)s;
        cuffmerge    -o %(outfile)s.dir
                     -s %(genome)s
                     -p %(cufflinks_threads)i
-                    -g <( gunzip < refcoding.gtf.gz)
+                    -g %(tmp2)s
                     %(tmp)s
         >& %(outfile)s.log;
         checkpoint;
         perl -p -e "s/\\0/./g" < %(outfile)s.dir/merged.gtf | gzip > %(outfile)s.gtf.gz;
         checkpoint;
-        rm -f %(outfile)s.dir;
+        rm -f %(tmp2)s;
+        rm -rf %(outfile)s.dir;
         '''
     P.run()
 
