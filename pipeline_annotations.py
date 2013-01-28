@@ -450,7 +450,30 @@ def annotateGenome( infile, outfile ):
     '''
     PipelineGeneset.annotateGenome( infile, 
                                     outfile,
-                                    only_proteincoding = True )
+                                    only_proteincoding = True,
+                                    method = "genome" )
+
+############################################################
+############################################################
+############################################################
+@files( PARAMS["ensembl_filename_gtf"], PARAMS['interface_genestructure_gff'] )
+def annotateGeneStructure( infile, outfile ):
+    '''annotate genome with gene structures.
+
+    Only considers protein coding genes. 
+
+    Processed_transcripts tend to cover larger genomic regions
+    and often overlap between adjacent protein coding genes.
+
+    In case of overlapping genes, only take the longest 
+    (in genomic coordinates).
+
+    Genes not on UCSC contigs are removed.
+    '''
+    PipelineGeneset.annotateGenome( infile, 
+                                    outfile,
+                                    only_proteincoding = True,
+                                    method = "genes" )
 
 ############################################################
 ############################################################

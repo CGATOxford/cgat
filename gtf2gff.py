@@ -410,7 +410,7 @@ def buildTerritories( iterator, fasta, options ):
         options.stdlog.write( "# ninput=%i, noutput=%i, nambiguous=%i\n" % (ninput, noutput, nambiguous ))
 
 ##-----------------------------------------------------------------------------
-def fullSegmentation( iterator, fasta, options ):
+def annotateGenome( iterator, fasta, options ):
     """perform a full segmentation of the genome (UTR, exon, intron ...)
     """
 
@@ -971,6 +971,7 @@ if __name__ == '__main__':
         merge_promotors = False,
         upstream = 5000,
         downstream = 5000,
+        detail = None,
         )
 
     (options, args) = E.Start( parser )
@@ -989,7 +990,7 @@ if __name__ == '__main__':
         iterator = GTF.iterator(options.stdin)
 
     if options.method == "full" or options.method == "genome":
-        segmentor = fullSegmentation( iterator, fasta, options )
+        segmentor = annotateGenome( iterator, fasta, options )
     elif options.method == "territories":
         segmentor = buildTerritories( iterator, fasta, options )
     elif options.method == "exons":

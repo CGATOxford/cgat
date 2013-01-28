@@ -614,13 +614,15 @@ def annotateIntervalsPeak( infile, outfile ):
 def annotateBindingFull( infile, outfile ):
     '''classify chipseq intervals according to their location 
     with respect to the gene set.
+    
+    The reference gene set is 
 
-    Binding is counted both for the full intervals.
+    Binding is counted for the full intervals.
     '''
     to_cluster = True
 
     geneset = os.path.join( PARAMS["annotations_dir"],
-                                    PARAMS_ANNOTATIONS["interface_geneset_all_gtf"] )
+                            PARAMS_ANNOTATIONS[PARAM["geneset_binding"] )
 
     statement = """
     zcat < %(geneset)s
@@ -651,7 +653,7 @@ def annotateBindingPeak( infile, outfile ):
     to_cluster = True
 
     geneset = os.path.join( PARAMS["annotations_dir"],
-                            PARAMS_ANNOTATIONS["interface_geneset_all_gtf"] )
+                            PARAMS_ANNOTATIONS[PARAM["geneset_binding"] )
 
     statement = """
     zcat < %(geneset)s
@@ -1448,6 +1450,53 @@ def runGATOnGenomicAnnotations( infiles, outfile ):
 ############################################################
 ############################################################
 ############################################################
+## compute overlap with genomic annotations
+############################################################
+@follows( mkdir("gat_annotations.dir") )
+@transform( TRACKS_BEDFILES,
+            regex("(.*).bed.gz"),
+            add_inputs( os.path.join( PARAMS["annotations_dir"],
+                                      PARAMS_ANNOTATIONS["interface_annotation_gff"] ),
+                        os.path.join( PARAMS["annotations_dir"],
+                                      PARAMS_ANNOTATIONS["interface_mapability_filtered_bed"] % PARAMS["gat_mapability"] ),
+                        os.path.join( PARAMS["annotations_dir"],
+                                      PARAMS_ANNOTATIONS["interface_gc_profile_bed"] ), 
+                        ),
+            r"gat_annotations.dir/\1.gat.tsv.gz" )
+def runGATOnGeneStructurec( infiles, outfile ):
+    '''run gat on gene structures
+
+    The workspace is composed of all mapable regions.
+    Enrichment is controlled by isochores.
+
+    To be rigorous, FDR should be re-computed after merging all
+    analyses.
+    '''
+
+    bedfile, annofile, workspacefile, isochorefile = infiles    
+
+    to_cluster = True
+    outdir = "annotations_gat.dir"
+
+    statement = '''gat-run.py
+         --segments=%(bedfile)s
+         --annotations=<(zcat %(annofile)s | awk '{printf("%%s\\t%%i\\t%%i\\t%%s\\n",$1,$4,$5,$3);}')
+         --workspace=%(workspacefile)s
+         --isochores=%(isochorefile)s
+         --num-samples=%(gat_num_samples)i
+         --force
+         --ignore-segment-tracks
+         --output-filename-pattern=%(outfile)s.%%s
+         -v 5
+         --log=%(outfile)s.log
+         | gzip
+         > %(outfile)s'''
+
+    P.run()
+
+############################################################
+############################################################
+############################################################
 ## compute overlap with gene annotations
 ############################################################
 @follows( mkdir("gat_functions.dir") )
@@ -1502,7 +1551,8 @@ def runGATOnGeneAnnotations( infiles, outfile ):
 
 @transform( (runGATOnGenomicContext,
              runGATOnGenomicAnnotations,
-             runGATOnGeneAnnotations),
+             runGATOnGeneAnnotations,
+             runGATOnGeneStructure),
             regex("gat_(.*).dir/(.*).gat.tsv.gz" ),
             r"gat_\1.dir/gat_\1_\2.load" )
 def loadGat( infile, outfile ):

@@ -141,7 +141,9 @@ def importRefSeqFromUCSC( infile, outfile, remove_duplicates = True ):
 ############################################################
 ############################################################
 ############################################################
-def annotateGenome( infile, outfile, only_proteincoding = False ):
+def annotateGenome( infile, outfile, 
+                    only_proteincoding = False,
+                    method = "genome"):
     '''annotate genomic regions with reference gene set.
 
     *infile* is an ENSEMBL gtf file.
@@ -167,7 +169,10 @@ def annotateGenome( infile, outfile, only_proteincoding = False ):
             | python %(scriptsdir)s/gtf2gtf.py --merge-exons --with-utr --log=%(outfile)s.log 
             | python %(scriptsdir)s/gtf2gtf.py --filter=longest-gene --log=%(outfile)s.log 
             | python %(scriptsdir)s/gtf2gtf.py --sort=position
-            | python %(scriptsdir)s/gtf2gff.py --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log --flank=%(geneset_flank)s 
+            | python %(scriptsdir)s/gtf2gff.py --genome-file=%(genome_dir)s/%(genome)s 
+                                               --log=%(outfile)s.log 
+                                               --flank=%(geneset_flank)s 
+                                               --method=%(method)s
             | gzip 
             > %(outfile)s
         """
