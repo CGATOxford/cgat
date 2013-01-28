@@ -1,4 +1,4 @@
-from csamtools cimport *
+from pysam.csamtools cimport *
 
 import collections, array, struct, itertools
 import Experiment as E

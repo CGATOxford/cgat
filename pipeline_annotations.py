@@ -829,7 +829,7 @@ def buildNoncodingTranscripts( infile, outfile ):
 def buildNoncodingTranscriptsBed( infile, outfile ):
     '''annotate transcripts from reference gene set. '''
     statement = """
-        cat < %(infile)s 
+        zcat < %(infile)s 
         | python %(scriptsdir)s/gff2bed.py --is-gtf --name=transcript_id --log=%(outfile)s.log 
         | python %(scriptsdir)s/bed2bed.py --method=filter-genome --genome-file=%(genome_dir)s/%(genome)s --log %(outfile)s.log
         | gzip
