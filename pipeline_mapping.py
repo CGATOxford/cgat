@@ -967,6 +967,9 @@ def mapReadsWithSTAR( infile, outfile ):
     job_options= "-pe dedicated %i -R y -l mem_free=%s" % (PARAMS["star_threads"],
                                                            PARAMS["star_memory"])
     to_cluster = True
+    
+    star_mapping_genome = PARAMS["star_genome"] or PARAMS["genome"]
+    
     m = PipelineMapping.STAR( executable = P.substituteParameters( **locals() )["star_executable"] )
     
     statement = m.build( (infile,), outfile ) 
