@@ -622,7 +622,7 @@ def annotateBindingFull( infile, outfile ):
     to_cluster = True
 
     geneset = os.path.join( PARAMS["annotations_dir"],
-                            PARAMS_ANNOTATIONS[PARAM["geneset_binding"] )
+                            PARAMS_ANNOTATIONS[PARAM["geneset_binding"]] )
 
     statement = """
     zcat < %(geneset)s
@@ -653,7 +653,7 @@ def annotateBindingPeak( infile, outfile ):
     to_cluster = True
 
     geneset = os.path.join( PARAMS["annotations_dir"],
-                            PARAMS_ANNOTATIONS[PARAM["geneset_binding"] )
+                            PARAMS_ANNOTATIONS[PARAM["geneset_binding"]] )
 
     statement = """
     zcat < %(geneset)s
@@ -1450,23 +1450,32 @@ def runGATOnGenomicAnnotations( infiles, outfile ):
 ############################################################
 ############################################################
 ############################################################
-## compute overlap with genomic annotations
+## compute overlap with gene structure
 ############################################################
-@follows( mkdir("gat_annotations.dir") )
+@follows( mkdir("gat_genestructure.dir") )
 @transform( TRACKS_BEDFILES,
             regex("(.*).bed.gz"),
             add_inputs( os.path.join( PARAMS["annotations_dir"],
-                                      PARAMS_ANNOTATIONS["interface_annotation_gff"] ),
+                                      PARAMS_ANNOTATIONS["interface_genestructure_gff"] ),
                         os.path.join( PARAMS["annotations_dir"],
                                       PARAMS_ANNOTATIONS["interface_mapability_filtered_bed"] % PARAMS["gat_mapability"] ),
                         os.path.join( PARAMS["annotations_dir"],
                                       PARAMS_ANNOTATIONS["interface_gc_profile_bed"] ), 
                         ),
-            r"gat_annotations.dir/\1.gat.tsv.gz" )
-def runGATOnGeneStructurec( infiles, outfile ):
+            r"gat_genestructure.dir/\1.gat.tsv.gz" )
+def runGATOnGeneStructure( infiles, outfile ):
     '''run gat on gene structures
 
-    The workspace is composed of all mapable regions.
+    The purpose of this gat run is to test for differential location
+    of intervals in parts of certain gene structures.
+
+    The workspace is composed of all mapable regions. The workspace is 
+    restricted to annotations in order to reduce the effect of
+    intergenic depletion. Furthermore, the workspace is restricted
+    to those parts that contain segments and annotations in order
+    to avoid a gene bias (only genes of a certain structure contain
+    segments).
+
     Enrichment is controlled by isochores.
 
     To be rigorous, FDR should be re-computed after merging all
@@ -1476,7 +1485,7 @@ def runGATOnGeneStructurec( infiles, outfile ):
     bedfile, annofile, workspacefile, isochorefile = infiles    
 
     to_cluster = True
-    outdir = "annotations_gat.dir"
+    outdir = "gat_genestructure.dir"
 
     statement = '''gat-run.py
          --segments=%(bedfile)s
@@ -1484,6 +1493,9 @@ def runGATOnGeneStructurec( infiles, outfile ):
          --workspace=%(workspacefile)s
          --isochores=%(isochorefile)s
          --num-samples=%(gat_num_samples)i
+         --counter=segment-midoverlap
+         --truncate-workspace-to-annotations
+         --restrict-workspace
          --force
          --ignore-segment-tracks
          --output-filename-pattern=%(outfile)s.%%s
