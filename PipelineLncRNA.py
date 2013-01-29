@@ -40,7 +40,7 @@ def buildCodingGeneSet(abinitio_coding, reference, outfile):
                                                                         , source="protein_coding" )
                                                                         , with_value = False  )
 
-    for gtf in GTF.iterator(IOTools.openFile(inf)):
+    for gtf in GTF.iterator(inf):
         if coding["protein_coding"].contains(gtf.contig, gtf.start, gtf.end):
             if gtf.class_code == "=":
                 outf.write("%s\n" % str(gtf))
@@ -107,8 +107,14 @@ def buildLncRNAGeneSet( abinitio_lincrna, reference, refnoncoding, pseudogenes_g
                       "processed_pseudogene",
                       "unprocessed_pseudogene",
                       "nonsense_mediated_decay",
-                      "retained_intron")
-                    
+                      "retained_intron",
+                      "IG_V_gene",
+                      "IG_J_gene",
+                      "IG_C_gene",
+                      "IG_D_gene", # 17/11/2012 Jethro added Ig genes to list. (NB 31 entries in $2 of reference.gtf.gz) 
+                      "CDS")       # 10/12/2012 Nick added CDS. This will then filter anything that overlaps with a CDS
+                                   # NB this is the annotation for RefSeq and so requires the user to have created a
+                                   # reference annotation that includes this annotation
     indices = {}
     for section in input_sections:
         indices[section] = GTF.readAndIndex( 
@@ -167,12 +173,18 @@ def buildLncRNAGeneSet( abinitio_lincrna, reference, refnoncoding, pseudogenes_g
         outf.write("%s\t%s\n" % (x, ",".join(y)))
 
     # write out transcripts that are not in removed set
-    outf = gzip.open(outfile, "w")
+    temp = P.getTempFile()
     for entry in GTF.iterator(IOTools.openFile(infile_abinitio)):
         if entry.transcript_id in remove_transcripts: continue
-        outf.write("%s\n" % str(entry))
-    outf.close()
+        temp.write("%s\n" % str(entry))
+    temp.close()
 
+    filename = temp.name
+    statement = '''cat %(filename)s | python %(scriptsdir)s/gtf2gtf.py
+                   --sort=transcript 
+                   --log=%(outfile)s.log
+                   | gzip > %(outfile)s'''
+    P.run()
 #-------------------------------------------------------------------------------
 def buildFilteredLncRNAGeneSet(flagged_gtf, outfile, genesets_previous):
     '''
@@ -195,14 +207,15 @@ def buildFilteredLncRNAGeneSet(flagged_gtf, outfile, genesets_previous):
         inf = IOTools.openFile(prev)
         for transcript in GTF.transcript_iterator( GTF.iterator(inf) ):
             # use an indexed genome to assess novelty of lncRNA
-            for gtf in transcript:
-                previous_multi.add(gtf.contig, gtf.start, gtf.end, gtf.strand)
-                # add single exons
-                if len(transcript) == 1:
-                    previous_single.add(transcript[0].contig, transcript[0].start, transcript[0].end, [transcript[0].strand, transcript[0].gene_id])
+            if len(transcript) > 1:
+                for gtf in transcript:
+                    previous_multi.add(gtf.contig, gtf.start,gtf.end,[transcript[0].strand,transcript[0].gene_id])
+            # add single exons
+            elif len(transcript) == 1:
+                previous_single.add(transcript[0].contig,transcript[0].start,transcript[0].end,[transcript[0].strand, transcript[0].gene_id])
 
     # create sets for keeping and discarding genes
-    outf = gzip.open(outfile, "w")
+    temp = P.getTempFile()
     keep = set()
     known = set()
     novel = set()
@@ -212,59 +225,81 @@ def buildFilteredLncRNAGeneSet(flagged_gtf, outfile, genesets_previous):
     for transcript in GTF.transcript_iterator(GTF.iterator(IOTools.openFile(flagged_gtf))):
         gene_id = transcript[0].gene_id
         # check if there is overlap in the known sets in order to add gene_status attribute
-        for gtf in transcript:
-            if gtf.exon_status == "m":
-                E.info("checking multi-exonic lncRNA for known status")
-                if previous_multi.contains(gtf.contig, gtf.start, gtf.end):
-                    known.add(gtf.gene_id)
-                else:
-                    novel.add(gtf.gene_id)
-            elif gtf.exon_status == "s":
-                if previous_single.contains(gtf.contig, gtf.start, gtf.end):
-                    for gtf2 in previous_single.get(gtf.contig, gtf.start, gtf.end):                               
-                        if gtf.strand == gtf2[2][0]:
-                            keep.add(gtf2[2][1])
+        if transcript[0].exon_status == "m":
+            if previous_multi.contains(transcript[0].contig
+                                       , min([gtf.start for gtf in transcript])
+                                       , max([gtf.end for gtf in transcript])):
+                known.add(transcript[0].gene_id)
+                # add previous multi exonic lincRNA gene id 
+                # to known set - to avoid addin gto gtf later
+                for gtf2 in previous_multi.get(transcript[0].contig
+                                       , min([gtf.start for gtf in transcript])
+                                       , max([gtf.end for gtf in transcript])):
+                    known.add(gtf2[2][1])
+            else:
+                novel.add(transcript[0].gene_id)
+        elif transcript[0].exon_status == "s": continue
     
     E.info("writing filtered lncRNA geneset")
-    E.info("writing %i known" % len(known))
-    E.info("writing %i novel" % len(novel))
-    E.info("writing %i single exon" % len(keep))
+    E.info("writing %i assembled but known" % len(known))
+    E.info("writing %i assembled novel" % len(novel))
 
-    # write out ones to keep from data
+    # write out ones to keep from assembled data
     for gtf in GTF.iterator(IOTools.openFile(flagged_gtf)):
         if gtf.gene_id in known and gtf.exon_status == "m":
             gtf.setAttribute("gene_status", "known")
-            outf.write("%s\n" % gtf)
+            temp.write("%s\n" % gtf)
         elif gtf.gene_id in novel and gtf.exon_status == "m":
             gtf.setAttribute("gene_status", "novel")
-            outf.write("%s\n" % gtf)
+            temp.write("%s\n" % gtf)
 
-    # write out ones to keep - from previous evidence
-    # create a set - if the gene is in the first known
-    # set then it won't be added again from the following sets
-    check = set()
+    # write out ones to keep - from previous evidence 
+    # i.e. anything single exon or anything
+    # multi-exonic non-overlapping the assembled set
+
+    # hierarchically done so add to 'done' if found as we iterate
+    # over the previous sets
+    done = IndexedGenome.IndexedGenome()
+    known_count = 0
     for prev in genesets_previous:
         inf = IOTools.openFile(prev)
-        for gtf in GTF.iterator(inf):
-            if gene_id in check: continue
-            if gtf.gene_id in keep:
-                gtf.setAttribute("gene_status", "known")
-                outf.write("%s\n" % gtf)
-                check.add(gtf.gene_id)
-    outf.close()
+        for gene in GTF.flat_gene_iterator(GTF.iterator(inf)):
+            gene_id = gene[0].gene_id
+
+            # dont' write out ones that we build
+            if gene_id in known: continue
+            elif done.contains(gene[0].contig, min([gtf.start for gtf in gene]), max([gtf.end for gtf in gene])): continue
+            else:
+                for gtf in gene:
+                    gtf.setAttribute("gene_status", "known")
+                    temp.write("%s\n" % gtf)
+                known_count += 1
+                done.add(gene[0].contig, min([gtf.start for gtf in gene]), max([gtf.end for gtf in gene]), gene_id)
+    E.info("written %i from %s " % (known_count, ",".join(genesets_previous)))
+    temp.close()
+
+
+    filename = temp.name
+    statement = '''cat %(filename)s | python %(scriptsdir)s/gtf2gtf.py 
+                   --sort=transcript 
+                   --log=%(outfile)s.log
+                   | gzip > %(outfile)s'''
+    P.run()
+
 #-------------------------------------------------------------------------------
-def buildFinalLncRNAGeneSet(filteredLncRNAGeneSet, cpc_table, outfile):
+def buildFinalLncRNAGeneSet(filteredLncRNAGeneSet, cpc_table, outfile, filter_cpc = None):
     '''
     filters lncRNA set based on the coding potential as output from 
     the CPC
     '''
-    # only filter if params are set
-    if PARAMS["filtering_cpc"]:
+    
+    if filter_cpc:
+           
         # get the transcripts that are designated as coding
         coding_set = set()
         dbh = sqlite3.connect("csvdb")
         cc = dbh.cursor()
-        for transcript_id in cc.execute("SELECT transcript_id from %s WHERE C_NC='coding'" % cpc_table):
+        for transcript_id in cc.execute("SELECT transcript_id from %s WHERE CP_score > 1" % cpc_table):
             coding_set.add(transcript_id[0])
 
         remove = set()
@@ -274,21 +309,37 @@ def buildFinalLncRNAGeneSet(filteredLncRNAGeneSet, cpc_table, outfile):
                 remove.add(gtf.gene_id)
                 outf_coding.write("%s\n" % gtf)
         outf_coding.close()
-        
-        # get temporary file
-        temp = P.getTempFile()
-    
-        for gtf in GTF.iterator(IOTools.openFile(filteredLncRNAGeneSet)):
-            if gtf.gene_id in remove: continue
-            temp.write("%s\n" % gtf)
-        temp.close()
-
-        filename = temp.name
-        statement = '''cat %(filename)s | python %(scriptsdir)s/gtf2gtf.py --sort=transcript | 
-                     python %(scriptsdir)s/gtf2gtf.py --renumber-genes=NONCO%%i 
-                    --log=%(outfile)s.log | python %(scriptsdir)s/gtf2gtf.py --sort=gene --log=%(outfile)s.log | gzip > %(outfile)s'''
     else:
-        statement = '''zcat  %(infile)s | gzip > %(outfile)s'''
+        # create empty set
+        remove = set()
+    
+    # get temporary file for built lncrna
+    temp = P.getTempFile()
+    
+    # get temporary file for known lncrna
+    temp2 = P.getTempFile()
+        
+    for gtf in GTF.iterator(IOTools.openFile(filteredLncRNAGeneSet)):
+        if gtf.gene_id in remove: continue
+        if gtf.transcript_id.find("TCONS") != -1:
+            # output known and buil transcripts separately
+            temp.write("%s\n" % gtf)
+        else:
+            temp2.write("%s\n" % gtf)
+    temp.close()
+    temp2.close()
+
+    filename = temp.name
+    filename2 = temp2.name
+    statement = '''cat %(filename)s | python %(scriptsdir)s/gtf2gtf.py --sort=gene | 
+                     python %(scriptsdir)s/gtf2gtf.py --renumber-genes=NONCO%%i 
+                    --log=%(outfile)s.log | python %(scriptsdir)s/gtf2gtf.py 
+                    --sort=gene --log=%(outfile)s.log > temp.gtf'''
+    P.run()
+    # recombine all transcripts with new ids
+    statement = ('''cat %(filename2)s temp.gtf | python %(scriptsdir)s/gtf2gtf.py 
+                 --sort=contig+gene --log = %(outfile)s.log | gzip > %(outfile)s''')
+    P.run()
 
 ########################################################
 # counter classes
@@ -396,6 +447,7 @@ class CounterMultiExonGenes(CounterExons):
             if len(transcript) > 1:
                 gene_ids.add(transcript[0].gene_id)
         return len(gene_ids)
+
 #----------------------------------------------------------------------
 def flagExonStatus(gtffile, outfile):
     '''
@@ -422,18 +474,16 @@ def flagExonStatus(gtffile, outfile):
 
 def classifyLncRNA(lincRNA_gtf, reference, outfile, dist = 2):
     '''
-    function to classify lincRNA in terms of their relationship to 
+    Classify lincRNA in terms of their proximity to 
     protein coding genes - creates indices for intervals on the 
-    fly - mayb should be creating additional annotations:
+    fly - maybe should be creating additional annotations:
 
-    antisense - transcript overlapping protein coding exons on opposite strand
-    antisense_upstream - transcript < 2kb from tss on opposite strand
-    antisense_downstream - transcript < 2kb from gene end on opposite strand
-    sense_upstream - transcript < 2kb from tss on same strand
-    sense_downstream - transcript < 2kb from gene end on same strand
-    antisense_span - start and end of transcript span and extend beyond protein coding gene on opposite strand
-    sense_span - start and end of transcript span and extend beyond protein coding gene on same strand
-    intergenic - >2kb from anyt protein coding gene
+    antisense - GENE overlapping protein coding exons or introns on opposite strand
+    antisense_upstream - GENE < Xkb from tss on opposite strand
+    antisense_downstream - GENE < Xkb from gene end on opposite strand
+    sense_upstream - GENE < Xkb from tss on same strand
+    sense_downstream - GENE < Xkb from gene end on same strand
+    intergenic - >Xkb from any protein coding gene
     intronic - overlaps protein coding gene intron on same strand
     antisense_intronic - overlaps protein coding intron on opposite strand
     '''
