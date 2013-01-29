@@ -258,34 +258,37 @@ def buildFinalLncRNAGeneSet(filteredLncRNAGeneSet, cpc_table, outfile):
     filters lncRNA set based on the coding potential as output from 
     the CPC
     '''
-    # get the transcripts that are designated as coding
-    coding_set = set()
-    dbh = sqlite3.connect("csvdb")
-    cc = dbh.cursor()
-    for transcript_id in cc.execute("SELECT transcript_id from %s WHERE C_NC='coding'" % cpc_table):
-        coding_set.add(transcript_id[0])
+    # only filter if params are set
+    if PARAMS["filtering_cpc"]:
+        # get the transcripts that are designated as coding
+        coding_set = set()
+        dbh = sqlite3.connect("csvdb")
+        cc = dbh.cursor()
+        for transcript_id in cc.execute("SELECT transcript_id from %s WHERE C_NC='coding'" % cpc_table):
+            coding_set.add(transcript_id[0])
 
-    remove = set()
-    outf_coding = gzip.open("gtfs/cpc_removed.gtf.gz", "w")
-    for gtf in GTF.iterator(IOTools.openFile(filteredLncRNAGeneSet)):
-        if gtf.transcript_id in coding_set:
-            remove.add(gtf.gene_id)
-            outf_coding.write("%s\n" % gtf)
-    outf_coding.close()
+        remove = set()
+        outf_coding = gzip.open("gtfs/cpc_removed.gtf.gz", "w")
+        for gtf in GTF.iterator(IOTools.openFile(filteredLncRNAGeneSet)):
+            if gtf.transcript_id in coding_set:
+                remove.add(gtf.gene_id)
+                outf_coding.write("%s\n" % gtf)
+        outf_coding.close()
+        
+        # get temporary file
+        temp = P.getTempFile()
     
-    # get temporary file
-    temp = P.getTempFile()
-    
-    for gtf in GTF.iterator(IOTools.openFile(filteredLncRNAGeneSet)):
-        if gtf.gene_id in remove: continue
-        temp.write("%s\n" % gtf)
-    temp.close()
+        for gtf in GTF.iterator(IOTools.openFile(filteredLncRNAGeneSet)):
+            if gtf.gene_id in remove: continue
+            temp.write("%s\n" % gtf)
+        temp.close()
 
-    filename = temp.name
-    statement = '''cat %(filename)s | python %(scriptsdir)s/gtf2gtf.py --sort=transcript | 
+        filename = temp.name
+        statement = '''cat %(filename)s | python %(scriptsdir)s/gtf2gtf.py --sort=transcript | 
                      python %(scriptsdir)s/gtf2gtf.py --renumber-genes=NONCO%%i 
                     --log=%(outfile)s.log | python %(scriptsdir)s/gtf2gtf.py --sort=gene --log=%(outfile)s.log | gzip > %(outfile)s'''
-    P.run()
+    else:
+        statement = '''zcat  %(infile)s | gzip > %(outfile)s'''
 
 ########################################################
 # counter classes
