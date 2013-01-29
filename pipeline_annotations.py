@@ -450,8 +450,7 @@ def annotateGenome( infile, outfile ):
     '''
     PipelineGeneset.annotateGenome( infile, 
                                     outfile,
-                                    only_proteincoding = True,
-                                    method = "genome" )
+                                    only_proteincoding = True )
 
 ############################################################
 ############################################################
@@ -470,10 +469,9 @@ def annotateGeneStructure( infile, outfile ):
 
     Genes not on UCSC contigs are removed.
     '''
-    PipelineGeneset.annotateGenome( infile, 
-                                    outfile,
-                                    only_proteincoding = True,
-                                    method = "genes" )
+    PipelineGeneset.annotateGeneStructure( infile, 
+                                           outfile,
+                                           only_proteincoding = True )
 
 ############################################################
 ############################################################
