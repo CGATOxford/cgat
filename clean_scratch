@@ -1,0 +1,59 @@
+#!/bin/bash
+
+# options
+# =======
+# limit: onlu if the disk is greater than this % full, 
+#        with the scratch be cleaned up
+# location: the folder to clean up
+# delay: files must be older than this to be cleaned up (minutes).
+# group: the script will only clean up files from this group
+limit=25
+location=/scratch/temp/
+delay=60
+group=usersfgu
+
+# only do something if scratch space is potentially limiting
+pc_used=`df -h $location | tail -n1 | awk '{print $5}' | sed 's/%//g'`
+
+if [ $pc_used -lt $limit ]
+   then 
+       echo "exiting, less than ${limit}% of scratch space used"
+       exit
+   else
+       #carry on
+       true
+fi
+
+# get list of users with files older than $delay min from root of scratch
+scratch_users=`find $location -maxdepth 1 -cmin $delay -exec stat -c %U {} \; | sort | uniq`
+
+# get a list of users currently running processes
+# * this is perhaps the weakest part - is it foolproof? *
+# * what about zombie processes? *
+# limit the list to a specified group
+active_users=`ps --group $group -eo ruser | sort | uniq`
+
+# make an array of the active users
+declare -A active
+for active_user in $active_users
+  do 
+    active[$active_user]=1
+  done
+
+# iterate over the scratch_users and delete files
+# belonging to them that are older than 1 hour 
+# if that user was not found to be active.
+for user in $scratch_users
+  do
+      if [[ ${active[$user]} ]]
+          then
+	      #user is active, do nothing
+    	      echo "$user is active, will not delete their files"
+          else
+	      # only remove files older than $delay min. belonging to the non-active user
+	      # the delay is necessary because theoretically the user
+	      # could have _just_ logged in.
+    	      find $location -user $user -type f -cmin $delay -exec rm {} \;
+       fi
+  done
+
