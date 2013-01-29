@@ -968,7 +968,7 @@ def mapReadsWithSTAR( infile, outfile ):
                                                            PARAMS["star_memory"])
     to_cluster = True
     
-    star_mapping_genome = PARAMS["star_genome"] or PARAMS["genome"]
+    star_mapping_genome = PARAMS["star_genome"] or PARAMS["genome"]+".dir"
     
     m = PipelineMapping.STAR( executable = P.substituteParameters( **locals() )["star_executable"] )
     
