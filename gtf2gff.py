@@ -808,9 +808,13 @@ def annotateTTS( iterator, fasta, options ):
         options.stdlog.write( "# ngenes=%i, ntranscripts=%i, ntss=%i\n" % (ngenes, ntranscripts, npromotors) )
 
 def annotateGenes( iterator, fasta, options ):
-    """annotate termination sites within iterator.
+    """annotate gene structures
 
-    Only protein_coding genes are annotated.
+    This method outputs intervals for first/middle/last exon/intron, UTRs and flanking regions.
+
+    This method annotates per transcript. In order to achieve a unique tiling, 
+    use only a single transcript per gene and remove any overlap between 
+    genes.
     """
 
     gene_iterator = GTF.gene_iterator( iterator )
@@ -818,7 +822,7 @@ def annotateGenes( iterator, fasta, options ):
     ngenes, ntranscripts, nskipped = 0, 0, 0
 
     results = []
-    increment =  options.flank // options.nflanks 
+    increment =  options.increment
 
     for gene in gene_iterator:
         ngenes += 1
@@ -889,10 +893,10 @@ def annotateGenes( iterator, fasta, options ):
                 _add( i, "middle_intron" )
                 
             for x, u in enumerate( upstream ):
-                _add(u, "upstream_%i" % (increment * x ) )
+                _add(u, "upstream_%i" % (increment * (x+1) ) )
 
             for x, u in enumerate( downstream ):
-                _add(u, "downstream_%i" % (increment * x ) )
+                _add(u, "downstream_%i" % (increment * (x+1) ) )
                 
             results.sort( key = lambda x: x.feature )
 
@@ -942,6 +946,9 @@ if __name__ == '__main__':
     parser.add_option("-f", "--flank", dest="flank", type="int",
                       help="size of the flanking region next to a gene [default=%default]."  )
 
+    parser.add_option( "--increment", dest="increment", type="int",
+                       help="size of increment in flank in genestructure annotation [default=%default]."  )
+
     parser.add_option("-p", "--promotor", dest="promotor", type="int",
                       help="size of a promotor region [default=%default]."  )
 
@@ -960,7 +967,7 @@ if __name__ == '__main__':
     parser.set_defaults(
         genome_file = None,
         flank = 1000,
-        nflanks = 5,
+        increment = 1000,
         max_frameshift_length = 4,
         min_intron_length = 30,
         ignore_missing = False,

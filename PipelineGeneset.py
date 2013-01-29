@@ -142,20 +142,23 @@ def importRefSeqFromUCSC( infile, outfile, remove_duplicates = True ):
 ############################################################
 ############################################################
 def annotateGenome( infile, outfile, 
-                    only_proteincoding = False,
-                    method = "genome"):
+                    only_proteincoding = False ):
     '''annotate genomic regions with reference gene set.
 
     *infile* is an ENSEMBL gtf file.
+    Only considers protein coding genes, if *only_proteincoding* is set.
 
-    In case of overlapping genes, only take the longest (in genomic coordinates).
+    The method applies the following filters:
+    * Exons from different transcripts in each gene are merged by overlap.
+    * In case of overlapping genes, only take the longest (in genomic coordinates) is kept.
 
-    Genes not on UCSC contigs are removed.
+    The task outputs a :term:`gff` formatted file in *outfile*. For more information,
+    see documentation for the script :mod:`gtf2gff.py` under the option ``--method=genome``.
 
-    Only considers protein coding genes, if ``only_proteincoding`` is set.
     '''
 
     to_cluster = True
+    method = "genome"
 
     if only_proteincoding: filter_cmd = ''' awk '$2 == "protein_coding"' '''
     else: filter_cmd = "cat"
@@ -172,6 +175,51 @@ def annotateGenome( infile, outfile,
             | python %(scriptsdir)s/gtf2gff.py --genome-file=%(genome_dir)s/%(genome)s 
                                                --log=%(outfile)s.log 
                                                --flank=%(geneset_flank)s 
+                                               --method=%(method)s
+            | gzip 
+            > %(outfile)s
+        """
+    P.run()
+
+############################################################
+############################################################
+############################################################
+def annotateGeneStructure( infile, outfile, 
+                    only_proteincoding = False ):
+    '''annotate genomic regions with reference gene set.
+
+    *infile* is an ENSEMBL gtf file.
+    Only considers protein coding genes, if *only_proteincoding* is set.
+
+    The method applies the following filters:
+    * If there are multiple transcripts in a gene, a representative transcript is kept.
+    * In case of overlapping genes, only take the longest (in genomic coordinates) is kept.
+
+    The task outputs a :term:`gff` formatted file in *outfile*. For more information,
+    see documentation for the script :mod:`gtf2gff.py` under the option ``--method=genes``.
+    '''
+
+    to_cluster = True
+
+    if only_proteincoding: filter_cmd = ''' awk '$2 == "protein_coding"' '''
+    else: filter_cmd = "cat"
+
+    method = "genes"
+
+    statement = """
+            gunzip 
+            < %(infile)s
+            | %(filter_cmd)s 
+            | python %(scriptsdir)s/gtf2gtf.py --sort=gene
+            | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s 
+            | awk '$3 == "exon"' 
+            | python /ifs/devel/andreas/cgat/gtf2gtf.py --filter=representative-transcript
+            | python %(scriptsdir)s/gtf2gtf.py --filter=longest-gene --log=%(outfile)s.log 
+            | python %(scriptsdir)s/gtf2gtf.py --sort=position
+            | python %(scriptsdir)s/gtf2gff.py --genome-file=%(genome_dir)s/%(genome)s 
+                                               --log=%(outfile)s.log 
+                                               --flank=%(genestructures_flank)i
+                                               --increment=%(genestructures_increment)i
                                                --method=%(method)s
             | gzip 
             > %(outfile)s
