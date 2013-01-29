@@ -85,6 +85,11 @@ PARAMS= {
     'cmd-run' : """%s/run.py""" % ROOT_DIR
     }
 
+hostname = os.uname()[0]
+# PATH for FGU
+if hostname.startswith("node") or hostname.startswith("fgu"):
+    pass
+
 CONFIG = {}
 
 PROJECT_ROOT = '/ifs/projects'
@@ -134,7 +139,6 @@ def getParameters( filenames = ["pipeline.ini",],
     global CONFIG
 
     CONFIG = ConfigParser.ConfigParser()
-    
     CONFIG.read( filenames )
 
     p = configToDictionary( CONFIG )
@@ -374,6 +378,8 @@ def getProjectId():
     if not curdir.startswith( PROJECT_ROOT ):
         raise ValueError( "method getProjectId no called within %s" % PROJECT_ROOT )
     prefixes = len(PROJECT_ROOT.split("/"))
+    # patch for projects in mini directory
+    if "/mini/" in curdir: prefixes += 1
     rootdir = "/" + os.path.join( *(curdir.split( "/" )[:prefixes+1]) )
     f = os.path.join( rootdir, "sftp", "web" )
     if not os.path.exists(f):
@@ -427,8 +433,42 @@ def load( infile,
 
     run()
 
+def concatenateAndLoad( infiles, outfile, regex_filename = None, header = None ):
+    '''concatenate categorical tables and load into a database.
+
+    Concatenation assumes that the header is the same in all files.
+    The first file will be taken in completion, headers
+    in other files will be removed.
+    '''
+    
+    infiles = " ".join(infiles)
+
+    tablename = toTable( outfile )
+
+    load_options,options = [], []
+
+    if regex_filename:
+        options.append( '--regex-filename="%s"' % regex_filename )
+
+    if header:
+        load_options.append( "--header=%s" % header )
+
+    options = " ".join(options)
+    load_options = " ".join(load_options)
+    statement = '''python %(scriptsdir)s/combine_tables.py
+                     --cat=track
+                     --no-titles
+                     %(options)s
+                   %(infiles)s
+                   | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+                      --index=track
+                      --table=%(tablename)s 
+                      %(load_options)s
+                   > %(outfile)s'''
+    run()
+
 def mergeAndLoad( infiles, outfile, suffix = None, columns=(0,1), regex = None, row_wise = True ):
-    '''load categorical tables into a database.
+    '''merge categorical tables and load into a database.
 
     Columns denotes the columns to be taken.
 
@@ -474,12 +514,17 @@ def mergeAndLoad( infiles, outfile, suffix = None, columns=(0,1), regex = None, 
             """
     run()
 
-def createView( dbhandle, tables, tablename, outfile, view_type = "TABLE" ):
+def createView( dbhandle, tables, tablename, outfile, view_type = "TABLE",
+                ignore_duplicates = True ):
     '''create a view in database for tables.
 
     Tables should be a list of tuples. Each tuple
     should contain the name of a table and the field
     to join with the first table.
+    
+    If ignore duplicates is set to False, duplicate column
+    names will be added with the tablename as prefix. The
+    default is to ignore.
 
     For example::
        tables = ("reads_summary", "track",
@@ -495,12 +540,13 @@ def createView( dbhandle, tables, tablename, outfile, view_type = "TABLE" ):
 
     Database.executewait( dbhandle, "DROP %(view_type)s IF EXISTS %(tablename)s" % locals() )
 
-    tracks = []
+    tracks, columns = [], []
     tablenames = [ x[0] for x in tables ]
-    for t in tables:
-        d = Database.executewait( dbhandle,"SELECT COUNT(DISTINCT %s) FROM %s" % (t[1],t[0]))
+    for table, track in tables:
+        d = Database.executewait( dbhandle,"SELECT COUNT(DISTINCT %s) FROM %s" % (track,table))
         tracks.append( d.fetchone()[0] )
-    
+        columns.append( [x.lower() for x in Database.getColumnNames( dbhandle, table ) if x != track ] )
+
     E.info( "creating %s from the following tables: %s" % (tablename, str(zip( tablenames, tracks ))))
     if min(tracks) != max(tracks):
         raise ValueError("number of rows not identical - will not create view" )
@@ -508,19 +554,34 @@ def createView( dbhandle, tables, tablename, outfile, view_type = "TABLE" ):
     from_statement = " , ".join( [ "%s as t%i" % (y[0],x) for x,y in enumerate(tables) ] )
     f = tables[0][1]
     where_statement = " AND ".join( ["t0.%s = t%i.%s" % (f,x+1,y[1]) for x,y in enumerate(tables[1:]) ] )
+    
+    all_columns, taken = [], set()
+    for x, c in enumerate(columns):
+        i = set(taken).intersection( set(c))
+        if i:
+            E.warn("duplicate column names: %s " % i )
+            if not ignore_duplicates:
+                table = tables[x][0]
+                all_columns.extend( ["t%i.%s AS %s_%s" % (x,y,table,y) for y in i ] )
+                c = [ y for y in c if y not in i ]
+                
+        all_columns.extend( ["t%i.%s" % (x,y) for y in c ] )
+        taken.update( set(c) )
 
-
-    statement = '''CREATE %(view_type)s %(tablename)s AS SELECT t0.track, * 
+    all_columns = ",".join( all_columns)
+    statement = '''CREATE %(view_type)s %(tablename)s AS SELECT t0.track, %(all_columns)s
                    FROM %(from_statement)s
                    WHERE %(where_statement)s
     ''' % locals()
-    
+
     Database.executewait( dbhandle, statement )
 
     nrows = Database.executewait( dbhandle, "SELECT COUNT(*) FROM view_mapping" ).fetchone()[0]
     
     if nrows == 0:
         raise ValueError( "empty view mapping, check statement = %s" % (statement % locals()) )
+    if nrows != min(tracks):
+        E.warn( "view creates duplicate rows, got %i, expected %i" % (nrows, min(tracks)))
 
     E.info( "created view_mapping with %i rows" % nrows )
 
@@ -1063,7 +1124,8 @@ def run_report( clean = True):
     xvfb_command = which("xvfb-run" )
 
     # permit multiple servers using -a option
-    if xvfb_command: xvfb_command+= " -a "
+    if xvfb_command: xvfb_command += " -a "
+    else: xvfb_command = ""
 
     # if there is no DISPLAY variable set, xvfb runs, but
     # exits with error when killing process. Thus, ignore return
@@ -1122,12 +1184,14 @@ def publish_report( prefix = "",
         prefix = PARAMS.get( "report_prefix", "" )
 
     web_dir = PARAMS["web_dir"]
-    if project_id == None:
+    if project_id == None: 
         project_id = getProjectId()
 
     src_export = os.path.abspath( "export" )
     dest_report = prefix + "report"
     dest_export = prefix + "export"
+
+    curdir = os.path.abspath( os.getcwd() )
 
     def _link( src, dest ):
         '''create links. 
@@ -1152,19 +1216,23 @@ def publish_report( prefix = "",
         shutil.copytree( os.path.abspath(src), dest ) 
 
     # publish export dir via symlinking
+    E.info( "linking export directory in %s" % dest_export )
     _link( src_export, dest_export )
 
     # publish web pages by copying
-    _copy( os.path.abspath("report/html"), dest_report ) 
+    E.info( "publishing web pages in %s" % os.path.abspath( os.path.join( PARAMS["web_dir"], dest_report )))
+    _copy( os.path.abspath("report/html"), dest_report )
 
     # substitute links to export and report
     _patterns = [ (re.compile( src_export ), 
                    "http://www.cgat.org/downloads/%(project_id)s/%(dest_export)s" % locals() ), 
                   (re.compile( '(%s)/report' % os.path.join( prefix_project, getProjectName() ) ),
-                   "http://www.cgat.org/downloads/%(project_id)s/%(dest_report)s" % locals() ) ]
+                   "http://www.cgat.org/downloads/%(project_id)s/%(dest_report)s" % locals() ),
+                  (re.compile( '(%s)/_static' % curdir),
+                   "http://www.cgat.org/downloads/%(project_id)s/%(dest_report)s/_static" % locals() )]
     
     _patterns.extend( patterns )
-    
+
     for root, dirs, files in os.walk(os.path.join( web_dir, dest_report)):
         for f in files:
             fn = os.path.join( root, f )
@@ -1215,6 +1283,10 @@ clone <source>
 
 def main( args = sys.argv ):
 
+    global GLOBAL_OPTIONS
+    global GLOBAL_ARGS
+    global GLOBAL_SESSION
+
     parser = optparse.OptionParser( version = "%prog version: $Id: Pipeline.py 2799 2009-10-22 13:40:13Z andreas $",
                                     usage = USAGE )
     
@@ -1238,6 +1310,9 @@ def main( args = sys.argv ):
     parser.add_option( "-p", "--multiprocess", dest="multiprocess", type="int",
                        help="number of parallel processes to use (different from number of jobs to use for cluster jobs) [default=%default]." ) 
 
+    parser.add_option( "-t", "--tempdir", dest="tempdir", type="string",
+                       help="temporary directory to use [default=%default].")
+
     parser.set_defaults(
         pipeline_action = None,
         pipeline_format = "svg",
@@ -1252,13 +1327,10 @@ def main( args = sys.argv ):
     (options, args) = E.Start( parser, 
                                add_cluster_options = True )
 
-    global GLOBAL_OPTIONS
-    global GLOBAL_ARGS
-    global GLOBAL_SESSION
-    
+
     GLOBAL_OPTIONS, GLOBAL_ARGS = options, args
     PARAMS["dryrun"] = options.dry_run
-
+    
     # get mercurial version
     repo = hgapi.Repo( PARAMS["scriptsdir"] )
     version = repo.hg_id()

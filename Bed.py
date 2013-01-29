@@ -57,38 +57,38 @@ class Bed(object):
         self.contig = None
         self.start = 0
         self.end = 0
-        self.mFields = []
-        self.mTrack = None
+        self.fields = []
+        self.track = None
         
     def __str__(self):
-        return "\t".join( (self.contig, str(self.start), str(self.end) ) + tuple(map(str, self.mFields)))
+        return "\t".join( (self.contig, str(self.start), str(self.end) ) + tuple(map(str, self.fields)))
 
     def fromGFF( self, gff, is_gtf = False, name=None ):
         """fill from gff formatted entry."""
         self.contig, self.start, self.end = gff.contig, gff.start, gff.end
         try:
-            self.mFields = [getattr( gff, name), 
+            self.fields = [getattr( gff, name), 
                             [gff.score,0][gff.score == None], 
                             gff.strand ]
         except AttributeError:
-            self.mFields = [gff[name],
+            self.fields = [gff[name],
                             [gff.score,0][gff.score == None], 
                             gff.strand ]
             
     def __contains__(self, key ):
-        return self.map_key2field[key] < len(self.mFields)
+        return self.map_key2field[key] < len(self.fields)
 
     def __getitem__(self, key):
-        return self.mFields[self.map_key2field[key]]
+        return self.fields[self.map_key2field[key]]
 
     def __getattr__(self, key ):
-        return self.mFields[self.map_key2field[key]]
+        return self.fields[self.map_key2field[key]]
         
 
     @property
     def columns(self):
         '''return number of columns in bed-entry.'''
-        return 3 + len(self.mFields)
+        return 3 + len(self.fields)
 
 class Track(object):
     '''bed track information.'''
@@ -128,13 +128,14 @@ def iterator( infile ):
         if line.strip() == "": continue
 
         b = Bed()
-        data = line[:-1].split()
+        # split at tab (Bed standard, do not split at space as this will split the name field)
+        data = line[:-1].split("\t")
         try:
             b.contig, b.start, b.end = data[0], int(data[1]), int(data[2])
         except IndexError:
             raise ValueError("parsing error in line '%s'" % line[:-1])
-        b.mFields = data[3:]
-        b.mTrack = track
+        b.fields = data[3:]
+        b.track = track
         yield b
 
 # for compatibility, remove
@@ -151,7 +152,7 @@ def setName( iterator ):
 
 def grouped_iterator( iterator ):
     '''yield bed results grouped by track.'''
-    return itertools.groupby( iterator, lambda x: x.mTrack )
+    return itertools.groupby( iterator, lambda x: x.track )
 
 def blocked_iterator( iterator ):
     '''yield blocked bed results.'''
@@ -164,13 +165,13 @@ def blocked_iterator( iterator ):
         bed.start, bed.end = blocks[0][0], blocks[-1][1]
         s = bed.start
         # hacky - needs be abstracted into Bed object
-        bed.mFields.extend( [""] * (9 - len(bed.mFields)))
-        bed.mFields[3] = str(bed.start)
-        bed.mFields[4] = str(bed.end)
-        bed.mFields[5] = 0
-        bed.mFields[6] = len(blocks)
-        bed.mFields[7] = ",".join( [str(y-x) for x,y in blocks ])
-        bed.mFields[8] = ",".join( [str(x-s) for x,y in blocks])
+        bed.fields.extend( [""] * (9 - len(bed.fields)))
+        bed.fields[3] = str(bed.start)
+        bed.fields[4] = str(bed.end)
+        bed.fields[5] = 0
+        bed.fields[6] = len(blocks)
+        bed.fields[7] = ",".join( [str(y-x) for x,y in blocks ])
+        bed.fields[8] = ",".join( [str(x-s) for x,y in blocks])
         return bed
 
     last_bed = None
@@ -247,15 +248,15 @@ def binIntervals( iterator, num_bins = 5, method = "equal-bases", bin_edges = No
     data = []
     beds = list(iterator)
 
-    for bed in beds: bed.mFields[1] = float( bed.mFields[1])
+    for bed in beds: bed.fields[1] = float( bed.fields[1])
 
     if bin_edges == None:
         if method == "equal-bases":
-            data = numpy.array( sorted( [(x.mFields[1], x.end-x.start) for x in beds ] ) )
+            data = numpy.array( sorted( [(x.fields[1], x.end-x.start) for x in beds ] ) )
         elif method == "equal-intervals":
-            data = numpy.array( sorted( [(x.mFields[1], 1) for x in beds ] ) )
+            data = numpy.array( sorted( [(x.fields[1], 1) for x in beds ] ) )
         elif method == "equal-range":
-            vals = [x.mFields[1] for x in beds ]
+            vals = [x.fields[1] for x in beds ]
             mi, ma = min( vals ), max( vals )
             increment = float(ma - mi) / num_bins
             bin_edges = numpy.arange( mi, ma, increment)
@@ -284,12 +285,12 @@ def binIntervals( iterator, num_bins = 5, method = "equal-bases", bin_edges = No
     last_contig, start, end, last_name = None, None, None, None
     new_beds = []
     for bed in beds:
-        name = bisect.bisect_right(bin_edges, bed.mFields[1])-1
+        name = bisect.bisect_right(bin_edges, bed.fields[1])-1
         contig = bed.contig
         if name != last_name or last_contig != contig:
             if last_name != None:
                 b = Bed()
-                b.contig, b.start, b.end, b.mFields = last_contig, start, end, [last_name]
+                b.contig, b.start, b.end, b.fields = last_contig, start, end, [last_name]
                 new_beds.append(b)
             start = bed.start
             last_name = name
@@ -299,7 +300,7 @@ def binIntervals( iterator, num_bins = 5, method = "equal-bases", bin_edges = No
 
     if last_name != None:
         b = Bed()
-        b.contig, b.start, b.end, b.mFields = contig, start, end, [last_name]
+        b.contig, b.start, b.end, b.fields = contig, start, end, [last_name]
         new_beds.append(b)
         
     return new_beds, bin_edges

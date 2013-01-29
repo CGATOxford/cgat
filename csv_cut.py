@@ -154,24 +154,22 @@ if __name__ == "__main__":
             
     old_fields = first_line[:-1].split("\t")
 
+    fields = []
+    for f in input_fields:
+        ## do pattern search
+        if f[0] == "%" and f[-1] == "%":
+            pattern = re.compile( f[1:-1] )
+            for o in old_fields:
+                if pattern.search( o ) and o not in fields:
+                    fields.append( o )
+        else:
+            if f in old_fields:
+                fields.append( f )
+    
     if options.remove:
-        fields = []
-        for x in old_fields:
-            if x not in input_fields:
-                fields.append( x )
-    else:
-        fields = []
-        for f in input_fields:
-            ## do pattern search
-            if f[0] == "%" and f[-1] == "%":
-                pattern = re.compile( f[1:-1] )
-                for o in old_fields:
-                    if pattern.search( o ) and o not in fields:
-                        fields.append( o )
-            else:
-                if f in old_fields:
-                    fields.append( f )
-                    
+        fields = set(fields)
+        fields = [ x for x in old_fields if x not in fields ]
+    
     if options.large:
         reader = CSV.DictReaderLarge( CommentStripper(sys.stdin),
                                       fieldnames = old_fields,

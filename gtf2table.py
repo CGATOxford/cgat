@@ -216,11 +216,11 @@ def readIntervalsFromGFF( filename_gff, source, feature,
         if with_values:
             for bed in iterator:
                 ninput += 1
-                e[bed.contig].append( (bed.start,bed.end,bed.mFields[0]) )
+                e[bed.contig].append( (bed.start,bed.end,bed.fields[0]) )
         elif with_records:
             for bed in iterator:
                 ninput += 1
-                bed.gene_id = bed.mFields[0]
+                bed.gene_id = bed.fields[0]
                 bed.transcript_id = bed.gene_id
                 e[bed.contig].append( (bed.start,bed.end,bed) )
         else:
@@ -1420,9 +1420,9 @@ class ClassifierRNASeq(Counter):
         return "\t".join( map(str, self.result) )
 
 ##-----------------------------------------------------------------------------------
-class ClassifierRNASeqNew(Counter):
+class ClassifierRNASeqSplicing(Counter):
     """This is IMSs new style transcript classifier. It aims to give classifications
-    that make more sense to biologist involved in splicing my using familier catagories.
+    that make more sense to biologists involved in splicing by using familiar catagories.
 
     classify RNASeq transcripts based on a reference annotation.
 
@@ -1732,7 +1732,7 @@ class ClassifierRNASeqNew(Counter):
 
             included_exons = [x for x in transcript_exons if x[1] > start and x[0] < end ]
             included_transcript_introns = [x for x in transcript_introns if x[0] > start and x[1] <= end]
-            included_boundaries = sorted([x for x in transcript_boundaries if x[1] > exons[0][1]  and x[1] < exons[-1][0]  ])
+            included_boundaries = sorted([x for x in transcript_boundaries if x[1] >= exons[0][1]  and x[0] <= exons[-1][0]  ])
             shared_included_boundaries = Intervals.intersect( boundaries, included_boundaries )
             
 			# If there is a matched structure, i.e. all of the introns in the gene model are in an existing gene
@@ -3618,7 +3618,7 @@ def main( argv = None ):
                                "classifier", 
                                "classifier-chipseq",
                                "classifier-rnaseq",
-			       "classifier-rnaseq-new",
+			       "classifier-rnaseq-splicing",
                                "overlap-stranded",
                                "overlap-transcripts",
                                "read-coverage", 
@@ -3814,10 +3814,10 @@ def main( argv = None ):
             counters.append( ClassifierRNASeq( filename_gff = options.filename_gff,
                                                fasta = fasta,
                                                options = options, prefix = prefix) )
-        elif c == "classifier-rnaseq-new":
-            counters.append( ClassifierRNASeqNew (filename_gff = options.filename_gff,
-				   		  fasta = fasta,
-				   		  options = options, prefix = prefix) )
+        elif c == "classifier-rnaseq-splicing":
+            counters.append( ClassifierRNASeqSplicing (filename_gff = options.filename_gff,
+						       fasta = fasta,
+						       options = options, prefix = prefix) )
         elif c == "classifier-polii":
             counters.append( ClassifierPolII( filename_gff = options.filename_gff,
                                               feature = None,

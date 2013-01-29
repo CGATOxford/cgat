@@ -122,10 +122,10 @@ def quoteTableName( name, quote_char = "_", backend="sqlite" ):
     if backend == "sqlite":
         # no special characters. Column names can not start with a number.
         if name[0] in "0123456789": name = "_" + name
-        return re.sub( "[-(),\[\].]", "_", name )
+        return re.sub( "[-(),\[\].:]", "_", name )
     elif backend in ("mysql","pg"):
         if name[0] in "0123456789": name = "_" + name
-        return re.sub( "[-(),\[\]]", "_", name )
+        return re.sub( "[-(),\[\]]:", "_", name )
 
 def createTable( dbhandle, error, options, rows = None, headers = None,
                  existing_tables = []):
@@ -194,7 +194,7 @@ def createTable( dbhandle, error, options, rows = None, headers = None,
     while 1:
         try:
             cc = dbhandle.cursor()
-            cc.execute("DROP TABLE IF EXISTS %s" % options.tablename)
+            cc.execute("DROP TABLE IF EXISTS '%s'" % options.tablename)
             dbhandle.commit()
             cc.close()
             E.info("existing table %s deleted" % options.tablename )
@@ -245,7 +245,7 @@ def createTable( dbhandle, error, options, rows = None, headers = None,
 def run( infile, options ):
 
     options.tablename = quoteTableName( options.tablename, backend = options.backend )
-    
+
     if options.map:
         m = {}
         for x in options.map:
@@ -308,7 +308,7 @@ def run( infile, options ):
 
         if len(rows) >= options.guess_size:
             break
-        
+
     if len(rows) == 0:
         if options.allow_empty:
             if not reader.fieldnames:
@@ -328,6 +328,7 @@ def run( infile, options ):
                                                       options = options,
                                                       existing_tables = existing_tables )
 
+
     E.info("read %i rows for type guessing" % len(rows) )
     def row_iter( rows, reader):
         for row in rows: 
@@ -342,7 +343,6 @@ def run( infile, options ):
                             string_value = options.string_value )
 
     ninput = 0
-
 
     if options.insert_quick:
         outfile, filename = tempfile.mkstemp()

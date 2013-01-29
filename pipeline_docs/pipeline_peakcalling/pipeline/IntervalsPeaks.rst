@@ -1,18 +1,18 @@
-=======
-Summits
-=======
+=====
+Peaks
+=====
 
-This page summarizes the :term:`summits` that have been called with the various peak/region callers. 
+This page summarizes the :term:`peaks` that have been called with the
+various peak callers. 
 
-``Summits`` are the locations at which peaks or regions show maxima. These can be interpreted as the most likely position(s) at which the physical binding is taking place.
-
+Peaks here refer to intervals arising from the detection of point binding factors, such as classical transcription factors.
 
 Number of intervals
 ===================
 
 The following figure shows the number of intervals per set:
 
-.. report:: Intervals.SummitsSummary
+.. report:: Intervals.PeaksSummary
    :render: interleaved-bar-plot
    :transform: filter
    :tf-fields: nintervals
@@ -22,7 +22,7 @@ The following figure shows the number of intervals per set:
 The following table presents the number of intervals and 
 the average interval width per set:
 
-.. report:: Intervals.SummitsSummaryTable
+.. report:: Intervals.PeaksSummaryTable
    :render: table
 
    Number of intervals and lengths of intervals in
@@ -33,7 +33,7 @@ Interval sizes
 
 The following figure shows the average interval length per set:
 
-.. report:: Intervals.SummitsSummary
+.. report:: Intervals.PeaksSummary
    :render: interleaved-bar-plot
    :transform: filter
    :tf-fields: avg(length)
@@ -42,7 +42,7 @@ The following figure shows the average interval length per set:
 
 The following plot shows the distribution of the interval size for each set.
 
-.. report:: Intervals.SummitsLengths
+.. report:: Intervals.PeaksLengths
    :render: line-plot
    :transform: histogram
    :logscale: x
@@ -59,7 +59,7 @@ Average values
 
 The following plot shows the distribution of the average read coverage within intervals.
 
-.. report:: Intervals.SummitsAverageValues
+.. report:: Intervals.PeaksAverageValues
    :render: line-plot
    :transform: histogram
    :tf-range: 0,50
@@ -73,7 +73,7 @@ Values at peak
 
 The following plot shows the distribution of the maximum read coverage within intervals.
 
-.. report:: Intervals.SummitsPeakValues
+.. report:: Intervals.PeaksPeakValues
    :render: line-plot
    :transform: histogram
    :tf-range: 0,100
@@ -90,7 +90,7 @@ an interval for each set, i.e. is it on the sides or the middle
 of an interval. Note that this counting does not take into account
 strandedness.
 
-.. report:: Intervals.SummitsPeakLocation
+.. report:: Intervals.PeaksPeakLocation
    :render: line-plot
    :transform: histogram
    :tf-aggregate: normalized-total
@@ -104,7 +104,7 @@ an interval for each set, i.e. is it on the sides or the middle
 of an interval. Note that this counting does not take into account
 strandedness.
 
-.. report:: Intervals.SummitsPeakDistance
+.. report:: Intervals.PeaksPeakDistance
    :render: line-plot
    :transform: histogram
    :logscale: x
@@ -112,4 +112,23 @@ strandedness.
    :as-lines:
   
    Distance of peak towards start/end of interval
+
+
+.. Summary of reads under peaks
+.. ============================
+
+.. The following tables show the number of reads for each track that fall under peaks in all tracks
+
+.. .. report:: ReadsUnderPeaks.ReadCountSummary
+..    :render: matrix
+..    :transform-matrix: correspondence-analysis
+
+..    Total number of reads from each track that fall under peaks
+
+
+.. .. report:: ReadsUnderPeaks.NormalisedTable
+..    :render: table
+
+..    Table showing the normalized number of reads falling under peaks for each track
+
 

@@ -60,7 +60,8 @@ def biomart_iterator( columns,
     R.library("biomaRt")
 
     mart = R.useMart(biomart=biomart, dataset= dataset )
-    result = R.getBM( attributes=columns, mart=mart )
+    result = R.getBM( attributes=rpy2.robjects.vectors.StrVector(columns), 
+                      mart=mart )
     
     # result is a dataframe.
     # rx returns a dataframe.

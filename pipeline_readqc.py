@@ -163,6 +163,7 @@ import Pipeline as P
 import Fastq
 import csv2db
 import cStringIO
+import string
 
 USECLUSTER = True
 
@@ -255,31 +256,66 @@ def loadFastqc( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-## adapter trimming
+## adaptor trimming
 #########################################################################
-# see http://intron.ccam.uchc.edu/groups/tgcore/wiki/013c0/Solexa_Library_Primer_Sequences.html
-ILLUMINA_ADAPTORS = { "Genomic/ChIPSeq-Adapters1-1" : "GATCGGAAGAGCTCGTATGCCGTCTTCTGCTTG",
-		      "Genomic/ChIPSeq-Adapters1-2" : "ACACTCTTTCCCTACACGACGCTCTTCCGATCT",
-		      "Genomic/ChIPSeq-PCR-1" : "AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCT",
-		      "Genomic/ChIPSeq-PCR-2" : "CAAGCAGAAGACGGCATACGAGCTCTTCCGATCT",
-		      "Genomic/ChIPSeq-Adapters1-Genomic" : "ACACTCTTTCCCTACACGACGCTCTTCCGATCT",
-		      "Paired-End-Adapters-1" : "GATCGGAAGAGCGGTTCAGCAGGAATGCCGAG",
-		      "Paired-End-Adapters-2" : "ACACTCTTTCCCTACACGACGCTCTTCCGATCT",
-		      "Paired-End-PCR-1" : "AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCT",
-		      "Paired-End-PCR-2" : "CAAGCAGAAGACGGCATACGAGATCGGTCTCGGCATTCCTGCTGAACCGCTCTTCCGATCT",
-		      "Paired-End-Sequencing-1" : "ACACTCTTTCCCTACACGACGCTCTTCCGATCT",
-		      "Paired-End-Sequencing-2" : "CGGTCTCGGCATTCCTGCTGAACCGCTCTTCCGATCT" }
+# these are the adaptors and PCR primers for used in various illumina libarary preps
+# see https://cgatwiki.anat.ox.ac.uk/xwiki/bin/view/CGAT/Illumina+Sequencing#HIlluminaAdaptors.html
+# currently included are primers/adaptors from:
+# TruSeq DNA HT and RNA HT Sample Prep Kits; TruSeq DNA v1/v2/LT RNA v1/v2/LT and ChIP Sample Prep Kits;
+# Oligonucleotide Sequences for TruSeq Small RNA Sample Prep Kits; Oligonucleotide Sequences for Genomic DNA;
+# Oligonucleotide Sequences for the v1 and v1.5 Small RNA Sample Prep Kits; 
+# Paired End DNA Oligonucleotide Sequences; Script Seq Adaptors;
+# Oligonucleotide Sequences for the Multiplexing Sample Prep Oligo Only Kits.
+ILLUMINA_ADAPTORS = { "Genomic-DNA-Adaptor" : "GATCGGAAGAGCTCGTATGCCGTCTTCTGCTTG",
+                      "Genomic/Paired-End/Oligo-Only-Adaptor" : "ACACTCTTTCCCTACACGACGCTCTTCCGATCT",
+                      "Genomic/TruSeq-Universal/PE/OO/ScriptSeq-Adaptor/PCR-Primer" : "AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCT",
+                      "Genomic-PCR-Primer" : "CAAGCAGAAGACGGCATACGAGCTCTTCCGATCT",
+                      "Paired-End-Adaptor" : "GATCGGAAGAGCGGTTCAGCAGGAATGCCGAG",
+                      "Paired-End-PCR-Primer" : "CAAGCAGAAGACGGCATACGAGATCGGTCTCGGCATTCCTGCTGAACCGCTCTTCCGATCT",
+                      "TruSeq-HT-Adaptor-I5" : "AATGATACGGCGACCACCGAGATCTACACNNNNNACACTCTTTCCCTACACGACGCTCTTCCGATCT",
+                      "TruSeq-HT-Adaptor-I7" : "GATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNNATCTCGTATGCCGTCTTCTGCTTG",
+                      "TruSeq-LT-Adaptor-I6" : "GATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNATCTCGTATGCCGTCTTCTGCTTG",
+                      "TruSeq-Small-RNA-Adaptor" : "TGGAATTCTCGGGTGCCAAGG",
+                      "TruSeq-Small-RNA-RT-Primer" : "GCCTTGGCACCCGAGAATTCCA",
+                      "TruSeq-Small-RNA-PCR-Primer" : "AATGATACGGCGACCACCGAGATCTACACGTTCAGAGTTCTACAGTCCGA",
+                      "TruSeq-Small-RNA-PCR-Primer-I6" : "CAAGCAGAAGACGGCATACGAGATNNNNNNGTGACTGGAGTTCCTTGGCACCCGAGAATTCCA",
+                      "Oligo-Only-Adaptor" : "GATCGGAAGAGCACACGTCT",
+                      "Oligo-Only-PCR-Primer" : "GTGACTGGAGTTCAGACGTGTGCTCTTCCGATCT",
+                      "Oligo-Only-PCR-Primer-I7" : "CAAGCAGAAGACGGCATACGAGATNNNNNNNTGACTGGAGTTC",
+                      "Small-RNA-v1-RT-Primer" : "CAAGCAGAAGACGGCATACGA",
+                      "Small-RNA-PCR-Primer" : "AATGATACGGCGACCACCGACAGGTTCAGAGTTCTACAGTCCGA",
+                      "ScriptSeq-Adaptor-I6" : "CAAGCAGAAGACGGCATACGAGATNNNNNNGTGACTGGAGTTCAGACGTGTGCTCTTCCGATCT",
+                      "SmartIIA": "AAGCAGTGGTATCAACGCAGAGTAC",
+                      }
 
 #########################################################################
 #########################################################################
 #########################################################################
 @merge( None, "contaminants.fasta" )
 def outputContaminants( infile, outfile ):
-    '''output file with contaminants.'''
+    '''output file with contaminants.
+    if contamination_reverse_complement is selected, then the reverse
+    complement of each sequence is also written to the outfile. 
+    '''
     outf = IOTools.openFile( outfile, "w")
-    for key, value in ILLUMINA_ADAPTORS.iteritems():
+    for key, value in ILLUMINA_ADAPTORS.iteritems(): 
         outf.write(">%s\n%s\n" % (key, value) )
+        if PARAMS["contamination_reverse_complement"]:
+            key_rc = key + "_rc"
+            value_rc = value[::-1]
+            value_rc = value_rc.translate(string.maketrans("ACTGN", "TGACN"))
+            outf.write(">%s\n%s\n" % (key_rc, value_rc) )
+        else: 
+            continue
     outf.close()
+
+def listAdaptors(infile): 
+    adaptors = []
+    for entry in FastaIterator.FastaIterator( IOTools.openFile( infile) ):
+        adaptors.append("%s %s" % (PARAMS["contamination_trim_type"], entry.sequence) )
+    adaptors = " ".join(adaptors)
+
+    return adaptors
 
 #########################################################################
 #########################################################################
@@ -298,16 +334,11 @@ def removeContaminants( infiles, outfile ):
     
     infile, contaminant_file = infiles
 
-    adaptors = []
-    for entry in FastaIterator.FastaIterator( IOTools.openFile( contaminant_file ) ):
-        adaptors.append( "-a %s" % entry.sequence )
-        
-    adaptors= " ".join(adaptors)
+    adaptors = listAdaptors(contaminant_file)
     to_cluster = USECLUSTER
-
+#    %(contamination_trim_type)s
     statement = '''
     cutadapt 
-    --discard
     %(adaptors)s
     --overlap=%(contamination_min_overlap_length)i
     --format=fastq
@@ -373,16 +404,17 @@ def processReads( infiles, outfile ):
     offset = Fastq.getOffset( format, raises = False )
 
     if PARAMS["process_remove_contaminants"]:
-        s.append( '''
+        adaptors = listAdaptors(contaminant_file)
+#              %(contamination_trim_type)s
+        s = [ '''
         cutadapt 
-              --discard
               %(adaptors)s
               --overlap=%(contamination_min_overlap_length)i
               --format=fastq
               %(contamination_options)s
               <( zcat < %(infile)s )
               2>> %(outfile)s_contaminants.log
-        ''' )
+        ''' ]
         do_sth = True
     else:
         s = ['zcat %(infile)s' ]
@@ -440,6 +472,61 @@ def processReads( infiles, outfile ):
         os.unlink( tmpfile2 )
         os.unlink( tmpfile )
 
+##################################################################
+##################################################################
+##################################################################
+def parseCutadapt( lines ):
+    '''parse cutadapt output.
+
+    Multiple cutadapt outputs are joined.
+    '''
+
+    def _chunker( inf ):
+        chunk = []
+        for line in inf:
+            if line.startswith("==="):
+                if chunk: yield chunk
+                chunk = []
+            chunk.append( line )
+        
+    assert lines[0].startswith("cutadapt")
+    results = {}
+
+    del lines[0]
+    for x, line in enumerate(lines):
+        if not line.strip(): continue
+        if ":" in line:
+            if line.strip().startswith("Command"): continue
+            param, value = line[:-1].split(":")
+            param = re.sub( " ", "_", param.strip()).lower()
+            value = re.sub( "[a-zA-Z ].*", "", value.strip() )
+            try:
+                value = int(value)
+            except ValueError:
+                try:
+                    value = float(value)
+                except:
+                    pass
+            results[param] = value
+        else:
+            break
+
+    del lines[:x]
+    results["unchanged_reads"] = int(results["processed_reads"]) - int(results["trimmed_reads"])
+    headers = results.keys()
+    
+    adapters = {}
+    for chunk in _chunker(lines):        
+        adapter = re.search("=== (.*) ===", chunk[0]).groups()[0]
+        length, removed = re.search( "Adapter '.*', length (\d+), was trimmed (\d+) times", chunk[2]).groups()
+
+        adapters[adapter] = length, removed
+
+    return results, adapters
+
+##################################################################
+##################################################################
+##################################################################
 @transform( processReads,
             suffix(""),
             ".tsv")
@@ -457,6 +544,14 @@ def summarizeProcessing( infile, outfile ):
                     inputs = [i1,i2]
                     outputs = [o,o]
                     break
+        elif step == "contaminants":
+            lines = inf.readlines()
+            assert lines[0].startswith("cutadapt")
+            lines = "@@@".join( lines )
+            for part in lines.split("cutadapt")[1:]:
+                results, adapters = parseCutadapt( ("cutadapt" + part).split("@@@") )
+                inputs.append( results["processed_reads"] )
+                outputs.append( results["unchanged_reads" ] )
         else:
             for line in inf:
                 if line.startswith( "Input:"):
@@ -472,14 +567,17 @@ def summarizeProcessing( infile, outfile ):
     outf = IOTools.openFile( outfile, "w")
     outf.write( "track\tstep\tpair\tinput\toutput\n")
 
-    for step in "artifacts", "trim", "filter", "reconcile":
+    for step in "contaminants", "artifacts", "trim", "filter", "reconcile":
         fn = infile + "_%s.log" % step
         if not os.path.exists(fn): continue
         for x, v in enumerate( _parseLog( IOTools.openFile( fn ), step)):
             outf.write( "%s\t%s\t%i\t%i\t%i\n" % (track, step, x, v[0], v[1]) )
-    
+
     outf.close()
 
+#########################################################################
+#########################################################################
+#########################################################################
 @transform( summarizeProcessing,
             regex(r"processed.(\S+).fastq.*.gz.tsv"),
             r"\1_processed.load")
@@ -490,50 +588,64 @@ def loadProcessingSummary( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
+@merge( summarizeProcessing, "processing_summary.tsv" )
+def summarizeAllProcessing( infiles, outfile ):
+    '''summarize processing information.'''
+
+    outf = IOTools.openFile( outfile, "w" )
+    data = []
+    for infile in infiles:
+        inf = IOTools.openFile( infile )
+        for line in inf:
+            track, step, pair, ninput, noutput = line[:-1].split("\t")
+            if track == "track": continue
+            data.append( (track, step, pair, ninput, noutput) )
+            
+    # sort by track, pair, input
+    data.sort( key = lambda x: (x[0], x[2], -int(x[3])))
+    first = True
+    for key, v in itertools.groupby( data, lambda x: (x[0], x[2])):
+        vals = list(v)
+        track,pair = key
+        ninput = int(vals[0][3])
+        outputs = [int(x[4]) for x in vals]
+        if first:
+            outf.write( "track\tpair\tninput\t%s\t%s\t%s\t%s\n" % ("\t".join( [x[1] for x in vals] ),
+                                                                   "noutput",
+                                                                   "\t".join( ["percent_%s" % x[1] for x in vals] ),
+                                                                   "percent_output" ))
+            first = False
+        outf.write( "%s\t%s\t%i\t%s\t%i\t%s\t%s\n" % ( track, pair, ninput, 
+                                                       "\t".join( map(str,outputs)),
+                                                       outputs[-1], 
+                                                       "\t".join( [ "%5.2f" % (100.0 * x / ninput) for x in outputs ] ),
+                                                       "%5.2f" % (100.0 * outputs[-1] / ninput)))
+    outf.close()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( summarizeAllProcessing, suffix(".tsv"), ".load" )
+def loadAllProcessingSummary( infile, outfile ):
+    P.load( infile, outfile )
+
+#########################################################################
+#########################################################################
+#########################################################################
 @merge( removeContaminants, "filtering.summary.tsv.gz" )
 def summarizeFiltering( infiles, outfile ):
     '''collect summary output from filtering stage.'''
 
     tracks = {}
     adapters = {}
-    def _chunker( inf ):
-        chunk = []
-        for line in inf:
-            if line.startswith("==="):
-                if chunk: yield chunk
-                chunk = []
-            chunk.append( line )
-            
+
     for f in infiles:
         track = f[len("nocontaminants."):]
         track = re.sub( "[.].*", "", track )
-        results = {}
-        lines = IOTools.openFile( f + ".log" ).readlines()
-        del lines[0]
-        for x, line in enumerate(lines):
-            if not line.strip(): continue
-            if ":" in line:
-                if line.strip().startswith("Command"): continue
-                param, value = line[:-1].split(":")
-                param = re.sub( " ", "_", param.strip()).lower()
-                value = re.sub( "[a-zA-Z ].*", "", value.strip() )
-                results[param] = value
-            else:
-                break
-            
-        del lines[:x]
-        results["unchanged_reads"] = int(results["processed_reads"]) - int(results["trimmed_reads"])
-        headers = results.keys()
-        tracks[track] = results
-        
-        results = {}
-        for chunk in _chunker(lines):        
-            adapter = re.search("=== (.*) ===", chunk[0]).groups()[0]
-            length, removed = re.search( "Adapter '.*', length (\d+), was trimmed (\d+) times", chunk[2]).groups()
-                
-            results[adapter] = length, removed
-        
-        adapters[track] = results
+        result, adapter = parseCutadapt( IOTools.openFile( f + ".log" ) )
+        tracks[track] = result
+        adapters[track] = adapter
+        header = result.keys()
 
     outf = IOTools.openFile( outfile, "w" )
     outf.write( "track\t%s\n" % "\t".join(headers))
@@ -542,13 +654,13 @@ def summarizeFiltering( infiles, outfile ):
         outf.write("%s\t%s\n" % (track, "\t".join( str(results[x]) for x in headers ) ) )
     outf.close()
 
+##################################################################
 @transform( summarizeFiltering,
             suffix(".summary.tsv.gz"),
             "_summary.load")
 def loadFilteringSummary( infile, outfile ):
     '''load filtering summary.'''
     P.load(infile, outfile )
-
 
 #########################################################################
 #########################################################################
@@ -583,7 +695,7 @@ def replaceBaseWithN(infile, outfile):
 #########################################################################
 #########################################################################
 #########################################################################
-@follows( processReads )
+@follows( loadProcessingSummary, loadAllProcessingSummary )
 def process():
     '''process (filter,trim) reads.'''
     pass

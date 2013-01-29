@@ -37,7 +37,7 @@ over various annotations derived from the :term:`gtf` file.
 
 The densities can be computed from :term:`bam` or :term:`bed` formatted files.
 :term:`bam` files need to be sorted by coordinate and indexed. If a :term:`bed` 
-formatted file is supplied, it must be compressed with  and indexed with :file:`tabix`.
+formatted file is supplied, it must be compressed with and indexed with :file:`tabix`.
 
 .. todo::
    
@@ -60,6 +60,21 @@ formatted file is supplied, it must be compressed with  and indexed with :file:`
 
    several options can be combined.
 
+-m/--method
+   utrprofile - aggregate over gene models with UTR. The areas are
+                upstream - UTR5 - CDS - INTRON - CDS - UTR3 - downstream
+   geneprofile - aggregate over exonic gene models. The areas are
+                upstream - EXON - INTRON - EXON - downstream
+   tssprofile  - aggregate over transcription start/stop
+                upstream - TSS/TTS - downstream
+   intervalprofile - aggregate over interval
+                upstream - EXON - downstream
+   midpointprofile - aggregate over midpoint of gene model. The areas are:
+                upstream - downstream
+
+-a/--merge-pairs
+   merge pairs in paired-ended data.
+   
 Usage
 -----
 
@@ -107,7 +122,7 @@ def main( argv = None ):
                                     usage = globals()["__doc__"] )
 
     parser.add_option( "-m", "--method", dest="methods", type = "choice", action = "append",
-                       choices = ("geneprofile", "tssprofile", "utrprofile", "intervalprofile" ),
+                       choices = ("geneprofile", "tssprofile", "utrprofile", "intervalprofile", "midpointprofile" ),
                        help = "counters to use. "
                               "[%default]" )
 
@@ -136,6 +151,10 @@ def main( argv = None ):
 
     parser.add_option( "-i", "--shift", dest="shifts", type = "int", action = "append",
                        help = "shift reads in :term:`bam` formatted file before computing densities (ChIP-Seq). "
+                              "[%default]" )
+
+    parser.add_option( "-a", "--merge-pairs", dest="merge_pairs", action = "store_true",
+                       help = "merge pairs in :term:`bam` formatted file before computing densities (ChIP-Seq). "
                               "[%default]" )
 
     parser.add_option( "-e", "--extend", dest="extends", type = "int", action = "append",
@@ -209,6 +228,8 @@ def main( argv = None ):
         profile_normalizations = [],
         normalization = None,
         scale_flanks = 0,
+        min_insert_size = 0,
+        max_insert_size = 1000,
         )
 
     ## add common options (-h/--help, ...) and parse command line 
@@ -239,7 +260,11 @@ def main( argv = None ):
             format = "bam"
             range_counter = _bam2geneprofile.RangeCounterBAM( bamfiles, 
                                                               shifts = options.shifts, 
-                                                              extends = options.extends )
+                                                              extends = options.extends,
+                                                              merge_pairs = options.merge_pairs,
+                                                              min_insert_size = options.min_insert_size,
+                                                              max_insert_size = options.max_insert_size )
+                                                              
         elif options.infiles[0].endswith( ".bed.gz" ):
             bedfiles = [ pysam.Tabixfile( x ) for x in options.infiles ]
             format = "bed"
@@ -286,6 +311,13 @@ def main( argv = None ):
                                                              options.extension_upstream,
                                                              options.extension_downstream ) )
 
+        elif method == "midpointprofile":
+            counters.append( _bam2geneprofile.MidpointCounter( range_counter, 
+                                                               options.resolution_upstream,
+                                                               options.resolution_downstream,
+                                                               options.extension_upstream,
+                                                               options.extension_downstream ) )
+
     # set normalization
     for c in counters:
         c.setNormalization( options.normalization )
@@ -316,7 +348,7 @@ def main( argv = None ):
         
         for method, counter in zip(options.methods, counters):
 
-            if method in ("geneprofile", "utrprofile", "intervalprofile"):
+            if method in ("geneprofile", "utrprofile", "intervalprofile" ):
 
                 plt.figure()
                 plt.subplots_adjust( wspace = 0.05)
@@ -369,6 +401,15 @@ def main( argv = None ):
                 plt.plot( range(-options.extension_outward, options.extension_inward), counter.aggregate_counts[0] )
                 plt.plot( range(-options.extension_inward, options.extension_outward), counter.aggregate_counts[1] )
                 plt.legend( counter.fields[:2] )
+
+                fn = E.getOutputFile( counter.name ) + ".png"
+                plt.savefig( os.path.expanduser(fn) )
+
+            elif method == "midpointprofile":
+
+                plt.figure()
+                plt.plot( numpy.arange(-options.resolution_upstream, 0), counter.aggregate_counts[0] )
+                plt.plot( numpy.arange(0, options.resolution_downstream), counter.aggregate_counts[1] )
 
                 fn = E.getOutputFile( counter.name ) + ".png"
                 plt.savefig( os.path.expanduser(fn) )

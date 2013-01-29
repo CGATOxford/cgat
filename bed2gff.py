@@ -88,26 +88,26 @@ def main( argv = sys.argv ):
         gff.contig = bed.contig
         gff.start = bed.start 
         gff.end = bed.end
-        if bed.mFields and len(bed.mFields) >= 3:
-            gff.strand = bed.mFields[2]
+        if bed.fields and len(bed.fields) >= 3:
+            gff.strand = bed.fields[2]
         else: 
             gff.strand = "."
 
-        if bed.mFields and len(bed.mFields) >= 2:
-            gff.score = bed.mFields[1]
+        if bed.fields and len(bed.fields) >= 2:
+            gff.score = bed.fields[1]
         
         
         if as_gtf:
-            if bed.mFields:
-                gff.gene_id = bed.mFields[0]
-                gff.transcript_id = bed.mFields[0]
+            if bed.fields:
+                gff.gene_id = bed.fields[0]
+                gff.transcript_id = bed.fields[0]
             else:
                 id += 1
                 gff.gene_id = id_format % id
                 gff.transcript_id = id_format % id            
         else:
-            if bed.mFields:
-                gff.source = bed.mFields[0]
+            if bed.fields:
+                gff.source = bed.fields[0]
             
         options.stdout.write( str(gff) + "\n" )
 

@@ -901,6 +901,50 @@ def compareTranscriptsBetweenExperiments( infiles, outfile ):
     reffile = "refcoding.gtf.gz"
     runCuffCompare( infiles, outfile, reffile )
 
+@merge (METHODTARGET,"%s.merged" % ALL.asFile())
+def mergeUsingCuffmerge(infiles,outfile):
+    ''' use cuffmerge to reassemble transcripts from independent assemblies
+    on each sample
+    CURRENTLY THIS IS NOT WIRED INTO THE MAIN PIPELINE FLOW '''
+
+ 
+    to_cluster = True
+    
+    tmpdir = P.getTempDir( "." )
+    
+    cmd_extract = "; ".join( [ "gunzip < %s > %s/%s" % (x,tmpdir,x) for x in infiles ] )
+    inf = "\n".join( ["%s/%s" % (tmpdir,x) for x in infiles] )
+
+    tmp = P.getTempFile(".")
+    tmp.write(inf)
+    tmp.close()
+    tmp = tmp.name
+
+    tmp2 = P.getTempFilename(".")
+
+    genome = os.path.join ( PARAMS["bowtie_index_dir"], PARAMS["genome"]) + ".fa"
+    genome = os.path.abspath( genome )
+    job_options= "-pe dedicated %i -R y" % PARAMS["cufflinks_threads"]
+
+    # note: cuffcompare adds \0 bytes to gtf file - replace with '.'
+    statement = '''
+        %(cmd_extract)s;
+       gunzip -c refcoding.gtf.gz > %(tmp2)s;
+       cuffmerge    -o %(outfile)s.dir
+                    -s %(genome)s
+                    -p %(cufflinks_threads)i
+                    -g %(tmp2)s
+                    %(tmp)s
+        >& %(outfile)s.log;
+        checkpoint;
+        perl -p -e "s/\\0/./g" < %(outfile)s.dir/merged.gtf | gzip > %(outfile)s.gtf.gz;
+        checkpoint;
+        rm -f %(tmp2)s;
+        rm -rf %(outfile)s.dir;
+        '''
+    P.run()
+
+    shutil.rmtree( tmpdir )
 #########################################################################
 #########################################################################
 #########################################################################
@@ -921,62 +965,99 @@ def loadTranscriptComparison( infile, outfile ):
 
     <track>_tracking 
     '''
-    tracks, result = Tophat.parseTranscriptComparison( IOTools.openFile( infile ))
-    tracks = [ P.snip( os.path.basename(x), ".gtf.gz" ) for x in tracks ]
-
+    
     tmpfile = P.getTempFilename()
     tmpfile2 = P.getTempFilename()
     tmpfile3 = P.getTempFilename()
 
-    outf = open( tmpfile, "w") 
-    outf.write( "track\n" )
-    outf.write( "\n".join( tracks ) + "\n" )
-    outf.close()
+    
+    #cuffcompare doesn't output stats if there are too many input files
+    #this will cause parseTranscriptComparision to fall over
+    #test if parseTranscriptComparison fails get track names from PipelineTracks.
+    try:
+        tracks, result = Tophat.parseTranscriptComparison( IOTools.openFile( infile ))
 
-    #########################################################
-    ## load tracks
-    #########################################################
-    tablename = P.toTable(outfile) + "_tracks"
+        tracks = [ P.snip( os.path.basename(x), ".gtf.gz" ) for x in tracks ]
 
-    statement = '''cat %(tmpfile)s
-    | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+        outf = open( tmpfile, "w") 
+        outf.write( "track\n" )
+        outf.write( "\n".join( tracks ) + "\n" )
+        outf.close()
+
+        #########################################################
+        ## load tracks
+        #########################################################
+        tablename = P.toTable(outfile) + "_tracks"
+
+        statement = '''cat %(tmpfile)s
+        | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --allow-empty
               --index=track
               --table=%(tablename)s 
-    > %(outfile)s
-    '''
+        > %(outfile)s
+        '''
 
-    P.run()
+        P.run()
 
-    L.info( "loaded %s" % tablename )
+        L.info( "loaded %s" % tablename )
 
-    #########################################################
-    ## load benchmarking data
-    #########################################################
-    outf = open( tmpfile, "w")
-    outf.write( "track\tcontig\t%s\n" % "\t".join( Tophat.CuffCompareResult.getHeaders() ) )
+        #########################################################
+        ## load benchmarking data
+        #########################################################
+        outf = open( tmpfile, "w")
+        outf.write( "track\tcontig\t%s\n" % "\t".join( Tophat.CuffCompareResult.getHeaders() ) )
 
-    for track, vv in result.iteritems():
-        track = P.snip( os.path.basename(track), ".gtf.gz" )
-        for contig, v in vv.iteritems():
-            if v.is_empty: continue
-            outf.write( "%s\t%s\t%s\n" % (P.quote( track ), contig, str(v) ) )
-    outf.close()
-
-    tablename = P.toTable( outfile ) + "_benchmark"
-
-    statement = '''cat %(tmpfile)s
-    | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+        for track, vv in result.iteritems():
+            track = P.snip( os.path.basename(track), ".gtf.gz" )
+            for contig, v in vv.iteritems():
+                if v.is_empty: continue
+                outf.write( "%s\t%s\t%s\n" % (P.quote( track ), contig, str(v) ) )
+        
+        outf.close()
+                
+        tablename = P.toTable( outfile ) + "_benchmark"
+                
+        statement = '''cat %(tmpfile)s
+            | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --allow-empty
               --index=track
               --index=contig
               --table=%(tablename)s 
-    > %(outfile)s
-    '''
+            >  %(outfile)s
+        '''
 
-    P.run()
+        P.run()
 
-    L.info( "loaded %s" % tablename )
+        L.info( "loaded %s" % tablename )
+
+    except UnboundLocalError:
+
+        tracks = [str(t) for t in PipelineTracks.Aggregate(TRACKS, track = PipelineTracks.Sample3(P.snip(infile, ".cuffcompare")))[P.snip(infile, ".cuffcompare")]]
+
+        outf = open( tmpfile, "w") 
+        outf.write( "track\n" )
+        outf.write( "\n".join( tracks ) + "\n" )
+        outf.close()
+
+        #########################################################
+        ## load tracks
+        #########################################################
+        tablename = P.toTable(outfile) + "_tracks"
+
+        statement = '''cat %(tmpfile)s
+        | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+              --allow-empty
+              --index=track
+              --table=%(tablename)s 
+        > %(outfile)s
+        '''
+
+        P.run()
+
+        L.info( "loaded %s" % tablename )
+        tablename = P.toTable( outfile ) + "_benchmark"
+        L.info( "WARNING %s not loaded: No data in input file")
+
 
     #########################################################
     ## load tracking and transcripts information
@@ -1138,11 +1219,200 @@ def buildFullGeneSet( infile, outfile ):
     infile += ".combined.gtf.gz"
     writePrunedGTF( infile, outfile )
 
+@merge((compareTranscriptsBetweenExperiments, buildFullGeneSet),
+           "full_cuffcompare.load")
+def buildAndLoadFullGeneSetTracking (infiles, outfile):
+    ''' take those transcripts accepted in the "Full" set and retrive the 
+    records for them from the agg-agg-agg_tracking set '''
+
+    infile, in_gtf = infiles
+   
+
+    inGTFIt = GTF.transcript_iterator(GTF.iterator(IOTools.openFile( in_gtf)))
+
+    kept_transcripts = set([gtf[0].transcript_id for gtf in inGTFIt])
+    inGTFIt = GTF.transcript_iterator(GTF.iterator(IOTools.openFile( in_gtf)))
+    kept_genes = set([gtf[0].gene_id for gtf in inGTFIt])
+
+    tmpfile = P.getTempFilename()
+    tmpfile2 = P.getTempFilename()
+    tmpfile3 = P.getTempFilename()
+
+    tracks = [str(t) for t in PipelineTracks.Aggregate(TRACKS, track = PipelineTracks.Sample3(P.snip(infile, ".cuffcompare")))[P.snip(infile, ".cuffcompare")]]
+
+    outf = open( tmpfile, "w") 
+    outf.write( "track\n" )
+    outf.write( "\n".join( tracks ) + "\n" )
+    outf.close()
+
+    #########################################################
+    ## load tracks
+    #########################################################
+    tablename = P.toTable(outfile) + "_tracks"
+    
+    statement = '''cat %(tmpfile)s
+        | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+              --allow-empty
+              --index=track
+              --table=%(tablename)s 
+        > %(outfile)s
+        '''
+
+    P.run()
+
+    L.info( "loaded %s" % tablename )
+   
+   
+
+
+    #########################################################
+    ## load tracking and transcripts information
+    #########################################################
+    outf = open( tmpfile, "w")
+    outf.write( "%s\n" % "\t".join( ( "transfrag_id",
+                                      "locus_id",
+                                      "ref_gene_id",
+                                      "ref_transcript_id",
+                                      "code", 
+                                      "nexperiments" ) ) )
+
+    outf2 = open( tmpfile2, "w")
+    outf2.write( "%s\n" % "\t".join( ( "track",
+                                       "transfrag_id",
+                                       "gene_id",
+                                       "transcript_id",
+                                       "fmi", 
+                                       "fpkm", 
+                                       "conf_lo", 
+                                       "conf_hi", 
+                                       "cov",
+                                       "length" ) ) )
+    outf3 = open( tmpfile3, "w" )
+    outf3.write( "transfrag_id\t%s\n" % "\t".join( [ P.quote( x ) for x in tracks ] ) )
+
+    fn = "%s.tracking.gz" % infile
+
+    if os.path.exists( fn ):
+        for transfrag in Tophat.iterate_tracking( IOTools.openFile( fn, "r") ):
+            if transfrag.transfrag_id in kept_transcripts:
+                nexperiments = len( [x for x in transfrag.transcripts if x] )
+
+                outf.write( "%s\n" % \
+                                "\t".join( (transfrag.transfrag_id, 
+                                            transfrag.locus_id, 
+                                            transfrag.ref_gene_id,
+                                            transfrag.ref_transcript_id,
+                                            transfrag.code,
+                                            str(nexperiments))))
+
+                outf3.write( "%s" % transfrag.transfrag_id )
+
+                for track, t in zip(tracks, transfrag.transcripts):
+                    if t:
+                        outf2.write("%s\n" % "\t".join( map(str, (track,
+                                                              transfrag.transfrag_id ) + t ) ) )
+
+                        outf3.write( "\t%f" % t.fpkm )
+                    else:
+                        outf3.write( "\t" )
+
+                outf3.write( "\n" )
+    else:
+        E.warn( "no tracking file %s - skipped " )
+            
+    outf.close()
+    outf2.close()
+    outf3.close()
+
+    tablename = P.toTable( outfile ) + "_tracking"
+    statement = '''cat %(tmpfile)s
+    | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+              --allow-empty
+              --index=locus_id
+              --index=transfrag_id
+              --index=code
+              --table=%(tablename)s 
+    >> %(outfile)s
+    '''
+
+    P.run()
+    L.info( "loaded %s" % tablename )
+
+    tablename = P.toTable( outfile ) + "_transcripts"
+    statement = '''cat %(tmpfile2)s
+    | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+              --allow-empty
+              --index=transfrag_id
+              --index=ref_gene_id
+              --index=ref_transcript_id
+              --index=transcript_id
+              --index=gene_id
+              --index=track
+              --table=%(tablename)s 
+    >> %(outfile)s
+    '''
+
+    P.run()
+    L.info( "loaded %s" % tablename )
+
+    tablename = P.toTable( outfile ) + "_fpkm"
+    statement = '''cat %(tmpfile3)s
+    | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+              --allow-empty
+              --index=transfrag_id
+              --table=%(tablename)s 
+    >> %(outfile)s
+    '''
+
+    P.run()
+    L.info( "loaded %s" % tablename )
+
+    #########################################################
+    ## load locus information
+    #########################################################
+    outf = open( tmpfile, "w")
+    outf.write( "%s\n" % "\t".join( ( "locus_id",
+                                      "contig",
+                                      "strand",
+                                      "start",
+                                      "end", 
+                                      "nexperiments", ) + tuple(tracks) ) )
+
+    for locus in Tophat.iterate_locus( IOTools.openFile( "%s.loci.gz" % infile, "r") ):
+        
+        if locus.locus_id in kept_genes:
+            counts = [ len(x) for x in locus.transcripts ] 
+            nexperiments = len( [x for x in counts if x > 0] )
+
+            outf.write( "%s\t%s\t%s\t%i\t%i\t%i\t%s\n" % \
+                            (locus.locus_id, locus.contig, locus.strand, 
+                             locus.start, locus.end,
+                             nexperiments,
+                             "\t".join( map( str, counts) ) ) )
+    outf.close()
+
+    tablename = P.toTable( outfile ) + "_loci"
+
+    statement = '''cat %(tmpfile)s
+    | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+              --index=locus_id
+              --table=%(tablename)s 
+    >> %(outfile)s
+    '''
+
+    P.run()
+    L.info( "loaded %s" % tablename )
+
+    os.unlink( tmpfile )
+    os.unlink( tmpfile2 )
+    os.unlink( tmpfile3 )
+   
+    
 #########################################################################
 #########################################################################
 #########################################################################
 @follows(loadTranscriptComparison)
-@merge( (buildFullGeneSet, buildReferenceGeneSet),
+@merge( (buildFullGeneSet, buildReferenceGeneSet, buildAndLoadFullGeneSetTracking),
         "pruned.gtf.gz" )
 def buildPrunedGeneSet( infiles, outfile ):
     '''builds a gene set by merging the ab-initio gene set and
@@ -1160,11 +1430,11 @@ def buildPrunedGeneSet( infiles, outfile ):
     
     Will also build removed.gtf.gz of removed transcripts.
     '''
-    abinitio_gtf, reference_gtf = infiles
+    abinitio_gtf, reference_gtf, tracking = infiles
     keep_gtf = outfile
     remove_gtf = "removed.gtf.gz"
 
-    tablename = P.quote( P.snip( abinitio_gtf, ".gtf.gz") + "_cuffcompare_tracking" )
+    tablename = P.quote( P.snip( tracking, ".load") + "_tracking" )
     
 
     dbhandle = sqlite3.connect( PARAMS["database"] )
@@ -1325,7 +1595,9 @@ def buildLincRNAGeneSet( infiles, outfile ):
     min_length = int(PARAMS["lincrna_min_length"])
 
     for gtfs in GTF.transcript_iterator( inf ):
+
         gene_id = gtfs[0].gene_id 
+
         total_genes.add( gene_id )
 
         l = sum( [ x.end - x.start for x in gtfs ] )
@@ -1599,12 +1871,10 @@ def classifyTranscriptsCuffcompare( infiles, outfile ):
     infile, reference = infiles
 
     #IMS: change to allow different classifiers
-    counter = PARAMS['gtf2table_classifier']
-
     statement = '''
     zcat %(infile)s.combined.gtf.gz
     | python %(scriptsdir)s/gtf2table.py
-           --counter=%(counter)s 
+           --counter=%(gtf2table_classifier)s 
            --reporter=transcripts
            --filename-gff=%(reference)s
            --log=%(outfile)s.log
@@ -1679,6 +1949,7 @@ def hasReplicates( track ):
     replicates = PipelineTracks.getSamplesInTrack( track, TRACKS )
     return len(replicates) > 1
 
+@jobs_limit(1,"R")
 @follows( loadTranscriptComparison, mkdir( os.path.join( PARAMS["exportdir"], "cuffcompare" ) ) )
 @files( [ ("%s.cuffcompare" % x.asFile(), "%s.reproducibility" % x.asFile() )
           for x in EXPERIMENTS if hasReplicates( x )] )
@@ -1792,7 +2063,8 @@ def buildReproducibility( infile, outfile ):
 @transform( buildReproducibility, suffix(".reproducibility"), "_reproducibility.load" )
 def loadReproducibility( infile, outfile ):
     '''load reproducibility results.'''
-    tablename = P.asTable(infile)
+    #IMS: toTable needs .load so changed P.toTable(infile) to P.toTable(outfile)
+    tablename = P.toTable(outfile)
     statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s --log=%(outfile)s.log --allow-empty=True < %(infile)s'''
 
 #########################################################################

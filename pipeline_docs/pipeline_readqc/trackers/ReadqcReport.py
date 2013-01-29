@@ -123,3 +123,13 @@ class FastqcSummary( ReadqcTracker ):
     slices = ("File type", "Filename", "Encoding", "Total Sequences", "Sequence Length", "%GC" )
     def __call__(self, track, slice ):
         return self.getAll( "SELECT * FROM %(track)s_Basic_Statistics WHERE measure = '%(slice)s'" )
+
+class ProcessingDetails( ReadqcTracker ):
+    '''return summary of the read processing steps.'''
+    pattern = "(.*)_processed$"
+    def __call__(self, track ):
+        return self.getAll( """SELECT pair,input,output,pair, 100.0 * output / input as percent 
+                              FROM %(track)s_processed""" )
+    
+class ProcessingSummary( ReadqcTracker, SingleTableTrackerRows ):
+    table = "processing_summary"
