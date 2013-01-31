@@ -71,7 +71,7 @@ detected_active=${!active[@]}
 log "Active users: $detected_active"
 
 # sanity check. The user root should always be detected as active, if not, exit.
-if [[ ${active["roots"]} ]]
+if [[ ${active["root"]} ]]
     then
        true
     else
