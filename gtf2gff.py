@@ -824,6 +824,9 @@ def annotateGenes( iterator, fasta, options ):
     results = []
     increment =  options.increment
 
+    introns_detail = "introns" in options.detail
+    exons_detail = "exons" in options.detail
+
     for gene in gene_iterator:
         ngenes += 1
         is_negative_strand = Genomics.IsNegativeStrand( gene[0][0].strand )
@@ -878,20 +881,28 @@ def annotateGenes( iterator, fasta, options ):
                 upstream, downstream = downstream, upstream
             
             # add exons
-            _add( exons[0], "first_exon" )
-            if len(exons) > 1:
-                _add( exons[-1], "last_exon" )
-            for e in exons[1:-1]:
-                _add( e, "middle_exon" )
-                
+            if exons_detail:
+                _add( exons[0], "first_exon" )
+                if len(exons) > 1:
+                    _add( exons[-1], "last_exon" )
+                for e in exons[1:-1]:
+                    _add( e, "middle_exon" )
+            else:
+                for e in exons:
+                    _add( e, "exon" )
+
             # add introns
-            if len(introns) > 0:
-                _add( introns[0], "first_intron" )
-            if len(introns) > 1:
-                _add( introns[-1], "last_intron" )
-            for i in introns[1:-1]:
-                _add( i, "middle_intron" )
-                
+            if introns_detail:
+                if len(introns) > 0:
+                    _add( introns[0], "first_intron" )
+                if len(introns) > 1:
+                    _add( introns[-1], "last_intron" )
+                for i in introns[1:-1]:
+                    _add( i, "middle_intron" )
+            else:
+                for i in introns:
+                    _add( i, "intron" )
+
             for x, u in enumerate( upstream ):
                 _add(u, "upstream_%i" % (increment * (x+1) ) )
 
@@ -958,6 +969,10 @@ if __name__ == '__main__':
     parser.add_option("-d", "--downstream", dest="downstream", type="int",
                       help="size of region downstream of tss [default=%default]."  )
 
+    parser.add_option( "--detail", dest="detail", type="choice",
+                       choices = ("introns+exons", "exons", "introns" ),
+                       help="level of detail for gene structure annotation [default=%default]."  )
+
     parser.add_option( "--merge-promotors", dest="merge_promotors", action="store_true",
                        help="merge promotors [default=%default]."  )
 
@@ -978,7 +993,7 @@ if __name__ == '__main__':
         merge_promotors = False,
         upstream = 5000,
         downstream = 5000,
-        detail = None,
+        detail = "exons",
         )
 
     (options, args) = E.Start( parser )

@@ -221,6 +221,7 @@ def annotateGeneStructure( infile, outfile,
                                                --flank=%(genestructures_flank)i
                                                --increment=%(genestructures_increment)i
                                                --method=%(method)s
+                                               --detail=exons
             | gzip 
             > %(outfile)s
         """

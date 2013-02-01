@@ -1393,6 +1393,7 @@ def runGATOnGenomicContext( infiles, outfile ):
          --force
          --ignore-segment-tracks
          --output-filename-pattern=%(outfile)s.%%s
+         --output-counts-pattern=%(outfile)s.%%s.counts.gz
          -v 5
          --log=%(outfile)s.log
          | gzip
@@ -1440,6 +1441,7 @@ def runGATOnGenomicAnnotations( infiles, outfile ):
          --force
          --ignore-segment-tracks
          --output-filename-pattern=%(outfile)s.%%s
+         --output-counts-pattern=%(outfile)s.%%s.counts.gz
          -v 5
          --log=%(outfile)s.log
          | gzip
@@ -1499,6 +1501,7 @@ def runGATOnGeneStructure( infiles, outfile ):
          --force
          --ignore-segment-tracks
          --output-filename-pattern=%(outfile)s.%%s
+         --output-counts-pattern=%(outfile)s.%%s.counts.gz
          -v 5
          --log=%(outfile)s.log
          | gzip
@@ -1554,6 +1557,7 @@ def runGATOnGeneAnnotations( infiles, outfile ):
          --force
          --ignore-segment-tracks
          --output-filename-pattern=%(outfile)s.%%s
+         --output-counts-pattern=%(outfile)s.%%s.counts.gz
          -v 5
          --log=%(outfile)s.log
          | gzip
@@ -1562,9 +1566,9 @@ def runGATOnGeneAnnotations( infiles, outfile ):
     P.run()
 
 @transform( (runGATOnGenomicContext,
-             runGATOnGenomicAnnotations,
-             runGATOnGeneAnnotations,
-             runGATOnGeneStructure),
+              runGATOnGenomicAnnotations,
+              runGATOnGeneAnnotations,
+              runGATOnGeneStructure),
             regex("gat_(.*).dir/(.*).gat.tsv.gz" ),
             r"gat_\1.dir/gat_\1_\2.load" )
 def loadGat( infile, outfile ):
