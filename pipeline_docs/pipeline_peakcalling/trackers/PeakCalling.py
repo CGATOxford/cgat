@@ -66,3 +66,8 @@ class SPPSummary( DefaultTracker, SingleTableTrackerRows ):
 class SICERSummary( DefaultTracker, SingleTableTrackerRows ):
     '''summary information from sicer.'''
     table = "sicer_summary"
+
+
+class SPPQuality( DefaultTracker, SingleTableTrackerRows ):
+    '''quality control information from spp.'''
+    table = "spp_quality"

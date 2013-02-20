@@ -34,6 +34,10 @@ Purpose
 
 This script reads several tab-separated tables and joins them into a single one.
 
+.. todo::
+
+   Rename to tables2table.py
+
 Usage
 -----
 
@@ -102,9 +106,9 @@ def concatenateTables( outfile, options, args ):
     rx = re.compile( options.regex_filename )
 
     if options.headers == None or options.headers == "auto":
-        headers = [rx.search(x).groups()[0] for x in options.filenames ]
+        row_headers = [rx.search(x).groups()[0] for x in options.filenames ]
     else:
-        headers = options.headers
+        row_headers = options.headers
 
     for nindex, filename in enumerate(options.filenames):
 
@@ -112,16 +116,19 @@ def concatenateTables( outfile, options, args ):
     
         if len(lines) == 0: continue
         
-        if first:
-            titles = lines[0]
-            outfile.write( "%s\t%s" % (options.cat, titles ) )
-            first = False
-        else:
-            if titles != lines[0]:
-                raise ValueError("incompatible headers: %s != %s" % (str(titles), lines[0]) )
+        # files have titles - use these
+        if options.titles:
+            if first:
+                titles = lines[0]
+                outfile.write( "%s\t%s" % (options.cat, titles ) )
+                first = False
+            else:
+                if titles != lines[0]:
+                    raise ValueError("incompatible headers: %s != %s" % (str(titles), lines[0]) )
+            del lines[0]
 
-        for l in lines[1:]:
-            outfile.write( "%s\t%s" % (headers[nindex], l ) )
+        for l in lines:
+            outfile.write( "%s\t%s" % (row_headers[nindex], l ) )
             
 def joinTables( outfile, options, args ):
     '''join tables.'''
@@ -196,12 +203,35 @@ def joinTables( outfile, options, args ):
                 
             del lines[0]
         else:
+
+            #IMS: We might still want filename titles even if the input columns don't have titles.
+            if options.add_file_prefix:
+                if not titles:
+                    titles = ["ID"]
+                try:
+                    p = re.search( options.regex_filename, prefix).groups()[0]
+                except AttributeError:
+                    E.warn( "can't extract title from filename %s" % prefix )
+                    p = "unknown"
+                titles.append( "%s_%s" % ( p, data[x] ) )
+            elif options.use_file_prefix:
+                if not titles:
+                    titles = ["ID"]
+                try:
+                    p = re.search( options.regex_filename, prefix).groups()[0]
+                except:
+                    E.warn( "can't extract title from filename %s" % prefix )
+                    p = "unknown"
+                titles.append( "%s" % p )
             ncolumns = 1
 
         n = 0
         for line in lines:
             data = string.split(line[:-1], "\t")
-            row_keys = [ data[x] for x in options.columns ]
+            try:
+                row_keys = [ data[x] for x in options.columns ]
+            except IndexError, msg:
+                raise IndexError( "error while parsing %s: %s" % (filename, msg))
             if options.sort_keys: 
                 if options.sort_keys == "numeric":
                     row_keys.sort( lambda x,y: cmp(float(x), float(y)) )
@@ -258,7 +288,7 @@ def joinTables( outfile, options, args ):
 
         order = range(0, len(tables)+1)
 
-        if options.titles:
+        if options.titles or (options.use_file_prefix or options.add_file_prefix):
 
             if options.sort:
                 sort_order = []
@@ -293,7 +323,7 @@ def joinTables( outfile, options, args ):
 
             outfile.write( "\t".join( map(lambda x: titles[order[x]], range(len(titles)))))
             outfile.write("\n")
-
+        
         if options.sort_keys:
             if options.sort_keys: 
                 if options.sort_keys == "numeric":

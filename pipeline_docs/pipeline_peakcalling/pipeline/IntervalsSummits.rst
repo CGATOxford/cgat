@@ -2,12 +2,10 @@
 Summits
 =======
 
-This page summarizes the :term:`region` that have been called with the
-various peak callers. 
+This page summarizes the :term:`summits` that have been called with the various peak/region callers. 
 
-``Regions`` are larger areas in the genome with higher read density
-than expected as opposed to ``summits``, which are smaller summits 
-within regions.
+``Summits`` are the locations at which peaks or regions show maxima. These can be interpreted as the most likely position(s) at which the physical binding is taking place.
+
 
 Number of intervals
 ===================
@@ -24,7 +22,7 @@ The following figure shows the number of intervals per set:
 The following table presents the number of intervals and 
 the average interval width per set:
 
-.. report:: Intervals.SummitsSummary
+.. report:: Intervals.SummitsSummaryTable
    :render: table
 
    Number of intervals and lengths of intervals in

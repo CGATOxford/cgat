@@ -9,11 +9,28 @@ class MappingSummary( RnaseqTracker, SingleTableTrackerRows ):
 class TophatSummary( RnaseqTracker, SingleTableTrackerRows ):
     table = "tophat_stats"
 
+class StarSummary( RnaseqTracker, SingleTableTrackerRows ):
+    table = "star_stats"
+
 class BamSummary( RnaseqTracker, SingleTableTrackerRows ):
     table = "bam_stats"
 
 class PicardSummary( RnaseqTracker, SingleTableTrackerRows ):
     table = "picard_stats_alignment_summary_metrics"
+
+class PicardDuplicationSummary( RnaseqTracker, SingleTableTrackerRows ):
+    table = "picard_duplication_stats_duplication_metrics"
+
+class DuplicationMetricsTable( RnaseqTracker, SingleTableTrackerHistogram ):
+
+    table = "picard_duplication_stats_duplication_histogram"
+
+    def __call__(self, track = None, slice = None ):
+        cols = self.getColumns(self.table)
+        fields = ", ".join(cols)
+        data = self.getAll( "SELECT %(fields)s FROM %(table)s ORDER BY coverage_multiple")
+        return data
+
 
 class MappingFlagsMismatches( RnaseqTracker, SingleTableTrackerHistogram ):
     table = "bam_stats_nm"
@@ -26,6 +43,10 @@ class MappingFlagsHits( RnaseqTracker, SingleTableTrackerHistogram ):
 class AlignmentQualityByCycle( RnaseqTracker, SingleTableTrackerHistogram ):
     table = "picard_stats_quality_by_cycle_histogram"
     column = "cycle"
+
+class DuplicationMetrics( RnaseqTracker, SingleTableTrackerHistogram ):
+    table = "picard_duplication_stats_duplication_histogram"
+    column = "coverage_multiple"
 
 class AlignmentQualityDistribution( RnaseqTracker, SingleTableTrackerHistogram ):
     table = "picard_stats_quality_distribution_histogram"

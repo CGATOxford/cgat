@@ -1,11 +1,11 @@
 .. Test documentation master file, created by
    sphinx-quickstart on Mon Mar 23 15:27:57 2009.
 
-.. _chipseqpipeline:
+.. _peakcallingpipeline:
 
-=================
-ChIP-Seq pipeline
-=================
+======================
+Peak calling pipeline
+======================
 
 The following pages contain automatically created tables and 
 plots from the ChIP-Seq pipeline.
@@ -17,14 +17,17 @@ Contents:
 
    pipeline/Methods.rst
    pipeline/Status.rst
+   pipeline/IntervalsPeaks.rst
    pipeline/IntervalsRegions.rst
    pipeline/IntervalsSummits.rst
+   pipeline/Mapping.rst
    pipeline/Callers.rst
    pipeline/Peaks.rst	
+   pipeline/Reproducibility.rst
+   pipeline/IDR.rst
+   pipeline/Encode.rst
 
 ..   pipeline/Mapping.rst
-..   pipeline/Reproducibility.rst
-
 ..   pipeline/Binding.rst
 ..   pipeline/IntervalLists.rst
 ..   pipeline/Correlations.rst

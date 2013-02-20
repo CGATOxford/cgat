@@ -1,6 +1,6 @@
 #cimport csamtools
 
-from csamtools cimport *
+from pysam.csamtools cimport *
 
 import collections, array, struct
 import Experiment as E
@@ -34,6 +34,7 @@ def count( Samfile samfile,
     cdef int nrna = 0
     cdef int nfiltered = 0
 
+    cdef int max_hi = 0
     # count nh, nm tags
     nh_filtered, nm_filtered = collections.defaultdict( int ), collections.defaultdict( int )
     nh_all, nm_all = collections.defaultdict( int ), collections.defaultdict( int )
@@ -55,6 +56,7 @@ def count( Samfile samfile,
     cdef uint8_t * v
     cdef int32_t nm
     cdef int32_t nh
+    cdef int32_t hi
     cdef int x
     cdef int lflags = len(FLAGS)
     cdef int f
@@ -76,6 +78,12 @@ def count( Samfile samfile,
         for x from 0 <= x < lflags:
             if flag & f: flags_counts[x] += 1
             f = f << 1
+
+        # get maximum NI field
+        v = bam_aux_get(read._delegate, 'HI')
+        if v != NULL:
+            hi = <int32_t>bam_aux2i(v)
+            if hi > max_hi: max_hi = hi
 
         v = bam_aux_get(read._delegate, 'NH')
         if v != NULL:
@@ -138,4 +146,4 @@ def count( Samfile samfile,
         t[FLAGS[f]] = flags_counts[x]
         f = f << 1
 
-    return c, t, nh_filtered, nh_all, nm_filtered, nm_all, mapq_filtered, mapq_all
+    return c, t, nh_filtered, nh_all, nm_filtered, nm_all, mapq_filtered, mapq_all, max_hi

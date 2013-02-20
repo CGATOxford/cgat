@@ -5,7 +5,7 @@ import PipelineTracks
 
 from SphinxReport.Tracker import *
 from PeakcallingReport import *
-
+import numpy
 
 ##################################################################################
 ##################################################################################
@@ -212,3 +212,27 @@ class OverlapROC( DefaultTracker ):
             result[field] = odict( (("FPR", roc[0]), (field,roc[1])) )
             
         return result
+
+
+class OverlapMatrix( DefaultTracker ):
+    pattern = "(.*)_reproducibility$"
+    field = "pexons_ovl"
+    
+    def __call__(self, track):
+        
+        data = self.get( "SELECT set1, set2, %(field)s1, %(field)s2 FROM %(track)s_reproducibility" )
+
+        rows = sorted(list(set([x[0] for x in data ]).union(set([x[1] for x in data ]))))
+
+        map_row2index = dict( [ (x[1],x[0]) for x in enumerate(rows) ] )
+
+        matrix = numpy.zeros( (len(rows), len(rows)) )
+        for row, col, value1, value2 in data:
+            matrix[map_row2index[row]][map_row2index[col]] = value1
+            matrix[map_row2index[col]][map_row2index[row]] = value2
+        
+        return odict( ( ( 'matrix', matrix), 
+                        ( 'rows', rows ), 
+                        ( 'columns', rows ) ) )
+    
+        

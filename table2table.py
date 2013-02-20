@@ -32,9 +32,72 @@ table2table.py - operate on tables
 Purpose
 -------
 
+This script implements a few methods for manipulating tables.
+
+Methods working on all tables:
+++++++++++++++++++++++++++++++
+
+transpose
+   transpose a table
+
 split-fields
-   Split muliple-value fields in each row at *separator*. Output
+   Split muliple-value fields in each row at ``--separator``. Output
    multiple rows with all combinations.
+
+group
+   Group values by column
+
+join-column
+   Join rows in a table by columns
+
+expand-table
+   If a field in a row contains multiple values,
+   the row is expanded into multiple rows such
+   that all values have space.
+
+flatten-table
+   Output a table as row/column/value tuples.
+
+as-column
+   Output table as a single column. Colums in the original table are appended and output.
+
+Methods for numerical columns
+++++++++++++++++++++++++++++
+
+Some methods make only sense for columns containing numerical values.
+If a table contains both numerical and non-numerical data, the
+numerical columns can be specified by the ``--columns`` option.
+
+normalize-by-value
+   divide all cells in a table by a value
+
+multiply-by-value
+   multiply all cells in a table by a value
+
+lower-bound
+   replace all cells with a value of less than lower bound with the lower
+   bound.
+
+upper-bound
+   replace all cells with a value of more than upper bound with the upper
+   bound.
+
+normalize-by-table
+   divide each cell in a table with the corresponding entry in a secondary
+   table.
+
+normalize-by-max
+   divide table columns by maximum per column
+
+kullback-leibler
+   compute kullback-leibler divergence between two columns. Compute
+   both D(a||b), D(b||a) and (D(a||b) + D(b||a)) / 2
+   
+rank
+   substitute cells with their ranks in a column
+
+fdr
+   compute an FDR over all columns selected. Replace cells with the qvalues.
 
 Usage
 -----
@@ -62,6 +125,15 @@ import Experiment as E
 import CSV
 import Stats
 import scipy.stats
+
+def getColumns( fields, columns = "all" ):
+    '''return columns to take.'''
+    if columns == "all":
+        return list(range( len(fields) ))
+    elif columns == "all-but-first":
+        return list(range( 1, len(fields) ))
+    else:
+        return map( lambda x: int(x) - 1, columns.split(","))
 
 ##########################################################
 ##########################################################
@@ -107,12 +179,7 @@ def readAndGroupTable( infile, options ):
     
     fields, table  = CSV.ReadTable( infile, with_header = options.has_headers, as_rows = True )
 
-    if options.columns == "all":
-        options.columns = range( len(fields) )
-    elif options.columns == "all-but-first":
-        options.columns = range( 1, len(fields) )
-    else:
-        options.columns = map( lambda x: int(x) - 1, options.columns.split(","))
+    options.columns = getColumns( fields, options.columns )
 
     converter = float
     if options.group_function == "min":
@@ -198,6 +265,31 @@ def readAndExpandTable( infile, options ):
 ##########################################################
 ##########################################################
 ##########################################################        
+def computeFDR( infile, options ):
+    '''compute FDR on a table.
+    '''
+
+    fields, table  = CSV.ReadTable( infile, with_header = options.has_headers, as_rows = True )
+
+    options.stdout.write("\t".join(fields) + "\n")
+    
+    for row in table:
+
+        data = []
+        for x in range(len(fields)):
+            data.append( row[x].split( options.separator ) )
+
+        nrows = max( [ len(d) for d in data ] )
+
+        for d in data:
+            d += [""] * (nrows - len(d))
+
+        for n in range(nrows):
+            options.stdout.write( "\t".join( [ d[n] for d in data ] ) + "\n" )
+
+##########################################################
+##########################################################
+##########################################################        
 def readAndJoinTable( infile, options ):
 
     fields, table  = CSV.ReadTable( infile, with_header = options.has_headers, as_rows = True )
@@ -256,7 +348,8 @@ if __name__ == "__main__":
     parser.add_option("-m", "--method", dest="methods", type="choice", action="append",
                       choices=( "transpose", "normalize-by-max","normalize-by-value","multiply-by-value",
                                "percentile","remove-header","normalize-by-table",
-                               "upper-bound","lower-bound","kullback-leibler","expand","compress" ),
+                               "upper-bound","lower-bound","kullback-leibler",
+                                "expand","compress", "fdr", ),
                       help="""actions to perform on table.""")
     
     parser.add_option("-s", "--scale", dest="scale", type="float",
@@ -282,7 +375,7 @@ if __name__ == "__main__":
                       help="input format of un-transposed table"  )
 
     parser.add_option("--expand", dest="expand_table", action="store_true",
-                      help="expand table."  )
+                      help="expand table - multi-value cells with be expanded over several rows."  )
 
     parser.add_option("--no-headers", dest="has_headers", action="store_false",
                       help="matrix has no row/column headers."  )
@@ -312,11 +405,18 @@ if __name__ == "__main__":
     parser.add_option("--flatten-table", dest="flatten_table", action="store_true",
                       help="flatten table."  )
 
+    parser.add_option("--as-column", dest="as_column", action="store_true",
+                      help="output table as a single column."  )
+
     parser.add_option("--split-fields", dest="split_fields", action="store_true",
                       help="split fields."  )
 
     parser.add_option("--separator", dest="separator", type="string",
                       help="separator for multi-valued fields [default=%default]."  )
+
+    parser.add_option( "--fdr-method", dest="fdr_method", type="choice",
+                      choices = ( "BH", "bonferroni", "holm", "hommel", "hochberg", "BY" ),
+                      help="method to perform multiple testing correction by controlling the fdr [default=%default]."  )
 
     parser.set_defaults(
         methods = [],
@@ -339,6 +439,9 @@ if __name__ == "__main__":
         expand = False,
         join_column = None,
         join_column_name = None,
+        compute_fdr = None,
+        as_column = False,
+        fdr_method= "BH",
         )
     
     (options, args) = E.Start( parser, add_pipe_options = True )
@@ -356,7 +459,7 @@ if __name__ == "__main__":
     if options.methods== ["remove-header"]:
         
         first = True
-        for line in sys.stdin:
+        for line in options.stdin:
             if line[0] == "#": continue
             if first:
                 first = False
@@ -365,29 +468,40 @@ if __name__ == "__main__":
 
     elif options.transpose or "transpose" in options.methods:
 
-        readAndTransposeTable( sys.stdin, options )
+        readAndTransposeTable( options.stdin, options )
 
     elif options.flatten_table:
         
-        fields, table  = CSV.ReadTable( sys.stdin, with_header = options.has_headers, as_rows = True )
-        
-        f = range(len(fields))
+        fields, table  = CSV.ReadTable( options.stdin, with_header = options.has_headers, as_rows = True )
 
-        options.stdout.write( "field\tvalue\n" )
+        options.columns = getColumns( fields, options.columns )
+
+        options.stdout.write( "row\tcolumn\tvalue\n" )
         
-        for row in table:
-            for x in f:
-                options.stdout.write( "%s\t%s\n" % (fields[x], row[x] ))
+        for x, row in enumerate(table):
+            for y in options.columns:
+                options.stdout.write( "%i\t%s\t%s\n" % (fields[y], row[y] ))
+
+    elif options.as_column:
+        
+        fields, table  = CSV.ReadTable( options.stdin, with_header = options.has_headers, as_rows = True )
+        options.columns = getColumns( fields, options.columns )
+        table = zip( *table )
+        
+        options.stdout.write( "value\n" )
+        
+        for column in options.columns:
+            options.stdout.write("\n".join( table[column] ) + "\n" )
 
     elif options.split_fields:
 
         # split comma separated fields
-        fields, table  = CSV.ReadTable( sys.stdin, 
+        fields, table  = CSV.ReadTable( options.stdin, 
                                         with_header = options.has_headers, 
                                         as_rows = True )
         
+
         options.stdout.write( "%s\n" % ("\t".join(fields)))
-        f = len(fields)
 
         for row in table:
             row = [ x.split(options.separator) for x in row ]
@@ -395,17 +509,13 @@ if __name__ == "__main__":
                 options.stdout.write( "%s\n" % "\t".join( d ) )
             
     elif options.group:
-
-        readAndGroupTable( sys.stdin, options )
+        readAndGroupTable( options.stdin, options )
 
     elif options.join_column:
-
-        readAndJoinTable( sys.stdin, options )
-        
+        readAndJoinTable( options.stdin, options )
 
     elif options.expand_table:
-
-        readAndExpandTable( sys.stdin, options )
+        readAndExpandTable( options.stdin, options )
 
     else:
 
@@ -413,20 +523,17 @@ if __name__ == "__main__":
         ######################################################################
         ######################################################################
         ## Apply remainder of transformations
-        fields, table  = CSV.ReadTable( sys.stdin, with_header = options.has_headers, as_rows = False )
+        fields, table  = CSV.ReadTable( options.stdin, with_header = options.has_headers, as_rows = False )
+        # convert columns to list
+        table = [ list(x) for x in table]
 
         ncols = len(fields)
         nrows = len(table[0])
 
         E.info( "processing table with %i rows and %i columns" % (nrows, ncols) )
 
-        if options.columns == "all":
-            options.columns = range( len(fields) )
-        elif options.columns == "all-but-first":
-            options.columns = range( 1, len(fields) )
-        else:
-            options.columns = map( lambda x: int(x) - 1, options.columns.split(","))
-
+        options.columns = getColumns( fields, options.columns )
+        
         ## convert all values to float
         for c in options.columns:
             for r in range(nrows):
@@ -508,6 +615,21 @@ if __name__ == "__main__":
                             if type(table[c][r]) == types.FloatType and \
                                    table[c][r] < boundary:
                                 table[c][r] = new_value
+
+            elif method == "fdr":
+                pvalues = []
+                for c in options.columns: pvalues.extend( table[c] )
+
+                assert max(pvalues) <= 1.0, "pvalues > 1 in table"
+                assert min(pvalues) >= 0, "pvalue < 0 in table"
+
+                # convert to str to avoid test for float downstream
+                qvalues = map(str, Stats.adjustPValues( pvalues, method = options.fdr_method ))
+
+                x = 0
+                for c in options.columns: 
+                    table[c] = qvalues[x:x+nrows]
+                    x += nrows
 
             elif method == "normalize-by-table":
 

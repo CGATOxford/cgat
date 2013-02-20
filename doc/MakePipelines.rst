@@ -12,6 +12,7 @@ below:
    pipelines/CompareTranscripts.rst
    pipelines/Gpipe.rst
    pipelines/MapTranscripts454.rst
+   pipelines/Optic.rst
 
 Some of these pipelines are still being used, though they are not actively
 supported any more.

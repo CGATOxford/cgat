@@ -4,6 +4,18 @@ Pipeline status
 
 This page combines various status information.
 
+Encode quality metrics
+======================
+
+The following status table applies the ENCODE quality
+metrics. For more information, see :pmid:`22955991`
+and http://code.google.com/p/phantompeakqualtools/.
+
+.. report:: Status.EncodeQualityMetrics
+   :render: status
+
+   Encode quality metrics
+
 Peak calling
 ============
 
@@ -11,7 +23,7 @@ MACS
 ----
 
 .. report:: Status.PeakCallingStatusMACS
-   :render: status        
+   :render: status
 
    Status of peak calling
 
@@ -19,7 +31,7 @@ SPP
 ---
 
 .. report:: Status.PeakCallingStatusSPP
-   :render: status        
+   :render: status
 
    Status of peak calling
 
@@ -27,7 +39,7 @@ SICER
 -----
 
 .. report:: Status.PeakCallingStatusSICER
-   :render: status        
+   :render: status
 
    Status of peak calling
 
@@ -35,7 +47,7 @@ Zinba
 -----
 
 .. report:: Status.PeakCallingStatusZinba
-   :render: status        
+   :render: status
 
    Status of peak calling
 
@@ -43,7 +55,7 @@ PeakRanger
 ----------
 
 .. report:: Status.PeakCallingStatusPeakRanger
-   :render: status        
+   :render: status
 
    Status of peak calling
 
