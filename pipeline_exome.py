@@ -611,18 +611,19 @@ def loadMetatdata(): pass
 @follows( mapReads )
 def mapping(): pass
 
-@follows( reorderBam,
+@follows( dedup,
+          reorderBam,
           addReadGroups,
-          dedup,
           loadPicardDuplicateStats)
+
 def processBAMs(): pass
 
 @follows( buildPicardAlignStats,
           loadPicardAlignStats,
           buildPicardInsertSizeStats,
           loadPicardInsertSizeStats,
-          buildCoverageStats,
-          loadCoverageStats )
+          buildCoverageStats)
+
 def postMappingQC(): pass
           
 @follows( buildRealignmentTargets,
@@ -632,11 +633,12 @@ def postMappingQC(): pass
 def gatk(): pass
 
 @follows( unifiedGenotyper,
-          callVariantsSAMtools, )
+          callVariantsSAMtools )
 def callVariants(): pass
 
-@follows( variantRecalibrator,
-          applyVariantRecalibration, )
+@follows( variantAnnotator,
+          variantRecalibrator,
+          applyVariantRecalibration )
 def vqsr(): pass
 
 @follows( annotateVariantsSNPeff,
@@ -651,14 +653,12 @@ def filterVariants(): pass
           loadVCFStats )
 def vcfstats(): pass
           
-@follows( loadMetatdata,
-          mapping,
+@follows( mapping,
           processBAMs,
           postMappingQC,
           gatk,
           callVariants,
-          filterVariants,
-          vcfstats )  
+          vqsr)  
 def full(): pass
 
 #########################################################################
