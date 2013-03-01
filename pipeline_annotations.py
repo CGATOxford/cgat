@@ -609,6 +609,10 @@ def loadTranscriptInformation( infile, outfile ):
         "uniprot_genename": "uniprot_name",
         }
 
+    # biomart db dmelanogaster_gene_ensemble doesn't have attribute uniprot_genename
+    if PARAMS["genome"].startswith("dm"):
+        del columns["uniprot_genename"]
+
     data = PBiomart.biomart_iterator( columns.keys()
                                       , biomart = "ensembl"
                                       , dataset = PARAMS["ensembl_biomart_dataset"] )
@@ -648,7 +652,12 @@ def loadTranscriptInformation( infile, outfile ):
         E.warn( "there are %i gene_names mapped to different gene_ids" % len(l))
     for gene_name, counts in l:
         E.info( "ambiguous mapping: %s->%i" % (gene_name, counts))
-        
+    
+    # adding final column back into transcript_info for dmelanogaster genomes
+    if PARAMS["genome"].startswith("dm"):
+        dbh = connect()
+        cc = dbh.cursor()
+        cc.execute( '''ALTER TABLE Table1 ADD COLUMN uniprot_name NULL''' )
 
 ############################################################
 ############################################################
