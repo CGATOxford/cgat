@@ -348,6 +348,7 @@ def calculateMappability( infile, outfile ):
     '''Calculate mappability using GEM '''
     index = P.snip(infile, ".gem")
     to_cluster = True
+    job_options = " -pe dedicated %i " % PARAMS["gem_threads"]
     statement = '''gem-mappability -t %(gem_threads)s -m %(gem_mismatches)s 
                                    --max-indel-length %(gem_max_indel_length)s 
                                    -l %(gem_window_size)s 

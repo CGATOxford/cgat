@@ -326,7 +326,7 @@ def merge( iterator ):
         for this in beds[1:]:
             d = this.start - end
             if this.contig != contig or d >= 0:
-                yield to_join
+                yield to_join, end
                 contig = this.contig
                 to_join = []
                 end = this.end
@@ -334,16 +334,16 @@ def merge( iterator ):
             end = max(end, this.end)
             to_join.append( this )
         
-        yield to_join
+        yield to_join, end
         raise StopIteration
 
     n = []
-    for to_join in iterate_chunks(beds):
+    for to_join, end in iterate_chunks(beds):
 
         y = Bed()
         y.contig = to_join[0].contig
         y.start = to_join[0].start
-        y.end = to_join[-1].end
+        y.end = end
         n.append( y )
 
     return n
