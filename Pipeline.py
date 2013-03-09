@@ -558,10 +558,13 @@ def createView( dbhandle, tables, tablename, outfile, view_type = "TABLE",
 
     touch( outfile )
 
-def snip( filename, extension = None, alt_extension = None):
+
+def snip( filename, extension = None, alt_extension = None, path = False):
     '''return prefix of filename.
 
     If extension is given, make sure that filename has the extension.
+
+    If path is set to false, the path is stripped from the file name.
     '''
     if extension: 
         if filename.endswith( extension ):
@@ -572,7 +575,12 @@ def snip( filename, extension = None, alt_extension = None):
             raise ValueError("'%s' expected to end in '%s'" % (filename, extension))
 
     root, ext = os.path.splitext( filename )
-    return root
+
+    if path==True: snipped = os.path.basename(root)
+    else: snipped = root
+
+    return snipped
+
 
 def getCallerLocals(decorators=0):
     '''returns locals of caller using frame.
