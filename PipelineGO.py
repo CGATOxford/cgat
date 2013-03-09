@@ -93,7 +93,7 @@ def createGOFromGeneOntology( infile, outfile ):
     filename = "geneontology.goa.gz"
     if not os.path.exists( filename ):
         statement = '''
-    wget -O %(filename)s http://cvsweb.geneontology.org/cgi-bin/cvsweb.cgi/go/gene-associations/%(go_geneontology_file)?rev=HEAD
+    wget -O %(filename)s http://cvsweb.geneontology.org/cgi-bin/cvsweb.cgi/go/gene-associations/%(go_geneontology_file)s?rev=HEAD
     '''
     
         P.run()
