@@ -622,7 +622,7 @@ def annotateBindingFull( infile, outfile ):
     to_cluster = True
 
     geneset = os.path.join( PARAMS["annotations_dir"],
-                            PARAMS_ANNOTATIONS[PARAM["geneset_binding"]] )
+                            PARAMS_ANNOTATIONS[PARAMS["geneset_binding"]] )
 
     statement = """
     zcat < %(geneset)s
@@ -653,7 +653,7 @@ def annotateBindingPeak( infile, outfile ):
     to_cluster = True
 
     geneset = os.path.join( PARAMS["annotations_dir"],
-                            PARAMS_ANNOTATIONS[PARAM["geneset_binding"]] )
+                            PARAMS_ANNOTATIONS[PARAMS["geneset_binding"]] )
 
     statement = """
     zcat < %(geneset)s
