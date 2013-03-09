@@ -1373,11 +1373,12 @@ def createGOFromGeneOntology( infile, outfile ):
     '''get GO assignments from ENSEMBL'''
     PipelineGO.createGOFromGeneOntology( infile, outfile )
 
+
 ############################################################
 @transform( createGOFromGeneOntology, 
             suffix( ".tsv.gz"), 
             add_inputs(buildGOPaths),
-            ".imputed.tsv.gz")
+            PARAMS["interface_go_geneontology_imputed"])
 def imputeGO( infiles, outfile ):
     PipelineGO.imputeGO( infiles[0], infiles[1], outfile )
 
