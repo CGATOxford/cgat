@@ -11,6 +11,9 @@ genome=hg19
 # location of indexed genome 
 genome_dir=/ifs/mirror/genomes/plain
 
+# location of indexed genome with faidx
+faidx_dir=/ifs/mirror/genomes/faidx
+
 # name of database
 database=csvdb
 
@@ -26,6 +29,13 @@ version=
 ##########################################################
 ##########################################################
 ##########################################################
+[gaps]
+# minimum gap size
+min_size=100
+
+##########################################################
+##########################################################
+##########################################################
 [geneset]
 # size of flank for annotating genome by geneset
 flank=5000
@@ -35,6 +45,14 @@ promotor_size=5000
 
 # size of gene territories
 territories_radius=100000
+
+# size for genestructures
+[genestructures]
+# extend each gene by 10kb in either direction
+flank=10000
+
+# annotate in intervals of 1kb.
+increment=1000
 
 ##########################################################
 ##########################################################
@@ -48,6 +66,12 @@ filename_pep=/ifs/mirror/ensembl/hg19/Homo_sapiens.GRCh37.60.pep.all.fa.gz
 filename_cdna=/ifs/mirror/ensembl/hg19/Homo_sapiens.GRCh37.60.cdna.all.fa.gz
 
 # biomart dataset to use
+
+# to discover the dataset you need, open an R session and enter the commands:
+## library(biomaRt)
+## ensembl <- useMart(ensembl)
+## listDatasets(ensembl)
+
 biomart_dataset=hsapiens_gene_ensembl
 
 # information about UCSC databases
@@ -76,7 +100,6 @@ dir=/ifs/mirror/ucsc
 # minimum mappability score to accept
 min_mappability=0.5
 
->>>>>>> other
 ##########################################################
 ##########################################################
 ##########################################################
@@ -85,7 +108,9 @@ min_mappability=0.5
 # (ensembl) host
 host=ensembldb.ensembl.org
 
-# (ensembl) database
+# (ensembl) database#
+# to get the database name try something like:
+# mysql --user anonymous --port 5306 --host ensembldb.ensembl.org -e "show databases;" | grep mus | less
 database=homo_sapiens_core_61_37f
 
 # ensembl port
@@ -97,6 +122,12 @@ url_ontology=http://www.geneontology.org/ontology/gene_ontology.obo
 # goslim annotation
 url_goslim=http://www.geneontology.org/GO_slims/goslim_goa.obo
 
+# species to use when getting data from geneontology.org. See list
+# at http://www.geneontology.org/GO.downloads.annotations.shtml
+# eg. for human: gene_association.goa_human.gz
+# and for mouse: gene_association.mgi.gz
+geneontology_species=must_specify
+
 ##########################################################
 ##########################################################
 ##########################################################
@@ -107,6 +138,22 @@ merge_distance=100
 
 # minimum segment size - segments smaller than this are removed
 min_segment_size=1000
+
+##########################################################
+##########################################################
+##########################################################
+## Options for gem created mapability information
+[gem]
+dir=
+
+window_size=
+
+threads=
+
+mismatches=
+
+max_indel_length=
+
 
 ##########################################################
 ##########################################################
@@ -145,6 +192,26 @@ halting_parameter=500
 
 # extend the region around each SNP by this amount
 extension=150000
+
+
+##########################################################
+##########################################################
+##########################################################
+
+[KEGG]
+
+#Warning: the KEGG datasource used here is no longer kept up to date.
+#biomart mart to use for id lookup
+mart=ensembl
+
+#biomart dataset to look up id mapping from entrez gene ids to ensembl ids
+# to discover the dataset you need, open an R session and enter the commands:
+## library(biomaRt)
+## ensembl <- useMart(ensembl)
+## listDatasets(ensembl)
+
+dataset=hsapiens_gene_ensembl
+
 
 ##########################################################
 ##########################################################
@@ -199,6 +266,9 @@ numts_gtf=numts.gtf.gz
 # gff file annotation genomic regions with the transcript set
 annotation_gff=annotation.gff.gz
 
+# gff file annotation genomic regions by gene structure
+genestructure_gff=genestructure.gff.gz
+
 # fasta file with peptide sequences
 peptides_fasta=peptides.fasta
 
@@ -211,19 +281,23 @@ cds_fasta=cds.fasta
 # table with contig size
 contigs=contigs.tsv
 
-<<<<<<< local
 # file with protein-coding transcripts
 transcripts_bed=transcripts.bed.gz
-=======
+
 # bed file with contig sizes
-contigs_bed=contigs.bed
+contigs_bed=contigs.bed.gz
+
+# bed file with contigs excluding any gapped regions
+contigs_ungapped_bed=contigs_ungapped.bed.gz
+
+# bed file with gapped regions in contigs
+gaps_bed=gaps.bed.gz
 
 # file with transcription start sites
 tss_bed=tss.bed.gz
->>>>>>> other
 
 # file with protein-coding transcripts
-transcripts_gtf=transcripts.gtf
+transcripts_gtf=transcripts.gtf.gz
 
 # file with non-coding transcripts
 noncoding_bed=noncoding.bed.gz
@@ -232,10 +306,10 @@ noncoding_bed=noncoding.bed.gz
 noncoding_genes_bed=noncoding.genes.bed.gz
 
 # file with non-coding transcripts
-noncoding_gtf=noncoding.gtf
+noncoding_gtf=noncoding.gtf.gz
 
 # file with lincRNA transcripts
-lincrna_gtf=lincrna.gtf
+lincrna_gtf=lincrna.gtf.gz
 
 # file with lincRNA transcripts
 lincrna_bed=lincrna.bed.gz
@@ -285,11 +359,20 @@ go=go.tsv.gz
 # table with GOSlim assignments for genes
 goslim=goslim.tsv.gz
 
+# go table with terms from geneontology.ord
+go_geneontology=go_geneontology.tsv.gz
+
+# table with KEGG assignments for genes
+kegg=kegg.tsv.gz
+
 # obo file for go ontology
 go_obo=go_ontology.obo
 
 # obo file for goslim ontology
 goslim_obo=goslim.obo
+
+# go table with terms imputed from geneontology.ord
+go_geneontology_imputed=go_geneontology.imputed.tsv.gz
 
 # gff file with gene territories
 territories_gff=territories.gff.gz
@@ -308,34 +391,37 @@ mapability_bed=mapability_%i.bed.gz
 # filtered mapability file
 mapability_filtered_bed=mapability_%i.filtered.bed.gz
 
-# filename with gwas intervals in bed format
-gwas_bed=gwas.bed.gz
+# filename with gwas catalog intervals in bed format
+gwas_catalog_bed=gwas_catalog.bed.gz
 
-# tables
+# filename with gwas distild intervals in bed format
+gwas_distild_bed=gwas_distild.bed.gz
+
+# filename with locations of CpG in bed format
+cpg_bed=cpg.bed.gz
+
+# AH: What are these for - please comment...
+genic_gtf=genes.gtf.gz
+
+genic_bed=genes.bed.gz
+
+gene_tss_extended_bed=tss.gene.extended.bed.gz
+
+upstream_flank_bed=upstream.flank.bed.gz
+
+downstream_flank_bed=downstream.flank.bed.gz
+
+intergenic_bed=intergenic.bed.gz
+
+# tables in the database
 table_genome=genome
-
 table_transcript_info=transcript_info
 table_gene_info=gene_info
 table_gene_stats=table_gene_stats
 table_protein_stats=protein_stats
-
 table_cds_gtf=cds_gtf
-
 table_go_assignments=go_assignments
 table_goslim_assignments=goslim_assignments
-
-# 
-genic_gtf=genes.gtf
-
-genic_bed=genes.bed
-
-gene_tss_extended_bed=tss.gene.extended.bed
-
-upstream_flank_bed=upstream.flank.bed
-
-downstream_flank_bed=downstream.flank.bed
-
-intergenic_bed=intergenic.bed
 
 ################################################################
 [report]
