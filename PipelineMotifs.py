@@ -70,6 +70,7 @@ import IOTools
 import Bed
 import Bioprospector
 import FastaIterator
+import glob
 
 PARAMS = P.getParameters()
 
@@ -814,7 +815,7 @@ def runGLAM2( infile, outfile, dbhandle ):
 ############################################################
 ############################################################
 ############################################################
-def collectMEMEResults( tmpdir, target_path ):
+def collectMEMEResults( tmpdir, target_path, outfile ):
     '''collect output from a MEME run in tmpdir
     and copy all over to target_path
 
@@ -839,7 +840,7 @@ def collectMEMEResults( tmpdir, target_path ):
     for epsfile in epsfiles:
         b, ext = os.path.splitext( epsfile )
         pngfile = b + ".png" 
-        statement = '''convert %(epsfile) %(pngfile)s" '''
+        statement = '''convert %(epsfile)s %(pngfile)s" '''
         P.run()
     
 ############################################################
@@ -889,7 +890,7 @@ def runMEME( track, outfile, dbhandle ):
         '''
         P.run()
 
-        collectMEMEResults( tmpdir, target_path )
+        collectMEMEResults( tmpdir, target_path, outfile )
 
 ############################################################
 ############################################################
@@ -932,7 +933,7 @@ def runMEMEOnSequences( infile, outfile ):
 
     P.run()
 
-    collectMEMEResults( tmpdir, target_path )
+    collectMEMEResults( tmpdir, target_path, outfile )
 
 ############################################################
 ############################################################
