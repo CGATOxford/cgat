@@ -1077,7 +1077,9 @@ def aggregateExonLevelReadCounts( infiles, outfile ):
 def loadAggregateExonLevelReadCounts( infile, outfile ):
     P.load( infile, outfile, options="--index=gene_id" )
 
-TARGETS_DE = [ ( (x, y, glob.glob("*.bam") ), 
+TARGETS_DE = [ ( (x, y, glob.glob("*.bam"),
+                  "exon_counts.dir/%s.exon_counts.tsv.gz" % P.snip(y,
+                                                    ".gtf.gz",path=True)),
                  "%s_%s.diff" % (P.snip(x, ".tsv"), P.snip(y,".gtf.gz") )) 
                for x,y in itertools.product( glob.glob( "design*.tsv"),
                                              glob.glob( "*.gtf.gz" ) ) ]
@@ -1086,19 +1088,18 @@ TARGETS_DE = [ ( (x, y, glob.glob("*.bam") ),
 #########################################################################
 #########################################################################
 @follows( mkdir("deseq.dir") )
-@files( [ ((x, aggregateExonLevelReadCounts), os.path.join( "deseq.dir", y)) for x, y in TARGETS_DE ] )
+@files( [ (x, os.path.join( "deseq.dir", y)) for x, y in TARGETS_DE ] )
 def runDESeq( infiles, outfile ):
     '''perform differential expression analysis using deseq.'''
 
     to_cluster = True 
-    design_file, geneset_file, bamfiles = infiles[0]
-    infile = infiles[1]
+    design_file, geneset_file, bamfiles, count_file = infiles
 
     track = P.snip( outfile, ".diff")
 
     statement = '''python %(scriptsdir)s/Expression.py
               --method=deseq
-              --filename-tags=%(infile)s
+              --filename-tags=%(count_file)s
               --filename-design=%(design_file)s
               --output-filename-pattern=%(track)s_
               --outfile=%(outfile)s
