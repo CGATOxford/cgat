@@ -1087,7 +1087,7 @@ TARGETS_DE = [ ( (x, y, glob.glob("*.bam"),
 #########################################################################
 #########################################################################
 #########################################################################
-@follows( mkdir("deseq.dir") )
+@follows( mkdir("deseq.dir"), loadAggregateExonLevelReadCounts )
 @files( [ (x, os.path.join( "deseq.dir", y)) for x, y in TARGETS_DE ] )
 def runDESeq( infiles, outfile ):
     '''perform differential expression analysis using deseq.'''
