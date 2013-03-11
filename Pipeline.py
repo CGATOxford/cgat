@@ -568,13 +568,13 @@ def snip( filename, extension = None, alt_extension = None, path = False):
     '''
     if extension: 
         if filename.endswith( extension ):
-            return filename[:-len(extension)]
+            root = filename[:-len(extension)]
         elif alt_extension and filename.endswith( alt_extension ):
-            return filename[:-len(alt_extension)]
+            root = filename[:-len(alt_extension)]
         else:
             raise ValueError("'%s' expected to end in '%s'" % (filename, extension))
-
-    root, ext = os.path.splitext( filename )
+    else:
+        root, ext = os.path.splitext( filename )
 
     if path==True: snipped = os.path.basename(root)
     else: snipped = root
