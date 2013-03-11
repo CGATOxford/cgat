@@ -172,16 +172,21 @@ def tabToDict(filename, key=None, value=None,sep="\t"):
 
     count = 0
     result = {}
+    valueidx, keyidx = False, False
+
     with open(filename,"r") as fh:
         for line in fh:
-            if count=0:
-                fieldn = 0
+            if line.startswith("#"): continue
+            if count==0:
+                fieldn= 0
                 for field in line.split(sep):
                     if field == key:
                         keyidx = fieldn
                     if field == value:
                         valueidx = fieldn
                     fieldn += 1
+                if not keyidx: raise ValueError("key name not found in header")
+                if not valueidx: raise ValueError("value name not found in header")
             else:
                 fields = line.split(sep)
                 result[fields[keyidx]] = fields[valueidx]
