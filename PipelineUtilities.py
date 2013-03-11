@@ -166,30 +166,39 @@ def biomart_iterator( attributes,
 ########################### File Utitilies ####################################
 ###############################################################################
 
-def tabToDict(filename, key=None, value=None,sep="\t"):
-    ''' make a dictionary from a text file on the 
-        specified column names '''
+def txtToDict(filename, key=None, sep="\t"):
+    ''' make a dictionary from a text file keyed 
+        on the specified column '''
 
     count = 0
     result = {}
     valueidx, keyidx = False, False
+    field_names = []
 
     with open(filename,"r") as fh:
         for line in fh:
             if line.startswith("#"): continue
             if count==0:
                 fieldn= 0
-                for field in line.split(sep):
+                for rawfield in line.split(sep):
+                    field = rawfield.strip()
                     if field == key:
-                        keyidx = fieldn
-                    if field == value:
-                        valueidx = fieldn
+                        keyidx = fieldn                      
+                    field_names.append(field)                       
                     fieldn += 1
+
                 if not keyidx: raise ValueError("key name not found in header")
-                if not valueidx: raise ValueError("value name not found in header")
+                #if not valueidx: raise ValueError("value name not found in header")
             else:
-                fields = line.split(sep)
-                result[fields[keyidx]] = fields[valueidx]
+                fields = [x.strip() for x in line.split(sep)]
+                fieldn = 0
+                for field in fields:
+                    if fieldn == keyidx: pass
+                    else:
+                        thiskey = field_names[keyidx]
+                        if thiskey not in result: result[thiskey] = {}
+                        result[thiskey][field_names[fieldn]]=field
+                    fieldn +=1
             count +=1
 
     return(result)
