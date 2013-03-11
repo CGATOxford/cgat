@@ -51,6 +51,7 @@ Code
 
 import sqlite3
 import Pipeline as P
+import rpy2.robjects as R
 
 try:
     PARAMS = P.getParameters()
@@ -128,11 +129,12 @@ def write(outfile, lines, header=False):
 ###############################################################################
 
 def biomart_iterator( attributes,
-                      filters,
-                      values,
                       host,
                       biomart, 
-                      dataset ):
+                      dataset,
+                      filters=None,
+                      values=None
+                      ):
     ''' Modified from pipeline biomart... '''
 
     r = R.r
@@ -143,10 +145,15 @@ def biomart_iterator( attributes,
                       path="/biomart/martservice",
                       archive=False )
 
-    values_list = values
+    if filters != None: filter_names = R.StrVector(filters)
+    else: filter_names = ""
+
+    if values != None: filter_values = values
+    else: filter_values = ""
+
     result = r.getBM( attributes=R.StrVector(attributes), 
-                      filters=R.StrVector(filters),
-                      values=values_list,
+                      filters=filter_names,
+                      values=filter_values,
                       mart=mart )
 
     # result is a dataframe.
@@ -155,3 +162,29 @@ def biomart_iterator( attributes,
     for data in zip( *[ result.rx(x)[0] for x in attributes] ):
         yield dict( zip(attributes, data) )
 
+###############################################################################
+########################### File Utitilies ####################################
+###############################################################################
+
+def tabToDict(filename, key=None, value=None,sep="\t"):
+    ''' make a dictionary from a text file on the 
+        specified column names '''
+
+    count = 0
+    result = {}
+    with open(filename,"r") as fh:
+        for line in fh:
+            if count=0:
+                fieldn = 0
+                for field in line.split(sep):
+                    if field == key:
+                        keyidx = fieldn
+                    if field == value:
+                        valueidx = fieldn
+                    fieldn += 1
+            else:
+                fields = line.split(sep)
+                result[fields[keyidx]] = fields[valueidx]
+            count +=1
+
+    return(result)
