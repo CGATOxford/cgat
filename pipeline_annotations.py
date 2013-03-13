@@ -1346,6 +1346,17 @@ def buildGOTable( infile, outfile ):
     infile = P.snip( infile, ".tsv.gz") + "_ontology.obo"
     PipelineGO.buildGOTable( infile, outfile )
 
+############################################################
+############################################################
+############################################################
+@transform( buildGOTable, suffix(".tsv"), ".load" )
+def loadGOTable( infile, outfile ):
+    '''load GO descriptions into database.'''
+    P.load( infile, outfile )
+
+############################################################
+############################################################
+############################################################
 @files(None,PARAMS['interface_kegg'])
 def importKEGGAssignments(infile,outfile):
     ''' import the KEGG annotations from the R KEGG.db 
