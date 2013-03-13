@@ -18,7 +18,7 @@ estimated using MAST-curves (:pmid:`19160518`). MAST-curves define
 an E-Value cutoff with the largest difference between peaks with motifs
 and expected number of peaks with motif by chance.
 
-.. report:: Motifs.MastSummary
+.. report:: Motifs.MastQuickSummary
    :render: interleaved-bar-plot
    :transform: filter
    :tf-fields: MC-explained / %
@@ -27,10 +27,10 @@ and expected number of peaks with motif by chance.
 
    Percentage of peaks explained by motifs.
 
-.. report:: Motifs.MastSummary
+.. report:: Motifs.MastQuickSummary
    :render: table
    :transform: filter                      
-   :tf-fields: MC-Evalue,MC-explained / %
+   :tf-fields: MC-With-Motifs,MC-Evalue,MC-explained / %
 
    Percentage of peaks explained by motifs.
 
@@ -61,13 +61,15 @@ middle of an interval.
 A strong motif displays a sigmoidal curve, while a weak/unspecific
 motif creates a diagonal.
 
-.. report:: Motifs.MastMotifLocationMiddle
-   :render: line-plot
-   :transform: histogram
-   :as-lines:
-   :tf-aggregate: normalized-total,cumulative
-   :layout: column-3
-   :width: 200
+[slow so disabled by default]
+
+.. .. report:: Motifs.MastMotifLocationMiddle
+..   :render: line-plot
+..   :transform: histogram
+..   :as-lines:
+..   :tf-aggregate: normalized-total,cumulative
+..   :layout: column-3
+..   :width: 200
 
    Location of motifs within intervals. If several
    motifs are within an interval, the midpoint
@@ -110,12 +112,14 @@ are two lines:
      X. This is a reverse cumulative distribution starting at low
      values for high X and then increasing to 100% as X decreases.
 
-.. report:: Motifs.MastPeakValWithMotif
-   :render: line-plot
-   :groupby: track
-   :as-lines:
-   :layout: column-3
-   :width: 200
+[slow so disabled by default]
+
+.. .. report:: Motifs.MastPeakValWithMotif
+..   :render: line-plot
+..   :groupby: track
+..   :as-lines:
+..   :layout: column-3
+..   :width: 200
 
    Proportion of intervals with a certain peakvalue or higher
    that contain a motif.

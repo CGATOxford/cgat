@@ -70,6 +70,7 @@ import IOTools
 import Bed
 import Bioprospector
 import FastaIterator
+import glob
 
 PARAMS = P.getParameters()
 
