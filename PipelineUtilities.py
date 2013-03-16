@@ -192,12 +192,13 @@ def txtToDict(filename, key=None, sep="\t"):
             else:
                 fields = [x.strip() for x in line.split(sep)]
                 fieldn = 0
+                thiskey = fields[keyidx]
+                result[thiskey]={}
                 for field in fields:
                     if fieldn == keyidx: pass
                     else:
-                        thiskey = field_names[keyidx]
-                        if thiskey not in result: result[thiskey] = {}
-                        result[thiskey][field_names[fieldn]]=field
+                        colkey = field_names[fieldn]
+                        result[thiskey][colkey]=field
                     fieldn +=1
             count +=1
 
