@@ -38,6 +38,9 @@ API
 
 from ruffus import *
 
+import os, sys, re, shutil
+import Experiment as E
+
 PROJECT_ROOT = '/ifs/projects'
 
 def getProjectId():

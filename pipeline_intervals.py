@@ -509,6 +509,8 @@ def buildContextStats( infiles, outfile ):
 
     min_overlap = 0.5
 
+    job_options = "-l mem_free=4G"
+
     to_cluster = True
     statement = '''
        python %(scriptsdir)s/rnaseq_bam_vs_bed.py

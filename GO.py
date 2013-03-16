@@ -1449,57 +1449,55 @@ def selectSignificantResults( pairs, fdrs, options ):
 ################################################################
 ################################################################
 ################################################################
-def outputMultipleGeneListResults( all_significant_results, 
+def outputMultipleGeneListResults( results, 
                                    all_genelists_with_results, 
                                    test_ontology,
                                    go2info,
-                                   options ):
+                                   options,
+                                   section ):
     '''select a set of significant results.
     '''
     
     col_headers = all_genelists_with_results
 
-    assert len(col_headers) == len(all_significant_results)
+    assert len(col_headers) == len(results)
 
-    # fold change matrix
-    matrix, row_headers = buildMatrix( all_significant_results, 
-                                       valuef = lambda x: math.log( x.mRatio + 0.00000001, 2 ),
-                                       dtype = numpy.float )
+    def _output( section, subsection, valuef, dtype ):
 
-    outfile = getFileName( options, 
-                           go = test_ontology,
-                           section = 'fold',
-                           set = 'all' )
+        # fold change matrix
+        matrix, row_headers = buildMatrix( results, 
+                                           valuef = valuef,
+                                           dtype = dtype )
 
-    IOTools.writeMatrix( outfile, matrix, row_headers, col_headers, row_header="category" )
+        outfile = getFileName( options, 
+                               go = test_ontology,
+                               section = section,
+                               set = '%s_all' % subsection )
 
-    outfile = getFileName( options, 
-                           go = test_ontology,
-                           section = 'fold',
-                           set = 'alldesc' )
+        IOTools.writeMatrix( outfile, matrix, row_headers, col_headers, row_header="category" )
 
-    IOTools.writeMatrix( outfile, matrix, 
-                         [ "%s:%s" % (x, go2info[x].mDescription) for x in row_headers], 
-                         col_headers, row_header="category" )
+        outfile = getFileName( options, 
+                               go = test_ontology,
+                               section = section,
+                               set = '%s_alldesc' % subsection )
 
-    # pvalue matrix
-    matrix, row_headers = buildMatrix( all_significant_results, 
-                                       valuef = lambda x: int(-10 * math.log( x.mPValue,10)),
-                                       dtype = numpy.int )
-    outfile = getFileName( options, 
-                           go = test_ontology,
-                           section = 'pvalue',
-                           set = 'all' )
-    IOTools.writeMatrix( outfile, matrix, row_headers, col_headers, row_header="category" )
+        IOTools.writeMatrix( outfile, matrix, 
+                             [ "%s:%s" % (x, go2info[x].mDescription) for x in row_headers], 
+                             col_headers, row_header="category" )
 
-    outfile = getFileName( options, 
-                           go = test_ontology,
-                           section = 'pvalue',
-                           set = 'alldesc' )
-    IOTools.writeMatrix( outfile, matrix,
-                         [ "%s:%s" % (x, go2info[x].mDescription) for x in row_headers], 
-                         col_headers, row_header="category" )
 
+    _output( 'l2fold', section, 
+             valuef = lambda x: math.log( x.mRatio + 0.00000001, 2 ),
+             dtype = numpy.float )
+
+    _output( 'l10pvalue', section, 
+             valuef = lambda x: int(-10*math.log( x.mPValue,10)),
+             dtype = numpy.int )
+
+    _output( 'l10qvalue', section, 
+             valuef = lambda x: int(-10*math.log( x.mQValue,10)),
+             dtype = numpy.int )
+             
 
 def pairwiseGOEnrichment( results_per_genelist, labels, test_ontology, go2info, options ):
     '''compute pairwise enrichment between sets.
@@ -1721,6 +1719,11 @@ def main():
                       choices = ( "empirical", "storey", "BH" ),
                       help="method to perform multiple testing correction by controlling the fdr [default=%default]."  )
 
+
+    parser.add_option( "--pairwise", dest="compute_pairwise", action="store_true",
+                       help="compute pairwise enrichment for multiple gene lists. "
+                       "[default=%default]." )
+
     # parser.add_option( "--qvalue-lambda", dest="qvalue_lambda", type="float",
     #                   help="fdr computation: lambda [default=%default]."  )
 
@@ -1746,6 +1749,7 @@ def main():
                          strict = False,
                          qvalue_method = "empirical",
                          pairs_min_observed_counts = 3,
+                         compute_pairwise = False,
                          )
 
     (options, args) = E.Start( parser, add_mysql_options = True )
@@ -1818,8 +1822,7 @@ def main():
         
         # nick - bug fix: background is the first tuple element from ReadGeneLists
         input_background = ReadGeneLists( options.filename_background, 
-                                         gene_pattern = options.gene_pattern )[0]
-
+                                          gene_pattern = options.gene_pattern )[0]
         E.info( "read %i genes for background" % len(input_background) )
     else:
         input_background = None
@@ -2156,18 +2159,29 @@ def main():
             ######################################################################
             ######################################################################
             ## output various summary files
+            ## significant results
             outputMultipleGeneListResults( all_significant_results, 
                                            all_genelists_with_results, 
                                            test_ontology, 
                                            go2info,
-                                           options )
+                                           options,
+                                           section = 'significant')
 
+            ## all results
+            outputMultipleGeneListResults( all_results, 
+                                           all_genelists_with_results, 
+                                           test_ontology, 
+                                           go2info,
+                                           options,
+                                           section = 'all')
 
-            pairwiseGOEnrichment( all_results,
-                                  all_genelists_with_results,
-                                  test_ontology,
-                                  go2info,
-                                  options )
+            
+            if options.compute_pairwise:
+                pairwiseGOEnrichment( all_results,
+                                      all_genelists_with_results,
+                                      test_ontology,
+                                      go2info,
+                                      options )
 
     E.Stop()
 

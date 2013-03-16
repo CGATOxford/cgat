@@ -74,7 +74,7 @@ class PipelineError( Exception ): pass
 # while building the statement. Hence, use dict.
 ROOT_DIR=os.path.dirname( __file__ )
 
-PARAMS= { 
+PARAMS = { 
     'scriptsdir' : ROOT_DIR,
     'toolsdir' : ROOT_DIR,
     'cmd-farm' : """%s/farm.py 
@@ -87,6 +87,11 @@ PARAMS= {
     'cmd-sql' : """sqlite3 -header -csv -separator $'\\t' """,
     'cmd-run' : """%s/run.py""" % ROOT_DIR
     }
+
+# path until parameter sharing is resolved between CGAT module
+# and the pipelines module.
+import CGAT
+CGAT.PARAMS = PARAMS
 
 hostname = os.uname()[0]
 

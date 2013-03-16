@@ -34,7 +34,7 @@ Code
 
 '''
 
-import string, re, sys, os, collections, types, glob, stat, gzip, subprocess
+import string, re, sys, os, collections, types, glob, stat, gzip, subprocess, itertools
 
 import numpy
 import numpy.ma
@@ -289,6 +289,29 @@ def readTable( file,
     return matrix, headers
 
 ########################################################################
+def writeTable( outfile, table, columns = None, fillvalue = "" ):
+    '''write a table to outfile.
+
+    If table is a dictionary, output columnwise. If *columns* is a list,
+    only output columns in columns in the specified order.
+    '''
+
+    if type(table) == dict:
+        if columns == None:
+            columns = table.keys()
+        outfile.write( "\t".join( columns )+ "\n" )
+        # get data
+        data = [ table[x] for x in columns ]
+        # transpose
+        data = list( itertools.izip_longest( *data, fillvalue = fillvalue ) )
+        
+        for d in data:
+            outfile.write( "\t".join( map(str, d)) + "\n" )
+    
+    else:
+        raise NotImplementedError
+
+########################################################################
 def readMatrix( infile, dtype = numpy.float ):
     '''read a numpy matrix from infile.
 
@@ -308,7 +331,7 @@ def readMatrix( infile, dtype = numpy.float ):
         matrix[row] = numpy.array(data[1:], dtype = dtype)
         
     return matrix, row_headers, col_headers
-    
+
 ########################################################################
 def writeMatrix( outfile, matrix, row_headers, col_headers, row_header = "" ):
     '''write a numpy matrix to outfile.

@@ -56,7 +56,7 @@ Code
 ----
 
 '''
-import sys, re, os, tempfile, collections, shutil
+import sys, re, os, tempfile, collections, shutil, glob
 
 import logging as L
 import Experiment as E
@@ -840,7 +840,7 @@ def collectMEMEResults( tmpdir, target_path, outfile ):
     for epsfile in epsfiles:
         b, ext = os.path.splitext( epsfile )
         pngfile = b + ".png" 
-        statement = '''convert %(epsfile)s %(pngfile)s" '''
+        statement = '''convert %(epsfile)s %(pngfile)s '''
         P.run()
     
 ############################################################
