@@ -443,18 +443,25 @@ def concatenateAndLoad( infiles, outfile, regex_filename = None, header = None )
                    > %(outfile)s'''
     run()
 
-def mergeAndLoad( infiles, outfile, suffix = None, columns=(0,1), regex = None, row_wise = True ):
+def mergeAndLoad( infiles, 
+                  outfile, 
+                  suffix = None, 
+                  columns=(0,1), 
+                  regex = None, 
+                  row_wise = True ):
     '''merge categorical tables and load into a database.
 
     Columns denotes the columns to be taken.
 
     The tables are merged and entered row-wise, i.e each file is 
-    a row unless row_wise is set to False. This is useful if 
+    a row unless *row_wise* is set to False. The latter is useful if 
     histograms are being merged.
 
     Filenames are stored in a ``track`` column. Directory names
     are chopped off.
     '''
+    if len(infiles) == 0:
+        raise ValueError( "no files for merging")
     if suffix:
         header = ",".join( [ os.path.basename( snip( x, suffix) ) for x in infiles] )
     elif regex:
