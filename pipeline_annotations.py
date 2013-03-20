@@ -148,6 +148,12 @@ goslim.tsv.gz
 territories.gff.gz
    A :term:`gff` formatted file of non-overlapping gene territories.
 
+tssterritories.gff.gz
+   A :term:`gff` formatted file of non-overlapping tss territories.
+
+greatdomains.gff.gz
+   A :term:`gff` formatted file of great regulatory domains (basal+extension rule).
+
 gc_segmentation.bed.gz
    A :term:`bed` formatted file with the genome segmented in regions
    of different G+C content.
@@ -793,6 +799,57 @@ def buildGeneTerritories( infile, outfile ):
           --radius=%(geneset_territories_radius)s
           --method=territories
     | python %(scriptsdir)s/gtf2gtf.py --filter=longest-gene --log=%(outfile)s.log 
+    | gzip
+    > %(outfile)s '''
+    
+    P.run()
+
+############################################################
+############################################################
+############################################################
+@merge( buildFlatGeneSet, PARAMS["interface_tssterritories_gff"] )
+def buildTSSTerritories( infile, outfile ):
+    '''build gene territories from protein coding genes.'''
+
+    to_cluster=True
+    
+    statement = '''
+    gunzip < %(infile)s
+    | awk '$2 == "protein_coding"'
+    | python %(scriptsdir)s/gtf2gtf.py --sort=gene
+    | python %(scriptsdir)s/gtf2gtf.py --merge-transcripts --with-utr
+    | python %(scriptsdir)s/gtf2gtf.py --sort=position
+    | python %(scriptsdir)s/gtf2gff.py 
+          --genome-file=%(genome_dir)s/%(genome)s 
+          --log=%(outfile)s.log
+          --radius=%(geneset_territories_radius)s
+          --method=tss-territories
+    | python %(scriptsdir)s/gtf2gtf.py --filter=longest-gene --log=%(outfile)s.log 
+    | gzip
+    > %(outfile)s '''
+    
+    P.run()
+
+############################################################
+############################################################
+############################################################
+@merge( buildFlatGeneSet, PARAMS["interface_greatdomains_gff"] )
+def buildGREATRegulatoryDomains( infile, outfile ):
+    '''build gene territories from protein coding genes.'''
+
+    to_cluster=True
+    
+    statement = '''
+    gunzip < %(infile)s
+    | awk '$2 == "protein_coding"'
+    | python %(scriptsdir)s/gtf2gtf.py --filter=representative-transcript --log=%(outfile)s.log
+    | python %(scriptsdir)s/gtf2gff.py 
+          --genome-file=%(genome_dir)s/%(genome)s 
+          --log=%(outfile)s.log
+          --radius=%(great_radius)s
+          --method=great-domains
+          --upstream=%(great_upstream)i
+          --downstream=%(great_downstream)i
     | gzip
     > %(outfile)s '''
     
@@ -1933,6 +1990,8 @@ def genome():
 
 @follows( buildGeneSet,
           buildGeneTerritories,
+          buildTSSTerritories,
+          buildGREATRegulatoryDomains,
           loadCDSTranscripts,
           loadTranscriptInformation,
           loadGeneStats,
