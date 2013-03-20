@@ -478,8 +478,9 @@ class GOResult:
 
 ##-------------------------------------------------------------------------------                                           
 class GOResults:
-
+    '''container for go results.'''
     def __init__(self):
+        # dictionary of (GOID,GoResult) tuples
         self.mResults = {}
         self.mNumGenes = 0
         self.mBackgroundCountsTotal = 0
@@ -1114,10 +1115,20 @@ def convertGo2Goslim( options ):
                           len(output_genes), len(output_goids),
                           noutput) )
 
-def outputResults( outfile, pairs, go2info,
+def outputResults( outfile, 
+                   pairs, 
+                   go2info,
                    options,
-                   fdrs = None, samples = None, gene2go = None, foreground = None ):
-    '''output GO results to outfile.'''
+                   fdrs = None, 
+                   samples = None, 
+                   gene2go = None, 
+                   foreground = None,
+                   gene2name = None):
+    '''output GO results to outfile.
+
+    If foreground is given, output a list of gene identifiers in the foreground.
+    If gene2name is given, output a columns with gene names (instead of identifiers)
+    '''
 
     headers = ["code",
                "scount", "stotal", "spercent", 
@@ -1132,6 +1143,8 @@ def outputResults( outfile, pairs, go2info,
     if gene2go and foreground:
         headers += ['foreground']
         go2genes = buildGO2Genes( gene2go )
+        if gene2name:
+            headers += ['genes']
 
     if samples:
         headers += ["min", "max", "zscore", "mpover", "mpunder", 
@@ -1178,7 +1191,10 @@ def outputResults( outfile, pairs, go2info,
         
         if foreground:
             if k in go2genes:
-                g = ";".join( [ x for x in go2genes[k] if x in foreground] )
+                g = [ x for x in go2genes[k] if x in foreground]
+                if gene2name:
+                    g = [gene2name.get(x,'?') for x in g ]
+                g = ";".join( g )
             else:
                 g = ""
             outfile.write("\t%s" % g )
@@ -1683,6 +1699,9 @@ def main():
     parser.add_option ("--filename-dump", dest="filename_dump", type="string",
                        help="dump GO category assignments into a flatfile [default=%default]." )
 
+    parser.add_option ("--filename-gene2name", dest="filename_gene2name", type="string",
+                       help="optional filename mapping gene identifiers to gene names [default=%default]." )
+
     parser.add_option ("--filename-ontology", dest="filename_ontology", type="string",
                        help="filename with ontology in OBO format [default=%default]." )
 
@@ -1750,6 +1769,7 @@ def main():
                          qvalue_method = "empirical",
                          pairs_min_observed_counts = 3,
                          compute_pairwise = False,
+                         filename_gene2name = None
                          )
 
     (options, args) = E.Start( parser, add_mysql_options = True )
@@ -1762,7 +1782,6 @@ def main():
     if options.fdr and options.sample == 0:
         E.warn( "fdr will be computed without sampling" )
         
-
     #############################################################
     ## dump GO
     if options.filename_dump:
@@ -1789,6 +1808,16 @@ def main():
         infile = IOTools.openFile(options.filename_input)
         gene2gos, go2infos = ReadGene2GOFromFile( infile )
         infile.close()
+
+    if options.filename_gene2name:
+        E.info("reading gene identifier to gene name mapping from %s" % options.filename_gene2name)
+        infile = IOTools.openFile( options.filename_gene2name)
+        gene2name = IOTools.readMap( infile, has_header = True )
+        infile.close()
+        E.info("read %i gene names for %i gene identifiers" % (len(set(gene2name.values())),
+                                                               len(gene2name)))
+    else:
+        gene2name = None
 
     #############################################################
     ## read GO ontology from file
@@ -2059,6 +2088,10 @@ def main():
             filtered_pairs = selectSignificantResults( pairs, fdrs, options )
 
             nselected = len(filtered_pairs)
+            nselected_up = len( [x for x in filtered_pairs if x[1].mRatio > 1 ] )
+            nselected_down = len( [x for x in filtered_pairs if x[1].mRatio < 1 ] )
+            
+            assert nselected_up + nselected_down == nselected
 
             outfile = getFileName( options, 
                                    go = test_ontology,
@@ -2099,20 +2132,22 @@ def main():
                 nbackground = len(go_results.mBackgroundGenes)
 
             outfile.write( "# input go mappings for gene list '%s' and category '%s'\n" % (genelist_name, test_ontology ))
-            outfile.write( "value\tparameter\n" )
-            outfile.write( "%i\tmapped genes\n" % ngenes )
-            outfile.write( "%i\tmapped categories\n" % ncategories )
-            outfile.write( "%i\tmappings\n" % nmaps )
-            outfile.write( "%i\tgenes in sample\n" % len(foreground) )
-            outfile.write( "%i\tgenes in sample with GO assignments\n" % (len(go_results.mSampleGenes)) )
-            outfile.write( "%i\tinput background\n" % nbackground )
-            outfile.write( "%i\tgenes in background with GO assignments\n" % (len(go_results.mBackgroundGenes)) )
-            outfile.write( "%i\tassociations in sample\n"     % go_results.mSampleCountsTotal )
-            outfile.write( "%i\tassociations in background\n" % go_results.mBackgroundCountsTotal )
-            outfile.write( "%s\tpercent genes in sample with GO assignments\n" % (IOTools.prettyPercent( len(go_results.mSampleGenes) , len(foreground), "%5.2f" )))
-            outfile.write( "%s\tpercent genes background with GO assignments\n" % (IOTools.prettyPercent( len(go_results.mBackgroundGenes), nbackground, "%5.2f" )))
-            outfile.write( "%i\tsignificant results reported\n" % nselected )
-            outfile.write( "%6.4f\tsignificance threshold\n" % options.threshold )        
+            outfile.write( "parameter\tvalue\tdescription\n" )
+            outfile.write( "mapped_genes\t%i\tmapped genes\n" % ngenes )
+            outfile.write( "mapped_categories\t%i\tmapped categories\n" % ncategories )
+            outfile.write( "mappings\t%i\tmappings\n" % nmaps )
+            outfile.write( "genes_in_fg\t%i\tgenes in foreground\n" % len(foreground) )
+            outfile.write( "genes_in_fg_with_assignment\t%i\tgenes in foreground with GO assignments\n" % (len(go_results.mSampleGenes)) )
+            outfile.write( "genes_in_bg\t%i\tinput background\n" % nbackground )
+            outfile.write( "genes_in_bg_with_assignment\t%i\tgenes in background with GO assignments\n" % (len(go_results.mBackgroundGenes)) )
+            outfile.write( "associations_in_fg\t%i\tassociations in sample\n"     % go_results.mSampleCountsTotal )
+            outfile.write( "associations_in_bg\t%i\tassociations in background\n" % go_results.mBackgroundCountsTotal )
+            outfile.write( "percent_genes_in_fg_with_association\t%s\tpercent genes in sample with GO assignments\n" % (IOTools.prettyPercent( len(go_results.mSampleGenes) , len(foreground), "%5.2f" )))
+            outfile.write( "percent_genes_in_bg_with_associations\t%s\tpercent genes background with GO assignments\n" % (IOTools.prettyPercent( len(go_results.mBackgroundGenes), nbackground, "%5.2f" )))
+            outfile.write( "significant\t%i\tsignificant results reported\n" % nselected )
+            outfile.write( "significant_up\t%i\tsignificant up-regulated results reported\n" % nselected_up )
+            outfile.write( "significant_down\t%i\tsignificant up-regulated results reported\n" % nselected_down )
+            outfile.write( "threshold\t%6.4f\tsignificance threshold\n" % options.threshold )        
 
             if options.output_filename_pattern:
                 outfile.close()
@@ -2148,7 +2183,8 @@ def main():
             outputResults( outfile, pairs, go2info, options, 
                            fdrs = fdrs, 
                            gene2go = gene2go,
-                           foreground = foreground)
+                           foreground = foreground,
+                           gene2name = gene2name )
 
             if options.output_filename_pattern:
                 outfile.close()
