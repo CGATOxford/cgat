@@ -285,7 +285,8 @@ def runGOFromFiles( outfile,
                     go_file = None,
                     ontology_file = None,
                     samples = None,
-                    minimum_counts = 0 ):
+                    minimum_counts = 0,
+                    gene2name = None):
     '''check for GO enrichment within a gene list.
 
     The gene list is given in ``fg_file``. It is compared
@@ -295,6 +296,8 @@ def runGOFromFiles( outfile,
 
     if *bg_file* is None, the all genes with GO annotations
     will be used.
+
+    If *gene2name* is given, it will be supplied to the GO.py script.
     '''
 
     to_cluster = True
@@ -315,6 +318,9 @@ def runGOFromFiles( outfile,
     else:
         options.append( "--fdr" )
         options.append( "--qvalue-method=BH" )
+
+    if gene2name:
+        options.append( "--filename-gene2name=%s" % gene2name)
 
     options = " ".join( options )
     statement = '''
