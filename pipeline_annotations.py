@@ -687,7 +687,7 @@ def loadEntrezToEnsembl(infile,outfile):
                                   tablename,
                                   data,
                                   columns = columns,
-                                  indices = ("gene_d", "entrez_id") )
+                                  indices = ("gene_id", "entrez_id") )
 
 ############################################################
 ############################################################
