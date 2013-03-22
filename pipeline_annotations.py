@@ -670,7 +670,7 @@ def loadTranscriptInformation( infile, outfile ):
 ############################################################
 ############################################################
 @files(PARAMS["ensembl_filename_gtf"], "ensembl_to_entrez.load")
-def loadEntrezToEnsembl(infile,outifle):
+def loadEntrezToEnsembl(infile,outfile):
     '''load table to convert from ENSEMBL gene ids to entrez gene ids'''
 
     tablename = P.toTable( outfile )
