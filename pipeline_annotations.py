@@ -677,7 +677,7 @@ def loadEntrezToEnsembl(infile,outfile):
 
     columns = {
         "ensembl_gene_id": "gene_id",
-        "entrez_gene_id": "entrez_id" }
+        "entrezgene": "entrez_id" }
     
     data = PBiomart.biomart_iterator( columns.keys(),
                                       biomart = "ensembl",
