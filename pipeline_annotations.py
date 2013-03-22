@@ -685,6 +685,7 @@ def loadEntrezToEnsembl(infile,outfile):
 
     PDatabase.importFromIterator( outfile,
                                   tablename,
+                                  data,
                                   columns = columns,
                                   indices = ("gene_d", "entrez_id") )
 
