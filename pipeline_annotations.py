@@ -669,6 +669,28 @@ def loadTranscriptInformation( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
+@files(PARAMS["ensembl_filename_gtf"], "ensembl_to_entrez.load")
+def loadEntrezToEnsembl(infile,outifle):
+    '''load table to convert from ENSEMBL gene ids to entrez gene ids'''
+
+    tablename = P.toTable( outfile )
+
+    columns = {
+        "ensembl_gene_id": "gene_id",
+        "entrez_gene_id": "entrez_id" }
+    
+    data = PBiomart.biomart_iterator( columns.keys(),
+                                      biomart = "ensembl",
+                                      dataset = PARAMS["ensembl_biomart_dataset"])
+
+    PDatabase.importFromIterator( outfile,
+                                  tablename,
+                                  columns = columns,
+                                  indices = ("gene_d", "entrez_id") )
+
+############################################################
+############################################################
+############################################################
 @files( PARAMS["ensembl_filename_gtf"], "transcript_synonyms.load" )
 def loadTranscriptSynonyms( infile, outfile ):
     '''load table with synonyms for transcript identifiers.'''
@@ -1998,6 +2020,7 @@ def genome():
           loadCDSStats,
           loadExonStats,
           loadGeneInformation,
+          loadEntrezToEnsembl,
           loadTranscriptSynonyms,
           buildExonTranscripts,
           buildCodingExonTranscripts,
