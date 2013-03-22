@@ -119,7 +119,7 @@ def main( argv = None ):
         BAM_CDEL = 2
         BAM_CREF_SKIP = 3
         take = (BAM_CMATCH, BAM_CDEL, BAM_CREF_SKIP)
-        outfile = sys.stdout
+        outfile = options.stdout
 
         for read in it:
             if read.is_unmapped: continue

@@ -138,19 +138,39 @@ upstream, downstream
    upstream/downstream regions in 5 intervals of a total of 1kb (see option --flank to increase
    the total size).
 
+.. _territorios:
+
 Territories
 +++++++++++
 
 If ``--method=territories``, the gene set is used to define gene territories. 
 Territories are segments around genes and are non-overlapping. Exons in a gene
 are merged and the resulting the region is enlarged by --radius. Overlapping
-territories are divided at the midpoint between the two genes.
+territories are divided at the midpoint between the two genes. The maximum
+extent of a territory is limited by the option ``--radius``
 
 .. note::
    The gtf file has to be sorted first by contig and then by position.
 
 .. note::
    Genes should already have been merged (gtf2gtf --merge-transcripts)
+
+TSSTerritories
+++++++++++++++
+
+If ``--method=tssterritories``, the gene set is used to define gene territories. 
+Instead of the full gene length as in :ref:`territories`, only the tss is used to 
+define a territory. Territories are segments around genes and are non-overlapping.
+Overlapping territories are divided at the midpoint between the two genes. The maximum
+extent of a territory is limited by the option ``--radius``.
+
+.. note::
+   The gtf file has to be sorted first by contig and then by position.
+
+.. note::
+   Genes should already have been merged (gtf2gtf --merge-transcripts)
+
+The domain definitions corresponds to the ``nearest gene`` rule in GREAT.
 
 GREAT-Domains
 +++++++++++++
@@ -330,16 +350,22 @@ def addIntergenicSegment( last, this, fasta, options ):
     return nadded
 
 ##-----------------------------------------------------------------------------
-def buildTerritories( iterator, fasta, options ):
+def buildTerritories( iterator, fasta, method, options ):
     """build gene territories. 
 
     Exons in a gene are merged and the resulting 
     segments enlarged by --radius. Territories
     overlapping are divided in the midpoint between
     the two genes.
+
+    If *method* is ``gene``, gene territories will be built.
+    If *method* is ``tss``, tss territories will be built.
+
     """
 
     ninput, noutput, nambiguous = 0, 0, 0
+
+    assert method in ("gene", "tss")
 
     dr = 2 * options.radius
 
@@ -357,6 +383,14 @@ def buildTerritories( iterator, fasta, options ):
 
             this_start = min( [ x.start for x in matches ] )
             this_end = max( [ x.end for x in matches ] )
+
+            if method == "tss":
+                # restrict to tss 
+                if matches[0].strand == "+":
+                    this_end = this_start + 1
+                else:
+                    this_start = this_end - 1
+
             this_contig = matches[0].contig
 
             if last_contig != this_contig: 
@@ -380,6 +414,13 @@ def buildTerritories( iterator, fasta, options ):
 
         start = min( [ x.start for x in matches ] )
         end = max( [ x.end for x in matches ] )
+
+        if method == "tss":
+            # restrict to tss 
+            if matches[0].strand == "+":
+                end = start + 1
+            else:
+                start = end - 1
 
         d = start - last_end
         if d < dr:
@@ -405,9 +446,8 @@ def buildTerritories( iterator, fasta, options ):
         assert gff.start < gff.end, "invalid segment: %s" % str(gff)
         options.stdout.write( str(gff) + "\n" )
         noutput += 1
-        
-    if options.loglevel >= 1:
-        options.stdlog.write( "# ninput=%i, noutput=%i, nambiguous=%i\n" % (ninput, noutput, nambiguous ))
+
+    E.info( "ninput=%i, noutput=%i, nambiguous=%i" % (ninput, noutput, nambiguous ))
 
 ##-----------------------------------------------------------------------------
 def annotateGenome( iterator, fasta, options ):
@@ -808,9 +848,13 @@ def annotateTTS( iterator, fasta, options ):
         options.stdlog.write( "# ngenes=%i, ntranscripts=%i, ntss=%i\n" % (ngenes, ntranscripts, npromotors) )
 
 def annotateGenes( iterator, fasta, options ):
-    """annotate termination sites within iterator.
+    """annotate gene structures
 
-    Only protein_coding genes are annotated.
+    This method outputs intervals for first/middle/last exon/intron, UTRs and flanking regions.
+
+    This method annotates per transcript. In order to achieve a unique tiling, 
+    use only a single transcript per gene and remove any overlap between 
+    genes.
     """
 
     gene_iterator = GTF.gene_iterator( iterator )
@@ -818,7 +862,10 @@ def annotateGenes( iterator, fasta, options ):
     ngenes, ntranscripts, nskipped = 0, 0, 0
 
     results = []
-    increment =  options.flank // options.nflanks 
+    increment =  options.increment
+
+    introns_detail = "introns" in options.detail
+    exons_detail = "exons" in options.detail
 
     for gene in gene_iterator:
         ngenes += 1
@@ -874,25 +921,33 @@ def annotateGenes( iterator, fasta, options ):
                 upstream, downstream = downstream, upstream
             
             # add exons
-            _add( exons[0], "first_exon" )
-            if len(exons) > 1:
-                _add( exons[-1], "last_exon" )
-            for e in exons[1:-1]:
-                _add( e, "middle_exon" )
-                
+            if exons_detail:
+                _add( exons[0], "first_exon" )
+                if len(exons) > 1:
+                    _add( exons[-1], "last_exon" )
+                for e in exons[1:-1]:
+                    _add( e, "middle_exon" )
+            else:
+                for e in exons:
+                    _add( e, "exon" )
+
             # add introns
-            if len(introns) > 0:
-                _add( introns[0], "first_intron" )
-            if len(introns) > 1:
-                _add( introns[-1], "last_intron" )
-            for i in introns[1:-1]:
-                _add( i, "middle_intron" )
-                
+            if introns_detail:
+                if len(introns) > 0:
+                    _add( introns[0], "first_intron" )
+                if len(introns) > 1:
+                    _add( introns[-1], "last_intron" )
+                for i in introns[1:-1]:
+                    _add( i, "middle_intron" )
+            else:
+                for i in introns:
+                    _add( i, "intron" )
+
             for x, u in enumerate( upstream ):
-                _add(u, "upstream_%i" % (increment * x ) )
+                _add(u, "upstream_%i" % (increment * (x+1) ) )
 
             for x, u in enumerate( downstream ):
-                _add(u, "downstream_%i" % (increment * x ) )
+                _add(u, "downstream_%i" % (increment * (x+1) ) )
                 
             results.sort( key = lambda x: x.feature )
 
@@ -930,8 +985,9 @@ if __name__ == '__main__':
                       help="restrict input by source [default=%default]."  )
 
     parser.add_option("-m", "--method", dest="method", type="choice",
-                      choices=("full", "genome", "territories", "exons", "promotors", "tts", 
+                      choices=("full", "genome", "exons", "promotors", "tts", 
                                "regulons", "tts-regulons", "genes",
+                               "territories", "tss-territories",
                                "great-domains",
                                ),
                       help="method for defining segments [default=%default]."  )
@@ -942,6 +998,9 @@ if __name__ == '__main__':
     parser.add_option("-f", "--flank", dest="flank", type="int",
                       help="size of the flanking region next to a gene [default=%default]."  )
 
+    parser.add_option( "--increment", dest="increment", type="int",
+                       help="size of increment in flank in genestructure annotation [default=%default]."  )
+
     parser.add_option("-p", "--promotor", dest="promotor", type="int",
                       help="size of a promotor region [default=%default]."  )
 
@@ -950,6 +1009,10 @@ if __name__ == '__main__':
 
     parser.add_option("-d", "--downstream", dest="downstream", type="int",
                       help="size of region downstream of tss [default=%default]."  )
+
+    parser.add_option( "--detail", dest="detail", type="choice",
+                       choices = ("introns+exons", "exons", "introns" ),
+                       help="level of detail for gene structure annotation [default=%default]."  )
 
     parser.add_option( "--merge-promotors", dest="merge_promotors", action="store_true",
                        help="merge promotors [default=%default]."  )
@@ -960,7 +1023,7 @@ if __name__ == '__main__':
     parser.set_defaults(
         genome_file = None,
         flank = 1000,
-        nflanks = 5,
+        increment = 1000,
         max_frameshift_length = 4,
         min_intron_length = 30,
         ignore_missing = False,
@@ -971,7 +1034,7 @@ if __name__ == '__main__':
         merge_promotors = False,
         upstream = 5000,
         downstream = 5000,
-        detail = None,
+        detail = "exons",
         )
 
     (options, args) = E.Start( parser )
@@ -992,7 +1055,9 @@ if __name__ == '__main__':
     if options.method == "full" or options.method == "genome":
         segmentor = annotateGenome( iterator, fasta, options )
     elif options.method == "territories":
-        segmentor = buildTerritories( iterator, fasta, options )
+        segmentor = buildTerritories( iterator, fasta, 'gene', options )
+    elif options.method == "tss-territories":
+        segmentor = buildTerritories( iterator, fasta, 'tss', options )
     elif options.method == "exons":
         segmentor = annotateExons( iterator, fasta, options )
     elif options.method == "promotors":

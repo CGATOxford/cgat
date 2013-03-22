@@ -70,6 +70,9 @@ try:
 except IOError:
     pass
 
+def getPicardOptions():
+    return "-pe dedicated 3 -R y -l mem_free=1.4G -l picard=1"
+
 def getNumReadsFromReadsFile( infile ):
     '''get number of reads from a .nreads file.'''
     with IOTools.openFile( infile ) as inf:
@@ -103,7 +106,7 @@ def buildPicardInsertSizeStats( infile, outfile, genome_file ):
     '''gather BAM file insert size statistics using Picard '''
 
     to_cluster = True
-    job_options = "-l mem_free=4G -l picard=1"
+    job_options = getPicardOptions()
 
     if getNumReadsFromBAMFile(infile) == 0:
         E.warn( "no reads in %s - no metrics" % infile )
@@ -124,7 +127,7 @@ def buildPicardAlignmentStats( infile, outfile, genome_file ):
     '''gather BAM file alignment statistics using Picard '''
 
     to_cluster = True
-    job_options = "-l mem_free=4G -l picard=1"
+    job_options = getPicardOptions()
 
     if getNumReadsFromBAMFile(infile) == 0:
         E.warn( "no reads in %s - no metrics" % infile )
@@ -162,7 +165,7 @@ def buildPicardDuplicationStats( infile, outfile ):
     '''Record duplicate metrics using Picard, the marked records are discarded'''
 
     to_cluster = True
-    job_options = "-l mem_free=4G -l picard=1"
+    job_options = getPicardOptions()
 
     if getNumReadsFromBAMFile(infile) == 0:
         E.warn( "no reads in %s - no metrics" % infile )
@@ -182,7 +185,7 @@ def buildPicardGCStats( infile, outfile, genome_file ):
     '''Gather BAM file GC bias stats using Picard '''
     to_cluster = True
 
-    job_options = "-l mem_free=4G -l picard=1"
+    job_options = getPicardOptions()
 
     if getNumReadsFromBAMFile(infile) == 0:
         E.warn( "no reads in %s - no metrics" % infile )

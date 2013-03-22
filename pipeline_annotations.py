@@ -148,6 +148,12 @@ goslim.tsv.gz
 territories.gff.gz
    A :term:`gff` formatted file of non-overlapping gene territories.
 
+tssterritories.gff.gz
+   A :term:`gff` formatted file of non-overlapping tss territories.
+
+greatdomains.gff.gz
+   A :term:`gff` formatted file of great regulatory domains (basal+extension rule).
+
 gc_segmentation.bed.gz
    A :term:`bed` formatted file with the genome segmented in regions
    of different G+C content.
@@ -348,6 +354,7 @@ def calculateMappability( infile, outfile ):
     '''Calculate mappability using GEM '''
     index = P.snip(infile, ".gem")
     to_cluster = True
+    job_options = " -pe dedicated %i " % PARAMS["gem_threads"]
     statement = '''gem-mappability -t %(gem_threads)s -m %(gem_mismatches)s 
                                    --max-indel-length %(gem_max_indel_length)s 
                                    -l %(gem_window_size)s 
@@ -450,8 +457,7 @@ def annotateGenome( infile, outfile ):
     '''
     PipelineGeneset.annotateGenome( infile, 
                                     outfile,
-                                    only_proteincoding = True,
-                                    method = "genome" )
+                                    only_proteincoding = True )
 
 ############################################################
 ############################################################
@@ -470,10 +476,9 @@ def annotateGeneStructure( infile, outfile ):
 
     Genes not on UCSC contigs are removed.
     '''
-    PipelineGeneset.annotateGenome( infile, 
-                                    outfile,
-                                    only_proteincoding = True,
-                                    method = "genes" )
+    PipelineGeneset.annotateGeneStructure( infile, 
+                                           outfile,
+                                           only_proteincoding = True )
 
 ############################################################
 ############################################################
@@ -611,6 +616,10 @@ def loadTranscriptInformation( infile, outfile ):
         "uniprot_genename": "uniprot_name",
         }
 
+    # biomart db dmelanogaster_gene_ensemble doesn't have attribute uniprot_genename
+    if PARAMS["genome"].startswith("dm"):
+        del columns["uniprot_genename"]
+
     data = PBiomart.biomart_iterator( columns.keys()
                                       , biomart = "ensembl"
                                       , dataset = PARAMS["ensembl_biomart_dataset"] )
@@ -650,7 +659,12 @@ def loadTranscriptInformation( infile, outfile ):
         E.warn( "there are %i gene_names mapped to different gene_ids" % len(l))
     for gene_name, counts in l:
         E.info( "ambiguous mapping: %s->%i" % (gene_name, counts))
-        
+    
+    # adding final column back into transcript_info for dmelanogaster genomes
+    if PARAMS["genome"].startswith("dm"):
+        dbh = connect()
+        cc = dbh.cursor()
+        cc.execute( '''ALTER TABLE Table1 ADD COLUMN uniprot_name NULL''' )
 
 ############################################################
 ############################################################
@@ -785,6 +799,57 @@ def buildGeneTerritories( infile, outfile ):
           --radius=%(geneset_territories_radius)s
           --method=territories
     | python %(scriptsdir)s/gtf2gtf.py --filter=longest-gene --log=%(outfile)s.log 
+    | gzip
+    > %(outfile)s '''
+    
+    P.run()
+
+############################################################
+############################################################
+############################################################
+@merge( buildFlatGeneSet, PARAMS["interface_tssterritories_gff"] )
+def buildTSSTerritories( infile, outfile ):
+    '''build gene territories from protein coding genes.'''
+
+    to_cluster=True
+    
+    statement = '''
+    gunzip < %(infile)s
+    | awk '$2 == "protein_coding"'
+    | python %(scriptsdir)s/gtf2gtf.py --sort=gene
+    | python %(scriptsdir)s/gtf2gtf.py --merge-transcripts --with-utr
+    | python %(scriptsdir)s/gtf2gtf.py --sort=position
+    | python %(scriptsdir)s/gtf2gff.py 
+          --genome-file=%(genome_dir)s/%(genome)s 
+          --log=%(outfile)s.log
+          --radius=%(geneset_territories_radius)s
+          --method=tss-territories
+    | python %(scriptsdir)s/gtf2gtf.py --filter=longest-gene --log=%(outfile)s.log 
+    | gzip
+    > %(outfile)s '''
+    
+    P.run()
+
+############################################################
+############################################################
+############################################################
+@merge( buildFlatGeneSet, PARAMS["interface_greatdomains_gff"] )
+def buildGREATRegulatoryDomains( infile, outfile ):
+    '''build gene territories from protein coding genes.'''
+
+    to_cluster=True
+    
+    statement = '''
+    gunzip < %(infile)s
+    | awk '$2 == "protein_coding"'
+    | python %(scriptsdir)s/gtf2gtf.py --filter=representative-transcript --log=%(outfile)s.log
+    | python %(scriptsdir)s/gtf2gff.py 
+          --genome-file=%(genome_dir)s/%(genome)s 
+          --log=%(outfile)s.log
+          --radius=%(great_radius)s
+          --method=great-domains
+          --upstream=%(great_upstream)i
+          --downstream=%(great_downstream)i
     | gzip
     > %(outfile)s '''
     
@@ -1347,6 +1412,17 @@ def buildGOTable( infile, outfile ):
     infile = P.snip( infile, ".tsv.gz") + "_ontology.obo"
     PipelineGO.buildGOTable( infile, outfile )
 
+############################################################
+############################################################
+############################################################
+@transform( buildGOTable, suffix(".tsv"), ".load" )
+def loadGOTable( infile, outfile ):
+    '''load GO descriptions into database.'''
+    P.load( infile, outfile )
+
+############################################################
+############################################################
+############################################################
 @files(None,PARAMS['interface_kegg'])
 def importKEGGAssignments(infile,outfile):
     ''' import the KEGG annotations from the R KEGG.db 
@@ -1374,11 +1450,12 @@ def createGOFromGeneOntology( infile, outfile ):
     '''get GO assignments from ENSEMBL'''
     PipelineGO.createGOFromGeneOntology( infile, outfile )
 
+
 ############################################################
 @transform( createGOFromGeneOntology, 
             suffix( ".tsv.gz"), 
             add_inputs(buildGOPaths),
-            ".imputed.tsv.gz")
+            PARAMS["interface_go_geneontology_imputed"])
 def imputeGO( infiles, outfile ):
     PipelineGO.imputeGO( infiles[0], infiles[1], outfile )
 
@@ -1913,6 +1990,8 @@ def genome():
 
 @follows( buildGeneSet,
           buildGeneTerritories,
+          buildTSSTerritories,
+          buildGREATRegulatoryDomains,
           loadCDSTranscripts,
           loadTranscriptInformation,
           loadGeneStats,

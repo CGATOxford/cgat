@@ -1,0 +1,100 @@
+#!/bin/bash
+
+# options
+# =======
+# limit: only if the disk is greater than this % full, 
+#        will the scratch be cleaned up
+# location: the folder to clean up
+# delay: files must be last accessed more than this to be cleaned up (minutes).
+# group: the script will only clean up files from this group
+limit=25
+location=/scratch/temp/
+delay=60
+group=usersfgu
+
+# *** functions ***
+# function to write log messages
+function log() {
+    echo "["`uname -n`"]("`date`") - "$1
+}
+
+# trap errors, report and exit.
+function error() {
+    log "Error occured in $1 at line $2, exiting"
+    exit
+}
+trap 'error "${BASH_SOURCE}" "${LINENO}"' ERR
+
+# function to report free space
+function free_space() {
+    echo `df -h $1 | tail -n1 | awk '{print $4}'`
+}
+
+# function to remove files with logging
+function remove() {
+    log "deleting $1"
+    rm $1
+}
+
+# *** /functions ***
+
+# only do something if scratch space is potentially limiting
+pc_used=`df -h $location | tail -n1 | awk '{print $5}' | sed 's/%//g'`
+
+if [ $pc_used -lt $limit ]
+   then 
+       log "exiting, less than ${limit}% of scratch space used"
+       exit
+   else
+       space_before=`free_space $location`
+fi
+
+# get list of users with files older than $delay min from root of scratch
+scratch_users=`find $location -type f -amin +$delay -exec stat -c %U {} \; | sort | uniq`
+log "Scratch users: $scratch_users"
+
+# get a list of users currently running processes and or logged in directly.
+# limit the list to a specified group
+process_users=`ps --group $group -eo ruser`
+loggedin_users=`users`
+active_users=`echo $process_users $loggedin_users | tr " " "\n" | sort -u`
+
+# make an array of the active users
+declare -A active
+for active_user in $active_users
+  do 
+    active[$active_user]=1
+  done
+
+# log the active users
+detected_active=${!active[@]}
+log "Active users: $detected_active"
+
+# sanity check. The user root should always be detected as active, if not, exit.
+if [[ ${active["root"]} ]]
+    then
+       true
+    else
+       log "Failed to detect processes belonging to root, exiting"
+       exit
+fi    
+
+# iterate over the inactive scratch_users and delete files
+# belonging to them that were last accessed > $delay minutes ago
+for user in $scratch_users
+  do
+      if [[ ${active[$user]} ]]
+          then
+	      #user is active, do nothing
+    	      log "User $user is active, will not delete their files"
+          else
+	      log "removing files of user $user"
+	      # only remove files older than $delay min. 
+	      # the delay is necessary because theoretically the user
+	      # could have _just_ logged in.
+    	      find $location -user $user -type f -amin +$delay -exec remove {} \;
+       fi
+  done
+
+log "Scratch space before cleaning $space_before, space after "`free_space $location`", exiting"
+exit

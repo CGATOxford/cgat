@@ -25,30 +25,30 @@ The following table lists all genomic contexts that reads map to.
 
    Number of alignments that align in a certain genomic context
 
-Ribosomal expression
-====================
+Ribosomal and Repetitive RNA expression
+=======================================
 
 Ribosomal RNA is one of the most abundant transcripts in a cell and dominates RNASeq samples
 until it is removed. The following plots and tables examine the number of alignments to
-repetitive RNA. Repetetive RNA annotation is taken from the UCSC repeatmasker tracks.
+ribosomal and repetitive RNA. Repetetive RNA annotation is taken from the UCSC repeatmasker tracks.
 
 .. report:: Mapping.MappingContext
    :render: table
    :slices: mapped,RNA,rRNA,scRNA,snRNA,srpRNA,tRNA,ribosomal_coding
 
-   Number of alignments that align to repetitive RNA annotations from 
-   the UCSC repeatmasker track
+   Number of alignments that align to ribosomal and repetitive RNA annotations (from 
+   the UCSC repeatmasker track)
 
 .. report:: Mapping.MappingContext
    :render: pie-plot
-   :pie-first-is-total: notRNA
+   :pie-first-is-total: other_mapped
    :groupby: track
    :slices: mapped,RNA,rRNA,scRNA,snRNA,srpRNA,tRNA,ribosomal_coding
    :layout: column-3
    :width: 200
 
-   Proportion of alignments that align to repetitive RNA annotations from 
-   the UCSC repeatmasker track
+   Proportion of alignments that align to ribosomal and repetitive RNA annotations (from 
+   the UCSC repeatmasker track)
 
 Protein coding expression
 =========================

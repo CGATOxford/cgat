@@ -411,9 +411,9 @@ else:
      
     def buildFilteredLncRNAGeneSet(infile, outfile):
         '''
-        won't perform a filtering at this point
+        will just filter out single exon lncRNA
         '''
-        statement = '''ln -s %(infile)s %(outfile)s'''
+        statement = '''zcat %(infile)s | grep 'exon_status "m"' | gzip > %(outfile)s'''                 # jethro - changed 'exon status "m"' to 'exon_status "m"'
         P.run()
 
 ##########################################################################
@@ -444,7 +444,7 @@ def buildLncRNAFasta(infile, outfile):
 ##########################################################################
 ##########################################################################
 ##########################################################################
-@transform(buildLncRNAFasta, regex(r"fasta/(\S+).fasta"), r"cpc/\1.cpc.result")
+@transform(buildLncRNAFasta, regex(r"fasta/(\S+).fasta"), r"cpc/\1.result")
 def runCPC(infile, outfile):
     '''
     run coding potential calculations on lncRNA geneset
@@ -460,15 +460,16 @@ def runCPC(infile, outfile):
 ##########################################################################
 ##########################################################################
 ##########################################################################
-@transform(runCPC, suffix(".result"), ".load")
+@follows(runCPC)
+@transform(runCPC, regex("cpc/(\S+).result"), r".load")       
 def loadCPCResults(infile, outfile):
     '''
     load the results of the cpc analysis
     '''
-    inf = infile.replace(".cpc", "")
+#    inf = os.path.join("cpc", infile)                                               Jethro - removed line
     tablename = filenameToTablename(os.path.basename(infile))
     statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s --log=%(outfile)s.log 
-                   --header=transcript_id,feature,C_NC,CP_score --index=transcript_id < %(inf)s > %(outfile)s'''
+                   --header=transcript_id,feature,C_NC,CP_score --index=transcript_id < %(infile)s > %(outfile)s'''   # Jethro - changed < %(inf)s > to < %(infile)s > 
     P.run()
 
 ##########################################################################
@@ -485,7 +486,7 @@ def buildFinalLncRNAGeneSet(infile, outfile):
     '''
     
     # filter based on coding potential
-    PipelineLncRNA.buildFinalLncRNAGeneSet(infile, "lncrna_filtered_cpc_result", outfile)
+    PipelineLncRNA.buildFinalLncRNAGeneSet(infile, "lncrna_filtered_cpc_result", outfile, PARAMS["filtering_cpc"])
 
 ##########################################################################
 ##########################################################################

@@ -898,6 +898,7 @@ class GSNAP( Mapper ):
 
         return statement
 
+
 class STAR( Mapper ):
 
     # tophat can map colour space files directly
@@ -931,7 +932,7 @@ class STAR( Mapper ):
         # add options specific to data type
         # index_dir set by environment variable
         index_prefix = "%(genome)s"
-        
+
         if nfiles == 1:
             infiles = "<( zcat %s )" % " ".join( [ x[0] for x in infiles ] )
             statement = '''
@@ -939,7 +940,7 @@ class STAR( Mapper ):
                    --runMode alignReads
                    --runThreadN %%(star_threads)i
                    --genomeLoad LoadAndRemove
-                   --genomeDir %%(star_index_dir)s/%%(star_genome)s.dir
+                   --genomeDir %%(star_index_dir)s/%%(star_mapping_genome)s.dir
                    --outFileNamePrefix %(tmpdir)s/
                    --outStd SAM
                    --outSAMunmapped Within
@@ -966,7 +967,7 @@ class STAR( Mapper ):
                    --runMode alignReads
                    --runThreadN %%(star_threads)i
                    --genomeLoad LoadAndRemove
-                   --genomeDir %%(star_index_dir)s/%%(genome)s.dir
+                   --genomeDir %%(star_index_dir)s/%%(star_mapping_genome)s.dir
                    --outFileNamePrefix %(tmpdir)s/
                    --outStd SAM
                    --outSAMunmapped Within

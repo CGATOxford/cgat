@@ -267,19 +267,14 @@ PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],
 import PipelineTracks
 
 # collect sra nd fastq.gz tracks
-TRACKS = PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
+TRACKS = PipelineTracks.Tracks( PipelineTracks.Sample ).loadFromDirectory( 
     glob.glob( "*.sra" ), "(\S+).sra" ) +\
-    PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
+    PipelineTracks.Tracks( PipelineTracks.Sample ).loadFromDirectory( 
         glob.glob( "*.fastq.gz" ), "(\S+).fastq.gz" ) +\
-        PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
+        PipelineTracks.Tracks( PipelineTracks.Sample ).loadFromDirectory( 
             glob.glob( "*.fastq.1.gz" ), "(\S+).fastq.1.gz" ) +\
-            PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
+            PipelineTracks.Tracks( PipelineTracks.Sample ).loadFromDirectory( 
                 glob.glob( "*.csfasta.gz" ), "(\S+).csfasta.gz" )
-
-ALL = PipelineTracks.Sample3()
-EXPERIMENTS = PipelineTracks.Aggregate( TRACKS, labels = ("condition", "tissue" ) )
-CONDITIONS = PipelineTracks.Aggregate( TRACKS, labels = ("condition", ) )
-TISSUES = PipelineTracks.Aggregate( TRACKS, labels = ("tissue", ) )
 
 ###################################################################
 ## Global flags
@@ -920,6 +915,7 @@ def buildTophatStats( infiles, outfile ):
 ############################################################
 ############################################################
 ############################################################
+@jobs_limit( 1, "db" )
 @active_if( SPLICED_MAPPING )
 @transform( buildTophatStats, suffix(".tsv"), ".load" )
 def loadTophatStats( infile, outfile ):
@@ -967,6 +963,9 @@ def mapReadsWithSTAR( infile, outfile ):
     job_options= "-pe dedicated %i -R y -l mem_free=%s" % (PARAMS["star_threads"],
                                                            PARAMS["star_memory"])
     to_cluster = True
+    
+    star_mapping_genome = PARAMS["star_genome"] or PARAMS["genome"]
+    
     m = PipelineMapping.STAR( executable = P.substituteParameters( **locals() )["star_executable"] )
     
     statement = m.build( (infile,), outfile ) 
@@ -1002,6 +1001,7 @@ def buildSTARStats( infiles, outfile ):
 ############################################################
 ############################################################
 ############################################################
+@jobs_limit( 1, "db" )
 @active_if( SPLICED_MAPPING )
 @transform( buildSTARStats, suffix(".tsv"), ".load")
 def loadSTARStats( infile, outfile ):
@@ -1168,6 +1168,7 @@ def buildPicardStats( infiles, outfile ):
 ############################################################
 ############################################################
 ############################################################
+@jobs_limit( 1, "db" )
 @merge( buildPicardStats, "picard_stats.load" )
 def loadPicardStats( infiles, outfile ):
     '''merge alignment stats into single tables.'''
@@ -1192,6 +1193,7 @@ def buildPicardDuplicationStats( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
+@jobs_limit( 1, "db" )
 @merge( buildPicardDuplicationStats, "picard_duplication_stats.load" )
 def loadPicardDuplicationStats( infiles, outfile ):
     '''merge alignment stats into single tables.'''
@@ -1260,6 +1262,7 @@ def buildBAMStats( infiles, outfile ):
 
 #########################################################################
 #########################################################################
+@jobs_limit( 1, "db" )
 @merge( buildBAMStats, "bam_stats.load" )
 def loadBAMStats( infiles, outfile ):
     '''import bam statisticis.'''
@@ -1302,6 +1305,7 @@ def buildContextStats( infiles, outfile ):
 ############################################################
 ############################################################
 ############################################################
+@jobs_limit( 1, "db" )
 @follows( loadBAMStats )
 @merge( buildContextStats, "context_stats.load" )
 def loadContextStats( infiles, outfile ):
@@ -1370,6 +1374,7 @@ def buildExonValidation( infiles, outfile ):
 ############################################################
 ############################################################
 ############################################################
+@jobs_limit( 1, "db" )
 @active_if( SPLICED_MAPPING )
 @merge( buildExonValidation, "exon_validation.load" )
 def loadExonValidation( infiles, outfile ):
@@ -1429,6 +1434,7 @@ def buildTranscriptLevelReadCounts( infiles, outfile):
 #########################################################################
 #########################################################################
 #########################################################################
+@jobs_limit( 1, "db" )
 @active_if( SPLICED_MAPPING )
 @transform( buildTranscriptLevelReadCounts,
             suffix(".tsv.gz"),
@@ -1476,6 +1482,7 @@ def buildIntronLevelReadCounts( infiles, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
+@jobs_limit( 1, "db" )
 @active_if( SPLICED_MAPPING )
 @transform(buildIntronLevelReadCounts,
            suffix(".tsv.gz"),
