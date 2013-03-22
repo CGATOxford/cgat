@@ -1055,15 +1055,17 @@ def runMACS2( infile, outfile, controlfile = None ):
     if controlfile: control = "--control=%s" % controlfile
     else: control = ""
 
-# example statement: macs2 callpeak -t R1-paupar-R1.call.bam -c R1-lacZ-R1.call.bam -f BAMPE -g 2.39e9 --verbose 5 --bw 150 -q 0.01 -m 10 100000 --name test
+    # example statement: macs2 callpeak -t R1-paupar-R1.call.bam -c R1-lacZ-R1.call.bam -f BAMPE -g 2.39e9 --verbose 5 --bw 150 -q 0.01 -m 10 100000 --name test
 
+    
+    # used to set the option --format=bampe
+    # removed to let macs2 detect the format.
     statement = '''
                     macs2 callpeak 
                     -t %(infile)s 
                     -c %(control)s 
                     --verbose=10 
                     --name=%(outfile)s 
-                    --format=BAMPE
                     --qvalue=%(macs2_max_qvalue)s
                     %(macs2_options)s 
                     >& %(outfile)s
@@ -1168,7 +1170,6 @@ def loadMACS( infile, outfile, bamfile, controlfile = None ):
 
     track = P.snip( os.path.basename(infile), ".macs" )
     filename_bed = infile + "_peaks.xls.gz"
-    filename_bed = infile + "_peaks.xls.gz"
     filename_diag = infile + "_diag.xls"
     filename_r = infile + "_model.r"
     filename_rlog = infile + ".r.log"
@@ -1180,10 +1181,14 @@ def loadMACS( infile, outfile, bamfile, controlfile = None ):
         P.touch( outfile )
         return
 
+    exportdir = os.path.join(PARAMS['exportdir'], 'macs' )
+    if not os.path.exists( exportdir ):
+        os.mkdir( exportdir )
     ###############################################################
     # create plot by calling R
     if os.path.exists( filename_r ):
-        statement = '''R --vanilla < %(filename_r)s > %(filename_rlog)s; '''
+        statement = '''R --vanilla < %(filename_r)s > %(filename_rlog)s; mv %(filename_pdf)s %(exportdir)s'''
+        P.run()
         P.run()
 
     ###############################################################
@@ -1324,6 +1329,8 @@ def loadMACS( infile, outfile, bamfile, controlfile = None ):
         '''
         P.run()        
 
+
+
 ############################################################
 ############################################################
 ############################################################
@@ -1352,15 +1359,26 @@ def loadMACS2( infile, outfile, bamfile, controlfile = None ):
     '''
     track = P.snip( os.path.basename(infile), ".macs2" )
     filename_bed = infile + "_peaks.xls.gz"
-
     filename_diag = infile + "_diag.xls"
+    filename_r = infile + "_model.r"
+    filename_rlog = infile + ".r.log"
+    filename_pdf = infile + "_model.pdf"
     filename_subpeaks = P.snip( infile, ".macs2", ) + ".subpeaks.macs_peaks.bed" 
-
 
     if not os.path.exists(filename_bed):
         E.warn("could not find %s" % infilename )
         P.touch( outfile )
         return
+
+    exportdir = os.path.join(PARAMS['exportdir'], 'macs2' )
+    if not os.path.exists( exportdir ):
+        os.mkdir( exportdir )
+
+    ###############################################################
+    # create plot by calling R
+    if os.path.exists( filename_r ):
+        statement = '''R --vanilla < %(filename_r)s > %(filename_rlog)s; mv %(filename_pdf)s %(exportdir)s'''
+        P.run()
 
     ###############################################################
     # filter peaks - this isn't needed...
