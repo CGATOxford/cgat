@@ -1061,35 +1061,44 @@ def runDESeq( infile,
             #R['dev.off']()
             pass
 
-    # Differential expression
-    E.info("calling differential expression")
-    R('''res <- nbinomTest( cds, '%s', '%s' )''' % (groups[0],groups[1]))
+    # Call diffential expression for all pairings of groups included in the design
+    
+    all_results = []
+    for combination in itertools.combinations(groups,2):
+        g1, g2 = combination
+        gfix = "%s_vs_%s_" % (g1,g2)
 
-    # Plot significance
-    R.png( '''%(outfile_prefix)ssignificance.png''' % locals() )
-    R('''plot( res$baseMean, res$log2FoldChange, log="x", pch=20, cex=.1, 
-                    col = ifelse( res$padj < %(fdr)s, "red", "black" ) )''' % locals() )
-    R['dev.off']()
+        outfile_groups_prefix = outfile_prefix + gfix
+        E.info("calling differential expression for %s vs %s" % (g1, g2))
+        R('''res <- nbinomTest( cds, '%s', '%s' )''' % (g1,g2) )
 
-    outf = IOTools.openFile( "%(outfile_prefix)sall.txt" % locals(), "w" )
-    isna = R["is.na"]
+        # Plot significance
+        R.png( '''%(outfile_groups_prefix)ssignificance.png''' % locals() )
+        R('''plot( res$baseMean, res$log2FoldChange, log="x", pch=20, cex=.1, 
+                        col = ifelse( res$padj < %(fdr)s, "red", "black" ) )''' % locals() )
+        R['dev.off']()
 
-    E.info("Generating output")
+        outf = IOTools.openFile( "%(outfile_groups_prefix)sall.txt" % locals(), "w" )
+        isna = R["is.na"]
 
-    # Parse results and parse to file
-    results, counts = deseqParseResults( groups[0], groups[1], fdr = fdr )
+        E.info("Generating output (%s vs %s)" % (g1, g2))
 
-    E.info( counts )
+        # Parse results and parse to file
+        results, counts = deseqParseResults( g1, g2, fdr = fdr )
+
+        all_results += results
+
+        E.info( counts )
+        outf = IOTools.openFile( "%(outfile_groups_prefix)ssummary.tsv" % locals(), "w" )
+        outf.write( "category\tcounts\n%s\n" % counts.asTable() )
+        outf.close()
 
     if outfile == sys.stdout:
-        writeExpressionResults( outfile, results )
+        writeExpressionResults(outfile, all_results)
     else:
-        with IOTools.openFile( outfile, "w" ) as outf:
-            writeExpressionResults( outf, results )
+        with IOTools.openFile(outfile, "w") as outf:
+            writeExpressionResults(outf, all_results)
 
-    outf = IOTools.openFile( "%(outfile_prefix)ssummary.tsv" % locals(), "w" )
-    outf.write( "category\tcounts\n%s\n" % counts.asTable() )
-    outf.close()
 
 Design = collections.namedtuple( "Design", ("include", "group", "pair") )
 

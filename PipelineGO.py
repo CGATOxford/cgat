@@ -93,7 +93,7 @@ def createGOFromGeneOntology( infile, outfile ):
     filename = "geneontology.goa.gz"
     if not os.path.exists( filename ):
         statement = '''
-    wget -O %(filename)s http://cvsweb.geneontology.org/cgi-bin/cvsweb.cgi/go/gene-associations/gene_association.goa_%(go_geneontology_species)s.gz?rev=HEAD
+    wget -O %(filename)s http://cvsweb.geneontology.org/cgi-bin/cvsweb.cgi/go/gene-associations/%(go_geneontology_file)s?rev=HEAD
     '''
     
         P.run()
@@ -201,9 +201,6 @@ def imputeGO( infile_go, infile_paths, outfile ):
 
     E.info( "%s" % str(c) )
 
-            
-            
-
 ############################################################
 def buildGOPaths( infile, outfile ):
     '''output file with paths of terms to root.
@@ -224,7 +221,7 @@ def buildGOTable( infile, outfile ):
     '''
     use_cluster = True
     statement = '''
-    echo -e "go_id\tdescription\tlong_description\ttext\n" > %(outfile)s;
+    echo -e "go_id\\tdescription\\tlong_description\\ttext\\n" > %(outfile)s;
     go2fmt.pl -w tbl %(infile)s >> %(outfile)s
     '''
     P.run()
@@ -288,7 +285,8 @@ def runGOFromFiles( outfile,
                     go_file = None,
                     ontology_file = None,
                     samples = None,
-                    minimum_counts = 0 ):
+                    minimum_counts = 0,
+                    gene2name = None):
     '''check for GO enrichment within a gene list.
 
     The gene list is given in ``fg_file``. It is compared
@@ -298,6 +296,8 @@ def runGOFromFiles( outfile,
 
     if *bg_file* is None, the all genes with GO annotations
     will be used.
+
+    If *gene2name* is given, it will be supplied to the GO.py script.
     '''
 
     to_cluster = True
@@ -318,6 +318,9 @@ def runGOFromFiles( outfile,
     else:
         options.append( "--fdr" )
         options.append( "--qvalue-method=BH" )
+
+    if gene2name:
+        options.append( "--filename-gene2name=%s" % gene2name)
 
     options = " ".join( options )
     statement = '''

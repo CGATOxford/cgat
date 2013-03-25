@@ -240,6 +240,49 @@ class MastSummary( Mast ):
 
         return odict(data)
 
+class MastQuickSummary( Mast ):
+    """return a quicker summary of MC analysis of mast results.
+
+    Return for each track the number of intervals in total,
+    the number of intervals submitted to mast, 
+    The evalue used as a MAST curve cutoff, the number and % explained using the Mast cutoff.
+
+    """
+
+    mEvalueCutoff = 1
+    mFDR = 0.1
+
+    def __call__(self, track, slice = None):
+
+        data = []
+        nintervals = self.getValue( "SELECT COUNT(*) FROM %(track)s_intervals" % locals() )
+        data.append( ("nintervals", nintervals ) )
+
+        evalues = self.getValues( "SELECT evalue FROM %(track)s_mast WHERE motif = '%(slice)s'" % locals() )
+        if len(evalues) <= 1: return odict()
+
+        try:
+            bin_edges, with_motifs, explained = computeMastCurve( evalues )
+        except ValueError, msg:
+            return odict( ( ("msg", msg),) )
+        
+        if len(explained) == 0:
+            return odict((("msg", "no data"), ) )
+
+        am = numpy.argmax( explained )
+        evalue = bin_edges[am]
+
+        
+        data.append( ("MC-With-Motifs", with_motifs[am] ) )
+        data.append( ("MC-Evalue", bin_edges[am] ) )
+        data.append( ("MC-explained", explained[am]) )
+        data.append( ("MC-explained / %", "%5.2f" % (100.0 * explained[am] / nintervals)) )
+
+        return odict(data)
+
+
+
+
 class MastMotifEvalues( Mast ):
     '''distribution of evalues.'''
     

@@ -1,3 +1,8 @@
+'''Collection of per-caller summary statistics.
+
+The data are specific for each caller.
+'''
+
 import os, sys, re, types, itertools
 import matplotlib.pyplot as plt
 import numpy, scipy.stats
@@ -11,8 +16,13 @@ from PeakcallingReport import *
 class MacsSummary( DefaultTracker ):
     '''summary information from macs.'''
 
+    tablename = 'macs_summary'
+
     def getTracks( self, subset = None ):
-        return self.getValues( "SELECT track FROM macs_summary ORDER BY track" )
+        if self.tablename in self.getTables():
+            return self.getValues( "SELECT track FROM %(tablename)s ORDER BY track" )
+        else: 
+            return None
     
     def __call__(self, track, slice = None ):
 
@@ -28,7 +38,7 @@ class MacsSummary( DefaultTracker ):
             "paired_peaks", )
 
         f = ",".join(fields)
-        data = self.getFirstRow( '''SELECT %(f)s FROM macs_summary WHERE track="%(track)s"''' % locals())
+        data = self.getFirstRow( '''SELECT %(f)s FROM %(tablename)s WHERE track="%(track)s"''' )
         result = odict( zip( fields, data) )
 
         if os.path.exists( resultsdir ):
@@ -58,6 +68,15 @@ class MacsFiltering(CallingTracker, SingleTableTrackerColumns ):
     '''summary of filtering.'''
     column = "fdr"
     table = "macs_fdr"
+
+class Macs2Summary(MacsSummary):
+    tablename = 'macs2_summary'
+
+class Macs2Diagnostics(MacsDiagnostics):
+    pattern = "(.*)_macs2_diagnostics"
+
+class Mac2sFiltering(MacsFiltering):
+    table = 'macs2_fdr'
 
 class SPPSummary( DefaultTracker, SingleTableTrackerRows ):
     '''summary information from spp.'''

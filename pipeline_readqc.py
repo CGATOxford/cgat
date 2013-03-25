@@ -205,6 +205,7 @@ def runFastqc(infiles, outfile):
 #########################################################################
 ## 
 #########################################################################
+@jobs_limit( 1, "db" )
 @transform( runFastqc, suffix(".fastqc"), "_fastqc.load" )
 def loadFastqc( infile, outfile ):
     '''load FASTQC stats.'''
@@ -578,6 +579,7 @@ def summarizeProcessing( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
+@jobs_limit( 1, "db" )
 @transform( summarizeProcessing,
             regex(r"processed.(\S+).fastq.*.gz.tsv"),
             r"\1_processed.load")
@@ -625,6 +627,7 @@ def summarizeAllProcessing( infiles, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
+@jobs_limit( 1, "db" )
 @transform( summarizeAllProcessing, suffix(".tsv"), ".load" )
 def loadAllProcessingSummary( infile, outfile ):
     P.load( infile, outfile )
@@ -655,6 +658,7 @@ def summarizeFiltering( infiles, outfile ):
     outf.close()
 
 ##################################################################
+@jobs_limit( 1, "db" )
 @transform( summarizeFiltering,
             suffix(".summary.tsv.gz"),
             "_summary.load")
