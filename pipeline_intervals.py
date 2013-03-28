@@ -509,6 +509,8 @@ def buildContextStats( infiles, outfile ):
 
     min_overlap = 0.5
 
+    job_options = "-l mem_free=4G"
+
     to_cluster = True
     statement = '''
        python %(scriptsdir)s/rnaseq_bam_vs_bed.py
@@ -622,7 +624,7 @@ def annotateBindingFull( infile, outfile ):
     to_cluster = True
 
     geneset = os.path.join( PARAMS["annotations_dir"],
-                            PARAMS_ANNOTATIONS[PARAM["geneset_binding"]] )
+                            PARAMS_ANNOTATIONS[PARAMS["geneset_binding"]] )
 
     statement = """
     zcat < %(geneset)s
@@ -653,7 +655,7 @@ def annotateBindingPeak( infile, outfile ):
     to_cluster = True
 
     geneset = os.path.join( PARAMS["annotations_dir"],
-                            PARAMS_ANNOTATIONS[PARAM["geneset_binding"]] )
+                            PARAMS_ANNOTATIONS[PARAMS["geneset_binding"]] )
 
     statement = """
     zcat < %(geneset)s

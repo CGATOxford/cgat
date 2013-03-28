@@ -39,14 +39,18 @@ class IntervalsSummaryTable( DefaultTracker ):
 
         #Get the column containing the recorded qvalues
         fdr_col_headings = ("fdr","qvalue","FDR")
+        fdr_col_head = None
         for name in fdr_col_headings:
             try:
                 test = self.getFirstRow("SELECT MAX(%s) FROM %s" % (name,table) )
                 fdr_col_head = name
             except:
                 pass
-
-        data = self.getFirstRow( "SELECT COUNT(*), ROUND(AVG(end-start),2), MIN(end-start), MAX(end-start), MAX(%(fdr_col_head)s) as VARCHAR FROM %(table)s"  )
+        
+        if fdr_col_head:
+            data = self.getFirstRow( "SELECT COUNT(*), ROUND(AVG(end-start),2), MIN(end-start), MAX(end-start), MAX(%(fdr_col_head)s) as VARCHAR FROM %(table)s"  )
+        else:
+            data = self.getFirstRow( "SELECT COUNT(*), ROUND(AVG(end-start),2), MIN(end-start), MAX(end-start), 'unknown' FROM %(table)s"  )
 
         #Formatting for prettiness
         if isinstance(data[4],float):

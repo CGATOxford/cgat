@@ -148,6 +148,12 @@ goslim.tsv.gz
 territories.gff.gz
    A :term:`gff` formatted file of non-overlapping gene territories.
 
+tssterritories.gff.gz
+   A :term:`gff` formatted file of non-overlapping tss territories.
+
+greatdomains.gff.gz
+   A :term:`gff` formatted file of great regulatory domains (basal+extension rule).
+
 gc_segmentation.bed.gz
    A :term:`bed` formatted file with the genome segmented in regions
    of different G+C content.
@@ -185,9 +191,9 @@ import sqlite3
 # for UCSC import
 import MySQLdb
 import IndexedFasta, IOTools, GFF, GTF
-import PipelineGeneset as PipelineGeneset
-import PipelineBiomart as PBiomart
-import PipelineDatabase as PDatabase
+import PipelineGeneset
+import PipelineBiomart
+import PipelineDatabase
 import PipelineGO
 import PipelineUCSC
 import PipelineKEGG
@@ -614,10 +620,11 @@ def loadTranscriptInformation( infile, outfile ):
     if PARAMS["genome"].startswith("dm"):
         del columns["uniprot_genename"]
 
-    data = PBiomart.biomart_iterator( columns.keys()
-                                      , biomart = "ensembl"
-                                      , dataset = PARAMS["ensembl_biomart_dataset"] )
-    
+    data = PipelineBiomart.biomart_iterator( columns.keys(),
+                                             biomart = PARAMS["ensembl_biomart_mart"],
+                                             dataset = PARAMS["ensembl_biomart_dataset"],
+                                             host = PARAMS["ensembl_biomart_host"] )
+
     # The full list of genes from this table is too extensive. The following are removed:
     # 1. Some genes are present as LRGxxx identifiers
     # """LRG stands for Locus Reference Genomic. An LRG is a fixed sequence, 
@@ -637,11 +644,12 @@ def loadTranscriptInformation( infile, outfile ):
 
     data = filter( lambda x: x['ensembl_gene_id'] in gene_ids, data )
 
-    PDatabase.importFromIterator( outfile
-                                  , tablename
-                                  , data
-                                  , columns = columns 
-                                  , indices = ("gene_id", "transcript_id", "protein_id", "gene_name", "transcript_name", "uniprot_id") )
+    PipelineDatabase.importFromIterator( outfile
+                                         , tablename
+                                         , data
+                                         , columns = columns 
+                                         , indices = ("gene_id", "transcript_id", "protein_id", "gene_name", "transcript_name", "uniprot_id")
+                                         )
 
     # validate: 1:1 mapping between gene_ids and gene_names
     dbh = connect()
@@ -675,11 +683,12 @@ def loadTranscriptSynonyms( infile, outfile ):
         "refseq_mrna" : "refseq_id",
         }
 
-    data = PBiomart.biomart_iterator( columns.keys()
-                                      , biomart = "ensembl"
-                                      , dataset = PARAMS["ensembl_biomart_dataset"] )
+    data = PipelineBiomart.biomart_iterator( columns.keys(),
+                                             biomart = PARAMS["ensembl_biomart_mart"],
+                                             dataset = PARAMS["ensembl_biomart_dataset"],
+                                             host = PARAMS["ensembl_biomart_host"] )
     
-    PDatabase.importFromIterator( outfile
+    PipelineDatabase.importFromIterator( outfile
                                   , tablename
                                   , data
                                   , columns = columns 
@@ -793,6 +802,56 @@ def buildGeneTerritories( infile, outfile ):
           --radius=%(geneset_territories_radius)s
           --method=territories
     | python %(scriptsdir)s/gtf2gtf.py --filter=longest-gene --log=%(outfile)s.log 
+    | gzip
+    > %(outfile)s '''
+    
+    P.run()
+
+############################################################
+############################################################
+############################################################
+@merge( buildFlatGeneSet, PARAMS["interface_tssterritories_gff"] )
+def buildTSSTerritories( infile, outfile ):
+    '''build gene territories from protein coding genes.'''
+
+    to_cluster=True
+    
+    statement = '''
+    gunzip < %(infile)s
+    | awk '$2 == "protein_coding"'
+    | python %(scriptsdir)s/gtf2gtf.py --filter=representative-transcript --log=%(outfile)s.log
+    | python %(scriptsdir)s/gtf2gtf.py --sort=position
+    | python %(scriptsdir)s/gtf2gff.py 
+          --genome-file=%(genome_dir)s/%(genome)s 
+          --log=%(outfile)s.log
+          --radius=%(geneset_territories_radius)s
+          --method=tss-territories
+    | python %(scriptsdir)s/gtf2gtf.py --filter=longest-gene --log=%(outfile)s.log 
+    | gzip
+    > %(outfile)s '''
+    
+    P.run()
+
+############################################################
+############################################################
+############################################################
+@merge( buildFlatGeneSet, PARAMS["interface_greatdomains_gff"] )
+def buildGREATRegulatoryDomains( infile, outfile ):
+    '''build gene territories from protein coding genes.'''
+
+    to_cluster=True
+    
+    statement = '''
+    gunzip < %(infile)s
+    | awk '$2 == "protein_coding"'
+    | python %(scriptsdir)s/gtf2gtf.py --filter=representative-transcript --log=%(outfile)s.log
+    | python %(scriptsdir)s/gtf2gff.py 
+          --genome-file=%(genome_dir)s/%(genome)s 
+          --log=%(outfile)s.log
+          --radius=%(great_radius)s
+          --method=great-domains
+          --upstream=%(great_upstream)i
+          --downstream=%(great_downstream)i
     | gzip
     > %(outfile)s '''
     
@@ -1355,6 +1414,17 @@ def buildGOTable( infile, outfile ):
     infile = P.snip( infile, ".tsv.gz") + "_ontology.obo"
     PipelineGO.buildGOTable( infile, outfile )
 
+############################################################
+############################################################
+############################################################
+@transform( buildGOTable, suffix(".tsv"), ".load" )
+def loadGOTable( infile, outfile ):
+    '''load GO descriptions into database.'''
+    P.load( infile, outfile )
+
+############################################################
+############################################################
+############################################################
 @files(None,PARAMS['interface_kegg'])
 def importKEGGAssignments(infile,outfile):
     ''' import the KEGG annotations from the R KEGG.db 
@@ -1382,11 +1452,12 @@ def createGOFromGeneOntology( infile, outfile ):
     '''get GO assignments from ENSEMBL'''
     PipelineGO.createGOFromGeneOntology( infile, outfile )
 
+
 ############################################################
 @transform( createGOFromGeneOntology, 
             suffix( ".tsv.gz"), 
             add_inputs(buildGOPaths),
-            ".imputed.tsv.gz")
+            PARAMS["interface_go_geneontology_imputed"])
 def imputeGO( infiles, outfile ):
     PipelineGO.imputeGO( infiles[0], infiles[1], outfile )
 
@@ -1921,6 +1992,8 @@ def genome():
 
 @follows( buildGeneSet,
           buildGeneTerritories,
+          buildTSSTerritories,
+          buildGREATRegulatoryDomains,
           loadCDSTranscripts,
           loadTranscriptInformation,
           loadGeneStats,

@@ -26,19 +26,15 @@ DATABASE=P['mapping_backend']
 ###################################################################
 import PipelineTracks
 
-TRACKS = PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
+TRACKS = PipelineTracks.Tracks( PipelineTracks.Sample ).loadFromDirectory( 
     glob.glob( "%s/*.sra" % DATADIR), "%s/(\S+).sra" % DATADIR) +\
-    PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
+    PipelineTracks.Tracks( PipelineTracks.Sample ).loadFromDirectory( 
     glob.glob( "%s/*.fastq.gz" % DATADIR), "%s/(\S+).fastq.gz" % DATADIR ) +\
-    PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
+    PipelineTracks.Tracks( PipelineTracks.Sample ).loadFromDirectory( 
     glob.glob( "%s/*.fastq.1.gz" % DATADIR), "%s/(\S+).fastq.1.gz" % DATADIR ) +\
-    PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
+    PipelineTracks.Tracks( PipelineTracks.Sample ).loadFromDirectory( 
     glob.glob( "*.csfasta.gz" ), "(\S+).csfasta.gz" )
 
-ALL = PipelineTracks.Aggregate( TRACKS )
-EXPERIMENTS = PipelineTracks.Aggregate( TRACKS, labels = ("condition", "tissue" ) )
-CONDITIONS = PipelineTracks.Aggregate( TRACKS, labels = ("condition", ) )
-TISSUES = PipelineTracks.Aggregate( TRACKS, labels = ("tissue", ) )
 
 ###########################################################################
 ## tracks for the gene sets
@@ -50,27 +46,6 @@ GENESET_TRACKS = PipelineTracks.Tracks( GenesetTrack ).loadFromDirectory(
     "%s/(\S+).cuffdiff" % DATADIR )
 
 CUFFDIFF_LEVELS= ("gene", "isoform", "cds", "tss")
-
-###########################################################################
-## shorthand
-MAP_TRACKS = {
-    'default' : EXPERIMENTS,
-    'experiments' : EXPERIMENTS,
-    'conditions' : CONDITIONS,
-    'tissues' : TISSUES,
-    'merged' : ALL,
-    'geneset-summary': GENESET_TRACKS }
-
-###########################################################################
-def selectTracks( subset ):
-    '''select tracks from *all_tracks* according to *subset*.
-    '''
-    if subset == None or subset == "default":
-        return MAP_TRACKS["default"]
-    elif subset in MAP_TRACKS:
-        return MAP_TRACKS[subset]
-
-    return subset
 
 ###########################################################################
 def splitLocus( locus ):

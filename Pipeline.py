@@ -74,7 +74,7 @@ class PipelineError( Exception ): pass
 # while building the statement. Hence, use dict.
 ROOT_DIR=os.path.dirname( __file__ )
 
-PARAMS= { 
+PARAMS = { 
     'scriptsdir' : ROOT_DIR,
     'toolsdir' : ROOT_DIR,
     'cmd-farm' : """%s/farm.py 
@@ -87,6 +87,11 @@ PARAMS= {
     'cmd-sql' : """sqlite3 -header -csv -separator $'\\t' """,
     'cmd-run' : """%s/run.py""" % ROOT_DIR
     }
+
+# path until parameter sharing is resolved between CGAT module
+# and the pipelines module.
+import CGAT
+CGAT.PARAMS = PARAMS
 
 hostname = os.uname()[0]
 
@@ -438,18 +443,25 @@ def concatenateAndLoad( infiles, outfile, regex_filename = None, header = None )
                    > %(outfile)s'''
     run()
 
-def mergeAndLoad( infiles, outfile, suffix = None, columns=(0,1), regex = None, row_wise = True ):
+def mergeAndLoad( infiles, 
+                  outfile, 
+                  suffix = None, 
+                  columns=(0,1), 
+                  regex = None, 
+                  row_wise = True ):
     '''merge categorical tables and load into a database.
 
     Columns denotes the columns to be taken.
 
     The tables are merged and entered row-wise, i.e each file is 
-    a row unless row_wise is set to False. This is useful if 
+    a row unless *row_wise* is set to False. The latter is useful if 
     histograms are being merged.
 
     Filenames are stored in a ``track`` column. Directory names
     are chopped off.
     '''
+    if len(infiles) == 0:
+        raise ValueError( "no files for merging")
     if suffix:
         header = ",".join( [ os.path.basename( snip( x, suffix) ) for x in infiles] )
     elif regex:
@@ -558,21 +570,29 @@ def createView( dbhandle, tables, tablename, outfile, view_type = "TABLE",
 
     touch( outfile )
 
-def snip( filename, extension = None, alt_extension = None):
+
+def snip( filename, extension = None, alt_extension = None, path = False):
     '''return prefix of filename.
 
     If extension is given, make sure that filename has the extension.
+
+    If path is set to false, the path is stripped from the file name.
     '''
     if extension: 
         if filename.endswith( extension ):
-            return filename[:-len(extension)]
+            root = filename[:-len(extension)]
         elif alt_extension and filename.endswith( alt_extension ):
-            return filename[:-len(alt_extension)]
+            root = filename[:-len(alt_extension)]
         else:
             raise ValueError("'%s' expected to end in '%s'" % (filename, extension))
+    else:
+        root, ext = os.path.splitext( filename )
 
-    root, ext = os.path.splitext( filename )
-    return root
+    if path==True: snipped = os.path.basename(root)
+    else: snipped = root
+
+    return snipped
+
 
 def getCallerLocals(decorators=0):
     '''returns locals of caller using frame.

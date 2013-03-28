@@ -15,7 +15,7 @@ def main( argv = sys.argv ):
                       help="destination directory." )
 
     parser.add_option("-n", "--name", dest="name", type="string",
-                      help="name of this pipeline." )
+                      help="name of this pipeline. 'pipeline_' will be prefixed." )
 
     parser.add_option("-f", "--force", dest="force", action="store_true",
                       help="overwrite existing files." )
@@ -31,6 +31,7 @@ def main( argv = sys.argv ):
     if not options.name: raise ValueError( "please provide a pipeline name" )
 
     reportdir = os.path.abspath( "src/pipeline_docs/pipeline_%s" % options.name )
+    confdir = os.path.abspath( "src/pipeline_%s" % (options.name))
 
     dest = options.destination
     name = options.name
@@ -38,6 +39,7 @@ def main( argv = sys.argv ):
     # create directories
     for d in ("", "src", "report",
               "src/pipeline_docs", 
+              "src/pipeline_%s" % options.name,
               reportdir,
               "%s/_templates" % reportdir,
               "%s/pipeline" % reportdir,
@@ -73,18 +75,18 @@ def main( argv = sys.argv ):
         infile.close()
 
     for f in ( "sphinxreport.ini",
-               "conf.py" ):
-        copy( f, "src" )
+               "conf.py",
+               "pipeline.ini" ):
+        copy( f, 'src/pipeline_%s' % options.name )
         
-    for f in ( "pipeline_template.py",
-               "pipeline_template.ini" ):
-        copy( f, "src" )
+    for f in ( "pipeline_template.py", ):
+        copy( f, 'src' )
 
     # create links
     for src,dest in ( ("sphinxreport.ini", "sphinxreport.ini"),
                       ("conf.py", "conf.py"),
-                      ( "pipeline_%s/pipeline.ini" % name, "pipeline.ini" )):
-        os.symlink( os.path.join( "../src", src), os.path.join( "report", dest ) )
+                      ( "pipeline.ini", "pipeline.ini" )):
+        os.symlink( os.path.join( confdir, src), os.path.join( "report", dest ) )
 
     for f in ( "cgat_logo.png",
                "index.html",

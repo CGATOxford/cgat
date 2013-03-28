@@ -258,13 +258,13 @@ import Database, CSV
 import sys, os, re, shutil, itertools, math, glob, time, gzip, collections, random
 
 import numpy, sqlite3
-import GFF, GTF, IOTools, IndexedFasta
+import GFF, GTF, Bed 
+import IOTools
+import IndexedFasta
 
-import PipelinePeakcalling as PipelinePeakcalling
-import PipelineMotifs as PipelineMotifs
-import PipelineGeneset as PGeneset
+import PipelinePeakcalling
+import PipelineMotifs
 import PipelineTracks
-import PipelineMapping
 import PipelineMappingQC
 
 ###################################################
@@ -1017,9 +1017,9 @@ def estimateSPPQualityMetrics( infile, outfile ):
     P.run()
 
     if os.path.exists( track + ".pdf" ):
-        shutil.move( track + ".pdf", os.path.join( PARAMS["exportdir"], "quality" ))
-
-
+        dest = os.path.join( PARAMS["exportdir"], "quality", track + ".pdf" )
+        if os.path.exists( dest ): os.unlink( dest )
+        shutil.move( track + ".pdf", dest )
 
 ############################################################
 ############################################################
