@@ -501,6 +501,7 @@ def runCuffdiff( infiles, outfile ):
                             design_file,
                             geneset_file,
                             outfile,
+                            threads = PARAMS.get("cuffdiff_threads",4),
                             cuffdiff_options = options,
                             fdr = PARAMS["cuffdiff_fdr"],
                             mask_file = mask_file )
