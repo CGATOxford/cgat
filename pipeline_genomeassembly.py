@@ -337,6 +337,40 @@ def loadMetavelvetStats(infile, outfile):
 ###################################################################                                                                                                                                                                          
 ###################################################################                                                                                                                                                                          
 ###################################################################                                                                                                                                                                          
+@transform(runMetavelvet, suffix(".contigs.fa"), ".lengths.tsv")
+def buildMetavelvetContigLengths(infile, outfile):
+    '''
+    output lengths for each contig in the metavelvet output
+    '''
+    PipelineGenomeAssembly.build_scaffold_lengths(infile, outfile, PARAMS)
+
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+@merge(loadMetavelvetStats, "metavelvet.dir/contig_summary.stats")
+def buildContigSummary(infiles, outfile):
+    '''
+    merge the contig summary statistics
+    '''
+    N = PARAMS["scaffold_n"]
+    dbh = connect()
+    cc = dbh.cursor()
+    outf = open(outfile, "w")
+    outf.write("track\tnscaffolds\tscaffold_length\tN%i\tmean_length\tmedian_length\n" % N)
+    for infile in infiles:
+        track = P.snip(os.path.basename(infile), ".summary.load").split("metavelvet-")[1]
+        table = P.toTable(infile)
+        data = cc.execute("""SELECT nscaffolds
+                             , scaffold_length
+                             , N50
+                             , mean_length
+                             , median_length FROM %s""" % table).fetchone()
+        outf.write("\t".join(map(str, [track, data[0], data[1], data[2], data[3], data[4]])) + "\n")
+    outf.close()
+
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
 ## assemble reads with idba
 ###################################################################                                                                                                                                                                          
 @active_if(METAGENOME)
@@ -392,14 +426,53 @@ def buildMetaphlanReadmap(infile, outfile):
     reads to clades based on specific genetic markers via 
     blastn searching
     '''
-    # TODO: allow for blast searching
-    statement = '''zcat %(infile)s 
-                   | python %(scriptsdir)s/metaphlan.py -t reads_map
-                   --input_type multifastq --bowtie2db %(metaphlan_db)s --no_map
-                   | python %(scriptsdir)s/metaphlan2table.py -t read_map 
-                   --log=%(outfile)s.log
-                   > %(outfile)s'''
+    to_cluster = True
+
+    # at present the pipeline will take a set of files
+    # and compute the abundances of different taxonomic groups
+    # based on ALL reads i.e. paired data are combined into
+    # a single file for analysis
+    if PARAMS["metaphlan_executable"] == "bowtie2":
+        assert os.path.exists(PARAMS["metaphlan_db"] + ".1.bt2"), "missing file %s: Are you sure you have the correct database for bowtie2?" % PARAMS["metaphlan_db"] + ".1.bt2"
+        method = "--bowtie2db"
+    elif PARAMS["metaphlan_executable"] == "blast":
+        assert os.path.exists(PARAMS["metaphlan_db"] + "nin"), "missing file %s: Are you sure you have the correct database for bowtie2?" % PARAMS["metaphlan_db"] + "nin"
+        method = "--blastdb"
+
+    statement = PipelineGenomeAssembly.Metaphlan().build(infile, method="read_map")
     P.run()
+
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+@transform(buildMetaphlanReadmap, suffix(".readmap"), ".readmap.load")
+def loadMetaphlanReadmaps(infile, outfile):
+    '''
+    load the metaphlan read maps
+    '''
+    P.load(infile,outfile)
+
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+@merge(loadMetaphlanReadmaps, "metaphlan.dir/taxonomic.counts")
+def countMetaphlanTaxonomicGroups(infiles, outfile):
+    '''
+    count the total number of species that
+    were found by metaphlan
+    '''
+    outf = open(outfile, "w")
+    outf.write("track\ttaxon_level\tcount\n")
+    taxons = ["_order", "class", "family", "genus", "kingdom", "phylum", "species"]
+    dbh = connect()
+    cc = dbh.cursor()
+    for infile in infiles:
+        table = P.toTable(infile)
+        track = P.snip(table, "_readmap")
+        for taxon in taxons:
+            count = cc.execute("""SELECT COUNT(DISTINCT %s) FROM %s""" % (taxon, table)).fetchone()[0]
+            outf.write("\t".join([track, taxon, str(count)]) + "\n")
+    outf.close()
 
 ###################################################################                                                                                                                                                                          
 ###################################################################                                                                                                                                                                          
@@ -415,16 +488,54 @@ def buildMetaphlanRelativeAbundance(infile, outfile):
     reads to clades based on specific genetic markers via 
     blastn searching
     '''
+    to_cluster = True
+    # at present the pipeline will take a set of files
+    # and compute the abundances of different taxonomic groups
+    # based on ALL reads i.e. paired data are combined into
+    # a single file for analysis
+    if PARAMS["metaphlan_executable"] == "bowtie2":
+        assert os.path.exists(PARAMS["metaphlan_db"] + ".1.bt2"), "missing file %s: Are you sure you have the correct database for bowtie2?" % PARAMS["metaphlan_db"] + ".1.bt2"
+        method = "--bowtie2db"
+    elif PARAMS["metaphlan_executable"] == "blast":
+        assert os.path.exists(PARAMS["metaphlan_db"] + "nin"), "missing file %s: Are you sure you have the correct database for bowtie2?" % PARAMS["metaphlan_db"] + "nin"
+        method = "--blastdb"
 
-    # TODO: allow for blast searching
-    statement = '''zcat %(infile)s 
-                   python %(scriptsdir)s/metaphlan.py -t rel_ab
-                   --input_type multifastq --bowtie2db %(metaphlan_db)s
-                   | python %(scriptsdir)s/metaphlan2table.py -t rel_ab --no_map
-                   | --log=%(outfile)s.log
-                   > %(outfile)s'''
+    statement = PipelineGenomeAssembly.Metaphlan().build(infile, method="rel_ab")
     P.run()
 
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+@transform(buildMetaphlanRelativeAbundance, suffix(".relab"), ".relab.load")
+def loadMetaphlanRelativeAbundances(infile, outfile):
+    '''
+    load the metaphlan relative abundances
+    '''
+    P.load(infile,outfile)
+
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+@merge(loadMetaphlanRelativeAbundances, "metaphlan.dir/taxonomic.abundances")
+def buildMetaphlanTaxonomicAbundances(infiles, outfile):
+    '''
+    build a file that combines taxonomic abundances 
+    from each sample
+    '''
+    dbh = connect()
+    cc = dbh.cursor()
+    outf = open(outfile, "w")
+    outf.write("track\ttaxon_level\ttaxon\tabundance\tidx\n")
+    for infile in infiles:
+        table = P.toTable(infile)
+        track = P.snip(table, "_relab")
+        for data in cc.execute("""SELECT taxon_level, taxon, rel_abundance FROM %s""" % table).fetchall():
+            # remove unassigned species at this point
+            idx = track.split("_")[1]
+            if data[1].find("unclassified") != -1: continue
+            outf.write("\t".join([track, data[0], data[1], str(data[2]), idx]) + "\n")
+    outf.close()
+            
 ###################################################################                                                                                                                                                                          
 ###################################################################                                                                                                                                                                          
 ###################################################################                                                                                                                                                                          
@@ -442,72 +553,9 @@ def runCortex_var(infile, outfile):
     statement = PipelineGenomeAssembly.Cortex_var().build(infile)
     P.run()
 
-@follows(loadMetavelvetStats, loadIdbaStats)
+@follows(loadMetavelvetStats, loadIdbaStats,loadMetaphlanRelativeAbundances)
 def full():
     pass
-
-
-
-
-
-
-
-
-
-
-
-
-# def mapPairs(infiles):
-#     '''
-#     map the files for each read pair from fastq to
-#     fasta files
-#     '''
-#     for x, y in itertools.combinations(infiles, 2):
-#         if x[:-5] == y[:-5]:
-#             yield (x, y), os.path.join("idba.dir", x[:-11] + ".fasta")
-
-# ###################################################################
-# ###################################################################
-# ###################################################################
-# if PARAMS["paired"]:
-#     @active_if( METAGENOME )
-#     @follows(mkdir("idba.dir"))
-#     @files(  [x for x in mapPairs(glob.glob(SEQUENCEFILES))] )
-#     def convertFastq2Fasta(infiles, outfile):
-#         '''
-#         convert the fastq raw data files into fasta format
-#         idba does not support fastq format. Need to convert
-#         fastq files into fasta files. if paired end then need
-#         to combine pairs into a single file
-#         '''
-#         reads1, reads2 = infiles[0], infiles[1]
-#         reads1_1, reads2_1 = P.snip(infiles[0], ".gz"), P.snip(infiles[0], ".gz")
-#         statement = '''gunzip %(reads1)s %(reads2)s; fq2fa --merge %(reads1_1)s %(reads2_1)s %(outfile)s'''
-#         P.run()
-# else:
-#     @active_if( METAGENOME )
-#     @follows(mkdir("idba.dir"))
-#     @transform( glob.glob(SEQUENCEFILES), regex("(\S+).fastq.gz")
-#                 , r"idba.dir/\1.fasta")
-#     def convertFastq2Fasta(infile, outfile):
-#         '''
-#         convert the fastq raw data files into fasta format
-#         idba does not support fastq format. Need to convert
-#         fastq files into fasta files. if paired end then need
-#         to combine pairs into a single file
-#         '''
-#         reads = infile
-#         statement = '''fq2fa %(reads)s %(outfile)s'''
-#         P.run()
-
-###################################################################
-## meta-velvet assembly ###########################################
-###################################################################
-
-
-
-
-
 
 
 if __name__== "__main__":
