@@ -81,11 +81,11 @@ def main( argv = None ):
     parser.add_option("-t", "--height", dest="height", type="int",
                       help="height of plotting window"  )
     parser.add_option("-w", "--width", dest="width", type="int",
-                      help="width of plotting window"  )
-    parser.add_option("-n", "--number", dest="number", type="string",
+                      help="number of bars"  )
+    parser.add_option("-n", "--number", dest="number", type="int",
                       help="width of plotting window"  )
     parser.add_option("-c", "--colour", dest="colour", type="choice"
-                      , choices=("red", "blue", "grey", "black", "pink", "green")
+                      , choices=("red", "purple", "blue", "grey", "black", "pink", "green")
                       , help="colour choices"  )
     parser.add_option("--side", dest="side", action="store_true"
                       , help="set to draw sideways barplot"  )
@@ -116,7 +116,8 @@ def main( argv = None ):
     outf = options.outfile
 
     R('''data <- read.table("%s", sep = "\t", header = T, stringsAsFactors = F)''' % inf)
-    R('''png("%s", height = %i, width = %i)''' % (outf, options.height, options.width) )
+    R('''pdf("%s", height = %i, width = %i)''' % (outf, options.height, options.width) )
+
     R('''ratio <- as.matrix(data$ratio[c(1:%i)])''' % options.number)
     R('''par(mai = c(%s))''' % options.margins)
     if options.side:
