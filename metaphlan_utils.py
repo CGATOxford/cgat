@@ -68,8 +68,12 @@ def relative_abundance_iterator(infile):
         entries = data[0].split("|")
         taxon = entries[len(entries)-1]
         taxon_names = taxon.split("__")
-        taxons[taxon_names[0]].append(taxon_names[1])
-        abundances[taxon_names[0]].append(abundance)
+        if len(taxon_names) == 1: # unclassified set
+            taxons[taxon_names[0]].append(taxon_names[0])
+            abundances[taxon_names[0]].append(abundance)
+        else:
+            taxons[taxon_names[0]].append(taxon_names[1])
+            abundances[taxon_names[0]].append(abundance)
 
     # return the taxonomic group and the specific
     # names within the taxonomic group
@@ -89,6 +93,8 @@ def relative_abundance_iterator(infile):
                 group = "genus"
             elif group == "s":
                 group = "species"
+            else:
+                group = group
             yield RelativeAbundance().read(group, abundance[0], abundance[1])
 
 ##############################
@@ -136,7 +142,9 @@ class Counter(ReadMap):
 
     def count(self, infile):
         '''
-        get counts for taxonomic groups
+        get counts for taxonomic groups i.e. the total of reads 
+        that were assigned to a taxonomic group in that
+        particular taxonomic group
         '''
         taxonomies = ["kingdom", "phylum", "class", "order", "family", "genus", "species"]
         for read in read_map_iterator(infile): 
@@ -185,9 +193,12 @@ class Counter(ReadMap):
     def count_total_species(self, infile):
         species = set()
         for read in read_map_iterator(infile):
+            if read.species.find("unclassified") == -1: continue
             species.add(read.species)
         return len(species)
-    
+    def proportion_with_clade_assignment(self, infile, total_reads):
+        return float(total_reads)/self.total_count(infile)
+
 ###########################################
 ###########################################
 ###########################################
