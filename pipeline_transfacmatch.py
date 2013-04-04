@@ -177,8 +177,8 @@ for x in INPUT_FORMATS:
         INPUT_FILE = input_file[0]
 
 # foreground and background sets
-INPUT_FOREGROUND = glob.glob("*.foreground.tsv")[0]
-INPUT_BACKGROUND = glob.glob("*.background.tsv")[0]
+INPUT_FOREGROUND = glob.glob("*.foreground.tsv")
+INPUT_BACKGROUND = glob.glob("*.background.tsv")
 
 TRACK_FOREGROUND = P.snip(INPUT_FOREGROUND, ".foreground.tsv")
 TRACK_BACKGROUND = P.snip(INPUT_BACKGROUND, ".background.tsv")
