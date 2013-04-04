@@ -180,8 +180,8 @@ for x in INPUT_FORMATS:
 INPUT_FOREGROUND = glob.glob("*.foreground.tsv")
 INPUT_BACKGROUND = glob.glob("*.background.tsv")
 
-TRACK_FOREGROUND = P.snip(INPUT_FOREGROUND, ".foreground.tsv")
-TRACK_BACKGROUND = P.snip(INPUT_BACKGROUND, ".background.tsv")
+TRACK_FOREGROUND = [P.snip(x, ".foreground.tsv") for x in INPUT_FOREGROUND]
+TRACK_BACKGROUND = [P.snip(x, ".background.tsv") for x in INPUT_BACKGROUND]
 
 #########################################################################
 #########################################################################
@@ -291,7 +291,7 @@ def Fasta():
 #########################################################################
 #########################################################################
 @follows(mkdir("GC_content.dir"), buildIntervalsFasta)
-@transform([INPUT_BACKGROUND, INPUT_FOREGROUND]
+@transform(INPUT_BACKGROUND + INPUT_FOREGROUND
            , regex(r"(\S+).tsv")
            , add_inputs(buildIntervalsFasta)
            , r"GC_content.dir/\1.gc.tsv")
@@ -322,7 +322,8 @@ def loadGCContent(infile, outfile):
 #########################################################################
 #########################################################################
 if PARAMS["CpG_match_background"]:
-    @merge(loadGCContent, "GC_content.dir/%s.cpg_matched.background.tsv" % TRACK_BACKGROUND)
+    @collate(loadGCContent, regex("GC_content.dir/(.+)\.(?:background|foreground)\.gc\.load"),
+             r"GC_content.dir/\1.cpg_matched.background.tsv")
     def matchBackgroundForCpGComposition(infiles, outfile):
         '''
         take the background set and subset it for intervals with
@@ -330,9 +331,13 @@ if PARAMS["CpG_match_background"]:
         - this requires that the background set is sufficiently
         large
         '''
+        track = re.match("GC_content.dir/(.+)\.(?:background|foreground)\.gc\.load", infiles[0]).groups()[0]
+        input_background = "%s.background.tsv" % track
+        input_foreground = "%s.foreground.tsv" % track
+        
         PipelineTransfacMatch.matchBackgroundForCpGComposition( infiles
-                                                                , INPUT_BACKGROUND
-                                                                , INPUT_FOREGROUND
+                                                                , input_background
+                                                                , input_foreground
                                                                 , PARAMS["database"]
                                                                 , outfile )
 
@@ -471,8 +476,9 @@ def Match():
 #########################################################################
 if PARAMS["CpG_match_background"]:
     @follows(loadMatchResults, loadMatchedCpGComposition, mkdir("match_test.dir"))
-    @merge(["GC_content.dir/%s.cpg_matched.background.tsv" % TRACK_BACKGROUND, INPUT_FOREGROUND]
-           , "match_test.dir/%s_%s.cpg.matched.significance" % (TRACK_FOREGROUND, TRACK_BACKGROUND))
+    @collate([matchBackgroundForCpGComposition,calculateGCContent],
+             regex(".+/(.+)\.(?:foreground.gc|cpg_matched.background)\.tsv"),
+             r"match_test.dir/\1.cpg.matched.significance")
     def estimateEnrichmentOfTFBS(infiles, outfile):
         '''
         estimate the significance of trnascription factors that are associated with
@@ -480,8 +486,11 @@ if PARAMS["CpG_match_background"]:
         '''
         # required files
         match_table = "match_result"
-        background, foreground = infiles[0], infiles[1]
-    
+
+        #we don't know which order the foreground and backgorund will come in
+        background = [infile for infile in infiles if re.search("background",infile)][0]
+        foreground = ["%s.foreground.tsv" % re.match(".+/(.+)\.foreground\.gc\.tsv", infile).groups()[0] 
+                      for infile in infiles if re.search("foreground", infile)][0]
         # run significance testing
         PipelineTransfacMatch.testSignificanceOfMatrices( background
                                                           , foreground
@@ -491,8 +500,8 @@ if PARAMS["CpG_match_background"]:
 
 else:    
     @follows(loadMatchResults, mkdir("match_test.dir"))
-    @merge([INPUT_BACKGROUND, INPUT_FOREGROUND]
-           , "match_test.dir/%s_%s.significance" % (TRACK_FOREGROUND, TRACK_BACKGROUND))
+    @collate(INPUT_BACKGROUND + INPUT_FOREGROUND, regex("(.+)\.(?:foreground|background)\.tsv")
+           , r"match_test.dir/\1.significance")
     def estimateEnrichmentOfTFBS(infiles, outfile):
         '''
         estimate the significance of trnascription factors that are associated with
@@ -500,8 +509,11 @@ else:
         '''
         # required files
         match_table = "match_result"
-        background, foreground = infiles[0], infiles[1]
-    
+
+        #we don't know which order the foreground and backgorund will come in
+        background = [infile for infile in infiles if re.search("background",infile)][0]
+        foreground = [infile for infile in infiles if re.search("foreground",infile)][0]
+
         # run significance testing
         PipelineTransfacMatch.testSignificanceOfMatrices( background
                                                           , foreground
@@ -527,6 +539,8 @@ def loadEnrichmentOfTFBS(infile, outfile):
 ##############
 # target
 ##############
+
+@posttask(touch_file("complete.flag"))
 @follows(loadEnrichmentOfTFBS)
 def Significance():
     pass
