@@ -447,7 +447,7 @@ def buildMatchMetrics(infile, outfile):
 #########################################################################
 #########################################################################
 #########################################################################
-@transform(buildMatchMetrics, suffix(".metrics"), ".load")
+@transform(buildMatchMetrics, suffix(""), ".load")
 def loadMatchMetrics(infile, outfile):
     '''
     load match metrics
