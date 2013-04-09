@@ -273,7 +273,9 @@ def buildIntervalsFasta(infile, outfile):
                    --genome=%(genomedir)s/%(genome)s 
                    --log=%(outfile)s.log > %(outfile)s'''
     P.run()
-    os.remove(inf)
+    
+    if infile.endswith(".gtf.gz"):
+        os.remove(inf)
 
 ###########    
 # target
