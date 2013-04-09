@@ -315,6 +315,7 @@ def loadGCContent(infile, outfile):
     statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s
                    --log=%(outfile)s.log
                    --index=id
+                   %(csv2db_options)s
                    < %(infile)s > %(outfile)s'''
     P.run()
 
@@ -367,6 +368,7 @@ if PARAMS["CpG_match_background"]:
         tablename = filenameToTablename(P.snip(os.path.basename(outfile), ".load"))
         statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s 
                        --log=%(outfile)s.log
+                       %(csv2db_options)s
                        < %(infile)s > %(outfile)s'''
         P.run()
 
@@ -426,6 +428,7 @@ def loadMatchResults(infile, outfile):
     statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s
                    --log=%(outfile)s.log
                    --index=seq_id
+                   %(csv2db_options)s
                    < %(inf)s > %(outfile)s'''
     P.run()
     os.remove(inf)
@@ -456,6 +459,7 @@ def loadMatchMetrics(infile, outfile):
     statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s
                    --log=%(outfile)s.log
                    --index=seq_id
+                   %(csv2db_options)s
                    < %(infile)s > %(outfile)s'''
     P.run()
 
@@ -533,6 +537,7 @@ def loadEnrichmentOfTFBS(infile, outfile):
     statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s
                   --log=%(outfile)s.log 
                   --index=matrix_id
+                  %(csv2db_options)s
                   < %(infile)s > %(outfile)s'''
     P.run()
     
