@@ -987,6 +987,23 @@ class MultiLineFormatter(logging.Formatter):
             s = s.replace('\n', '\n' + ' '*len(header))
         return s
 
+def submit( module, function, params, toCluster = True ):
+    '''Submit a python function as a job (to the cluster)'''
+
+    param_string = ",".join(params)
+    scriptsdir = PARAMS["scriptsdir"]
+
+    to_cluster = toCluster
+
+    statement = '''python %(scriptsdir)s/run_function.py
+                          -m %(module)s
+                          -f %(function)s
+                          -p %(param_string)s
+                '''
+    run()
+
+
+
 def clonePipeline( srcdir ):
     '''clone a pipeline from srcdir into the current directory.
     '''
