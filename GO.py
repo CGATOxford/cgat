@@ -1590,7 +1590,9 @@ def pairwiseGOEnrichment( results_per_genelist, labels, test_ontology, go2info, 
                 if cc == dd == 0:
                     c.skipped += 1
                     continue
-                
+
+                c.tested += 1
+
                 fisher, pvalue = scipy.stats.fisher_exact( numpy.array( 
                         ((aa, bb),
                          (cc, dd))))
@@ -1621,6 +1623,7 @@ def pairwiseGOEnrichment( results_per_genelist, labels, test_ontology, go2info, 
                                            len(y_go_categories),
                                            c.shared,
                                            c.skipped,
+                                           c.tested,
                                            c.significant_pvalue,
                                            c.insignicant_pvalue) ) ) + "\n" )
     if options.output_filename_pattern:
