@@ -281,3 +281,96 @@
 2012-10-10 09:33:34,880 INFO reading additional configuration from conf.py
 2012-10-10 09:33:45,128 INFO no previous lncRNA set provided: Using refnoncoding set
 2012-10-10 09:33:58,720 INFO reading additional configuration from conf.py
+2013-03-22 16:20:02,487 INFO initialising plugins
+2013-03-22 16:20:04,394 DEBUG found plugins: 3 capabilites and 50 plugins
+2013-03-22 16:20:44,375 INFO no previous lncRNA set provided: Using refnoncoding set
+2013-03-22 16:25:03,948 INFO initialising plugins
+2013-03-22 16:25:07,198 DEBUG found plugins: 3 capabilites and 50 plugins
+2013-03-22 16:25:55,639 INFO report_directive: starting: /ifs/devel/andreas/cgat/doc/pipelines/CompareTranscripts.rst:362
+2013-03-22 16:25:55,640 DEBUG report_directive.run: profile: started: rst: /ifs/devel/andreas/cgat/doc/pipelines/CompareTranscripts.rst:362
+2013-03-22 16:25:55,641 DEBUG report_directive.run: arguments=[u'Trackers.MakefileParameters'], options={'tracks': 'Makefile.compare_transcripts', 'transpose': u'', 'render': 'glossary'}, lineno=362, content=[u'Overview of pipeline parameters.'], document=/ifs/devel/andreas/cgat/doc/pipelines/CompareTranscripts.rst
+2013-03-22 16:25:55,641 DEBUG report_directive.run: plotdir=Trackers.MakefileParameters, basename=Trackers, ext=.MakefileParameters, fname=Trackers.MakefileParameters, rstdir=/ifs/devel/andreas/cgat/doc/pipelines, srcdir=/ifs/devel/andreas/cgat/doc, builddir=/ifs/devel/andreas/cgat/doc
+2013-03-22 16:25:55,641 DEBUG report_directive.run: reference=Trackers.MakefileParameters, basedir=, rst2src=../_static/report_directive/, root2build=../_static/report_directive/, outdir=_static/report_directive/, codename=Trackers_MakefileParameters.code
+2013-03-22 16:25:55,658 DEBUG report_directive.run: options={'tracks': 'Makefile.compare_transcripts', 'transpose': u'', 'render': 'glossary'}
+2013-03-22 16:25:55,658 DEBUG report_directive.run: renderer options: {'transpose': u''}
+2013-03-22 16:25:55,658 DEBUG report_directive.run: transformer options: {}
+2013-03-22 16:25:55,658 DEBUG report_directive.run: dispatcher options: {'tracks': 'Makefile.compare_transcripts'}
+2013-03-22 16:25:55,658 DEBUG report_directive.run: tracker options: {}
+2013-03-22 16:25:55,658 DEBUG report_directive.run: display options: {'render': 'glossary'}
+2013-03-22 16:25:55,658 DEBUG report_directive.run: options_hash=2ad4a53939ccd9bcef6cbf111375a2e7
+2013-03-22 16:25:55,659 DEBUG report_directive.run: checking for changed files.
+2013-03-22 16:25:55,668 DEBUG report_directive.run: /ifs/devel/andreas/cgat/doc/pipelines/CompareTranscripts.rst:362: checking for []
+2013-03-22 16:25:55,669 INFO report_directive.run: /ifs/devel/andreas/cgat/doc/pipelines/CompareTranscripts.rst:362: noredo: all files are present
+2013-03-22 16:25:55,858 INFO report_directive: starting: /ifs/devel/andreas/cgat/doc/pipelines/MapTranscripts454.rst:55
+2013-03-22 16:25:55,858 DEBUG report_directive.run: profile: started: rst: /ifs/devel/andreas/cgat/doc/pipelines/MapTranscripts454.rst:55
+2013-03-22 16:25:55,859 DEBUG report_directive.run: arguments=[u'Trackers.MakefileParameters'], options={'tracks': 'Makefile.map_transcripts_454', 'transpose': u'', 'render': 'glossary'}, lineno=55, content=[u'Overview of pipeline parameters.'], document=/ifs/devel/andreas/cgat/doc/pipelines/MapTranscripts454.rst
+2013-03-22 16:25:55,859 DEBUG report_directive.run: plotdir=Trackers.MakefileParameters, basename=Trackers, ext=.MakefileParameters, fname=Trackers.MakefileParameters, rstdir=/ifs/devel/andreas/cgat/doc/pipelines, srcdir=/ifs/devel/andreas/cgat/doc, builddir=/ifs/devel/andreas/cgat/doc
+2013-03-22 16:25:55,859 DEBUG report_directive.run: reference=Trackers.MakefileParameters, basedir=, rst2src=../_static/report_directive/, root2build=../_static/report_directive/, outdir=_static/report_directive/, codename=Trackers_MakefileParameters.code
+2013-03-22 16:25:55,859 DEBUG report_directive.run: options={'tracks': 'Makefile.map_transcripts_454', 'transpose': u'', 'render': 'glossary'}
+2013-03-22 16:25:55,860 DEBUG report_directive.run: renderer options: {'transpose': u''}
+2013-03-22 16:25:55,860 DEBUG report_directive.run: transformer options: {}
+2013-03-22 16:25:55,860 DEBUG report_directive.run: dispatcher options: {'tracks': 'Makefile.map_transcripts_454'}
+2013-03-22 16:25:55,860 DEBUG report_directive.run: tracker options: {}
+2013-03-22 16:25:55,860 DEBUG report_directive.run: display options: {'render': 'glossary'}
+2013-03-22 16:25:55,860 DEBUG report_directive.run: options_hash=fdccf2c3a3af6a09abbd046bcbb2f87c
+2013-03-22 16:25:55,860 DEBUG report_directive.run: checking for changed files.
+2013-03-22 16:25:55,866 DEBUG report_directive.run: /ifs/devel/andreas/cgat/doc/pipelines/MapTranscripts454.rst:55: checking for []
+2013-03-22 16:25:55,866 INFO report_directive.run: /ifs/devel/andreas/cgat/doc/pipelines/MapTranscripts454.rst:55: noredo: all files are present
+2013-03-22 16:27:44,430 INFO reading additional configuration from conf.py
+2013-03-22 16:27:55,388 INFO no previous lncRNA set provided: Using refnoncoding set
+2013-03-22 16:28:09,855 INFO reading additional configuration from conf.py
+2013-03-22 16:33:40,157 INFO initialising plugins
+2013-03-22 16:33:42,146 DEBUG found plugins: 3 capabilites and 50 plugins
+2013-03-22 16:34:19,881 INFO report_directive: starting: /ifs/devel/andreas/cgat/doc/pipelines/CompareTranscripts.rst:362
+2013-03-22 16:34:19,881 DEBUG report_directive.run: profile: started: rst: /ifs/devel/andreas/cgat/doc/pipelines/CompareTranscripts.rst:362
+2013-03-22 16:34:19,882 DEBUG report_directive.run: arguments=[u'Trackers.MakefileParameters'], options={'tracks': 'Makefile.compare_transcripts', 'transpose': u'', 'render': 'glossary'}, lineno=362, content=[u'Overview of pipeline parameters.'], document=/ifs/devel/andreas/cgat/doc/pipelines/CompareTranscripts.rst
+2013-03-22 16:34:19,882 DEBUG report_directive.run: plotdir=Trackers.MakefileParameters, basename=Trackers, ext=.MakefileParameters, fname=Trackers.MakefileParameters, rstdir=/ifs/devel/andreas/cgat/doc/pipelines, srcdir=/ifs/devel/andreas/cgat/doc, builddir=/ifs/devel/andreas/cgat/doc
+2013-03-22 16:34:19,882 DEBUG report_directive.run: reference=Trackers.MakefileParameters, basedir=, rst2src=../_static/report_directive/, root2build=../_static/report_directive/, outdir=_static/report_directive/, codename=Trackers_MakefileParameters.code
+2013-03-22 16:34:19,885 DEBUG report_directive.run: options={'tracks': 'Makefile.compare_transcripts', 'transpose': u'', 'render': 'glossary'}
+2013-03-22 16:34:19,885 DEBUG report_directive.run: renderer options: {'transpose': u''}
+2013-03-22 16:34:19,885 DEBUG report_directive.run: transformer options: {}
+2013-03-22 16:34:19,885 DEBUG report_directive.run: dispatcher options: {'tracks': 'Makefile.compare_transcripts'}
+2013-03-22 16:34:19,885 DEBUG report_directive.run: tracker options: {}
+2013-03-22 16:34:19,885 DEBUG report_directive.run: display options: {'render': 'glossary'}
+2013-03-22 16:34:19,886 DEBUG report_directive.run: options_hash=2ad4a53939ccd9bcef6cbf111375a2e7
+2013-03-22 16:34:19,887 DEBUG report_directive.run: checking for changed files.
+2013-03-22 16:34:19,887 DEBUG report_directive.run: /ifs/devel/andreas/cgat/doc/pipelines/CompareTranscripts.rst:362: no check performed: _static/report_directive/Trackers_MakefileParameters@glossary@2ad4a53939ccd9bcef6cbf111375a2e7.txt missing
+2013-03-22 16:34:19,887 DEBUG report_directive.run: collecting tracker Trackers.MakefileParameters with options {} 
+2013-03-22 16:34:19,888 DEBUG instantiating class MakefileParameters
+2013-03-22 16:34:19,888 DEBUG entered getModule with `Trackers`
+2013-03-22 16:34:19,888 DEBUG searching for module name=Trackers at path=None
+2013-03-22 16:34:19,929 DEBUG loading module: Trackers: <open file '/ifs/devel/andreas/cgat/doc/python/Trackers.py', mode 'U' at 0xf894030>, /ifs/devel/andreas/cgat/doc/python/Trackers.py, ('.py', 'U', 1)
+2013-03-22 16:34:19,944 WARNING could not load module Trackers
+2013-03-22 16:34:19,944 WARNING report_directive.run: exception caught at /ifs/devel/andreas/cgat/doc/pipelines/CompareTranscripts.rst:362 - see document
+2013-03-22 16:34:19,956 DEBUG report_directive.run: profile: started: collecting: /ifs/devel/andreas/cgat/doc/pipelines/CompareTranscripts.rst:362
+2013-03-22 16:34:19,958 WARNING report_directive.layoutBlocks: missing title
+2013-03-22 16:34:19,961 DEBUG report_directive.run: profile: finished: collecting: /ifs/devel/andreas/cgat/doc/pipelines/CompareTranscripts.rst:362
+2013-03-22 16:34:19,961 DEBUG report_directive.run: profile: finished: rst: /ifs/devel/andreas/cgat/doc/pipelines/CompareTranscripts.rst:362
+2013-03-22 16:34:20,133 INFO report_directive: starting: /ifs/devel/andreas/cgat/doc/pipelines/MapTranscripts454.rst:55
+2013-03-22 16:34:20,133 DEBUG report_directive.run: profile: started: rst: /ifs/devel/andreas/cgat/doc/pipelines/MapTranscripts454.rst:55
+2013-03-22 16:34:20,134 DEBUG report_directive.run: arguments=[u'Trackers.MakefileParameters'], options={'tracks': 'Makefile.map_transcripts_454', 'transpose': u'', 'render': 'glossary'}, lineno=55, content=[u'Overview of pipeline parameters.'], document=/ifs/devel/andreas/cgat/doc/pipelines/MapTranscripts454.rst
+2013-03-22 16:34:20,134 DEBUG report_directive.run: plotdir=Trackers.MakefileParameters, basename=Trackers, ext=.MakefileParameters, fname=Trackers.MakefileParameters, rstdir=/ifs/devel/andreas/cgat/doc/pipelines, srcdir=/ifs/devel/andreas/cgat/doc, builddir=/ifs/devel/andreas/cgat/doc
+2013-03-22 16:34:20,134 DEBUG report_directive.run: reference=Trackers.MakefileParameters, basedir=, rst2src=../_static/report_directive/, root2build=../_static/report_directive/, outdir=_static/report_directive/, codename=Trackers_MakefileParameters.code
+2013-03-22 16:34:20,134 DEBUG report_directive.run: options={'tracks': 'Makefile.map_transcripts_454', 'transpose': u'', 'render': 'glossary'}
+2013-03-22 16:34:20,134 DEBUG report_directive.run: renderer options: {'transpose': u''}
+2013-03-22 16:34:20,134 DEBUG report_directive.run: transformer options: {}
+2013-03-22 16:34:20,135 DEBUG report_directive.run: dispatcher options: {'tracks': 'Makefile.map_transcripts_454'}
+2013-03-22 16:34:20,135 DEBUG report_directive.run: tracker options: {}
+2013-03-22 16:34:20,135 DEBUG report_directive.run: display options: {'render': 'glossary'}
+2013-03-22 16:34:20,135 DEBUG report_directive.run: options_hash=fdccf2c3a3af6a09abbd046bcbb2f87c
+2013-03-22 16:34:20,135 DEBUG report_directive.run: checking for changed files.
+2013-03-22 16:34:20,135 DEBUG report_directive.run: /ifs/devel/andreas/cgat/doc/pipelines/MapTranscripts454.rst:55: no check performed: _static/report_directive/Trackers_MakefileParameters@glossary@fdccf2c3a3af6a09abbd046bcbb2f87c.txt missing
+2013-03-22 16:34:20,136 DEBUG report_directive.run: collecting tracker Trackers.MakefileParameters with options {} 
+2013-03-22 16:34:20,136 DEBUG instantiating class MakefileParameters
+2013-03-22 16:34:20,136 DEBUG entered getModule with `Trackers`
+2013-03-22 16:34:20,136 DEBUG searching for module name=Trackers at path=None
+2013-03-22 16:34:20,138 DEBUG loading module: Trackers: <open file '/ifs/devel/andreas/cgat/doc/python/Trackers.py', mode 'U' at 0xfe4c390>, /ifs/devel/andreas/cgat/doc/python/Trackers.py, ('.py', 'U', 1)
+2013-03-22 16:34:20,138 WARNING could not load module Trackers
+2013-03-22 16:34:20,138 WARNING report_directive.run: exception caught at /ifs/devel/andreas/cgat/doc/pipelines/MapTranscripts454.rst:55 - see document
+2013-03-22 16:34:20,139 DEBUG report_directive.run: profile: started: collecting: /ifs/devel/andreas/cgat/doc/pipelines/MapTranscripts454.rst:55
+2013-03-22 16:34:20,140 WARNING report_directive.layoutBlocks: missing title
+2013-03-22 16:34:20,143 DEBUG report_directive.run: profile: finished: collecting: /ifs/devel/andreas/cgat/doc/pipelines/MapTranscripts454.rst:55
+2013-03-22 16:34:20,143 DEBUG report_directive.run: profile: finished: rst: /ifs/devel/andreas/cgat/doc/pipelines/MapTranscripts454.rst:55
+2013-03-22 16:35:45,245 INFO reading additional configuration from conf.py
+2013-03-22 16:35:55,916 INFO no previous lncRNA set provided: Using refnoncoding set
+2013-03-22 16:36:09,551 INFO reading additional configuration from conf.py

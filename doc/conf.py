@@ -29,7 +29,10 @@ data_dir = os.path.abspath('..')
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.todo', 'sphinx.ext.coverage', 'sphinx.ext.pngmath', 'sphinx.ext.ifconfig',
-              'SphinxReport.only_directives', 'SphinxReport.report_directive', 'sphinx.ext.inheritance_diagram' ]
+              'SphinxReport.only_directives', 
+	      'SphinxReport.report_directive', 
+	      'sphinx.ext.inheritance_diagram',
+	      'sphinxcontrib.programoutput' ]
 
 # autoclass configuration - use both class and __init__ method to
 # document methods.

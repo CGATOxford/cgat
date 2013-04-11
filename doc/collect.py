@@ -6,7 +6,16 @@ the directory :file:`scripts`, while those starting with
 upper case characters are put into :file:`modules`.
 """
 
-TEMPLATE_RST='''
+TEMPLATE_SCRIPT='''
+.. automodule:: %(prefix)s
+   :members:
+   :inherited-members:
+   :show-inheritance:
+
+.. program-output: python ../%(prefix)s.py --help
+'''
+
+TEMPLATE_MODULE='''
 .. automodule:: %(prefix)s
    :members:
    :inherited-members:
@@ -37,8 +46,10 @@ if __name__ == "__main__":
                 continue
 
             if prefix[0].isupper(): 
+                template = TEMPLATE_MODULE
                 dest = "modules"
             else:
+                template = TEMPLATE_SCRIPT
                 dest = "scripts"
 
             filename = os.path.join( os.path.abspath(dest), "%s.rst" % prefix )
@@ -48,7 +59,7 @@ if __name__ == "__main__":
 
             E.debug( "adding %s" % filename )
             outfile = open( filename, "w" )
-            outfile.write( TEMPLATE_RST % locals() )
+            outfile.write( template % locals() )
             outfile.close()
 
             ncreated += 1

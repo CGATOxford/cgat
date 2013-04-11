@@ -10,6 +10,7 @@ Genomics
 .. toctree::
    :maxdepth: 1
    
+   scripts/bam2geneprofile.rst
    scripts/bed2bed.rst
    scripts/bed2gff.rst
    scripts/gff2bed.rst
