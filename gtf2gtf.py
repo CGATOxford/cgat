@@ -590,14 +590,15 @@ if __name__ == '__main__':
                 else:
                     ndiscarded += 1
         elif options.filter in ("longest-transcript", "representative-transcript" ):
-            
+
             iterator = GTF.gene_iterator( GTF.iterator(options.stdin) )
 
             def selectLongestTranscript( gene ):
                 r = []
                 for transcript in gene:
                     transcript.sort( key = lambda x: x.start )
-                    r.append( transcript[-1].end - transcript[0].start )
+                    length = transcript[-1].end - transcript[0].start
+                    r.append( (length, transcript) )
                 r.sort()
                 return r[-1][1]
             
@@ -620,8 +621,8 @@ if __name__ == '__main__':
                 transcript_counts.sort()
                 return transcript_counts[-1][1]
 
-            if options.filter == "longest_transcript":
-                _selector = selectLongestTranscript
+            if options.filter == "longest-transcript":
+                _select = selectLongestTranscript
             elif options.filter == "representative-transcript":
                 _select = selectRepresentativeTranscript
 
