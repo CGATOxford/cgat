@@ -409,7 +409,7 @@ def load( infile,
 
     run()
 
-def concatenateAndLoad( infiles, outfile, regex_filename = None, header = None ):
+def concatenateAndLoad( infiles, outfile, regex_filename = None, header = None, cat = None, titles = False ):
     '''concatenate categorical tables and load into a database.
 
     Concatenation assumes that the header is the same in all files.
@@ -429,11 +429,18 @@ def concatenateAndLoad( infiles, outfile, regex_filename = None, header = None )
     if header:
         load_options.append( "--header=%s" % header )
 
+    if not cat:
+        cat = "track"
+        
+    if titles == False:
+        no_titles = "--no-titles"
+    else: no_titles = ""
+
     options = " ".join(options)
     load_options = " ".join(load_options)
     statement = '''python %(scriptsdir)s/combine_tables.py
-                     --cat=track
-                     --no-titles
+                     --cat=%(cat)s
+                     %(no_titles)s
                      %(options)s
                    %(infiles)s
                    | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
