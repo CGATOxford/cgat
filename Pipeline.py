@@ -1029,6 +1029,7 @@ def submit( module, function, params = None,
                           --function=%(function)s
                           %(infiles)s
                           %(outfiles)s
+                          %(params)s
                 '''
     run()
 

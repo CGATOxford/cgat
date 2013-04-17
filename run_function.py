@@ -122,25 +122,32 @@ def main(argv = None):
     if options.input_filenames:
         infiles = options.input_filenames
     else:
-        infiles = options.params.pop(0)
+        infiles = False
 
     if options.output_filenames:
         outfiles = options.output_filenames
     else:
-        outfiles = options.params.pop(0)
+        outfiles = False
 
     # Parse the parameters into an array
     if options.params:
         params = [param.strip() for param in options.params.split(",")]
     else:
-        params = []
+        params = False
               
     # deal with single file case
     if len(infiles) == 1: infiles = infiles[0]
     if len(outfiles) == 1: outfiles = outfiles[0]
 
     # Make the function call
-    function(infiles, outfiles, *params)
+    if infiles and outfiles and params:
+        function(infiles, outfiles, params)
+    elif infiles and outfiles and not params:
+        function(infiles, outfiles)
+    elif params:
+        function(params)
+    else:
+        raise ValueError("Expecting infile+outfile+params or infile+outfile or params")
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv))
