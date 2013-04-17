@@ -14,21 +14,20 @@ def loadXXX():
 import sys, tempfile, optparse, shutil, itertools, csv, math, random, re, glob, os, shutil, collections
 import sqlite3
 import cStringIO
+import csv
+import numpy
+import gzip
+import pysam
+import fileinput
 
+##########################
 import Experiment as E
 import Pipeline as P
-
-import csv
 import IndexedFasta, IndexedGenome, FastaIterator, Genomics
 import IOTools
 import GTF, GFF, Bed, WrapperMACS, WrapperZinba
 # import Stats
-
 import PipelineMapping
-import pysam
-import numpy
-import gzip
-import fileinput
 
 ###################################################
 ###################################################

@@ -55,6 +55,7 @@ from ruffus import *
 
 # use threading instead of multiprocessing
 from multiprocessing.pool import ThreadPool
+# note that threading can cause problems with rpy.
 task.Pool = ThreadPool
 
 import logging as L
@@ -994,18 +995,40 @@ class MultiLineFormatter(logging.Formatter):
             s = s.replace('\n', '\n' + ' '*len(header))
         return s
 
-def submit( module, function, params, toCluster = True ):
-    '''Submit a python function as a job (to the cluster)'''
+def submit( module, function, params = None,
+            infiles = None, outfiles = None, 
+            toCluster = True):
+    '''Submit a python *function* as a job to the cluster.
 
-    param_string = ",".join(params)
-    scriptsdir = PARAMS["scriptsdir"]
+    The function should reside in *module*. If *module* is
+    not part of the PYTHONPATH, an absolute path can be given.
+
+    *infiles* and *output* are either a single filename or a list of 
+    input/output filenames. Neither options supports yet nested lists.
+    '''
+
+    if type( infiles ) in (list, tuple):
+        infiles = " ".join( ["--input=%s" % x for x in infiles ] )
+    else:
+        infiles = "--input=%s" % infiles
+
+    if type( outfiles ) in (list, tuple):
+        outfiles = " ".join( ["--output=%s" % x for x in outfiles ] )
+    else:
+        outfiles = "--output=%s" % outfiles
+
+    if params:
+        params = "--params=%s" % ",".join(params)
+    else:
+        params = ""
 
     to_cluster = toCluster
 
     statement = '''python %(scriptsdir)s/run_function.py
-                          -m %(module)s
-                          -f %(function)s
-                          -p %(param_string)s
+                          --module=%(module)s
+                          --function=%(function)s
+                          %(infiles)s
+                          %(outfiles)s
                 '''
     run()
 
