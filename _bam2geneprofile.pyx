@@ -424,6 +424,10 @@ class GeneCounter( IntervalsCounter ):
 
         contig = gtf[0].contig 
         exons = GTF.asRanges( gtf, "exon" )
+        if len(exons) == 0:
+            E.warn( "no exons in gene %s:%s" % (gtf[0].gene_id, gtf[0].transcript_id))
+            return 0
+
         exon_start, exon_end = exons[0][0], exons[-1][1]
         if self.scale_flanks > 0:
             self.extension_downstream = (exon_end - exon_start)*self.scale_flanks

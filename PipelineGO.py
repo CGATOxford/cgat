@@ -286,6 +286,7 @@ def runGOFromFiles( outfile,
                     ontology_file = None,
                     samples = None,
                     minimum_counts = 0,
+                    pairs = False,
                     gene2name = None):
     '''check for GO enrichment within a gene list.
 
@@ -298,6 +299,9 @@ def runGOFromFiles( outfile,
     will be used.
 
     If *gene2name* is given, it will be supplied to the GO.py script.
+
+    If *pairs* is set, each category for each pair of gene sets will be tested for 
+    differential enrichment.
     '''
 
     to_cluster = True
@@ -318,6 +322,9 @@ def runGOFromFiles( outfile,
     else:
         options.append( "--fdr" )
         options.append( "--qvalue-method=BH" )
+
+    if pairs:
+        options.append( "--pairwise" )
 
     if gene2name:
         options.append( "--filename-gene2name=%s" % gene2name)
