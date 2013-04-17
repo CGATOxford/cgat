@@ -312,7 +312,8 @@ def getControl( track ):
     '''
     n = track.clone()
     n.condition = PARAMS["tracks_control"]
-    n.replicate = "R1"
+    if PARAMS["tracks_single_control"]:
+        n.replicate = "R1"
     return n
 
 def getUnstimulated( track ):
@@ -998,7 +999,7 @@ def loadSPPSummary( infile, outfile ):
            "spp.dir/%s.qual" % x.asFile() ) for x in TRACKS ] )
 def estimateSPPQualityMetrics( infile, outfile ):
 
-    track = P.snip(infile, ".bam" )
+    track = P.snip(infile, ".call.bam" )
 
     controlfile = "%s.call.bam" % getControl(Sample(track)).asFile()
 

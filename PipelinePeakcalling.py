@@ -1051,7 +1051,7 @@ def runMACS2( infile, outfile, controlfile = None ):
     '''
     to_cluster = True
 
-    if controlfile: control = "--control=%s" % controlfile
+    if controlfile: control = "%s" % controlfile
     else: control = ""
 
     # example statement: macs2 callpeak -t R1-paupar-R1.call.bam -c R1-lacZ-R1.call.bam -f BAMPE -g 2.39e9 --verbose 5 --bw 150 -q 0.01 -m 10 100000 --name test
