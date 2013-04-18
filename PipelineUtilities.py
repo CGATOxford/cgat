@@ -63,55 +63,51 @@ except IOError:
 #################### Database Queries #################################
 #######################################################################
 
-def execute(queries, database=PARAMS["database"], attach=False):
+
+
+def db_execute(cc, statements):
+    '''excute a statement or statements against a cursor'''
+
+    if type(statements) not in (list, tuple):
+        statements = [ statements ]
+
+    for statement in statements:
+        cc.execute(statement)
+    
+
+def execute(queries, database=PARAMS.get("database",""), attach=False):
     '''Execute a statement or a  list of statements (sequentially)'''
 
     dbhandle = sqlite3.connect( database )
     cc = dbhandle.cursor()
-   
-    
-    if attach:
-        # handle single attach statements
-        if type(attach) not in (list, tuple):
-            attach = [ attach ]
+      
+    if attach: db_execute(cc, attach)
 
-        for attach_statement in attach:
-            cc.execute(attach_statement)
-
-    # handle single statements
-    if type(queries) not in (list, tuple):
-        queries = [ queries ]
-        
-    for statement in queries: cc.execute(statement)
+    db_execute(cc, statement)
     cc.close()
 
 
-def fetch(query, database=PARAMS["database"], attach=False):
+def fetch(query, database=PARAMS.get("database",""), attach=False):
     '''Fetch all query results and return'''
     dbhandle = sqlite3.connect( database )
     cc = dbhandle.cursor()
 
-    if attach:
-        # handle single attach statements
-        if type(attach) not in (list, tuple):
-            attach = [ attach ]
-        for attach_statement in attach:
-            cc.execute(attach_statement)
+    if attach: db_execute(cc, attach)
 
     sqlresult = cc.execute(query).fetchall()
     cc.close()
     return sqlresult
 
 
-def fetch_with_names(query, database=PARAMS["database"], attach=False):
+def fetch_with_names(query, database=PARAMS.get("database",""), attach=False):
     '''Fetch query results and returns them as an array of row arrays, 
        in which the first entry is an array of the field names'''
 
     dbhandle = sqlite3.connect( database )
     cc = dbhandle.cursor()
-    if attach:
-        for attach_statement in attach:
-            cc.execute(attach_statement)
+
+    if attach: db_execute(cc, attach)
+
     sqlresult = cc.execute(query).fetchall()
     data=[]
     # http://stackoverflow.com/questions/4147707/
@@ -125,15 +121,17 @@ def fetch_with_names(query, database=PARAMS["database"], attach=False):
     cc.close()
     return data
 
+ 
 
-def fetch_DataFrame(query, database=PARAMS["database"], attach=False):
+def fetch_DataFrame(query, database=PARAMS.get("database",""), attach=False):
     '''Fetch query results and returns them as a pandas dataframe'''
 
     dbhandle = sqlite3.connect( database )
     cc = dbhandle.cursor()
+
     if attach:
-        for attach_statement in attach:
-            cc.execute(attach_statement)
+        db_execute(attach)
+
     sqlresult = cc.execute(query).fetchall()
     cc.close()
     
