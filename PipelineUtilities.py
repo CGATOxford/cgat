@@ -64,15 +64,24 @@ except IOError:
 #######################################################################
 
 def execute(queries, database=PARAMS["database"], attach=False):
-    '''Execute a list of statements sequentially'''
+    '''Execute a statement or a  list of statements (sequentially)'''
 
     dbhandle = sqlite3.connect( database )
     cc = dbhandle.cursor()
-
+   
+    
     if attach:
+        # handle single attach statements
+        if type(attach) not in (list, tuple):
+            attach = [ attach ]
+
         for attach_statement in attach:
             cc.execute(attach_statement)
 
+    # handle single statements
+    if type(queries) not in (list, tuple):
+        queries = [ queries ]
+        
     for statement in queries: cc.execute(statement)
     cc.close()
 
@@ -81,9 +90,14 @@ def fetch(query, database=PARAMS["database"], attach=False):
     '''Fetch all query results and return'''
     dbhandle = sqlite3.connect( database )
     cc = dbhandle.cursor()
+
     if attach:
+        # handle single attach statements
+        if type(attach) not in (list, tuple):
+            attach = [ attach ]
         for attach_statement in attach:
             cc.execute(attach_statement)
+
     sqlresult = cc.execute(query).fetchall()
     cc.close()
     return sqlresult
