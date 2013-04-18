@@ -410,7 +410,7 @@ def load( infile,
 
     run()
 
-def concatenateAndLoad( infiles, outfile, regex_filename = None, header = None, cat = None, titles = False ):
+def concatenateAndLoad( infiles, outfile, regex_filename = None, header = None, cat = None, titles = False, options = "" ):
     '''concatenate categorical tables and load into a database.
 
     Concatenation assumes that the header is the same in all files.
@@ -422,6 +422,7 @@ def concatenateAndLoad( infiles, outfile, regex_filename = None, header = None, 
 
     tablename = toTable( outfile )
 
+    passed_options = options
     load_options,options = [], []
 
     if regex_filename:
@@ -438,7 +439,7 @@ def concatenateAndLoad( infiles, outfile, regex_filename = None, header = None, 
     else: no_titles = ""
 
     options = " ".join(options)
-    load_options = " ".join(load_options)
+    load_options = " ".join(load_options) + " " + passed_options
     statement = '''python %(scriptsdir)s/combine_tables.py
                      --cat=%(cat)s
                      %(no_titles)s
