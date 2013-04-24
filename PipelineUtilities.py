@@ -48,10 +48,11 @@ Code
 ----
 
 """
-
 import sqlite3
 import Pipeline as P
 import rpy2.robjects as R
+import pickle
+from pandas import DataFrame
 
 try:
     PARAMS = P.getParameters()
@@ -62,41 +63,51 @@ except IOError:
 #################### Database Queries #################################
 #######################################################################
 
-def execute(queries, database=PARAMS["database"], attach=False):
-    '''Execute a list of statements sequentially'''
+
+
+def db_execute(cc, statements):
+    '''excute a statement or statements against a cursor'''
+
+    if type(statements) not in (list, tuple):
+        statements = [ statements ]
+
+    for statement in statements:
+        cc.execute(statement)
+    
+
+def execute(queries, database=PARAMS.get("database",""), attach=False):
+    '''Execute a statement or a  list of statements (sequentially)'''
 
     dbhandle = sqlite3.connect( database )
     cc = dbhandle.cursor()
+      
+    if attach: db_execute(cc, attach)
 
-    if attach:
-        for attach_statement in attach:
-            cc.execute(attach_statement)
-
-    for statement in queries: cc.execute(statement)
+    db_execute(cc, statement)
     cc.close()
 
 
-def fetch(query, database=PARAMS["database"], attach=False):
+def fetch(query, database=PARAMS.get("database",""), attach=False):
     '''Fetch all query results and return'''
     dbhandle = sqlite3.connect( database )
     cc = dbhandle.cursor()
-    if attach:
-        for attach_statement in attach:
-            cc.execute(attach_statement)
+
+    if attach: db_execute(cc, attach)
+
     sqlresult = cc.execute(query).fetchall()
     cc.close()
     return sqlresult
 
 
-def fetch_with_names(query, database=PARAMS["database"], attach=False):
+def fetch_with_names(query, database=PARAMS.get("database",""), attach=False):
     '''Fetch query results and returns them as an array of row arrays, 
        in which the first entry is an array of the field names'''
 
     dbhandle = sqlite3.connect( database )
     cc = dbhandle.cursor()
-    if attach:
-        for attach_statement in attach:
-            cc.execute(attach_statement)
+
+    if attach: db_execute(cc, attach)
+
     sqlresult = cc.execute(query).fetchall()
     data=[]
     # http://stackoverflow.com/questions/4147707/
@@ -109,6 +120,29 @@ def fetch_with_names(query, database=PARAMS["database"], attach=False):
 
     cc.close()
     return data
+
+ 
+
+def fetch_DataFrame(query, database=PARAMS.get("database",""), attach=False):
+    '''Fetch query results and returns them as a pandas dataframe'''
+
+    dbhandle = sqlite3.connect( database )
+    cc = dbhandle.cursor()
+
+    if attach:
+        db_execute(attach)
+
+    sqlresult = cc.execute(query).fetchall()
+    cc.close()
+    
+    # see http://pandas.pydata.org/pandas-docs/dev/generated/
+    # pandas.DataFrame.from_records.html#pandas.DataFrame.from_records
+    # this method is design to handle sql_records with proper type
+    # conversion
+
+    field_names = [ d[0] for d in cc.description ]
+    pandas_DataFrame = DataFrame.from_records(sqlresult, columns = field_names)
+    return pandas_DataFrame
 
 
 def write(outfile, lines, header=False):
@@ -203,3 +237,20 @@ def txtToDict(filename, key=None, sep="\t"):
             count +=1
 
     return(result)
+
+###############################################################################
+############################### Objects #######################################
+###############################################################################
+
+def save(file_name, obj):
+    '''dump a python object to a file using pickle'''
+    with open(file_name,"wb") as pkl_file:
+        pickle.dump(obj,pkl_file)
+    return
+
+def load(file_name):
+    '''retrieve a pickled python object from a file'''
+    with open(file_name,"r") as pkl_file:
+        data = pickle.load(pkl_file)
+    return data
+

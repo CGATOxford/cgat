@@ -106,9 +106,9 @@ def concatenateTables( outfile, options, args ):
     rx = re.compile( options.regex_filename )
 
     if options.headers == None or options.headers == "auto":
-        row_headers = [rx.search(x).groups()[0] for x in options.filenames ]
+        row_headers = [[y for y in rx.search(x).groups()] for x in options.filenames ]
     else:
-        row_headers = options.headers
+        row_headers = [options.headers]
 
     for nindex, filename in enumerate(options.filenames):
 
@@ -120,7 +120,19 @@ def concatenateTables( outfile, options, args ):
         if options.titles:
             if first:
                 titles = lines[0]
-                outfile.write( "%s\t%s" % (options.cat, titles ) )
+                if options.cat == None:
+                    if len(row_headers)==1:
+                        row_head_titles = [ "filename" ]
+                    else:
+                        row_head_titles = [ "patten" + str(x) for x in range(len(row_headers)) ]
+                else:
+                    row_head_titles = [ x.strip() for x in options.cat.split(",") ]
+
+                if len(row_head_titles) != len(row_headers[0]):
+                    raise ValueError("Different number of row headers and titles specified")
+
+                header = "\t".join([x for x in row_head_titles ]) + "\t%s" % titles
+                outfile.write( header  )
                 first = False
             else:
                 if titles != lines[0]:
@@ -128,7 +140,8 @@ def concatenateTables( outfile, options, args ):
             del lines[0]
 
         for l in lines:
-            outfile.write( "%s\t%s" % (row_headers[nindex], l ) )
+            row = "\t".join([str(x) for x in  row_headers[nindex]]) + "\t%s" % l
+            outfile.write(row )
             
 def joinTables( outfile, options, args ):
     '''join tables.'''

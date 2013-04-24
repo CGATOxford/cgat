@@ -81,10 +81,13 @@ def executewait( dbhandle, statement, error, retry = False, wait=5):
     '''
 
     cc = dbhandle.cursor()    
-    while 1:
+    i = 20
+    while i>0:
         try:
             cc.execute( statement )
-        except error, msg:
+            return cc
+        except sqlite3.OperationalError as e:
+            msg = e.message
             E.warn("import failed: msg=%s, statement=\n  %s" % (msg, statement ) )
         # TODO: check for database locked msg
             if not retry:
@@ -92,9 +95,10 @@ def executewait( dbhandle, statement, error, retry = False, wait=5):
             if not re.search("locked", str(msg)):
                 raise error, msg
             time.sleep(wait)
+            i -= 1
             continue
         break
-    return cc
+    raise sqlite.OperationalError("Database locked and too many retries")
 
 def quoteRow( row, take, 
               map_column2type, 

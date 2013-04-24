@@ -186,18 +186,30 @@ def testSignificanceOfMatrices( background
                     contingency[0,1] += 1
                 elif tf not in ids_tfs[seq_id]:
                     contingency[1,1] += 1
+        print tf
+        print contingency
         f =  fisherpy(numpy2ri(contingency))
         
         # get overlap numbers
         nforeground = contingency[0,0]
         nbackground = contingency[0,1]
-        tforeground = len(interval_sets["foreground"])
-        tbackground = len(interval_sets["background"])
+        tforeground = contingency[0,0] + contingency[1,0]
+        tbackground = contingency[0,1] + contingency[1,1]
         
         # convert back to python object                                                                                                                                                                                                      
         f = [list(x) for x in np.array(f)]
+        
+   
         pvalue, ci_low, ci_hi, OR =  f[0][0], f[1][0], f[1][1], f[2][0]
         pvalues.append(pvalue)
+
+        # if every background and every foreground, or no background and no foreground interals
+        # are hit, make OR = 1 by definition
+
+        if (nforeground + nbackground == 0 or 
+            (nforeground==tforeground and nbackground == tbackground)):
+            OR = 1
+
         results.append([tf, OR, ci_low, ci_hi, pvalue, nforeground, nbackground, tforeground, tbackground])
 
     # correct for multiple comparisons

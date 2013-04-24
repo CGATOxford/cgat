@@ -417,6 +417,14 @@ if __name__ == "__main__":
     parser.add_option( "--fdr-method", dest="fdr_method", type="choice",
                       choices = ( "BH", "bonferroni", "holm", "hommel", "hochberg", "BY" ),
                       help="method to perform multiple testing correction by controlling the fdr [default=%default]."  )
+    #IMS: add option to use a column as the row id in flatten
+    parser.add_option("--id-column", dest="id_column", type ="string",
+                      help="list of column(s) to use as the row id when flattening the table. If None, then row number is used. [defualt=%default].")
+    parser.add_option("--variable-name", dest="variable_name", type = "string",
+                      help="the column header for the 'variable' column when flattening [default=%default].")
+    parser.add_option("--value-name", dest="value_name", type = "string",
+                      help="the column header for the 'value' column when flattening [default=%default].")
+
 
     parser.set_defaults(
         methods = [],
@@ -442,6 +450,9 @@ if __name__ == "__main__":
         compute_fdr = None,
         as_column = False,
         fdr_method= "BH",
+        id_column=None,
+        variable_name="column",
+        value_name="value",
         )
     
     (options, args) = E.Start( parser, add_pipe_options = True )
@@ -471,16 +482,31 @@ if __name__ == "__main__":
         readAndTransposeTable( options.stdin, options )
 
     elif options.flatten_table:
-        
+        #IMS: bug fixed to make work. Also added options for keying on a particular
+        #     and adding custom column headings
+
         fields, table  = CSV.ReadTable( options.stdin, with_header = options.has_headers, as_rows = True )
-
+        
         options.columns = getColumns( fields, options.columns )
+        
+        if options.id_column:
+            id_columns = map(lambda x: int(x) -1,options.id_column.split(","))
+            id_header = "\t".join([fields[id_column] for id_column in id_columns])
+            options.columns = [x for x in options.columns if x not in id_columns]
+        else:
+            id_header = "row"
 
-        options.stdout.write( "row\tcolumn\tvalue\n" )
+        options.stdout.write( "%s\t%s\t%s\n" %(id_header, options.variable_name, options.value_name) )
         
         for x, row in enumerate(table):
+
+            if options.id_column:
+                row_id = "\t".join([row[int(x)-1] for x in options.id_column.split(",")])
+            else:
+                row_id = str(x)
+
             for y in options.columns:
-                options.stdout.write( "%i\t%s\t%s\n" % (fields[y], row[y] ))
+                options.stdout.write( "%s\t%s\t%s\n" % (row_id,fields[y], row[y] ))
 
     elif options.as_column:
         
