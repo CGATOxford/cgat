@@ -395,7 +395,7 @@ class SequencePropertiesCpg(SequenceProperties):
                 self.mCountsN += 1
                 lastc = False
             else:
-                self.CountsOthers +=1
+                self.mCountsOthers +=1
                 lastc = False
                
     def getFields(self):
