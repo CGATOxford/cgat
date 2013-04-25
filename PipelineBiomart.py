@@ -16,7 +16,8 @@ import rpy2.robjects.numpy2ri
 
 def importFromBiomart( outfile, columns, 
                        biomart = "ensembl", 
-                       dataset = "hsapiens_gene_ensembl" ):
+                       dataset = "hsapiens_gene_ensembl",
+                       host = 'www.biomart.org' ):
     '''download a dataset from biomart and output as a 
     tab-separated table.
 
@@ -29,7 +30,7 @@ def importFromBiomart( outfile, columns,
     
     keys = columns.keys()
 
-    mart = R.useMart(biomart=biomart, dataset= dataset )
+    mart = R.useMart(biomart=biomart, dataset= dataset, host=host )
     result = R.getBM( attributes=keys, mart=mart )
     
     outf = open( outfile, "w" )
@@ -45,7 +46,8 @@ def importFromBiomart( outfile, columns,
 
 def biomart_iterator( columns, 
                       biomart = "ensembl", 
-                      dataset = "hsapiens_gene_ensembl" ):
+                      dataset = "hsapiens_gene_ensembl",
+                      host = 'www.biomart.org' ):
     '''download a dataset from biomart and output as a 
     tab-separated table.
 
@@ -59,7 +61,7 @@ def biomart_iterator( columns,
 
     R.library("biomaRt")
 
-    mart = R.useMart(biomart=biomart, dataset= dataset )
+    mart = R.useMart(biomart=biomart, dataset= dataset, host=host )
     result = R.getBM( attributes=rpy2.robjects.vectors.StrVector(columns), 
                       mart=mart )
     

@@ -205,6 +205,7 @@ def runFastqc(infiles, outfile):
 #########################################################################
 ## 
 #########################################################################
+@jobs_limit( 1, "db" )
 @transform( runFastqc, suffix(".fastqc"), "_fastqc.load" )
 def loadFastqc( infile, outfile ):
     '''load FASTQC stats.'''
@@ -376,11 +377,14 @@ def processReads( infiles, outfile ):
     do_sth = False
     to_cluster = True
 
-    track = P.snip( outfile, ".fastq.1.gz")
     infile2 = checkPairs( infile )
 
     if infile2:
-        outfile2 = P.snip( outfile, ".fastq.1.gz") + ".fastq.2.gz"
+        track = P.snip( outfile, ".fastq.1.gz" )        
+        outfile2 = P.snip( outfile, ".fastq.1.gz" ) + ".fastq.2.gz"
+    else:
+        track = P.snip( outfile, ".fastq.gz" )
+
 
     if PARAMS["process_sample"] and infile2:
         E.warn( "sampling can not be combined with other processing for paired ended reads")
@@ -561,8 +565,12 @@ def summarizeProcessing( infile, outfile ):
 
         return zip(inputs, outputs)
     
-    track = P.snip( infile, ".fastq.1.gz")
+
     infile2 = checkPairs( infile )
+    if infile2: 
+        track = P.snip( infile, ".fastq.1.gz")        
+    else:
+        track = P.snip( infile, ".fastq.gz" )
 
     outf = IOTools.openFile( outfile, "w")
     outf.write( "track\tstep\tpair\tinput\toutput\n")
@@ -578,6 +586,7 @@ def summarizeProcessing( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
+@jobs_limit( 1, "db" )
 @transform( summarizeProcessing,
             regex(r"processed.(\S+).fastq.*.gz.tsv"),
             r"\1_processed.load")
@@ -625,6 +634,7 @@ def summarizeAllProcessing( infiles, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
+@jobs_limit( 1, "db" )
 @transform( summarizeAllProcessing, suffix(".tsv"), ".load" )
 def loadAllProcessingSummary( infile, outfile ):
     P.load( infile, outfile )
@@ -655,6 +665,7 @@ def summarizeFiltering( infiles, outfile ):
     outf.close()
 
 ##################################################################
+@jobs_limit( 1, "db" )
 @transform( summarizeFiltering,
             suffix(".summary.tsv.gz"),
             "_summary.load")

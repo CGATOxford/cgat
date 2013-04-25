@@ -177,11 +177,11 @@ for x in INPUT_FORMATS:
         INPUT_FILE = input_file[0]
 
 # foreground and background sets
-INPUT_FOREGROUND = glob.glob("*.foreground.tsv")[0]
-INPUT_BACKGROUND = glob.glob("*.background.tsv")[0]
+INPUT_FOREGROUND = glob.glob("*.foreground.tsv")
+INPUT_BACKGROUND = glob.glob("*.background.tsv")
 
-TRACK_FOREGROUND = P.snip(INPUT_FOREGROUND, ".foreground.tsv")
-TRACK_BACKGROUND = P.snip(INPUT_BACKGROUND, ".background.tsv")
+TRACK_FOREGROUND = [P.snip(x, ".foreground.tsv") for x in INPUT_FOREGROUND]
+TRACK_BACKGROUND = [P.snip(x, ".background.tsv") for x in INPUT_BACKGROUND]
 
 #########################################################################
 #########################################################################
@@ -273,7 +273,9 @@ def buildIntervalsFasta(infile, outfile):
                    --genome=%(genomedir)s/%(genome)s 
                    --log=%(outfile)s.log > %(outfile)s'''
     P.run()
-    os.remove(inf)
+    
+    if infile.endswith(".gtf.gz"):
+        os.remove(inf)
 
 ###########    
 # target
@@ -291,7 +293,7 @@ def Fasta():
 #########################################################################
 #########################################################################
 @follows(mkdir("GC_content.dir"), buildIntervalsFasta)
-@transform([INPUT_BACKGROUND, INPUT_FOREGROUND]
+@transform(INPUT_BACKGROUND + INPUT_FOREGROUND
            , regex(r"(\S+).tsv")
            , add_inputs(buildIntervalsFasta)
            , r"GC_content.dir/\1.gc.tsv")
@@ -315,6 +317,7 @@ def loadGCContent(infile, outfile):
     statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s
                    --log=%(outfile)s.log
                    --index=id
+                   %(csv2db_options)s
                    < %(infile)s > %(outfile)s'''
     P.run()
 
@@ -322,7 +325,8 @@ def loadGCContent(infile, outfile):
 #########################################################################
 #########################################################################
 if PARAMS["CpG_match_background"]:
-    @merge(loadGCContent, "GC_content.dir/%s.cpg_matched.background.tsv" % TRACK_BACKGROUND)
+    @collate(loadGCContent, regex("GC_content.dir/(.+)\.(?:background|foreground)\.gc\.load"),
+             r"GC_content.dir/\1.cpg_matched.background.tsv")
     def matchBackgroundForCpGComposition(infiles, outfile):
         '''
         take the background set and subset it for intervals with
@@ -330,9 +334,13 @@ if PARAMS["CpG_match_background"]:
         - this requires that the background set is sufficiently
         large
         '''
+        track = re.match("GC_content.dir/(.+)\.(?:background|foreground)\.gc\.load", infiles[0]).groups()[0]
+        input_background = "%s.background.tsv" % track
+        input_foreground = "%s.foreground.tsv" % track
+        
         PipelineTransfacMatch.matchBackgroundForCpGComposition( infiles
-                                                                , INPUT_BACKGROUND
-                                                                , INPUT_FOREGROUND
+                                                                , input_background
+                                                                , input_foreground
                                                                 , PARAMS["database"]
                                                                 , outfile )
 
@@ -362,6 +370,7 @@ if PARAMS["CpG_match_background"]:
         tablename = filenameToTablename(P.snip(os.path.basename(outfile), ".load"))
         statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s 
                        --log=%(outfile)s.log
+                       %(csv2db_options)s
                        < %(infile)s > %(outfile)s'''
         P.run()
 
@@ -421,6 +430,7 @@ def loadMatchResults(infile, outfile):
     statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s
                    --log=%(outfile)s.log
                    --index=seq_id
+                   %(csv2db_options)s
                    < %(inf)s > %(outfile)s'''
     P.run()
     os.remove(inf)
@@ -442,7 +452,7 @@ def buildMatchMetrics(infile, outfile):
 #########################################################################
 #########################################################################
 #########################################################################
-@transform(buildMatchMetrics, suffix(".metrics"), ".load")
+@transform(buildMatchMetrics, suffix(""), ".load")
 def loadMatchMetrics(infile, outfile):
     '''
     load match metrics
@@ -451,6 +461,7 @@ def loadMatchMetrics(infile, outfile):
     statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s
                    --log=%(outfile)s.log
                    --index=seq_id
+                   %(csv2db_options)s
                    < %(infile)s > %(outfile)s'''
     P.run()
 
@@ -471,8 +482,9 @@ def Match():
 #########################################################################
 if PARAMS["CpG_match_background"]:
     @follows(loadMatchResults, loadMatchedCpGComposition, mkdir("match_test.dir"))
-    @merge(["GC_content.dir/%s.cpg_matched.background.tsv" % TRACK_BACKGROUND, INPUT_FOREGROUND]
-           , "match_test.dir/%s_%s.cpg.matched.significance" % (TRACK_FOREGROUND, TRACK_BACKGROUND))
+    @collate([matchBackgroundForCpGComposition,calculateGCContent],
+             regex(".+/(.+)\.(?:foreground.gc|cpg_matched.background)\.tsv"),
+             r"match_test.dir/\1.cpg.matched.significance")
     def estimateEnrichmentOfTFBS(infiles, outfile):
         '''
         estimate the significance of trnascription factors that are associated with
@@ -480,8 +492,11 @@ if PARAMS["CpG_match_background"]:
         '''
         # required files
         match_table = "match_result"
-        background, foreground = infiles[0], infiles[1]
-    
+
+        #we don't know which order the foreground and backgorund will come in
+        background = [infile for infile in infiles if re.search("background",infile)][0]
+        foreground = ["%s.foreground.tsv" % re.match(".+/(.+)\.foreground\.gc\.tsv", infile).groups()[0] 
+                      for infile in infiles if re.search("foreground", infile)][0]
         # run significance testing
         PipelineTransfacMatch.testSignificanceOfMatrices( background
                                                           , foreground
@@ -491,8 +506,8 @@ if PARAMS["CpG_match_background"]:
 
 else:    
     @follows(loadMatchResults, mkdir("match_test.dir"))
-    @merge([INPUT_BACKGROUND, INPUT_FOREGROUND]
-           , "match_test.dir/%s_%s.significance" % (TRACK_FOREGROUND, TRACK_BACKGROUND))
+    @collate(INPUT_BACKGROUND + INPUT_FOREGROUND, regex("(.+)\.(?:foreground|background)\.tsv")
+           , r"match_test.dir/\1.significance")
     def estimateEnrichmentOfTFBS(infiles, outfile):
         '''
         estimate the significance of trnascription factors that are associated with
@@ -500,8 +515,11 @@ else:
         '''
         # required files
         match_table = "match_result"
-        background, foreground = infiles[0], infiles[1]
-    
+
+        #we don't know which order the foreground and backgorund will come in
+        background = [infile for infile in infiles if re.search("background",infile)][0]
+        foreground = [infile for infile in infiles if re.search("foreground",infile)][0]
+
         # run significance testing
         PipelineTransfacMatch.testSignificanceOfMatrices( background
                                                           , foreground
@@ -521,12 +539,15 @@ def loadEnrichmentOfTFBS(infile, outfile):
     statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s
                   --log=%(outfile)s.log 
                   --index=matrix_id
+                  %(csv2db_options)s
                   < %(infile)s > %(outfile)s'''
     P.run()
     
 ##############
 # target
 ##############
+
+@posttask(touch_file("complete.flag"))
 @follows(loadEnrichmentOfTFBS)
 def Significance():
     pass

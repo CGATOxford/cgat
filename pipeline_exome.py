@@ -645,13 +645,14 @@ def mapping(): pass
           reorderBam,
           addReadGroups,
           loadPicardDuplicateStats)
+
 def processBAMs(): pass
 
 @follows( buildPicardAlignStats,
           loadPicardAlignStats,
           buildPicardInsertSizeStats,
           loadPicardInsertSizeStats,
-          buildCoverageStats )
+          buildCoverageStats)
 def postMappingQC(): pass
           
 @follows( buildRealignmentTargets,
@@ -680,14 +681,12 @@ def filterVariants(): pass
           loadVCFStats )
 def vcfstats(): pass
           
-@follows( loadMetaData,
-          mapping,
+@follows( mapping,
           processBAMs,
           postMappingQC,
           gatk,
           callVariants,
-          filterVariants,
-          vcfstats )  
+          vqsr)  
 def full(): pass
 
 #########################################################################

@@ -38,6 +38,9 @@ API
 
 from ruffus import *
 
+import os, sys, re, shutil
+import Experiment as E
+
 PROJECT_ROOT = '/ifs/projects'
 
 def getProjectId():
@@ -126,6 +129,9 @@ def publish_report( prefix = "",
     def _copy( src, dest ):
         dest = os.path.abspath( os.path.join( PARAMS["web_dir"], dest ) )
         if os.path.exists( dest ): shutil.rmtree( dest )
+        if not os.path.exists(src):
+            E.warn( "%s does not exist - skipped" % src )
+            return
         shutil.copytree( os.path.abspath(src), dest ) 
 
     # publish export dir via symlinking

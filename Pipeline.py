@@ -55,6 +55,7 @@ from ruffus import *
 
 # use threading instead of multiprocessing
 from multiprocessing.pool import ThreadPool
+# note that threading can cause problems with rpy.
 task.Pool = ThreadPool
 
 import logging as L
@@ -74,7 +75,7 @@ class PipelineError( Exception ): pass
 # while building the statement. Hence, use dict.
 ROOT_DIR=os.path.dirname( __file__ )
 
-PARAMS= { 
+PARAMS = { 
     'scriptsdir' : ROOT_DIR,
     'toolsdir' : ROOT_DIR,
     'cmd-farm' : """%s/farm.py 
@@ -87,6 +88,11 @@ PARAMS= {
     'cmd-sql' : """sqlite3 -header -csv -separator $'\\t' """,
     'cmd-run' : """%s/run.py""" % ROOT_DIR
     }
+
+# path until parameter sharing is resolved between CGAT module
+# and the pipelines module.
+import CGAT
+CGAT.PARAMS = PARAMS
 
 hostname = os.uname()[0]
 
@@ -404,7 +410,7 @@ def load( infile,
 
     run()
 
-def concatenateAndLoad( infiles, outfile, regex_filename = None, header = None ):
+def concatenateAndLoad( infiles, outfile, regex_filename = None, header = None, cat = None, titles = False, options = "" ):
     '''concatenate categorical tables and load into a database.
 
     Concatenation assumes that the header is the same in all files.
@@ -416,6 +422,7 @@ def concatenateAndLoad( infiles, outfile, regex_filename = None, header = None )
 
     tablename = toTable( outfile )
 
+    passed_options = options
     load_options,options = [], []
 
     if regex_filename:
@@ -424,11 +431,18 @@ def concatenateAndLoad( infiles, outfile, regex_filename = None, header = None )
     if header:
         load_options.append( "--header=%s" % header )
 
+    if not cat:
+        cat = "track"
+        
+    if titles == False:
+        no_titles = "--no-titles"
+    else: no_titles = ""
+
     options = " ".join(options)
-    load_options = " ".join(load_options)
+    load_options = " ".join(load_options) + " " + passed_options
     statement = '''python %(scriptsdir)s/combine_tables.py
-                     --cat=track
-                     --no-titles
+                     --cat=%(cat)s
+                     %(no_titles)s
                      %(options)s
                    %(infiles)s
                    | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
@@ -438,18 +452,25 @@ def concatenateAndLoad( infiles, outfile, regex_filename = None, header = None )
                    > %(outfile)s'''
     run()
 
-def mergeAndLoad( infiles, outfile, suffix = None, columns=(0,1), regex = None, row_wise = True ):
+def mergeAndLoad( infiles, 
+                  outfile, 
+                  suffix = None, 
+                  columns=(0,1), 
+                  regex = None, 
+                  row_wise = True ):
     '''merge categorical tables and load into a database.
 
     Columns denotes the columns to be taken.
 
     The tables are merged and entered row-wise, i.e each file is 
-    a row unless row_wise is set to False. This is useful if 
+    a row unless *row_wise* is set to False. The latter is useful if 
     histograms are being merged.
 
     Filenames are stored in a ``track`` column. Directory names
     are chopped off.
     '''
+    if len(infiles) == 0:
+        raise ValueError( "no files for merging")
     if suffix:
         header = ",".join( [ os.path.basename( snip( x, suffix) ) for x in infiles] )
     elif regex:
@@ -558,21 +579,29 @@ def createView( dbhandle, tables, tablename, outfile, view_type = "TABLE",
 
     touch( outfile )
 
-def snip( filename, extension = None, alt_extension = None):
+
+def snip( filename, extension = None, alt_extension = None, path = False):
     '''return prefix of filename.
 
     If extension is given, make sure that filename has the extension.
+
+    If path is set to false, the path is stripped from the file name.
     '''
     if extension: 
         if filename.endswith( extension ):
-            return filename[:-len(extension)]
+            root = filename[:-len(extension)]
         elif alt_extension and filename.endswith( alt_extension ):
-            return filename[:-len(alt_extension)]
+            root = filename[:-len(alt_extension)]
         else:
             raise ValueError("'%s' expected to end in '%s'" % (filename, extension))
+    else:
+        root, ext = os.path.splitext( filename )
 
-    root, ext = os.path.splitext( filename )
-    return root
+    if path==True: snipped = os.path.basename(root)
+    else: snipped = root
+
+    return snipped
+
 
 def getCallerLocals(decorators=0):
     '''returns locals of caller using frame.
@@ -966,6 +995,46 @@ class MultiLineFormatter(logging.Formatter):
             header, footer = s.split(record.message)
             s = s.replace('\n', '\n' + ' '*len(header))
         return s
+
+def submit( module, function, params = None,
+            infiles = None, outfiles = None, 
+            toCluster = True):
+    '''Submit a python *function* as a job to the cluster.
+
+    The function should reside in *module*. If *module* is
+    not part of the PYTHONPATH, an absolute path can be given.
+
+    *infiles* and *output* are either a single filename or a list of 
+    input/output filenames. Neither options supports yet nested lists.
+    '''
+
+    if type( infiles ) in (list, tuple):
+        infiles = " ".join( ["--input=%s" % x for x in infiles ] )
+    else:
+        infiles = "--input=%s" % infiles
+
+    if type( outfiles ) in (list, tuple):
+        outfiles = " ".join( ["--output=%s" % x for x in outfiles ] )
+    else:
+        outfiles = "--output=%s" % outfiles
+
+    if params:
+        params = "--params=%s" % ",".join(params)
+    else:
+        params = ""
+
+    to_cluster = toCluster
+
+    statement = '''python %(scriptsdir)s/run_function.py
+                          --module=%(module)s
+                          --function=%(function)s
+                          %(infiles)s
+                          %(outfiles)s
+                          %(params)s
+                '''
+    run()
+
+
 
 def clonePipeline( srcdir ):
     '''clone a pipeline from srcdir into the current directory.

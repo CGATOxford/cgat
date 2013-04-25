@@ -1160,7 +1160,7 @@ def mapReadsWithTophat( infiles, outfile ):
     if "--butterfly-search" in PARAMS["tophat_options"]:
         # for butterfly search - require insane amount of
         # RAM.
-        job_options += " -l mem_free=8G"
+     job_options += " -l mem_free=8G"
     else:
         job_options += " -l mem_free=2G"
 

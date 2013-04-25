@@ -84,7 +84,7 @@ python CBioPortal.py [options] command(s)
 
 '''
 import urllib2, re, optparse, sys, os, IOTools
-from SphinxReport.odict import OrderedDict as odict
+from collections import OrderedDict as odict
 import Experiment as E
  
 #######################################################################################
