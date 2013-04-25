@@ -446,12 +446,9 @@ def mkErrors(read,readLen,mx,insD,delD,gQ,bQ,iQ,qual):
         d4=inds[prev[0]]
         d5=inds[after]
         index=str(d0)+'.'+str(d1)+'.'+str(d2)+'.'+str(d3)+'.'+str(d4)+'.'+str(d5)
-        tot=float(mx[d0][d1][d2][d3][d4][d5][5])
+        tot=numpy.float64(mx[d0][d1][d2][d3][d4][d5][5])
 
-        # hack to force continue
-        if tot == 0:
-            E.warn("cannot process for %s read %s" % (mx, read))
-            continue
+
         Mprobs=mx[d0][d1][d2][d3][d4][d5]/tot
         val=random.random()
         a=Mprobs[0]
