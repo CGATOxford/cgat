@@ -317,42 +317,40 @@ class Idba(Metavelvet):
 ##########################
 # Ray meta
 ##########################
-class Ray(Idba):
-    '''
-    ray contig assembler
-    '''
-    def build(self, infile):
-        '''
-        build statement for running Ray
-        '''
-        track = self.getTrack(infile)
+# class Ray(Idba):
+#     '''
+#     ray contig assembler
+#     '''
+#     def build(self, infile):
+#         '''
+#         build statement for running Ray
+#         '''
+#         track = self.getTrack(infile)
 
-        outdir = P.getTempDir()
-        format = self.getFormat(infile)
-        paired = self.checkPairs(infile)
+#         outdir = P.getTempDir()
+#         format = self.getFormat(infile)
+#         paired = self.checkPairs(infile)
 
-        # check whether the data are paired-end
-        if len(paired) > 1:
-            pair = paired[0]
-            files = " ".join([infile, paired[1]])
-        else:
-            pair = paired
-            files = infile
+#         # check whether the data are paired-end
+#         if len(paired) > 1:
+#             pair = paired[0]
+#             files = " ".join([infile, paired[1]])
+#         else:
+#             pair = paired
+#             files = infile
             
-        outdir = os.path.join(os.getcwd(), "ray.dir")
+#         outdir = os.path.join(os.getcwd(), "ray.dir")
         
-        # TODO Ray picks up file types so should just have to
-        # say whether its paired or not
+#         # TODO Ray picks up file types so should just have to
+#         # say whether its paired or not
         
-        # build statement
-        statement = '''mpiexec -n 80 %%(ray_executable)s -k %%(kmer)s
+#         # build statement
+#         common_options = "-k %%(kmer)s "
+#         if pair:
+#             statement = '''mpiexec -n 80 %%(ray_executable)s -k %%(kmer)s'''
+                         
                          
         
-
-
-
-
-
 
 ##########################
 # metaphlan
