@@ -166,6 +166,7 @@ import PipelineMapping
 import PipelineGenomeAssembly
 import FastaIterator
 import metaphlan_utils
+import PipelineMapping
 
 ###################################################
 ###################################################
@@ -202,7 +203,9 @@ TISSUES = PipelineTracks.Aggregate( TRACKS, labels = ("tissue", ) )
 ## Global flags
 ###################################################################
 ASSEMBLERS = P.asList( PARAMS["assemblers"] )
-METAGENOME = "meta-velvet" in ASSEMBLERS or "ibda" in ASSEMBLERS or "cortex_var" in ASSEMBLERS
+MAPPER = PARAMS["coverage_mapper"]
+BOWTIE = MAPPER == "bowtie"
+BWA = MAPPER == "bwa"
 
 ###################################################################
 ###################################################################
@@ -263,7 +266,7 @@ def loadReadCounts( infiles, outfile ):
 ###################################################################                                                                                                                                                                          
 ## assemble reads with meta-velvet
 ###################################################################                                                                                                                                                                          
-@active_if(METAGENOME)
+@active_if("metavelvet" in ASSEMBLERS)
 @follows(mkdir("metavelvet.dir"))
 @transform( SEQUENCEFILES,
             SEQUENCEFILES_REGEX
@@ -281,7 +284,6 @@ def runMetavelvet(infile, outfile):
 ###################################################################                                                                                                                                                                          
 ###################################################################                                                                                                                                                                          
 @jobs_limit(1, "R")
-@active_if(METAGENOME)
 @transform(runMetavelvet
            , suffix(".contigs.fa")
            , ".stats.pdf")
@@ -300,7 +302,6 @@ def plotCoverageHistogram(infile, outfile):
 ###################################################################                                                                                                                                                                          
 ###################################################################                                                                                                                                                                          
 ###################################################################                                                                                                                                                                          
-@active_if(METAGENOME)
 @transform(runMetavelvet
            , suffix(".contigs.fa")
            , ".stats.load")
@@ -337,43 +338,9 @@ def loadMetavelvetStats(infile, outfile):
 ###################################################################                                                                                                                                                                          
 ###################################################################                                                                                                                                                                          
 ###################################################################                                                                                                                                                                          
-@transform(runMetavelvet, suffix(".contigs.fa"), ".lengths.tsv")
-def buildMetavelvetContigLengths(infile, outfile):
-    '''
-    output lengths for each contig in the metavelvet output
-    '''
-    PipelineGenomeAssembly.build_scaffold_lengths(infile, outfile, PARAMS)
-
-###################################################################                                                                                                                                                                          
-###################################################################                                                                                                                                                                          
-###################################################################                                                                                                                                                                          
-@merge(loadMetavelvetStats, "metavelvet.dir/contig_summary.stats")
-def buildContigSummary(infiles, outfile):
-    '''
-    merge the contig summary statistics
-    '''
-    N = PARAMS["scaffold_n"]
-    dbh = connect()
-    cc = dbh.cursor()
-    outf = open(outfile, "w")
-    outf.write("track\tnscaffolds\tscaffold_length\tN%i\tmean_length\tmedian_length\n" % N)
-    for infile in infiles:
-        track = P.snip(os.path.basename(infile), ".summary.load").split("metavelvet-")[1]
-        table = P.toTable(infile)
-        data = cc.execute("""SELECT nscaffolds
-                             , scaffold_length
-                             , N50
-                             , mean_length
-                             , median_length FROM %s""" % table).fetchone()
-        outf.write("\t".join(map(str, [track, data[0], data[1], data[2], data[3], data[4]])) + "\n")
-    outf.close()
-
-###################################################################                                                                                                                                                                          
-###################################################################                                                                                                                                                                          
-###################################################################                                                                                                                                                                          
 ## assemble reads with idba
 ###################################################################                                                                                                                                                                          
-@active_if(METAGENOME)
+@active_if("idba" in ASSEMBLERS)
 @follows(mkdir("idba.dir"))
 @transform( SEQUENCEFILES,
             SEQUENCEFILES_REGEX
@@ -383,7 +350,7 @@ def runIdba(infile, outfile):
     run idba on each track
     '''
     to_cluster = True
-    
+    job_options = " -l mem_free=30G"
     statement = PipelineGenomeAssembly.Idba().build(infile)
     P.run()
 
@@ -393,7 +360,7 @@ def runIdba(infile, outfile):
 @transform(runIdba, suffix(".scaffold.fa"), ".summary.tsv")
 def buildIdbaStats(infile, outfile):
     '''
-    build metavelvet stats:
+    build idba stats:
     N50
     Number of scaffolds 
     Total scaffold length
@@ -413,9 +380,285 @@ def loadIdbaStats(infile, outfile):
 ###################################################################                                                                                                                                                                          
 ###################################################################                                                                                                                                                                          
 ###################################################################                                                                                                                                                                          
+@active_if("ray" in ASSEMBLERS)
+@follows(mkdir("ray.dir"))
+@transform( SEQUENCEFILES,
+            SEQUENCEFILES_REGEX
+            , r"ray.dir/\1.contigs.fa")
+def runRay(infile, outfile):
+    '''
+    run Ray on each track
+    '''
+    to_cluster = True
+    job_options = " -l mem_free=30G"
+    statement = PipelineGenomeAssembly.Ray().build(infile)
+    P.run()
+
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+@transform(runRay, suffix(".contigs.fa"), ".summary.tsv")
+def buildRayStats(infile, outfile):
+    '''
+    build ray stats:
+    N50
+    Number of scaffolds 
+    Total scaffold length
+    max length
+    '''
+    PipelineGenomeAssembly.contig_to_stats(infile, outfile, PARAMS)
+
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+@transform(buildRayStats, regex("(\S+).dir/(\S+).tsv"), r"\1.dir/\1-\2.load")
+def loadRayStats(infile, outfile):
+    '''
+    load the ray stats
+    '''
+    P.load(infile, outfile)
+
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+ASSEMBLY_TARGETS = []
+assembly_targets = {"metavelvet": runMetavelvet
+                    , "idba": runIdba
+                    , "ray": runRay
+                    }
+for x in ASSEMBLERS:
+    ASSEMBLY_TARGETS.append(assembly_targets[x])
+
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+STATS_TARGETS = []
+stats_targets = {"metavelvet": loadMetavelvetStats
+                    , "idba": loadIdbaStats
+                    , "ray": loadRayStats
+                    }
+for x in ASSEMBLERS:
+    STATS_TARGETS.append(stats_targets[x])
+
+@follows(*STATS_TARGETS)
+def contig_stats():
+    pass
+
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+@split(STATS_TARGETS, "*/contig.summary.tsv")
+def buildContigSummary(infiles, outfile):
+    '''
+    merge the contig summary statistics
+    '''
+    stats = collections.defaultdict(list)
+    for filepath in infiles:
+        dirname = os.path.dirname(filepath)
+        stats[dirname].append(os.path.basename(filepath))
+
+    N = PARAMS["scaffold_n"]
+
+    # connect to database
+    dbh = connect()
+    cc = dbh.cursor()
+    for dirname in stats.keys():
+        outfname = os.path.join(dirname, "contig.summary.tsv")
+        outf = open(outfname, "w")
+        outf.write("track\tnscaffolds\tscaffold_length\tN%i\tmean_length\tmedian_length\tmax_length\n" % N)
+        for infile in stats[dirname]:
+            track = P.snip(infile.split(dirname.split(".dir")[0])[1][1:], ".summary.load")
+            table = P.toTable(infile)
+            data = cc.execute("""SELECT nscaffolds
+                                 , scaffold_length
+                                 , N50
+                                 , mean_length
+                                 , median_length
+                                 , max_length FROM %s""" % table).fetchone()
+            outf.write("\t".join(map(str, [track, data[0], data[1], data[2], data[3], data[4], data[5]])) + "\n")
+        outf.close()
+
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+@transform(buildContigSummary, suffix(".tsv"), ".load")
+def loadContigSummary(infile, outfile):
+    '''
+    load contig summary stats for each assembler
+    '''
+    outname = P.snip(os.path.dirname(infile), ".dir") + "_" + os.path.basename(infile) + ".load"
+    P.load(infile, outname)
+    P.touch(outfile)
+
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+@transform(ASSEMBLY_TARGETS, suffix(".fa"), ".lengths.tsv")
+def buildContigLengths(infile, outfile):
+    '''
+    output lengths for each contig in each of the assemblies
+    '''
+    PipelineGenomeAssembly.build_scaffold_lengths(infile, outfile, PARAMS)
+
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+@transform(buildContigLengths, suffix(".lengths.tsv"), ".load")
+def loadContigLengths(infile, outfile):
+    '''
+    load contig lengths
+    '''
+    outname = P.snip(os.path.dirname(infile), ".dir") + "_" + P.snip(os.path.basename(infile), ".tsv") + ".load"
+    P.load(infile, outname)
+    P.touch(outfile)
+
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+## build indices for mapping - this is for coverage analysis
+###################################################################                                                                                                                                                                          
+@active_if(BOWTIE)
+@transform(ASSEMBLY_TARGETS, suffix(".fa"), ".ebwt")
+def buildAssemblyBowtieIndices(infile, outfile):
+    '''
+    build bowtie indices
+    '''
+    outbase = TRACKS.getTracks()[0]
+    directory = os.path.dirname(infile)
+    statement = '''bowtie-build -f %(infile)s %(directory)s/%(outbase)s'''
+    P.run()
+    P.touch(outfile)
+
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+## map with bowtie
+###################################################################                                                                                                                                                                          
+@active_if("metavelvet" in ASSEMBLERS)
+@follows(buildAssemblyBowtieIndices, runMetavelvet)
+@transform(SEQUENCEFILES, SEQUENCEFILES_REGEX, r"metavelvet.dir/\1.bam")
+def mapReadsWithBowtieAgainstMetavelvetContigs(infile, outfile):
+    '''
+    map reads against contigs with bowtie
+    '''
+    PARAMS["bowtie_index_dir"] = "metavelvet.dir"
+    PARAMS["genome"] = TRACKS.getTracks(infile)[0].split(".")[0]
+        
+    infile, reffile = infile,  os.path.join("metavelvet.dir", TRACKS.getTracks(infile)[0])
+    m = PipelineMapping.Bowtie( executable = P.substituteParameters( **locals() )["bowtie_executable"] )
+    statement = m.build( (infile,), outfile ) 
+    P.run()
+
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+@active_if("idba" in ASSEMBLERS)
+@follows(buildAssemblyBowtieIndices, runIdba)
+@transform(SEQUENCEFILES, SEQUENCEFILES_REGEX, r"idba.dir/\1.bam")
+def mapReadsWithBowtieAgainstIdbaContigs(infile, outfile):
+    '''
+    map reads against contigs with bowtie
+    '''
+    PARAMS["bowtie_index_dir"] = "idba.dir"
+    PARAMS["genome"] = TRACKS.getTracks(infile)[0].split(".")[0]
+        
+    infile, reffile = infile,  os.path.join("idba.dir", TRACKS.getTracks(infile)[0])
+    m = PipelineMapping.Bowtie( executable = P.substituteParameters( **locals() )["bowtie_executable"] )
+    statement = m.build( (infile,), outfile ) 
+    P.run()
+
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+@active_if("ray" in ASSEMBLERS)
+@follows(buildAssemblyBowtieIndices, runRay)
+@transform(SEQUENCEFILES, SEQUENCEFILES_REGEX, r"ray.dir/\1.bam")
+def mapReadsWithBowtieAgainstRayContigs(infile, outfile):
+    '''
+    map reads against contigs with bowtie
+    '''
+    PARAMS["bowtie_index_dir"] = "ray.dir"
+    PARAMS["genome"] = TRACKS.getTracks(infile)[0].split(".")[0]
+        
+    infile, reffile = infile,  os.path.join("ray.dir", TRACKS.getTracks(infile)[0])
+    m = PipelineMapping.Bowtie( executable = P.substituteParameters( **locals() )["bowtie_executable"] )
+    statement = m.build( (infile,), outfile ) 
+    P.run()
+
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+@active_if("metavelvet" in ASSEMBLERS)
+@transform(buildContigLengths, suffix(".lengths.tsv")
+           , add_inputs(mapReadsWithBowtieAgainstMetavelvetContigs)
+           , ".coverage")
+def buildCoverageOverMetavelvetContigs(infiles, outfile):
+    '''
+    build histograms of the coverage over each of the contigs
+    '''
+    inf = infiles[0].find("metavelvet") != -1 
+    if inf:
+        size = infiles[0]
+        bam = infiles[1]
+        statement = '''bedtools genomecov -split -ibam %(bam)s -g %(size)s -d > %(outfile)s'''
+        P.run()
+
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+@active_if("idba" in ASSEMBLERS)
+@transform(buildContigLengths, suffix(".lengths.tsv")
+           , add_inputs(mapReadsWithBowtieAgainstIdbaContigs)
+           , ".coverage")
+def buildCoverageOverIdbaContigs(infiles, outfile):
+    '''
+    build histograms of the coverage over each of the contigs
+    '''
+    inf = infiles[0].find("idba") != -1 
+    if inf:
+        size = infiles[0]
+        bam = infiles[1]
+        statement = '''bedtools genomecov -split -ibam %(bam)s -g %(size)s -d > %(outfile)s'''
+        P.run()
+
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+@active_if("ray" in ASSEMBLERS)
+@transform(buildContigLengths, suffix(".lengths.tsv")
+           , add_inputs(mapReadsWithBowtieAgainstRayContigs)
+           , ".coverage")
+def buildCoverageOverRayContigs(infiles, outfile):
+    '''
+    build histograms of the coverage over each of the contigs
+    '''
+    inf = infiles[0].find("ray") != -1 
+    if inf:
+        size = infiles[0]
+        bam = infiles[1]
+        statement = '''bedtools genomecov -split -ibam %(bam)s -g %(size)s -d > %(outfile)s'''
+        P.run()
+
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+COVERAGE_TARGETS = []
+coverage_targets = {"metavelvet": buildCoverageOverMetavelvetContigs
+                    , "idba": buildCoverageOverIdbaContigs
+                    , "ray": buildCoverageOverRayContigs}
+
+for x in ASSEMBLERS:
+    COVERAGE_TARGETS.append(coverage_targets[x])
+
+@follows(*COVERAGE_TARGETS)
+def coverage():
+    pass
+
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
 ## annotate metagenomic reads with metaphlan
 ###################################################################                                                                                                                                                                          
-@active_if(METAGENOME)
 @follows(mkdir("metaphlan.dir"))
 @transform( SEQUENCEFILES,
             SEQUENCEFILES_REGEX
@@ -436,9 +679,8 @@ def buildMetaphlanReadmap(infile, outfile):
         assert os.path.exists(PARAMS["metaphlan_db"] + ".1.bt2"), "missing file %s: Are you sure you have the correct database for bowtie2?" % PARAMS["metaphlan_db"] + ".1.bt2"
         method = "--bowtie2db"
     elif PARAMS["metaphlan_executable"] == "blast":
-        assert os.path.exists(PARAMS["metaphlan_db"] + "nin"), "missing file %s: Are you sure you have the correct database for bowtie2?" % PARAMS["metaphlan_db"] + "nin"
+        assert os.path.exists(PARAMS["metaphlan_db"] + "nin"), "missing file %s: Are you sure you have the correct database for blast?" % PARAMS["metaphlan_db"] + "nin"
         method = "--blastdb"
-
     statement = PipelineGenomeAssembly.Metaphlan().build(infile, method="read_map")
     P.run()
 
@@ -477,7 +719,6 @@ def countMetaphlanTaxonomicGroups(infiles, outfile):
 ###################################################################                                                                                                                                                                          
 ###################################################################                                                                                                                                                                          
 ###################################################################                                                                                                                                                                          
-@active_if(METAGENOME)
 @follows(mkdir("metaphlan.dir"))
 @transform( SEQUENCEFILES,
             SEQUENCEFILES_REGEX
@@ -535,25 +776,10 @@ def buildMetaphlanTaxonomicAbundances(infiles, outfile):
             if data[1].find("unclassified") != -1: continue
             outf.write("\t".join([track, data[0], data[1], str(data[2]), idx]) + "\n")
     outf.close()
-            
-###################################################################                                                                                                                                                                          
-###################################################################                                                                                                                                                                          
-###################################################################                                                                                                                                                                          
-## compare genomes using cortex_var
-###################################################################                                                                                                                                                                          
-@active_if(METAGENOME)
-@follows(mkdir("cortex_var.dir"))
-@transform( SEQUENCEFILES,
-            SEQUENCEFILES_REGEX
-            , r"cortex.dir/\1.scaffold.fa")
-def runCortex_var(infile, outfile):
-    '''
-    run cortex_var on each track
-    '''
-    statement = PipelineGenomeAssembly.Cortex_var().build(infile)
-    P.run()
 
-@follows(loadMetavelvetStats, loadIdbaStats,loadMetaphlanRelativeAbundances)
+@follows( coverage
+          , contig_stats
+          , loadMetaphlanRelativeAbundances)
 def full():
     pass
 
