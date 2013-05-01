@@ -102,6 +102,9 @@ def main( argv = None ):
 
     parser.add_option( "--trim3", dest="trim3", type="int",
                        help="trim # bases from 3' end [default=%default]."  )
+    parser.add_option( "--sort", dest="sort", action="store_true",
+                       help="sort fastq by sequence id [default=%default]."  )
+
 
     parser.set_defaults(
         change_format = None,
@@ -176,6 +179,9 @@ def main( argv = None ):
             options.stdout.write( "%s\n" % record )
             c.output += 1
         
+    elif options.sort:
+        statement = "paste - - - - | sort -k1,1 -t ' ' | tr '\t' '\n'"
+        os.system(statement)
 
     ## write footer and output benchmark information.
     E.info( "%s" % str(c) )
