@@ -173,7 +173,8 @@ def build_scaffold_lengths(contigs_file, outfile, params):
     for record in FastaIterator.iterate(inf):
         scaffold_length = len(list(record.sequence))
         if scaffold_length > f:
-            outf.write("%s\t%i\n" % (record.title, scaffold_length))
+            # rename sequences if they have a space in them
+            outf.write("%s\t%i\n" % (record.title.replace(" ", "_"), scaffold_length))
     outf.close()
 
 ############################
@@ -232,7 +233,8 @@ class Metavelvet(Assembler):
                       ; gzip %(metavelvet_dir)s/%(track)s.graph2
                       ; mv %(outdir)s/meta-velvetg.contigs.fa %(metavelvet_dir)s/%(track)s.contigs.fa
                       ; sed -i 's/in/_in/g' %(outdir)s/meta-velvetg.Graph2-stats.txt
-                      ; mv  %(outdir)s/meta-velvetg.Graph2-stats.txt %(metavelvet_dir)s/%(track)s.stats.txt''' % locals()
+                      ; mv  %(outdir)s/meta-velvetg.Graph2-stats.txt %(metavelvet_dir)s/%(track)s.stats.txt
+                      ; rm -rf %(outdir)s''' % locals()
         return statement
 
 ##########################
@@ -285,7 +287,7 @@ class Idba(Metavelvet):
                 outf = P.snip(os.path.basename(infile_new), ".fastq") + ".fa"
                 statement = '''%(zippy)s
                              fq2fa %(mtype)s %(infile_new)s %(outf)s
-                             ''' % locals()
+                             rm -rf %(temp)s''' % locals()
         else:
             statement = None
         return statement
@@ -309,7 +311,10 @@ class Idba(Metavelvet):
         # build statement
         track = self.getTrack(infile)
         outdir = "idba.dir"
-        statement = '''%%(idba_executable)s -r %(inf)s -o %(outdir)s
+        data_options = ["%(idba_options)s"]
+        data_options = " ".join(data_options)
+        
+        statement = '''%%(idba_executable)s -r %(inf)s -o %(outdir)s %(data_options)s
                        ; mv idba.dir/scaffold.fa idba.dir/%(track)s.scaffold.fa''' % locals()
         return statement
         
@@ -317,40 +322,72 @@ class Idba(Metavelvet):
 ##########################
 # Ray meta
 ##########################
-# class Ray(Idba):
-#     '''
-#     ray contig assembler
-#     '''
-#     def build(self, infile):
-#         '''
-#         build statement for running Ray
-#         '''
-#         track = self.getTrack(infile)
+class Ray(Idba):
+    '''
+    ray contig assembler
+    '''
+    def build(self, infile):
+        '''
+        build statement for running Ray
+        '''
+        track = self.getTrack(infile)
+     
+        format = self.getFormat(infile)
+        paired = self.checkPairs(infile)
 
-#         outdir = P.getTempDir()
-#         format = self.getFormat(infile)
-#         paired = self.checkPairs(infile)
-
-#         # check whether the data are paired-end
-#         if len(paired) > 1:
-#             pair = paired[0]
-#             files = " ".join([infile, paired[1]])
-#         else:
-#             pair = paired
-#             files = infile
+        tempdir = P.getTempDir()
+        # check whether the data are paired-end
+        if len(paired) > 1:
+            pair = paired[0]
+            # Ray doesn't like .fastq.1.gz etc
+            read1 = infile
+            read2 = paired[1]
+            read1_new = os.path.join(tempdir,read1.replace(".fastq.1.gz", ".1.fastq"))
+            read2_new = os.path.join(tempdir,read2.replace(".fastq.2.gz", ".2.fastq"))
+            files = " ".join([read1_new, read2_new])
+        else:
+            pair = paired
+            files = infile
             
-#         outdir = os.path.join(os.getcwd(), "ray.dir")
+        raydir = os.path.join(os.getcwd(), "ray.dir")
         
-#         # TODO Ray picks up file types so should just have to
-#         # say whether its paired or not
+        # Ray picks up file types so should just have to
+        # say whether its paired or not
+
+        print files
         
-#         # build statement
-#         common_options = "-k %%(kmer)s "
-#         if pair:
-#             statement = '''mpiexec -n 80 %%(ray_executable)s -k %%(kmer)s'''
-                         
-                         
-        
+        # build statement
+        common_options = "-k %(kmer)s"
+        if pair == "interleaved":
+            filetype = "-i"
+        elif not pair:
+            filetype = "-s"
+        elif pair == "separate":
+            filetype = "-p"
+        else:
+            raise IOError, "do not support file of this type: %s" % infile
+
+        statement = '''gunzip -c %(read1)s > %(read1_new)s
+                       ; gunzip -c %(read2)s > %(read2_new)s 
+                       ; %%(ray_executable)s %(common_options)s %(filetype)s %(files)s -o %(raydir)s
+                       ; checkpoint; mv %(raydir)s/Scaffolds.fa %(raydir)s/%(track)s.scaffolds.fa
+                       ; mv %(raydir)s/ScaffoldComponents.txt %(raydir)s/%(track)s.scaffold_components.txt
+                       ; mv %(raydir)s/ScaffoldLengths.txt %(raydir)s/%(track)s.scaffold_lengths.txt
+                       ; mv %(raydir)s/ScaffoldLinks.txt %(raydir)s/%(track)s.scaffold_links.txt
+                       ; mv %(raydir)s/Contigs.fa %(raydir)s/%(track)s.contigs.fa#
+                       ; mv %(raydir)s/OutputNumbers.txt %(raydir)s/%(track)s.numbers.txt
+                       ; mv %(raydir)s/CoverageDistribution.txt %(raydir)s/graph/%(track)s.coverage_distribution.txt
+                       ; mkdir %(raydir)s/graph
+                       ; mv %(raydir)s/CoverageDistributionAnalysis.txt %(raydir)s/graph/%(track)s.coverage_distribution_analysis.txt
+                       ; mv %(raydir)s/degreeDistribution.txt %(raydir)s/graph/%(track)s.degree_distribution.txt
+                       ; mv %(raydir)s/Kmers.txt %(raydir)s/graph/%(track)s.kmers.txt
+                       ; mkdir %(raydir)s/assembly
+                       ; mv %(raydir)s/SeedLengthDistribution.txt %(raydir)s/assembly/%(track)s.seed_length_distribution.txt
+                       ; mv %(raydir)s/LibraryStatistics.txt %(raydir)s/%(track)s.library_statistics.txt
+                       ; mv %(raydir)s/LibraryData.xml %(raydir)s/%(track)s.library_data.xml 
+                       ; rm -rf %(tempdir)s''' % locals()
+        return statement
+
 
 ##########################
 # metaphlan
@@ -456,6 +493,7 @@ class Cortex_var(Idba):
                        --sample_id %(track)s
                        --kmer_size %%(kmer)s
                        --dump_binary dump_binary.ctx
+                       ; rm -rf %(temp)s
                     ''' % locals()
         
         return statement
