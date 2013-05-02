@@ -256,8 +256,10 @@ class SAM( object ):
                  npermutations = 1000,
                  ndelta=10,
                  method = "ttest",
-                 use_excel_sam = False ):
-
+                 use_excel_sam = False,
+                 treatment_label = "treatment",
+                 control_label = "control" ):
+        
         if ngenes and fdr:
             raise ValueError( "either supply ngenes or fdr, but not both.")
         
@@ -407,10 +409,10 @@ class SAM( object ):
             significant = (0,1)[probeset in significant_genes]
 
             genes.append( GeneExpressionResult._make( (probeset,
-                                                       "treatment",
+                                                       treatment_label,
                                                        mean1,
                                                        numpy.std( treatment ),
-                                                       "control",
+                                                       control_label,
                                                        mean2,
                                                        numpy.std( control ),
                                                        pvalue,

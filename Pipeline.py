@@ -998,7 +998,8 @@ class MultiLineFormatter(logging.Formatter):
 
 def submit( module, function, params = None,
             infiles = None, outfiles = None, 
-            toCluster = True):
+            toCluster = True,
+            logfile = None ):
     '''Submit a python *function* as a job to the cluster.
 
     The function should reside in *module*. If *module* is
@@ -1018,6 +1019,11 @@ def submit( module, function, params = None,
     else:
         outfiles = "--output=%s" % outfiles
 
+    if logfile:
+        logfile = "--log=%s" % logfile
+    else:
+        logfile = ""
+
     if params:
         params = "--params=%s" % ",".join(params)
     else:
@@ -1028,13 +1034,12 @@ def submit( module, function, params = None,
     statement = '''python %(scriptsdir)s/run_function.py
                           --module=%(module)s
                           --function=%(function)s
+                          %(logfile)s
                           %(infiles)s
                           %(outfiles)s
                           %(params)s
                 '''
     run()
-
-
 
 def clonePipeline( srcdir ):
     '''clone a pipeline from srcdir into the current directory.

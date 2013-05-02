@@ -171,10 +171,6 @@ def main( argv = None ):
             counts_per_alignment[anno] += 1
     infile.close()
 
-    infile = open( tmpfilename, "r")
-
-
-
     for key, counts  in counts_per_alignment.iteritems():
         options.stdout.write( "%s\t%i\n" % (key, counts) )
 

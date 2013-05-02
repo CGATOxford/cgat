@@ -61,7 +61,7 @@ Code
 '''
 
 from optparse import OptionParser
-import sys, os
+import sys, os, importlib
 
 import Experiment as E
 
@@ -112,7 +112,9 @@ def main(argv = None):
 
     # Import the specified module and map the specified fuction
     E.info( "importing module '%s' " % module_base_name)
-    module = __import__(module_base_name)
+    E.debug( "sys.path is: %s" % sys.path )
+
+    module = importlib.import_module( module_base_name )
     try:
         function = getattr(module, options.function)
     except AttributeError as msg:
