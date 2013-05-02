@@ -38,57 +38,32 @@ This pipeline works on a single genome.
 Overview
 ========
 
-The pipeline assumes the data derive from multiple tissues/conditions (:term:`experiment`) 
-with one or more biological and/or technical replicates (:term:`replicate`). A :term:`replicate`
-within each :term:`experiment` is a :term:`track`.
+The pipeline implements various mappers and QC plots. It can be used for
 
-Mapping strategy
+* Mapping against a genome
+* Mapping RNASEQ data against a genome 
+* Mapping against a transcriptome
+
+Principal targets
+-----------------
+
+mapping
+    perform all mappings
+
+qc
+    perform all QC steps
+
+full
+    compute all mappings and QC
+
+Optional targets
 ----------------
 
-The best strategy for mapping and transcriptome assembly depends on the length of your reads.
-With short reads, detecting novel splice-junctions is a difficult task. In this case it will be
-best to rely on a set of known splice-junctions. Longer reads map more easily across splice-junctions.
+merge
+    merge mapped :term:`bam` formatted files, for example if reads from different lanes were mapped
+    separately. After merging, the ``qc`` target can be run again to get qc stats
+    for the merged :term:`bam` formatted files.
 
-From the tophat manual::
-
-   TopHat finds splice junctions without a reference annotation. TopHat version 1.4 maps RNA-seq reads
-   first to a reference transcriptome. Only those reads that don't map in this initial process are 
-   mapped against the genome.
-
-   Through the second stage of genome mapping, TopHat identifies novel splice junctions and then confirms
-   these through mapping to known junctions.
-   
-   Short read sequencing machines can currently produce reads 100bp or longer, but many exons are 
-   shorter than this, and so would be missed in the initial mapping. TopHat solves this problem 
-   by splitting all input reads into smaller segments, and then mapping them independently. The segment 
-   alignments are "glued" back together in a final step of the program to produce the end-to-end read alignments.
-
-   TopHat generates its database of possible splice junctions from three sources of evidence. The first 
-   source is pairings of "coverage islands", which are distinct regions of piled up reads in the 
-   initial mapping. Neighboring islands are often spliced together in the transcriptome, so 
-   TopHat looks for ways to join these with an intron. The second source is only used when 
-   TopHat is run with paired end reads. When reads in a pair come from different exons of a 
-   transcript, they will generally be mapped far apart in the genome coordinate space. When 
-   this happens, TopHat tries to "close" the gap between them by looking for subsequences of 
-   the genomic interval between mates with a total length about equal to the expected distance 
-   between mates. The "introns" in this subsequence are added to the database. The third, and 
-   strongest, source of evidence for a splice junction is when two segments from the same read #
-   are mapped far apart, or when an internal segment fails to map. With long (>=75bp) reads, 
-   "GT-AG", "GC-AG" and "AT-AC" introns be found ab initio. With shorter reads, TopHat only 
-   reports alignments across "GT-AG" introns
-
-Thus, in order to increase the sensitivity of splice-site detection, it might be best to derive a set of 
-splice-junctions using all reads. This is not done automatically, but can be done manually by 
-adding a file with junctions to the ``tophat_options`` entry in the configuration file.
-
-The pipeline supplies tophat with a list of all coding exons to facilitate mapping across known
-splice-junctions. If they are prioritized, I do not know.
-
-Transcripts are built individually for each :term:`track`. This seems to be the most rigorous way
-as there might be conflicting transcripts between replicates and merging the sets might confuse transcript
-reconstruction. Also, conflicting transcripts between replicates give an idea of the variability of the data. 
-However, if there are only few reads,  there might be a case for building transcript models using reads 
-from all replicates of an experiment. However, there is no reason to merge reads between experiments.
 
 Usage
 =====
@@ -114,11 +89,9 @@ Reads are imported by placing files are linking to files in the :term:`working d
 
 The default file format assumes the following convention:
 
-   <sample>-<condition>-<replicate>.<suffix>
+   filename.<suffix>
 
-``sample`` and ``condition`` make up an :term:`experiment`, while ``replicate`` denotes
-the :term:`replicate` within an :term:`experiment`. The ``suffix`` determines the file type.
-The following suffixes/file types are possible:
+The ``suffix`` determines the file type. The following suffixes/file types are possible:
 
 sra
    Short-Read Archive format. Reads will be extracted using the :file:`fastq-dump` tool.
@@ -1120,6 +1093,28 @@ def mapping(): pass
 ###################################################################
 ###################################################################
 ###################################################################
+if "merge_pattern_input" in PARAMS:
+    if "merge_pattern_output" not in PARAMS:
+        raise ValueError("no output pattern 'merge_pattern_output' specificied")
+    @collate( MAPPINGTARGETS, 
+              regex( "%s.bam" % PARAMS["merge_pattern_input"] ),
+              r"%s.bam" % PARAMS["merge_pattern_output"],
+              )
+    def mergeBAMFiles( infiles, outfile ):
+        '''merge BAM files from the same experiment.'''
+        
+        to_cluster = True
+
+        statement = '''
+        samtools merge %(outfile)s %(infiles)s >& %(outfile)s.log
+        '''
+        P.run()
+    # add to bam files produced
+    MAPPINGTARGETS.append( mergeBAMFiles )
+
+###################################################################
+###################################################################
+###################################################################
 ## QC targets
 ###################################################################
 
@@ -1489,6 +1484,7 @@ def buildIntronLevelReadCounts( infiles, outfile ):
            ".load" )
 def loadIntronLevelReadCounts( infile, outfile ):
     P.load( infile, outfile, options="--index=gene_id --allow-empty" )
+
 
 ###################################################################
 ###################################################################
