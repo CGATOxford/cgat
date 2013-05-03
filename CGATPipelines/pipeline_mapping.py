@@ -1105,7 +1105,9 @@ if "merge_pattern_input" in PARAMS:
 
         infiles = " ".join(infiles)
         statement = '''
-        samtools merge %(outfile)s %(infiles)s >& %(outfile)s.log
+        samtools merge %(outfile)s %(infiles)s >& %(outfile)s.log;
+        checkpoint;
+        samtools index %(outfile)s
         '''
         P.run()
 

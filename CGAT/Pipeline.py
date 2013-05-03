@@ -73,20 +73,22 @@ class PipelineError( Exception ): pass
 # possible to use defaultdict, but then statements will
 # fail on execution if a parameter does not exists, and not
 # while building the statement. Hence, use dict.
-ROOT_DIR=os.path.dirname( __file__ )
+LIB_DIR=os.path.dirname( __file__ )
+ROOT_DIR=os.path.dirname( LIB_DIR )
+SCRIPTS_DIR=os.path.join( ROOT_DIR, "scripts" )
 
 PARAMS = { 
-    'scriptsdir' : ROOT_DIR,
-    'toolsdir' : ROOT_DIR,
+    'scriptsdir' : SCRIPTS_DIR,
+    'toolsdir' : SCRIPTS_DIR,
     'cmd-farm' : """%s/farm.py 
                 --method=drmaa 
                 --cluster-priority=-10 
 		--cluster-queue=all.q 
 		--cluster-num-jobs=100 
                 --bashrc=%s/bashrc.cgat
-		--cluster-options="" """ % (ROOT_DIR,ROOT_DIR),
+		--cluster-options="" """ % (SCRIPTS_DIR,SCRIPTS_DIR),
     'cmd-sql' : """sqlite3 -header -csv -separator $'\\t' """,
-    'cmd-run' : """%s/run.py""" % ROOT_DIR
+    'cmd-run' : """%s/run.py""" % SCRIPTS_DIR
     }
 
 # path until parameter sharing is resolved between CGAT module
@@ -1121,8 +1123,14 @@ def peekParameters( workingdir, pipeline ):
     '''
     
     dirname = os.path.dirname( __file__ )
-    # special case: pipeline called in source directory
-    if dirname == "": dirname = os.path.abspath(".")
+
+    if dirname == "":
+        # special case: pipeline called in source directory
+        dirname = os.path.abspath(".")
+    else:
+        # point towards location of CGAT pipelines
+        dirname = os.path.join( os.path.dirname( dirname ), "CGATPipelines")
+
     pipeline = os.path.join( dirname, pipeline )
     assert os.path.exists( pipeline ), "can't find pipeline source %s" % pipeline
     if workingdir == "": workingdir = os.path.abspath(".")

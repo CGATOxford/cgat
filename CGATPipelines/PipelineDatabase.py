@@ -13,7 +13,6 @@ import glob
 import os
 import shutil
 import collections
-import csv2db
 
 import CGAT.Experiment as E
 import CGAT.Pipeline as P

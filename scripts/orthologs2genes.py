@@ -67,7 +67,7 @@ import warnings
 import CGAT.Experiment as E
 import CGAT.Orthologs as Orthologs
 import pgdb
-import Components
+import CGAT.Components as Components
 
 ## ignore warnings from networkx/matplotlib that a display
 ## can not be found

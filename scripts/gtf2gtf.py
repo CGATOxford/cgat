@@ -75,7 +75,7 @@ import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Genomics as Genomics
 import CGAT.Intervals as Intervals
 import CGAT.IOTools as IOTools
-import Components
+import CGAT.Components as Components
 
 ##------------------------------------------------------------
 ## This script needs some attention.

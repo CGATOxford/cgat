@@ -2,6 +2,7 @@ from distribute_setup import use_setuptools
 use_setuptools()
 
 from setuptools import Extension, setup, find_packages
+from Cython.Distutils import build_ext
 
 import glob, sys, os
 
@@ -23,10 +24,10 @@ shared_dependencies = [
     'scipy>=0.11',
     'matplotlib>=1.2.1', 
     'sqlalchemy>=0.7.0', 
-    'openpyxl>=1.5.7' ]
+    'pysam>=0.7' ]
 
-if major==2 and minor1<5 or major<2:
-    raise SystemExit("""SphinxReport requires Python 2.5 or later.""")
+if major==2 and minor1<6 or major<2:
+    raise SystemExit("""CGAT requires Python 2.6 or later.""")
 
 classifiers="""
 Development Status :: 3 - Alpha
@@ -50,6 +51,21 @@ Operating System :: MacOS
 # R - gplots (for r-heatmap)
 # graphvis - for dependency graphs in documentation
 
+##########################################################
+## Extensions
+
+import os
+
+# Connected components cython extension
+Components = Extension(
+     'CGAT.Components',                   
+     [ 'CGAT/Components/Components.pyx',        
+       'CGAT/Components/connected_components.cpp',],
+     library_dirs=[],
+     libraries=[],              
+     language="c++",               
+     )
+
 setup(name='CGAT',
       version='0.1',
       description='CGAT : the CGAT code collection',
@@ -70,5 +86,7 @@ setup(name='CGAT',
       install_requires = shared_dependencies + extra_dependencies,
       zip_safe = False,
       include_package_data = True,
+      ext_modules=[Components],
+      cmdclass = {'build_ext': build_ext}
       )
 

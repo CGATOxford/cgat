@@ -175,7 +175,7 @@ import CGAT.Stats as Stats
 import CGATPipelines.PipelineTracks as PipelineTracks
 import CGAT.Pipeline as P
 import CGAT.Fastq as Fastq
-import csv2db
+import CGAT.CSV2DB as CSV2DB
 import cStringIO
 import string
 
@@ -248,23 +248,23 @@ def loadFastqc( infile, outfile ):
         
         for name, status, header, data in section_iterator(IOTools.openFile( fn )):
 
-            parser = csv2db.buildParser()
+            parser = CSV2DB.buildParser()
             (options, args) = parser.parse_args([])
             options.tablename = prefix + "_" + re.sub(" ", "_", name ) 
             options.allow_empty= True
 
             inf = cStringIO.StringIO( "\n".join( [header] + data ) + "\n" )
-            csv2db.run( inf, options )
+            CSV2DB.run( inf, options )
             results.append( (name, status ) )
 
         # load status table
-        parser = csv2db.buildParser()
+        parser = CSV2DB.buildParser()
         (options, args) = parser.parse_args([])
         options.tablename = prefix + "_status"
         options.allow_empty= True
 
         inf = cStringIO.StringIO( "\n".join( ["name\tstatus"] + ["\t".join( x ) for x in results ] ) + "\n" )
-        csv2db.run( inf, options )
+        CSV2DB.run( inf, options )
 
     P.touch( outfile )
 
