@@ -110,7 +110,7 @@ fastq.1.gz, fastq2.2.gz
 Optional inputs
 +++++++++++++++
 
-Requirements
+nRequirements
 ------------
 
 The pipeline requires the results from :doc:`pipeline_annotations`. Set the configuration variable 
@@ -751,23 +751,6 @@ def countReads( infile, outfile ):
     statement = m.build( (infile,), outfile ) 
     P.run()
 
-@merge(countReads, "reads_summary.load" )
-def loadReadCounts( infiles, outfile ):
-    '''load read counts into database.'''
-
-    outf = P.getTempFile()
-    outf.write( "track\ttotal_reads\n")
-    for infile in infiles:
-        track = P.snip(infile, ".nreads")
-        lines = IOTools.openFile( infile ).readlines()
-        nreads = int( lines[0][:-1].split("\t")[1])
-        outf.write( "%s\t%i\n" % (track,nreads))
-    outf.close()
-        
-    P.load( outf.name, outfile )
-    
-    os.unlink(outf.name)
-
 #########################################################################
 #########################################################################
 #########################################################################
@@ -1110,8 +1093,33 @@ if "merge_pattern_input" in PARAMS:
         samtools merge %(outfile)s %(infiles)s >& %(outfile)s.log
         '''
         P.run()
+
     # add to bam files produced
     MAPPINGTARGETS.append( mergeBAMFiles )
+
+    @collate( countReads,
+              regex( "%s.nreads" % PARAMS["merge_pattern_input"] ),
+              r"%s.nreads" % PARAMS["merge_pattern_output"],
+              )
+    def mergeReadCounts( infiles, outfile ):
+        '''merge BAM files from the same experiment.'''
+        
+        to_cluster = True
+
+        nreads = 0
+        for infile in infiles:
+            with IOTools.openFile( infile, "r" ) as inf:
+                for line in infiles:
+                    if not line.startswith("nreads"): continue
+                    nreads += int(line[:-1].split("\t")[1])
+                    
+        outf = IOTools.openFile( outfile, "w")
+        outf.write("nreads\t%i\n" % nreads )
+        outf.close()
+
+else:
+    @follows( countReads )
+    def mergeReadCounts(): pass
 
 ###################################################################
 ###################################################################
@@ -1225,7 +1233,7 @@ def loadPicardDuplicationStats( infiles, outfile ):
 ############################################################
 ############################################################
 ############################################################
-@follows( countReads )
+@follows( countReads, mergeReadCounts )
 @transform( MAPPINGTARGETS,
             regex("(.*)/(.*)\.(.*).bam"),
             add_inputs( r"\2.nreads" ),
@@ -1486,6 +1494,25 @@ def buildIntronLevelReadCounts( infiles, outfile ):
 def loadIntronLevelReadCounts( infile, outfile ):
     P.load( infile, outfile, options="--index=gene_id --allow-empty" )
 
+###################################################################
+###################################################################
+###################################################################
+@merge((countReads, mergeReadCounts), "reads_summary.load" )
+def loadReadCounts( infiles, outfile ):
+    '''load read counts into database.'''
+
+    outf = P.getTempFile()
+    outf.write( "track\ttotal_reads\n")
+    for infile in infiles:
+        track = P.snip(infile, ".nreads")
+        lines = IOTools.openFile( infile ).readlines()
+        nreads = int( lines[0][:-1].split("\t")[1])
+        outf.write( "%s\t%i\n" % (track,nreads))
+    outf.close()
+        
+    P.load( outf.name, outfile )
+    
+    os.unlink(outf.name)
 
 ###################################################################
 ###################################################################

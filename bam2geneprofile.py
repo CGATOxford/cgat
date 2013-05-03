@@ -43,6 +43,10 @@ formatted file is supplied, it must be compressed with and indexed with :file:`t
    
    * paired-endedness is ignored. Both ends of a paired-ended read are treated 
    individually.
+
+   * use CIGAR string to accurately define aligned regions. Currently only the
+   full extension of the alignment is used. Thus, results from RNASEQ experiments
+   might be mis-leading.
   
 -n/--normalization
    normalize counts before aggregation. The normalization options are:

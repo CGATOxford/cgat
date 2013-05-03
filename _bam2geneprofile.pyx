@@ -434,9 +434,13 @@ class GeneCounter( IntervalsCounter ):
             self.extension_upstream = (exon_end - exon_start)*self.scale_flanks
             E.debug("scale flanks")
 
-        upstream = [ ( max(0, exon_start - self.extension_upstream), exon_start ), ] 
-        downstream = [ ( exon_end, exon_end + self.extension_downstream ), ]
-        
+        if gtf[0].strand == "-":
+            downstream = [ ( max(0, exon_start - self.extension_downstream), exon_start ), ] 
+            upstream = [ ( exon_end, exon_end + self.extension_upstream ), ]
+        else:
+            upstream = [ ( max(0, exon_start - self.extension_upstream), exon_start ), ] 
+            downstream = [ ( exon_end, exon_end + self.extension_downstream ), ]
+
         E.debug("counting exons" )
         self.counts_exons = self.counter.getCounts( contig, exons, self.resolution_exons  )
         E.debug("counting upstream" )
@@ -449,7 +453,8 @@ class GeneCounter( IntervalsCounter ):
         ## revert for negative strand
         if gtf[0].strand == "-":
             self.counts_exons = self.counts_exons[::-1]
-            self.counts_upstream, self.counts_downstream = self.counts_downstream[::-1], self.counts_upstream[::-1]
+            self.counts_upstream = self.counts_upstream[::-1]
+            self.counts_downstream = self.counts_downstream[::-1]
             
         self.addLengths( upstream, exons, downstream )
 
@@ -511,10 +516,17 @@ class UTRCounter( IntervalsCounter ):
 
         cds_start, cds_end = self.cds[0][0], self.cds[-1][1]
         utrs = Intervals.truncate( exons, self.cds )
-        self.upstream_utr = [ x for x in utrs if x[1] <= cds_start ]
-        self.downstream_utr = [ x for x in utrs if x[0] >= cds_end ]
-        self.upstream = [ ( max(0, exon_start - self.extension_upstream), exon_start ), ] 
-        self.downstream = [ ( exon_end, exon_end + self.extension_downstream ), ]
+
+        if gtf[0].strand == "-":
+            self.upstream_utr = [ x for x in utrs if x[0] >= cds_end ]
+            self.downstream_utr = [ x for x in utrs if x[1] <= cds_start ]
+            self.downstream = [ ( max(0, exon_start - self.extension_downstream), exon_start ), ] 
+            self.upstream = [ ( exon_end, exon_end + self.extension_upstream ), ]
+        else:
+            self.upstream_utr = [ x for x in utrs if x[1] <= cds_start ]
+            self.downstream_utr = [ x for x in utrs if x[0] >= cds_end ]
+            self.upstream = [ ( max(0, exon_start - self.extension_upstream), exon_start ), ] 
+            self.downstream = [ ( exon_end, exon_end + self.extension_downstream ), ]
         
         E.debug("counting cds" )
         self.counts_cds = self.counter.getCounts( contig, self.cds, self.resolution_cds  )
@@ -544,8 +556,10 @@ class UTRCounter( IntervalsCounter ):
         ## revert for negative strand
         if gtf[0].strand == "-":
             self.counts_cds = self.counts_cds[::-1]
-            self.counts_upstream_utr, self.counts_downstream_utr = self.counts_downstream_utr[::-1], self.counts_upstream_utr[::-1]
-            self.counts_upstream, self.counts_downstream = self.counts_downstream[::-1], self.counts_upstream[::-1]
+            self.counts_upstream_utr = self.counts_upstream_utr[::-1]
+            self.counts_downstream_utr = self.counts_downstream_utr[::-1]
+            self.counts_upstream = self.counts_upstream[::-1]
+            self.counts_downstream = self.counts_downstream[::-1]
 
         self.aggregate( self.counts_upstream,
                         self.counts_upstream_utr,
@@ -619,8 +633,12 @@ class MidpointCounter( GeneCounter ):
         exon_start, exon_end = exons[0][0], exons[-1][1]
         midpoint = (exon_end - exon_start) // 2 + exon_start
 
-        upstream = [ ( max(0, midpoint - self.extension_upstream), midpoint ), ] 
-        downstream = [ ( midpoint, midpoint + self.extension_downstream ), ]
+        if gtf[0].strand == "-":
+            downstream = [ ( max(0, midpoint - self.extension_downstream), midpoint ), ] 
+            upstream = [ ( midpoint, midpoint + self.extension_upstream ), ]
+        else:
+            upstream = [ ( max(0, midpoint - self.extension_upstream), midpoint ), ] 
+            downstream = [ ( midpoint, midpoint + self.extension_downstream ), ]
         
         E.debug("counting upstream" )
         self.counts_upstream = self.counter.getCounts( contig, upstream, self.resolution_upstream ) 
@@ -631,7 +649,8 @@ class MidpointCounter( GeneCounter ):
 
         ## revert for negative strand
         if gtf[0].strand == "-":
-            self.counts_upstream, self.counts_downstream = self.counts_downstream[::-1], self.counts_upstream[::-1]
+            self.counts_upstream = self.counts_upstream[::-1]
+            self.counts_downstream = self.counts_downstream[::-1]
             
         self.addLengths( upstream, downstream )
 
@@ -669,10 +688,16 @@ class TSSCounter( IntervalsCounter ):
         self.tss, self.tts = exons[0][0], exons[-1][1]
 
         # no max(0, ...) here as these ranges need to have always the same length
-        self.tss_ranges = [ (max(0, self.tss - self.extension_out), 
-                             self.tss + self.extension_in), ]
-        self.tts_ranges = [ (max(0, self.tts - self.extension_in), 
-                             self.tts + self.extension_out), ]
+        if strand == "-":
+            self.tts_ranges = [ (max(0, self.tss - self.extension_out), 
+                                 self.tss + self.extension_in), ]
+            self.tss_ranges = [ (max(0, self.tts - self.extension_in), 
+                                 self.tts + self.extension_out), ]
+        else:
+            self.tss_ranges = [ (max(0, self.tss - self.extension_out), 
+                                 self.tss + self.extension_in), ]
+            self.tts_ranges = [ (max(0, self.tts - self.extension_in), 
+                                 self.tts + self.extension_out), ]
         E.debug( "tss=%s, tts=%s" % (self.tss_ranges, self.tts_ranges) )
 
         self.counts_tss = self.counter.getCounts( contig, self.tss_ranges )
@@ -680,7 +705,8 @@ class TSSCounter( IntervalsCounter ):
 
          ## revert for negative strand
         if strand == "-":
-            self.counts_tss, self.counts_tts = self.counts_tts[::-1], self.counts_tss[::-1]
+            self.counts_tss = self.counts_tss[::-1]
+            self.counts_tts = self.counts_tts[::-1]
             
         self.aggregate( self.counts_tss, self.counts_tts )
 
