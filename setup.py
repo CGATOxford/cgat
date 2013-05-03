@@ -66,6 +66,16 @@ Components = Extension(
      language="c++",               
      )
 
+# Nested containment lists
+NCL = Extension(
+    "CGAT.NCL",                   
+    [ "CGAT/NCL/cnestedlist.pyx",    
+      "CGAT/NCL/intervaldb.c" ],
+      library_dirs=[],
+      libraries=[],
+      language="c",
+    )
+
 setup(name='CGAT',
       version='0.1',
       description='CGAT : the CGAT code collection',
@@ -86,7 +96,7 @@ setup(name='CGAT',
       install_requires = shared_dependencies + extra_dependencies,
       zip_safe = False,
       include_package_data = True,
-      ext_modules=[Components],
+      ext_modules=[Components, NCL],
       cmdclass = {'build_ext': build_ext}
       )
 

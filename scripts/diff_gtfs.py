@@ -64,13 +64,13 @@ import string
 import re
 import optparse
 import collections
+import numpy
 
 import CGAT.Experiment as E
 import CGAT.GFF as GFF
 import CGAT.GTF as GTF
 import CGAT.IOTools as IOTools
-import ncl
-import numpy
+import CGAT.NCL as NCL
 
 class Counter:
 

@@ -33,7 +33,7 @@ Code
 ----
 
 '''
-import ncl
+import NCL as ncl
 from bx.intervals.intersection import Intersecter, Interval
 
 class IndexedGenome:

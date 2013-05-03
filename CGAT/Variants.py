@@ -38,7 +38,7 @@ import os, sys, re, optparse, collections
 import Experiment as E
 import IOTools
 import Genomics
-import ncl
+import NCL as ncl
 
 Variant = collections.namedtuple( "Variant", 
                                   "pos, reference, genotype" ) 

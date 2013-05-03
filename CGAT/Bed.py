@@ -34,10 +34,11 @@ Code
 
 '''
 import re
-import ncl
 import numpy
 import bisect
 import itertools
+
+import NCL as ncl
 
 class Bed(object):
     """an interval in bed format."""

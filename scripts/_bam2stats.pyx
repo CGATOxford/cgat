@@ -3,7 +3,7 @@
 from pysam.csamtools cimport *
 
 import collections, array, struct
-import Experiment as E
+import CGAT.Experiment as E
 
 FLAGS = {
     1: 'paired',

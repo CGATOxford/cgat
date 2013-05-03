@@ -54,7 +54,6 @@ import optparse
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import CGAT.Bed as Bed
-import ncl
 import numpy
 
 class Counter:

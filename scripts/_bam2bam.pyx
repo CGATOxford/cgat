@@ -1,7 +1,7 @@
 from pysam.csamtools cimport *
 
 import collections, array, struct, itertools
-import Experiment as E
+import CGAT.Experiment as E
 
 cdef class SetNH:
 

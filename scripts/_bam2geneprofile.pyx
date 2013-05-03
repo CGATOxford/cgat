@@ -4,8 +4,10 @@ from pysam.csamtools cimport *
 import pysam
 
 import collections, array, struct, sys, itertools
-import Experiment as E
-import Intervals, GTF, Stats
+import CGAT.Experiment as E
+import CGAT.Intervals as Intervals
+import CGAT.GTF as GTF
+import CGAT.Stats as Stats
 import numpy
 
 CountResult = collections.namedtuple( "Counts", "upstream upstream_utr cds downstream_utr downstream" )
