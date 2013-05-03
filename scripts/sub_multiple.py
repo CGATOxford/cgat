@@ -56,7 +56,9 @@ Code
 ----
 
 '''
-import string, re, sys
+import string
+import re
+import sys
 
 if __name__ == "__main__":
     param_filename_patterns = sys.argv[1]

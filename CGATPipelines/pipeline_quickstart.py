@@ -1,5 +1,7 @@
 #!/bin/env python
-import sys, re, os
+import sys
+import re
+import os
 import optparse
 
 USAGE="""%s [OPTIONS]

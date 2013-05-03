@@ -57,10 +57,15 @@ Code
 
 '''
 
-import os, sys, re, optparse
+import os
+import sys
+import re
+import optparse
 
-import Experiment as E
-import GO, IOTools, Stats
+import CGAT.Experiment as E
+import CGAT.GO as GO
+import CGAT.IOTools as IOTools
+import CGAT.Stats as Stats
 
 def computeFDR( all_results, 
                 qvalue_method = "storey" ):

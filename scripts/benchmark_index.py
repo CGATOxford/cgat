@@ -29,9 +29,12 @@ USAGE="""python bnechmark_index.py [options] file [ files ]
 benchmarking of indexing methods for fasta files.
 """
 
-import tempfile, timeit, sys, os
+import tempfile
+import timeit
+import sys
+import os
 from IndexedFasta import *
-import Stats
+import CGAT.Stats as Stats
 
 if __name__ == "__main__":
 

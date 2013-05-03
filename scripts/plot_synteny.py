@@ -56,17 +56,27 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, time, sets, optparse, math, tempfile, bisect
+import os
+import sys
+import string
+import re
+import getopt
+import time
+import sets
+import optparse
+import math
+import tempfile
+import bisect
 
 """ program $Id: plot_synteny.py 2781 2009-09-10 11:33:14Z andreas $
 
 """
-import Experiment
-import IOTools
-import SVGdraw 
+import CGAT.Experiment as Experiment
+import CGAT.IOTools as IOTools
+import CGAT.SVGdraw as SVGdraw
 import numpy
-import Synteny
-import IndexedFasta
+import CGAT.Synteny as Synteny
+import CGAT.IndexedFasta as IndexedFasta
 
 # some definitions for the layout of the picture
 BLACK = (0,0,0)

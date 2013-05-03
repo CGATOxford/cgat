@@ -56,7 +56,9 @@ Code
 ----
 
 '''
-import sys, string, re
+import sys
+import string
+import re
 
 if __name__ == "__main__":
 

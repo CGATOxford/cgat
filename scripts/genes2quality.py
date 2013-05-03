@@ -56,7 +56,15 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, time, optparse, math, tempfile
+import os
+import sys
+import string
+import re
+import getopt
+import time
+import optparse
+import math
+import tempfile
 
 """ program $Id: genes2quality.py 2781 2009-09-10 11:33:14Z andreas $
 
@@ -74,8 +82,8 @@ The following filtering options are available:
 --filter-ds: keeps only transcripts with a ds of less than #
 """
 
-import Experiment
-import Genomics
+import CGAT.Experiment as Experiment
+import CGAT.Genomics as Genomics
 
 import pgdb
 

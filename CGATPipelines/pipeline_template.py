@@ -101,12 +101,22 @@ Code
 """
 from ruffus import *
 
-import sys, glob, gzip, os, itertools, re, math, types, collections, time
-import optparse, shutil
+import sys
+import glob
+import gzip
+import os
+import itertools
+import re
+import math
+import types
+import collections
+import time
+import optparse
+import shutil
 import sqlite3
-import Experiment as E
-import IOTools
-import Database
+import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
+import CGAT.Database as Database
 
 ###################################################
 ###################################################
@@ -115,7 +125,7 @@ import Database
 ###################################################
 
 # load options from the config file
-import Pipeline as P
+import CGAT.Pipeline as P
 P.getParameters( 
     ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
      "../pipeline.ini",
@@ -129,7 +139,7 @@ PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],
 ###################################################################
 ## Helper functions mapping tracks to conditions, etc
 ###################################################################
-import PipelineTracks
+import CGATPipelines.PipelineTracks as PipelineTracks
 
 ###################################################################
 ###################################################################

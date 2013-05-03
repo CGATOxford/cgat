@@ -130,15 +130,30 @@ Code
 ----
 
 '''
-import os, sys, string, re, optparse, math, time, tempfile, subprocess, types, bisect, array, collections
+import os
+import sys
+import string
+import re
+import optparse
+import math
+import time
+import tempfile
+import subprocess
+import types
+import bisect
+import array
+import collections
 import itertools
-import GFF, GTF, Bed, IOTools
-import Experiment as E
-import IndexedFasta
-import Stats
-import SequenceProperties
-import Genomics
-import Intervals
+import CGAT.GFF as GFF
+import CGAT.GTF as GTF
+import CGAT.Bed as Bed
+import CGAT.IOTools as IOTools
+import CGAT.Experiment as E
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.Stats as Stats
+import CGAT.SequenceProperties as SequenceProperties
+import CGAT.Genomics as Genomics
+import CGAT.Intervals as Intervals
 
 import bx
 import bx.bbi.bigwig_file
@@ -146,7 +161,7 @@ import bx.intervals.io
 import bx.intervals.intersection
 import alignlib
 import numpy
-import IndexedGenome
+import CGAT.IndexedGenome as IndexedGenome
 import pysam
 
 def readIntervalsFromGFF( filename_gff, source, feature, 

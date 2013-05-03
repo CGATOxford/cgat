@@ -57,16 +57,23 @@ Code
 '''
 
 
-import os, sys, string, re, optparse, math, time, random
+import os
+import sys
+import string
+import re
+import optparse
+import math
+import time
+import random
 
 USAGE="""python %s [OPTIONS]
 
 
 """ % sys.argv[0]
 
-import Experiment
-import IOTools
-import TreeTools
+import CGAT.Experiment as Experiment
+import CGAT.IOTools as IOTools
+import CGAT.TreeTools as TreeTools
 
 ##------------------------------------------------------------
 if __name__ == '__main__':

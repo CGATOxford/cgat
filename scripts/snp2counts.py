@@ -70,16 +70,21 @@ Code
 
 """ 
 
-import os, sys, re, optparse, collections
+import os
+import sys
+import re
+import optparse
+import collections
 
 import numpy
-import Experiment as E
-import IOTools
+import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
 import pysam
-import IndexedFasta
-import IndexedGenome
-import Genomics
-import GFF, GTF
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.IndexedGenome as IndexedGenome
+import CGAT.Genomics as Genomics
+import CGAT.GFF as GFF
+import CGAT.GTF as GTF
 import alignlib
 
 CdsResult = collections.namedtuple( 'CdsResult',

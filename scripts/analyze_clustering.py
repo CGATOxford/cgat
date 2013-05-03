@@ -56,7 +56,17 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, time, sets, optparse, math, tempfile, random
+import os
+import sys
+import string
+import re
+import getopt
+import time
+import sets
+import optparse
+import math
+import tempfile
+import random
 
 """analyse values based on a clustering.
 
@@ -75,7 +85,7 @@ optional input:
 
 """
 
-import Experiment
+import CGAT.Experiment as Experiment
 
 import numpy
 import scipy

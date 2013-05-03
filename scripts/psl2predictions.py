@@ -56,7 +56,10 @@ Code
 ----
 
 '''
-import sys, string, re, getopt
+import sys
+import string
+import re
+import getopt
 
 USAGE="""python %s [OPTIONS] < psl > predictions
 
@@ -76,8 +79,8 @@ param_short_options="v:ht"
 
 param_trans = None
 
-import Experiment
-import PredictionParser
+import CGAT.Experiment as Experiment
+import CGAT.PredictionParser as PredictionParser
 
 if __name__ == "__main__":
 

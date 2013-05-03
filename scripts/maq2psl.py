@@ -57,13 +57,16 @@ Code
 ----
 
 '''
-import sys, string, re, optparse
+import sys
+import string
+import re
+import optparse
 
-import Experiment
-import IndexedFasta
-import Genomics
-import Blat
-import Maq
+import CGAT.Experiment as Experiment
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.Genomics as Genomics
+import CGAT.Blat as Blat
+import CGAT.Maq as Maq
 import bisect
 import itertools
 

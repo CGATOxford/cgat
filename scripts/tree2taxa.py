@@ -56,11 +56,15 @@ Code
 
 """ 
 
-import os, sys, string, re, optparse
+import os
+import sys
+import string
+import re
+import optparse
 
 from types import *
-import Experiment
-import TreeTools
+import CGAT.Experiment as Experiment
+import CGAT.TreeTools as TreeTools
 
 if __name__ == "__main__":
 

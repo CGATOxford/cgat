@@ -58,11 +58,20 @@ Code
 ----
 
 '''
-import os, sys, string, re, tempfile, subprocess, optparse, gzip, glob
+import os
+import sys
+import string
+import re
+import tempfile
+import subprocess
+import optparse
+import gzip
+import glob
 
 from types import *
 
-import Experiment, IOTools
+import CGAT.Experiment as Experiment
+import CGAT.IOTools as IOTools
 
 class LogFileData:
     mRegex = re.compile("# job finished in (\d+) seconds at (.*) --\s+([.\d]+)\s+([.\d]+)\s+([.\d]+)\s+([.\d]+)")

@@ -112,7 +112,11 @@ The following command outputs alignments for the first iteration that they are f
 
 '''
 
-import os, sys, re, optparse, collections
+import os
+import sys
+import re
+import optparse
+import collections
 
 BlastResult = collections.namedtuple( "blastresult",
                                       "qseqid qstart qend sseqid sstart send evalue bitscore pident score qseq sseq" )

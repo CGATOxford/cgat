@@ -56,9 +56,15 @@ Code
 ----
 
 '''
-import sys, re, string, os, getopt, time, optparse
+import sys
+import re
+import string
+import os
+import getopt
+import time
+import optparse
 
-import Experiment
+import CGAT.Experiment as Experiment
 from scipy.stats import *
 
 USAGE="""simulate_function.py [options] [infile] < stdin

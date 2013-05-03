@@ -56,9 +56,13 @@ Code
 ----
 
 '''
-import os, sys, string, re, optparse
+import os
+import sys
+import string
+import re
+import optparse
 
-import Experiment
+import CGAT.Experiment as Experiment
 
 USAGE="""python %s [OPTIONS] [genomic_sequence] [ < genomic sequence]
 

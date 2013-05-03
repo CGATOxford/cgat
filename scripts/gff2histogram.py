@@ -56,7 +56,10 @@ Code
 ----
 
 '''
-import sys, string, re, optparse
+import sys
+import string
+import re
+import optparse
 
 USAGE="""python %s [OPTIONS] input1 input2
 
@@ -71,9 +74,12 @@ Methods:
 Version: $Id: gff2histogram.py 2781 2009-09-10 11:33:14Z andreas $
 """ % sys.argv[0]
 
-import Experiment as E
-import GFF, GTF, Bed
-import Histogram, Stats
+import CGAT.Experiment as E
+import CGAT.GFF as GFF
+import CGAT.GTF as GTF
+import CGAT.Bed as Bed
+import CGAT.Histogram as Histogram
+import CGAT.Stats as Stats
 
 ##------------------------------------------------------------------------
 if __name__ == "__main__":

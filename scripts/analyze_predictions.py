@@ -56,16 +56,26 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, time, sets, optparse, math, tempfile
+import os
+import sys
+import string
+import re
+import getopt
+import time
+import sets
+import optparse
+import math
+import tempfile
 
-import pgdb, csv
+import pgdb
+import csv
 """ program $Id: analyze_predictions.py 2781 2009-09-10 11:33:14Z andreas $
 
 analyse a prediction list
 
 
 """
-import Experiment
+import CGAT.Experiment as Experiment
 
 if __name__ == "__main__":
 

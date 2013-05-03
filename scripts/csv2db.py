@@ -67,10 +67,19 @@ Code
 ----
 
 '''
-import os, sys, string, re, time, optparse, tempfile, subprocess, types
+import os
+import sys
+import string
+import re
+import time
+import optparse
+import tempfile
+import subprocess
+import types
 
-import Experiment as E
-import csv, CSV
+import CGAT.Experiment as E
+import csv
+import CGAT.CSV as CSV
 import sqlite3
 
 def executewait( dbhandle, statement, error, retry = False, wait=5):

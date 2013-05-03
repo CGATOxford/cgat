@@ -49,10 +49,13 @@ Code
 
 """ 
 
-import os, sys, re, optparse
+import os
+import sys
+import re
+import optparse
 import pysam
 
-import Experiment as E
+import CGAT.Experiment as E
 
 import pyximport
 pyximport.install(build_in_temp=False)

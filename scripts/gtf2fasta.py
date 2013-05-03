@@ -139,13 +139,19 @@ Code
 
 """ 
 
-import os, sys, re, optparse, string, collections, array
+import os
+import sys
+import re
+import optparse
+import string
+import collections
+import array
 
-import Experiment as E
-import GTF
-import IndexedFasta
-import Genomics
-import Intervals
+import CGAT.Experiment as E
+import CGAT.GTF as GTF
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.Genomics as Genomics
+import CGAT.Intervals as Intervals
 
 # mapping ensembl annotations in the source field
 MAP_ENSEMBL = { 'miRNA' : 'm',

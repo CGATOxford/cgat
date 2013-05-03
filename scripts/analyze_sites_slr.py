@@ -56,7 +56,13 @@ Code
 ----
 
 '''
-import os, sys, string, re, tempfile, subprocess, optparse
+import os
+import sys
+import string
+import re
+import tempfile
+import subprocess
+import optparse
 
 from types import *
 
@@ -68,14 +74,14 @@ The input is either:
 
 """
 
-import Genomics
-import Experiment
+import CGAT.Genomics as Genomics
+import CGAT.Experiment as Experiment
 import scipy
 import scipy.stats
-import WrapperSlr
-import Mali
-import IOTools
-import CSV
+import CGAT.WrapperSlr as WrapperSlr
+import CGAT.Mali as Mali
+import CGAT.IOTools as IOTools
+import CGAT.CSV as CSV
 
 class Result:
     def __init__(self, id=0, nfiltered=0, ntotal=0, nsynonymous=0, nnegative=0, npositive=0, significance = 0):

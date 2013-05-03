@@ -55,10 +55,14 @@ Code
 ----
 
 '''
-import sys, re, string, os, optparse
+import sys
+import re
+import string
+import os
+import optparse
 
-import Experiment
-import Histogram
+import CGAT.Experiment as Experiment
+import CGAT.Histogram as Histogram
 import scipy
 
 def PrintValues( outfile, values,  options, prefix = "",titles = None):

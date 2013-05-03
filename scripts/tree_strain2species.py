@@ -57,13 +57,18 @@ Code
 
 """ 
 
-import os, sys, string, re, optparse, subprocess
+import os
+import sys
+import string
+import re
+import optparse
+import subprocess
 
 import scipy.stats
 
-import Experiment
-import TreeTools
-import IOTools
+import CGAT.Experiment as Experiment
+import CGAT.TreeTools as TreeTools
+import CGAT.IOTools as IOTools
 
 def parseIdentifier( id, options ):
 

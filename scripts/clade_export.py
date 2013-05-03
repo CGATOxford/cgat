@@ -56,9 +56,20 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, time, sets, optparse, math, tempfile, glob, shutil
+import os
+import sys
+import string
+import re
+import getopt
+import time
+import sets
+import optparse
+import math
+import tempfile
+import glob
+import shutil
 
-import Experiment
+import CGAT.Experiment as Experiment
 
 import pgdb
 

@@ -61,9 +61,12 @@ Code
 
 '''
 
-import sys, re, optparse, os
-import Experiment
-import GFF
+import sys
+import re
+import optparse
+import os
+import CGAT.Experiment as Experiment
+import CGAT.GFF as GFF
 
 class OutputChunk:
     def __init__(self, options):

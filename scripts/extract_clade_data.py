@@ -56,14 +56,22 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, tempfile, time, optparse, math
+import os
+import sys
+import string
+import re
+import getopt
+import tempfile
+import time
+import optparse
+import math
 
-import Experiment
-import Genomics
-import IndexedFasta
-import IOTools
+import CGAT.Experiment as Experiment
+import CGAT.Genomics as Genomics
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.IOTools as IOTools
 import pgdb
-import Regions
+import CGAT.Regions as Regions
 
 USAGE="""python %s [OPTIONS] 
 

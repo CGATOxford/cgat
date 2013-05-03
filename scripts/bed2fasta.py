@@ -54,12 +54,15 @@ Code
 ----
 
 '''
-import sys, string, re, optparse
-import Experiment as E
-import IOTools
-import Bed
-import IndexedFasta
-import Masker
+import sys
+import string
+import re
+import optparse
+import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
+import CGAT.Bed as Bed
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.Masker as Masker
 
 ############################################################
 ############################################################

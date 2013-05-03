@@ -33,10 +33,15 @@ Code
 ----
 
 '''
-import sys, re, os, tempfile, collections, shutil
+import sys
+import re
+import os
+import tempfile
+import collections
+import shutil
 
-import Experiment as E
-import Pipeline as P
+import CGAT.Experiment as E
+import CGAT.Pipeline as P
 import sqlite3
 import gff2annotator
 

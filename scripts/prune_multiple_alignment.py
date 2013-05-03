@@ -56,7 +56,13 @@ Code
 ----
 
 '''
-import os, sys, string, re, optparse, math, warnings
+import os
+import sys
+import string
+import re
+import optparse
+import math
+import warnings
 
 import scipy
 import scipy.cluster
@@ -86,10 +92,10 @@ Lower case characters are interpreted as unaligned characters, unless
 the option --ignore-case is given.
 """ % sys.argv[0]
 
-import Experiment
-import Genomics
-import Mali
-import Exons
+import CGAT.Experiment as Experiment
+import CGAT.Genomics as Genomics
+import CGAT.Mali as Mali
+import CGAT.Exons as Exons
 
 def GetPides( mali, id1, ids, first_res, last_res ):
     """calculate pid between sequence id1 and all others in ids."""

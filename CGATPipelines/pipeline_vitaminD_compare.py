@@ -54,14 +54,26 @@ TODO: currently the bed files and the intervals are inconsistent
      in the table. The ids do correspond).
 
 """
-import sys, tempfile, optparse, shutil, itertools, csv, math, random, re, glob, os, shutil, collections
+import sys
+import tempfile
+import optparse
+import shutil
+import itertools
+import csv
+import math
+import random
+import re
+import glob
+import os
+import shutil
+import collections
 
-import Experiment as E
-import Pipeline as P
+import CGAT.Experiment as E
+import CGAT.Pipeline as P
 from ruffus import *
 import csv
 import sqlite3
-import IOTools
+import CGAT.IOTools as IOTools
 import pysam
 import numpy
 import gzip

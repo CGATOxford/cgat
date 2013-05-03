@@ -21,12 +21,19 @@
 #################################################################################
 """unit testing module for the Tree.py class."""
 
-import sys, os, shutil, optparse, random, math
-import unittest, tempfile
+import sys
+import os
+import shutil
+import optparse
+import random
+import math
+import unittest
+import tempfile
 import snp2counts
 
-import GTF, Genomics
-import IndexedFasta
+import CGAT.GTF as GTF
+import CGAT.Genomics as Genomics
+import CGAT.IndexedFasta as IndexedFasta
 
 class getCDSPositionTestPos(unittest.TestCase):
 

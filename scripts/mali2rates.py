@@ -59,13 +59,21 @@ Code
 ----
 
 '''
-import os, sys, string, re, optparse, time, math, tempfile, shutil
-import Experiment
-import Mali
-import Genomics
-import WrapperPhylip
-import WrapperCodeML
-import RateEstimation
+import os
+import sys
+import string
+import re
+import optparse
+import time
+import math
+import tempfile
+import shutil
+import CGAT.Experiment as Experiment
+import CGAT.Mali as Mali
+import CGAT.Genomics as Genomics
+import CGAT.WrapperPhylip as WrapperPhylip
+import CGAT.WrapperCodeML as WrapperCodeML
+import CGAT.RateEstimation as RateEstimation
 
 ##-----------------------------------------------------------------------------------
 ##-----------------------------------------------------------------------------------

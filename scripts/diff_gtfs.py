@@ -59,11 +59,16 @@ Code
 
 '''
 
-import sys, string, re, optparse, collections
+import sys
+import string
+import re
+import optparse
+import collections
 
-import Experiment as E
-import GFF, GTF
-import IOTools
+import CGAT.Experiment as E
+import CGAT.GFF as GFF
+import CGAT.GTF as GTF
+import CGAT.IOTools as IOTools
 import ncl
 import numpy
 

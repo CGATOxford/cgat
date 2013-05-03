@@ -56,7 +56,15 @@ Code
 ----
 
 '''
-import os, sys, string, re, tempfile, subprocess, optparse, time, math
+import os
+import sys
+import string
+import re
+import tempfile
+import subprocess
+import optparse
+import time
+import math
 
 """read in data and append columns to a density histogram
 
@@ -66,7 +74,7 @@ import os, sys, string, re, tempfile, subprocess, optparse, time, math
 '#' at start of line is a comment
 """
 
-import Experiment
+import CGAT.Experiment as Experiment
 import numpy
 import scipy
 

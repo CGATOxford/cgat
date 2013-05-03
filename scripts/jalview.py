@@ -55,10 +55,18 @@ Code
 ----
 
 '''
-import os, sys, string, re, tempfile, subprocess, optparse, time, math
+import os
+import sys
+import string
+import re
+import tempfile
+import subprocess
+import optparse
+import time
+import math
 
-import Experiment
-import Mali
+import CGAT.Experiment as Experiment
+import CGAT.Mali as Mali
 
 if __name__ == "__main__":
 

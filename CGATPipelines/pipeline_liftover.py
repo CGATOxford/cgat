@@ -94,14 +94,27 @@ Code
 
 
 """
-import sys, tempfile, optparse, shutil, itertools, csv, math, random, re, glob, os, shutil, collections
-import csv, gzip
+import sys
+import tempfile
+import optparse
+import shutil
+import itertools
+import csv
+import math
+import random
+import re
+import glob
+import os
+import shutil
+import collections
+import csv
+import gzip
 from ruffus import *
 import sqlite3
 
-import Experiment as E
-import Pipeline as P
-import IOTools
+import CGAT.Experiment as E
+import CGAT.Pipeline as P
+import CGAT.IOTools as IOTools
 
 ###################################################
 ###################################################
@@ -110,7 +123,7 @@ import IOTools
 ###################################################
 
 # load options from the config file
-import Pipeline as P
+import CGAT.Pipeline as P
 P.getParameters( 
     ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
      "../pipeline.ini",
@@ -132,7 +145,7 @@ PARAMS = P.getParameters()
 ###################################################################
 ## Helper functions mapping tracks to conditions, etc
 ###################################################################
-import PipelineTracks
+import CGATPipelines.PipelineTracks as PipelineTracks
 
 TRACKS = PipelineTracks.Tracks( PipelineTracks.Sample ).loadFromDirectory( 
     glob.glob( "*.gtf.gz" ), "(\S+).gtf.gz", exclude = (".mapped.gtf.gz", ))

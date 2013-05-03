@@ -233,7 +233,12 @@ API
 
 '''
 
-import sys, re, string, glob, collections, copy
+import sys
+import re
+import string
+import glob
+import collections
+import copy
 
 # '-' as separator
 FILE_SEPARATOR="-"

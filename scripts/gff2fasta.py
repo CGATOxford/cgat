@@ -54,13 +54,17 @@ Code
 ----
 
 '''
-import sys, string, re, optparse
-import Experiment as E
-import GFF, GTF
-import Genomics
-import AGP
-import IndexedFasta
-import Intervals
+import sys
+import string
+import re
+import optparse
+import CGAT.Experiment as E
+import CGAT.GFF as GFF
+import CGAT.GTF as GTF
+import CGAT.Genomics as Genomics
+import CGAT.AGP as AGP
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.Intervals as Intervals
 
 import bx.intervals.io
 import bx.intervals.intersection

@@ -56,7 +56,12 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, math
+import os
+import sys
+import string
+import re
+import getopt
+import math
 
 USAGE="""python %s [OPTIONS] < exonerate_output > filtered
 
@@ -88,10 +93,10 @@ param_mask_char = "x"
 
 param_filename_output = None
 
-import Experiment
-import Genomics
-import MaliIO
-import Exons
+import CGAT.Experiment as Experiment
+import CGAT.Genomics as Genomics
+import CGAT.MaliIO as MaliIO
+import CGAT.Exons as Exons
 
 ##------------------------------------------------------------
 if __name__ == '__main__':

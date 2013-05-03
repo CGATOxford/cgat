@@ -56,15 +56,24 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, time, sets, optparse, math, tempfile
+import os
+import sys
+import string
+import re
+import getopt
+import time
+import sets
+import optparse
+import math
+import tempfile
 """ program $Id: analyze_queries.py 2781 2009-09-10 11:33:14Z andreas $
 
 Analyse query predictions.
 """
-import Experiment
-import Exons
-import IOTools
-import Genomics
+import CGAT.Experiment as Experiment
+import CGAT.Exons as Exons
+import CGAT.IOTools as IOTools
+import CGAT.Genomics as Genomics
 
 import pgdb
 

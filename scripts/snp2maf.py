@@ -55,17 +55,23 @@ Code
 
 """ 
 
-import os, sys, re, optparse, collections, gzip
+import os
+import sys
+import re
+import optparse
+import collections
+import gzip
 import sqlite3
 
 import numpy
-import Experiment as E
-import IOTools
-import IndexedFasta
-import Genomics
-import GFF, GTF
+import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.Genomics as Genomics
+import CGAT.GFF as GFF
+import CGAT.GTF as GTF
 import ncl
-import Variants
+import CGAT.Variants as Variants
 import alignlib
 
 def alignIndels( all_alleles, colcounts, extend_by = 0 ):

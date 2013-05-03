@@ -54,7 +54,15 @@ Code
 ----
 
 '''
-import os, sys, string, re, optparse, math, time, random, types
+import os
+import sys
+import string
+import re
+import optparse
+import math
+import time
+import random
+import types
 
 USAGE="""python %s [OPTIONS]
 
@@ -62,8 +70,8 @@ USAGE="""python %s [OPTIONS]
 
 """ % sys.argv[0]
 
-import Experiment
-import Mali
+import CGAT.Experiment as Experiment
+import CGAT.Mali as Mali
 
 ##------------------------------------------------------------
 if __name__ == '__main__':

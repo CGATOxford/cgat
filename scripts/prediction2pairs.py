@@ -56,7 +56,11 @@ Code
 ----
 
 '''
-import os, sys, string, re, optparse
+import os
+import sys
+import string
+import re
+import optparse
 
 USAGE="""python %s [OPTIONS] < assignments > pairs
 
@@ -67,8 +71,10 @@ step assumes that there are no frameshifts in the cds sequences. Frameshifts
 in the predictions are removed.
 """ % sys.argv[0]
 
-import Experiment, Genomics, PredictionParser
-import IndexedFasta
+import CGAT.Experiment as Experiment
+import CGAT.Genomics as Genomics
+import CGAT.PredictionParser as PredictionParser
+import CGAT.IndexedFasta as IndexedFasta
 
 import alignlib
 

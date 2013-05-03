@@ -56,7 +56,11 @@ Code
 ----
 
 '''
-import sys, string, re, optparse, time
+import sys
+import string
+import re
+import optparse
+import time
 
 USAGE="""python %s [OPTIONS] < in > out
 
@@ -69,10 +73,10 @@ Options:
 -v, --verbose=                  loglevel.
 """ % sys.argv[0]
 
-import Experiment
-import IOTools
+import CGAT.Experiment as Experiment
+import CGAT.IOTools as IOTools
 import pgdb
-import IndexedFasta
+import CGAT.IndexedFasta as IndexedFasta
 
 #################################################################################
 #################################################################################

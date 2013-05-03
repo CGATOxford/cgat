@@ -54,16 +54,23 @@ Code
 ----
 
 '''
-import os, sys, string, re, tempfile, subprocess, optparse, math
+import os
+import sys
+import string
+import re
+import tempfile
+import subprocess
+import optparse
+import math
 
 """
 """
 
-import Experiment
-import Genomics
+import CGAT.Experiment as Experiment
+import CGAT.Genomics as Genomics
 import numpy
 
-import FastaIterator
+import CGAT.FastaIterator as FastaIterator
 import Bio.Alphabet.IUPAC
 
 ##-------------------------------------------------------------------------

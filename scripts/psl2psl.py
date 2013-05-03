@@ -92,14 +92,23 @@ Code
 '''
 
 
-import sys, re, string, optparse, time, os, collections, warnings
+import sys
+import re
+import string
+import optparse
+import time
+import os
+import collections
+import warnings
 
-import Experiment as E
-import Stats
-import Genomics
-import Blat
-import GFF, GTF
-import IndexedFasta, IndexedGenome
+import CGAT.Experiment as E
+import CGAT.Stats as Stats
+import CGAT.Genomics as Genomics
+import CGAT.Blat as Blat
+import CGAT.GFF as GFF
+import CGAT.GTF as GTF
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.IndexedGenome as IndexedGenome
 
 ## ignore warnings from networkx/matplotlib that a display
 ## can not be found

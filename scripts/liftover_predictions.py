@@ -56,9 +56,15 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, optparse, bisect
+import os
+import sys
+import string
+import re
+import getopt
+import optparse
+import bisect
 
-import Genomics
+import CGAT.Genomics as Genomics
 import alignlib
 
 USAGE="""python %s file1 file2
@@ -75,8 +81,8 @@ Options:
 
 """ % sys.argv[0]
 
-import Experiment
-import PredictionParser
+import CGAT.Experiment as Experiment
+import CGAT.PredictionParser as PredictionParser
 
 from predict_genes import PredictorExonerate
 

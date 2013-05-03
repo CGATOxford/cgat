@@ -57,11 +57,16 @@ Code
 
 '''
 
-import os, sys, re, optparse, itertools, random
-import Pipeline as P
-import Experiment as E
-import GTF
-import IOTools
+import os
+import sys
+import re
+import optparse
+import itertools
+import random
+import CGAT.Pipeline as P
+import CGAT.Experiment as E
+import CGAT.GTF as GTF
+import CGAT.IOTools as IOTools
 from rpy2.robjects import r as R
 from rpy2.robjects.vectors import FloatVector
 from rpy2.robjects.vectors import StrVector

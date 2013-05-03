@@ -54,9 +54,13 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt
+import os
+import sys
+import string
+import re
+import getopt
 
-import Experiment
+import CGAT.Experiment as Experiment
 
 param_long_options=["verbose=", "help" ]
 param_short_options="v:h"

@@ -51,12 +51,18 @@ Code
 
 CONTIG,START,END = "chr6", 28000000,34000000
 
-import sys, tempfile, optparse, shutil, itertools, random
+import sys
+import tempfile
+import optparse
+import shutil
+import itertools
+import random
 
 from ruffus import *
-import Experiment as E
-import Pipeline as P
-import IndexedFasta, IndexedGenome
+import CGAT.Experiment as E
+import CGAT.Pipeline as P
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.IndexedGenome as IndexedGenome
 import pysam
 
 import pipeline_vitaminD

@@ -56,7 +56,14 @@ Code
 ----
 
 '''
-import os, sys, string, re, tempfile, subprocess, optparse, math
+import os
+import sys
+import string
+import re
+import tempfile
+import subprocess
+import optparse
+import math
 
 USAGE = """Convert gene atlas table into a convenient format.
 
@@ -68,7 +75,9 @@ The map need not be unique.
 
 """
 
-import Experiment, IOTools, MatlabTools
+import CGAT.Experiment as Experiment
+import CGAT.IOTools as IOTools
+import CGAT.MatlabTools as MatlabTools
 import scipy
 import numpy
 

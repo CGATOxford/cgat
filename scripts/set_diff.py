@@ -71,9 +71,14 @@ Code
 ----
 
 '''
-import os, sys, string, re, optparse
+import os
+import sys
+import string
+import re
+import optparse
 
-import Experiment, IOTools
+import CGAT.Experiment as Experiment
+import CGAT.IOTools as IOTools
 
 if __name__ == "__main__":
     

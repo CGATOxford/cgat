@@ -56,7 +56,9 @@ Code
 ----
 
 '''
-import sys, os, string
+import sys
+import os
+import string
 
 if __name__ == "__main__":
 	# Length of each alignment segment

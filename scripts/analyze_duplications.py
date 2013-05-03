@@ -56,7 +56,14 @@ Code
 ----
 
 '''
-import os, sys, string, re, tempfile, subprocess, optparse, math
+import os
+import sys
+import string
+import re
+import tempfile
+import subprocess
+import optparse
+import math
 
 """Analyse duplications in various species
 
@@ -67,12 +74,12 @@ species1 species2 location function height
 is for a duplication of species2 in species.
 """
 
-import Experiment
+import CGAT.Experiment as Experiment
 import pgdb
 import numpy
-import MatlabTools
-import Histogram
-import TreeTools
+import CGAT.MatlabTools as MatlabTools
+import CGAT.Histogram as Histogram
+import CGAT.TreeTools as TreeTools
 import scipy
 import scipy.optimize
 

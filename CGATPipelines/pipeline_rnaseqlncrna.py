@@ -172,25 +172,36 @@ code
 
 # load modules                                                                                                                                                                                                                               
 from ruffus import *
-import Experiment as E
+import CGAT.Experiment as E
 import logging as L
-import Database, CSV
+import CGAT.Database as Database
+import CGAT.CSV as CSV
 import numpy as np
 import fnmatch
 import sqlite3
-import PipelineMappingQC
-import GTF
-import IOTools
+import CGATPipelines.PipelineMappingQC as PipelineMappingQC
+import CGAT.GTF as GTF
+import CGAT.IOTools as IOTools
 import gzip
-import GFF
-import PipelineRnaseq
-import sys, os, re, shutil, itertools, math, glob, time, gzip, collections, random
+import CGAT.GFF as GFF
+import CGATPipelines.PipelineRnaseq as PipelineRnaseq
+import sys
+import os
+import re
+import shutil
+import itertools
+import math
+import glob
+import time
+import gzip
+import collections
+import random
 from rpy2.robjects import r as R
-import Expression
-import IndexedGenome
-import PipelineLncRNA
+import CGAT.Expression as Expression
+import CGAT.IndexedGenome as IndexedGenome
+import CGATPipelines.PipelineLncRNA as PipelineLncRNA
 
-import Pipeline as P
+import CGAT.Pipeline as P
 
 # get parameters
 P.getParameters( 

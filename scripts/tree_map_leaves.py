@@ -56,7 +56,14 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, tempfile, time, popen2
+import os
+import sys
+import string
+import re
+import getopt
+import tempfile
+import time
+import popen2
 
 from Bio.Nexus import Nexus
 from Bio.Nexus.Nodes import Node
@@ -77,8 +84,8 @@ Options:
 -b, --strip-branches            remove branch lengths
 """ % sys.argv[0]
 
-import Experiment
-import TreeTools
+import CGAT.Experiment as Experiment
+import CGAT.TreeTools as TreeTools
 
 param_loglevel = 1
 

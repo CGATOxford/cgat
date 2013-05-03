@@ -64,7 +64,12 @@ Code
 ----
 
 '''
-import sys, re, string, os, getopt, time
+import sys
+import re
+import string
+import os
+import getopt
+import time
 
 param_long_options = ["missing=", "headers=", "titles", "normalize", "format=", "format-bin=", "format-value=", "sort="]
 param_short_options = "v:ht:m:h:s:f:"
@@ -82,8 +87,8 @@ param_format_value = None
 
 param_sort = None
 
-import Experiment
-import Histogram
+import CGAT.Experiment as Experiment
+import CGAT.Histogram as Histogram
 
 ##---------------------------------------------------------------------------------------------------------        
 if __name__ == '__main__':

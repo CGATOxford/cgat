@@ -175,18 +175,35 @@ Code
 ====
 
 """
-import sys, tempfile, optparse, shutil, itertools, csv, math, random, re, glob, os, shutil, collections
+import sys
+import tempfile
+import optparse
+import shutil
+import itertools
+import csv
+import math
+import random
+import re
+import glob
+import os
+import shutil
+import collections
 
-import Experiment as E
+import CGAT.Experiment as E
 import logging as L
-import Database
+import CGAT.Database as Database
 from ruffus import *
 import csv
 import sqlite3
-import IndexedFasta, IndexedGenome, FastaIterator, Genomics
-import IOTools
-import GTF, GFF, Bed
-import MatrixTools
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.IndexedGenome as IndexedGenome
+import CGAT.FastaIterator as FastaIterator
+import CGAT.Genomics as Genomics
+import CGAT.IOTools as IOTools
+import CGAT.GTF as GTF
+import CGAT.GFF as GFF
+import CGAT.Bed as Bed
+import CGAT.MatrixTools as MatrixTools
 import pysam
 import numpy
 import gzip
@@ -195,15 +212,15 @@ import xml.etree.ElementTree
 import PipelineChipseq as PipelineChipseq
 import PipelineMotifs as PipelineMotifs
 import PipelineGeneset as PGeneset
-import PipelineTracks
-import PipelineMapping
+import CGATPipelines.PipelineTracks as PipelineTracks
+import CGATPipelines.PipelineMapping as PipelineMapping
 
 ###################################################
 ###################################################
 ###################################################
 ## Pipeline configuration
 ###################################################
-import Pipeline as P
+import CGAT.Pipeline as P
 P.getParameters( 
     ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
      "../pipeline.ini",

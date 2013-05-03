@@ -54,10 +54,13 @@ Code
 ----
 
 '''
-import sys, string, re, optparse
-import Experiment
-import PredictionParser
-import GFF
+import sys
+import string
+import re
+import optparse
+import CGAT.Experiment as Experiment
+import CGAT.PredictionParser as PredictionParser
+import CGAT.GFF as GFF
 
 if __name__ == "__main__":
 

@@ -58,14 +58,23 @@ Code
 ----
 
 '''
-import os, sys, string, re, optparse, types, random, collections, itertools
+import os
+import sys
+import string
+import re
+import optparse
+import types
+import random
+import collections
+import itertools
 
-import GFF,GTF
-import Experiment as E
-import IndexedFasta
-import Genomics
-import Intervals
-import IOTools
+import CGAT.GFF as GFF
+import CGAT.GTF as GTF
+import CGAT.Experiment as E
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.Genomics as Genomics
+import CGAT.Intervals as Intervals
+import CGAT.IOTools as IOTools
 import Components
 
 ##------------------------------------------------------------

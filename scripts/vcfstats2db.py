@@ -54,10 +54,19 @@ Code
 ----
 
 '''
-import os, sys, string, re, time, optparse, tempfile, subprocess, types
-import Experiment as E
-import csv, CSV
-import IOTools
+import os
+import sys
+import string
+import re
+import time
+import optparse
+import tempfile
+import subprocess
+import types
+import CGAT.Experiment as E
+import csv
+import CGAT.CSV as CSV
+import CGAT.IOTools as IOTools
 
 if __name__ == '__main__':
 

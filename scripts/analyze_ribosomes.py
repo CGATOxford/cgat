@@ -56,7 +56,16 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, time, sets, optparse, math, tempfile
+import os
+import sys
+import string
+import re
+import getopt
+import time
+import sets
+import optparse
+import math
+import tempfile
 
 USAGE=""" program $Id: analyze_ribosomes.py 2781 2009-09-10 11:33:14Z andreas $
 
@@ -65,10 +74,10 @@ analyse ribosomal proteins.
 Input is a file of orthologs, a list of schemas and a list
 of sequence identifiers.
 """
-import Experiment
-import CSV
-import IOTools
-import Stats
+import CGAT.Experiment as Experiment
+import CGAT.CSV as CSV
+import CGAT.IOTools as IOTools
+import CGAT.Stats as Stats
 
 if __name__ == "__main__":
 

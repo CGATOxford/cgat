@@ -58,13 +58,19 @@ Code
 ----
 
 '''
-import os, sys, string, re, tempfile, time, optparse
-import Experiment as E
-import BlastAlignments
+import os
+import sys
+import string
+import re
+import tempfile
+import time
+import optparse
+import CGAT.Experiment as E
+import CGAT.BlastAlignments as BlastAlignments
 import alignlib
-import Genomics
-import FastaIterator
-import IOTools
+import CGAT.Genomics as Genomics
+import CGAT.FastaIterator as FastaIterator
+import CGAT.IOTools as IOTools
 
 def AlignExhaustive( seq_wobble, seq_cds, seq_peptide, map_p2c, options, diag_width = 2 ):
     """Align two sequences.

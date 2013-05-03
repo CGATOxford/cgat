@@ -59,8 +59,15 @@ Code
 ----
 '''
 
-import os, sys, re, string, optparse, glob, subprocess, os.path
-import Experiment
+import os
+import sys
+import re
+import string
+import optparse
+import glob
+import subprocess
+import os.path
+import CGAT.Experiment as Experiment
 
 def getLastLine( filename, read_size = 1024 ):
   """return last line of a file.

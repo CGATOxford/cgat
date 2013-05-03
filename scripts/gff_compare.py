@@ -57,15 +57,18 @@ Code
 ----
 
 '''
-import sys, string, re, optparse
+import sys
+import string
+import re
+import optparse
 
 USAGE="""python %s [OPTIONS] target reference
 
 """ % sys.argv[0]
 
-import Experiment
-import PredictionParser
-import GFF
+import CGAT.Experiment as Experiment
+import CGAT.PredictionParser as PredictionParser
+import CGAT.GFF as GFF
 import numpy
 
 ##------------------------------------------------------------------------

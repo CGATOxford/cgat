@@ -85,19 +85,24 @@ Code
 
 """ 
 
-import os, sys, string, re, getopt, optparse
+import os
+import sys
+import string
+import re
+import getopt
+import optparse
 
-import Orthologs
+import CGAT.Orthologs as Orthologs
 
 USAGE="""python trees2sets.py < stdin 
 
 
 """
 
-import Experiment
-import TreeTools
-import SetTools
-import IOTools
+import CGAT.Experiment as Experiment
+import CGAT.TreeTools as TreeTools
+import CGAT.SetTools as SetTools
+import CGAT.IOTools as IOTools
 
 def buildPattern( nspecies, s, members = None):
     """build a present/absent pattern for species

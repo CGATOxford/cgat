@@ -62,14 +62,21 @@ Code
 '''
 
 
-import os, sys, string, re, optparse, math, StringIO
+import os
+import sys
+import string
+import re
+import optparse
+import math
+import StringIO
 
 
 
 import numpy
-import Experiment as E
-import IOTools
-import MatlabTools, Stats
+import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
+import CGAT.MatlabTools as MatlabTools
+import CGAT.Stats as Stats
 import scipy
 
 if __name__ == "__main__":

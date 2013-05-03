@@ -105,14 +105,30 @@ The results of the computation are all stored in an sqlite relational
 database :file:`csvdb`.
 
 """
-import sys, tempfile, optparse, shutil, itertools, csv, math, random, re, glob, os, shutil, collections, gzip
+import sys
+import tempfile
+import optparse
+import shutil
+import itertools
+import csv
+import math
+import random
+import re
+import glob
+import os
+import shutil
+import collections
+import gzip
 import sqlite3
-import IOTools
-import MAST, GTF, GFF, Bed
+import CGAT.IOTools as IOTools
+import CGAT.MAST as MAST
+import CGAT.GTF as GTF
+import CGAT.GFF as GFF
+import CGAT.Bed as Bed
 import cStringIO
 import numpy
 import fileinput
-import Experiment as E
+import CGAT.Experiment as E
 import logging as L
 from ruffus import *
 from rpy2.robjects import r as R
@@ -123,7 +139,7 @@ USECLUSTER = True
 ###################################################
 ## Pipeline configuration
 ###################################################
-import Pipeline as P
+import CGAT.Pipeline as P
 P.getParameters(  ["%s.ini" % os.path.splitext(__file__)[0],  "../pipeline.ini", "pipeline.ini" ] )
 PARAMS = P.PARAMS
 #PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],"pipeline_annotations.py" )

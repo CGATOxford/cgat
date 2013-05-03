@@ -1,20 +1,39 @@
 '''ChIP-Seq tasks associated with intervals.
 '''
 
-import sys, tempfile, optparse, shutil, itertools, csv, math, random, re, glob, os, shutil, collections
+import sys
+import tempfile
+import optparse
+import shutil
+import itertools
+import csv
+import math
+import random
+import re
+import glob
+import os
+import shutil
+import collections
 import sqlite3
 import cStringIO
 
-import Experiment as E
-import Pipeline as P
+import CGAT.Experiment as E
+import CGAT.Pipeline as P
 
 import csv
-import IndexedFasta, IndexedGenome, FastaIterator, Genomics
-import IOTools
-import GTF, GFF, Bed, MACS, WrapperZinba
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.IndexedGenome as IndexedGenome
+import CGAT.FastaIterator as FastaIterator
+import CGAT.Genomics as Genomics
+import CGAT.IOTools as IOTools
+import CGAT.GTF as GTF
+import CGAT.GFF as GFF
+import CGAT.Bed as Bed
+import MACS
+import CGAT.WrapperZinba as WrapperZinba
 # import Stats
 
-import PipelineMapping
+import CGATPipelines.PipelineMapping as PipelineMapping
 import pysam
 import numpy
 import gzip

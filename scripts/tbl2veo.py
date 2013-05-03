@@ -56,12 +56,19 @@ Code
 ----
 
 '''
-import os, sys, string, re, tempfile, subprocess, optparse, time
+import os
+import sys
+import string
+import re
+import tempfile
+import subprocess
+import optparse
+import time
 
 """convert tab-separated table to VidaExpert formatted data file.
 """
 
-import Experiment
+import CGAT.Experiment as Experiment
 
 parser = optparse.OptionParser( version = "%prog version: $Id: tbl2veo.py 2782 2009-09-10 11:40:29Z andreas $")
 

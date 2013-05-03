@@ -61,9 +61,11 @@ Code
 '''
 
 from optparse import OptionParser
-import sys, os, importlib
+import sys
+import os
+import importlib
 
-import Experiment as E
+import CGAT.Experiment as E
 
 def main(argv = None):
     

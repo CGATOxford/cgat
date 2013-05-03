@@ -57,7 +57,15 @@ Code
 ----
 
 '''
-import os, sys, string, re, optparse, math, time, tempfile, subprocess
+import os
+import sys
+import string
+import re
+import optparse
+import math
+import time
+import tempfile
+import subprocess
 
 import webbrowser
 
@@ -69,9 +77,10 @@ with UCSC and genome browser.
 TODO: add support for ensembl
 """ % sys.argv[0]
 
-import GFF, GTF
-import Experiment
-import IndexedFasta
+import CGAT.GFF as GFF
+import CGAT.GTF as GTF
+import CGAT.Experiment as Experiment
+import CGAT.IndexedFasta as IndexedFasta
 
 ##------------------------------------------------------------
 if __name__ == '__main__':

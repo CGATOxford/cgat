@@ -69,15 +69,25 @@ Code
 ----
 
 '''
-import sys, string, re, optparse, time, os, shutil, tempfile, math
+import sys
+import string
+import re
+import optparse
+import time
+import os
+import shutil
+import tempfile
+import math
 
-import Experiment
-import GFF, Genomics
-import IndexedFasta, IndexedGenome
+import CGAT.Experiment as Experiment
+import CGAT.GFF as GFF
+import CGAT.Genomics as Genomics
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.IndexedGenome as IndexedGenome
 
-import Intervals
-import Stats
-import GFF
+import CGAT.Intervals as Intervals
+import CGAT.Stats as Stats
+import CGAT.GFF as GFF
 
 #########################################################
 #########################################################

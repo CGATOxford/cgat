@@ -56,7 +56,9 @@ Code
 ----
 
 '''
-import random, os, time
+import random
+import os
+import time
 
 
 if __name__ == "__main__":

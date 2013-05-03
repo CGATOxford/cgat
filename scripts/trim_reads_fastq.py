@@ -90,13 +90,26 @@ Code
 ====
 
 """
-import sys, tempfile, optparse, shutil, itertools, csv, math, random, re, glob, os, shutil, collections, gzip
+import sys
+import tempfile
+import optparse
+import shutil
+import itertools
+import csv
+import math
+import random
+import re
+import glob
+import os
+import shutil
+import collections
+import gzip
 
 
-import Experiment as E
+import CGAT.Experiment as E
 import logging as L
 from ruffus import *
-import PipelineMapping
+import CGATPipelines.PipelineMapping as PipelineMapping
 
 USECLUSTER = True
 
@@ -105,7 +118,7 @@ USECLUSTER = True
 ###################################################
 ## Pipeline configuration
 ###################################################
-import Pipeline as P
+import CGAT.Pipeline as P
 P.getParameters(  ["%s.ini" % __file__[:-len(".py")],  "../pipeline.ini", "pipeline.ini" ] )
 PARAMS = P.PARAMS
 PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],"pipeline_annotations.py" )

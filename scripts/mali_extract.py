@@ -56,7 +56,12 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, math
+import os
+import sys
+import string
+import re
+import getopt
+import math
 
 USAGE="""python %s [OPTIONS] < mali > filtered
 
@@ -83,8 +88,8 @@ param_mask_char = "x"
 param_subset = None
 param_filename_components = None
 
-import Experiment
-import MaliIO
+import CGAT.Experiment as Experiment
+import CGAT.MaliIO as MaliIO
             
 ##------------------------------------------------------------
 if __name__ == '__main__':

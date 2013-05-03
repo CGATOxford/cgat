@@ -56,7 +56,12 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, tempfile
+import os
+import sys
+import string
+import re
+import getopt
+import tempfile
 
 USAGE="""python %s [OPTIONS] < orthologs > genes
 
@@ -85,11 +90,11 @@ Options:
 --report-step                   dump progress at each umpth step.
 """ % sys.argv[0]
 
-import Experiment
-import Genomics
-import Exons
+import CGAT.Experiment as Experiment
+import CGAT.Genomics as Genomics
+import CGAT.Exons as Exons
 import alignlib
-import BlastAlignments
+import CGAT.BlastAlignments as BlastAlignments
 
 param_long_options=["verbose=", "help",
                     "cds=",

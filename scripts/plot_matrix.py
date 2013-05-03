@@ -54,13 +54,18 @@ Code
 ----
 
 '''
-import sys, os, string, re, time, optparse
+import sys
+import os
+import string
+import re
+import time
+import optparse
 
 
 import scipy
 import numpy
-import MatlabTools
-import Experiment
+import CGAT.MatlabTools as MatlabTools
+import CGAT.Experiment as Experiment
 from array import array
 import math
 import numpy

@@ -93,12 +93,21 @@ Code
 ----
 """
 
-import os, sys, string, re, getopt, time, optparse, math, tempfile, subprocess
+import os
+import sys
+import string
+import re
+import getopt
+import time
+import optparse
+import math
+import tempfile
+import subprocess
 
-import Experiment
-import TreeTools
-import IOTools
-import WrapperPhylip
+import CGAT.Experiment as Experiment
+import CGAT.TreeTools as TreeTools
+import CGAT.IOTools as IOTools
+import CGAT.WrapperPhylip as WrapperPhylip
 
 def Process( lines, other_trees, options, map_old2new, ntree):
 

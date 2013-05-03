@@ -54,13 +54,19 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, tempfile, optparse
-import Experiment
-import AlignedPairs
-import Blat
-import FastaIterator
-import IndexedFasta
-import IOTools
+import os
+import sys
+import string
+import re
+import getopt
+import tempfile
+import optparse
+import CGAT.Experiment as Experiment
+import CGAT.AlignedPairs as AlignedPairs
+import CGAT.Blat as Blat
+import CGAT.FastaIterator as FastaIterator
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.IOTools as IOTools
 
 def iterate_double_fasta ( fn1, fn2 ):
     iterator = FastaIterator.iterate_together( fn1, fn2 )

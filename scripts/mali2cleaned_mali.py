@@ -56,7 +56,11 @@ Code
 ----
 
 '''
-import os, sys, string, re, optparse
+import os
+import sys
+import string
+import re
+import optparse
 
 USAGE="""python %s [OPTIONS] < graph.in > graph.out
 
@@ -66,9 +70,9 @@ Version: $Id: mali2cleaned_mali.py 2781 2009-09-10 11:33:14Z andreas $
 
 """ % sys.argv[0]
 
-import Experiment
-import Mali
-import Exons
+import CGAT.Experiment as Experiment
+import CGAT.Mali as Mali
+import CGAT.Exons as Exons
 
 import warnings
 

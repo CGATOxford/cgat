@@ -85,7 +85,12 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, math
+import os
+import sys
+import string
+import re
+import getopt
+import math
 
 import evaluate_bootstrap
 
@@ -178,12 +183,12 @@ param_cluster_merging_min_identity = 90
 ####################################################
 
 
-import Experiment
-import MaliIO
+import CGAT.Experiment as Experiment
+import CGAT.MaliIO as MaliIO
 import scipy
-import Exons
+import CGAT.Exons as Exons
 import alignlib
-import Genomics
+import CGAT.Genomics as Genomics
 import numpy
 
 ##--------------------------------------------------------------------------------------- 

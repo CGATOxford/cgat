@@ -59,11 +59,19 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, time, optparse, math, tempfile
-import Experiment as E
-import CSV
-import IOTools
-import Stats
+import os
+import sys
+import string
+import re
+import getopt
+import time
+import optparse
+import math
+import tempfile
+import CGAT.Experiment as E
+import CGAT.CSV as CSV
+import CGAT.IOTools as IOTools
+import CGAT.Stats as Stats
 import numpy
 
 def readRates( infile ):

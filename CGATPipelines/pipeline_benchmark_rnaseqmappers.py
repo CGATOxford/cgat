@@ -154,14 +154,22 @@ Code
 # load modules
 from ruffus import *
 
-import Experiment as E
+import CGAT.Experiment as E
 import logging as L
-import Database
+import CGAT.Database as Database
 
-import sys, os, re, shutil, itertools, math, glob, time
+import sys
+import os
+import re
+import shutil
+import itertools
+import math
+import glob
+import time
 
-import numpy, sqlite3
-import IOTools
+import numpy
+import sqlite3
+import CGAT.IOTools as IOTools
 
 ###################################################
 ###################################################
@@ -170,7 +178,7 @@ import IOTools
 ###################################################
 
 # load options from the config file
-import Pipeline as P
+import CGAT.Pipeline as P
 P.getParameters( 
     ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
      "../pipeline.ini",
@@ -184,8 +192,8 @@ PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],
 ###################################################################
 ## Helper functions mapping tracks to conditions, etc
 ###################################################################
-import PipelineMapping
-import PipelineTracks
+import CGATPipelines.PipelineMapping as PipelineMapping
+import CGATPipelines.PipelineTracks as PipelineTracks
 
 TRACKS = PipelineTracks.Tracks( PipelineTracks.Sample ).loadFromDirectory( 
     glob.glob( "*.fastq.gz" ), "(\S+).fastq.gz" )

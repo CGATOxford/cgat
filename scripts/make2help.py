@@ -56,12 +56,17 @@ Code
 ----
 
 '''
-import os, sys, string, re, optparse, time
+import os
+import sys
+import string
+import re
+import optparse
+import time
 
 """extract help test from a makefile
 """
 
-import Experiment
+import CGAT.Experiment as Experiment
 from export_code import getMakefiles
 
 class Parameter:

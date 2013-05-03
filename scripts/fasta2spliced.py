@@ -55,11 +55,14 @@ Code
 
 '''
 
-import sys, string, re, optparse
-import Experiment
-import IndexedFasta
-import Genomics
-import GFF
+import sys
+import string
+import re
+import optparse
+import CGAT.Experiment as Experiment
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.Genomics as Genomics
+import CGAT.GFF as GFF
 
 if __name__ == "__main__":
 

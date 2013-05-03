@@ -56,7 +56,16 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, time, sets, optparse, math, tempfile
+import os
+import sys
+import string
+import re
+import getopt
+import time
+import sets
+import optparse
+import math
+import tempfile
 
 """ program $Id: analyze_genes.py 2781 2009-09-10 11:33:14Z andreas $
 
@@ -64,8 +73,8 @@ count number of matches found in gene prediction pipeline.
 
 Count by category and by gene.
 """
-import Experiment
-import Exons
+import CGAT.Experiment as Experiment
+import CGAT.Exons as Exons
 
 import pgdb
 

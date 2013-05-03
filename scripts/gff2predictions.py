@@ -56,7 +56,10 @@ Code
 ----
 
 '''
-import sys, string, re, optparse
+import sys
+import string
+import re
+import optparse
 
 USAGE="""python %s [OPTIONS] < psl > predictions
 
@@ -66,13 +69,13 @@ Version: $Id: gff2predictions.py 2021 2008-07-10 16:00:48Z andreas $
 """
 
 
-import Experiment
-import PredictionParser
-import Genomics
-import Exons
-import IndexedFasta
-import GFF
-import IOTools
+import CGAT.Experiment as Experiment
+import CGAT.PredictionParser as PredictionParser
+import CGAT.Genomics as Genomics
+import CGAT.Exons as Exons
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.GFF as GFF
+import CGAT.IOTools as IOTools
 
 from predict_genes import PredictorExonerate
 

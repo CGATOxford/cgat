@@ -56,12 +56,24 @@ Code
 ----
 
 '''
-import sys, string, re, optparse, time, os, shutil, tempfile, math, itertools, glob, collections
+import sys
+import string
+import re
+import optparse
+import time
+import os
+import shutil
+import tempfile
+import math
+import itertools
+import glob
+import collections
 
-import Experiment as E
-import GFF, GTF
-import IndexedFasta
-import IOTools
+import CGAT.Experiment as E
+import CGAT.GFF as GFF
+import CGAT.GTF as GTF
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.IOTools as IOTools
 
 def outputSegments( outfile,
                     intervals,

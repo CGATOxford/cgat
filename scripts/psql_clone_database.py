@@ -56,12 +56,20 @@ Code
 ----
 
 '''
-import os, sys, string, re, time, optparse, math, tempfile, copy
+import os
+import sys
+import string
+import re
+import time
+import optparse
+import math
+import tempfile
+import copy
 import subprocess
 
 import pgdb
 
-import Experiment
+import CGAT.Experiment as Experiment
 
 ##---------------------------------------------------------------------------------------------
 def DbExecute( dbhandle, statement ):

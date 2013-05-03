@@ -4,14 +4,23 @@ Most of this tasks take a geneset (.gtf.gz) from ENSEMBL
 as input.
 '''
 
-import sys, re, os, tempfile, collections, shutil, gzip, sqlite3
+import sys
+import re
+import os
+import tempfile
+import collections
+import shutil
+import gzip
+import sqlite3
 
-import IOTools
-import Pipeline as P
-import Experiment as E
-import GTF, GFF, IndexedFasta
+import CGAT.IOTools as IOTools
+import CGAT.Pipeline as P
+import CGAT.Experiment as E
+import CGAT.GTF as GTF
+import CGAT.GFF as GFF
+import CGAT.IndexedFasta as IndexedFasta
 
-import PipelineUCSC
+import CGATPipelines.PipelineUCSC as PipelineUCSC
 
 # for UCSC import
 import MySQLdb

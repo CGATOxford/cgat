@@ -58,9 +58,19 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, tempfile, time, optparse, math, glob
+import os
+import sys
+import string
+import re
+import getopt
+import tempfile
+import time
+import optparse
+import math
+import glob
 
-import Experiment, IOTools
+import CGAT.Experiment as Experiment
+import CGAT.IOTools as IOTools
 
 if __name__ == "__main__":
 

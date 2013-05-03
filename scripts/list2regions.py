@@ -62,12 +62,16 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt
+import os
+import sys
+import string
+import re
+import getopt
 
-import Experiment
-import Genomics
-import Intervalls
-import PredictionParser
+import CGAT.Experiment as Experiment
+import CGAT.Genomics as Genomics
+import CGAT.Intervalls as Intervalls
+import CGAT.PredictionParser as PredictionParser
 
 param_long_options=["verbose=", "help", "max-percent-overlap=",
                     "min-coverage-query=", "min-score=", "min-percent-identity=",

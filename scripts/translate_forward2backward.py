@@ -56,7 +56,14 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, tempfile, time, popen2
+import os
+import sys
+import string
+import re
+import getopt
+import tempfile
+import time
+import popen2
 
 USAGE="""python %s [OPTIONS] 
 

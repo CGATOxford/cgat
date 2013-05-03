@@ -56,7 +56,10 @@ Code
 ----
 
 '''
-import sys, string, re, optparse
+import sys
+import string
+import re
+import optparse
 
 USAGE = """filter results from an xrate tms run.
 
@@ -71,9 +74,9 @@ This program takes as input the file lnl.table Makefile.xrate_tms
 
 """
 
-import Experiment
-import Stats
-import CSV
+import CGAT.Experiment as Experiment
+import CGAT.Stats as Stats
+import CGAT.CSV as CSV
 
 if __name__ == "__main__":
 

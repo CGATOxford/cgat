@@ -54,13 +54,21 @@ Code
 ----
 
 '''
-import sys, os, re, subprocess, optparse, tempfile, collections, itertools, random
+import sys
+import os
+import re
+import subprocess
+import optparse
+import tempfile
+import collections
+import itertools
+import random
 
 from multiprocessing import Process
 from threading import Thread as Process
 
-import Experiment as E
-import Stats
+import CGAT.Experiment as E
+import CGAT.Stats as Stats
 
 USAGE = """benchmark the relative speed of nodes on the cluster.
 
@@ -68,7 +76,7 @@ execute in a networked directory available on all nodes.
 """
 
 CODE_CPU="""
-import Experiment as E
+import CGAT.Experiment as E
 import operator
 
 E.Start()

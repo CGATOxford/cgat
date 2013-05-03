@@ -56,7 +56,11 @@ Code
 ----
 
 '''
-import os, sys, string, re, optparse
+import os
+import sys
+import string
+import re
+import optparse
 
 USAGE="""python %s < predictions > genes
 
@@ -70,10 +74,10 @@ Options:
 -g, --genome-pattern=           pattern for filenames with the genomic DNA (FASTA).
 """ % sys.argv[0]
 
-import Experiment
-import Genomics
-import IndexedFasta
-import PredictionParser
+import CGAT.Experiment as Experiment
+import CGAT.Genomics as Genomics
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.PredictionParser as PredictionParser
 
 ##------------------------------------------------------------
 if __name__ == '__main__':

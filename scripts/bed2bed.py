@@ -64,13 +64,24 @@ Code
 ----
 '''
 
-import sys, re, string, optparse, time, os, itertools, tempfile, subprocess, shutil
+import sys
+import re
+import string
+import optparse
+import time
+import os
+import itertools
+import tempfile
+import subprocess
+import shutil
 
-import Experiment as E
-import Stats
-import GFF, GTF
-import IndexedFasta, IOTools
-import Bed
+import CGAT.Experiment as E
+import CGAT.Stats as Stats
+import CGAT.GFF as GFF
+import CGAT.GTF as GTF
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.IOTools as IOTools
+import CGAT.Bed as Bed
 import pysam
 
 def merge( iterator, max_distance = 0, by_name = False, min_intervals = 1 ):

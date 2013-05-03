@@ -48,9 +48,13 @@ Code
 
 """ 
 
-import os, sys, re, optparse, fileinput
+import os
+import sys
+import re
+import optparse
+import fileinput
 
-import Experiment as E
+import CGAT.Experiment as E
 
 def main( argv = None ):
     """script main.

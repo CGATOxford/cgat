@@ -31,7 +31,7 @@ import argparse as ap
 import subprocess as subp
 import multiprocessing as mp
 from collections import defaultdict as defdict
-import bz2 
+import bz2
 
 try:
     import cPickle as pickle

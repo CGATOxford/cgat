@@ -70,12 +70,17 @@ Code
 
 '''
 
-import os, sys, re, optparse, collections, itertools
+import os
+import sys
+import re
+import optparse
+import collections
+import itertools
 
-import Experiment as E
-import IOTools
+import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
 import pysam
-import GFF
+import CGAT.GFF as GFF
 
 import pyximport
 pyximport.install(build_in_temp=False)

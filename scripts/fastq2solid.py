@@ -56,11 +56,16 @@ Code
 
 '''
 
-import os, sys, re, optparse, math, random
+import os
+import sys
+import re
+import optparse
+import math
+import random
 
-import Experiment as E
-import IOTools
-import Fastq
+import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
+import CGAT.Fastq as Fastq
 
 def main( argv = None ):
     """script main.

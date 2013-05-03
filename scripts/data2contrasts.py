@@ -54,12 +54,18 @@ Code
 
 """ 
 
-import sys, re, string, os, optparse, math
+import sys
+import re
+import string
+import os
+import optparse
+import math
 
-import Experiment
-import scipy, scipy.stats
-import WrapperPhylip
-import TreeTools
+import CGAT.Experiment as Experiment
+import scipy
+import scipy.stats
+import CGAT.WrapperPhylip as WrapperPhylip
+import CGAT.TreeTools as TreeTools
 
 def calculateCorrelationCoefficient( a, b):
     """calculate correlation coefficient for regression through the origin."""

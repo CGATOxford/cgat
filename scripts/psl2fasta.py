@@ -56,10 +56,19 @@ Code
 ----
 
 '''
-import os, sys, string, re, tempfile, subprocess, optparse, math
+import os
+import sys
+import string
+import re
+import tempfile
+import subprocess
+import optparse
+import math
 
-import Experiment
-import IndexedFasta, Blat, Genomics
+import CGAT.Experiment as Experiment
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.Blat as Blat
+import CGAT.Genomics as Genomics
 
 import psyco_full
 import sys

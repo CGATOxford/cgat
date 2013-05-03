@@ -55,14 +55,22 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, time, optparse, math, tempfile
+import os
+import sys
+import string
+import re
+import getopt
+import time
+import optparse
+import math
+import tempfile
 
 
-import Experiment as E
-import SVGdraw 
+import CGAT.Experiment as E
+import CGAT.SVGdraw as SVGdraw
 import bisect
 import numpy
-import Stats
+import CGAT.Stats as Stats
 
 class DataPoint:
     def __init__(self):

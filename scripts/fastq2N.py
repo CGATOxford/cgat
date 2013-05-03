@@ -59,9 +59,12 @@ Code
 
 '''
 
-import os, sys, re, optparse
-import Experiment as E
-import Fastq
+import os
+import sys
+import re
+import optparse
+import CGAT.Experiment as E
+import CGAT.Fastq as Fastq
 import gzip
 
 # define functions to be used in main

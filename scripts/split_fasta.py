@@ -56,10 +56,14 @@ Code
 ----
 
 '''
-import sys, string, re, os, optparse
-import FastaIterator
-import IOTools
-import Experiment
+import sys
+import string
+import re
+import os
+import optparse
+import CGAT.FastaIterator as FastaIterator
+import CGAT.IOTools as IOTools
+import CGAT.Experiment as Experiment
 
 class Files:
 

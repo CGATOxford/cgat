@@ -48,13 +48,20 @@ Code
 
 """ 
 
-import os, sys, re, optparse, tempfile, subprocess, glob, shutil
+import os
+import sys
+import re
+import optparse
+import tempfile
+import subprocess
+import glob
+import shutil
 
-import Experiment as E
+import CGAT.Experiment as E
 
 EXECUTABLE="GCProfile"
 
-import FastaIterator
+import CGAT.FastaIterator as FastaIterator
 
 def segmentWithCpG( infile, options ):
     '''segment a fasta file, output intervals containing a CpG.'''

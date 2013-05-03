@@ -56,7 +56,12 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, tempfile
+import os
+import sys
+import string
+import re
+import getopt
+import tempfile
 
 USAGE="""python %s [OPTIONS] < exonerate_output > filtered
 
@@ -83,11 +88,11 @@ Options:
 --disable-activation            turn of reactivation of eliminated queries
 """ % sys.argv[0]
 
-import Experiment
-import Genomics
-import Intervalls
-import PredictionParser
-import PredictionFile
+import CGAT.Experiment as Experiment
+import CGAT.Genomics as Genomics
+import CGAT.Intervalls as Intervalls
+import CGAT.PredictionParser as PredictionParser
+import CGAT.PredictionFile as PredictionFile
 import alignlib
 
 param_loglevel = 2

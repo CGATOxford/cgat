@@ -56,6 +56,6 @@ Code
 ----
 
 '''
-import Pipeline as P
+import CGAT.Pipeline as P
 from ruffus import *
 

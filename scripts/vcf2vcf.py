@@ -42,11 +42,20 @@ Code
 ----
 '''
 
-import sys, re, string, optparse, time, os, itertools, tempfile, subprocess, shutil
+import sys
+import re
+import string
+import optparse
+import time
+import os
+import itertools
+import tempfile
+import subprocess
+import shutil
 
-import Experiment as E
-import Stats
-import VCF
+import CGAT.Experiment as E
+import CGAT.Stats as Stats
+import CGAT.VCF as VCF
     
 def main( argv = sys.argv ):
 

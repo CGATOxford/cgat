@@ -60,12 +60,21 @@ Code
 
 '''
 
-import os, sys, re, string, optparse, time, glob, subprocess, tempfile, shutil
+import os
+import sys
+import re
+import string
+import optparse
+import time
+import glob
+import subprocess
+import tempfile
+import shutil
 
 import farm
 
-import Experiment
-import IOTools
+import CGAT.Experiment as Experiment
+import CGAT.IOTools as IOTools
 import threadpool
 
 ##--------------------------------------------------------------------

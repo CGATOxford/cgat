@@ -60,10 +60,14 @@ Code
 
 '''
 
-import os, sys, re, optparse
+import os
+import sys
+import re
+import optparse
 
-import Experiment as E
-import Mali, IOTools
+import CGAT.Experiment as E
+import CGAT.Mali as Mali
+import CGAT.IOTools as IOTools
 import alignlib
 
 def main( argv = None ):

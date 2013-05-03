@@ -54,13 +54,19 @@ Code
 ----
 
 '''
-import os, sys, string, re, optparse, math, time
+import os
+import sys
+import string
+import re
+import optparse
+import math
+import time
 
-import Experiment
-import IOTools
-import Mali
+import CGAT.Experiment as Experiment
+import CGAT.IOTools as IOTools
+import CGAT.Mali as Mali
 import alignlib
-import FastaIterator
+import CGAT.FastaIterator as FastaIterator
 
 def convertMali2Mali( mali ):
     """convert a mali to a profile."""

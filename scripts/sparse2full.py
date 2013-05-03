@@ -55,9 +55,14 @@ Code
 
 '''
 
-import os, sys, optparse, string, re, random
+import os
+import sys
+import optparse
+import string
+import re
+import random
 
-import Experiment
+import CGAT.Experiment as Experiment
 
 def CountElements( matrix, default_value ):
     """count elements that are of default value and those that aren't."""

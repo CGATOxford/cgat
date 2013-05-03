@@ -58,7 +58,13 @@ Code
 ----
 
 '''
-import os, sys, string, re, optparse, time, random
+import os
+import sys
+import string
+import re
+import optparse
+import time
+import random
 import rpy2
 from rpy2.robjects import r as R
 
@@ -78,9 +84,9 @@ for an interesting article about normality tests.
 
 """
 
-import Experiment as E
-import IOTools
-import Stats
+import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
+import CGAT.Stats as Stats
 
 if __name__  == "__main__":
 

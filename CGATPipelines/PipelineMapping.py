@@ -58,11 +58,16 @@ Code
 
 '''
 
-import os, sys, shutil, glob, collections, re
-import Pipeline as P
-import Experiment as E
-import IOTools
-import Fastq
+import os
+import sys
+import shutil
+import glob
+import collections
+import re
+import CGAT.Pipeline as P
+import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
+import CGAT.Fastq as Fastq
 import pysam
 
 SequenceInformation = collections.namedtuple( "SequenceInformation",

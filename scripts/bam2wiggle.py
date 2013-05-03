@@ -70,11 +70,18 @@ Code
 
 """ 
 
-import os, sys, re, optparse, itertools, tempfile, shutil, subprocess
+import os
+import sys
+import re
+import optparse
+import itertools
+import tempfile
+import shutil
+import subprocess
 
-import Experiment as E
+import CGAT.Experiment as E
 import pysam
-import IOTools
+import CGAT.IOTools as IOTools
 
 class SpanWriter(object):
     '''output values within spans.

@@ -56,9 +56,12 @@ Code
 
 '''
 
-import os, sys, re, optparse
+import os
+import sys
+import re
+import optparse
 import metaphlan_utils
-import Experiment as E
+import CGAT.Experiment as E
 
 
 def main( argv = None ):

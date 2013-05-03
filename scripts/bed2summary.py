@@ -56,10 +56,24 @@ Code
 ----
 
 '''
-import os, sys, string, re, optparse, math, time, tempfile, subprocess, types, bisect, array, collections
-import GFF, GTF, Bed
-import Experiment as E
-import IndexedFasta
+import os
+import sys
+import string
+import re
+import optparse
+import math
+import time
+import tempfile
+import subprocess
+import types
+import bisect
+import array
+import collections
+import CGAT.GFF as GFF
+import CGAT.GTF as GTF
+import CGAT.Bed as Bed
+import CGAT.Experiment as E
+import CGAT.IndexedFasta as IndexedFasta
 
 class Counter:
 

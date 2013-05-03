@@ -129,14 +129,19 @@ Code
 
 """ 
 
-import os, sys, re, optparse, collections
+import os
+import sys
+import re
+import optparse
+import collections
 
-import Experiment as E
+import CGAT.Experiment as E
 
 import pysam
-import IndexedFasta, IndexedGenome
-import Genomics
-import GFF
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.IndexedGenome as IndexedGenome
+import CGAT.Genomics as Genomics
+import CGAT.GFF as GFF
 
 def readJunctions( filename_junctions ):
     '''read junctions from a tab-separated file.

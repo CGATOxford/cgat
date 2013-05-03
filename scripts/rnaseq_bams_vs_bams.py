@@ -77,11 +77,16 @@ Code
 
 '''
 
-import os, sys, re, optparse, collections, itertools
-import Experiment as E
-import IOTools
+import os
+import sys
+import re
+import optparse
+import collections
+import itertools
+import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
 import pysam
-import GTF
+import CGAT.GTF as GTF
 
 class multiway_groupby(object):
     # [k for k, g in groupby('AAAABBBCCDAABBB')] --> A B C D A B

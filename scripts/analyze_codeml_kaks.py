@@ -53,18 +53,24 @@ Code
 ----
 
 '''
-import os, sys, string, re, tempfile, subprocess, optparse
+import os
+import sys
+import string
+import re
+import tempfile
+import subprocess
+import optparse
 
 from types import *
 
-import Genomics
-import Experiment
-import WrapperCodeML
+import CGAT.Genomics as Genomics
+import CGAT.Experiment as Experiment
+import CGAT.WrapperCodeML as WrapperCodeML
 import scipy
 import scipy.stats
-import TreeTools
+import CGAT.TreeTools as TreeTools
 
-import Stats
+import CGAT.Stats as Stats
 
 if __name__ == "__main__":
     

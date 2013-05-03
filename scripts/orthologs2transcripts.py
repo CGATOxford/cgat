@@ -56,7 +56,12 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, tempfile
+import os
+import sys
+import string
+import re
+import getopt
+import tempfile
 
 USAGE="""python %s [OPTIONS] < orthologs > genes
 
@@ -104,15 +109,15 @@ Options:
 --min-exon-size=                minimum exon size (important for exon counts) (in codons).
 """ % sys.argv[0]
 
-import Experiment
-import Genomics
-import Exons
+import CGAT.Experiment as Experiment
+import CGAT.Genomics as Genomics
+import CGAT.Exons as Exons
 import alignlib
 
-import WrapperDialign
-import WrapperDBA
-import WrapperClustal
-import AlignedPairs
+import CGAT.WrapperDialign as WrapperDialign
+import CGAT.WrapperDBA as WrapperDBA
+import CGAT.WrapperClustal as WrapperClustal
+import CGAT.AlignedPairs as AlignedPairs
 
 param_long_options=["verbose=", "help", "map1=", "map2=",
                     "peptides1=", "peptides2=",

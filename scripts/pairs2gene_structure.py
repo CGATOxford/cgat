@@ -56,7 +56,11 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt
+import os
+import sys
+import string
+import re
+import getopt
 
 USAGE="""python %s [OPTIONS] < assignments > pairs
 
@@ -75,7 +79,9 @@ Options:
                                 
 """ % sys.argv[0]
 
-import Experiment, Genomics, PredictionParser
+import CGAT.Experiment as Experiment
+import CGAT.Genomics as Genomics
+import CGAT.PredictionParser as PredictionParser
 import alignlib
 
 param_long_options=["verbose=", "help", "genome-file=", "format=",

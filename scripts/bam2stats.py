@@ -139,11 +139,15 @@ Code
 
 '''
 
-import os, sys, re, optparse, collections
-import Experiment as E
-import IOTools
+import os
+import sys
+import re
+import optparse
+import collections
+import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
 import pysam
-import GFF
+import CGAT.GFF as GFF
 
 import pyximport
 pyximport.install(build_in_temp=False)

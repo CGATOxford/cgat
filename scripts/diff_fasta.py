@@ -59,12 +59,17 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, optparse
+import os
+import sys
+import string
+import re
+import getopt
+import optparse
 
-import Genomics
+import CGAT.Genomics as Genomics
 import alignlib
-import Experiment
-import IOTools
+import CGAT.Experiment as Experiment
+import CGAT.IOTools as IOTools
 
 def MapIdentifiers( seqs, pattern):
 

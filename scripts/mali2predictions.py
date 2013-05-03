@@ -62,14 +62,18 @@ lower case characters are exons, upper-case characters are introns.
 Introns of a size smaller than 6 are frameshifts.
 """
 
-import sys, os, string, re, optparse
+import sys
+import os
+import string
+import re
+import optparse
 
-import Experiment
-import Prediction
-import IndexedFasta
-import Genomics
-import Mali
-import IOTools
+import CGAT.Experiment as Experiment
+import CGAT.Prediction as Prediction
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.Genomics as Genomics
+import CGAT.Mali as Mali
+import CGAT.IOTools as IOTools
 
 def processCodon( codon ):
     """process a codon.

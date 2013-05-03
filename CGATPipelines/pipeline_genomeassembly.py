@@ -150,23 +150,38 @@ Code
 # load modules
 from ruffus import *
 
-import Experiment as E
+import CGAT.Experiment as E
 import logging as L
-import Database, CSV
+import CGAT.Database as Database
+import CGAT.CSV as CSV
 
-import sys, os, re, shutil, itertools, math, glob, time, gzip, collections, random
+import sys
+import os
+import re
+import shutil
+import itertools
+import math
+import glob
+import time
+import gzip
+import collections
+import random
 
-import numpy, sqlite3
-import GFF, GTF, IOTools, IndexedFasta
+import numpy
+import sqlite3
+import CGAT.GFF as GFF
+import CGAT.GTF as GTF
+import CGAT.IOTools as IOTools
+import CGAT.IndexedFasta as IndexedFasta
 from rpy2.robjects import r as R
 import rpy2.robjects as ro
 import rpy2.robjects.vectors as rovectors
 from rpy2.rinterface import RRuntimeError
-import PipelineMapping
-import PipelineGenomeAssembly
-import FastaIterator
+import CGATPipelines.PipelineMapping as PipelineMapping
+import CGATPipelines.PipelineGenomeAssembly as PipelineGenomeAssembly
+import CGAT.FastaIterator as FastaIterator
 import metaphlan_utils
-import PipelineMapping
+import CGATPipelines.PipelineMapping as PipelineMapping
 
 ###################################################
 ###################################################
@@ -175,7 +190,7 @@ import PipelineMapping
 ###################################################
 
 # load options from the config file
-import Pipeline as P
+import CGAT.Pipeline as P
 P.getParameters( 
     "pipeline.ini" )
 
@@ -186,7 +201,7 @@ PARAMS = P.PARAMS
 ###################################################################
 ## Helper functions mapping tracks to conditions, etc
 ###################################################################
-import PipelineTracks
+import CGATPipelines.PipelineTracks as PipelineTracks
 
 # collect fastq.gz tracks
 TRACKS = PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 

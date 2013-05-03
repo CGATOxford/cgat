@@ -55,13 +55,21 @@ Code
 ----
 
 '''
-import os, sys, string, re, optparse, math, time, tempfile, subprocess
+import os
+import sys
+import string
+import re
+import optparse
+import math
+import time
+import tempfile
+import subprocess
 
 
-import Experiment
-import IOTools
-import Genomics
-import FastaIterator
+import CGAT.Experiment as Experiment
+import CGAT.IOTools as IOTools
+import CGAT.Genomics as Genomics
+import CGAT.FastaIterator as FastaIterator
 
 ## Class for calling masking programs.
 class Masker :

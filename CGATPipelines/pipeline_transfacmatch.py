@@ -133,31 +133,42 @@ database :file:`csvdb`.
 
 # load modules
 from ruffus import *
-import Experiment as E
+import CGAT.Experiment as E
 import logging as L
-import Database, CSV
+import CGAT.Database as Database
+import CGAT.CSV as CSV
 import numpy as np
 import fnmatch
 import sqlite3
 import list_overlap
-import FastaIterator
+import CGAT.FastaIterator as FastaIterator
 import random
-import GTF
-import IOTools
-import sys, os, re, shutil, itertools, math, glob, time, gzip, collections, random
+import CGAT.GTF as GTF
+import CGAT.IOTools as IOTools
+import sys
+import os
+import re
+import shutil
+import itertools
+import math
+import glob
+import time
+import gzip
+import collections
+import random
 from rpy2.robjects import r as R
 from rpy2.robjects.packages import importr
 from rpy2.robjects.numpy2ri import numpy2ri
 import rpy2.robjects as robjects
-import PipelineTracks
-import PipelineTransfacMatch
+import CGATPipelines.PipelineTracks as PipelineTracks
+import CGATPipelines.PipelineTransfacMatch as PipelineTransfacMatch
 
 #########################################################################
 #########################################################################
 #########################################################################
 use_cluster = True
 
-import Pipeline as P
+import CGAT.Pipeline as P
 P.getParameters( 
     ["%s.ini" % __file__[:-len(".py")],
      "../pipeline.ini",

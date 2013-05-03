@@ -56,12 +56,18 @@ Code
 ----
 
 '''
-import os, sys, string, re, optparse, time, warnings
+import os
+import sys
+import string
+import re
+import optparse
+import time
+import warnings
 
-import Experiment
-import Orthologs
-import GraphTools
-import IOTools
+import CGAT.Experiment as Experiment
+import CGAT.Orthologs as Orthologs
+import CGAT.GraphTools as GraphTools
+import CGAT.IOTools as IOTools
 
 if __name__  == "__main__":
 

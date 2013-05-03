@@ -61,9 +61,18 @@ USAGE="""python submit.py [OPTIONS]
 submit a list of jobs to the cluster.
 """
 
-import os, sys, re, string, optparse, time, glob, subprocess, stat
+import os
+import sys
+import re
+import string
+import optparse
+import time
+import glob
+import subprocess
+import stat
 
-import Experiment, IOTools
+import CGAT.Experiment as Experiment
+import CGAT.IOTools as IOTools
 
 def checkPythonRuns( filename ):
     """returns true if a python run is complete."""

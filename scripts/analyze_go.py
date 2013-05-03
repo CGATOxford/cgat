@@ -56,10 +56,16 @@ Code
 ----
 
 '''
-import os, sys, string, re, tempfile, subprocess, optparse
+import os
+import sys
+import string
+import re
+import tempfile
+import subprocess
+import optparse
 
-import Experiment
-import Database
+import CGAT.Experiment as Experiment
+import CGAT.Database as Database
 
 
 def WriteBackground( go_type, options, suffix ):

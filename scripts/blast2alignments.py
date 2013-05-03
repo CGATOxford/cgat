@@ -56,11 +56,19 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, tempfile, time, optparse, math
+import os
+import sys
+import string
+import re
+import getopt
+import tempfile
+import time
+import optparse
+import math
 
-import Experiment
-import Genomics
-import BlastAlignments
+import CGAT.Experiment as Experiment
+import CGAT.Genomics as Genomics
+import CGAT.BlastAlignments as BlastAlignments
 import alignlib
 
 USAGE="""python %s [OPTIONS] < graph.in > graph.out

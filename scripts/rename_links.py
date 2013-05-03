@@ -56,9 +56,14 @@ Code
 ----
 
 '''
-import os, sys, string, re, optparse, fnmatch
+import os
+import sys
+import string
+import re
+import optparse
+import fnmatch
 
-import Experiment as E
+import CGAT.Experiment as E
 
 if __name__ == "__main__":
 

@@ -55,10 +55,16 @@ Code
 ----
 
 '''
-import sys, re, string, os, getopt, time, optparse
+import sys
+import re
+import string
+import os
+import getopt
+import time
+import optparse
 
-import IOTools
-import Experiment as E
+import CGAT.IOTools as IOTools
+import CGAT.Experiment as E
 
 def main( argv = None ):
     """script main.

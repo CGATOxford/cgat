@@ -56,7 +56,12 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, tempfile
+import os
+import sys
+import string
+import re
+import getopt
+import tempfile
 
 USAGE="""python %s [OPTIONS] schema1 schema2 [...]
 
@@ -75,10 +80,10 @@ Options:
 -g, --use-genome-length         use genome length for deciding which rep to use.
 """ % sys.argv[0]
 
-import Experiment
-import IndexedFasta
-import Exons
-import Genomics
+import CGAT.Experiment as Experiment
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.Exons as Exons
+import CGAT.Genomics as Genomics
 import alignlib
 
 param_loglevel = 1

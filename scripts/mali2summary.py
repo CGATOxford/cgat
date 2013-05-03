@@ -56,11 +56,17 @@ Code
 ----
 
 '''
-import os, sys, string, re, optparse, math, time
+import os
+import sys
+import string
+import re
+import optparse
+import math
+import time
 
-import Experiment as E
-import IOTools
-import Mali
+import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
+import CGAT.Mali as Mali
 import scipy
 import scipy.stats
 

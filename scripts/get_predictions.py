@@ -56,7 +56,16 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, time, sets, optparse, math, tempfile
+import os
+import sys
+import string
+import re
+import getopt
+import time
+import sets
+import optparse
+import math
+import tempfile
 
 import pgdb
 
@@ -68,7 +77,7 @@ retrieve predictions/exons
 
 """
 
-import Experiment
+import CGAT.Experiment as Experiment
 
 def GetResult( dbhandle, keys, options ):
 

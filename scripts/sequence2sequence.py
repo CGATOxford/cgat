@@ -136,12 +136,21 @@ Code
 ----
 
 '''
-import os, sys, string, re, optparse, math, time, tempfile, subprocess, random
-import Experiment as E
-import IOTools
-import Genomics
-import FastaIterator
-import Masker
+import os
+import sys
+import string
+import re
+import optparse
+import math
+import time
+import tempfile
+import subprocess
+import random
+import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
+import CGAT.Genomics as Genomics
+import CGAT.FastaIterator as FastaIterator
+import CGAT.Masker as Masker
 import random
 
 def getCodons( sequence, gap_chars = "-." ):

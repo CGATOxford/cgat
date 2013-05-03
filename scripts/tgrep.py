@@ -58,9 +58,16 @@ Code
 ----
 
 '''
-import os, sys, string, re, tempfile, subprocess, optparse, time
+import os
+import sys
+import string
+import re
+import tempfile
+import subprocess
+import optparse
+import time
 
-import Experiment
+import CGAT.Experiment as Experiment
 
 
 

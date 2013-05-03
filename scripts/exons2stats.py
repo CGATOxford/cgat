@@ -56,13 +56,22 @@ Code
 ----
 
 '''
-import os, sys, string, re, tempfile, subprocess, optparse, time, math, csv
+import os
+import sys
+import string
+import re
+import tempfile
+import subprocess
+import optparse
+import time
+import math
+import csv
 
 import pgdb
 """get statistics from an exons file.
 """
-import Experiment
-import Exons
+import CGAT.Experiment as Experiment
+import CGAT.Exons as Exons
 
 parser = optparse.OptionParser( version = "%prog version: $Id: exons2stats.py 2781 2009-09-10 11:33:14Z andreas $")
 

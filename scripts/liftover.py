@@ -56,12 +56,17 @@ Code
 ----
 
 '''
-import os, sys, string, re, optparse, time
+import os
+import sys
+import string
+import re
+import optparse
+import time
 
 """liftover coordinates using a liftover formatted file from the ucsc
 """
 
-import Experiment
+import CGAT.Experiment as Experiment
 import numpy
 
 parser = optparse.OptionParser( version = "%prog version: $Id: liftover.py 2404 2009-01-12 11:22:36Z andreas $")

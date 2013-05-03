@@ -60,9 +60,14 @@ Code
 ----
 
 '''
-import os, sys, string, re, optparse
-import GFF, GTF
-import Experiment as E
+import os
+import sys
+import string
+import re
+import optparse
+import CGAT.GFF as GFF
+import CGAT.GTF as GTF
+import CGAT.Experiment as E
 
 def main():
     '''

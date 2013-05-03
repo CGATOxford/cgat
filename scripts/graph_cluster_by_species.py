@@ -56,7 +56,15 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, tempfile, time, popen2, optparse
+import os
+import sys
+import string
+import re
+import getopt
+import tempfile
+import time
+import popen2
+import optparse
 
 USAGE="""python %s [OPTIONS] < graph.in > graph.out
 
@@ -73,7 +81,7 @@ Cluster transcripts based on a distance measure. The transcripts can be clustere
         
 """ % sys.argv[0]
 
-import Experiment
+import CGAT.Experiment as Experiment
 import networkx
 
 ###########################################################

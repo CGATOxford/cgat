@@ -54,12 +54,21 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, time, optparse, math, tempfile, random
-import Experiment
-import Genomics
+import os
+import sys
+import string
+import re
+import getopt
+import time
+import optparse
+import math
+import tempfile
+import random
+import CGAT.Experiment as Experiment
+import CGAT.Genomics as Genomics
 import Bio
-import FastaIterator
-import IOTools
+import CGAT.FastaIterator as FastaIterator
+import CGAT.IOTools as IOTools
 
 if __name__ == "__main__":
 

@@ -56,7 +56,13 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, time, tempfile
+import os
+import sys
+import string
+import re
+import getopt
+import time
+import tempfile
 
 USAGE="""python %s [OPTIONS] < exonerate_output > filtered
 
@@ -82,11 +88,11 @@ Options:
 -s, --filename-sizes=           filename with sizes
 """ % sys.argv[0]
 
-import Experiment
-import Genomics
-import Intervalls
-import PredictionParser
-import PredictionFile
+import CGAT.Experiment as Experiment
+import CGAT.Genomics as Genomics
+import CGAT.Intervalls as Intervalls
+import CGAT.PredictionParser as PredictionParser
+import CGAT.PredictionFile as PredictionFile
 
 param_loglevel = 1
 

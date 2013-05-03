@@ -6,7 +6,10 @@ input: for example something like
 
 """
 
-import os, sys, string, re
+import os
+import sys
+import string
+import re
 
 if __name__ == "__main__":
 

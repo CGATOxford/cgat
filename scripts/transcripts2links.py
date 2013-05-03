@@ -56,15 +56,25 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, time, sets, optparse, math, tempfile, warnings
+import os
+import sys
+import string
+import re
+import getopt
+import time
+import sets
+import optparse
+import math
+import tempfile
+import warnings
 
 """ program $Id: transcripts2links.py 2781 2009-09-10 11:33:14Z andreas $
 
 Given a list of transcripts, create links between them.
 
 """
-import Experiment
-import Genomics
+import CGAT.Experiment as Experiment
+import CGAT.Genomics as Genomics
 
 def WriteLinks( outfile, chunk, weight = 0.0, separator = "|"):
 

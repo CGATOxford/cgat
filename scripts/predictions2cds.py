@@ -56,7 +56,11 @@ Code
 ----
 
 '''
-import os, sys, string, re, optparse
+import os
+import sys
+import string
+import re
+import optparse
 
 USAGE="""python %s < predictions > genes
 
@@ -72,11 +76,11 @@ exons:        exon table output
 """ % sys.argv[0]
 
 import alignlib
-import Experiment
-import Genomics
-import IndexedFasta
-import Exons
-import PredictionParser
+import CGAT.Experiment as Experiment
+import CGAT.Genomics as Genomics
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.Exons as Exons
+import CGAT.PredictionParser as PredictionParser
 
 ##------------------------------------------------------------
 if __name__ == '__main__':

@@ -56,7 +56,15 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, time, optparse, math, tempfile
+import os
+import sys
+import string
+import re
+import getopt
+import time
+import optparse
+import math
+import tempfile
 
 ## patch for old python installations
 if sys.version_info < (2,4):
@@ -70,7 +78,8 @@ python graph_check.py < graph.in
 Check graph for completeness.
 
 """
-import Experiment, IOTools
+import CGAT.Experiment as Experiment
+import CGAT.IOTools as IOTools
 
 def writeSet( outfile, outset ):
     """write set to file."""

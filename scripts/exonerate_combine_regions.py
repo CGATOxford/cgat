@@ -56,7 +56,11 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt
+import os
+import sys
+import string
+import re
+import getopt
 
 USAGE="""python %s [OPTIONS] < exonerate_output > filtered
 
@@ -78,9 +82,9 @@ Options:
 -s, --min-score=                minimum total alignment score
 """ % sys.argv[0]
 
-import Experiment
-import Genomics
-import Intervalls
+import CGAT.Experiment as Experiment
+import CGAT.Genomics as Genomics
+import CGAT.Intervalls as Intervalls
 
 HEADER="""# QUERY:        query
 # QFROM:        query first residue

@@ -56,7 +56,14 @@ Code
 ----
 
 '''
-import os, sys, string, re, tempfile, subprocess, optparse, math
+import os
+import sys
+import string
+import re
+import tempfile
+import subprocess
+import optparse
+import math
 
 """analyze codonbias of orthologs.
 
@@ -65,7 +72,7 @@ The input looks like:
 schema1 gene1 cai1 schema2, gene2, cai2
 """
 
-import Experiment
+import CGAT.Experiment as Experiment
 
 def GetThreshold( dbhandle, schema ):
     """get dominant set threshold for schema."""

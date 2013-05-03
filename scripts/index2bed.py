@@ -46,10 +46,14 @@ Code
 
 """ 
 
-import os, sys, re, optparse
+import os
+import sys
+import re
+import optparse
 
-import IndexedFasta, Bed
-import Experiment as E
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.Bed as Bed
+import CGAT.Experiment as E
 
 def main( argv = None ):
     """script main.

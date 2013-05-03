@@ -56,7 +56,13 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, time, optparse
+import os
+import sys
+import string
+import re
+import getopt
+import time
+import optparse
 
 USAGE="""python %s < predictions > genes
 
@@ -105,12 +111,13 @@ f: filter by list of transcripts
 
 """ % sys.argv[0]
 
-import Experiment
-import Genomics, IndexedFasta
-import Exons
-import Intervals
+import CGAT.Experiment as Experiment
+import CGAT.Genomics as Genomics
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.Exons as Exons
+import CGAT.Intervals as Intervals
 import alignlib
-import GFF
+import CGAT.GFF as GFF
 
 ##---------------------------------------------------------------------------------------------
 def getRangesFromExons( exons, both_strands = False, contig_sizes = None ):

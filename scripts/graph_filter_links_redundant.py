@@ -2,7 +2,9 @@
 those which are redundant.
 """
 
-import sys, string, os
+import sys
+import string
+import os
 
 class Map:
 

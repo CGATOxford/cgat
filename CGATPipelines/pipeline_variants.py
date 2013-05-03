@@ -132,24 +132,36 @@ Code
 
 """
 from ruffus import *
-import sys, glob, gzip, os, itertools, CSV, re, math, types, collections, time
-import optparse, shutil
+import sys
+import glob
+import gzip
+import os
+import itertools
+import CGAT.CSV as CSV
+import re
+import math
+import types
+import collections
+import time
+import optparse
+import shutil
 import numpy
 import sqlite3
-import GFF, GTF
-import Experiment as E
-import IOTools
-import Genomics
-import Database
-import FastaIterator
+import CGAT.GFF as GFF
+import CGAT.GTF as GTF
+import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
+import CGAT.Genomics as Genomics
+import CGAT.Database as Database
+import CGAT.FastaIterator as FastaIterator
 import PipelineGeneset as PGeneset
 import PipelineEnrichment as PEnrichment
 import PipelineGO as PGO
 import PipelineBiomart as PBiomart
 import PipelineDatabase as PDatabase
-import PipelineUCSC
+import CGATPipelines.PipelineUCSC as PipelineUCSC
 import scipy.stats
-import Stats
+import CGAT.Stats as Stats
 import pysam
 
 # only update R if called as pipeline
@@ -165,7 +177,7 @@ import rpy2.robjects.numpy2ri
 ###################################################
 
 # load options from the config file
-import Pipeline as P
+import CGAT.Pipeline as P
 P.getParameters( 
     ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
      "../pipeline.ini",
@@ -179,7 +191,7 @@ PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],
 ###################################################################
 ## Helper functions mapping tracks to conditions, etc
 ###################################################################
-import PipelineTracks
+import CGATPipelines.PipelineTracks as PipelineTracks
 
 ## need to be refactored
 
@@ -189,7 +201,7 @@ SEPARATOR = "|"
 ###################################################################
 ## Helper functions mapping tracks to conditions, etc
 ###################################################################
-import PipelineTracks
+import CGATPipelines.PipelineTracks as PipelineTracks
 
 class TracksVCF (PipelineTracks.Tracks ):
     def load( self, filename, exclude = None ):

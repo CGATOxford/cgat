@@ -82,14 +82,23 @@ Code
 
 """ 
 
-import os, sys, string, re, getopt, time, optparse, math, tempfile, subprocess
+import os
+import sys
+import string
+import re
+import getopt
+import time
+import optparse
+import math
+import tempfile
+import subprocess
 
 from types import *
 """ program $Id: tree2matrix.py 2782 2009-09-10 11:40:29Z andreas $
 
 """
-import Experiment
-import TreeTools
+import CGAT.Experiment as Experiment
+import CGAT.TreeTools as TreeTools
 
 def TranslateNode( node, tree, terminals, options ):
     if options.do_translate:

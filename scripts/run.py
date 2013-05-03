@@ -65,9 +65,16 @@ The wrapper records where a command was executed and how long
 it took.
 """
 
-import os, sys, re, string, optparse, time, glob, subprocess
+import os
+import sys
+import re
+import string
+import optparse
+import time
+import glob
+import subprocess
 
-import Experiment as E
+import CGAT.Experiment as E
 
 if __name__ == '__main__':
 

@@ -58,11 +58,14 @@ Code
 ----
 
 '''
-import sys, string, re, optparse
+import sys
+import string
+import re
+import optparse
 
-import Experiment
-import Exons
-import IndexedFasta
+import CGAT.Experiment as Experiment
+import CGAT.Exons as Exons
+import CGAT.IndexedFasta as IndexedFasta
 
 if __name__ == "__main__":
 

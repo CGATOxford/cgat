@@ -55,10 +55,15 @@ Code
 ----
 
 '''
-import sys, re, string, os, getopt, time
+import sys
+import re
+import string
+import os
+import getopt
+import time
 
-import Experiment
-import Histogram
+import CGAT.Experiment as Experiment
+import CGAT.Histogram as Histogram
 
 USAGE = """python calculate_histogram.py < stdin > stdout
 

@@ -56,10 +56,19 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, tempfile, time, optparse, math
+import os
+import sys
+import string
+import re
+import getopt
+import tempfile
+import time
+import optparse
+import math
 
-import Experiment as E
-import GFF, IndexedFasta
+import CGAT.Experiment as E
+import CGAT.GFF as GFF
+import CGAT.IndexedFasta as IndexedFasta
 
 if __name__ == "__main__":
 

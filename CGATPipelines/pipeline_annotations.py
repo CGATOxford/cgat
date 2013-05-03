@@ -182,22 +182,37 @@ Code
 ====
 
 """
-import sys, tempfile, optparse, shutil, itertools, csv, math, random, re, glob, os, shutil, collections
-import Experiment as E
-import Pipeline as P
+import sys
+import tempfile
+import optparse
+import shutil
+import itertools
+import csv
+import math
+import random
+import re
+import glob
+import os
+import shutil
+import collections
+import CGAT.Experiment as E
+import CGAT.Pipeline as P
 from ruffus import *
 from bx.bbi.bigwig_file import BigWigFile
 import sqlite3
 # for UCSC import
 import MySQLdb
-import IndexedFasta, IOTools, GFF, GTF
-import PipelineGeneset
-import PipelineBiomart
-import PipelineDatabase
-import PipelineGO
-import PipelineUCSC
-import PipelineKEGG
-import Intervals
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.IOTools as IOTools
+import CGAT.GFF as GFF
+import CGAT.GTF as GTF
+import CGATPipelines.PipelineGeneset as PipelineGeneset
+import CGATPipelines.PipelineBiomart as PipelineBiomart
+import CGATPipelines.PipelineDatabase as PipelineDatabase
+import CGATPipelines.PipelineGO as PipelineGO
+import CGATPipelines.PipelineUCSC as PipelineUCSC
+import CGATPipelines.PipelineKEGG as PipelineKEGG
+import CGAT.Intervals as Intervals
 
 ###################################################
 ###################################################

@@ -56,12 +56,20 @@ Code
 ----
 
 '''
-import os, sys, string, re, tempfile, subprocess, optparse, time, math
+import os
+import sys
+import string
+import re
+import tempfile
+import subprocess
+import optparse
+import time
+import math
 
 """Convert EMBL formatted file into a tab-separated table.
 """
 
-import Experiment
+import CGAT.Experiment as Experiment
 
 from Bio import SeqRecord
 import Bio.ExPASy as ExPASy

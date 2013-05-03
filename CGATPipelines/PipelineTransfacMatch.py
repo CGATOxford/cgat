@@ -7,18 +7,21 @@
 ################
 # import modules
 ################
-import re, sys, os
-import IOTools
+import re
+import sys
+import os
+import CGAT.IOTools as IOTools
 import sqlite3
 import collections
-import Pipeline as P
+import CGAT.Pipeline as P
 import numpy as np
 from rpy2.robjects import r as R
 from rpy2.robjects.packages import importr
 from rpy2.robjects.numpy2ri import numpy2ri
 import rpy2.robjects as robjects
-import glob, random
-import FastaIterator
+import glob
+import random
+import CGAT.FastaIterator as FastaIterator
 
 ########################################
 # helper function

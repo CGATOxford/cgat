@@ -56,12 +56,20 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, time, optparse, math, tempfile
+import os
+import sys
+import string
+import re
+import getopt
+import time
+import optparse
+import math
+import tempfile
 
 """ program $Id: go2plot.py 2782 2009-09-10 11:40:29Z andreas $
 
 """
-import Experiment
+import CGAT.Experiment as Experiment
 
 doEps = True                 # generate eps instead of ps (but make sure it's just one page!)
 largepvalues = True          # if true smallest p value is 10^-4 otherwise 10^-5.

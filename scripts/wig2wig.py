@@ -26,10 +26,20 @@ The script currently implements the following methods:
    Intervals extending beyond a contig a truncated. 
 '''   
 
-import sys, re, string, optparse, time, os, itertools, tempfile, subprocess, shutil
+import sys
+import re
+import string
+import optparse
+import time
+import os
+import itertools
+import tempfile
+import subprocess
+import shutil
 
-import Experiment as E
-import IndexedFasta, IOTools
+import CGAT.Experiment as E
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.IOTools as IOTools
 
 def sanitizeGenome( infile, outfile, contigs ):
     """truncate bed intervals that extend beyond contigs.

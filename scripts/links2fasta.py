@@ -56,14 +56,21 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, tempfile, time, optparse
+import os
+import sys
+import string
+import re
+import getopt
+import tempfile
+import time
+import optparse
 
-import Experiment
-import BlastAlignments
+import CGAT.Experiment as Experiment
+import CGAT.BlastAlignments as BlastAlignments
 import alignlib
-import Genomics
-import Exons
-import FastaIterator
+import CGAT.Genomics as Genomics
+import CGAT.Exons as Exons
+import CGAT.FastaIterator as FastaIterator
 
 class Map:
     def __init__(self):

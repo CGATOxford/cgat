@@ -56,7 +56,12 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, math
+import os
+import sys
+import string
+import re
+import getopt
+import math
 
 USAGE="""python %s [OPTIONS] < exonerate_output > filtered
 
@@ -109,9 +114,9 @@ param_short_options="v:hb:e:p:g:E:P:G:i:a:S:nl"
 ## pattern for genomes, %s is substituted for the sbjct_token
 param_genome_file = "genome_%s.fasta"
 
-import Experiment
-import Genomics
-import PredictionParser
+import CGAT.Experiment as Experiment
+import CGAT.Genomics as Genomics
+import CGAT.PredictionParser as PredictionParser
 import pgdb
 import webbrowser
 

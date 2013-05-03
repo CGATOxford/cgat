@@ -63,12 +63,20 @@ Code
 
 '''
 
-import os, sys, re, optparse, time, subprocess, tempfile, collections, itertools
+import os
+import sys
+import re
+import optparse
+import time
+import subprocess
+import tempfile
+import collections
+import itertools
 
-import Experiment as E
-import IOTools
+import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
 import pysam
-import Bed
+import CGAT.Bed as Bed
 
 def main( argv = None ):
     """script main.

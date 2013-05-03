@@ -57,10 +57,14 @@ Code
 
 '''
 
-import os, sys, re, optparse, gzip
+import os
+import sys
+import re
+import optparse
+import gzip
 
-import Experiment as E
-import IOTools
+import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
 
 import pysam
 

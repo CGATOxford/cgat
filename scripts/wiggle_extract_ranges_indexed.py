@@ -29,8 +29,9 @@ import psyco_full
 
 from bx.cookbook import doc_optparse
 
-import Wiggle
-import sys, os.path
+import CGAT.Wiggle as Wiggle
+import sys
+import os.path
 
 def main():
     # Parse Command Line

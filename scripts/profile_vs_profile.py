@@ -54,7 +54,15 @@ Code
 ----
 
 '''
-import os, sys, string, re, tempfile, subprocess, optparse, time, math
+import os
+import sys
+import string
+import re
+import tempfile
+import subprocess
+import optparse
+import time
+import math
 import shutil
 
 #--------------------------------------------------------
@@ -62,7 +70,7 @@ import shutil
 #--------------------------------------------------------
 # import of user libraries
 #--------------------------------------------------------
-import Experiment
+import CGAT.Experiment as Experiment
 import alignlib
 from ProfileLibrary import ProfileLibrary
 from ProfileLibraryCompass import ProfileLibraryCompass

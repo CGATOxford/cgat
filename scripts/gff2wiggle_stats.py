@@ -58,13 +58,20 @@ Code
 
 '''
 
-import sys, re, string, optparse, time, os, glob
+import sys
+import re
+import string
+import optparse
+import time
+import os
+import glob
 
-import Experiment
-import Stats
-import GFF, GTF
+import CGAT.Experiment as Experiment
+import CGAT.Stats as Stats
+import CGAT.GFF as GFF
+import CGAT.GTF as GTF
 
-import Wiggle
+import CGAT.Wiggle as Wiggle
 import alignlib
 
 if __name__ == '__main__':

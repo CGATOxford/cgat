@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 	 
-import sys,re
+import sys
+import re
 from Bio.Seq import Seq
 from Bio.Alphabet import generic_dna
 	 

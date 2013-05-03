@@ -56,7 +56,11 @@ Code
 ----
 
 '''
-import os, sys, string, re, optparse
+import os
+import sys
+import string
+import re
+import optparse
 
 USAGE="""python %s < predictions > introns
 
@@ -66,13 +70,13 @@ Summarize information about introns in predictions.
   
 """ % sys.argv[0]
 
-import Experiment
-import Genomics
-import IndexedFasta
-import Exons
-import Prediction
-import PredictionParser
-import Stats
+import CGAT.Experiment as Experiment
+import CGAT.Genomics as Genomics
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.Exons as Exons
+import CGAT.Prediction as Prediction
+import CGAT.PredictionParser as PredictionParser
+import CGAT.Stats as Stats
 
 def findCodonReverse( sequence, start, found_codons, abort_codons = None ):
     """find codon by tracking along sequence from start.

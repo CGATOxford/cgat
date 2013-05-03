@@ -61,10 +61,22 @@ Code
 '''
 
 # for UCSC import
-import sys, tempfile, optparse, shutil, itertools, csv, math, random, re, glob, os, shutil, collections
+import sys
+import tempfile
+import optparse
+import shutil
+import itertools
+import csv
+import math
+import random
+import re
+import glob
+import os
+import shutil
+import collections
 
-import Experiment as E
-import Pipeline as P
+import CGAT.Experiment as E
+import CGAT.Pipeline as P
 from ruffus import *
 
 import MySQLdb

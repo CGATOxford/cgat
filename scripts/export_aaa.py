@@ -56,7 +56,11 @@ Code
 ----
 
 '''
-import sys, string, re, optparse, time
+import sys
+import string
+import re
+import optparse
+import time
 
 USAGE="""python %s [OPTIONS] < in > out
 
@@ -69,7 +73,7 @@ Options:
 -v, --verbose=                  loglevel.
 """ % sys.argv[0]
 
-import Experiment
+import CGAT.Experiment as Experiment
 import pgdb
 
 HEADER="""##gff-version   3

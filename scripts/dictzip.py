@@ -8,7 +8,10 @@ be concatenated to overcome dictzip's 1.8 Gb size limit."""
 # based on Andrew Kuchling's minigzip.py distributed with the zlib module
 # Random access read/write and seek-whence support by Gerton Lunter, 3/3/07
 
-import struct, sys, time, bisect
+import struct
+import sys
+import time
+import bisect
 import zlib
 import __builtin__
 

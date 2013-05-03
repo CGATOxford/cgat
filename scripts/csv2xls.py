@@ -56,12 +56,21 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, time, optparse, math, tempfile
+import os
+import sys
+import string
+import re
+import getopt
+import time
+import optparse
+import math
+import tempfile
 
-import Experiment
-import csv, CSV
+import CGAT.Experiment as Experiment
+import csv
+import CGAT.CSV as CSV
 
-import pyExcelerator 
+import pyExcelerator
 
 def GetHeaderStyle():
     fnt = pyExcelerator.Font()

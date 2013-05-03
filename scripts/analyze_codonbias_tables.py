@@ -56,9 +56,14 @@ Code
 ----
 
 '''
-import sys, string, os, optparse
+import sys
+import string
+import os
+import optparse
 
-import Experiment, CSV, Genomics
+import CGAT.Experiment as Experiment
+import CGAT.CSV as CSV
+import CGAT.Genomics as Genomics
 
 def WriteHeader( options ):
     if options.is_frequencies:

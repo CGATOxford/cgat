@@ -58,17 +58,21 @@ Code
 
 '''
 
-import os, sys, re, optparse, collections
-import Experiment as E
-import IOTools
+import os
+import sys
+import re
+import optparse
+import collections
+import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
 import pysam
-import GTF
+import CGAT.GTF as GTF
 import numpy
 import pybedtools
 import tempfile
 import pyximport
 pyximport.install(build_in_temp=False)
-import Pipeline as P
+import CGAT.Pipeline as P
 
 #########################################################
 #########################################################

@@ -66,20 +66,31 @@ Code
 ----
 '''
 
-import sys, re, string, optparse, time, os, tempfile, shutil, collections, math
+import sys
+import re
+import string
+import optparse
+import time
+import os
+import tempfile
+import shutil
+import collections
+import math
 
-import scipy, scipy.stats, numpy
+import scipy
+import scipy.stats
+import numpy
 
-import Intervals
-import Experiment as E
-import Histogram
-import GFF
-import Blat
-import IndexedFasta
+import CGAT.Intervals as Intervals
+import CGAT.Experiment as E
+import CGAT.Histogram as Histogram
+import CGAT.GFF as GFF
+import CGAT.Blat as Blat
+import CGAT.IndexedFasta as IndexedFasta
 import alignlib
-import Mali
-import Stats
-import Genomics
+import CGAT.Mali as Mali
+import CGAT.Stats as Stats
+import CGAT.Genomics as Genomics
 
 
 

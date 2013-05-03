@@ -58,12 +58,20 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, time, optparse, math, tempfile
+import os
+import sys
+import string
+import re
+import getopt
+import time
+import optparse
+import math
+import tempfile
 
-import Experiment
+import CGAT.Experiment as Experiment
 
 import alignlib
-import FastaIterator
+import CGAT.FastaIterator as FastaIterator
 
 """ program $Id: align_all_vs_all.py 2782 2009-09-10 11:40:29Z andreas $
 """

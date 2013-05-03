@@ -12,7 +12,11 @@ OPTIONS:
 -g, --gunzip:   files need to be decompressed
 -r, --rotate:   translation vector + rotation matrix, separted by ,
 """
-import sys, os, getopt, re, string
+import sys
+import os
+import getopt
+import re
+import string
 
 param_pattern_pdb = "/data/databases/pdb/pdb%s.ent.gz"
 param_cmd_rotate  = "/data/bin/rotate_pdb"

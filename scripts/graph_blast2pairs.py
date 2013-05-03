@@ -56,7 +56,14 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, tempfile, time, popen2
+import os
+import sys
+import string
+import re
+import getopt
+import tempfile
+import time
+import popen2
 
 USAGE="""python %s [OPTIONS] < graph.in > graph.out
 
@@ -103,8 +110,8 @@ param_loglevel = 1
 param_method = "bitscore"
 param_filename_self_scores = None
 
-import Experiment
-import BlastAlignments
+import CGAT.Experiment as Experiment
+import CGAT.BlastAlignments as BlastAlignments
 import math
 
 param_lambda = 0.267

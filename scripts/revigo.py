@@ -103,11 +103,19 @@ and obsolete identifiers. The code has been included into this script until gogr
 
 '''
 
-import itertools, math, sys, optparse, collections, os, re, string
+import itertools
+import math
+import sys
+import optparse
+import collections
+import os
+import re
+import string
 
-import GO, IOTools
+import CGAT.GO as GO
+import CGAT.IOTools as IOTools
 
-import Experiment as E
+import CGAT.Experiment as E
 import numpy
 import networkx
 import networkx.algorithms.traversal.depth_first_search as traversal

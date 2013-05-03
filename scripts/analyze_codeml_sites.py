@@ -60,13 +60,18 @@ Code
 ----
 
 '''
-import os, sys, string, re, optparse, time
+import os
+import sys
+import string
+import re
+import optparse
+import time
 
-import Genomics
-import Experiment
-import WrapperCodeML
-import Stats
-import Mali
+import CGAT.Genomics as Genomics
+import CGAT.Experiment as Experiment
+import CGAT.WrapperCodeML as WrapperCodeML
+import CGAT.Stats as Stats
+import CGAT.Mali as Mali
 import alignlib
 
 def selectPositiveSites( results, selection_mode, options, mali = None ):

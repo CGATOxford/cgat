@@ -56,7 +56,12 @@ Code
 ----
 
 '''
-import os, sys, string, re, optparse, math
+import os
+import sys
+import string
+import re
+import optparse
+import math
 
 USAGE="""python %s [OPTIONS] < exonerate_output > filtered
 
@@ -68,11 +73,11 @@ Build a file with exon comparisions between genes.
 """ % sys.argv[0]
 
 import alignlib
-import Experiment as E
-import Genomics
-import IndexedFasta
-import PredictionParser
-import Exons
+import CGAT.Experiment as E
+import CGAT.Genomics as Genomics
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.PredictionParser as PredictionParser
+import CGAT.Exons as Exons
 
 ##------------------------------------------------------------
 if __name__ == '__main__':

@@ -59,13 +59,16 @@ Code
 
 '''
 import tempfile
-import os, sys, re, optparse
+import os
+import sys
+import re
+import optparse
 import pybedtools
-import Experiment as E
-import Bed
+import CGAT.Experiment as E
+import CGAT.Bed as Bed
 import collections
-import IOTools
-import IndexedGenome
+import CGAT.IOTools as IOTools
+import CGAT.IndexedGenome as IndexedGenome
 
 def main( argv = None ):
     """script main.

@@ -54,9 +54,15 @@ Code
 ----
 
 '''
-import os, sys, string, re, tempfile, optparse, time
+import os
+import sys
+import string
+import re
+import tempfile
+import optparse
+import time
 
-import Experiment
+import CGAT.Experiment as Experiment
 
 
 def AddOptions( outfile,  infile, source_directory, options ):

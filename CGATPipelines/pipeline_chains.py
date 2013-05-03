@@ -92,12 +92,25 @@ Code
 ----
 
 """
-import sys, tempfile, optparse, shutil, itertools, csv, math, random, re, glob, os, shutil, collections
+import sys
+import tempfile
+import optparse
+import shutil
+import itertools
+import csv
+import math
+import random
+import re
+import glob
+import os
+import shutil
+import collections
 
-import Experiment as E
-import Pipeline as P
+import CGAT.Experiment as E
+import CGAT.Pipeline as P
 
-import IOTools, IndexedFasta
+import CGAT.IOTools as IOTools
+import CGAT.IndexedFasta as IndexedFasta
 from ruffus import *
 
 ###################################################
@@ -107,7 +120,7 @@ from ruffus import *
 ###################################################
 
 # load options from the config file
-import Pipeline as P
+import CGAT.Pipeline as P
 P.getParameters( 
     ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
      "../pipeline.ini",
@@ -130,7 +143,7 @@ PARAMS = P.getParameters()
 ###################################################################
 ## Helper functions mapping tracks to conditions, etc
 ###################################################################
-import PipelineTracks
+import CGATPipelines.PipelineTracks as PipelineTracks
 
 ###################################################################
 def extractGenomes( filename ):

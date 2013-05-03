@@ -62,11 +62,21 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, time, sets, optparse, math, tempfile, copy
+import os
+import sys
+import string
+import re
+import getopt
+import time
+import sets
+import optparse
+import math
+import tempfile
+import copy
 
 import pgdb
 
-import Experiment
+import CGAT.Experiment as Experiment
 
 USAGE="""python psql_add_tables.py src dest field"""
 

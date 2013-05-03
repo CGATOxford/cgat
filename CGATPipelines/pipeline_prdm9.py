@@ -48,22 +48,32 @@ Code
 
 """
 from ruffus import *
-import sys, glob, gzip, os, itertools, CSV, re, math, types
-import optparse, shutil
+import sys
+import glob
+import gzip
+import os
+import itertools
+import CGAT.CSV as CSV
+import re
+import math
+import types
+import optparse
+import shutil
 import sqlite3
-import GFF, GTF
-import Experiment as E
-import Pipeline as P
-import IOTools
-import Genomics
-import Database
-import FastaIterator
+import CGAT.GFF as GFF
+import CGAT.GTF as GTF
+import CGAT.Experiment as E
+import CGAT.Pipeline as P
+import CGAT.IOTools as IOTools
+import CGAT.Genomics as Genomics
+import CGAT.Database as Database
+import CGAT.FastaIterator as FastaIterator
 import PipelineGeneset as PGeneset
 import PipelineGO as PGO
 import scipy.stats
-import Stats
+import CGAT.Stats as Stats
 import alignlib
-import Mali
+import CGAT.Mali as Mali
 
 PARAMS = P.getParameters()
 

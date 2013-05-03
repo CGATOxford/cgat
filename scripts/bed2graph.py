@@ -46,11 +46,14 @@ Code
 
 """ 
 
-import os, sys, re, optparse
+import os
+import sys
+import re
+import optparse
 
-import Experiment as E
-import IOTools
-import Bed
+import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
+import CGAT.Bed as Bed
 import ncl
 import numpy
 

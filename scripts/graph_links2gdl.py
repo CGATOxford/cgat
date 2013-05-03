@@ -70,9 +70,14 @@ python links2gdl.py [OPTIONS] < in_edges > out_graph.gdl
 --default-edge-colour   default edge colour
 """
 
-import os, sys, string, re, getopt, optparse
+import os
+import sys
+import string
+import re
+import getopt
+import optparse
 
-import Experiment
+import CGAT.Experiment as Experiment
 import matplotlib
 
 FORMAT_GRAPH = '''

@@ -52,14 +52,28 @@ Code
 
 """
 
-import Experiment as E
+import CGAT.Experiment as E
 import logging as L
-import Database, CSV
+import CGAT.Database as Database
+import CGAT.CSV as CSV
 
-import sys, os, re, shutil, itertools, math, glob, time, gzip, collections, random
+import sys
+import os
+import re
+import shutil
+import itertools
+import math
+import glob
+import time
+import gzip
+import collections
+import random
 
-import numpy, sqlite3
-import GTF, IOTools, IndexedFasta
+import numpy
+import sqlite3
+import CGAT.GTF as GTF
+import CGAT.IOTools as IOTools
+import CGAT.IndexedFasta as IndexedFasta
 from rpy2.robjects import r as R
 import rpy2.robjects as ro
 import rpy2.robjects.vectors as rovectors
@@ -67,7 +81,7 @@ import rpy2.rinterface as ri
 import rpy2.robjects.numpy2ri
 rpy2.robjects.numpy2ri.activate()
 
-import Pipeline as P
+import CGAT.Pipeline as P
 
 try:
     PARAMS = P.getParameters()

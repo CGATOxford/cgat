@@ -56,11 +56,18 @@ Code
 ----
 
 '''
-import os, sys, string, re, optparse, math, time, random
+import os
+import sys
+import string
+import re
+import optparse
+import math
+import time
+import random
 
-import Experiment
-import IOTools
-import Mali
+import CGAT.Experiment as Experiment
+import CGAT.IOTools as IOTools
+import CGAT.Mali as Mali
 
 ##------------------------------------------------------------
 if __name__ == '__main__':

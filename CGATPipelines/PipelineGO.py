@@ -48,14 +48,26 @@ Code
 
 
 """
-import sys, tempfile, optparse, shutil, itertools, csv, math, random, re, glob, os, shutil, collections
+import sys
+import tempfile
+import optparse
+import shutil
+import itertools
+import csv
+import math
+import random
+import re
+import glob
+import os
+import shutil
+import collections
 import sqlite3
 
-import Experiment as E
-import Pipeline as P
-import Stats
-import IOTools
-import CSV
+import CGAT.Experiment as E
+import CGAT.Pipeline as P
+import CGAT.Stats as Stats
+import CGAT.IOTools as IOTools
+import CGAT.CSV as CSV
 
 try:
     PARAMS = P.getParameters()

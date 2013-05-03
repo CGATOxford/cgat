@@ -56,10 +56,16 @@ Code
 ----
 
 '''
-import sys, re, string, os, getopt, time, optparse
+import sys
+import re
+import string
+import os
+import getopt
+import time
+import optparse
 
-import Experiment
-import Histogram2D
+import CGAT.Experiment as Experiment
+import CGAT.Histogram2D as Histogram2D
 
 USAGE = """python calculate_histogram.py < stdin > stdout
 

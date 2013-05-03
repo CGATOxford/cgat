@@ -56,9 +56,12 @@ Code
 ----
 
 '''
-import zlib, sys, optparse, struct
+import zlib
+import sys
+import optparse
+import struct
 
-import Experiment
+import CGAT.Experiment as Experiment
 
 if __name__ == '__main__':
 

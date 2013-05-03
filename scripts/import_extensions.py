@@ -59,9 +59,14 @@ Code
 
 '''
 
-import os, sys, re, optparse, glob, traceback
+import os
+import sys
+import re
+import optparse
+import glob
+import traceback
 
-import Experiment as E
+import CGAT.Experiment as E
 
 def main( argv = None ):
     """script main.

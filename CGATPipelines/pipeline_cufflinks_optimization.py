@@ -121,28 +121,44 @@ Code
 # load modules
 from ruffus import *
 
-import Experiment as E
+import CGAT.Experiment as E
 import logging as L
-import Database, CSV
+import CGAT.Database as Database
+import CGAT.CSV as CSV
 
-import sys, os, re, shutil, itertools, math, glob, time, gzip, collections, random, operator
+import sys
+import os
+import re
+import shutil
+import itertools
+import math
+import glob
+import time
+import gzip
+import collections
+import random
+import operator
 
-import numpy, sqlite3
-import GFF, GTF, IOTools, IndexedFasta
-import Tophat
+import numpy
+import sqlite3
+import CGAT.GFF as GFF
+import CGAT.GTF as GTF
+import CGAT.IOTools as IOTools
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.Tophat as Tophat
 from rpy2.robjects import r as R
 import rpy2.robjects as ro
 import rpy2.robjects.vectors as rovectors
 from rpy2.rinterface import RRuntimeError
 import pysam
 
-import Expression
+import CGAT.Expression as Expression
 
-import PipelineGeneset
-import PipelineMapping
-import PipelineRnaseq
-import PipelineMappingQC
-import Stats
+import CGATPipelines.PipelineGeneset as PipelineGeneset
+import CGATPipelines.PipelineMapping as PipelineMapping
+import CGATPipelines.PipelineRnaseq as PipelineRnaseq
+import CGATPipelines.PipelineMappingQC as PipelineMappingQC
+import CGAT.Stats as Stats
 
 ###################################################
 ###################################################
@@ -151,7 +167,7 @@ import Stats
 ###################################################
 
 # load options from the config file
-import Pipeline as P
+import CGAT.Pipeline as P
 P.getParameters( 
     ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
      "../pipeline.ini",

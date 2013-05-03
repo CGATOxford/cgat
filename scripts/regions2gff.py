@@ -56,16 +56,24 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, tempfile, time, optparse, math
+import os
+import sys
+import string
+import re
+import getopt
+import tempfile
+import time
+import optparse
+import math
 
-import Experiment
-import Genomics
-import GenomicIO
-import IOTools
+import CGAT.Experiment as Experiment
+import CGAT.Genomics as Genomics
+import CGAT.GenomicIO as GenomicIO
+import CGAT.IOTools as IOTools
 import pgdb
-import Regions
-import GFF
-import Intervals
+import CGAT.Regions as Regions
+import CGAT.GFF as GFF
+import CGAT.Intervals as Intervals
 
 USAGE="""python %s [OPTIONS] 
 

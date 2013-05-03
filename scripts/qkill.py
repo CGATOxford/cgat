@@ -48,8 +48,12 @@ Code
 
 """ 
 
-import os, sys, re, optparse, subprocess
-import Experiment as E
+import os
+import sys
+import re
+import optparse
+import subprocess
+import CGAT.Experiment as E
 import xml.etree.ElementTree
 import cStringIO as StringIO
 

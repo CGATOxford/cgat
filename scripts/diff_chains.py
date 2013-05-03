@@ -49,10 +49,14 @@ Code
 
 """ 
 
-import os, sys, re, optparse, collections
+import os
+import sys
+import re
+import optparse
+import collections
 
-import IOTools
-import Experiment as E
+import CGAT.IOTools as IOTools
+import CGAT.Experiment as E
 import alignlib
 
 def chain_iterator( infile ):

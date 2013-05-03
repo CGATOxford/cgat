@@ -75,10 +75,20 @@ INTERPRO format: ignored, gene_id, ignored, name, short_description, long_descri
 """
 
 
-import os, sys, string, re, getopt, time, sets, optparse, math, tempfile, copy
+import os
+import sys
+import string
+import re
+import getopt
+import time
+import sets
+import optparse
+import math
+import tempfile
+import copy
 
-import IOTools
-import Experiment
+import CGAT.IOTools as IOTools
+import CGAT.Experiment as Experiment
 
 class Annotation:
     def __init__(self, identifier, short, description):

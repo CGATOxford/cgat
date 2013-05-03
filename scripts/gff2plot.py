@@ -124,7 +124,14 @@ Code
 ----
 
 '''
-import sys, re, string, os, getopt, time, optparse, types
+import sys
+import re
+import string
+import os
+import getopt
+import time
+import optparse
+import types
 
 import ConfigParser
 import matplotlib
@@ -133,7 +140,7 @@ import matplotlib.ticker
 import scipy.stats
 import numpy
 
-import Experiment
+import CGAT.Experiment as Experiment
 
 def formatGenomicCoordinate( value, pos = None ):
     

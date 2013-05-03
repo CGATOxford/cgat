@@ -6,17 +6,24 @@ fasta files whereas others will take fastq and in either case can
 be paired-end (in the same or different files) or single end
 '''
 
-import sys, re, os, tempfile, collections, shutil, gzip, sqlite3
+import sys
+import re
+import os
+import tempfile
+import collections
+import shutil
+import gzip
+import sqlite3
 
-import IOTools
-import Pipeline as P
-import Experiment as E
-import PipelineMapping
-import FastaIterator
-import Fastq
+import CGAT.IOTools as IOTools
+import CGAT.Pipeline as P
+import CGAT.Experiment as E
+import CGATPipelines.PipelineMapping as PipelineMapping
+import CGAT.FastaIterator as FastaIterator
+import CGAT.Fastq as Fastq
 import glob
 import collections
-import PipelineTracks
+import CGATPipelines.PipelineTracks as PipelineTracks
 import metaphlan_utils
 import numpy as np
 

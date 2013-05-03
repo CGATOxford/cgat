@@ -56,7 +56,14 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, tempfile, time, popen2
+import os
+import sys
+import string
+import re
+import getopt
+import tempfile
+import time
+import popen2
 
 USAGE="""python %s [OPTIONS] schema1 schema2 [...]
 
@@ -84,8 +91,8 @@ param_long_options=["verbose=", "help", "connection=",
 
 param_short_options="v:hC:r:f:as:"
 
-import Genomics
-import Experiment
+import CGAT.Genomics as Genomics
+import CGAT.Experiment as Experiment
 import pgdb
 import scipy
 import numpy

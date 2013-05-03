@@ -56,8 +56,13 @@ Code
 ----
 
 '''
-import os, sys, string, re, random, optparse
-import Experiment
+import os
+import sys
+import string
+import re
+import random
+import optparse
+import CGAT.Experiment as Experiment
 import pgdb
 
 """python create_gbrowser_files.py.

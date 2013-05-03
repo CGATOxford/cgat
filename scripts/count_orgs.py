@@ -56,9 +56,14 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, optparse
+import os
+import sys
+import string
+import re
+import getopt
+import optparse
 
-import Orthologs
+import CGAT.Orthologs as Orthologs
 
 USAGE="""python count_orgs.py < stdin 
 
@@ -69,8 +74,8 @@ absences/presences are checked, if they make sense phylogenetically.
 
 """
 
-import Experiment
-import TreeTools
+import CGAT.Experiment as Experiment
+import CGAT.TreeTools as TreeTools
 import tree2patterns
 
 class SpeciesCounts:

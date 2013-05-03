@@ -73,13 +73,19 @@ Code
 ----
 
 '''
-import os, sys, string, re, optparse, math, StringIO
+import os
+import sys
+import string
+import re
+import optparse
+import math
+import StringIO
 
 import numpy
-import Experiment as E
-import IOTools
-import CorrespondenceAnalysis
-import MatlabTools
+import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
+import CGAT.CorrespondenceAnalysis as CorrespondenceAnalysis
+import CGAT.MatlabTools as MatlabTools
 import scipy
 
 if __name__ == "__main__":

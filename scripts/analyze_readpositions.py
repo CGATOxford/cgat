@@ -55,16 +55,24 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, time, optparse, math, tempfile
+import os
+import sys
+import string
+import re
+import getopt
+import time
+import optparse
+import math
+import tempfile
 
 USAGE=""" program $Id: analyze_readpositions.py 2781 2009-09-10 11:33:14Z andreas $
 
 
 """
-import Experiment
-import CSV
-import IOTools
-import Stats
+import CGAT.Experiment as Experiment
+import CGAT.CSV as CSV
+import CGAT.IOTools as IOTools
+import CGAT.Stats as Stats
 import numpy
 
 def main():

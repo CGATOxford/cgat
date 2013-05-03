@@ -61,16 +61,21 @@ Code
 
 '''
 
-import os, sys, re, optparse, collections
+import os
+import sys
+import re
+import optparse
+import collections
 
-import Experiment as E
+import CGAT.Experiment as E
 
-import Expression
+import CGAT.Expression as Expression
 import rpy2
 from rpy2.robjects import r as R
 
-import Experiment as E
-import GTF, IOTools
+import CGAT.Experiment as E
+import CGAT.GTF as GTF
+import CGAT.IOTools as IOTools
 
 def getProbeset2Gene( database ):
     

@@ -72,13 +72,19 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, time, sets
+import os
+import sys
+import string
+import re
+import getopt
+import time
+import sets
 
 from Bio.Nexus import Nexus
 from Bio.Nexus.Nodes import Node
 
-import Experiment
-import TreeTools
+import CGAT.Experiment as Experiment
+import CGAT.TreeTools as TreeTools
 
 param_loglevel = 1
 

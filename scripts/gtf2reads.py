@@ -81,13 +81,19 @@ Code
 ----
 
 '''
-import os, sys, string, re, optparse, types, random
-import GTF
-import Experiment
-import IndexedFasta
-import Genomics
-import SequencePairProperties
-import Iterators
+import os
+import sys
+import string
+import re
+import optparse
+import types
+import random
+import CGAT.GTF as GTF
+import CGAT.Experiment as Experiment
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.Genomics as Genomics
+import CGAT.SequencePairProperties as SequencePairProperties
+import CGAT.Iterators as Iterators
 
 import numpy
 import numpy.random

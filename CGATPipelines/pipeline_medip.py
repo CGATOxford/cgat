@@ -148,20 +148,34 @@ Code
 # load modules
 from ruffus import *
 
-import Experiment as E
+import CGAT.Experiment as E
 import logging as L
-import Database
-import sys, os, re, shutil, itertools, math, glob, time, gzip, collections, random, csv
-import numpy, sqlite3
-import GTF, IOTools, IndexedFasta
-import PipelineGeneset
-import PipelineMapping
-import Stats
-import PipelineTracks
-import PipelineMappingQC
-import PipelineMedip
-import Pipeline as P
-import Expression
+import CGAT.Database as Database
+import sys
+import os
+import re
+import shutil
+import itertools
+import math
+import glob
+import time
+import gzip
+import collections
+import random
+import csv
+import numpy
+import sqlite3
+import CGAT.GTF as GTF
+import CGAT.IOTools as IOTools
+import CGAT.IndexedFasta as IndexedFasta
+import CGATPipelines.PipelineGeneset as PipelineGeneset
+import CGATPipelines.PipelineMapping as PipelineMapping
+import CGAT.Stats as Stats
+import CGATPipelines.PipelineTracks as PipelineTracks
+import CGATPipelines.PipelineMappingQC as PipelineMappingQC
+import CGATPipelines.PipelineMedip as PipelineMedip
+import CGAT.Pipeline as P
+import CGAT.Expression as Expression
 
 from rpy2.robjects import r as R
 import rpy2.robjects as ro

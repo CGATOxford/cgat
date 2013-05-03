@@ -56,17 +56,24 @@ Code
 ----
 
 '''
-import os, sys, string, re, tempfile, subprocess, optparse, random
+import os
+import sys
+import string
+import re
+import tempfile
+import subprocess
+import optparse
+import random
 
 """Wrapper for adaptive codon bias program
 """
 
-import Experiment
-import Genomics
+import CGAT.Experiment as Experiment
+import CGAT.Genomics as Genomics
 
-import WrapperAdaptiveCAI
-import IOTools
-import CSV
+import CGAT.WrapperAdaptiveCAI as WrapperAdaptiveCAI
+import CGAT.IOTools as IOTools
+import CGAT.CSV as CSV
 
 ## order of codon matrix as expected by caijava.
 OUTPUT_ORDER_CODON_MATRIX = ( \

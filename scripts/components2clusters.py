@@ -61,7 +61,14 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, tempfile, time, popen2
+import os
+import sys
+import string
+import re
+import getopt
+import tempfile
+import time
+import popen2
 
 param_long_options=["verbose=", "help", 
                     "equivalences=", "components=", "queries=", "transcripts=", "filter="]
@@ -74,7 +81,7 @@ param_filename_map_cluster2queries = None
 param_filename_map_transcript2cluster = None
 param_filename_filter = None
 
-import Experiment
+import CGAT.Experiment as Experiment
 
 if __name__ == "__main__":
 

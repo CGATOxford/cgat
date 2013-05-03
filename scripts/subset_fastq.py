@@ -1,8 +1,8 @@
 import random
 import sys
 import gzip
-import Pipeline as P
-import Experiment as E
+import CGAT.Pipeline as P
+import CGAT.Experiment as E
 
 def write_random_records(fqa, fqb, outfa, outfb, N):
     """ get N random headers from a fastq file without reading the

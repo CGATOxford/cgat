@@ -135,13 +135,19 @@ Code
 ----
 
 '''
-import os, sys, string, re, optparse, math, time
+import os
+import sys
+import string
+import re
+import optparse
+import math
+import time
 
-import Genomics
-import Masker
-import Experiment as E
-import IOTools
-import Mali
+import CGAT.Genomics as Genomics
+import CGAT.Masker as Masker
+import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
+import CGAT.Mali as Mali
 
 ##------------------------------------------------------------
 ##------------------------------------------------------------

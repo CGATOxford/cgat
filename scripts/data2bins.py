@@ -58,9 +58,17 @@ Code
 ----
 
 '''
-import sys, re, string, os, getopt, time, optparse, math, bisect
-import Experiment as E
-import CSV
+import sys
+import re
+import string
+import os
+import getopt
+import time
+import optparse
+import math
+import bisect
+import CGAT.Experiment as E
+import CGAT.CSV as CSV
 
 class Outputter:
     def __init__(self, filename, headers = None):

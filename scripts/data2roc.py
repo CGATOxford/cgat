@@ -73,9 +73,13 @@ Code
 
 '''
 
-import string, re, getopt, sys, optparse
+import string
+import re
+import getopt
+import sys
+import optparse
 
-import Experiment as E
+import CGAT.Experiment as E
 
 def doMultiple( options ):
 

@@ -67,10 +67,17 @@ Code
 ----
 
 '''
-import sys, string, re, optparse, collections
-import Experiment as E
-import GFF, GTF
-import Stats, IOTools, Intervals
+import sys
+import string
+import re
+import optparse
+import collections
+import CGAT.Experiment as E
+import CGAT.GFF as GFF
+import CGAT.GTF as GTF
+import CGAT.Stats as Stats
+import CGAT.IOTools as IOTools
+import CGAT.Intervals as Intervals
 
 class counter_gff:
 

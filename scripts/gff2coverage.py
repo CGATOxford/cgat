@@ -55,11 +55,20 @@ Code
 
 '''
 
-import sys, string, re, optparse, time, os, shutil, tempfile, math, collections
+import sys
+import string
+import re
+import optparse
+import time
+import os
+import shutil
+import tempfile
+import math
+import collections
 
-import Experiment
-import GFF
-import IndexedFasta
+import CGAT.Experiment as Experiment
+import CGAT.GFF as GFF
+import CGAT.IndexedFasta as IndexedFasta
 
 USAGE="""python %s [OPTIONS] < stdin > stdout
 

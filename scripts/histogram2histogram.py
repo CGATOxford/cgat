@@ -56,7 +56,11 @@ Code
 ----
 
 '''
-import sys, re, string, os, optparse
+import sys
+import re
+import string
+import os
+import optparse
 
 USAGE = """python %s < stdin > stdout
 
@@ -69,8 +73,8 @@ read in data and append columns to a density histogram
 
 """ % sys.argv[0]
 
-import Experiment
-import IOTools
+import CGAT.Experiment as Experiment
+import CGAT.IOTools as IOTools
 import numpy
 
 if __name__ == "__main__":

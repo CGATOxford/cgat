@@ -56,9 +56,14 @@ Code
 ----
 
 '''
-import os, sys, string, re, optparse, array
+import os
+import sys
+import string
+import re
+import optparse
+import array
 
-import Experiment
+import CGAT.Experiment as Experiment
 
 def maskSequence( sequence, regions, mask_char = "N" ):
     """mask sequence with regions."""

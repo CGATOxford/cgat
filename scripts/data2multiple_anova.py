@@ -1,10 +1,16 @@
 """compute multiple ANOVA between samples."""
 
-import sys, re, string, os, optparse, math
+import sys
+import re
+import string
+import os
+import optparse
+import math
 
-import Experiment
-import scipy, scipy.stats
-import IOTools
+import CGAT.Experiment as Experiment
+import scipy
+import scipy.stats
+import CGAT.IOTools as IOTools
 
 import rpy2
 from rpy2.robjects import r as R

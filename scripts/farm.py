@@ -93,10 +93,20 @@ Code
 
 '''
 
-import os, sys, re, string, optparse, time, glob, subprocess, tempfile, shutil, stat
+import os
+import sys
+import re
+import string
+import optparse
+import time
+import glob
+import subprocess
+import tempfile
+import shutil
+import stat
 
-import Experiment as E
-import IOTools
+import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
 import threadpool
 import multiprocessing
 

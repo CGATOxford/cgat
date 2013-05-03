@@ -70,12 +70,18 @@ Code
 
 '''
 
-import os, sys, re, optparse, time
+import os
+import sys
+import re
+import optparse
+import time
 
-import Experiment as E
-import GTF, IOTools, Bed
+import CGAT.Experiment as E
+import CGAT.GTF as GTF
+import CGAT.IOTools as IOTools
+import CGAT.Bed as Bed
 import pysam
-import IndexedGenome
+import CGAT.IndexedGenome as IndexedGenome
 
 import pyximport
 pyximport.install(build_in_temp=False)

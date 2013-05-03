@@ -49,9 +49,13 @@ TODO: cache and emit reads rather than iterating over the samfile twice...
 
 '''
 
-import os, sys, re, optparse, collections
-import Experiment as E
-import IOTools
+import os
+import sys
+import re
+import optparse
+import collections
+import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
 import pysam
 
 

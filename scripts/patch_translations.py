@@ -59,12 +59,16 @@ Code
 USAGE="""recalculated translations from a predictions file.
 """
 
-import sys, os, string, re, optparse
+import sys
+import os
+import string
+import re
+import optparse
 
-import Experiment
-import PredictionParser
-import IndexedFasta
-import Genomics
+import CGAT.Experiment as Experiment
+import CGAT.PredictionParser as PredictionParser
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.Genomics as Genomics
 
 ##------------------------------------------------------------
 if __name__ == '__main__':

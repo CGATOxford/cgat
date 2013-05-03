@@ -28,12 +28,25 @@ Mappability pipeline
 Pipeline to count mappable bases in a given genome
 
 """
-import sys, tempfile, optparse, shutil, itertools, csv, math, random, re, glob, os, shutil, collections, gzip
+import sys
+import tempfile
+import optparse
+import shutil
+import itertools
+import csv
+import math
+import random
+import re
+import glob
+import os
+import shutil
+import collections
+import gzip
 import sqlite3
-import Experiment as E
+import CGAT.Experiment as E
 import logging as L
 from ruffus import *
-import Pipeline as P
+import CGAT.Pipeline as P
 
 P.getParameters(  ["%s.ini" % os.path.splitext(__file__)[0],  "pipeline.ini" ] )
 PARAMS = P.PARAMS

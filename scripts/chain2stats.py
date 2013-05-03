@@ -59,7 +59,8 @@ Code
 '''
 
 #import modules
-import os,sys
+import os
+import sys
 from optparse import OptionParser
 from operator import add
 from numpy import *
@@ -69,7 +70,7 @@ import bx.bitset
 import bx.bitset_builders
 import collections
 
-import Experiment as E
+import CGAT.Experiment as E
 
 
 ############################ Functions/Generators ############################

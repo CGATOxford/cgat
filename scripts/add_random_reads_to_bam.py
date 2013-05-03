@@ -51,10 +51,23 @@ Code
 # load modules
 
 import logging as L
-import Experiment as E
-import Pipeline as P
-import sys, os, re, shutil, itertools, math, glob, time, gzip, collections, random, optparse
-import GTF, IOTools, IndexedFasta
+import CGAT.Experiment as E
+import CGAT.Pipeline as P
+import sys
+import os
+import re
+import shutil
+import itertools
+import math
+import glob
+import time
+import gzip
+import collections
+import random
+import optparse
+import CGAT.GTF as GTF
+import CGAT.IOTools as IOTools
+import CGAT.IndexedFasta as IndexedFasta
 
 def main( argv = None ):
     """script main.

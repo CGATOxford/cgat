@@ -56,7 +56,10 @@ Code
 ----
 
 '''
-import sys, string, re, optparse
+import sys
+import string
+import re
+import optparse
 
 USAGE="""python %s [OPTIONS] input1 input2
 
@@ -66,9 +69,10 @@ a gff file.
 Version: $Id: maq2assembly.py 2781 2009-09-10 11:33:14Z andreas $
 """ % sys.argv[0]
 
-import Experiment
-import GFF, GTF
-import Stats
+import CGAT.Experiment as Experiment
+import CGAT.GFF as GFF
+import CGAT.GTF as GTF
+import CGAT.Stats as Stats
 
 def reader(infile):
 

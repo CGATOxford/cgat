@@ -60,12 +60,19 @@ Code
 ----
 
 '''
-import sys, re, string, os, getopt, time, optparse, array
-import Experiment as E
-import Histogram
-import MatlabTools
+import sys
+import re
+import string
+import os
+import getopt
+import time
+import optparse
+import array
+import CGAT.Experiment as E
+import CGAT.Histogram as Histogram
+import CGAT.MatlabTools as MatlabTools
 import numpy
-import IOTools
+import CGAT.IOTools as IOTools
 import numpy.ma
 
 def main():

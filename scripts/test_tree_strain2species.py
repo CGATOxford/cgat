@@ -56,10 +56,11 @@ Code
 ----
 
 '''
-import unittest, sys
+import unittest
+import sys
 from pprint import pprint
 
-import TreeTools
+import CGAT.TreeTools as TreeTools
 import tree_strain2species
 
 class tree_strain2speciesTest(unittest.TestCase):

@@ -59,14 +59,19 @@ Code
 
 """ 
 
-import os, sys, re, optparse, itertools, collections
+import os
+import sys
+import re
+import optparse
+import itertools
+import collections
 
-import Experiment as E
-import IOTools
-import Bed
+import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
+import CGAT.Bed as Bed
 import numpy
 import pysam
-import Intervals
+import CGAT.Intervals as Intervals
 
 def isContainedInAll( contig, start, end, bedfiles ):
 

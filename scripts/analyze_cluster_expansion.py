@@ -56,7 +56,16 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, time, sets, optparse, math, tempfile
+import os
+import sys
+import string
+import re
+import getopt
+import time
+import sets
+import optparse
+import math
+import tempfile
 
 """analyse values based on a clustering.
 
@@ -65,7 +74,7 @@ given:
 
 """
 
-import Experiment
+import CGAT.Experiment as Experiment
 
 import numpy
 import scipy

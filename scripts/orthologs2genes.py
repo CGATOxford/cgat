@@ -56,10 +56,16 @@ Code
 ----
 
 '''
-import os, sys, string, re, optparse, time, warnings
+import os
+import sys
+import string
+import re
+import optparse
+import time
+import warnings
 
-import Experiment as E
-import Orthologs
+import CGAT.Experiment as E
+import CGAT.Orthologs as Orthologs
 import pgdb
 import Components
 

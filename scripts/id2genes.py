@@ -56,7 +56,12 @@ Code
 ----
 
 '''
-import sys, re, string, os, getopt, time
+import sys
+import re
+import string
+import os
+import getopt
+import time
 
 USAGE = """python %s < stdin > stdout
 

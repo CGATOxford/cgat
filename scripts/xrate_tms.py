@@ -56,7 +56,16 @@ Code
 ----
 
 '''
-import os, sys, string, re, optparse, math, time, random, types, tempfile
+import os
+import sys
+import string
+import re
+import optparse
+import math
+import time
+import random
+import types
+import tempfile
 
 USAGE="""python %s [OPTIONS]
 
@@ -64,12 +73,12 @@ analyze a protein alignment using a model for TM proteins.
 
 """ % sys.argv[0]
 
-import Experiment as Experiment
-import Mali
-import Genomics
-import RateEstimation
-import TreeTools
-import IOTools
+import CGAT.Experiment as Experiment
+import CGAT.Mali as Mali
+import CGAT.Genomics as Genomics
+import CGAT.RateEstimation as RateEstimation
+import CGAT.TreeTools as TreeTools
+import CGAT.IOTools as IOTools
 
 from XGram.Generator.Prebuilt import Codons
 from XGram.Model import Annotation

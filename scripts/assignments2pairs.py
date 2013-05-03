@@ -56,7 +56,12 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, optparse
+import os
+import sys
+import string
+import re
+import getopt
+import optparse
 
 USAGE="""python %s [OPTIONS] < assignments > pairs
 
@@ -101,7 +106,10 @@ Options:
 --filename-previous               filename with previous output (that are to be skipped).
 """ % sys.argv[0]
 
-import Experiment, Genomics, PredictionParser, IndexedFasta
+import CGAT.Experiment as Experiment
+import CGAT.Genomics as Genomics
+import CGAT.PredictionParser as PredictionParser
+import CGAT.IndexedFasta as IndexedFasta
 
 global_outfile = None
 global_chunk_size = 0

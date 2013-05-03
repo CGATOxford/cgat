@@ -2,7 +2,7 @@
 """
 
 import sys
-import Genomics
+import CGAT.Genomics as Genomics
 
 if __name__ == "__main__":
 

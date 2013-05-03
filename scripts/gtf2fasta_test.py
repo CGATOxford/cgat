@@ -21,12 +21,18 @@
 #################################################################################
 """unit testing module for the Tree.py class."""
 
-import sys, os, shutil, optparse, random
-import unittest, tempfile
+import sys
+import os
+import shutil
+import optparse
+import random
+import unittest
+import tempfile
 import gtf2fasta
-import IndexedFasta
+import CGAT.IndexedFasta as IndexedFasta
 
-import GTF, GFF
+import CGAT.GTF as GTF
+import CGAT.GFF as GFF
 
 class GeneralTest(unittest.TestCase):
 

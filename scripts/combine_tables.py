@@ -62,10 +62,16 @@ Code
 ----
 
 '''
-import sys, re, string, os, time, glob, optparse
+import sys
+import re
+import string
+import os
+import time
+import glob
+import optparse
 
-import IOTools
-import Experiment as E
+import CGAT.IOTools as IOTools
+import CGAT.Experiment as E
 
 def readTable( filename, options ):
     '''read table and filter.'''

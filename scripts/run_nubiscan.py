@@ -48,12 +48,17 @@ Code
 
 """ 
 
-import os, sys, re, optparse
+import os
+import sys
+import re
+import optparse
 import numpy
-import Experiment as E
+import CGAT.Experiment as E
 import nubiscan
-import FastaIterator, Stats, Genomics
-import Masker
+import CGAT.FastaIterator as FastaIterator
+import CGAT.Stats as Stats
+import CGAT.Genomics as Genomics
+import CGAT.Masker as Masker
 
 # from MEME
 RXRVDR = numpy.matrix( (( 0.02,  0.16,  0.82,  0.66,  0.00,  0.00 ),

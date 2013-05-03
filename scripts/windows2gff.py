@@ -56,11 +56,19 @@ Code
 ----
 
 '''
-import sys, string, re, optparse, time, os, shutil, tempfile, math
+import sys
+import string
+import re
+import optparse
+import time
+import os
+import shutil
+import tempfile
+import math
 
-import Experiment as E
-import GFF
-import IndexedFasta
+import CGAT.Experiment as E
+import CGAT.GFF as GFF
+import CGAT.IndexedFasta as IndexedFasta
 
 def getFixedWidthWindows( map_contig2size, options ):
     """return a list of fixed contig sizes."""

@@ -56,9 +56,12 @@ Code
 
 '''
 
-import os, sys, re, optparse
+import os
+import sys
+import re
+import optparse
 
-import Experiment as E
+import CGAT.Experiment as E
 from rpy2.robjects import r as R
 
 

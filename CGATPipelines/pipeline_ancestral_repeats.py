@@ -119,24 +119,41 @@ Code
 
 
 """
-import sys, tempfile, optparse, shutil, itertools, csv, math, random, re, glob, os, shutil, collections
+import sys
+import tempfile
+import optparse
+import shutil
+import itertools
+import csv
+import math
+import random
+import re
+import glob
+import os
+import shutil
+import collections
 
-import Experiment as E
+import CGAT.Experiment as E
 import logging as L
 
 from ruffus import *
 import csv
 import sqlite3
-import IndexedFasta, IndexedGenome, FastaIterator, Genomics
-import GFF, GTF, Blat
-import IOTools
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.IndexedGenome as IndexedGenome
+import CGAT.FastaIterator as FastaIterator
+import CGAT.Genomics as Genomics
+import CGAT.GFF as GFF
+import CGAT.GTF as GTF
+import CGAT.Blat as Blat
+import CGAT.IOTools as IOTools
 
 ###################################################
 ###################################################
 ###################################################
 ## Pipeline configuration
 ###################################################
-import Pipeline as P
+import CGAT.Pipeline as P
 P.getParameters( 
     ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
      "../pipeline.ini",

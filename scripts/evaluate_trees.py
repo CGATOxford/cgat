@@ -56,7 +56,15 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, tempfile, time, popen2, optparse
+import os
+import sys
+import string
+import re
+import getopt
+import tempfile
+import time
+import popen2
+import optparse
 
 from Bio.Nexus import Nexus
 from Bio.Nexus.Nodes import Node
@@ -74,11 +82,11 @@ Options:
 -g, --genes=                    filename with list of genes per species
 """ % sys.argv[0]
 
-import Experiment
-import BlastAlignments
+import CGAT.Experiment as Experiment
+import CGAT.BlastAlignments as BlastAlignments
 import alignlib
-import Genomics
-import TreeTools
+import CGAT.Genomics as Genomics
+import CGAT.TreeTools as TreeTools
 
 ##------------------------------------------------------------------------
 if __name__ == "__main__":

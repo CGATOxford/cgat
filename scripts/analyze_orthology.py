@@ -56,7 +56,17 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, time, sets, optparse, math, tempfile, copy
+import os
+import sys
+import string
+import re
+import getopt
+import time
+import sets
+import optparse
+import math
+import tempfile
+import copy
 
 """program $Id: analyze_orthology.py 2781 2009-09-10 11:33:14Z andreas $
 
@@ -64,18 +74,19 @@ analyse orthology sets.
 
 """
 
-import Experiment
-import Orthologs
-import Genomics
+import CGAT.Experiment as Experiment
+import CGAT.Orthologs as Orthologs
+import CGAT.Genomics as Genomics
 import pgdb
 import csv
-import scipy, scipy.stats
+import scipy
+import scipy.stats
 import numpy
-import Histogram
+import CGAT.Histogram as Histogram
 import alignlib
-import AlignedPairs
-import TreeTools
-import IOTools
+import CGAT.AlignedPairs as AlignedPairs
+import CGAT.TreeTools as TreeTools
+import CGAT.IOTools as IOTools
 import gzip
 
 ##-------------------------------------------------------------------------------------------

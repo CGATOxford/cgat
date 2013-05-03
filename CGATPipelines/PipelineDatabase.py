@@ -1,11 +1,23 @@
 '''utility functions for working with a database.
 '''
-import sys, tempfile, optparse, shutil, itertools, csv, math, random, re, glob, os, shutil, collections
+import sys
+import tempfile
+import optparse
+import shutil
+import itertools
+import csv
+import math
+import random
+import re
+import glob
+import os
+import shutil
+import collections
 import csv2db
 
-import Experiment as E
-import Pipeline as P
-import Stats
+import CGAT.Experiment as E
+import CGAT.Pipeline as P
+import CGAT.Stats as Stats
 
 try:
     PARAMS = P.getParameters()

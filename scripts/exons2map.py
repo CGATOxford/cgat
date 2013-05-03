@@ -56,7 +56,10 @@ Code
 ----
 
 '''
-import sys, string, re, getopt
+import sys
+import string
+import re
+import getopt
 
 USAGE="""python %s [OPTIONS] < psl > predictions
 
@@ -81,9 +84,9 @@ param_trans = None
 
 param_filename_contigs = None
 
-import Experiment
-import PredictionParser
-import Exons
+import CGAT.Experiment as Experiment
+import CGAT.PredictionParser as PredictionParser
+import CGAT.Exons as Exons
 import alignlib
 
 if __name__ == "__main__":

@@ -58,14 +58,19 @@ Code
 ----
 
 """ 
-import os, sys, string, re, optparse, math
+import os
+import sys
+import string
+import re
+import optparse
+import math
 
 import scipy
 import scipy.stats
-import Experiment
-import TreeTools
-import IOTools
-import WrapperPhylip
+import CGAT.Experiment as Experiment
+import CGAT.TreeTools as TreeTools
+import CGAT.IOTools as IOTools
+import CGAT.WrapperPhylip as WrapperPhylip
 
 def getBestTree( trees, method = "select-largest"):
     """select best tree out of a set of trees."""

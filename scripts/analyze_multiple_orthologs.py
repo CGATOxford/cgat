@@ -56,13 +56,22 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, time, sets, optparse, math, tempfile
+import os
+import sys
+import string
+import re
+import getopt
+import time
+import sets
+import optparse
+import math
+import tempfile
 
 """get ortholog counts for a set of predictions in a genome.
 """
 
-import Experiment
-import IOTools
+import CGAT.Experiment as Experiment
+import CGAT.IOTools as IOTools
 
 import pgdb
 

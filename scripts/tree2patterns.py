@@ -58,14 +58,23 @@ Code
 
 """ 
 
-import os, sys, string, re, getopt, time, sets, optparse, math, tempfile
+import os
+import sys
+import string
+import re
+import getopt
+import time
+import sets
+import optparse
+import math
+import tempfile
 
 
 from Bio.Nexus import Nexus
 from Bio.Nexus.Nodes import Node
 
-import Experiment
-import TreeTools
+import CGAT.Experiment as Experiment
+import CGAT.TreeTools as TreeTools
 
 def traverseGraph( graph, start, block = []):
     """traverse graph, go not passed nodes in block.

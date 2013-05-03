@@ -1,10 +1,11 @@
 ''' Pipeline components related to KEGG analysis '''
 
-import Experiment as E
+import CGAT.Experiment as E
 from rpy2.robjects import r as R
 import rpy2.robjects as ro
 import rpy2.robjects.numpy2ri
-import IOTools, re
+import CGAT.IOTools as IOTools
+import re
 
 def importKEGGAssignments(outfile, mart, biomart_dataset):
     ''' import the KEGG annotations from the R KEGG.db 

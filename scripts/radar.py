@@ -56,7 +56,15 @@ Code
 ----
 
 '''
-import os, sys, string, re, optparse, math, time, tempfile, subprocess
+import os
+import sys
+import string
+import re
+import optparse
+import math
+import time
+import tempfile
+import subprocess
 
 USAGE="""python %s [OPTIONS] < mali > mali
 
@@ -75,10 +83,10 @@ that the edit operations are called upon.
 
 """ % sys.argv[0]
 
-import Experiment
-import IOTools
-import Genomics
-import FastaIterator
+import CGAT.Experiment as Experiment
+import CGAT.IOTools as IOTools
+import CGAT.Genomics as Genomics
+import CGAT.FastaIterator as FastaIterator
 
 ##------------------------------------------------------------
 if __name__ == '__main__':

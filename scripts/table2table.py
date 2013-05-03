@@ -119,11 +119,18 @@ Code
 ----
 
 '''
-import os, sys, string, re, optparse, math, types, itertools
+import os
+import sys
+import string
+import re
+import optparse
+import math
+import types
+import itertools
 
-import Experiment as E
-import CSV
-import Stats
+import CGAT.Experiment as E
+import CGAT.CSV as CSV
+import CGAT.Stats as Stats
 import scipy.stats
 
 def getColumns( fields, columns = "all" ):

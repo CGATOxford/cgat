@@ -56,7 +56,12 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, math
+import os
+import sys
+import string
+import re
+import getopt
+import math
 
 USAGE="""python %s [OPTIONS] < exonerate_output > filtered
 
@@ -130,12 +135,12 @@ param_remove_fragments = False
 
 param_pattern_prefix = ""
 
-import Experiment
-import MaliIO
+import CGAT.Experiment as Experiment
+import CGAT.MaliIO as MaliIO
 import scipy
-import Exons
+import CGAT.Exons as Exons
 import alignlib
-import Genomics
+import CGAT.Genomics as Genomics
 import numpy
 
 ##--------------------------------------------------------------------------------------- 

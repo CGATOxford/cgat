@@ -80,12 +80,20 @@ Code
 ----
 
 '''
-import os, sys, string, re, optparse, math, time, random, types
+import os
+import sys
+import string
+import re
+import optparse
+import math
+import time
+import random
+import types
 
 
-import Experiment
-import IOTools
-import Mali
+import CGAT.Experiment as Experiment
+import CGAT.IOTools as IOTools
+import CGAT.Mali as Mali
 
 ## import shared helper functions from malis2malis
 from malis2malis import *

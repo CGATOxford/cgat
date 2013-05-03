@@ -56,9 +56,17 @@ Code
 ----
 
 '''
-import os, sys, string, re, time, optparse, tempfile, subprocess, types
+import os
+import sys
+import string
+import re
+import time
+import optparse
+import tempfile
+import subprocess
+import types
 import numpy
-import Experiment as E
+import CGAT.Experiment as E
 
 def output( counts, row_names, col_names, options ):
 

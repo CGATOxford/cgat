@@ -49,21 +49,41 @@ Code
 ----
 
 """
-import sys, tempfile, optparse, shutil, itertools, csv, math, random, re, glob, os, shutil, collections, ConfigParser
+import sys
+import tempfile
+import optparse
+import shutil
+import itertools
+import csv
+import math
+import random
+import re
+import glob
+import os
+import shutil
+import collections
+import ConfigParser
 
-import Experiment as E
-import Pipeline as P
+import CGAT.Experiment as E
+import CGAT.Pipeline as P
 from ruffus import *
 import csv
 import sqlite3
-import IndexedFasta, IndexedGenome, FastaIterator, Genomics
-import IOTools
-import MAST, GTF, GFF, Bed, Stats
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.IndexedGenome as IndexedGenome
+import CGAT.FastaIterator as FastaIterator
+import CGAT.Genomics as Genomics
+import CGAT.IOTools as IOTools
+import CGAT.MAST as MAST
+import CGAT.GTF as GTF
+import CGAT.GFF as GFF
+import CGAT.Bed as Bed
+import CGAT.Stats as Stats
 import cStringIO
 import pysam
 import numpy
 import gzip
-import Expression
+import CGAT.Expression as Expression
 import fileinput
 
 import rpy2

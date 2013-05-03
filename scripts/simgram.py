@@ -56,7 +56,17 @@ Code
 ----
 
 '''
-import os, sys, string, re, tempfile, subprocess, optparse, time, math, shutil, random
+import os
+import sys
+import string
+import re
+import tempfile
+import subprocess
+import optparse
+import time
+import math
+import shutil
+import random
 
 from types import *
 
@@ -65,10 +75,10 @@ USAGE = """python simgram.py [OPTIONS] < mali.in > out
 Simulate alignments using simgram
 """
 
-import Experiment as Experiment
-import Mali
-import Genomics
-import TreeTools
+import CGAT.Experiment as Experiment
+import CGAT.Mali as Mali
+import CGAT.Genomics as Genomics
+import CGAT.TreeTools as TreeTools
 
 # imports for xrate computation
 from XGram.Generator.Prebuilt import Codons

@@ -57,9 +57,15 @@ Code
 ----
 
 '''
-import os, sys, string, re, optparse, time, random
-import Experiment
-import IOTools
+import os
+import sys
+import string
+import re
+import optparse
+import time
+import random
+import CGAT.Experiment as Experiment
+import CGAT.IOTools as IOTools
 import networkx
 
 def getFile( section, options ):

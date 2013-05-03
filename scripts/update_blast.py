@@ -56,11 +56,20 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, time, sets, optparse, math, tempfile
+import os
+import sys
+import string
+import re
+import getopt
+import time
+import sets
+import optparse
+import math
+import tempfile
 
-import Experiment
-import Genomics
-import BlastAlignments
+import CGAT.Experiment as Experiment
+import CGAT.Genomics as Genomics
+import CGAT.BlastAlignments as BlastAlignments
 
 def WriteUnique( file, clusters ):
     

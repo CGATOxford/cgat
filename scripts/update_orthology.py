@@ -56,14 +56,24 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, time, sets, optparse, math, tempfile, glob
+import os
+import sys
+import string
+import re
+import getopt
+import time
+import sets
+import optparse
+import math
+import tempfile
+import glob
 
 """ program $Id: update_orthology.py 2781 2009-09-10 11:33:14Z andreas $
 
 update orthology assignments.
 
 """
-import Experiment
+import CGAT.Experiment as Experiment
 
 def createLink( old_fn, new_fn ):
     """create symbolic link between old and new."""

@@ -3,16 +3,18 @@ functions and classes for use with the lincRNA
 pipeline
 '''
 
-import re, sys, os
-import GTF
-import IOTools
+import re
+import sys
+import os
+import CGAT.GTF as GTF
+import CGAT.IOTools as IOTools
 import gzip
 import collections
-import IndexedGenome
-import Pipeline as P
-import Experiment as E
+import CGAT.IndexedGenome as IndexedGenome
+import CGAT.Pipeline as P
+import CGAT.Experiment as E
 import sqlite3
-import Experiment as E
+import CGAT.Experiment as E
 
 ########################################################
 # gene set building

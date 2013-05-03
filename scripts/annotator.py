@@ -55,7 +55,13 @@ Code
 ----
 
 '''
-import sys, string, re, optparse, collections, bisect, os
+import sys
+import string
+import re
+import optparse
+import collections
+import bisect
+import os
 
 USAGE="""python %s [OPTIONS] input1 input2
 
@@ -67,10 +73,11 @@ use bme or rtree indices.
 Version: $Id: annotator.py 2861 2010-02-23 17:36:32Z andreas $
 """ % sys.argv[0]
 
-import Experiment as E
-import GFF, GTF
+import CGAT.Experiment as E
+import CGAT.GFF as GFF
+import CGAT.GTF as GTF
 import numpy
-import Stats
+import CGAT.Stats as Stats
 
 class Identifier:
     def __init__( self, line = None):

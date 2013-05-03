@@ -58,9 +58,15 @@ Code
 ----
 
 '''
-import sys, re, string, os, time, glob, optparse
+import sys
+import re
+import string
+import os
+import time
+import glob
+import optparse
 
-import Experiment
+import CGAT.Experiment as Experiment
 
 ##---------------------------------------------------------------------------------------------------------        
 if __name__ == '__main__':

@@ -46,12 +46,24 @@ Code
 ----
 
 """ 
-import sys, re, string, optparse, time, os, itertools, tempfile, subprocess, shutil
+import sys
+import re
+import string
+import optparse
+import time
+import os
+import itertools
+import tempfile
+import subprocess
+import shutil
 
-import Experiment as E
-import Stats
-import GFF, GTF, Bed
-import IndexedFasta, IOTools
+import CGAT.Experiment as E
+import CGAT.Stats as Stats
+import CGAT.GFF as GFF
+import CGAT.GTF as GTF
+import CGAT.Bed as Bed
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.IOTools as IOTools
 
 def main( argv = sys.argv ):
 

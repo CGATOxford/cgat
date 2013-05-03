@@ -56,7 +56,13 @@ Code
 ----
 
 '''
-import os, sys, string, re, tempfile, optparse, gzip
+import os
+import sys
+import string
+import re
+import tempfile
+import optparse
+import gzip
 
 USAGE="""python %s [OPTIONS] < exonerate_output > filtered
 
@@ -89,12 +95,12 @@ Options for deciding when two queries are homologs:
 --overlap-min-identity=         minimum percent identity for overlap
 """ % sys.argv[0]
 
-import Experiment
-import Exons
-import Genomics
-import Intervalls
-import PredictionParser
-import PredictionFile
+import CGAT.Experiment as Experiment
+import CGAT.Exons as Exons
+import CGAT.Genomics as Genomics
+import CGAT.Intervalls as Intervalls
+import CGAT.PredictionParser as PredictionParser
+import CGAT.PredictionFile as PredictionFile
 import alignlib
 
 

@@ -56,7 +56,17 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, time, sets, optparse, math, tempfile, copy
+import os
+import sys
+import string
+import re
+import getopt
+import time
+import sets
+import optparse
+import math
+import tempfile
+import copy
 
 from types import *
 
@@ -66,16 +76,16 @@ analyse orthology sets.
 
 """
 
-import Experiment
-import TreeTools
-import Tree
-import SVGTree
-import SVGdraw
-import IOTools
-import Stats
+import CGAT.Experiment as Experiment
+import CGAT.TreeTools as TreeTools
+import CGAT.Tree as Tree
+import CGAT.SVGTree as SVGTree
+import CGAT.SVGdraw as SVGdraw
+import CGAT.IOTools as IOTools
+import CGAT.Stats as Stats
 import scipy
 import scipy.stats
-import Histogram
+import CGAT.Histogram as Histogram
 
 import analyze_orthology_multiple as TreeReconciliation
 

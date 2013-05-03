@@ -46,19 +46,26 @@ Code
 
 """
 from ruffus import *
-import sys, glob, subprocess, re, csv, os
-import optparse, shutil, collections
+import sys
+import glob
+import subprocess
+import re
+import csv
+import os
+import optparse
+import shutil
+import collections
 import sqlite3
 import numpy
 
-import Experiment as E
-import Pipeline as P
-import IOTools
+import CGAT.Experiment as E
+import CGAT.Pipeline as P
+import CGAT.IOTools as IOTools
 
 ## global options
 PARAMS = P.getParameters()
 
-import GTF
+import CGAT.GTF as GTF
 
 TRACKS = ("Down","NonDiff","Up","UpAndDown")
 

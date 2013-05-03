@@ -56,7 +56,16 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, tempfile, time, popen2, optparse, hashlib
+import os
+import sys
+import string
+import re
+import getopt
+import tempfile
+import time
+import popen2
+import optparse
+import hashlib
 
 USAGE="""python %s [OPTIONS] < graph.in > graph.out
 
@@ -74,8 +83,8 @@ Options:
 -i, --identity-map              mapping is done by identities
 """ % sys.argv[0]
 
-import Experiment
-import BlastAlignments
+import CGAT.Experiment as Experiment
+import CGAT.BlastAlignments as BlastAlignments
 
 def ReadIdentityMap( infile):
     """read identity map.

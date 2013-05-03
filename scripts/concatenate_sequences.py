@@ -59,7 +59,15 @@ Code
 ----
 
 '''
-import os, sys, string, re, optparse, math, time, tempfile, subprocess
+import os
+import sys
+import string
+import re
+import optparse
+import math
+import time
+import tempfile
+import subprocess
 
 USAGE="""python %s [OPTIONS] in1 in2 [...]
 
@@ -67,11 +75,11 @@ USAGE="""python %s [OPTIONS] in1 in2 [...]
 
 """ % sys.argv[0]
 
-import Experiment
-import IOTools
-import Genomics
-import FastaIterator
-import Masker
+import CGAT.Experiment as Experiment
+import CGAT.IOTools as IOTools
+import CGAT.Genomics as Genomics
+import CGAT.FastaIterator as FastaIterator
+import CGAT.Masker as Masker
 
 ##------------------------------------------------------------
 if __name__ == '__main__':

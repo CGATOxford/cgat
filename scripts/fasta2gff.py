@@ -55,11 +55,21 @@ Code
 
 '''
 
-import os, sys, string, re, getopt, tempfile, time, optparse, math, glob
+import os
+import sys
+import string
+import re
+import getopt
+import tempfile
+import time
+import optparse
+import math
+import glob
 
-import Experiment as E
-import IndexedFasta
-import GFF, GTF
+import CGAT.Experiment as E
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.GFF as GFF
+import CGAT.GTF as GTF
 
 USAGE="""python %s [OPTIONS] 
 

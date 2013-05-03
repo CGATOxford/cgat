@@ -71,9 +71,12 @@ Code
 
 '''
 
-import os, sys, re, optparse
+import os
+import sys
+import re
+import optparse
 
-import Experiment as E
+import CGAT.Experiment as E
 
 def getNodes( nodes = None):
     '''hack - allow ranges, ...'''

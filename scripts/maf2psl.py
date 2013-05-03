@@ -48,13 +48,16 @@ Code
 
 """ 
 
-import os, sys, re, optparse
+import os
+import sys
+import re
+import optparse
 
-import Experiment as E
+import CGAT.Experiment as E
 from bx.align import maf
 from bx.align.tools import get_components_for_species
 
-import Blat
+import CGAT.Blat as Blat
 
 def threaditer( reader, species ):
     '''iterate over reader and return components for species.'''

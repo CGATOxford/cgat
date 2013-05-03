@@ -49,7 +49,7 @@ Code
 
 """
 import sqlite3
-import Pipeline as P
+import CGAT.Pipeline as P
 import rpy2.robjects as R
 import pickle
 from pandas import DataFrame

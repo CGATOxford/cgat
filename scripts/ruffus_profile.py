@@ -24,11 +24,21 @@ summary information.
 
 '''
 
-import sys, os, imp, cStringIO, re, types, glob, optparse, shutil, datetime, logging
+import sys
+import os
+import imp
+import cStringIO
+import re
+import types
+import glob
+import optparse
+import shutil
+import datetime
+import logging
 import collections
 
-import Experiment as E
-import IOTools
+import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
 
 class Counter(object):
     '''

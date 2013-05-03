@@ -56,11 +56,17 @@ Code
 ----
 
 '''
-import sys, re, string, os, getopt, time, optparse
+import sys
+import re
+import string
+import os
+import getopt
+import time
+import optparse
 
-import Experiment
-import IndexedFasta
-import FastaIterator
+import CGAT.Experiment as Experiment
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.FastaIterator as FastaIterator
 
 class FromFastaIterator:
 

@@ -56,12 +56,16 @@ Code
 ----
 
 '''
-import os, sys, re, csv
+import os
+import sys
+import re
+import csv
 import sqlite3
 
-import Stats, IOTools
-import Experiment as E
-import Pipeline as P
+import CGAT.Stats as Stats
+import CGAT.IOTools as IOTools
+import CGAT.Experiment as E
+import CGAT.Pipeline as P
 
 PARAMS = P.getParameters()
 

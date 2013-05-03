@@ -56,7 +56,16 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, time, optparse, math, tempfile, bisect
+import os
+import sys
+import string
+import re
+import getopt
+import time
+import optparse
+import math
+import tempfile
+import bisect
 
 USAGE="""python plot_duplications.py [OPTIONS] < stdin > stdout
 
@@ -82,10 +91,10 @@ start with a "#". You can remove this by setting -v 0 or --verbose=0.
 """
 
 
-import Experiment
-import IOTools
-import SVGdraw 
-import TreeTools
+import CGAT.Experiment as Experiment
+import CGAT.IOTools as IOTools
+import CGAT.SVGdraw as SVGdraw
+import CGAT.TreeTools as TreeTools
 
 # some definitions for the layout of the picture
 BLACK = (0,0,0)

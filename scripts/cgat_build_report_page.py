@@ -56,10 +56,14 @@ Code
 
 '''
 
-import os, sys, re, optparse, subprocess
+import os
+import sys
+import re
+import optparse
+import subprocess
 
-import Experiment as E
-import IOTools
+import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
 
 def main( argv = None ):
     """script main.

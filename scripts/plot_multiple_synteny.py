@@ -56,16 +56,24 @@ Code
 ----
 
 '''
-import os, sys, string, re, time, optparse, math, random, tempfile
+import os
+import sys
+import string
+import re
+import time
+import optparse
+import math
+import random
+import tempfile
 
 """ program $Id: plot_multiple_synteny.py 2781 2009-09-10 11:33:14Z andreas $
 
 """
-import Experiment
-import IOTools
-import SVGdraw 
+import CGAT.Experiment as Experiment
+import CGAT.IOTools as IOTools
+import CGAT.SVGdraw as SVGdraw
 import numpy
-import Synteny
+import CGAT.Synteny as Synteny
 import pgdb
 
 # some definitions for the layout of the picture

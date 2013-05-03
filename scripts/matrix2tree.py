@@ -56,15 +56,25 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, time, optparse, math, tempfile, subprocess, random
+import os
+import sys
+import string
+import re
+import getopt
+import time
+import optparse
+import math
+import tempfile
+import subprocess
+import random
 
 from types import *
 
-import Experiment
-import TreeTools
-import Tree
-import IOTools
-import WrapperPhylip
+import CGAT.Experiment as Experiment
+import CGAT.TreeTools as TreeTools
+import CGAT.Tree as Tree
+import CGAT.IOTools as IOTools
+import CGAT.WrapperPhylip as WrapperPhylip
 
 if __name__ == "__main__":
 

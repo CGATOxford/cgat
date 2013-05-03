@@ -56,7 +56,12 @@ Code
 ----
 
 '''
-import sys, re, string, os, getopt, time
+import sys
+import re
+import string
+import os
+import getopt
+import time
 
 USAGE = """python %s < stdin > stdout
 
@@ -78,7 +83,7 @@ OPTIONS:
 --pattern-identifier            if given, use this pattern to extract id from column.
 """ % (sys.argv[0], "s")
 
-import Experiment
+import CGAT.Experiment as Experiment
 
 param_long_options = ["verbose=", "help", "split-regex=", "after", "pattern-output=", "skip", "column=", "map=", "dry-run",
                       "header", "remove-key", "append", "pattern-identifier=" ]

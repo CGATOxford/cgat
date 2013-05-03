@@ -57,9 +57,16 @@ Code
 ----
 
 '''
-import sys, string, re, optparse, time, os, shutil, tempfile
+import sys
+import string
+import re
+import optparse
+import time
+import os
+import shutil
+import tempfile
 
-import Experiment as E
+import CGAT.Experiment as E
 
 USAGE="""python %s
 """ % sys.argv[0]

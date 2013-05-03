@@ -56,12 +56,18 @@ Code
 ----
 
 '''
-import os, sys, string, re, optparse, time, datetime
+import os
+import sys
+import string
+import re
+import optparse
+import time
+import datetime
 
 """read Medline entries from Web
 """
 
-import Experiment
+import CGAT.Experiment as Experiment
 
 from Bio import Medline
 from Bio import PubMed

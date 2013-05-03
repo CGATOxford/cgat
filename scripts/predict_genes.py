@@ -56,7 +56,14 @@ Code
 ----
 
 '''
-import os, sys, string, re, optparse, tempfile, time, subprocess
+import os
+import sys
+import string
+import re
+import optparse
+import tempfile
+import time
+import subprocess
 
 USAGE="""python %s [OPTIONS] peptide genome
 
@@ -116,12 +123,12 @@ HEADER="""# QUERY:        1  query id
 SHORT_HEADER="""# QUERY\tSBJCT\tSCORE\tQFROM\tQTO\tSBJCT\tSFROM\tSTO\tSALI\tQLEN\tCQUERY\tNGAPS\tNFR\tNINTRON\tNPHASE0\tNPHAS1\tNPHASE2\tNSTOP\tPIDE\tPSIM\tPEP\tSGFROM\tSGTO\tGALI\tNERROR"""
 
 
-import Experiment
-import Genomics
-import IndexedFasta
+import CGAT.Experiment as Experiment
+import CGAT.Genomics as Genomics
+import CGAT.IndexedFasta as IndexedFasta
 import alignlib
-import PredictionParser
-import Exons
+import CGAT.PredictionParser as PredictionParser
+import CGAT.Exons as Exons
 
 global_options = {}
 

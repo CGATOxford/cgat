@@ -56,20 +56,26 @@ Code
 ----
 
 '''
-import sys, re, os, tempfile, collections, shutil, glob
+import sys
+import re
+import os
+import tempfile
+import collections
+import shutil
+import glob
 
 import logging as L
-import Experiment as E
-import Pipeline as P
+import CGAT.Experiment as E
+import CGAT.Pipeline as P
 import sqlite3
-import IndexedFasta
-import Masker
-import Glam2Scan
-import MAST
-import IOTools
-import Bed
-import Bioprospector
-import FastaIterator
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.Masker as Masker
+import CGAT.Glam2Scan as Glam2Scan
+import CGAT.MAST as MAST
+import CGAT.IOTools as IOTools
+import CGAT.Bed as Bed
+import CGAT.Bioprospector as Bioprospector
+import CGAT.FastaIterator as FastaIterator
 import glob
 
 PARAMS = P.getParameters()

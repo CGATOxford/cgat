@@ -56,7 +56,12 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, math
+import os
+import sys
+import string
+import re
+import getopt
+import math
 
 USAGE="""python %s [OPTIONS] < exonerate_output > filtered
 
@@ -81,7 +86,7 @@ param_filename = None
 param_filename_keys = None
 param_format = "predictions"
 
-import PredictionParser
+import CGAT.PredictionParser as PredictionParser
 
 ##------------------------------------------------------------
 if __name__ == '__main__':

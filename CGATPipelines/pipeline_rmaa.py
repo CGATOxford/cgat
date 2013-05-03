@@ -127,9 +127,17 @@ Code
 # load modules
 from ruffus import *
 
-import Experiment as E
+import CGAT.Experiment as E
 
-import sys, os, re, shutil, itertools, math, glob, logging, time
+import sys
+import os
+import re
+import shutil
+import itertools
+import math
+import glob
+import logging
+import time
 
 # for plotting
 try:
@@ -142,7 +150,7 @@ except RuntimeError:
 import numpy
 
 # load options from the config file
-import Pipeline as P
+import CGAT.Pipeline as P
 P.getParameters( 
     ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
      "../pipeline.ini",

@@ -60,12 +60,20 @@ Code
 ----
 
 '''
-import os, sys, string, re, tempfile, subprocess, optparse, math, collections
+import os
+import sys
+import string
+import re
+import tempfile
+import subprocess
+import optparse
+import math
+import collections
 
-import Experiment as E
-import Genomics
-import IOTools
-import FastaIterator
+import CGAT.Experiment as E
+import CGAT.Genomics as Genomics
+import CGAT.IOTools as IOTools
+import CGAT.FastaIterator as FastaIterator
 
 ##---------------------------------------------------------------------------------------------
     

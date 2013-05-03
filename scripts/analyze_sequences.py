@@ -54,12 +54,18 @@ Code
 ----
 
 '''
-import os, sys, string, re, tempfile, subprocess, optparse
+import os
+import sys
+import string
+import re
+import tempfile
+import subprocess
+import optparse
 
-import Experiment
-import Genomics
+import CGAT.Experiment as Experiment
+import CGAT.Genomics as Genomics
 
-import FastaIterator
+import CGAT.FastaIterator as FastaIterator
 import Bio.Alphabet.IUPAC
 
 class SequenceProperties:

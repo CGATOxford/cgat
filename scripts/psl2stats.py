@@ -56,17 +56,24 @@ Code
 ----
 
 '''
-import os, sys, string, re, tempfile, subprocess, optparse, math
+import os
+import sys
+import string
+import re
+import tempfile
+import subprocess
+import optparse
+import math
 
 
-import Experiment
-import Blat
-import IOTools
+import CGAT.Experiment as Experiment
+import CGAT.Blat as Blat
+import CGAT.IOTools as IOTools
 
 # import psyco_full
 import sys
 import bx.bitset
-import bx.bitset_builders 
+import bx.bitset_builders
 
 ##---------------------------------------------------------------------------------------------
     

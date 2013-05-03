@@ -56,9 +56,17 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, tempfile, time, optparse, math
+import os
+import sys
+import string
+import re
+import getopt
+import tempfile
+import time
+import optparse
+import math
 
-import Experiment
+import CGAT.Experiment as Experiment
 
 USAGE="""python %s [OPTIONS] < graph.in > graph.out
 

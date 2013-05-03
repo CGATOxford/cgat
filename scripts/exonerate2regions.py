@@ -56,7 +56,12 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, time
+import os
+import sys
+import string
+import re
+import getopt
+import time
 
 USAGE="""python %s [OPTIONS] < exonerate_output > filtered
 
@@ -77,10 +82,10 @@ Options:
 -d, --dump                      just dump results
 """ % sys.argv[0]
 
-import Experiment
-import Genomics
-import Intervalls
-import PredictionParser
+import CGAT.Experiment as Experiment
+import CGAT.Genomics as Genomics
+import CGAT.Intervalls as Intervalls
+import CGAT.PredictionParser as PredictionParser
 
 HEADER="""# QUERY:        1  query
 # QFROM:        2  query first residue

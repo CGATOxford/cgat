@@ -56,10 +56,15 @@ Code
 ----
 
 '''
-import sys, re, string, os, optparse
+import sys
+import re
+import string
+import os
+import optparse
 
-import Experiment
-import scipy, scipy.stats
+import CGAT.Experiment as Experiment
+import scipy
+import scipy.stats
 
 USAGE="""python %s [OPTIONS]
 

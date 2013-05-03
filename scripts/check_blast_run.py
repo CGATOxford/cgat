@@ -56,15 +56,24 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, time, sets, optparse, math, tempfile
+import os
+import sys
+import string
+import re
+import getopt
+import time
+import sets
+import optparse
+import math
+import tempfile
 
 """ program $Id: check_blast_run.py 2781 2009-09-10 11:33:14Z andreas $
 check blast run.
 
 Input: one or more sets of vertices.
 """
-import Experiment
-import BlastAlignments
+import CGAT.Experiment as Experiment
+import CGAT.BlastAlignments as BlastAlignments
 
 parser = optparse.OptionParser( version = "%prog version: $Id: check_blast_run.py 2781 2009-09-10 11:33:14Z andreas $")
 

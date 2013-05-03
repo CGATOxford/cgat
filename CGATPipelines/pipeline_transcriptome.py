@@ -103,22 +103,41 @@ Code
 ====
 
 """
-import sys, tempfile, optparse, shutil, itertools, csv, math, random, re, glob, os, shutil, collections
-import csv, gzip
+import sys
+import tempfile
+import optparse
+import shutil
+import itertools
+import csv
+import math
+import random
+import re
+import glob
+import os
+import shutil
+import collections
+import csv
+import gzip
 from ruffus import *
 import sqlite3
 
-import Experiment as E
-import Pipeline as P
-import IndexedFasta, IndexedGenome, FastaIterator, Genomics
-import IOTools, Database, GFF, GTF
-import Database
+import CGAT.Experiment as E
+import CGAT.Pipeline as P
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.IndexedGenome as IndexedGenome
+import CGAT.FastaIterator as FastaIterator
+import CGAT.Genomics as Genomics
+import CGAT.IOTools as IOTools
+import CGAT.Database as Database
+import CGAT.GFF as GFF
+import CGAT.GTF as GTF
+import CGAT.Database as Database
 
 import PipelineGeneset as PGeneset
 import PipelineAnnotator as PAnnotator
 
 # load options from the config file
-import Pipeline as P
+import CGAT.Pipeline as P
 P.getParameters( 
     ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
      "../pipeline.ini",
@@ -140,7 +159,7 @@ PARAMS_ANCESTRAL_REPEATS = P.peekParameters( PARAMS["ancestral_repeats_dir"],
 ###################################################################
 ## Helper functions mapping tracks to conditions, etc
 ###################################################################
-import PipelineTracks
+import CGATPipelines.PipelineTracks as PipelineTracks
 
 # collect sra nd fastq.gz tracks
 TRACKS = PipelineTracks.Tracks( PipelineTracks.Sample ).loadFromDirectory( 

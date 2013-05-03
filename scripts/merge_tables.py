@@ -56,14 +56,21 @@ Code
 ----
 
 '''
-import os, sys, string, re, tempfile, subprocess, optparse, time
+import os
+import sys
+import string
+import re
+import tempfile
+import subprocess
+import optparse
+import time
 
 """merge two tables with the same number of lines
 """
 
-import Experiment
+import CGAT.Experiment as Experiment
 
-import WrapperAdaptiveCAI
+import CGAT.WrapperAdaptiveCAI as WrapperAdaptiveCAI
 import numpy
 
 parser = optparse.OptionParser( version = "%prog version: $Id: merge_tables.py 2782 2009-09-10 11:40:29Z andreas $")

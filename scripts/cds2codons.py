@@ -55,9 +55,19 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, time, sets, optparse, math, tempfile
+import os
+import sys
+import string
+import re
+import getopt
+import time
+import sets
+import optparse
+import math
+import tempfile
 
-import Experiment, Genomics
+import CGAT.Experiment as Experiment
+import CGAT.Genomics as Genomics
 import alignlib
 
 class Map:

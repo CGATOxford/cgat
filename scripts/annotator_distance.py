@@ -56,20 +56,30 @@ Code
 ----
 """
 
-import os, sys, optparse, collections, itertools
-import GFF, GTF, Bed
-import Intervals, IOTools
-import Experiment as E
+import os
+import sys
+import optparse
+import collections
+import itertools
+import CGAT.GFF as GFF
+import CGAT.GTF as GTF
+import CGAT.Bed as Bed
+import CGAT.Intervals as Intervals
+import CGAT.IOTools as IOTools
+import CGAT.Experiment as E
 import bx.intervals.io
 import bx.intervals.intersection
 import numpy
-import random, math, array
-import scipy, scipy.stats
+import random
+import math
+import array
+import scipy
+import scipy.stats
 
 import matplotlib.pyplot as plt
 from matplotlib import _pylab_helpers
 
-import progressbar 
+import progressbar
 
 USAGE="""python %s [OPTIONS]
 

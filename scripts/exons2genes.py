@@ -56,7 +56,11 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt
+import os
+import sys
+import string
+import re
+import getopt
 
 USAGE="""python %s < predictions > genes
 
@@ -74,11 +78,11 @@ Options:
 -G, --genes                     table with genic regions to be skipped
 """ % sys.argv[0]
 
-import Experiment
-import Genomics
-import Exons
-import Intervalls
-import PredictionParser
+import CGAT.Experiment as Experiment
+import CGAT.Genomics as Genomics
+import CGAT.Exons as Exons
+import CGAT.Intervalls as Intervalls
+import CGAT.PredictionParser as PredictionParser
 import alignlib
 import pgdb
 

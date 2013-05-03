@@ -56,7 +56,14 @@ Code
 ----
 
 '''
-import os, sys, string, re, time, optparse, subprocess, tempfile
+import os
+import sys
+import string
+import re
+import time
+import optparse
+import subprocess
+import tempfile
 
 """ program $Id: clone_run.py 2781 2009-09-10 11:33:14Z andreas $
 
@@ -65,7 +72,7 @@ clone a prediction run.
 1. copy all tables from new schema into old schema.
 
 """
-import Experiment
+import CGAT.Experiment as Experiment
 
 def Run( statement, stdout = sys.stdout, stderr = sys.stderr ):
 

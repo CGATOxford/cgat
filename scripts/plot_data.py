@@ -60,11 +60,17 @@ Code
 ----
 
 '''
-import sys, re, string, os, getopt, time, optparse
+import sys
+import re
+import string
+import os
+import getopt
+import time
+import optparse
 
-import Experiment as E
-import Histogram
-import MatlabTools
+import CGAT.Experiment as E
+import CGAT.Histogram as Histogram
+import CGAT.MatlabTools as MatlabTools
 import numpy
 import matplotlib.numerix.ma as MA
 

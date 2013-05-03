@@ -58,10 +58,15 @@ Code
 ----
 
 '''
-import os, sys, string, re, random, optparse
+import os
+import sys
+import string
+import re
+import random
+import optparse
 
-import Experiment as E
-import Mali
+import CGAT.Experiment as E
+import CGAT.Mali as Mali
 
 def getBootstrappedMali( mali, block_size = 1):
     """return a multiple alignment of same

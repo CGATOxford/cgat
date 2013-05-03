@@ -109,23 +109,42 @@ Code
 ====
 
 """
-import sys, tempfile, optparse, shutil, itertools, csv, math, random, re, glob, os, shutil, collections, gzip
+import sys
+import tempfile
+import optparse
+import shutil
+import itertools
+import csv
+import math
+import random
+import re
+import glob
+import os
+import shutil
+import collections
+import gzip
 import sqlite3
 import pysam
-import IndexedFasta, IndexedGenome, FastaIterator, Genomics
-import IOTools
-import MAST, GTF, GFF, Bed
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.IndexedGenome as IndexedGenome
+import CGAT.FastaIterator as FastaIterator
+import CGAT.Genomics as Genomics
+import CGAT.IOTools as IOTools
+import CGAT.MAST as MAST
+import CGAT.GTF as GTF
+import CGAT.GFF as GFF
+import CGAT.Bed as Bed
 import cStringIO
 import numpy
-import Masker
+import CGAT.Masker as Masker
 import fileinput
 import gff2annotator
-import Experiment as E
+import CGAT.Experiment as E
 import logging as L
 import PipelineChipseq as PIntervals
-import PipelineTracks
-import PipelineMapping
-import PipelineGO
+import CGATPipelines.PipelineTracks as PipelineTracks
+import CGATPipelines.PipelineMapping as PipelineMapping
+import CGATPipelines.PipelineGO as PipelineGO
 from ruffus import *
 from rpy2.robjects import r as R
 import rpy2.robjects as ro
@@ -137,7 +156,7 @@ USECLUSTER = True
 ###################################################
 ## Pipeline configuration
 ###################################################
-import Pipeline as P
+import CGAT.Pipeline as P
 P.getParameters(  ["pipeline_proj007.ini", ] )
 PARAMS = P.PARAMS
 PARAMS_ANNOTATIONS = [0,] #P.peekParameters( PARAMS["geneset_dir"],"pipeline_annotations.py" )

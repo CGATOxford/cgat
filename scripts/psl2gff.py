@@ -47,12 +47,19 @@ Code
 
 '''
 
-import sys, re, string, optparse, time, os, glob
+import sys
+import re
+import string
+import optparse
+import time
+import os
+import glob
 
-import Experiment as E
-import IOTools
-import Blat
-import GFF, GTF
+import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
+import CGAT.Blat as Blat
+import CGAT.GFF as GFF
+import CGAT.GTF as GTF
 
 def main():
 

@@ -61,7 +61,11 @@ Code
 
 '''
 
-import sys, re, os, string, getopt
+import sys
+import re
+import os
+import string
+import getopt
 import alignlib
 
 param_master = 0

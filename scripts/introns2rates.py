@@ -68,18 +68,23 @@ Code
 ----
 
 '''
-import os, sys, string, re, getopt, tempfile
+import os
+import sys
+import string
+import re
+import getopt
+import tempfile
 
-import Experiment
-import Genomics
-import Exons
-import WrapperBaseML
-import WrapperGblocks
+import CGAT.Experiment as Experiment
+import CGAT.Genomics as Genomics
+import CGAT.Exons as Exons
+import CGAT.WrapperBaseML as WrapperBaseML
+import CGAT.WrapperGblocks as WrapperGblocks
 import alignlib
 
-import WrapperDialign
-import WrapperDBA
-import WrapperClustal
+import CGAT.WrapperDialign as WrapperDialign
+import CGAT.WrapperDBA as WrapperDBA
+import CGAT.WrapperClustal as WrapperClustal
 
 param_long_options=["verbose=", "help",
                     "write-exons=", "write-introns=",

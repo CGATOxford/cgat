@@ -63,7 +63,7 @@ Code
 ----
 
 '''
-import IndexedFasta
+import CGAT.IndexedFasta as IndexedFasta
 
 if __name__ == "__main__":
     IndexedFasta.main()

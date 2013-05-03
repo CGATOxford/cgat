@@ -56,11 +56,20 @@ Code
 ----
 
 '''
-import os, sys, string, re, tempfile, subprocess, optparse, time, math, code
-import Experiment as E
-import MatlabTools
+import os
+import sys
+import string
+import re
+import tempfile
+import subprocess
+import optparse
+import time
+import math
+import code
+import CGAT.Experiment as E
+import CGAT.MatlabTools as MatlabTools
 import numpy
-import Stats
+import CGAT.Stats as Stats
 
 from rpy2.robjects import r as R
 import rpy2.robjects as ro

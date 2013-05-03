@@ -59,16 +59,25 @@ Code
 ----
 
 '''
-import os, sys, string, re, tempfile, subprocess, optparse, time, math
+import os
+import sys
+import string
+import re
+import tempfile
+import subprocess
+import optparse
+import time
+import math
 
 from types import *
 
-import Experiment as E
-import WrapperCodeML
-import Mali
-import Genomics
-import RateEstimation
-import IOTools, TreeTools
+import CGAT.Experiment as E
+import CGAT.WrapperCodeML as WrapperCodeML
+import CGAT.Mali as Mali
+import CGAT.Genomics as Genomics
+import CGAT.RateEstimation as RateEstimation
+import CGAT.IOTools as IOTools
+import CGAT.TreeTools as TreeTools
 
 ##-------------------------------------------------------------------
 ##-------------------------------------------------------------------

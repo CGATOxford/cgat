@@ -59,7 +59,12 @@ Code
 ----
 
 '''
-import os, sys, string, re, optparse, math
+import os
+import sys
+import string
+import re
+import optparse
+import math
 
 USAGE="""python %s [OPTIONS] < transcripts > filtered
 
@@ -76,16 +81,16 @@ sequence is assumed to be selonoprotein.
 
 """ % sys.argv[0]
 
-import Experiment as E
-import Genomics
-import Mali
-import Exons
-import WrapperMuscle
-import Intervals
+import CGAT.Experiment as E
+import CGAT.Genomics as Genomics
+import CGAT.Mali as Mali
+import CGAT.Exons as Exons
+import CGAT.WrapperMuscle as WrapperMuscle
+import CGAT.Intervals as Intervals
 from peptides2cds import getMapPeptide2Cds
 import alignlib
-import GTF
-import IOTools
+import CGAT.GTF as GTF
+import CGAT.IOTools as IOTools
 
 def buildGeneMap( identifiers, separator = "|" ):
     """build map of predictions to genes.

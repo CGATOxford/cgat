@@ -52,14 +52,21 @@ Code
 
 '''
 
-import sys, re, string, optparse, time, os, tempfile, shutil
+import sys
+import re
+import string
+import optparse
+import time
+import os
+import tempfile
+import shutil
 
-import Intervals
-import Experiment
-import Histogram
-import GFF
-import Blat
-import IndexedFasta
+import CGAT.Intervals as Intervals
+import CGAT.Experiment as Experiment
+import CGAT.Histogram as Histogram
+import CGAT.GFF as GFF
+import CGAT.Blat as Blat
+import CGAT.IndexedFasta as IndexedFasta
 
 def printHistogram( values, section, options, min_value = 0, increment = 1.0 ):
 

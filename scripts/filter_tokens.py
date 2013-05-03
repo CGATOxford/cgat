@@ -56,7 +56,12 @@ Code
 ----
 
 '''
-import sys, re, string, os, time, optparse
+import sys
+import re
+import string
+import os
+import time
+import optparse
 
 USAGE = """python %s [token1 [token2 [...]]] < stdin > stdout
 
@@ -64,7 +69,7 @@ filter lines where pattern matches
 
 """ % sys.argv[0]
 
-import Experiment
+import CGAT.Experiment as Experiment
 
 
 if __name__ == "__main__":

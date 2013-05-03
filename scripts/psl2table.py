@@ -56,7 +56,14 @@ Code
 ----
 
 '''
-import os, sys, string, re, tempfile, subprocess, optparse, math
+import os
+import sys
+import string
+import re
+import tempfile
+import subprocess
+import optparse
+import math
 
 USAGE = \
 """analyze sequence pairs from a psl formatted table.
@@ -70,12 +77,12 @@ counts: compute residue counts (percent G+C, ...)
 match:  compute match statistics (pid, coverage)
 """
 
-import Experiment
-import Blat
-import SequenceProperties
-import SequencePairProperties
-import IOTools
-import WrapperCodeML
+import CGAT.Experiment as Experiment
+import CGAT.Blat as Blat
+import CGAT.SequenceProperties as SequenceProperties
+import CGAT.SequencePairProperties as SequencePairProperties
+import CGAT.IOTools as IOTools
+import CGAT.WrapperCodeML as WrapperCodeML
 
 ##---------------------------------------------------------------------------------------------
 class Counter:

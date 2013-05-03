@@ -63,16 +63,25 @@ Code
 ----
 
 '''
-import os, sys, string, re, optparse, math, time, random, types, collections
+import os
+import sys
+import string
+import re
+import optparse
+import math
+import time
+import random
+import types
+import collections
 
 USAGE="""python %s [OPTIONS]
 
 """ % sys.argv[0]
 
-import Experiment as E
-import IOTools
-import Mali
-import Intervals
+import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
+import CGAT.Mali as Mali
+import CGAT.Intervals as Intervals
 
 def addOptions( parser ):
     """add options to parser concerning components and masks."""

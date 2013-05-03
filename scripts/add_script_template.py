@@ -57,9 +57,13 @@ Code
 
 '''
 
-import os, sys, re, optparse, shutil
+import os
+import sys
+import re
+import optparse
+import shutil
 
-import Experiment as E
+import CGAT.Experiment as E
 
 SCRIPT = """################################################################################
 #

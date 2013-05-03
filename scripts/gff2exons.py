@@ -56,7 +56,10 @@ Code
 ----
 
 '''
-import sys, string, re, optparse
+import sys
+import string
+import re
+import optparse
 
 USAGE="""python %s [OPTIONS] < in.gff > reference.exons
 
@@ -66,10 +69,10 @@ Can also create a file peptides2genes.
 Version: $Id: gff2exons.py 2447 2009-01-27 17:12:48Z andreas $
 """ % sys.argv[0]
 
-import Experiment
-import GFF
-import Genomics
-import IndexedFasta
+import CGAT.Experiment as Experiment
+import CGAT.GFF as GFF
+import CGAT.Genomics as Genomics
+import CGAT.IndexedFasta as IndexedFasta
 
 def processEntries( name, entries, options, fasta, contigs ):
 

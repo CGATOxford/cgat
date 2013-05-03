@@ -56,7 +56,10 @@ Code
 ----
 
 '''
-import sys, string, re, getopt
+import sys
+import string
+import re
+import getopt
 
 USAGE="""python %s [OPTIONS] < psl > predictions
 
@@ -85,8 +88,8 @@ param_connection = "db:andreas"
 
 import pgdb
 
-import Experiment
-import PredictionParser
+import CGAT.Experiment as Experiment
+import CGAT.PredictionParser as PredictionParser
 
 def ProcessChunk( chunk, prediction_id, lcontig  ):
     """process a chunk.

@@ -75,10 +75,16 @@ Code
 
 '''
 
-import os, sys, re, optparse, time, itertools
+import os
+import sys
+import re
+import optparse
+import time
+import itertools
 
-import Experiment as E
-import GTF, IOTools
+import CGAT.Experiment as E
+import CGAT.GTF as GTF
+import CGAT.IOTools as IOTools
 import pysam
 
 import pyximport

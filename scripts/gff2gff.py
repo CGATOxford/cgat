@@ -55,15 +55,20 @@ Code
 
 '''
 
-import sys, string, re, optparse
+import sys
+import string
+import re
+import optparse
 
 
-import Experiment as E
-import IOTools
-import GFF, GTF, AGP
-import Genomics
-import IndexedFasta
-import Intervals
+import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
+import CGAT.GFF as GFF
+import CGAT.GTF as GTF
+import CGAT.AGP as AGP
+import CGAT.Genomics as Genomics
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.Intervals as Intervals
 import collections
 import numpy
 import bx.intervals.io

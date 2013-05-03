@@ -65,8 +65,9 @@ Code
 ----
 '''
 
-import Experiment
-import GFF, GTF
+import CGAT.Experiment as Experiment
+import CGAT.GFF as GFF
+import CGAT.GTF as GTF
 
 def GetNextLine( infile ):
     for line in infile:

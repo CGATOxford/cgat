@@ -58,12 +58,20 @@ Code
 ----
 
 '''
-import os, sys, string, re, optparse, math, time, random, types
+import os
+import sys
+import string
+import re
+import optparse
+import math
+import time
+import random
+import types
 
-import Experiment
-import IOTools
+import CGAT.Experiment as Experiment
+import CGAT.IOTools as IOTools
 import alignlib
-import FastaIterator
+import CGAT.FastaIterator as FastaIterator
 
 ##------------------------------------------------------------
 if __name__ == '__main__':

@@ -56,12 +56,20 @@ Code
 ----
 
 '''
-import os, sys, string, re, optparse, math, time, random, types
-import Experiment as E
-import Blat
-import Iterators
+import os
+import sys
+import string
+import re
+import optparse
+import math
+import time
+import random
+import types
+import CGAT.Experiment as E
+import CGAT.Blat as Blat
+import CGAT.Iterators as Iterators
 import alignlib
-import IndexedFasta
+import CGAT.IndexedFasta as IndexedFasta
 
 def fillAlignment( map_alignment, alignment ):
 

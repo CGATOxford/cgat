@@ -62,13 +62,19 @@ Code
 
 '''
 
-import os, sys, re, optparse, subprocess, signal, glob
+import os
+import sys
+import re
+import optparse
+import subprocess
+import signal
+import glob
 import argparse
 
 import multiprocessing.pool
 
-import Experiment as E
-import IOTools
+import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
 
 # If true, the original segment_juncs will be called without splitting
 # the input data.

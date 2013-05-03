@@ -33,9 +33,17 @@ Code
 ----
 '''
 
-import sys, re, string, optparse, time, os, itertools
-import Experiment as E
-import GFF, GTF, Bed
+import sys
+import re
+import string
+import optparse
+import time
+import os
+import itertools
+import CGAT.Experiment as E
+import CGAT.GFF as GFF
+import CGAT.GTF as GTF
+import CGAT.Bed as Bed
 
 def main( argv = sys.argv ):
 
