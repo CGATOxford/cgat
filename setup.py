@@ -68,7 +68,7 @@ Components = Extension(
 
 # Nested containment lists
 NCL = Extension(
-    "CGAT.NCL",                   
+    "CGAT.NCL.cnestedlist",                   
     [ "CGAT/NCL/cnestedlist.pyx",    
       "CGAT/NCL/intervaldb.c" ],
       library_dirs=[],
