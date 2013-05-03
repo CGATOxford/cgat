@@ -1105,6 +1105,7 @@ if "merge_pattern_input" in PARAMS:
         
         to_cluster = True
 
+        infiles = " ".join(infiles)
         statement = '''
         samtools merge %(outfile)s %(infiles)s >& %(outfile)s.log
         '''
