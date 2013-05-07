@@ -84,7 +84,6 @@ Options:
 
 import CGAT.Experiment as Experiment
 import CGAT.BlastAlignments as BlastAlignments
-import alignlib
 import CGAT.Genomics as Genomics
 import CGAT.TreeTools as TreeTools
 

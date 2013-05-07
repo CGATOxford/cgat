@@ -13,7 +13,24 @@ written before and during CGAT.
 .. note::
    The documentation is under construction.
 
-.. _CGATPipelines:
+Overview
+========
+
+The CGAT code collection has grown out of the work in comparative genomics
+by the Ponting group in the last decade. Now, CGAT has added
+functionality to do next-generation sequencing analysis. 
+
+The collection has three major components, these are directories in 
+the package.
+
+* scripts
+  A collection of useful scripts for genomics and NGS analysis
+
+* CGAT
+  A collection of modules with utility functions for genomics and NGS analysis.
+  
+* CGATPipelines
+  A collection of pipelines for common workflows in genomics and NGS analysis.
 
 Pipelines
 =========
