@@ -116,7 +116,7 @@ class RangeCounterBAM(RangeCounter):
 
         cdef int extend
         cdef int shift
-        cdef Samfile samfile
+        cdef pysam.Samfile samfile
         cdef bint merge_pairs = self.merge_pairs
         cdef int min_insert_size = self.min_insert_size
         cdef int max_insert_size = self.max_insert_size

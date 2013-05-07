@@ -48,6 +48,8 @@ Implemented tasks are:
    * :meth:`filter` - filter reads by quality score
    * :meth:`sample` - sample a certain proportion of reads
 
+Individual tasks are enabled in the configuration file.
+
 Usage
 =====
 
@@ -143,9 +145,18 @@ Code
 
 """
 
+###################################################
+###################################################
+###################################################
 # load modules
+###################################################
+
+# import ruffus
 from ruffus import *
-from rpy2.robjects import r as R
+
+# import useful standard python modules
+import sys, os, re, shutil, itertools, math, glob, time, gzip, collections, random
+import cStringIO
 
 import CGAT.Experiment as E
 import logging as L
@@ -154,6 +165,7 @@ import sys
 import os
 import re
 import shutil
+import string
 import itertools
 import math
 import glob
@@ -176,10 +188,6 @@ import CGATPipelines.PipelineTracks as PipelineTracks
 import CGAT.Pipeline as P
 import CGAT.Fastq as Fastq
 import CGAT.CSV2DB as CSV2DB
-import cStringIO
-import string
-
-USECLUSTER = True
 
 ###################################################
 ###################################################
@@ -188,13 +196,16 @@ USECLUSTER = True
 ###################################################
 
 # load options from the config file
-import CGAT.Pipeline as P
 P.getParameters( 
     ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
      "../pipeline.ini",
      "pipeline.ini" ] )
 PARAMS = P.PARAMS
 
+#########################################################################
+#########################################################################
+#########################################################################
+# define input files
 INPUT_FORMATS = ("*.fastq.1.gz", "*.fastq.gz", "*.sra", "*.csfasta.gz")
 REGEX_FORMATS = regex( r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz)")
 
@@ -202,14 +213,13 @@ REGEX_FORMATS = regex( r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz)")
 #########################################################################
 #########################################################################
 @follows(mkdir(PARAMS["exportdir"]), mkdir(os.path.join(PARAMS["exportdir"], "fastqc")) )
-
 @transform( INPUT_FORMATS,
             REGEX_FORMATS,
             r"\1.fastqc")
 def runFastqc(infiles, outfile):
     '''convert sra files to fastq and check mapping qualities are in solexa format. 
     Perform quality control checks on reads from .fastq files.'''
-    to_cluster = USECLUSTER
+    to_cluster = True
     m = PipelineMapping.FastQc(nogroup = PARAMS["readqc_no_group"] )
     statement = m.build((infiles,), outfile) 
     P.run()
@@ -349,9 +359,19 @@ def removeContaminants( infiles, outfile ):
     
     infile, contaminant_file = infiles
 
+<<<<<<< local
+    adaptors = []
+    for entry in FastaIterator.FastaIterator( IOTools.openFile( contaminant_file ) ):
+        adaptors.append( "-a %s" % entry.sequence )
+        
+    adaptors= " ".join(adaptors)
+    to_cluster = True
+
+=======
     adaptors = listAdaptors(contaminant_file)
     to_cluster = USECLUSTER
 #    %(contamination_trim_type)s
+>>>>>>> other
     statement = '''
     cutadapt 
     %(adaptors)s
@@ -364,6 +384,9 @@ def removeContaminants( infiles, outfile ):
     '''
     P.run()
 
+#########################################################################
+#########################################################################
+#########################################################################
 def checkPairs( infile ):
     '''check for paired read files'''
     if infile.endswith( ".fastq.1.gz"):
@@ -450,7 +473,7 @@ def processReads( infiles, outfile ):
         do_sth = True
 
     if PARAMS["process_sample"]:
-        s.append( 'python %(scriptsdir)s/fastq2fast.py --sample=%(sample_proportion)f --log=%(outfile)s_sample.log' )
+        s.append( 'python %(scriptsdir)s/fastq2fastq.py --sample=%(sample_proportion)f --log=%(outfile)s_sample.log' )
 
     if not do_sth:
         E.warn( "no filtering specified for %s - nothing done" % infile )
@@ -490,6 +513,11 @@ def processReads( infiles, outfile ):
         os.unlink( tmpfile2 )
         os.unlink( tmpfile )
 
+<<<<<<< local
+#########################################################################
+#########################################################################
+#########################################################################
+=======
 ##################################################################
 ##################################################################
 ##################################################################
@@ -545,6 +573,7 @@ def parseCutadapt( lines ):
 ##################################################################
 ##################################################################
 ##################################################################
+>>>>>>> other
 @transform( processReads,
             suffix(""),
             ".tsv")
@@ -678,8 +707,17 @@ def summarizeFiltering( infiles, outfile ):
         outf.write("%s\t%s\n" % (track, "\t".join( str(results[x]) for x in headers ) ) )
     outf.close()
 
+<<<<<<< local
+#########################################################################
+#########################################################################
+#########################################################################
+=======
 ##################################################################
+<<<<<<< local
+>>>>>>> other
+=======
 @jobs_limit( 1, "db" )
+>>>>>>> other
 @transform( summarizeFiltering,
             suffix(".summary.tsv.gz"),
             "_summary.load")

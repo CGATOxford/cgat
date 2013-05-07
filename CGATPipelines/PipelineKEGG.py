@@ -7,7 +7,7 @@ import rpy2.robjects.numpy2ri
 import CGAT.IOTools as IOTools
 import re
 
-def importKEGGAssignments(outfile, mart, biomart_dataset):
+def importKEGGAssignments(outfile, mart, host, biomart_dataset):
     ''' import the KEGG annotations from the R KEGG.db 
     annotations package. Note that since KEGG is no longer
     publically availible, this is not up-to-date and maybe removed
@@ -17,7 +17,7 @@ def importKEGGAssignments(outfile, mart, biomart_dataset):
     R.library("biomaRt")
 
     E.info("getting entrez to ensembl mapping ...")
-    mart = R.useMart(biomart=mart,dataset = biomart_dataset)
+    mart = R.useMart(biomart=mart, host = host, path = "/biomart/martservice", dataset = biomart_dataset)
     
     entrez2ensembl = R.getBM(attributes = ro.StrVector(["ensembl_gene_id","entrezgene"]),
                              mart = mart)
