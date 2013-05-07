@@ -1,7 +1,4 @@
 
-:mod:`CSV`
-=========================
-
 .. automodule:: CSV
    :members:
    :inherited-members:

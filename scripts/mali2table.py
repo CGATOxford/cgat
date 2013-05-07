@@ -70,7 +70,7 @@ import CGAT.Mali as Mali
 import scipy
 import scipy.stats
 
-from SequenceProperties import *
+from CGAT.SequenceProperties import *
 
 def main( argv = sys.argv ):
 

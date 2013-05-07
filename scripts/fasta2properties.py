@@ -70,7 +70,7 @@ import math
 import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.IOTools as IOTools
-from SequenceProperties import *
+from CGAT.SequenceProperties import *
 import CGAT.FastaIterator as FastaIterator
 import Bio.Alphabet.IUPAC
 

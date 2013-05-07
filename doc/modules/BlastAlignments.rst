@@ -1,7 +1,4 @@
 
-:mod:`BlastAlignments`
-=========================
-
 .. automodule:: BlastAlignments
    :members:
    :inherited-members:

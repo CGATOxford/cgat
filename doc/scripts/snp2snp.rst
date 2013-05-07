@@ -3,3 +3,5 @@
    :members:
    :inherited-members:
    :show-inheritance:
+
+.. program-output: python ../scripts/snp2snp.py --help

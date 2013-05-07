@@ -359,7 +359,6 @@ def removeContaminants( infiles, outfile ):
     
     infile, contaminant_file = infiles
 
-<<<<<<< local
     adaptors = []
     for entry in FastaIterator.FastaIterator( IOTools.openFile( contaminant_file ) ):
         adaptors.append( "-a %s" % entry.sequence )
@@ -367,11 +366,6 @@ def removeContaminants( infiles, outfile ):
     adaptors= " ".join(adaptors)
     to_cluster = True
 
-=======
-    adaptors = listAdaptors(contaminant_file)
-    to_cluster = USECLUSTER
-#    %(contamination_trim_type)s
->>>>>>> other
     statement = '''
     cutadapt 
     %(adaptors)s
@@ -513,11 +507,6 @@ def processReads( infiles, outfile ):
         os.unlink( tmpfile2 )
         os.unlink( tmpfile )
 
-<<<<<<< local
-#########################################################################
-#########################################################################
-#########################################################################
-=======
 ##################################################################
 ##################################################################
 ##################################################################
@@ -573,7 +562,6 @@ def parseCutadapt( lines ):
 ##################################################################
 ##################################################################
 ##################################################################
->>>>>>> other
 @transform( processReads,
             suffix(""),
             ".tsv")
@@ -707,17 +695,10 @@ def summarizeFiltering( infiles, outfile ):
         outf.write("%s\t%s\n" % (track, "\t".join( str(results[x]) for x in headers ) ) )
     outf.close()
 
-<<<<<<< local
 #########################################################################
 #########################################################################
 #########################################################################
-=======
-##################################################################
-<<<<<<< local
->>>>>>> other
-=======
 @jobs_limit( 1, "db" )
->>>>>>> other
 @transform( summarizeFiltering,
             suffix(".summary.tsv.gz"),
             "_summary.load")

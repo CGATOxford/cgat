@@ -33,7 +33,7 @@ import tempfile
 import timeit
 import sys
 import os
-from IndexedFasta import *
+from CGAT.IndexedFasta import *
 import CGAT.Stats as Stats
 
 if __name__ == "__main__":

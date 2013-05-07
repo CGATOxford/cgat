@@ -1,7 +1,4 @@
 
-:mod:`Genomics`
-=========================
-
 .. automodule:: Genomics
    :members:
    :inherited-members:

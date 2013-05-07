@@ -1,7 +1,4 @@
 
-:mod:`Maq`
-=========================
-
 .. automodule:: Maq
    :members:
    :inherited-members:

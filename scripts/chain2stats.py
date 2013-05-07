@@ -65,13 +65,12 @@ from optparse import OptionParser
 from operator import add
 from numpy import *
 from operator import itemgetter,attrgetter
-from IndexedFasta import IndexedFasta
 import bx.bitset
 import bx.bitset_builders
 import collections
 
 import CGAT.Experiment as E
-
+from CGAT.IndexedFasta import IndexedFasta
 
 ############################ Functions/Generators ############################
 

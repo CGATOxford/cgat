@@ -1,5 +1,5 @@
 
-.. automodule:: WrapperZinba.py
+.. automodule:: WrapperZinba
    :members:
    :inherited-members:
    :show-inheritance:

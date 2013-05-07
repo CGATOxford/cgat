@@ -63,9 +63,9 @@ import tempfile
 import subprocess
 import types
 
-import CGAT.Experiment as E
+import Experiment as E
 import csv
-import CGAT.CSV as CSV
+import CSV as CSV
 import sqlite3
 
 def executewait( dbhandle, statement, error, retry = False, wait=5):

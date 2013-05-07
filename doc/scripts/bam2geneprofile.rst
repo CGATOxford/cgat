@@ -4,4 +4,4 @@
    :inherited-members:
    :show-inheritance:
 
-.. program-output:: python ../bam2geneprofile.py --help
+.. program-output: python ../scripts/bam2geneprofile.py --help

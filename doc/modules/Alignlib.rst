@@ -1,7 +1,4 @@
 
-:mod:`Alignlib`
-=========================
-
 .. automodule:: Alignlib
    :members:
    :inherited-members:

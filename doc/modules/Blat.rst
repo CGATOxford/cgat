@@ -1,7 +1,4 @@
 
-:mod:`Blat`
-=========================
-
 .. automodule:: Blat
    :members:
    :inherited-members:

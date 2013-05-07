@@ -374,3 +374,110 @@
 2013-03-22 16:35:45,245 INFO reading additional configuration from conf.py
 2013-03-22 16:35:55,916 INFO no previous lncRNA set provided: Using refnoncoding set
 2013-03-22 16:36:09,551 INFO reading additional configuration from conf.py
+2013-05-07 14:53:20,433 INFO initialising plugins
+2013-05-07 14:53:22,707 DEBUG found plugins: 3 capabilites and 58 plugins
+2013-05-07 14:54:30,601 INFO initialising plugins
+2013-05-07 14:54:32,762 DEBUG found plugins: 3 capabilites and 58 plugins
+2013-05-07 14:54:33,598 INFO report_directive: starting: /ifs/devel/andreas/cgat/doc/make_pipelines/CompareTranscripts.rst:362
+2013-05-07 14:54:33,598 DEBUG report_directive.run: profile: started: rst: /ifs/devel/andreas/cgat/doc/make_pipelines/CompareTranscripts.rst:362
+2013-05-07 14:54:33,599 DEBUG report_directive.run: arguments=[u'Trackers.MakefileParameters'], options={'tracks': 'Makefile.compare_transcripts', 'transpose': u'', 'render': 'glossary'}, lineno=362, content=[u'Overview of pipeline parameters.'], document=/ifs/devel/andreas/cgat/doc/make_pipelines/CompareTranscripts.rst
+2013-05-07 14:54:33,599 DEBUG report_directive.run: plotdir=Trackers.MakefileParameters, basename=Trackers, ext=.MakefileParameters, fname=Trackers.MakefileParameters, rstdir=/ifs/devel/andreas/cgat/doc/make_pipelines, srcdir=/ifs/devel/andreas/cgat/doc, builddir=/ifs/devel/andreas/cgat/doc
+2013-05-07 14:54:33,599 DEBUG report_directive.run: reference=Trackers.MakefileParameters, basedir=, rst2src=../_static/report_directive/, root2build=../_static/report_directive/, outdir=_static/report_directive/, codename=Trackers_MakefileParameters.code
+2013-05-07 14:54:33,600 DEBUG report_directive.run: options={'tracks': 'Makefile.compare_transcripts', 'transpose': u'', 'render': 'glossary'}
+2013-05-07 14:54:33,600 DEBUG report_directive.run: renderer options: {'transpose': u''}
+2013-05-07 14:54:33,600 DEBUG report_directive.run: transformer options: {}
+2013-05-07 14:54:33,600 DEBUG report_directive.run: dispatcher options: {'tracks': 'Makefile.compare_transcripts'}
+2013-05-07 14:54:33,600 DEBUG report_directive.run: tracker options: {}
+2013-05-07 14:54:33,600 DEBUG report_directive.run: display options: {'render': 'glossary'}
+2013-05-07 14:54:33,600 DEBUG report_directive.run: options_hash=2ad4a53939ccd9bcef6cbf111375a2e7
+2013-05-07 14:54:33,601 DEBUG report_directive.run: checking for changed files.
+2013-05-07 14:54:33,613 DEBUG report_directive.run: /ifs/devel/andreas/cgat/doc/make_pipelines/CompareTranscripts.rst:362: checking for []
+2013-05-07 14:54:33,613 INFO report_directive.run: /ifs/devel/andreas/cgat/doc/make_pipelines/CompareTranscripts.rst:362: noredo: all files are present
+2013-05-07 14:54:33,800 INFO report_directive: starting: /ifs/devel/andreas/cgat/doc/make_pipelines/MapTranscripts454.rst:55
+2013-05-07 14:54:33,800 DEBUG report_directive.run: profile: started: rst: /ifs/devel/andreas/cgat/doc/make_pipelines/MapTranscripts454.rst:55
+2013-05-07 14:54:33,800 DEBUG report_directive.run: arguments=[u'Trackers.MakefileParameters'], options={'tracks': 'Makefile.map_transcripts_454', 'transpose': u'', 'render': 'glossary'}, lineno=55, content=[u'Overview of pipeline parameters.'], document=/ifs/devel/andreas/cgat/doc/make_pipelines/MapTranscripts454.rst
+2013-05-07 14:54:33,800 DEBUG report_directive.run: plotdir=Trackers.MakefileParameters, basename=Trackers, ext=.MakefileParameters, fname=Trackers.MakefileParameters, rstdir=/ifs/devel/andreas/cgat/doc/make_pipelines, srcdir=/ifs/devel/andreas/cgat/doc, builddir=/ifs/devel/andreas/cgat/doc
+2013-05-07 14:54:33,801 DEBUG report_directive.run: reference=Trackers.MakefileParameters, basedir=, rst2src=../_static/report_directive/, root2build=../_static/report_directive/, outdir=_static/report_directive/, codename=Trackers_MakefileParameters.code
+2013-05-07 14:54:33,801 DEBUG report_directive.run: options={'tracks': 'Makefile.map_transcripts_454', 'transpose': u'', 'render': 'glossary'}
+2013-05-07 14:54:33,801 DEBUG report_directive.run: renderer options: {'transpose': u''}
+2013-05-07 14:54:33,801 DEBUG report_directive.run: transformer options: {}
+2013-05-07 14:54:33,801 DEBUG report_directive.run: dispatcher options: {'tracks': 'Makefile.map_transcripts_454'}
+2013-05-07 14:54:33,801 DEBUG report_directive.run: tracker options: {}
+2013-05-07 14:54:33,801 DEBUG report_directive.run: display options: {'render': 'glossary'}
+2013-05-07 14:54:33,802 DEBUG report_directive.run: options_hash=fdccf2c3a3af6a09abbd046bcbb2f87c
+2013-05-07 14:54:33,802 DEBUG report_directive.run: checking for changed files.
+2013-05-07 14:54:33,803 DEBUG report_directive.run: /ifs/devel/andreas/cgat/doc/make_pipelines/MapTranscripts454.rst:55: checking for []
+2013-05-07 14:54:33,803 INFO report_directive.run: /ifs/devel/andreas/cgat/doc/make_pipelines/MapTranscripts454.rst:55: noredo: all files are present
+2013-05-07 14:57:16,702 INFO reading additional configuration from conf.py
+2013-05-07 14:57:27,603 INFO no previous lncRNA set provided: Using refnoncoding set
+2013-05-07 14:57:41,828 INFO reading additional configuration from conf.py
+2013-05-07 15:08:55,176 INFO initialising plugins
+2013-05-07 15:08:57,545 DEBUG found plugins: 3 capabilites and 58 plugins
+2013-05-07 15:08:58,164 INFO report_directive: starting: /ifs/devel/andreas/cgat/doc/make_pipelines/CompareTranscripts.rst:362
+2013-05-07 15:08:58,164 DEBUG report_directive.run: profile: started: rst: /ifs/devel/andreas/cgat/doc/make_pipelines/CompareTranscripts.rst:362
+2013-05-07 15:08:58,165 DEBUG report_directive.run: arguments=[u'Trackers.MakefileParameters'], options={'tracks': 'Makefile.compare_transcripts', 'transpose': u'', 'render': 'glossary'}, lineno=362, content=[u'Overview of pipeline parameters.'], document=/ifs/devel/andreas/cgat/doc/make_pipelines/CompareTranscripts.rst
+2013-05-07 15:08:58,165 DEBUG report_directive.run: plotdir=Trackers.MakefileParameters, basename=Trackers, ext=.MakefileParameters, fname=Trackers.MakefileParameters, rstdir=/ifs/devel/andreas/cgat/doc/make_pipelines, srcdir=/ifs/devel/andreas/cgat/doc, builddir=/ifs/devel/andreas/cgat/doc
+2013-05-07 15:08:58,165 DEBUG report_directive.run: reference=Trackers.MakefileParameters, basedir=, rst2src=../_static/report_directive/, root2build=../_static/report_directive/, outdir=_static/report_directive/, codename=Trackers_MakefileParameters.code
+2013-05-07 15:08:58,166 DEBUG report_directive.run: options={'tracks': 'Makefile.compare_transcripts', 'transpose': u'', 'render': 'glossary'}
+2013-05-07 15:08:58,166 DEBUG report_directive.run: renderer options: {'transpose': u''}
+2013-05-07 15:08:58,166 DEBUG report_directive.run: transformer options: {}
+2013-05-07 15:08:58,166 DEBUG report_directive.run: dispatcher options: {'tracks': 'Makefile.compare_transcripts'}
+2013-05-07 15:08:58,166 DEBUG report_directive.run: tracker options: {}
+2013-05-07 15:08:58,166 DEBUG report_directive.run: display options: {'render': 'glossary'}
+2013-05-07 15:08:58,166 DEBUG report_directive.run: options_hash=2ad4a53939ccd9bcef6cbf111375a2e7
+2013-05-07 15:08:58,167 DEBUG report_directive.run: checking for changed files.
+2013-05-07 15:08:58,168 DEBUG report_directive.run: /ifs/devel/andreas/cgat/doc/make_pipelines/CompareTranscripts.rst:362: checking for []
+2013-05-07 15:08:58,168 INFO report_directive.run: /ifs/devel/andreas/cgat/doc/make_pipelines/CompareTranscripts.rst:362: noredo: all files are present
+2013-05-07 15:08:58,354 INFO report_directive: starting: /ifs/devel/andreas/cgat/doc/make_pipelines/MapTranscripts454.rst:55
+2013-05-07 15:08:58,354 DEBUG report_directive.run: profile: started: rst: /ifs/devel/andreas/cgat/doc/make_pipelines/MapTranscripts454.rst:55
+2013-05-07 15:08:58,355 DEBUG report_directive.run: arguments=[u'Trackers.MakefileParameters'], options={'tracks': 'Makefile.map_transcripts_454', 'transpose': u'', 'render': 'glossary'}, lineno=55, content=[u'Overview of pipeline parameters.'], document=/ifs/devel/andreas/cgat/doc/make_pipelines/MapTranscripts454.rst
+2013-05-07 15:08:58,355 DEBUG report_directive.run: plotdir=Trackers.MakefileParameters, basename=Trackers, ext=.MakefileParameters, fname=Trackers.MakefileParameters, rstdir=/ifs/devel/andreas/cgat/doc/make_pipelines, srcdir=/ifs/devel/andreas/cgat/doc, builddir=/ifs/devel/andreas/cgat/doc
+2013-05-07 15:08:58,355 DEBUG report_directive.run: reference=Trackers.MakefileParameters, basedir=, rst2src=../_static/report_directive/, root2build=../_static/report_directive/, outdir=_static/report_directive/, codename=Trackers_MakefileParameters.code
+2013-05-07 15:08:58,355 DEBUG report_directive.run: options={'tracks': 'Makefile.map_transcripts_454', 'transpose': u'', 'render': 'glossary'}
+2013-05-07 15:08:58,355 DEBUG report_directive.run: renderer options: {'transpose': u''}
+2013-05-07 15:08:58,356 DEBUG report_directive.run: transformer options: {}
+2013-05-07 15:08:58,356 DEBUG report_directive.run: dispatcher options: {'tracks': 'Makefile.map_transcripts_454'}
+2013-05-07 15:08:58,356 DEBUG report_directive.run: tracker options: {}
+2013-05-07 15:08:58,356 DEBUG report_directive.run: display options: {'render': 'glossary'}
+2013-05-07 15:08:58,356 DEBUG report_directive.run: options_hash=fdccf2c3a3af6a09abbd046bcbb2f87c
+2013-05-07 15:08:58,356 DEBUG report_directive.run: checking for changed files.
+2013-05-07 15:08:58,357 DEBUG report_directive.run: /ifs/devel/andreas/cgat/doc/make_pipelines/MapTranscripts454.rst:55: checking for []
+2013-05-07 15:08:58,357 INFO report_directive.run: /ifs/devel/andreas/cgat/doc/make_pipelines/MapTranscripts454.rst:55: noredo: all files are present
+2013-05-07 15:10:05,379 INFO reading additional configuration from conf.py
+2013-05-07 15:10:15,945 INFO no previous lncRNA set provided: Using refnoncoding set
+2013-05-07 15:10:30,138 INFO reading additional configuration from conf.py
+2013-05-07 15:18:52,045 INFO initialising plugins
+2013-05-07 15:18:54,211 DEBUG found plugins: 3 capabilites and 58 plugins
+2013-05-07 15:18:54,886 INFO report_directive: starting: /ifs/devel/andreas/cgat/doc/make_pipelines/CompareTranscripts.rst:362
+2013-05-07 15:18:54,886 DEBUG report_directive.run: profile: started: rst: /ifs/devel/andreas/cgat/doc/make_pipelines/CompareTranscripts.rst:362
+2013-05-07 15:18:54,887 DEBUG report_directive.run: arguments=[u'Trackers.MakefileParameters'], options={'tracks': 'Makefile.compare_transcripts', 'transpose': u'', 'render': 'glossary'}, lineno=362, content=[u'Overview of pipeline parameters.'], document=/ifs/devel/andreas/cgat/doc/make_pipelines/CompareTranscripts.rst
+2013-05-07 15:18:54,887 DEBUG report_directive.run: plotdir=Trackers.MakefileParameters, basename=Trackers, ext=.MakefileParameters, fname=Trackers.MakefileParameters, rstdir=/ifs/devel/andreas/cgat/doc/make_pipelines, srcdir=/ifs/devel/andreas/cgat/doc, builddir=/ifs/devel/andreas/cgat/doc
+2013-05-07 15:18:54,888 DEBUG report_directive.run: reference=Trackers.MakefileParameters, basedir=, rst2src=../_static/report_directive/, root2build=../_static/report_directive/, outdir=_static/report_directive/, codename=Trackers_MakefileParameters.code
+2013-05-07 15:18:54,888 DEBUG report_directive.run: options={'tracks': 'Makefile.compare_transcripts', 'transpose': u'', 'render': 'glossary'}
+2013-05-07 15:18:54,888 DEBUG report_directive.run: renderer options: {'transpose': u''}
+2013-05-07 15:18:54,888 DEBUG report_directive.run: transformer options: {}
+2013-05-07 15:18:54,888 DEBUG report_directive.run: dispatcher options: {'tracks': 'Makefile.compare_transcripts'}
+2013-05-07 15:18:54,888 DEBUG report_directive.run: tracker options: {}
+2013-05-07 15:18:54,888 DEBUG report_directive.run: display options: {'render': 'glossary'}
+2013-05-07 15:18:54,889 DEBUG report_directive.run: options_hash=2ad4a53939ccd9bcef6cbf111375a2e7
+2013-05-07 15:18:54,889 DEBUG report_directive.run: checking for changed files.
+2013-05-07 15:18:54,890 DEBUG report_directive.run: /ifs/devel/andreas/cgat/doc/make_pipelines/CompareTranscripts.rst:362: checking for []
+2013-05-07 15:18:54,890 INFO report_directive.run: /ifs/devel/andreas/cgat/doc/make_pipelines/CompareTranscripts.rst:362: noredo: all files are present
+2013-05-07 15:18:55,076 INFO report_directive: starting: /ifs/devel/andreas/cgat/doc/make_pipelines/MapTranscripts454.rst:55
+2013-05-07 15:18:55,076 DEBUG report_directive.run: profile: started: rst: /ifs/devel/andreas/cgat/doc/make_pipelines/MapTranscripts454.rst:55
+2013-05-07 15:18:55,077 DEBUG report_directive.run: arguments=[u'Trackers.MakefileParameters'], options={'tracks': 'Makefile.map_transcripts_454', 'transpose': u'', 'render': 'glossary'}, lineno=55, content=[u'Overview of pipeline parameters.'], document=/ifs/devel/andreas/cgat/doc/make_pipelines/MapTranscripts454.rst
+2013-05-07 15:18:55,077 DEBUG report_directive.run: plotdir=Trackers.MakefileParameters, basename=Trackers, ext=.MakefileParameters, fname=Trackers.MakefileParameters, rstdir=/ifs/devel/andreas/cgat/doc/make_pipelines, srcdir=/ifs/devel/andreas/cgat/doc, builddir=/ifs/devel/andreas/cgat/doc
+2013-05-07 15:18:55,077 DEBUG report_directive.run: reference=Trackers.MakefileParameters, basedir=, rst2src=../_static/report_directive/, root2build=../_static/report_directive/, outdir=_static/report_directive/, codename=Trackers_MakefileParameters.code
+2013-05-07 15:18:55,077 DEBUG report_directive.run: options={'tracks': 'Makefile.map_transcripts_454', 'transpose': u'', 'render': 'glossary'}
+2013-05-07 15:18:55,077 DEBUG report_directive.run: renderer options: {'transpose': u''}
+2013-05-07 15:18:55,077 DEBUG report_directive.run: transformer options: {}
+2013-05-07 15:18:55,077 DEBUG report_directive.run: dispatcher options: {'tracks': 'Makefile.map_transcripts_454'}
+2013-05-07 15:18:55,078 DEBUG report_directive.run: tracker options: {}
+2013-05-07 15:18:55,078 DEBUG report_directive.run: display options: {'render': 'glossary'}
+2013-05-07 15:18:55,078 DEBUG report_directive.run: options_hash=fdccf2c3a3af6a09abbd046bcbb2f87c
+2013-05-07 15:18:55,078 DEBUG report_directive.run: checking for changed files.
+2013-05-07 15:18:55,078 DEBUG report_directive.run: /ifs/devel/andreas/cgat/doc/make_pipelines/MapTranscripts454.rst:55: checking for []
+2013-05-07 15:18:55,079 INFO report_directive.run: /ifs/devel/andreas/cgat/doc/make_pipelines/MapTranscripts454.rst:55: noredo: all files are present
+2013-05-07 15:20:01,916 INFO reading additional configuration from conf.py
+2013-05-07 15:20:16,709 INFO no previous lncRNA set provided: Using refnoncoding set
+2013-05-07 15:20:30,823 INFO reading additional configuration from conf.py

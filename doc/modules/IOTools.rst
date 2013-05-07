@@ -1,7 +1,4 @@
 
-:mod:`IOTools`
-=========================
-
 .. automodule:: IOTools
    :members:
    :inherited-members:
