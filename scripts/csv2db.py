@@ -71,7 +71,7 @@ import os
 import sys
 import re
 import CGAT.Experiment as E
-import CGAT.CSV2DB as CSV2BD
+import CGAT.CSV2DB as CSV2DB
 
 def main( argv = sys.argv ):
 
