@@ -177,7 +177,6 @@ def annotateGenome( infile, outfile,
             < %(infile)s
             | %(filter_cmd)s 
             | python %(scriptsdir)s/gtf2gtf.py --sort=gene
-            | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s 
             | python %(scriptsdir)s/gtf2gtf.py --merge-exons --with-utr --log=%(outfile)s.log 
             | python %(scriptsdir)s/gtf2gtf.py --filter=longest-gene --log=%(outfile)s.log 
             | python %(scriptsdir)s/gtf2gtf.py --sort=position
@@ -220,7 +219,6 @@ def annotateGeneStructure( infile, outfile,
             < %(infile)s
             | %(filter_cmd)s 
             | python %(scriptsdir)s/gtf2gtf.py --sort=gene
-            | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s 
             | awk '$3 == "exon"' 
             | python /ifs/devel/andreas/cgat/gtf2gtf.py --filter=representative-transcript
             | python %(scriptsdir)s/gtf2gtf.py --filter=longest-gene --log=%(outfile)s.log 
@@ -258,7 +256,6 @@ def buildFlatGeneSet( infile, outfile ):
             < %(infile)s 
             | awk '$3 == "exon"' 
             | python %(scriptsdir)s/gtf2gtf.py --sort=contig+gene
-            | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s 
             | python %(scriptsdir)s/gtf2gtf.py --merge-exons --permit-duplicates --log=%(outfile)s.log 
             | python %(scriptsdir)s/gtf2gtf.py --set-transcript-to-gene --log=%(outfile)s.log 
             | python %(scriptsdir)s/gtf2gtf.py --sort=position+gene
@@ -270,6 +267,9 @@ def buildFlatGeneSet( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
+# Doesn't filter miscellaneous contigs from mm10
+# Function called from pipeline_kamilah, pipeline_snps
+# pipeline_polyphen
 def buildProteinCodingGenes( infile, outfile ):
     '''build a collection of exons from the protein-coding
     section of the ENSEMBL gene set. The exons include both CDS
@@ -531,7 +531,6 @@ def buildExons( infile, outfile ):
     statement = '''
     gunzip < %(infile)s 
     | awk '$3 == "exon"' 
-    | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
     | python %(scriptsdir)s/gtf2gtf.py --remove-duplicates=gene --log=%(outfile)s.log 
     | gzip > %(outfile)s
     '''
@@ -553,7 +552,6 @@ def buildCodingExons( infile, outfile ):
     gunzip < %(infile)s 
     | awk '$2 == "protein_coding"' 
     | awk '$3 == "exon"' 
-    | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
     | python %(scriptsdir)s/gtf2gtf.py --remove-duplicates=gene --log=%(outfile)s.log 
     | gzip > %(outfile)s
     '''
@@ -575,7 +573,6 @@ def buildNonCodingExons( infile, outfile ):
     | awk '$2 != "protein_coding"' 
     | awk '$3 == "exon"' 
     | grep -v "protein_coding"
-    | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
     | python %(scriptsdir)s/gtf2gtf.py --remove-duplicates=gene --log=%(outfile)s.log 
     | gzip > %(outfile)s
     '''
@@ -593,7 +590,6 @@ def buildLincRNAExons( infile, outfile ):
     | awk '$2 == "lincRNA"' 
     | awk '$3 == "exon"' 
     | grep -v "protein_coding"
-    | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
     | python %(scriptsdir)s/gtf2gtf.py --remove-duplicates=gene --log=%(outfile)s.log 
     | gzip > %(outfile)s
     '''
@@ -617,7 +613,6 @@ def buildCDS( infile, outfile ):
     gunzip < %(infile)s 
     | awk '$2 == "protein_coding"' 
     | awk '$3 == "CDS"' 
-    | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
     | python %(scriptsdir)s/gtf2gtf.py --remove-duplicates=gene --log=%(outfile)s.log 
     | gzip > %(outfile)s
     '''
@@ -723,6 +718,9 @@ def loadProteinStats( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
+# Function does not appear to be called from any script in
+# the existing src directory
+# Doesn't filter miscellaneous contigs from mm10
 def buildPromotorRegions( infile, outfile ):
     '''annotate promotor regions from reference gene set.'''
     statement = """
@@ -738,6 +736,9 @@ def buildPromotorRegions( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
+# Function does not appear to be called from any script in
+# the existing src directory
+# Doesn't filter miscellaneous contigs from mm10
 def buildTSSRegions( infile, outfile ):
     '''annotate transcription start sites from reference gene set.
 

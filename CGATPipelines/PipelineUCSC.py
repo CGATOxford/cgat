@@ -143,16 +143,21 @@ def getRepeatsFromUCSC( dbhandle, repclasses, outfile ):
     # sort gff and make sure that names are correct
     tmpfilename = tmpfile.name
 
-    statement = '''cat %(tmpfilename)s
+    statement = [ '''cat %(tmpfilename)s
         | %(scriptsdir)s/gff_sort pos 
         | python %(scriptsdir)s/gff2gff.py 
             --sanitize=genome 
             --skip-missing 
             --genome-file=%(genome_dir)s/%(genome)s
-            --log=%(outfile)s.log 
-        | gzip
-        > %(outfile)s
-    '''
+            --log=%(outfile)s.log ''']
+
+    if PARAMS["geneset_remove_contigs"]:
+        statement.append( ''' --remove-contigs="%(geneset_remove_contigs)s" ''' )
+
+    statement.append( '''| gzip > %(outfile)s ''' )
+
+    statement = " ".join( statement )
+    
     P.run()
 
     os.unlink( tmpfilename)
