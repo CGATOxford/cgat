@@ -58,7 +58,7 @@ Configuration
 
 The :file:`pipeline.ini` needs to be edited so that it points to the
 appropriate locations of the auxiliary files. See especially:
-v
+vv
 1. section ``[ensembl]`` with the location of the ENSEMBL dump
     files (``filename_gtf``, filename_pep``, ``filename_cdna``)
 
@@ -707,15 +707,15 @@ def loadEntrezToEnsembl(infile,outfile):
         "ensembl_gene_id": "gene_id",
         "entrezgene": "entrez_id" }
     
-    data = PBiomart.biomart_iterator( columns.keys(),
-                                      biomart = "ensembl",
-                                      dataset = PARAMS["ensembl_biomart_dataset"])
+    data = PipelineBiomart.biomart_iterator( columns.keys(),
+                                             biomart = "ensembl",
+                                             dataset = PARAMS["ensembl_biomart_dataset"])
 
-    PDatabase.importFromIterator( outfile,
-                                  tablename,
-                                  data,
-                                  columns = columns,
-                                  indices = ("gene_id", "entrez_id") )
+    PipelineDatabase.importFromIterator( outfile,
+                                         tablename,
+                                         data,
+                                         columns = columns,
+                                         indices = ("gene_id", "entrez_id") )
 
 ############################################################
 ############################################################

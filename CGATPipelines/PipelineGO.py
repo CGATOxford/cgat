@@ -80,7 +80,8 @@ except IOError:
 ## get GO assignments
 def createGOFromENSEMBL( infile, outfile ):
     '''get GO assignments from ENSEMBL'''
-    
+
+    job_options = "-l mem_free=5G"
     statement = '''
         python %(scriptsdir)s/GO.py 
                      --filename-dump=%(outfile)s 
@@ -272,11 +273,14 @@ def createGOSlimFromENSEMBL( infile, outfile ):
     statement = '''wget %(go_url_ontology)s --output-document=go_ontology.obo'''
     P.run()
     
+    to_cluster = True
+    job_options = "-l mem_free=5G"
     statement = '''
         map2slim -outmap %(outfile)s.map goslim.obo go_ontology.obo
     '''
     P.run()
 
+    job_options = "-l mem_free=5G"
     statement = '''
         zcat < %(infile)s
         | python %(scriptsdir)s/GO.py 
