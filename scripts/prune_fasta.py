@@ -75,18 +75,12 @@ import sys
 import re
 import string
 import os
-
-"""
-
-Version: $Id: prune_fasta.py 18 2005-08-09 15:32:24Z andreas $
-
-"""
+import CGAT.Experiment as E
 
 param_stop_codons = ("TAG", "TAA", "TGA")
 param_remove_errors = 1
 
 def Write( description, sequence ):
-
 
     try:
         start = int(re.search( "\[start_codon:(\d+)\]", description).groups()[0])
@@ -103,13 +97,26 @@ def Write( description, sequence ):
         
     fragment = sequence[start:stop]
     print fragment
-    
-if __name__ == "__main__":
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if not argv: argv = sys.argv
+
+    # setup command line parser
+    parser = optparse.OptionParser( version = "%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
+                                    usage = globals()["__doc__"] )
+
+    ## add common options (-h/--help, ...) and parse command line 
+    (options, args) = E.Start( parser, argv = argv )
 
     sequence = ""
     description = None
     
-    for line in sys.stdin:
+    for line in options.stdin:
         
         if line[0] == ">":
             if description:
@@ -121,6 +128,12 @@ if __name__ == "__main__":
         sequence += line[:-1]
 
     Write( description, sequence )
+
+    ## write footer and output benchmark information.
+    E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
     
 
     

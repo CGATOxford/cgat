@@ -82,6 +82,14 @@ of these are written in python. The tools are grouped by topic:
    scripts.rst
    modules.rst
 
+Deverlopers guide
+
+.. toctree::
+   :maxdepth: 2
+
+   testing.rst
+   release.rst
+
 Disclaimer
 ==========
 

@@ -1,7 +1,5 @@
 
 .. automodule:: trees2tree
-   :members:
-   :inherited-members:
-   :show-inheritance:
 
-.. program-output: python ../scripts/trees2tree.py --help
+.. program-output:: python ../scripts/trees2tree.py --help
+

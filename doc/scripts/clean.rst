@@ -1,7 +1,5 @@
 
 .. automodule:: clean
-   :members:
-   :inherited-members:
-   :show-inheritance:
 
-.. program-output: python ../scripts/clean.py --help
+.. program-output:: python ../scripts/clean.py --help
+

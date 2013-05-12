@@ -26,6 +26,11 @@ shared_dependencies = [
     'sqlalchemy>=0.7.0', 
     'pysam>=0.7' ]
 
+# check if within CGAT, do not install dependencies
+curdir = os.getcwd()
+if curdir.startswith("/ifs" ):
+    extra_dependencies, shared_dependencies = [], []
+
 if major==2 and minor1<6 or major<2:
     raise SystemExit("""CGAT requires Python 2.6 or later.""")
 
@@ -97,6 +102,7 @@ setup(name='CGAT',
       zip_safe = False,
       include_package_data = True,
       ext_modules=[Components, NCL],
-      cmdclass = {'build_ext': build_ext}
+      cmdclass = {'build_ext': build_ext},
+      test_suite = "tests",
       )
 

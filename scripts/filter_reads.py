@@ -1,10 +1,70 @@
 #!/usr/bin/env python
-	 
+################################################################################
+#
+#   MRC FGU Computational Genomics Group
+#
+#   $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $
+#
+#   Copyright (C) 2009 Andreas Heger
+#
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU General Public License
+#   as published by the Free Software Foundation; either version 2
+#   of the License, or (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#################################################################################
+'''
+filter_reads.py -
+=============================================
+
+:Author: ???
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+Usage
+-----
+
+Example::
+
+   python script_template.py --help
+
+Type::
+
+   python script_template.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+
+import os
+import sys
+import re
+import optparse
 import sys
 import re
 from Bio.Seq import Seq
 from Bio.Alphabet import generic_dna
-	 
+
+import CGAT.Experiment as E
+
 def readread(s):
     return [s.readline(),s.readline(),s.readline(),s.readline()]
  
@@ -48,10 +108,28 @@ def filter_low_complexity(s,o):
     sys.stderr.write(r"Total reads removed: %s\n" % removed)
     sys.stderr.write(r"Total reads remaining: %s\n" % remaining_reads)
 
-if __name__=='__main__':
-    if (len(sys.argv)!=2):
-        print "Usage: python filter_reads.py < infile.fastq > outfile.fastq"
-        exit(1)
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if not argv: argv = sys.argv
+
+    # setup command line parser
+    parser = optparse.OptionParser( version = "%prog version: $Id$", 
+                                    usage = globals()["__doc__"] )
+
+    ## add common options (-h/--help, ...) and parse command line 
+    (options, args) = E.Start( parser, argv = argv )
+
     filter_low_complexity(sys.stdin,sys.stdout)
 
+    ## write footer and output benchmark information.
+    E.Stop()
 
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+
+
+	 

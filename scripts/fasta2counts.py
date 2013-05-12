@@ -20,8 +20,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-fasta2counts.py - compute some basic stats from sequences
-=========================================================
+fasta2counts.py - basic stats from collection of sequences
+==========================================================
 
 :Author: Andreas Heger
 :Release: $Id$
@@ -31,27 +31,34 @@ fasta2counts.py - compute some basic stats from sequences
 Purpose
 -------
 
-This script computes same basic counts from a fasta-formatted
-file.
+This script computes same basic counts from a fasta-formatted file. For each sequence in
+the :term:`fasta` formatted and indexed input file it will output in a :term:`tsv` formatted table:
+
+contig
+   Sequence identifier
+nresidues
+   Number of residues
+ngaps
+   Number of gaps
+nseqregions
+   Number of ungapped regions
+ngapregions
+   Number of gapped regions
+nA, nC, nG, nT, nN, nX, nO
+   Number of A,C,T,G,N,X,O characters in sequence
 
 Usage
 -----
 
 Example::
 
-   python <script_name>.py --help
+   python fasta2counts.py h19
 
 Type::
 
-   python <script_name>.py --help
+   python fasta2counts.py --help
 
 for command line help.
-
-Documentation
--------------
-
-Code
-----
 
 '''
 
@@ -78,6 +85,7 @@ def writeHeader( outfile ):
                                "nA", "nC", "nG", "nT",
                                "nN", "nX", "nO" ) ) + "\n" )
     
+
     
 
 if __name__ == "__main__":

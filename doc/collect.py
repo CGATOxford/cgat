@@ -8,11 +8,9 @@ upper case characters are put into :file:`modules`.
 
 TEMPLATE_SCRIPT='''
 .. automodule:: %(prefix)s
-   :members:
-   :inherited-members:
-   :show-inheritance:
 
-.. program-output: python ../scripts/%(prefix)s.py --help
+.. program-output:: python ../scripts/%(prefix)s.py --help
+
 '''
 
 TEMPLATE_MODULE='''
@@ -52,6 +50,9 @@ if __name__ == "__main__":
     ncreated, nskipped = 0, 0
 
     for glob_expression, template, dest in dirs:
+
+        if not os.path.exists( dest ):
+            os.mkdir( dest )
 
         files = glob.glob( os.path.abspath( glob_expression ) )
 
