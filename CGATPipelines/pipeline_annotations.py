@@ -27,7 +27,7 @@ Annotation pipeline
 
 :Author: Andreas Heger
 :Release: $Id$
-:Date: |today|
+vv:Date: |today|
 :Tags: Python
 
 The annotation pipeline imports various annotations and organizes them
@@ -58,7 +58,7 @@ Configuration
 
 The :file:`pipeline.ini` needs to be edited so that it points to the
 appropriate locations of the auxiliary files. See especially:
-
+vv
 1. section ``[ensembl]`` with the location of the ENSEMBL dump
     files (``filename_gtf``, filename_pep``, ``filename_cdna``)
 
@@ -441,23 +441,34 @@ def loadMappableBasesPerContig( infile, outfile ):
 ############################################################
 @files( PARAMS["ensembl_filename_gtf"], PARAMS['interface_geneset_all_gtf'] )
 def buildGeneSet( infile, outfile ):
-    '''build a gene set - reconciles chromosome names. '''
+    '''build a gene set - firstly, reconciles chromosome names by 
+       removing those that do not occur in the specified genome assembly; 
+       secondly, removes chromosome names specified in pipeline.ini  '''
+
     to_cluster = True
 
-    statement = '''zcat %(infile)s
+    statement = [ '''zcat %(infile)s
     | python %(scriptsdir)s/gff2gff.py 
                   --sanitize=genome 
                   --skip-missing 
                   --genome-file=%(genome_dir)s/%(genome)s 
-                  --log=%(outfile)s.log
-    | gzip > %(outfile)s
-    '''
+                  --log=%(outfile)s.log ''' ]
+
+    if PARAMS["geneset_remove_contigs"]:
+        # in quotation marks to avoid confusion with shell special
+        # characters such as ( and |
+        statement.append( ''' --remove-contigs="%(geneset_remove_contigs)s" ''' )
+
+    statement.append( ''' | gzip > %(outfile)s ''' )
+
+    statement = " ".join( statement )
+
     P.run()
 
 ############################################################
 ############################################################
 ############################################################
-@files( PARAMS["ensembl_filename_gtf"], PARAMS['interface_annotation_gff'] )
+@files( buildGeneSet, PARAMS['interface_annotation_gff'] )
 def annotateGenome( infile, outfile ):
     '''annotate genomic regions with reference gene set.
 
@@ -477,7 +488,7 @@ def annotateGenome( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-@files( PARAMS["ensembl_filename_gtf"], PARAMS['interface_genestructure_gff'] )
+@files( buildGeneSet, PARAMS['interface_genestructure_gff'] )
 def annotateGeneStructure( infile, outfile ):
     '''annotate genome with gene structures.
 
@@ -499,7 +510,7 @@ def annotateGeneStructure( infile, outfile ):
 ############################################################
 ############################################################
 @follows( annotateGenome )
-@files( PARAMS["ensembl_filename_gtf"], PARAMS['interface_geneset_flat_gtf'] )
+@files( buildGeneSet, PARAMS['interface_geneset_flat_gtf'] )
 def buildFlatGeneSet( infile, outfile ):
     '''build a flattened gene set.
 
@@ -528,20 +539,20 @@ def loadGeneStats( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-@files( PARAMS["ensembl_filename_gtf"], 
+@files( buildGeneSet, 
         PARAMS["interface_geneset_cds_gtf"] )
 def buildCDSTranscripts( infile, outfile ):
     '''build a collection of transcripts from the protein-coding
     section of the ENSEMBL gene set.
 
-    Only CDS exons are parts of exons are output - UTR's are removed.
+    Only CDS parts of exons are output - UTR's are removed.
     '''
     PipelineGeneset.buildCDS( infile, outfile )
 
 ############################################################
 ############################################################
 ############################################################
-@files( PARAMS["ensembl_filename_gtf"], 
+@files( buildGeneSet, 
         PARAMS["interface_geneset_exons_gtf"] )
 def buildExonTranscripts( infile, outfile ):
     '''build a collection of transcripts from the protein-coding
@@ -559,7 +570,7 @@ def loadExonStats( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-@files( PARAMS["ensembl_filename_gtf"], 
+@files( buildGeneSet, 
         PARAMS["interface_geneset_coding_exons_gtf"] )
 def buildCodingExonTranscripts( infile, outfile ):
     '''build a collection of transcripts from the protein-coding
@@ -569,7 +580,7 @@ def buildCodingExonTranscripts( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-@files( PARAMS["ensembl_filename_gtf"], 
+@files( buildGeneSet, 
         PARAMS["interface_geneset_noncoding_exons_gtf"] )
 def buildNonCodingExonTranscripts( infile, outfile ):
     '''build a collection of transcripts from the protein-coding
@@ -579,7 +590,7 @@ def buildNonCodingExonTranscripts( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-@files( PARAMS["ensembl_filename_gtf"], 
+@files( buildGeneSet, 
         PARAMS["interface_geneset_lincrna_exons_gtf"] )
 def buildLincRNAExonTranscripts( infile, outfile ):
     '''build a collection of transcripts from the protein-coding
@@ -606,7 +617,7 @@ def loadCDSStats( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-@files( PARAMS["ensembl_filename_gtf"], "transcript_info.load" )
+@files( buildGeneSet, "transcript_info.load" )
 def loadTranscriptInformation( infile, outfile ):
     '''load transcript information.'''
     
@@ -696,15 +707,15 @@ def loadEntrezToEnsembl(infile,outfile):
         "ensembl_gene_id": "gene_id",
         "entrezgene": "entrez_id" }
     
-    data = PBiomart.biomart_iterator( columns.keys(),
-                                      biomart = "ensembl",
-                                      dataset = PARAMS["ensembl_biomart_dataset"])
+    data = PipelineBiomart.biomart_iterator( columns.keys(),
+                                             biomart = "ensembl",
+                                             dataset = PARAMS["ensembl_biomart_dataset"])
 
-    PDatabase.importFromIterator( outfile,
-                                  tablename,
-                                  data,
-                                  columns = columns,
-                                  indices = ("gene_id", "entrez_id") )
+    PipelineDatabase.importFromIterator( outfile,
+                                         tablename,
+                                         data,
+                                         columns = columns,
+                                         indices = ("gene_id", "entrez_id") )
 
 ############################################################
 ############################################################
@@ -903,7 +914,6 @@ def buildPromotorRegions( infile, outfile ):
     '''annotate promotor regions from reference gene set.'''
     statement = """
         gunzip < %(infile)s 
-        | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
         | python %(scriptsdir)s/gtf2gff.py --method=promotors --promotor=%(geneset_promotor_size)s --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
         | python %(scriptsdir)s/gff2bed.py --is-gtf --name=transcript_id --log=%(outfile)s.log 
         | gzip 
@@ -919,7 +929,6 @@ def buildTranscripts( infile, outfile ):
     '''annotate transcripts from reference gene set. '''
     statement = """
         gunzip < %(infile)s 
-        | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
         | python %(scriptsdir)s/gtf2gtf.py --join-exons --log=%(outfile)s.log 
         | gzip
         > %(outfile)s """
@@ -945,7 +954,6 @@ def buildNoncodingTranscripts( infile, outfile ):
     '''annotate transcripts from reference gene set. '''
     statement = """
         gunzip < %(infile)s 
-        | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
         | python %(scriptsdir)s/gtf2gtf.py --join-exons --log=%(outfile)s.log 
         | gzip
         > %(outfile)s """
@@ -983,7 +991,6 @@ def buildLincRNATranscripts( infile, outfile ):
     '''annotate transcripts from reference gene set. '''
     statement = """
         gunzip < %(infile)s 
-        | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
         | python %(scriptsdir)s/gtf2gtf.py --join-exons --log=%(outfile)s.log 
         | gzip
         > %(outfile)s """
@@ -1013,7 +1020,6 @@ def buildTranscriptTSS( infile, outfile ):
     Similar to promotors, except that the witdth is set to 1. '''
     statement = """
         gunzip < %(infile)s 
-        | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
         | python %(scriptsdir)s/gtf2gtf.py --join-exons --log=%(outfile)s.log 
         | python %(scriptsdir)s/gtf2gff.py --method=promotors --promotor=1 --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
         | python %(scriptsdir)s/gff2bed.py --is-gtf --name=transcript_id --log=%(outfile)s.log 
@@ -1028,7 +1034,6 @@ def buildGeneTSS( infile, outfile ):
     '''create a single TSS for each gene'''
     statement = """
         gunzip < %(infile)s 
-        | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
         | python %(scriptsdir)s/gtf2gtf.py --merge-transcripts --with-utr --log=%(outfile)s.log 
         | python %(scriptsdir)s/gtf2gff.py --method=promotors --promotor=1 --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
         | python %(scriptsdir)s/gff2bed.py --is-gtf --name=gene_id --log=%(outfile)s.log 
@@ -1043,7 +1048,6 @@ def buildGeneTSSInterval( infile, outfile ):
     '''create a single interval that encompasses all annotated TSSs for a given gene'''
     statement = """
         gunzip < %(infile)s 
-        | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
         | python %(scriptsdir)s/gtf2gtf.py --join-exons --log=%(outfile)s.log
         | python %(scriptsdir)s/gtf2gff.py --method=promotors --promotor=1 --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
         | sed s/transcript/exon/g | sed s/exon_id/transcript_id/g 
@@ -1060,7 +1064,6 @@ def buildNoncodingGeneTSS( infile, outfile ):
     '''Assign a TSS for each non-coding gene'''
     statement = """
         gunzip < %(infile)s 
-        | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
         | python %(scriptsdir)s/gtf2gtf.py --merge-transcripts --with-utr --log=%(outfile)s.log 
         | python %(scriptsdir)s/gtf2gff.py --method=promotors --promotor=1 --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
         | python %(scriptsdir)s/gff2bed.py --is-gtf --name=gene_id --log=%(outfile)s.log 
@@ -1100,7 +1103,6 @@ def convertToGTF( infile, outfile ):
 def buildTranscriptTTS( infile, outfile ):
     '''annotate transcription termination sites from reference gene set. '''
     statement = """gunzip < %(infile)s 
-                   | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
                    | python %(scriptsdir)s/gtf2gtf.py --join-exons --log=%(outfile)s.log 
                    | python %(scriptsdir)s/gtf2gff.py --method=tts --promotor=1 --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
                    | python %(scriptsdir)s/gff2bed.py --is-gtf --name=transcript_id --log=%(outfile)s.log 
@@ -1112,8 +1114,7 @@ def buildTranscriptTTS( infile, outfile ):
 @merge( buildCodingExonTranscripts, PARAMS["interface_tts_gene_bed"] )
 def buildGeneTTS( infile, outfile ):
     '''annotate transcription termination sites from reference gene set. '''
-    statement = """gunzip < %(infile)s 
-                   | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
+    statement = """gunzip < %(infile)s
                    | python %(scriptsdir)s/gtf2gtf.py --merge-transcripts --log=%(outfile)s.log 
                    | python %(scriptsdir)s/gtf2gff.py --method=tts --promotor=1 --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
                    | python %(scriptsdir)s/gff2bed.py --is-gtf --name=gene_id --log=%(outfile)s.log 
@@ -1531,7 +1532,7 @@ def buildGenomicFunctionalAnnotation( infiles, outfiles ):
 ############################################################
 @merge( (importRepeatsFromUCSC, 
          importRNAAnnotationFromUCSC,
-         PARAMS["ensembl_filename_gtf"],
+         buildGeneSet,
          buildFlatGeneSet,
          createGO,
          ),
@@ -1563,7 +1564,6 @@ def buildGenomicContext( infiles, outfile ):
             gunzip 
             < %(annotations_gtf)s
             | python %(scriptsdir)s/gtf2gtf.py --sort=gene
-            | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s 
             | python %(scriptsdir)s/gtf2gtf.py --merge-exons --log=%(outfile)s.log 
             | python %(scriptsdir)s/gff2bed.py --name=source --is-gtf --log=%(outfile)s.log
             | sort -k 1,1 -k2,2n
@@ -1662,7 +1662,7 @@ def buildGenomicContextStats( infile, outfile ):
 ############################################################
 ############################################################
 ## BED feature files for genes, TSS intervals, 5'/3' flanks and intergenic regions
-@files( PARAMS["ensembl_filename_gtf"], PARAMS['interface_genic_gtf'] )
+@files( buildGeneSet, PARAMS['interface_genic_gtf'] )
 def buildGeneIntervals( infile, outfile ):
     ''' Merge all transcripts per gene (including utr) to get start and stop 
         coordinates for every protein-coding gene and store in a GTF file'''
@@ -1674,7 +1674,6 @@ def buildGeneIntervals( infile, outfile ):
 
     statement = '''%(uncompress)s %(infile)s 
                    | awk '$2 == "protein_coding"' 
-                   | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log
                    | python %(scriptsdir)s/gtf2gtf.py --merge-transcripts --with-utr --log=%(outfile)s.log
                    | gzip 
                    > %(outfile)s;'''

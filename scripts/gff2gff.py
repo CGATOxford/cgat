@@ -352,6 +352,9 @@ a,b=minimum,maximum number of features.""" )
     parser.add_option( "--skip-missing", dest="skip_missing", action="store_true",
                        help="skip entries on missing contigs. Otherwise an exception is raised [%default]." )
 
+    parser.add_option( "--remove-contigs", dest="remove_contigs", type="string", action="store",
+                       help="a comma separated list of regular expressions specifying contigs to be removed when runnnig sanitize [%default]." )
+
     parser.set_defaults(
         forward_coordinates = False,
         forward_strand = False,
@@ -372,6 +375,7 @@ a,b=minimum,maximum number of features.""" )
         merge_features = None,
         output_format = "%06i",
         skip_missing = False,
+        remove_contigs = None,
         is_gtf = False,
         )
 
@@ -555,6 +559,7 @@ a,b=minimum,maximum number of features.""" )
 
         skipped_contigs = collections.defaultdict( int )
         outofrange_contigs = collections.defaultdict( int )
+        filtered_contigs = collections.defaultdict( int )
         
         for gff in gffs:
             try:
@@ -571,6 +576,12 @@ a,b=minimum,maximum number of features.""" )
                 if lcontig < gff.end:
                     outofrange_contigs[gff.contig] += 1
                     continue
+
+            if options.remove_contigs:
+                to_remove = [re.compile(x) for x in options.remove_contigs.split(",")]
+                if any([x.match(gff.contig) for x in to_remove]):
+                    filtered_contigs[gff.contig] += 1 
+                    continue
                 
             options.stdout.write( str(gff) + "\n" )
 
@@ -583,6 +594,13 @@ a,b=minimum,maximum number of features.""" )
                     (sum(outofrange_contigs.values()),
                      len(outofrange_contigs.keys()),
                      str(outofrange_contigs) ) )
+
+        if filtered_contigs:
+            E.info( "filtered out %i entries on %i contigs: %s" %\
+                        (sum(filtered_contigs.values()), 
+                         len(filtered_contigs.keys()), 
+                         str(filtered_contigs) ) ) 
+
     else:
 
         
