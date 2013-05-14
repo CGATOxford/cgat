@@ -52,7 +52,7 @@ Genomics
    scripts/psl2stats.rst
    scripts/psl2table.rst
    scripts/maq2assembly.rst
-   scripts/maq2blat.rst
+   scripts/maq2psl.rst
    scripts/windows2gff.rst
    scripts/analyze_readpositions.rst
    scripts/combine_gff.rst
@@ -69,12 +69,10 @@ Genomics
    scripts/diff_bed.rst
    scripts/fasta2bed.rst
    scripts/gff2table.rst
-   scripts/gtf2fasta_test.rst
    scripts/index2gff.rst
    scripts/maf2psl.rst
    scripts/maq2psl.rst
    scripts/snp2counts.rst
-   scripts/snp2counts_test.rst
    scripts/snp2maf.rst
    scripts/psl2chain.rst
 
@@ -97,8 +95,7 @@ Trees
    scripts/trees2tree.rst
    scripts/trees2trees.rst
    scripts/data2contrasts.rst
-   scripts/tree_species2gene.rst
-   scripts/test_tree_strain2species.rst
+   scripts/tree_species2genes.rst
    scripts/matrix2tree.rst
    scripts/fasta2nj.rst
    scripts/tree2patterns.rst
@@ -177,7 +174,6 @@ Sequences and rates
    scripts/index_fasta.rst
    scripts/mali2kaks.rst
    scripts/mali2rates.rst
-   scripts/mali_rates.rst
    scripts/malis2masks.rst
    scripts/diff_fasta.rst
    scripts/analyze_codeml_kaks.rst
@@ -191,24 +187,6 @@ Sequences and rates
    scripts/extractseq.rst
    scripts/quality2masks.rst
    scripts/map_residues.rst
-
-Structures
-----------
-
-.. toctree::
-   :maxdepth: 1
-
-   scripts/merge_pdb_files.rst
-   scripts/pdb2filter_residues.rst
-   scripts/pdb2sequence.rst
-   scripts/pdb2superimpose.rst
-   scripts/pdb_annotate_structure.rst
-   scripts/pdb_domains2molscript.rst
-   scripts/pdb_filter_residues.rst
-   scripts/pdb_renumber.rst
-   scripts/pdb_superimpose.rst
-   scripts/renumber_pdb_file.rst
-   scripts/renumber_pdb_files.rst
 
 Matrices and Tables
 -------------------
@@ -463,18 +441,6 @@ Scripts relevant to codon bias analysis.
    scripts/preppy.rst
 
 
-Xrate pipeline
-+++++++++++++++
-
-.. toctree::
-   :maxdepth: 1
-
-   scripts/xrate_blocks.rst
-   scripts/xrate_gc.rst
-   scripts/xrate_tms.rst
-   scripts/xrate_tms_lrt.rst
-   scripts/simgram.rst
-
 Unsorted
 --------
 
@@ -508,15 +474,15 @@ This section contains obsolete or incomplete scripts.
 .. toctree::
    :maxdepth: 1
 
-   scripts/analyze_go.rst
-   scripts/tree_map_leaves.rst
-   scripts/liftover.rst
-   scripts/gnuplot_data.rst
-   scripts/gnuplot_histogram.rst
-   scripts/go2plot.rst
-   scripts/mali_extract.rst
-   scripts/mali_phylip2fasta.rst
-   scripts/mali_plain2aln.rst
-   scripts/mali_remove_gaps.rst
+   .. scripts/analyze_go.rst
+   .. scripts/tree_map_leaves.rst
+   .. scripts/liftover.rst
+   .. scripts/gnuplot_data.rst
+   .. scripts/gnuplot_histogram.rst
+   .. scripts/go2plot.rst
+   .. scripts/mali_extract.rst
+   .. scripts/mali_phylip2fasta.rst
+   .. scripts/mali_plain2aln.rst
+   .. scripts/mali_remove_gaps.rst
 
 

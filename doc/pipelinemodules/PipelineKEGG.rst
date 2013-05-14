@@ -1,5 +1,5 @@
 
-.. automodule:: Stats2Plot
+.. automodule:: PipelineKEGG
    :members:
    :inherited-members:
    :show-inheritance:

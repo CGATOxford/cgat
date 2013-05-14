@@ -42,22 +42,22 @@ complete list:
 .. toctree::
    :maxdepth: 1	
 
-   scripts/pipeline_annotations.rst   
-   scripts/pipeline_ancestral_repeats.rst
-   scripts/pipeline_chains.rst
-   scripts/pipeline_chipseq.rst
-   scripts/pipeline_liftover.rst
-   scripts/pipeline_readqc.rst
-   scripts/pipeline_rnaseq.rst
-   scripts/pipeline_variants.rst
-   scripts/pipeline_benchmark_rnaseqmappers.rst
-   scripts/pipeline_testing.rst
-   scripts/pipeline_mapping.rst
-   scripts/pipeline_rnaseqtranscripts.rst
-   scripts/pipeline_transcriptome.rst
-   scripts/pipeline_rnaseqdiffexpression.rst
-   scripts/pipeline_peakcalling.rst
-   scripts/pipeline_rnaseqlncrna.rst   
+   pipelines/pipeline_annotations.rst   
+   pipelines/pipeline_ancestral_repeats.rst
+   pipelines/pipeline_chains.rst
+   pipelines/pipeline_chipseq.rst
+   pipelines/pipeline_liftover.rst
+   pipelines/pipeline_readqc.rst
+   pipelines/pipeline_rnaseq.rst
+   pipelines/pipeline_variants.rst
+   pipelines/pipeline_benchmark_rnaseqmappers.rst
+   pipelines/pipeline_testing.rst
+   pipelines/pipeline_mapping.rst
+   pipelines/pipeline_rnaseqtranscripts.rst
+   pipelines/pipeline_transcriptome.rst
+   pipelines/pipeline_rnaseqdiffexpression.rst
+   pipelines/pipeline_peakcalling.rst
+   pipelines/pipeline_rnaseqlncrna.rst   
 
 Help on installing, using and building pipelines is below:
 

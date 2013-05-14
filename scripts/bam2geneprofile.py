@@ -131,8 +131,7 @@ def main( argv = None ):
 
     parser.add_option( "-m", "--method", dest="methods", type = "choice", action = "append",
                        choices = ("geneprofile", "tssprofile", "utrprofile", 
-                                  "intervalprofile", "midpointprofile",
-                                  "),
+                                  "intervalprofile", "midpointprofile" ),
                        help = "counters to use. Counters describe the meta-gene structure to use"
                               " for counting. Several counters can be chosen."
                               " [%default]" )
