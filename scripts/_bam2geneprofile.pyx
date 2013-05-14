@@ -53,14 +53,69 @@ class RangeCounter:
             return self.counts
 
 class RangeCounterBAM(RangeCounter):
-
-    def __init__(self, samfiles, shifts, extends, merge_pairs, min_insert_size, max_insert_size, 
+    '''count densities using bam files.
+    '''
+    def __init__(self, samfiles,
                  *args, **kwargs ):
+        '''
+        :param samfiles: list of :term:`bam` formatted files
+        :param shifts: list of read shifts
+        :param extends: list of read extensions
+        :param merge_pairs: merge read pairs for counting
+        :param min_insert_size: remove paired reads with insert size below this threshold
+        :param max_insert_size: remove paired reads with insert size above this threshold
+        '''
+
         RangeCounter.__init__(self, *args, **kwargs )
         self.samfiles = samfiles
-        self.merge_pairs = merge_pairs
-        self.min_insert_size = min_insert_size
-        self.max_insert_size = max_insert_size
+
+    def count(self, contig, ranges ):
+
+        if len(ranges) == 0: return
+
+        # collect pileup profile in region bounded by start and end.
+        cdef int i
+        cdef int xstart, xend, rstart, rend, start, end
+        cdef int interval_width
+        cdef int current_offset
+        cdef AlignedRead read
+        cdef int shift_extend
+        cdef int work_offset
+        cdef int pos
+        cdef int length
+
+        counts = self.counts
+
+        cdef Samfile samfile
+
+        for samfile in self.samfiles:
+
+            current_offset = 0
+
+            for start, end in ranges:
+                length = end - start
+
+                for read in samfile.fetch( contig, start, end ):
+                    rstart = max( start, read.pos ) - start + current_offset
+                    rend = min( end, read.aend) - start + current_offset
+                    for i from rstart <= i < rend: counts[i] += 1
+
+                current_offset += length
+
+class RangeCounterBAMShift(RangeCounter):
+    '''count densities using bam files. 
+
+    Before counting, reads are shifted and extended by a fixed amount.
+    '''
+    def __init__(self, samfiles, shifts, extends, 
+                 *args, **kwargs ):
+        '''
+        :param samfiles: list of :term:`bam` formatted files
+        :param shifts: list of read shifts
+        :param extends: list of read extensions
+        '''
+
+        RangeCounterBAM.__init__(self, samfiles, *args, **kwargs )
 
         self.shifts, self.extends = [], []
 
@@ -117,9 +172,6 @@ class RangeCounterBAM(RangeCounter):
         cdef int extend
         cdef int shift
         cdef Samfile samfile
-        cdef bint merge_pairs = self.merge_pairs
-        cdef int min_insert_size = self.min_insert_size
-        cdef int max_insert_size = self.max_insert_size
 
         for samfile, shift, extend in zip( self.samfiles, self.shifts, self.extends):
 
@@ -128,51 +180,141 @@ class RangeCounterBAM(RangeCounter):
 
             for start, end in ranges:
                 length = end - start
-                if merge_pairs:
-                    xstart, xend = max(0, start - shift_extend), max(0, end + shift_extend)
+                # collect reads including the regions left/right of interval
+                xstart, xend = max(0, start - shift_extend), max(0, end + shift_extend)
 
-                    for read in samfile.fetch( contig, xstart, xend ):
-                        flag = read._delegate.core.flag 
-                        # remove unmapped reads
-                        if flag & 4: continue
-                        # remove unpaired
-                        if not flag & 2: continue
-                        # this is second pair of read - skip to avoid double counting
-                        if flag & 128: continue
-                        # remove reads on different contigs
-                        if read.tid != read.mrnm: continue
-                        # remove if insert size too large
-                        if (read.isize > max_insert_size) or (read.isize < min_insert_size) : continue
-                        if read.pos < read.mpos:
-                            rstart = max( start, read.pos)
-                            rend = min( end, read.mpos + read.rlen )
-                        else:
-                            rstart = max( start, read.mpos)
-                            rend = min( end, read.pos + read.rlen )
+                for read in samfile.fetch( contig, xstart, xend ):
+                    if read.is_reverse: 
+                        rstart = read.aend - start - shift_extend
+                    else:
+                        rstart = read.pos - start + shift
 
-                        rstart += -start + current_offset
-                        rend += -start + current_offset
-                        for i from rstart <= i < rend: counts[i] += 1
+                    rend = min( length, rstart + extend ) + current_offset
+                    rstart = max( 0, rstart ) + current_offset
+                    for i from rstart <= i < rend: counts[i] += 1
+
+                current_offset += length
+
+class RangeCounterBAMMerge(RangeCounter):
+    '''count densities using bam files.
+
+    Before counting, paired end reads are merged and counts
+    are computed over the full merged range.
+    '''
+    def __init__(self, samfiles,
+                 merge_pairs, 
+                 min_insert_size, max_insert_size, 
+                 *args, **kwargs ):
+        '''
+        :param samfiles: list of :term:`bam` formatted files
+        :param min_insert_size: remove paired reads with insert size below this threshold
+        :param max_insert_size: remove paired reads with insert size above this threshold
+        '''
+
+        RangeCounterBAM.__init__(self, samfiles,
+                                 *args, **kwargs )
+        self.samfiles = samfiles
+        self.merge_pairs = merge_pairs
+        self.min_insert_size = min_insert_size
+        self.max_insert_size = max_insert_size
+
+    def count(self, contig, ranges ):
+
+        if len(ranges) == 0: return
+
+        # collect pileup profile in region bounded by start and end.
+        cdef int i
+        cdef int xstart, xend, rstart, rend, start, end
+        cdef int interval_width
+        cdef int current_offset
+        cdef AlignedRead read
+        cdef int shift_extend
+        cdef int work_offset
+        cdef int pos
+        cdef int length
+
+        counts = self.counts
+
+        cdef Samfile samfile
+        cdef int min_insert_size = self.min_insert_size
+        cdef int max_insert_size = self.max_insert_size
+
+        for samfile in self.samfiles:
+
+            current_offset = 0
+
+            for start, end in ranges:
+                length = end - start
+                
+                xstart, xend = max(0, start - shift_extend), max(0, end + shift_extend)
+
+                for read in samfile.fetch( contig, xstart, xend ):
+                    flag = read._delegate.core.flag 
+                    # remove unmapped reads
+                    if flag & 4: continue
+                    # remove unpaired
+                    if not flag & 2: continue
+                    # this is second pair of read - skip to avoid double counting
+                    if flag & 128: continue
+                    # remove reads on different contigs
+                    if read.tid != read.mrnm: continue
+                    # remove if insert size too large
+                    if (read.isize > max_insert_size) or (read.isize < min_insert_size) : continue
+                    if read.pos < read.mpos:
+                        rstart = max( start, read.pos)
+                        rend = min( end, read.mpos + read.rlen )
+                    else:
+                        rstart = max( start, read.mpos)
+                        rend = min( end, read.pos + read.rlen )
+                        
+                    rstart += -start + current_offset
+                    rend += -start + current_offset
+                    for i from rstart <= i < rend: counts[i] += 1
   
-                elif shift_extend > 0:
-                    # collect reads including the regions left/right of interval
-                    xstart, xend = max(0, start - shift_extend), max(0, end + shift_extend)
+                current_offset += length
 
-                    for read in samfile.fetch( contig, xstart, xend ):
-                        if read.is_reverse: 
-                            rstart = read.aend - start - shift_extend
-                        else:
-                            rstart = read.pos - start + shift
+class RangeCounterBAMBaseAccuracy(RangeCounter):
+    '''count densities using bam files with base accuracy.
+    '''
+    def __init__(self, 
+                 *args, **kwargs ):
+        '''
+        '''
 
-                        rend = min( length, rstart + extend ) + current_offset
-                        rstart = max( 0, rstart ) + current_offset
-                        for i from rstart <= i < rend: counts[i] += 1
-                else:
-                    for read in samfile.fetch( contig, start, end ):
-                        rstart = max( start, read.pos ) - start + current_offset
-                        rend = min( end, read.aend) - start + current_offset
-                        for i from rstart <= i < rend: counts[i] += 1
+        RangeCounterBAM.__init__(self, *args, **kwargs )
 
+    def count(self, contig, ranges ):
+
+        if len(ranges) == 0: return
+
+        # collect pileup profile in region bounded by start and end.
+        cdef int i
+        cdef int xstart, xend, rstart, rend, start, end
+        cdef int interval_width
+        cdef int current_offset
+        cdef AlignedRead read
+        cdef int work_offset
+        cdef int pos
+        cdef int length
+        
+        counts = self.counts
+
+        cdef Samfile samfile
+
+        for samfile in self.samfiles:
+
+            current_offset = 0
+
+            for start, end in ranges:
+                length = end - start
+                for read in samfile.fetch( contig, start, end ):
+                    # note: not optimized for speed yet - uses a python list
+                    positions = read.positions
+                    for i in positions:
+                        if i < start: continue
+                        if i > end: continue
+                        counts[i - start + current_offset] += 1
+                        
                 current_offset += length
 
 class RangeCounterBed(RangeCounter):
