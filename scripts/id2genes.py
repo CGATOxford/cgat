@@ -85,8 +85,8 @@ OPTIONS:
 
 param_long_options = ["create=", "regex-token=", "pattern-sub=",
                       "apply=", "invert", "multiple", "columns-token=", "echo",
-                      "filter", "inplace", "backup", "skip", "error=" ]
-param_short_options = "c:r:p:a:imo:fnbs"
+                      "filter", "inplace", "backup", "skip", "error=", "help" ]
+param_short_options = "c:r:p:a:imo:fnbsh"
 
 param_create = None
 param_regex_token = None
@@ -117,6 +117,9 @@ if __name__ == "__main__":
         sys.exit(1)
 
     for o,a in optlist:
+        if o in ("-h", "--help"):
+            print USAGE
+            sys.exit(0)
         if o in ("-c", "--create"):
             param_create = a
         elif o in ("-r", "--regex-token"):

@@ -100,7 +100,6 @@ import gzip
 import fileinput
 import CGATPipelines.PipelineTracks as PipelineTracks
 import CGATPipelines.PipelineMapping as PipelineMapping
-from bein.util import *
 
 USECLUSTER = True
 

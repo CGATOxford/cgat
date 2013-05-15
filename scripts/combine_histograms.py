@@ -71,7 +71,7 @@ import os
 import getopt
 import time
 
-param_long_options = ["missing=", "headers=", "titles", "normalize", "format=", "format-bin=", "format-value=", "sort="]
+param_long_options = ["missing=", "headers=", "titles", "normalize", "format=", "format-bin=", "format-value=", "sort=", "help"]
 param_short_options = "v:ht:m:h:s:f:"
 
 param_headers = None
@@ -100,11 +100,14 @@ if __name__ == '__main__':
                                       
 
     except getopt.error, msg:
-        print USAGE, msg
+        print globals()["__doc__"], msg
         sys.exit(1)
 
     for o,a in optlist:
-        if o in ("-h", "--headers"):
+        if o in ( "--help",):
+            print globals()["__doc__"]
+            sys.exit(0)
+        elif o in ("-h", "--headers"):
             param_headers = string.split( a, "," )
         elif o in ("-n", "--normalize"):
             param_normalize = 1
@@ -127,7 +130,7 @@ if __name__ == '__main__':
                 param_sort = string.split( a, "," )
 
     if len(args) < 1:
-        print USAGE, "please specify at one histogram."
+        print globals()["__doc__"], "please specify at one histogram."
         sys.exit(1)
 
     param_filenames = args

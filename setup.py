@@ -24,7 +24,8 @@ shared_dependencies = [
     'scipy>=0.11',
     'matplotlib>=1.2.1', 
     'sqlalchemy>=0.7.0', 
-    'pysam>=0.7' ]
+    'pysam>=0.7',
+    'openpyxl>=1.5.7' ]
 
 # check if within CGAT, do not install dependencies
 curdir = os.getcwd()
@@ -60,6 +61,7 @@ Operating System :: MacOS
 ## Extensions
 
 import os
+import numpy
 
 # Connected components cython extension
 Components = Extension(
@@ -79,6 +81,16 @@ NCL = Extension(
       library_dirs=[],
       libraries=[],
       language="c",
+    )
+
+# Nubiscan motif mapping
+Nubiscan = Extension(
+    "CGAT.Nubiscan.cnubiscan",                   
+    [ 'CGAT/Nubiscan/cnubiscan.pyx'],
+    library_dirs=[],
+    libraries=[],            
+    include_dirs = [numpy.get_include()], 
+    language="c",               
     )
 
 setup(name='CGAT',
@@ -101,7 +113,7 @@ setup(name='CGAT',
       install_requires = shared_dependencies + extra_dependencies,
       zip_safe = False,
       include_package_data = True,
-      ext_modules=[Components, NCL],
+      ext_modules=[Components, NCL, Nubiscan],
       cmdclass = {'build_ext': build_ext},
       test_suite = "tests",
       )

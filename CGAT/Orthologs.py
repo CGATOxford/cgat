@@ -1,4 +1,14 @@
-"""tools to deal with Leo's orthology pipeline."""
+"""
+Orthologs.py - tools to deal with Leo's orthology pipeline.
+===========================================================
+
+:Author: 
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+"""
+
 import string, re
 
 ## patch to work around wrong gene assignments for BDGP

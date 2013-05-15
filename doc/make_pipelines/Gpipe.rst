@@ -134,7 +134,7 @@ The filenames and their contents are:
 :file:`peptides.fasta`
    A fasta-formatted file with peptide sequences. Each sequence is on a single line. 
    The identifier of a sequence is taken from the description line 
-   with the pattern ``>(\S+)'' (characters between > and first white-space).
+   with the pattern ``>(\S+)`` (characters between > and first white-space).
    For example::
    
       >CG11023-RA

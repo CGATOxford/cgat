@@ -110,8 +110,8 @@ fastq.1.gz, fastq2.2.gz
 Optional inputs
 +++++++++++++++
 
-nRequirements
-------------
+Requirements
+-------------
 
 The pipeline requires the results from :doc:`pipeline_annotations`. Set the configuration variable 
 :py:data:`annotations_database` and :py:data:`annotations_dir`.
@@ -180,7 +180,7 @@ Glossary
 .. _bowtie: http://bowtie-bio.sourceforge.net/index.shtml
 .. _gsnap: http://research-pub.gene.com/gmap/
 .. _bamstats: http://www.agf.liv.ac.uk/454/sabkea/samStats_13-01-2011
-.. _star - http://code.google.com/p/rna-star/
+.. _star: http://code.google.com/p/rna-star/
 
 Code
 ====

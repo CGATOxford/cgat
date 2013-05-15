@@ -58,6 +58,22 @@ complete list:
    pipelines/pipeline_rnaseqdiffexpression.rst
    pipelines/pipeline_peakcalling.rst
    pipelines/pipeline_rnaseqlncrna.rst   
+   pipelines/pipeline_capseq.rst
+   pipelines/pipeline_cufflinks_optimization.rst
+   pipelines/pipeline_exome.rst
+   pipelines/pipeline_expression.rst
+   pipelines/pipeline_fastqToBigWig.rst
+   pipelines/pipeline_fusion.rst
+   pipelines/pipeline_genomeassembly.rst
+   pipelines/pipeline_intervals.rst
+   pipelines/pipeline_mappability.rst
+   pipelines/pipeline_mapping_benchmark.rst
+   pipelines/pipeline_medip.rst
+   pipelines/pipeline_polyphen.rst
+   pipelines/pipeline_promotors.rst
+   pipelines/pipeline_quickstart.rst
+   pipelines/pipeline_transfacmatch.rst
+   pipelines/pipeline_variant_annotation.rst
 
 Help on installing, using and building pipelines is below:
 
@@ -88,7 +104,9 @@ Deverlopers guide
    :maxdepth: 2
 
    testing.rst
+   styleguide.rst
    release.rst
+   glossary.rst   
 
 Disclaimer
 ==========

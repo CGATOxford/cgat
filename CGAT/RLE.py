@@ -1,6 +1,12 @@
-"""a simple run length encoder.
+"""RLE.py - a simple run length encoder
+=======================================
 
-See http://rosettacode.org/wiki/Run-length_encoding#Python
+:Author: 
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Taken from: http://rosettacode.org/wiki/Run-length_encoding#Python
 """
 from itertools import groupby
 import array
@@ -57,7 +63,6 @@ def uncompress( stream ):
             n = None
     return decode( r )
     
-
 if __name__ == "__main__":
     import doctest
     doctest.testmod()

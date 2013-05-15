@@ -185,27 +185,29 @@ PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],
 ###################################################################
 ###################################################################
 # get options that are to be tested
-
-options = P.asList(PARAMS["cufflinks_test_options"])
-
 cufflinks_options = {}
-for option in options:
-    if option == "--pre-mrna-fraction" \
-            or option == "--small-anchor-fraction" \
-            or option == "--max-multiread-fraction": 
-        cufflinks_options[option]=[0, 0.5, 0.75, 1]
-    elif option == "--min-isoform-fraction":
-        cufflinks_options[option]=[0.05, 0.1, 0.5, 1]
-    elif option == "--junc-alpha":
-        cufflinks_options[option]=[0.001, 0.01, 0.1]
-    elif option == "--min-frags-per-transfrag":
-        cufflinks_options[option]=[1, 5, 10]
-    elif option == "--overhang-tolerance":
-        cufflinks_options[option]=[0,2,5,8]
-    elif option == "--overlap-radius":
-        cufflinks_options[option]=[50, 100, 200]
-    else:
-        raise ValueError("pipeline_cufflinks_optimization does not support parameter %s" % option)
+if "cufflinks_test_options" in PARAMS:
+    options = P.asList(PARAMS["cufflinks_test_options"])
+    for option in options:
+        if option == "--pre-mrna-fraction" \
+                or option == "--small-anchor-fraction" \
+                or option == "--max-multiread-fraction": 
+            cufflinks_options[option]=[0, 0.5, 0.75, 1]
+        elif option == "--min-isoform-fraction":
+            cufflinks_options[option]=[0.05, 0.1, 0.5, 1]
+        elif option == "--junc-alpha":
+            cufflinks_options[option]=[0.001, 0.01, 0.1]
+        elif option == "--min-frags-per-transfrag":
+            cufflinks_options[option]=[1, 5, 10]
+        elif option == "--overhang-tolerance":
+            cufflinks_options[option]=[0,2,5,8]
+        elif option == "--overlap-radius":
+            cufflinks_options[option]=[50, 100, 200]
+        else:
+            raise ValueError("pipeline_cufflinks_optimization does not support parameter %s" % option)
+
+if len(cufflinks_options) == 0:
+    raise ValueError( "no options to optimize specified" )
 
 #####################
 # get input tracks
@@ -292,14 +294,14 @@ def getLogFileNames(options_generator):
 ###################################################################
 ###################################################################
 ###################################################################
-@transform(TRACKS, suffix(".bam"), ".%s.bam" % "chr%s" % str(PARAMS["chromosome_chr"]))
+@transform(TRACKS, suffix(".bam"), ".%s.bam" % PARAMS["chromosome"])
 def reduceBamToChr19(infile, outfile):
     '''
     reduce the dataset for parameter testing.
     '''
     bam = pysam.Samfile(infile, "rb")
     outbam = pysam.Samfile(outfile, "wb", template = bam)
-    for alignment in bam.fetch("%s" % "chr" + str(PARAMS["chromosome_chr"])):
+    for alignment in bam.fetch( PARAMS["chromosome"]):
         outbam.write(alignment)
     bam.close()
     outbam.close()
@@ -390,7 +392,7 @@ def createConfigFiles(infile, outfile):
 ###################################################################
 ###################################################################
 @follows(createLogFiles)
-@files([os.path.join(PARAMS["general_pipeline_rnaseqtranscripts_dir"], x) for x in ["conf.py", "sphinxreport.ini"]]
+@files([os.path.join(PARAMS["pipeline_rnaseqtranscripts_dir"], x) for x in ["conf.py", "sphinxreport.ini"]]
            , [os.path.join(directoryname, y) for directoryname, y in itertools.product (getDirectoryNames(options_generator(cufflinks_options)), ["conf.py", "sphinxreport.ini"])])
 def linkToPipelineRnaseqTranscriptsConfigFiles(infiles, outfiles):
     '''
@@ -428,7 +430,7 @@ def executePipelineRnaseqTranscripts(infile, outfile):
 ###################################################################
 @follows(executePipelineRnaseqTranscripts)
 @transform(os.path.join(DIRECTORIES[0], "reference.gtf.gz")
-           , regex(r"(\S+).gtf.gz"), "reference.chr%s.gtf.gz" % PARAMS["chromosome_chr"])
+           , regex(r"(\S+).gtf.gz"), "reference.%s.gtf.gz" % PARAMS["chromosome"])
 def filterReferenceGtfForChr19(infile, outfile):
     '''
     for reporting purposes get the chr19 filtered reference gtf file;
@@ -498,8 +500,8 @@ def countMultiAndSingleExonLincRna(infile, outfile):
 ###################################################################
 ###################################################################
 @follows(executePipelineRnaseqTranscripts)
-@transform([os.path.join(directory, P.snip(bam, ".bam") + ".chr%s.bam" % PARAMS["chromosome_chr"]) for directory, bam in itertools.product(getDirectoryNames(options_generator(cufflinks_options)), TRACKS)]
-           , suffix(".accepted.chr%s.bam" % PARAMS["chromosome_chr"]), ".summary")
+@transform([os.path.join(directory, P.snip(bam, ".bam") + ".%s.bam" % PARAMS["chromosome"]) for directory, bam in itertools.product(getDirectoryNames(options_generator(cufflinks_options)), TRACKS)]
+           , suffix(".accepted.%s.bam" % PARAMS["chromosome"]), ".summary")
 def summariseReadsContributingToTranscripts(infile, outfile):
     '''
     for each run of the pipeline and for each track, count the proportion

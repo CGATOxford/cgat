@@ -19,8 +19,15 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+"""
+Tree.py - A derivation of the tree class from Biopython
+=======================================================
 
-"""A derivation of the tree class from Biopython.
+:Author: 
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
 """
 import sys, string, re, os, math
 

@@ -15,7 +15,6 @@ Genomics
    :maxdepth: 1
 
    modules/AString.rst 
-   modules/AlignatorBenchmark.rst                   
    modules/Blat.rst    
    modules/FastaIterator.rst
    modules/IndexedFasta.rst
@@ -48,7 +47,6 @@ Phylogeny
 
    modules/Tree.rst
    modules/TreeTools.rst
-   modules/Tree_test.rst
    modules/RateEstimation.rst
    modules/PamMatrices.rst
 
@@ -86,9 +84,6 @@ Math and Stats
    modules/Histogram.rst
    modules/Histogram2D.rst
    modules/Stats.rst
-   modules/Stats2Html.rst
-   modules/Stats2Plot.rst
-   modules/Stats_test.rst
    modules/MatlabTools.rst
    modules/MatrixTools.rst
 

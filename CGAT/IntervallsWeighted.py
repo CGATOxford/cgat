@@ -12,8 +12,11 @@
 ##
 ####
 ####
+"""
+IntervallsWeigted.py - working with weigted intervals
+=====================================================
 
-"""Work with weighted invervalls. A weighted intervall is
+Work with weighted invervalls. A weighted intervall is
 a tuple of the form (from,to,weight).
 
 Funktions in this module take an optional function parameter object fct,

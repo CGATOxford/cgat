@@ -159,7 +159,7 @@ class Mapper( object ):
         '''add uncompression for compressed files.
         and programs that expect uncompressed files.
 
-        .. warn::
+        .. note::
             This will only work if the downstream programs read the
             file only once.
         '''

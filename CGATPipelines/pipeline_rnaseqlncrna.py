@@ -218,7 +218,7 @@ PARAMS = P.PARAMS
 PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_annotations_dir"],
                                        "pipeline_annotations.py" )
 PREVIOUS = P.asList(PARAMS["genesets_previous"])
-print PREVIOUS
+
 #########################################################################
 #########################################################################
 #########################################################################

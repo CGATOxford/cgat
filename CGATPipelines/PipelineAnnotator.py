@@ -689,11 +689,15 @@ def makeAnnotatorArchitecture( infile, outfile,
     defined in the file PARAMS["annotations"].
 
     Annotator is run with the following parameters:
-    1. Segments: the interval track
-    2. Annotations:
-       1. genomic architecture (PARAMS["annotation"])
-       2. promotors (PARAMS["promotors"])
-    3. Workspace: the full genome
+
+    Segments
+       the interval track
+    Annotations:
+       genomic architecture (PARAMS["annotation"])
+       promotors (PARAMS["promotors"])
+    Workspace
+       the full genome
+
     '''
     
     tmpdir = tempfile.mkdtemp( dir = os.getcwd() )
@@ -749,11 +753,14 @@ def makeAnnotatorTracks( infiles, outfile, **kwargs ):
     '''check statistical overlap between intervals and selected ucsc tracks
 
     Annotator is run with the following parameters:
-    1. Segments: the interval track
-    2. Annotations:
-       1. ucsc encode features
-       2. disease intervals (regions of interest)
-    3. Workspace: the full genome
+    
+    Segments
+        the interval track
+    Annotations
+        UCSC encode features
+        disease intervals (regions of interest)
+    Workspace
+        the full genome
     '''
     
     infile, infile_annotations = infiles

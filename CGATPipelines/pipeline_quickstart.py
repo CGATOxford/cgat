@@ -62,7 +62,7 @@ def main( argv = sys.argv ):
     def copy( src, dst ):
         fn_dest = os.path.join( dest, dst, rx_file.sub(name, src) )
                                     
-        fn_src = os.path.join( srcdir, "pipeline_template", src)
+        fn_src = os.path.join( srcdir, "pipeline_template_data", src)
 
         if os.path.exists( fn_dest ) and not options.force:
             raise OSError( "file %s already exists - not overwriting." % fn_dest )

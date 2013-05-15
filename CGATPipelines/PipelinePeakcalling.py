@@ -1175,12 +1175,12 @@ def loadMACS( infile, outfile, bamfile, controlfile = None ):
 
     This method creates two optional additional files:
 
-    * if the file :file:`<track>_diag.xls` is present, load MACS 
-    diagnostic data into the table :file:`<track>_macsdiag`.
+       * if the file :file:`<track>_diag.xls` is present, load MACS 
+         diagnostic data into the table :file:`<track>_macsdiag`.
     
-    * if the file :file:`<track>_model.r` is present, call R to
-    create a MACS peak-shift plot and save it as :file:`<track>_model.pdf`
-    in the :file:`export/MACS` directory.
+       * if the file :file:`<track>_model.r` is present, call R to
+         create a MACS peak-shift plot and save it as :file:`<track>_model.pdf`
+         in the :file:`export/MACS` directory.
 
     This method creates :file:`<outfile>.tsv.gz` with the results
     of the filtering.
@@ -1365,12 +1365,12 @@ def loadMACS2( infile, outfile, bamfile, controlfile = None ):
 
     This method creates two optional additional files:
 
-    * if the file :file:`<track>_diag.xls` is present, load MACS 
-    diagnostic data into the table :file:`<track>_macsdiag`.
+       * if the file :file:`<track>_diag.xls` is present, load MACS 
+         diagnostic data into the table :file:`<track>_macsdiag`.
     
-    * if the file :file:`<track>_model.r` is present, call R to
-    create a MACS peak-shift plot and save it as :file:`<track>_model.pdf`
-    in the :file:`export/MACS` directory.
+       * if the file :file:`<track>_model.r` is present, call R to
+         create a MACS peak-shift plot and save it as :file:`<track>_model.pdf`
+         in the :file:`export/MACS` directory.
 
     This method creates :file:`<outfile>.tsv.gz` with the results
     of the filtering.

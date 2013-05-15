@@ -1,4 +1,11 @@
-"""Classes and methods for dealing with gtf formatted files.
+"""
+GTF.py - Classes and methods for dealing with gtf formatted files
+=================================================================
+
+:Author: 
+:Release: $Id$
+:Date: |today|
+:Tags: Python
 
 The default GTF version is 2.2.
 """

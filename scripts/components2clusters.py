@@ -98,7 +98,7 @@ if __name__ == "__main__":
         if o in ( "-v", "--verbose" ):
             param_loglevel = int(a)
         elif o in ( "-h", "--help" ):
-            print USAGE
+            print globals()["__doc__"]
             sys.exit(0)
         elif o in ("-e", "--equivalences"):
             param_filename_equivalences = a

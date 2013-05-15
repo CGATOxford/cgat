@@ -97,7 +97,7 @@ def buildUTRExtension( infile, outfile ):
     Works on output of buildGeneLevelReadExtension.
 
     Known problems
-    --------------
+    ++++++++++++++
 
     * the size of the extension is limited by the window size
 
@@ -108,7 +108,7 @@ def buildUTRExtension( infile, outfile ):
       a good amount of reads still present in the UTR.
 
     The model
-    ---------
+    ++++++++++++++
 
     The model is a three-state model:
 
@@ -128,7 +128,7 @@ def buildUTRExtension( infile, outfile ):
     distribution of counts.
 
     Parameter estimation
-    --------------------
+    ++++++++++++++++++++
 
     Parameters are derived from known UTRs within full length 
     territories.
@@ -146,7 +146,7 @@ def buildUTRExtension( infile, outfile ):
     
 
     Alternatives
-    ------------
+    ++++++++++++
 
     The method could be improved.
 

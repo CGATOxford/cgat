@@ -78,7 +78,8 @@ def GetHeader():
 
 def GetParams( options = None):
     """return a string containing script parameters.
-    Parameters are all variables that start with "param_".
+
+    Parameters are all variables that start with ``param_``.
     """
     result = []
     if options:

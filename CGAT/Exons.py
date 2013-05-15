@@ -19,9 +19,15 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
-"""A library to read/write/manage exons.
+"""
+Exons.py - A library to read/write/manage exons.
+=====================================================
 
-Version: $Id: Exons.py 2881 2010-04-07 08:45:38Z andreas $
+:Author: 
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
 """
 
 import re, sys, string

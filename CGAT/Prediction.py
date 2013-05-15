@@ -20,7 +20,14 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 """
-Version: $Id: Prediction.py 2781 2009-09-10 11:33:14Z andreas $
+Prediction.py - Gene prediction with exonerate/genewise
+========================================================
+
+:Author: 
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
 """
 import os, sys, string, re, getopt, tempfile, copy
 

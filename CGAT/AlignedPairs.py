@@ -20,7 +20,14 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 """
-Version: $Id: AlignedPairs.py 2781 2009-09-10 11:33:14Z andreas $
+AlignedPairs.py - 
+==================================================
+
+:Author: 
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
 """
 import sys, os, string
 import alignlib

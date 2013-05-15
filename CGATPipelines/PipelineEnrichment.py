@@ -43,12 +43,55 @@ import shutil
 import CGAT.Experiment as E
 import CGAT.Pipeline as P
 import sqlite3
-import gff2annotator
 
 try:
     PARAMS = P.getParameters()
 except IOError:
     pass
+
+def outputSegments( outfile,
+                    intervals,
+                    section,
+                    outfile_synonyms = None,
+                    max_length = 100000,
+                    remove_regex = None ):
+
+    if section == "segments":
+        prefix = "##Segs"
+    elif section == "workspace":
+        prefix = "##Work"
+    else:
+        raise ValueError("invalid section `%s`" % section )
+    
+    ninput, ncontigs, nsegments, ndiscarded = 0, 0, 0, 0
+    for contig, gffs in intervals.items():
+        ninput += 1
+        if remove_regex and remove_regex.search(contig): continue
+
+        if max_length:
+            segments = [ x for x in gffs if x[1]-x[0] <= max_length ]
+        else:
+            segments = [ x for x in gffs ]
+
+        nsegments += len(segments)
+        ndiscarded += len(gffs) - len(segments)
+
+        if outfile_synonyms:
+            synonyms = collections.defaultdict( list )
+            for x in segments:
+                synonyms[x[2].source].append( (x[0], x[1]) )
+
+            for key, segs in synonyms.iteritems():
+                outfile.write( "%s\t%s\t%s\n" % (prefix, key, "\t".join(
+                    [ "(%i,%i)" % x for x in segs ] )))
+                outfile_synonyms.write("##Synonym\t%s\t%s\n" % (key, contig) )
+
+        else:
+            outfile.write( "%s\t%s\t%s\n" % (prefix, contig, "\t".join(
+                [ "(%i,%i)" % x for x in segments ] )))
+
+        ncontigs += 1
+    return ninput, nsegments, ndiscarded, ncontigs
 
 ############################################################
 ############################################################

@@ -19,8 +19,21 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+"""
+AGP.py - working with AGP files 
+=====================================================
 
-"""reading, writing and using AGP files to assemble contigs to scaffolds."""
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+to assemble contigs to scaffolds.
+
+Code
+----
+
+"""
 
 class ObjectPosition:
     def __init__(self):

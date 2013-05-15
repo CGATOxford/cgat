@@ -21,6 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 """
+SNP Annotation pipeline
+=======================
 
 :Author: Andreas Heger
 :Release: $Id: pipeline_snps.py 2870 2010-03-03 10:20:29Z andreas $
@@ -478,8 +480,8 @@ elif PARAMS["filename_vcf"]:
         P.run()
 
 else:
-    @follows( [] )
-    def buildPileUps(): pass
+    @merge( "*.py", None )
+    def buildPileups(): pass
     
 @transform( buildPileups, suffix(".pileup.gz"), ".pileup.stats")
 def countPileups( infile, outfile ):
@@ -746,6 +748,7 @@ map_synonym2strains = \
       'A' : 'A_J',
       'BALBC': 'BALB' }
     
+@active_if( "sv_data" in PARAMS )
 @split( PARAMS["sv_data"], "mouse*.sv.bed.gz")
 def importSVs( infile, outfiles ):
     '''import SV data.

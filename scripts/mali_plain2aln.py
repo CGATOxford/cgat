@@ -59,6 +59,7 @@ Code
 import sys
 import os
 import string
+import optparse
 
 import CGAT.Experiment as E
 

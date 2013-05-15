@@ -35,53 +35,51 @@ All of the commands provided in the webservice are implemented here and as far a
 possible the name, syntax and paramter names of the query are identical to the
 raw commands to the webservice. These queries are:
 
-getCancerStudies,
-getCaseLists,
-getProfileData,
-getMutationData,
-getClinicalData,
-getProteinArrayInfo,
-getProteinArrayData,
-getLink,
-getOncoprintHTML.
+* getCancerStudies,
+* getCaseLists,
+* getProfileData,
+* getMutationData,
+* getClinicalData,
+* getProteinArrayInfo,
+* getProteinArrayData,
+* getLink,
+* getOncoprintHTML.
 
 In addition two new queries are implememented that are not part of the webservice:
 
-getPercentAltered and
-getTotalAltered
+* getPercentAltered and
+* getTotalAltered
 
 These emulate the function of the website where the percent of cases that show any
 alteration for the gene and profiles given are returned (getPercentAltered, or the
 percent of cases that show an alteration in any of the genes (getTotalAltered) is
 returned. 
 
-examples:
+examples::
 
-gene_list = [ "TP53",
-              "BCL2",
-              "MYC"  ]
-portal = CBioPortal()
-portal.setDefaultStudy(study = "prad_mskcc")
-portal.setDefaultCaseList(case_set_id = "prad_all_complete")
-portal.getPercentAltered(gene_list = gene_list)
+   gene_list = [ "TP53",
+   "BCL2",
+   "MYC"  ]
+   portal = CBioPortal()
+   portal.setDefaultStudy(study = "prad_mskcc")
+   portal.setDefaultCaseList(case_set_id = "prad_all_complete")
+   portal.getPercentAltered(gene_list = gene_list)
 
-or more tersely:
+or more tersely::
 
-portal.CBioProtal()
-portal.getPercentAltered(study = "prad_mskcc", case_set_id = "prad_all_complete", 
-                         gene_list = ["TP53","BCL2","MYC"], 
-                         genetic_profile_id =["prad_mskcc_mrna"])
+   portal.CBioProtal()
+   portal.getPercentAltered(study = "prad_mskcc", case_set_id = "prad_all_complete", 
+                            gene_list = ["TP53","BCL2","MYC"], 
+                            genetic_profile_id =["prad_mskcc_mrna"])
 
-any warnings returned by the query are stored in CBioPortal.last_warnings.
+Any warnings returned by the query are stored in CBioPortal.last_warnings.
 
 Query's that would give too long an URL are split into smaller querys and the results
 combined transparently.
 
-A commandline interface is provided for convenience, syntax
+A commandline interface is provided for convenience, syntax::
 
-python CBioPortal.py [options] command(s)
-  
-
+   python CBioPortal.py [options] command(s)
 '''
 import urllib2, re, optparse, sys, os, IOTools
 from collections import OrderedDict as odict

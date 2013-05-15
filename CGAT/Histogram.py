@@ -15,14 +15,17 @@
 
 
 """
-Various functions to deal with histogram.
+Histogram.py - Various functions to deal with histograms
+===========================================================
+
+:Author: 
+:Release: $Id$
+:Date: |today|
+:Tags: Python
 
 Histograms can be calculated from a list/tuple/array of
 values. The histogram returned is then a list of tuples
 of the format [(bin1,value1), (bin2,value2), ...].
-
-Author:         Andreas Heger
-Version:        $Id: Histogram.py 2784 2009-09-10 11:41:14Z andreas $ 
 
 """
 
@@ -238,12 +241,16 @@ def Combine( source_histograms, missing_value = 0 ):
 #-------------------------------------------------------------------------------------------------------
 def Print( h, intervalls = None, format = 0, nonull = None, format_value=None, format_bin=None ):
     """print a histogram.
+
     A histogram can either be a list/tuple of values or
     a list/tuple of lists/tuples where the first value contains
     the bin and second contains the values (which can again be
     a list/tuple).
-    format:     0 = print histogram in several lines
-                1 = print histogram on single line
+
+    format
+       0 = print histogram in several lines
+       1 = print histogram on single line
+
     """
 
     Write( sys.stdout, h, intervalls, format, nonull, format_value, format_bin )
