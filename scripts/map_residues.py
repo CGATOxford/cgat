@@ -78,23 +78,27 @@ if __name__ == '__main__':
      
     try:
         optlist, args = getopt.getopt(sys.argv[1:],
-                                      "V:m:f:",
+                                      "V:m:f:h",
                                       ["Verbose=", "master=", 
-                                       "format="])
+                                       "format=", "help"])
                                        
     except getopt.error, msg:
-        print USAGE,msg
+        print globals()["__doc__"], msg
         sys.exit(2)
 
     for o,a in optlist:
-        if o in ("-f", "--format"):
+        if o in ("-h", "--help"):
+            print globals()["__doc__"]
+            sys.exit(0)
+
+        elif o in ("-f", "--format"):
             param_format = a
         elif o in ("-m", "--master"):
             param_master = string.atoi(a)
 
     if len(args) != 1:
         print "please specify a multiple alignment."
-        print USAGE
+        print globals()["__doc__"]
         sys.exit(1)
 
     lines = map( lambda x: string.split(x[:-1], "\t"), open(args[0], "r").readlines())
@@ -103,7 +107,7 @@ if __name__ == '__main__':
 
     if len(lines) <= param_master:
         print "master alignment does no exist in the alignment."
-        print USAGE
+        print globals()["__doc__"]
         sys.exit(1)
 
     master_from, master_ali, master_to, master_id = lines[param_master]

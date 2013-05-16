@@ -21,6 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 """
+Polyphen prediction pipeline
+=============================
 
 :Author: Andreas Heger
 :Release: $Id: pipeline_snps.py 2870 2010-03-03 10:20:29Z andreas $
@@ -29,8 +31,6 @@
 
 Purpose
 -------
-
-Polyphen prediction pipeline.
 
 Input:
 
@@ -80,6 +80,9 @@ import pysam
 ###################################################################
 ## read global options from configuration file
 P.getParameters( 
+    ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
+     "../pipeline.ini",
+     "pipeline.ini" ],
     defaults = { 'polyphen_modes' : "" } )
 
 P.PARAMS.update( 

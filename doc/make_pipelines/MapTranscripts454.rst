@@ -58,3 +58,6 @@ The following parameters can be set in the :file:`Makefile`:
    :transpose:
 
    Overview of pipeline parameters.
+
+
+.. _gmap: http://www.molecularevolution.org/software/genomics/gmap

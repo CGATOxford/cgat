@@ -95,7 +95,7 @@ if __name__ == "__main__":
         if o in ( "-v", "--verbose" ):
             param_loglevel = int(a)
         elif o in ( "-h", "--help" ):
-            print USAGE
+            print globals()["__doc__"]
             sys.exit(0)
         elif o in ("-p", "--pattern-species"):
             param_pattern_species = a
@@ -104,7 +104,7 @@ if __name__ == "__main__":
 
     if not param_filename_genes:
         print "please specify a filename with genes"
-        print USAGE
+        print globals()["__doc__"]
         sys.exit(1)
     
     print Experiment.GetHeader()

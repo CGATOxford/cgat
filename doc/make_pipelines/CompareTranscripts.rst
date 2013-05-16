@@ -87,12 +87,12 @@ The pipeline includes additional information if it is present:
 :term:`PARAM_FILENAME_GO` and :term:`PARAM_FILENAME_GOSLIM`
    GO annotations for genes in the reference set. Example format is::
 
-   cell_location   ENSPPYG00000000676      GO:0016020      membrane        NA
+       cell_location   ENSPPYG00000000676      GO:0016020      membrane        NA
 
 :term:`PARAM_FILENAME_TERRITORIES`
    gene territories. GTF formatted file, an example entry would be::
 
-   chr1    protein_coding  exon    3979975 4199559 .       -       .       transcript_id "ENSPPYG00000000050"; gene_id "ENSPPYG00000000050";#
+       chr1    protein_coding  exon    3979975 4199559 .       -       .       transcript_id "ENSPPYG00000000050"; gene_id "ENSPPYG00000000050";#
  
 :term:`PARAM_CPC_UNIREF`
    uniref database to use for coding potential predictions.

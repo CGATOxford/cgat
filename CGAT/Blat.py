@@ -794,10 +794,13 @@ def addAlignments( matches, shift = 0, by_query = False ):
 def getComponents( matches, max_distance = 0, min_overlap = 0, by_query = False ):
     """return overlapping matches.
     
-    max_distance: allow reads to be joined if they are # residues apart. 
+    max_distance
+       allow reads to be joined if they are # residues apart. 
        Adjacent reads are 1 residue apart, overlapping reads are 0 residues
-       apart.
-    min_overlap: require at least # residues to be overlapping
+       apart
+    min_overlap
+       require at least # residues to be overlapping
+
     """
 
     addAlignments( matches, by_query = by_query )

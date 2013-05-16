@@ -799,14 +799,14 @@ if __name__ == "__main__":
     try:
         optlist, args = getopt.getopt(sys.argv[1:], param_short_options, param_long_options)
     except getopt.error, msg:
-        print USAGE, msg
+        print globals()["__doc__"], msg
         sys.exit(2)
 
     for o,a in optlist:
         if o in ( "-v", "--verbose" ):
             param_loglevel = int(a)
         elif o in ( "-h", "--help" ):
-            print USAGE
+            print globals()["__doc__"]
             sys.exit(0)
         elif o in ("-p", "--pattern-species"):
             param_pattern_species = a

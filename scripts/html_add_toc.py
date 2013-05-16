@@ -97,19 +97,21 @@ def main():
     try:
         opts, args = getopt.getopt(sys.argv[1:], "", ["max-depth=",
                                                       "no-toc-links",
-                                                      "hide"])
-    except getopt.GetoptError:
+                                                      "hide",
+                                                      "help"])
+    except getopt.GetoptError, msg:
         usage()
-        sys.exit(1)
-    if len(args)!=2:
-        usage()
+        print msg
         sys.exit(1)
 
     max_depth=3
     no_toc_links=0
     do_hide=False
     for o, a in opts:
-        if o=="--no-toc-links":
+        if o == "--help":
+            usage()
+            sys.exit(0)
+        elif o=="--no-toc-links":
             no_toc_links=1
         elif o=="--max-depth":
             try:
@@ -122,6 +124,11 @@ def main():
         else:
             raise("Internal Error %s %s not processed" % (
                 o, a))
+
+    if len(args)!=2:
+        usage()
+        sys.exit(1)
+
     filename_in=args[0]
     filename_out=args[1]
     fd=open(filename_in)

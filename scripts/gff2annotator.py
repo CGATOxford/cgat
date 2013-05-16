@@ -74,50 +74,7 @@ import CGAT.GFF as GFF
 import CGAT.GTF as GTF
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.IOTools as IOTools
-
-def outputSegments( outfile,
-                    intervals,
-                    section,
-                    outfile_synonyms = None,
-                    max_length = 100000,
-                    remove_regex = None ):
-
-    if section == "segments":
-        prefix = "##Segs"
-    elif section == "workspace":
-        prefix = "##Work"
-    else:
-        raise ValueError("invalid section `%s`" % section )
-    
-    ninput, ncontigs, nsegments, ndiscarded = 0, 0, 0, 0
-    for contig, gffs in intervals.items():
-        ninput += 1
-        if remove_regex and remove_regex.search(contig): continue
-
-        if max_length:
-            segments = [ x for x in gffs if x[1]-x[0] <= max_length ]
-        else:
-            segments = [ x for x in gffs ]
-
-        nsegments += len(segments)
-        ndiscarded += len(gffs) - len(segments)
-
-        if outfile_synonyms:
-            synonyms = collections.defaultdict( list )
-            for x in segments:
-                synonyms[x[2].source].append( (x[0], x[1]) )
-
-            for key, segs in synonyms.iteritems():
-                outfile.write( "%s\t%s\t%s\n" % (prefix, key, "\t".join(
-                    [ "(%i,%i)" % x for x in segs ] )))
-                outfile_synonyms.write("##Synonym\t%s\t%s\n" % (key, contig) )
-
-        else:
-            outfile.write( "%s\t%s\t%s\n" % (prefix, contig, "\t".join(
-                [ "(%i,%i)" % x for x in segments ] )))
-
-        ncontigs += 1
-    return ninput, nsegments, ndiscarded, ncontigs
+import CGATPipelines.PipelineEnrichment as PipelineEnrichment 
 
 USAGE="""python %s [OPTIONS] < stdin > stdout
 
@@ -243,13 +200,13 @@ if __name__ == "__main__":
 
         intervals =GFF.readAsIntervals( iterator, with_records = with_records )
         ninput, nsegments, ndiscarded, ncontigs = \
-                outputSegments( options.stdout,
-                                intervals,
-                                options.section,
-                                outfile_synonyms = outfile_synonyms,
-                                max_length = options.max_length,
-                                remove_regex = options.remove_regex )
-
+            PipelineEnrichment.outputSegments( options.stdout,
+                                               intervals,
+                                               options.section,
+                                               outfile_synonyms = outfile_synonyms,
+                                               max_length = options.max_length,
+                                               remove_regex = options.remove_regex )
+            
         if outfile_synonyms:
             outfile_synonyms.close()
 

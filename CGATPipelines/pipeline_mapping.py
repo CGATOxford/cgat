@@ -110,8 +110,8 @@ fastq.1.gz, fastq2.2.gz
 Optional inputs
 +++++++++++++++
 
-nRequirements
-------------
+Requirements
+-------------
 
 The pipeline requires the results from :doc:`pipeline_annotations`. Set the configuration variable 
 :py:data:`annotations_database` and :py:data:`annotations_dir`.
@@ -180,7 +180,7 @@ Glossary
 .. _bowtie: http://bowtie-bio.sourceforge.net/index.shtml
 .. _gsnap: http://research-pub.gene.com/gmap/
 .. _bamstats: http://www.agf.liv.ac.uk/454/sabkea/samStats_13-01-2011
-.. _star - http://code.google.com/p/rna-star/
+.. _star: http://code.google.com/p/rna-star/
 
 Code
 ====
@@ -1091,8 +1091,8 @@ def mapping(): pass
 ###################################################################
 ###################################################################
 ###################################################################
-if "merge_pattern_input" in PARAMS:
-    if "merge_pattern_output" not in PARAMS:
+if "merge_pattern_input" in PARAMS and PARAMS["merge_pattern_input"]:
+    if "merge_pattern_output" not in PARAMS or not PARAMS["merge_pattern_output"]:
         raise ValueError("no output pattern 'merge_pattern_output' specificied")
     @collate( MAPPINGTARGETS, 
               regex( "%s.bam" % PARAMS["merge_pattern_input"] ),
@@ -1311,6 +1311,8 @@ def buildContextStats( infiles, outfile ):
     infile, reffile = infiles
 
     min_overlap = 0.5
+
+    job_options = "-l mem_free=4G"
 
     to_cluster = True
     statement = '''

@@ -19,7 +19,14 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
-"""Subroutines for working on I/O of large genomic files.
+"""
+GenomicIO.py - Subroutines for working on I/O of large genomic files
+====================================================================
+
+:Author: 
+:Release: $Id$
+:Date: |today|
+:Tags: Python
 
 I tried the Biopython parser, but it was too slow for large genomic chunks.
 """

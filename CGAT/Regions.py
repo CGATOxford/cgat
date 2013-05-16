@@ -19,7 +19,9 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
-"""some helper functions for working with genomic segments
+"""
+Regions.py - helper functions for working with genomic segments
+===============================================================
 
 Version: $Id: Regions.py 2781 2009-09-10 11:33:14Z andreas $
 """

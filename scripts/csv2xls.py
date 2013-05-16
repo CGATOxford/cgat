@@ -70,33 +70,7 @@ import CGAT.Experiment as Experiment
 import csv
 import CGAT.CSV as CSV
 
-import pyExcelerator
-
-def GetHeaderStyle():
-    fnt = pyExcelerator.Font()
-    fnt.name = 'Arial'
-    fnt.colour_index = 10
-    fnt.outline = False
-
-    borders = pyExcelerator.Borders()
-    borders.bottom = 10
-
-    style = pyExcelerator.XFStyle()
-    style.font = fnt
-    style.borders = borders
-    return style
-
-
-def GetDataStyle():
-    fnt = pyExcelerator.Font()
-    fnt.name = 'Arial'
-    fnt.colour_index = 0
-    fnt.outline = False
-
-    style = pyExcelerator.XFStyle()
-    style.font = fnt
-    return style
-
+import openpyxl
 
 if __name__ == "__main__":
 
@@ -112,9 +86,9 @@ if __name__ == "__main__":
     (options, args) = Experiment.Start( parser, add_csv_options  = True)
 
     if not options.output_filename:
-        raise "please specify an output filename."
+        raise ValueError("please specify an output filename.")
 
-    w = pyExcelerator.Workbook()
+    w = openpyxl.Workbook( optimized_write = True )
 
     ## create styles
     header_style = GetHeaderStyle()
@@ -136,8 +110,7 @@ if __name__ == "__main__":
         
         cur_row = 0
         
-        for x in range(len(headers)):
-            ws.write( cur_row, x, headers[x], header_style )
+        ws.append( headers )
             
         cur_row += 1
         
@@ -146,9 +119,8 @@ if __name__ == "__main__":
         for row in reader:
             row = CSV.ConvertDictionary( row )
 
-            for x in range(len(headers)):
-                if headers[x] in row:
-                    ws.write( cur_row, x, row[headers[x]], data_style )
+            data = [ row.get( headers[x], "") for x in range(len(headers))]
+            ws.append( data )
                 
             cur_row += 1
 

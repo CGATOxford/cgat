@@ -169,7 +169,7 @@ def loadParameters( filenames  ):
 def substituteParameters( **kwargs ):
     '''return a local PARAMS dictionary.
 
-    Options in **kwargs substitute default
+    Options in ``**kwargs`` substitute default
     values in PARAMS.
 
     Finally, task specific configuration values 
@@ -321,9 +321,10 @@ def asList( param ):
     '''return a param as a list'''
     if type(param) not in (types.ListType, types.TupleType):
         try:
-            return [x.strip() for x in param.split(",")]
+            params = [x.strip() for x in param.strip().split(",")]
         except AttributeError:
-            return [param]
+            params = [param.strip()]
+        return [ x for x in params if x != ""]
     else: return param
 
 def asTuple( param ):

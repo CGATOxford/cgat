@@ -62,7 +62,7 @@ as-column
    Output table as a single column. Colums in the original table are appended and output.
 
 Methods for numerical columns
-++++++++++++++++++++++++++++
++++++++++++++++++++++++++++++
 
 Some methods make only sense for columns containing numerical values.
 If a table contains both numerical and non-numerical data, the

@@ -1,4 +1,12 @@
-"""functions for handling two-dimennsional histograms.
+"""
+Histogram2D.py - functions for handling two-dimensional histograms.
+===================================================================
+
+:Author: 
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
 """
 
 import string

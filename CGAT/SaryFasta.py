@@ -21,13 +21,16 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #
 #################################################################################
-"""Subroutines for working on I/O of large genomic files.
 """
+SaryFasta.py - index fasta files by suffix array
+===================================================
 
-USAGE="""python SaryFasta.py [options] name [ files ]
+Subroutines for working on I/O of large genomic files.
 
 Index a fasta file to retrieve sequences by suffix-array fragment
 search.
+
+python SaryFasta.py [options] name [ files ]
 """
 
 import os, sys, array, string, re, types, optparse, time, struct, hashlib, base64, shutil, subprocess

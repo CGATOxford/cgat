@@ -1,4 +1,13 @@
-"""utilities for computing rate estimates for codon models."""
+"""
+RateEstimation.py - utilities for computing rate estimates for codon models.
+=============================================================================
+
+:Author: 
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+"""
 
 import Bio.Data.CodonTable
 try:

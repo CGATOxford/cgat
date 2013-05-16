@@ -76,6 +76,7 @@ import re
 import string
 import os
 import CGAT.Experiment as E
+import optparse
 
 param_stop_codons = ("TAG", "TAA", "TGA")
 param_remove_errors = 1

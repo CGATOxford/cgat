@@ -58,6 +58,7 @@ Code
 import sys
 import os
 import re
+import optparse
 
 import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
@@ -73,10 +74,6 @@ def main( argv = None ):
     # setup command line parser
     parser = optparse.OptionParser( version = "%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
                                     usage = globals()["__doc__"] )
-
-    parser.add_option("-t", "--test", dest="test", type="string",
-                      help="supply help"  )
-
 
     ## add common options (-h/--help, ...) and parse command line 
     (options, args) = E.Start( parser, argv = argv )

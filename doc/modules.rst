@@ -15,18 +15,14 @@ Genomics
    :maxdepth: 1
 
    modules/AString.rst 
-   modules/AlignatorBenchmark.rst                   
    modules/Blat.rst    
    modules/FastaIterator.rst
    modules/IndexedFasta.rst
    modules/Intervals.rst
-   modules/Intervals_test.rst
    modules/Mali.rst
    modules/MaliIO.rst
    modules/Masker.rst
-   modules/Masker_test.rst
    modules/SequencePairProperties.rst
-   modules/SequencePairProperties_test.rst
    modules/SequenceProperties.rst
    modules/GFF.rst
    modules/GTF.rst
@@ -51,7 +47,6 @@ Phylogeny
 
    modules/Tree.rst
    modules/TreeTools.rst
-   modules/Tree_test.rst
    modules/RateEstimation.rst
    modules/PamMatrices.rst
 
@@ -89,9 +84,6 @@ Math and Stats
    modules/Histogram.rst
    modules/Histogram2D.rst
    modules/Stats.rst
-   modules/Stats2Html.rst
-   modules/Stats2Plot.rst
-   modules/Stats_test.rst
    modules/MatlabTools.rst
    modules/MatrixTools.rst
 
@@ -116,16 +108,43 @@ Tools
    :maxdepth: 1
 
    modules/Experiment.rst
-   modules/Pipeline.rst
-   modules/PipelineTracks.rst
-   modules/PipelineMapping.rst
    modules/CSV.rst
    modules/IOTools.rst
    modules/Iterators.rst
    modules/Database.rst
    modules/ExternalList.rst
    modules/ProgressBar.rst
-   modules/dictzip.rst
+
+Pipelines
+---------
+
+.. toctree::
+   :maxdepth: 1
+
+   modules/Pipeline.rst
+   pipelinemodules/PipelineTracks.rst
+   pipelinemodules/PipelineMapping.rst
+   pipelinemodules/PipelineAnnotator.rst
+   pipelinemodules/PipelineBiomart.rst
+   pipelinemodules/PipelineChipseq.rst
+   pipelinemodules/PipelineDatabase.rst
+   pipelinemodules/PipelineEnrichment.rst
+   pipelinemodules/PipelineGO.rst
+   pipelinemodules/PipelineGeneset.rst
+   pipelinemodules/PipelineGenomeAssembly.rst
+   pipelinemodules/PipelineIntervalAnnotation.rst
+   pipelinemodules/PipelineKEGG.rst
+   pipelinemodules/PipelineLncRNA.rst
+   pipelinemodules/PipelineMapping.rst
+   pipelinemodules/PipelineMappingQC.rst
+   pipelinemodules/PipelineMedip.rst
+   pipelinemodules/PipelineMotifs.rst
+   pipelinemodules/PipelinePeakcalling.rst
+   pipelinemodules/PipelineRnaseq.rst
+   pipelinemodules/PipelineTracks.rst
+   pipelinemodules/PipelineTransfacMatch.rst
+   pipelinemodules/PipelineUCSC.rst
+   pipelinemodules/PipelineUtilities.rst
 
 Plotting
 --------
@@ -141,18 +160,12 @@ Other
    modules/RLE.rst
    modules/Cluster.rst
    modules/Dots.rst
-   modules/NeighbourTools.rst
-   modules/PdbTools.rst
-   modules/Rsdb2Html.rst
-   modules/Rsdb2Plot.rst
    modules/SVGDuplicationsWheel.rst
    modules/SVGTree.rst
    modules/SVGdraw.rst
-   modules/ScopTester.rst
    modules/SetTools.rst
    modules/Sockets.rst
    modules/GraphTools.rst
-   modules/GraphTree.rst
 
 Obsolete
 --------
@@ -166,5 +179,40 @@ Obsolete
    modules/Fasta.rst
    modules/Alignlib.rst   
    modules/SuffixArray.rst
+
+Unsorted
+---------
+
+Modules not sorted into categories.
+
+.. toctree::
+   :maxdepth: 2
+
+   modules/Bioprospector.rst
+   modules/BlatTest.rst 
+   modules/CBioPortal.rst 
+   modules/CGAT.rst
+   modules/CSV2DB.rst 
+   modules/Expression.rst 
+   modules/Fastq.rst 
+   modules/GDLDraw.rst 
+   modules/GemErr.rst 
+   modules/GemReads.rst 
+   modules/Glam2.rst 
+   modules/Glam2Scan.rst
+   modules/Hypergeometric.rst
+   modules/IGV.rst
+   modules/IndexedGenome.rst
+   modules/Logfile.rst
+   modules/MAST.rst
+   modules/Motifs.rst
+   modules/Tophat.rst
+   modules/VCF.rst
+   modules/Variants.rst
+   modules/WrapperIDR.rst
+   modules/WrapperMACS.rst
+   modules/WrapperMEDIPS.rst
+   modules/WrapperSPP.rst
+   modules/WrapperZinba.rst
 
 

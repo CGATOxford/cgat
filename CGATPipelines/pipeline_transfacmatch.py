@@ -140,7 +140,6 @@ import CGAT.CSV as CSV
 import numpy as np
 import fnmatch
 import sqlite3
-import list_overlap
 import CGAT.FastaIterator as FastaIterator
 import random
 import CGAT.GTF as GTF
@@ -170,7 +169,7 @@ use_cluster = True
 
 import CGAT.Pipeline as P
 P.getParameters( 
-    ["%s.ini" % __file__[:-len(".py")],
+    ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
      "../pipeline.ini",
      "pipeline.ini" ] )
 PARAMS = P.PARAMS
@@ -179,6 +178,7 @@ PARAMS = P.PARAMS
 # helper functions mapping input files
 ################################################
 
+INPUT_FILE=None
 # input intervals / gtf entries
 INPUT_FORMATS = ("*.gtf.gz", "*.bed.gz")
 REGEX_FORMATS = regex(r"(\S+).(gtf.gz|bed.gz)")

@@ -158,7 +158,6 @@ import cStringIO
 import numpy
 import CGAT.Masker as Masker
 import fileinput
-import gff2annotator
 import CGAT.Experiment as E
 import logging as L
 import PipelineChipseq as PIntervals
@@ -242,8 +241,6 @@ TISSUES = PipelineTracks.Aggregate( TRACKS, labels = ("tissue",) )
 TRACKS_MASTER = EXPERIMENTS.keys() + CONDITIONS.keys()
 # compound targets : correlation between tracks
 TRACKS_CORRELATION = TRACKS_MASTER + list(TRACKS)
-
-print "Expts=", EXPERIMENTS, "\n"
 
 ###################################################################
 ###################################################################

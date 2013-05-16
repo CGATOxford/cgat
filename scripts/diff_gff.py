@@ -64,6 +64,7 @@ Documentation
 Code
 ----
 '''
+import optparse
 
 import CGAT.Experiment as Experiment
 import CGAT.GFF as GFF

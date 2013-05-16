@@ -66,9 +66,9 @@ formatted file is supplied, it must be compressed with and indexed with :file:`t
 
 -m/--method
    utrprofile - aggregate over gene models with UTR. The areas are
-                upstream - UTR5 - CDS - INTRON - CDS - UTR3 - downstream
+                upstream - UTR5 - CDS - UTR3 - downstream
    geneprofile - aggregate over exonic gene models. The areas are
-                upstream - EXON - INTRON - EXON - downstream
+                upstream - EXON - downstream
    tssprofile  - aggregate over transcription start/stop
                 upstream - TSS/TTS - downstream
    intervalprofile - aggregate over interval
@@ -130,11 +130,14 @@ def main( argv = None ):
                                     usage = globals()["__doc__"] )
 
     parser.add_option( "-m", "--method", dest="methods", type = "choice", action = "append",
-                       choices = ("geneprofile", "tssprofile", "utrprofile", "intervalprofile", "midpointprofile" ),
-                       help = "counters to use. "
-                              "[%default]" )
+                       choices = ("geneprofile", "tssprofile", "utrprofile", 
+                                  "intervalprofile", "midpointprofile" ),
+                       help = "counters to use. Counters describe the meta-gene structure to use"
+                              " for counting. Several counters can be chosen."
+                              " [%default]" )
 
-    parser.add_option( "-b", "--bamfile", "--bedfile", "--bigwigfile", dest="infiles", type = "string", action = "append",
+    parser.add_option( "-b", "--bamfile", "--bedfile", "--bigwigfile", dest="infiles", 
+                       type = "string", action = "append",
                        help = "BAM/bed/bigwig files to use. Do not mix different types"
                               "[%default]" )
 
@@ -154,16 +157,26 @@ def main( argv = None ):
 
     parser.add_option( "-r", "--reporter", dest="reporter", type = "choice",
                        choices = ("gene", "transcript"  ),
-                       help = "report results for gene or transcript. "
-                              "[%default]" )
+                       help = "report results for genes or transcripts."
+                              " When 'genes` is chosen, exons across all transcripts for"
+                              " a gene are merged. When 'transcript' is chosen, counts are"
+                              " computed for each transcript separately with each transcript"
+                              " contributing equally to the meta-gene profile."
+                              " [%default]" )
 
     parser.add_option( "-i", "--shift", dest="shifts", type = "int", action = "append",
                        help = "shift reads in :term:`bam` formatted file before computing densities (ChIP-Seq). "
                               "[%default]" )
 
     parser.add_option( "-a", "--merge-pairs", dest="merge_pairs", action = "store_true",
-                       help = "merge pairs in :term:`bam` formatted file before computing densities (ChIP-Seq). "
+                       help = "merge pairs in :term:`bam` formatted file before computing"
+                              " densities (ChIP-Seq)."
                               "[%default]" )
+
+    parser.add_option( "-u", "--base-accuracy", dest="base_accuracy", action = "store_true",
+                       help = "compute densities with base accuracy. The default is to"
+                              " only use the start and end of the aligned region (RNA-Seq)"
+                              " [%default]" )
 
     parser.add_option( "-e", "--extend", dest="extends", type = "int", action = "append",
                        help = "extend reads in :term:`bam` formatted file (ChIP-Seq). "
@@ -236,8 +249,10 @@ def main( argv = None ):
         profile_normalizations = [],
         normalization = None,
         scale_flanks = 0,
+        merge_pairs = False,
         min_insert_size = 0,
         max_insert_size = 1000,
+        base_accuracy = False,
         )
 
     ## add common options (-h/--help, ...) and parse command line 
@@ -264,14 +279,23 @@ def main( argv = None ):
     if len(options.infiles) > 0:
         if options.infiles[0].endswith( ".bam" ):
             bamfiles = [ pysam.Samfile( x, "rb" ) for x in options.infiles ]
-            #infile = pysam.Samfile( bamfile, "rb" )
             format = "bam"
-            range_counter = _bam2geneprofile.RangeCounterBAM( bamfiles, 
-                                                              shifts = options.shifts, 
-                                                              extends = options.extends,
-                                                              merge_pairs = options.merge_pairs,
-                                                              min_insert_size = options.min_insert_size,
-                                                              max_insert_size = options.max_insert_size )
+            if options.merge_pairs:
+                range_counter = _bam2geneprofile.RangeCounterBAM( bamfiles, 
+                                                                  shifts = options.shifts, 
+                                                                  extends = options.extends,
+                                                                  merge_pairs = options.merge_pairs,
+                                                                  min_insert_size = options.min_insert_size,
+                                                                  max_insert_size = options.max_insert_size )
+            elif options.shifts or options.extends:
+                range_counter = _bam2geneprofile.RangeCounterBAM( bamfiles, 
+                                                                  shifts = options.shifts, 
+                                                                  extends = options.extends )
+            elif options.base_accuracy:
+                range_counter = _bam2geneprofile.RangeCounterBAMBaseAccuracy( bamfiles )
+            else:
+                range_counter = _bam2geneprofile.RangeCounterBAM( bamfiles )
+            
                                                               
         elif options.infiles[0].endswith( ".bed.gz" ):
             bedfiles = [ pysam.Tabixfile( x ) for x in options.infiles ]

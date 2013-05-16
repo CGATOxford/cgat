@@ -1055,7 +1055,6 @@ def ReadTranscriptsAndCds( transcript_ids1, transcript_ids2 ):
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    global_substitution_matrix = makeSubstitutionMatrix( "emboss" )
     try:
         optlist, args = getopt.getopt(sys.argv[1:], param_short_options, param_long_options)
     except getopt.error, msg:
@@ -1128,6 +1127,8 @@ if __name__ == '__main__':
     print Experiment.GetHeader()
     print Experiment.GetParams()
     sys.stdout.flush()
+
+    global_substitution_matrix = makeSubstitutionMatrix( "emboss" )
 
     ## get a list of used transcripts first
     pairs = map( lambda x: x[:-1].split("\t")[:2], filter( lambda x: x[0] != "#", sys.stdin.readlines()))

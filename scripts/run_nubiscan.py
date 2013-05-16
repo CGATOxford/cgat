@@ -54,7 +54,7 @@ import re
 import optparse
 import numpy
 import CGAT.Experiment as E
-import nubiscan
+import CGAT.Nubiscan as Nubiscan
 import CGAT.FastaIterator as FastaIterator
 import CGAT.Stats as Stats
 import CGAT.Genomics as Genomics
@@ -175,7 +175,7 @@ def main( argv = None ):
     else:
         options.arrangements = options.arrangements.split(",")
         
-    options.stdout.write( "%s" % "\t".join(nubiscan.NubiscanMatch._fields) )
+    options.stdout.write( "%s" % "\t".join(Nubiscan.NubiscanMatch._fields) )
     if options.add_sequence: options.stdout.write( "\tsequence" )
     options.stdout.write("\n")
 
@@ -197,7 +197,7 @@ def main( argv = None ):
             
         ninput = len(seqs)
         map_id2title = dict( enumerate( [re.sub("\s.*", "", x.title) for x in seqs] ) )
-        matcher = nubiscan.MatcherRandomisationSequences( sense_matrix,
+        matcher = Nubiscan.MatcherRandomisationSequences( sense_matrix,
                                                           samples = options.iterations )
         
         results = matcher.run( masked_seqs,
@@ -205,7 +205,7 @@ def main( argv = None ):
                                qvalue_threshold = options.qvalue_threshold )
 
         if options.combine:
-            results =  nubiscan.combineMotifs( results )
+            results =  Nubiscan.combineMotifs( results )
         
         for r in results:
 
@@ -246,7 +246,7 @@ def main( argv = None ):
 
     elif options.fdr_control == "xall":
 
-        matcher = nubiscan.MatcherRandomisationSequence( sense_matrix,
+        matcher = Nubiscan.MatcherRandomisationSequence( sense_matrix,
                                                          samples = options.iterations )
     
 
@@ -270,7 +270,7 @@ def main( argv = None ):
             results.append( m._replace( qvalue = qvalue ) )
 
         if options.combine:            
-            results =  nubiscan.combineMotifs( results )
+            results =  Nubiscan.combineMotifs( results )
 
         # output
         for r in results:
@@ -288,7 +288,7 @@ def main( argv = None ):
             noutput += 1
 
     elif options.fdr_control == "per-sequence":
-        matcher = nubiscan.MatcherRandomisationSequence( sense_matrix,
+        matcher = Nubiscan.MatcherRandomisationSequence( sense_matrix,
                                                          samples = options.iterations )
     
 
@@ -299,7 +299,7 @@ def main( argv = None ):
                                   qvalue_threshold = options.qvalue_threshold )
             
             if options.combine:
-                result =  nubiscan.combineMotifs( result )
+                result =  Nubiscan.combineMotifs( result )
 
             t = re.sub(" .*","",  seq.title)
             for r in result:

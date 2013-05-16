@@ -74,13 +74,13 @@ if __name__  == "__main__":
 
     parser.add_option( "-m", "--method", dest="method", type="string",
                        help="method to use [ks=Kolmogorov-Smirnov,mwu=Mann-WhitneyU]")
-    parser.add_option("-a", "--hardcopy", dest="hardcopy", type="string",
+    parser.add_option( "-a", "--hardcopy", dest="hardcopy", type="string",
                       help="write hardcopy to file.", metavar = "FILE" )
     parser.add_option( "-1", "--infile1", dest="filename_input1", type="string" ,
                        help="input filename for distribution 1.")
     parser.add_option( "-2", "--infile2", dest="filename_input2", type="string" ,
                        help="input filename for distribution 2.")
-    parser.add_option( "-a", "--infile-map", dest="filename_input_map", type="string" ,
+    parser.add_option( "-p", "--infile-map", dest="filename_input_map", type="string" ,
                        help="input filename for mapping categories to values.")
 
     parser.set_defaults(

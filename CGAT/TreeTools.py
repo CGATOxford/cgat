@@ -1,5 +1,11 @@
+"""
+TreeTools.py - tools for dealing with domain trees.
+====================================================
 
-"""tools for dealing with domain trees.
+:Author: 
+:Release: $Id$
+:Date: |today|
+:Tags: Python
 
 A tree is a list of nodes:
 

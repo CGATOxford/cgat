@@ -177,7 +177,8 @@ class SAMR( object ):
 
     for an explanation of the differences between siggens SAM
     and Excel SAM. This version is parameterised to reproduce Excel SAM
-    by setting:
+    by setting::
+       
        var.equal = TRUE
        med = TRUE
 

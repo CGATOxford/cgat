@@ -35,6 +35,16 @@ Purpose
 This script calculates histograms from data in a
 tab-separated table.
 
+read in data and build histogram of column
+
+-c, --column            column to take [default = 0]
+-a, --append=           append columns [normalize]
+-n, --normalize         normalize column
+--cumulative            cumulative histogram
+--reverse-cumulative    reverse cumulative histogram
+-i, --titles            use supplied titles
+# at start of line is a comment
+
 Usage
 -----
 
@@ -65,19 +75,6 @@ import time
 import CGAT.Experiment as Experiment
 import CGAT.Histogram as Histogram
 
-USAGE = """python calculate_histogram.py < stdin > stdout
-
-read in data and build histogram of column
-
--c, --column            column to take [default = 0]
--a, --append=           append columns [normalize]
--n, --normalize         normalize column
---cumulative            cumulative histogram
---reverse-cumulative    reverse cumulative histogram
--i, --titles            use supplied titles
-# at start of line is a comment
-"""
-
 param_loglevel = 1
 param_separator = "//"
 param_take = None
@@ -99,9 +96,9 @@ param_reverse_cumulative = False
 
 param_long_options = ["Verbose=", "nonull", "fill","take=", "column=", "show_empty",
                       "upper=", "lower=", "bin-size=", "scale=", "normalize", "append=", "titles",
-                      "cumulative", "reverse-cumulative"]
+                      "cumulative", "reverse-cumulative", "help"]
 
-param_short_options = "v:nft:c:eu:l:b:a:io"
+param_short_options = "v:nft:c:eu:l:b:a:ioh"
 
 ##---------------------------------------------------------------------------------------------------------        
 if __name__ == '__main__':
@@ -112,14 +109,14 @@ if __name__ == '__main__':
                                       param_long_options)
 
     except getopt.error, msg:
-        print USAGE
+        print globals()["__doc__"]
         sys.exit(2)
 
     for o,a in optlist:
         if o in ( "-v", "--verbose" ):
             param_loglevel = int(a)
         elif o in ( "-h", "--help" ):
-            print USAGE
+            print globals()["__doc__"]
             sys.exit(0)
         elif o in ("-t", "--take"):
             param_take = map(string.atoi, string.split(a, ","))

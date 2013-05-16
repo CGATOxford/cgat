@@ -1,5 +1,11 @@
 """
-Support for the `wiggle`_ format used by `ucsc`_.
+Wiggle.py - Support for the `wiggle`_ format used by `ucsc`_.
+=============================================================
+
+:Author: 
+:Release: $Id$
+:Date: |today|
+:Tags: Python
 
 .. _wiggle: http://genome.ucsc.edu/FAQ/FAQformat.html#format5
 .. _ucsc: ??
