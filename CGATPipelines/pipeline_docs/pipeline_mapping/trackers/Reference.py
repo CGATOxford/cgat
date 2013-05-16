@@ -3,7 +3,7 @@ import os, sys, re, types, itertools, math
 from MappingReport import *
 from SphinxReport.ResultBlock import ResultBlock, ResultBlocks
 
-import Stats
+import CGAT.Stats
 
 ##################################################################################
 ##################################################################################
