@@ -1,4 +1,36 @@
-"""
+################################################################################
+#
+#   MRC FGU Computational Genomics Group
+#
+#   $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $
+#
+#   Copyright (C) 2009 Andreas Heger
+#
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU General Public License
+#   as published by the Free Software Foundation; either version 2
+#   of the License, or (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#################################################################################
+'''
+list_overlap.py - compute overlap between lists
+===============================================
+
+:Author: 
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
 
 taken from https://github.com/brentp/bio-playground/blob/master/utils/list_overlap_p.py
 find the probability that as high as `shared_genes` is random
@@ -27,7 +59,27 @@ the gene-name. The comparison *is* case sensitive.
 
 See: http://www.nslij-genetics.org/wli/pub/ieee-embs06.pdf
 
-"""
+Usage
+-----
+
+Example::
+
+   python script_template.py --help
+
+Type::
+
+   python script_template.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+
 import optparse
 import sys
 import os.path as op

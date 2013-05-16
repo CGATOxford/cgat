@@ -38,10 +38,10 @@ Given a reference tree and a collection of trees, this script outputs
 (depending on the option --method)
 
    * strict: 1:1 ortholog clusters for a selected set of species
-   combinations. All species need to be present for a species combination
+     combinations. All species need to be present for a species combination
    
    * degenerate: 1:m ortholog cluster for a selected set of species
-   combinations. All species need to be present for a species combination.
+     combinations. All species need to be present for a species combination.
 
    * lineage: lineage specific duplications.
 

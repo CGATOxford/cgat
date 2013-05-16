@@ -34,7 +34,9 @@ Purpose
 
 This script reads a collection of trees from stdin and outputs the again on stdout
 after manipulating them. Manipulations include
+
    * renaming taxa
+
    * normalizing branch lengths
 
 The complete list of methods is:
@@ -71,7 +73,6 @@ balanced-root
 
 add-node-names
 ++++++++++++++++++++
-
 
 Usage
 -----

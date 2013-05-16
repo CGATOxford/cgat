@@ -34,6 +34,7 @@ data_dir = os.path.abspath('..')
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.todo', 'sphinx.ext.coverage', 'sphinx.ext.pngmath', 'sphinx.ext.ifconfig',
               'SphinxReport.only_directives', 
 	      'SphinxReport.report_directive', 
+	      'SphinxReport.roles',
 	      'sphinx.ext.inheritance_diagram',
 	      'sphinxcontrib.programoutput' ]
 

@@ -156,7 +156,6 @@ Sequences and rates
    scripts/concatenate_sequences.rst
    scripts/filter_fasta.rst
    scripts/jalview.rst
-   scripts/get_medline_from_www.rst
    scripts/get_sequences_from_www.rst
    scripts/mali2bootstrap.rst
    scripts/mali2mali.rst
@@ -260,7 +259,6 @@ Cluster and jobs
    :maxdepth: 1
 
    scripts/farm.rst
-   scripts/farm_test.rst
    scripts/qkill.rst
    scripts/nofarm.rst
    scripts/run.rst
@@ -523,7 +521,6 @@ Unsorted
    scripts/mali_plain2aln.rst
    scripts/mali_remove_gaps.rst
    scripts/medip_merge_intervals.rst
-   scripts/metaphlan2table.rst
    scripts/probeset2gene.rst
    scripts/rebuild_extensions.rst
    scripts/revigo.rst

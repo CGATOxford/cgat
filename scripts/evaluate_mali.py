@@ -34,33 +34,31 @@ Purpose
 
 Evaluate a multiple alignment. Remove gaps if so wished.
 
+Options::
 
-
-
-Options:
--h, --help                      print this message.
--v, --verbose=                  loglevel.
--o, --output-pattern            pattern for output multiple alignments
--p, --master-pattern=           pattern identifying sequences of the query species from identifier
--s, --species-pattern=          pattern identifying species from identifier
--e, --exons=                    exon information for evaluation
--c, --cluster                   cluster by overlap
--f, --remove-fragments          remove fragments
--p, --prefix=                   prefix for cluster identifier
---min-overlap-percent           minimum percent overlap between sequence paris
---min-overlap-residues          minimum overlap in residues between sequence pairs
---min-coverage-percent          minimum percent coverage between sequence paris
---min-coverage-residues         minimum coverage in residues between sequence pairs
---components                    filename with components to be analyses separately in the multiple alignment
---min-cluster-support           cluster according to species tree (minimum support)
---min-report-support            report consistent/inconsistent clades (minimum support). Set
-                                to value below 0, if you want to process lists until first
-                                inconsistent edge.
--r, --reference-tree            reference tree in the command line (no spaces!)
---pattern-species=              regex pattern to extract species from identifier
---file-bootstrap=               filename with bootstrap patterns.
---file-tree=                    filename of reference tree
---only-headers                  dump out headers only.
+  -h, --help                      print this message.
+  -v, --verbose=                  loglevel.
+  -o, --output-pattern            pattern for output multiple alignments
+  -p, --master-pattern=           pattern identifying sequences of the query species from identifier
+  -s, --species-pattern=          pattern identifying species from identifier
+  -e, --exons=                    exon information for evaluation
+  -c, --cluster                   cluster by overlap
+  -f, --remove-fragments          remove fragments
+  -p, --prefix=                   prefix for cluster identifier
+  --min-overlap-percent           minimum percent overlap between sequence paris
+  --min-overlap-residues          minimum overlap in residues between sequence pairs
+  --min-coverage-percent          minimum percent coverage between sequence paris
+  --min-coverage-residues         minimum coverage in residues between sequence pairs
+  --components                    filename with components to be analyses separately in the multiple alignment
+  --min-cluster-support           cluster according to species tree (minimum support)
+  --min-report-support            report consistent/inconsistent clades (minimum support). Set
+                                  to value below 0, if you want to process lists until first
+                                  inconsistent edge.
+  -r, --reference-tree            reference tree in the command line (no spaces!)
+  --pattern-species=              regex pattern to extract species from identifier
+  --file-bootstrap=               filename with bootstrap patterns.
+  --file-tree=                    filename of reference tree
+  --only-headers                  dump out headers only.
 
 Usage
 -----

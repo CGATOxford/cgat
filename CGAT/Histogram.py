@@ -258,12 +258,16 @@ def Print( h, intervalls = None, format = 0, nonull = None, format_value=None, f
 #-------------------------------------------------------------------------------------------------------
 def Write( outfile, h, intervalls = None, format = 0, nonull = None, format_value=None, format_bin=None ):
     """print a histogram.
+
     A histogram can either be a list/tuple of values or
     a list/tuple of lists/tuples where the first value contains
     the bin and second contains the values (which can again be
     a list/tuple).
-    format:     0 = print histogram in several lines
-                1 = print histogram on single line
+
+    :param format: output format. 
+        0 = print histogram in several lines,
+        1 = print histogram on single line
+  
     """
 
     lines = []

@@ -1,4 +1,16 @@
-"""A collection of useful, general purpose iterators."""
+"""
+Iterators.py - general purpose iterators.
+==========================================
+
+:Author: Unknown
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+A collection of useful, general purpose iterators.
+
+This code was downloaded from an unknown source.
+"""
 
 import random
 

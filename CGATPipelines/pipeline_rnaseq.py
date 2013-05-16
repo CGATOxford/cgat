@@ -60,7 +60,7 @@ The pipeline performs the following tasks:
    * build a combined gene set including the reference gene set and isoforms predicted by :term:`cufflinks`.
       * compare all isoforms in all experiments+isoforms (:term:`cuffcompare`) to each other 
          and the reference gene set
-        * summary statistics on isoforms with respect to gene set
+         * summary statistics on isoforms with respect to gene set
    * estimate differential expression levels of transcripts
       * different gene sets
          * reference gene set
@@ -3522,9 +3522,10 @@ def buildGeneLevelReadCounts( infiles, outfile ):
                 "gene_counts.dir/%s.gene_counts.tsv.gz" % ALL.asFile()) ] )
 def buildAggregateGeneLevelReadCounts( infiles, outfile):
     '''count reads falling into transcripts of protein coding 
-       gene models.
+    gene models.
 
     .. note::
+
        In paired-end data sets each mate will be counted. Thus
        the actual read counts are approximately twice the fragment
        counts.

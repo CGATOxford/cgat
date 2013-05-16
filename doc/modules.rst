@@ -131,7 +131,6 @@ Pipelines
    pipelinemodules/PipelineEnrichment.rst
    pipelinemodules/PipelineGO.rst
    pipelinemodules/PipelineGeneset.rst
-   pipelinemodules/PipelineGenomeAssembly.rst
    pipelinemodules/PipelineIntervalAnnotation.rst
    pipelinemodules/PipelineKEGG.rst
    pipelinemodules/PipelineLncRNA.rst
@@ -158,14 +157,13 @@ Other
    :maxdepth: 2
 
    modules/RLE.rst
-   modules/Cluster.rst
-   modules/Dots.rst
    modules/SVGDuplicationsWheel.rst
    modules/SVGTree.rst
    modules/SVGdraw.rst
    modules/SetTools.rst
    modules/Sockets.rst
    modules/GraphTools.rst
+   modules/Cluster.rst
 
 Obsolete
 --------
@@ -177,7 +175,6 @@ Obsolete
    modules/IntervallsWeighted.rst
    modules/SaryFasta.rst
    modules/Fasta.rst
-   modules/Alignlib.rst   
    modules/SuffixArray.rst
 
 Unsorted

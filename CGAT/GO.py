@@ -1525,12 +1525,14 @@ def pairwiseGOEnrichment( results_per_genelist, labels, test_ontology, go2info, 
 
     The assumption is that the background set is the same in all gene lists.
 
-    For each combination of two gene lists:
-        for each GO category:
-            get counts in foreground, total counts of foreground
-            compute chi-square enrichment output
-            save P-value
-        apply fdr - output significant differences.
+    The workflow is thus::
+
+       for each combination of two gene lists:
+           for each GO category:
+               get counts in foreground, total counts of foreground
+               compute chi-square enrichment output
+               save P-value
+           apply fdr - output significant differences.
     '''
     
     dicts = [ dict(x) for x in results_per_genelist ]

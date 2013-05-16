@@ -20,7 +20,14 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 """
-Version: $Id: PredictionParser.py 2764 2009-09-04 16:55:07Z andreas $
+PredictionParser.py - Parser for exonerate/genewise output
+==========================================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
 """
 import os, sys, string, re, getopt, tempfile, copy
 
@@ -975,12 +982,11 @@ class PredictionParserGenewise( PredictionParser ):
     def ParseAlb( self, lines ):
         """Parse genewise logical block alignment and return aligment.
 
-        return a tuple with:
-        ( code,
-          score, ngaps, nframeshifts,
+        :returns: tuple with ``(code, score, ngaps, nframeshifts,
           nintrons, nphase0, nphase1, nphase2,
           alignment of peptide to genome,
-          alignment of peptide to translation )
+          alignment of peptide to translation)``
+
         """
 
         map_genewise2code = \
@@ -1473,16 +1479,17 @@ def Blocks2AlignmentCDNA( query_block_starts,
 class PredictionParserBlatCDNA (PredictionParser):
     """Parse output from psl.
 
-Sample line:
-psLayout version 3
+    Sample line::
 
-match   mis-    rep.    N's     Q gap   Q gap   T gap   T gap   strand  Q               Q       Q       Q       T               T       T       T       block   blockSizes
-        qStarts  tStarts
-        match   match           count   bases   count   bases           name            size    start   end     name            size    start   end     count
-:: ---------------------------------------------------------------------------------------------------------------------------------------------------------------
-885     0       0       0       0       0       3       85      +       ENSCAFT00000000002      885     0       885     chr1.fa 124897793       3228799 3229769 4       41,577,103,164,       0,41,618,721,   3228799,3228845,3229427,3229605,        aactactttggattcacccacagtggggcggcggcagcagc,ggctgcggcccagtatagccagcatccagcttctggtgtagcctactctcatccaactacagttgctagctacgctatccatcaggctccagtagctgctcacacagttactgcggcccatgcaccagcaggcaccacagttgcagttgccaggcctgccccagtagctgttgcagctgctgcaatagctgctgcttatggaggctaccccactggacatacagcaagtgactatggctctatccagagacaacaagaagcaccaccaccagcacccccagctactacacagaactaccaggactcatactcatatgtaagatccactgctcctgctgtagcatatgatagtaagcagctgcctgcccagcctcagccttctgttgctgaaacctactatcagattgcccccaaagcaggttatagccaaggtgcaactcagtatacacaagcccagcaaactcgacaagtgacagccataaaaccagccacaccaagtccagctaccactactttctccatttatcccgtatcttccatcgttcagtcagtagcagttgcagctactgtggtgcca,tatacccagagtgctacttatagtaccatggcagttacttattctggtacatcttattcaggttatgaagcagcagtatattcagctgcatccttctactacc,cagctgcctggacagggaccatctttactaaaaaagcaccattccaaaataaacaactgaaaccaaaacagcctcccaaaccggcccagatagattatcgtgatgtttgtaagattagctgtgctgaaccacagacttataaagaacatttagaaggacaaaaa,     aactactttggattcacccacagtggggcggcggcagcagc,ggctgcggcccagtatagccagcatccagcttctggtgtagcctactctcatccaactacagttgctagctacgctatccatcaggctccagtagctgctcacacagttactgcggcccatgcaccagcaggcaccacagttgcagttgccaggcctgccccagtagctgttgcagctgctgcaatagctgctgcttatggaggctaccccactggacatacagcaagtgactatggctctatccagagacaacaagaagcaccaccaccagcacccccagctactacacagaactaccaggactcatactcatatgtaagatccactgctcctgctgtagcatatgatagtaagcagctgcctgcccagcctcagccttctgttgctgaaacctactatcagattgcccccaaagcaggttatagccaaggtgcaactcagtatacacaagcccagcaaactcgacaagtgacagccataaaaccagccacaccaagtccagctaccactactttctccatttatcccgtatcttccatcgttcagtcagtagcagttgcagctactgtggtgcca,tatacccagagtgctacttatagtaccatggcagttacttattctggtacatcttattcaggttatgaagcagcagtatattcagctgcatccttctactacc,cagctgcctggacagggaccatctttactaaaaaagcaccattccaaaataaacaactgaaaccaaaacagcctcccaaaccggcccagatagattatcgtgatgtttgtaagattagctgtgctgaaccacagacttataaagaacatttagaaggacaaaaa,
+      psLayout version 3
+
+      match   mis-    rep.    N's     Q gap   Q gap   T gap   T gap   strand  Q               Q       Q       Q       T               T       T       T       block   blockSizes
+              qStarts  tStarts
+              match   match           count   bases   count   bases           name            size    start   end     name            size    start   end     count
+      :: ---------------------------------------------------------------------------------------------------------------------------------------------------------------
+      885     0       0       0       0       0       3       85      +       ENSCAFT00000000002      885     0       885     chr1.fa 124897793       3228799 3229769 4       41,577,103,164,       0,41,618,721,   3228799,3228845,3229427,3229605,        aactactttggattcacccacagtggggcggcggcagcagc,ggctgcggcccagtatagccagcatccagcttctggtgtagcctactctcatccaactacagttgctagctacgctatccatcaggctccagtagctgctcacacagttactgcggcccatgcaccagcaggcaccacagttgcagttgccaggcctgccccagtagctgttgcagctgctgcaatagctgctgcttatggaggctaccccactggacatacagcaagtgactatggctctatccagagacaacaagaagcaccaccaccagcacccccagctactacacagaactaccaggactcatactcatatgtaagatccactgctcctgctgtagcatatgatagtaagcagctgcctgcccagcctcagccttctgttgctgaaacctactatcagattgcccccaaagcaggttatagccaaggtgcaactcagtatacacaagcccagcaaactcgacaagtgacagccataaaaccagccacaccaagtccagctaccactactttctccatttatcccgtatcttccatcgttcagtcagtagcagttgcagctactgtggtgcca,tatacccagagtgctacttatagtaccatggcagttacttattctggtacatcttattcaggttatgaagcagcagtatattcagctgcatccttctactacc,cagctgcctggacagggaccatctttactaaaaaagcaccattccaaaataaacaactgaaaccaaaacagcctcccaaaccggcccagatagattatcgtgatgtttgtaagattagctgtgctgaaccacagacttataaagaacatttagaaggacaaaaa,     aactactttggattcacccacagtggggcggcggcagcagc,ggctgcggcccagtatagccagcatccagcttctggtgtagcctactctcatccaactacagttgctagctacgctatccatcaggctccagtagctgctcacacagttactgcggcccatgcaccagcaggcaccacagttgcagttgccaggcctgccccagtagctgttgcagctgctgcaatagctgctgcttatggaggctaccccactggacatacagcaagtgactatggctctatccagagacaacaagaagcaccaccaccagcacccccagctactacacagaactaccaggactcatactcatatgtaagatccactgctcctgctgtagcatatgatagtaagcagctgcctgcccagcctcagccttctgttgctgaaacctactatcagattgcccccaaagcaggttatagccaaggtgcaactcagtatacacaagcccagcaaactcgacaagtgacagccataaaaccagccacaccaagtccagctaccactactttctccatttatcccgtatcttccatcgttcagtcagtagcagttgcagctactgtggtgcca,tatacccagagtgctacttatagtaccatggcagttacttattctggtacatcttattcaggttatgaagcagcagtatattcagctgcatccttctactacc,cagctgcctggacagggaccatctttactaaaaaagcaccattccaaaataaacaactgaaaccaaaacagcctcccaaaccggcccagatagattatcgtgatgtttgtaagattagctgtgctgaaccacagacttataaagaacatttagaaggacaaaaa,
+
     Run is cDNA versus genome.
-    
     """
     
     def __init__(self):
@@ -1651,15 +1658,15 @@ class PredictionParserBlatTrans (PredictionParser):
 
     Query is protein, database is 6frame translation
     
-    Input looks like this:
+    Input looks like this::
 
-psLayout version 3
+        psLayout version 3
 
-match   mis-    rep.    N's     Q gap   Q gap   T gap   T gap   strand  Q               Q       Q       Q       T               T       T       T       block   blockSizes
-        qStarts  tStarts
-        match   match           count   bases   count   bases           name            size    start   end     name            size    start   end     count
-:: ---------------------------------------------------------------------------------------------------------------------------------------------------------------
-98      0       0       0       0       0       2       3113    +-      185061  98      0       98      chr19.fa        56914383        6068186 6071593 3       28,27,43,        0,28,55,        50842790,50845539,50846068,     IFSCRQNCVEFYPIFLVTLWMAGWYFNQ,VFATCLGLVYIYARHQYFWGYSEAAKK,RITGFRLSLGCLALLTVLGALGIANSFLDEYLDLNVIKKLRHF,   IFSCRQNCVEFYPIFLVTLWMAGWYFNQ,VFATCLGLVYIYARHQYFWGYSEAAKK,RITGFRLSLGCLALLTVLGALGIANSFLDEYLDLNVIKKLRHF,
+        match   mis-    rep.    N's     Q gap   Q gap   T gap   T gap   strand  Q               Q       Q       Q       T               T       T       T       block   blockSizes
+                qStarts  tStarts
+                match   match           count   bases   count   bases           name            size    start   end     name            size    start   end     count
+        :: ---------------------------------------------------------------------------------------------------------------------------------------------------------------
+        98      0       0       0       0       0       2       3113    +-      185061  98      0       98      chr19.fa        56914383        6068186 6071593 3       28,27,43,        0,28,55,        50842790,50845539,50846068,     IFSCRQNCVEFYPIFLVTLWMAGWYFNQ,VFATCLGLVYIYARHQYFWGYSEAAKK,RITGFRLSLGCLALLTVLGALGIANSFLDEYLDLNVIKKLRHF,   IFSCRQNCVEFYPIFLVTLWMAGWYFNQ,VFATCLGLVYIYARHQYFWGYSEAAKK,RITGFRLSLGCLALLTVLGALGIANSFLDEYLDLNVIKKLRHF,
     """
     
     def __init__(self):

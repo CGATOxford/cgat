@@ -21,8 +21,10 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-SequenceProperties.py - 
-======================================================
+SequenceProperties.py - compute properties of sequences
+=======================================================
+
+Classes for extracting and reporting sequence properties on nucleotide sequences.
 
 :Author: Andreas Heger
 :Release: $Id$
@@ -34,9 +36,6 @@ Code
 
 '''
 import os, sys, string, re, tempfile, subprocess, optparse, math, hashlib, base64
-
-"""classes for extracting and reporting sequence properties on nucleotide sequences.
-"""
 
 import Genomics
 import IOTools
@@ -466,17 +465,19 @@ class SequencePropertiesCpg(SequenceProperties):
 class SequencePropertiesDegeneracy (SequenceProperties):
     """count degeneracy.
 
-    2: MW are non-degenerate.
-    9: EDKNQHCYF are 2-fold degenerate.
-    1: I is 3-fold degenerate
-    5: VGATP are 4-fold degenerate.
-    3: RLS are 2-fold and four-fold degenerate.
-       Depending on the first two codons, the codons are counted
-       as two or four-fold degenerate codons. This is encoded
-       in the file Genomics.py.
+    The degeneracies for amino acids are::
 
-    Note that the number degenerate sites is across all codons positions.
-    
+       2: MW are non-degenerate.
+       9: EDKNQHCYF are 2-fold degenerate.
+       1: I is 3-fold degenerate
+       5: VGATP are 4-fold degenerate.
+       3: RLS are 2-fold and four-fold degenerate.
+          Depending on the first two codons, the codons are counted
+          as two or four-fold degenerate codons. This is encoded
+          in the file Genomics.py.
+
+    Note that the number degenerate sites is computed across all codon 
+    positions.
     """
     def __init__(self):
         

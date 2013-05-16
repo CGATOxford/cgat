@@ -1,4 +1,7 @@
-''' Pipeline components related to KEGG analysis '''
+'''
+PipelineKegg.py - Pipeline components related to KEGG analysis 
+==============================================================
+'''
 
 import CGAT.Experiment as E
 from rpy2.robjects import r as R

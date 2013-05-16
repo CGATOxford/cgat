@@ -1,5 +1,9 @@
-'''utility functions for working with a database.
 '''
+PipelineDatabase.py - utility functions for working with a database
+===================================================================
+
+'''
+
 import sys
 import tempfile
 import optparse

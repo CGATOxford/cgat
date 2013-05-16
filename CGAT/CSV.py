@@ -1,4 +1,13 @@
-"""Tools for CSV support."""
+"""
+CSV.py - Tools for parsing CSV files
+========================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+"""
 
 import string, re, types
 import csv

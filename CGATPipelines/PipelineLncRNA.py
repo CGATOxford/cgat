@@ -1,6 +1,7 @@
 '''
-functions and classes for use with the lincRNA
-pipeline
+PipelineLncRNA.py - functions and classes for use with the lincRNA pipeline
+===========================================================================
+
 '''
 
 import re

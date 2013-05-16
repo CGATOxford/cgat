@@ -806,3 +806,18 @@ Below is a list of all python scripts and their revision status.
 +--------------------------------+------------+---------------+---------------+---------------+---------------+
 |xrate_tms_lrt.py                |            |               |               |               |               |
 +--------------------------------+------------+---------------+---------------+---------------+---------------+
+
+
+Contributions
+=============
+
+We included publicly and freely available code into the tool
+collection for convenience. 
+
+* IGV.py was written by Brent Pedersen.
+* SVGdraw.py was written by ...
+* The NCL module draws from code written by ...
+* list_overlap.py
+* Iterators.py
+
+

@@ -3,7 +3,7 @@ Building CGAT pipelines
 =======================
 
 The best way to build a pipeline is to start from an example. There are several 
-pipelines available, see CGATPipelines_. To start a new project, use 
+pipelines available, see :ref:`CGATPipelines`. To start a new project, use 
 :file:`pipeline_quickstart.py`::
 
    python <srcdir>pipeline_quickstart.py --name=test
@@ -471,5 +471,7 @@ Checking requisites
 
 TODO
 
-.. _SphinxReport_: http://code.google.com/p/sphinx-report
+.. _ruffus: http://www.ruffus.org.uk/
+.. _sqlite: http://www.sqlite.org/
+.. _sphinxreport: http://code.google.com/p/sphinx-report/
 

@@ -1,5 +1,6 @@
-'''utility tasks for importing data from biomart.
-
+'''
+PipelineBiomart.py - utility tasks for importing data from biomart
+==================================================================
 
 In order to find out about datasets, filters and attributes, use the
 

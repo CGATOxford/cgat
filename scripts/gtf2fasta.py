@@ -97,10 +97,13 @@ The script creates the following additional output files:
 
 counts
    Counts for each annotations
+
 junctions
    Splice junctions. This is a tab separated table linking residues that are
    joined via features. The coordinates are forward/reverse coordinates.
+
    The columns are:
+
    contig
       the contig
    strand

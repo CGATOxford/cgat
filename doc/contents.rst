@@ -66,7 +66,6 @@ complete list:
    pipelines/pipeline_expression.rst
    pipelines/pipeline_fastqToBigWig.rst
    pipelines/pipeline_fusion.rst
-   pipelines/pipeline_genomeassembly.rst
    pipelines/pipeline_intervals.rst
    pipelines/pipeline_mappability.rst
    pipelines/pipeline_mapping_benchmark.rst

@@ -58,13 +58,13 @@ to optimize a variety of user specified parameters. It performs the following ta
     * Reduction of input bam files into chr19 only bamfiles
 
     * Runs the rnaseq transcript building pipeline for all combinations
-    of user specified parameters
+      of user specified parameters
 
     * Collects metrics in a single database csvdb from each run (metrics provided by the transcript
-    building pipeline) and assesses how many reads contribute to transcripts (inc. spliced reads)
+      building pipeline) and assesses how many reads contribute to transcripts (inc. spliced reads)
 
     * It also assesses the ratio of single vs. multi exon transfrags as a measure of overall transcriptome
-    quality.
+      quality.
 
 
 Usage
@@ -112,6 +112,16 @@ path:
 +--------------------+-------------------+------------------------------------------------+
 |cufflinks_          |>=1.3.0            |transcription levels                            |
 +--------------------+-------------------+------------------------------------------------+
+
+Glossary
+========
+
+.. glossary::
+
+   cufflinks
+      cufflinks_ - transcriptome analysis
+
+.. _cufflinks: http://cufflinks.cbcb.umd.edu/index.html
 
 Code
 ====

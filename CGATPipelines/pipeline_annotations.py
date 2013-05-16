@@ -27,7 +27,7 @@ Annotation pipeline
 
 :Author: Andreas Heger
 :Release: $Id$
-vv:Date: |today|
+:Date: |today|
 :Tags: Python
 
 The annotation pipeline imports various annotations and organizes them
@@ -58,15 +58,15 @@ Configuration
 
 The :file:`pipeline.ini` needs to be edited so that it points to the
 appropriate locations of the auxiliary files. See especially:
-vv
-1. section ``[ensembl]`` with the location of the ENSEMBL dump
+
+1 section ``[ensembl]`` with the location of the ENSEMBL dump
     files (``filename_gtf``, filename_pep``, ``filename_cdna``)
 
-2. section ``[general]`` with the location of the indexed genomic
+2 section ``[general]`` with the location of the indexed genomic
     fasta files to use and the name of the genome (default=``hg19``),
     see :doc:`IndexedFasta`.
 
-3. section ``[ucsc]`` with the name of the database to use (default=``hg19``).
+3 section ``[ucsc]`` with the name of the database to use (default=``hg19``).
 
 Input
 -----

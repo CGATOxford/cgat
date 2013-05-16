@@ -1,4 +1,6 @@
-'''utility tasks for dealing with ENSEMBL gene sets.
+'''
+PipelineGeneset.py - utility tasks for dealing with ENSEMBL gene sets
+=====================================================================
 
 Most of this tasks take a geneset (.gtf.gz) from ENSEMBL
 as input.
@@ -272,8 +274,9 @@ def buildFlatGeneSet( infile, outfile ):
 # pipeline_polyphen
 def buildProteinCodingGenes( infile, outfile ):
     '''build a collection of exons from the protein-coding
-    section of the ENSEMBL gene set. The exons include both CDS
-    and UTR.
+    section of the ENSEMBL gene set. 
+
+    The exons include both CDS and UTR.
 
     *infile* is an ENSEMBL gtf file.
 
@@ -809,10 +812,10 @@ def buildPseudogenes( infiles, outfile ):
     Pseudogenes are:
     
     * gene_type or transcript_type contains the phrase "pseudo". This taken from
-    the database.
+      the database.
 
     * feature 'processed_transcript' with similarity to protein coding genes. Similarity
-    is assessed by aligning with exonerate.
+      is assessed by aligning with exonerate.
 
     Pseudogenic transcripts can overlap with protein coding transcripts.
     '''

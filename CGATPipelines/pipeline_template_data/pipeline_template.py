@@ -104,9 +104,10 @@ from ruffus import *
 import sys, glob, gzip, os, itertools, re, math, types, collections, time
 import optparse, shutil
 import sqlite3
-import Experiment as E
-import IOTools
-import Database
+
+import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
+import CGAT.Database as Database
 
 ###################################################
 ###################################################

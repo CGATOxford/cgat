@@ -102,7 +102,7 @@ class RangeCounterBAM(RangeCounter):
 
                 current_offset += length
 
-class RangeCounterBAMShift(RangeCounter):
+class RangeCounterBAMShift(RangeCounterBAM):
     '''count densities using bam files. 
 
     Before counting, reads are shifted and extended by a fixed amount.
@@ -195,11 +195,13 @@ class RangeCounterBAMShift(RangeCounter):
 
                 current_offset += length
 
-class RangeCounterBAMMerge(RangeCounter):
+class RangeCounterBAMMerge(RangeCounterBAM):
     '''count densities using bam files.
 
     Before counting, paired end reads are merged and counts
     are computed over the full merged range.
+
+    Reads are not shifted.
     '''
     def __init__(self, samfiles,
                  merge_pairs, 
@@ -228,7 +230,6 @@ class RangeCounterBAMMerge(RangeCounter):
         cdef int interval_width
         cdef int current_offset
         cdef AlignedRead read
-        cdef int shift_extend
         cdef int work_offset
         cdef int pos
         cdef int length
@@ -246,7 +247,7 @@ class RangeCounterBAMMerge(RangeCounter):
             for start, end in ranges:
                 length = end - start
                 
-                xstart, xend = max(0, start - shift_extend), max(0, end + shift_extend)
+                xstart, xend = start, end
 
                 for read in samfile.fetch( contig, xstart, xend ):
                     flag = read._delegate.core.flag 
@@ -273,7 +274,7 @@ class RangeCounterBAMMerge(RangeCounter):
   
                 current_offset += length
 
-class RangeCounterBAMBaseAccuracy(RangeCounter):
+class RangeCounterBAMBaseAccuracy(RangeCounterBAM):
     '''count densities using bam files with base accuracy.
     '''
     def __init__(self, 
@@ -312,9 +313,15 @@ class RangeCounterBAMBaseAccuracy(RangeCounter):
                     positions = read.positions
                     for i in positions:
                         if i < start: continue
-                        if i > end: continue
-                        counts[i - start + current_offset] += 1
-                        
+                        if i >= end: continue
+                        try:
+                            counts[i - start + current_offset] += 1
+                        except IndexError:
+                            print len(counts)
+                            print "i=", i, "start=",start, "end=", end, "current_offset=", current_offset
+                            print "positions=", positions
+                            raise
+
                 current_offset += length
 
 class RangeCounterBed(RangeCounter):

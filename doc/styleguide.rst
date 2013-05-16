@@ -153,6 +153,28 @@ Other guidelines
 * In order to build documentation, each script and module needs to
   be importable from anywhere. 
   
+Documentation
+=============
+
+Writing doc-strings
+-------------------
+
+Functions should be documented through their doc-string using
+restructured text. For example::
+
+    def computeValue( name, method, accuracy=2):  
+
+        :param name: The name to use.
+    	:type name: str.
+	:param method: method to use.
+	:type state: choice of ('empirical', 'parametric')
+	:param accuracy:
+	:type accuracy: integer
+	:returns:  int -- the value
+	:raises: AttributeError, KeyError
+
+
+
 
 
 

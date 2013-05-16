@@ -4,4 +4,7 @@ tssprofile:
     outputs: [tssprofile.lengths.tsv.gz, geneprofile.lengths.tsv.gz, tssprofile.none.tsv.gz, geneprofile.none.tsv.gz]
     references: [test1.tssprofile.lengths.tsv.gz, test1.geneprofile.lengths.tsv.gz, test1.tssprofile.none.tsv.gz, test1.geneprofile.none.tsv.gz]
 
+introns:
+    stdin: null 
+	
 

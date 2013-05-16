@@ -85,7 +85,7 @@ by running::
 
    python <src>/pipeline_<name>.py --help
 
-The basic syntax for :term:`pipeline_<name>.py` is::
+The basic syntax for ``pipeline_<name>.py`` is::
 
    python <src>/pipeline_<name>.py [options] _COMMAND_
 
@@ -163,7 +163,7 @@ Building pipeline reports
 ================================
 
 Some of the pipelines are associated with an automated report generator to display
-summary information as a set of nicely formatted :term:`html` pages. In order to
+summary information as a set of nicely formatted html pages. In order to
 build the documentation, drop the appropriate :file:`conf.py` and :file:`sphinxreport.ini`
 configuration files into the :term:`working directory` and run the pipeline command:
 

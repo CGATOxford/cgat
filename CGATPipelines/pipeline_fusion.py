@@ -38,7 +38,8 @@ Overview
 The pipleline takes a set up reads in any legal format for tophat and performs the following tasks:
 
     * Runs tophat-fusion on each track seperately collecting the data in directiories of the form:
-     track_tophat
+      track_tophat
+
     * Runs tophat-fusion-post on all track simulateously to build a single report of fusions found in the samples
 
 Eventaully, this pipeline may include other algorithms for finding fusion transcripts and tasks for  QCing the
@@ -90,6 +91,7 @@ fastq.1.gz, fastq2.2.gz
 
    Quality scores need to be of the same scale for all input files. Thus it might be
    difficult to mix different formats.
+
 Optional inputs
 +++++++++++++++
 
@@ -336,8 +338,11 @@ def doCleanUp(infile,outfile):
            r"edgeR_output/\1_edgeR_GLM_analysis.tsv")
 def edgeR_analysis(infile,outfile):
     ''' Runs the edgeR GLM analysis script using each of the input
-    files as the exon counts, and each of the *design.tsv  as the
-    designs. Options to the script are stored in the ini '''
+    files as the exon counts, and each of the *design.tsv*  as the
+    designs. 
+    
+    Options to the script are stored in the ini. 
+    '''
 
     to_cluster = USECLUSTER
     R_path = PARAMS['R_path']
