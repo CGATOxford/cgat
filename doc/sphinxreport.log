@@ -901,3 +901,4 @@
 2013-05-15 15:38:50,338 DEBUG report_directive.run: checking for changed files.
 2013-05-15 15:38:50,339 DEBUG report_directive.run: /ifs/devel/andreas/cgat/doc/make_pipelines/MapTranscripts454.rst:55: checking for []
 2013-05-15 15:38:50,339 INFO report_directive.run: /ifs/devel/andreas/cgat/doc/make_pipelines/MapTranscripts454.rst:55: noredo: all files are present
+2013-05-15 15:40:10,444 INFO no previous lncRNA set provided: Using refnoncoding set

@@ -1091,8 +1091,8 @@ def mapping(): pass
 ###################################################################
 ###################################################################
 ###################################################################
-if "merge_pattern_input" in PARAMS:
-    if "merge_pattern_output" not in PARAMS:
+if "merge_pattern_input" in PARAMS and PARAMS["merge_pattern_input"]:
+    if "merge_pattern_output" not in PARAMS or not PARAMS["merge_pattern_output"]:
         raise ValueError("no output pattern 'merge_pattern_output' specificied")
     @collate( MAPPINGTARGETS, 
               regex( "%s.bam" % PARAMS["merge_pattern_input"] ),
@@ -1311,6 +1311,8 @@ def buildContextStats( infiles, outfile ):
     infile, reffile = infiles
 
     min_overlap = 0.5
+
+    job_options = "-l mem_free=4G"
 
     to_cluster = True
     statement = '''

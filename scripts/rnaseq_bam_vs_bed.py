@@ -153,7 +153,7 @@ def main( argv = None ):
         E.warn( "no data in %s" % bamfile )
         return
 
-    statement = """intersectBed %(format)s %(bamfile)s -b %(bedfile)s -bed -wo -f %(min_overlap)f > %(tmpfilename)s""" % locals()
+    statement = """intersectBed %(format)s %(bamfile)s -b %(bedfile)s -bed -wo -f %(min_overlap)f | head -n 1000 > %(tmpfilename)s""" % locals()
 
     E.info( "running %s" % statement )
     retcode = E.run( statement )
