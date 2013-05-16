@@ -191,8 +191,8 @@ Array jobs can be controlled through the ``job_array`` variable::
 
 
 Note that the :file:`grid_task.bash` file must be grid engine aware. This means
-it makes use of the :env:`SGE_TASK_ID``, :env:`SGE_TASK_FIRST``, :env:`SGE_TASK_LAST` and 
-:env:`SGE_TASK_STEPSIZE` environment variables to select the chunk of data it wants
+it makes use of the :envvar:`SGE_TASK_ID`, :envvar:`SGE_TASK_FIRST`, :envvar:`SGE_TASK_LAST` and 
+:envvar:`SGE_TASK_STEPSIZE` environment variables to select the chunk of data it wants
 to work on.
 
 The job submission files are files called `tmp*` in the :term:`working directory`.
@@ -297,7 +297,7 @@ a report, while the latter only updates changed pages. The report will be in the
 
 Note that report building requries two files in the :term:`working directory`:
 
-   * :file:`sphinxreport.ini` - configuration values for Sphinxreport.
+   * :file:`sphinxreport.ini` - configuration values for Sphinxreport_.
    * :file:`conf.py` - configuration values for sphinx.
 
 .. _ConfigurationValues:
@@ -347,7 +347,7 @@ The statement above will load the parameters from a :mod:`pipeline_annotations` 
 Using configuration values
 --------------------------
 
-Configuration values are accessible via the :var:`PARAMS` variable. The :var:`PARAMS`
+Configuration values are accessible via the :py:data:`PARAMS` variable. The :py:data:`PARAMS`
 variable is a dictionary mapping configuration parameters to values. Keys are in the
 format ``section_parameter``. For example, the key ``bowtie_threads`` will provide the
 configuration value of::
@@ -377,7 +377,7 @@ For example, given the following task::
    def mapWithBowtie( infile, outfile ):
       ...
 
-and the files :files:`data1.fastq` and :file:`data2.fastq` in the :term:`working directory`,
+and the files :file:`data1.fastq` and :file:`data2.fastq` in the :term:`working directory`,
 two output files :file:`data.bam` and :file:`data2.bam` will be created on executing
 ``mapWithBowtie``. Both will use the same parameters. To set parameters specific to the 
 execution of :file:`data1.fastq`, add the following to :file:`pipeline.ini`::
@@ -471,5 +471,5 @@ Checking requisites
 
 TODO
 
-
+.. _SphinxReport_: http://code.google.com/p/sphinx-report
 

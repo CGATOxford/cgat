@@ -119,33 +119,56 @@ def main( argv = None ):
 
     options.stdout.write( "category\talignments\n" )
 
+    # get number of columns of reference bed file
+    for bed in Bed.iterator(IOTools.openFile( bedfile )):
+        ncolumns_bed = bed.columns
+        break
+    E.info( "assuming %s is bed%i format" % (bedfile, ncolumns_bed))
+
+    if ncolumns_bed < 4:
+        raise ValueError("please supply a name attribute in the bed file")
+
+    # get information about 
     if bamfile.endswith(".bam"):
         format = "-abam"
         samfile = pysam.Samfile( bamfile, "rb" )
         total = samfile.mapped
-        data = collections.namedtuple( "data", "contig start end name v1 strand contig2 start2 end2 name2" )
+        # latest bedtools uses bed12 format when bam is input
+        ncolumns_bam = 12
         # count per read
         sort_key = lambda x: x.name
     else: 
         format = "-a"
         total = IOTools.getNumLines( bamfile )
         # get bed format
-        ncolumns = 0
+        ncolumns_bam = 0
         for bed in Bed.iterator(IOTools.openFile( bamfile )):
-            ncolumns = bed.columns
+            ncolumns_bam = bed.columns
+            break
 
-        if ncolumns > 0:
-            E.info( "assuming this is bed%i fomat" % ncolumns )
-            extra = " ".join( ["name", "score", "strand", "thickstart", 
-                               "thickend", "rgb", 
-                               "blockcount", "blockstarts", "blockends"][:ncolumns-3] )
-            data = collections.namedtuple( "data", "contig start end %s contig2 start2 end2 name2" % extra)
-
-            if ncolumns == 3:
+        if ncolumns_bam > 0:
+            E.info( "assuming %s is bed%i fomat" % (bamfile, ncolumns_bam ))
+            if ncolumns_bam == 3:
                 # count per interval
                 sort_key = lambda x: (x.contig, x.start, x.end)
             else:
+                # count per interval category
                 sort_key = lambda x: x.name
+
+    # use fields for bam/bed file (regions to count with)
+    data_fields = [ "contig", "start", "end", "name",
+                    "score", "strand", "thickstart", "thickend", "rgb",
+                    "blockcount", "blockstarts", "blockends" ][:ncolumns_bam]
+
+    # add fields for second bed (regions to count in)
+    data_fields.extend( [ "contig2", "start2", "end2", "name2",
+                          "score2", "strand2", "thickstart2", "thickend2", "rgb2",
+                          "blockcount2", "blockstarts2", "blockends2" ][:ncolumns_bed] )
+
+    # add bases overlap
+    data_fields.append( "bases_overlap"  )
+
+    data = collections.namedtuple( "data", data_fields )
 
     options.stdout.write( "total\t%i\n" % total )
 
@@ -153,7 +176,7 @@ def main( argv = None ):
         E.warn( "no data in %s" % bamfile )
         return
 
-    statement = """intersectBed %(format)s %(bamfile)s -b %(bedfile)s -bed -wo -f %(min_overlap)f | head -n 1000 > %(tmpfilename)s""" % locals()
+    statement = """intersectBed %(format)s %(bamfile)s -b %(bedfile)s -bed -wo -f %(min_overlap)f > %(tmpfilename)s""" % locals()
 
     E.info( "running %s" % statement )
     retcode = E.run( statement )

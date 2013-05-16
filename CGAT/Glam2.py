@@ -1,4 +1,6 @@
-"""Parser for MAST files.
+"""
+Glam2.py - Parser for MAST files.
+=================================
 
 As of biopython 1.5.6, the MAST parser is broken.
 

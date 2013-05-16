@@ -157,9 +157,9 @@ To get the latest bugfixes, go into the :term:`source directory` and type::
 The first command retrieves the latest changes from the master repository
 and the second command updates your local version with these changes.
 
-.. _PipelineDocumentation:
+.. _PipelineReporting:
 
-Building pipeline documentation
+Building pipeline reports
 ================================
 
 Some of the pipelines are associated with an automated report generator to display

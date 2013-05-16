@@ -902,3 +902,7 @@
 2013-05-15 15:38:50,339 DEBUG report_directive.run: /ifs/devel/andreas/cgat/doc/make_pipelines/MapTranscripts454.rst:55: checking for []
 2013-05-15 15:38:50,339 INFO report_directive.run: /ifs/devel/andreas/cgat/doc/make_pipelines/MapTranscripts454.rst:55: noredo: all files are present
 2013-05-15 15:40:10,444 INFO no previous lncRNA set provided: Using refnoncoding set
+2013-05-16 10:38:48,050 INFO initialising plugins
+2013-05-16 10:38:50,243 DEBUG found plugins: 3 capabilites and 59 plugins
+2013-05-16 11:07:27,204 INFO initialising plugins
+2013-05-16 11:07:29,259 DEBUG found plugins: 3 capabilites and 59 plugins

@@ -1,5 +1,11 @@
-"""Parser for Bioprospector output
+"""
+Bioprospector.py - Parser for Bioprospector output
+==================================================
 
+:Author: 
+:Release: $Id$
+:Date: |today|
+:Tags: Python
 """
 
 import string, sys, re, types, collections
