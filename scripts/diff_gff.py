@@ -32,18 +32,18 @@ Purpose
 
 This script compares the intervals in two :term:`gff` formatted files.
 
-The script outputs the following symbols:
+The script outputs the following symbols::
 
->: an entry unique to the second file
-<: an entry unique to the first file
+    >: an entry unique to the second file
+    <: an entry unique to the first file
 
-if --write-equivalent is set, then it also outputs overlapping entries:
+    if --write-equivalent is set, then it also outputs overlapping entries:
 
-~: partially overlapping entries
-/: an entry that is split in the first file (split_right)
-\: an entry that is split in the second file (split_left)
-=: identical entries
-|: half-identical entries, only one boundary is matching
+    ~: partially overlapping entries
+    /: an entry that is split in the first file (split_right)
+    \: an entry that is split in the second file (split_left)
+    =: identical entries
+    |: half-identical entries, only one boundary is matching
 
 Usage
 -----

@@ -82,8 +82,8 @@ This pipeline implements the following nomenclature for peaks:
 
    interval
       Generic term for an interval in which the read density is higher then expected. Both
-      a :term:`region` or a :term:`summit` are an :term:`interval`
-      
+      a :term:`region` or a :term:`summit` are an :term:`interval`.
+
    peak
       Within a :term:`region` or :term:`summit` the position with the highest base coverage.
 

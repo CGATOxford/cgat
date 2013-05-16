@@ -63,7 +63,7 @@ Variants
 
 Variants are read from a :term:`vcf` formatted file called :term:`variants.vcf.gz`. 
 The file is assumed to have been compressed with :file:`bgzip` and compressed with
-tabix_.
+tabix.
 
 The tracks are taken from the headers in the :term:`vcf` file. Please avoid any special
 characters like ``_][*.+-``  within strain names.

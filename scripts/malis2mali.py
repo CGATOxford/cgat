@@ -45,14 +45,14 @@ a '%%s') or in a single file.
 
 This file maps sequence identifiers in the multiple alignment file(s)
 to multiple alignment identifiers. The format for this file is a tab separated table 
-containing the following fields:
+containing the following fields::
 
-1       sequence        a sequence identifier
-2       input_id        The id under which the alignment is found. This value is substituted
-                        for the '%%s' in --pattern-mali.
-3       component_id    The component_id or multiple alignment identifier.
-                        This field is optional. If no third column is specified, the input_id
-                        is used.
+    1       sequence        a sequence identifier
+    2       input_id        The id under which the alignment is found. This value is substituted
+                            for the '%%s' in --pattern-mali.
+    3       component_id    The component_id or multiple alignment identifier.
+                            This field is optional. If no third column is specified, the input_id
+                            is used.
 
 Methods:
 

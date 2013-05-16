@@ -138,7 +138,7 @@ upstream, downstream
    upstream/downstream regions in 5 intervals of a total of 1kb (see option --flank to increase
    the total size).
 
-.. _territorios:
+.. _territories:
 
 Territories
 +++++++++++

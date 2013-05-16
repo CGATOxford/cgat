@@ -454,8 +454,11 @@ def buildMatchMetrics(infile, outfile):
     '''
     match outputs transcription factors that are found in the supplied
     sequences. We are interested in the following metrics:
-     * No. unique transcription factors found per sequence
-     * Maximal number of TF motifs found per sequence
+
+       * No. unique transcription factors found per sequence
+
+       * Maximal number of TF motifs found per sequence
+
     '''
     tablename = filenameToTablename(os.path.basename(P.snip(infile, ".load"))) + "_result"
     PipelineTransfacMatch.frequencyMetrics(PARAMS["database"], tablename, outfile)

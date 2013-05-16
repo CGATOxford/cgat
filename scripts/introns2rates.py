@@ -34,18 +34,19 @@ Purpose
 
 Read a list of aligned introns and compute pairs.
 
-Options:
--h, --help                      print this message.
--v, --verbose=                  loglevel.
---is-compressed                 alignments are in compressed format (unaligend sequence has to
-                                be provided)
---do-gblocks                    apply gblocks to alignment before calculation.
---skip-distance                 skip distance calculation
---skip-alistats                 skip alignment characteristics calculation
---echo-unaligned                echo unaligned transcripts
---method=                       alignment method [dbaligned|clusaligned|dialigned|dialignedlgs]
---fixed-alpha=                  fix alpha at value
---anchor-alignment=             anchor alignment with x residues of A at each side
+Options::
+
+    -h, --help                      print this message.
+    -v, --verbose=                  loglevel.
+    --is-compressed                 alignments are in compressed format (unaligend sequence has to
+                                    be provided)
+    --do-gblocks                    apply gblocks to alignment before calculation.
+    --skip-distance                 skip distance calculation
+    --skip-alistats                 skip alignment characteristics calculation
+    --echo-unaligned                echo unaligned transcripts
+    --method=                       alignment method [dbaligned|clusaligned|dialigned|dialignedlgs]
+    --fixed-alpha=                  fix alpha at value
+    --anchor-alignment=             anchor alignment with x residues of A at each side
 
 Usage
 -----

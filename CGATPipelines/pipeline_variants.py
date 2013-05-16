@@ -62,7 +62,7 @@ Variants
 
 Variants are read from a :term:`vcf` formatted file called :term:`variants.vcf.gz`. 
 The file is assumed to have been compressed with :file:`bgzip` and compressed with
-tabix_.
+tabix.
 
 The tracks are taken from the headers in the :term:`vcf` file. Please avoid any special
 characters like ``_][*.+-``  within strain names.
@@ -1192,12 +1192,16 @@ def summarizeAllelesPerTranscript( infile, outfile ):
     '''summarize effects on a per-gene level.
 
     The following fields are exclusive:
+
     is_wildtype
        both alleles are wildtype
+
     is_knockout
        both alleles knocked out
+
     is_truncated
        both alleles truncated or truncated and knocked out
+
     is_affected
        one allele is truncated or knocked out
 

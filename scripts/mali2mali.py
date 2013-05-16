@@ -48,11 +48,13 @@ shift-alignment
 
 mark-transitions
    marks transitions in the alignment. The parameter denotes either
-                        (1) a filename to a file containing id-transition pairs in
-                        tabular form. There can be multiple transitions for the same id, but
-                        they should be on separate lines. Use 'mali' as an id for multiple
-                        alignment coordinates.
-                        (2) a colon (':') -separated list of transitions
+
+      1 a filename to a file containing id-transition pairs in
+        tabular form. There can be multiple transitions for the same id, but
+        they should be on separate lines. Use 'mali' as an id for multiple
+        alignment coordinates.
+
+      2 a colon (':') -separated list of transitions
 
 filter-even-transitions
    same parameter as above, but will remove all even segments (0, 2, ...).

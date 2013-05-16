@@ -43,6 +43,14 @@ map to regions that are conflicting with those in :term:`bamT`.
    Note that if junctions are supplied, the resultant bam files will not
    be sorted by position.
 
+.. glossary::
+
+   bamG
+      :term:`bam` formatted file with reads mapped against the genome
+
+   bamT
+      :term:`bam` formatted file with reads mapped against transcripts
+
 Usage
 -----
 

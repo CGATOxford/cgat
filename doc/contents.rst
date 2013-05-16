@@ -39,7 +39,7 @@ CGAT has written a few :term:`production pipelines`. These pipelines perform
 basic tasks, are fairly generic and might be of wider interest. Below is a 
 complete list:
 
-.. _CGATPipelines:
+.. _cgatpipelines:
  
 .. toctree::
    :maxdepth: 1	

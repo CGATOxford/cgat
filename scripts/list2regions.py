@@ -32,15 +32,17 @@ list2regions.py - predict genes from a list of associations
 Purpose
 -------
 
--h, --help                      print this message.
--v, --verbose=                  loglevel.
--p, --peptides=                 file with peptide sequences (FASTA).
--g, --genome-file=              pattern for filenames with the genomic DNA (FASTA).
--m, --map=                      map of peptide identifiers
---disable-conflict              turn of resolution of conflicts
---disable-overlap               turn of resolution of overlaps
---disable-suboptimal            turn of elimination of suboptimal predictions
---disable-activation            turn of reactivation of eliminated queries
+Options::
+
+    -h, --help                      print this message.
+    -v, --verbose=                  loglevel.
+    -p, --peptides=                 file with peptide sequences (FASTA).
+    -g, --genome-file=              pattern for filenames with the genomic DNA (FASTA).
+    -m, --map=                      map of peptide identifiers
+    --disable-conflict              turn of resolution of conflicts
+    --disable-overlap               turn of resolution of overlaps
+    --disable-suboptimal            turn of elimination of suboptimal predictions
+    --disable-activation            turn of reactivation of eliminated queries
 
 Usage
 -----

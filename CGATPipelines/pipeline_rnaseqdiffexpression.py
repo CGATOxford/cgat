@@ -32,9 +32,10 @@ RNA-Seq Differential expression pipeline
 
 The RNA-Seq differential expression pipeline performs differential
 expression analysis. It requires three inputs:
-   1. one or more genesets in :term:`gtf` formatted files 
-   2. mapped reads in :term:`bam` formatted files
-   3. design files as :term:`tsv`-separated format
+
+   1 one or more genesets in :term:`gtf` formatted files 
+   2 mapped reads in :term:`bam` formatted files
+   3 design files as :term:`tsv`-separated format
 
 This pipeline works on a single genome.
 

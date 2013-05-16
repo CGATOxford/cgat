@@ -334,8 +334,6 @@ path:
 |picard              |>=1.42             |bam/sam files. The .jar files need to be in your|
 |                    |                   | CLASSPATH environment variable.                |
 +--------------------+-------------------+------------------------------------------------+
-|bamstats_           |>=1.22             |from CGR, Liverpool                             |
-+--------------------+-------------------+------------------------------------------------+
 
 Pipeline output
 ===============
@@ -3778,13 +3776,16 @@ def buildAggregateTranscriptLevelReadCounts( infiles, outfile):
        gene models.
 
     .. note::
+
        In paired-end data sets each mate will be counted. Thus
        the actual read counts are approximately twice the fragment
        counts.
        
-    .. note:: this step takes very long if multiple bam-files are supplied.
-    It has thus been taken out of the pipeline. The aggregate can be derived from summing
-    the individual counts anyways.
+    .. note:: 
+
+       This step takes very long if multiple bam-files are supplied.
+       It has thus been taken out of the pipeline. The aggregate can be derived from summing
+       the individual counts anyways.
 
     '''
     bamfiles, geneset = infiles

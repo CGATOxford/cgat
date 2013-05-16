@@ -3,7 +3,7 @@ Building CGAT pipelines
 =======================
 
 The best way to build a pipeline is to start from an example. There are several 
-pipelines available, see :ref:`CGATPipelines`. To start a new project, use 
+pipelines available, see :ref:`cgatpipelines`. To start a new project, use 
 :file:`pipeline_quickstart.py`::
 
    python <srcdir>pipeline_quickstart.py --name=test

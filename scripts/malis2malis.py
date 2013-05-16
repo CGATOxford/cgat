@@ -35,13 +35,13 @@ Purpose
 extract sequences from a set of multiple alignments and distribute into new directories.
 
 Files can be split according to an input file given to the option --filename-components.
-This file is a tab separated table containing the following fields:
+This file is a tab separated table containing the following fields::
 
-1       sequence        a sequence identifier
-2       input_id        The id under which the alignment is found.
-3       component_id    The component_id which under which the directory shall be stored.
-                        This is optional, if no third column is specified, the input_id
-                        is used.
+   1       sequence        a sequence identifier
+   2       input_id        The id under which the alignment is found.
+   3       component_id    The component_id which under which the directory shall be stored.
+                           This is optional, if no third column is specified, the input_id
+                           is used.
 
 Usage
 -----

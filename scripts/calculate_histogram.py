@@ -35,15 +35,17 @@ Purpose
 This script calculates histograms from data in a
 tab-separated table.
 
-read in data and build histogram of column
+read in data and build histogram of column.
 
--c, --column            column to take [default = 0]
--a, --append=           append columns [normalize]
--n, --normalize         normalize column
---cumulative            cumulative histogram
---reverse-cumulative    reverse cumulative histogram
--i, --titles            use supplied titles
-# at start of line is a comment
+Options::
+
+    -c, --column            column to take [default = 0]
+    -a, --append=           append columns [normalize]
+    -n, --normalize         normalize column
+    --cumulative            cumulative histogram
+    --reverse-cumulative    reverse cumulative histogram
+    -i, --titles            use supplied titles
+    # at start of line is a comment
 
 Usage
 -----

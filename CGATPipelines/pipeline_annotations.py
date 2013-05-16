@@ -64,7 +64,7 @@ appropriate locations of the auxiliary files. See especially:
 
 2 section ``[general]`` with the location of the indexed genomic
     fasta files to use and the name of the genome (default=``hg19``),
-    see :doc:`IndexedFasta`.
+    see :doc:`modules.IndexedFasta`.
 
 3 section ``[ucsc]`` with the name of the database to use (default=``hg19``).
 

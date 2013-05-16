@@ -57,7 +57,7 @@ Type::
    python bam2wiggle.py --output-format=bigwig in.bam out.bigwig
 
 to convert the :term:`bam` file file:`in.bam` to :term:`bigwig` format 
-and save the result in :term:`out.bigwig`.
+and save the result in :file:`out.bigwig`.
 
 Type::
 

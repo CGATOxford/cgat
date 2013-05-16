@@ -33,7 +33,7 @@ Purpose
 -------
 
 This scripts implements some more complex filtering. The sequence
-identifiers need to correspond to the :term:`gpipe id` scheme.
+identifiers need to correspond to the ```gpipe id`` scheme.
 
 Usage
 -----
