@@ -69,6 +69,8 @@ formatted file is supplied, it must be compressed with and indexed with :file:`t
                 upstream - UTR5 - CDS - UTR3 - downstream
    geneprofile - aggregate over exonic gene models. The areas are
                 upstream - EXON - downstream
+   geneprofilewithintrons - aggregate over exonic, intron gene models. The areas are
+                upstream - EXON - INTRON - downstream
    tssprofile  - aggregate over transcription start/stop
                 upstream - TSS/TTS - downstream
    intervalprofile - aggregate over interval
@@ -131,7 +133,9 @@ def main( argv = None ):
 
     parser.add_option( "-m", "--method", dest="methods", type = "choice", action = "append",
                        choices = ("geneprofile", "tssprofile", "utrprofile", 
-                                  "intervalprofile", "midpointprofile" ),
+                                  "intervalprofile", "midpointprofile",
+                                  "geneprofilewithintrons", 
+                                  ),
                        help = "counters to use. Counters describe the meta-gene structure to use"
                               " for counting. Several counters can be chosen."
                               " [%default]" )
@@ -202,6 +206,10 @@ def main( argv = None ):
                        help = "resolution of cds region in bp "
                               "[%default]" )
 
+    parser.add_option("--resolution-introns", dest="resolution_introns", type = "int",
+                       help = "resolution of introns region in bp "
+                              "[%default]" )
+
     parser.add_option("--extension_upstream", dest = "extension_upstream", type = "int",
                        help = "extension upstream from the first exon in bp"
                               "[%default]" )
@@ -233,6 +241,7 @@ def main( argv = None ):
         sort = [],
         reporter = "transcript",
         resolution_cds = 1000,
+        resolution_introns = 1000,
         resolution_upstream_utr = 1000,
         resolution_downstream_utr = 1000,
         resolution_upstream = 1000,
@@ -329,7 +338,15 @@ def main( argv = None ):
                                                            options.extension_upstream,
                                                            options.extension_downstream,
                                                            options.scale_flanks ) )
-
+        elif method == "geneprofilewithintrons":
+            counters.append( _bam2geneprofile.GeneCounterWithIntrons( range_counter, 
+                                                           options.resolution_upstream,
+                                                           options.resolution_cds,
+                                                           options.resolution_introns,
+                                                           options.resolution_downstream,
+                                                           options.extension_upstream,
+                                                           options.extension_downstream,
+                                                           options.scale_flanks ) )
         elif method == "tssprofile":
             counters.append( _bam2geneprofile.TSSCounter( range_counter, 
                                                            options.extension_outward,
@@ -380,7 +397,7 @@ def main( argv = None ):
         
         for method, counter in zip(options.methods, counters):
 
-            if method in ("geneprofile", "utrprofile", "intervalprofile" ):
+            if method in ("geneprofile", "geneprofilewithintrons", "utrprofile", "intervalprofile" ):
 
                 plt.figure()
                 plt.subplots_adjust( wspace = 0.05)
