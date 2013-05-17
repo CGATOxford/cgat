@@ -71,8 +71,8 @@ values:
    describe important parameters
 
 The sphinxreport report requires a :file:`conf.py` and :file:`sphinxreport.ini` file 
-(see :ref:`PipelineDocumenation`). To start with, use the files supplied with the
-:ref:`Example` data.
+(see :ref:`PipelineReporting`). To start with, use the files supplied with the
+Example_ data.
 
 
 Input
@@ -81,8 +81,8 @@ Input
 Reads
 ++++++
 
-Input are :file:`.export.txt.gz`-formatted files from Illumina, :term:`fastq.gz` files,
-or :term:`csfasta.gz` files.
+Input are :file:`.export.txt.gz`-formatted files from Illumina, :file:`fastq.gz` files,
+or :file:`csfasta.gz` files.
 
 
 The files should be labeled in the following way::

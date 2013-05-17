@@ -38,12 +38,6 @@ SVGdraw.py - generate SVG drawings
 
 This module has been copied from 3rd party resources.
 
-Code
-----
-
-'''
-__doc__="""Use SVGdraw to generate your SVGdrawings.
-
 SVGdraw uses an object model drawing and a method toXML to create SVG graphics
 by using easy to use classes and methods usualy you start by creating a drawing eg
 
@@ -67,7 +61,8 @@ this results in the svg source of the drawing, which consists of a circle
 on a white background. Its as easy as that;)
 This module was created using the SVG specification of www.w3c.org and the
 O'Reilly (www.oreilly.com) python books as information sources. A svg viewer
-is available from www.adobe.com"""
+is available from www.adobe.com
+'''
 
 __version__="1.0"
 

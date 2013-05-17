@@ -1,7 +1,4 @@
-.. Andreas' Python Tools documentation master file, created by
-   sphinx-quickstart on Wed Sep 16 16:32:15 2009.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+.. _modules:
 
 Modules
 =======
@@ -193,11 +190,8 @@ Modules not sorted into categories.
    modules/Expression.rst 
    modules/Fastq.rst 
    modules/GDLDraw.rst 
-   modules/GemErr.rst 
-   modules/GemReads.rst 
    modules/Glam2.rst 
    modules/Glam2Scan.rst
-   modules/Hypergeometric.rst
    modules/IGV.rst
    modules/IndexedGenome.rst
    modules/Logfile.rst

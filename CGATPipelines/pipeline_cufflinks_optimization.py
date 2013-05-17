@@ -78,8 +78,8 @@ Configuration
 The pipeline requires a configured :file:`pipeline.ini` file. 
 
 The sphinxreport report requires a :file:`conf.py` and :file:`sphinxreport.ini` file 
-(see :ref:`PipelineDocumenation`). To start with, use the files supplied with the
-:ref:`Example` data.
+(see :ref:`PipelineReporting`). To start with, use the files supplied with the
+Example_ data.
 
 Input
 -----
@@ -112,6 +112,20 @@ path:
 +--------------------+-------------------+------------------------------------------------+
 |cufflinks_          |>=1.3.0            |transcription levels                            |
 +--------------------+-------------------+------------------------------------------------+
+
+Example
+=======
+
+Example data is available at http://www.cgat.org/~andreas/sample_data/pipeline_cufflinks_optimization.tgz.
+To run the example, simply unpack and untar::
+
+   wget http://www.cgat.org/~andreas/sample_data/pipeline_cufflinks_optimization.tgz
+   tar -xvzf pipeline_cufflinks_optimization.tgz
+   cd pipeline_cufflinks_optimization.dir
+   python <srcdir>/pipeline_cufflinks_optimization.py make full
+
+.. note:: 
+   For the pipeline to run, install the :doc:`pipeline_annotations` as well.
 
 Glossary
 ========

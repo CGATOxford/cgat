@@ -32,15 +32,15 @@ Input (required):
    track name, for example heart.gtf, kidney.gtf, sample1.gtf, ...
 
 genome.fasta, genome.idx
-   an indexed genome :term:`PARAM_GENOME`. See also index_fasta.py.
+   an indexed genome ``PARAM_GENOME``. See also index_fasta.py.
    
 ensembl.gtf
    a gtf file with a reference sequence set: the default is ``ensembl``, 
-   but can be changed in :term:`PARAM_MASTER_SET_GENES`
+   but can be changed in ``PARAM_MASTER_SET_GENES``.
 
 annotations.gff
    a gff file with annotated genomic regions. See 
-   :term:`PARAM_GENOME_REGIONS`. Use gtf2gff.py to create this file.
+   ``PARAM_GENOME_REGIONS``. Use gtf2gff.py to create this file.
 
 The pipeline includes additional information if it is present:
 
@@ -66,36 +66,41 @@ The pipeline includes additional information if it is present:
 %.readgtf
    mapped locations of reads after filtering.
 
-:term:`PARAM_FILE_REPEATS_RATES`
-   gff formatted file of ancesctral repeats.
-   The score field contains the rate (see Makefile.ancestral_repeats)
+.. glossary::
 
-:term:`PARAM_FILE_REPEATS`
-   gff file with repeats in genome. These are used for masking in coding 
-   potential predictions. 
+   PARAM_FILE_REPEATS_RATES
+      gff formatted file of ancesctral repeats.
+      The score field contains the rate (see Makefile.ancestral_repeats)
 
-:term:`PARAM_FILE_REPEATS_GC`
-   gff formatted file of ancesctral repeats.
-   The score field contains the G+C content (see Makefile.ancestral_repeats)
+   PARAM_FILE_REPEATS
+      gff file with repeats in genome. These are used for masking in coding 
+      potential predictions. 
 
-:term:`PARAM_FILE_ALIGNMENTS`
-   psl formatted file with genomic alignments
-   between this species in query and another at appropriate evolutionary 
-   distance in target. 
-   
+   PARAM_FILE_REPEATS_GC
+      gff formatted file of ancesctral repeats.
+      The score field contains the G+C content (see Makefile.ancestral_repeats)
 
-:term:`PARAM_FILENAME_GO` and :term:`PARAM_FILENAME_GOSLIM`
-   GO annotations for genes in the reference set. Example format is::
+   PARAM_FILE_ALIGNMENTS
+      psl formatted file with genomic alignments
+      between this species in query and another at appropriate evolutionary 
+      distance in target. 
 
-       cell_location   ENSPPYG00000000676      GO:0016020      membrane        NA
 
-:term:`PARAM_FILENAME_TERRITORIES`
-   gene territories. GTF formatted file, an example entry would be::
+   PARAM_FILENAME_GO (PARAM_FILENAME_GOSLIM)
+      GO annotations for genes in the reference set. Example format is::
 
-       chr1    protein_coding  exon    3979975 4199559 .       -       .       transcript_id "ENSPPYG00000000050"; gene_id "ENSPPYG00000000050";#
- 
-:term:`PARAM_CPC_UNIREF`
-   uniref database to use for coding potential predictions.
+	  cell_location   ENSPPYG00000000676      GO:0016020      membrane        NA
+
+   PARAM_FILENAME_TERRITORIES
+      gene territories. GTF formatted file, an example entry would be::
+
+	  chr1    protein_coding  exon    3979975 4199559 .       -       .       transcript_id "ENSPPYG00000000050"; gene_id "ENSPPYG00000000050";#
+
+   PARAM_CPC_UNIREF
+      uniref database to use for coding potential predictions.
+
+   PARAM_DATABASE
+      database name
 
 Output from the mapTranscripts454 project can be imported with a single command::
 
@@ -151,8 +156,8 @@ GO analysis
 
 GO analysis will compute the relative enrichment/depletion gene sets.
 
-Requires :term:`PARAM_FILENAME_TERRITORIES`, :term:`PARAM_FILENAME_GO`
-and :term:`PARAM_FILENAME_GOSLIM` to be set.
+Requires ``PARAM_FILENAME_TERRITORIES``, ``PARAM_FILENAME_GO``
+and ``PARAM_FILENAME_GOSLIM`` to be set.
 
 There are two counting methods. The first method (``go``) assigns GO terms associated with 
 the reference gene set to TLs and counts these. The second method (``territorygo``) assigns TLs to genes
@@ -242,7 +247,7 @@ territories.workspace
    workspace of territories
 
 alignable.workspace
-   only segments that can be aligned to a reference genome (see :term:`...`).
+   only segments that can be aligned to a reference genome.
 
 There is a convenience target::
 
@@ -291,7 +296,7 @@ that will build all available annotations.
 Usage
 +++++
 
-In order to perform :term:`Annotator` analyses, you run a make target::
+In order to perform ``Annotator`` analyses, you run a make target::
 
    make <track>:<slice>:<subset>:<workspace>:<workspace2>_<annotations>.annotators
 

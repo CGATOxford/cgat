@@ -67,8 +67,8 @@ The pipeline performs the following tasks:
          * combined gene set
          * novel gene set
       * different methods
-         * :term:`DESeg` (tag counting)
-         * :term:`cuffdiff``
+         * :term:`DESeq` (tag counting)
+         * :term:`cuffdiff`
       * summary statistics on differential expression
 
 Mapping strategy
@@ -269,8 +269,8 @@ Configuration
 The pipeline requires a configured :file:`pipeline.ini` file. 
 
 The sphinxreport report requires a :file:`conf.py` and :file:`sphinxreport.ini` file 
-(see :ref:`PipelineDocumenation`). To start with, use the files supplied with the
-:ref:`Example` data.
+(see :ref:`PipelineReporting`). To start with, use the files supplied with the
+Example_ data.
 
 Input
 -----
@@ -399,15 +399,20 @@ Glossary
    tophat
       tophat_ - a read mapper to detect splice-junctions
 
-   bowtie
-      bowtie_ - a read mapper
+   deseq
+      deseq_ - differential expression analysis
 
+   cuffdiff
+      find differentially expressed transcripts. Part of cufflinks_.
 
-   
+   cuffcompare
+      compare transcriptomes. Part of cufflinks_.
+
 .. _cufflinks: http://cufflinks.cbcb.umd.edu/index.html
 .. _tophat: http://tophat.cbcb.umd.edu/
 .. _bowtie: http://bowtie-bio.sourceforge.net/index.shtml
 .. _bamstats: http://www.agf.liv.ac.uk/454/sabkea/samStats_13-01-2011
+.. _deseq: http://www-huber.embl.de/users/anders/DESeq/
 
 Code
 ====
