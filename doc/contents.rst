@@ -41,6 +41,7 @@ Most of these scripts are written in python. The tools are grouped by topic:
 .. toctree::
    :maxdepth: 2
 
+   test.rst
    scripts.rst
    modules.rst
 

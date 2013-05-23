@@ -821,3 +821,18 @@ collection for convenience.
 * Iterators.py
 
 
+Contributors
+------------
+
+Andreas Heger
+Antonio Berlanga-Taylor
+Martin Dienstbier
+Nicholas Ilott
+Jethro Johnson
+Katherine Fawcett
+Stephen Sansom
+David Sims
+Ian Sudbery
+Hu Xiaoming
+
+

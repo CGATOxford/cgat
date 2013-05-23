@@ -35,70 +35,89 @@ Purpose
 This script takes a bam file as input and computes a few metrics:
 
 
-+------------------------+----------------------------------------------------------------+
-|*Category*              |*Content*                                                       |
-+------------------------+----------------------------------------------------------------+
-|total                   |total number of alignments in bam file                          |
-+------------------------+----------------------------------------------------------------+
-|alignments_mapped       |alignments mapped to a chromosome (bam flag)                    |
-+------------------------+----------------------------------------------------------------+
-|alignments_unmapped     |alignments unmapped (bam flag)                                  |
-+------------------------+----------------------------------------------------------------+
-|qc_fail                 |alignments failing QC (bam flag)                                |
-+------------------------+----------------------------------------------------------------+
-|mate_unmapped           |alignments in which the mate is unmapped (bam flag)             |
-+------------------------+----------------------------------------------------------------+
-|reverse                 |alignments in which read maps to reverse strand (bam flag)      |
-|                        |                                                                |
-+------------------------+----------------------------------------------------------------+
-|mate_reverse            |alignments in which mate maps to reverse strand (bam flag)      |
-+------------------------+----------------------------------------------------------------+
-|proper_pair             |alignments in which both pairs have been mapped properly ly     |
-|                        |(according to the mapper) (bam flag)                            |
-+------------------------+----------------------------------------------------------------+
-|read1                   |alignments    for 1st read of pair (bam flag)                   |
-+------------------------+----------------------------------------------------------------+
-|paired                  |alignments of reads that are paired (bam flag)                  |
-+------------------------+----------------------------------------------------------------+
-|duplicate               |read is PCR or optical duplicate (bam flag)                     |
-+------------------------+----------------------------------------------------------------+
-|read2                   |alignment is for 2nd read of pair (bam flag)                    |
-+------------------------+----------------------------------------------------------------+
-|secondary               |alignment is not primary alignment                              |
-+------------------------+----------------------------------------------------------------+
-|alignments_rna          |          alignments mapping to regions of repetitive RNA       |
-+------------------------+----------------------------------------------------------------+
-|alignments_no_rna       |alignments mapping not to regions of repetitive RNA (if --remove|
-|                        |-rna has been set, otherwise equal to mapped)                   |
-+------------------------+----------------------------------------------------------------+
-|alignments_duplicates   |number of alignments mapping to the same location               |
-+------------------------+----------------------------------------------------------------+
-|alignments_unique       |number of alignments mapping to unique locations                |
-+------------------------+----------------------------------------------------------------+
-|reads_total             |number of reads in file. Either given via --input-reads or deduc|
-|                        |ed as the sum of mappend and unmapped reads                     |
-+------------------------+----------------------------------------------------------------+
-|reads_mapped            |number of reads mapping in file. Derived from the total number o|
-|                        |f alignments and removing counts for multiple matches. Requires |
-|                        |the NH flag to be set correctly.                                |
-+------------------------+----------------------------------------------------------------+
-|reads_unmapped          |number of reads unmapped in file. Assumes that there is only one|
-|                        | entry per unmapped read.                                       |
-+------------------------+----------------------------------------------------------------+
-|reads_missing           |number of reads missing, if number of reads given by --input-rea|
-|                        |ds. Otherwise 0.                                                |
-+------------------------+----------------------------------------------------------------+
-|reads_norna             |reads not mapping to repetetive RNA regions.                    |
-+------------------------+----------------------------------------------------------------+
-|pairs_total             |number of total pairs - this is the number of reads_total divide|
-|                        |d by two. If there were no pairs, pairs_total will be 0.        |
-+------------------------+----------------------------------------------------------------+
-|pairs_mapped            |number of mapped pairs - this is the same as the number of prope|
-|                        |r pairs.                                                        |
-+------------------------+----------------------------------------------------------------+
++------------------------+------------------------------------------+
+|*Category*              |*Content*                                 |
++------------------------+------------------------------------------+
+|total                   |total number of alignments in bam file    |
++------------------------+------------------------------------------+
+|alignments_mapped       |alignments mapped to a chromosome (bam    |
+|                        |flag)                                     |
++------------------------+------------------------------------------+
+|alignments_unmapped     |alignments unmapped (bam flag)            |
++------------------------+------------------------------------------+
+|qc_fail                 |alignments failing QC (bam flag)          |
++------------------------+------------------------------------------+
+|mate_unmapped           |alignments in which the mate is unmapped  |
+|                        |(bam flag)                                |
++------------------------+------------------------------------------+
+|reverse                 |alignments in which read maps to reverse  |
+|                        |strand (bam flag)                         |
++------------------------+------------------------------------------+
+|mate_reverse            |alignments in which mate maps to reverse  |
+|                        |strand (bam flag)                         |
++------------------------+------------------------------------------+
+|proper_pair             |alignments in which both pairs have been  |
+|                        |mapped properly ly (according to the      |
+|                        |mapper) (bam flag)                        |
++------------------------+------------------------------------------+
+|read1                   |alignments for 1st read of pair (bam flag)|
++------------------------+------------------------------------------+
+|paired                  |alignments of reads that are paired (bam  |
+|                        |flag)                                     |
++------------------------+------------------------------------------+
+|duplicate               |read is PCR or optical duplicate (bam     |
+|                        |flag)                                     |
++------------------------+------------------------------------------+
+|read2                   |alignment is for 2nd read of pair (bam    |
+|                        |flag)                                     |
++------------------------+------------------------------------------+
+|secondary               |alignment is not primary alignment        |
++------------------------+------------------------------------------+
+|alignments_rna          |          alignments mapping to regions of|
+|                        |repetitive RNA                            |
++------------------------+------------------------------------------+
+|alignments_no_rna       |alignments mapping not to regions of      |
+|                        |repetitive RNA (if --remove -rna has been |
+|                        |set, otherwise equal to mapped)           |
++------------------------+------------------------------------------+
+|alignments_duplicates   |number of alignments mapping to the same  |
+|                        |location                                  |
++------------------------+------------------------------------------+
+|alignments_unique       |number of alignments mapping to unique    |
+|                        |locations                                 |
++------------------------+------------------------------------------+
+|reads_total             |number of reads in file. Either given via |
+|                        |--input-reads or deduc ed as the sum of   |
+|                        |mappend and unmapped reads                |
++------------------------+------------------------------------------+
+|reads_mapped            |number of reads mapping in file. Derived  |
+|                        |from the total number o f alignments and  |
+|                        |removing counts for multiple              |
+|                        |matches. Requires the NH flag to be set   |
+|                        |correctly.                                |
++------------------------+------------------------------------------+
+|reads_unmapped          |number of reads unmapped in file. Assumes |
+|                        |that there is only one                    |
+|                        | entry per unmapped read.                 |
++------------------------+------------------------------------------+
+|reads_missing           |number of reads missing, if number of     |
+|                        |reads given by --input-rea ds. Otherwise  |
+|                        |0.                                        |
++------------------------+------------------------------------------+
+|reads_norna             |reads not mapping to repetetive RNA       |
+|                        |regions.                                  |
++------------------------+------------------------------------------+
+|pairs_total             |number of total pairs - this is the number|
+|                        |of reads_total divide d by two. If there  |
+|                        |were no pairs, pairs_total will be 0.     |
++------------------------+------------------------------------------+
+|pairs_mapped            |number of mapped pairs - this is the same |
+|                        |as the number of prope r pairs.           |
++------------------------+------------------------------------------+
 
-Additionally, the script outputs histograms for the following tags and scores. These 
-histograms are only computed for alignments not within regions of repetetive RNA.
+Additionally, the script outputs histograms for the following tags and
+scores. These histograms are only computed for alignments not within
+regions of repetetive RNA.
 
 * NM: number of mismatches in alignments.
 * NH: number of hits of reads.
@@ -120,19 +139,23 @@ for command line help.
 Documentation
 -------------
 
-Reads are not counted via read name, but making use of NH and HI flags when present.
-To recap, NH is the number of reported alignments that contain the query in the current record, 
-while HI is the hit index and ranges from 0 to NH-1. 
+Reads are not counted via read name, but making use of NH and HI flags
+when present.  To recap, NH is the number of reported alignments that
+contain the query in the current record, while HI is the hit index and
+ranges from 0 to NH-1.
 
-Unfortunately, not all aligners follow this convention. For example, gsnap seems to set
-NH to the number of reportable alignments, while the actual number of reported alignments in the file
-is less. Thus, if the HI flag is present, the maximum HI is used to correct the NH flag. The
-assumption is, that the same reporting threshold has been used for all alignments.
+Unfortunately, not all aligners follow this convention. For example,
+gsnap seems to set NH to the number of reportable alignments, while
+the actual number of reported alignments in the file is less. Thus, if
+the HI flag is present, the maximum HI is used to correct the NH
+flag. The assumption is, that the same reporting threshold has been
+used for all alignments.
 
 If no NH flag is present, it is assumed that all reads have only been reported once.
 
-Multi-matching counts after filtering are really guesswork. Basically, the assumption is
-that filtering is consistent and will tend to remove all alignments of a query.
+Multi-matching counts after filtering are really guesswork. Basically,
+the assumption is that filtering is consistent and will tend to remove
+all alignments of a query.
 
 Code
 ----

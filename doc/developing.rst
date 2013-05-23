@@ -38,5 +38,7 @@ following are true:
    :file:`doc/scripts.rst` and a file
    :file:`doc/scripts/newscript.py`.
 
-   
+8. The script has at least one test case added to :file:`tests` - and
+   the test works.
+	
 

@@ -64,7 +64,13 @@ possible. The relevant documents are:
 
    * `PEP0008 - Style Guide for Python Code <http://www.python.org/dev/peps/pep-0008/>`_
 
-   * `PEP0257 - Docstring Conventions <http://www.python.org/dev/peps/pep-0257/>`_
+   * `PEP0257 - Docstring Conventions
+     <http://www.python.org/dev/peps/pep-0257/>`_
+
+For documenting CGAT code, we follow the conventions for documenting
+python code:
+
+   * `Python Developer's guide <http://docs.python.org/devguide/documenting.html>`_
 
 In terms of writing scripts, we follow the following conventions:
 
