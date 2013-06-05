@@ -36,7 +36,13 @@ extensions = ['sphinx.ext.autodoc', 'sphinx.ext.todo', 'sphinx.ext.coverage', 's
 	      'SphinxReport.report_directive', 
 	      'SphinxReport.roles',
 	      'sphinx.ext.inheritance_diagram',
-	      'sphinxcontrib.programoutput' ]
+	      'sphinxcontrib.programoutput',
+	      'sphinx.ext.intersphinx' ]
+
+intersphinx_mapping = {'python': ('http://docs.python.org/2.7', None)}
+
+# order of autodocumented functions
+autodoc_member_order="bysource"
 
 # autoclass configuration - use both class and __init__ method to
 # document methods.
