@@ -83,7 +83,7 @@ def createGOFromENSEMBL( infile, outfile ):
 
     job_options = "-l mem_free=5G"
     statement = '''
-        python %(scriptsdir)s/GO.py 
+        python %(scriptsdir)s/runGO.py 
                      --filename-dump=%(outfile)s 
                      --host=%(go_host)s 
                      --user=anonymous 
@@ -283,7 +283,7 @@ def createGOSlimFromENSEMBL( infile, outfile ):
     job_options = "-l mem_free=5G"
     statement = '''
         zcat < %(infile)s
-        | python %(scriptsdir)s/GO.py 
+        | python %(scriptsdir)s/runGO.py 
                 --go2goslim 
                 --filename-ontology=go_ontology.obo 
                 --slims=%(outfile)s.map 
@@ -314,7 +314,7 @@ def runGOFromFiles( outfile,
     if *bg_file* is None, the all genes with GO annotations
     will be used.
 
-    If *gene2name* is given, it will be supplied to the GO.py script.
+    If *gene2name* is given, it will be supplied to the runGO.py script.
 
     If *pairs* is set, each category for each pair of gene sets will be tested for 
     differential enrichment.
@@ -347,7 +347,7 @@ def runGOFromFiles( outfile,
 
     options = " ".join( options )
     statement = '''
-    python %(scriptsdir)s/GO.py 
+    python %(scriptsdir)s/runGO.py 
         --filename-input=%(go_file)s 
         --genes=%(fg_file)s 
         --output-filename-pattern='%(outdir)s/%%(set)s.%%(go)s.%%(section)s' 

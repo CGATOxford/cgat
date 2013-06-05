@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-GO.py - compute GO enrichment from gene lists
+runGO.py - compute GO enrichment from gene lists
 =============================================
 
 :Author: Andreas Heger
@@ -32,7 +32,7 @@ GO.py - compute GO enrichment from gene lists
 Usage
 -----
 
-The script ``GO.py`` will test for enrichment or depletion 
+The script ``runGO.py`` will test for enrichment or depletion 
 of GO categories within a gene list.
 
 The script uses a hypergeometric test to check if a particular
@@ -61,7 +61,7 @@ is to down download GO assignments from the ENSEMBL database. The command
 below will download go assignments for the human gene set
 and save it in the file :file:`gene2go.data`::
 
-   python GO.py 
+   python runGO.py 
       --filename-dump=gene2go.data
       --host=ensembldb.ensembl.org
       --user=anonymous 
@@ -75,7 +75,7 @@ The sequence of commands is::
     wget http://www.geneontology.org/GO_slims/goslim_goa.obo
     wget http://www.geneontology.org/ontology/gene_ontology.obo
     map2slim -outmap go2goslim.map goslim_goa.obo gene_ontology.obo
-    python GO.py 
+    python runGO.py 
                 --go2goslim 
                 --filename-ontology=gene_ontology.obo 
                 --slims=go2goslim.map 
@@ -139,7 +139,7 @@ Running the GO analysis
 
 The command below runs a GO analysis, computing an FDR using 10.000 samples::
 
-    python GO.py 
+    python runGO.py 
         --filename-input=gene2go.data
         --genes=foreground
         --background=background 
@@ -1670,7 +1670,7 @@ def pairwiseGOEnrichment( results_per_genelist, labels, test_ontology, go2info, 
 ##---------------------------------------------------------------------------    
 def main():
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: GO.py 2883 2010-04-07 08:46:22Z andreas $", usage = globals()["__doc__"])
+    parser = optparse.OptionParser( version = "%prog version: $Id: runGO.py 2883 2010-04-07 08:46:22Z andreas $", usage = globals()["__doc__"])
 
     dbhandle = Database.Database()
     

@@ -32,7 +32,7 @@ barplotGo.py
 Purpose
 -------
 
-This script takes the output from GO.py (section = results) and produces a barplot of the 
+This script takes the output from runGO.py (section = results) and produces a barplot of the 
 enrichment results. The plotting is performed using Rpy.
 
 Usage

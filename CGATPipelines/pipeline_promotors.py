@@ -514,7 +514,7 @@ def loadGeneSummary( infile, outfile ):
 @merge( loadGeneSummary, PARAMS["interface_promotor_ontology"] )
 def buildGeneOntology( infile, outfile ):
     '''create an output file akin to GO ontology files to be
-    used with GO.py
+    used with runGO.py
     '''
     
     table = P.toTable( infile )
