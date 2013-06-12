@@ -738,10 +738,12 @@ def buildMaskGtf(infile, outfile):
     This takes ensembl annotations (geneset_all.gtf.gz) and writes out all entries that 
     have a 'source' match to "rRNA" or 'contig' match to "chrM". for use with cufflinks
     '''
+    E.warn( "geneset_mask.gtf contains gtf entries where source field contains 'rRNA'"
+            " or where contig field matches 'chrM', 'chrMT', 'M', or 'MT'" )
     geneset = IOTools.openFile(infile)
     outf = open(outfile, "wb")
     for entry in GTF.iterator(geneset):
-        if re.findall("rRNA", entry.source) or re.findall("chrM", entry.contig):
+        if re.search("rRNA", entry.source) or re.search("chrM|chrMT|^MT$|^M$", entry.contig):
             outf.write("\t".join((map(str,[entry.contig
                               , entry.source
                               , entry.feature
