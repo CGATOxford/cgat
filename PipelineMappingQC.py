@@ -181,6 +181,26 @@ def buildPicardDuplicationStats( infile, outfile ):
                  '''
     P.run()
 
+def buildPicardDuplicateStats( infile, outfile ):
+    '''Record duplicate metrics using Picard and keep the dedupped .bam file'''
+
+    to_cluster = True
+    job_options = getPicardOptions()
+
+    if getNumReadsFromBAMFile(infile) == 0:
+        E.warn( "no reads in %s - no metrics" % infile )
+        P.touch( outfile )
+        return
+
+    statement = '''MarkDuplicates
+                                   INPUT=%(infile)s 
+                                   ASSUME_SORTED=true 
+                                   METRICS_FILE=%(outfile)s.duplicate_metrics
+                                   OUTPUT=%(outfile)s 
+                                   VALIDATION_STRINGENCY=SILENT 
+                 '''
+    P.run()
+
 def buildPicardGCStats( infile, outfile, genome_file ):
     '''Gather BAM file GC bias stats using Picard '''
     to_cluster = True
