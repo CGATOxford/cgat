@@ -73,6 +73,8 @@ import Experiment as E
 import csv, CSV
 import sqlite3
 
+csv.field_size_limit(sys.maxint)
+
 def executewait( dbhandle, statement, error, retry = False, wait=5):
     '''execute sql statement.
 
