@@ -1,7 +1,4 @@
 
-:mod:`GFF`
-=========================
-
 .. automodule:: GFF
    :members:
    :inherited-members:

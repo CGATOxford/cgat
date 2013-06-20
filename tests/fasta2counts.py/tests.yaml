@@ -1,0 +1,6 @@
+basic_test:
+    stdin: null 
+    outputs: [stdout]
+    references: [test1.tsv]
+    options: --genome-file=%DIR%/small_genome
+

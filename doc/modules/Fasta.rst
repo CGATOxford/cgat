@@ -1,7 +1,4 @@
 
-:mod:`Fasta`
-=========================
-
 .. automodule:: Fasta
    :members:
    :inherited-members:

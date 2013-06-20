@@ -16,7 +16,10 @@ import sys, os
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-sys.path.extend( [os.path.abspath('..'), os.path.abspath('python') ] )
+sys.path.extend( [os.path.abspath('../CGAT'), 
+	          os.path.abspath('../scripts'),
+		  os.path.abspath('../CGATPipelines'),
+                  os.path.abspath('python') ] )
 
 # show errors
 sphinxreport_show_errors=True
@@ -29,7 +32,17 @@ data_dir = os.path.abspath('..')
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.todo', 'sphinx.ext.coverage', 'sphinx.ext.pngmath', 'sphinx.ext.ifconfig',
-              'SphinxReport.only_directives', 'SphinxReport.report_directive', 'sphinx.ext.inheritance_diagram' ]
+              'SphinxReport.only_directives', 
+	      'SphinxReport.report_directive', 
+	      'SphinxReport.roles',
+	      'sphinx.ext.inheritance_diagram',
+	      'sphinxcontrib.programoutput',
+	      'sphinx.ext.intersphinx' ]
+
+intersphinx_mapping = {'python': ('http://docs.python.org/2.7', None)}
+
+# order of autodocumented functions
+autodoc_member_order="bysource"
 
 # autoclass configuration - use both class and __init__ method to
 # document methods.
@@ -78,7 +91,7 @@ release = '0.1'
 
 # List of directories, relative to source directory, that shouldn't be searched
 # for source files.
-exclude_trees = ['_build']
+exclude_trees = ['_build', 'obsolete']
 
 # The reST default role (used for this markup: `text`) to use for all documents.
 #default_role = None
@@ -113,7 +126,7 @@ html_theme = 'cgat'
 #html_theme_options = {}
 
 # Add any paths that contain custom themes here, relative to this directory.
-html_theme_path=[ "../pipeline_docs/themes" ]
+html_theme_path=[ "../CGATPipelines/pipeline_docs/themes" ]
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".

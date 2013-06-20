@@ -1,0 +1,2 @@
+The Sphinx (http://sphinx.pocoo.org)
+and matplotlib (http://matplotlib.sourceforge.net) developers.

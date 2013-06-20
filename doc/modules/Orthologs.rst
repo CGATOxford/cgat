@@ -1,7 +1,4 @@
 
-:mod:`Orthologs`
-=========================
-
 .. automodule:: Orthologs
    :members:
    :inherited-members:

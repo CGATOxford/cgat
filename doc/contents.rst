@@ -13,57 +13,68 @@ written before and during CGAT.
 .. note::
    The documentation is under construction.
 
-.. _CGATPipelines:
+Overview
+========
 
-Pipelines
-=========
+The CGAT code collection has grown out of the work in comparative genomics
+by the Ponting group in the last decade. Now, CGAT has added
+functionality to do next-generation sequencing analysis. 
 
-CGAT has written a few :term:`production pipelines`. These pipelines perform
-basic tasks, are fairly generic and might be of wider interest. Below is a 
-complete list:
- 
-.. toctree::
-   :maxdepth: 1	
+The collection has three major components, these are directories in 
+the package.
 
-   scripts/pipeline_annotations.rst   
-   scripts/pipeline_ancestral_repeats.rst
-   scripts/pipeline_chains.rst
-   scripts/pipeline_chipseq.rst
-   scripts/pipeline_liftover.rst
-   scripts/pipeline_readqc.rst
-   scripts/pipeline_rnaseq.rst
-   scripts/pipeline_variants.rst
-   scripts/pipeline_benchmark_rnaseqmappers.rst
-   scripts/pipeline_testing.rst
-   scripts/pipeline_mapping.rst
-   scripts/pipeline_rnaseqtranscripts.rst
-   scripts/pipeline_transcriptome.rst
-   scripts/pipeline_rnaseqdiffexpression.rst
-   scripts/pipeline_peakcalling.rst
-   scripts/pipeline_rnaseqlncrna.rst   
+* :ref:`Scripts`
+  A collection of useful scripts for genomics and NGS analysis
 
-Help on installing, using and building pipelines is below:
-
-.. toctree::
-   :maxdepth: 2
-
-   setup.rst
-   pipelines.rst
-   BuildingPipelines.rst
-   PipelinesBackground.rst   
-   MakePipelines.rst   
+* :ref:`Modules`
+  A collection of modules with utility functions for genomics and NGS analysis.
+  
+* :ref:`Pipelines`
+  A collection of pipelines for common workflows in genomics and NGS analysis.
 
 Scripts and modules
 ===================
 
-The pipelines make use of a large number of scripts, tools and modules. Most
-of these are written in python. The tools are grouped by topic:
+The CGAT code collection is as set of tools and modules for genomics.
+Most of these scripts are written in python. The tools are grouped by topic:
 
 .. toctree::
    :maxdepth: 2
 
+   test.rst
    scripts.rst
    modules.rst
+
+.. _cgatpipelines:
+
+CGAT Pipelines
+==============
+
+CGAT pipelines perform basic tasks, are fairly generic and might be of wider interest. 
+
+.. toctree::
+   :maxdepth: 2
+
+   Pipelines.rst
+
+Developer's guide
+=================
+
+.. toctree::
+   :maxdepth: 2
+
+   developing.rst
+   testing.rst
+   styleguide.rst
+   release.rst
+
+Glossary
+========
+
+.. toctree::
+   :maxdepth: 2
+
+   glossary.rst   
 
 Disclaimer
 ==========
@@ -80,5 +91,3 @@ Indices and tables
 * :ref:`search`
 
 .. _alignlib: http://wwwfgu.anat.ox.ac.uk/~andreas/alignlib
-.. _ncl: http://wwwfgu.anat.ox.ac.uk/~andreas/documentation/ncl/contents.html
-.. _fastgtf: http://wwwfgu.anat.ox.ac.uk/~andreas/documentation/fastgtf/contents.html

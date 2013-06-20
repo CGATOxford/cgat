@@ -1,7 +1,4 @@
 
-:mod:`ProfileLibrary`
-=========================
-
 .. automodule:: ProfileLibrary
    :members:
    :inherited-members:

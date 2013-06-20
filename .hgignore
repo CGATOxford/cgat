@@ -1,5 +1,7 @@
 syntax: glob
 
+CGAT.egg-info/*
+build/*
 _static/*
 _build/*
 _cache/*
@@ -12,4 +14,5 @@ conf.py
 *.orig
 *.pyc
 *~
-
+*.so
+distribute-*

@@ -1,7 +1,4 @@
 
-:mod:`WrapperSlr`
-=========================
-
 .. automodule:: WrapperSlr
    :members:
    :inherited-members:
