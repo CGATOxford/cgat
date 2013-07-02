@@ -1,7 +1,4 @@
 
-:mod:`AlignedPairs`
-=========================
-
 .. automodule:: AlignedPairs
    :members:
    :inherited-members:

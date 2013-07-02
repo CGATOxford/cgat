@@ -1,5 +1,5 @@
 
-.. automodule:: WrapperMEDIPS.py
+.. automodule:: WrapperMEDIPS
    :members:
    :inherited-members:
    :show-inheritance:

@@ -1,5 +1,5 @@
 
-.. automodule:: softmask.py
-   :members:
-   :inherited-members:
-   :show-inheritance:
+.. automodule:: softmask
+
+.. program-output:: python ../scripts/softmask.py --help
+

@@ -1,7 +1,4 @@
 
-:mod:`Iterators`
-=========================
-
 .. automodule:: Iterators
    :members:
    :inherited-members:

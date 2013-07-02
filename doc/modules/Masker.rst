@@ -1,7 +1,4 @@
 
-:mod:`Masker`
-=========================
-
 .. automodule:: Masker
    :members:
    :inherited-members:

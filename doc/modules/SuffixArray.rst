@@ -1,7 +1,4 @@
 
-:mod:`SuffixArray`
-=========================
-
 .. automodule:: SuffixArray
    :members:
    :inherited-members:

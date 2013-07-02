@@ -1,0 +1,19 @@
+Nested contained lists are a way to index segment data. See
+Alekseyenko & Lee (2007):
+
+(http://bioinformatics.oxfordjournals.org/cgi/content/full/23/11/1386)
+
+The following code was taken from the author's implemetation
+in pygr (http://code.google.com/p/pygr) and modified. The
+modifications include:
+
+1. remove target coordinates, only target_id is kept.
+
+pygr is available under the New BSD license.
+
+Note:
+
+I had trouble packaging this, the .pxd file was not found through setup.py, though
+cythoning the file itself worked fine. As a temporary fix, I added all declarations
+of the .pxd file to the .pyx file and renamed the former to _cnestedlist.pxd
+

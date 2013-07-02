@@ -1,7 +1,4 @@
 
-:mod:`Regions`
-=========================
-
 .. automodule:: Regions
    :members:
    :inherited-members:

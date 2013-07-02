@@ -1,7 +1,4 @@
 
-:mod:`Mali`
-=========================
-
 .. automodule:: Mali
    :members:
    :inherited-members:

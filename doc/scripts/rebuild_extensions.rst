@@ -1,5 +1,5 @@
 
-.. automodule:: rebuild_extensions.py
-   :members:
-   :inherited-members:
-   :show-inheritance:
+.. automodule:: rebuild_extensions
+
+.. program-output:: python ../scripts/rebuild_extensions.py --help
+

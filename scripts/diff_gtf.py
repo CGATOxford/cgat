@@ -1,0 +1,314 @@
+################################################################################
+#   Gene prediction pipeline 
+#
+#   $Id: diff_gtf.py 2781 2009-09-10 11:33:14Z andreas $
+#
+#   Copyright (C) 2004 Andreas Heger
+#
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU General Public License
+#   as published by the Free Software Foundation; either version 2
+#   of the License, or (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#################################################################################
+'''
+diff_gtf.py - compare two gtf files
+===================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+This script compares two gtf files.
+
+The script outputs the following symbols::
+
+  >: an entry unique to the second file
+  <: an entry unique to the first file
+
+  if --write-equivalent is set, then it also outputs overlapping entries:
+
+  ~: partially overlapping entries
+  /: an entry that is split in the first file (split_right)
+  \: an entry that is split in the second file (split_left)
+  =: identical entries
+  |: half-identical entries, only one boundary is matching
+
+
+Usage
+-----
+
+Example::
+
+   python <script_name>.py --help
+
+Type::
+
+   python <script_name>.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
+import sys
+import string
+import re
+import optparse
+import collections
+import CGAT.Experiment as E
+import CGAT.GFF as GFF
+import CGAT.GTF as GTF
+import bx.intervals.intersection
+
+def GetNextLine( infile ):
+    for line in infile:
+        if line[0] == "#": continue
+        return line
+    return None
+
+class Counts:
+
+    mPercentFormat = "%.2f"
+
+    def __init__(self, add_percent ):
+
+        self.nleft, self.nright, self.noverlap = 0, 0, 0
+        self.nunique_left = 0
+        self.nunique_right = 0
+        self.nidentical = 0
+        self.nhalf = 0
+        self.nsplit_left = 0
+        self.nsplit_right = 0
+        self.mAddPercent = add_percent
+        
+    def __add__(self, other):
+        self.nleft += other.nleft
+        self.nright += other.nright
+        self.noverlap += other.noverlap
+        self.nunique_left += other.nunique_left
+        self.nunique_right += other.nunique_right
+        self.nidentical += other.nidentical
+        self.nhalf += other.nhalf
+        self.nsplit_left += other.nsplit_left
+        self.nsplit_right += other.nsplit_right
+        return self
+    
+    def getHeader( self ):
+        h = "total_left\ttotal_right\tnoverlap\tnidentical\tnhalf\tunique_left\tunique_right\tsplit_left\tsplit_right"        
+        if self.mAddPercent:
+            h += "\t" + self.getHeaderPercent()
+        return h
+
+    def __str__( self ):
+        h = "\t".join(map(str, \
+                             (self.nleft, self.nright,
+                              self.noverlap, self.nidentical, self.nhalf,
+                              self.nunique_left, self.nunique_right,
+                              self.nsplit_left, self.nsplit_right)))
+        if self.mAddPercent:
+            h += "\t" + self.asPercent()
+            
+        return h 
+
+    def getHeaderPercent( self ):
+        return "\t".join( map( lambda x: "pl%s\tpr%s" % (x,x), ("overlap", "identical", "half", "unique", "split")))
+    
+    def asPercent( self ):
+        return "\t".join( map( lambda x: self.mPercentFormat % (100.0 * x),
+                               ( float(self.noverlap) / self.nleft,
+                                 float(self.noverlap) / self.nright,    
+                                 float(self.nidentical) / self.nleft,
+                                 float(self.nidentical) / self.nright,    
+                                 float(self.nhalf) / self.nleft,
+                                 float(self.nhalf) / self.nright,    
+                                 float(self.nunique_left) / self.nleft,
+                                 float(self.nunique_right) / self.nright,    
+                                 float(self.nsplit_left) / self.nleft,
+                                 float(self.nsplit_right) / self.nright )))
+
+def getFile( options, section ):
+
+    if options.output_pattern:
+        outfile = open(options.output_pattern % section, "w")
+        if options.loglevel >= 1:
+            options.stdlog.write("# output for section '%s' goes to file %s\n" % (section, options.output_pattern % section) )
+    else:
+        outfile = options.stdout
+        outfile.write( "## section: %s\n" % section)
+    return outfile
+
+def writeDiff( outfile, symbol, genes ):
+
+    for gene in genes:
+        for exon in gene:
+            outfile.write("%s\t%s\n" % (symbol, str(exon)))
+
+if __name__ == "__main__":
+
+    parser = optparse.OptionParser( version = "%prog version: $Id: diff_gtf.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
+
+    parser.add_option("-e", "--write-equivalent", dest="write_equivalent", 
+                      help="write equivalent entries [default=%default].", action="store_true"  )
+
+    parser.add_option("-f", "--write-full", dest="write_full",
+                      help="write full gff entries [default=%default].", action="store_true"  )
+
+    parser.add_option("-o", "--format=", dest="format",
+                      help="output format [flat|multi-line] [default=%default]" )
+
+    parser.add_option("-p", "--add-percent", dest="add_percent", action="store_true",
+                      help="add percentage columns [default=%default]." )
+
+    parser.add_option("-t", "--output-pattern", dest="output_pattern", type="string",
+                      help="pattern for output files (should contain one %s). The output will be  [default=%default].")
+
+    parser.add_option("-s", "--ignore-strand", dest="ignore_strand", action="store_true",
+                      help="ignore strand information [default=%default]." )
+
+    parser.set_defaults(
+        write_equivalent = False,
+        write_full = False,
+        format="flat",
+        add_percent=False,
+        output_pattern = None,
+        ignore_strand = False,
+        as_gtf = False,
+        )
+
+    (options, args) = E.Start( parser )
+
+    if len(args) != 2:
+        print USAGE
+        print "two arguments required"
+        sys.exit(1)
+
+    input_filename1, input_filename2 = args
+
+    ## duplicated features cause a problem. Make sure
+    ## features are non-overlapping by running
+    ## gff_combine.py on GFF files first.
+
+    E.info( "reading data started" )
+
+    idx, genes2 = {}, set()
+    for e in GTF.readFromFile( open( input_filename2, "r" ) ):
+        genes2.add( e.gene_id )
+        if e.contig not in idx: idx[e.contig] = bx.intervals.intersection.Intersecter()
+        idx[e.contig].add_interval( bx.intervals.Interval(e.start,e.end,value=e) )
+
+    overlaps_genes = []
+
+    E.info( "reading data finished: %i contigs" % len(idx))
+
+    subtotals = []
+    subtotal = Counts( add_percent = options.add_percent )
+
+    outfile_diff = getFile( options, "diff" )
+    outfile_overlap = getFile( options, "overlap" )
+    overlapping_genes = set()
+
+    genes1 = set()
+
+    # iterate over exons
+    with open( input_filename1, "r" ) as infile:
+        for this in GTF.iterator( infile ):
+
+            genes1.add( this.gene_id )
+
+            try:
+                intervals = idx[this.contig].find( this.start, this.end )
+            except KeyError:
+                continue
+
+            others = [ x.value for x in intervals ]
+            for other in others:
+                overlapping_genes.add( (this.gene_id, other.gene_id) )
+
+            # check for identical/half-identical matches
+            output = None
+            for other in others:
+                if this.start == other.start and this.end == other.end:
+                    output, symbol = other, "="
+                    break
+            else:
+                for other in others:
+                    if this.start == other.start or this.end == other.end:
+                        output, symbol = other, "|"
+                        break
+                else:
+                    symbol = "~"
+
+    if outfile_diff != options.stdout: outfile_diff.close()
+    if outfile_overlap != options.stdout: outfile_overlap.close()
+
+    outfile = None
+    ##################################################################
+    ##################################################################
+    ##################################################################
+    ## print gene based information
+    ##################################################################    
+    if overlapping_genes:
+        outfile = getFile( options, "genes_ovl" )
+        outfile.write ("gene_id1\tgene_id2\n" )
+        for a, b in overlapping_genes: outfile.write( "%s\t%s\n" % (a,b) )
+        if outfile != options.stdout: outfile.close()
+
+        outfile_total = getFile(options, "genes_total" )
+        outfile_total.write("set\tngenes\tnoverlapping\tpoverlapping\tnunique\tpunique\n" )
+
+        outfile = getFile( options, "genes_uniq1" )
+        b = set( [ x[0] for x in overlapping_genes ] )
+        d = genes1.difference(b)
+        outfile.write ("gene_id1\n" )
+        outfile.write( "\n".join( d ) + "\n" )
+        if outfile != options.stdout: outfile.close()
+        outfile_total.write( "%s\t%i\t%i\t%5.2f\t%i\t%5.2f\n" % (
+                input_filename1, len(genes1), len(b), 100.0 * len(b) / len(a),
+                len(d), 100.0 * len(d) / len(genes1) ) )
+
+        outfile = getFile( options, "genes_uniq2" )
+        b = set( [ x[1] for x in overlapping_genes ] )
+        d = genes2.difference(b)
+        outfile.write ("gene_id2\n" )
+        outfile.write( "\n".join( d ) + "\n" )
+        if outfile != options.stdout: outfile.close()
+
+        outfile_total.write( "%s\t%i\t%i\t%5.2f\t%i\t%5.2f\n" % (
+                input_filename2, len(genes2), len(b), 100.0 * len(b) / len(a),
+                len(d), 100.0 * len(d) / len(genes2) ) )
+        if outfile_total != options.stdout: outfile_total.close()
+        
+    ##################################################################
+    ##################################################################
+    ##################################################################
+    ## print totals
+    ##################################################################    
+    #outfile = getFile(options, "total" )
+    #outfile.write("chr\tstrand\t%s\n" % Counts( add_percent = options.add_percent ).getHeader())
+
+    #total = Counts( add_percent = options.add_percent )
+    #for x in subtotals:
+    #    outfile.write( "\t".join( (x[0], x[1], str(x[2])) ) + "\n" )
+    #    total += x[2]
+
+    #outfile.write("\t".join( ("all", "all", str(total)) ) + "\n")
+    #if outfile != options.stdout: outfile.close()
+    
+    E.Stop()    

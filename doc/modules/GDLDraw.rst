@@ -1,7 +1,4 @@
 
-:mod:`GDLDraw`
-=========================
-
 .. automodule:: GDLDraw
    :members:
    :inherited-members:

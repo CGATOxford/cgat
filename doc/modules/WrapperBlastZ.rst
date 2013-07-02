@@ -1,7 +1,4 @@
 
-:mod:`WrapperBlastZ`
-=========================
-
 .. automodule:: WrapperBlastZ
    :members:
    :inherited-members:

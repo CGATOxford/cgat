@@ -9,10 +9,10 @@ below:
 .. toctree::
    :maxdepth: 1
 
-   pipelines/CompareTranscripts.rst
-   pipelines/Gpipe.rst
-   pipelines/MapTranscripts454.rst
-   pipelines/Optic.rst
+   make_pipelines/CompareTranscripts.rst
+   make_pipelines/Gpipe.rst
+   make_pipelines/MapTranscripts454.rst
+   make_pipelines/Optic.rst
 
 Some of these pipelines are still being used, though they are not actively
 supported any more.

@@ -1,5 +1,7 @@
 [ui]
 merge = emacs
+username = katherine.fawcett@dpag.ox.ac.uk
+
 
 [merge-tools]
 emacs.args = -q --eval "(ediff-merge-with-ancestor \"$local\" \"$other\" \"$base\" nil \"$output\")"

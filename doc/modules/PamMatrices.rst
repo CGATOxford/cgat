@@ -1,7 +1,4 @@
 
-:mod:`PamMatrices`
-=========================
-
 .. automodule:: PamMatrices
    :members:
    :inherited-members:

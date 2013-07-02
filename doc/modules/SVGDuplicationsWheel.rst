@@ -1,7 +1,4 @@
 
-:mod:`SVGDuplicationsWheel`
-=========================
-
 .. automodule:: SVGDuplicationsWheel
    :members:
    :inherited-members:

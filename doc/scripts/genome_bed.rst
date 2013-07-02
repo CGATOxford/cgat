@@ -1,5 +1,5 @@
 
-.. automodule:: genome_bed.py
-   :members:
-   :inherited-members:
-   :show-inheritance:
+.. automodule:: genome_bed
+
+.. program-output:: python ../scripts/genome_bed.py --help
+

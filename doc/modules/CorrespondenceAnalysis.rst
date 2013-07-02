@@ -1,3 +1,4 @@
+
 .. automodule:: CorrespondenceAnalysis
    :members:
    :inherited-members:

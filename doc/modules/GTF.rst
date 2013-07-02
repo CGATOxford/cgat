@@ -1,7 +1,4 @@
 
-:mod:`GTF`
-=========================
-
 .. automodule:: GTF
    :members:
    :inherited-members:

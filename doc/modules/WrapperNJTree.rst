@@ -1,7 +1,4 @@
 
-:mod:`WrapperNJTree`
-=========================
-
 .. automodule:: WrapperNJTree
    :members:
    :inherited-members:
