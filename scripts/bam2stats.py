@@ -236,11 +236,11 @@ def main( argv = None ):
     parser = optparse.OptionParser( version = "%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
                                     usage = globals()["__doc__"] )
 
-    parser.add_option( "-r", "--filename-rna", dest="filename_rna", type="string",
-                       help = "gff formatted file with rna locations. Note that the computation currently does not take"
-                              " into account indels, so it is an approximate count only [%default]" )
+    parser.add_option( "-r", "--filename-rna", dest="filename_rna", type="string", metavar='GFF',
+                       help = "gff formatted file with rna locations. Note that the computation currently "
+                              "does not take into account indels, so it is an approximate count only [%default]" )
     parser.add_option( "-f", "--remove-rna", dest="remove_rna", action="store_true",
-                       help = "remove rna reads for duplicate and other counts [%default]" )
+                       help = "as well as counting, also remove rna reads for duplicate and other counts [%default]" )
     parser.add_option( "-i", "--input-reads", dest="input_reads", type="int",
                        help = "the number of reads - if given, used to provide percentages [%default]" )
     parser.add_option( "--force-output", dest="force_output", action="store_true",
