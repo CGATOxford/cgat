@@ -288,6 +288,30 @@ class BetterFormatter(optparse.IndentedHelpFormatter):
 #################################################################
 #################################################################
 #################################################################
+
+class AppendCommaOption(optparse.Option):
+    '''add ability of providing "," separated arguments to options
+    that have action "append".
+
+    This is what galaxy does, but generally convenient.
+    
+    '''
+    def check_value( self, opt, value ):
+        # do not check type for ',' separated lists
+        if "," in value: 
+            return value
+        else:
+            return optparse.Option.check_value( self, opt, value )
+
+    def take_action(self, action, dest, opt, value, values, parser):
+        if action == "append" and "," in value:
+            lvalue = value.split(",")
+            values.ensure_value(dest, []).extend(lvalue)
+        else:
+            optparse.Option.take_action(
+                self, action, dest, opt, value, values, parser)
+
+#################################################################
 def getHeader():
     """return a header string with command line options and timestamp
 
@@ -417,6 +441,9 @@ def Start( parser = None,
     
     if not parser:
         parser = optparse.OptionParser( version = "%prog version: $Id: Experiment.py 2803 2009-10-22 13:41:24Z andreas $" )
+
+    # allow "," in append options
+    parser.option_class = AppendCommaOption
 
     # set new option parser
     parser.formatter = BetterFormatter()
