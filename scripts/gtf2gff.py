@@ -99,13 +99,19 @@ intergenic
    telomeric region (before/after first/last gene).
 
 intronic
-   intronic region.
+   intronic region. An intron has a minimum size of 30 bases.
 
 frameshift
-   frameshift. Introns of less than 10 residues length
+   frameshift. Introns of less than 4 residues length
 
 ambiguous
    in case of overlapping genes, regions are designated ambiguous
+
+unknown
+   unknown are ``intronic`` regions that are less than the minimum size 
+   of an intron (default: 30) and larger than the size of frameshift (default:4).
+   These could be either genuine small introns or they could be artefactual arising
+   from collapsing the exons within a gene model.
 
 All segments are annotated by their closest gene. Intergenic regions are
 annotated with their two neighbouring genes. The upstream gene is listed
