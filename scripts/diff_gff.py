@@ -156,7 +156,7 @@ def getFile( options, section ):
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: diff_gff.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: diff_gff.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-e", "--write-equivalent", dest="write_equivalent", 
                       help="write equivalent entries [default=%default].", action="store_true"  )

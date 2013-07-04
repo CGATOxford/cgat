@@ -376,7 +376,7 @@ def filterMali( mali, method="3rd" ):
 ##------------------------------------------------------------
 def main( argv = sys.argv ):
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: mali2mali.py 2782 2009-09-10 11:40:29Z andreas $", 
+    parser = E.OptionParser( version = "%prog version: $Id: mali2mali.py 2782 2009-09-10 11:40:29Z andreas $", 
                                     usage = globals()["__doc__"])
 
     parser.add_option("-i", "--input-format", dest="input_format", type="choice",

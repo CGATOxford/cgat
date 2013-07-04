@@ -1027,7 +1027,7 @@ def main():
 
     import Experiment as E
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: IndexedFasta.py 2801 2009-10-22 13:40:39Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: IndexedFasta.py 2801 2009-10-22 13:40:39Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option( "-e", "--extract", dest="extract", type="string",
                        help="""extract region for testing purposes. Format is contig:strand:from:to. The default coordinates are

@@ -101,7 +101,7 @@ from malis2malis import *
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: malis2mali.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: malis2mali.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
 
     addOptions( parser )
 

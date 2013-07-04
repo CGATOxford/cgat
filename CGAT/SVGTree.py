@@ -1220,7 +1220,7 @@ class SVGTree:
     
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: SVGTree.py 2784 2009-09-10 11:41:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: SVGTree.py 2784 2009-09-10 11:41:14Z andreas $")
 
     parser.add_option("-i", "--title", dest="title", type="string",
                       help="page title.")

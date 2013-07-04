@@ -88,7 +88,7 @@ def maskSequence( sequence, regions, mask_char = "N" ):
 if __name__ == '__main__':
 
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: mask_fasta.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: mask_fasta.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option("-e", "--extend", dest="extend", type="int",
                       help="extend sequences by # residues."  )

@@ -118,7 +118,7 @@ def writeInfo( outfile, vertices, nlinks, nlines, nerrors, ncomments, is_sorted 
     
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: graph_check.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: graph_check.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option("--filename-missing", dest="filename_missing", type="string",
                       help="missing entries.")

@@ -70,7 +70,7 @@ import CGAT.IndexedFasta as IndexedFasta
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: fasta2gaps.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: fasta2gaps.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="pattern to look for sequence filename."  )

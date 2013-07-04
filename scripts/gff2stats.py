@@ -182,7 +182,7 @@ class counter_exons:
 ##------------------------------------------------------------------------
 def main( argv = sys.argv ):
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: gff2stats.py 2781 2009-09-10 11:33:14Z andreas $",
+    parser = E.OptionParser( version = "%prog version: $Id: gff2stats.py 2781 2009-09-10 11:33:14Z andreas $",
                                     usage=globals()["__doc__"])
 
     parser.add_option("--is-gtf", dest="is_gtf", action="store_true",

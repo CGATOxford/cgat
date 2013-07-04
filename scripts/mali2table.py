@@ -74,7 +74,7 @@ from CGAT.SequenceProperties import *
 
 def main( argv = sys.argv ):
 
-    parser = optparse.OptionParser( version = "%prog version: $Id$",
+    parser = E.OptionParser( version = "%prog version: $Id$",
                                     usage = globals()["__doc__"])
 
     parser.add_option("-i", "--input-format", dest="input_format", type="choice",

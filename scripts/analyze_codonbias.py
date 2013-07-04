@@ -161,7 +161,7 @@ CODON_PREFERENCES = {
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: analyze_codonbias.py 865 2007-01-15 13:44:43Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: analyze_codonbias.py 865 2007-01-15 13:44:43Z andreas $")
 
     parser.add_option("-o", "--input-file-trace", dest="input_filename_trace", type="string",
                       help="input filename for cai.",

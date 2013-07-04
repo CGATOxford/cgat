@@ -278,7 +278,7 @@ def selectMatches( query_id, matches, options, queries_fasta = None ):
 
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: psl2map.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"] )
+    parser = E.OptionParser( version = "%prog version: $Id: psl2map.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option("--input-filename-queries", dest="input_filename_queries", type="string",
                       help="fasta filename with queries - required for polyA analysis [%default]."  )

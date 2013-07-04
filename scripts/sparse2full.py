@@ -281,7 +281,7 @@ def Sparse2Matrix( outfile, matrix_id, lines, options, in_map_token2row = {}, in
 
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: sparse2full.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: sparse2full.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option("-m", "--method", dest="methods", type="string",
                       help="""method to use [normalize-by-min-diagonal|normalize-by-column|

@@ -708,7 +708,7 @@ def runDRMAA( data, environment ):
 def getOptionParser():
     """create parser and add options."""
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: farm.py 2782 2009-09-10 11:40:29Z andreas $", 
+    parser = E.OptionParser( version = "%prog version: $Id: farm.py 2782 2009-09-10 11:40:29Z andreas $", 
                                     usage = globals()["__doc__"] )
 
 

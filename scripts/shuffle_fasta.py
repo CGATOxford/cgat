@@ -72,7 +72,7 @@ import CGAT.IOTools as IOTools
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: shuffle_fasta.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: shuffle_fasta.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option("-c", "--codons", dest="codons", action="store_true",
                       help="make sure that shuffled sequences only contain valid codons."  )

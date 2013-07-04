@@ -125,7 +125,7 @@ class SbjctsCounter( SequenceProperties.SequencePropertiesNA ):
     
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: psl2table.py 2891 2010-04-07 08:59:18Z andreas $",
+    parser = E.OptionParser( version = "%prog version: $Id: psl2table.py 2891 2010-04-07 08:59:18Z andreas $",
                                     usage = globals()["__doc__"])
 
     parser.add_option( "--mask-lowercase", dest="mask_lowercase", action="store_true",

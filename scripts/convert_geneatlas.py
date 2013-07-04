@@ -83,7 +83,7 @@ import numpy
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: convert_geneatlas.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"] )
+    parser = E.OptionParser( version = "%prog version: $Id: convert_geneatlas.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option("-m", "--filename-map", dest="filename_map", type="string",
                       help="filename map." )

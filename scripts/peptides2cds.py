@@ -429,7 +429,7 @@ def getMapPeptide2Cds( peptide_sequence, cds_sequence, options ):
         
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: peptides2cds.py 2890 2010-04-07 08:58:54Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: peptides2cds.py 2890 2010-04-07 08:58:54Z andreas $")
 
     parser.add_option("-p", "--peptides", dest="filename_peptides", type="string",
                       help="filename with peptide sequences [%default]."  )

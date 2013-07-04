@@ -87,7 +87,7 @@ import CGAT.Genomics as Genomics
 
 import pgdb
 
-parser = optparse.OptionParser( version = "%prog version: $Id: genes2quality.py 2781 2009-09-10 11:33:14Z andreas $")
+parser = E.OptionParser( version = "%prog version: $Id: genes2quality.py 2781 2009-09-10 11:33:14Z andreas $")
 
 def ProcessGene( outfile, gene_id, qualities, options ):
     """output best quality transcript for gene.

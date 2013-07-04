@@ -81,7 +81,7 @@ import alignlib
 ##------------------------------------------------------------
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: prediction2pairs.py 2031 2008-07-15 09:19:05Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: prediction2pairs.py 2031 2008-07-15 09:19:05Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option( "-g", "--genome-file", dest="genome_file", type="string",
                        help="filename with genomic data (indexed)." )

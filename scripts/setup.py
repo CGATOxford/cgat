@@ -104,7 +104,7 @@ def AddOptions( outfile,  infile, source_directory, options ):
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: setup.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: setup.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-f", "--force", dest="force", action="store_true",
                       help="force overwrite of existing Makefile." )

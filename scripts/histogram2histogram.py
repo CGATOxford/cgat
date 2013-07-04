@@ -79,7 +79,7 @@ import numpy
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: histogram2histogram.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: histogram2histogram.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option("-i", "--is-int", dest="is_ints", action="store_true",
                       help="categories are integers."  )

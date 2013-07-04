@@ -342,7 +342,7 @@ def removeSplitTranscripts( mali, exons, map_species2transcripts, options ):
 ##-------------------------------------------------------------------------------    
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: mali2cleaned_mali.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: mali2cleaned_mali.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-m", "--genome-master", dest="genome_master", type="string",
                       help="genome to use as master." )

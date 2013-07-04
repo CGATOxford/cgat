@@ -78,7 +78,7 @@ import CGAT.WrapperPhylip as WrapperPhylip
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: matrix2tree.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: matrix2tree.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option("-i", "--invert-map", dest="invert_map", action="store_true",
                       help="""invert map.""")

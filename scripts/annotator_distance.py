@@ -697,7 +697,7 @@ def findMedian( dist ):
 
 def main( argv = sys.argv ):
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: annotator_distance.py 2861 2010-02-23 17:36:32Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: annotator_distance.py 2861 2010-02-23 17:36:32Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-a", "--filename-annotations", dest="filename_annotations", type="string",
                       help="filename mapping gene ids to annotations (a tab-separated table with two-columns) [default=%default]." )

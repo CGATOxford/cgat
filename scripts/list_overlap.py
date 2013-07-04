@@ -146,7 +146,7 @@ def with_genes(fftot, ffa, ffb, asfile=True):
 
 
 def main():
-    p = optparse.OptionParser(__doc__)
+    p = E.OptionParser(__doc__)
     opts, args = p.parse_args()
     if (len(args) not in (3, 4)):
         sys.exit(not p.print_help())

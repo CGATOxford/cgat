@@ -73,7 +73,7 @@ import CGAT.Experiment as Experiment
 import CGAT.WrapperAdaptiveCAI as WrapperAdaptiveCAI
 import numpy
 
-parser = optparse.OptionParser( version = "%prog version: $Id: merge_tables.py 2782 2009-09-10 11:40:29Z andreas $")
+parser = E.OptionParser( version = "%prog version: $Id: merge_tables.py 2782 2009-09-10 11:40:29Z andreas $")
 
 if __name__ == "__main__":
 

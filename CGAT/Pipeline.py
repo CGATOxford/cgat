@@ -1688,7 +1688,7 @@ def main( args = sys.argv ):
     global GLOBAL_ARGS
     global GLOBAL_SESSION
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: Pipeline.py 2799 2009-10-22 13:40:13Z andreas $",
+    parser = E.OptionParser( version = "%prog version: $Id: Pipeline.py 2799 2009-10-22 13:40:13Z andreas $",
                                     usage = USAGE )
     
     parser.add_option( "--pipeline-action", dest="pipeline_action", type="choice",
@@ -1833,7 +1833,7 @@ if __name__ == "__main__":
 
     main()
 
-    #parser = optparse.OptionParser( version = "%prog version: $Id: Pipeline.py 2799 2009-10-22 13:40:13Z andreas $")
+    #parser = E.OptionParser( version = "%prog version: $Id: Pipeline.py 2799 2009-10-22 13:40:13Z andreas $")
 
     #(options, args) = E.Start( parser, add_cluster_options = True )
 

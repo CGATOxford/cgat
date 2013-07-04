@@ -90,7 +90,7 @@ import CGAT.Stats as Stats
 
 if __name__  == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: r_compare_distributions.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: r_compare_distributions.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option( "-m", "--method", dest="method", type="choice",
                        help="method to use: ks=Kolmogorov-Smirnov, mwu=Mann-WhitneyU, shapiro=Shapiro-Wilk, paired-mwu=paired Mann-WhitneyU, paired-t=paired t-test [default=%default]",

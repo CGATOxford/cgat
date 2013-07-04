@@ -256,7 +256,7 @@ def extendInterval(iterator, distance):
 
 def main( argv = sys.argv ):
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: bed2bed.py 2861 2010-02-23 17:36:32Z andreas $", 
+    parser = E.OptionParser( version = "%prog version: $Id: bed2bed.py 2861 2010-02-23 17:36:32Z andreas $", 
                                     usage = globals()["__doc__"] )
 
     #IMS: new method: extend intervals by set amount

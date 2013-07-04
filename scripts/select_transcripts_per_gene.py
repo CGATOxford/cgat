@@ -105,7 +105,7 @@ def Write( outfile, gene_id, qualities, priority ):
         
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: select_transcripts_per_gene.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: select_transcripts_per_gene.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-i", "--priority", dest="priority", type="string",
                       help="quality priority."  )

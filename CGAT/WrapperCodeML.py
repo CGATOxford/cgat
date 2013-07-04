@@ -2210,7 +2210,7 @@ def runEvolver( options ):
         
 if __name__ == "__main__":
     
-    parser = optparse.OptionParser( version = "%prog version: $Id: WrapperCodeML.py 2781 2009-09-10 11:33:14Z andreas $" )
+    parser = E.OptionParser( version = "%prog version: $Id: WrapperCodeML.py 2781 2009-09-10 11:33:14Z andreas $" )
 
     parser.add_option("--write-control-file", dest="write_control_file", action="store_true",
                       help="write a control file."  )

@@ -372,7 +372,7 @@ def WriteMap( options, category, map_id):
     
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: export_aaa.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: export_aaa.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-s", "--set", dest="set",
                       help="set to use.", type="choice", choices=("full", "filtered", "clean") )

@@ -86,7 +86,7 @@ import CGAT.PredictionParser as PredictionParser
 
 from predict_genes import PredictorExonerate
 
-parser = optparse.OptionParser( version = "%prog version: $Id: liftover_predictions.py 2781 2009-09-10 11:33:14Z andreas $")
+parser = E.OptionParser( version = "%prog version: $Id: liftover_predictions.py 2781 2009-09-10 11:33:14Z andreas $")
 
 #####################################################################
 def ReadOffsets( infile ):

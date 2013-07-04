@@ -82,7 +82,7 @@ import CGAT.PredictionParser as PredictionParser
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: predictions2disruptions.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: predictions2disruptions.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genome pattern."  )

@@ -61,7 +61,7 @@ The basic usage of this module within a script is::
         if not argv: argv = sys.argv
 
         # setup command line parser
-        parser = optparse.OptionParser( version = "%prog version: $Id$", 
+        parser = E.OptionParser( version = "%prog version: $Id$", 
                                         usage = globals()["__doc__"] )
                                         
         parser.add_option("-t", "--test", dest="test", type="string",
@@ -91,7 +91,7 @@ within a script.
 
 .. autofunction:: Experiment.Start
 
-The :py:func:`Start` is called with an optparse.OptionParser object. 
+The :py:func:`Start` is called with an E.OptionParser object. 
 :py:func:`Start` will add additional command line arguments, such as
 ``--help`` for command line help or ``--verbose`` to control the :term:`loglevel`.
 It can also add optional arguments for scripts needing database access,
@@ -288,7 +288,6 @@ class BetterFormatter(optparse.IndentedHelpFormatter):
 #################################################################
 #################################################################
 #################################################################
-
 class AppendCommaOption(optparse.Option):
     '''add ability of providing "," separated arguments to options
     that have action "append".
@@ -310,6 +309,28 @@ class AppendCommaOption(optparse.Option):
         else:
             optparse.Option.take_action(
                 self, action, dest, opt, value, values, parser)
+
+
+#################################################################
+#################################################################
+#################################################################
+class OptionParser( optparse.OptionParser ):
+    '''CGAT derivative of OptionParser.
+
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        optparse.OptionParser.__init__(self, *args, 
+                                       option_class = AppendCommaOption,
+                                       formatter = BetterFormatter(),
+                                       **kwargs)
+
+        # set new option parser
+        # parser.formatter = BetterFormatter()
+        # parser.formatter.set_parser(parser)
+
+
+
 
 #################################################################
 def getHeader():
@@ -375,7 +396,7 @@ def Start( parser = None,
            return_parser = False):
     """set up an experiment.
 
-    *param parser* an :py:class:`optparse.OptionParser` instance with commandi line options.
+    *param parser* an :py:class:`E.OptionParser` instance with commandi line options.
     *param argv* command line options to parse. Defaults to :py:data:`sys.argv`
     *quiet* set :term:`loglevel` to 0 - no logging
     *no_parsing* do not parse command line options
@@ -386,7 +407,7 @@ def Start( parser = None,
     *add_pipe_options* add common options for redirecting input/output
     *add_cluster_options* add common options for scripts submitting jobs to the cluster
     *add_output_options* add commond options for working with multiple output files
-    *returns* a tuple (options,args) with options (a :py:class:`optparse.OptionParser` object 
+    *returns* a tuple (options,args) with options (a :py:class:`E.OptionParser` object 
               and a list of positional arguments.
 
     The :py:func:`Start` method will also set up a file logger.
@@ -440,14 +461,7 @@ def Start( parser = None,
     """
     
     if not parser:
-        parser = optparse.OptionParser( version = "%prog version: $Id: Experiment.py 2803 2009-10-22 13:41:24Z andreas $" )
-
-    # allow "," in append options
-    parser.option_class = AppendCommaOption
-
-    # set new option parser
-    parser.formatter = BetterFormatter()
-    parser.formatter.set_parser(parser)
+        parser = OptionParser( version = "%prog version: $Id: Experiment.py 2803 2009-10-22 13:41:24Z andreas $" )
 
     global global_options, global_args, global_starting_time
 

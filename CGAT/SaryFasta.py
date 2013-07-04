@@ -281,7 +281,7 @@ if __name__ == "__main__":
 
     import Experiment
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: SaryFasta.py 2784 2009-09-10 11:41:14Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: SaryFasta.py 2784 2009-09-10 11:41:14Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option( "-e", "--extract", dest="extract", type="string",
                        help="extract region ( for testing purposes. Format is contig:strand:from:to." )
