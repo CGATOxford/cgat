@@ -78,9 +78,9 @@ def buildRefnoncodingGeneSet(reference, outfile):
     Sense_overlapping
     Processed transcript
     '''
-
-    statement = '''zcat %(reference)s 
-                   | awk '$2 == "lincRNA" || $2 == "non_coding" || $2 == "3prime_overlapping_ncrna" || $2 == "ncRNA_host"' | gzip > %(outfile)s'''                                                                                                                                             
+    # Possibility of adding processed_transcript to this list?                                    
+    # Jethro - added sense_intronic and sense_overlapping to this list
+    statement = ''' zcat %(reference)s | awk '$2 == "lincRNA" || $2 == "non_coding" || $2 == "3prime_overlapping_ncrna" || $2 == "ncRNA_host" || $2 == "sense_intronic" || $2 == "sense_overlapping"' | gzip > %(outfile)s '''
     P.run()
 
 #-------------------------------------------------------------------------------
@@ -111,13 +111,25 @@ def buildLncRNAGeneSet( abinitio_lincrna, reference, refnoncoding, pseudogenes_g
                       "unprocessed_pseudogene",
                       "nonsense_mediated_decay",
                       "retained_intron",
-                      "IG_V_gene",
-                      "IG_J_gene",
                       "IG_C_gene",
-                      "IG_D_gene", # 17/11/2012 Jethro added Ig genes to list. (NB 31 entries in $2 of reference.gtf.gz) 
+                      "IG_D_gene",
+                      "IG_J_gene",
+                      "IG_V_gene",
+                      "TR_C_gene",
+                      "TR_J_gene",
+                      "TR_V_gene",
+                      "TR_D_gene",
+                      "IG_LV_gene",
+                      "TR_V_gene", 
+                      "ambiguous_orf", 
+                      "retrotransposed"
+                      "TEC",
                       "CDS")       # 10/12/2012 Nick added CDS. This will then filter anything that overlaps with a CDS
                                    # NB this is the annotation for RefSeq and so requires the user to have created a
                                    # reference annotation that includes this annotation
+                                   # 20/1106/2013 Jethro updated list based on www.gencodegenes.org/gencode_biotypes.html 
+                                   # N.B. anything with containing 'pseudo' should appear in pseudogenes_gtf
+                                   # consider adding non_stop_decay to this list? 
     indices = {}
     for section in input_sections:
         indices[section] = GTF.readAndIndex( 
@@ -325,7 +337,7 @@ def buildFinalLncRNAGeneSet(filteredLncRNAGeneSet, cpc_table, outfile, filter_cp
     for gtf in GTF.iterator(IOTools.openFile(filteredLncRNAGeneSet)):
         if gtf.gene_id in remove: continue
         if gtf.transcript_id.find("TCONS") != -1:
-            # output known and buil transcripts separately
+            # output known and built transcripts separately
             temp.write("%s\n" % gtf)
         else:
             temp2.write("%s\n" % gtf)
