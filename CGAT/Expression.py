@@ -500,6 +500,7 @@ def loadTagData( tags_filename, design_filename ):
     R('''conds <- pheno2$group[ includedSamples ]''')
     R('''pairs = factor(pheno2$pair[ includedSamples ])''')
 
+ 
     E.info( "filtered data: %i observations for %i samples" % tuple( R('''dim(countsTable)''') ) )
 
 def filterTagData( min_sample_counts = 10):
@@ -527,8 +528,12 @@ def filterTagData( min_sample_counts = 10):
 
     return observations, samples
 
-def groupTagData():
+def groupTagData(ref_group = None):
     '''compute groups and pairs from tag data table.'''
+
+    # Relevel the groups so that the reference comes first
+    if not ref_group is None:
+        R('''groups <- relevel(groups, ref = "%s")''' % ref_group)
 
     groups = R('''levels(groups)''')
     pairs = R('''levels(pairs)''')
@@ -564,6 +569,7 @@ def runEdgeR( infile,
               fdr = 0.1,
               prefix = "",
               dispersion = None,
+              ref_group = None
               ):
     '''run DESeq on.
 
@@ -601,7 +607,7 @@ def runEdgeR( infile,
         E.warn( "no samples remain after filtering - no output" )
         return
 
-    groups, pairs, has_replicates, has_pairs = groupTagData()
+    groups, pairs, has_replicates, has_pairs = groupTagData(ref_group)
 
     sample_names = R('''colnames(countsTable)''')
     E.info( "%i samples to test at %i observations: %s" % ( nsamples, nobservations,
@@ -669,6 +675,13 @@ def runEdgeR( infile,
 
     # build DGEList object
     R( '''countsTable = DGEList( countsTable, group = groups )''' )
+
+    # Relevel groups to make the results predictable - IMS
+    if not ref_group is None:
+        R('''countsTable$samples$group <- relevel(countsTable$samples$group, ref = "%s")''' % ref_group)
+    else:
+        #if no ref_group provided use first group in groups
+        R('''countsTable$sample$group <- relevel(countsTable$samples$group, ref = "%s")''' % groups[0])
 
     # calculate normalisation factors
     E.info( "calculating normalization factors" )
@@ -774,6 +787,7 @@ def runEdgeR( infile,
             fold = 0
             
         # note that fold change is computed as second group divided by first
+        # no it isn't, its set by alphabetical order of the factors. But I will fix it - IMS
         results.append( GeneExpressionResult._make( ( \
                     interval,
                     groups[1],
@@ -930,6 +944,7 @@ def runDESeq( infile,
               prefix = "",
               fit_type = "parametric",
               dispersion_method = "pooled",
+              ref_group = None
               ):
     '''run DESeq on.
 
@@ -987,7 +1002,7 @@ def runDESeq( infile,
     # load library 
     R('''suppressMessages(library('DESeq'))''')
 
-    loadTagData( infile, design_file )
+    loadTagData( infile, design_file, ref_group )
 
     nobservations, nsamples = filterTagData()
 
@@ -999,7 +1014,7 @@ def runDESeq( infile,
         E.warn( "no samples remain after filtering - no output" )
         return
 
-    groups, pairs, has_replicates, has_pairs = groupTagData()
+    groups, pairs, has_replicates, has_pairs = groupTagData(ref_group)
 
     sample_names = R('''colnames(countsTable)''')
     E.info( "%i samples to test at %i observations: %s" % ( nsamples, nobservations,
@@ -1472,6 +1487,10 @@ def main( argv = None ):
     parser.add_option("-f", "--fdr", dest="fdr", type="float",
                       help="fdr to apply [default=%default]."  )
 
+    parser.add_option("-r","--reference-group", dest="ref_group", type="string",
+                      help="Group to use as reference to compute fold changes against [default=$default]")
+
+
     parser.set_defaults(
         input_filename_tags = "-",
         input_filename_design = None,
@@ -1480,6 +1499,7 @@ def main( argv = None ):
         fdr = 0.1,
         deseq_dispersion_method = "pooled",
         deseq_fit_type = "local",
+        ref_group = None
         )
 
     ## add common options (-h/--help, ...) and parse command line 
@@ -1502,7 +1522,8 @@ def main( argv = None ):
                   options.output_filename_pattern,
                   fdr = options.fdr,
                   dispersion_method = options.deseq_dispersion_method,
-                  fit_type = options.deseq_fit_type)
+                  fit_type = options.deseq_fit_type,
+                  ref_group = options.ref_group)
 
     elif options.method == "edger":
         assert options.input_filename_tags and os.path.exists(options.input_filename_tags)
@@ -1511,7 +1532,8 @@ def main( argv = None ):
                   options.input_filename_design,
                   options.output_filename,
                   options.output_filename_pattern,
-                  fdr = options.fdr )
+                  fdr = options.fdr,
+                  ref_group = options.ref_group)
 
     if fh and os.path.exists( fh.name): os.unlink( fh.name )
 
