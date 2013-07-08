@@ -1074,7 +1074,7 @@ def runMACS2( infile, outfile, controlfile = None ):
 
     # example statement: macs2 callpeak -t R1-paupar-R1.call.bam -c R1-lacZ-R1.call.bam -f BAMPE -g 2.39e9 --verbose 5 --bw 150 -q 0.01 -m 10 100000 --name test
 
-    
+    job_options="-l mem_free=8G"
     # used to set the option --format=bampe
     # removed to let macs2 detect the format.
     statement = '''
