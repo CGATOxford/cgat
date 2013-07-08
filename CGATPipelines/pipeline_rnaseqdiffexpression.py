@@ -410,12 +410,12 @@ TARGETS_FPKM = [ ( ( "%s.gtf.gz" % x.asFile(), "%s.bam" % y.asFile()),
 def buildMaskGtf(infile, outfile):
     '''
     This takes ensembl annotations (geneset_all.gtf.gz) and writes out all entries that 
-    have a 'source' match to "rRNA" or 'contig' match to "chrM". for use with cufflinks
+    have a 'source' match to "rRNA" or 'contig' match to "chrM|^MT|chrMT". for use with cufflinks
     '''
     geneset = IOTools.openFile(infile)
     outf = open(outfile, "wb")
     for entry in GTF.iterator(geneset):
-        if re.findall("rRNA", entry.source) or re.findall("chrM", entry.contig):
+        if re.findall("rRNA", entry.source) or re.findall("chrM|^MT|chrMT", entry.contig):
             outf.write("\t".join((map(str,[entry.contig
                               , entry.source
                               , entry.feature
@@ -1261,9 +1261,11 @@ def diff_expression(): pass
 def plotRNASEQTagData( infiles, outfile ):
     '''perform differential expression analysis using deseq.'''
     
-    design_file, geneset_file, bamfiles = infiles
+    design_file, geneset_file, bamfiles, infile = infiles
 
-    infile = os.path.join( "exon_counts.dir", P.snip( geneset_file, ".gtf.gz") + ".exon_counts.tsv.gz" )
+    # Jethro - ./exon_counts.dir/<geneset_file>.exon_counts.tsv.gz is now passed as
+    #          the fourth element in TARGETS_DE
+    #infile = os.path.join( "exon_counts.dir", P.snip( geneset_file, ".gtf.gz") + ".exon_counts.tsv.gz" )
     Expression.plotTagStats( infile, design_file, outfile )
 
     P.touch( outfile )
