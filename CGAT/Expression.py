@@ -1002,7 +1002,7 @@ def runDESeq( infile,
     # load library 
     R('''suppressMessages(library('DESeq'))''')
 
-    loadTagData( infile, design_file, ref_group )
+    loadTagData( infile, design_file)
 
     nobservations, nsamples = filterTagData()
 
