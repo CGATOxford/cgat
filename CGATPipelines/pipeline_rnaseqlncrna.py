@@ -308,7 +308,7 @@ def buildCodingGeneSet(infiles, outfile):
 ##########################################################
 ##########################################################
 @follows(buildCodingGeneSet)
-@transform(PARAMS["genesets_refcoding"], regex(r"(\S+)/(\S+).gtf.gz"), add_inputs(buildCodingGeneSet), r"gtfs/\2.gtf.gz")
+@transform(PARAMS["genesets_refcoding"], regex(r"(\S+).gtf.gz"), add_inputs(buildCodingGeneSet), r"gtfs/\1.gtf.gz")
 def buildRefcodingGeneSet(infiles, outfile):
     '''
     builds a refcoding geneset based on the genes that are present in
@@ -472,15 +472,14 @@ def runCPC(infile, outfile):
 ##########################################################################
 ##########################################################################
 @follows(runCPC)
-@transform(runCPC, regex("cpc/(\S+).result"), r".load")       
+@transform(runCPC, regex("cpc/(\S+).result"), r"\1.load")       
 def loadCPCResults(infile, outfile):
     '''
     load the results of the cpc analysis
     '''
-#    inf = os.path.join("cpc", infile)                                               Jethro - removed line
-    tablename = filenameToTablename(os.path.basename(infile))
+    tablename = ("lncrna_filtered_cpc_result")
     statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s --log=%(outfile)s.log 
-                   --header=transcript_id,feature,C_NC,CP_score --index=transcript_id < %(infile)s > %(outfile)s'''   # Jethro - changed < %(inf)s > to < %(infile)s > 
+                   --header=transcript_id,feature,C_NC,CP_score --index=transcript_id < %(infile)s > %(outfile)s'''
     P.run()
 
 ##########################################################################
