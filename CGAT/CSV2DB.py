@@ -286,9 +286,14 @@ def run( infile, options ):
     if options.header != None:
         options.header = [x.strip() for x in options.header.split(",")]
 
-    reader = CSV.DictReader( infile, 
+    if options.utf:
+        reader = CSV.UnicodeDictReader( infile, 
                              dialect=options.dialect, 
                              fieldnames = options.header )
+    else:
+        reader = CSV.DictReader( infile, 
+                                 dialect=options.dialect, 
+                                 fieldnames = options.header )
 
     if options.replace_header:
         reader.next()
@@ -517,6 +522,8 @@ def buildParser( ):
 
     parser.add_option( "-z", "--from-zipped", dest="from_zipped", action="store_true",
                        help="input is zipped.")
+    parser.add_option( "--utf8", dest="utf", action="store_true",
+                       help="standard in is encoded as UTF8 rather than local default, WARNING: does not strip comment lines yet [default=%default]")
 
     parser.set_defaults(
         map = [],
@@ -541,6 +548,7 @@ def buildParser( ):
         insert_quick = False,
         allow_empty = False,
         retry = False,
+        utr = False
         )
     
     return parser
