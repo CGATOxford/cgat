@@ -1234,3 +1234,24 @@ class BowtieJunctions( BowtieTranscripts ):
         return statement
 
 
+def splitGeneSet(infile):
+    ''' split a gtf file by the first column '''
+
+    last = None
+    outfile = None
+    outprefix = P.snip(infile,".gtf.gz")
+
+    for line in IOTools.openFile(infile):
+        
+        this=line.split("\t")[0]
+
+        if this==last:
+            outfile.write(line)
+
+        else:
+            last = this
+            if outfile is not None:
+                outfile.close()
+            
+            outfile = IOTools.openFile("%s.%s.gtf.gz" % (outprefix,this),"w")
+            outfile.write(line)
