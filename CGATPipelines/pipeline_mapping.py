@@ -1472,7 +1472,7 @@ def buildTranscriptLevelReadCounts( infiles, outfile):
 #########################################################################
 @active_if( SPLICED_MAPPING )
 @collate(buildTranscriptLevelReadCounts, regex("(.+)\..+\.transcript_counts.tsv.gz"),
-         r"\1.transcript_counts.tsv")
+         r"\1.transcript_counts.tsv.gz")
 def collateTranscriptCounts(infiles,outfile):
     ''' pull together the transcript counts over each chromosome '''
 
