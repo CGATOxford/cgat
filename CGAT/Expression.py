@@ -66,11 +66,11 @@ from rpy2.robjects import r as R
 import rpy2.robjects as ro
 import rpy2.robjects.numpy2ri
 
-import Experiment as E
-import Pipeline as P
-import Database
-import IOTools
-import Stats
+import CGAT.Experiment as E
+import CGAT.Pipeline as P
+import CGAT.Database as Database
+import CGAT.IOTools as IOTools
+import CGAT.Stats as Stats
 import sqlite3
 
 try:
