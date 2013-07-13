@@ -1178,14 +1178,14 @@ def loadDESeqStats( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@follows( mkdir("edger.dir") )
-@files( [ ((x, aggregateExonLevelReadCounts), os.path.join( "edger.dir", y)) for x, y in TARGETS_DE ] )
+@follows( aggregateExonLevelReadCounts,mkdir("edger.dir") )
+@files( [ (x, os.path.join( "edger.dir", y)) for x, y in TARGETS_DE ] )
 def runEdgeR( infiles, outfile ):
     '''perform differential expression analysis using edger.'''
 
     to_cluster = True 
-    design_file, geneset_file, bamfiles = infiles[0]
-    infile = infiles[1]
+    design_file, geneset_file, bamfiles, infile = infiles
+
 
     track = P.snip( outfile, ".diff")
 
