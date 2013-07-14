@@ -2,7 +2,7 @@ import os, sys, re, types, itertools, glob
 
 from SphinxReport.Tracker import *
 from SphinxReport.Utils import PARAMS as P
-from SphinxReport.odict import OrderedDict as odict
+from collections import OrderedDict as odict
 
 # get from config file
 UCSC_DATABASE="hg19"
@@ -24,7 +24,7 @@ DATABASE=P['rnaseqtranscripts_backend']
 # cf. pipeline_rnaseq.py
 # This should be automatically gleaned from pipeline_rnaseq.py
 ###################################################################
-import PipelineTracks
+import CGATPipelines.PipelineTracks as PipelineTracks
 
 TRACKS = PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
     glob.glob( "%s/*.bam" % DATADIR), "%s/(\S+).bam" % DATADIR)
