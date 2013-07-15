@@ -739,6 +739,14 @@ def runEdgeR( infile,
 
     E.info("Generating output")
 
+    
+    # output cpm table
+    R('''library(reshape2)''')
+    R('''countsTable.cpm <- cpm(countsTable,  normalized.lib.sizes=TRUE)''')
+    R('''countsTable.cpm.melt <- melt(countsTable.cpm)''')
+    R('''names(countsTable.cpm.melt) <- c("id","sample","ncpm")''')
+    R('''write.table(countsTable.cpm.melt, file="%(outfile_prefix)scpm.tsv", sep = "\t", row.names=FALSE, quote=FALSE)''' % locals())
+
     # compute adjusted P-Values
     R('''padj = p.adjust( lrt$table$PValue, 'BH' )''' )
 
