@@ -147,7 +147,7 @@ class DifferentialExpressionComparison( RnaseqTracker ):
 
     tracks = list( itertools.combinations( ("deseq", "cuffdiff", "edger"), 3 ))
  
-    slices = [ "%s_%s" % y,x.asFile() for x,y in itertools.product(GENESETS,DESIGNS) ]
+    slices = [ "%s_%s" % (y,x.asFile()) for x,y in itertools.product(GENESETS,DESIGNS) ]
 
 class DifferentialExpressionOverlap( DifferentialExpressionComparison ):
 
