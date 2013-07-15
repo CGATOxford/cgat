@@ -90,7 +90,7 @@ import optparse
 import types
 import random
 import CGAT.GTF as GTF
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Genomics as Genomics
 import CGAT.SequencePairProperties as SequencePairProperties
@@ -188,7 +188,7 @@ def main():
         sample_size = 0,
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
     
     assert options.genome_file, "please supply an indexed genome." 
 
@@ -374,7 +374,7 @@ def main():
     if options.loglevel >= 1:
         options.stdlog.write( "# ninput=%i, noutput=%i, nskipped=%i\n" % (ninput, noutput, nskipped ) )
 
-    Experiment.Stop()
+    E.Stop()
 
 if __name__ == '__main__':
     main()

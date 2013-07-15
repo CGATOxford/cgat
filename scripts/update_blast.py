@@ -67,7 +67,7 @@ import optparse
 import math
 import tempfile
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.BlastAlignments as BlastAlignments
 
@@ -141,7 +141,7 @@ if __name__ == "__main__":
         write_fasta = False,
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if not options.filename_new_query_sequences:
         raise "please supply filename with new query sequences."
@@ -176,4 +176,4 @@ if __name__ == "__main__":
     if options.loglevel >= 1:
         print "# query: common=%i, old=%i, new=%i" % (len(common), len(unique_old), len(unique_new))
 
-    Experiment.Stop()
+    E.Stop()

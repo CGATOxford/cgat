@@ -73,7 +73,7 @@ import warnings
 Given a list of transcripts, create links between them.
 
 """
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 
 def WriteLinks( outfile, chunk, weight = 0.0, separator = "|"):
@@ -105,7 +105,7 @@ if __name__ == "__main__":
         filter= None,
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     subset = {}
     if options.filter:
@@ -177,4 +177,4 @@ if __name__ == "__main__":
         for c in components:
             WriteLinks( sys.stdout, c, options.weight, options.separator)
 
-    Experiment.Stop()
+    E.Stop()

@@ -64,7 +64,7 @@ import optparse
 import time
 import warnings
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Orthologs as Orthologs
 import CGAT.GraphTools as GraphTools
 import CGAT.IOTools as IOTools
@@ -125,7 +125,7 @@ if __name__  == "__main__":
         format="graph",
         )
     
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
     rs = re.compile( options.species_regex )
     rg = re.compile( options.gene_regex )
@@ -453,4 +453,4 @@ if __name__  == "__main__":
     if options.loglevel >= 1:
         options.stdout.write("# ninput=%i, noutput=%i, nmissed=%i, skipped=%i, nsingletons=%i\n" % (ninput, noutput, nmissed, nskipped, nsingletons))
 
-    Experiment.Stop()
+    E.Stop()

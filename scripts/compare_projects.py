@@ -92,7 +92,7 @@ param_long_options=["verbose=", "help", "connection=",
 param_short_options="v:hC:r:f:as:"
 
 import CGAT.Genomics as Genomics
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import pgdb
 import scipy
 import numpy
@@ -149,8 +149,8 @@ if __name__ == "__main__":
     else:
         param_schemas = args
 
-    print Experiment.GetHeader()
-    print Experiment.GetParams()
+    print E.GetHeader()
+    print E.GetParams()
 
     dbhandle = pgdb.connect( param_connection )
     headers1 = []
@@ -261,4 +261,4 @@ if __name__ == "__main__":
     else:
         for r in result: print string.join(map(str, r), param_separator)
 
-    print Experiment.GetFooter()
+    print E.GetFooter()

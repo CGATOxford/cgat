@@ -74,7 +74,7 @@ absences/presences are checked, if they make sense phylogenetically.
 
 """
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.TreeTools as TreeTools
 import tree2patterns
 
@@ -131,7 +131,7 @@ if __name__ == "__main__":
         filename_summary = None,
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if options.reference_tree:
         if options.reference_tree[0] == "(":
@@ -338,4 +338,4 @@ if __name__ == "__main__":
         
     if outfile != sys.stdout: outfile.close()
     
-    Experiment.Stop()
+    E.Stop()

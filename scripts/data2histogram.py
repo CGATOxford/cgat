@@ -66,7 +66,7 @@ import math
 import tempfile
 import types
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Histogram as Histogram
 import numpy
 
@@ -134,7 +134,7 @@ if __name__ == "__main__":
         value_format = "%6.4f",
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if options.columns != "all":
         options.columns = map(lambda x: int(x) -1 , options.columns.split(","))
@@ -238,7 +238,7 @@ if __name__ == "__main__":
         if not vals:
             if options.loglevel >= 1:
                 options.stdlog.write( "# no data\n" )
-            Experiment.Stop()
+            E.Stop()
             sys.exit(0)
 
         for x in range(len(options.columns)):
@@ -282,7 +282,7 @@ if __name__ == "__main__":
             combined_histogram = Histogram.Combine( hists, missing_value = options.missing_value )
             Histogram.Print( combined_histogram, nonull = options.nonull )        
 
-    Experiment.Stop()
+    E.Stop()
 
 
 

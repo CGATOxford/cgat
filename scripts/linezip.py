@@ -61,7 +61,7 @@ import sys
 import optparse
 import struct
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 
 if __name__ == '__main__':
 
@@ -97,7 +97,7 @@ if __name__ == '__main__':
     header_bytes = 4
     max_line_length = 256**header_bytes
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     iteration = 0
     uncompressed, compressed = 0, 0 

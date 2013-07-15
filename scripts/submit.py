@@ -71,7 +71,7 @@ import glob
 import subprocess
 import stat
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 
 def checkPythonRuns( filename ):
@@ -110,7 +110,7 @@ if __name__ == '__main__':
                          check_completeness = "python",
                          )
 
-    (options, args) = Experiment.Start( parser, 
+    (options, args) = E.Start( parser, 
                                         add_pipe_options = True )
 
     if args:
@@ -210,4 +210,4 @@ if __name__ == '__main__':
         options.stdlog.write("# ninput=%i, nrun=%i, nskipped=%i, ndeleted=%i, nerrors=%i\n" %\
                                  (ninput, nrun, nskipped, ndeleted, nerrors ) )
 
-    Experiment.Stop()
+    E.Stop()

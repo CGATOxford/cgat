@@ -60,7 +60,7 @@ import os
 import optparse
 import math
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import scipy
 import scipy.stats
 import CGAT.IOTools as IOTools
@@ -102,7 +102,7 @@ if __name__ == '__main__':
         display_tree = False,
         )
 
-    (options, args) = Experiment.Start( parser, quiet = True )
+    (options, args) = E.Start( parser, quiet = True )
 
     if options.columns not in ( "all", "all-but-first"):
         options.columns = map(lambda x: int(x) -1 , options.columns.split(","))

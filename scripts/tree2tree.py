@@ -105,7 +105,7 @@ import math
 import tempfile
 import subprocess
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.TreeTools as TreeTools
 import CGAT.IOTools as IOTools
 import CGAT.WrapperPhylip as WrapperPhylip
@@ -338,7 +338,7 @@ if __name__ == "__main__":
         with_branchlengths = True,
         )
 
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
     options.methods = options.methods.split(",")
     options.parameters = options.parameters.split(",")    
@@ -423,4 +423,4 @@ if __name__ == "__main__":
     if options.loglevel >= 1:
         options.stdlog.write( "# ntotal=%i, nskipped=%i\n" % (ntotal, nskipped))
         
-    Experiment.Stop()
+    E.Stop()

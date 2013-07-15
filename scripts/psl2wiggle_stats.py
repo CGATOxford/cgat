@@ -65,7 +65,7 @@ import time
 import os
 import glob
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Stats as Stats
 import CGAT.Blat as Blat
 
@@ -100,7 +100,7 @@ if __name__ == '__main__':
                          with_values = False,
                          test = None )
 
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
     # open indexed access to wiggles
     wiggle_files = glob.glob( options.wiggle_files )
@@ -179,4 +179,4 @@ if __name__ == '__main__':
     if options.loglevel >= 1:
         options.stdlog.write( "# ninput=%i, noutput=%i, nskipped=%i\n" % (ninput, noutput, nskipped) )
 
-    Experiment.Stop()
+    E.Stop()

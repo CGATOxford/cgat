@@ -58,7 +58,7 @@ import sys
 import string
 import re
 import optparse
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.PredictionParser as PredictionParser
 import CGAT.GFF as GFF
 
@@ -73,7 +73,7 @@ if __name__ == "__main__":
         format="flat"
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     last_e = None
     for line in sys.stdin:
@@ -107,6 +107,6 @@ if __name__ == "__main__":
         
     print str(last_e)
 
-    Experiment.Stop()
+    E.Stop()
 
         

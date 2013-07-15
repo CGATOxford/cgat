@@ -69,7 +69,7 @@ import tempfile
 """ program $Id: join_tables.py 2782 2009-09-10 11:40:29Z andreas $
 
 """
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 
 USAGE = """python %s < stdin > stdout
 
@@ -110,7 +110,7 @@ if __name__ == "__main__":
         missing_value = "",
         )
 
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
     if len(args) < 2:
         raise "there have to be at least two tables."
@@ -186,4 +186,4 @@ if __name__ == "__main__":
         if f:
             f.close()
 
-    Experiment.Stop()
+    E.Stop()

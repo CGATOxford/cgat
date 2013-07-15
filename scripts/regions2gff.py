@@ -66,7 +66,7 @@ import time
 import optparse
 import math
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.GenomicIO as GenomicIO
 import CGAT.IOTools as IOTools
@@ -698,7 +698,7 @@ if __name__ == "__main__":
         report_step = 10000
         )
 
-    (options, args) = Experiment.Start( parser, add_psql_options = True )
+    (options, args) = E.Start( parser, add_psql_options = True )
 
     if options.orthologs: options.id_format = "schema-id"
     
@@ -749,4 +749,4 @@ if __name__ == "__main__":
 
     processPredictions( dbhandle, options.schema, options, prediction_ids, taboo_regions, map_feature2property )        
 
-    Experiment.Stop()
+    E.Stop()

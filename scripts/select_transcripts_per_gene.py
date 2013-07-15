@@ -73,7 +73,7 @@ Remove transcripts from a gene that are likely predictions by paralogs.
 
 """
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Exons as Exons
 
 import pgdb
@@ -131,7 +131,7 @@ if __name__ == "__main__":
         separator = "|",
         )
 
-    (options, args) = Experiment.Start( parser, add_psql_options = True )
+    (options, args) = E.Start( parser, add_psql_options = True )
 
     if options.priority: options.priority = options.priority.split(",")
 
@@ -196,4 +196,4 @@ if __name__ == "__main__":
 
     Write( sys.stdout, last_gene, qualities, options.priority )    
 
-    Experiment.Stop()
+    E.Stop()

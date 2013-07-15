@@ -69,7 +69,7 @@ Version: $Id: gff2predictions.py 2021 2008-07-10 16:00:48Z andreas $
 """
 
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.PredictionParser as PredictionParser
 import CGAT.Genomics as Genomics
 import CGAT.Exons as Exons
@@ -158,7 +158,7 @@ if __name__ == "__main__":
         predictions_file = None,
         remove_unaligned = False )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if not options.genome_file:
         raise "please specify a genome file."
@@ -487,5 +487,5 @@ if __name__ == "__main__":
         if peptide_sequences:
             options.stdlog.write("# nfound=%i, nnotfound=%i, nidentical=%i, nmismatch=%i, naligned=%i, nunaligned=%i\n" %\
                                  (nfound, nnotfound, nidentical, nmismatch, naligned, nunaligned))        
-    Experiment.Stop()
+    E.Stop()
     

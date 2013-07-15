@@ -69,7 +69,7 @@ import optparse
 import math
 import glob
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 
 if __name__ == "__main__":
@@ -84,7 +84,7 @@ if __name__ == "__main__":
         filename_map = None,
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if options.filename_map:
         map_species2sp = IOTools.ReadMap( open(options.filename_map, "r"))
@@ -123,4 +123,4 @@ if __name__ == "__main__":
 
     if options.loglevel >= 1:
         options.stdlog.write("# ninput=%i, noutput=%i, nerrors=%i\n" % (ninput, noutput, nerrors))
-    Experiment.Stop()
+    E.Stop()

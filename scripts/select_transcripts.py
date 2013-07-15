@@ -111,7 +111,7 @@ f: filter by list of transcripts
 
 """ % sys.argv[0]
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Exons as Exons
@@ -826,7 +826,7 @@ if __name__ == '__main__':
         genome_file = None,
         discard_large_clusters = None )
     
-    (options, args) = Experiment.Start( parser, add_psql_options = True )    
+    (options, args) = E.Start( parser, add_psql_options = True )    
 
     if options.test_nids: options.test_nids = options.test_nids.split(",")
 
@@ -1155,6 +1155,6 @@ if __name__ == '__main__':
     for v,c in eliminated_by_method.items():
         options.stdlog.write( "# method=%s, count=%i\n" % (v, c) )
 
-    Experiment.Stop()
+    E.Stop()
 
 

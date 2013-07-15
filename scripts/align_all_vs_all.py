@@ -68,7 +68,7 @@ import optparse
 import math
 import tempfile
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 
 import alignlib
 import CGAT.FastaIterator as FastaIterator
@@ -88,7 +88,7 @@ if __name__ == "__main__":
         gep = -1.0,
         )
 
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
     if options.filename_sequences:
         infile = open(options.filename_sequences, "r")
@@ -134,4 +134,4 @@ if __name__ == "__main__":
                                   
             
 
-    Experiment.Stop()
+    E.Stop()

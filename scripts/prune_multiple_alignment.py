@@ -92,7 +92,7 @@ Lower case characters are interpreted as unaligned characters, unless
 the option --ignore-case is given.
 """ % sys.argv[0]
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.Mali as Mali
 import CGAT.Exons as Exons
@@ -551,7 +551,7 @@ if __name__ == '__main__':
         mask_master = False,
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if options.target == "paml":
         options.mask_stops = True
@@ -848,6 +848,6 @@ if __name__ == '__main__':
             outfile.write( ">%s\n%s\n" % (id, Genomics.TranslateDNA2Protein(mali[id])))
         outfile.close()
 
-    Experiment.Stop()
+    E.Stop()
     
     

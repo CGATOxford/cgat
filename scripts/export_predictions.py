@@ -73,7 +73,7 @@ Options:
 -v, --verbose=                  loglevel.
 """ % sys.argv[0]
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import pgdb
 import CGAT.IndexedFasta as IndexedFasta
@@ -1204,7 +1204,7 @@ if __name__ == "__main__":
         tracks="contigs,genes,mrnas,cds",
         )
 
-    (options, args) = Experiment.Start( parser,
+    (options, args) = E.Start( parser,
                                         add_psql_options = True,
                                         add_pipe_options = True )
 
@@ -1256,7 +1256,7 @@ if __name__ == "__main__":
     elif options.format == "fasta":
 
         writeFasta( args, options )
-        Experiment.Stop()
+        E.Stop()
         sys.exit(0)
         
     if options.filename_batch:
@@ -1302,7 +1302,7 @@ if __name__ == "__main__":
             WriteMap( options, "genes", map_gene_id)
             WriteMap( options, "predictions", map_prediction_id)            
 
-    Experiment.Stop()
+    E.Stop()
     
 
     

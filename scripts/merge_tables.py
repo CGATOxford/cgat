@@ -68,7 +68,7 @@ import time
 """merge two tables with the same number of lines
 """
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 
 import CGAT.WrapperAdaptiveCAI as WrapperAdaptiveCAI
 import numpy
@@ -85,7 +85,7 @@ if __name__ == "__main__":
     parser.set_defaults( \
         tables = [])
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if len(options.tables) < 1:
         raise "please specify at least one table."
@@ -110,4 +110,4 @@ if __name__ == "__main__":
 
         print string.join( frags, "\t" )
     
-    Experiment.Stop()
+    E.Stop()

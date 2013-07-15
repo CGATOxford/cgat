@@ -61,7 +61,7 @@ import sys
 import string
 import re
 import optparse
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 
 if __name__ == "__main__":
 
@@ -81,7 +81,7 @@ if __name__ == "__main__":
         start = None,
         end = None)
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if not options.start:
         keep = True
@@ -131,4 +131,4 @@ if __name__ == "__main__":
             print l
 
 
-    Experiment.Stop()
+    E.Stop()

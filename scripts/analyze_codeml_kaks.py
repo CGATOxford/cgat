@@ -64,7 +64,7 @@ import optparse
 from types import *
 
 import CGAT.Genomics as Genomics
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.WrapperCodeML as WrapperCodeML
 import scipy
 import scipy.stats
@@ -114,7 +114,7 @@ write-ka-tree: write out ka tree(s).
         mode = "pairs",
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     options.methods = options.methods.split(",")
     options.models = options.models.split(",")
@@ -200,4 +200,4 @@ write-ka-tree: write out ka tree(s).
                 last_result = result
                 x += 1
         
-    Experiment.Stop()
+    E.Stop()

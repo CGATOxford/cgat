@@ -65,7 +65,7 @@ import optparse
 import scipy
 import numpy
 import CGAT.MatlabTools as MatlabTools
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 from array import array
 import math
 import numpy
@@ -228,7 +228,7 @@ if __name__ == "__main__":
         title = None,
         subplots = None)
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     # import matplotlib/pylab. Has to be done here
     # for batch scripts without GUI.
@@ -383,4 +383,4 @@ if __name__ == "__main__":
     else:
         pylab.show()
 
-    Experiment.Stop()
+    E.Stop()

@@ -62,7 +62,7 @@ import string
 import re
 import getopt
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.Intervalls as Intervalls
 import CGAT.PredictionParser as PredictionParser

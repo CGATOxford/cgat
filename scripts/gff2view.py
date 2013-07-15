@@ -79,7 +79,7 @@ TODO: add support for ensembl
 
 import CGAT.GFF as GFF
 import CGAT.GTF as GTF
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
 
 ##------------------------------------------------------------
@@ -135,7 +135,7 @@ if __name__ == '__main__':
         joined = False,
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if len(args) != 1:
         print USAGE
@@ -223,4 +223,4 @@ if __name__ == '__main__':
 
         nopened += 1
         
-    Experiment.Stop()
+    E.Stop()

@@ -69,7 +69,7 @@ import tempfile
 """ program $Id: go2plot.py 2782 2009-09-10 11:40:29Z andreas $
 
 """
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 
 doEps = True                 # generate eps instead of ps (but make sure it's just one page!)
 largepvalues = True          # if true smallest p value is 10^-4 otherwise 10^-5.
@@ -342,7 +342,7 @@ if __name__ == "__main__":
         footer = "",        
         )
 
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
     if len(args) == 0:
         raise "Please supply at least one input file."
@@ -454,4 +454,4 @@ if __name__ == "__main__":
 
 
 
-    Experiment.Stop()
+    E.Stop()

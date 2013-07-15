@@ -71,7 +71,7 @@ import tempfile
 
 show differences between two transcript sets.
 """
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 
 def parseIdentifier( id, options ):
@@ -144,7 +144,7 @@ if __name__ == "__main__":
         output_pattern = "%s",
         )
 
-    (options, args) = Experiment.Start( parser, add_psql_options = True )
+    (options, args) = E.Start( parser, add_psql_options = True )
 
     options.filename1, options.filename2 = args
 
@@ -228,4 +228,4 @@ if __name__ == "__main__":
                     outfile.write( "%s\n" % (x,) )
                 outfile.close()
                     
-    Experiment.Stop()
+    E.Stop()

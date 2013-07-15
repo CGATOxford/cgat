@@ -76,7 +76,7 @@ analyse orthology sets.
 
 """
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.TreeTools as TreeTools
 import CGAT.Tree as Tree
 import CGAT.SVGTree as SVGTree
@@ -284,7 +284,7 @@ if __name__ == "__main__":
         skip_without_outgroups = False,
         )
     
-    (options, args) = Experiment.Start( parser, add_psql_options = True, add_csv_options = True )
+    (options, args) = E.Start( parser, add_psql_options = True, add_csv_options = True )
 
     if options.outgroup_species:
         options.outgroup_species = set(options.outgroup_species.split(","))
@@ -555,5 +555,5 @@ if __name__ == "__main__":
     if options.loglevel >= 1:
         options.stdlog.write("# ninput=%i, nfiltered=%i, nskipped=%i, nskipped_filter=%i, nskipped_outgroups=%i, noutput=%i\n" % (ninput, nfiltered, nskipped, nskipped_filter, nskipped_outgroups, noutput ) )
                 
-    Experiment.Stop()
+    E.Stop()
 

@@ -70,7 +70,7 @@ import glob
 
 from types import *
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 
 class LogFileData:
@@ -189,7 +189,7 @@ if __name__ == "__main__":
         recursive = False,
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if args:
         filenames = args
@@ -266,5 +266,5 @@ if __name__ == "__main__":
             
         options.stdout.write( "%s\t%s\n" % ("total", str(total) ) )  
 
-    Experiment.Stop()
+    E.Stop()
     

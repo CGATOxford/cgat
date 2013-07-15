@@ -67,7 +67,7 @@ import optparse
 import math
 import tempfile
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.GFF as GFF
 
 USAGE="""
@@ -98,7 +98,7 @@ if __name__ == "__main__":
         feature = "CDS",
         )
 
-    (options, args) = Experiment.Start( parser, add_csv_options  = True)
+    (options, args) = E.Start( parser, add_csv_options  = True)
 
     input_gffs = GFF.readFromFile( sys.stdin, separator = " " )
 
@@ -168,4 +168,4 @@ if __name__ == "__main__":
         n.source = options.source_id
         options.stdout.write(str(n) + "\n")
         
-    Experiment.Stop()
+    E.Stop()

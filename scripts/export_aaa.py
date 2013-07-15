@@ -73,7 +73,7 @@ Options:
 -v, --verbose=                  loglevel.
 """ % sys.argv[0]
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import pgdb
 
 HEADER="""##gff-version   3
@@ -410,7 +410,7 @@ if __name__ == "__main__":
         quality_clean_set = 'CG,PG,SG',
         )
 
-    (options, args) = Experiment.Start( parser,
+    (options, args) = E.Start( parser,
                                         add_psql_options = True,
                                         add_pipe_options = True )
 
@@ -447,7 +447,7 @@ if __name__ == "__main__":
             WriteMap( options, "genes", map_gene_id)
             WriteMap( options, "predictions", map_prediction_id)            
 
-    Experiment.Stop()
+    E.Stop()
     
 
     

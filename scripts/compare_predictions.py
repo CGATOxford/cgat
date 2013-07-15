@@ -86,7 +86,7 @@ param_long_options=["verbose=", "help", "table-reference=", "table-target="]
 param_short_options="v:hR:T:"
 
 import alignlib
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.PredictionParser as PredictionParser
 import CGAT.Exons as Exons
@@ -126,8 +126,8 @@ if __name__ == '__main__':
         print USAGE, "no arguments required."
         sys.exit(2)
 
-    print Experiment.GetHeader()
-    print Experiment.GetParams()
+    print E.GetHeader()
+    print E.GetParams()
 
     dbhandle = pgdb.connect( param_connection )
 
@@ -292,7 +292,7 @@ if __name__ == '__main__':
         
     cr.close()
 
-    print Experiment.GetFooter()
+    print E.GetFooter()
         
         
 

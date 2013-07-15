@@ -181,7 +181,7 @@ param_cluster_merging_min_identity = 90
 ####################################################
 
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.MaliIO as MaliIO
 import scipy
 import CGAT.Exons as Exons
@@ -1002,8 +1002,8 @@ if __name__ == '__main__':
         elif o == "--only-headers":
             param_only_headers = True
 
-    print Experiment.GetHeader()
-    print Experiment.GetParams()
+    print E.GetHeader()
+    print E.GetParams()
     evaluate_bootstrap.param_loglevel = param_loglevel
 
     if param_only_headers:
@@ -1058,7 +1058,7 @@ if __name__ == '__main__':
                 
     if param_only_headers:
         print "PREFIX\t" + "\nPREFIX\t".join(headers)
-        print Experiment.GetFooter()
+        print E.GetFooter()
         sys.exit(0)
     else:
         print "# PREFIX\t" + "\n# PREFIX\t".join(headers)
@@ -1247,7 +1247,7 @@ if __name__ == '__main__':
                 outfile.close()
 
 
-    print Experiment.GetFooter()
+    print E.GetFooter()
     
     
  

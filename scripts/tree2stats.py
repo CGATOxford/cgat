@@ -67,7 +67,7 @@ import subprocess
 
 from types import *
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.TreeTools as TreeTools
 import CGAT.Stats as Stats
 
@@ -90,7 +90,7 @@ if __name__ == "__main__":
         filtered_branch_length = -999,
         )
 
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
     nexus = TreeTools.Newick2Nexus( sys.stdin )
     if options.loglevel >= 1:
@@ -124,4 +124,4 @@ if __name__ == "__main__":
     if options.loglevel >= 1:
         options.stdlog.write( "# ninput=%i, nskipped=%i\n" % (ninput, nskipped))
         
-    Experiment.Stop()
+    E.Stop()

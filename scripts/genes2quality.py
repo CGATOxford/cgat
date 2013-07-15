@@ -82,7 +82,7 @@ The following filtering options are available:
 --filter-ds: keeps only transcripts with a ds of less than #
 """
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 
 import pgdb
@@ -186,7 +186,7 @@ if __name__ == "__main__":
         filter_quality = None
         )
 
-    (options, args) = Experiment.Start( parser, add_psql_options = True )
+    (options, args) = E.Start( parser, add_psql_options = True )
 
     if options.priority: options.priority = options.priority.split(",")
     if options.filter_keep: options.filter_keep = options.filter_keep.split(",")
@@ -267,7 +267,7 @@ if __name__ == "__main__":
         sys.stdout.flush()
 
     if len(rows) == 0:
-        Experiment.Stop()
+        E.Stop()
         sys.exit(0)
         
     last_gene, last_id, last_quality,last_score = rows[0]
@@ -314,4 +314,4 @@ if __name__ == "__main__":
     if options.loglevel >= 1:
         options.stdlog.write("# ninput=%i, noutput=%i, nfiltered_ds=%i\n" % (ninput, noutput, nfiltered_ds))
     
-    Experiment.Stop()
+    E.Stop()

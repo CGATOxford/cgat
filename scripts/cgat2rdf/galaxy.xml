@@ -51,7 +51,7 @@
     </param>
   {%- elif type == "data" %} format="{{ p.format }}" />
   {#- added by AH: do not output empty values -#}  
-  {%- elif p.value == None or p.value == "" %} value="" />
+  {%- elif p.value == None or p.value == "" or p.value == [] %} value="" />
   {%- else %} value="{{ p.value }}" />
   {%- endif -%}
 {%- endmacro -%}
@@ -59,8 +59,8 @@
 {#- helper function to print select type parameter -#}
 {% macro printSelectOptions(p) -%}
   {% if p.property_bag -%}
-    {% if p.property_bag['from_loc'] -%}
-    <options from_data_table="{{data.name}}_indexes" />
+   {% if p.property_bag['from_loc'] -%}
+    <options from_data_table="{{p.property_bag.get( 'loc_id', data.name)}}_indexes" />
     {%- endif -%}
   {%- else -%}
     {#- added by AH: for boolean choices insert the flag instead -#}
@@ -116,9 +116,9 @@
     {#- added by AH: for boolean values insert a variable -#}
     ${{printVariableName(prefix, p.ns_name)}}
   {%- elif p.property_bag['from_loc'] == 'path' -%}
-    {{arg}}{{c}}"${filter(lambda x: str(x[0]) == str(${{p.property_bag['loc_id_filter']}}), $__app__.tool_data_tables['{{data.name}}_indexes'].get_fields())[0][-1]}"
+    {{arg}}{{c}}"${filter(lambda x: str(x[{{p.property_bag.get('loc_id_filter', 0)}}]) == str(${{p.ns_name}}), $__app__.tool_data_tables['{{p.property_bag.get( 'loc_id', data.name )}}_indexes'].get_fields())[0][-1]}"
   {%- elif p.property_bag['from_loc'] == 'dbkey' -%}
-    {{arg}}{{c}}"${filter(lambda x: str(x[0]) == str(${{p.property_bag['loc_id_filter']}}), $__app__.tool_data_tables['{{data.name}}_indexes'].get_fields())[0][1]}"
+    {{arg}}{{c}}"${filter(lambda x: str(x[1]) == str(${{p.property_bag['loc_id_filter']}}), $__app__.tool_data_tables['{{p.property_bag.get( 'loc_id', data.name)}}_indexes'].get_fields())[0][1]}"
   {%- elif not printValue -%}
     {%- if p.min_occurrence|int == 0 and (p.value == None or p.value == "") -%}
       {#- added by AH: for optional arguments - do not print out None or "" values -#}
@@ -145,8 +145,9 @@
 <tool id="{{data.name}}" name="{{data.name}}" version="{{data.version}}">
   <description>{{ data.description }}</description>
   <parallelism method="basic"></parallelism>
-  <command{{' interpreter="' + data['interpreter'] + '"' if data['interpreter'] != '(binary)'}}>
-    {{data.binary}}
+  <command{{' interpreter="' + data['interpreter'] + '"' if data['interpreter'] != '(binary)'}}> 
+    {{data.binary}} --verbose=0
+    {#- logging to separate file -#}
     {#- print out advaned menu options -#}
     {%- if showAdvanceMenu %}
       #if str($advanced_condition.advanced) == "True":

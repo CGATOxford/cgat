@@ -70,7 +70,7 @@ import tempfile
 
 Analyse query predictions.
 """
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Exons as Exons
 import CGAT.IOTools as IOTools
 import CGAT.Genomics as Genomics
@@ -315,7 +315,7 @@ if __name__ == "__main__":
         format_percent="%5.2f",
         )
 
-    (options, args) = Experiment.Start( parser, add_psql_options = True )
+    (options, args) = E.Start( parser, add_psql_options = True )
 
     if options.filename_peptides:
         peptides = Genomics.ReadPeptideSequences( open(options.filename_peptides, "r"))
@@ -496,4 +496,4 @@ if __name__ == "__main__":
 
                 if outfile != options.stdout: outfile.close()
             
-    Experiment.Stop()
+    E.Stop()

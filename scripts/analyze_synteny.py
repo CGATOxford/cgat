@@ -75,7 +75,7 @@ Methods:
 counts = count number of orthologs per contig pair.
 
 """
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import numpy
 import CGAT.Synteny as Synteny
@@ -105,7 +105,7 @@ if __name__ == "__main__":
         output_pattern_gff = "%s.gff",
         )
 
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
     if len(args) != 2:
         raise "please supply two files with synteny information."
@@ -320,4 +320,4 @@ if __name__ == "__main__":
             outfile.write("ortholog_total\t%i\t%i\t%5.2f\n" % (nassigned,
                                                        ntotal, float( ntotal) * 100 / nassigned))
             
-    Experiment.Stop()
+    E.Stop()

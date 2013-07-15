@@ -73,7 +73,7 @@ import glob
 update orthology assignments.
 
 """
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 
 def createLink( old_fn, new_fn ):
     """create symbolic link between old and new."""
@@ -104,7 +104,7 @@ if __name__ == "__main__":
         schemas=""
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     options.schemas = options.schemas.split(",")
 
@@ -218,4 +218,4 @@ if __name__ == "__main__":
     if options.loglevel >= 1:
         options.stdlog.write( "# ninput=%i, nlinked=%i, nupdate=%i, nnew=%i, nerrors=%i\n" % (ninput, nlinked, nupdate, nnew, nerrors) )
     
-    Experiment.Stop()
+    E.Stop()

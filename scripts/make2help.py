@@ -66,7 +66,7 @@ import time
 """extract help test from a makefile
 """
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 from export_code import getMakefiles
 
 class Parameter:
@@ -121,7 +121,7 @@ if __name__  == "__main__":
         filename="Makefile",
         )
     
-    (options, args) = Experiment.Start( parser,
+    (options, args) = E.Start( parser,
                                         quiet = True,
                                         add_pipe_options = True )
 
@@ -254,4 +254,4 @@ if __name__  == "__main__":
     for makefile in makefiles:
         options.stdout.write("    %s\n" % makefile )
         
-    Experiment.Stop()
+    E.Stop()

@@ -61,7 +61,7 @@ import string
 import os
 import optparse
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.CSV as CSV
 import CGAT.Genomics as Genomics
 
@@ -211,7 +211,7 @@ if __name__ == "__main__":
        global_sort= False,
        )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
     if options.methods:
         options.methods = options.methods.split(",")
 

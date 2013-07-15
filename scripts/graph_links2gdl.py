@@ -77,7 +77,7 @@ import re
 import getopt
 import optparse
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import matplotlib
 
 FORMAT_GRAPH = '''
@@ -210,7 +210,7 @@ if __name__ == "__main__":
         add_edge_labels = False,
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     options.column_edge_weight -= 1
     options.column_edge_colour -= 1    
@@ -430,7 +430,7 @@ if __name__ == "__main__":
             
     options.stdout.write ("}\n" )
     
-    Experiment.Stop()
+    E.Stop()
 
     
 

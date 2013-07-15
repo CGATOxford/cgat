@@ -62,7 +62,7 @@ import string
 import re
 import optparse
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 
 USAGE="""python %s [OPTIONS] [genomic_sequence] [ < genomic sequence]
 
@@ -95,7 +95,7 @@ if __name__ == '__main__':
         width=100,
         )
 
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
     nchunk = 0
     chunksize = 0

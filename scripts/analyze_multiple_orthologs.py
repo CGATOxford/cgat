@@ -70,7 +70,7 @@ import tempfile
 """get ortholog counts for a set of predictions in a genome.
 """
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 
 import pgdb
@@ -90,7 +90,7 @@ if __name__ == "__main__":
         species = None,
     )
 
-    (options, args) = Experiment.Start( parser, add_psql_options = True )
+    (options, args) = E.Start( parser, add_psql_options = True )
 
     dbhandle = pgdb.connect( options.psql_connection )
 
@@ -137,4 +137,4 @@ if __name__ == "__main__":
             options.stdout.write("\t%s:%s:%s:%s" % degeneracies[x][s])
         options.stdout.write("\n")
     
-    Experiment.Stop()
+    E.Stop()

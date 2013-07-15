@@ -70,7 +70,7 @@ import random
 
 from types import *
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.TreeTools as TreeTools
 import CGAT.Tree as Tree
 import CGAT.IOTools as IOTools
@@ -141,7 +141,7 @@ if __name__ == "__main__":
         debug = False,
         )
 
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
     phylip = WrapperPhylip.Phylip()
 
@@ -300,4 +300,4 @@ if __name__ == "__main__":
             for tree in result.mNexus.trees:
                 options.stdlog.write("# ninput=%i, nreference=%i, noutput=%i\n" % ( len(matrix)-1, nref, len(tree.get_terminals()) ) )
 
-    Experiment.Stop()
+    E.Stop()

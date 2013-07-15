@@ -106,7 +106,7 @@ Options:
 --filename-previous               filename with previous output (that are to be skipped).
 """ % sys.argv[0]
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.PredictionParser as PredictionParser
 import CGAT.IndexedFasta as IndexedFasta
@@ -306,7 +306,7 @@ if __name__ == '__main__':
         filename_previous = None, )
 
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
             
     if len(args) > 0:
         print USAGE, "no arguments required."
@@ -655,7 +655,7 @@ if __name__ == '__main__':
     print "# written %i pairs" % npairs
     print "# written %i regions" % nregions
     
-    print Experiment.GetFooter()
+    print E.GetFooter()
     
     
 

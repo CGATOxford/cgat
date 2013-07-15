@@ -82,7 +82,7 @@ Options:
 -g, --genes=                    filename with list of genes per species
 """ % sys.argv[0]
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.BlastAlignments as BlastAlignments
 import CGAT.Genomics as Genomics
 import CGAT.TreeTools as TreeTools
@@ -99,7 +99,7 @@ if __name__ == "__main__":
         filename_reference_tree = None
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if not options.filename_reference_tree:
         print "please supply reference tree."
@@ -134,4 +134,4 @@ if __name__ == "__main__":
     print "# total=%i, compatible=%i, failed=%i, topology=%i, taxa=%i, leaves=%i" %\
           (ntotal, nok, nfailed, ntopology, ntaxa, nleaves )
     
-    Experiment.Stop()
+    E.Stop()

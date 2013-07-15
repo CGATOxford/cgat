@@ -62,7 +62,7 @@ import tempfile
 import optparse
 import time
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 
 
 def AddOptions( outfile,  infile, source_directory, options ):
@@ -154,7 +154,7 @@ if __name__ == "__main__":
         root_dir = None,
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if not options.method:
         raise ValueError("please specify a method.")
@@ -234,5 +234,5 @@ if __name__ == "__main__":
     print "Setup of module '%s' complete.\n" % ( options.method )
     print "Working directory is %s.\n" % (os.path.realpath(target_directory))
 
-    Experiment.Stop()
+    E.Stop()
 

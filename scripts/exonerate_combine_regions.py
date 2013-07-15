@@ -82,7 +82,7 @@ Options:
 -s, --min-score=                minimum total alignment score
 """ % sys.argv[0]
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.Intervalls as Intervalls
 
@@ -302,8 +302,8 @@ if __name__ == '__main__':
         print USAGE, "no arguments required."
         sys.exit(2)
 
-    print Experiment.GetHeader()
-    print Experiment.GetParams()
+    print E.GetHeader()
+    print E.GetParams()
     
     # read complete genomic sequence
     if param_filename_genome:

@@ -3616,10 +3616,10 @@ def main( argv = None ):
                        help="format of secondary stream [default=%default]."  )
 
     parser.add_option( "--gff-source", dest="gff_sources", type="string", action="append",
-                      help="restrict to this source in extra gff file (for counter: overlap) [default=%default]."  )
+                      help="restrict input to this 'source' in extra gff file (for counter: overlap) [default=%default]."  )
 
     parser.add_option( "--gff-feature", dest="gff_features", type="string", action="append",
-                      help="restrict to this feature in extra gff file (for counter: overlap) [default=%default]."  )
+                      help="restrict input to this 'feature' in extra gff file (for counter: overlap) [default=%default]."  )
 
     parser.add_option("-r", "--reporter", dest="reporter", type="choice",
                       choices=("genes", "transcripts" ),

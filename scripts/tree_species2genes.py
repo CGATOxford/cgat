@@ -67,7 +67,7 @@ import popen2
 from Bio.Nexus import Nexus
 from Bio.Nexus.Nodes import Node
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.BlastAlignments as BlastAlignments
 import CGAT.Genomics as Genomics
 
@@ -107,8 +107,8 @@ if __name__ == "__main__":
         print globals()["__doc__"]
         sys.exit(1)
     
-    print Experiment.GetHeader()
-    print Experiment.GetParams()
+    print E.GetHeader()
+    print E.GetParams()
 
     rx = re.compile( param_pattern_species )
     infile = open(param_filename_genes, "r")
@@ -127,4 +127,4 @@ if __name__ == "__main__":
 
     print TreeTools.Nexus2Newick( nexus )
     
-    print Experiment.GetFooter()
+    print E.GetFooter()

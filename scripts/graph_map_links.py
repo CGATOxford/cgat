@@ -83,7 +83,7 @@ Options:
 -i, --identity-map              mapping is done by identities
 """ % sys.argv[0]
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.BlastAlignments as BlastAlignments
 
 def ReadIdentityMap( infile):
@@ -131,7 +131,7 @@ if __name__ == "__main__":
         report_step = 1000000,
         non_redundant = False)
         
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if options.filename_map_query:
         infile = open(options.filename_map_query, "r")        
@@ -301,6 +301,6 @@ if __name__ == "__main__":
     print "# ninput=%i, noutput=%i, nskipped=%i, nfailed=%i, nsame=%i, nmapped=%i" % (\
         ninput, noutput, nskipped, nfailed, nsame, nmapped )
     
-    Experiment.Stop()
+    E.Stop()
 
 

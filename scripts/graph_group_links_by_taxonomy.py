@@ -62,7 +62,7 @@ import string
 import os
 import optparse
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import scipy
 import scipy.stats
 
@@ -155,7 +155,7 @@ if __name__ == '__main__':
         write_id = False,
         )
     
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if options.write_id:
         if options.function not in ("min", "max"):
@@ -236,4 +236,4 @@ if __name__ == '__main__':
     printResult( options.stdout, last_id, ranges, values_within, values_without, f,
                  options = options )
 
-    Experiment.Stop()
+    E.Stop()

@@ -75,7 +75,7 @@ analyse a prediction list
 
 
 """
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 
 if __name__ == "__main__":
 
@@ -97,7 +97,7 @@ if __name__ == "__main__":
         tablename_predictions = "predictions",
         separator = "|" )
 
-    (options, args) = Experiment.Start( parser, add_psql_options = True, add_csv_options = True )
+    (options, args) = E.Start( parser, add_psql_options = True, add_csv_options = True )
     options.methods = options.methods.split(",")
     dbhandle = pgdb.connect( options.psql_connection )
 
@@ -155,4 +155,4 @@ if __name__ == "__main__":
                 
         outfile.write("\n")
             
-    Experiment.Stop()
+    E.Stop()

@@ -66,7 +66,7 @@ import optparse
 import math
 import tempfile
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import alignlib
 
@@ -119,7 +119,7 @@ if __name__ == "__main__":
         filename_map = None,
         )
 
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
     if not options.filename_map:
         raise "please supply filename with map between peptide to cds."
@@ -185,5 +185,5 @@ if __name__ == "__main__":
 
     options.stderr.write( "# input=%i, output=%i, errors=%i, stops=%i\n" % (ninput, noutput, nerrors, nstops ))
     
-    Experiment.Stop()
+    E.Stop()
 

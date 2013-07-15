@@ -63,7 +63,7 @@ import os
 import optparse
 
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Histogram as Histogram
 
 if __name__ == "__main__":
@@ -77,7 +77,7 @@ if __name__ == "__main__":
         is_ints = False
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     vals = []
     
@@ -123,7 +123,7 @@ if __name__ == "__main__":
 
         cumul_down -= val
 
-    Experiment.Stop()
+    E.Stop()
 
 
 

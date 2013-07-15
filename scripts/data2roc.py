@@ -158,7 +158,7 @@ def main( argv = None ):
 
     if options.multiple:
         doMultiple( options )
-        Experiment.Stop()
+        E.Stop()
         sys.exit(0)
 
     true_positives = 0

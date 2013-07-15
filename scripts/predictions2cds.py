@@ -76,7 +76,7 @@ exons:        exon table output
 """ % sys.argv[0]
 
 import alignlib
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Exons as Exons
@@ -111,7 +111,7 @@ if __name__ == '__main__':
         reset_to_start = False,
         reset_query = False )
     
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
     if len(args) > 0:
         print USAGE, "no arguments required."
@@ -310,5 +310,5 @@ if __name__ == '__main__':
     if options.loglevel >= 1:
         options.stdlog.write("# ninput=%i, noutput=%i, nskipped=%i, nerrors=%i\n" % (ninput, noutput, nskipped, nerrors))
 
-    Experiment.Stop()
+    E.Stop()
         

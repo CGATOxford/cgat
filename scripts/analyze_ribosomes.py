@@ -74,7 +74,7 @@ analyse ribosomal proteins.
 Input is a file of orthologs, a list of schemas and a list
 of sequence identifiers.
 """
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.CSV as CSV
 import CGAT.IOTools as IOTools
 import CGAT.Stats as Stats
@@ -136,7 +136,7 @@ if __name__ == "__main__":
         remove_na = False,
         )
 
-    (options, args) = Experiment.Start( parser, add_csv_options = True )
+    (options, args) = E.Start( parser, add_csv_options = True )
 
     options.schemas = options.schemas.split(",")
     if not options.schemas: raise "please supply schemas."
@@ -312,4 +312,4 @@ if __name__ == "__main__":
                 for x in range(len(options.schemas)):
                     options.stdout.write( "%s\t%s\n" % (options.schemas[x], row[extract_columns[x]]))
             
-    Experiment.Stop()
+    E.Stop()

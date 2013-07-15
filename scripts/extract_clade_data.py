@@ -66,7 +66,7 @@ import time
 import optparse
 import math
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.IOTools as IOTools
@@ -124,7 +124,7 @@ if __name__ == "__main__":
         separator = "|",
         )
 
-    (options, args) = Experiment.Start( parser, add_psql_options = True )
+    (options, args) = E.Start( parser, add_psql_options = True )
 
     ## database handle for connecting to postgres
     dbhandle = pgdb.connect( options.psql_connection )
@@ -142,4 +142,4 @@ if __name__ == "__main__":
                                                     gene_id, re.sub("-", "", sequence) ) )
 
 
-    Experiment.Stop()
+    E.Stop()

@@ -70,7 +70,7 @@ Summarize information about introns in predictions.
   
 """ % sys.argv[0]
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Exons as Exons
@@ -134,7 +134,7 @@ if __name__ == '__main__':
         skip_header = False,
         )
 
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
     if len(args) > 0:
         print USAGE, "no arguments required."
@@ -250,4 +250,4 @@ if __name__ == '__main__':
         options.stdlog.write("# ninput=%i, noutput=%i.\n" % (\
             ninput, noutput))
 
-    Experiment.Stop()
+    E.Stop()

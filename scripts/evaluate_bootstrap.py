@@ -84,7 +84,7 @@ import sets
 from Bio.Nexus import Nexus
 from Bio.Nexus.Nodes import Node
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.TreeTools as TreeTools
 
 param_loglevel = 1
@@ -828,8 +828,8 @@ if __name__ == "__main__":
         elif o in ("-x", "--prefix"):
             param_prefix_cluster = a
 
-    print Experiment.GetHeader()
-    print Experiment.GetParams()
+    print E.GetHeader()
+    print E.GetParams()
 
     rx_species = re.compile(param_pattern_species)
 
@@ -924,4 +924,4 @@ if __name__ == "__main__":
     if param_filename_clusters:
         outfile_clusters.close()
     
-    print Experiment.GetFooter()
+    print E.GetFooter()

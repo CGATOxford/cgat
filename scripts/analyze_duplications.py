@@ -74,7 +74,7 @@ species1 species2 location function height
 is for a duplication of species2 in species.
 """
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import pgdb
 import numpy
 import CGAT.MatlabTools as MatlabTools
@@ -196,7 +196,7 @@ if __name__ == "__main__":
                          reverse=False,
                          method="counts")
     
-    (options, args) = Experiment.Start( parser, add_psql_options = True )
+    (options, args) = E.Start( parser, add_psql_options = True )
 
     options.species = options.species.split(",")
     options.locations = options.locations.split(",")
@@ -550,4 +550,4 @@ if __name__ == "__main__":
                             outfile.close()
 
                         
-    Experiment.Stop()
+    E.Stop()

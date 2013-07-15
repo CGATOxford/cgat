@@ -72,7 +72,7 @@ clone a prediction run.
 1. copy all tables from new schema into old schema.
 
 """
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 
 def Run( statement, stdout = sys.stdout, stderr = sys.stderr ):
 
@@ -116,7 +116,7 @@ if __name__ == "__main__":
 
     files = "peptides2genes", "peptides.fasta", "genome*.fasta", "reference.exons"
     
-    (options, args) = Experiment.Start( parser,
+    (options, args) = E.Start( parser,
                                         add_psql_options = True,
                                         add_pipe_options = True )
 
@@ -165,13 +165,13 @@ if __name__ == "__main__":
     
     Run ( "make -C %s prepare" % options.new_directory, stdout=options.stdout, stderr=options.stderr )
 
-    Experiment.Stop()
+    E.Stop()
 
     print "########### running make all"
 
     Run ( "make -C %s -t all" % options.new_directory, stdout=options.stdout, stderr=options.stderr )
 
-    Experiment.Stop()
+    E.Stop()
 
 
     print "########## cloning schema %s to %s" % (options.old_schema, options.new_schema)

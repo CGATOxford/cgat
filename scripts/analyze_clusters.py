@@ -88,7 +88,7 @@ import tempfile
 import copy
 
 import CGAT.IOTools as IOTools
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 
 class Annotation:
     def __init__(self, identifier, short, description):
@@ -172,7 +172,7 @@ if __name__ == "__main__":
         separator_fields = ";",
         )
 
-    (options, args) = Experiment.Start( parser, add_psql_options = True, add_csv_options = True )
+    (options, args) = E.Start( parser, add_psql_options = True, add_csv_options = True )
 
     clusters, nerrors = IOTools.ReadList( sys.stdin )
 
@@ -261,4 +261,4 @@ if __name__ == "__main__":
     if options.loglevel >= 1:
         options.stdlog.write( "# ninput=%i, noutput=%i, nskipped=%i, nnomaster=%i, nnoannotation=%i\n" % (ninput, noutput, nskipped, nnomaster, nnoannotation) )
         
-    Experiment.Stop()
+    E.Stop()

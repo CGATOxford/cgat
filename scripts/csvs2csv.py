@@ -66,7 +66,7 @@ import time
 import glob
 import optparse
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 
 ##---------------------------------------------------------------------------------------------------------        
 if __name__ == '__main__':
@@ -125,7 +125,7 @@ if __name__ == '__main__':
         regex_filename = "(.*)"
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if options.headers: 
         if "," in options.headers:
@@ -161,7 +161,7 @@ if __name__ == '__main__':
         if len(options.filenames) == 1:
             for line in open(options.filenames[0]):
                 options.stdout.write( line )
-            Experiment.Stop()
+            E.Stop()
             sys.exit(0)
         
     if options.headers and options.headers[0] != "auto" and \
@@ -351,6 +351,6 @@ if __name__ == '__main__':
 
             sys.stdout.write("\n")
     
-    Experiment.Stop()
+    E.Stop()
 
 

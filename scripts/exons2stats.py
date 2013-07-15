@@ -70,7 +70,7 @@ import csv
 import pgdb
 """get statistics from an exons file.
 """
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Exons as Exons
 
 parser = E.OptionParser( version = "%prog version: $Id: exons2stats.py 2781 2009-09-10 11:33:14Z andreas $")
@@ -106,7 +106,7 @@ if __name__ == "__main__":
         format = "exons",
         )
 
-    (options, args) = Experiment.Start( parser, add_csv_options = True, add_psql_options = True )
+    (options, args) = E.Start( parser, add_csv_options = True, add_psql_options = True )
 
     if options.quality: options.quality=options.quality.split(",")
     
@@ -137,7 +137,7 @@ if __name__ == "__main__":
         v["Id"] = k
         writer.writerow(v)
 
-    Experiment.Stop()
+    E.Stop()
 
 
 

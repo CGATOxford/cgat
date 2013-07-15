@@ -63,7 +63,7 @@ import re
 import optparse
 
 from types import *
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.TreeTools as TreeTools
 
 if __name__ == "__main__":
@@ -78,7 +78,7 @@ if __name__ == "__main__":
         skip_trees = False
         )
 
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
     nexus = TreeTools.Newick2Nexus( sys.stdin )
     if options.loglevel >= 1:
@@ -112,4 +112,4 @@ if __name__ == "__main__":
     if options.loglevel >= 1:
         options.stdlog.write( "# ntotal=%i\n" % (ntotal))
         
-    Experiment.Stop()
+    E.Stop()

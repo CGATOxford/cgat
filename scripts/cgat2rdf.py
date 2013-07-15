@@ -211,7 +211,7 @@ class Generator:
             self._addTriple(ap_node, Component['hasArgument'], a_node)
 
             choices = []
-            if p['choices']:
+            if 'choices' in p and p['choices']:
                 choices = map(lambda x: x.strip(), p['choices'].split(','))
 
             p_type = p['type']
@@ -511,8 +511,13 @@ def main( argv = None ):
 
         assert 'arg' in param or 'arg_long' in param
             
-        param['property_bag'] = {}
         param['dependencies'] = {}
+        param['property_bag'] = {}
+
+        if option.dest == "genome_file":
+            param['property_bag'] = { 'from_loc' : 'path',
+                                      'loc_id' : 'sam_fa',
+                                      'loc_id_filter' : '1'}
 
         data['parameters'].append( param )
 

@@ -83,7 +83,7 @@ OPTIONS:
 --pattern-identifier            if given, use this pattern to extract id from column.
 """ % (sys.argv[0], "s")
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 
 param_long_options = ["verbose=", "help", "split-regex=", "after", "pattern-output=", "skip", "column=", "map=", "dry-run",
                       "header", "remove-key", "append", "pattern-identifier=" ]
@@ -170,8 +170,8 @@ if __name__ == "__main__":
         elif o == "--pattern-identifier":
             param_pattern_identifier = re.compile(a)
             
-    print Experiment.GetHeader()
-    print Experiment.GetParams()
+    print E.GetHeader()
+    print E.GetParams()
 
     mymap = {}
     if param_filename_map:
@@ -285,4 +285,4 @@ if __name__ == "__main__":
                                                                                              len(set(mymap).difference(found)),
                                                                                              len(filenames)) )
         
-    print Experiment.GetFooter()
+    print E.GetFooter()

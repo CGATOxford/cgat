@@ -135,7 +135,7 @@ param_remove_fragments = False
 
 param_pattern_prefix = ""
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.MaliIO as MaliIO
 import scipy
 import CGAT.Exons as Exons
@@ -1060,8 +1060,8 @@ if __name__ == '__main__':
         elif o == "--components":
             param_filename_components = a
 
-    print Experiment.GetHeader()
-    print Experiment.GetParams()
+    print E.GetHeader()
+    print E.GetParams()
             
     ## 1. read multiple alignment in fasta format
     all_mali, all_identifiers = MaliIO.readFasta( sys.stdin )
@@ -1245,6 +1245,6 @@ if __name__ == '__main__':
                     outfile.write( ">%s\n%s\n" % (id, core_mali[id]))
                 outfile.close()
 
-    print Experiment.GetFooter()
+    print E.GetFooter()
     
     

@@ -64,7 +64,7 @@ import optparse
 import math
 import tempfile
 import random
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import Bio
 import CGAT.FastaIterator as FastaIterator
@@ -99,7 +99,7 @@ if __name__ == "__main__":
         precision = 10000,
         )
 
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
     iterator = FastaIterator.FastaIterator( sys.stdin )
 
@@ -176,4 +176,4 @@ if __name__ == "__main__":
             sequence = "".join(sequence)
         options.stdout.write( ">%s\n%s\n" % (cur_record.title, "".join(sequence)))
         
-    Experiment.Stop()
+    E.Stop()

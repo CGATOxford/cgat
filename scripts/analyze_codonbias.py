@@ -68,7 +68,7 @@ import random
 """Wrapper for adaptive codon bias program
 """
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 
 import CGAT.WrapperAdaptiveCAI as WrapperAdaptiveCAI
@@ -243,7 +243,7 @@ if __name__ == "__main__":
         get_preferred_codons = None,
         dominant_set = 0.0 )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
     if options.select:
         options.select = options.select.split(",")
 
@@ -271,7 +271,7 @@ if __name__ == "__main__":
         for codon in codons:
             outfile.write( "%s\t%f\n" % ( codon, weights[codon]) )
 
-        Experiment.Stop()
+        E.Stop()
         sys.exit(1)
 
     ###################################################################
@@ -517,5 +517,5 @@ if __name__ == "__main__":
         for codon in codons:
             outfile.write( "%s\t%f\n" % ( codon, usages[codon]) )
 
-    Experiment.Stop()
+    E.Stop()
     

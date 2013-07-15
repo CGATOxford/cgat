@@ -68,7 +68,7 @@ import optparse
 
 import CGAT.Genomics as Genomics
 import alignlib
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 
 def MapIdentifiers( seqs, pattern):
@@ -104,7 +104,7 @@ if __name__ == "__main__":
                          output = [] ) 
                          
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if len(args) != 2:
         raise ValueError( "two files needed to compare." )
@@ -256,5 +256,5 @@ if __name__ == "__main__":
           (ndiff, ndiff_first, ndiff_last, ndiff_prefix, ndiff_selenocysteine, ndiff_masked, nfixed,
            ndiff - ndiff_first - ndiff_last - ndiff_prefix - ndiff_selenocysteine - ndiff_masked - nfixed) )
     
-    Experiment.Stop()
+    E.Stop()
         

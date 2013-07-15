@@ -59,7 +59,7 @@ import sys
 import string
 import re
 import optparse
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Genomics as Genomics
 import CGAT.GFF as GFF
@@ -100,7 +100,7 @@ if __name__ == "__main__":
         format_id = "seg%05i",
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     genome = IndexedFasta.IndexedFasta( options.genome_file )
 
@@ -255,4 +255,4 @@ if __name__ == "__main__":
     if options.loglevel >= 1:
         options.stdlog.write( "# ninput=%i, noutput=%i\n" % (ninput, noutput) )
 
-    Experiment.Stop()
+    E.Stop()

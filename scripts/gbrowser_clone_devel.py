@@ -62,7 +62,7 @@ import string
 import re
 import random
 import optparse
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import MySQLdb
 import _mysql
 
@@ -132,7 +132,7 @@ if __name__ == "__main__":
         set = "flies",
     )
 
-    (options, args) = Experiment.Start( parser, add_mysql_options = True )
+    (options, args) = E.Start( parser, add_mysql_options = True )
 
     if options.set == "flies":
         data = data_flies
@@ -200,4 +200,4 @@ if __name__ == "__main__":
             
         cc.close()
         
-    Experiment.Stop()
+    E.Stop()

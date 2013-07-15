@@ -114,7 +114,7 @@ param_short_options="v:hb:e:p:g:E:P:G:i:a:S:nl"
 ## pattern for genomes, %s is substituted for the sbjct_token
 param_genome_file = "genome_%s.fasta"
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.PredictionParser as PredictionParser
 import pgdb
@@ -589,8 +589,8 @@ if __name__ == '__main__':
         param_extra_tables.append( (param_tablename_redundant, "r") )
         param_extra_conditions.append( "p.prediction_id = r.rep_prediction_id AND r.rep_prediction_id = r.mem_prediction_id" )
 
-    print Experiment.GetHeader()
-    print Experiment.GetParams()
+    print E.GetHeader()
+    print E.GetParams()
     
     dbhandle = pgdb.connect( param_connection )
 

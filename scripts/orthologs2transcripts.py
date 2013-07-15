@@ -109,7 +109,7 @@ Options:
 --min-exon-size=                minimum exon size (important for exon counts) (in codons).
 """ % sys.argv[0]
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.Exons as Exons
 import alignlib
@@ -1124,8 +1124,8 @@ if __name__ == '__main__':
         print USAGE, "no arguments required."
         sys.exit(2)
 
-    print Experiment.GetHeader()
-    print Experiment.GetParams()
+    print E.GetHeader()
+    print E.GetParams()
     sys.stdout.flush()
 
     global_substitution_matrix = makeSubstitutionMatrix( "emboss" )
@@ -1287,4 +1287,4 @@ if __name__ == '__main__':
                 noutput += 1
             
     print "# ninput=%i, noutput=%i, npairs=%i, nerrors=%i, nskipped=%i" % (ninput, noutput, npairs, total_nerrors, total_nskipped)
-    print Experiment.GetFooter()
+    print E.GetFooter()

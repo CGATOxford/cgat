@@ -68,7 +68,7 @@ import optparse
 import time
 
 import CGAT.Genomics as Genomics
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.WrapperCodeML as WrapperCodeML
 import CGAT.Stats as Stats
 import CGAT.Mali as Mali
@@ -273,7 +273,7 @@ if __name__ == "__main__":
         filter_mali = None,
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if options.jalview_titles:
         options.jalview_titles = options.jalview_titles.split(",")
@@ -592,4 +592,4 @@ if __name__ == "__main__":
     if options.loglevel >= 1:
         options.stdlog.write("# ninput=%i, noutput=%i, nskipped=%i\n" % (ninput, noutput, nskipped))
     
-    Experiment.Stop()
+    E.Stop()

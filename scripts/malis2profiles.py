@@ -70,7 +70,7 @@ USAGE="""python %s [OPTIONS]
 
 """ % sys.argv[0]
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Mali as Mali
 
 ##------------------------------------------------------------
@@ -81,7 +81,7 @@ if __name__ == '__main__':
     parser.set_defaults(
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
     
     mali = Mali.SequenceCollection()
     last_id = None
@@ -110,5 +110,5 @@ if __name__ == '__main__':
     if options.loglevel >= 1:
         options.stdlog.write("# ninput=%i, noutput=%i, nskipped=%i.\n" % (ninput, noutput, nskipped))
         
-    Experiment.Stop()
+    E.Stop()
     

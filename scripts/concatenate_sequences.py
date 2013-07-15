@@ -75,7 +75,7 @@ USAGE="""python %s [OPTIONS] in1 in2 [...]
 
 """ % sys.argv[0]
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import CGAT.Genomics as Genomics
 import CGAT.FastaIterator as FastaIterator
@@ -94,7 +94,7 @@ if __name__ == '__main__':
         method = "in-order",
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if len(args) < 2:
         raise "please supply at least two filenames to concatenate."
@@ -133,6 +133,6 @@ if __name__ == '__main__':
     if options.loglevel >= 1:
         options.stdlog.write( "# ninput=%i, noutput=%i, nerrors=%i\n" % (ninput, noutput, nerrors) )
         
-    Experiment.Stop()
+    E.Stop()
     
     

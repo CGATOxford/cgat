@@ -80,7 +80,7 @@ Options:
 -g, --use-genome-length         use genome length for deciding which rep to use.
 """ % sys.argv[0]
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Exons as Exons
 import CGAT.Genomics as Genomics
@@ -394,8 +394,8 @@ if __name__ == "__main__":
         elif o in ("-f", "--genome-file"):
             param_genome_file = a
         
-    print Experiment.GetHeader()
-    print Experiment.GetParams()
+    print E.GetHeader()
+    print E.GetParams()
 
     # read peptide sequences
     if param_filename_peptides:
@@ -484,6 +484,6 @@ if __name__ == "__main__":
     if param_loglevel >= 1:
         print "# RESULT: %i transcripts in %i genes" % (len(map_transcript2cluster), cluster_id-1)
         
-    print Experiment.GetFooter()
+    print E.GetFooter()
 
     

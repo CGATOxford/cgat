@@ -87,7 +87,7 @@ param_format_value = None
 
 param_sort = None
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Histogram as Histogram
 
 ##---------------------------------------------------------------------------------------------------------        
@@ -135,8 +135,8 @@ if __name__ == '__main__':
 
     param_filenames = args
 
-    print Experiment.GetHeader()
-    print Experiment.GetParams()    
+    print E.GetHeader()
+    print E.GetParams()    
 
     histograms = []
 
@@ -231,6 +231,6 @@ if __name__ == '__main__':
                      format_value=param_format_value,
                      )
 
-    print Experiment.GetFooter()
+    print E.GetFooter()
 
 

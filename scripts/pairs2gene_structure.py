@@ -79,7 +79,7 @@ Options:
                                 
 """ % sys.argv[0]
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.PredictionParser as PredictionParser
 import alignlib
@@ -128,8 +128,8 @@ if __name__ == '__main__':
         print USAGE, "no arguments required."
         sys.exit(1)
 
-    print Experiment.GetHeader()
-    print Experiment.GetParams()
+    print E.GetHeader()
+    print E.GetParams()
 
     ## reading CDS sequences
     if param_filename_cds:
@@ -239,5 +239,5 @@ if __name__ == '__main__':
         print ">%s_vs_%s_%s_%i_%i\n%s" % \
               (p.mQueryToken, p.mSbjctToken, p.mSbjctStrand, p.mSbjctGenomeFrom, p.mSbjctGenomeTo, col_ali)
             
-    print Experiment.GetFooter()
+    print E.GetFooter()
     

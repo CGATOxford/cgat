@@ -74,7 +74,7 @@ analyse orthology sets.
 
 """
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Orthologs as Orthologs
 import CGAT.Genomics as Genomics
 import pgdb
@@ -1630,7 +1630,7 @@ if __name__ == "__main__":
                             },
         is_query_sbjct = False )
     
-    (options, args) = Experiment.Start( parser, add_psql_options = True, add_csv_options = True )
+    (options, args) = E.Start( parser, add_psql_options = True, add_csv_options = True )
     options.methods = options.methods.split(",")
 
     rs = re.compile( options.species_regex )
@@ -2381,4 +2381,4 @@ if __name__ == "__main__":
         if options.prefix_output:
             outfile.close()
 
-    Experiment.Stop()
+    E.Stop()

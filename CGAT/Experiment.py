@@ -289,27 +289,39 @@ class BetterFormatter(optparse.IndentedHelpFormatter):
 #################################################################
 #################################################################
 class AppendCommaOption(optparse.Option):
-    '''add ability of providing "," separated arguments to options
-    that have action "append".
+    '''Option with additional parsing capabilities.
 
-    This is what galaxy does, but generally convenient.
+    * "," in arguments to options that have the action 'append' 
+      are treated as a list of options. This is what galaxy does, 
+      but generally convenient.
+
+    * Option values of "None" and "" are treated as default values.
+    
     
     '''
     def check_value( self, opt, value ):
         # do not check type for ',' separated lists
         if "," in value: 
             return value
+        elif value == "None" or value == "":
+            # for galaxy - unset values encoded as None
+            # thus: do not parse but use default
+            return "default"
         else:
             return optparse.Option.check_value( self, opt, value )
 
     def take_action(self, action, dest, opt, value, values, parser):
-        if action == "append" and "," in value:
+        if value == "default":
+            # for galaxy - unset values encoded as None
+            # thus: do not parse but use default
+            pass
+        elif action == "append":
+            # treat values containing , as a list of options
             lvalue = value.split(",")
             values.ensure_value(dest, []).extend(lvalue)
         else:
             optparse.Option.take_action(
                 self, action, dest, opt, value, values, parser)
-
 
 #################################################################
 #################################################################
