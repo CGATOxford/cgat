@@ -151,7 +151,7 @@ def processEntries( name, entries, options, fasta, contigs ):
 ##------------------------------------------------------------------------
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: gff2exons.py 2447 2009-01-27 17:12:48Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: gff2exons.py 2447 2009-01-27 17:12:48Z andreas $")
 
     parser.add_option("-p", "--filename-peptides2genes", dest="filename_peptides2genes", type="string",
                       help="filename in which to output peptides2genes information."  )

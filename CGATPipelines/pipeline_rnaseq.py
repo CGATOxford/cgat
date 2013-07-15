@@ -60,15 +60,15 @@ The pipeline performs the following tasks:
    * build a combined gene set including the reference gene set and isoforms predicted by :term:`cufflinks`.
       * compare all isoforms in all experiments+isoforms (:term:`cuffcompare`) to each other 
          and the reference gene set
-        * summary statistics on isoforms with respect to gene set
+         * summary statistics on isoforms with respect to gene set
    * estimate differential expression levels of transcripts
       * different gene sets
          * reference gene set
          * combined gene set
          * novel gene set
       * different methods
-         * :term:`DESeg` (tag counting)
-         * :term:`cuffdiff``
+         * :term:`DESeq` (tag counting)
+         * :term:`cuffdiff`
       * summary statistics on differential expression
 
 Mapping strategy
@@ -269,8 +269,8 @@ Configuration
 The pipeline requires a configured :file:`pipeline.ini` file. 
 
 The sphinxreport report requires a :file:`conf.py` and :file:`sphinxreport.ini` file 
-(see :ref:`PipelineDocumenation`). To start with, use the files supplied with the
-:ref:`Example` data.
+(see :ref:`PipelineReporting`). To start with, use the files supplied with the
+Example_ data.
 
 Input
 -----
@@ -333,8 +333,6 @@ path:
 +--------------------+-------------------+------------------------------------------------+
 |picard              |>=1.42             |bam/sam files. The .jar files need to be in your|
 |                    |                   | CLASSPATH environment variable.                |
-+--------------------+-------------------+------------------------------------------------+
-|bamstats_           |>=1.22             |from CGR, Liverpool                             |
 +--------------------+-------------------+------------------------------------------------+
 
 Pipeline output
@@ -401,15 +399,20 @@ Glossary
    tophat
       tophat_ - a read mapper to detect splice-junctions
 
-   bowtie
-      bowtie_ - a read mapper
+   deseq
+      deseq_ - differential expression analysis
 
+   cuffdiff
+      find differentially expressed transcripts. Part of cufflinks_.
 
-   
+   cuffcompare
+      compare transcriptomes. Part of cufflinks_.
+
 .. _cufflinks: http://cufflinks.cbcb.umd.edu/index.html
 .. _tophat: http://tophat.cbcb.umd.edu/
 .. _bowtie: http://bowtie-bio.sourceforge.net/index.shtml
 .. _bamstats: http://www.agf.liv.ac.uk/454/sabkea/samStats_13-01-2011
+.. _deseq: http://www-huber.embl.de/users/anders/DESeq/
 
 Code
 ====
@@ -3522,9 +3525,10 @@ def buildGeneLevelReadCounts( infiles, outfile ):
                 "gene_counts.dir/%s.gene_counts.tsv.gz" % ALL.asFile()) ] )
 def buildAggregateGeneLevelReadCounts( infiles, outfile):
     '''count reads falling into transcripts of protein coding 
-       gene models.
+    gene models.
 
     .. note::
+
        In paired-end data sets each mate will be counted. Thus
        the actual read counts are approximately twice the fragment
        counts.
@@ -3777,13 +3781,16 @@ def buildAggregateTranscriptLevelReadCounts( infiles, outfile):
        gene models.
 
     .. note::
+
        In paired-end data sets each mate will be counted. Thus
        the actual read counts are approximately twice the fragment
        counts.
        
-    .. note:: this step takes very long if multiple bam-files are supplied.
-    It has thus been taken out of the pipeline. The aggregate can be derived from summing
-    the individual counts anyways.
+    .. note:: 
+
+       This step takes very long if multiple bam-files are supplied.
+       It has thus been taken out of the pipeline. The aggregate can be derived from summing
+       the individual counts anyways.
 
     '''
     bamfiles, geneset = infiles

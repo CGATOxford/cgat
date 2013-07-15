@@ -70,7 +70,7 @@ import CGAT.IOTools as IOTools
 
 if __name__  == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: r_mann_whitney_u.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: r_mann_whitney_u.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option( "-m", "--method", dest="method", type="string",
                        help="method to use [ks=Kolmogorov-Smirnov,mwu=Mann-WhitneyU]")

@@ -73,7 +73,7 @@ import CGAT.Genomics as Genomics
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: patch_translations.py 1841 2008-05-08 12:07:13Z andreas $",
+    parser = E.OptionParser( version = "%prog version: $Id: patch_translations.py 1841 2008-05-08 12:07:13Z andreas $",
                                     usage = globals()["__doc__"] )
 
     parser.add_option( "-g", "--genome-file", dest="genome_file", type="string",

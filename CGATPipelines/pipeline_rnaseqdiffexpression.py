@@ -32,9 +32,10 @@ RNA-Seq Differential expression pipeline
 
 The RNA-Seq differential expression pipeline performs differential
 expression analysis. It requires three inputs:
-   1. one or more genesets in :term:`gtf` formatted files 
-   2. mapped reads in :term:`bam` formatted files
-   3. design files as :term:`tsv`-separated format
+
+   1 one or more genesets in :term:`gtf` formatted files 
+   2 mapped reads in :term:`bam` formatted files
+   3 design files as :term:`tsv`-separated format
 
 This pipeline works on a single genome.
 
@@ -101,8 +102,8 @@ Configuration
 The pipeline requires a configured :file:`pipeline.ini` file. 
 
 The sphinxreport report requires a :file:`conf.py` and :file:`sphinxreport.ini` file 
-(see :ref:`PipelineDocumenation`). To start with, use the files supplied with the
-:ref:`Example` data.
+(see :ref:`PipelineReporting`). To start with, use the files supplied with the
+Example_ data.
 
 Input
 -----
@@ -266,10 +267,20 @@ Glossary
 
    tophat
       tophat_ - a read mapper to detect splice-junctions
-   
+
+   deseq
+      deseq_ - differential expression analysis
+
+   cuffdiff
+      find differentially expressed transcripts. Part of cufflinks_.
+
+   cuffcompare
+      compare transcriptomes. Part of cufflinks_.
+
 .. _cufflinks: http://cufflinks.cbcb.umd.edu/index.html
 .. _tophat: http://tophat.cbcb.umd.edu/
 .. _bamstats: http://www.agf.liv.ac.uk/454/sabkea/samStats_13-01-2011
+.. _deseq: http://www-huber.embl.de/users/anders/DESeq/
 
 Code
 ====
@@ -552,12 +563,13 @@ def buildExpressionStats( tables, method, outfile, outdir ):
     dbhandle = sqlite3.connect( PARAMS["database"] )
 
     def _split( tablename ):
-        parts = tablename.split("_")
-        design, geneset = parts[0], parts[1]
+        #parts = tablename.split("_")
+        design, geneset = re.match("(.+)_([^_]+)_%s" % method, tablename).groups()
         return design, geneset
 
         # return re.match("([^_]+)_", tablename ).groups()[0]
 
+    
     keys_status = "OK", "NOTEST", "FAIL", "NOCALL"
 
     outf = IOTools.openFile( outfile, "w" )
@@ -1167,14 +1179,14 @@ def loadDESeqStats( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@follows( mkdir("edger.dir") )
-@files( [ ((x, aggregateExonLevelReadCounts), os.path.join( "edger.dir", y)) for x, y in TARGETS_DE ] )
+@follows( aggregateExonLevelReadCounts,mkdir("edger.dir") )
+@files( [ (x, os.path.join( "edger.dir", y)) for x, y in TARGETS_DE ] )
 def runEdgeR( infiles, outfile ):
     '''perform differential expression analysis using edger.'''
 
     to_cluster = True 
-    design_file, geneset_file, bamfiles = infiles[0]
-    infile = infiles[1]
+    design_file, geneset_file, bamfiles, infile = infiles
+
 
     track = P.snip( outfile, ".diff")
 
@@ -1250,7 +1262,7 @@ def diff_expression(): pass
 def plotRNASEQTagData( infiles, outfile ):
     '''perform differential expression analysis using deseq.'''
     
-    design_file, geneset_file, bamfiles = infiles
+    design_file, geneset_file = infiles[0], infiles[1]
 
     infile = os.path.join( "exon_counts.dir", P.snip( geneset_file, ".gtf.gz") + ".exon_counts.tsv.gz" )
     Expression.plotTagStats( infile, design_file, outfile )

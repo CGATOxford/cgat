@@ -157,7 +157,7 @@ def getAlignedColumns( mali, exons ):
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: mali2predictions.py 2781 2009-09-10 11:33:14Z andreas $",
+    parser = E.OptionParser( version = "%prog version: $Id: mali2predictions.py 2781 2009-09-10 11:33:14Z andreas $",
                                     usage = globals()["__doc__"] )
 
     parser.add_option( "-g", "--genome-file", dest="genome_file", type="string",

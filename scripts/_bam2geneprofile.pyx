@@ -102,7 +102,7 @@ class RangeCounterBAM(RangeCounter):
 
                 current_offset += length
 
-class RangeCounterBAMShift(RangeCounter):
+class RangeCounterBAMShift(RangeCounterBAM):
     '''count densities using bam files. 
 
     Before counting, reads are shifted and extended by a fixed amount.
@@ -195,11 +195,13 @@ class RangeCounterBAMShift(RangeCounter):
 
                 current_offset += length
 
-class RangeCounterBAMMerge(RangeCounter):
+class RangeCounterBAMMerge(RangeCounterBAM):
     '''count densities using bam files.
 
     Before counting, paired end reads are merged and counts
     are computed over the full merged range.
+
+    Reads are not shifted.
     '''
     def __init__(self, samfiles,
                  merge_pairs, 
@@ -228,7 +230,6 @@ class RangeCounterBAMMerge(RangeCounter):
         cdef int interval_width
         cdef int current_offset
         cdef AlignedRead read
-        cdef int shift_extend
         cdef int work_offset
         cdef int pos
         cdef int length
@@ -246,7 +247,7 @@ class RangeCounterBAMMerge(RangeCounter):
             for start, end in ranges:
                 length = end - start
                 
-                xstart, xend = max(0, start - shift_extend), max(0, end + shift_extend)
+                xstart, xend = start, end
 
                 for read in samfile.fetch( contig, xstart, xend ):
                     flag = read._delegate.core.flag 
@@ -273,7 +274,7 @@ class RangeCounterBAMMerge(RangeCounter):
   
                 current_offset += length
 
-class RangeCounterBAMBaseAccuracy(RangeCounter):
+class RangeCounterBAMBaseAccuracy(RangeCounterBAM):
     '''count densities using bam files with base accuracy.
     '''
     def __init__(self, 
@@ -312,9 +313,15 @@ class RangeCounterBAMBaseAccuracy(RangeCounter):
                     positions = read.positions
                     for i in positions:
                         if i < start: continue
-                        if i > end: continue
-                        counts[i - start + current_offset] += 1
-                        
+                        if i >= end: continue
+                        try:
+                            counts[i - start + current_offset] += 1
+                        except IndexError:
+                            print len(counts)
+                            print "i=", i, "start=",start, "end=", end, "current_offset=", current_offset
+                            print "positions=", positions
+                            raise
+
                 current_offset += length
 
 class RangeCounterBed(RangeCounter):
@@ -604,6 +611,106 @@ class GeneCounter( IntervalsCounter ):
 
         self.aggregate( self.counts_upstream,
                         self.counts_exons,
+                        self.counts_downstream )
+
+        return 1
+
+class GeneCounterWithIntrons( IntervalsCounter ):
+    '''count reads in exons and upstream/downstream of genes/transcripts.
+    
+    Only protein coding transcripts are counted (i.e. those with a CDS)
+    '''
+    
+    name = "geneprofilewithintrons" #Tim 16 May. 2013. for introns
+    
+    def __init__(self, counter, 
+                 int resolution_upstream,
+                 int resolution_exons,
+                 int resolution_introns,  #Tim 16 May. 2013. for introns
+                 int resolution_downstream,
+                 int extension_upstream = 0, 
+                 int extension_downstream = 0,
+                 int scale_flanks = 0,
+                 *args,
+                 **kwargs ):
+
+        IntervalsCounter.__init__(self, *args, **kwargs )
+
+        self.counter = counter
+        self.extension_upstream = extension_upstream
+        self.extension_downstream = extension_downstream 
+        self.resolution_exons = resolution_exons
+        self.resolution_introns = resolution_introns   #Tim 16 May. 2013. for introns
+        self.resolution_upstream = resolution_upstream
+        self.resolution_downstream = resolution_downstream
+        self.scale_flanks = scale_flanks
+
+        for field, length in zip( 
+            ("upstream", "exons", "introns", "downstream"),  #Tim 16 May. 2013. for introns
+            (resolution_upstream,
+             resolution_exons,
+             resolution_introns,  #Tim 16 May. 2013. for introns
+             resolution_downstream ) ):
+            self.add( field, length )
+        
+    def count( self, gtf ):
+        '''build ranges to be analyzed from a gene model.
+
+        Returns a tuple with ranges for exons, upstream, downstream.
+        '''
+
+        contig = gtf[0].contig 
+        exons = GTF.asRanges( gtf, "exon" )
+        introns = Intervals.complement(exons) #Tim 16 May. 2013. for introns
+        
+        if len(exons) == 0:
+            E.warn( "no exons in gene %s:%s" % (gtf[0].gene_id, gtf[0].transcript_id))
+            return 0
+            
+        #Tim 16 May. 2013. for introns. 
+        #Genes have no introns are removed completely because include them will distort 
+        #the relative height of exons/introns in the profile 
+        #(when user use norm total-max, most likely the relative height is very important info)
+        if len(introns) == 0:   
+            E.warn( "no introns in gene %s:%s" % (gtf[0].gene_id, gtf[0].transcript_id))
+            return 0
+
+        exon_start, exon_end = exons[0][0], exons[-1][1]
+        if self.scale_flanks > 0:
+            self.extension_downstream = (exon_end - exon_start)*self.scale_flanks
+            self.extension_upstream = (exon_end - exon_start)*self.scale_flanks
+            E.debug("scale flanks")
+
+        if gtf[0].strand == "-":
+            downstream = [ ( max(0, exon_start - self.extension_downstream), exon_start ), ] 
+            upstream = [ ( exon_end, exon_end + self.extension_upstream ), ]
+        else:
+            upstream = [ ( max(0, exon_start - self.extension_upstream), exon_start ), ] 
+            downstream = [ ( exon_end, exon_end + self.extension_downstream ), ]
+
+        E.debug("counting exons" )
+        self.counts_exons = self.counter.getCounts( contig, exons, self.resolution_exons  )
+        E.debug("counting introns" ) #Tim 16 May. 2013. for introns. 
+        self.counts_introns = self.counter.getCounts( contig, introns, self.resolution_introns  )        
+        E.debug("counting upstream" )
+        self.counts_upstream = self.counter.getCounts( contig, upstream, self.resolution_upstream ) 
+        E.debug("counting downstream" )
+        self.counts_downstream = self.counter.getCounts( contig, downstream, self.resolution_downstream )
+
+        E.debug("counting finished" )
+
+        ## revert for negative strand
+        if gtf[0].strand == "-":
+            self.counts_exons = self.counts_exons[::-1]
+            self.counts_introns = self.counts_introns[::-1]   #Tim 16 May. 2013. for introns. 
+            self.counts_upstream = self.counts_upstream[::-1]
+            self.counts_downstream = self.counts_downstream[::-1]
+            
+        self.addLengths( upstream, exons, introns, downstream )   #Tim 16 May. 2013. for introns. 
+
+        self.aggregate( self.counts_upstream,
+                        self.counts_exons,
+                        self.counts_introns,  #Tim 16 May. 2013. for introns. 
                         self.counts_downstream )
 
         return 1

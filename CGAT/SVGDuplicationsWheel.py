@@ -887,7 +887,7 @@ class DuplicationPlot:
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: SVGDuplicationsWheel.py 2784 2009-09-10 11:41:14Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: SVGDuplicationsWheel.py 2784 2009-09-10 11:41:14Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-e", "--headers", dest="headers", action="store_true",
                       help="first row is a header [ignored]."  )

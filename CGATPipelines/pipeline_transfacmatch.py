@@ -66,8 +66,8 @@ the file. In order to get a local configuration file in the current directory, t
     python <codedir>/pipeline_transfacmatch.py config
 
 The sphinxreport report requires a :file:`conf.py` and :file:`sphinxreport.ini` file 
-(see :ref:`PipelineDocumenation`). To start with, use the files supplied with the
-:ref:`Example` data.
+(see :ref:`PipelineReporting`). To start with, use the files supplied with the
+Example_ data.
 
 Input
 -----
@@ -127,6 +127,19 @@ Pipline Output
 The results of the computation are all stored in an sqlite relational
 database :file:`csvdb`.
 
+Example
+=======
+
+Example data is available at ...
+To run the example, simply unpack and untar::
+
+   wget http://www.cgat.org/~andreas/sample_data/pipeline_transfacmatch.tgz
+   tar -xvzf pipeline_transfacmatch.tgz
+   cd pipeline_transfacmatch.dir
+   python <srcdir>/pipeline_transfacmatch.py make full
+
+.. note:: 
+   For the pipeline to run, install the :doc:`pipeline_annotations` as well.
 
 """
 
@@ -454,8 +467,11 @@ def buildMatchMetrics(infile, outfile):
     '''
     match outputs transcription factors that are found in the supplied
     sequences. We are interested in the following metrics:
-     * No. unique transcription factors found per sequence
-     * Maximal number of TF motifs found per sequence
+
+       * No. unique transcription factors found per sequence
+
+       * Maximal number of TF motifs found per sequence
+
     '''
     tablename = filenameToTablename(os.path.basename(P.snip(infile, ".load"))) + "_result"
     PipelineTransfacMatch.frequencyMetrics(PARAMS["database"], tablename, outfile)

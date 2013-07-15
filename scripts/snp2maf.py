@@ -116,7 +116,7 @@ def main( argv = None ):
     if not argv: argv = sys.argv
 
     # setup command line parser
-    parser = optparse.OptionParser( version = "%prog version: $Id: snp2maf.py 2875 2010-03-27 17:42:04Z andreas $", usage = globals()["__doc__"] )
+    parser = E.OptionParser( version = "%prog version: $Id: snp2maf.py 2875 2010-03-27 17:42:04Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genome [default=%default]."  )

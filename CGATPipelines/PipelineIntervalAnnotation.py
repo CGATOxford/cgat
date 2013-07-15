@@ -1,4 +1,7 @@
-'''Tasks associated with annotation of genomic intervals.'''
+'''
+PipelineIntervalAnnotation.py - Tasks associated with annotation of genomic intervals
+=====================================================================================
+'''
 
 import sys
 import tempfile

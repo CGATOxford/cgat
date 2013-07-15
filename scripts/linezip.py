@@ -65,7 +65,7 @@ import CGAT.Experiment as Experiment
 
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: linezip.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: linezip.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option("-i", "--filename_input", dest="filename_input", type="string",
                       help="filename for compressed input." )

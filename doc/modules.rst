@@ -1,7 +1,4 @@
-.. Andreas' Python Tools documentation master file, created by
-   sphinx-quickstart on Wed Sep 16 16:32:15 2009.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+.. _modules:
 
 Modules
 =======
@@ -131,7 +128,6 @@ Pipelines
    pipelinemodules/PipelineEnrichment.rst
    pipelinemodules/PipelineGO.rst
    pipelinemodules/PipelineGeneset.rst
-   pipelinemodules/PipelineGenomeAssembly.rst
    pipelinemodules/PipelineIntervalAnnotation.rst
    pipelinemodules/PipelineKEGG.rst
    pipelinemodules/PipelineLncRNA.rst
@@ -158,14 +154,13 @@ Other
    :maxdepth: 2
 
    modules/RLE.rst
-   modules/Cluster.rst
-   modules/Dots.rst
    modules/SVGDuplicationsWheel.rst
    modules/SVGTree.rst
    modules/SVGdraw.rst
    modules/SetTools.rst
    modules/Sockets.rst
    modules/GraphTools.rst
+   modules/Cluster.rst
 
 Obsolete
 --------
@@ -177,7 +172,6 @@ Obsolete
    modules/IntervallsWeighted.rst
    modules/SaryFasta.rst
    modules/Fasta.rst
-   modules/Alignlib.rst   
    modules/SuffixArray.rst
 
 Unsorted
@@ -196,11 +190,8 @@ Modules not sorted into categories.
    modules/Expression.rst 
    modules/Fastq.rst 
    modules/GDLDraw.rst 
-   modules/GemErr.rst 
-   modules/GemReads.rst 
    modules/Glam2.rst 
    modules/Glam2Scan.rst
-   modules/Hypergeometric.rst
    modules/IGV.rst
    modules/IndexedGenome.rst
    modules/Logfile.rst

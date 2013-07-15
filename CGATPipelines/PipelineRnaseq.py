@@ -97,7 +97,6 @@ def buildUTRExtension( infile, outfile ):
     Works on output of buildGeneLevelReadExtension.
 
     Known problems
-    ++++++++++++++
 
     * the size of the extension is limited by the window size
 
@@ -108,13 +107,12 @@ def buildUTRExtension( infile, outfile ):
       a good amount of reads still present in the UTR.
 
     The model
-    ++++++++++++++
 
-    The model is a three-state model:
+    The model is a three-state model::
 
-    UTR --|--> notUTR --|--> otherTranscript --|
-      ^---|      ^------|              ^-------|
-                 ^-----------------------------|
+        UTR --|--> notUTR --|--> otherTranscript --|
+          ^---|      ^------|              ^-------|
+                     ^-----------------------------|
 
     The chain starts in UTR and ends in notUTr or otherTranscript.
 
@@ -128,13 +126,13 @@ def buildUTRExtension( infile, outfile ):
     distribution of counts.
 
     Parameter estimation
-    ++++++++++++++++++++
 
     Parameters are derived from known UTRs within full length 
     territories.
     
     Transitions and emissions for the otherTranscript state
     are set heuristically:
+
        * low probabibily for remaining in state "otherTranscript".
            * these transcripts should be short.
 
@@ -146,7 +144,6 @@ def buildUTRExtension( infile, outfile ):
     
 
     Alternatives
-    ++++++++++++
 
     The method could be improved.
 

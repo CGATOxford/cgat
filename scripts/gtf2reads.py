@@ -40,16 +40,17 @@ read_length_stddev).
 
 There are two modeling schemas:
    1 uniform expression: the sampling aims at a given
-      statistical coverage. Each position in a transcript
-      is equally likely to be a starting point of a sequencing
-      read. The sampling procedure:
+     statistical coverage. Each position in a transcript
+     is equally likely to be a starting point of a sequencing
+     read. The sampling procedure::
 
-      1. estimate lvsequence = lsequence * gauss( coverage_mean, coverage_stddev)
-      Sample until sum of residues in reads > lvsequence
-         1. positions of read: uniformly from (1/lsequence)
-         2. length of read: drawn from N(<read length>,stddev(read_length))
-         3. strand of read: uniformly from (1/2)
-         4. reject read if less than minimum size (min_read_length)
+         1. estimate lvsequence = lsequence * gauss( coverage_mean, coverage_stddev)
+         Sample until sum of residues in reads > lvsequence
+
+            1. positions of read: uniformly from (1/lsequence)
+            2. length of read: drawn from N(<read length>,stddev(read_length))
+            3. strand of read: uniformly from (1/2)
+            4. reject read if less than minimum size (min_read_length)
 
    Note that the effective read length and coverage will lie below the input
    values, as read lengths are constricted by the transcript length.
@@ -122,7 +123,7 @@ def getMutatedSequence( sequence, divergence ):
 ##------------------------------------------------------------
 def main():
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: gtf2reads.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: gtf2reads.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genome [default=%default]."  )

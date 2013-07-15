@@ -69,7 +69,7 @@ import time
 import CGAT.Experiment as Experiment
 import numpy
 
-parser = optparse.OptionParser( version = "%prog version: $Id: liftover.py 2404 2009-01-12 11:22:36Z andreas $")
+parser = E.OptionParser( version = "%prog version: $Id: liftover.py 2404 2009-01-12 11:22:36Z andreas $")
 
 def readLiftOver( infile, chromosome,
                   chromosome_size = 250000000,

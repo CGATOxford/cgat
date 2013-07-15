@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-bam2geneprofile.py - build coverage profile for a set of transcripts/genes
+bam2geneprofile.py - build meta-gene profile for a set of transcripts/genes
 ===========================================================================
 
 :Author: Andreas Heger
@@ -32,53 +32,96 @@ bam2geneprofile.py - build coverage profile for a set of transcripts/genes
 Purpose
 -------
 
-This script takes a :term:`gtf` formatted file and computes density profiles
+This script takes a :term:`gtf` formatted file and computes meta-gene profiles
 over various annotations derived from the :term:`gtf` file. 
 
-The densities can be computed from :term:`bam` or :term:`bed` formatted files.
-:term:`bam` files need to be sorted by coordinate and indexed. If a :term:`bed` 
-formatted file is supplied, it must be compressed with and indexed with :file:`tabix`.
+A meta-gene profile is an abstract genomic entity over which reads stored in a 
+:term:`bam` formatted file have been counted. A meta-gene might be an idealized
+eukaryotic gene (upstream, exonic sequence, downstream) or any other genomic landmark 
+of interest such as transcription start sites.
+
+The script can be used to visualize binding profiles of a chromatin mark in gene 
+bodies, binding of transcription factors in promotors or 3' bias in RNASeq data.
+
+Background
+---------- 
+
+The :file:`bam2geneprofile.py` script reads in a set of transcripts from a :term:`gtf` 
+formatted file. For each transcript, overlapping reads from the provided :term:`bam` file 
+are collected. The counts within the transcript are then mapped onto the meta-gene
+structure and counts are aggregated over all transcripts in the :term:`gtf` file.
+
+:term:`Bam` files need to be sorted by coordinate and indexed. 
+
+A meta-gene structure has two components - regions of variable size, such as exons, introns, etc,
+which nevertheless have a fixed start and end coordinate in a transcript. The other component
+are regions of fixed width, such a regions of a certain size upstream or downstream of a landmark such as
+a transcription start site.
+
+The size of the former class, regions of variable size, can be varied with ``--resolution`` options.
+For example, the option ``--resolution-upstream-utr=1000`` will create a meta-gene with 
+a 1000bp upstream UTR region. UTRs that are larger will be compressed, but UTRs that are smaller, will
+be stretched to fit the 1000bp meta-gene UTR region.
+
+The size of fixed-width regions can be set with ``--extension`` options. For example,
+the options ``--extension-upstream`` will set the size of the uptsream extension region
+to 1000bp. Note that no scaling is required when counting reads towards the meta-gene profile.
+
+Options
+-------
+
+The behaviour of the script can be modified by several options.
+
+Genes versus transcripts
+++++++++++++++++++++++++
+
+The default is to collect reads on a per-transcript level. Alternatively, the script can
+merge all transcripts of a gene into a single virtual transcript. Note that this virtual transcript
+might not be a biologically plausible transcript. It is usually better to provide :file:`bam2geneprofile.py`
+with a set of representative transcripts per gene in order to avoid up-weighting genes with
+multiple transcripts.
+
+Meta-gene structures
+++++++++++++++++++++
+
+The script provides a variety of different meta-gene structures (``--methods``).
+
+Normalization
++++++++++++++
+
+Normalization can be applied in two stages of the computation.
+
+Before adding counts to the meta-gene profile, the profile for the individual
+transcript can be normalized. Without normalization, highly expressed genes
+will contribute more to the meta-gene profile than lowly expressed genes.
+With normalization, each gene contributes an equal amount (``-normalize``).
+
+When outputting the meta-gene profile, the meta-gene profile itself can be normalized.
+Normalization a profile can help comparing the shapes of profiles between different
+experiments independent of the number of reads or transcripts used in the construction
+of the meta-gene profile (``--normalize-profile``).
+
+Bed and wiggle files
+++++++++++++++++++++
+
+The densities can be computed from :term:`bed` or :term:`wiggle` formatted files.
+If a :term:`bed` formatted file is supplied, it must be compressed with and indexed with :file:`tabix`.
+
 
 .. todo::
    
    * paired-endedness is ignored. Both ends of a paired-ended read are treated 
-   individually.
+     individually.
 
    * use CIGAR string to accurately define aligned regions. Currently only the
-   full extension of the alignment is used. Thus, results from RNASEQ experiments
-   might be mis-leading.
+     full extension of the alignment is used. Thus, results from RNASEQ experiments
+     might be mis-leading.
   
--n/--normalization
-   normalize counts before aggregation. The normalization options are:
-   * sum: sum of counts within a region
-   * max: maximum count within a region
-   * total-sum: sum of counts across all regions
-   * total-max: maximum count in all regions
-   * none: no normalization
 
 -N/--normalize-profiles
-   normalize profiles when outputting. The normalization methods are:
-   * none: no normalization
-   * area: normalize such that the area under the profile is 1.
-   * counts: normalize by number of features (genes,tss) that have been counted
 
    several options can be combined.
 
--m/--method
-   utrprofile - aggregate over gene models with UTR. The areas are
-                upstream - UTR5 - CDS - UTR3 - downstream
-   geneprofile - aggregate over exonic gene models. The areas are
-                upstream - EXON - downstream
-   tssprofile  - aggregate over transcription start/stop
-                upstream - TSS/TTS - downstream
-   intervalprofile - aggregate over interval
-                upstream - EXON - downstream
-   midpointprofile - aggregate over midpoint of gene model. The areas are:
-                upstream - downstream
-
--a/--merge-pairs
-   merge pairs in paired-ended data.
-   
 Usage
 -----
 
@@ -126,15 +169,41 @@ def main( argv = None ):
     if not argv: argv = sys.argv
 
     # setup command line parser
-    parser = optparse.OptionParser( version = "%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
+    parser = E.OptionParser( version = "%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
                                     usage = globals()["__doc__"] )
 
     parser.add_option( "-m", "--method", dest="methods", type = "choice", action = "append",
                        choices = ("geneprofile", "tssprofile", "utrprofile", 
-                                  "intervalprofile", "midpointprofile" ),
-                       help = "counters to use. Counters describe the meta-gene structure to use"
-                              " for counting. Several counters can be chosen."
-                              " [%default]" )
+                                  "intervalprofile", "midpointprofile",
+                                  "geneprofilewithintrons", 
+                                  ),
+                       help = '''counters to use. Counters describe the meta-gene structure to use
+
+utrprofile - aggregate over gene models with UTR. 
+
+             upstream - UTR5 - CDS - UTR3 - downstream
+
+geneprofile - aggregate over exonic gene models. 
+
+             upstream - EXON - downstream
+
+geneprofilewithintrons - aggregate over exonic, intron gene models. 
+
+             upstream - EXON - INTRON - downstream
+
+tssprofile  - aggregate over transcription start/stop
+
+             upstream - TSS/TTS - downstream
+
+intervalprofile - aggregate over interval
+
+             upstream - EXON - downstream
+
+midpointprofile - aggregate over midpoint of gene model.
+
+             upstream - downstream
+
+[%default]''' )
 
     parser.add_option( "-b", "--bamfile", "--bedfile", "--bigwigfile", dest="infiles", 
                        type = "string", action = "append",
@@ -147,13 +216,26 @@ def main( argv = None ):
 
     parser.add_option( "-n", "--normalization", dest="normalization", type = "choice",
                        choices = ("none", "max", "sum", "total-max", "total-sum"),
-                       help = "normalization to use. Normalize the counts before aggregating "
-                              "[%default]" )
+                       help = """normalization to apply on each transcript profile before adding to meta-gene profile. 
+
+The options are:
+
+* none: no normalization
+* sum: sum of counts within a region
+* max: maximum count within a region
+* total-sum: sum of counts across all regions
+* total-max: maximum count in all regions
+[%default]""" )
 
     parser.add_option( "-p", "--normalize-profile", dest="profile_normalizations", type = "choice", action="append",
                        choices = ("none", "area", "counts"),
-                       help = "profile normalization to use. "
-                              "[%default]" )
+                       help = """normalization to apply on meta-gene profile normalization. 
+
+The options are:
+* none: no normalization
+* area: normalize such that the area under the meta-gene profile is 1.
+* counts: normalize by number of features (genes,tss) that have been counted
+[%default]""" )
 
     parser.add_option( "-r", "--reporter", dest="reporter", type = "choice",
                        choices = ("gene", "transcript"  ),
@@ -202,23 +284,27 @@ def main( argv = None ):
                        help = "resolution of cds region in bp "
                               "[%default]" )
 
-    parser.add_option("--extension_upstream", dest = "extension_upstream", type = "int",
+    parser.add_option("--resolution-introns", dest="resolution_introns", type = "int",
+                       help = "resolution of introns region in bp "
+                              "[%default]" )
+
+    parser.add_option("--extension-upstream", dest = "extension_upstream", type = "int",
                        help = "extension upstream from the first exon in bp"
                               "[%default]" )
 
-    parser.add_option("--extension_downstream", dest = "extension_downstream", type = "int",
+    parser.add_option("--extension-downstream", dest = "extension_downstream", type = "int",
                        help = "extension downstream from the last exon in bp"
                               "[%default]" )
 
-    parser.add_option("--extension_inward", dest="extension_inward", type = "int",
+    parser.add_option("--extension-inward", dest="extension_inward", type = "int",
                        help = "extension inward from a TSS start site in bp"
                               "[%default]" )
 
-    parser.add_option("--extension_outward", dest="extension_outward", type = "int",
+    parser.add_option("--extension-outward", dest="extension_outward", type = "int",
                        help = "extension outward from a TSS start site in bp"
                               "[%default]" )
                        
-    parser.add_option("--scale_flank_length", dest="scale_flanks", type = "int",
+    parser.add_option("--scale-flank-length", dest="scale_flanks", type = "int",
                        help = "scale flanks to (integer multiples of) gene length"
                               "[%default]" )
 
@@ -233,6 +319,7 @@ def main( argv = None ):
         sort = [],
         reporter = "transcript",
         resolution_cds = 1000,
+        resolution_introns = 1000,
         resolution_upstream_utr = 1000,
         resolution_downstream_utr = 1000,
         resolution_upstream = 1000,
@@ -329,7 +416,15 @@ def main( argv = None ):
                                                            options.extension_upstream,
                                                            options.extension_downstream,
                                                            options.scale_flanks ) )
-
+        elif method == "geneprofilewithintrons":
+            counters.append( _bam2geneprofile.GeneCounterWithIntrons( range_counter, 
+                                                           options.resolution_upstream,
+                                                           options.resolution_cds,
+                                                           options.resolution_introns,
+                                                           options.resolution_downstream,
+                                                           options.extension_upstream,
+                                                           options.extension_downstream,
+                                                           options.scale_flanks ) )
         elif method == "tssprofile":
             counters.append( _bam2geneprofile.TSSCounter( range_counter, 
                                                            options.extension_outward,
@@ -380,7 +475,7 @@ def main( argv = None ):
         
         for method, counter in zip(options.methods, counters):
 
-            if method in ("geneprofile", "utrprofile", "intervalprofile" ):
+            if method in ("geneprofile", "geneprofilewithintrons", "utrprofile", "intervalprofile" ):
 
                 plt.figure()
                 plt.subplots_adjust( wspace = 0.05)

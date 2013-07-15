@@ -33,19 +33,18 @@ Purpose
 
 This script compares two gtf files.
 
-The script outputs the following symbols:
+The script outputs the following symbols::
 
->: an entry unique to the second file
-<: an entry unique to the first file
+  >: an entry unique to the second file
+  <: an entry unique to the first file
 
-if --write-equivalent is set, then it also outputs overlapping entries:
+  if --write-equivalent is set, then it also outputs overlapping entries:
 
-~: partially overlapping entries
-/: an entry that is split in the first file (split_right)
-\: an entry that is split in the second file (split_left)
-=: identical entries
-|: half-identical entries, only one boundary is matching
-
+  ~: partially overlapping entries
+  /: an entry that is split in the first file (split_right)
+  \: an entry that is split in the second file (split_left)
+  =: identical entries
+  |: half-identical entries, only one boundary is matching
 
 
 Usage
@@ -163,7 +162,7 @@ def writeDiff( outfile, symbol, genes ):
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: diff_gtf.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: diff_gtf.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-e", "--write-equivalent", dest="write_equivalent", 
                       help="write equivalent entries [default=%default].", action="store_true"  )

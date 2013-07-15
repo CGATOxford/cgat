@@ -78,7 +78,7 @@ import Bio.Alphabet.IUPAC
     
 def main( argv = None ):
 
-    parser = optparse.OptionParser( version = "%prog version: $Id$",
+    parser = E.OptionParser( version = "%prog version: $Id$",
                                     usage = globals()["__doc__"] )
 
     parser.add_option("-w", "--filename-weights", dest="filename_weights", type="string",

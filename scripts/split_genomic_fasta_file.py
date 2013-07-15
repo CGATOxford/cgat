@@ -145,7 +145,7 @@ def processSequence( key, description_rest, sequence, options, mask_regions = No
 if __name__ == '__main__':
 
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: split_genomic_fasta_file.py 1225 2007-04-10 15:13:11Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: split_genomic_fasta_file.py 1225 2007-04-10 15:13:11Z andreas $")
 
     parser.add_option("-e", "--extend", dest="extend", type="int",
                       help="extend sequences by # residues."  )

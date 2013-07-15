@@ -57,7 +57,7 @@ Type::
    python bam2wiggle.py --output-format=bigwig in.bam out.bigwig
 
 to convert the :term:`bam` file file:`in.bam` to :term:`bigwig` format 
-and save the result in :term:`out.bigwig`.
+and save the result in :file:`out.bigwig`.
 
 Type::
 
@@ -175,7 +175,7 @@ def main( argv = None ):
     if not argv: argv = sys.argv
 
     # setup command line parser
-    parser = optparse.OptionParser( version = "%prog version: $Id: bam2wiggle.py 2832 2009-11-24 16:11:06Z andreas $", usage = globals()["__doc__"] )
+    parser = E.OptionParser( version = "%prog version: $Id: bam2wiggle.py 2832 2009-11-24 16:11:06Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option("-o", "--output-format", dest="output_format", type="choice",
                       choices=("bedgraph", "wiggle", "bigbed", "bigwig", "bed"),

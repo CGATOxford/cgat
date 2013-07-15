@@ -52,7 +52,7 @@ Medip analysis
 --------------
 
 The medip analysis makes use of the MEDIPS R package by `Chavez et al. <http://medips.molgen.mpg.de/>`_ 
-(see :pmid:`PMID: 20802089`).
+(see :pmid:`20802089`).
 
 Briefly, the data is processed in the following way:
 

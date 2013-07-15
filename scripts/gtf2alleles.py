@@ -793,7 +793,7 @@ def main( argv = None ):
     if not argv: argv = sys.argv
 
     # setup command line parser
-    parser = optparse.OptionParser( version = "%prog version: $Id: gtf2alleles.py 2886 2010-04-07 08:47:46Z andreas $", usage = globals()["__doc__"] )
+    parser = E.OptionParser( version = "%prog version: $Id: gtf2alleles.py 2886 2010-04-07 08:47:46Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genome [default=%default]."  )

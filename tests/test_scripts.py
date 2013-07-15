@@ -51,7 +51,7 @@ def check_script( script, stdin, options, outputs, references, workingdir ):
                 
         reference = os.path.join( workingdir, reference)
         if not os.path.exists( reference):
-            raise OSError( "reference file '%s'  does not exist" % reference )
+            raise OSError( "reference file '%s'  does not exist (%s)" % (reference,tmpdir) )
 
         for a,b in zip( _read( output ), _read( reference )):
             assert_equal( a, b, "files %s and %s are not the same" % (output, reference) )

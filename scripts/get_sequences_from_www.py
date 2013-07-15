@@ -76,7 +76,7 @@ import Bio.ExPASy as ExPASy
 import Bio.SwissProt as SProt
 from Bio import File
     
-parser = optparse.OptionParser( version = "%prog version: $Id: get_sequences_from_www.py 2782 2009-09-10 11:40:29Z andreas $")
+parser = E.OptionParser( version = "%prog version: $Id: get_sequences_from_www.py 2782 2009-09-10 11:40:29Z andreas $")
 
 if __name__ == "__main__":
 

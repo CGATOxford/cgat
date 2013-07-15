@@ -154,8 +154,8 @@ Configuration
 The pipeline requires a configured :file:`pipeline.ini` file. 
 
 The sphinxreport report requires a :file:`conf.py` and :file:`sphinxreport.ini` file 
-(see :ref:`PipelineDocumenation`). To start with, use the files supplied with the
-:ref:`Example` data.
+(see :ref:`PipelineReporting`). To start with, use the files supplied with the
+Example_ data.
 
 Input
 -----
@@ -198,8 +198,6 @@ path:
 +--------------------+-------------------+------------------------------------------------+
 |picard              |>=1.42             |bam/sam files. The .jar files need to be in your|
 |                    |                   | CLASSPATH environment variable.                |
-+--------------------+-------------------+------------------------------------------------+
-|bamstats_           |>=1.22             |from CGR, Liverpool                             |
 +--------------------+-------------------+------------------------------------------------+
 
 Pipeline output
@@ -916,7 +914,7 @@ def compareTranscriptsBetweenExperiments( infiles, outfile ):
     reffile = "refcoding.gtf.gz"
     runCuffCompare( infiles, outfile, reffile )
 
-@merge (METHODTARGET,"%s.merged" % ALL.asFile())
+@merge (METHODTARGET,"%s.merged.gtf.gz" % ALL.asFile())
 def mergeUsingCuffmerge(infiles,outfile):
     ''' use cuffmerge to reassemble transcripts from independent assemblies
     on each sample
@@ -1813,7 +1811,8 @@ def loadGeneSetStats( infile, outfile ):
 #########################################################################
 @transform( GENESETTARGETS + [
         buildReferenceGeneSet,
-        buildCodingGeneSet],
+        buildCodingGeneSet,
+        mergeUsingCuffmerge],
             suffix(".gtf.gz"),
             "_geneinfo.load" )
 def loadGeneSetGeneInformation( infile, outfile ):
@@ -1824,7 +1823,7 @@ def loadGeneSetGeneInformation( infile, outfile ):
 #########################################################################
 @transform( GENESETTARGETS + [
         buildReferenceGeneSet,
-        buildCodingGeneSet ],
+        buildCodingGeneSet, mergeUsingCuffmerge ],
             suffix(".gtf.gz"),
             "_transcript2gene.load" )
 def loadGeneInformation( infile, outfile ):
@@ -1835,7 +1834,8 @@ def loadGeneInformation( infile, outfile ):
 #########################################################################
 @transform( GENESETTARGETS + [
         buildReferenceGeneSet,
-        buildCodingGeneSet ],
+        buildCodingGeneSet,
+        mergeUsingCuffmerge],
             suffix(".gtf.gz"),
             "_transcriptinfo.load" )
 def loadGeneSetTranscriptInformation( infile, outfile ):
@@ -1844,7 +1844,7 @@ def loadGeneSetTranscriptInformation( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@transform( GENESETTARGETS + [buildTranscriptsWithCufflinks,],
+@transform( GENESETTARGETS + [buildTranscriptsWithCufflinks, mergeUsingCuffmerge],
             suffix(".gtf.gz"), 
             add_inputs( buildReferenceGeneSetWithCDS ),
             ".class.tsv.gz" )

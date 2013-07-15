@@ -161,7 +161,7 @@ def processChunk( contig, chunk, options, fasta = None ):
     
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: gff2coverage.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: gff2coverage.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option( "-g", "--genome-file", dest="genome_file", type="string",
                        help="filename with genome."  )

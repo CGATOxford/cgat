@@ -1002,7 +1002,8 @@ class MultiLineFormatter(logging.Formatter):
 def submit( module, function, params = None,
             infiles = None, outfiles = None, 
             toCluster = True,
-            logfile = None ):
+            logfile = None, 
+            jobOptions = ""):
     '''Submit a python *function* as a job to the cluster.
 
     The function should reside in *module*. If *module* is
@@ -1031,6 +1032,8 @@ def submit( module, function, params = None,
         params = "--params=%s" % ",".join(params)
     else:
         params = ""
+
+    job_options = jobOptions 
 
     to_cluster = toCluster
 

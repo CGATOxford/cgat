@@ -35,7 +35,7 @@ clean:
 
 # remove the pyc file - otherwise errors when importing pipeline and other scripts
 html:
-	rm -f ../*.pyc
+	rm -f ../{CGAT,CGATPipelines,scripts}/*.pyc
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) _build/html
 	@echo
 	@echo "Build finished. The HTML pages are in _build/html."

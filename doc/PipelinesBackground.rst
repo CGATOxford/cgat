@@ -62,3 +62,6 @@ tools to build a pipeline:
    * sqlite_ to store the results of the computational steps
    * sphinxreport_ to visualize the data in the sqlite database
 
+.. _ruffus: http://www.ruffus.org.uk/
+.. _sqlite: http://www.sqlite.org/
+.. _sphinxreport: http://code.google.com/p/sphinx-report/

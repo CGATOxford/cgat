@@ -48,11 +48,13 @@ shift-alignment
 
 mark-transitions
    marks transitions in the alignment. The parameter denotes either
-                        (1) a filename to a file containing id-transition pairs in
-                        tabular form. There can be multiple transitions for the same id, but
-                        they should be on separate lines. Use 'mali' as an id for multiple
-                        alignment coordinates.
-                        (2) a colon (':') -separated list of transitions
+
+      1 a filename to a file containing id-transition pairs in
+        tabular form. There can be multiple transitions for the same id, but
+        they should be on separate lines. Use 'mali' as an id for multiple
+        alignment coordinates.
+
+      2 a colon (':') -separated list of transitions
 
 filter-even-transitions
    same parameter as above, but will remove all even segments (0, 2, ...).
@@ -374,7 +376,7 @@ def filterMali( mali, method="3rd" ):
 ##------------------------------------------------------------
 def main( argv = sys.argv ):
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: mali2mali.py 2782 2009-09-10 11:40:29Z andreas $", 
+    parser = E.OptionParser( version = "%prog version: $Id: mali2mali.py 2782 2009-09-10 11:40:29Z andreas $", 
                                     usage = globals()["__doc__"])
 
     parser.add_option("-i", "--input-format", dest="input_format", type="choice",

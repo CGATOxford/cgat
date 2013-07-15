@@ -92,7 +92,7 @@ def WriteBackground( go_type, options, suffix ):
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: analyze_go.py 309 2005-12-01 15:50:26Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: analyze_go.py 309 2005-12-01 15:50:26Z andreas $")
 
     dbhandle = Database.Database()
     

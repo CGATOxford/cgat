@@ -35,13 +35,13 @@ Purpose
 extract sequences from a set of multiple alignments and distribute into new directories.
 
 Files can be split according to an input file given to the option --filename-components.
-This file is a tab separated table containing the following fields:
+This file is a tab separated table containing the following fields::
 
-1       sequence        a sequence identifier
-2       input_id        The id under which the alignment is found.
-3       component_id    The component_id which under which the directory shall be stored.
-                        This is optional, if no third column is specified, the input_id
-                        is used.
+   1       sequence        a sequence identifier
+   2       input_id        The id under which the alignment is found.
+   3       component_id    The component_id which under which the directory shall be stored.
+                           This is optional, if no third column is specified, the input_id
+                           is used.
 
 Usage
 -----
@@ -621,7 +621,7 @@ def selectComponents( component_ids,
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: malis2malis.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: malis2malis.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-d", "--pattern-output", dest="pattern_output", type="string",
                       help="filename pattern for output multiple alignment files."  )

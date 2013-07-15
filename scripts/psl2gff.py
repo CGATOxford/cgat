@@ -63,7 +63,7 @@ import CGAT.GTF as GTF
 
 def main():
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: psl2gff.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"] )
+    parser = E.OptionParser( version = "%prog version: $Id: psl2gff.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option("-a", "--as-gtf", dest="as_gtf", action="store_true",
                       help="output as gtf."  )

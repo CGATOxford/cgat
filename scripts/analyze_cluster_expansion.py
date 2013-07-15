@@ -80,7 +80,7 @@ import numpy
 import scipy
 import scipy.stats
 
-parser = optparse.OptionParser( version = "%prog version: $Id: analyze_cluster_expansion.py 2781 2009-09-10 11:33:14Z andreas $")
+parser = E.OptionParser( version = "%prog version: $Id: analyze_cluster_expansion.py 2781 2009-09-10 11:33:14Z andreas $")
 
 
 if __name__ == "__main__":

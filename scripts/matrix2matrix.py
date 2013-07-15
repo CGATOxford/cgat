@@ -90,7 +90,7 @@ import scipy
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: matrix2matrix.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: matrix2matrix.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option("-m", "--method", dest="methods", type="choice", action="append",
                       choices=("normalize-by-min-diagonal", "normalize-by-column",

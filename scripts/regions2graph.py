@@ -546,7 +546,7 @@ def ExchangeStreams( old_predictions, new_predictions ):
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: regions2graph.py 2754 2009-09-04 16:50:22Z andreas $", usage = globals()["__doc__"] )
+    parser = E.OptionParser( version = "%prog version: $Id: regions2graph.py 2754 2009-09-04 16:50:22Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option( "-b", "--benchmark", dest="filename_benchmark", type="string",
                       help=""  )

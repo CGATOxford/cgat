@@ -97,10 +97,13 @@ The script creates the following additional output files:
 
 counts
    Counts for each annotations
+
 junctions
    Splice junctions. This is a tab separated table linking residues that are
    joined via features. The coordinates are forward/reverse coordinates.
+
    The columns are:
+
    contig
       the contig
    strand
@@ -481,7 +484,7 @@ def main( argv = None ):
     if not argv: argv = sys.argv
 
     # setup command line parser
-    parser = optparse.OptionParser( version = "%prog version: $Id: gtf2fasta.py 2861 2010-02-23 17:36:32Z andreas $", usage = globals()["__doc__"] )
+    parser = E.OptionParser( version = "%prog version: $Id: gtf2fasta.py 2861 2010-02-23 17:36:32Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genome [default=%default]."  )

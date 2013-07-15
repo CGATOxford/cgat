@@ -134,7 +134,7 @@ def plotMatrix( matrix, color_scheme, row_headers, col_headers, vmin, vmax, opti
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: plot_matrix.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: plot_matrix.py 2782 2009-09-10 11:40:29Z andreas $")
     
     parser.add_option("-c", "--columns", dest="columns", type="string",
                       help="columns to take from table." )

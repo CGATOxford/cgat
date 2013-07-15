@@ -82,7 +82,7 @@ def fillAlignment( map_alignment, alignment ):
 
 def main():
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: quality2masks.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: quality2masks.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("--quality-threshold", dest="quality_threshold", type="int",
                       help="quality threshold for masking positions [default=%default]" )

@@ -114,7 +114,7 @@ class X:
     
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: gbrowser_clone_devel.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: gbrowser_clone_devel.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-t", "--target-dir", dest="target", type="string",
                       help="target directory.", metavar = "FILE"  )

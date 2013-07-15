@@ -293,7 +293,7 @@ def ProcessResult( result, options, mali = None, prefix = None, p_value = None )
 
 if __name__ == "__main__":
     
-    parser = optparse.OptionParser( version = "%prog version: $Id: analyze_sites_slr.py 2781 2009-09-10 11:33:14Z andreas $" )
+    parser = E.OptionParser( version = "%prog version: $Id: analyze_sites_slr.py 2781 2009-09-10 11:33:14Z andreas $" )
 
     parser.add_option("--method", dest="method", type="choice",
                       choices=("summary-slr", "summary-filtered", "over-representation",

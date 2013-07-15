@@ -71,7 +71,7 @@ import CGAT.IOTools as IOTools
 
 if __name__  == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: orthologs2list.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: orthologs2list.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option( "-s", "--species-regex", dest="species_regex", type="string" ,
                        help="regular expression to extract species from identifier.")

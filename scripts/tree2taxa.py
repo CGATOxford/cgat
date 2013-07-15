@@ -68,7 +68,7 @@ import CGAT.TreeTools as TreeTools
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: tree2taxa.py 2782 2009-09-10 11:40:29Z andreas $",
+    parser = E.OptionParser( version = "%prog version: $Id: tree2taxa.py 2782 2009-09-10 11:40:29Z andreas $",
                                     usage = globals()["__doc__"] )
 
     parser.add_option( "--skip-trees", dest="skip_trees", action="store_true",

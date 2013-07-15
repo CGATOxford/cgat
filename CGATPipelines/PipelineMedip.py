@@ -1,4 +1,6 @@
-'''PipelineMedis.py
+'''
+PipelineMedip.py - tasks associated with MedipSeq analysis
+==========================================================
 
 '''
 

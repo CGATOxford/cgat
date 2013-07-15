@@ -221,7 +221,7 @@ def GetAdjustedBoundaries( id, exons ):
 
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: links2fasta.py 2446 2009-01-27 16:32:35Z andreas $", usage = globals()["__doc__"] )
+    parser = E.OptionParser( version = "%prog version: $Id: links2fasta.py 2446 2009-01-27 16:32:35Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option( "-s", "--sequences", dest="filename_sequences", type="string",
                        help="peptide sequence [Default=%default]" )

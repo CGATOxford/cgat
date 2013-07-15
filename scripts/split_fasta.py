@@ -156,7 +156,7 @@ class FilesChunks(Files):
             
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: split_fasta.py 1714 2007-12-11 16:51:12Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: split_fasta.py 1714 2007-12-11 16:51:12Z andreas $")
     
     parser.add_option("-f", "--file", dest="input_filename", type="string",
                       help="input filename. If not given, stdin is used.",

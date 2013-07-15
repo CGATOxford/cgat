@@ -635,12 +635,14 @@ def prettyString( val ):
     else: return "na"
 
 class nested_dict(collections.defaultdict):
-    """
-    Auto-vivifying nested dict
-    E.g.::
+    """Auto-vivifying nested dictionaries.
+ 
+    For example::
+
       nd= nested_dict()
       nd["mouse"]["chr1"]["+"] = 311 
-    """
+    
+   """
 
     def __init__(self):
         collections.defaultdict.__init__(self, nested_dict)

@@ -25,7 +25,7 @@
 ##CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 ##OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 ##OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
+##
 ##Thanks to Gerald Rosennfellner for his help and useful comments.
 '''
 SVGdraw.py - generate SVG drawings
@@ -37,12 +37,6 @@ SVGdraw.py - generate SVG drawings
 :Tags: Python
 
 This module has been copied from 3rd party resources.
-
-Code
-----
-
-'''
-__doc__="""Use SVGdraw to generate your SVGdrawings.
 
 SVGdraw uses an object model drawing and a method toXML to create SVG graphics
 by using easy to use classes and methods usualy you start by creating a drawing eg
@@ -67,7 +61,8 @@ this results in the svg source of the drawing, which consists of a circle
 on a white background. Its as easy as that;)
 This module was created using the SVG specification of www.w3c.org and the
 O'Reilly (www.oreilly.com) python books as information sources. A svg viewer
-is available from www.adobe.com"""
+is available from www.adobe.com
+'''
 
 __version__="1.0"
 
@@ -734,7 +729,7 @@ class symbol(SVGelement):
             self.attributes['viewBox']=_viewboxlist(viewBox)
             
 class defs(SVGelement):
-    """d=defs(**args)
+    """d=defs(``**args``)
 
     container for defining elements
     """
@@ -742,7 +737,7 @@ class defs(SVGelement):
         SVGelement.__init__(self,'defs',**args)
 
 class switch(SVGelement):
-    """sw=switch(**args)
+    """sw=switch(``**args``)
 
     Elements added to a switch element which are "switched" by the attributes
     requiredFeatures, requiredExtensions and systemLanguage.
@@ -753,7 +748,7 @@ class switch(SVGelement):
 
         
 class use(SVGelement):
-    """u=use(link,x,y,width,height,**args)
+    """u=use(link,x,y,width,height,``**args``)
     
     references a symbol by linking to its id and its position, height and width
     """
@@ -771,7 +766,7 @@ class use(SVGelement):
             
             
 class link(SVGelement):
-    """a=link(url,**args)
+    """a=link(url,``**args``)
 
     a link  is defined by a hyperlink. add elements which have to be linked
     a.addElement(SVGelement)
@@ -780,7 +775,7 @@ class link(SVGelement):
         SVGelement.__init__(self,'a',{'xlink:href':link},**args)
         
 class view(SVGelement):
-    """v=view(id,**args)
+    """v=view(id,``**args``)
 
     a view can be used to create a view with different attributes"""
     def __init__(self,id=None,**args):
@@ -789,7 +784,7 @@ class view(SVGelement):
             self.attributes['id']=id
 
 class script(SVGelement):
-    """sc=script(type,type,cdata,**args)
+    """sc=script(type,type,cdata,``**args``)
 
     adds a script element which contains CDATA to the SVG drawing
 
@@ -798,7 +793,7 @@ class script(SVGelement):
         SVGelement.__init__(self,'script',{'type':type},cdata=cdata,**args)
         
 class animate(SVGelement):
-    """an=animate(attribute,from,to,during,**args)
+    """an=animate(attribute,from,to,during,``**args``)
 
     animates an attribute.    
     """
@@ -812,7 +807,7 @@ class animate(SVGelement):
             self.attributes['dur']=dur
         
 class animateMotion(SVGelement):
-    """an=animateMotion(pathdata,dur,**args)
+    """an=animateMotion(pathdata,dur,``**args``)
 
     animates a SVGelement over the given path in dur seconds
     """
@@ -824,7 +819,7 @@ class animateMotion(SVGelement):
             self.attributes['dur']=dur
 
 class animateTransform(SVGelement):
-    """antr=animateTransform(type,from,to,dur,**args)
+    """antr=animateTransform(type,from,to,dur,``**args``)
     
     transform an element from and to a value.
     """
@@ -840,7 +835,7 @@ class animateTransform(SVGelement):
         if dur<>None:
             self.attributes['dur']=dur
 class animateColor(SVGelement):
-    """ac=animateColor(attribute,type,from,to,dur,**args)
+    """ac=animateColor(attribute,type,from,to,dur,``**args``)
 
     Animates the color of a element
     """
@@ -855,7 +850,7 @@ class animateColor(SVGelement):
         if dur<>None:
             self.attributes['dur']=dur        
 class set(SVGelement):
-    """st=set(attribute,to,during,**args)
+    """st=set(attribute,to,during,``**args``)
     
     sets an attribute to a value for a
     """
@@ -869,7 +864,7 @@ class set(SVGelement):
 
             
 class svg(SVGelement):
-    """s=svg(viewbox,width,height,**args)
+    """s=svg(viewbox,width,height,``**args``)
     
     a svg or element is the root of a drawing add all elements to a svg element.
     You can have different svg elements in one svg file

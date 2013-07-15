@@ -1,3 +1,5 @@
+.. _styleguide:
+
 ===========
 Style Guide
 ===========
@@ -53,6 +55,7 @@ The general rule is to write easily readable and maintainable
 code. Thus, please
 
    * document code liberally and accurately
+
    * make use of whitespaces and line-breaks to break long statements
       into easily readable statements.
 
@@ -60,7 +63,14 @@ In case of uncertainty, follow the python style guides as much as
 possible. The relevant documents are:
 
    * `PEP0008 - Style Guide for Python Code <http://www.python.org/dev/peps/pep-0008/>`_
-   * `PEP0257 - Docstring Conventions <http://www.python.org/dev/peps/pep-0257/>`_
+
+   * `PEP0257 - Docstring Conventions
+     <http://www.python.org/dev/peps/pep-0257/>`_
+
+For documenting CGAT code, we follow the conventions for documenting
+python code:
+
+   * `Python Developer's guide <http://docs.python.org/devguide/documenting.html>`_
 
 In terms of writing scripts, we follow the following conventions:
 
@@ -78,6 +88,50 @@ In terms of writing scripts, we follow the following conventions:
 	gene1	1000
 	gene2	2000
      	# Another comment
+
+   * Scripts should follow the 
+     `unix philosophy <http://en.wikipedia.org/wiki/Unix_philosophy>`_.
+     They should concentrate on one task and do it well. Ideally,
+     the major input and output can be read from and written to standard
+     input and standard output, respectively. 
+
+   * The names of scripts should be meaningful. Most of our scripts
+     perform data transformation of one kind of another, these are
+     often called ``a2b.py``. The distinctions can be subtle.
+     Examples are:
+     
+     :doc:`scripts/gtf2gtf`
+        Input is :term:`gtf`, output is :term:`gtf`. This script
+        manipulates gene sets (filtering, merging, ...).
+
+     :doc:`scripts/gtf2gff`
+        Input is :term:`gtf`, output is :term:`gff`. This script
+	takes gene sets and changes the hierarchical description
+	within a :term:`gtf` file to the flat description of features
+	in a :term:`gff` file. For example, this script can define
+	gene territories, regulatory domains or genomic annotations
+	based on a gene set.
+ 
+     :doc:`scripts/bed2gff`
+        Input is :term:`bed`, output is :term:`gff`. As both 
+      	formats describe intervals in the genome, this script
+        basically does a conversion between the two formats.
+
+     Quite a few scripts contain the ``2table`` or ``2stats``. These
+     compute, respectively, properties or summary statistics for
+     entries in a file. For example:
+
+     :doc:`scripts/gtf2table` 
+         Input is :term:`gtf`. For each gene or transcript, compute
+	 selected properties. If there are 10,000 genes in the input,
+	 the output table will contain 10,000 rows.
+	 
+     :doc:`scripts/gff2stats`
+         Input is :term:`gff`. Compute summary statistics across
+	 all features in the file. Here, aggregate sizes or similar
+	 by feature type or name per chromosome. No matter if there
+	 are 10,000 or 100,000 interval is the input, the output 
+	 will be have the same number of rows.
 
 Where to put code
 =================
@@ -153,6 +207,28 @@ Other guidelines
 * In order to build documentation, each script and module needs to
   be importable from anywhere. 
   
+Documentation
+=============
+
+Writing doc-strings
+-------------------
+
+Functions should be documented through their doc-string using
+restructured text. For example::
+
+    def computeValue( name, method, accuracy=2):  
+
+        :param name: The name to use.
+    	:type name: str.
+	:param method: method to use.
+	:type state: choice of ('empirical', 'parametric')
+	:param accuracy:
+	:type accuracy: integer
+	:returns:  int -- the value
+	:raises: AttributeError, KeyError
+
+
+
 
 
 

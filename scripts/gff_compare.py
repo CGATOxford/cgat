@@ -278,7 +278,7 @@ def CountMatchesPerGene( gffs,
 ##------------------------------------------------------------------------
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: gff_compare.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"] )
+    parser = E.OptionParser( version = "%prog version: $Id: gff_compare.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option("-f", "--write-full", dest="write_full",
                       help="write full gff entries.", action="store_true"  )

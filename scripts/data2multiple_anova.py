@@ -1,4 +1,57 @@
-"""compute multiple ANOVA between samples."""
+################################################################################
+#
+#   MRC FGU Computational Genomics Group
+#
+#   $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $
+#
+#   Copyright (C) 2009 Andreas Heger
+#
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU General Public License
+#   as published by the Free Software Foundation; either version 2
+#   of the License, or (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#################################################################################
+'''
+data2multiple_anova.py - compute multiple ANOVA between samples
+===============================================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+Usage
+-----
+
+Example::
+
+   python script_template.py --help
+
+Type::
+
+   python script_template.py --help
+
+for command line help.
+
+Documentation
+-------------
+
+Code
+----
+
+'''
 
 import sys
 import re
@@ -18,7 +71,7 @@ from rpy2.robjects import r as R
 ##---------------------------------------------------------------------------------------------------------        
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: data2multiple_anova.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: data2multiple_anova.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option("-c", "--columns", dest="columns", type="string",
                       help="columns to take for calculating histograms." )

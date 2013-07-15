@@ -51,8 +51,8 @@ Configuration
 The pipeline requires a configured :file:`pipeline.ini` file. 
 
 The sphinxreport report requires a :file:`conf.py` and :file:`sphinxreport.ini` file 
-(see :ref:`PipelineDocumenation`). To start with, use the files supplied with the
-:ref:`Example` data.
+(see :ref:`PipelineReporting`). To start with, use the files supplied with the
+Example_ data.
 
 Input
 -----
@@ -60,9 +60,9 @@ Input
 Variants
 ++++++++
 
-Variants are read from a :term:`vcf` formatted file called :term:`variants.vcf.gz`. 
+Variants are read from a :term:`vcf` formatted file called :file:`variants.vcf.gz`. 
 The file is assumed to have been compressed with :file:`bgzip` and compressed with
-tabix_.
+tabix.
 
 The tracks are taken from the headers in the :term:`vcf` file. Please avoid any special
 characters like ``_][*.+-``  within strain names.
@@ -1192,12 +1192,16 @@ def summarizeAllelesPerTranscript( infile, outfile ):
     '''summarize effects on a per-gene level.
 
     The following fields are exclusive:
+
     is_wildtype
        both alleles are wildtype
+
     is_knockout
        both alleles knocked out
+
     is_truncated
        both alleles truncated or truncated and knocked out
+
     is_affected
        one allele is truncated or knocked out
 

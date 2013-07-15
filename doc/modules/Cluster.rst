@@ -1,5 +1,5 @@
 
-.. automodule:: GemReads
+.. automodule:: Cluster
    :members:
    :inherited-members:
    :show-inheritance:

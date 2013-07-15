@@ -58,13 +58,13 @@ to optimize a variety of user specified parameters. It performs the following ta
     * Reduction of input bam files into chr19 only bamfiles
 
     * Runs the rnaseq transcript building pipeline for all combinations
-    of user specified parameters
+      of user specified parameters
 
     * Collects metrics in a single database csvdb from each run (metrics provided by the transcript
-    building pipeline) and assesses how many reads contribute to transcripts (inc. spliced reads)
+      building pipeline) and assesses how many reads contribute to transcripts (inc. spliced reads)
 
     * It also assesses the ratio of single vs. multi exon transfrags as a measure of overall transcriptome
-    quality.
+      quality.
 
 
 Usage
@@ -78,8 +78,8 @@ Configuration
 The pipeline requires a configured :file:`pipeline.ini` file. 
 
 The sphinxreport report requires a :file:`conf.py` and :file:`sphinxreport.ini` file 
-(see :ref:`PipelineDocumenation`). To start with, use the files supplied with the
-:ref:`Example` data.
+(see :ref:`PipelineReporting`). To start with, use the files supplied with the
+Example_ data.
 
 Input
 -----
@@ -112,6 +112,30 @@ path:
 +--------------------+-------------------+------------------------------------------------+
 |cufflinks_          |>=1.3.0            |transcription levels                            |
 +--------------------+-------------------+------------------------------------------------+
+
+Example
+=======
+
+Example data is available at http://www.cgat.org/~andreas/sample_data/pipeline_cufflinks_optimization.tgz.
+To run the example, simply unpack and untar::
+
+   wget http://www.cgat.org/~andreas/sample_data/pipeline_cufflinks_optimization.tgz
+   tar -xvzf pipeline_cufflinks_optimization.tgz
+   cd pipeline_cufflinks_optimization.dir
+   python <srcdir>/pipeline_cufflinks_optimization.py make full
+
+.. note:: 
+   For the pipeline to run, install the :doc:`pipeline_annotations` as well.
+
+Glossary
+========
+
+.. glossary::
+
+   cufflinks
+      cufflinks_ - transcriptome analysis
+
+.. _cufflinks: http://cufflinks.cbcb.umd.edu/index.html
 
 Code
 ====

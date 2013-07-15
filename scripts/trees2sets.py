@@ -38,10 +38,10 @@ Given a reference tree and a collection of trees, this script outputs
 (depending on the option --method)
 
    * strict: 1:1 ortholog clusters for a selected set of species
-   combinations. All species need to be present for a species combination
+     combinations. All species need to be present for a species combination
    
    * degenerate: 1:m ortholog cluster for a selected set of species
-   combinations. All species need to be present for a species combination.
+     combinations. All species need to be present for a species combination.
 
    * lineage: lineage specific duplications.
 
@@ -530,7 +530,7 @@ def writeOrthologSets( outfile, nexus,
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: trees2sets.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: trees2sets.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
     
     parser.add_option("-t", "--reference-tree", dest="reference_tree", type="string",
                       help="reference tree to read."  )

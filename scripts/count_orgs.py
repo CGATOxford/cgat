@@ -94,7 +94,7 @@ def GetPattern( data, l ):
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: count_orgs.py 1706 2007-12-11 16:46:11Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: count_orgs.py 1706 2007-12-11 16:46:11Z andreas $", usage = globals()["__doc__"])
     
     parser.add_option("-t", "--reference-tree", dest="reference_tree", type="string",
                       help="reference tree to read."  )

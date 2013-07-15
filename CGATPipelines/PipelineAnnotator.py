@@ -796,10 +796,15 @@ def makeAnnotatorRegionsOfInterest( infiles, outfile, **kwargs ):
     '''check statistical overlap between intervals regions of interest.
 
     Annotator is run with the following parameters:
-    1. Segments: the interval track
-    2. Annotations:
-       1. disease intervals (regions of interest)
-    3. Workspace: mappable part of gene territories
+
+       1 Segments: the interval track
+
+       2 Annotations
+
+          1 disease intervals (regions of interest)
+
+       3 Workspace: mappable part of gene territories
+
     '''
 
     infile, infile_regions = infiles

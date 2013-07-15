@@ -35,7 +35,7 @@ call the files genome.fasta and genome.idx. For example::
 
 Build the index for `gmap`_ by running gmap_setup. By default, `gmap`_ indices should be put
 in :file:`/net/cpp-mirror/databases/gmap`. Provide the location to the indices using
-the variable :term:`PARAM_GMAP_OPTIONS`.
+the variable ``PARAM_GMAP_OPTIONS``.
 
 .. note::
 

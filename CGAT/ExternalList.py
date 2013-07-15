@@ -20,8 +20,11 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
+"""
+ExternalList.py - large disk-based lists
+========================================
 
-"""A list class that serves as a stand-in for python lists but
+A list class that serves as a stand-in for python lists but
 stores data on the file system.
 
 Implements not all functionality of lists yet. Lists are stored

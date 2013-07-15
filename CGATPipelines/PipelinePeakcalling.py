@@ -1,5 +1,5 @@
-'''ChIP-Seq tasks associated with intervals.
-
+'''PipelinePeakCalling.py - ChIP-Seq tasks associated with calling peaks
+========================================================================
 
 def runXXX():
     run a certain peak caller
@@ -8,7 +8,6 @@ def loadXXX():
     load results from peak caller. The minimum information required are:
         contig, start, end
         
-
 '''
 
 import sys

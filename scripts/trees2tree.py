@@ -89,7 +89,7 @@ def getBestTree( trees, method = "select-largest"):
     
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: trees2tree.py 2782 2009-09-10 11:40:29Z andreas $", 
+    parser = E.OptionParser( version = "%prog version: $Id: trees2tree.py 2782 2009-09-10 11:40:29Z andreas $", 
                                     usage = globals()["__doc__"] )
 
     parser.add_option("-m", "--method", dest="method", type="choice",

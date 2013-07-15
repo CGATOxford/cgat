@@ -75,7 +75,7 @@ def main( argv = None ):
     if not argv: argv = sys.argv
 
     # setup command line parser
-    parser = optparse.OptionParser( version = "%prog version: $Id: maf2psl.py 2879 2010-04-06 14:44:34Z andreas $", 
+    parser = E.OptionParser( version = "%prog version: $Id: maf2psl.py 2879 2010-04-06 14:44:34Z andreas $", 
                                     usage = globals()["__doc__"] )
 
     parser.add_option("-q", "--query", dest="query", type="string",

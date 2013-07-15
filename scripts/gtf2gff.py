@@ -99,13 +99,19 @@ intergenic
    telomeric region (before/after first/last gene).
 
 intronic
-   intronic region.
+   intronic region. An intron has a minimum size of 30 bases.
 
 frameshift
-   frameshift. Introns of less than 10 residues length
+   frameshift. Introns of less than 4 residues length
 
 ambiguous
    in case of overlapping genes, regions are designated ambiguous
+
+unknown
+   unknown are ``intronic`` regions that are less than the minimum size 
+   of an intron (default: 30) and larger than the size of frameshift (default:4).
+   These could be either genuine small introns or they could be artefactual arising
+   from collapsing the exons within a gene model.
 
 All segments are annotated by their closest gene. Intergenic regions are
 annotated with their two neighbouring genes. The upstream gene is listed
@@ -138,7 +144,7 @@ upstream, downstream
    upstream/downstream regions in 5 intervals of a total of 1kb (see option --flank to increase
    the total size).
 
-.. _territorios:
+.. _territories:
 
 Territories
 +++++++++++
@@ -980,7 +986,7 @@ def annotateGenes( iterator, fasta, options ):
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: gtf2gff.py 2861 2010-02-23 17:36:32Z andreas $", usage = globals()["__doc__"] )
+    parser = E.OptionParser( version = "%prog version: $Id: gtf2gff.py 2861 2010-02-23 17:36:32Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genome [default=%default]."  )

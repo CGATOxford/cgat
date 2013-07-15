@@ -260,7 +260,7 @@ def main( argv = None ):
     if not argv: argv = sys.argv
 
     # setup command line parser
-    parser = optparse.OptionParser( version = "%prog version: $Id$", 
+    parser = E.OptionParser( version = "%prog version: $Id$", 
                                     usage = globals()["__doc__"] )
 
     parser.add_option("-f", "--alignment-format", dest="alignment_format", type="choice",

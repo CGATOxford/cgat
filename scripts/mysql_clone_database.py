@@ -110,7 +110,7 @@ def copyTables(dbhandle, dest, src, dry_run = False ):
     
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: mysql_clone_database.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: mysql_clone_database.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-c", "--create", dest="create", action="store_true",
                       help="create target database if it does not exist."  )

@@ -35,10 +35,11 @@ Purpose
 maps a list of residues in a master sequence based on an explicit
 (multiple) alignment.
 
-Options:
--m, --master    number of sequence to use as master (default is first row)
--f, --format    alignment format (plain is the default and so far the only
-                supported option)       
+Options::
+
+    -m, --master    number of sequence to use as master (default is first row)
+    -f, --format    alignment format (plain is the default and so far the only
+                    supported option)       
 
 Usage
 -----

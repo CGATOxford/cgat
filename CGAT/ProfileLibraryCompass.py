@@ -260,7 +260,7 @@ if __name__ == "__main__":
 
     #--------------------------------------------------------
     # command line parsing options
-    parser = optparse.OptionParser( version = "%prog version: $Id: ProfileLibraryCompass.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: ProfileLibraryCompass.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-p", "--prefix", dest="prefix", type="string",
                       help="prefix to use for the profile library." )

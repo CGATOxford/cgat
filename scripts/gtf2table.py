@@ -3593,7 +3593,8 @@ class CounterBigwigCounts(Counter):
 ##------------------------------------------------------------
 def main( argv = None ):
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: gtf2table.py 2888 2010-04-07 08:48:36Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: gtf2table.py 2888 2010-04-07 08:48:36Z andreas $", 
+			     usage = globals()["__doc__"] )
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genome [default=%default]."  )
@@ -3601,13 +3602,13 @@ def main( argv = None ):
     parser.add_option("-q", "--quality-file", dest="quality_file", type="string",
                       help="filename with genomic base quality information [default=%default]."  )
 
-    parser.add_option("-b", "--bam-file", dest="bam_files", type="string",
+    parser.add_option("-b", "--bam-file", dest="bam_files", type="string", metavar="bam",
                       help="filename with read mapping information. Multiple files can be submitted in a comma-separated list [default=%default]."  )
 
-    parser.add_option("-i", "--bigwig-file", dest="bigwig_file", type="string",
+    parser.add_option("-i", "--bigwig-file", dest="bigwig_file", type="string", metavar="bigwig",
                       help="filename with bigwig information [default=%default]."  )
 
-    parser.add_option("-f", "--filename-gff", dest="filename_gff", type="string", action="append",
+    parser.add_option("-f", "--filename-gff", dest="filename_gff", type="string", action="append", metavar='bed',
                       help="filename with extra gff files. The order is important [default=%default]."  )
 
     parser.add_option( "--filename-format", dest="filename_format", type="choice",
@@ -3625,7 +3626,7 @@ def main( argv = None ):
                       help="report results for 'genes' or 'transcripts' [default=%default]."  )
 
     parser.add_option("-s", "--section", dest="sections", type="choice", action="append",
-                      choices=("exons", "introns" ),
+                      choices= ("exons", "introns" ), 
                       help="select range on which counters will operate [default=%default]."  )
 
     parser.add_option("-c", "--counter", dest="counters", type="choice", action="append",
@@ -3677,7 +3678,7 @@ def main( argv = None ):
 
     if not argv: argv = sys.argv
 
-    (options, args) = E.Start( parser, add_output_options = True, argv = argv)
+    (options, args) = E.Start( parser, add_output_options = True, argv = argv )
 
     if options.prefixes:
         if len(options.prefixes) != len(options.counters):

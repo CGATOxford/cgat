@@ -44,12 +44,15 @@ def Calculate(values, mode=0, bin_function=None):
 #-------------------------------------------------------------------------------------------------------
 def Print( h, bin_function=None ):
     """print a histogram.
+
     A histogram can either be a list/tuple of values or
     a list/tuple of lists/tuples where the first value contains
     the bin and second contains the values (which can again be
     a list/tuple).
-    format:     0 = print histogram in several lines
-                1 = print histogram on single line
+
+    :param format: output format. 
+        0 = print histogram in several lines,
+        1 = print histogram on single line
     """
 
     if bin_function: h = map(bin_function, h)

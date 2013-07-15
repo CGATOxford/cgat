@@ -541,10 +541,11 @@ def Transcript2GeneTree( tree,
 
     The procedure for converting a transcript tree into a gene tree:
 
-    
     If there are two genes, and they are monophyletic, no matter how many
-    transcripts:
+    transcripts, the order is as follows:
+
        1 Merge all nodes into two, one for each gene.
+
        2 The distance between the genes is the minimum distance observed between
          two transcripts from different genes. Half of this will be set as the
          branch length from the gene leaves.
@@ -552,7 +553,7 @@ def Transcript2GeneTree( tree,
     If this is not possible for a set of genes, the procedure will fail and not
     return a gene tree.
     """
-    raise "incomplete"
+    raise NotImplementedError()
     MapTaxa( tree, map_transcript2gene )
 
     ## get all leaves and sort by taxon
@@ -1196,31 +1197,31 @@ def ReconciliateByRio( gene_tree, species_tree,
     Recursion:
 
         Visit each internal node g of G in post-order traversal, (i.e.
-        from leaves to root)
+        from leaves to root)::
 
-        set a = M(g1) # g1 = first child of current node g
-        set b = M(g2) # g2 = second child of current node g
+          set a = M(g1) # g1 = first child of current node g
+          set b = M(g2) # g2 = second child of current node g
 
-        while a != b:
-            if a > b:
-                  set a = parent of node a in species tree
-            else:
-                  set b = parent of node b in species tree
-        set M(g) = a
+          while a != b:
+              if a > b:
+                    set a = parent of node a in species tree
+              else:
+                    set b = parent of node b in species tree
+          set M(g) = a
 
-        if M(g) == M(g1) or M(g) == M(g2):
-            g is duplication
-        else:
-            g is speciation
+          if M(g) == M(g1) or M(g) == M(g2):
+              g is duplication
+          else:
+              g is speciation
 
     The algorithm returns an array for each node with its type. 
 
     If extract_gene is given, the algorithm will label transcription nodes
     for alternative transcripts (duplications involving the same gene).
 
-
     The algorithm has been extended to accomodate the following test cases:
-    1. alternative transcripts:
+
+    Alternative transcripts
         Alternative transcripts that span genes from other species are permitted,
         if at most one gene of the other species is involved.
 

@@ -52,8 +52,8 @@ Configuration
 The pipeline requires a configured :file:`pipeline.ini` file. 
 
 The sphinxreport report requires a :file:`conf.py` and :file:`sphinxreport.ini` file 
-(see :ref:`PipelineDocumenation`). To start with, use the files supplied with the
-:ref:`Example` data.
+(see :ref:`PipelineReporting`). To start with, use the files supplied with the
+Example_ data.
 
 Input
 -----
@@ -61,9 +61,9 @@ Input
 Variants
 ++++++++
 
-Variants are read from a :term:`vcf` formatted file called :term:`variants.vcf.gz`. 
+Variants are read from a :term:`vcf` formatted file called :file:`variants.vcf.gz`. 
 The file is assumed to have been compressed with :file:`bgzip` and compressed with
-tabix_.
+tabix.
 
 The tracks are taken from the headers in the :term:`vcf` file. Please avoid any special
 characters like ``_][*.+-``  within strain names.

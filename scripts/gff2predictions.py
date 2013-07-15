@@ -112,7 +112,7 @@ def checkIdentity( reference, translation, options ):
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: gff2predictions.py 2021 2008-07-10 16:00:48Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: gff2predictions.py 2021 2008-07-10 16:00:48Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-t", "--trans", dest="trans", 
                       help="input is translated DNA.", action="store_true"  )

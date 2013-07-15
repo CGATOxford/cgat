@@ -83,7 +83,7 @@ def fillAlignment( map_alignment, alignment ):
 
 def main():
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: malis2masks.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: malis2masks.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("--random-proportion", dest="random_proportion", type="float",
                       help="mask randomly columns in multiple alignments [default=%default]" )

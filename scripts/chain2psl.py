@@ -84,7 +84,7 @@ def main( argv = None ):
     if not argv: argv = sys.argv
 
     # setup command line parser
-    parser = optparse.OptionParser( version = "%prog version: $Id: chain2psl.py 2899 2010-04-13 14:37:37Z andreas $", 
+    parser = E.OptionParser( version = "%prog version: $Id: chain2psl.py 2899 2010-04-13 14:37:37Z andreas $", 
                                     usage = globals()["__doc__"] )
 
     ## add common options (-h/--help, ...) and parse command line 

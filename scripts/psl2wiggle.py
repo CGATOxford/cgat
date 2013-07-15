@@ -70,7 +70,7 @@ import numpy
 
 def main( argv = sys.argv ):
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: psl2wiggle.py 2834 2009-11-24 16:11:23Z andreas $", usage = globals()["__doc__"] )
+    parser = E.OptionParser( version = "%prog version: $Id: psl2wiggle.py 2834 2009-11-24 16:11:23Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genome [default=%default]."  )

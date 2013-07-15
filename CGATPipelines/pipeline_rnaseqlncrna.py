@@ -105,7 +105,7 @@ Configuration
 The pipeline requires a configured :file:`pipeline.ini` file. 
 
 The sphinxreport report requires a :file:`conf.py` and :file:`sphinxreport.ini` file 
-(see :ref:`PipelineDocumenation`)
+(see :ref:`PipelineReporting`)
 
 
 input
@@ -561,14 +561,22 @@ def classifyLncRNA(infiles, outfile):
     protein coding genes - creates indices for intervals on the 
     fly - mayb should be creating additional annotations:
 
-    antisense - transcript overlapping protein coding exons on opposite strand
-    antisense_upstream - transcript < 2kb from tss on opposite strand
-    antisense_downstream - transcript < 2kb from gene end on opposite strand
-    sense_upstream - transcript < 2kb from tss on same strand
-    sense_downstream - transcript < 2kb from gene end on same strand
-     intergenic - >2kb from anyt protein coding gene
-    intronic - overlaps protein coding gene intron on same strand
-    antisense_intronic - overlaps protein coding intron on opposite strand
+    antisense
+       transcript overlapping protein coding exons on opposite strand
+    antisense_upstream
+       transcript < 2kb from tss on opposite strand
+    antisense_downstream 
+       transcript < 2kb from gene end on opposite strand
+    sense_upstream
+       transcript < 2kb from tss on same strand
+    sense_downstream
+       transcript < 2kb from gene end on same strand
+    intergenic
+       transcript >2kb from any protein coding gene
+    intronic
+       overlaps protein coding gene intron on same strand
+    antisense_intronic
+       overlaps protein coding intron on opposite strand
     '''
     
     PipelineLncRNA.classifyLncRNAGenes(infiles[0], infiles[1], outfile, dist = PARAMS["lncrna_dist"])

@@ -267,7 +267,7 @@ def writeStatsMissed( outfile,
 ##--------------------------------------------------------------------------
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: analyze_queries.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: analyze_queries.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-g", "--genomes", dest="genomes", type="string",
                       help="genomes to analyse."  )

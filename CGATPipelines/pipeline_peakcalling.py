@@ -51,21 +51,20 @@ spp_
 zinba_
    ZINBA (Zero Inflated Negative Binomial Algorithm) is a computational and statistical framework used to call regions of the genome enriched for sequencing reads originating from a diverse array of biological experiments. We collectively refer to the sequencing data derived from these experiments as DNA-seq, including FAIRE-seq, ChIP-seq, and DNAase-seq experiments
 
-sicer_narrow_
+sicer_ narrow
     A clustering approach for identification of enriched domains from histone modification ChIP-Seq data.
     The types of region called by the sicer alogrithm reflect the paramaters it is run with. In this pipeline sicer is run by default with two different parameter sets, to allow the simultaneous detection of narrower and broader regions of enrichmnet.
 
-sicer_broad_
+sicer_ broad
     (See above)
 
-peakranger_ranger_
+peakranger_ ranger
     PeakRanger is a multi-purpose, ultrafast ChIP Seq peak caller. It is used in the modENCODE project and included in the iPlant pipeline system.
     PeakRanger v1.02 was developed in Dr.Lincoln Stein's lab at OICR and is now in continual development at Dr.Helen Hobbs's lab of the McDermott Center of UT Southwestern.
     PeakRanger can run two separate algorithms for peak detection, "ranger" for point-source binding event detection and "ccat" for the detection of broader regions of enrichment. In this pipeline, both alorighms are presented as separate peak callers for convience.
 
-peakranger_ccat_
+peakranger_ ccat
     PeakRanger is here run using the CCAT alogorithm (See: Xu, H., L. Handoko, et al. (2010).A signal-noise model for significance analysis of ChIP-seq with negative control.Bioinformatics 26(9): 1199-1204)
-
 
 Peak callers have different strengths and weaknesses. Some might work well on broad peaks such as some histone
 marks, others work better for narrow, sharp peaks. Many callers these days attempt to call both types of peaks.
@@ -83,8 +82,8 @@ This pipeline implements the following nomenclature for peaks:
 
    interval
       Generic term for an interval in which the read density is higher then expected. Both
-      a :term:`region` or a :term:`summit` are an :term:`interval`
-      
+      a :term:`region` or a :term:`summit` are an :term:`interval`.
+
    peak
       Within a :term:`region` or :term:`summit` the position with the highest base coverage.
 
@@ -92,6 +91,7 @@ The pipeline computes some basic measures to validate peak calling. In order to 
 peaks, use :doc:`pipeline_intervals`.
 
 .. note::
+
    The pipeline currently expects that mulit-mapping reads (reads mapping to multiple locations)
    have been removed.
 
@@ -120,8 +120,8 @@ Configuration
 The pipeline requires a configured :file:`pipeline.ini` file. 
 
 The sphinxreport report requires a :file:`conf.py` and :file:`sphinxreport.ini` file 
-(see :ref:`PipelineDocumenation`). To start with, use the files supplied with the
-:ref:`Example` data.
+(see :ref:`PipelineReporting`). To start with, use the files supplied with the
+Example_ data.
 
 Input
 -----
@@ -238,10 +238,12 @@ To run the example, simply unpack and untar::
    For the pipeline to run, install the :doc:`pipeline_annotations` as well.
 
 .. _macs: http://liulab.dfci.harvard.edu/MACS/00README.html
+.. _macs2: http://liulab.dfci.harvard.edu/MACS/00README.html
 .. _spp: http://compbio.med.harvard.edu/Supplements/ChIP-seq/tutorial.html
 .. _sicer: http://home.gwu.edu/~wpeng/Software.htm
 .. _zinba: http://code.google.com/p/zinba/
 .. _peakranger: http://ranger.sourceforge.net/
+
 
 Code
 ====

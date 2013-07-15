@@ -1,4 +1,11 @@
-"""Parser for MAST files.
+"""
+Glam2Scan.py - Parser for MAST files
+====================================
+
+:Author: 
+:Release: $Id$
+:Date: |today|
+:Tags: Python
 
 As of biopython 1.5.6, the MAST parser is broken.
 

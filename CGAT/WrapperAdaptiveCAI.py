@@ -40,7 +40,7 @@ import os, sys, string, re, tempfile, subprocess, optparse
 
 import Experiment
 
-parser = optparse.OptionParser( version = "%prog version: $Id: WrapperAdaptiveCAI.py 756 2006-09-20 16:38:02Z andreas $")
+parser = E.OptionParser( version = "%prog version: $Id: WrapperAdaptiveCAI.py 756 2006-09-20 16:38:02Z andreas $")
 
 class CAIError(Exception):
     pass

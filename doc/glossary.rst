@@ -1,71 +1,115 @@
-========
-Glossary
-========
+File formats
+=============
 
 .. glossary::
 
     yaml
-	http://en.wikipedia.org/wiki/YAML
+    	Language to serialize objects. Used in the CGAT testing
+    	framework. (`YAML <http://en.wikipedia.org/wiki/YAML>`_).
 
     bam
-        bam format
+        Format to store genomic alignments in a compressed format.
+	(`BAM <http://samtools.sourceforge.net/>`_).
+
+    bed
+	File containing genomic intervals. 
+	(`BED <https://genome.ucsc.edu/FAQ/FAQformat.html#format1>`_).
+	
+    vcf
+        `Variant call format
+        <http://www.1000genomes.org/wiki/Analysis/Variant%20Call%20Format/vcf-variant-call-format-version-41>`_.
+
+    gtf
+	`General transfer format
+        <http://www.ensembl.org/info/website/upload/gff.html>`_.
+	Format to store genes and transcripts.
+    
+    gff
+	`General feature format <http://www.ensembl.org/info/website/upload/gff.html>`_.
+
+    bigwig
+        Compressed format for displaying numerical values across
+        genomic ranges (`BIGWIG <https://genome.ucsc.edu/goldenPath/help/bigWig.html>`_).
+
+    fasta
+        Sequence format. 
+
+    wiggle
+        Format for displaying numerical values across genomic
+        ranges (`Wiggle <https://genome.ucsc.edu/goldenPath/help/wiggle.html>`_).
+
+    psl  
+    	Genomic alignment format. The format is described in detail
+	`(PSL <https://genome.ucsc.edu/FAQ/FAQformat.html#format2>`_.
+
+    sam
+        Format to store genomic alignments
+	`(SAM <http://samtools.sourceforge.net/>`_).
+	
+    gdl
+        gdl
+
+    tsv
+        Tab separated values. In these tables, records are separated by new-line
+        characters and fields by tab characters. Lines with comments are started
+        by the ``#`` character and are ignored. The first uncommented line
+        should contain the column headers. For example::
+
+	  # This is a comment
+	  gene_id	length
+	  gene1	1000
+	  gene2	2000
+	  # Another comment
+
+    svg
+        pass
+
+    edge list
+        pass
+
+    fastq
+        fastq
+
+    sra
+        sra
+
+    axt
+        axt
+
+    maf
+        maf
+   
+    fastq
+        pass
+
+Other terms
+===========
+
+.. glossary::
 
     test directory
         Directory that contains the :file:`test.yaml`, input and
 	reference files for testing scripts.
 	
-    bed
-	bed
-	
-    vcf
-        vcf
-
     experiment
         experiment
 
     replicate
         replicate
 
-    track
-        track
-
-    gtf
-	gtf
-    
-    gff
-	gff
-
-    bigwig
-        bigwig
-
-    fasta
-        fasta
-
-    wiggle
-        wiggle
-
-    psl  
-    	 psl
-
     graph
 	graph
 
-    sam
-        sam
-	
-    gdl
-        gdl
+    track
+        track
 
-    tsv
-        tsv
+    graph
+	graph
 
     submit host
         pass
 
     execution host 
-        pass
-
-    svg
         pass
 
     edge list
@@ -77,24 +121,12 @@ Glossary
     sphinxreport
         sphinxreport
 
-    fastq
-        fastq
-
-    sra
-        sra
-
     query
         pass
 
     target
         pass
 
-    axt
-        axt
-
-    maf
-        maf
-   
     code directory
        pass
 
@@ -109,3 +141,17 @@ Glossary
 
     tss
         Transcription start site
+
+    production pipeline
+        A pipeline that performs common tasks on a certain type of
+        data. The idea of a production pipeline is to provide common
+       	preprocessing of data and a first look. A :term:`project
+        pipeline` might then take data from one or more
+        :term:`production pipeline` to glean biological insight.
+
+    project pipeline
+        A pipeline that is project specific. Usually code is developed
+	first inside a project pipeline. When it becomes generally
+        useful, it may be refactored into a production pipeline.
+	
+ 

@@ -106,7 +106,7 @@ def readRates( infile ):
 
 def main():
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: rates2rates.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: rates2rates.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option( "--output-filename-pattern", dest="output_filename_pattern", type="string",
                       help="pattern for additional output files [%default]."  )

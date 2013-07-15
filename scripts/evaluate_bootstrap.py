@@ -37,20 +37,21 @@ by results if they agree with this tree.
 
 The input format is the output from phylip's >consense< program.
 
-Options:
--h, --help                      print this message.
--v, --verbose=                  loglevel.
--p, --pattern-species=          regex pattern to extract species from identifier
--f, --file-tree=                filename with reference-tree
--r, --reference-tree            reference tree in the command line (no spaces!)
--c, --min-cluster-support       cluster according to species tree (minimum support)
--e, --min-report-support        report consistent/inconsistent clades (minimum support). Set
-                                to value below 0, if you want to process lists until first
-                                inconsistent edge.
--c, --file-clusters=            filename with clusters
--i, --file-inconsistencies=     filename with inconsistencies
--s, --file-subtrees=            filename with subtrees
--x, --prefix                    cluster prefix to use
+Options::
+
+    -h, --help                      print this message.
+    -v, --verbose=                  loglevel.
+    -p, --pattern-species=          regex pattern to extract species from identifier
+    -f, --file-tree=                filename with reference-tree
+    -r, --reference-tree            reference tree in the command line (no spaces!)
+    -c, --min-cluster-support       cluster according to species tree (minimum support)
+    -e, --min-report-support        report consistent/inconsistent clades (minimum support). Set
+                                    to value below 0, if you want to process lists until first
+                                    inconsistent edge.
+    -c, --file-clusters=            filename with clusters
+    -i, --file-inconsistencies=     filename with inconsistencies
+    -s, --file-subtrees=            filename with subtrees
+    -x, --prefix                    cluster prefix to use
 
 Usage
 -----

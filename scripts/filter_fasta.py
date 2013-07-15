@@ -33,7 +33,7 @@ Purpose
 -------
 
 This scripts implements some more complex filtering. The sequence
-identifiers need to correspond to the :term:`gpipe id` scheme.
+identifiers need to correspond to the ```gpipe id`` scheme.
 
 Usage
 -----
@@ -132,7 +132,7 @@ class MaskerSeg (Masker):
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: filter_fasta.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: filter_fasta.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-m", "--method", dest="method", type="choice",
                       choices=("longest-transcript", "ids", "quality" ),
