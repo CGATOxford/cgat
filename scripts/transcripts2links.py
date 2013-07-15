@@ -87,7 +87,7 @@ def WriteLinks( outfile, chunk, weight = 0.0, separator = "|"):
     
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: transcripts2links.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: transcripts2links.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-w", "--weight", dest="weight", type="float",
                       help="weight to assign each pair."  )

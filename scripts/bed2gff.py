@@ -67,7 +67,7 @@ import CGAT.IOTools as IOTools
 
 def main( argv = sys.argv ):
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: bed2gff.py 2861 2010-02-23 17:36:32Z andreas $", 
+    parser = E.OptionParser( version = "%prog version: $Id: bed2gff.py 2861 2010-02-23 17:36:32Z andreas $", 
                                     usage = globals()["__doc__"] )
 
     parser.add_option("-a", "--as-gtf", dest="as_gtf", action="store_true",

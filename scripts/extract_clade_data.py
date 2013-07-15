@@ -110,7 +110,7 @@ members.group_id = '%(group_id)s'"""
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: extract_clade_data.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: extract_clade_data.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-g", "--filename-groups", dest="filename_groups", type="string",
                       help="filename with orthologous groups to extract."  )

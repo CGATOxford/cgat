@@ -548,7 +548,7 @@ def doFDR( options, args ):
                                        extra_values) )
 
 def main():
-    parser = optparse.OptionParser( version = "%prog version: $Id: annotator.py 2861 2010-02-23 17:36:32Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: annotator.py 2861 2010-02-23 17:36:32Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-g", "--filename-gtf", dest="filename_gtf", type="string",
                       help="filename with gtf information. Used to map a segment to a gene name [default=%default]." )

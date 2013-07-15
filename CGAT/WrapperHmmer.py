@@ -144,7 +144,7 @@ if __name__ == "__main__":
     
     phylip = Phylip()
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: WrapperHmmer.py 2807 2009-10-22 13:42:10Z andreas $" )
+    parser = E.OptionParser( version = "%prog version: $Id: WrapperHmmer.py 2807 2009-10-22 13:42:10Z andreas $" )
 
     parser.add_option("-t", "--filename-input-tree", dest="filename_input_tree", type="string",
                       help="filename with tree information."  )

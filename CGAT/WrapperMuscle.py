@@ -131,7 +131,7 @@ class Muscle:
 if __name__ == "__main__":
 
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: WrapperMuscle.py 2784 2009-09-10 11:41:14Z andreas $" )
+    parser = E.OptionParser( version = "%prog version: $Id: WrapperMuscle.py 2784 2009-09-10 11:41:14Z andreas $" )
 
     parser.add_option("-t", "--filename-input-tree", dest="filename_input_tree", type="string",
                       help="filename with tree information."  )

@@ -80,7 +80,7 @@ import CGAT.Histogram as Histogram
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: graph_check_transitivity.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: graph_check_transitivity.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option("--filename-missing", dest="filename_missing", type="string",
                       help="missing entries.")

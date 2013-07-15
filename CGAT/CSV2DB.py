@@ -273,6 +273,11 @@ def run( infile, options ):
         except OSError, msg:
             E.warn("could not change permissions of database: %s" % msg )
 
+        # Avoid the following error:
+        # sqlite3.ProgrammingError: You must not use 8-bit bytestrings unless you use a text_factory that can interpret 8-bit bytestrings (like text_factory = str). It is highly recommended that you instead just switch your application to Unicode strings
+        # Note: might be better to make csv2db unicode aware.
+        dbhandle.text_factory = str
+
         error = sqlite3.OperationalError
         options.insert_many = True  # False
         options.null = None # "NULL" 
@@ -466,7 +471,7 @@ def run( infile, options ):
 
 def buildParser( ):
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: csv2db.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: csv2db.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option( "--dialect", dest="dialect", type="string",
                       help="csv dialect to use [default=%default]." )

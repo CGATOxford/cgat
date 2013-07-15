@@ -533,7 +533,7 @@ def writeToFile( mali, section, options, is_aligned = True ):
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: align_transcripts.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: align_transcripts.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-m", "--master", dest="master", type="string",
                       help="master sequence."  )

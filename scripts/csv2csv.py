@@ -74,7 +74,7 @@ import tempfile
 import CGAT.Experiment as Experiment
 import csv
 
-parser = optparse.OptionParser( version = "%prog version: $Id: csv2csv.py 2782 2009-09-10 11:40:29Z andreas $")
+parser = E.OptionParser( version = "%prog version: $Id: csv2csv.py 2782 2009-09-10 11:40:29Z andreas $")
 
 def ConvertDictionary( d ):
     """tries to convert values in a dictionary.

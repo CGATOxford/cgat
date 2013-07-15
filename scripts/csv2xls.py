@@ -74,7 +74,7 @@ import openpyxl
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: csv2xls.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: csv2xls.py 2782 2009-09-10 11:40:29Z andreas $")
     
     parser.add_option( "-o", "--outfile=", dest="output_filename", type="string",
                        help="write to output filename." )

@@ -184,7 +184,7 @@ def FuncScatterDiagonal( data ):
 
 def main():
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: r_table2scatter.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: r_table2scatter.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option("-c", "--columns", dest="columns", type="string",
                       help="columns to take from table. Choices are 'all', 'all-but-first' or a ','-separated list of columns." )

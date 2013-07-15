@@ -87,7 +87,7 @@ def ConvertDictionary( d ):
     
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: csv_uniq.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: csv_uniq.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.set_defaults(
         remove = False,

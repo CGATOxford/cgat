@@ -424,7 +424,7 @@ Column  Content
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: export_all.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: export_all.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-r", "--release", dest="release", type="string",
                       help="release.")

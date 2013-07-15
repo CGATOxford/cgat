@@ -78,7 +78,7 @@ import CGAT.Experiment as E
 
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: run.py 2782 2009-09-10 11:40:29Z andreas $", 
+    parser = E.OptionParser( version = "%prog version: $Id: run.py 2782 2009-09-10 11:40:29Z andreas $", 
                                     usage = globals()["__doc__"] )
 
     ## stop parsing options at the first argument

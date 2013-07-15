@@ -77,7 +77,7 @@ import CGAT.FastaIterator as FastaIterator
 """
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: align_all_vs_all.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: align_all_vs_all.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option("-s", "--sequences", dest="filename_sequences", type="string",
                       help="input file with sequences"  )

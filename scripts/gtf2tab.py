@@ -73,7 +73,7 @@ def main():
     '''
     main function
     '''
-    parser = optparse.OptionParser( version = "%prog version: $Id: gtf2tab.py 2887 2010-04-07 08:48:04Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: gtf2tab.py 2887 2010-04-07 08:48:04Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option( "-o", "--only-attributes", dest="only_attributes", action="store_true",
                        help="output attributes as separate columns [default=%default]." )

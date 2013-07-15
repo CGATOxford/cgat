@@ -159,7 +159,7 @@ def PrintMatches( matches,
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: graph2besthits.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: graph2besthits.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option("-p", "--pattern-genome", dest="pattern_genome", type="string",
                       help="genome_pattern."  )

@@ -845,7 +845,7 @@ def GetMap( values ):
     
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: plot_multiple_synteny.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: plot_multiple_synteny.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-t", "--title", dest="title", type="string",
                       help="page title.")

@@ -73,7 +73,7 @@ delete a section from a gbrowser database.
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: gbrowser_delete_features.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: gbrowser_delete_features.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-d", "--dry-run", dest="dry_run", action="store_true",
                       help="dry run, do not execute any commands."  )

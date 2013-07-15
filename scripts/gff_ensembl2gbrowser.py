@@ -83,7 +83,7 @@ chr8    gpipe   CDS     202417740       202417805       59.0909090909   -       
 
 """
 
-parser = optparse.OptionParser( version = "%prog version: $Id: gff_ensembl2gbrowser.py 2781 2009-09-10 11:33:14Z andreas $")
+parser = E.OptionParser( version = "%prog version: $Id: gff_ensembl2gbrowser.py 2781 2009-09-10 11:33:14Z andreas $")
 
 if __name__ == "__main__":
 

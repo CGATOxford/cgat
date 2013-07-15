@@ -70,7 +70,7 @@ import time
 
 import CGAT.Experiment as Experiment
 
-parser = optparse.OptionParser( version = "%prog version: $Id: tbl2veo.py 2782 2009-09-10 11:40:29Z andreas $")
+parser = E.OptionParser( version = "%prog version: $Id: tbl2veo.py 2782 2009-09-10 11:40:29Z andreas $")
 
 if __name__ == "__main__":
 

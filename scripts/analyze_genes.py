@@ -78,7 +78,7 @@ import CGAT.Exons as Exons
 
 import pgdb
 
-parser = optparse.OptionParser( version = "%prog version: $Id: analyze_genes.py 2781 2009-09-10 11:33:14Z andreas $")
+parser = E.OptionParser( version = "%prog version: $Id: analyze_genes.py 2781 2009-09-10 11:33:14Z andreas $")
 
 def GetCounts( r, priority ):
     """count transcript by genes sorted by priority.

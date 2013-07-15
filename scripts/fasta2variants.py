@@ -79,7 +79,7 @@ import CGAT.FastaIterator as FastaIterator
     
 def main( argv = None ):
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: analyze_codonbias_shannon.py 2864 2010-03-03 10:18:16Z andreas $",
+    parser = E.OptionParser( version = "%prog version: $Id: analyze_codonbias_shannon.py 2864 2010-03-03 10:18:16Z andreas $",
                                     usage = globals()["__doc__"] )
 
     parser.add_option( "-c", "--is-cds", dest="is_cds", action="store_true",

@@ -723,7 +723,7 @@ def PrintMembers( rep_id, outfile, eliminated, eliminated_by_method ):
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: select_transcripts.py 2263 2008-11-17 16:36:29Z andreas $", usage = globals()["__doc__"] )
+    parser = E.OptionParser( version = "%prog version: $Id: select_transcripts.py 2263 2008-11-17 16:36:29Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option( "-o", "--overlap", dest="overlap_residues", type="int",
                        help="overlap residues.")

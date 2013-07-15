@@ -90,7 +90,7 @@ import CGAT.TreeTools as TreeTools
 ##------------------------------------------------------------------------
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: evaluate_trees.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: evaluate_trees.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-r", "--reference=", dest="filename_reference_tree",
                       help="filename with reference tree.", type="string" )

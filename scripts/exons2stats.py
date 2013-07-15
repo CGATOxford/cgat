@@ -73,7 +73,7 @@ import pgdb
 import CGAT.Experiment as Experiment
 import CGAT.Exons as Exons
 
-parser = optparse.OptionParser( version = "%prog version: $Id: exons2stats.py 2781 2009-09-10 11:33:14Z andreas $")
+parser = E.OptionParser( version = "%prog version: $Id: exons2stats.py 2781 2009-09-10 11:33:14Z andreas $")
 
 if __name__ == "__main__":
 

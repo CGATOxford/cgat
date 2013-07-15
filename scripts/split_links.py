@@ -89,7 +89,7 @@ def WriteLine( a, b, line, prefix="%s-%s" ):
     
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: split_links.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: split_links.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-m", "--method", dest="method", type="string",
                       help="method for splitting." )

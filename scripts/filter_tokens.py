@@ -74,7 +74,7 @@ import CGAT.Experiment as Experiment
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: filter_tokens.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: filter_tokens.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option( "-r", "--regex-token", dest="regex_token", type="string",
                        help="regular expression for tokens (has to create one pair of brackets)." )

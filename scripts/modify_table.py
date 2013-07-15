@@ -78,7 +78,7 @@ import CGAT.Experiment as Experiment
 import numpy
 import scipy
 
-parser = optparse.OptionParser( version = "%prog version: $Id: modify_table.py 2782 2009-09-10 11:40:29Z andreas $")
+parser = E.OptionParser( version = "%prog version: $Id: modify_table.py 2782 2009-09-10 11:40:29Z andreas $")
 
 ##---------------------------------------------------------------------------------------------------------        
 if __name__ == '__main__':

@@ -1670,7 +1670,7 @@ def pairwiseGOEnrichment( results_per_genelist, labels, test_ontology, go2info, 
 ##---------------------------------------------------------------------------    
 def main():
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: GO.py 2883 2010-04-07 08:46:22Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: GO.py 2883 2010-04-07 08:46:22Z andreas $", usage = globals()["__doc__"])
 
     dbhandle = Database.Database()
     

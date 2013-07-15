@@ -621,7 +621,7 @@ def selectComponents( component_ids,
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: malis2malis.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: malis2malis.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-d", "--pattern-output", dest="pattern_output", type="string",
                       help="filename pattern for output multiple alignment files."  )

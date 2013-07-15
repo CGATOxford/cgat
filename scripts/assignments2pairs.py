@@ -213,7 +213,7 @@ def WriteEntry( query_token,
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: assignments2pairs.py 2011 2008-07-04 10:40:51Z andreas $", usage = globals()["__doc__"] )
+    parser = E.OptionParser( version = "%prog version: $Id: assignments2pairs.py 2011 2008-07-04 10:40:51Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option( "--peptides", dest="filename_peptides", type="string",
                       help=""  )

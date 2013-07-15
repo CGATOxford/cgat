@@ -82,7 +82,7 @@ import CGAT.Exons as Exons
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: compare_predictions2exons.py 2011 2008-07-04 10:40:51Z andreas $",
+    parser = E.OptionParser( version = "%prog version: $Id: compare_predictions2exons.py 2011 2008-07-04 10:40:51Z andreas $",
                                     usage = globals()["__doc__"] )
 
     parser.add_option( "-g", "--genome-file", dest="genome_file", type="string",

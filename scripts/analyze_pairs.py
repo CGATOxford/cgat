@@ -182,7 +182,7 @@ def CalculateDistanceT92( info ):
 ##--------------------------------------------------------------------------------------------
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: analyze_pairs.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: analyze_pairs.py 2781 2009-09-10 11:33:14Z andreas $")
     
     parser.add_option( "--filters", dest="filters", type="string",
                       help="Filters to use for filtering sequences [all|codon1|codon2|codon3|d4]." )

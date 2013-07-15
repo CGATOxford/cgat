@@ -70,7 +70,7 @@ import CGAT.IOTools as IOTools
 
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: vcfstats_sqlite.py 0001 2011-04-13 davids $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: vcfstats_sqlite.py 0001 2011-04-13 davids $", usage = globals()["__doc__"])
 
     (options, args) = E.Start( parser )
 

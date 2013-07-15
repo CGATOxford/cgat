@@ -196,7 +196,7 @@ def main( argv = None ):
 
     if not argv: argv = sys.argv
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: GO.py 2883 2010-04-07 08:46:22Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: GO.py 2883 2010-04-07 08:46:22Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-s", "--species", dest="species", type="string",
                       help="species to use [default=%default]." )

@@ -847,7 +847,7 @@ def tableToString(intable):
 
 def main(argv = None):
 
-    parser = optparse.OptionParser(version = "%prog version: $Id: CBioPortal.py 2888 2012-06-07 15:52:00Z ians $", usage = globals()["__doc__"])
+    parser = E.OptionParser(version = "%prog version: $Id: CBioPortal.py 2888 2012-06-07 15:52:00Z ians $", usage = globals()["__doc__"])
 
     parser.add_option("-o","--output_file", type="string", default = None,
                       help="[Optional] Filename to output results to. [default=STDOUT]" )

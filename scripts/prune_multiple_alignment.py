@@ -482,7 +482,7 @@ def checkCodon( codon, options ):
 if __name__ == '__main__':
 
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: prune_multiple_alignment.py 2654 2009-05-06 13:51:22Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: prune_multiple_alignment.py 2654 2009-05-06 13:51:22Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-m", "--master", dest="master", type="string",
                       help="master sequence."  )

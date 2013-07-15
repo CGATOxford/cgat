@@ -75,7 +75,7 @@ Input: one or more sets of vertices.
 import CGAT.Experiment as Experiment
 import CGAT.BlastAlignments as BlastAlignments
 
-parser = optparse.OptionParser( version = "%prog version: $Id: check_blast_run.py 2781 2009-09-10 11:33:14Z andreas $")
+parser = E.OptionParser( version = "%prog version: $Id: check_blast_run.py 2781 2009-09-10 11:33:14Z andreas $")
 
 if __name__ == "__main__":
 

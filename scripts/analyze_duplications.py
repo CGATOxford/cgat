@@ -143,7 +143,7 @@ def fit( histogram, parameters, fresiduals = residuals_decay ):
     
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: analyze_duplications.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: analyze_duplications.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-s", "--species", dest="species", type="string",
                       help="species to use." )

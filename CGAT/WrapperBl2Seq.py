@@ -141,7 +141,7 @@ class Bl2Seq:
     
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: WrapperBl2Seq.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: WrapperBl2Seq.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-f", "--input-file", dest="input_filename", type="string",
                       help="input filename. If '-', stdin is used [default=%default].",

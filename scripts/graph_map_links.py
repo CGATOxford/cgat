@@ -108,7 +108,7 @@ def ReadIdentityMap( infile):
 ##-------------------------------------------------------------------------------
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: graph_map_links.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: graph_map_links.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option("-q", "--map-query", dest="filename_map_query", type="string",
                       help="filename with queries to map." )

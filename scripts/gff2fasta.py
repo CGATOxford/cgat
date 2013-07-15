@@ -72,7 +72,7 @@ import bx.intervals.intersection
 ##------------------------------------------------------------------------
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: gff2fasta.py 2861 2010-02-23 17:36:32Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: gff2fasta.py 2861 2010-02-23 17:36:32Z andreas $")
 
     parser.add_option( "--is-gtf", dest="is_gtf", action="store_true",
                       help="input is gtf."  )
