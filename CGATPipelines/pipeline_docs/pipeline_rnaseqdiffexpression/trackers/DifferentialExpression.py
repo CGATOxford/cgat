@@ -42,15 +42,15 @@ class TrackerDESeqFit( Tracker ):
 ##############################################################
 class TrackerDESummaryDESeq( RnaseqTracker, SingleTableTrackerRows ):
     table = "deseq_stats"
-    fields = ("level", "geneset", "treatment_name", "control_name" )
+    fields = ("level", "geneset", "treatment_name", "control_name", "design" )
 
 class TrackerDESummaryEdgeR( RnaseqTracker, SingleTableTrackerRows ):
     table = "edger_stats"
-    fields = ("level", "geneset", "treatment_name", "control_name" )
+    fields = ("level", "geneset", "treatment_name", "control_name" ,"design")
 
 class TrackerDESummaryCuffdiff( RnaseqTracker, SingleTableTrackerRows ):
     table = "cuffdiff_stats"
-    fields = ("level", "geneset", "treatment_name", "control_name" )
+    fields = ("level", "geneset", "treatment_name", "control_name", "design" )
 
 ##############################################################
 ##############################################################
@@ -187,8 +187,8 @@ class DifferentialExpressionCorrelationPValueCuffdiffDeseq( DifferentialExpressi
         pvalues = {pair1:[], pair2: []}
         for pvals in cc.execute("""
                    SELECT a.pvalue, b.pvalue
-                          FROM design_%s_%s_gene_diff AS a, 
-                          design_%s_%s_gene_diff AS b
+                          FROM %s_%s_gene_diff AS a, 
+                          %s_%s_gene_diff AS b
                           WHERE a.test_id = b.test_id
                           AND ABS( a.l2fold ) != 10
                           AND ABS( b.l2fold ) != 10
@@ -232,7 +232,7 @@ class DifferentialExpressionCorrelationFoldChangeCuffdiffDeseq( DifferentialExpr
         for folds in cc.execute("""
                    SELECT a.l2fold, b.l2fold
                           FROM design_%s_%s_gene_diff AS a, 
-                          design_%s_%s_gene_diff AS b
+                          %s_%s_gene_diff AS b
                           WHERE a.test_id = b.test_id
                           AND ABS( a.l2fold ) < 10
                           AND ABS( b.l2fold ) < 10
