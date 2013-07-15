@@ -2,7 +2,7 @@ import os, sys, re, types, itertools, math, sqlite3
 
 from SphinxReport.Tracker import *
 from SphinxReport.Utils import PARAMS as P
-from SphinxReport.odict import OrderedDict as odict
+from collections import OrderedDict as odict
 
 from RnaseqDiffExpressionReport import *
 

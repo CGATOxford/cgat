@@ -1811,7 +1811,8 @@ def loadGeneSetStats( infile, outfile ):
 #########################################################################
 @transform( GENESETTARGETS + [
         buildReferenceGeneSet,
-        buildCodingGeneSet],
+        buildCodingGeneSet,
+        mergeUsingCuffmerge],
             suffix(".gtf.gz"),
             "_geneinfo.load" )
 def loadGeneSetGeneInformation( infile, outfile ):
@@ -1833,7 +1834,8 @@ def loadGeneInformation( infile, outfile ):
 #########################################################################
 @transform( GENESETTARGETS + [
         buildReferenceGeneSet,
-        buildCodingGeneSet ],
+        buildCodingGeneSet,
+        mergeUsingCuffmerge],
             suffix(".gtf.gz"),
             "_transcriptinfo.load" )
 def loadGeneSetTranscriptInformation( infile, outfile ):
