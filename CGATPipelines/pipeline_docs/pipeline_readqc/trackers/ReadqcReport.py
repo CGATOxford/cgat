@@ -19,7 +19,7 @@ DATABASE=P['readqc_backend']
 # cf. pipeline_rnaseq.py
 # This should be automatically gleaned from pipeline_rnaseq.py
 ###################################################################
-import PipelineTracks
+import CGATPipelines.PipelineTracks as PipelineTracks
 
 TRACKS = PipelineTracks.Tracks( PipelineTracks.Sample ).loadFromDirectory( 
     glob.glob( "%s/*.sra" % DATADIR), "%s/(\S+).sra" % DATADIR) +\
