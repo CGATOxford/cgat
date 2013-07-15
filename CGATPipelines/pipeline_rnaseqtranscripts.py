@@ -914,7 +914,7 @@ def compareTranscriptsBetweenExperiments( infiles, outfile ):
     reffile = "refcoding.gtf.gz"
     runCuffCompare( infiles, outfile, reffile )
 
-@merge (METHODTARGET,"%s.merged" % ALL.asFile())
+@merge (METHODTARGET,"%s.merged.gtf.gz" % ALL.asFile())
 def mergeUsingCuffmerge(infiles,outfile):
     ''' use cuffmerge to reassemble transcripts from independent assemblies
     on each sample
