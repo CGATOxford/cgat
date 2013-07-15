@@ -147,7 +147,7 @@ class DifferentialExpressionComparison( RnaseqTracker ):
 
     tracks = list( itertools.combinations( ("deseq", "cuffdiff", "edger"), 3 ))
  
-    slices = [ x.asFile() for x in GENESETS ]
+    slices = [ "%s_%s" % y,x.asFile() for x,y in itertools.product(GENESETS,DESIGNS) ]
 
 class DifferentialExpressionOverlap( DifferentialExpressionComparison ):
 
@@ -156,9 +156,9 @@ class DifferentialExpressionOverlap( DifferentialExpressionComparison ):
         pair1, pair2, pair3 = track
         
 
-        a = self.get('''SELECT test_id FROM design_%(slice)s_%(pair1)s_gene_diff WHERE significant = 1''')
-        b = self.get('''SELECT test_id FROM design_%(slice)s_%(pair2)s_gene_diff WHERE significant = 1''')
-        c = self.get('''SELECT test_id FROM design_%(slice)s_%(pair3)s_gene_diff WHERE significant = 1''')
+        a = self.get('''SELECT test_id FROM %(slice)s_%(pair1)s_gene_diff WHERE significant = 1''')
+        b = self.get('''SELECT test_id FROM %(slice)s_%(pair2)s_gene_diff WHERE significant = 1''')
+        c = self.get('''SELECT test_id FROM %(slice)s_%(pair3)s_gene_diff WHERE significant = 1''')
 
         a = set(map(str,a))
         b = set(map(str,b))
