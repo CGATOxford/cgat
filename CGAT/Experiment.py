@@ -295,21 +295,42 @@ class AppendCommaOption(optparse.Option):
     This is what galaxy does, but generally convenient.
     
     '''
-    def check_value( self, opt, value ):
-        # do not check type for ',' separated lists
-        if "," in value: 
-            return value
-        else:
-            return optparse.Option.check_value( self, opt, value )
+#    def check_value( self, opt, value ):
+#        # do not check type for ',' separated lists
+#        if "," in value: 
+#            return value
+#        else:
+#            return optparse.Option.check_value( self, opt, value )
+#
+#    def take_action(self, action, dest, opt, value, values, parser):
+#        if action == "append" and "," in value:
+#            lvalue = value.split(",")
+#            values.ensure_value(dest, []).extend(lvalue)
+#        else:
+#            optparse.Option.take_action(
+#                self, action, dest, opt, value, values, parser)
+#
 
-    def take_action(self, action, dest, opt, value, values, parser):
-        if action == "append" and "," in value:
-            lvalue = value.split(",")
-            values.ensure_value(dest, []).extend(lvalue)
+
+    def convert_value( self, opt, value ):
+        if value is not None:
+            if self.nargs == 1:
+                if self.action == "append" and "," in value:
+                    return [self.check_value(opt, v ) for v in value.split(",")]
+                else:
+                    return self.check_value( opt, value )
+            else:
+                return tuple( [self.check_value(opt, v) for v in value] )
+
+
+# why is it necessary to pass action and dest to this function when
+# they could be accessed as self.action and self.dest? 
+    def take_action( self, action, dest, opt, value, values, parser):
+        if action == "append" and type( value ) == list: 
+            values.ensure_value(dest, []).extend( value )
         else:
             optparse.Option.take_action(
-                self, action, dest, opt, value, values, parser)
-
+                self, action, dest, opt, value, values, parser )
 
 #################################################################
 #################################################################
