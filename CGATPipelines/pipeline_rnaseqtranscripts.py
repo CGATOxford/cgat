@@ -1822,7 +1822,7 @@ def loadGeneSetGeneInformation( infile, outfile ):
 #########################################################################
 @transform( GENESETTARGETS + [
         buildReferenceGeneSet,
-        buildCodingGeneSet, mergeUsingCuffMerge ],
+        buildCodingGeneSet, mergeUsingCuffmerge ],
             suffix(".gtf.gz"),
             "_transcript2gene.load" )
 def loadGeneInformation( infile, outfile ):
