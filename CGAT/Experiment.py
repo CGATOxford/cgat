@@ -304,7 +304,7 @@ class AppendCommaOption(optparse.Option):
         if "," in value: 
             return value
         elif value == "None" or value == "":
-            # for galaxy - unset values encoded as None
+            # for galaxy - unset values encoded as None or empty
             # thus: do not parse but use default
             return "default"
         else:

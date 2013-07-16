@@ -148,7 +148,7 @@
   <command{{' interpreter="' + data['interpreter'] + '"' if data['interpreter'] != '(binary)'}}> 
     {{data.binary}} --verbose=0
     {#- logging to separate file -#}
-    {#- print out advaned menu options -#}
+    {#- print out advanced menu options -#}
     {%- if showAdvanceMenu %}
       #if str($advanced_condition.advanced) == "True":
       {%- for parameter in displayMap['show in advanced'] %}
@@ -161,6 +161,9 @@
       #end if
     {%- endif %}
     {%- for parameter in displayMap['normal'] %}
+      {{ printOption(parameter, '',  parameter.display != 'show') }}
+    {%- endfor %}
+    {%- for parameter in displayMap['hidden'] %}
       {{ printOption(parameter, '',  parameter.display != 'show') }}
     {%- endfor %}
   </command>

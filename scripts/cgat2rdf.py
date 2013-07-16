@@ -448,6 +448,9 @@ def main( argv = None ):
 
     defaults = PARSER.get_default_values()
 
+    # flag to indicate wether script needs to go through cgat_wrapper.py
+    use_wrapper = False
+
     for option in PARSER.option_list:
         # ignore options added by optparse
         if option.dest == None: continue
@@ -481,6 +484,10 @@ def main( argv = None ):
                 if mvar in MAP_TYPE2FORMAT:
                     param['format'] = MAP_TYPE2FORMAT[mvar]
                     param['type'] = "data"
+                if mvar == "bam":
+                    # 
+                    use_wrapper = True
+
         elif option.type == "choice":
             param['type'] = "select"
             param['choices'] = option.choices
@@ -520,6 +527,28 @@ def main( argv = None ):
                                       'loc_id_filter' : '1'}
 
         data['parameters'].append( param )
+
+    if use_wrapper:
+        
+        # add hidden option for wrapper
+        param = {}
+        param['name'] = 'wrapper-command'
+        param['ns_name'] = 'wrapper-command'
+        param['display'] = 'hidden'
+        param['type'] = 'text'
+        param['value'] = data['binary']
+        param['label'] = 'wrapper'
+        param['description'] = 'wrapper'
+        param['rank'] = 1
+        param['min_occurrence'] = 0
+        param['max_occurrence'] = 1
+        param['dependencies'] = {}
+        param['property_bag'] = {}
+        param['arg_long'] = "--wrapper-command"
+        data['parameters'].append( param )
+
+        # point to wrapper
+        data['binary'] = "cgat_wrapper.py"
 
     if options.output_format == "rdf":
         print g.serialize(data, format='turtle')  
