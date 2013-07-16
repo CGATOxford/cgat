@@ -178,6 +178,12 @@ USECLUSTER = True
 P.getParameters( ["%s/pipeline.ini" % os.path.splitext(__file__)[0], "../exome.ini", "exome.ini" ] )
 PARAMS = P.PARAMS
 
+def getPicardOptions():
+    return "-pe dedicated 3 -R y -l mem_free=1.4G -l picard=1"
+
+def getGATKOptions():
+    return "-pe dedicated 3 -R y -l mem_free=1.4G -l picard=1"    
+    
 #########################################################################
 #########################################################################
 #########################################################################
@@ -250,6 +256,7 @@ def mapReads(infiles, outfile):
 def dedup(infile, outfile):
     '''Remove PE duplicate alignments from BAM files.'''
     to_cluster = USECLUSTER
+    job_options = getPicardOptions()
     track = P.snip( outfile, ".bam" )
     dedup_method = PARAMS["dedup_method"]
     if dedup_method == 'samtools':
@@ -270,6 +277,7 @@ def loadPicardDuplicateStats( infiles, outfile ):
 def reorderBam(infile, outfile):
     '''Reorder BAM file using ordering of contigs in regference genome'''
     to_cluster = USECLUSTER
+    job_options = getPicardOptions()
     statement = '''ReorderSam INPUT=%(infile)s OUTPUT=%(outfile)s REFERENCE=%%(bwa_index_dir)s/%%(genome)s.fa  VALIDATION_STRINGENCY=SILENT; ''' % locals()
     statement += '''samtools index %(outfile)s; ''' % locals()
     P.run()
@@ -279,6 +287,7 @@ def reorderBam(infile, outfile):
 def addReadGroups(infile, outfile):
     '''Add read groups to read names'''
     to_cluster = USECLUSTER
+    job_options = getPicardOptions()
     track = P.snip( os.path.basename(infile), ".reorder.bam" )
     library = PARAMS["readgroup_library"]
     platform = PARAMS["readgroup_platform"]
@@ -347,6 +356,7 @@ def loadCoverageStats( infiles, outfile ):
 def buildRealignmentTargets(infile, outfile):
     '''Identify regions of the genome that need to be realigned'''
     to_cluster = USECLUSTER
+    job_options = getGATKOptions()
     track = P.snip( infile, ".readgroups.bam" )
     threads = PARAMS["gatk_threads"]
     statement = '''GenomeAnalysisTKLite -T RealignerTargetCreator -o %(outfile)s --num_threads %(threads)s -R %%(bwa_index_dir)s/%%(genome)s.fa -I %(infile)s''' % locals()
@@ -358,6 +368,7 @@ def buildRealignmentTargets(infile, outfile):
 def localRealignmentAroundIndels(infiles, outfile):
     '''Perform local realignment around indels'''
     to_cluster = USECLUSTER
+    job_options = getGATKOptions()
     infile, realignment_intervals = infiles
     threads = PARAMS["gatk_threads"]
     statement = '''GenomeAnalysisTKLite -T IndelRealigner -o %(outfile)s -R %%(bwa_index_dir)s/%%(genome)s.fa -I %(infile)s -targetIntervals %(realignment_intervals)s''' % locals()
@@ -368,6 +379,7 @@ def localRealignmentAroundIndels(infiles, outfile):
 def countCovariates(infile, outfile):
     '''Identify covariates for base quality score realignment'''
     to_cluster = USECLUSTER
+    job_options = getGATKOptions()
     threads = PARAMS["gatk_threads"]
     dbsnp = PARAMS["gatk_dbsnp"]
     statement = '''GenomeAnalysisTKLite -T BaseRecalibrator --out %(outfile)s --disable_indel_quals -R %%(bwa_index_dir)s/%%(genome)s.fa -I %(infile)s --knownSites %(dbsnp)s''' % locals()
@@ -379,6 +391,7 @@ def countCovariates(infile, outfile):
 def bqsr(infiles, outfile):
     '''base quality score realignment'''
     to_cluster = USECLUSTER
+    job_options = getGATKOptions()
     threads = PARAMS["gatk_threads"]
     infile, recal = infiles
     statement = '''GenomeAnalysisTKLite -T PrintReads -o %(outfile)s -BQSR %(recal)s -R %%(bwa_index_dir)s/%%(genome)s.fa -I %(infile)s ''' % locals()
@@ -447,6 +460,7 @@ def variantAnnotator( infiles, outfile ):
 def variantRecalibrator( infile, outfile ):
     '''Create variant recalibration file'''
     to_cluster = USECLUSTER
+    job_options = getGATKOptions()
     track = P.snip( os.path.basename(outfile), ".recal" )
     hapmap = PARAMS["gatk_hapmap"]
     omni = PARAMS["gatk_omni"]
@@ -468,6 +482,7 @@ def variantRecalibrator( infile, outfile ):
 def applyVariantRecalibration( infiles, outfile ):
     '''Perform variant quality score recalibration using GATK '''
     to_cluster = USECLUSTER
+    job_options = getGATKOptions()
     infile, recal, tranches = infiles
     statement = '''GenomeAnalysisTK -T ApplyRecalibration -R %%(bwa_index_dir)s/%%(genome)s.fa -input %(infile)s
                    --ts_filter_level 99.0 
@@ -578,7 +593,6 @@ def processBAMs(): pass
           loadPicardAlignStats,
           buildCoverageStats,
           loadCoverageStats)
-
 def postMappingQC(): pass
           
 @follows( buildRealignmentTargets,

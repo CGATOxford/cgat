@@ -562,6 +562,7 @@ def main( argv = sys.argv ):
     if options.from_zipped:
         import gzip
         infile = gzip.GzipFile( fileobj= options.stdin, mode='r')
+
     else:
         infile = options.stdin
 

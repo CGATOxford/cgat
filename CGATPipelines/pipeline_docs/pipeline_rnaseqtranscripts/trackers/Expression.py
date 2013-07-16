@@ -1,7 +1,7 @@
 import os, sys, re, types, itertools
 
 from SphinxReport.Tracker import *
-from SphinxReport.odict import OrderedDict as odict
+from collections OrderedDict as odict
 
 from RnaseqTranscriptsReport import *
 

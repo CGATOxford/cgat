@@ -1412,11 +1412,19 @@ def loadExonValidation( infiles, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
+@active_if(SPLICED_MAPPING)
+@split(buildCodingGeneSet,"refcoding.*.gtf.gz")
+def splitCodingGeneSetByChr(infile,outfiles):
+    '''split coding geneset by chromosome to allow parallel
+    read counting '''
+
+    PipelineMapping.splitGeneSet(infile)
+
 @active_if( SPLICED_MAPPING )
-@transform( MAPPINGTARGETS, 
-            suffix(".bam"),
-            add_inputs( buildCodingGeneSet ),
-            ".transcript_counts.tsv.gz" )
+@split( MAPPINGTARGETS, 
+        regex("(.+).bam"),
+        add_inputs( splitCodingGeneSetByChr ),
+        r"\1.*.transcript_counts.tsv.gz" )
 def buildTranscriptLevelReadCounts( infiles, outfile):
     '''count reads falling into transcripts of protein coding 
        gene models.
@@ -1429,29 +1437,53 @@ def buildTranscriptLevelReadCounts( infiles, outfile):
        counts.
        
     '''
-    infile, geneset = infiles
+    infile, genesets = infiles[0],infiles[1:]
     
     if "transcriptome.dir" in infile:
         P.touch()
         return
 
     to_cluster = True
-
-    statement = '''
-    zcat %(geneset)s 
-    | python %(scriptsdir)s/gtf2table.py 
-          --reporter=transcripts
-          --bam-file=%(infile)s 
-          --counter=length
-          --prefix="exons_"
-          --counter=read-counts 
-          --prefix=""
-          --counter=read-coverage
-          --prefix=coverage_
-    | gzip
-    > %(outfile)s
-    '''
+    statements = []
     
+    for geneset in genesets:
+
+        chrom = re.match("refcoding\.(.+)\.gtf.gz",geneset).groups()[0]
+        bam = P.snip(infile,".bam")
+        outfile = "%s.%s.transcript_counts.tsv.gz" % (bam,chrom)
+
+        statement = '''
+               zcat %(geneset)s 
+             | python %%(scriptsdir)s/gtf2table.py 
+               --reporter=transcripts
+               --bam-file=%(infile)s 
+               --counter=length
+               --prefix="exons_"
+               --counter=read-counts 
+               --prefix=""
+               --counter=read-coverage
+               --prefix=coverage_
+            | gzip
+          > %(outfile)s
+         ''' % locals()
+        statements.append(statement)
+
+    P.run()
+#########################################################################
+@active_if( SPLICED_MAPPING )
+@collate(buildTranscriptLevelReadCounts, regex("(.+)\..+\.transcript_counts.tsv.gz"),
+         r"\1.transcript_counts.tsv.gz")
+def collateTranscriptCounts(infiles,outfile):
+    ''' pull together the transcript counts over each chromosome '''
+
+    infiles = " ".join(infiles)
+    statement = '''python %(scriptsdir)s/combine_tables.py
+                                      --cat
+                                      --log=%(outfile)s.log
+                                      %(infiles)s
+                  | cut -f1 --complement
+                  | gzip
+                  > %(outfile)s '''
     P.run()
 
 #########################################################################
@@ -1459,7 +1491,7 @@ def buildTranscriptLevelReadCounts( infiles, outfile):
 #########################################################################
 @jobs_limit( 1, "db" )
 @active_if( SPLICED_MAPPING )
-@transform( buildTranscriptLevelReadCounts,
+@transform( collateTranscriptCounts,
             suffix(".tsv.gz"),
             ".load" )
 def loadTranscriptLevelReadCounts( infile, outfile ):
