@@ -330,6 +330,31 @@ def guessFormats( scriptname, docstring ):
 
     return input_format, output_format
 
+def buildParam( **kwargs ):
+    '''return a parameter with default values.
+
+    Specific fields can be set by providing keyword arguments.
+    '''
+
+    param = {}
+
+    param['label'] = "label"
+    param['description'] = "description"
+    param['rank'] = 1
+    param['display'] = 'show'
+    param['min_occurrence'] = 0
+    param['max_occurrence'] = 1
+
+    # get default value
+    param['value'] = "value"
+    param['type' ] = "text"
+    param['dependencies'] = {}
+    param['property_bag'] = {}
+    param['arg_long'] = '--long-argument'
+
+    param.update( kwargs )
+    return param
+
 def main( argv = None ):
     """script main.
 
@@ -340,7 +365,7 @@ def main( argv = None ):
 
     # setup command line parser
     parser = E.OptionParser( version = "%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
-                                    usage = globals()["__doc__"] )
+                             usage = globals()["__doc__"] )
 
     parser.add_option( "-f", "--format", dest="output_format", type="choice",
                        choices = ("rdf", "galaxy"),
@@ -467,10 +492,22 @@ def main( argv = None ):
         # ignore output options
         if option.dest in ("stdin", "stdout", "stdlog", "stderr", "loglevel" ): continue
 
+        param = buildParam()
+
+        # get command line option call (long/short option)
+        try:
+            param['arg'] = option._short_opts[0]
+        except IndexError: pass
+
+        try:
+            param['arg_long'] = option._long_opts[0]
+        except IndexError: pass
+
+        assert 'arg' in param or 'arg_long' in param
+
         # print "----------------------------------"
         # print [(x,getattr(option,x)) for x in dir( option )]
 
-        param = {}
         param['name'] = option.dest
         param['ns_name'] = option.dest
         if option.type == "int":
@@ -485,8 +522,31 @@ def main( argv = None ):
                     param['format'] = MAP_TYPE2FORMAT[mvar]
                     param['type'] = "data"
                 if mvar == "bam":
-                    # 
                     use_wrapper = True
+                    data['parameters'].append( buildParam( name = 'wrapper_bam_file',
+                                                           ns_name = 'wrapper_bam_file',
+                                                           arg_long = '--wrapper-bam-file',
+                                                           label = option.dest,
+                                                           type = 'data',
+                                                           format = 'bam',
+                                                           help = option.help,
+                                                           value = getattr( defaults,  option.dest ) ) )
+
+                    data['parameters'].append( buildParam( name = 'wrapper_bam_index',
+                                                           ns_name = 'wrapper_bam_index',
+                                                           arg_long = '--wrapper-bai-file',
+                                                           type = 'data',
+                                                           value = '${wrapper_bam_file.metadata.bam_index}',
+                                                           display = 'hidden' ) )
+
+                    # use long argument
+                    data['parameters'].append( buildParam( name = 'wrapper_bam_option',
+                                                           ns_name = 'wrapper_bam_option',
+                                                           arg_long = '--wrapper-bam-option',
+                                                           value = param['arg_long'],
+                                                           display = 'hidden' ) )
+                    
+                    continue
 
         elif option.type == "choice":
             param['type'] = "select"
@@ -508,15 +568,6 @@ def main( argv = None ):
         # get default value
         param['value'] = getattr( defaults,  option.dest )
 
-        try:
-            param['arg'] = option._short_opts[0]
-        except IndexError: pass
-
-        try:
-            param['arg_long'] = option._long_opts[0]
-        except IndexError: pass
-
-        assert 'arg' in param or 'arg_long' in param
             
         param['dependencies'] = {}
         param['property_bag'] = {}
@@ -528,32 +579,31 @@ def main( argv = None ):
 
         data['parameters'].append( param )
 
-    if use_wrapper:
-        
-        # add hidden option for wrapper
-        param = {}
-        param['name'] = 'wrapper-command'
-        param['ns_name'] = 'wrapper-command'
-        param['display'] = 'hidden'
-        param['type'] = 'text'
-        param['value'] = data['binary']
-        param['label'] = 'wrapper'
-        param['description'] = 'wrapper'
-        param['rank'] = 1
-        param['min_occurrence'] = 0
-        param['max_occurrence'] = 1
-        param['dependencies'] = {}
-        param['property_bag'] = {}
-        param['arg_long'] = "--wrapper-command"
-        data['parameters'].append( param )
 
-        # point to wrapper
-        data['binary'] = "cgat_wrapper.py"
 
     if options.output_format == "rdf":
         print g.serialize(data, format='turtle')  
 
+
     elif options.output_format == "galaxy":
+
+        if use_wrapper:
+        
+            # add hidden option for wrapper
+            param = buildParam( 
+                name = 'wrapper-command',
+                ns_name = 'wrapper-command',
+                display = 'hidden',
+                type = 'text',
+                value = data['binary'],
+                label = 'wrapper',
+                description = 'wrapper',
+                arg_long = "--wrapper-command" )
+            
+            data['parameters'].append( param )
+        
+        # point to wrapper
+        data['binary'] = "cgat_galaxy_wrapper.py"
 
         displayMap = collections.defaultdict( list )
 
