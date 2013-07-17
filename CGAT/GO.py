@@ -184,11 +184,11 @@ import scipy
 import scipy.stats
 import scipy.special
 import numpy
-import CGAT.Stats as Stats
-import CGAT.Database as Database
-import CGAT.Experiment as E
-import CGAT.IOTools as IOTools
-import CGAT.CSV as CSV
+import Stats as Stats
+import Database as Database
+import Experiment as E
+import IOTools as IOTools
+import CSV as CSV
 
 from rpy2.robjects import r as R
 
