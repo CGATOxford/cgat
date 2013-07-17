@@ -252,17 +252,28 @@ def mapReads(infiles, outfile):
 #########################################################################
 ## BAM file processing                
 #########################################################################
-@transform( mapReads, regex( r"bam/(\S+).bam"), r"bam/\1.dedup.bam")
-def dedup(infile, outfile):
-    '''Remove PE duplicate alignments from BAM files.'''
+@transform( mapReads, regex( r"bam/(\S+).bam"), r"bam/\1.reorder.bam")
+def reorderBam(infile, outfile):
+    '''Reorder BAM file using ordering of contigs in regference genome'''
     to_cluster = USECLUSTER
     job_options = getPicardOptions()
-    track = P.snip( outfile, ".bam" )
+    statement = '''ReorderSam INPUT=%(infile)s OUTPUT=%(outfile)s REFERENCE=%%(bwa_index_dir)s/%%(genome)s.fa  VALIDATION_STRINGENCY=SILENT; ''' % locals()
+    statement += '''samtools index %(outfile)s; ''' % locals()
+    P.run()
+
+#########################################################################
+@collate( reorderBam, regex( r"bam/(\S+-\S+)-(\S+)-(\S+).reorder.bam"), r"bam/\1.dedup.bam")
+def dedup(infiles, outfile):
+    '''Remove PE duplicate alignments from BAM files.'''
+    to_cluster = USECLUSTER
+    inputfiles = " INPUT=".join(infiles)
+    job_options = getPicardOptions()
     dedup_method = PARAMS["dedup_method"]
     if dedup_method == 'samtools':
         statement = '''samtools rmdup %(infile)s %(outfile)s; ''' % locals()    
     elif dedup_method == 'picard':
-        PipelineMappingQC.buildPicardDuplicateStats( infile, outfile )
+        statement = '''MarkDuplicates INPUT=%(inputfiles)s ASSUME_SORTED=true METRICS_FILE=%(outfile)s.duplicate_metrics OUTPUT=%(outfile)s VALIDATION_STRINGENCY=SILENT'''
+    P.run()
     statement = '''samtools index %(outfile)s; ''' % locals()
     P.run()
 
@@ -273,22 +284,12 @@ def loadPicardDuplicateStats( infiles, outfile ):
     PipelineMappingQC.loadPicardDuplicateStats( infiles, outfile )
 
 #########################################################################
-@transform( dedup, regex( r"bam/(\S+).dedup.bam"), r"bam/\1.reorder.bam")
-def reorderBam(infile, outfile):
-    '''Reorder BAM file using ordering of contigs in regference genome'''
-    to_cluster = USECLUSTER
-    job_options = getPicardOptions()
-    statement = '''ReorderSam INPUT=%(infile)s OUTPUT=%(outfile)s REFERENCE=%%(bwa_index_dir)s/%%(genome)s.fa  VALIDATION_STRINGENCY=SILENT; ''' % locals()
-    statement += '''samtools index %(outfile)s; ''' % locals()
-    P.run()
-
-#########################################################################
-@transform( reorderBam, regex( r"bam/(\S+).reorder.bam"), r"bam/\1.readgroups.bam")
+@transform( dedup, regex( r"bam/(\S+).dedup.bam"), r"bam/\1.readgroups.bam")
 def addReadGroups(infile, outfile):
     '''Add read groups to read names'''
     to_cluster = USECLUSTER
+    track = P.snip( os.path.basename(infile), ".dedup.bam" )
     job_options = getPicardOptions()
-    track = P.snip( os.path.basename(infile), ".reorder.bam" )
     library = PARAMS["readgroup_library"]
     platform = PARAMS["readgroup_platform"]
     platform_unit = PARAMS["readgroup_platform_unit"]
@@ -423,11 +424,12 @@ def haplotypeCaller(infile, outfile):
 
 ##########################################################################
 @follows( haplotypeCaller )
-@transform( bqsr, regex( r"bam/(\S+).bqsr.bam"), r"variants/\1.samtools.vcf")
-def callVariantsSAMtools(infile, outfile):
+@collate( bqsr, regex( r"bam/(\S+?)-(\S+).bqsr.bam"), r"variants/\1.samtools.bcf")
+def callVariantsSAMtools(infiles, outfile):
     '''Perform SNV and indel calling separately for each bam using SAMtools. '''
     to_cluster = USECLUSTER
-    statement = '''samtools mpileup -ugf %%(bwa_index_dir)s/%%(genome)s.fa %(infile)s > %(outfile)s 2>>%(outfile)s.log;''' % locals()
+    inputfiles = " ".join(infiles)
+    statement = '''samtools mpileup -gDf %%(genome_dir)s/hg19.fa %(inputfiles)s > %(outfile)s 2>>%(outfile)s.log;''' % locals()
     P.run()
 
 ##########################################################################
@@ -496,7 +498,8 @@ def applyVariantRecalibration( infiles, outfile ):
 #########################################################################
 #########################################################################
 ## Phasing
-@transform(applyVariantRecalibration, regex(r"variants/(trio\S+|multiplex\S+).haplotypeCaller.vqsr.vcf"), add_inputs(r"\1.ped"), r"variants/\1.haplotypeCaller.pbt.vcf")
+@active_if(PARAMS["gatk_phasing"]==1)
+@transform(applyVariantRecalibration, regex(r"variants/(\S+).haplotypeCaller.vqsr.vcf"), add_inputs(r"\1.ped"), r"variants/\1.haplotypeCaller.pbt.vcf")
 def phaseByTransmission(infiles, outfile):
     '''Infer phase based on pedigree information'''
     to_cluster = USECLUSTER
@@ -505,6 +508,7 @@ def phaseByTransmission(infiles, outfile):
     P.run()
 
 #########################################################################
+@active_if(PARAMS["gatk_phasing"]==1)
 @transform(phaseByTransmission, 
            regex(r"variants/(\S+).haplotypeCaller.pbt.vcf"), 
            add_inputs(r"bam/\1.list"), 
@@ -517,7 +521,10 @@ def readBackedPhasing(infiles, outfile):
     P.run()
 
 ######################################################################### 
-@transform( (readBackedPhasing, applyVariantRecalibration), regex( r"(variants/(\S+).haplotypeCaller.rbp|variants/(single\S+).haplotypeCaller.vqsr).vcf"), r"\1.snpsift.vcf")
+CALIBRATION= {1: readBackedPhasing
+              , 0: applyVariantRecalibration}
+
+@transform(CALIBRATION[PARAMS["gatk_phasing"]], regex( r"variants/(\S+).haplotypeCaller.(\S+).vcf"), r"variants/\1.haplotypeCaller.snpsift.vcf")
 def annotateVariantsSNPsift( infile, outfile ):
     '''Add annotations using SNPsift'''
     to_cluster = USECLUSTER
@@ -529,7 +536,7 @@ def annotateVariantsSNPsift( infile, outfile ):
 #########################################################################
 #########################################################################
 ## Tabulation
-@transform( annotateVariantsSNPsift, regex( r"variants/(\S+).haplotypeCaller.(\S+).snpsift.vcf"), r"variants/\1.haplotypeCaller.snpsift.table")
+@transform( annotateVariantsSNPsift, regex( r"variants/(\S+).haplotypeCaller.snpsift.vcf"), r"variants/\1.haplotypeCaller.snpsift.table")
 def vcfToTable( infile, outfile ):
     '''Convert vcf to tab-delimited file'''
     to_cluster = USECLUSTER
@@ -582,14 +589,16 @@ def loadMetadata(): pass
 @follows( mapReads )
 def mapping(): pass
 
-@follows( dedup,
-          reorderBam,
+@follows( reorderBam,
+          dedup,
           addReadGroups,
           loadPicardDuplicateStats)
 
 def processBAMs(): pass
 
-@follows( buildPicardAlignStats,
+@follows( mapping,
+          processBAMs,
+          buildPicardAlignStats,
           loadPicardAlignStats,
           buildCoverageStats,
           loadCoverageStats)
