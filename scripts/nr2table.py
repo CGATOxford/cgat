@@ -66,18 +66,18 @@ import tempfile
 import subprocess
 
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import Bio
 import CGAT.FastaIterator as FastaIterator
 
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: nr2table.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: nr2table.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
 
     parser.set_defaults()
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
     
     iterator = FastaIterator.FastaIterator( sys.stdin )
 
@@ -124,6 +124,6 @@ if __name__ == '__main__':
     if options.loglevel >= 1:
         options.stdlog.write( "# ninput=%i, noutput=%i, nentries=%i\n" % (ninput, noutput, nentries ))
         
-    Experiment.Stop()
+    E.Stop()
     
     

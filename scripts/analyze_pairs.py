@@ -66,7 +66,7 @@ import math
 """
 """
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import numpy
 
@@ -182,7 +182,7 @@ def CalculateDistanceT92( info ):
 ##--------------------------------------------------------------------------------------------
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: analyze_pairs.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: analyze_pairs.py 2781 2009-09-10 11:33:14Z andreas $")
     
     parser.add_option( "--filters", dest="filters", type="string",
                       help="Filters to use for filtering sequences [all|codon1|codon2|codon3|d4]." )
@@ -196,7 +196,7 @@ if __name__ == "__main__":
         fields="aligned,unaligned1,unaligned2,identical,transitions,transversions,jc69,t92",
         )
     
-    (options, args) = Experiment.Start( parser, add_pipe_options = True)
+    (options, args) = E.Start( parser, add_pipe_options = True)
 
     options.filters = options.filters.split(",")
     options.fields = options.fields.split(",")    
@@ -272,4 +272,4 @@ if __name__ == "__main__":
                                                 second_record.title,
                                                 "\t".join(result) ))
         
-    Experiment.Stop()
+    E.Stop()

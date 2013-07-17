@@ -63,7 +63,7 @@ import os
 import optparse
 import CGAT.FastaIterator as FastaIterator
 import CGAT.IOTools as IOTools
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 
 class Files:
 
@@ -156,7 +156,7 @@ class FilesChunks(Files):
             
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: split_fasta.py 1714 2007-12-11 16:51:12Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: split_fasta.py 1714 2007-12-11 16:51:12Z andreas $")
     
     parser.add_option("-f", "--file", dest="input_filename", type="string",
                       help="input filename. If not given, stdin is used.",
@@ -191,7 +191,7 @@ if __name__ == "__main__":
         num_sequences = None,
         output_pattern = "%s" )
 
-    (options, args) = Experiment.Start( parser ) 
+    (options, args) = E.Start( parser ) 
 
     if options.input_filename:
         infile = IOTools.openFile( options.input_filename, "r")
@@ -258,4 +258,4 @@ if __name__ == "__main__":
     if options.loglevel >= 1:
         print "# input=%i, output=%i, ndeleted=%i" % (ninput, noutput, ndeleted)
         
-    Experiment.Stop()
+    E.Stop()

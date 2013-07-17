@@ -128,7 +128,7 @@ def main( argv = None ):
 
     if not argv: argv = sys.argv
  
-    parser = optparse.OptionParser( version = "%prog version: $Id: data2roc.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: data2roc.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-p", "--positives", dest="positives", type="float",
                       help="total number of true positives. If not set, take all true positives encountered [default=%default]." )
@@ -158,7 +158,7 @@ def main( argv = None ):
 
     if options.multiple:
         doMultiple( options )
-        Experiment.Stop()
+        E.Stop()
         sys.exit(0)
 
     true_positives = 0

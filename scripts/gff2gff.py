@@ -288,7 +288,7 @@ def cropGFF( gffs, options ):
 ##------------------------------------------------------------------------
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: gff2gff.py 2868 2010-03-03 10:19:52Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: gff2gff.py 2868 2010-03-03 10:19:52Z andreas $")
 
     parser.add_option( "-f", "--forward-coordinates", dest="forward_coordinates", 
                       help="translate to forward coordinates.", action="store_true"  )

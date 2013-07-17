@@ -65,7 +65,7 @@ import sys
 import re
 import optparse
 import os
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.GFF as GFF
 
 class OutputChunk:
@@ -111,7 +111,7 @@ class OutputChunk:
 ##------------------------------------------------------------------------
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: gff2chunks.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"] )
+    parser = E.OptionParser( version = "%prog version: $Id: gff2chunks.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option( "-m", "--method", dest="method", type="choice",
                        choices=("overlap",),
@@ -134,7 +134,7 @@ if __name__ == "__main__":
         min_chunk_size = 1,
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     gffs = GFF.iterator( sys.stdin )
     
@@ -165,4 +165,4 @@ if __name__ == "__main__":
     if options.loglevel >= 1:
         options.stdlog.write( "# ninput=%i, noutput=%i, nchunks=%i\n" % (ninput, noutput, nchunks ) )
 
-    Experiment.Stop()
+    E.Stop()

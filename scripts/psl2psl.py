@@ -821,7 +821,7 @@ def iterator_filter_fasta( infile, query_fasta, sbjct_fasta, options ):
 
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: psl2psl.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"] )
+    parser = E.OptionParser( version = "%prog version: $Id: psl2psl.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option("--filter-query", dest="filename_filter_query", type="string",
                       help="filename with intervals in the query to filter (in gff format) [default=%default]."  )

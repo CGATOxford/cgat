@@ -74,7 +74,7 @@ absences/presences are checked, if they make sense phylogenetically.
 
 """
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.TreeTools as TreeTools
 import tree2patterns
 
@@ -94,7 +94,7 @@ def GetPattern( data, l ):
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: count_orgs.py 1706 2007-12-11 16:46:11Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: count_orgs.py 1706 2007-12-11 16:46:11Z andreas $", usage = globals()["__doc__"])
     
     parser.add_option("-t", "--reference-tree", dest="reference_tree", type="string",
                       help="reference tree to read."  )
@@ -131,7 +131,7 @@ if __name__ == "__main__":
         filename_summary = None,
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if options.reference_tree:
         if options.reference_tree[0] == "(":
@@ -338,4 +338,4 @@ if __name__ == "__main__":
         
     if outfile != sys.stdout: outfile.close()
     
-    Experiment.Stop()
+    E.Stop()

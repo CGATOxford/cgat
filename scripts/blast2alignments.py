@@ -66,7 +66,7 @@ import time
 import optparse
 import math
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.BlastAlignments as BlastAlignments
 import alignlib
@@ -85,7 +85,7 @@ Options:
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: blast2alignments.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: blast2alignments.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option("-s", "--sequences", dest="filename_sequences", type="string",
                       help="filename with sequences."  )
@@ -97,7 +97,7 @@ if __name__ == "__main__":
         format = "fasta",
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if not options.filename_sequences:
         raise "please supply filename with sequences."
@@ -146,7 +146,7 @@ if __name__ == "__main__":
         noutput += 1
         
     print "# ninput=%i, noutput=%i, nskipped=%i, nfailed=%i" % (ninput, noutput, nskipped, nfailed)
-    Experiment.Stop()
+    E.Stop()
 
             
     

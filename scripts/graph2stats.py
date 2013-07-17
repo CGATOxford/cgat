@@ -75,7 +75,7 @@ calculate statistics for a (redundant) graph.
 
 Possibilities are: 
 """
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Histogram as Histogram
 
 def PrintHistograms( outfile, titles, histograms, options ):
@@ -90,7 +90,7 @@ def PrintHistograms( outfile, titles, histograms, options ):
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: graph2stats.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: graph2stats.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option("-r", "--range", dest="range", type="string",
                       help="range to calculate histogram for."  )
@@ -133,7 +133,7 @@ if __name__ == "__main__":
         output_format = "semi"
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if options.columns != "all":
         options.columns = map(lambda x: int(x) -1 , options.columns.split(","))
@@ -220,5 +220,5 @@ if __name__ == "__main__":
             for k2 in vv.keys():
                 options.stdout.write( "%s\t%s\t%i\n" % (k1, k2, vv[k2] ) )
                 
-    Experiment.Stop()
+    E.Stop()
 

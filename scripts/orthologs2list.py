@@ -64,14 +64,14 @@ import optparse
 import time
 import warnings
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Orthologs as Orthologs
 import CGAT.GraphTools as GraphTools
 import CGAT.IOTools as IOTools
 
 if __name__  == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: orthologs2list.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: orthologs2list.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option( "-s", "--species-regex", dest="species_regex", type="string" ,
                        help="regular expression to extract species from identifier.")
@@ -125,7 +125,7 @@ if __name__  == "__main__":
         format="graph",
         )
     
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
     rs = re.compile( options.species_regex )
     rg = re.compile( options.gene_regex )
@@ -453,4 +453,4 @@ if __name__  == "__main__":
     if options.loglevel >= 1:
         options.stdout.write("# ninput=%i, noutput=%i, nmissed=%i, skipped=%i, nsingletons=%i\n" % (ninput, noutput, nmissed, nskipped, nsingletons))
 
-    Experiment.Stop()
+    E.Stop()

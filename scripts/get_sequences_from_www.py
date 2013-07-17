@@ -69,14 +69,14 @@ import math
 """Convert EMBL formatted file into a tab-separated table.
 """
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 
 from Bio import SeqRecord
 import Bio.ExPASy as ExPASy
 import Bio.SwissProt as SProt
 from Bio import File
     
-parser = optparse.OptionParser( version = "%prog version: $Id: get_sequences_from_www.py 2782 2009-09-10 11:40:29Z andreas $")
+parser = E.OptionParser( version = "%prog version: $Id: get_sequences_from_www.py 2782 2009-09-10 11:40:29Z andreas $")
 
 if __name__ == "__main__":
 
@@ -86,7 +86,7 @@ if __name__ == "__main__":
     parser.set_defaults(
         fields = [] )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     s_parser = SProt.RecordParser()
 
@@ -132,4 +132,4 @@ if __name__ == "__main__":
         nfound += 1
         
     print "# input=%i, found=%i, missed=%i" % (ninput, nfound, nmissed)
-    Experiment.Stop()
+    E.Stop()

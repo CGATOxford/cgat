@@ -469,7 +469,7 @@ def run( infile, options ):
 
 def buildParser( ):
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: csv2db.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: csv2db.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option( "--dialect", dest="dialect", type="string",
                       help="csv dialect to use [default=%default]." )
@@ -562,6 +562,7 @@ def main( argv = sys.argv ):
     if options.from_zipped:
         import gzip
         infile = gzip.GzipFile( fileobj= options.stdin, mode='r')
+
     else:
         infile = options.stdin
 

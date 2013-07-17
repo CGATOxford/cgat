@@ -74,7 +74,7 @@ Options:
 -g, --genome-pattern=           pattern for filenames with the genomic DNA (FASTA).
 """ % sys.argv[0]
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.PredictionParser as PredictionParser
@@ -82,7 +82,7 @@ import CGAT.PredictionParser as PredictionParser
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: predictions2disruptions.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: predictions2disruptions.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genome pattern."  )
@@ -99,7 +99,7 @@ if __name__ == '__main__':
         stop_codons = ("TAG", "TAA", "TGA")
         )
 
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
     if len(args) > 0:
         print USAGE, "no arguments required."
@@ -142,4 +142,4 @@ if __name__ == '__main__':
 
         options.stdout.flush()
         
-    Experiment.Stop()
+    E.Stop()

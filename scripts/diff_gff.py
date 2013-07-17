@@ -66,7 +66,7 @@ Code
 '''
 import optparse
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.GFF as GFF
 import CGAT.GTF as GTF
 
@@ -156,7 +156,7 @@ def getFile( options, section ):
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: diff_gff.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: diff_gff.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-e", "--write-equivalent", dest="write_equivalent", 
                       help="write equivalent entries [default=%default].", action="store_true"  )
@@ -189,7 +189,7 @@ if __name__ == "__main__":
         as_gtf = False,
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if len(args) != 2:
         print USAGE
@@ -446,4 +446,4 @@ if __name__ == "__main__":
     if outfile != options.stdout: outfile.close()
 
     
-    Experiment.Stop()    
+    E.Stop()    

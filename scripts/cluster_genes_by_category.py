@@ -77,7 +77,7 @@ Options:
 -r, --regions=                  filename with regions for genes
 """ % sys.argv[0]
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 
 param_loglevel = 2
@@ -116,8 +116,8 @@ if __name__ == '__main__':
             param_filename_regions = a
             
 
-    print Experiment.GetHeader()
-    print Experiment.GetParams()
+    print E.GetHeader()
+    print E.GetParams()
 
     queries = {}
     for line in sys.stdin:
@@ -169,4 +169,4 @@ if __name__ == '__main__':
             
         if last: print str(last)
         
-    print Experiment.GetFooter()    
+    print E.GetFooter()    

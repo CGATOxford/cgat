@@ -84,7 +84,7 @@ import CGAT.Stats as Stats
 ##------------------------------------------------------------------------
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: gff2histogram.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: gff2histogram.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-b", "--bin-size", dest="bin_size", type="string",
                       help="bin size."  )

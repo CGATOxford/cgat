@@ -69,7 +69,7 @@ import tempfile
 import glob
 import shutil
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 
 import pgdb
 
@@ -364,7 +364,7 @@ Column  Content
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: clade_export.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: clade_export.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-r", "--release", dest="release", type="string",
                       help="release.")
@@ -401,7 +401,7 @@ if __name__ == "__main__":
         project_name = "unknown",
         )
 
-    (options, args) = Experiment.Start( parser, add_psql_options = True )
+    (options, args) = E.Start( parser, add_psql_options = True )
 
     options.build_dir = options.package_name + "_" + options.release
     options.sections = options.sections.split(",")
@@ -462,4 +462,4 @@ I might clean up identifiers in the future.
             options.stdlog.write("# compressing files finished.\n")
             options.stdlog.flush()            
     
-    Experiment.Stop()
+    E.Stop()

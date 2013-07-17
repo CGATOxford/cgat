@@ -60,7 +60,7 @@ import os
 import optparse
 import math
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import scipy
 import scipy.stats
 import CGAT.IOTools as IOTools
@@ -71,7 +71,7 @@ from rpy2.robjects import r as R
 ##---------------------------------------------------------------------------------------------------------        
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: data2multiple_anova.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: data2multiple_anova.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option("-c", "--columns", dest="columns", type="string",
                       help="columns to take for calculating histograms." )
@@ -102,7 +102,7 @@ if __name__ == '__main__':
         display_tree = False,
         )
 
-    (options, args) = Experiment.Start( parser, quiet = True )
+    (options, args) = E.Start( parser, quiet = True )
 
     if options.columns not in ( "all", "all-but-first"):
         options.columns = map(lambda x: int(x) -1 , options.columns.split(","))

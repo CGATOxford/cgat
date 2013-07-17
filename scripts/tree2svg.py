@@ -103,7 +103,7 @@ import subprocess
 
 from types import *
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.TreeTools as TreeTools
 import CGAT.IOTools as IOTools
 import CGAT.SVGTree as SVGTree
@@ -283,7 +283,7 @@ class BranchDecoratorTable( SVGTree.BranchDecoratorHorizontal ):
 ###------------------------------------------------------------------------------------------------
 def main():
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: plot_tree.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: plot_tree.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option("-i", "--title", dest="title", type="string",
                       help="page title.")
@@ -360,7 +360,7 @@ def main():
         filename_tables = None,
         )
 
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
     
     if options.filename_tree:
         tree_lines = open(options.filename_tree, "r").readlines()
@@ -490,7 +490,7 @@ def main():
     
     plot.writeToFile(sys.stdout)
     
-    Experiment.Stop()
+    E.Stop()
 
 
 if __name__ == "__main__":

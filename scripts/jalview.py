@@ -65,12 +65,12 @@ import optparse
 import time
 import math
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Mali as Mali
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: jalview.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"] )
+    parser = E.OptionParser( version = "%prog version: $Id: jalview.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option("-m", "--method", dest="method", type="choice", 
                       choices=("list2annotation", ),
@@ -90,7 +90,7 @@ if __name__ == "__main__":
         filename_mali = None,
         )
 
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
     if not options.filename_mali:
         raise "please specify a multiple alignment."
@@ -117,4 +117,4 @@ if __name__ == "__main__":
             
         options.stdout.write("NO_GRAPH\t%s\t%s\n" % (options.jalview_title, "|".join( codes ) ))
             
-    Experiment.Stop()
+    E.Stop()

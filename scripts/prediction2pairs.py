@@ -71,7 +71,7 @@ step assumes that there are no frameshifts in the cds sequences. Frameshifts
 in the predictions are removed.
 """ % sys.argv[0]
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.PredictionParser as PredictionParser
 import CGAT.IndexedFasta as IndexedFasta
@@ -81,7 +81,7 @@ import alignlib
 ##------------------------------------------------------------
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: prediction2pairs.py 2031 2008-07-15 09:19:05Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: prediction2pairs.py 2031 2008-07-15 09:19:05Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option( "-g", "--genome-file", dest="genome_file", type="string",
                        help="filename with genomic data (indexed)." )
@@ -101,7 +101,7 @@ if __name__ == "__main__":
         filename_prefix = "",
         )
 
-    (options, args) = Experiment.Start( parser, add_psql_options = True )    
+    (options, args) = E.Start( parser, add_psql_options = True )    
 
     if len(args) > 0:
         print USAGE, "no arguments required."
@@ -207,4 +207,4 @@ if __name__ == "__main__":
     if options.loglevel >= 1:
         options.stdlog.write("# ninput=%i, noutput=%i, nsanity=%i, nlength=%i, n3=%i\n" % (ninput, noutput, nsanity, nlength, n3) )
                                   
-    Experiment.Stop()
+    E.Stop()

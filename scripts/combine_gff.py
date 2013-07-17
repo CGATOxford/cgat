@@ -58,13 +58,13 @@ import sys
 import string
 import re
 import optparse
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.PredictionParser as PredictionParser
 import CGAT.GFF as GFF
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: combine_gff.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: combine_gff.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-f", "--format", dest="format",
                       help="output format.", type="choice", choices=("flat", "full", "first") )
@@ -73,7 +73,7 @@ if __name__ == "__main__":
         format="flat"
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     last_e = None
     for line in sys.stdin:
@@ -107,6 +107,6 @@ if __name__ == "__main__":
         
     print str(last_e)
 
-    Experiment.Stop()
+    E.Stop()
 
         

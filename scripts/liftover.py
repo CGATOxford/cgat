@@ -66,10 +66,10 @@ import time
 """liftover coordinates using a liftover formatted file from the ucsc
 """
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import numpy
 
-parser = optparse.OptionParser( version = "%prog version: $Id: liftover.py 2404 2009-01-12 11:22:36Z andreas $")
+parser = E.OptionParser( version = "%prog version: $Id: liftover.py 2404 2009-01-12 11:22:36Z andreas $")
 
 def readLiftOver( infile, chromosome,
                   chromosome_size = 250000000,
@@ -188,7 +188,7 @@ if __name__ == "__main__":
         chromosome = None,
         )
     
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if options.filename_map == "":
         raise "please specify the file with the liftover mapping information."
@@ -229,6 +229,6 @@ if __name__ == "__main__":
                     pass
                     # print "%s\t%i\tna" % (chromosome, x )                    
 
-    Experiment.Stop()
+    E.Stop()
 
     

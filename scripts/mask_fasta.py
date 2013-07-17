@@ -63,7 +63,7 @@ import re
 import optparse
 import array
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 
 def maskSequence( sequence, regions, mask_char = "N" ):
     """mask sequence with regions."""
@@ -88,7 +88,7 @@ def maskSequence( sequence, regions, mask_char = "N" ):
 if __name__ == '__main__':
 
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: mask_fasta.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: mask_fasta.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option("-e", "--extend", dest="extend", type="int",
                       help="extend sequences by # residues."  )
@@ -116,7 +116,7 @@ if __name__ == '__main__':
         filename_mask_regions = None,
         mask_char = "N" )
 
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
     ## read segments to mask
     
@@ -218,4 +218,4 @@ if __name__ == '__main__':
     if options.loglevel >= 1:
         options.stdlog.write( "# nkeys=%i, nwritten=%i, nmasked=%i, nerrors=%i\n" % (total_keys, total_written, total_masked, nerrors) )
 
-    Experiment.Stop()
+    E.Stop()

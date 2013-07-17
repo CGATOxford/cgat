@@ -72,7 +72,7 @@ The input looks like:
 schema1 gene1 cai1 schema2, gene2, cai2
 """
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 
 def GetThreshold( dbhandle, schema ):
     """get dominant set threshold for schema."""
@@ -90,7 +90,7 @@ def GetThreshold( dbhandle, schema ):
 ##--------------------------------------------------------------------------------------------
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: analyze_codonbias_orthology.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: analyze_codonbias_orthology.py 2781 2009-09-10 11:33:14Z andreas $")
     
     parser.add_option( "--filters", dest="filters", type="string",
                       help="Filters to use for filtering sequences [all|codon1|codon2|codon3|44]." )
@@ -102,7 +102,7 @@ if __name__ == "__main__":
         gap_char = "-",
         )
     
-    (options, args) = Experiment.Start( parser, add_pipe_options = True,
+    (options, args) = E.Start( parser, add_pipe_options = True,
                                         add_psql_options = True)
 
     data = map(lambda x: x[:-1].split("\t"), filter( lambda x: x[0] != "#", sys.stdin.readlines()))
@@ -120,4 +120,4 @@ if __name__ == "__main__":
     
 
     
-    Experiment.Stop()
+    E.Stop()

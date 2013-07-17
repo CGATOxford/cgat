@@ -91,7 +91,7 @@ import random
 import types
 
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import CGAT.Mali as Mali
 
@@ -101,7 +101,7 @@ from malis2malis import *
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: malis2mali.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: malis2mali.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
 
     addOptions( parser )
 
@@ -136,7 +136,7 @@ if __name__ == '__main__':
         mask_acgtn = False,
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     options.parameters = options.parameters.split(",")    
 
@@ -367,5 +367,5 @@ if __name__ == '__main__':
     if options.loglevel >= 1:
         options.stdlog.write("# nsample=%i, nskipped=%i\n" % (len(component_ids), nskipped))
 
-    Experiment.Stop()
+    E.Stop()
     

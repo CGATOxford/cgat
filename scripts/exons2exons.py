@@ -70,14 +70,14 @@ remove-stop: removes a traling stop codon from the last exon.
 """
 
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.Exons as Exons
 import CGAT.IndexedFasta as IndexedFasta
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: exons2exons.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: exons2exons.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-m", "--method", dest="method",
                       help="method to apply.", type="choice",
@@ -95,7 +95,7 @@ if __name__ == "__main__":
         forward_coordinates = False,
         genome_file = None )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
     
 
     if options.method == "remove-stop" and not options.genome_file:
@@ -161,4 +161,4 @@ if __name__ == "__main__":
     if options.loglevel >= 1:
         options.stdlog.write("# ninput=%i, noutput=%i, nremoved_stops=%i, nremoved_exons=%i\n" % (ninput, noutput, nremoved_stops, nremoved_exons) )
     
-    Experiment.Stop()
+    E.Stop()

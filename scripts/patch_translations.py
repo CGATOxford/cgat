@@ -65,7 +65,7 @@ import string
 import re
 import optparse
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.PredictionParser as PredictionParser
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Genomics as Genomics
@@ -73,7 +73,7 @@ import CGAT.Genomics as Genomics
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: patch_translations.py 1841 2008-05-08 12:07:13Z andreas $",
+    parser = E.OptionParser( version = "%prog version: $Id: patch_translations.py 1841 2008-05-08 12:07:13Z andreas $",
                                     usage = globals()["__doc__"] )
 
     parser.add_option( "-g", "--genome-file", dest="genome_file", type="string",
@@ -83,7 +83,7 @@ if __name__ == '__main__':
         genome_file = None,
         )
     
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
     if len(args) > 0:
         print USAGE, "no arguments required."
@@ -120,4 +120,4 @@ if __name__ == '__main__':
         options.stdlog.write("# ninput=%i, noutput=%i\n" % (ninput, noutput))
         
 
-    Experiment.Stop()
+    E.Stop()

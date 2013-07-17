@@ -81,7 +81,7 @@ Cluster transcripts based on a distance measure. The transcripts can be clustere
         
 """ % sys.argv[0]
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import networkx
 
 ###########################################################
@@ -403,7 +403,7 @@ def clusterByReciprocity( links, map_transcript2id, options ):
 ##-------------------------------------------------------------------------------
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: graph_cluster_by_species.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: graph_cluster_by_species.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option("-m", "--genome-master", dest="genome_master", type="string",
                       help="genome to use as master." )
@@ -441,7 +441,7 @@ if __name__ == "__main__":
         max_weight = None,
         separator = "|")
         
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     options.quality_priority = options.quality_priority.split(",")
 
@@ -517,4 +517,4 @@ if __name__ == "__main__":
         options.stdlog.write( "# ncomponents=%i, nsynonyms=%i\n" % (len(components), len(map_synonyms)))
         options.stdlog.write( "# final component sizes: %s\n" % ",".join(map( lambda x: str(len(x)), components)))
 
-    Experiment.Stop()
+    E.Stop()

@@ -106,7 +106,7 @@ Options:
 --filename-previous               filename with previous output (that are to be skipped).
 """ % sys.argv[0]
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.PredictionParser as PredictionParser
 import CGAT.IndexedFasta as IndexedFasta
@@ -213,7 +213,7 @@ def WriteEntry( query_token,
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: assignments2pairs.py 2011 2008-07-04 10:40:51Z andreas $", usage = globals()["__doc__"] )
+    parser = E.OptionParser( version = "%prog version: $Id: assignments2pairs.py 2011 2008-07-04 10:40:51Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option( "--peptides", dest="filename_peptides", type="string",
                       help=""  )
@@ -306,7 +306,7 @@ if __name__ == '__main__':
         filename_previous = None, )
 
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
             
     if len(args) > 0:
         print USAGE, "no arguments required."
@@ -655,7 +655,7 @@ if __name__ == '__main__':
     print "# written %i pairs" % npairs
     print "# written %i regions" % nregions
     
-    print Experiment.GetFooter()
+    print E.GetFooter()
     
     
 

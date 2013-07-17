@@ -68,9 +68,9 @@ import time
 """convert tab-separated table to VidaExpert formatted data file.
 """
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 
-parser = optparse.OptionParser( version = "%prog version: $Id: tbl2veo.py 2782 2009-09-10 11:40:29Z andreas $")
+parser = E.OptionParser( version = "%prog version: $Id: tbl2veo.py 2782 2009-09-10 11:40:29Z andreas $")
 
 if __name__ == "__main__":
 
@@ -79,7 +79,7 @@ if __name__ == "__main__":
                       help="columns to take from table." )
 
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     lines = map( string.strip, filter( lambda x: x[0] != "#", sys.stdin.readlines()))
 
@@ -97,4 +97,4 @@ if __name__ == "__main__":
     for l in lines:
         print l.replace( "\t", " ")
 
-    Experiment.Stop()
+    E.Stop()

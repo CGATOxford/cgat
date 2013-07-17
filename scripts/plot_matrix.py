@@ -65,7 +65,7 @@ import optparse
 import scipy
 import numpy
 import CGAT.MatlabTools as MatlabTools
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 from array import array
 import math
 import numpy
@@ -134,7 +134,7 @@ def plotMatrix( matrix, color_scheme, row_headers, col_headers, vmin, vmax, opti
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: plot_matrix.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: plot_matrix.py 2782 2009-09-10 11:40:29Z andreas $")
     
     parser.add_option("-c", "--columns", dest="columns", type="string",
                       help="columns to take from table." )
@@ -228,7 +228,7 @@ if __name__ == "__main__":
         title = None,
         subplots = None)
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     # import matplotlib/pylab. Has to be done here
     # for batch scripts without GUI.
@@ -383,4 +383,4 @@ if __name__ == "__main__":
     else:
         pylab.show()
 
-    Experiment.Stop()
+    E.Stop()

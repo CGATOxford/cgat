@@ -67,7 +67,7 @@ import subprocess
 
 from types import *
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.TreeTools as TreeTools
 import CGAT.Stats as Stats
 
@@ -78,7 +78,7 @@ compute summary statistics for trees.
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: tree2stats.py 2782 2009-09-10 11:40:29Z andreas $",
+    parser = E.OptionParser( version = "%prog version: $Id: tree2stats.py 2782 2009-09-10 11:40:29Z andreas $",
                                     usage = globals()["__doc__"] )
 
     parser.add_option("-m", "--method", dest="methods", type="choice", action="append",
@@ -90,7 +90,7 @@ if __name__ == "__main__":
         filtered_branch_length = -999,
         )
 
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
     nexus = TreeTools.Newick2Nexus( sys.stdin )
     if options.loglevel >= 1:
@@ -124,4 +124,4 @@ if __name__ == "__main__":
     if options.loglevel >= 1:
         options.stdlog.write( "# ninput=%i, nskipped=%i\n" % (ninput, nskipped))
         
-    Experiment.Stop()
+    E.Stop()

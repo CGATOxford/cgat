@@ -66,12 +66,12 @@ import subprocess
 
 from types import *
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.TreeTools as TreeTools
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: tree_diff.py 2782 2009-09-10 11:40:29Z andreas $",
+    parser = E.OptionParser( version = "%prog version: $Id: tree_diff.py 2782 2009-09-10 11:40:29Z andreas $",
                                     usage = globals()["__doc__"] )
 
     parser.add_option("-1", "--filename-tree1", dest="filename_tree1", type="string",
@@ -87,7 +87,7 @@ if __name__ == "__main__":
         outgroup = None
         )
 
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
     if (len(args) == 2):
         options.filename_tree1, options.filename_tree2 = args
@@ -131,4 +131,4 @@ if __name__ == "__main__":
             
     options.stdlog.write( "# n1=%i, n2=%i, ntotal=%i, nsame=%i, ndiff=%i\n" % (len(trees1), len(trees2), ntotal, nsame, ndiff))
         
-    Experiment.Stop()
+    E.Stop()

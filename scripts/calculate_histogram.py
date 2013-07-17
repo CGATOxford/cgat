@@ -74,7 +74,7 @@ import os
 import getopt
 import time
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Histogram as Histogram
 
 param_loglevel = 1
@@ -155,8 +155,8 @@ if __name__ == '__main__':
     histograms = []
 
     if param_loglevel >= 1:
-        print Experiment.GetHeader()
-        print Experiment.GetParams()    
+        print E.GetHeader()
+        print E.GetParams()    
     
     vals = []
     
@@ -235,7 +235,7 @@ if __name__ == '__main__':
         Histogram.Print( combined_histogram, nonull = param_nonull )        
 
     if param_loglevel >= 1:        
-        print Experiment.GetFooter()
+        print E.GetFooter()
     
 
 

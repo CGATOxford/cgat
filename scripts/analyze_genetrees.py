@@ -76,7 +76,7 @@ analyse orthology sets.
 
 """
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.TreeTools as TreeTools
 import CGAT.Tree as Tree
 import CGAT.SVGTree as SVGTree
@@ -139,7 +139,7 @@ def printCounts( heights_per_species, relheights_per_species,
 ##------------------------------------------------------------------------------------------
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: analyze_genetrees.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: analyze_genetrees.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option( "-r", "--species-regex", dest="species_regex", type="string" ,
                        help="regular expression to extractspecies from identifier.")
@@ -284,7 +284,7 @@ if __name__ == "__main__":
         skip_without_outgroups = False,
         )
     
-    (options, args) = Experiment.Start( parser, add_psql_options = True, add_csv_options = True )
+    (options, args) = E.Start( parser, add_psql_options = True, add_csv_options = True )
 
     if options.outgroup_species:
         options.outgroup_species = set(options.outgroup_species.split(","))
@@ -555,5 +555,5 @@ if __name__ == "__main__":
     if options.loglevel >= 1:
         options.stdlog.write("# ninput=%i, nfiltered=%i, nskipped=%i, nskipped_filter=%i, nskipped_outgroups=%i, noutput=%i\n" % (ninput, nfiltered, nskipped, nskipped_filter, nskipped_outgroups, noutput ) )
                 
-    Experiment.Stop()
+    E.Stop()
 

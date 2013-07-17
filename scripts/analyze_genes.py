@@ -73,12 +73,12 @@ count number of matches found in gene prediction pipeline.
 
 Count by category and by gene.
 """
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Exons as Exons
 
 import pgdb
 
-parser = optparse.OptionParser( version = "%prog version: $Id: analyze_genes.py 2781 2009-09-10 11:33:14Z andreas $")
+parser = E.OptionParser( version = "%prog version: $Id: analyze_genes.py 2781 2009-09-10 11:33:14Z andreas $")
 
 def GetCounts( r, priority ):
     """count transcript by genes sorted by priority.
@@ -136,7 +136,7 @@ if __name__ == "__main__":
         separator = "|",
         )
 
-    (options, args) = Experiment.Start( parser, add_psql_options = True )
+    (options, args) = E.Start( parser, add_psql_options = True )
 
     if options.genomes: options.genomes = options.genomes.split(",")
     if options.priority: options.priority = options.priority.split(",")
@@ -246,4 +246,4 @@ if __name__ == "__main__":
         
     sys.stdout.write("all\t%s\n" % "\t".join(map(lambda x: "%i" % x, totals )))
 
-    Experiment.Stop()
+    E.Stop()

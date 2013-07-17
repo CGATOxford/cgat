@@ -62,7 +62,7 @@ import optparse
 import math
 import time
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import CGAT.Mali as Mali
 import alignlib
@@ -82,7 +82,7 @@ def convertMali2Mali( mali ):
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: sequences2mali.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: sequences2mali.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-i", "--input-format", dest="input_format", type="choice",
                       choices=("plain", "fasta", "clustal", "stockholm", "phylip" ),
@@ -114,7 +114,7 @@ if __name__ == '__main__':
         alignment_method = "sw",
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     options.parameters = options.parameters.split(",")    
 
@@ -169,5 +169,5 @@ if __name__ == '__main__':
             
         mali.writeToFile( sys.stdout, format = options.output_format )
         
-    Experiment.Stop()
+    E.Stop()
     

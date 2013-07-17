@@ -74,7 +74,7 @@ import CGAT.Experiment as E
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: gene2gene.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: gene2gene.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option( "-q", "--restrict-quality", dest="restrict_quality", type="string",
                        help="restrict genes to given quality codes." )

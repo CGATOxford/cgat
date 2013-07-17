@@ -66,7 +66,7 @@ import tempfile
 import subprocess
 
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import CGAT.Genomics as Genomics
 import CGAT.FastaIterator as FastaIterator
@@ -132,7 +132,7 @@ class MaskerSeg (Masker):
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: filter_fasta.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: filter_fasta.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-m", "--method", dest="method", type="choice",
                       choices=("longest-transcript", "ids", "quality" ),
@@ -159,7 +159,7 @@ if __name__ == '__main__':
         separator = "|",
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
     options.parameters = options.parameters.split(",")
 
     iterator = FastaIterator.FastaIterator( sys.stdin )    
@@ -237,6 +237,6 @@ if __name__ == '__main__':
     if options.loglevel >= 1:
         options.stdlog.write( "# ninput=%i, noutput=%i, nskipped=%i\n" % (ninput, noutput, nskipped ))
         
-    Experiment.Stop()
+    E.Stop()
     
     

@@ -64,7 +64,7 @@ import tempfile
 import subprocess
 import optparse
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Database as Database
 
 
@@ -92,7 +92,7 @@ def WriteBackground( go_type, options, suffix ):
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: analyze_go.py 309 2005-12-01 15:50:26Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: analyze_go.py 309 2005-12-01 15:50:26Z andreas $")
 
     dbhandle = Database.Database()
     
@@ -106,7 +106,7 @@ if __name__ == "__main__":
     parser.set_defaults( database = "ensembl_mart_31")
     parser.set_defaults( prefix = "dm_go_")    
     
-    (options, args) = Experiment.Start( parser, add_mysql_options = True )
+    (options, args) = E.Start( parser, add_mysql_options = True )
 
     dbhandle.Connect( options )
 

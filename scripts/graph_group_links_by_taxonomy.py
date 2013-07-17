@@ -62,7 +62,7 @@ import string
 import os
 import optparse
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import scipy
 import scipy.stats
 
@@ -133,7 +133,7 @@ def printResult( outfile, id, ranges, values_within, values_without, f, options)
 ##---------------------------------------------------------------------------------------------------------        
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: graph_group_links_by_taxonomy.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: graph_group_links_by_taxonomy.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option("-c", "--columns", dest="columns", type="string",
                       help="columns to take for calculating histograms." )
@@ -155,7 +155,7 @@ if __name__ == '__main__':
         write_id = False,
         )
     
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if options.write_id:
         if options.function not in ("min", "max"):
@@ -236,4 +236,4 @@ if __name__ == '__main__':
     printResult( options.stdout, last_id, ranges, values_within, values_without, f,
                  options = options )
 
-    Experiment.Stop()
+    E.Stop()

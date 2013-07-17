@@ -75,7 +75,7 @@ def main( argv = None ):
     if not argv: argv = sys.argv
 
     # setup command line parser
-    parser = optparse.OptionParser( version = "%prog version: $Id$", usage = globals()["__doc__"] )
+    parser = E.OptionParser( version = "%prog version: $Id$", usage = globals()["__doc__"] )
     
     parser.add_option("-e", "--headers", dest="headers", type="string",
                       help="',' separated list of node headers [default=%default]."  )

@@ -77,7 +77,7 @@ retrieve predictions/exons
 
 """
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 
 def GetResult( dbhandle, keys, options ):
 
@@ -105,7 +105,7 @@ def GetResult( dbhandle, keys, options ):
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: get_predictions.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: get_predictions.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-s", "--schema", dest="schema", type="string",
                       help="database schema to use."  )
@@ -116,7 +116,7 @@ if __name__ == "__main__":
         result = "exons",
         )
 
-    (options, args) = Experiment.Start( parser, add_psql_options = True )
+    (options, args) = E.Start( parser, add_psql_options = True )
 
     dbhandle = pgdb.connect( options.psql_connection )
     
@@ -149,4 +149,4 @@ if __name__ == "__main__":
                 print "\t".join(map(str, r))
         
     print "# ntested=%i, nmissed=%i" % (ntested, nmissed)
-    Experiment.Stop()
+    E.Stop()

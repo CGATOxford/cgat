@@ -64,7 +64,7 @@ def main( argv = None ):
     if not argv: argv = sys.argv
 
     # setup command line parser
-    parser = optparse.OptionParser( version = "%prog version: $Id: index2gff.py 2880 2010-04-07 08:44:13Z andreas $",
+    parser = E.OptionParser( version = "%prog version: $Id: index2gff.py 2880 2010-04-07 08:44:13Z andreas $",
                                     usage = globals()["__doc__"] )
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",

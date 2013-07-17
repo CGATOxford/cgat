@@ -92,7 +92,7 @@ def main( argv = None ):
     if not argv: argv = sys.argv
 
     # setup command line parser
-    parser = optparse.OptionParser()
+    parser = E.OptionParser()
 
     parser.add_option("-i", "--infile", dest="infile", type="string",
                       help="Input filename")

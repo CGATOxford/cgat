@@ -75,7 +75,7 @@ The map need not be unique.
 
 """
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import CGAT.MatlabTools as MatlabTools
 import scipy
@@ -83,7 +83,7 @@ import numpy
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: convert_geneatlas.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"] )
+    parser = E.OptionParser( version = "%prog version: $Id: convert_geneatlas.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option("-m", "--filename-map", dest="filename_map", type="string",
                       help="filename map." )
@@ -106,7 +106,7 @@ if __name__ == "__main__":
                          value_format = "%5.2f",
                          method="counts")
     
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if not options.filename_map:
         raise "please supply filename mapping probesets to identifiers."
@@ -203,4 +203,4 @@ if __name__ == "__main__":
     if options.loglevel >= 1:
         options.stdlog.write( "# ninput=%i, nkept=%i, noutput=%i, nno_map=%i, ndegenerate=%i\n" % (len(row_headers), nkept, noutput, len(no_map), len(degenerate)))
 
-    Experiment.Stop()
+    E.Stop()

@@ -77,7 +77,7 @@ import re
 import getopt
 import optparse
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import matplotlib
 
 FORMAT_GRAPH = '''
@@ -156,7 +156,7 @@ if __name__ == "__main__":
 
     #--------------------------------------------------------
     # command line parsing options
-    parser = optparse.OptionParser( version = "%prog version: $Id: graph_links2gdl.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: graph_links2gdl.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-c", "--filename-components", dest="filename_components", type="string",
                       help="filename with component information." )
@@ -210,7 +210,7 @@ if __name__ == "__main__":
         add_edge_labels = False,
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     options.column_edge_weight -= 1
     options.column_edge_colour -= 1    
@@ -430,7 +430,7 @@ if __name__ == "__main__":
             
     options.stdout.write ("}\n" )
     
-    Experiment.Stop()
+    E.Stop()
 
     
 

@@ -67,7 +67,7 @@ import optparse
 import glob
 import subprocess
 import os.path
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 
 def getLastLine( filename, read_size = 1024 ):
   """return last line of a file.
@@ -109,7 +109,7 @@ def isNewer( a, b ):
 
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: clean.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"] )
+    parser = E.OptionParser( version = "%prog version: $Id: clean.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option( "-g", "--glob", dest="glob_pattern", type="string" ,
                        help="glob pattern to use for collecting files [%default].")
@@ -127,7 +127,7 @@ if __name__ == '__main__':
                          dry_run = False,
                          )
 
-    (options, args) = Experiment.Start( parser, 
+    (options, args) = E.Start( parser, 
                                         add_pipe_options = True )
 
     if args:
@@ -166,4 +166,4 @@ if __name__ == '__main__':
         options.stdlog.write("# ndirs=%i, nfiles=%i, ndeleted=%i\n" %\
                                  (ndirs, nfiles, ndeleted) )
 
-    Experiment.Stop()
+    E.Stop()

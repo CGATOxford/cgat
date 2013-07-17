@@ -62,7 +62,7 @@ import string
 import re
 import optparse
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 
 USAGE="""python %s [OPTIONS] [genomic_sequence] [ < genomic sequence]
 
@@ -82,7 +82,7 @@ def Print( outfile, fragments, options ):
     
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: split_genome.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: split_genome.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-c", "--chunk-size", dest="chunk_size",
                       help="size of chunks in nucleotides.", type="int")
@@ -95,7 +95,7 @@ if __name__ == '__main__':
         width=100,
         )
 
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
     nchunk = 0
     chunksize = 0

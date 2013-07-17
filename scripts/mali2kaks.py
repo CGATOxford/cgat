@@ -825,7 +825,7 @@ def processMali( mali, options ):
 
 if __name__ == "__main__":
     
-    parser = optparse.OptionParser( version = "%prog version: $Id: mali2kaks.py 2781 2009-09-10 11:33:14Z andreas $" )
+    parser = E.OptionParser( version = "%prog version: $Id: mali2kaks.py 2781 2009-09-10 11:33:14Z andreas $" )
 
     parser.add_option( "--set-omega", dest="omega", type="float",
                       help="initial omega value.")

@@ -66,7 +66,7 @@ import time
 import optparse
 import math
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.IOTools as IOTools
@@ -467,7 +467,7 @@ def ProcessPredictions( dbhandle, schema, options, prediction_ids, taboo_regions
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: extract_regions.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: extract_regions.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="pattern to look for sequence filename."  )
@@ -558,7 +558,7 @@ if __name__ == "__main__":
         output_coordinate_format = "full",
         )
 
-    (options, args) = Experiment.Start( parser, add_psql_options = True )
+    (options, args) = E.Start( parser, add_psql_options = True )
 
     if options.orthologs: options.id_format = "schema-id"
     
@@ -625,4 +625,4 @@ if __name__ == "__main__":
     else:
         ProcessPredictions( dbhandle, options.schema, options, prediction_ids, taboo_regions )        
 
-    Experiment.Stop()
+    E.Stop()

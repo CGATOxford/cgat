@@ -190,7 +190,7 @@ def Write( old_transcripts, map_transcript2location, fix, options ):
     
 if __name__  == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: orthologs2genes.py 2889 2010-04-07 08:57:57Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: orthologs2genes.py 2889 2010-04-07 08:57:57Z andreas $")
     
     parser.add_option( "-s", "--species-regex", dest="species_regex", type="string" ,
                        help="regular expression to extract species from identifier.")

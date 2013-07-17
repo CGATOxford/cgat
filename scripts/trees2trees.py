@@ -71,14 +71,14 @@ USAGE="""python %s [OPTIONS]
 
 """ % sys.argv[0]
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import CGAT.TreeTools as TreeTools
 
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: trees2trees.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: trees2trees.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-c", "--output-filename-map", dest="output_filename_map", type="string",
                       help="filename of map to output."  )
@@ -139,7 +139,7 @@ if __name__ == '__main__':
         regex_species = ("^([^|]+)" ),
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     nexus = TreeTools.Newick2Nexus( sys.stdin )
     
@@ -334,5 +334,5 @@ if __name__ == '__main__':
                              (ninput, noutput, nskipped,
                               ndiscarded, ndiscarded_taxa, ndiscarded_branches))
         
-    Experiment.Stop()
+    E.Stop()
     

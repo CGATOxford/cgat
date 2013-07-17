@@ -533,7 +533,7 @@ def writeToFile( mali, section, options, is_aligned = True ):
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: align_transcripts.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: align_transcripts.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-m", "--master", dest="master", type="string",
                       help="master sequence."  )
@@ -1033,7 +1033,7 @@ sequences will be aligned to the cds sequences. This produces better coordinates
 
     if options.stop_at == "aligned":
         aligned.writeToFile( options.stdout, format=options.output_format)
-        Experiment.Stop()
+        E.Stop()
         sys.exit(0)
 
     ##########################################################################
@@ -1176,7 +1176,7 @@ sequences will be aligned to the cds sequences. This produces better coordinates
 
     if options.stop_at == "unpacked":
         aligned.writeToFile( options.stdout, format=options.output_format)
-        Experiment.Stop()
+        E.Stop()
         sys.exit(0)
 
     # perform sanity checks

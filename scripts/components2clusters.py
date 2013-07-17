@@ -81,12 +81,12 @@ param_filename_map_cluster2queries = None
 param_filename_map_transcript2cluster = None
 param_filename_filter = None
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 
 if __name__ == "__main__":
 
-    print Experiment.GetHeader()
-    print Experiment.GetParams()    
+    print E.GetHeader()
+    print E.GetParams()    
 
     try:
         optlist, args = getopt.getopt(sys.argv[1:], param_short_options, param_long_options)
@@ -173,4 +173,4 @@ if __name__ == "__main__":
     outfile_clusters.close()
     outfile_transcripts.close()
 
-    print Experiment.GetFooter()
+    print E.GetFooter()

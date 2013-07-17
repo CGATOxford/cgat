@@ -140,7 +140,7 @@ import matplotlib.ticker
 import scipy.stats
 import numpy
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 
 def formatGenomicCoordinate( value, pos = None ):
     
@@ -479,7 +479,7 @@ def layoutTracks( tracks ):
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: gff2plot.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: gff2plot.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-f", "--file", dest="filenames", type="string",
                       help="files[s] to take data from,stdin = -."  )
@@ -572,7 +572,7 @@ if __name__ == "__main__":
         )
 
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
     options.symbols=options.symbols.split(",")
 
     #--------------------------------------------------------
@@ -694,4 +694,4 @@ if __name__ == "__main__":
     if options.loglevel >= 1:
         options.stdlog.write( "# ninput=%i, ncontigs=%i, nplots=%i\n" % (len(tracks), nplots, len(contigs) ) )
 
-    Experiment.Stop()
+    E.Stop()

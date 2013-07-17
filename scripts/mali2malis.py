@@ -65,14 +65,14 @@ import math
 import time
 import random
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import CGAT.Mali as Mali
 
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: mali2malis.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: mali2malis.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-a", "--pattern-mali", dest="pattern_mali", type="string",
                       help="filename pattern for multiple alignment files."  )
@@ -95,7 +95,7 @@ if __name__ == '__main__':
         pattern_mali= "%s.fasta",
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     ## read coordinates
     if options.filename_coordinates:
@@ -132,5 +132,5 @@ if __name__ == '__main__':
     if options.loglevel >= 1:
         options.stdlog.write("# input=%i, output=%i\n" % (ninput, noutput) )
 
-    Experiment.Stop()
+    E.Stop()
     

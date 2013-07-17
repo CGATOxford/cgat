@@ -73,13 +73,13 @@ read in data and append columns to a density histogram
 
 """ % sys.argv[0]
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import numpy
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: histogram2histogram.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: histogram2histogram.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option("-i", "--is-int", dest="is_ints", action="store_true",
                       help="categories are integers."  )
@@ -109,7 +109,7 @@ if __name__ == "__main__":
         format_val="%6.4f",
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if options.truncate: options.truncate = map(float, options.truncate.split(","))
     options.method = options.method.split(",")
@@ -164,7 +164,7 @@ if __name__ == "__main__":
     for d in data:
         print format % tuple(d)
     
-    Experiment.Stop()
+    E.Stop()
 
 
 

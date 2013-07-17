@@ -93,7 +93,7 @@ Possibly two pipelines have been running concurrently.
 
 def main( argv = sys.argv ):
 
-    parser = optparse.OptionParser( version = "%prog version: $Id$", 
+    parser = E.OptionParser( version = "%prog version: $Id$", 
                                     usage = globals()["__doc__"])
     
     parser.add_option( "-l", "--logfile", dest="logfile", type="string",

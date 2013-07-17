@@ -68,7 +68,7 @@ import string
 import re
 import optparse
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Prediction as Prediction
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Genomics as Genomics
@@ -157,7 +157,7 @@ def getAlignedColumns( mali, exons ):
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: mali2predictions.py 2781 2009-09-10 11:33:14Z andreas $",
+    parser = E.OptionParser( version = "%prog version: $Id: mali2predictions.py 2781 2009-09-10 11:33:14Z andreas $",
                                     usage = globals()["__doc__"] )
 
     parser.add_option( "-g", "--genome-file", dest="genome_file", type="string",
@@ -175,7 +175,7 @@ if __name__ == '__main__':
         master = None
         )
     
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
     if len(args) > 0:
         print USAGE, "no arguments required."
@@ -327,4 +327,4 @@ if __name__ == '__main__':
         
         options.stdout.write( str(prediction) + "\n" )
     
-    Experiment.Stop()
+    E.Stop()

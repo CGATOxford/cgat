@@ -69,7 +69,7 @@ import subprocess
 
 import pgdb
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 
 ##---------------------------------------------------------------------------------------------
 def DbExecute( dbhandle, statement ):
@@ -91,13 +91,13 @@ def DbDo( dbhandle, statement ):
 ##------------------------------------------------------------------------------------------
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: psql_clone_database.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: psql_clone_database.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
     parser.set_defaults( \
         start = None,
         fields = [] )
 
-    (options, args) = Experiment.Start( parser, add_psql_options = True )
+    (options, args) = E.Start( parser, add_psql_options = True )
     
     dbhandle = pgdb.connect( options.psql_connection )
 
@@ -133,6 +133,6 @@ if __name__ == "__main__":
                           shell = True )
     sts = os.waitpid(p.pid, 0)
 
-    Experiment.Stop()
+    E.Stop()
 
     

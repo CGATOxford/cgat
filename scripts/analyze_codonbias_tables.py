@@ -61,7 +61,7 @@ import string
 import os
 import optparse
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.CSV as CSV
 import CGAT.Genomics as Genomics
 
@@ -189,7 +189,7 @@ def WriteOverviewFrequencies( fields, table, options ):
     
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: analyze_codonbias_tables.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: analyze_codonbias_tables.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option( "--methods", dest="methods", type="string",
                       help="methods to apply.")
@@ -211,7 +211,7 @@ if __name__ == "__main__":
        global_sort= False,
        )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
     if options.methods:
         options.methods = options.methods.split(",")
 

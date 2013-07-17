@@ -78,7 +78,7 @@ Options:
 -G, --genes                     table with genic regions to be skipped
 """ % sys.argv[0]
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.Exons as Exons
 import CGAT.Intervalls as Intervalls
@@ -197,8 +197,8 @@ if __name__ == '__main__':
         print USAGE, "no arguments required."
         sys.exit(2)
 
-    print Experiment.GetHeader()
-    print Experiment.GetParams()
+    print E.GetHeader()
+    print E.GetParams()
     sys.stdout.flush()
     
     dbhandle = pgdb.connect( param_connection )
@@ -372,4 +372,4 @@ if __name__ == '__main__':
 
     print "# genes=%i, assignments=%i, total=%i, filtered_region=%i" % (gene_id-1, nassigned, total, nfiltered_region)
     
-    print Experiment.GetFooter()
+    print E.GetFooter()

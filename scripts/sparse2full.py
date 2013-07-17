@@ -62,7 +62,7 @@ import string
 import re
 import random
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 
 def CountElements( matrix, default_value ):
     """count elements that are of default value and those that aren't."""
@@ -281,7 +281,7 @@ def Sparse2Matrix( outfile, matrix_id, lines, options, in_map_token2row = {}, in
 
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: sparse2full.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: sparse2full.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option("-m", "--method", dest="methods", type="string",
                       help="""method to use [normalize-by-min-diagonal|normalize-by-column|
@@ -359,7 +359,7 @@ if __name__ == '__main__':
         write_separators = True,
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if options.full2sparse:
         # convert a full matrix to a sparse matrix
@@ -468,4 +468,4 @@ if __name__ == '__main__':
         if options.filename_map:
             outfile_map.close()
                 
-    Experiment.Stop()
+    E.Stop()

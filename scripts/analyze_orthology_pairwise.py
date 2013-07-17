@@ -75,7 +75,7 @@ analyse orthology sets.
 
 """
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Orthologs as Orthologs
 import CGAT.Genomics as Genomics
 import pgdb
@@ -1474,7 +1474,7 @@ def ReadOrphans( infile, options ):
         
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: analyze_orthology_pairwise.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: analyze_orthology_pairwise.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option( "-e", "--schema", dest="schema", type="string" , 
                        help="schema.")
@@ -1512,7 +1512,7 @@ if __name__ == "__main__":
         threshold_filter_classes = "CG,SG,PG,RG,CP,SP,PP",
         test = None )    
     
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if options.threshold_filter_classes: options.threshold_filter_classes = options.threshold_filter_classes.split(",")
     
@@ -1784,4 +1784,4 @@ if __name__ == "__main__":
         options.stdout.write("\n")
 
         
-    Experiment.Stop()
+    E.Stop()

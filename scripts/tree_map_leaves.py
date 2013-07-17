@@ -84,7 +84,7 @@ Options:
 -b, --strip-branches            remove branch lengths
 """ % sys.argv[0]
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.TreeTools as TreeTools
 
 param_loglevel = 1
@@ -122,8 +122,8 @@ if __name__ == "__main__":
         elif o in ("-b", "--strip-branches"):
             param_remove_branch_lengths = True
 
-    print Experiment.GetHeader()
-    print Experiment.GetParams()
+    print E.GetHeader()
+    print E.GetParams()
 
     keys = {}
     if param_apply:
@@ -162,4 +162,4 @@ if __name__ == "__main__":
             outfile.write("%s\t%s\n" % (key, keys[key]))
         outfile.close()
 
-    print Experiment.GetFooter()
+    print E.GetFooter()

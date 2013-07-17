@@ -234,7 +234,7 @@ def main( argv = None ):
     if not argv: argv = sys.argv
 
     # setup command line parser
-    parser = optparse.OptionParser( version = "%prog version: $Id: bed2graph.py 2861 2010-02-23 17:36:32Z andreas $", usage = globals()["__doc__"] )
+    parser = E.OptionParser( version = "%prog version: $Id: bed2graph.py 2861 2010-02-23 17:36:32Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option("-s", "--ignore-strand", dest="ignore_strand", action="store_true",
                       help="ignore strand information [default=%default]." )

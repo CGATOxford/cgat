@@ -95,7 +95,7 @@ Options for deciding when two queries are homologs:
 --overlap-min-identity=         minimum percent identity for overlap
 """ % sys.argv[0]
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Exons as Exons
 import CGAT.Genomics as Genomics
 import CGAT.Intervalls as Intervalls
@@ -546,7 +546,7 @@ def ExchangeStreams( old_predictions, new_predictions ):
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: regions2graph.py 2754 2009-09-04 16:50:22Z andreas $", usage = globals()["__doc__"] )
+    parser = E.OptionParser( version = "%prog version: $Id: regions2graph.py 2754 2009-09-04 16:50:22Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option( "-b", "--benchmark", dest="filename_benchmark", type="string",
                       help=""  )
@@ -658,7 +658,7 @@ if __name__ == '__main__':
         test = None,
         max_intron = 50000)
     
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
     if len(args) > 0:
         print USAGE, "no arguments required."
@@ -1020,4 +1020,4 @@ if __name__ == '__main__':
         options.stdlog.write( "# pairs: nread=%i, input=%i, joined=%i, clusters=%i, regions=%i, eliminated_subopt=%i, eliminated_overlap=%i, noutput=%i, nfiltered=%i\n" % \
               (nread, ninput, njoined, nclusters, region_id, neliminated_suboptimal, neliminated_overlap, noutput, nfiltered ))
 
-    Experiment.Stop()
+    E.Stop()

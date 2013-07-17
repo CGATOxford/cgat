@@ -71,10 +71,10 @@ import tempfile
 
 
 """
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import csv
 
-parser = optparse.OptionParser( version = "%prog version: $Id: csv2csv.py 2782 2009-09-10 11:40:29Z andreas $")
+parser = E.OptionParser( version = "%prog version: $Id: csv2csv.py 2782 2009-09-10 11:40:29Z andreas $")
 
 def ConvertDictionary( d ):
     """tries to convert values in a dictionary.
@@ -95,7 +95,7 @@ if __name__ == "__main__":
     parser.add_option( "-s", "--sort", dest="sort", type="string" ,
                        help="fields to take (in sorted order).")
 
-    (options, args) = Experiment.Start( parser, add_csv_options  = True)
+    (options, args) = E.Start( parser, add_csv_options  = True)
 
     reader = csv.DictReader( sys.stdin, dialect=options.csv_dialect )
 
@@ -116,4 +116,4 @@ if __name__ == "__main__":
         row = ConvertDictionary( row )
         writer.writerow(row)
         
-    Experiment.Stop()
+    E.Stop()

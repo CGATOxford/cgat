@@ -69,12 +69,12 @@ filter lines where pattern matches
 
 """ % sys.argv[0]
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: filter_tokens.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: filter_tokens.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option( "-r", "--regex-token", dest="regex_token", type="string",
                        help="regular expression for tokens (has to create one pair of brackets)." )
@@ -103,7 +103,7 @@ if __name__ == "__main__":
         tokens = None,
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if options.columns:
         options.columns=map(lambda x: int(x) -1, options.columns.split(","))
@@ -180,4 +180,4 @@ if __name__ == "__main__":
     if options.loglevel >= 1:
         options.stdlog.write( "# input=%i, kept=%i, discarded=%i\n" % (ninput, nkept, ninput-nkept) )
         
-    Experiment.Stop()
+    E.Stop()

@@ -63,12 +63,12 @@ import re
 import optparse
 
 from types import *
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.TreeTools as TreeTools
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: tree2taxa.py 2782 2009-09-10 11:40:29Z andreas $",
+    parser = E.OptionParser( version = "%prog version: $Id: tree2taxa.py 2782 2009-09-10 11:40:29Z andreas $",
                                     usage = globals()["__doc__"] )
 
     parser.add_option( "--skip-trees", dest="skip_trees", action="store_true",
@@ -78,7 +78,7 @@ if __name__ == "__main__":
         skip_trees = False
         )
 
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
     nexus = TreeTools.Newick2Nexus( sys.stdin )
     if options.loglevel >= 1:
@@ -112,4 +112,4 @@ if __name__ == "__main__":
     if options.loglevel >= 1:
         options.stdlog.write( "# ntotal=%i\n" % (ntotal))
         
-    Experiment.Stop()
+    E.Stop()

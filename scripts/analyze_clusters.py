@@ -88,7 +88,7 @@ import tempfile
 import copy
 
 import CGAT.IOTools as IOTools
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 
 class Annotation:
     def __init__(self, identifier, short, description):
@@ -148,7 +148,7 @@ def printAnnotations( outfile, annotations, options ):
 ##------------------------------------------------------------------------------------------
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: analyze_clusters.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: analyze_clusters.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option( "-r", "--species-regex", dest="species_regex", type="string" ,
                        help="regular expression to extractspecies from identifier.")
@@ -172,7 +172,7 @@ if __name__ == "__main__":
         separator_fields = ";",
         )
 
-    (options, args) = Experiment.Start( parser, add_psql_options = True, add_csv_options = True )
+    (options, args) = E.Start( parser, add_psql_options = True, add_csv_options = True )
 
     clusters, nerrors = IOTools.ReadList( sys.stdin )
 
@@ -261,4 +261,4 @@ if __name__ == "__main__":
     if options.loglevel >= 1:
         options.stdlog.write( "# ninput=%i, noutput=%i, nskipped=%i, nnomaster=%i, nnoannotation=%i\n" % (ninput, noutput, nskipped, nnomaster, nnoannotation) )
         
-    Experiment.Stop()
+    E.Stop()

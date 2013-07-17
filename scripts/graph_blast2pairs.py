@@ -110,7 +110,7 @@ param_loglevel = 1
 param_method = "bitscore"
 param_filename_self_scores = None
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.BlastAlignments as BlastAlignments
 import math
 
@@ -170,8 +170,8 @@ if __name__ == "__main__":
             param_min_evalue = float(a)
             
     if param_loglevel >= 1:
-        print Experiment.GetHeader()
-        print Experiment.GetParams()
+        print E.GetHeader()
+        print E.GetParams()
 
     if param_filename_self_scores:
         self_scores = {}
@@ -283,6 +283,6 @@ if __name__ == "__main__":
         ninput, noutput, nskipped, nfailed )
 
     if param_loglevel >= 1:    
-        print Experiment.GetFooter()
+        print E.GetFooter()
 
 

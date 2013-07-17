@@ -81,7 +81,7 @@ import scipy
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: matrix2stats.py 2795 2009-09-16 15:29:23Z andreas $",
+    parser = E.OptionParser( version = "%prog version: $Id: matrix2stats.py 2795 2009-09-16 15:29:23Z andreas $",
                                     usage = globals()["__doc__"] )
 
     parser.add_option("-m", "--method", dest="method", type="choice",

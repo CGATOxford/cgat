@@ -66,7 +66,7 @@ import subprocess
 
 import scipy.stats
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.TreeTools as TreeTools
 import CGAT.IOTools as IOTools
 
@@ -435,7 +435,7 @@ def processSpeciesTrees( chunks, lines, map_strain2species, options ):
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: tree_strain2species.py 2782 2009-09-10 11:40:29Z andreas $",
+    parser = E.OptionParser( version = "%prog version: $Id: tree_strain2species.py 2782 2009-09-10 11:40:29Z andreas $",
                                     usage = globals()["__doc__"] )
 
     parser.add_option( "--filename-synonyms", dest="filename_synonyms", type="string" ,
@@ -462,7 +462,7 @@ if __name__ == "__main__":
         merge_mode = "ignore",
         )
 
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
     ########################################################################
     ########################################################################
@@ -489,4 +489,4 @@ if __name__ == "__main__":
     else:
         processGeneTrees( chunks, lines, map_strain2species, options )
 
-    Experiment.Stop()
+    E.Stop()

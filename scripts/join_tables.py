@@ -69,7 +69,7 @@ import tempfile
 """ program $Id: join_tables.py 2782 2009-09-10 11:40:29Z andreas $
 
 """
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 
 USAGE = """python %s < stdin > stdout
 
@@ -94,7 +94,7 @@ def GetData( f ):
         
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: join_tables.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: join_tables.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option("-c", "--columns", dest="columns", type="string",
                       help="columns to do join on. Files have to sorted alphabeticlly and incrementally on these columns." )
@@ -110,7 +110,7 @@ if __name__ == "__main__":
         missing_value = "",
         )
 
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
     if len(args) < 2:
         raise "there have to be at least two tables."
@@ -186,4 +186,4 @@ if __name__ == "__main__":
         if f:
             f.close()
 
-    Experiment.Stop()
+    E.Stop()

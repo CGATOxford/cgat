@@ -68,7 +68,7 @@ import time
 import math
 import tempfile
 import shutil
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Mali as Mali
 import CGAT.Genomics as Genomics
 import CGAT.WrapperPhylip as WrapperPhylip
@@ -514,7 +514,7 @@ def runXrate( mali, pairs, options ):
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: mali2rates.py 2781 2009-09-10 11:33:14Z andreas $",
+    parser = E.OptionParser( version = "%prog version: $Id: mali2rates.py 2781 2009-09-10 11:33:14Z andreas $",
                                     usage = globals()["__doc__"])
 
     parser.add_option("-i", "--input-format", dest="input_format", type="choice",
@@ -623,7 +623,7 @@ if __name__ == "__main__":
         is_codons = False,
         )
     
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if options.filename != "-":
         infile = open(options.filename, "r")
@@ -776,7 +776,7 @@ if __name__ == "__main__":
     if options.loglevel >= 1:
         options.stdlog.write("# nseqs=%i, npairs=%i, nskipped_length=%i, nskipped_distance=%i\n" % ( len(ids), npairs, nskipped_length, nskipped_distance))
     
-    Experiment.Stop()
+    E.Stop()
 
 """
 /* Copyright 2005 Emmanuel Paradis <paradis@isem.univ-montp2.fr> */

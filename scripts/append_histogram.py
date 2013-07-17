@@ -63,12 +63,12 @@ import os
 import optparse
 
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Histogram as Histogram
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: append_histogram.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: append_histogram.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option("-i", "--is-int", dest="is_ints", action="store_true",
                       help="categories are integers."  )
@@ -77,7 +77,7 @@ if __name__ == "__main__":
         is_ints = False
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     vals = []
     
@@ -123,7 +123,7 @@ if __name__ == "__main__":
 
         cumul_down -= val
 
-    Experiment.Stop()
+    E.Stop()
 
 
 

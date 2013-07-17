@@ -79,7 +79,7 @@ param_short_options="v:ht"
 
 param_trans = None
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.PredictionParser as PredictionParser
 
 if __name__ == "__main__":
@@ -99,8 +99,8 @@ if __name__ == "__main__":
         elif o in ( "-t", "--trans"):
             param_trans = 1
 
-    print Experiment.GetHeader()
-    print Experiment.GetParams()
+    print E.GetHeader()
+    print E.GetParams()
 
     if param_trans:
         parser = PredictionParser.PredictionParserBlatTrans()
@@ -126,6 +126,6 @@ if __name__ == "__main__":
             
         print str(entries)
 
-    print Experiment.GetFooter()
+    print E.GetFooter()
 
     

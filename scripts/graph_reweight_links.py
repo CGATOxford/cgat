@@ -110,7 +110,7 @@ param_method = "bitscore"
 param_filename_self_scores = None
 param_format = "blast"
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.BlastAlignments as BlastAlignments
 import math
 
@@ -149,8 +149,8 @@ if __name__ == "__main__":
         elif o in ("-d", "--distance"):
             param_max_distance = float(a)
             
-    print Experiment.GetHeader()
-    print Experiment.GetParams()
+    print E.GetHeader()
+    print E.GetParams()
 
     if param_filename_self_scores:
         self_scores = {}
@@ -215,6 +215,6 @@ if __name__ == "__main__":
     print "# ninput=%i, noutput=%i, nskipped=%i, failed=%i" % (\
         ninput, noutput, nskipped, nfailed )
     
-    print Experiment.GetFooter()
+    print E.GetFooter()
 
 

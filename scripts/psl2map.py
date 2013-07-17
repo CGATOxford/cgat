@@ -62,7 +62,7 @@ import tempfile
 import shutil
 
 import CGAT.Intervals as Intervals
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Histogram as Histogram
 import CGAT.GFF as GFF
 import CGAT.Blat as Blat
@@ -278,7 +278,7 @@ def selectMatches( query_id, matches, options, queries_fasta = None ):
 
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: psl2map.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"] )
+    parser = E.OptionParser( version = "%prog version: $Id: psl2map.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option("--input-filename-queries", dest="input_filename_queries", type="string",
                       help="fasta filename with queries - required for polyA analysis [%default]."  )
@@ -405,7 +405,7 @@ if __name__ == '__main__':
                          ignore_all_random = False,
                          )
 
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
     if len(args) == 1:
         if options.from_zipped or args[0][-3:] == ".gz":
@@ -726,4 +726,4 @@ if __name__ == '__main__':
                               nskipped, nqueries_removed_region, nempty))
         options.stdlog.write("# omitted matches: pid=%i, query_coverage=%i, gaps=%i, regions=%i, nmatches=%i\n" % (nremoved_pid, nremoved_query_coverage, nremoved_gaps, nremoved_regions, nremoved_nmatches ))
 
-    Experiment.Stop()
+    E.Stop()

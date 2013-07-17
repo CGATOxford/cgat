@@ -66,7 +66,7 @@ import optparse
 import math
 import tempfile
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import csv
 
 
@@ -87,14 +87,14 @@ def ConvertDictionary( d ):
     
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: csv_uniq.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: csv_uniq.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.set_defaults(
         remove = False,
         unique = False,
         )
 
-    (options, args) = Experiment.Start( parser, add_csv_options  = True)
+    (options, args) = E.Start( parser, add_csv_options  = True)
 
     input_fields = args
 
@@ -119,4 +119,4 @@ if __name__ == "__main__":
             row = ConvertDictionary( row )
             writer.writerow(row)
 
-    Experiment.Stop()
+    E.Stop()

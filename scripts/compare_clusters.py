@@ -64,7 +64,7 @@ import re
 import optparse
 import time
 import random
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import networkx
 
@@ -78,7 +78,7 @@ def getFile( section, options ):
 
 if __name__  == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: compare_clusters.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: compare_clusters.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option( "-o", "--output-pattern", dest="output_pattern", type="string" ,
                        help="output pattern for filenames.")
@@ -88,7 +88,7 @@ if __name__  == "__main__":
         format = "%5.2f",
         )
     
-    (options, args) = Experiment.Start( parser,
+    (options, args) = E.Start( parser,
                                         add_pipe_options = True )
 
     if len(args) != 2:
@@ -224,4 +224,4 @@ if __name__  == "__main__":
     options.stdout.write( "%s\t%i\t%s\n" % ("unique2", nrest2, options.format % (100.0 * nrest2 / ntotal )))
     options.stdout.write( "%s\t%i\t%s\n" % ("other", nother, options.format % (100.0 * nother / ntotal )))            
 
-    Experiment.Stop()
+    E.Stop()

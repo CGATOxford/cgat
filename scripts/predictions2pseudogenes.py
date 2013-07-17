@@ -81,7 +81,7 @@ Options:
 -a, --assembly                  do contig assembly
 """ % sys.argv[0]
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.Intervalls as Intervalls
 import CGAT.PredictionParser as PredictionParser
@@ -237,8 +237,8 @@ if __name__ == '__main__':
         print USAGE, "no arguments required."
         sys.exit(2)
 
-    print Experiment.GetHeader()
-    print Experiment.GetParams()
+    print E.GetHeader()
+    print E.GetParams()
 
     parser = PredictionParser.PredictionParserExonerate()
 
@@ -330,6 +330,6 @@ if __name__ == '__main__':
     if param_loglevel >= 1:
         print "# nread=%i, new=%i, first_id=%i" % (ninput, len(new_entries), first_pseudo_id)
         
-    print Experiment.GetFooter()
+    print E.GetFooter()
     
 

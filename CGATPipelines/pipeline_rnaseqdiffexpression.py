@@ -563,12 +563,13 @@ def buildExpressionStats( tables, method, outfile, outdir ):
     dbhandle = sqlite3.connect( PARAMS["database"] )
 
     def _split( tablename ):
-        parts = tablename.split("_")
-        design, geneset = parts[0], parts[1]
+        #parts = tablename.split("_")
+        design, geneset = re.match("(.+)_([^_]+)_%s" % method, tablename).groups()
         return design, geneset
 
         # return re.match("([^_]+)_", tablename ).groups()[0]
 
+    
     keys_status = "OK", "NOTEST", "FAIL", "NOCALL"
 
     outf = IOTools.openFile( outfile, "w" )
@@ -1178,14 +1179,14 @@ def loadDESeqStats( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@follows( mkdir("edger.dir") )
-@files( [ ((x, aggregateExonLevelReadCounts), os.path.join( "edger.dir", y)) for x, y in TARGETS_DE ] )
+@follows( aggregateExonLevelReadCounts,mkdir("edger.dir") )
+@files( [ (x, os.path.join( "edger.dir", y)) for x, y in TARGETS_DE ] )
 def runEdgeR( infiles, outfile ):
     '''perform differential expression analysis using edger.'''
 
     to_cluster = True 
-    design_file, geneset_file, bamfiles = infiles[0]
-    infile = infiles[1]
+    design_file, geneset_file, bamfiles, infile = infiles
+
 
     track = P.snip( outfile, ".diff")
 
@@ -1261,7 +1262,7 @@ def diff_expression(): pass
 def plotRNASEQTagData( infiles, outfile ):
     '''perform differential expression analysis using deseq.'''
     
-    design_file, geneset_file, bamfiles = infiles
+    design_file, geneset_file = infiles[0], infiles[1]
 
     infile = os.path.join( "exon_counts.dir", P.snip( geneset_file, ".gtf.gz") + ".exon_counts.tsv.gz" )
     Expression.plotTagStats( infile, design_file, outfile )

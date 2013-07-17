@@ -59,14 +59,14 @@ import sys
 import string
 import re
 import optparse
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Genomics as Genomics
 import CGAT.GFF as GFF
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: fasta2spliced.py 2861 2010-02-23 17:36:32Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: fasta2spliced.py 2861 2010-02-23 17:36:32Z andreas $")
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genome."  )
@@ -100,7 +100,7 @@ if __name__ == "__main__":
         format_id = "seg%05i",
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     genome = IndexedFasta.IndexedFasta( options.genome_file )
 
@@ -255,4 +255,4 @@ if __name__ == "__main__":
     if options.loglevel >= 1:
         options.stdlog.write( "# ninput=%i, noutput=%i\n" % (ninput, noutput) )
 
-    Experiment.Stop()
+    E.Stop()

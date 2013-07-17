@@ -64,7 +64,7 @@ import time
 import os
 import glob
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Blat as Blat
 import CGAT.Genomics as Genomics
@@ -75,7 +75,7 @@ import CGAT.Intervals as Intervals
 
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: gff2psl.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"] )
+    parser = E.OptionParser( version = "%prog version: $Id: gff2psl.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option( "--is-gtf", dest="is_gtf", action="store_true",
                       help="input is gtf."  )
@@ -98,7 +98,7 @@ if __name__ == '__main__':
                          allow_duplicates = False,
                          test = None )
     
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
     if options.genome_file:
         genome_fasta = IndexedFasta.IndexedFasta( options.genome_file )
@@ -166,4 +166,4 @@ if __name__ == '__main__':
     if options.loglevel >= 1:
         options.stdlog.write( "# ninput=%i, noutput=%i, nskipped=%i\n" % (ninput, noutput, nskipped) )
 
-    Experiment.Stop()
+    E.Stop()

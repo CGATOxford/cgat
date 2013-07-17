@@ -69,7 +69,7 @@ Can also create a file peptides2genes.
 Version: $Id: gff2exons.py 2447 2009-01-27 17:12:48Z andreas $
 """ % sys.argv[0]
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.GFF as GFF
 import CGAT.Genomics as Genomics
 import CGAT.IndexedFasta as IndexedFasta
@@ -151,7 +151,7 @@ def processEntries( name, entries, options, fasta, contigs ):
 ##------------------------------------------------------------------------
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: gff2exons.py 2447 2009-01-27 17:12:48Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: gff2exons.py 2447 2009-01-27 17:12:48Z andreas $")
 
     parser.add_option("-p", "--filename-peptides2genes", dest="filename_peptides2genes", type="string",
                       help="filename in which to output peptides2genes information."  )
@@ -173,7 +173,7 @@ if __name__ == "__main__":
         convert_to_cds = False,
         genome_file = None )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if options.genome_file:
         fasta = IndexedFasta.IndexedFasta( options.genome_file ) 
@@ -254,7 +254,7 @@ if __name__ == "__main__":
                                   ntranslated,
                                   len(genes),
                                   len(map_peptides2genes) ) )
-    Experiment.Stop()
+    E.Stop()
 
 
 

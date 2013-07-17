@@ -62,7 +62,7 @@ import string
 import re
 import random
 import optparse
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import MySQLdb
 import _mysql
 
@@ -73,7 +73,7 @@ delete a section from a gbrowser database.
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: gbrowser_delete_features.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: gbrowser_delete_features.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-d", "--dry-run", dest="dry_run", action="store_true",
                       help="dry run, do not execute any commands."  )
@@ -85,7 +85,7 @@ if __name__ == "__main__":
         source_type = None,
     )
 
-    (options, args) = Experiment.Start( parser, add_mysql_options = True )
+    (options, args) = E.Start( parser, add_mysql_options = True )
 
     dbhandle = MySQLdb.Connect( host = options.host,
                                 user = options.user,
@@ -178,7 +178,7 @@ if __name__ == "__main__":
         else:
             dbhandle.cursor().execute(statement)
 
-    Experiment.Stop()
+    E.Stop()
         
     
     

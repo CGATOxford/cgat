@@ -72,10 +72,10 @@ check blast run.
 
 Input: one or more sets of vertices.
 """
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.BlastAlignments as BlastAlignments
 
-parser = optparse.OptionParser( version = "%prog version: $Id: check_blast_run.py 2781 2009-09-10 11:33:14Z andreas $")
+parser = E.OptionParser( version = "%prog version: $Id: check_blast_run.py 2781 2009-09-10 11:33:14Z andreas $")
 
 if __name__ == "__main__":
 
@@ -93,7 +93,7 @@ if __name__ == "__main__":
 	    filename_missed = None,
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if len(options.vertices) == "":
 	    raise "please specify one set of vertices."
@@ -173,5 +173,5 @@ if __name__ == "__main__":
 		    for y in missed_queries[x]:
 			    outfile.write( "%i\t%s\t%s\n" % (x, options.vertices[x], y) )
 		    
-    Experiment.Stop()
+    E.Stop()
 

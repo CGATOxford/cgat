@@ -68,7 +68,7 @@ import random
 """Wrapper for adaptive codon bias program
 """
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 
 import CGAT.WrapperAdaptiveCAI as WrapperAdaptiveCAI
@@ -161,7 +161,7 @@ CODON_PREFERENCES = {
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: analyze_codonbias.py 865 2007-01-15 13:44:43Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: analyze_codonbias.py 865 2007-01-15 13:44:43Z andreas $")
 
     parser.add_option("-o", "--input-file-trace", dest="input_filename_trace", type="string",
                       help="input filename for cai.",
@@ -243,7 +243,7 @@ if __name__ == "__main__":
         get_preferred_codons = None,
         dominant_set = 0.0 )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
     if options.select:
         options.select = options.select.split(",")
 
@@ -271,7 +271,7 @@ if __name__ == "__main__":
         for codon in codons:
             outfile.write( "%s\t%f\n" % ( codon, weights[codon]) )
 
-        Experiment.Stop()
+        E.Stop()
         sys.exit(1)
 
     ###################################################################
@@ -517,5 +517,5 @@ if __name__ == "__main__":
         for codon in codons:
             outfile.write( "%s\t%f\n" % ( codon, usages[codon]) )
 
-    Experiment.Stop()
+    E.Stop()
     

@@ -90,7 +90,7 @@ import optparse
 import types
 import random
 import CGAT.GTF as GTF
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Genomics as Genomics
 import CGAT.SequencePairProperties as SequencePairProperties
@@ -123,7 +123,7 @@ def getMutatedSequence( sequence, divergence ):
 ##------------------------------------------------------------
 def main():
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: gtf2reads.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: gtf2reads.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genome [default=%default]."  )
@@ -188,7 +188,7 @@ def main():
         sample_size = 0,
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
     
     assert options.genome_file, "please supply an indexed genome." 
 
@@ -374,7 +374,7 @@ def main():
     if options.loglevel >= 1:
         options.stdlog.write( "# ninput=%i, noutput=%i, nskipped=%i\n" % (ninput, noutput, nskipped ) )
 
-    Experiment.Stop()
+    E.Stop()
 
 if __name__ == '__main__':
     main()

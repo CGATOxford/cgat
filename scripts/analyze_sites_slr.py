@@ -75,7 +75,7 @@ The input is either:
 """
 
 import CGAT.Genomics as Genomics
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import scipy
 import scipy.stats
 import CGAT.WrapperSlr as WrapperSlr
@@ -293,7 +293,7 @@ def ProcessResult( result, options, mali = None, prefix = None, p_value = None )
 
 if __name__ == "__main__":
     
-    parser = optparse.OptionParser( version = "%prog version: $Id: analyze_sites_slr.py 2781 2009-09-10 11:33:14Z andreas $" )
+    parser = E.OptionParser( version = "%prog version: $Id: analyze_sites_slr.py 2781 2009-09-10 11:33:14Z andreas $" )
 
     parser.add_option("--method", dest="method", type="choice",
                       choices=("summary-slr", "summary-filtered", "over-representation",
@@ -349,7 +349,7 @@ if __name__ == "__main__":
         truncate_sites_list = 0,
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     slr = WrapperSlr.Slr()
 
@@ -559,4 +559,4 @@ if __name__ == "__main__":
             if options.loglevel >= 1:
                 options.stdlog.write("# ntotal=%i, npos=%i\n" % (len(results), len(new_results)))
 
-    Experiment.Stop()
+    E.Stop()

@@ -61,7 +61,7 @@ import string
 import os
 import optparse
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Histogram as Histogram
 import scipy
 
@@ -129,7 +129,7 @@ def PrintValues( outfile, values,  options, prefix = "",titles = None):
 ##---------------------------------------------------------------------------------------------------------        
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: data2stats.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: data2stats.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option("-c", "--columns", dest="columns", type="string",
                       help="columns to take for calculating histograms." )
@@ -183,7 +183,7 @@ if __name__ == '__main__':
     
 
 
-    (options, args) = Experiment.Start( parser, quiet = True )
+    (options, args) = E.Start( parser, quiet = True )
 
     if options.columns not in ( "all", "all-but-first", "variable" ):
         options.columns = map(lambda x: int(x) -1 , options.columns.split(","))
@@ -325,7 +325,7 @@ if __name__ == '__main__':
             PrintValues( outfile, [ [], ], options, None, titles )
 
     if options.loglevel >= 1:
-        Experiment.Stop()
+        E.Stop()
     
 
 

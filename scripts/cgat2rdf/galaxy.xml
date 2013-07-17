@@ -1,0 +1,227 @@
+{% macro getType(p) -%}
+  {% if p.type == "None" or p.choices or p.property_bag['from_loc'] or p.type == "boolean" -%}
+     select
+  {%- elif p.type in ["input", "stdin"] -%}
+     data
+  {%- elif p.type == "string" -%}
+     text
+  {%- else -%}
+     {{ p.type }}
+  {%- endif -%}
+{%- endmacro -%}
+
+{% macro convertValue(value) -%}
+  {% if value == "True" -%}
+    yes
+  {%- else -%}
+    no
+  {%- endif -%}
+{%- endmacro -%}
+
+{#- recursive function to print a parameter and its depenedent parameters -#}
+{% macro printParameter(p) -%}
+  {%- if p.max_occurrence == '?' or p.max_occurrence|int > 1 -%}
+    <repeat name="{{p.ns_name}}_repeat" title="{{p.label|e}} Repeat"{{' min="' + p.min_occurrence + '"' if p.min_occurrence }}{{' max="' + p.max_occurrence + '"' if p.max_occurrence and p.max_occurrence != '?' }}>
+      {{ printParameterCore(p) }}
+    </repeat>
+  {%- elif p.name in dependencyMap %}
+    <conditional name="{{p.ns_name}}_condition">
+      {{ printParameterCore(p) }}
+      {%- for group in dependencyMap[p.name] | groupby('condition') %}
+      <when value="{{ group.grouper }}">
+        {% for dependency in group.list -%}
+          {{ printParameter(dependency.parameter) }}
+        {%- endfor %}
+      </when>
+      {%- endfor %}
+    </conditional>
+  {%- else -%}
+    {{ printParameterCore(p) }}
+  {%- endif -%}
+{%- endmacro -%}
+
+{#- Print a single parameter based on it's type. Boolean type is converted into select type. None and empty values are not printed-#}
+{% macro printParameterCore(p) -%}
+  {%- set type = getType(p) -%}
+  <param name="{{ p.ns_name }}" type="{{ type }}" label="{{ p.label|e }}" help="{{ p.description|e }}"
+  {%- if p.min_occurrence|int == 0  and p.max_occurrence|int < 2 %} optional="true" {%- endif -%}
+  {%- if "multiple" in p and p.multiple%} multiple="true" {%- endif -%}
+  {%- if type == "select" %}>
+    {{ printSelectOptions(p) }}
+    </param>
+  {%- elif type == "data" %} format="{{ p.format }}" />
+  {#- added by AH: do not output empty values -#}  
+  {%- elif p.value == None or p.value == "" or p.value == [] %} value="" />
+  {%- else %} value="{{ p.value }}" />
+  {%- endif -%}
+{%- endmacro -%}
+
+{#- helper function to print select type parameter -#}
+{% macro printSelectOptions(p) -%}
+  {% if p.property_bag -%}
+   {% if p.property_bag['from_loc'] -%}
+    <options from_data_table="{{p.property_bag.get( 'loc_id', data.name)}}_indexes" />
+    {%- endif -%}
+  {%- else -%}
+    {#- added by AH: for boolean choices insert the flag instead -#}
+    {%- if p.type == "boolean" -%}
+       <option value="{{p.arg_long}}" selected="true">Check</option>
+       <option value="" selected="true">Default</option>
+    {%- else -%}
+       {%- set value = p.choices if p.choices else ['False', 'True'] -%}
+       {%- for v in value %}
+          <option value="{{ v }}"{{' selected="true"' if p.value == v}}>{{ v }}</option>
+       {%- endfor -%}
+     {%- endif -%}
+  {%- endif -%}
+{%- endmacro -%}
+
+{#- helper function to print variable name. -#}
+{% macro printVariableName(prefix, name) -%}
+    {%- if prefix -%}
+        {{prefix}}.{{name}}
+    {%- else -%}
+        {{name}}
+    {%- endif -%}
+{%- endmacro -%}
+
+{% macro printOption(p, prefix, printValue) -%}
+  {%- if p.max_occurrence == '?' or p.max_occurrence|int > 1 -%}
+    #for $i in ${{printVariableName(prefix, p.ns_name)}}_repeat
+        {{p.arg}} "${i.{{p.ns_name}}}"
+      #end for
+  {%- elif p.name in dependencyMap -%}
+    {%- set prefix = printVariableName(prefix, p.ns_name + '_condition') -%}
+      {{ printOptionCore(p, prefix, printValue) }}
+    {%- for group in dependencyMap[p.name] | groupby('condition') %}
+      {%- set control = 'if' if loop.first else 'elif' %}
+      #{{control}} str(${{printVariableName(prefix, p.ns_name)}}) == "{{group.grouper}}":
+      {%- for dependency in group.list %}
+        {{ printOptionCore(dependency.parameter, prefix, dependency.parameter.display != 'show') }}
+      {%- endfor %}
+      {% if loop.last %}#end if {% endif -%}
+    {%- endfor -%}
+  {%- else -%}
+    {{ printOptionCore(p, prefix, printValue) }}
+  {%- endif %}
+{%- endmacro -%}
+
+{% macro printOptionCore(p, prefix, printValue) -%}
+  {%- set arg = p.arg or p.arg_long -%}
+  {%- set c = "=" if p.arg_long and not p.arg else " " -%}
+  {%- if p.type == "None" and not printValue -%}
+    {%- set truevalue = p.value if p.value else "True" -%}
+    #if str(${{printVariableName(prefix, p.ns_name)}}) == "{{ truevalue }}" then "{{arg}}" else "" #
+  {%- elif p.type == "boolean" and not printValue -%}
+    {#- added by AH: for boolean values insert a variable -#}
+    ${{printVariableName(prefix, p.ns_name)}}
+  {%- elif p.property_bag['from_loc'] == 'path' -%}
+    {{arg}}{{c}}"${filter(lambda x: str(x[{{p.property_bag.get('loc_id_filter', 0)}}]) == str(${{p.ns_name}}), $__app__.tool_data_tables['{{p.property_bag.get( 'loc_id', data.name )}}_indexes'].get_fields())[0][-1]}"
+  {%- elif p.property_bag['from_loc'] == 'dbkey' -%}
+    {{arg}}{{c}}"${filter(lambda x: str(x[1]) == str(${{p.property_bag['loc_id_filter']}}), $__app__.tool_data_tables['{{p.property_bag.get( 'loc_id', data.name)}}_indexes'].get_fields())[0][1]}"
+  {%- elif not printValue -%}
+    {%- if p.min_occurrence|int == 0 and (p.value == None or p.value == "") -%}
+      {#- added by AH: for optional arguments - do not print out None or "" values -#}
+      #if ${{printVariableName(prefix, p.ns_name)}}
+        {{arg}}{{c}}${{printVariableName(prefix, p.ns_name)}}
+      #end if
+    {%- else -%}
+      {{arg}}{{c}}"${{printVariableName(prefix, p.ns_name)}}"
+    {%- endif -%}
+  {%- elif p.value -%}
+    {#- this is for hidden parameters: print out an option using its default value. -#}
+	{%- if p.type == 'select' -%}
+	  {{arg}}{{c}}{{p.value[0]}}
+	{%- elif p.type in ['integer', 'float'] -%}
+	  {{arg}}{{c}}{{p.value}}
+	{%- else -%}
+	  {{arg}}{{c}}"{{p.value}}"
+	{%- endif -%}
+  {%- else -%}
+    {{arg}}
+  {%- endif -%}
+{%- endmacro -%}
+
+<tool id="{{data.name}}" name="{{data.name}}" version="{{data.version}}">
+  <description>{{ data.description }}</description>
+  <parallelism method="basic"></parallelism>
+  <command{{' interpreter="' + data['interpreter'] + '"' if data['interpreter'] != '(binary)'}}> 
+    {{data.binary}} --verbose=0
+    {#- logging to separate file -#}
+    {#- print out advanced menu options -#}
+    {%- if showAdvanceMenu %}
+      #if str($advanced_condition.advanced) == "True":
+      {%- for parameter in displayMap['show in advanced'] %}
+        {{ printOption(parameter, 'advanced_condition', False) }}
+      {%- endfor %}
+      #else:
+      {%- for parameter in displayMap['show in advanced'] %}
+        {{ printOption(parameter, '', True) }}
+      {%- endfor %}
+      #end if
+    {%- endif %}
+    {%- for parameter in displayMap['normal'] %}
+      {{ printOption(parameter, '',  parameter.display != 'show') }}
+    {%- endfor %}
+    {%- for parameter in displayMap['hidden'] %}
+      {{ printOption(parameter, '',  parameter.display != 'show') }}
+    {%- endfor %}
+  </command>
+  <requirements>
+    <requirement type="package">{{data.binary}}</requirement>
+  </requirements>
+  <inputs>
+  {%- for i in displayMap['show'] if i.type not in ['stdout', 'output', 'stderr'] %}
+    {{ printParameter(i) }}
+  {%- endfor -%}
+  {%- if showAdvanceMenu %}
+    <conditional name="advanced_condition">
+  	  <param name="advanced" type="select" label="Advanced options for {{data.name}}">
+        <option value="False" selected='selected'>False</option>
+        <option value="True">True</option>
+  	  </param>
+  	  <when value="False" />
+  	  <when value="True">
+      {%- for i in displayMap['show in advanced'] if i.type not in ['stdout', 'output', 'stderr'] %}
+        {{ printParameter(i) }}
+      {%- endfor %}
+  	  </when>
+  	</conditional>
+  {%- endif %}
+  </inputs>
+  <outputs>
+  {%- for o in outputs %}
+    <data name="{{o.ns_name}}" label="${tool.name}{{' on ${on_string}' if inputs}}: {{o.label}}" format="{{o.format or 'txt'}}" >
+    {%- if o.dependencies -%}
+      {% for dep_group in o.dependencies | groupby("dependent_scope") -%}
+        {%- if dep_group.grouper == 'format' %}
+        <change_format>
+        {%- for dep in dep_group.list %}
+          <when input="{{dep.depending_parameter}}" value="{{dep.depending_condition}}" format="{{dep.dependent_effect}}" />
+        {% endfor -%}
+        </change_format>
+        {% endif -%}
+      {%- endfor -%}
+    {% endif -%}
+    </data>
+  {% endfor %}
+  </outputs>
+  <help>
+{{ data.help|e }}
+
+{% if data.help %}------{% endif %}
+
+**Generated By**:
+
+LUMC Interface Generator {{version}}
+
+{{time}}
+
+**Based On**:
+{% if data['meta'] %}
+{{data['meta']['label']}}
+
+{{data['meta']['time']}}
+{% endif %}
+  </help>
+</tool>

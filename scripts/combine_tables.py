@@ -1,5 +1,5 @@
 ################################################################################
- #
+#
 #   MRC FGU Computational Genomics Group
 #
 #   $Id$
@@ -396,10 +396,13 @@ def joinTables( outfile, options, args ):
 ##---------------------------------------------------------------------------------------------------------        
 def main( argv = sys.argv ):
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: combine_tables.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: combine_tables.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-t", "--no-titles", dest="titles", action="store_false",
                       help="no titles in input."  )
+
+    parser.add_option( "--ignore-titles", dest = "ignore_titles", action="store_true",
+                       help="" )
 
     parser.add_option("-i", "--skip-titles", dest="skip_titles", action="store_true",
                       help="skip output of titles."  )

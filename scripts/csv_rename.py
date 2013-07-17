@@ -64,12 +64,12 @@ import optparse
 import math
 import tempfile
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import csv
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: csv_rename.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: csv_rename.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option( "-r", "--remove", dest="remove", action="store_true",
                        help="remove specified columns, keep all others." )
@@ -84,7 +84,7 @@ if __name__ == "__main__":
         filename_fields = None,
         )
 
-    (options, args) = Experiment.Start( parser,
+    (options, args) = E.Start( parser,
                                         add_csv_options  = True )
     mapper = {}
     for x in args:
@@ -95,7 +95,7 @@ if __name__ == "__main__":
         line = sys.stdin.readline()
         
         if not line:
-            Experiment.Stop()
+            E.Stop()
             sys.exit(0)
         
         if line[0] == "#": 
@@ -124,4 +124,4 @@ if __name__ == "__main__":
         noutput = ninput
         options.stdout.write( "# ninput=%i, noutput=%i, nreplaced=%i, nlines=%i\n" % (ninput,noutput,nreplaced,nlines) )
 
-    Experiment.Stop()
+    E.Stop()

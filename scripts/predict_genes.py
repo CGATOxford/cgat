@@ -123,7 +123,7 @@ HEADER="""# QUERY:        1  query id
 SHORT_HEADER="""# QUERY\tSBJCT\tSCORE\tQFROM\tQTO\tSBJCT\tSFROM\tSTO\tSALI\tQLEN\tCQUERY\tNGAPS\tNFR\tNINTRON\tNPHASE0\tNPHAS1\tNPHASE2\tNSTOP\tPIDE\tPSIM\tPEP\tSGFROM\tSGTO\tGALI\tNERROR"""
 
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.IndexedFasta as IndexedFasta
 import alignlib
@@ -204,7 +204,7 @@ class MaskerSeg (Masker):
     mOptions="12 2.2 2.5 -x"
 
 
-class Predictor(Experiment.Experiment):
+class Predictor(E.Experiment):
 
     mLogLevel = 0
     mKeepTemp = False
@@ -340,7 +340,7 @@ class PredictorExonerate ( Predictor ):
 
 
 ##--------------------------------------------------------------------------        
-class TranscriptPredictor(Experiment.Experiment):
+class TranscriptPredictor(E.Experiment):
 
     mSensitivityLevelStart = 0
     
@@ -1304,7 +1304,7 @@ def EvaluatePrediction( prediction, query_exons, query_sequence ):
 ##-------------------------------------------------------------------------------
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: predict_genes.py 2462 2009-01-28 10:18:22Z andreas $", usage = globals()["__doc__"] )
+    parser = E.OptionParser( version = "%prog version: $Id: predict_genes.py 2462 2009-01-28 10:18:22Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option("-b", "--query-border",dest="query_border", type="int")
     parser.add_option("-i", "--bracket-increment", dest="bracket_increments", type="string" )
@@ -1355,7 +1355,7 @@ if __name__ == "__main__":
         keep_temp = False,
         )
 
-    (global_options, args) = Experiment.Start( parser )
+    (global_options, args) = E.Start( parser )
     
     if global_options.mask_probe:
         global_options.mask_probe = global_options.mask_probe.split( "," )
@@ -1395,8 +1395,8 @@ if __name__ == "__main__":
         
     exit_code = 0
 
-    print Experiment.GetHeader()
-    print Experiment.GetParams()
+    print E.GetHeader()
+    print E.GetParams()
     predictor.DumpParameters()
 
     if global_options.filename_exons:
@@ -1779,7 +1779,7 @@ if __name__ == "__main__":
                 os.remove( query_filename )
                 os.remove( sbjct_filename )            
             
-    Experiment.Stop()
+    E.Stop()
     sys.exit(exit_code)
 
 

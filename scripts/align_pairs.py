@@ -61,7 +61,7 @@ import re
 import getopt
 import tempfile
 import optparse
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.AlignedPairs as AlignedPairs
 import CGAT.Blat as Blat
 import CGAT.FastaIterator as FastaIterator
@@ -132,7 +132,7 @@ def getFile( section, options ):
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: align_pairs.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"] )
+    parser = E.OptionParser( version = "%prog version: $Id: align_pairs.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option("--skip-statistics", dest="skip_stats", action="store_true",
                       help="do not compute alignment statistics [%default]."  )
@@ -175,7 +175,7 @@ if __name__ == '__main__':
         anchor_alignment = 0,
         options_blastz = "C=2 B=1 T=0 W=6 K=2200" )
 
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
     if len(options.methods) == 0:
         print USAGE

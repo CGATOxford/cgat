@@ -85,13 +85,13 @@ optional input:
 
 """
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 
 import numpy
 import scipy
 import scipy.stats
 
-parser = optparse.OptionParser( version = "%prog version: $Id: analyze_clustering.py 2781 2009-09-10 11:33:14Z andreas $")
+parser = E.OptionParser( version = "%prog version: $Id: analyze_clustering.py 2781 2009-09-10 11:33:14Z andreas $")
 
 if __name__ == "__main__":
 
@@ -143,7 +143,7 @@ if __name__ == "__main__":
         notitles = False,
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     options.columns = map( lambda x: int(x)-1, options.columns.split(","))
 
@@ -351,4 +351,4 @@ if __name__ == "__main__":
             outfile.close()
 
     options.stdlog.write( "# ninput=%i, ntaken=%i, nskipped=%i, nmissed=%i\n" % (ninput, ntaken, nskipped, nmissed) )
-    Experiment.Stop()
+    E.Stop()

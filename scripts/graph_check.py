@@ -78,7 +78,7 @@ python graph_check.py < graph.in
 Check graph for completeness.
 
 """
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 
 def writeSet( outfile, outset ):
@@ -118,7 +118,7 @@ def writeInfo( outfile, vertices, nlinks, nlines, nerrors, ncomments, is_sorted 
     
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: graph_check.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: graph_check.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option("--filename-missing", dest="filename_missing", type="string",
                       help="missing entries.")
@@ -148,7 +148,7 @@ if __name__ == "__main__":
         sort_order = "alphanumeric",
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if options.loglevel >= 1:
         options.stdlog.write("# output goes to:\n" )
@@ -235,4 +235,4 @@ if __name__ == "__main__":
     if missed_self:        
         writeSet( open( options.filename_output_pattern % "missed_self", "w" ), missed_self )
 
-    Experiment.Stop()
+    E.Stop()

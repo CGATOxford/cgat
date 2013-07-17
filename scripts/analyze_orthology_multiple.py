@@ -76,7 +76,7 @@ analyse orthology sets.
 
 """
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.TreeTools as TreeTools
 import CGAT.Tree as Tree
 import CGAT.SVGTree as SVGTree
@@ -2801,7 +2801,7 @@ def processGeneTrees( gene_nexus, options ):
 ##------------------------------------------------------------------------------------------
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: analyze_orthology_multiple.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: analyze_orthology_multiple.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option( "--species-regex", dest="species_regex", type="string" ,
                        help="regular expression to extract species from identifier.")
@@ -3021,11 +3021,11 @@ local-dups: print locally duplicated genes in each cluster. Local duplications a
         svg_add_legend = True,
         )
     
-    (options, args) = Experiment.Start( parser, add_csv_options = True )
+    (options, args) = E.Start( parser, add_csv_options = True )
 
     if options.analyze_resolution_data:
         analyzeResolutionData( sys.stdin, options )
-        Experiment.Stop()
+        E.Stop()
         sys.exit(0)
 
     if options.outgroup_species:
@@ -3176,7 +3176,7 @@ local-dups: print locally duplicated genes in each cluster. Local duplications a
                                 extract_species,
                                 gene_nexus,
                                 map_id2location )
-        Experiment.Stop()
+        E.Stop()
         sys.exit(0)
 
     #########################################################################
@@ -3607,5 +3607,5 @@ local-dups: print locally duplicated genes in each cluster. Local duplications a
         if options.print_species_svg:
             printSVGSpeciesTrees( species_nexus.trees, total_counts_nodes, options )
                 
-    Experiment.Stop()
+    E.Stop()
 

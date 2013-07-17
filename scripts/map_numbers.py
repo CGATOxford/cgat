@@ -62,11 +62,11 @@ import optparse
 import time
 import random
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 
 if __name__  == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: map_numbers.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: map_numbers.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option( "-m", "--method", dest="method", type="string" ,
                        help="method to use.")
@@ -75,7 +75,7 @@ if __name__  == "__main__":
         method = "random_rgb",
         )
     
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
     numbers = map( lambda x: int(x[:-1].split("\t")[0]),
                    filter( lambda x: x[0] != "#", sys.stdin.readlines()) )
@@ -93,5 +93,5 @@ if __name__  == "__main__":
     for x, y in map_number2output.items():
         options.stdout.write( "%i\t%s\n" % (x, y) )
 
-    Experiment.Stop()
+    E.Stop()
     

@@ -77,7 +77,7 @@ counts: compute residue counts (percent G+C, ...)
 match:  compute match statistics (pid, coverage)
 """
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Blat as Blat
 import CGAT.SequenceProperties as SequenceProperties
 import CGAT.SequencePairProperties as SequencePairProperties
@@ -125,7 +125,7 @@ class SbjctsCounter( SequenceProperties.SequencePropertiesNA ):
     
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: psl2table.py 2891 2010-04-07 08:59:18Z andreas $",
+    parser = E.OptionParser( version = "%prog version: $Id: psl2table.py 2891 2010-04-07 08:59:18Z andreas $",
                                     usage = globals()["__doc__"])
 
     parser.add_option( "--mask-lowercase", dest="mask_lowercase", action="store_true",
@@ -150,7 +150,7 @@ if __name__ == "__main__":
         with_match = True,
         )
     
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     counters_plain = []
     counters = []
@@ -264,4 +264,4 @@ if __name__ == "__main__":
     if options.loglevel >= 1:
         options.stdlog.write( "# ninput=%i, noutput=%i, nskipped=%i\n" % (ninput, noutput, nskipped) )
 
-    Experiment.Stop()
+    E.Stop()

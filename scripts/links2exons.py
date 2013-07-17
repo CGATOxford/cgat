@@ -78,7 +78,7 @@ Options:
 -e, --expand                    write in nucleic acid coordinates (default: peptide coordinates)
 """ % sys.argv[0]
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.Exons as Exons
 import alignlib
@@ -136,8 +136,8 @@ if __name__ == '__main__':
         print USAGE, "no arguments required."
         sys.exit(2)
 
-    print Experiment.GetHeader()
-    print Experiment.GetParams()
+    print E.GetHeader()
+    print E.GetParams()
     sys.stdout.flush()
 
     if param_loglevel >= 1:
@@ -215,4 +215,4 @@ if __name__ == '__main__':
     if param_loglevel >= 1:            
         print "# ninput=%i, noutput=%i, nskipped=%i" % (ninput, npairs, nskipped)
     
-    print Experiment.GetFooter()
+    print E.GetFooter()

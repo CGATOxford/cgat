@@ -74,11 +74,11 @@ import math
 '#' at start of line is a comment
 """
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import numpy
 import scipy
 
-parser = optparse.OptionParser( version = "%prog version: $Id: modify_table.py 2782 2009-09-10 11:40:29Z andreas $")
+parser = E.OptionParser( version = "%prog version: $Id: modify_table.py 2782 2009-09-10 11:40:29Z andreas $")
 
 ##---------------------------------------------------------------------------------------------------------        
 if __name__ == '__main__':
@@ -105,12 +105,12 @@ if __name__ == '__main__':
         format="%5.2f",
         methods=[])
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
     
     options.columns = map( lambda x: int(x)-1, options.columns.split(","))
 
-    print Experiment.GetHeader()
-    print Experiment.GetParams()
+    print E.GetHeader()
+    print E.GetParams()
 
     vals = []
     
@@ -163,7 +163,7 @@ if __name__ == '__main__':
     for d in zip( *new_columns ):
         print string.join( map(str, d), "\t")
     
-    Experiment.Stop()
+    E.Stop()
 
 
 

@@ -74,13 +74,13 @@ given:
 
 """
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 
 import numpy
 import scipy
 import scipy.stats
 
-parser = optparse.OptionParser( version = "%prog version: $Id: analyze_cluster_expansion.py 2781 2009-09-10 11:33:14Z andreas $")
+parser = E.OptionParser( version = "%prog version: $Id: analyze_cluster_expansion.py 2781 2009-09-10 11:33:14Z andreas $")
 
 
 if __name__ == "__main__":
@@ -104,7 +104,7 @@ if __name__ == "__main__":
         species = 'pdmel_vs_dmel,pdsim_vs_dmel2,pdyak_vs_dmel4,pdere_vs_dmel3,pdana_vs_dmel3,pdpse_vs_dmel3,pdvir_vs_dmel3,pdmoj_vs_dmel3,pdgrim_vs_dmel2',
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     options.species = options.species.split(",")
     options.status  = options.status.split(",") + ["all"]    
@@ -186,4 +186,4 @@ if __name__ == "__main__":
 
     
     print "# ncomponents=%i" % (len(map_component2id))
-    Experiment.Stop()
+    E.Stop()

@@ -66,7 +66,7 @@ import optparse
 import math
 import tempfile
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import csv
 import CGAT.CSV as CSV
 
@@ -74,7 +74,7 @@ import openpyxl
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: csv2xls.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: csv2xls.py 2782 2009-09-10 11:40:29Z andreas $")
     
     parser.add_option( "-o", "--outfile=", dest="output_filename", type="string",
                        help="write to output filename." )
@@ -83,7 +83,7 @@ if __name__ == "__main__":
         output_filename=None,
         )
 
-    (options, args) = Experiment.Start( parser, add_csv_options  = True)
+    (options, args) = E.Start( parser, add_csv_options  = True)
 
     if not options.output_filename:
         raise ValueError("please specify an output filename.")
@@ -127,6 +127,6 @@ if __name__ == "__main__":
     
     w.save(options.output_filename)
         
-    Experiment.Stop()
+    E.Stop()
 
 

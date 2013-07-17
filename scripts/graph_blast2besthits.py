@@ -89,7 +89,7 @@ param_loglevel = 1
 param_method = "evalue"
 param_filename_self_scores = None
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.BlastAlignments as BlastAlignments
 import math
 
@@ -185,8 +185,8 @@ if __name__ == "__main__":
         elif o in ("-i", "--pide-factor"):
             param_pide_threshold_factor = float(a)
             
-    print Experiment.GetHeader()
-    print Experiment.GetParams()
+    print E.GetHeader()
+    print E.GetParams()
 
     ninput, noutput, nskipped, nfailed = 0, 0, 0, 0
 
@@ -230,7 +230,7 @@ if __name__ == "__main__":
     
     print "# ninput=%i, noutput=%i" % ( ninput, noutput )
     
-    print Experiment.GetFooter()
+    print E.GetFooter()
 
     if noutput == 0:
         if ninput == 0:

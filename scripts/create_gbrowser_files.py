@@ -62,7 +62,7 @@ import string
 import re
 import random
 import optparse
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import pgdb
 
 """python create_gbrowser_files.py.
@@ -751,7 +751,7 @@ WORM_DATA = (
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: create_gbrowser_files.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: create_gbrowser_files.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-t", "--target-dir", dest="target", type="string",
                       help="target directory.", metavar = "FILE"  )
@@ -781,7 +781,7 @@ if __name__ == "__main__":
         url_gene = "http://genserv.anat.ox.ac.uk%s/clades/%s/queryForGene?name=",
     )
 
-    (options, args) = Experiment.Start( parser, add_psql_options = True)
+    (options, args) = E.Start( parser, add_psql_options = True)
 
     if options.contrib: options.contrib = options.contrib.lower().split(",")
     
@@ -880,4 +880,4 @@ if __name__ == "__main__":
                     
         outfile.close()
 
-    Experiment.Stop()
+    E.Stop()

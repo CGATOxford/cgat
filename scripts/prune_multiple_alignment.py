@@ -92,7 +92,7 @@ Lower case characters are interpreted as unaligned characters, unless
 the option --ignore-case is given.
 """ % sys.argv[0]
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.Mali as Mali
 import CGAT.Exons as Exons
@@ -482,7 +482,7 @@ def checkCodon( codon, options ):
 if __name__ == '__main__':
 
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: prune_multiple_alignment.py 2654 2009-05-06 13:51:22Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: prune_multiple_alignment.py 2654 2009-05-06 13:51:22Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-m", "--master", dest="master", type="string",
                       help="master sequence."  )
@@ -551,7 +551,7 @@ if __name__ == '__main__':
         mask_master = False,
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if options.target == "paml":
         options.mask_stops = True
@@ -848,6 +848,6 @@ if __name__ == '__main__':
             outfile.write( ">%s\n%s\n" % (id, Genomics.TranslateDNA2Protein(mali[id])))
         outfile.close()
 
-    Experiment.Stop()
+    E.Stop()
     
     

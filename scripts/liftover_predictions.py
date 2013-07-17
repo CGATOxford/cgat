@@ -81,12 +81,12 @@ Options:
 
 """ % sys.argv[0]
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.PredictionParser as PredictionParser
 
 from predict_genes import PredictorExonerate
 
-parser = optparse.OptionParser( version = "%prog version: $Id: liftover_predictions.py 2781 2009-09-10 11:33:14Z andreas $")
+parser = E.OptionParser( version = "%prog version: $Id: liftover_predictions.py 2781 2009-09-10 11:33:14Z andreas $")
 
 #####################################################################
 def ReadOffsets( infile ):
@@ -253,7 +253,7 @@ if __name__ == "__main__":
         skip_errors = None
         )
 
-    (options, args) = Experiment.Start( parser, add_pipe_options = True)
+    (options, args) = E.Start( parser, add_pipe_options = True)
 
     predictor = PredictorExonerate()
 
@@ -640,7 +640,7 @@ if __name__ == "__main__":
     options.stdlog.write("# peptides: input=%i, found=%i, missed=%i, found_genes=%i, missed_genes=%i\n" % (\
         len(peptides), len(found_transcripts), nmissed_transcripts, len(found_genes), nmissed_genes) )
     
-    Experiment.Stop()
+    E.Stop()
            
            
             

@@ -88,7 +88,7 @@ param_connection = "db:andreas"
 
 import pgdb
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.PredictionParser as PredictionParser
 
 def ProcessChunk( chunk, prediction_id, lcontig  ):
@@ -175,8 +175,8 @@ if __name__ == "__main__":
         elif o in ("-m", "--file-map"):
             param_filename_map = a
 
-    print Experiment.GetHeader()
-    print Experiment.GetParams()
+    print E.GetHeader()
+    print E.GetParams()
 
     dbhandle = pgdb.connect( param_connection )
 

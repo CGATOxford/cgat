@@ -21,13 +21,17 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-IndexedFasta.py - 
-======================================================
+IndexedFasta.py - fast random access in fasta files
+===================================================
 
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
 :Tags: Python
+
+Usage
+-----
+
 
 Code
 ----
@@ -35,20 +39,6 @@ Code
 '''
 import os, sys, array, string, re, types, optparse, time, struct, math, tarfile, logging
 import platform, anydbm
-
-USAGE="""python %s [options] name [ files ]
-
-Index fasta formatted files to create a database called "name".
-
-Example:
-
-  python %s oa_ornAna1_softmasked /net/cpp-mirror/ucsc/ornAna1/bigZips/ornAna1.fa.gz > oa_ornAna1_softmasked.log
-
-""" % (sys.argv[0], sys.argv[0] )
-
-# import psyco
-# psyco.full()
-
 import math
 import random
 import zlib
@@ -56,6 +46,7 @@ import gzip
 import cStringIO
 import Experiment as E
 from AString import AString
+import pysam
 
 ##------------------------------------------------------------
 class Uncompressor:
@@ -510,7 +501,7 @@ NAME_MAP={
 
 PREFERENCES=('uncompressed', 'lzo', 'dictzip', 'zlib', 'gzip', 'bzip2', 'debug')
 
-class IndexedFasta:
+class CGATIndexedFasta:
     """an indexed fasta file."""
 
     def __init__( self, dbname ):
@@ -537,18 +528,18 @@ class IndexedFasta:
 
     def __len__(self):
         """return the number of sequences in fasta file."""
-        if not self.mIsLoaded: self.__loadIndex()
+        if not self.mIsLoaded: self._loadIndex()
         return len(self.mIndex)
 
     def __contains__(self, contig):
-        if not self.mIsLoaded: self.__loadIndex()
+        if not self.mIsLoaded: self._loadIndex()
         return contig in self.mIndex or contig in self.mSynonyms
 
     def __getitem__(self, key ):
         """return full length sequence."""
         return self.getSequence( key, "+", 0, 0, as_array = True )
         
-    def __loadIndex( self, compress=False ):
+    def _loadIndex( self, compress=False ):
         """load complete index into memory.
 
         if compress is set to true, the index will not be loaded,
@@ -585,7 +576,7 @@ class IndexedFasta:
             return
         else:
             self.mIndex = {}
-            
+
         for line in open(self.mNameIndex, "r"):
 
             data = line[:-1].split("\t")
@@ -605,9 +596,16 @@ class IndexedFasta:
                     (identifier, pos_id, pos_seq, lsequence) = data[0], int(data[1]), int(data[2]), int(data[-1])
                     self.mIndex[identifier] = struct.pack( "QQi", pos_id, pos_seq, lsequence)
                     
+
+        self.mIsLoaded = True
+
+    def _addSynonyms( self ):
+        '''add synonyms to indices.
+        '''
+
         # Treat common cases of naming incompatibilites like chr1 = 1. 
         # Truncate or add known prefixes
-        def __addSynonyms( src, target ):
+        def _add( src, target ):
             for p in ("chr", "contig", "scaffold", "Chr" ):
                 if src.startswith(p):
                     k = src[len(p):]
@@ -632,12 +630,10 @@ class IndexedFasta:
         elif "chrM" not in self.mSynonyms and "chrMT" in self.mSynonyms:
             self.mSynonyms[ "chrM" ] = "chrMT"
 
-        for key, val in k: __addSynonyms( key, val )
+        for key, val in k: _add( key, val )
 
         # add pointers to self
-        for key in self.mIndex.keys(): __addSynonyms( key, key )
-
-        self.mIsLoaded = True
+        for key in self.mIndex.keys(): _add( key, key )
 
     def setTranslator(self, translator = None ):
         """set the :class:`Translator` to use."""
@@ -649,7 +645,7 @@ class IndexedFasta:
 
     def getToken( self, contig ):
         """check if token is in index."""
-        if not self.mIsLoaded: self.__loadIndex()
+        if not self.mIsLoaded: self._loadIndex()
 
         if contig in self.mSynonyms:
             contig = self.mSynonyms[contig]
@@ -661,28 +657,28 @@ class IndexedFasta:
 
     def getLength( self, contig ):
         """return sequence length for sbjct_token."""
-        if not self.mIsLoaded: self.__loadIndex()
+        if not self.mIsLoaded: self._loadIndex()
         return struct.unpack( "QQi", self.mIndex[self.getToken(contig)] )[2]
 
     def getLengths( self ):
         """return all sequence lengths."""
-        if not self.mIsLoaded: self.__loadIndex()
+        if not self.mIsLoaded: self._loadIndex()
         return [ struct.unpack( "QQi", x)[2] for x in self.mIndex.values() ]
 
     def compressIndex( self ):
         """compress index.
         Creates a database interface to an index.
         """
-        self.__loadIndex( compress=True )
+        self._loadIndex( compress=True )
 
     def getContigs( self ):
         """return a list of contigs (no synonyms)."""
-        if not self.mIsLoaded: self.__loadIndex()
+        if not self.mIsLoaded: self._loadIndex()
         return self.mIndex.keys()
 
     def getContigSizes( self, with_synonyms = True ):
         """return hash with contig sizes including synonyms."""
-        if not self.mIsLoaded: self.__loadIndex()
+        if not self.mIsLoaded: self._loadIndex()
 
         contig_sizes = {}
         for key, val in self.mIndex.items():
@@ -794,7 +790,7 @@ class IndexedFasta:
         in a fragment. Thus, the fragment can be smaller than
         size due to contig boundaries.
         """
-        if not self.mIsLoaded: self.__loadIndex()
+        if not self.mIsLoaded: self._loadIndex()
 
         token = random.choice( self.mIndex.keys() )        
         strand = random.choice( ("+", "-") )
@@ -814,13 +810,108 @@ class IndexedFasta:
             
         return token, strand, start, end
 
+
+class PysamIndexedFasta( CGATIndexedFasta ):
+    '''interface a  pysam/samtools indexed fasta file with the
+    CGATIndexedFasta API.'''
+    
+    def __init__(self, dbname ):
+
+        # open database file and truncate 
+        if os.path.exists( dbname ) and dbname.endswith( ".fa" ):
+            self.mDatabaseFile = pysam.Fastafile( dbname )
+            dbname = dbname[:-len(".fa")]
+        elif os.path.exists( dbname ) and dbname.endswith( ".fasta" ):
+            self.mDatabaseFile = pysam.Fastafile( dbname )
+            dbname = dbname[:-len(".fasta")]
+        elif os.path.exists( dbname + ".fa" ):
+            self.mDatabaseFile = pysam.Fastafile( dbname + ".fa" )
+        elif os.path.exists( dbname + ".fasta" ):
+            self.mDatabaseFile = pysam.Fastafile( dbname + ".fasta" )
+
+        if os.path.exists( dbname + ".fai" ):
+            self.mNameIndex = dbname + ".fai"
+        elif os.path.exists( dbname + ".fa.fai" ):
+            self.mNameIndex = dbname + ".fa.fai"
+        elif os.path.exists( dbname + ".fasta.fai" ):
+            self.mNameIndex = dbname + ".fasta.fai"
+        else:
+            raise ValueError( "PysamIndexedFasta requires pre-built index")
+        
+        self.mMethod = "faidx"
+        self.mDbname = dbname
+        self.mNoSeek = False
+        self.mIsLoaded = False
+        self.mSynonyms = {} 
+        self.mConverter = None
+        self.mIndex = {}
+        self.mTranslator = None
+
+
+    def _loadIndex( self, compress = False ):
+        '''load index into memory.'''
+
+        with open( self.mNameIndex, "r") as infile:
+
+            for line in infile:
+                contig, lsequence, offset, line_blen, line_len = line[:-1].split()
+                self.mIndex[contig] = struct.pack( "QQi", int(offset), int(offset), int(lsequence))
+                
+        self.mIsLoaded = True
+        self._addSynonyms()
+
+    def getSequence( self,
+                     contig, 
+                     strand = "+", 
+                     start = 0, 
+                     end = 0,
+                     converter = None,
+                     as_array = False):
+
+        contig = self.getToken( contig )
+        
+        data = self.mIndex[contig]
+        pos_id, dummy, lsequence = struct.unpack( "QQi", data )
+
+        # convert to 0-based positive strand coordinates
+        if converter:
+            first_pos, last_pos = converter( start, end,
+                                             str(strand) in ("+", "1"),
+                                             lsequence )
+        elif self.mConverter:
+            first_pos, last_pos = self.mConverter( start, end,
+                                                   str(strand) in ("+", "1"),
+                                                   lsequence )
+        else:
+            first_pos, last_pos = start, end
+            if str(strand) in ("-", "0", "-1"):
+                first_pos, last_pos = lsequence - last_pos, lsequence - first_pos
+
+        sequence = self.mDatabaseFile.fetch( contig, first_pos, last_pos )
+        
+        if str(strand) in ("-", "0", "-1"):
+            sequence = string.translate( sequence[::-1],
+                                         string.maketrans("ACGTacgtNn", "TGCAtgcaNn") )
+
+        return sequence
+
+def IndexedFasta( dbname, *args, **kwargs ):
+    '''factory function for IndexedFasta objects.'''
+
+    if (os.path.exists( dbname ) or os.path.exists( dbname + ".fa" )) \
+            and ( os.path.exists( dbname + ".fai") or \
+                      os.path.exists( dbname + ".fa.fai") ):
+        return PysamIndexedFasta( dbname, *args, **kwargs )
+    else:
+        return CGATIndexedFasta( dbname, *args, **kwargs )
+
 ###############################################################################
 ###############################################################################
 ###############################################################################
 ## converter functions. Some code duplication could be avoided but 
 ## I preferred to keep the functions lean.
 ###############################################################################        
-def __one_forward_closed(x, y, c, l):
+def _one_forward_closed(x, y, c, l):
     """convert coordinates to zero-based, both strand, open/closed coordinates.
     
      Parameters are from, to, is_positive_strand, length of contig.
@@ -828,7 +919,7 @@ def __one_forward_closed(x, y, c, l):
     x -= 1
     if not c: x, y = l - y, l - x
     return x, y 
-def __zero_forward_closed(x, y, c, l):
+def _zero_forward_closed(x, y, c, l):
     """convert coordinates to zero-based, both strand, open/closed coordinates.
     
      Parameters are from, to, is_positive_strand, length of contig.
@@ -836,20 +927,20 @@ def __zero_forward_closed(x, y, c, l):
     y += 1
     if not c: x, y = l - y, l - x
     return x, y 
-def __one_both_closed(x, y, c = None, l = None):
+def _one_both_closed(x, y, c = None, l = None):
     """convert coordinates to zero-based, both strand, open/closed coordinates.
     
      Parameters are from, to, is_positive_strand, length of contig.
     """
     return x - 1, y
-def __zero_both_closed(x, y, c = None, l = None):
+def _zero_both_closed(x, y, c = None, l = None):
     """convert coordinates to zero-based, both strand, open/closed coordinates.
     
      Parameters are from, to, is_positive_strand, length of contig.
     """
     return x, y + 1
 
-def __one_forward_open(x, y, c, l):
+def _one_forward_open(x, y, c, l):
     """convert coordinates to zero-based, both strand, open/closed coordinates.
     
      Parameters are from, to, is_positive_strand, length of contig.
@@ -858,21 +949,21 @@ def __one_forward_open(x, y, c, l):
     y -= 1
     if not c: x, y = l - y, l - x
     return x, y 
-def __zero_forward_open(x, y, c, l):
+def _zero_forward_open(x, y, c, l):
     """convert coordinates to zero-based, both strand, open/closed coordinates.
     
      Parameters are from, to, is_positive_strand, length of contig.
     """
     if not c: x, y = l - y, l - x
     return x, y 
-def __one_both_open(x, y, c = None, l = None):
+def _one_both_open(x, y, c = None, l = None):
     """convert coordinates to zero-based, both strand, open/closed coordinates.
     
      Parameters are from, to, is_positive_strand, length of contig.
     """
     return x - 1, y - 1
 
-def __zero_both_open(x, y, c = None, l = None):
+def _zero_both_open(x, y, c = None, l = None):
     """convert coordinates to zero-based, both strand, open/closed coordinates.
     
     Parameters are from, to, is_positive_strand, length of contig.
@@ -902,25 +993,25 @@ def getConverter( format ):
     if "one" in data:
         if "forward" in data:
             if "closed" in data:
-                return __one_forward_closed                
+                return _one_forward_closed                
             else:
-                return __one_forward_open
+                return _one_forward_open
         else:
             if "closed" in data:
-                return __one_both_closed
+                return _one_both_closed
             else:
-                return __one_both_open
+                return _one_both_open
     else:
         if "forward" in data:
             if "closed" in data:
-                return __zero_forward_closed
+                return _zero_forward_closed
             else:
-                return __zero_forward_open
+                return _zero_forward_open
         else:
             if "closed" in data:
-                return __zero_both_closed
+                return _zero_both_closed
             else:
-                return __zero_both_open                
+                return _zero_both_open                
 
 ## Test function for benchmarking purposes
 def benchmarkRandomFragment( fasta, size ):
@@ -964,7 +1055,7 @@ def splitFasta( infile, chunk_size, dir="/tmp", pattern=None ):
     n = 0
     chunk = 0
     
-    def __getFilename( chunk ):
+    def _getFilename( chunk ):
         if pattern:
             outname = pattern % chunk
             outfile = os.open( outname, "w" )
@@ -972,7 +1063,7 @@ def splitFasta( infile, chunk_size, dir="/tmp", pattern=None ):
             (outfile, outname) = tempfile.mkstemp( dir=dir )
         return (outfile, outname)
 
-    outfile, outname = __getFilename(chunk)
+    outfile, outname = _getFilename(chunk)
     filenames = [ outname ]
     noutput = 0
     for line in infile:
@@ -982,7 +1073,7 @@ def splitFasta( infile, chunk_size, dir="/tmp", pattern=None ):
             if n > chunk_size:
                 os.close(outfile)
                 n = 1               
-                outfile, outname = __getFilename(chunk)
+                outfile, outname = _getFilename(chunk)
                 filenames.append( outname )
             noutput += 1
             
@@ -1010,6 +1101,8 @@ def parseCoordinates( s ):
                 start, end = d[1].split("..")
             else:
                 start = d[1]
+        else:
+            raise ValueError("format not recognized")
     else:
         contig = s
         strand = "+"
@@ -1023,170 +1116,3 @@ def parseCoordinates( s ):
     
     return contig, strand, start, end
 
-def main():
-
-    import Experiment as E
-
-    parser = optparse.OptionParser( version = "%prog version: $Id: IndexedFasta.py 2801 2009-10-22 13:40:39Z andreas $", usage = globals()["__doc__"])
-
-    parser.add_option( "-e", "--extract", dest="extract", type="string",
-                       help="""extract region for testing purposes. Format is contig:strand:from:to. The default coordinates are
-0-based open/closed coordinates on both strands. For example, chr1:+:10:12 will return bases 11 to 12 on chr1.""" )
-
-    parser.add_option( "-c", "--compression", dest="compression", type="choice",
-                       choices=("lzo", "zlib", "gzip", "dictzip", "bzip2", "debug"),
-                       help="compress database [default=%default]." )
-
-    parser.add_option( "--random-access-points", dest="random_access_points", type="int",
-                       help="save random access points every # number of nucleotides [default=%default]." )
-
-    parser.add_option( "-i", "--input-format", dest="input_format", type="choice",
-                       choices=("one-forward-open", "zero-both-open" ),
-                       help="coordinate format of input [default=%default]." )
-
-    parser.add_option( "-s", "--synonyms", dest="synonyms", type="string",
-                       help="list of synonyms, comma separated with =, for example, chr1=chr1b [default=%default]" )
-
-    parser.add_option( "-b", "--benchmark", dest="benchmark", action="store_true",
-                       help="benchmark time for read access [default=%default]." )
-    
-    parser.add_option( "--benchmark-num-iterations", dest="benchmark_num_iterations", type="int",
-                       help="number of iterations for benchmark [default=%default]." )
-
-    parser.add_option( "--benchmark-fragment-size", dest="benchmark_fragment_size", type="int",
-                       help="benchmark: fragment size [default=%default]." )
-
-    parser.add_option( "--verify", dest="verify", type="string",
-                       help="verify against other database [default=%default].")
-
-    parser.add_option( "-a", "--clean-sequence", dest="clean_sequence", action="store_true",
-                       help="remove X/x from DNA sequences - they cause errors in exonerate [default=%default]." )
-
-    parser.add_option( "--allow-duplicates", dest="allow_duplicates", action="store_true",
-                       help="allow duplicate identifiers. Further occurances of an identifier are suffixed by an '_%i' [default=%default]." )
-
-    parser.add_option( "--regex-identifier", dest="regex_identifier", type="string",
-                       help="regular expression for extracting the identifier from fasta description line [default=%default]." )
-
-    parser.add_option( "--compress-index", dest="compress_index", action="store_true",
-                       help="compress index [default=%default]." )
-
-    parser.add_option( "--force", dest="force", action="store_true",
-                       help="force overwriting of existing files [default=%default]." )
-
-    parser.add_option( "-t", "--translator", dest="translator", type="choice",
-                       choices=("solexa", "phred", "bytes", "range200" ),
-                       help="translate numerical quality scores [default=%default]." )
-
-
-    parser.set_defaults(
-        extract = None,
-        input_format = "zero-both-open",
-        benchmark_fragment_size = 1000,
-        benchmark_num_iterations = 1000000,
-        benchmark = False,
-        compression = None,
-        random_access_points = 0,
-        synonyms = None,
-        verify = None,
-        verify_num_iterations = 100000,
-        verify_fragment_size = 100,
-        clean_sequence = False,
-        allow_duplicates = False,
-        regex_identifier = None,
-        compress_index = False,
-        force = False,
-        translator = None )
-    
-    (options, args) = E.Start( parser )
-
-    if options.synonyms:
-        synonyms = {}
-        for x in options.synonyms.split(","):
-            a,b = x.split("=")
-            a = a.strip()
-            b = b.strip()
-            if a not in synonyms: synonyms[a] = []
-            synonyms[a].append( b )
-    else:
-        synonyms = None
-
-    if options.translator:
-        if options.translator == "phred":
-            options.translator = TranslatorPhred()
-        elif options.translator == "solexa":
-            options.translator = TranslatorSolexa()
-        elif options.translator == "bytes":
-            options.translator = TranslatorBytes()
-        elif options.translator == "range200":
-            options.translator = TranslatorRange200()
-        else:
-            raise ValueError("unknown translator %s" % options.translator)
-        
-    if options.extract:
-        fasta = IndexedFasta( args[0] )
-        fasta.setTranslator( options.translator )
-        converter = getConverter( options.input_format )
-        
-        contig, strand, start, end = parseCoordinates( options.extract )
-        sequence = fasta.getSequence( contig, strand,
-                                      start, end,
-                                      converter = converter )
-        options.stdout.write( ">%s\n%s\n" % \
-                              ( options.extract, sequence ) )
-    elif options.benchmark:
-        import timeit
-        timer = timeit.Timer( stmt="benchmarkRandomFragment( fasta = fasta, size = %i)" % (options.benchmark_fragment_size),
-                              setup="""from __main__ import benchmarkRandomFragment,IndexedFasta\nfasta=IndexedFasta( "%s" )""" % (args[0] ) )
-
-        t = timer.timeit( number = options.benchmark_num_iterations )
-        options.stdout.write("iter\tsize\ttime\n" )
-        options.stdout.write("%i\t%i\t%i\n" % (options.benchmark_num_iterations, options.benchmark_fragment_size, t ) )
-    elif options.verify:
-        fasta1 = IndexedFasta( args[0] ) 
-        fasta2 = IndexedFasta( options.verify )
-        nerrors1 = verify( fasta1, fasta2,
-                           options.verify_num_iterations,
-                           options.verify_fragment_size,
-                           stdout=options.stdout )
-        options.stdout.write("errors=%i\n" % (nerrors1) )        
-        nerrors2 = verify( fasta2, fasta1,
-                           options.verify_num_iterations,
-                           options.verify_fragment_size,
-                           stdout=options.stdout )
-        options.stdout.write("errors=%i\n" % (nerrors2) )        
-    elif options.compress_index:
-        fasta = IndexedFasta( args[0] ) 
-        fasta.compressIndex()
-    else:
-        if options.loglevel >= 1:
-            options.stdlog.write("# creating database %s\n" % args[0])            
-            options.stdlog.write("# indexing the following files: \n# %s\n" %\
-                                 (" \n# ".join( args[1:] ) ))
-            options.stdlog.flush()
-
-            if synonyms:
-                options.stdlog.write("# Applying the following synonyms:\n" )
-                for k,v in synonyms.items():
-                    options.stdlog.write( "# %s=%s\n" % (k, ",".join(v) ) )
-                options.stdlog.flush()
-        if len(args) < 2:
-            print USAGE
-            sys.exit(1)
-            
-        iterator = MultipleFastaIterator( args[1:],     
-                                          regex_identifier = options.regex_identifier )
-        createDatabase( args[0], 
-                        iterator, 
-                        synonyms = synonyms,
-                        random_access_points = options.random_access_points,
-                        compression = options.compression,
-                        clean_sequence = options.clean_sequence,
-                        allow_duplicates = options.allow_duplicates,
-                        translator = options.translator,
-                        force = options.force )
-
-    
-    E.Stop()
-
-if __name__ == "__main__": main()

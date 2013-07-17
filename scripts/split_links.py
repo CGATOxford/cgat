@@ -65,7 +65,7 @@ import subprocess
 import optparse
 import time
 import math
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.WrapperAdaptiveCAI as WrapperAdaptiveCAI
 import numpy
 
@@ -89,7 +89,7 @@ def WriteLine( a, b, line, prefix="%s-%s" ):
     
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: split_links.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: split_links.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-m", "--method", dest="method", type="string",
                       help="method for splitting." )
@@ -105,7 +105,7 @@ if __name__ == "__main__":
 
     parser.set_defaults()
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if options.targets: options.targets = options.targets.split(",")
 
@@ -133,7 +133,7 @@ if __name__ == "__main__":
 
     print "nsame=%i, ndiff=%i" % (nsame, ndiff )
 
-    Experiment.Stop()
+    E.Stop()
             
         
     

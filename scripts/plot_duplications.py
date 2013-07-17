@@ -91,7 +91,7 @@ start with a "#". You can remove this by setting -v 0 or --verbose=0.
 """
 
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import CGAT.SVGdraw as SVGdraw
 import CGAT.TreeTools as TreeTools
@@ -769,7 +769,7 @@ class DuplicationPlot:
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: plot_duplications.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: plot_duplications.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-e", "--headers", dest="headers", action="store_true",
                       help="first row is a header [ignored]."  )
@@ -815,7 +815,7 @@ if __name__ == "__main__":
         input_format = "pairwise",
         )
 
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
     if options.filename_contig_sizes:
         map_contig2size = IOTools.ReadMap( open(options.filename_contig_sizes, "r"),
@@ -844,7 +844,7 @@ if __name__ == "__main__":
     k = map_contig2size.keys()
     
     if len(k) == 0:
-        Experiment.Stop()
+        E.Stop()
         sys.exit(0)
     
     k.sort()
@@ -953,4 +953,4 @@ if __name__ == "__main__":
 
     plot.writeToFile(sys.stdout)
     
-    Experiment.Stop()
+    E.Stop()

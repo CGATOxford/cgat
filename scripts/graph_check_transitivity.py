@@ -75,12 +75,12 @@ for every two edges A->B and B->C check whether A->C exists.
 
 Edges are taken to be undirected.
 """
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Histogram as Histogram
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: graph_check_transitivity.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: graph_check_transitivity.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option("--filename-missing", dest="filename_missing", type="string",
                       help="missing entries.")
@@ -101,7 +101,7 @@ if __name__ == "__main__":
         subsets = False,
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     # retrieve data
     vals = {}
@@ -200,4 +200,4 @@ if __name__ == "__main__":
     if options.filename_found:
         outfile_found.close()
         
-    Experiment.Stop()
+    E.Stop()

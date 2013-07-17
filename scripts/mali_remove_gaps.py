@@ -93,7 +93,7 @@ param_mask_char = "x"
 
 param_filename_output = None
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.MaliIO as MaliIO
 import CGAT.Exons as Exons
@@ -122,8 +122,8 @@ if __name__ == '__main__':
     if param_loglevel >= 1:
         print "# read mali with %i entries." % len(identifiers)
 
-    print Experiment.GetHeader()
-    print Experiment.GetParams()
+    print E.GetHeader()
+    print E.GetParams()
 
     ## 1. remove gaps in multiple alignment
 
@@ -229,6 +229,6 @@ if __name__ == '__main__':
             outfile.write( ">%s\n%s\n" % (id, Genomics.TranslateDNA2Protein(mali[id])))
         outfile.close()
 
-    print Experiment.GetFooter()
+    print E.GetFooter()
     
     

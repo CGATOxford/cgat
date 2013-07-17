@@ -64,7 +64,7 @@ import getopt
 import time
 import optparse
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 from scipy.stats import *
 
 USAGE="""simulate_function.py [options] [infile] < stdin
@@ -79,7 +79,7 @@ Examples:
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: simulate_function.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: simulate_function.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-x", "--xrange", dest="xrange", type="string",
                       help="xrange."  )
@@ -97,7 +97,7 @@ if __name__ == "__main__":
         function = "x",
         value_format = "%6.4f" )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if options.xrange: options.xrange = map(float, options.xrange.split(","))
     if options.yrange: options.yrange = map(float, options.yrange.split(","))
@@ -111,6 +111,6 @@ if __name__ == "__main__":
                                               (x, f(x)) )) + "\n" )
         x += options.xrange[2]
 
-    Experiment.Stop()
+    E.Stop()
     
         

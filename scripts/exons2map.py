@@ -84,7 +84,7 @@ param_trans = None
 
 param_filename_contigs = None
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.PredictionParser as PredictionParser
 import CGAT.Exons as Exons
 import alignlib
@@ -107,8 +107,8 @@ if __name__ == "__main__":
             param_filename_contigs = a
             
 
-    print Experiment.GetHeader()
-    print Experiment.GetParams()
+    print E.GetHeader()
+    print E.GetParams()
 
     last_exon = Exons.Exon()
 
@@ -165,6 +165,6 @@ if __name__ == "__main__":
 
     print "# nexons=%i, npairs=%i" % (nexons, npairs)
     
-    print Experiment.GetFooter()
+    print E.GetFooter()
 
     

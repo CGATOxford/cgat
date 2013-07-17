@@ -71,7 +71,7 @@ import bisect
 """ program $Id: plot_synteny.py 2781 2009-09-10 11:33:14Z andreas $
 
 """
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import CGAT.SVGdraw as SVGdraw
 import numpy
@@ -491,7 +491,7 @@ class PlotSyntenyGenomic( PlotSynteny ):
     
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: plot_synteny.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: plot_synteny.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-e", "--headers", dest="headers", action="store_true",
                       help="first row is a header [ignored]."  )
@@ -530,7 +530,7 @@ if __name__ == "__main__":
         coordinates = "genes",
         )
 
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
     if len(args) != 2:
         raise "please supply two files with synteny information."
@@ -576,4 +576,4 @@ if __name__ == "__main__":
     
     plot.writeToFile(sys.stdout)
     
-    Experiment.Stop()
+    E.Stop()

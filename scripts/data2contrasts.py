@@ -61,7 +61,7 @@ import os
 import optparse
 import math
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import scipy
 import scipy.stats
 import CGAT.WrapperPhylip as WrapperPhylip
@@ -82,7 +82,7 @@ def calculateCorrelationCoefficient( a, b):
 ##---------------------------------------------------------------------------------------------------------        
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: data2contrasts.py 2782 2009-09-10 11:40:29Z andreas $",
+    parser = E.OptionParser( version = "%prog version: $Id: data2contrasts.py 2782 2009-09-10 11:40:29Z andreas $",
                                     usage = globals()["__doc__"] )
 
     parser.add_option("-c", "--columns", dest="columns", type="string",
@@ -114,7 +114,7 @@ if __name__ == '__main__':
         display_tree = False,
         )
 
-    (options, args) = Experiment.Start( parser, quiet = True )
+    (options, args) = E.Start( parser, quiet = True )
 
     if options.columns not in ( "all", "all-but-first"):
         options.columns = map(lambda x: int(x) -1 , options.columns.split(","))
@@ -306,7 +306,7 @@ if __name__ == '__main__':
                                                                                  
                                                                                       
                 
-    Experiment.Stop()
+    E.Stop()
     
     
 

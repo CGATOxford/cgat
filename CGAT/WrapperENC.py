@@ -143,7 +143,7 @@ class ENC:
     
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: WrapperENC.py 14 2005-08-09 15:24:07Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: WrapperENC.py 14 2005-08-09 15:24:07Z andreas $")
 
     parser.add_option("-f", "--input-file", dest="input_filename", type="string",
                       help="input filename. If '-', stdin is used [default=%default].",

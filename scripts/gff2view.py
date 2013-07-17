@@ -79,13 +79,13 @@ TODO: add support for ensembl
 
 import CGAT.GFF as GFF
 import CGAT.GTF as GTF
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
 
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: gff2view.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: gff2view.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-t", "--target", dest="target", type="choice",
                       choices = ("ucsc", "gbrowser"),
@@ -135,7 +135,7 @@ if __name__ == '__main__':
         joined = False,
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if len(args) != 1:
         print USAGE
@@ -223,4 +223,4 @@ if __name__ == '__main__':
 
         nopened += 1
         
-    Experiment.Stop()
+    E.Stop()

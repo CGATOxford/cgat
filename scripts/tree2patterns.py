@@ -73,7 +73,7 @@ import tempfile
 from Bio.Nexus import Nexus
 from Bio.Nexus.Nodes import Node
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.TreeTools as TreeTools
 
 def traverseGraph( graph, start, block = []):
@@ -140,7 +140,7 @@ def calculatePatternsFromTree( tree, sort_order ):
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: tree2patterns.py 2781 2009-09-10 11:33:14Z andreas $",
+    parser = E.OptionParser( version = "%prog version: $Id: tree2patterns.py 2781 2009-09-10 11:33:14Z andreas $",
                                     usage = globals()["__doc__"] )
 
     parser.add_option("-t", "--reference-tree", dest="reference_tree", type="string",
@@ -154,7 +154,7 @@ if __name__ == "__main__":
         sort_order = [],
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if not options.sort_order:
         for nx in reference_tree.get_terminals():
@@ -177,7 +177,7 @@ if __name__ == "__main__":
     for p in patterns:
         print p
 
-    Experiment.Stop()
+    E.Stop()
 
 
 

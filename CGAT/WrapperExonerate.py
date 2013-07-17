@@ -42,7 +42,7 @@ import Experiment
 import PredictionParser
 import Genomics
 
-parser = optparse.OptionParser( version = "%prog version: $Id: WrapperExonerate.py 2781 2009-09-10 11:33:14Z andreas $")
+parser = E.OptionParser( version = "%prog version: $Id: WrapperExonerate.py 2781 2009-09-10 11:33:14Z andreas $")
 
 class ExonerateError(Exception):
     pass

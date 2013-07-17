@@ -66,7 +66,7 @@ import tempfile
 import math
 import collections
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.GFF as GFF
 import CGAT.IndexedFasta as IndexedFasta
 
@@ -161,7 +161,7 @@ def processChunk( contig, chunk, options, fasta = None ):
     
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: gff2coverage.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: gff2coverage.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option( "-g", "--genome-file", dest="genome_file", type="string",
                        help="filename with genome."  )
@@ -182,7 +182,7 @@ if __name__ == "__main__":
         method = "genomic",
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if options.genome_file:
         fasta = IndexedFasta.IndexedFasta( options.genome_file )
@@ -239,7 +239,7 @@ if __name__ == "__main__":
             else: options.stdout.write( "\n" )
                                      
             
-    Experiment.Stop()
+    E.Stop()
 
 
 

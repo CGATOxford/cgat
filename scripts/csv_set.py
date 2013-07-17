@@ -66,7 +66,7 @@ import optparse
 import math
 import tempfile
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.CSV as CSV
 import csv
 import hashlib
@@ -84,7 +84,7 @@ class UniqueBuffer:
     
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: csv_set.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: csv_set.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option( "-u", "--unique", dest="unique", action="store_true",
                        help="output rows are uniq." )
@@ -104,7 +104,7 @@ if __name__ == "__main__":
         method = "intersection",
         )
 
-    (options, args) = Experiment.Start( parser, add_csv_options  = True)
+    (options, args) = E.Start( parser, add_csv_options  = True)
 
     if len(args) != 2:
         raise "please specify two files to join."
@@ -172,4 +172,4 @@ if __name__ == "__main__":
             if key not in keys:
                 outfile.write( "\t".join(row2) + "\n")
     
-    Experiment.Stop()
+    E.Stop()

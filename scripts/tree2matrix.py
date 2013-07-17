@@ -97,7 +97,7 @@ from types import *
 """ program $Id: tree2matrix.py 2782 2009-09-10 11:40:29Z andreas $
 
 """
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.TreeTools as TreeTools
 
 def TranslateNode( node, tree, terminals, options ):
@@ -110,7 +110,7 @@ def TranslateNode( node, tree, terminals, options ):
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: tree2matrix.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: tree2matrix.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option("-f", "--format", dest="format", type="string",
                       help="number format to use."  )
@@ -144,7 +144,7 @@ if __name__ == "__main__":
         regex_species = ("^([^|]+)" ),
         )
 
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
     if options.species: options.species = options.species.split(",")
     nexus = TreeTools.Newick2Nexus( sys.stdin )
@@ -274,4 +274,4 @@ if __name__ == "__main__":
     if outfile != sys.stdout:
         outfile.close()
     
-    Experiment.Stop()
+    E.Stop()

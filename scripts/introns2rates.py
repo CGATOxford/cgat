@@ -75,7 +75,7 @@ import re
 import getopt
 import tempfile
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.Exons as Exons
 import CGAT.WrapperBaseML as WrapperBaseML
@@ -402,8 +402,8 @@ if __name__ == '__main__':
         
     gblocks = WrapperGblocks.Gblocks()
     
-    print Experiment.GetHeader()
-    print Experiment.GetParams()
+    print E.GetHeader()
+    print E.GetParams()
     print baseml.GetOptions()
     sys.stdout.flush()
     
@@ -588,4 +588,4 @@ if __name__ == '__main__':
 
     print "# input=%i, skipped=%i, nerrors=%i, transcripts=%i, introns=%i" % (ninput, nskipped, nerrors,
                                                                               ntoken_pairs, nintron_pairs )
-    print Experiment.GetFooter()
+    print E.GetFooter()

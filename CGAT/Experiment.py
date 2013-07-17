@@ -61,7 +61,7 @@ The basic usage of this module within a script is::
         if not argv: argv = sys.argv
 
         # setup command line parser
-        parser = optparse.OptionParser( version = "%prog version: $Id$", 
+        parser = E.OptionParser( version = "%prog version: $Id$", 
                                         usage = globals()["__doc__"] )
                                         
         parser.add_option("-t", "--test", dest="test", type="string",
@@ -91,7 +91,7 @@ within a script.
 
 .. autofunction:: Experiment.Start
 
-The :py:func:`Start` is called with an optparse.OptionParser object. 
+The :py:func:`Start` is called with an E.OptionParser object. 
 :py:func:`Start` will add additional command line arguments, such as
 ``--help`` for command line help or ``--verbose`` to control the :term:`loglevel`.
 It can also add optional arguments for scripts needing database access,
@@ -288,6 +288,74 @@ class BetterFormatter(optparse.IndentedHelpFormatter):
 #################################################################
 #################################################################
 #################################################################
+class AppendCommaOption(optparse.Option):
+    '''Option with additional parsing capabilities.
+
+    * "," in arguments to options that have the action 'append' 
+      are treated as a list of options. This is what galaxy does, 
+      but generally convenient.
+
+    * Option values of "None" and "" are treated as default values.
+    
+    
+    '''
+#    def check_value( self, opt, value ):
+#        # do not check type for ',' separated lists
+#        if "," in value: 
+#            return value
+#        else:
+#            return optparse.Option.check_value( self, opt, value )
+#
+#    def take_action(self, action, dest, opt, value, values, parser):
+#        if action == "append" and "," in value:
+#            lvalue = value.split(",")
+#            values.ensure_value(dest, []).extend(lvalue)
+#        else:
+#            optparse.Option.take_action(
+#                self, action, dest, opt, value, values, parser)
+#
+
+    def convert_value( self, opt, value ):
+        if value is not None:
+            if self.nargs == 1:
+                if self.action == "append" and "," in value:
+                    return [self.check_value(opt, v ) for v in value.split(",")]
+                else:
+                    return self.check_value( opt, value )
+            else:
+                return tuple( [self.check_value(opt, v) for v in value] )
+
+    # why is it necessary to pass action and dest to this function when
+    # they could be accessed as self.action and self.dest? 
+    def take_action( self, action, dest, opt, value, values, parser):
+        if action == "append" and type( value ) == list: 
+            values.ensure_value(dest, []).extend( value )
+        else:
+            optparse.Option.take_action(
+                self, action, dest, opt, value, values, parser )
+
+#################################################################
+#################################################################
+#################################################################
+class OptionParser( optparse.OptionParser ):
+    '''CGAT derivative of OptionParser.
+
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        optparse.OptionParser.__init__(self, *args, 
+                                       option_class = AppendCommaOption,
+                                       formatter = BetterFormatter(),
+                                       **kwargs)
+
+        # set new option parser
+        # parser.formatter = BetterFormatter()
+        # parser.formatter.set_parser(parser)
+
+
+
+
+#################################################################
 def getHeader():
     """return a header string with command line options and timestamp
 
@@ -351,7 +419,7 @@ def Start( parser = None,
            return_parser = False):
     """set up an experiment.
 
-    *param parser* an :py:class:`optparse.OptionParser` instance with commandi line options.
+    *param parser* an :py:class:`E.OptionParser` instance with commandi line options.
     *param argv* command line options to parse. Defaults to :py:data:`sys.argv`
     *quiet* set :term:`loglevel` to 0 - no logging
     *no_parsing* do not parse command line options
@@ -362,7 +430,7 @@ def Start( parser = None,
     *add_pipe_options* add common options for redirecting input/output
     *add_cluster_options* add common options for scripts submitting jobs to the cluster
     *add_output_options* add commond options for working with multiple output files
-    *returns* a tuple (options,args) with options (a :py:class:`optparse.OptionParser` object 
+    *returns* a tuple (options,args) with options (a :py:class:`E.OptionParser` object 
               and a list of positional arguments.
 
     The :py:func:`Start` method will also set up a file logger.
@@ -416,11 +484,7 @@ def Start( parser = None,
     """
     
     if not parser:
-        parser = optparse.OptionParser( version = "%prog version: $Id: Experiment.py 2803 2009-10-22 13:41:24Z andreas $" )
-
-    # set new option parser
-    parser.formatter = BetterFormatter()
-    parser.formatter.set_parser(parser)
+        parser = OptionParser( version = "%prog version: $Id: Experiment.py 2803 2009-10-22 13:41:24Z andreas $" )
 
     global global_options, global_args, global_starting_time
 

@@ -71,7 +71,7 @@ import glob
 import subprocess
 import stat
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 
 def checkPythonRuns( filename ):
@@ -90,7 +90,7 @@ def isNewer( a, b ):
 
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: submit.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"] )
+    parser = E.OptionParser( version = "%prog version: $Id: submit.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option( "-g", "--glob", dest="glob_pattern", type="string" ,
                        help="glob pattern to use for collecting cluster jobs descriptions [%default]")
@@ -110,7 +110,7 @@ if __name__ == '__main__':
                          check_completeness = "python",
                          )
 
-    (options, args) = Experiment.Start( parser, 
+    (options, args) = E.Start( parser, 
                                         add_pipe_options = True )
 
     if args:
@@ -210,4 +210,4 @@ if __name__ == '__main__':
         options.stdlog.write("# ninput=%i, nrun=%i, nskipped=%i, ndeleted=%i, nerrors=%i\n" %\
                                  (ninput, nrun, nskipped, ndeleted, nerrors ) )
 
-    Experiment.Stop()
+    E.Stop()

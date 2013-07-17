@@ -78,7 +78,7 @@ Options:
 -p, --pattern-species=          regex pattern to extract species from identifier
 """ % sys.argv[0]
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 
 param_loglevel = 1
 
@@ -123,8 +123,8 @@ if __name__ == "__main__":
         elif o in ("-p", "--pattern-species"):
             param_pattern_species = a
 
-    print Experiment.GetHeader()
-    print Experiment.GetParams()
+    print E.GetHeader()
+    print E.GetParams()
 
     lines = ["#NEXUS\nBegin trees;\ntree tree = "] + sys.stdin.readlines() + ["End;"]
     nexus = Nexus.Nexus( string.join(lines, "") )
@@ -160,4 +160,4 @@ if __name__ == "__main__":
                         tree.display()
                     changed = True
         
-    print Experiment.GetFooter()
+    print E.GetFooter()

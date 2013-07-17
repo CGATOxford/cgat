@@ -66,7 +66,7 @@ import time
 import optparse
 import math
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 
 USAGE="""python %s [OPTIONS] < graph.in > graph.out
 
@@ -159,7 +159,7 @@ def PrintMatches( matches,
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: graph2besthits.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: graph2besthits.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option("-p", "--pattern-genome", dest="pattern_genome", type="string",
                       help="genome_pattern."  )
@@ -181,7 +181,7 @@ if __name__ == "__main__":
         score_threshold_factor = 1.0,
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
     
     ninput, noutput, nskipped, nfailed = 0, 0, 0, 0
 
@@ -234,7 +234,7 @@ if __name__ == "__main__":
     print "# ninput=%i, noutput=%i" % (\
         ninput, noutput )
     
-    Experiment.Stop()
+    E.Stop()
 
 
 

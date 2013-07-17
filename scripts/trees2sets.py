@@ -99,7 +99,7 @@ USAGE="""python trees2sets.py < stdin
 
 """
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.TreeTools as TreeTools
 import CGAT.SetTools as SetTools
 import CGAT.IOTools as IOTools
@@ -530,7 +530,7 @@ def writeOrthologSets( outfile, nexus,
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: trees2sets.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: trees2sets.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
     
     parser.add_option("-t", "--reference-tree", dest="reference_tree", type="string",
                       help="reference tree to read."  )
@@ -582,7 +582,7 @@ if __name__ == "__main__":
         reroot = None,
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if len(options.methods) == 0:
         options.methods.append("strict")
@@ -674,4 +674,4 @@ if __name__ == "__main__":
                                method = method,
                                outgroups = options.outgroups )
     
-    Experiment.Stop()
+    E.Stop()

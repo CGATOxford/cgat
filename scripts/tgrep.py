@@ -67,13 +67,13 @@ import subprocess
 import optparse
 import time
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 
 
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: tgrep.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: tgrep.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option("-c", "--columns", dest="columns", type="string",
                       help="columns to test from table." )
@@ -95,7 +95,7 @@ if __name__ == "__main__":
         delimiter = "\t",
         invert_match = False )
                         
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     options.columns = map(lambda x: int(x)-1, options.columns.split(","))
 
@@ -122,4 +122,4 @@ if __name__ == "__main__":
         if (not found and options.invert_match) or (found and not options.invert_match):
             print line[:-1]
 
-    Experiment.Stop()
+    E.Stop()

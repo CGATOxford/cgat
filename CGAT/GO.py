@@ -184,11 +184,11 @@ import scipy
 import scipy.stats
 import scipy.special
 import numpy
-import Stats
-import Database
-import Experiment as E
-import IOTools
-import CSV
+import CGAT.Stats as Stats
+import CGAT.Database as Database
+import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
+import CGAT.CSV as CSV
 
 from rpy2.robjects import r as R
 
@@ -1670,7 +1670,7 @@ def pairwiseGOEnrichment( results_per_genelist, labels, test_ontology, go2info, 
 ##---------------------------------------------------------------------------    
 def main():
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: GO.py 2883 2010-04-07 08:46:22Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: GO.py 2883 2010-04-07 08:46:22Z andreas $", usage = globals()["__doc__"])
 
     dbhandle = Database.Database()
     

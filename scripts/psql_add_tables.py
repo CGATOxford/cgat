@@ -76,7 +76,7 @@ import copy
 
 import pgdb
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 
 USAGE="""python psql_add_tables.py src dest field"""
 
@@ -101,7 +101,7 @@ def DbDo( dbhandle, statement ):
 ##------------------------------------------------------------------------------------------
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: psql_add_tables.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: psql_add_tables.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option( "-s", "--start", dest="start", type="int",
                        help="index to start.")
@@ -114,7 +114,7 @@ if __name__ == "__main__":
         start = None,
         fields = [] )
 
-    (options, args) = Experiment.Start( parser, add_psql_options = True )
+    (options, args) = E.Start( parser, add_psql_options = True )
     
     dbhandle = pgdb.connect( options.psql_connection )
 
@@ -149,6 +149,6 @@ if __name__ == "__main__":
     options.stdlog.write("# adding table %s to %s\n" % (src_table, dest_table) )
     DbDo( dbhandle, statement )
     
-    Experiment.Stop()
+    E.Stop()
 
     
