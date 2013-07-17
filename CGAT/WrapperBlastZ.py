@@ -39,7 +39,6 @@ import os, sys, string, re, tempfile, optparse, subprocess
 """
 
 import Genomics
-import alignlib
 import Experiment
 
 parser = E.OptionParser( version = "%prog version: $Id: WrapperBlastZ.py 2781 2009-09-10 11:33:14Z andreas $")
@@ -181,6 +180,7 @@ if __name__ == "__main__":
     
     wrapper = BlastZ( options.options )
 
+    import alignlib
     seqs1 = Genomics.ReadPeptideSequences( open(options.input_filename_seq1, "r") )
     seqs2 = Genomics.ReadPeptideSequences( open(options.input_filename_seq2, "r") )
     seq1 = seqs1[seqs1.keys()[0]]

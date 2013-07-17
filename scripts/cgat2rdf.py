@@ -54,6 +54,44 @@ for command line help.
 Documentation
 -------------
 
+This script takes a CGAT script and attempts to write an interface definition
+for this script. In order to guess the file types correctly, :file:`cgat2rdf.py`
+makes use of the following information:
+
+1. The script name. If the name of the script contains a "format2format.py", :file:`cgat2rdf.py`
+   will assume that the script works within a pipe: it takes stdin and stdout as 
+   input and output, respectively, and each are formatted according to the formats.
+   For example, ``bed2bed.py`` has a :term:`bed` formatted file as input and output,
+   while ``gtf2gff.py`` has a :term:`gtf` formatted file as input and outputs
+   a :term:`gff` file. Most formats are not parsed, though :file:`cgat2rdf.py` contains
+   some type mappings:
+
++--------------------+--------------------+--------------------+
+|Format              |Maps to             |Content             |
++--------------------+--------------------+--------------------+
+|tsv                 |tabular             |Tab-separated values|
++--------------------+--------------------+--------------------+
+|table               |tabular             |ditto               |
++--------------------+--------------------+--------------------+
+|stats               |tabular             |ditto               |
++--------------------+--------------------+--------------------+
+|csv                 |tabular             |ditto               |
++--------------------+--------------------+--------------------+
+
+   
+2. The command line options. :file:`cgat2rdf.py` will import the script it 
+   runs and captures the command line option parser information. Based on these
+   data, options are added to the interface. Atomic values such as int, float,
+   etc, are interpreted directly. For textual arguments, :file:`cgat2rdf.py`
+   tests if the :attr:`metavar` attribute has been set. When set, the content
+   of this attribute will determine the file type.
+
+The interface decription can be exported either as :term:`RDF` or in a variety
+of other formats:
+
+galaxy
+    Galaxy xml file.
+
 Code
 ----
 
@@ -492,6 +530,9 @@ def main( argv = None ):
         # ignore output options
         if option.dest in ("stdin", "stdout", "stdlog", "stderr", "loglevel" ): continue
 
+        # remove default from help string
+        option.help = re.sub( "[%default[^]*]", "", option.help)
+
         param = buildParam()
 
         # get command line option call (long/short option)
@@ -603,7 +644,7 @@ def main( argv = None ):
             data['parameters'].append( param )
         
         # point to wrapper
-        data['binary'] = "cgat_galaxy_wrapper.py"
+        data['binary'] = os.path.join( dirname, "cgat_galaxy_wrapper.py" )
 
         displayMap = collections.defaultdict( list )
 

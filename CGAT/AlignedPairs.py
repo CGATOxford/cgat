@@ -30,7 +30,8 @@ AlignedPairs.py -
 
 """
 import sys, os, string
-import alignlib
+try: import alignlib
+except ImportError: pass
 
 import WrapperDialign
 import WrapperDBA

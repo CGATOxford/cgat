@@ -63,7 +63,8 @@ import Genomics
 import IndexedFasta
 import Prediction
 import PredictionParser
-import alignlib
+try: import alignlib
+except ImportError: pass
 import Cluster
 import GFF
 import threading

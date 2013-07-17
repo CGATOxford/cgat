@@ -31,7 +31,8 @@ Exons.py - A library to read/write/manage exons.
 """
 
 import re, sys, string
-import alignlib
+try: import alignlib
+except ImportError: pass
 
 class Exon:
     """class for exons.
