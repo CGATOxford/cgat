@@ -393,44 +393,20 @@ def buildParam( **kwargs ):
     param.update( kwargs )
     return param
 
-def main( argv = None ):
-    """script main.
-
-    parses command line options in sys.argv, unless *argv* is given.
-    """
-
-    if not argv: argv = sys.argv
-
-    # setup command line parser
-    parser = E.OptionParser( version = "%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
-                             usage = globals()["__doc__"] )
-
-    parser.add_option( "-f", "--format", dest="output_format", type="choice",
-                       choices = ("rdf", "galaxy"),
-                       help = "output format [%default]. ")
-    
-    parser.set_defaults( output_format = "rdf" )
-
-    ## add common options (-h/--help, ...) and parse command line 
-    (options, args) = E.Start( parser, argv = argv )
-
-    if len(args) != 1:
-        raise ValueError( "expected a script name" )
-
-    script_name = args[0]
-    if not script_name.endswith(".py"):
-        raise ValueError( "expected a python script ending in '.py'" )
+def processScript( script_name, outfile, options ):
+    '''process one script.'''
 
     # call other script
     dirname = os.path.dirname( script_name )
     basename = os.path.basename( script_name)[:-3]
 
+    if options.src_dir: 
+        dirname = options.src_dir
+        script_name = os.path.join( dirname, basename ) + ".py"
+
     sys.path.insert(0, dirname )
     module = __import__(basename)
 
-    # start script in order to build the command line parser
-    global ORIGINAL_START
-    ORIGINAL_START = E.Start
     E.Start = LocalStart
     E.info( "loaded modules %s" % module)
     try:
@@ -468,6 +444,9 @@ def main( argv = None ):
     data['owner'] = "CGAT"
     data['email'] = "andreas.heger@gmail.com"
     data['binary'] = script_name
+
+    # does not output multiple files 
+    data['multiple_output_files'] = False
     
     input_format, output_format = guessFormats( basename, docstring )
 
@@ -507,6 +486,8 @@ def main( argv = None ):
     stdout['property_bag'] = {}
     stdout['dependencies'] = {}
 
+    outputs = [ stdout ]
+
     data['parameters'] = [stdin, stdout ]
 
     defaults = PARSER.get_default_values()
@@ -524,14 +505,15 @@ def main( argv = None ):
         # ignore options related to forcing output
         if "force" in option.dest: continue
 
-        # ignore special options:
-        if option.dest in ("output_filename_pattern", ): continue
+        # ignore some special options:
+        #if option.dest in ("output_filename_pattern", ): 
+        #    continue
 
         # ignore output options
         if option.dest in ("stdin", "stdout", "stdlog", "stderr", "loglevel" ): continue
 
         # remove default from help string
-        option.help = re.sub( "[%default[^]*]", "", option.help)
+        option.help = re.sub( "\[[^\]]*%default[^\]]*\]", "", option.help)
 
         param = buildParam()
 
@@ -541,7 +523,7 @@ def main( argv = None ):
         except IndexError: pass
 
         try:
-            param['arg_long'] = option._long_opts[0]
+            param['arg_long'] = option._long_opts[0] 
         except IndexError: pass
 
         assert 'arg' in param or 'arg_long' in param
@@ -608,7 +590,6 @@ def main( argv = None ):
 
         # get default value
         param['value'] = getattr( defaults,  option.dest )
-
             
         param['dependencies'] = {}
         param['property_bag'] = {}
@@ -618,13 +599,35 @@ def main( argv = None ):
                                       'loc_id' : 'sam_fa',
                                       'loc_id_filter' : '1'}
 
+
+        # deal with multiple output files:
+        if option.dest == "output_filename_pattern":
+            use_wrapper = True
+            data['parameters'].append( buildParam( name = 'wrapper_html_file',
+                                                   ns_name = 'wrapper_html_file',
+                                                   arg_long = '--wrapper-html-file',
+                                                   value = '$html_file',
+                                                   display = 'hidden' ) )
+
+            data['parameters'].append( buildParam( name = 'wrapper_html_dir',
+                                                   ns_name = 'wrapper_html_dir',
+                                                   arg_long = '--wrapper-html-dir',
+                                                   value = '$html_file.files_path',
+                                                   display = 'hidden' ) )
+
+            outputs.append( buildParam( name = 'html_file',
+                                        ns_name = 'html_file',
+                                        format= 'html',
+                                        label= 'html' ),
+                            )
+            continue
+
+
         data['parameters'].append( param )
 
 
-
     if options.output_format == "rdf":
-        print g.serialize(data, format='turtle')  
-
+        outfile.write( g.serialize(data, format='turtle') + "\n" )
 
     elif options.output_format == "galaxy":
 
@@ -654,9 +657,93 @@ def main( argv = None ):
         displayMap['normal'] = displayMap['show']
         
         target = Template( open('/ifs/devel/andreas/cgat/scripts/cgat2rdf/galaxy.xml').read() )
-        print target.render( data = data, 
-                             displayMap = displayMap,
-                             outputs = [stdout] )
+        outfile.write( target.render( data = data, 
+                                      displayMap = displayMap,
+                                      outputs = outputs ) + "\n" )
+
+
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if not argv: argv = sys.argv
+
+    # setup command line parser
+    parser = E.OptionParser( version = "%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
+                             usage = globals()["__doc__"] )
+
+    parser.add_option( "-f", "--format", dest="output_format", type="choice",
+                       choices = ("rdf", "galaxy"),
+                       help = "output format [%default]. ")
+
+    parser.add_option( "-l", "--list", dest="filename_list", type="string",
+                       help = "filename with list of files to export [%default]. ")
+
+    parser.add_option( "-s", "--source-dir", dest="src_dir", type="string",
+                       help = "directory to look for scripts [%default]. ")
+
+    parser.add_option( "-r", "--input-regex", dest="input_regex", type="string",
+                       help = "regular expression to extract script name [%default]. ")
+
+    parser.add_option( "-p", "--output-pattern", dest="output_pattern", type="string",
+                       help = "pattern to build output filename. Should contain an '%s' [%default]. ")
+    
+    parser.set_defaults( output_format = "rdf",
+                         src_dir = None,
+                         input_regex = None,
+                         output_pattern = None,
+                         filename_list = None )
+
+    ## add common options (-h/--help, ...) and parse command line 
+    (options, args) = E.Start( parser, argv = argv )
+
+    if len(args) == 0:
+        E.info( "reading script names from stdin" )
+        for line in options.stdin:
+            if line.startswith("#"): continue
+            args.append( line[:-1].split("\t")[0] )
+
+    # start script in order to build the command line parser
+    global ORIGINAL_START
+    ORIGINAL_START = E.Start
+
+    if options.output_pattern and not options.input_regex:
+        raise ValueError("please specify --input-regex when using --output-pattern")
+
+    if options.output_format == "galaxy":
+        options.stdout.write( '''<section name="CGAT Tools" id="cgat_tools">\n''')
+
+    for script_name in args:
+        if not script_name.endswith(".py"):
+            raise ValueError( "expected a python script ending in '.py'" )
+
+        if options.input_regex:
+            try:
+                input_string = re.search( options.input_regex, script_name ).groups()[0]
+            except AttributeError:
+                E.warn("can not parse %s - skipped", script_name )
+                continue
+
+        if options.output_pattern:
+            outfile_name = re.sub( "%s", input_string, options.output_pattern )
+            outfile = open( outfile_name, "w" )
+        else:
+            outfile = options.stdout
+
+        E.info( "input=%s, output=%s" % (script_name, outfile_name ))
+        processScript( script_name, outfile, options )
+        
+        if options.output_format == "galaxy":
+            options.stdout.write( '''   <tool file="cgat/%s" />\n''' % outfile_name )
+
+        if outfile != options.stdout:
+            outfile.close()
+
+    if options.output_format == "galaxy":
+        options.stdout.write( '''</section>\n''')
 
     E.Stop()
 

@@ -32,36 +32,46 @@ gtf2table.py - annotate genes/transrcipts
 Purpose
 -------
 
-compute properties of genes of given in a gtf file and output them in 
-tabular format. 
+compute properties of genes or transcripts given in a :term:`gtf` 
+formatted file and output them in tabular format. 
+
+Quantities can be either computed per gene (all exons across all transcripts)
+or per transcript. The input needs to be sorted accordingly.
 
 The following methods are available:
 
-position
-   output genomic coordinates of gene
+bigwig-counts 
+   collect density values from bigwig file and output
+   summary statistics and percentage of bases covered (``pcovered``)
+   by value in bigwig file.
+   
+binding-pattern 
+   given a list of intervals, determine the binding
+   pattern within and surrounding the gene. For each gene, intervals
+   overlapping the CDS, introns, UTRs and the flank are collected and
+   recorded. The binding is summarized with a binding pattern, a
+   binary pattern indicating overlap/no overlap with 5' flank, 5' UTR,
+   CDS, Introns, 3' UTR, 3' flank.
 
-length
-   output length summary of gene
+classifier
+   classify transcripts according to genomic annotation 
+   Requires a :term:`gff` file with genomic annotations
+   (see :py:doc:`gtf2gff`.)
 
-splice
-   output splicing summary of gene
+classifier-chipseq
+   classify chipseq intervals
 
-quality
-   output base-quality information summary of gene. Needs quality scores.
+classifier-rnaseq
+   classify rnaseq transcripts with respect to a reference
+   geneset. Requires a :term:`gtf` file with a reference
+   gene set.
 
-overrun
-   output intron overrun
-
-read-coverage
-   output read coverage summary of gene
-
-read-extension
-
-read-counts
-
-bigwig-counts
-
-splice-comparison
+classifier-polii classify 
+   according to PolII transcripts. A
+   gene/transcript is transcribed, if it is covered by large PolII
+   intervals over 80% of its length. A gene/transript is primed if its
+   promotor/UTR is covered by 50% of its length, while the rest of the
+   gene body isn't.
 
 composition-na
    output nucleotide composition of gene
@@ -69,53 +79,88 @@ composition-na
 composition-cgp
    output cpg composition of gene
 
-overlap
-
-overlap-stranded
-
-proximity
-
-proximity-exclusive
-
-proximity-lengthmatched
-
-neighbours
-
-territories
+coverage
+   compute nucleotide coverage of input with segments in another file.
+   The values are output in 5' to 3' order for each nucleotide. Requires
+   a second :term:`gff` formatted file with features to cover.
 
 distance
+   compute distance of genes to features in a second file. Requires
+   a second :term:`gff` formatted file with transcripts. The strand
+   information of the features is ignored.
 
 distance-genes
+   compute distance of genes to genes in a second file. Requires a 
+   second :term:`gtf` formatted file with genes. The counter distinguishes
+   a variety of cases (closest upstream/downstream).
 
 distance-tss
+   compute distance of genes to transcription start sites. Requires a
+   second :term:`gtf` formatted file with genes.
 
-coverage
+length
+   output exon length summary of gene.
 
-classifier
+neighbours
+    output features in second stream that are in proximity to genes
+    in input. Requires a :term:`gtf` formatted file with genes.
 
-classifier-chipseq
-   classify chipseq intervals
+overlap
+    compute overlap of genes in input with features in second stream.
+    Requires a :term:`gff` formatted file with gene territories.
 
-classifier-rnaseq
-   classify rnaseq transcripts
+overlap-stranded
+    count overlap with genomic features in second another file. Outputs
+    the number of overlapping exons. Records the direction of overlap
+    (sense/antisense). Requires a :term:`gff` formatted file with 
+    features.
 
-classifier-polii
-   classify according to PolII transcripts. A gene/transcript is transcribed, if it is covered
-   by large PolII intervals over 80% of its length. A gene/transript is primed if its promotor/UTR
-   is covered by 50% of its length, while the rest of the gene body isn't.
+overlap-transcripts
+    count overlap of genes with transcripts in another set.
+    Requires a :term:`gtf` formatted file.
 
-binding-pattern
-   given a list of intervals, determine the binding pattern within and surrounding the gene. For each
-   gene, intervals overlapping the CDS, introns, UTRs and the flank are collected and recorded. The binding
-   is summarized with a binding pattern, a binary pattern indicating overlap/no overlap with
-   5' flank, 5' UTR, CDS, Introns, 3' UTR, 3' flank.
+overrun
+   output intron overrun, exons in the input gene set extending
+   into the introns of a reference gene set. Requries a :term:`gtf`
+   formatted file with a reference gene set.
+
+position
+   output genomic coordinates of gene
+
+proximity
+   report summary stats (lengths,values) of features in proximity to 
+   genes input gene set. Requires a :term:`gff` formatted file with
+   genomic features.
+
+proximity-exclusive
+   as proximity, but exclude any ranges overlapping the gene set.
+
+proximity-lengthmatched
+  as proximity-exclusive, but length-match features with genes.
+
+quality
+   output base-quality information summary of gene. Needs quality scores.
+
+read-coverage
+   output read coverage summary statistics of gene
+
+read-extension
+
+read-counts
+
+splice
+   output splicing summary of gene
+
+splice-comparison
+
+territories
 
 Usage
 -----
 
 Example::
 
-   python gtf2table.py --help
+   python gtf2table.py --counter=length < geneset.gtf > geneset.tsv
 
 Type::
 
@@ -500,7 +545,9 @@ class CounterOverlapTranscripts(CounterOverlap):
     Nover1 and nover2 now count "transcripts".
     """
 
-    headerTemplate = ( "ngenes", "ntranscripts", "nexons", "nbases", "pover1", "pover2" )
+    headerTemplate = ( "ngenes", "ntranscripts", 
+		       "nexons", "nbases", 
+		       "pover1", "pover2" )
 
     ## save value for intervals
     mWithValues = False
@@ -567,8 +614,8 @@ class CounterOverlapTranscripts(CounterOverlap):
 
 ##-----------------------------------------------------------------------------------
 class CounterCoverage(CounterOverlap):
-    """compute base coverage with segments in another file.
-    The values are output in 5' to 3' order for each base.
+    """compute nucleotide coverage of input with segments in another file.
+    The values are output in 5' to 3' order for each nucleotide.
     """
 
     headerTemplate = ["cov_%s" % x for x in Stats.Summary().getHeaders()+ ("covered", "values",) ]
@@ -3258,26 +3305,37 @@ def main( argv = None ):
                       help="select range on which counters will operate [default=%default]."  )
 
     parser.add_option("-c", "--counter", dest="counters", type="choice", action="append",
-                      choices=("length", "splice", "composition-na", "composition-cpg", 
-                               "overlap", 
-                               "classifier", 
-                               "classifier-chipseq",
-                               "classifier-rnaseq",
-			       "classifier-rnaseq-splicing",
-                               "overlap-stranded",
-                               "overlap-transcripts",
-                               "read-coverage", 
-                               "read-extension", 
-                               "read-counts",
-                               "bigwig-counts",
-                               'neighbours',
-                               "proximity", "proximity-exclusive", "proximity-lengthmatched",
-                               "position", "territories", "splice-comparison", 
-                               "distance", "distance-genes", "distance-tss",
-                               "coverage", "quality", "overrun",
-                               "classifier-polii",
-                               "binding-pattern" ),
-                      help="select counters to apply [default=%default]."  )
+                      choices=(	"bigwig-counts",
+				"binding-pattern",
+				"classifier", 
+				"classifier-chipseq",
+				"classifier-rnaseq",
+				"classifier-rnaseq-splicing",
+				"classifier-polii",
+				"composition-na", 
+				"composition-cpg", 
+				"coverage", 
+				"distance", 
+				"distance-genes", 
+				"distance-tss",
+				"length", 
+				'neighbours',
+				"overlap", 
+				"overlap-stranded",
+				"overlap-transcripts",
+				"overrun",
+				"position", 
+				"proximity", 
+				"proximity-exclusive", 
+				"proximity-lengthmatched",
+				"quality",
+				"read-coverage", 
+				"read-extension", 
+				"read-counts",
+				"splice", 
+				"splice-comparison", 
+				"territories"),
+		      help="select counters to apply to input [default=%default]."  )
 
     parser.add_option( "--add-gtf-source", dest="add_gtf_source", action="store_true",
                       help="add gtf field of source to output [default=%default]."  )

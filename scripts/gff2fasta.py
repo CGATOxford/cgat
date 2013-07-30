@@ -20,8 +20,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-gff2fasta.py - get sequences from gff file
-==========================================
+gff2fasta.py - output sequences from genomic features
+=====================================================
 
 :Author: Andreas Heger
 :Release: $Id$
@@ -31,19 +31,21 @@ gff2fasta.py - get sequences from gff file
 Purpose
 -------
 
-This script outputs sequences for intervals within
+This script outputs the genomic sequences for intervals within
 a :term:`gff` formatted file.
+
+The ouput can be optionall masked and filtered.
 
 Usage
 -----
 
 Example::
 
-   python <script_name>.py --help
+   python gff2fasta.py --genome-file=hg19 < features.gff > features.fasta
 
 Type::
 
-   python <script_name>.py --help
+   python gff2fasta.py --help
 
 for command line help.
 
@@ -75,36 +77,40 @@ if __name__ == "__main__":
     parser = E.OptionParser( version = "%prog version: $Id: gff2fasta.py 2861 2010-02-23 17:36:32Z andreas $")
 
     parser.add_option( "--is-gtf", dest="is_gtf", action="store_true",
-                      help="input is gtf."  )
+                      help="input is gtf instead of gff."  )
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
-                      help="filename with genome."  )
+                      help="filename with genome [default=%default]."  )
 
     parser.add_option("-m", "--merge", dest="merge", action="store_true",
-                      help="merge sequences with the same group."  )
+                      help="merge adjacent intervals with the same attributes. "
+                      "[default=%default]")
 
     parser.add_option("-e", "--feature", dest="feature", type = "string",
-                      help="feature to filter, for example 'exon', 'CDS'. If set to the empty string, all entries are output [%default]."  )
+                      help="filter by a feature, for example 'exon', 'CDS'. If "
+                      "set to the empty string, all entries are output [%default]."  )
 
     parser.add_option("-f", "--filename-masks", dest="filename_masks", type = "string",
+                      metavar = "gff",
                       help="mask sequences with regions given in gff file [%default]."  )
 
     parser.add_option( "--remove-masked-regions", dest="remove_masked_regions", action="store_true",
-                      help="remove masked regions [%default]."  )
+                      help="remove regions instead of masking [%default]."  )
 
     parser.add_option( "--min-length", dest="min_length", type="int",
-                       help="require a minimum sequence length [%default]" )
+                       help="set minimum length for sequences output [%default]" )
 
     parser.add_option( "--max-length", dest="max_length", type="int",
-                       help="require a maximum sequence length [%default]" )
+                       help="set maximum length for sequences output [%default]" )
 
     parser.add_option( "--extend-at", dest="extend_at", type="choice",
                        choices=("none", "3", "5", "both", "3only", "5only" ),
-                       help="extend at no, 3', 5' or both ends. If 3only or 5only are set, only the added sequence is returned [default=%default]" )
+                       help="extend at no end, 3', 5' or both ends. If "
+                       "3only or 5only are set, only the added sequence "
+                       "is returned [default=%default]" )
 
     parser.add_option( "--extend-by", dest="extend_by", type="int",
                        help="extend by # bases [default=%default]" )
-
 
     parser.set_defaults(
         is_gtf = False,

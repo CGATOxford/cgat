@@ -32,20 +32,19 @@ add_script_template.py - add template to python scipts
 Purpose
 -------
 
-.. todo::
-   
-   describe purpose of the script.
+adds a preamble to python scripts. The original scripts
+are saved as ``.bak`` files.
 
 Usage
 -----
 
 Example::
 
-   python <script_name>.py --help
+   python add_script_template.py script1.py script2.py
 
 Type::
 
-   python <script_name>.py --help
+   python add_script_template.py --help
 
 for command line help.
 

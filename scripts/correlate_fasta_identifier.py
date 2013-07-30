@@ -67,7 +67,7 @@ USAGE="""python %s [OPTIONS] filename < stdin > stdout
 
 Version: $Id: correlate_fasta_identifier.py 14 2005-08-09 15:24:07Z andreas $
 
-Given a two files fasta sequences substitute
+Given two :term:`fasta` formatted files, substitute
 identifiers in stream with those given in file with filename.
 
 Options:

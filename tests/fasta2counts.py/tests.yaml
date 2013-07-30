@@ -1,4 +1,10 @@
-basic_test:
+version:
+    stdin: null
+    outputs: [stdout]
+    references: [version_test.out]
+    options: --version
+
+basic:
     stdin: null 
     outputs: [stdout]
     references: [test1.tsv]

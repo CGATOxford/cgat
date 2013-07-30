@@ -247,12 +247,12 @@ if __name__ == "__main__":
     if options.select:
         options.select = options.select.split(",")
 
-    outfile = sys.stdout
+    outfile = options.stdout
 
     ###################################################################
     ## convert weights table to a codon table
     if options.weights_matrix2table:
-        lines = sys.stdin.readlines()
+        lines = options.stdin.readlines()
         data = []
         for line in lines:
             if line[0] == "#": continue

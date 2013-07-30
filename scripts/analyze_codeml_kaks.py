@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-analyze_codeml_kaks.py - analyze results from codeml kaks run
+codeml2tsv.py - analyze results from codeml kaks run
 =============================================================
 
 :Author: Andreas Heger
@@ -38,11 +38,11 @@ Usage
 
 Example::
 
-   python analyze_codeml_kaks.py --help
+   python codeml2tsv.py --help
 
 Type::
 
-   python analyze_codeml_kaks.py --help
+   python codeml2tsv.py --help
 
 for command line help.
 
@@ -74,7 +74,7 @@ import CGAT.Stats as Stats
 
 if __name__ == "__main__":
     
-    parser = E.OptionParser( version = "%prog version: $Id: analyze_codeml_kaks.py 2781 2009-09-10 11:33:14Z andreas $" )
+    parser = E.OptionParser( version = "%prog version: $Id: codeml2tsv.py 2781 2009-09-10 11:33:14Z andreas $" )
 
     parser.add_option("-m", "--methods", dest="methods", type="string",
                       help="""methods for analysis.

@@ -206,11 +206,13 @@ midpointprofile - aggregate over midpoint of gene model.
 [%default]''' )
 
     parser.add_option( "-b", "--bamfile", "--bedfile", "--bigwigfile", dest="infiles", 
+                       metavar = "BAM",
                        type = "string", action = "append",
                        help = "BAM/bed/bigwig files to use. Do not mix different types"
                               "[%default]" )
 
     parser.add_option( "-g", "--gtffile", dest="gtffile", type = "string",
+                       metavar = "GTF",
                        help = "GTF file to use. "
                               "[%default]" )
 
@@ -248,7 +250,7 @@ The options are:
 
     parser.add_option( "-i", "--shift", dest="shifts", type = "int", action = "append",
                        help = "shift reads in :term:`bam` formatted file before computing densities (ChIP-Seq). "
-                              "[%default]" )
+                       "[%default]" )
 
     parser.add_option( "-a", "--merge-pairs", dest="merge_pairs", action = "store_true",
                        help = "merge pairs in :term:`bam` formatted file before computing"

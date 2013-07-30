@@ -18,7 +18,7 @@ from nose.tools import assert_equal
 # 5. List of reference files
 import yaml
 
-def check_script( script, stdin, options, outputs, references, workingdir ):
+def check_script( test_name, script, stdin, options, outputs, references, workingdir ):
     
     tmpdir = tempfile.mkdtemp()
 
@@ -38,6 +38,10 @@ def check_script( script, stdin, options, outputs, references, workingdir ):
                               shell = True,
                               cwd = tmpdir )
     assert retval == 0
+
+    # for version tests, do not compare output
+    if test_name == "version":
+        return
     
     # compare line by line, ignoring comments
     for output, reference in zip( outputs, references ):
@@ -71,6 +75,7 @@ def test_scripts():
         for test, values in script_tests.items():
             check_script.description = os.path.join( scriptdir, test)
             yield( check_script,
+                   test,
                    os.path.abspath( os.path.join( "scripts", os.path.basename(scriptdir))),
                    values.get('stdin', None), 
                    values['options'], 

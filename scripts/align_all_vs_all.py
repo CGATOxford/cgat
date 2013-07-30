@@ -33,7 +33,7 @@ Purpose
 -------
 
 This script computes all-vs-all alignments between
-sequnces in a :term:`fasta` formatted file.
+sequences in a :term:`fasta` formatted file.
 
 Currently only Smith-Waterman protein alignment is
 implemented.
@@ -130,8 +130,6 @@ if __name__ == "__main__":
                 100 * alignlib.calculatePercentIdentity( map_a2b, sequences[x][1], sequences[y][1]),
                 sequences[x][1].getLength(),
                 sequences[y][1].getLength() ))
-                
-                                  
             
 
     E.Stop()

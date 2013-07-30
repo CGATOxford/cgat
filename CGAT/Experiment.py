@@ -318,8 +318,14 @@ class AppendCommaOption(optparse.Option):
     def convert_value( self, opt, value ):
         if value is not None:
             if self.nargs == 1:
-                if self.action == "append" and "," in value:
-                    return [self.check_value(opt, v ) for v in value.split(",")]
+                if self.action == "append":
+                    if "," in value:
+                        return [self.check_value(opt, v ) for v in value.split(",") if v != ""]
+                    else:
+                        if value != "":
+                            return self.check_value( opt, value )
+                        else:
+                            return value
                 else:
                     return self.check_value( opt, value )
             else:
@@ -328,6 +334,7 @@ class AppendCommaOption(optparse.Option):
     # why is it necessary to pass action and dest to this function when
     # they could be accessed as self.action and self.dest? 
     def take_action( self, action, dest, opt, value, values, parser):
+
         if action == "append" and type( value ) == list: 
             values.ensure_value(dest, []).extend( value )
         else:

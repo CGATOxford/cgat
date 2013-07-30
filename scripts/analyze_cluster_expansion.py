@@ -21,8 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-analyze_cluster_expansion.py - 
-======================================================
+optic_analyze_cluster_expansion.py - analyse values based on a clustering.
+==========================================================================
 
 :Author: Andreas Heger
 :Release: $Id$
@@ -32,20 +32,19 @@ analyze_cluster_expansion.py -
 Purpose
 -------
 
-.. todo::
-   
-   describe purpose of the script.
+given:
+        a map of predictions to components
 
 Usage
 -----
 
 Example::
 
-   python analyze_cluster_expansion.py --help
+   python optic_analyze_cluster_expansion.py --help
 
 Type::
 
-   python analyze_cluster_expansion.py --help
+   python optic_analyze_cluster_expansion.py --help
 
 for command line help.
 
@@ -66,13 +65,6 @@ import sets
 import optparse
 import math
 import tempfile
-
-"""analyse values based on a clustering.
-
-given:
-        a map of predictions to components
-
-"""
 
 import CGAT.Experiment as E
 
