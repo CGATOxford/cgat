@@ -54,6 +54,24 @@ import optparse
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Bed as Bed
 import CGAT.Experiment as E
+import CGAT.GFF as GFF
+
+def getFixedWidthWindows( map_contig2size, window_size ):
+    """return a list of fixed contig sizes."""
+    
+
+    for contig, size in map_contig2size.items():
+        E.info("processing %s" % contig)
+        for x in range(0, size, window_increment):
+            if x + window_size > size: continue
+            gff = GFF.Entry()
+            gff.feature = "window"
+            gff.source = "window"
+            gff.contig = contig
+            gff.start = x
+            gff.end = min(size, x + window_size)
+            yield gff
+
 
 def main( argv = None ):
     """script main.
@@ -73,9 +91,16 @@ def main( argv = None ):
     parser.add_option( "--remove-regex", dest="remove_regex", type="string", 
                        help="regular expression of contigs to remove [default=None]."  )
 
+    parser.add_option( "-e", "--gff-file", dest="gff_file", type="string",
+                       help="gff file to use for getting contig sizes."  )
+
+    parser.add_option( "-f", "--fixed-width-windows=", dest="fixed_width_windows", type="string",
+                       help="fixed width windows. Supply the window size as a parameter. Optionally supply an offset." )
+
     parser.set_defaults(
         genome_file = None,
         remove_regex = None,
+        fixed_windows = None,
         )
 
     ## add common options (-h/--help, ...) and parse command line 
@@ -86,28 +111,60 @@ def main( argv = None ):
     else:
         remove_regex = None
 
+    if options.fixed_width_windows:
+        v = map(int, options.fixed_width_windows.split(","))
+        if len(v) == 2:
+            window_size, window_increment = v
+        elif len(v) == 1:
+            window_size, window_increment = v[0], v[0]
+        else:
+            raise ValueError( "could not parse window size '%s': should be size[,increment]" % options.fixed_width_windows )
+
+    if options.gff_file:
+        infile = open( options.gff_file, "r" )
+        gff = GFF.readFromFile( infile )   
+        infile.close()
+        for g in gff:
+            try:
+                map_contig2size[g.mName] = max( map_contig2size[g.mName], g.end )
+            except ValueError:
+                map_contig2size[g.mName] = g.end 
+            
+    else:
+        gff = None
+
+    if options.genome_file:
+        fasta = IndexedFasta.IndexedFasta( options.genome_file )
+        map_contig2size = fasta.getContigSizes( with_synonyms = False )
+    else:
+        fasta = None
+
+    if map_contig2size == None:
+        raise ValueError( "no source of contig sizes supplied" )
+
     ## do sth
-    ninput, nskipped, noutput = 0, 0, 0
+    counter = E.Counter()
 
-    fasta = IndexedFasta.IndexedFasta( options.genome_file )
-
-    entry = Bed.Bed()
-    entry.start = 0
-
-    for contig, size in fasta.getContigSizes( with_synonyms = False ).iteritems():
-
-        ninput += 1
+    for contig, size in map_contig2size.items():
+        size = int(size)
+        counter.input += 1
 
         if remove_regex and remove_regex.search(contig): 
-            nskipped += 1
+            counter.skipped += 1
             continue
 
-        entry.contig = contig
-        entry.end = int(size)
-        options.stdout.write( "%s\n" % str(entry) )
-        noutput += 1
+        if options.fixed_width_windows:
+            for x in range(0, size, window_increment):
+                if x + window_size > size: continue
+                options.stdout.write( "%s\t%i\t%i" % (contig, x, min(size, x + window_size)))
+                counter.windows += 1
+        else:
+            options.stdout.write( "%s\t%i\t%i" % (contig, 0, size))
+            counter.windows += 1
 
-    E.info( "ninput=%i, noutput=%i, nskipped=%i" % (ninput, noutput,nskipped) )
+        counter.output += 1
+
+    E.info( str(counter) )
 
     ## write footer and output benchmark information.
     E.Stop()
