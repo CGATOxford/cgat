@@ -122,9 +122,6 @@ def main( argv = None ):
         with open( os.path.join( dirname, "tests.yaml" ), "w" ) as outf:
             outf.write( YAML_TEMPLATE )
         
-        with open( os.path.join( dirname, "version_test.out" ), "w") as outf:
-            outf.write("")
-
         counter.created += 1
 
     E.info( "%s" % str(counter))
