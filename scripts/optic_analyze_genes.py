@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-analyze_genes.py - 
+optic_analyze_genes.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python analyze_genes.py --help
+   python optic_analyze_genes.py --help
 
 Type::
 
-   python analyze_genes.py --help
+   python optic_analyze_genes.py --help
 
 for command line help.
 
@@ -67,7 +67,7 @@ import optparse
 import math
 import tempfile
 
-""" program $Id: analyze_genes.py 2781 2009-09-10 11:33:14Z andreas $
+""" program $Id: optic_analyze_genes.py 2781 2009-09-10 11:33:14Z andreas $
 
 count number of matches found in gene prediction pipeline.
 
@@ -78,7 +78,7 @@ import CGAT.Exons as Exons
 
 import pgdb
 
-parser = E.OptionParser( version = "%prog version: $Id: analyze_genes.py 2781 2009-09-10 11:33:14Z andreas $")
+parser = E.OptionParser( version = "%prog version: $Id: optic_analyze_genes.py 2781 2009-09-10 11:33:14Z andreas $")
 
 def GetCounts( r, priority ):
     """count transcript by genes sorted by priority.

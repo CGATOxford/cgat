@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-exons2genes.py - 
+gpipe_exons2genes.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python exons2genes.py --help
+   python gpipe_exons2genes.py --help
 
 Type::
 
-   python exons2genes.py --help
+   python gpipe_exons2genes.py --help
 
 for command line help.
 
@@ -64,7 +64,7 @@ import getopt
 
 USAGE="""python %s < predictions > genes
 
-Version: $Id: exons2genes.py 1799 2008-03-28 11:44:19Z andreas $
+Version: $Id: gpipe_exons2genes.py 1799 2008-03-28 11:44:19Z andreas $
 
 collect overlapping exons into genes.
 
@@ -88,7 +88,8 @@ import pgdb
 
 param_long_options=["verbose=", "help", "overlap=", "filter-tokens=", "filter-predictions=",
                     "table-predictions=",
-                    "table-quality=", "table-genes=", "quality="]
+                    "table-quality=", "table-genes=", "quality=",
+                    "version"]
 param_short_options="v:ho:t:p:P:T:G:Q:"
 
 param_loglevel = 1
@@ -177,6 +178,9 @@ if __name__ == '__main__':
             param_loglevel = int(a)
         elif o in ( "-h", "--help" ):
             print USAGE
+            sys.exit(0)
+        elif o in ( "--version", ):
+            print "version="
             sys.exit(0)
         elif o in ( "-o", "--overlap" ):
             param_overlap_residues = int(a)

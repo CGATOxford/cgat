@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-regions2graph.py - 
+optic_regions2graph.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python regions2graph.py --help
+   python optic_regions2graph.py --help
 
 Type::
 
-   python regions2graph.py --help
+   python optic_regions2graph.py --help
 
 for command line help.
 
@@ -66,7 +66,7 @@ import gzip
 
 USAGE="""python %s [OPTIONS] < exonerate_output > filtered
 
-Version: $Id: regions2graph.py 2754 2009-09-04 16:50:22Z andreas $
+Version: $Id: optic_regions2graph.py 2754 2009-09-04 16:50:22Z andreas $
 
 Read a graph of regions and dump out a bipartite graph.
 
@@ -546,7 +546,7 @@ def ExchangeStreams( old_predictions, new_predictions ):
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = E.OptionParser( version = "%prog version: $Id: regions2graph.py 2754 2009-09-04 16:50:22Z andreas $", usage = globals()["__doc__"] )
+    parser = E.OptionParser( version = "%prog version: $Id: optic_regions2graph.py 2754 2009-09-04 16:50:22Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option( "-b", "--benchmark", dest="filename_benchmark", type="string",
                       help=""  )

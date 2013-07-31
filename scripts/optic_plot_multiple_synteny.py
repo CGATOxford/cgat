@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-plot_multiple_synteny.py - 
+optic_plot_multiple_synteny.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python plot_multiple_synteny.py --help
+   python optic_plot_multiple_synteny.py --help
 
 Type::
 
-   python plot_multiple_synteny.py --help
+   python optic_plot_multiple_synteny.py --help
 
 for command line help.
 
@@ -66,7 +66,7 @@ import math
 import random
 import tempfile
 
-""" program $Id: plot_multiple_synteny.py 2781 2009-09-10 11:33:14Z andreas $
+""" program $Id: optic_plot_multiple_synteny.py 2781 2009-09-10 11:33:14Z andreas $
 
 """
 import CGAT.Experiment as E
@@ -845,7 +845,7 @@ def GetMap( values ):
     
 if __name__ == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: plot_multiple_synteny.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: optic_plot_multiple_synteny.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-t", "--title", dest="title", type="string",
                       help="page title.")

@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-genes2quality.py - 
+gpipe_genes2quality.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python genes2quality.py --help
+   python gpipe_genes2quality.py --help
 
 Type::
 
-   python genes2quality.py --help
+   python gpipe_genes2quality.py --help
 
 for command line help.
 
@@ -66,7 +66,7 @@ import optparse
 import math
 import tempfile
 
-""" program $Id: genes2quality.py 2781 2009-09-10 11:33:14Z andreas $
+""" program $Id: gpipe_genes2quality.py 2781 2009-09-10 11:33:14Z andreas $
 
 return a table mapping genes to quality codes.
 
@@ -87,7 +87,7 @@ import CGAT.Genomics as Genomics
 
 import pgdb
 
-parser = E.OptionParser( version = "%prog version: $Id: genes2quality.py 2781 2009-09-10 11:33:14Z andreas $")
+parser = E.OptionParser( version = "%prog version: $Id: gpipe_genes2quality.py 2781 2009-09-10 11:33:14Z andreas $")
 
 def ProcessGene( outfile, gene_id, qualities, options ):
     """output best quality transcript for gene.

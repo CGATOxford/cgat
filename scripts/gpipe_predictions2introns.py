@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-predictions2introns.py - 
+gpipe_predictions2introns.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python predictions2introns.py --help
+   python gpipe_predictions2introns.py --help
 
 Type::
 
-   python predictions2introns.py --help
+   python gpipe_predictions2introns.py --help
 
 for command line help.
 
@@ -64,7 +64,7 @@ import optparse
 
 USAGE="""python %s < predictions > introns
 
-Version: $Id: predictions2introns.py 2781 2009-09-10 11:33:14Z andreas $
+Version: $Id: gpipe_predictions2introns.py 2781 2009-09-10 11:33:14Z andreas $
 
 Summarize information about introns in predictions.
   
@@ -105,7 +105,7 @@ def findCodonReverse( sequence, start, found_codons, abort_codons = None ):
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = E.OptionParser( version = "%prog version: $Id: predictions2introns.py 2781 2009-09-10 11:33:14Z andreas $",
+    parser = E.OptionParser( version = "%prog version: $Id: gpipe_predictions2introns.py 2781 2009-09-10 11:33:14Z andreas $",
                                     usage = globals()["__doc__"] )
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",

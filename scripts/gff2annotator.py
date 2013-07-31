@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-gff2annotator.py - convert from gff to annotator format
+gff2annotator2tsv.py - convert from gff to annotator format
 =======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python gff2annotator.py --help
+   python gff2annotator2tsv.py --help
 
 Type::
 
-   python gff2annotator.py --help
+   python gff2annotator2tsv.py --help
 
 for command line help.
 
@@ -106,7 +106,7 @@ this script will create:
 
 if __name__ == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: gff2annotator.py 2861 2010-02-23 17:36:32Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: gff2annotator2tsv.py 2861 2010-02-23 17:36:32Z andreas $", usage = globals()["__doc__"])
 
         
     parser.add_option( "-g", "--genome-file", dest="genome_file", type="string",

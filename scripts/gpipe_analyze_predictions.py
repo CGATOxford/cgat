@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-analyze_predictions.py - 
+gpipe_analyze_predictions.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python analyze_predictions.py --help
+   python gpipe_analyze_predictions.py --help
 
 Type::
 
-   python analyze_predictions.py --help
+   python gpipe_analyze_predictions.py --help
 
 for command line help.
 
@@ -69,7 +69,7 @@ import tempfile
 
 import pgdb
 import csv
-""" program $Id: analyze_predictions.py 2781 2009-09-10 11:33:14Z andreas $
+""" program $Id: gpipe_analyze_predictions.py 2781 2009-09-10 11:33:14Z andreas $
 
 analyse a prediction list
 
@@ -79,7 +79,7 @@ import CGAT.Experiment as E
 
 if __name__ == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: analyze_predictions.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: gpipe_analyze_predictions.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option( "-s", "--species-regex", dest="species_regex", type="string" ,
                        help="regular expression to extract species from identifier.")

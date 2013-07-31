@@ -113,6 +113,7 @@ def __main__():
     # use argparse to ignore unknown options
     parser = argparse.ArgumentParser()
 
+    parser.add_argument( "--version", action="version", version="%(prog)s")
     parser.add_argument( "--wrapper-command", dest="command", type=str)
     parser.add_argument( "--wrapper-bam-file", dest="bam_file", type=str)
     parser.add_argument( "--wrapper-bam-option", dest="bam_option", type=str)

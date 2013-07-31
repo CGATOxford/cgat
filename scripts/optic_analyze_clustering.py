@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-analyze_clustering.py - 
+optic_analyze_clustering.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python analyze_clustering.py --help
+   python optic_analyze_clustering.py --help
 
 Type::
 
-   python analyze_clustering.py --help
+   python optic_analyze_clustering.py --help
 
 for command line help.
 
@@ -91,7 +91,7 @@ import numpy
 import scipy
 import scipy.stats
 
-parser = E.OptionParser( version = "%prog version: $Id: analyze_clustering.py 2781 2009-09-10 11:33:14Z andreas $")
+parser = E.OptionParser( version = "%prog version: $Id: optic_analyze_clustering.py 2781 2009-09-10 11:33:14Z andreas $")
 
 if __name__ == "__main__":
 

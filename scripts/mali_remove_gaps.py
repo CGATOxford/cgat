@@ -82,7 +82,7 @@ Options:
 -o, --file-output               output
 """ % sys.argv[0]
 
-param_long_options=["verbose=", "help", "file-output=" ]
+param_long_options=["verbose=", "help", "file-output=", "version" ]
 
 param_short_options="v:hm:e:p:c"
 
@@ -110,6 +110,9 @@ if __name__ == '__main__':
     for o,a in optlist:
         if o in ( "-v", "--verbose" ):
             param_loglevel = int(a)
+        elif o in ( "--version", ):
+            print "version="
+            sys.exit(0)
         elif o in ( "-h", "--help" ):
             print USAGE
             sys.exit(0)

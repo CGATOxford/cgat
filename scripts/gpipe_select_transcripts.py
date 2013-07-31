@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-select_transcripts.py - 
+gpipe_select_transcripts.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python select_transcripts.py --help
+   python gpipe_select_transcripts.py --help
 
 Type::
 
-   python select_transcripts.py --help
+   python gpipe_select_transcripts.py --help
 
 for command line help.
 
@@ -66,7 +66,7 @@ import optparse
 
 USAGE="""python %s < predictions > genes
 
-Version: $Id: select_transcripts.py 2263 2008-11-17 16:36:29Z andreas $
+Version: $Id: gpipe_select_transcripts.py 2263 2008-11-17 16:36:29Z andreas $
 
 select a set of transcripts from genes. Each transcript is
 a representative of other predictions.
@@ -723,7 +723,7 @@ def PrintMembers( rep_id, outfile, eliminated, eliminated_by_method ):
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = E.OptionParser( version = "%prog version: $Id: select_transcripts.py 2263 2008-11-17 16:36:29Z andreas $", usage = globals()["__doc__"] )
+    parser = E.OptionParser( version = "%prog version: $Id: gpipe_select_transcripts.py 2263 2008-11-17 16:36:29Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option( "-o", "--overlap", dest="overlap_residues", type="int",
                        help="overlap residues.")

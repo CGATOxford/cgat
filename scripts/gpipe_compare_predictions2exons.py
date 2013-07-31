@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-compare_predictions2exons.py - 
+gpipe_compare_predictions2exons.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python compare_predictions2exons.py --help
+   python gpipe_compare_predictions2exons.py --help
 
 Type::
 
-   python compare_predictions2exons.py --help
+   python gpipe_compare_predictions2exons.py --help
 
 for command line help.
 
@@ -65,7 +65,7 @@ import math
 
 USAGE="""python %s [OPTIONS] < exonerate_output > filtered
 
-Version: $Id: compare_predictions2exons.py 2011 2008-07-04 10:40:51Z andreas $
+Version: $Id: gpipe_compare_predictions2exons.py 2011 2008-07-04 10:40:51Z andreas $
 
 Evaluate genewise alignments.
 
@@ -82,7 +82,7 @@ import CGAT.Exons as Exons
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = E.OptionParser( version = "%prog version: $Id: compare_predictions2exons.py 2011 2008-07-04 10:40:51Z andreas $",
+    parser = E.OptionParser( version = "%prog version: $Id: gpipe_compare_predictions2exons.py 2011 2008-07-04 10:40:51Z andreas $",
                                     usage = globals()["__doc__"] )
 
     parser.add_option( "-g", "--genome-file", dest="genome_file", type="string",

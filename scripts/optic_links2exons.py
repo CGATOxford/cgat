@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-links2exons.py - 
+optic_links2exons.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python links2exons.py --help
+   python optic_links2exons.py --help
 
 Type::
 
-   python links2exons.py --help
+   python optic_links2exons.py --help
 
 for command line help.
 
@@ -65,7 +65,7 @@ import tempfile
 
 USAGE="""python %s [OPTIONS] < orthologs > genes
 
-Version: $Id: links2exons.py 1799 2008-03-28 11:44:19Z andreas $
+Version: $Id: optic_links2exons.py 1799 2008-03-28 11:44:19Z andreas $
 
 Transform a list of blastp alignments between sequences to
 a list of alignments between exons.
@@ -85,7 +85,7 @@ import alignlib
 import CGAT.BlastAlignments as BlastAlignments
 
 param_long_options=["verbose=", "help",
-                    "cds=", "map="]
+                    "cds=", "map=", "version"]
 
 param_short_options="v:hc:m:"
 
@@ -126,6 +126,9 @@ if __name__ == '__main__':
             param_loglevel = int(a)
         elif o in ( "-h", "--help" ):
             print USAGE
+            sys.exit(0)
+        elif o in ( "--version", ):
+            print "version="
             sys.exit(0)
         elif o == "--cds":
             param_filename_cds = a

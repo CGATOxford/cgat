@@ -2,7 +2,7 @@
 #
 #   MRC FGU Computational Genomics Group
 #
-#   $Id: bam_correlation.py 2861 2010-02-23 17:36:32Z andreas $
+#   $Id: bams2correlation.py 2861 2010-02-23 17:36:32Z andreas $
 #
 #   Copyright (C) 2009 Andreas Heger
 #
@@ -21,11 +21,11 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 """
-bam_correlation.py - compute coverage correlation between bam files
+bams2correlation.py - compute coverage correlation between bam files
 ===================================================================
 
 :Author: Andreas Heger
-:Release: $Id: bam_correlation.py 2861 2010-02-23 17:36:32Z andreas $
+:Release: $Id: bams2correlation.py 2861 2010-02-23 17:36:32Z andreas $
 :Date: |today|
 :Tags: Python
 
@@ -65,7 +65,7 @@ def main( argv = None ):
     if not argv: argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser( version = "%prog version: $Id: bam_correlation.py 2861 2010-02-23 17:36:32Z andreas $", usage = globals()["__doc__"] )
+    parser = E.OptionParser( version = "%prog version: $Id: bams2correlation.py 2861 2010-02-23 17:36:32Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option("-i", "--intervals", dest="filename_intervals", type="string",
                       help="filename with intervals to use [default=%default]."  )

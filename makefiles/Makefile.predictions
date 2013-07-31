@@ -47,7 +47,7 @@ step%.0: step5 $*.prepare
 %.prepare: 
 	grep -v "#" regions.predictions |\
 	sort -k2,2 -t'	' |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)assignments2pairs.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_assignments2pairs.py \
 	--min-margin=$(PARAM_PREDICTION_MIN_MARGIN) \
 	--default-margin=$(PARAM_PREDICTION_MARGIN) \
 	--genome-file=$(PARAM_INPUT_GENOME) \

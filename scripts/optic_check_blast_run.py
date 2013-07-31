@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-check_blast_run.py - 
+optic_check_blast_run.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python check_blast_run.py --help
+   python optic_check_blast_run.py --help
 
 Type::
 
-   python check_blast_run.py --help
+   python optic_check_blast_run.py --help
 
 for command line help.
 
@@ -67,7 +67,7 @@ import optparse
 import math
 import tempfile
 
-""" program $Id: check_blast_run.py 2781 2009-09-10 11:33:14Z andreas $
+""" program $Id: optic_check_blast_run.py 2781 2009-09-10 11:33:14Z andreas $
 check blast run.
 
 Input: one or more sets of vertices.
@@ -75,7 +75,7 @@ Input: one or more sets of vertices.
 import CGAT.Experiment as E
 import CGAT.BlastAlignments as BlastAlignments
 
-parser = E.OptionParser( version = "%prog version: $Id: check_blast_run.py 2781 2009-09-10 11:33:14Z andreas $")
+parser = E.OptionParser( version = "%prog version: $Id: optic_check_blast_run.py 2781 2009-09-10 11:33:14Z andreas $")
 
 if __name__ == "__main__":
 

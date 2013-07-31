@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-update_orthology.py - 
+optic_update_orthology.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python update_orthology.py --help
+   python optic_update_orthology.py --help
 
 Type::
 
-   python update_orthology.py --help
+   python optic_update_orthology.py --help
 
 for command line help.
 
@@ -68,7 +68,7 @@ import math
 import tempfile
 import glob
 
-""" program $Id: update_orthology.py 2781 2009-09-10 11:33:14Z andreas $
+""" program $Id: optic_update_orthology.py 2781 2009-09-10 11:33:14Z andreas $
 
 update orthology assignments.
 
@@ -89,7 +89,7 @@ def createLink( old_fn, new_fn ):
 
 if __name__ == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: update_orthology.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: optic_update_orthology.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-o", "--old-dir", dest="old_directory", type="string",
                       help="old directory."  )

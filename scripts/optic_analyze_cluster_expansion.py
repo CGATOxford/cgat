@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-optic_analyze_cluster_expansion.py - analyse values based on a clustering.
+optic_optic_analyze_cluster_expansion.py - analyse values based on a clustering.
 ==========================================================================
 
 :Author: Andreas Heger
@@ -40,11 +40,11 @@ Usage
 
 Example::
 
-   python optic_analyze_cluster_expansion.py --help
+   python optic_optic_analyze_cluster_expansion.py --help
 
 Type::
 
-   python optic_analyze_cluster_expansion.py --help
+   python optic_optic_analyze_cluster_expansion.py --help
 
 for command line help.
 
@@ -72,7 +72,7 @@ import numpy
 import scipy
 import scipy.stats
 
-parser = E.OptionParser( version = "%prog version: $Id: analyze_cluster_expansion.py 2781 2009-09-10 11:33:14Z andreas $")
+parser = E.OptionParser( version = "%prog version: $Id: optic_analyze_cluster_expansion.py 2781 2009-09-10 11:33:14Z andreas $")
 
 
 if __name__ == "__main__":

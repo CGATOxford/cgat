@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-filter_fasta.py - select sequences in a fasta file
+gpipe_filter_fasta.py - select sequences in a fasta file
 ==================================================
 
 :Author: Andreas Heger
@@ -40,11 +40,11 @@ Usage
 
 Example::
 
-   python filter_fasta.py --help
+   python gpipe_filter_fasta.py --help
 
 Type::
 
-   python filter_fasta.py --help
+   python gpipe_filter_fasta.py --help
 
 for command line help.
 
@@ -132,7 +132,7 @@ class MaskerSeg (Masker):
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = E.OptionParser( version = "%prog version: $Id: filter_fasta.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: gpipe_filter_fasta.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-m", "--method", dest="method", type="choice",
                       choices=("longest-transcript", "ids", "quality" ),

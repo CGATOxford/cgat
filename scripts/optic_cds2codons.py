@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-cds2codons.py - remove frameshifts from cdna sequences
+optic_cds2codons.py - remove frameshifts from cdna sequences
 ======================================================
 
 :Author: Andreas Heger
@@ -40,11 +40,11 @@ Usage
 
 Example::
 
-   python cds2codons.py --help
+   python optic_cds2codons.py --help
 
 Type::
 
-   python cds2codons.py --help
+   python optic_cds2codons.py --help
 
 for command line help.
 
@@ -103,7 +103,7 @@ class Map:
 
 if __name__ == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: cds2codons.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: optic_cds2codons.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-m", "--map", dest="filename_map", type="string",
                       help="filename with mapping information."  )

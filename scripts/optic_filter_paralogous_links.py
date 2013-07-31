@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-filter_paralogous_links.py - 
+optic_filter_paralogous_links.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python filter_paralogous_links.py --help
+   python optic_filter_paralogous_links.py --help
 
 Type::
 
-   python filter_paralogous_links.py --help
+   python optic_filter_paralogous_links.py --help
 
 for command line help.
 
@@ -65,7 +65,7 @@ import tempfile
 
 USAGE="""python %s [OPTIONS] < orthologs > genes
 
-Version: $Id: filter_paralogous_links.py 1799 2008-03-28 11:44:19Z andreas $
+Version: $Id: optic_filter_paralogous_links.py 1799 2008-03-28 11:44:19Z andreas $
 
 Remove from a list of alignments those between paralogous sequences.
 
@@ -107,7 +107,7 @@ param_long_options=["verbose=", "help",
                     "missing-max-missing=", "missing-min-present=",
                     "disable-check-exon-number",
                     "report-step=",
-                    "compress" ]
+                    "compress", "version" ]
                     
 
 param_short_options="v:hg:"
@@ -285,6 +285,9 @@ if __name__ == '__main__':
     for o,a in optlist:
         if o in ( "-v", "--verbose" ):
             param_loglevel = int(a)
+        elif o in ( "--version", ):
+            print "version="
+            sys.exit(0)
         elif o in ( "-h", "--help" ):
             print USAGE
             sys.exit(0)

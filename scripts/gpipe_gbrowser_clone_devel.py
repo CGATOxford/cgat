@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-gbrowser_clone_devel.py - 
+gpipe_gbrowser_clone_devel.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python gbrowser_clone_devel.py --help
+   python gpipe_gbrowser_clone_devel.py --help
 
 Type::
 
-   python gbrowser_clone_devel.py --help
+   python gpipe_gbrowser_clone_devel.py --help
 
 for command line help.
 
@@ -96,7 +96,7 @@ data_worms = (
     ( "Cfour", "ww_cfou2" )
     )
 
-USAGE="""python gbrowser_clone_devel.py
+USAGE="""python gpipe_gbrowser_clone_devel.py
 
 Clone the devel installation into the target installation.
 """ 
@@ -114,7 +114,7 @@ class X:
     
 if __name__ == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: gbrowser_clone_devel.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: gpipe_gbrowser_clone_devel.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-t", "--target-dir", dest="target", type="string",
                       help="target directory.", metavar = "FILE"  )

@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-predictions2cds.py - 
+gpipe_predictions2cds.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python predictions2cds.py --help
+   python gpipe_predictions2cds.py --help
 
 Type::
 
-   python predictions2cds.py --help
+   python gpipe_predictions2cds.py --help
 
 for command line help.
 
@@ -64,7 +64,7 @@ import optparse
 
 USAGE="""python %s < predictions > genes
 
-Version: $Id: predictions2cds.py 1858 2008-05-13 15:07:05Z andreas $
+Version: $Id: gpipe_predictions2cds.py 1858 2008-05-13 15:07:05Z andreas $
 
 extract cds or introns from predicions into various formats.
 
@@ -85,7 +85,7 @@ import CGAT.PredictionParser as PredictionParser
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = E.OptionParser( version = "%prog version: $Id: predictions2cds.py 1858 2008-05-13 15:07:05Z andreas $",
+    parser = E.OptionParser( version = "%prog version: $Id: gpipe_predictions2cds.py 1858 2008-05-13 15:07:05Z andreas $",
                                     usage = globals()["__doc__"] )
 
     parser.add_option( "-g", "--genome-file", dest="genome_file", type="string",

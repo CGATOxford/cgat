@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-analyze_codonbias.py - codonbias analysis
+codonbias_acai2tsv.py - codonbias analysis
 =========================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python analyze_codonbias.py --help
+   python codonbias_acai2tsv.py --help
 
 Type::
 
-   python analyze_codonbias.py --help
+   python codonbias_acai2tsv.py --help
 
 for command line help.
 
@@ -161,7 +161,7 @@ CODON_PREFERENCES = {
 
 if __name__ == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: analyze_codonbias.py 865 2007-01-15 13:44:43Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: codonbias_acai2tsv.py 865 2007-01-15 13:44:43Z andreas $")
 
     parser.add_option("-o", "--input-file-trace", dest="input_filename_trace", type="string",
                       help="input filename for cai.",

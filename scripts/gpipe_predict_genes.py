@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-predict_genes.py - 
+gpipe_predict_genes.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python predict_genes.py --help
+   python gpipe_predict_genes.py --help
 
 Type::
 
-   python predict_genes.py --help
+   python gpipe_predict_genes.py --help
 
 for command line help.
 
@@ -67,7 +67,7 @@ import subprocess
 
 USAGE="""python %s [OPTIONS] peptide genome
 
-Version: $Id: predict_genes.py 2462 2009-01-28 10:18:22Z andreas $
+Version: $Id: gpipe_predict_genes.py 2462 2009-01-28 10:18:22Z andreas $
 
 Wrapper for running gene predictions.
 
@@ -1304,7 +1304,7 @@ def EvaluatePrediction( prediction, query_exons, query_sequence ):
 ##-------------------------------------------------------------------------------
 if __name__ == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: predict_genes.py 2462 2009-01-28 10:18:22Z andreas $", usage = globals()["__doc__"] )
+    parser = E.OptionParser( version = "%prog version: $Id: gpipe_predict_genes.py 2462 2009-01-28 10:18:22Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option("-b", "--query-border",dest="query_border", type="int")
     parser.add_option("-i", "--bracket-increment", dest="bracket_increments", type="string" )
@@ -1555,7 +1555,7 @@ if __name__ == "__main__":
                     last_sbjct_sequence = sbjct_sequence
                 
                 ## do not test on region_nr, as first region_nr might not
-                ## be 1 due to duplicated key removal in assignments2pairs.py
+                ## be 1 due to duplicated key removal in gpipe_assignments2pairs.py
                 if region_id != last_region_id:
                     this_time = time.time()                        
                     if global_options.loglevel >= 1 and last_time:

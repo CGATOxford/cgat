@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-predictions2pseudogenes.py - 
+gpipe_predictions2pseudogenes.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python predictions2pseudogenes.py --help
+   python gpipe_predictions2pseudogenes.py --help
 
 Type::
 
-   python predictions2pseudogenes.py --help
+   python gpipe_predictions2pseudogenes.py --help
 
 for command line help.
 
@@ -65,7 +65,7 @@ import time
 
 USAGE="""python %s [OPTIONS] < exonerate_output > filtered
 
-Version: $Id: predictions2pseudogenes.py 18 2005-08-09 15:32:24Z andreas $
+Version: $Id: gpipe_predictions2pseudogenes.py 18 2005-08-09 15:32:24Z andreas $
 
 Compile collinear predictions into new predictions.
 
@@ -95,7 +95,8 @@ param_format = "exonerate"
 
 param_long_options=["verbose=", "help",
                     "format=", "max-intron=",
-                    "conserve-frame", "max-difference="]
+                    "conserve-frame", "max-difference=",
+                    "version"]
 
 
 param_short_options="v:hf:i:d:ca"
@@ -221,6 +222,9 @@ if __name__ == '__main__':
     for o,a in optlist:
         if o in ( "-v", "--verbose" ):
             param_loglevel = int(a)
+        elif o in ( "--version", ):
+            print "version="
+            sys.exit(0)
         elif o in ( "-h", "--help" ):
             print USAGE
             sys.exit(0)

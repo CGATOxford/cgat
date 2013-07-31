@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-analyze_logfiles.py - create summary from logfiles
+cgat_logfiles2tsv.py - create summary from logfiles
 ==================================================
 
 :Author: Andreas Heger
@@ -43,11 +43,11 @@ Usage
 
 Example::
 
-   python analyze_logfiles.py --help
+   python cgat_logfiles2tsv.py --help
 
 Type::
 
-   python analyze_logfiles.py --help
+   python cgat_logfiles2tsv.py --help
 
 for command line help.
 
@@ -167,7 +167,7 @@ class LogFileDataLines(LogFileData):
     
 if __name__ == "__main__":
     
-    parser = E.OptionParser( version = "%prog version: $Id: analyze_logfiles.py 2781 2009-09-10 11:33:14Z andreas $" )
+    parser = E.OptionParser( version = "%prog version: $Id: cgat_logfiles2tsv.py 2781 2009-09-10 11:33:14Z andreas $" )
 
     parser.add_option( "-g", "--glob", dest="glob_pattern", type="string" ,
                        help="glob pattern to use for collecting files [%default].")

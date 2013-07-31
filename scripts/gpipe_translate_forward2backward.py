@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-translate_forward2backward.py - 
+gpipe_translate_forward2backward.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python translate_forward2backward.py --help
+   python gpipe_translate_forward2backward.py --help
 
 Type::
 
-   python translate_forward2backward.py --help
+   python gpipe_translate_forward2backward.py --help
 
 for command line help.
 
@@ -67,7 +67,7 @@ import popen2
 
 USAGE="""python %s [OPTIONS] 
 
-Version: $Id: translate_forward2backward.py 18 2005-08-09 15:32:24Z andreas $
+Version: $Id: gpipe_translate_forward2backward.py 18 2005-08-09 15:32:24Z andreas $
 
 Wrapper for running gene predictions.
 
@@ -82,7 +82,7 @@ param_long_options=["verbose=", "help",
                     "exit-identical", "min-score=", "method=",
                     "recursive", "refinement","probe", "incremental",
                     "exons=", "mask-probe", "format=",
-                    "probe-options="]
+                    "probe-options=", "version"]
 
 param_short_options="v:hi:b:em:procx:af:"
 
@@ -101,6 +101,9 @@ if __name__ == "__main__":
     for o,a in optlist:
         if o in ( "-v", "--verbose" ):
             param_loglevel = int(a)
+        elif o in ( "--version", ):
+            print "version="
+            sys.exit(0)
         elif o in ( "-h", "--help" ):
             print USAGE
             sys.exit(0)

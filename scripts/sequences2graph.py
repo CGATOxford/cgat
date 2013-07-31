@@ -68,7 +68,7 @@ import CGAT.Intervalls as Intervalls
 import CGAT.PredictionParser as PredictionParser
 import alignlib
 
-param_long_options=["verbose=", "help"]
+param_long_options=["verbose=", "help", "version"]
 param_short_options="v:ho:t:"
 
 param_loglevel = 1
@@ -91,6 +91,9 @@ if __name__ == '__main__':
     for o,a in optlist:
         if o in ( "-v", "--verbose" ):
             param_loglevel = int(a)
+        elif o in ( "--version", ):
+            print "version="
+            sys.exit(0)
         elif o in ( "-h", "--help" ):
             print globals()["__doc__"]
             sys.exit(0)

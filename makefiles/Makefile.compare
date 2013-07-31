@@ -324,7 +324,7 @@ target_extra.list:
 ## convert list of extra predictions to genes
 %.genes: %.list
 	cut -f 1 $*.list > $@_tmp
-	python $(DIR_SCRIPTS_GENEPREDICTION)predictions2genes.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_predictions2genes.py \
 	--filter-predictions=$@_tmp \
 	--table-predictions=$(PARAM_TABLE_NAME_PREDICTIONS) > $@
 	rm -f $@_tmp
@@ -822,7 +822,7 @@ counts_overlap:
 ########################################################
 ## get gff file for list of predictions
 %.gff: %.list
-	python $(DIR_SCRIPTS_GENEPREDICTION)get_genes.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_get_genes.py \
 	--format=gff-seq \
 	--schema=$(PARAM_PSQL_SCHEMA) \
 	--filter-prediction=$*.list \
@@ -914,20 +914,20 @@ create_tables: $(PARAM_TABLE_NAME_ASSIGNMENTS).create_table_assignments \
 	$(CONNECTION) "CREATE INDEX $(CMD_TABLE_PREFIX)_prediction_id2 ON $* (prediction_id2)";
 
 $(PARAM_TABLE_NAME_ASSIGNMENTS).assignments:
-	$(CMD_REMOTE_SUBMIT) python $(DIR_SCRIPTS_GENEPREDICTION)compare_predictions.py \
+	$(CMD_REMOTE_SUBMIT) python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_compare_predictions.py \
 	--table-reference=$(PARAM_REFERENCE_TABLE_NAME_PREDICTIONS) \
 	--table-target=$(PARAM_TABLE_NAME_PREDICTIONS) \
 	< /dev/null > $@
 
 $(PARAM_TABLE_NAME_ASSIGNMENTS_REF2TARGET).assignments:
-	$(CMD_REMOTE_SUBMIT) python $(DIR_SCRIPTS_GENEPREDICTION)compare_predictions.py \
+	$(CMD_REMOTE_SUBMIT) python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_compare_predictions.py \
 	--table-reference=$(PARAM_REFERENCE_TABLE_NAME_PREDICTIONS) \
 	--table-target=$(PARAM_TABLE_NAME_PREDICTIONS) \
 	< /dev/null > $@
 
 
 $(PARAM_TABLE_NAME_ASSIGNMENTS_TARGET2REF).assignments:
-	$(CMD_REMOTE_SUBMIT) python $(DIR_SCRIPTS_GENEPREDICTION)compare_predictions.py \
+	$(CMD_REMOTE_SUBMIT) python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_compare_predictions.py \
 	--table-reference=$(PARAM_TABLE_NAME_PREDICTIONS) \
 	--table-target=$(PARAM_REFERENCE_TABLE_NAME_PREDICTIONS) \
 	< /dev/null > $@

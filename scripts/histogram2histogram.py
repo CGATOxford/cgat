@@ -112,7 +112,7 @@ if __name__ == "__main__":
 
     (options, args) = E.Start( parser )
 
-    # old append_histogram.py semantics - need to merged with newer
+    # old histogram2histogram.py semantics - need to merged with newer
     # code below.
     if options.method == "append":
 

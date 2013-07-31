@@ -92,7 +92,7 @@ echo \"# execution host   : \`hostname\`\" \n\
 echo \"# query  : $$1" \n\
 echo \"# target : $$2" \n\
 exonerate $(EXONERATE_OPTIONS) --query \$$1 --target \$$2 |\
-python $(DIR_SCRIPTS_GENEPREDICTION)exonerate2regions.py \
+python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_exonerate2regions.py \
 	--force-contiguous \
 	--peptides=\$$1 \
 	--genome=\$$2 \
@@ -118,7 +118,7 @@ define PREDICTION_SCRIPT
 #! /bin/bash\n\
 echo \"# \$$0 started at \`date\`\" \n\
 echo \"# execution host   : \`hostname\`\" \n\
-python $(DIR_SCRIPTS_GENEPREDICTION)predict_genes.py $(PARAM_PREDICTION_OPTIONS) -\n\
+python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_predict_genes.py $(PARAM_PREDICTION_OPTIONS) -\n\
 exit \$$?
 endef
 
@@ -132,7 +132,7 @@ prediction.bash:
 ## prediction
 define MEMBERS_SCRIPT
 #! /bin/bash\n\
-python $(DIR_SCRIPTS_GENEPREDICTION)predict_genes.py $(PARAM_MEMBERS_OPTIONS) -\n\
+python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_predict_genes.py $(PARAM_MEMBERS_OPTIONS) -\n\
 exit \$$?
 endef
 

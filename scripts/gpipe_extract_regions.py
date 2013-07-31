@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-extract_regions.py - 
+gpipe_extract_regions.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python extract_regions.py --help
+   python gpipe_extract_regions.py --help
 
 Type::
 
-   python extract_regions.py --help
+   python gpipe_extract_regions.py --help
 
 for command line help.
 
@@ -75,7 +75,7 @@ import CGAT.Regions as Regions
 
 USAGE="""python %s [OPTIONS] 
 
-Version: $Id: extract_regions.py 2781 2009-09-10 11:33:14Z andreas $
+Version: $Id: gpipe_extract_regions.py 2781 2009-09-10 11:33:14Z andreas $
 
 get sequences/sequence regions for a list of predictions and output a fasta-formatted
 file.
@@ -467,7 +467,7 @@ def ProcessPredictions( dbhandle, schema, options, prediction_ids, taboo_regions
 
 if __name__ == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: extract_regions.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: gpipe_extract_regions.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="pattern to look for sequence filename."  )

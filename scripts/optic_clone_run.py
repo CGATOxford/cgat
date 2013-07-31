@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-clone_run.py - 
+optic_clone_run.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python clone_run.py --help
+   python optic_clone_run.py --help
 
 Type::
 
-   python clone_run.py --help
+   python optic_clone_run.py --help
 
 for command line help.
 
@@ -65,7 +65,7 @@ import optparse
 import subprocess
 import tempfile
 
-""" program $Id: clone_run.py 2781 2009-09-10 11:33:14Z andreas $
+""" program $Id: optic_clone_run.py 2781 2009-09-10 11:33:14Z andreas $
 
 clone a prediction run.
 
@@ -92,7 +92,7 @@ def Run( statement, stdout = sys.stdout, stderr = sys.stderr ):
     
 if __name__ == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: clone_run.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: optic_clone_run.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-o", "--old-schema", dest="old_schema", type="string",
                       help="old_schema."  )

@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-evaluate_mali.py - evaluate a multiple alignment
+optic_evaluate_mali.py - evaluate a multiple alignment
 ================================================
 
 :Author: Andreas Heger
@@ -65,11 +65,11 @@ Usage
 
 Example::
 
-   python evaluate_mali.py --help
+   python optic_evaluate_mali.py --help
 
 Type::
 
-   python evaluate_mali.py --help
+   python optic_evaluate_mali.py --help
 
 for command line help.
 
@@ -90,7 +90,7 @@ import re
 import getopt
 import math
 
-import evaluate_bootstrap
+import optic_evaluate_bootstrap as evaluate_bootstrap
 
 USAGE="""python %s [OPTIONS] < exonerate_output > filtered
 
@@ -105,6 +105,7 @@ param_long_options=["verbose=", "help", "file-output=",
                     "min-cluster-support=", "min-report-support=",
                     "reference-tree=", "pattern-species=",
                     "file-bootstrap=", "file-tree=", "only-headers",
+                    "version"
                     ]
 
 param_short_options="v:ho:s:p:e:"
@@ -962,6 +963,9 @@ if __name__ == '__main__':
             param_loglevel = int(a)
         elif o in ( "-h", "--help" ):
             print USAGE
+            sys.exit(0)
+        elif o in ( "--version", ):
+            print "version="
             sys.exit(0)
         elif o in ("-o", "--file-output"):
             param_filename_output = a

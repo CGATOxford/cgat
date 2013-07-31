@@ -240,7 +240,7 @@ peptides2cds: peptides.fasta cds.fasta
 codons.fasta: cds.fasta peptides2cds
 	$(PRELOG)
 	@$(CMD_REMOTE_SUBMIT)\
-	python $(DIR_SCRIPTS_GENEPREDICTION)cds2codons.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)optic_cds2codons.py \
 	--map=peptides2cds --codons\
 	< cds.fasta > $@
 	$(EPILOG)
@@ -286,7 +286,7 @@ all.fasta: codons.fasta
 ## extract new weighting table from a previous ACAI run.
 %.weights: %.acai
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 	--input-file-genes=selected.acai_genes \
 	--input-file-trace=selected.acai_trace \
 	--input-file-codons=selected.acai_codons \
@@ -298,7 +298,7 @@ all.fasta: codons.fasta
 ## compute weights based on a set of sequences
 biased.weights: all.acai
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 	--input-file-genes=all.acai_genes \
 	--input-file-subset=biased.set \
 	--weights=subset \
@@ -311,7 +311,7 @@ biased.weights: all.acai
 ## compute weights based on a set of sequences
 biased.frequencies: all.acai biased.set
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 	--input-file-genes=all.acai_genes \
 	--input-file-subset=biased.set \
 	--weights=subset \
@@ -323,7 +323,7 @@ biased.frequencies: all.acai biased.set
 ## get non-normalized frequencies
 biased.absolute_frequencies: all.acai biased.set
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 	--input-file-genes=all.acai_genes \
 	--input-file-subset=biased.set \
 	--weights=subset \
@@ -342,7 +342,7 @@ random.set: filter
 
 random.weights: all.acai
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 	--input-file-genes=all.acai_genes \
 	--input-file-subset=random.set \
 	--weights=subset \
@@ -353,7 +353,7 @@ random.weights: all.acai
 
 random.frequencies: all.acai random.set
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 	--input-file-genes=all.acai_genes \
 	--input-file-subset=random.set \
 	--weights=subset \
@@ -372,7 +372,7 @@ random%.set: filter
 
 random%.rweights: all.acai random%.set
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 	--input-file-genes=all.acai_genes \
 	--input-file-subset=random$*.set \
 	--weights=subset \
@@ -383,7 +383,7 @@ random%.rweights: all.acai random%.set
 
 random%.frequencies: all.acai random%.set
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 	--input-file-genes=all.acai_genes \
 	--input-file-subset=random$*.set \
 	--weights=subset \
@@ -415,7 +415,7 @@ random%.acai: random%.rweights selected.fasta
 ## according to caijava 
 selected.frequencies: selected.acai
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 	--input-file-genes=selected.acai_genes \
 	--input-file-trace=selected.acai_trace \
 	--input-file-codons=selected.acai_codons \
@@ -426,7 +426,7 @@ selected.frequencies: selected.acai
 ## get non-normalized frequencies
 selected.absolute_frequencies: selected.acai
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 	--input-file-genes=selected.acai_genes \
 	--input-file-trace=selected.acai_trace \
 	--input-file-codons=selected.acai_codons \
@@ -439,14 +439,14 @@ selected.absolute_frequencies: selected.acai
 ## one big table with all the data
 all.data: all.acai all.shannon all.enc $(EXTRA_TARGETS)
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 	--input-file-codons=all.acai_codons \
 	--input-file-genes=all.acai_genes \
 	--input-file-trace=all.acai_trace \
 	--select="CAIEXT AS CAI" |\
 	grep -v "#" > $@_tmp1; \
 	if test -e external.acai; then \
-		python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+		python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 		--input-file-codons=external.acai_codons \
 		--input-file-genes=external.acai_genes \
 		--input-file-trace=external.acai_trace \
@@ -457,7 +457,7 @@ all.data: all.acai all.shannon all.enc $(EXTRA_TARGETS)
 		file2=""; \
 	fi; \
 	if test -e biased.acai; then \
-		python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+		python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 		--input-file-codons=biased.acai_codons \
 		--input-file-genes=biased.acai_genes \
 		--input-file-trace=biased.acai_trace \
@@ -479,7 +479,7 @@ all.data: all.acai all.shannon all.enc $(EXTRA_TARGETS)
 ## according to caijava 
 dominant.frequencies: selected.acai
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 	--input-file-genes=selected.acai_genes \
 	--input-file-trace=selected.acai_trace \
 	--input-file-codons=selected.acai_codons \
@@ -490,7 +490,7 @@ dominant.frequencies: selected.acai
 
 nondominant.frequencies: selected.acai
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 	--input-file-genes=selected.acai_genes \
 	--input-file-trace=selected.acai_trace \
 	--input-file-codons=selected.acai_codons \
@@ -566,13 +566,13 @@ reproducibility_acai.hist: selected.fasta
 		> $@.dir/acai_$${x}.log; \
 	done
 	@for ((x = 0; x < $(PARAM_NUM_SHUFFLES); ++x)); do \
-		python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+		python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 			--input-file-genes=$@.dir/acai_$${x}.genes \
 			--select=CAICLASS |\
 		python $(DIR_SCRIPTS_TOOLS)data2histogram.py \
 			--min-value=0.0 \
 			--bin-size=0.02 > $@.dir/acai_$${x}.hist; \
-		python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+		python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 			--input-file-trace=$@.dir/acai_$${x}.trace \
 			--weights=final-list |\
 		sort -k1,1 |\
@@ -598,7 +598,7 @@ iteration_acai.hist: selected.fasta
 			    --output-file-extra=$@.dir/acai_$${x}.genes \
 			    --output-file-trace=$@.dir/acai_$${x}.trace \
 		    < $@.dir/input_$${x}.fasta > $@.dir/acai_$${x}.log; \
-		    python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+		    python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 			    --input-file-genes=$@.dir/acai_$${x}.genes \
 			    --select=CAICLASS \
 			    --dominant-set=$(PARAM_ACAI_DOMINANT_SET_THRESHOLD_ANALYSIS) \
@@ -607,7 +607,7 @@ iteration_acai.hist: selected.fasta
 		fi; \
 	done
 	@for ((x = 0; x < $(PARAM_NUM_ITERATIONS); ++x)); do \
-		python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+		python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 			--input-file-genes=$@.dir/acai_$${x}.genes \
 			--select=CAICLASS |\
 		python $(DIR_SCRIPTS_TOOLS)data2histogram.py \
@@ -616,7 +616,7 @@ iteration_acai.hist: selected.fasta
 			--bin-size=0.02 |\
 		perl -p -e "s/CAICLASS/$${x}/" \
 		> $@.dir/acai_$${x}.hist; \
-		python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+		python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 			--input-file-trace=$@.dir/acai_$${x}.trace \
 			--weights=final-list |\
 		perl -p -e "s/WEIGHT/$${x}/" \
@@ -649,14 +649,14 @@ shuffled_acai.hist: selected.fasta
 		> $@.dir/acai_$${x}.log; \
 	done
 	@for ((x = 0; x < $(PARAM_NUM_SHUFFLES); ++x)); do \
-		python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+		python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 			--input-file-genes=$@.dir/acai_$${x}.genes \
 			--select=CAICLASS |\
 		python $(DIR_SCRIPTS_TOOLS)data2histogram.py \
 			--min-value=0.0 \
 			--bin-size=0.02 \
 			--column=2 > $@.dir/acai_$${x}.hist; \
-		python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+		python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 			--input-file-genes=$@.dir/acai_$${x}.genes \
 			--select=CAICLASS |\
 		python $(DIR_SCRIPTS_TOOLS)data2stats.py \
@@ -692,14 +692,14 @@ shuffled_biasedcai.hist: selected.fasta
 		fi; \
 	done
 	@for ((x = 0; x < $(PARAM_NUM_SHUFFLES); ++x)); do \
-		python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+		python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 			--input-file-genes=$@.dir/acai_$${x}.genes \
 			--select=CAIEXT |\
 		python $(DIR_SCRIPTS_TOOLS)data2histogram.py \
 			--min-value=0.0 \
 			--bin-size=0.02 \
 			--column=2 > $@.dir/acai_$${x}.hist; \
-		python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+		python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 			--input-file-genes=$@.dir/acai_$${x}.genes \
 			--select=CAIEXT |\
 		python $(DIR_SCRIPTS_TOOLS)data2stats.py \
@@ -734,14 +734,14 @@ shuffled_biasedcai_uniform.hist: selected.fasta
 		fi; \
 	done
 	@for ((x = 0; x < $(PARAM_NUM_SHUFFLES); ++x)); do \
-		python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+		python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 			--input-file-genes=$@.dir/acai_$${x}.genes \
 			--select=CAIEXT |\
 		python $(DIR_SCRIPTS_TOOLS)data2histogram.py \
 			--min-value=0.0 \
 			--bin-size=0.02 \
 			--column=2 > $@.dir/acai_$${x}.hist; \
-		python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+		python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 			--input-file-genes=$@.dir/acai_$${x}.genes \
 			--select=CAIEXT |\
 		python $(DIR_SCRIPTS_TOOLS)data2stats.py \
@@ -759,7 +759,7 @@ randomized_acai.hist: selected.fasta
 	@-mkdir $@.dir
 	@for ((x = 0; x < $(PARAM_NUM_SHUFFLES); ++x)); do \
 		if test ! -e $@.dir/acai_$${x}.log; then \
-		    python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+		    python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 			    --weights="random" | grep -v "#" > $@.dir/acai_$${x}.weights; \
 		    python $(DIR_SCRIPTS_GENEPREDICTION)WrapperAdaptiveCAI.py \
 			    --iterations=$(PARAM_ACAI_ITERATIONS) \
@@ -769,14 +769,14 @@ randomized_acai.hist: selected.fasta
 		fi; \
 	done
 	@for ((x = 0; x < $(PARAM_NUM_SHUFFLES); ++x)); do \
-		python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+		python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 			--input-file-genes=$@.dir/acai_$${x}.genes \
 			--select=CAIEXT |\
 		python $(DIR_SCRIPTS_TOOLS)data2histogram.py \
 			--min-value=0.0 \
 			--bin-size=0.02 \
 			--column=2 > $@.dir/acai_$${x}.hist; \
-		python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+		python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 			--input-file-genes=$@.dir/acai_$${x}.genes \
 			--select=CAIEXT |\
 		python $(DIR_SCRIPTS_TOOLS)data2stats.py \
@@ -816,7 +816,7 @@ shuffled_enc.hist: selected.fasta
 ###################################################
 all.sets: selected.acai
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 		--select=caiclass \
 		--dominant-set=$(PARAM_ACAI_DOMINANT_SET_THRESHOLD_ANALYSIS) \
 		--input-file-genes=selected.acai_genes |\
@@ -833,7 +833,7 @@ all.sets: selected.acai
 
 dominant.set: selected.acai
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 		--select=caiclass \
 		--dominant-set=$(PARAM_ACAI_DOMINANT_SET_THRESHOLD_ANALYSIS) \
 		--input-file-genes=selected.acai_genes |\
@@ -854,14 +854,14 @@ nondominant.set: dominant.set
 all.load: all.acai all.sets all.enc all.shannon $(EXTRA_TARGETS)
 	$(PRELOG)
 	@$(CMD_PSQL_CONNECTION) "DELETE FROM $(PARAM_TABLE_NAME_CODONBIAS);" >/dev/null
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 	--input-file-codons=all.acai_codons \
 	--input-file-genes=all.acai_genes \
 	--input-file-trace=all.acai_trace \
 	--select=CAIEXT |\
 	grep -v "#" > $@_tmp1
 	@if [ -e external.acai_codons ]; then \
-		python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+		python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 		--input-file-codons=external.acai_codons \
 		--input-file-genes=external.acai_genes \
 		--input-file-trace=external.acai_trace \
@@ -871,7 +871,7 @@ all.load: all.acai all.sets all.enc all.shannon $(EXTRA_TARGETS)
 		extra_field1="CAIEXT2"; \
 	fi; \
 	if [ -e biased.acai_codons ]; then \
-		python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+		python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 			--input-file-codons=biased.acai_codons \
 			--input-file-genes=biased.acai_genes \
 			--input-file-trace=biased.acai_trace \
@@ -980,7 +980,7 @@ randoms.finish: randoms.run randoms.zscore_table
 randoms.table: randoms.run
 	$(PRELOG)
 	@for (( y=0; y < $(PARAM_RANDOM_ITERATIONS); ++y )); do \
-		python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+		python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 			--input-file-codons=random$${y}.acai_codons \
 			--input-file-genes=random$${y}.acai_genes \
 			--input-file-trace=random$${y}.acai_trace \
@@ -992,12 +992,12 @@ randoms.table: randoms.run
 
 randoms_%.zscore: 
 	@printf "%i\t" $* > $@; \
-	python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 		--input-file-codons=random$*.acai_codons \
 		--input-file-genes=random$*.acai_genes \
 		--input-file-trace=random$*.acai_trace \
 		--select="CAIEXT" < /dev/null |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)analyze_ribosomes.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)optic_analyze_ribosomes.py \
 		--field-compare=CAIEXT \
 		--filename-identifiers=random$*.set \
 		--field-extract=%sCAIEXT \

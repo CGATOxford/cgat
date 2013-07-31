@@ -24,7 +24,7 @@ tree2patterns.py - convert trees to taxon patterns
 ==================================================
 
 :Author: Andreas Heger
-:Release: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $
+:Release: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $
 :Date: |today|
 :Tags: Python
 

@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-compare_predictions.py - 
+gpipe_compare_predictions.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python compare_predictions.py --help
+   python gpipe_compare_predictions.py --help
 
 Type::
 
-   python compare_predictions.py --help
+   python gpipe_compare_predictions.py --help
 
 for command line help.
 
@@ -65,7 +65,7 @@ import math
 
 USAGE="""python %s [OPTIONS] < exonerate_output > filtered
 
-Version: $Id: compare_predictions.py 1799 2008-03-28 11:44:19Z andreas $
+Version: $Id: gpipe_compare_predictions.py 1799 2008-03-28 11:44:19Z andreas $
 
 Evaluate genewise alignments.
 
@@ -82,7 +82,7 @@ Options:
 -q, --quality-pide=             quality threshold (pide) for exons.
 """ % sys.argv[0]
 
-param_long_options=["verbose=", "help", "table-reference=", "table-target="]
+param_long_options=["verbose=", "help", "table-reference=", "table-target=", "version"]
 param_short_options="v:hR:T:"
 
 import alignlib
@@ -114,6 +114,9 @@ if __name__ == '__main__':
     for o,a in optlist:
         if o in ( "-v", "--verbose" ):
             param_loglevel = int(a)
+        elif o in ( "--version", ):
+            print "version="
+            sys.exit(0)
         elif o in ( "-h", "--help" ):
             print USAGE
             sys.exit(0)

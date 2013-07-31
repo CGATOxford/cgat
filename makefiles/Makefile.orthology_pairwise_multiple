@@ -118,7 +118,7 @@ prepare: create-schema create-tables
 			if [ ! -e $${target_dir} ]; then \
 			    echo "setting up $${target_dir}" $(TOLOG); \
 			    mkdir $${target_dir}; \
-			    python $(DIR_SCRIPTS_GENEPREDICTION)setup.py \
+			    python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_setup.py \
 			    -f \
 			    -m orthology_pairwise \
 			    -p orthology_$${genomes[$$x]}-$${genomes[$$y]} \
@@ -491,7 +491,7 @@ analysis: analysis.prepare analysis.run
 
 analysis.prepare:
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)setup.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_setup.py \
 		-m orthology_pairwise_analysis -d analysis.dir -p $(PARAM_PROJECT_NAME) \
 		-o $(DIR_ROOT) \
 		"PARAM_DIR_SRC=../" \
@@ -667,7 +667,7 @@ summary.dir/orthologs_%.links.gz:
 			genome2=$${genomes[$$y]}; \
 			target_dir=pair_$${genome1}-$${genome2}; \
 			if [ -e $(ORTHOLOGS_FILE) ]; then \
-				python $(DIR_SCRIPTS_GENEPREDICTION)orthologs2list.py \
+				python $(DIR_SCRIPTS_GENEPREDICTION)optic_orthologs2list.py \
 				--species-regex="^([^$(PARAM_SEPARATOR)]+)\$(PARAM_SEPARATOR)" \
 				--gene-regex="^[^$(PARAM_SEPARATOR)]+\$(PARAM_SEPARATOR)[^$(PARAM_SEPARATOR)]+\$(PARAM_SEPARATOR)([^$(PARAM_SEPARATOR)]+)\$(PARAM_SEPARATOR)" \
 				--no-combine-genes \
@@ -742,7 +742,7 @@ summary.dir/orphans_%.links.gz: summary.dir/orthologs_%.links.gz
 			genome2=$${genomes[$$y]}; \
 			target_dir=pair_$${genome1}-$${genome2}; \
 			if [ -e $(ORPHANS_FILE) ]; then \
-				python $(DIR_SCRIPTS_GENEPREDICTION)orthologs2list.py \
+				python $(DIR_SCRIPTS_GENEPREDICTION)optic_orthologs2list.py \
 				--species-regex="^([^$(PARAM_SEPARATOR)]+)\$(PARAM_SEPARATOR)" \
 				--gene-regex="^[^$(PARAM_SEPARATOR)]+\$(PARAM_SEPARATOR)[^$(PARAM_SEPARATOR)]+\$(PARAM_SEPARATOR)([^$(PARAM_SEPARATOR)]+)\$(PARAM_SEPARATOR)" \
 				--no-combine-genes \
@@ -1072,7 +1072,7 @@ stats: stats.prepare stats.run
 
 stats.prepare: summary.dir/orthologs.links
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)setup.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_setup.py \
 		-f -m stats \
 		-p $(PARAM_PROJECT_NAME)_stats \
 		-d stats.dir \

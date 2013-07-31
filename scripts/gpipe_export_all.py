@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-export_all.py - 
+gpipe_export_all.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python export_all.py --help
+   python gpipe_export_all.py --help
 
 Type::
 
-   python export_all.py --help
+   python gpipe_export_all.py --help
 
 for command line help.
 
@@ -73,7 +73,7 @@ import CGAT.Experiment as E
 
 import pgdb
 
-""" program $Id: export_all.py 2781 2009-09-10 11:33:14Z andreas $
+""" program $Id: gpipe_export_all.py 2781 2009-09-10 11:33:14Z andreas $
 
 prepare export of fly data.
 """
@@ -424,7 +424,7 @@ Column  Content
 
 if __name__ == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: export_all.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: gpipe_export_all.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-r", "--release", dest="release", type="string",
                       help="release.")

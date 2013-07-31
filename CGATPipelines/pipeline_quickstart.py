@@ -3,7 +3,7 @@
 #
 #   MRC FGU Computational Genomics Group
 #
-#   $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $
+#   $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $
 #
 #   Copyright (C) 2009 Andreas Heger
 #

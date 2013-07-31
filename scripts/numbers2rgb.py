@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-map_numbers.py - map numbers to RGB values
+numbers2rgb.py - map numbers to RGB values
 ==========================================
 
 :Author: Andreas Heger
@@ -39,11 +39,11 @@ Usage
 
 Example::
 
-   python map_numbers.py --help
+   python numbers2rgb.py --help
 
 Type::
 
-   python map_numbers.py --help
+   python numbers2rgb.py --help
 
 for command line help.
 
@@ -66,7 +66,7 @@ import CGAT.Experiment as E
 
 if __name__  == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: map_numbers.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: numbers2rgb.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option( "-m", "--method", dest="method", type="string" ,
                        help="method to use.")

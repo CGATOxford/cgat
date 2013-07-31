@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-analyze_ribosomes.py - 
+optic_analyze_ribosomes.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python analyze_ribosomes.py --help
+   python optic_analyze_ribosomes.py --help
 
 Type::
 
-   python analyze_ribosomes.py --help
+   python optic_analyze_ribosomes.py --help
 
 for command line help.
 
@@ -67,7 +67,7 @@ import optparse
 import math
 import tempfile
 
-USAGE=""" program $Id: analyze_ribosomes.py 2781 2009-09-10 11:33:14Z andreas $
+USAGE=""" program $Id: optic_analyze_ribosomes.py 2781 2009-09-10 11:33:14Z andreas $
 
 analyse ribosomal proteins.
 
@@ -81,7 +81,7 @@ import CGAT.Stats as Stats
 
 if __name__ == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: analyze_ribosomes.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: optic_analyze_ribosomes.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-s", "--schemas", dest="schemas", type="string",
                       help="schemas in the set."  )

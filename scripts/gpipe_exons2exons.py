@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-exons2exons.py - 
+gpipe_exons2exons.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python exons2exons.py --help
+   python gpipe_exons2exons.py --help
 
 Type::
 
-   python exons2exons.py --help
+   python gpipe_exons2exons.py --help
 
 for command line help.
 
@@ -77,7 +77,7 @@ import CGAT.IndexedFasta as IndexedFasta
 
 if __name__ == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: exons2exons.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: gpipe_exons2exons.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-m", "--method", dest="method",
                       help="method to apply.", type="choice",

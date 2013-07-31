@@ -594,7 +594,7 @@ def makeReadCorrelation( infiles, outfile ):
     infiles = " ".join(infiles)
 
     statement = '''
-    python %(scriptsdir)s/bam_correlation.py 
+    python %(scriptsdir)s/bams2correlation.py 
            --log=%(outfile)s.log 
            --genome=%(genome_dir)s/%(genome)s 
            %(infiles)s 

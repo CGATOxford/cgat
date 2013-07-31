@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-liftover_predictions.py - 
+gpipe_liftover_predictions.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python liftover_predictions.py --help
+   python gpipe_liftover_predictions.py --help
 
 Type::
 
-   python liftover_predictions.py --help
+   python gpipe_liftover_predictions.py --help
 
 for command line help.
 
@@ -69,7 +69,7 @@ import alignlib
 
 USAGE="""python %s file1 file2
 
-Version: $Id: liftover_predictions.py 2781 2009-09-10 11:33:14Z andreas $
+Version: $Id: gpipe_liftover_predictions.py 2781 2009-09-10 11:33:14Z andreas $
 
 map predictions between two assemblies. This procedure here
 only accounts for length differences in gap regions (NNN).
@@ -84,9 +84,9 @@ Options:
 import CGAT.Experiment as E
 import CGAT.PredictionParser as PredictionParser
 
-from predict_genes import PredictorExonerate
+from gpipe_predict_genes import PredictorExonerate
 
-parser = E.OptionParser( version = "%prog version: $Id: liftover_predictions.py 2781 2009-09-10 11:33:14Z andreas $")
+parser = E.OptionParser( version = "%prog version: $Id: gpipe_liftover_predictions.py 2781 2009-09-10 11:33:14Z andreas $")
 
 #####################################################################
 def ReadOffsets( infile ):

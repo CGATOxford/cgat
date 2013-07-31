@@ -81,12 +81,14 @@ OPTIONS:
 -r, --remove-key                remove key column
 -append                         append data to existing files.
 --pattern-identifier            if given, use this pattern to extract id from column.
+--version                       output version information
 """ % (sys.argv[0], "s")
 
 import CGAT.Experiment as E
 
-param_long_options = ["verbose=", "help", "split-regex=", "after", "pattern-output=", "skip", "column=", "map=", "dry-run",
-                      "header", "remove-key", "append", "pattern-identifier=" ]
+param_long_options = ["verbose=", "help", "split-regex=", "after", "pattern-output=", "skip", 
+                      "column=", "map=", "dry-run",
+                      "header", "remove-key", "append", "pattern-identifier=", "version" ]
 
 param_short_options = "v:hr:ap:sc:dek"
 
@@ -144,6 +146,9 @@ if __name__ == "__main__":
     for o,a in optlist:
         if o in ( "-v", "--verbose" ):
             param_loglevel = int(a)
+        elif o in ( "--version", ):
+            print "version="
+            sys.exit(0)
         elif o in ( "-h", "--help" ):
             print USAGE
             sys.exit(0)

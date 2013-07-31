@@ -183,7 +183,7 @@ step4.2: step4.1 tblastn.predictions
 	touch $@
 
 tblastn.predictions: step4.1
-	python $(DIR_SCRIPTS_GENEPREDICTION)regions2predictions.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)optic_regions2predictions.py \
 	--min-score=$(PARAM_STEP4_MIN_SCORE) \
 	--max-percent-overlap=$(PARAM_STEP4_MAX_PERCENT_OVERLAP) \
 	--min-coverage-query=$(PARAM_STEP4_MIN_COVERAGE_QUERY) \

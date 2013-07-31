@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-analyze_queries.py - 
+gpipe_analyze_queries.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python analyze_queries.py --help
+   python gpipe_analyze_queries.py --help
 
 Type::
 
-   python analyze_queries.py --help
+   python gpipe_analyze_queries.py --help
 
 for command line help.
 
@@ -66,7 +66,7 @@ import sets
 import optparse
 import math
 import tempfile
-""" program $Id: analyze_queries.py 2781 2009-09-10 11:33:14Z andreas $
+""" program $Id: gpipe_analyze_queries.py 2781 2009-09-10 11:33:14Z andreas $
 
 Analyse query predictions.
 """
@@ -267,7 +267,7 @@ def writeStatsMissed( outfile,
 ##--------------------------------------------------------------------------
 if __name__ == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: analyze_queries.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: gpipe_analyze_queries.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-g", "--genomes", dest="genomes", type="string",
                       help="genomes to analyse."  )

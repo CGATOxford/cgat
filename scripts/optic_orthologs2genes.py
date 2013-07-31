@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-orthologs2genes.py - 
+optic_orthologs2genes.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python orthologs2genes.py --help
+   python optic_orthologs2genes.py --help
 
 Type::
 
-   python orthologs2genes.py --help
+   python optic_orthologs2genes.py --help
 
 for command line help.
 
@@ -190,7 +190,7 @@ def Write( old_transcripts, map_transcript2location, fix, options ):
     
 if __name__  == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: orthologs2genes.py 2889 2010-04-07 08:57:57Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: optic_orthologs2genes.py 2889 2010-04-07 08:57:57Z andreas $")
     
     parser.add_option( "-s", "--species-regex", dest="species_regex", type="string" ,
                        help="regular expression to extract species from identifier.")

@@ -92,7 +92,7 @@ all: exons.regions \
 ## get exonic regions. These will be used to remove introns due to overlap with exons.
 exons.regions:
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)extract_regions.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_extract_regions.py \
 		--type=exons \
 		--ids=all \
 		--id-format=schema-id \
@@ -104,7 +104,7 @@ exons.regions:
 
 introns.fasta: exons.regions
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)extract_regions.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_extract_regions.py \
 		--type=introns \
 		--ids=all \
 		--id-format=full \
@@ -118,7 +118,7 @@ introns.fasta: exons.regions
 ## Introns, only one entry per sequence id.
 joined_introns.fasta: exons.regions
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)extract_regions.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_extract_regions.py \
 		--type=introns \
 		--join \
 		--ids=all \

@@ -86,7 +86,7 @@ data = (
 #data = ( ( "Monodelphis", "mono_p1" ), )
 #data = ( ( "Dsimulans", "dsim_vs_dmel6"), )
 
-USAGE="""python gbrowser_clone_devel.py
+USAGE="""python gpipe_gbrowser_clone_devel.py
 
 Clone the devel installation into the target installation.
 

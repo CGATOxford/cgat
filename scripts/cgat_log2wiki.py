@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-log2wiki.py - convert a log file into a wiki page
+cgat_log2wiki.py - convert a log file into a wiki page
 =================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python log2wiki.py --help
+   python cgat_log2wiki.py --help
 
 Type::
 
-   python log2wiki.py --help
+   python cgat_log2wiki.py --help
 
 for command line help.
 
@@ -65,7 +65,7 @@ import CGAT.Experiment as E
 
 if __name__ == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: log2wiki.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: cgat_log2wiki.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option("-s", "--start", dest="start", type="string",
                       help="start of section." )

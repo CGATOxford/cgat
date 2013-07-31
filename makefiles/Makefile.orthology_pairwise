@@ -166,13 +166,13 @@ ifneq ($(STEP1_PREVIOUS_SEQUENCES), )
 ## (new against all, all against new)
 step1.prepare: step1.queries.fasta 
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)update_blast.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic_update_blast.py \
 	$(PYTHON_OPTIONS) \
 	--old-query-sequences=$(STEP1_PREVIOUS_SEQUENCES) \
 	--new-query-sequences=step1.queries.fasta \
 	--write-fasta --fasta-pattern=step1.%s.fasta \
 	--output-pattern=step1.%s.update > $@
-	@python $(DIR_SCRIPTS_GENEPREDICTION)setup.py -f -m blast \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_setup.py -f -m blast \
 		-p $(PARAM_PROJECT_NAME)_blast_all_vs_new \
 		-d step1.all_vs_new.dir \
 		-o $(DIR_ROOT) \
@@ -186,7 +186,7 @@ step1.prepare: step1.queries.fasta
 		PARAM_PRIORITY=$(PARAM_PRIORITY) >> $@
 	@-ln -s ../step1.queries.fasta   step1.all_vs_new.dir/queries.fasta
 	@-ln -s ../step1.query_new.fasta step1.all_vs_new.dir/sbjcts.fasta
-	@python $(DIR_SCRIPTS_GENEPREDICTION)setup.py -f -m blast \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_setup.py -f -m blast \
 		-p $(PARAM_PROJECT_NAME)_blast_new_vs_all \
 		-d step1.new_vs_all.dir \
 		-i ../../data/Makefile.inc \
@@ -250,7 +250,7 @@ else
 step1.prepare: step1.queries.fasta 
 	$(PRELOG)
 	@rm -rf step1.dir
-	@python $(DIR_SCRIPTS_GENEPREDICTION)setup.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_setup.py \
 		-m blast \
 		-d step1.dir \
 		-p $(PARAM_PROJECT_NAME)_blast \
@@ -294,7 +294,7 @@ endif
 step1.queries.fasta: peptides1.fasta peptides2.fasta
 	$(PRELOG)
 	@cat $^ |\
-	python $(DIR_SCRIPTS_TOOLS)filter_fasta.py \
+	python $(DIR_SCRIPTS_TOOLS)gpipe_filter_fasta.py \
 		--method=quality \
 		--log=$@.log \
 		--parameters=$(PARAM_RESTRICT_QUALITY) > $@
@@ -308,7 +308,7 @@ step1.check:
 		grep ">" peptides1.fasta | perl -p -e "s/>//; s/ .*//" > peptides1.ids; \
 		grep ">" peptides2.fasta | perl -p -e "s/>//; s/ .*//" > peptides2.ids; \
 		gunzip < step1.dir/blast.links.gz |\
-		python $(DIR_SCRIPTS_GENEPREDICTION)check_blast_run.py \
+		python $(DIR_SCRIPTS_GENEPREDICTION)optic_check_blast_run.py \
 		--vertices=peptides1.ids \
 		--vertices=peptides2.ids \
 		--missed=step1.check.missed \
@@ -621,7 +621,7 @@ step3.run: step3.prepare
 step3.prepare: step2
 	$(PRELOG)
 	@rm -rf step3.dir
-	@python $(DIR_SCRIPTS_GENEPREDICTION)setup.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_setup.py \
 		-m orthology \
 		-d step3.dir \
 		-p $(PARAM_PROJECT_NAME)_orthology \
@@ -647,7 +647,7 @@ step3.finish: step3.run step3.genes1 step3.genes2
 #####################################################################
 step3.map_transcripts: step3.run
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)orthologs2genes.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic_orthologs2genes.py \
 	$(PYTHON_OPTIONS) \
 	$(STEP3_TRANSCRIPTS_OPTIONS) \
 	--write-map \
@@ -671,7 +671,7 @@ step3.genes%: step3.map_transcripts
 	@grep -v "#" step3.map_transcripts | cut -f 1 > $@.tmp1
 	@awk 'BEGIN {while (getline < "$@.tmp1") { map[$$1] = $$2 } } \
 	$$1 in map' < exons$*.exons |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)exons2clusters.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_gpipe_exonerate_combine_regions.py \
 	--use-genome-length > $@.tmp2
 	@awk '!/^#/ { split( $$1, a, "$(PARAM_SEPARATOR)"); \
 		     split( $$2, b, "$(PARAM_SEPARATOR)"); \
@@ -783,7 +783,7 @@ step5: step3 step5.prepare step5.run step5.finish
 step5.run: step5.prepare
 	$(PRELOG)
 	@$(CMD_REMOTE_SUBMIT) $(CMD_BENCHMARK) \
-	python $(DIR_SCRIPTS_GENEPREDICTION)analyze_orthology.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)optic_analyze_orthology.py \
 		$(STEP5_ANALYSIS_OPTIONS) \
 		--methods=$(STEP5_METHODS) \
 		< /dev/null > $@
@@ -832,7 +832,7 @@ step6.prepare: step3 step6.orthologs step6.pairs.gz
 step6.orthologs: step3
 	$(PRELOG)
 	@$(CMD_BENCHMARK) \
-	python $(DIR_SCRIPTS_GENEPREDICTION)orthologs2list.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)optic_orthologs2list.py \
 		$(PYTHON_OPTIONS) \
 		--log=$@.log \
 		< step3.dir/interpretation > $@
@@ -989,7 +989,7 @@ step7.pairs: step6.pairs.gz
 	@$(CMD_REMOTE_SUBMIT) \
 	"gunzip < $< |\
 	grep -v '#' |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)analyze_pairs.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)fasta2distances.py \
 	$(PYTHON_OPTIONS) \
 	--fields='aligned,identical,transitions,transversions,jc69,t92' \
 	--filter='all,codon3,d4' |\
@@ -1046,7 +1046,7 @@ step9.run: step9.prepare
 step9.prepare: step6 step9.links
 	$(PRELOG)
 	@rm -rf step9.dir
-	@python $(DIR_SCRIPTS_GENEPREDICTION)setup.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_setup.py \
 		-m orthology \
 		-d step9.dir \
 		-p $(PARAM_PROJECT_NAME)_orthology \
@@ -1080,7 +1080,7 @@ ifdef PARAM_STEP9_MAP_GENES
 else
 	@grep ">" peptides$*.fasta | perl -p -e "s/>//; s/ .*//" > $@.tmp
 endif
-	@python $(DIR_SCRIPTS_GENEPREDICTION)genes2quality.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_genes2quality.py \
 	$(PYTHON_OPTIONS) \
 	--filter-quality=$(PARAM_STEP2_QUALITY_SEEDS) \
 	--infile-transcripts=$@.tmp > $@
@@ -1094,12 +1094,12 @@ step9.links: step6.kaks step9.map_gene2quality1 step9.map_gene2quality2
 	perl $(DIR_SCRIPTS_TOOLS)graph_links2tokens.pl > $@.tmp1
 	@cut -f 1,2,4 < step6.kaks > $@.tmp2
 	@grep ">" peptides1.fasta | perl -p -e "s/>//; s/ .*//" |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)transcripts2links.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)optic_transcripts2links.py \
 	$(PYTHON_OPTIONS) \
 	--filename-filter=$@.tmp1 \
 	--method="genes" >> $@.tmp2
 	@grep ">" peptides2.fasta | perl -p -e "s/>//; s/ .*//" |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)transcripts2links.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)optic_transcripts2links.py \
 	$(PYTHON_OPTIONS) \
 	--filename-filter=$@.tmp1 \
 	--method="genes" >> $@.tmp2
@@ -1209,7 +1209,7 @@ step10: step9 step10.prepare step10.run step10.finish
 step10.run: step10.prepare
 	$(PRELOG)
 	@$(CMD_REMOTE_SUBMIT) \
-	python $(DIR_SCRIPTS_GENEPREDICTION)analyze_orthology.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)optic_analyze_orthology.py \
 		$(STEP10_ANALYSIS_OPTIONS) \
 		--methods=$(STEP10_METHODS) \
 	< /dev/null > $@
@@ -1263,7 +1263,7 @@ step11_$(PARAM_GENOME2).trace: STEP11_OPTIONS=--schema=$(PARAM_GENOME2) --filena
 step11_%.trace: step10
 	$(PRELOG)
 	@$(CMD_REMOTE_SUBMIT) \
-	python $(DIR_SCRIPTS_GENEPREDICTION)analyze_orthology_pairwise.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)optic_analyze_orthology_pairwise.py \
 		$(PYTHON_OPTIONS) \
 		$(STEP11_OPTIONS) \
 		--filename-blast=step1.dir/blast.links.gz \

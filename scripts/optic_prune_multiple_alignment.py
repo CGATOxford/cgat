@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-prune_multiple_alignment.py - 
+optic_prune_multiple_alignment.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python prune_multiple_alignment.py --help
+   python optic_prune_multiple_alignment.py --help
 
 Type::
 
-   python prune_multiple_alignment.py --help
+   python optic_prune_multiple_alignment.py --help
 
 for command line help.
 
@@ -482,7 +482,7 @@ def checkCodon( codon, options ):
 if __name__ == '__main__':
 
 
-    parser = E.OptionParser( version = "%prog version: $Id: prune_multiple_alignment.py 2654 2009-05-06 13:51:22Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: optic_prune_multiple_alignment.py 2654 2009-05-06 13:51:22Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-m", "--master", dest="master", type="string",
                       help="master sequence."  )

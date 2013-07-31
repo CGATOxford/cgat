@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-setup.py - setup Makefile pipelines
+gpipe_setup.py - setup Makefile pipelines
 ===================================
 
 :Author: Andreas Heger
@@ -39,11 +39,11 @@ Usage
 
 Example::
 
-   python setup.py --help
+   python gpipe_setup.py --help
 
 Type::
 
-   python setup.py --help
+   python gpipe_setup.py --help
 
 for command line help.
 
@@ -104,7 +104,7 @@ def AddOptions( outfile,  infile, source_directory, options ):
 
 if __name__ == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: setup.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: gpipe_setup.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-f", "--force", dest="force", action="store_true",
                       help="force overwrite of existing Makefile." )

@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-gbrowser_delete_features.py - 
+gpipe_gbrowser_delete_features.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python gbrowser_delete_features.py --help
+   python gpipe_gbrowser_delete_features.py --help
 
 Type::
 
-   python gbrowser_delete_features.py --help
+   python gpipe_gbrowser_delete_features.py --help
 
 for command line help.
 
@@ -73,7 +73,7 @@ delete a section from a gbrowser database.
 
 if __name__ == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: gbrowser_delete_features.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: gpipe_gbrowser_delete_features.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-d", "--dry-run", dest="dry_run", action="store_true",
                       help="dry run, do not execute any commands."  )

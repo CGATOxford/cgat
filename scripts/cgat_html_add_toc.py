@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-html_add_toc.py - insert table of contents in html document
+cgat_html_add_toc.py - insert table of contents in html document
 ===========================================================
 
 :Author: Andreas Heger
@@ -42,11 +42,11 @@ Usage
 
 Example::
 
-   python html_add_toc.py --help
+   python cgat_html_add_toc.py --help
 
 Type::
 
-   python html_add_toc.py --help
+   python cgat_html_add_toc.py --help
 
 for command line help.
 
@@ -98,7 +98,8 @@ def main():
         opts, args = getopt.getopt(sys.argv[1:], "", ["max-depth=",
                                                       "no-toc-links",
                                                       "hide",
-                                                      "help"])
+                                                      "help",
+                                                      "version"])
     except getopt.GetoptError, msg:
         usage()
         print msg
@@ -110,6 +111,9 @@ def main():
     for o, a in opts:
         if o == "--help":
             usage()
+            sys.exit(0)
+        elif o in ( "--version", ):
+            print "version="
             sys.exit(0)
         elif o=="--no-toc-links":
             no_toc_links=1

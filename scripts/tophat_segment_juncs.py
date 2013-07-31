@@ -3,7 +3,7 @@
 #
 #   MRC FGU Computational Genomics Group
 #
-#   $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $
+#   $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $
 #
 #   Copyright (C) 2009 Andreas Heger
 #
@@ -122,6 +122,7 @@ def main( argv = None ):
     parser = argparse.ArgumentParser(description='Process tophat options.')
     parser.add_argument('-p', '--num-threads', metavar='N', type=int, dest='nthreads',
                          help='number of threads')
+    parser.add_argument('--version', action='version', version='%(prog)s')
     options, args = parser.parse_known_args( argv[1:] )
 
     E.info( "parallelizing segment juncs with %i threads" % options.nthreads )

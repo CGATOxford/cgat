@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-exons2map.py - 
+gpipe_exons2map.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python exons2map.py --help
+   python gpipe_exons2map.py --help
 
 Type::
 
-   python exons2map.py --help
+   python gpipe_exons2map.py --help
 
 for command line help.
 
@@ -68,7 +68,7 @@ Convert exon list to a map of prediction to genome.
 Note: This file takes in forward strand coordinates, but
 returns forward/backward coordinates.
 
-Version: $Id: exons2map.py 1799 2008-03-28 11:44:19Z andreas $
+Version: $Id: gpipe_exons2map.py 1799 2008-03-28 11:44:19Z andreas $
 
 Options:
 -h, --help                      print this message.
@@ -77,7 +77,7 @@ Options:
 """ % sys.argv[0]
 
 
-param_long_options=["verbose=", "help", "contigs="]
+param_long_options=["verbose=", "help", "contigs=", "version"]
 param_short_options="v:hc:"
 
 param_trans = None
@@ -100,6 +100,9 @@ if __name__ == "__main__":
     for o,a in optlist:
         if o in ( "-v", "--verbose" ):
             param_loglevel = int(a)
+        elif o in ( "--version", ):
+            print "version="
+            sys.exit(0)
         elif o in ( "-h", "--help" ):
             print USAGE
             sys.exit(0)

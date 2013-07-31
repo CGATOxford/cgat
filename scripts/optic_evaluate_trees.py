@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-evaluate_trees.py - 
+optic_evaluate_trees.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python evaluate_trees.py --help
+   python optic_evaluate_trees.py --help
 
 Type::
 
-   python evaluate_trees.py --help
+   python optic_evaluate_trees.py --help
 
 for command line help.
 
@@ -71,7 +71,7 @@ from Bio.Nexus.Nodes import Node
 
 USAGE="""python %s [OPTIONS] < tree.in > tree.out
 
-Version: $Id: evaluate_trees.py 2781 2009-09-10 11:33:14Z andreas $
+Version: $Id: optic_evaluate_trees.py 2781 2009-09-10 11:33:14Z andreas $
 
 compare a set of trees to reference trees.
 
@@ -90,7 +90,7 @@ import CGAT.TreeTools as TreeTools
 ##------------------------------------------------------------------------
 if __name__ == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: evaluate_trees.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: optic_evaluate_trees.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-r", "--reference=", dest="filename_reference_tree",
                       help="filename with reference tree.", type="string" )

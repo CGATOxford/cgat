@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-update_blast.py - take a blast output file and rerun with BLAST
+optic_update_blast.py - take a blast output file and rerun with BLAST
 ===============================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python update_blast.py --help
+   python optic_update_blast.py --help
 
 Type::
 
-   python update_blast.py --help
+   python optic_update_blast.py --help
 
 for command line help.
 
@@ -120,7 +120,7 @@ def CompareSequenceSets( seqs1, seqs2 ):
 
 if __name__ == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: update_blast.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: optic_update_blast.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("--new-query-sequences", dest="filename_new_query_sequences", type="string",
                       help="new sequences."  )

@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-orthologs2list.py - 
+optic_orthologs2list.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python orthologs2list.py --help
+   python optic_orthologs2list.py --help
 
 Type::
 
-   python orthologs2list.py --help
+   python optic_orthologs2list.py --help
 
 for command line help.
 
@@ -71,7 +71,7 @@ import CGAT.IOTools as IOTools
 
 if __name__  == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: orthologs2list.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: optic_orthologs2list.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option( "-s", "--species-regex", dest="species_regex", type="string" ,
                        help="regular expression to extract species from identifier.")

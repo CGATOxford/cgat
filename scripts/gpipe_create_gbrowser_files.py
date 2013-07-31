@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-create_gbrowser_files.py - 
+gpipe_create_gbrowser_files.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python create_gbrowser_files.py --help
+   python gpipe_create_gbrowser_files.py --help
 
 Type::
 
-   python create_gbrowser_files.py --help
+   python gpipe_create_gbrowser_files.py --help
 
 for command line help.
 
@@ -65,7 +65,7 @@ import optparse
 import CGAT.Experiment as E
 import pgdb
 
-"""python create_gbrowser_files.py.
+"""python gpipe_create_gbrowser_files.py.
 
 Script to create configuration files for gbrowser.
 
@@ -751,7 +751,7 @@ WORM_DATA = (
 
 if __name__ == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: create_gbrowser_files.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: gpipe_create_gbrowser_files.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-t", "--target-dir", dest="target", type="string",
                       help="target directory.", metavar = "FILE"  )

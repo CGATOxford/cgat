@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-exons2clusters.py - 
+gpipe_exonerate_combine_regions.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python exons2clusters.py --help
+   python gpipe_exonerate_combine_regions.py --help
 
 Type::
 
-   python exons2clusters.py --help
+   python gpipe_exonerate_combine_regions.py --help
 
 for command line help.
 
@@ -65,7 +65,7 @@ import tempfile
 
 USAGE="""python %s [OPTIONS] schema1 schema2 [...]
 
-Version: $Id: exons2clusters.py 2464 2009-02-02 10:28:09Z andreas $
+Version: $Id: gpipe_exonerate_combine_regions.py 2464 2009-02-02 10:28:09Z andreas $
 
 Cluster exons into genes. Identical overlap is required.
 
@@ -92,7 +92,8 @@ param_filename_peptides = None
 
 param_long_options=["verbose=", "help",
                     "peptides=", "overlap=", "alignment=", "regex-preferred=", "contigs=",
-                    "use-genome-length", "genome-file="]
+                    "use-genome-length", "genome-file=",
+                    "version"]
 
 param_short_options="v:hp:o:a:r:c:gf:"
 
@@ -376,6 +377,9 @@ if __name__ == "__main__":
     for o,a in optlist:
         if o in ( "-v", "--verbose" ):
             param_loglevel = int(a)
+        elif o in ( "--version", ):
+            print "version="
+            sys.exit(0)
         elif o in ( "-h", "--help" ):
             print USAGE
             sys.exit(0)

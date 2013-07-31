@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-analyze_genetrees.py - 
+optic_analyze_genetrees.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python analyze_genetrees.py --help
+   python optic_analyze_genetrees.py --help
 
 Type::
 
-   python analyze_genetrees.py --help
+   python optic_analyze_genetrees.py --help
 
 for command line help.
 
@@ -70,7 +70,7 @@ import copy
 
 from types import *
 
-"""program $Id: analyze_genetrees.py 2781 2009-09-10 11:33:14Z andreas $
+"""program $Id: optic_analyze_genetrees.py 2781 2009-09-10 11:33:14Z andreas $
 
 analyse orthology sets.
 
@@ -87,7 +87,7 @@ import scipy
 import scipy.stats
 import CGAT.Histogram as Histogram
 
-import analyze_orthology_multiple as TreeReconciliation
+import optic_analyze_orthology_multiple as TreeReconciliation
 
 def printCounts( heights_per_species, relheights_per_species,
                  heights_per_tree, relheights_per_tree,                 
@@ -139,7 +139,7 @@ def printCounts( heights_per_species, relheights_per_species,
 ##------------------------------------------------------------------------------------------
 if __name__ == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: analyze_genetrees.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: optic_analyze_genetrees.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option( "-r", "--species-regex", dest="species_regex", type="string" ,
                        help="regular expression to extractspecies from identifier.")

@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-count_orgs.py - 
+optic_count_orgs.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python count_orgs.py --help
+   python optic_count_orgs.py --help
 
 Type::
 
-   python count_orgs.py --help
+   python optic_count_orgs.py --help
 
 for command line help.
 
@@ -65,7 +65,7 @@ import optparse
 
 import CGAT.Orthologs as Orthologs
 
-USAGE="""python count_orgs.py < stdin 
+USAGE="""python optic_count_orgs.py < stdin 
 
 count presence or absence of species/transcripts/genes in clusters.
 
@@ -94,7 +94,7 @@ def GetPattern( data, l ):
 
 if __name__ == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: count_orgs.py 1706 2007-12-11 16:46:11Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: optic_count_orgs.py 1706 2007-12-11 16:46:11Z andreas $", usage = globals()["__doc__"])
     
     parser.add_option("-t", "--reference-tree", dest="reference_tree", type="string",
                       help="reference tree to read."  )

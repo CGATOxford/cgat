@@ -2,7 +2,7 @@
 #
 #   MRC FGU Computational Genomics Group
 #
-#   $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $
+#   $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $
 #
 #   Copyright (C) 2009 Andreas Heger
 #
@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-import_extensions.py - test importing all scripts
+cgat_import_extensions.py - test importing all scripts
 =================================================
 
 :Author: Andreas Heger
@@ -43,11 +43,11 @@ Usage
 
 Example::
 
-   python import_extensions.py
+   python cgat_import_extensions.py
 
 Type::
 
-   python import_extensions.py --help
+   python cgat_import_extensions.py --help
 
 for command line help.
 
@@ -77,7 +77,7 @@ def main( argv = None ):
     if not argv: argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser( version = "%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
+    parser = E.OptionParser( version = "%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
                                     usage = globals()["__doc__"] )
 
     parser.set_defaults(

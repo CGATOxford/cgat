@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-predictions2transcripts.py - patch predictions into transcripts
+gpipe_predictions2transcripts.py - patch predictions into transcripts
 ===============================================================
 
 :Author: Andreas Heger
@@ -42,11 +42,11 @@ Usage
 
 Example::
 
-   python predictions2transcripts.py --help
+   python gpipe_predictions2transcripts.py --help
 
 Type::
 
-   python predictions2transcripts.py --help
+   python gpipe_predictions2transcripts.py --help
 
 for command line help.
 
@@ -98,7 +98,7 @@ def findCodonReverse( sequence, start, found_codons, abort_codons = None ):
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = E.OptionParser( version = "%prog version: $Id: predictions2transcripts.py 1841 2008-05-08 12:07:13Z andreas $",
+    parser = E.OptionParser( version = "%prog version: $Id: gpipe_predictions2transcripts.py 1841 2008-05-08 12:07:13Z andreas $",
                                     usage = globals()["__doc__"] )
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genome."  )

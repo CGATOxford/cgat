@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-predictions2assembly.py - 
+gpipe_predictions2assembly.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python predictions2assembly.py --help
+   python gpipe_predictions2assembly.py --help
 
 Type::
 
-   python predictions2assembly.py --help
+   python gpipe_predictions2assembly.py --help
 
 for command line help.
 
@@ -66,7 +66,7 @@ import tempfile
 
 USAGE="""python %s [OPTIONS] < exonerate_output > filtered
 
-Version: $Id: predictions2assembly.py 698 2006-07-19 15:53:22Z andreas $
+Version: $Id: gpipe_predictions2assembly.py 698 2006-07-19 15:53:22Z andreas $
 
 Compile collinear predictions that are spread accross several contigs into new predictions.
 Old predictions are translated into the newly created contigs.
@@ -106,7 +106,7 @@ param_long_options=["verbose=", "help",
                     "join-pattern=", "genome-file=",
                     "max-overlap=",
                     "max-difference=", "contigs=",
-                    "filename-sizes="]
+                    "filename-sizes=", "version"]
 
 param_short_options="v:hf:i:d:c:o:jg:s:"
 
@@ -394,6 +394,9 @@ if __name__ == '__main__':
             param_loglevel = int(a)
         elif o in ( "-h", "--help" ):
             print USAGE
+            sys.exit(0)
+        elif o in ( "--version", ):
+            print "version="
             sys.exit(0)
         elif o in ("-f", "--format"):
             param_format = a

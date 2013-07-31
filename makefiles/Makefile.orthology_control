@@ -396,7 +396,7 @@ cluster_%.view_tree: %.colours
 family_%.setup-family:
 	$(PRELOG)
 	-mkdir family_$*.dir
-	python $(DIR_SCRIPTS_GENEPREDICTION)setup.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_setup.py \
 	-f -p $* \
 	-d family_$*.dir \
 	-m orthology_family \
@@ -639,7 +639,7 @@ non_orphans: orphans orthologs
 ## filtering by gene structure
 orthologs_filtered.links: orthologs.blast
 	$(CMD_REMOTE_SUBMIT) \
-	python $(DIR_SCRIPTS_GENEPREDICTION)filter_paralogous_links.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)optic_filter_paralogous_links.py \
 	--cds=$(PARAM_SRC_EXON_BOUNDARIES) \
 	--verbose=3 \
 	< orthologs.blast > $@

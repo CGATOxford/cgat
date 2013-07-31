@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-exonerate2regions.py - 
+gpipe_exonerate2regions.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python exonerate2regions.py --help
+   python gpipe_exonerate2regions.py --help
 
 Type::
 
-   python exonerate2regions.py --help
+   python gpipe_exonerate2regions.py --help
 
 for command line help.
 
@@ -65,7 +65,7 @@ import time
 
 USAGE="""python %s [OPTIONS] < exonerate_output > filtered
 
-Version: $Id: exonerate2regions.py 1799 2008-03-28 11:44:19Z andreas $
+Version: $Id: gpipe_exonerate2regions.py 1799 2008-03-28 11:44:19Z andreas $
 
 Analyse exonerate matches and calculate summary statistics for an alignment.
 
@@ -129,7 +129,8 @@ param_format = "exonerate"
 
 param_long_options=["verbose=", "help", "genome=", "peptides=",
                     "min-score=", "correct-offset", "format=",
-                    "max-intron=", "force-contiguous", "dump"]
+                    "max-intron=", "force-contiguous", "dump",
+                    "version"]
 
 param_short_options="v:hg:p:e:o:c:s:of:i:cd"
 
@@ -308,6 +309,9 @@ if __name__ == '__main__':
             param_loglevel = int(a)
         elif o in ( "-h", "--help" ):
             print USAGE
+            sys.exit(0)
+        elif o in ( "--version", ):
+            print "version="
             sys.exit(0)
         elif o in ("-g", "--genome"):
             param_filename_genome = a

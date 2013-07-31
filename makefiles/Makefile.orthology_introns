@@ -265,7 +265,7 @@ all: step2
 ## predict gene structure from peptides and transcripts
 %_genes.pairs: %_genes2transcripts.map %_peptides.fasta
 	sort -k5,5 $*_genes2transcripts.map |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)assignments2pairs.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_assignments2pairs.py \
 	--genome-file=$*_genome/%s.fasta \
 	--forward-coordinates \
 	--input-format=ensembl \
@@ -283,7 +283,7 @@ all: step2
 predictions-hook: $(PREDICTIONS_TARGETS)
 
 %.matches: %.chunk
-	$(CMD_REMOTE_SUBMIT) python $(DIR_SCRIPTS_GENEPREDICTION)predict_genes.py \
+	$(CMD_REMOTE_SUBMIT) python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_predict_genes.py \
 	--method=twostep_ee \
 	--probe \
 	--probe-options=\'--proteinwordlimit 5 --proteinhspdropoff 5  --proteinwordlen 3 --subopt FALSE\' \
@@ -331,7 +331,7 @@ predictions-hook: $(PREDICTIONS_TARGETS)
 ## build file with exon cds
 %_selected.cds: %_selected.predictions
 	sort -k3,3 < $*_selected.predictions |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)predictions2cds.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_predictions2cds.py \
 	--genome-file=$*_genome/%s.fasta --format=cds --reset-to-start  \
 	> $@
 
@@ -339,7 +339,7 @@ predictions-hook: $(PREDICTIONS_TARGETS)
 ## build fasta file with transcripts
 %_transcripts.fasta: %_selected.predictions
 	sort -k3,3 < $*_selected.predictions |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)predictions2cds.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_predictions2cds.py \
 	--genome-file=$*_genome/%s.fasta --format=cdnas --reset-to-start |\
 	grep -v "#" | awk '{printf(">%s\n%s\n", $$2, $$7);}' > $@
 
@@ -371,7 +371,7 @@ orthologs.transcripts: orthologs.genes assignments.prepare
 assignments-hook: $(ASSIGNMENTS_TARGETS)
 
 %.transcripts: %.chunk
-	$(CMD_REMOTE_SUBMIT) python $(DIR_SCRIPTS_GENEPREDICTION)orthologs2transcripts.py \
+	$(CMD_REMOTE_SUBMIT) python $(DIR_SCRIPTS_GENEPREDICTION)optic_orthologs2transcripts.py \
 	--map1=$(DIR_TMP_SHARED_REMOTE)$(QUERY1)_genes2transcripts.map \
 	--map2=$(DIR_TMP_SHARED_REMOTE)$(QUERY2)_genes2transcripts.map \
 	--peptides1=$(DIR_TMP_SHARED_REMOTE)$(QUERY1)_peptides.fasta \
@@ -485,7 +485,7 @@ $(QUERY1)_gene_length.hist: orthologs.lengths
 	python /net/cpp-group/scripts/tools/calculate_histogram.py --bin-size=200 > $@
 
 $(QUERY1)_gene_length_cumul.hist: $(QUERY1)_gene_length.hist
-	python /net/cpp-group/scripts/tools/append_histogram.py < $(QUERY1)_gene_length.hist |\
+	python /net/cpp-group/scripts/tools/histogram2histogram.py < $(QUERY1)_gene_length.hist |\
 	grep -v "#" | cut -f 1,4 > $@
 
 $(QUERY2)_gene_length.hist: orthologs.lengths
@@ -493,7 +493,7 @@ $(QUERY2)_gene_length.hist: orthologs.lengths
 	python /net/cpp-group/scripts/tools/calculate_histogram.py --bin-size=200 > $@
 
 $(QUERY2)_gene_length_cumul.hist: $(QUERY2)_gene_length.hist
-	python /net/cpp-group/scripts/tools/append_histogram.py < $(QUERY2)_gene_length.hist |\
+	python /net/cpp-group/scripts/tools/histogram2histogram.py < $(QUERY2)_gene_length.hist |\
 	grep -v "#" | cut -f 1,4 > $@
 
 combined_gene_length.png: $(QUERY1)_gene_length.hist $(QUERY2)_gene_length.hist
@@ -819,7 +819,7 @@ orthologous_segments.pairs: step2.run
 ###########################################################
 ## calculate and align orthologous segments
 step2_%.pairs: step2_%.transcripts
-	$(CMD_REMOTE_SUBMIT) python $(DIR_SCRIPTS_GENEPREDICTION)orthologs2transcripts.py \
+	$(CMD_REMOTE_SUBMIT) python $(DIR_SCRIPTS_GENEPREDICTION)optic_orthologs2transcripts.py \
 	--mode=transcripts \
 	--peptides1=$(DIR_TMP_SHARED_REMOTE)$(QUERY1)_peptides.fasta \
 	--peptides2=$(DIR_TMP_SHARED_REMOTE)$(QUERY2)_peptides.fasta \

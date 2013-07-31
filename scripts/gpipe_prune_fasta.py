@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-prune_fasta.py - prune fasta sequences
+gpipe_prune_fasta.py - prune fasta sequences
 ======================================
 
 :Author: Andreas Heger
@@ -56,11 +56,11 @@ Usage
 
 Example::
 
-   python prune_fasta.py --help
+   python gpipe_prune_fasta.py --help
 
 Type::
 
-   python prune_fasta.py --help
+   python gpipe_prune_fasta.py --help
 
 for command line help.
 
@@ -108,7 +108,7 @@ def main( argv = None ):
     if not argv: argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser( version = "%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
+    parser = E.OptionParser( version = "%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
                                     usage = globals()["__doc__"] )
 
     ## add common options (-h/--help, ...) and parse command line 

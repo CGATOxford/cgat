@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-cluster_genes_by_category.py - 
+gpipe_cluster_genes_by_category.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python cluster_genes_by_category.py --help
+   python gpipe_cluster_genes_by_category.py --help
 
 Type::
 
-   python cluster_genes_by_category.py --help
+   python gpipe_cluster_genes_by_category.py --help
 
 for command line help.
 
@@ -65,7 +65,7 @@ import tempfile
 
 USAGE="""python %s [OPTIONS] < exonerate_output > filtered
 
-Version: $Id: cluster_genes_by_category.py 14 2005-08-09 15:24:07Z andreas $
+Version: $Id: gpipe_cluster_genes_by_category.py 14 2005-08-09 15:24:07Z andreas $
 
 Cluster genes belonging to the same category
 
@@ -84,7 +84,8 @@ param_loglevel = 2
 
 param_long_options=["verbose=", "help",
                     "go=", "regions=",
-                    "distance="]
+                    "distance=",
+                    "version"]
 param_short_options="v:hg:d:r:"
 
 param_filename_go = None
@@ -105,6 +106,9 @@ if __name__ == '__main__':
     for o,a in optlist:
         if o in ( "-v", "--verbose" ):
             param_loglevel = int(a)
+        elif o in ( "--version", ):
+            print "version="
+            sys.exit(0)
         elif o in ( "-h", "--help" ):
             print USAGE
             sys.exit(0)

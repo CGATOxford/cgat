@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-export_aaa.py - 
+gpipe_export_aaa.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python export_aaa.py --help
+   python gpipe_export_aaa.py --help
 
 Type::
 
-   python export_aaa.py --help
+   python gpipe_export_aaa.py --help
 
 for command line help.
 
@@ -66,7 +66,7 @@ USAGE="""python %s [OPTIONS] < in > out
 
 output gene predictions for AAA submission.
 
-Version: $Id: export_aaa.py 2781 2009-09-10 11:33:14Z andreas $
+Version: $Id: gpipe_export_aaa.py 2781 2009-09-10 11:33:14Z andreas $
 
 Options:
 -h, --help                      print this message.
@@ -372,7 +372,7 @@ def WriteMap( options, category, map_id):
     
 if __name__ == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: export_aaa.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: gpipe_export_aaa.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-s", "--set", dest="set",
                       help="set to use.", type="choice", choices=("full", "filtered", "clean") )

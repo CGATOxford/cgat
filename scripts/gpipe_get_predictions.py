@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-get_predictions.py - 
+gpipe_get_predictions.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python get_predictions.py --help
+   python gpipe_get_predictions.py --help
 
 Type::
 
-   python get_predictions.py --help
+   python gpipe_get_predictions.py --help
 
 for command line help.
 
@@ -69,9 +69,9 @@ import tempfile
 
 import pgdb
 
-""" program $Id: get_predictions.py 2781 2009-09-10 11:33:14Z andreas $
+""" program $Id: gpipe_get_predictions.py 2781 2009-09-10 11:33:14Z andreas $
 
-get_predictions.py
+gpipe_get_predictions.py
 
 retrieve predictions/exons
 
@@ -105,7 +105,7 @@ def GetResult( dbhandle, keys, options ):
 
 if __name__ == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: get_predictions.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: gpipe_get_predictions.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-s", "--schema", dest="schema", type="string",
                       help="database schema to use."  )

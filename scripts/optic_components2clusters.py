@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-components2clusters.py - 
+optic_components2clusters.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -46,11 +46,11 @@ Usage
 
 Example::
 
-   python components2clusters.py --help
+   python optic_components2clusters.py --help
 
 Type::
 
-   python components2clusters.py --help
+   python optic_components2clusters.py --help
 
 for command line help.
 
@@ -71,7 +71,8 @@ import time
 import popen2
 
 param_long_options=["verbose=", "help", 
-                    "equivalences=", "components=", "queries=", "transcripts=", "filter="]
+                    "equivalences=", "components=", "queries=", "transcripts=", "filter=",
+                    "version"]
 param_short_options="v:he:c:q:t:f:"
 
 param_filename_equivalences = None
@@ -91,12 +92,15 @@ if __name__ == "__main__":
     try:
         optlist, args = getopt.getopt(sys.argv[1:], param_short_options, param_long_options)
     except getopt.error, msg:
-        print USAGE, msg
+        print globals()["__doc__"], msg
         sys.exit(2)
 
     for o,a in optlist:
         if o in ( "-v", "--verbose" ):
             param_loglevel = int(a)
+        elif o in ( "--version", ):
+            print "version="
+            sys.exit(0)
         elif o in ( "-h", "--help" ):
             print globals()["__doc__"]
             sys.exit(0)

@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-compare_projects.py - 
+optic_compare_projects.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python compare_projects.py --help
+   python optic_compare_projects.py --help
 
 Type::
 
-   python compare_projects.py --help
+   python optic_compare_projects.py --help
 
 for command line help.
 
@@ -67,7 +67,7 @@ import popen2
 
 USAGE="""python %s [OPTIONS] schema1 schema2 [...]
 
-Version: $Id: compare_projects.py 2387 2009-01-07 16:33:07Z andreas $
+Version: $Id: optic_compare_projects.py 2387 2009-01-07 16:33:07Z andreas $
 
 Dump out various overview for comparisions between genomes
 
@@ -87,7 +87,8 @@ param_loglevel = 1
 param_long_options=["verbose=", "help", "connection=",
                     "report=", "fields=",
                     "associate-schemas",
-                    "separator=", "summary="]
+                    "separator=", "summary=",
+                    "version"]
 
 param_short_options="v:hC:r:f:as:"
 
@@ -126,6 +127,9 @@ if __name__ == "__main__":
     for o,a in optlist:
         if o in ( "-v", "--verbose" ):
             param_loglevel = int(a)
+        elif o in ( "--version", ):
+            print "version="
+            sys.exit(0)
         elif o in ( "-h", "--help" ):
             print USAGE
             sys.exit(0)

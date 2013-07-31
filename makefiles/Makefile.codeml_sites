@@ -301,7 +301,7 @@ stats: $(TARGET_STATS)
 
 %.counts:
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codeml_sites.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)codemls2tsv.py \
 		--filter-probability=$(PARAM_FILTER_SITES_PROBABILITY) \
 		--filter-omega=$(PARAM_FILTER_SITES_OMEGA) \
 		--models=`echo $(PARAM_FILTER_MODELS) | perl -p -e "chop; s/\s+/,/g"` \

@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-gff2predictions.py - convert a gff or exons file to gpipe predictions
+gpipe_gff2predictions.py - convert a gff or exons file to gpipe predictions
 =====================================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python gff2predictions.py --help
+   python gpipe_gff2predictions.py --help
 
 Type::
 
-   python gff2predictions.py --help
+   python gpipe_gff2predictions.py --help
 
 for command line help.
 
@@ -65,7 +65,7 @@ USAGE="""python %s [OPTIONS] < psl > predictions
 
 Convert GFF exon list to predictions format.
 
-Version: $Id: gff2predictions.py 2021 2008-07-10 16:00:48Z andreas $
+Version: $Id: gpipe_gff2predictions.py 2021 2008-07-10 16:00:48Z andreas $
 """
 
 
@@ -77,7 +77,7 @@ import CGAT.IndexedFasta as IndexedFasta
 import CGAT.GFF as GFF
 import CGAT.IOTools as IOTools
 
-from predict_genes import PredictorExonerate
+from gpipe_predict_genes import PredictorExonerate
 
 def checkIdentity( reference, translation, options ):
     """check if the two sequences in reference and translation
@@ -112,7 +112,7 @@ def checkIdentity( reference, translation, options ):
 
 if __name__ == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: gff2predictions.py 2021 2008-07-10 16:00:48Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: gpipe_gff2predictions.py 2021 2008-07-10 16:00:48Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-t", "--trans", dest="trans", 
                       help="input is translated DNA.", action="store_true"  )

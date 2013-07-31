@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-blast2alignments.py - 
+blast2fasta.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python blast2alignments.py --help
+   python blast2fasta.py --help
 
 Type::
 
-   python blast2alignments.py --help
+   python blast2fasta.py --help
 
 for command line help.
 
@@ -73,7 +73,7 @@ import alignlib
 
 USAGE="""python %s [OPTIONS] < graph.in > graph.out
 
-Version: $Id: blast2alignments.py 2782 2009-09-10 11:40:29Z andreas $
+Version: $Id: blast2fasta.py 2782 2009-09-10 11:40:29Z andreas $
 
 Convert a blast graph into a pairwise alignment graph
 
@@ -85,7 +85,7 @@ Options:
 
 if __name__ == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: blast2alignments.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: blast2fasta.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option("-s", "--sequences", dest="filename_sequences", type="string",
                       help="filename with sequences."  )

@@ -100,7 +100,7 @@ step8.collected.predictions.gz: step5.predictions.gz step6.predictions.gz step7.
 step8.pseudogenes.predictions.gz: step8.collected.predictions.gz
 	$(PRELOG)
 	@gunzip < $< |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)predictions2pseudogenes.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_predictions2pseudogenes.py \
 	$(PYTHON_OPTIONS) \
 	--format=predictions \
 	$(PARAM_PSEUDOGENES_OPTIONS) \
@@ -116,7 +116,7 @@ step8.assembly.predictions.gz: step8.collected.predictions.gz $(PSEUDOGENES_TARG
 	$(PRELOG)
 	@cat $^ |\
 	gunzip |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)predictions2assembly.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_predictions2assembly.py \
 	$(PYTHON_OPTIONS) \
 	--format=predictions \
 	--genome-file=$(PARAM_INPUT_GENOME) \
@@ -145,7 +145,7 @@ step8.assembly_sizes.load: step8.assembly.predictions.gz
 step8.predictions.gz: $(ASSEMBLY_RESULTS)
 	$(PRELOG)
 	@cat $^ | gunzip | grep -h -v "#" |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)regions2predictions.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)optic_regions2predictions.py \
 	--disable-conflict --disable-suboptimal --disable-activation \
 	--min-score=$(PARAM_FILTER_MIN_SCORE) \
 	--min-coverage-query=$(PARAM_FILTER_MIN_COVERAGE_QUERY) \
@@ -199,7 +199,7 @@ step8.patch.prepare:
 	@$(MAKE) step8.patch.dir
 	@gunzip < step8.predictions.gz | grep -v "#" |\
 	sort -k3,3 -t'	' |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)assignments2pairs.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_assignments2pairs.py \
 	$(PYTHON_OPTIONS) \
 	--default-margin=$(PARAM_MEMBERS_MARGIN) \
 	--genome-file=$(PARAM_ASSEMBLY_PATTERN) \
@@ -224,7 +224,7 @@ step8.patch.run-hook: $(STEP8_TARGETS)
 
 step8_%.matches: step8_%.chunk
 	@$(CMD_REMOTE_SUBMIT) \
-	python $(DIR_SCRIPTS_GENEPREDICTION)predict_genes.py $(PARAM_PATCH_OPTIONS) - \
+	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_predict_genes.py $(PARAM_PATCH_OPTIONS) - \
 	< step8_$*.chunk > $@
 
 step8.patch.finish: step8.patch.run step8.patch.matches step8.patch.predictions
@@ -308,7 +308,7 @@ step8.cds: step8.predictions.gz
 	$(PRELOG)
 	@$(CMD_REMOTE_SUBMIT) \
 	"gunzip < $< | sort -k{3,3} |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)predictions2cds.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_predictions2cds.py \
 	$(PYTHON_OPTIONS) \
 	--genome-file=$(PARAM_ASSEMBLY_PATTERN)" \
 	< /dev/null > $@
@@ -330,7 +330,7 @@ step8.map_prediction2genome: step8.predictions.gz
 	$(PRELOG)
 	@$(CMD_REMOTE_SUBMIT) \
 	"gunzip < $< | sort -k{3,3} |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)predictions2cds.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_predictions2cds.py \
 	$(PYTHON_OPTIONS) \
 	--genome-file=$(PARAM_ASSEMBLY_PATTERN) \
 	--format=map" \
@@ -354,7 +354,7 @@ step8.transcripts: step8.predictions.gz
 	$(PRELOG)
 	@$(CMD_REMOTE_SUBMIT) \
 	"gunzip < $< | sort -k{3,3} |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)predictions2transcripts.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_predictions2transcripts.py \
 	$(PYTHON_OPTIONS) \
 	--genome-file=$(PARAM_ASSEMBLY_PATTERN)" \
 	< /dev/null > $@
@@ -376,7 +376,7 @@ step8.disruptions: step8.predictions.gz
 	$(PRELOG)
 	@$(CMD_REMOTE_SUBMIT) \
 	"gunzip < $< | sort -k{3,3} |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)predictions2disruptions.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_predictions2disruptions.py \
 	$(PYTHON_OPTIONS) \
 	--genome-file=$(PARAM_ASSEMBLY_PATTERN)" \
 	< /dev/null > $@
@@ -398,7 +398,7 @@ step8.introns: step8.predictions.gz
 	$(PRELOG)
 	@$(CMD_REMOTE_SUBMIT) \
 	"gunzip < $< | sort -k{3,3} |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)predictions2introns.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_predictions2introns.py \
 		$(PYTHON_OPTIONS) \
 		--genome-file=$(PARAM_ASSEMBLY_PATTERN)" \
 	< /dev/null > $@

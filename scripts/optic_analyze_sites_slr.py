@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-analyze_sites_slr.py - 
+optic_analyze_sites_slr.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python analyze_sites_slr.py --help
+   python optic_analyze_sites_slr.py --help
 
 Type::
 
-   python analyze_sites_slr.py --help
+   python optic_analyze_sites_slr.py --help
 
 for command line help.
 
@@ -293,7 +293,7 @@ def ProcessResult( result, options, mali = None, prefix = None, p_value = None )
 
 if __name__ == "__main__":
     
-    parser = E.OptionParser( version = "%prog version: $Id: analyze_sites_slr.py 2781 2009-09-10 11:33:14Z andreas $" )
+    parser = E.OptionParser( version = "%prog version: $Id: optic_analyze_sites_slr.py 2781 2009-09-10 11:33:14Z andreas $" )
 
     parser.add_option("--method", dest="method", type="choice",
                       choices=("summary-slr", "summary-filtered", "over-representation",

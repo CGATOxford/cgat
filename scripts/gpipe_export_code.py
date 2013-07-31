@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-export_code.py - package all code from a pipeline
+gpipe_export_code.py - package all code from a pipeline
 =================================================
 
 :Author: Andreas Heger
@@ -42,11 +42,11 @@ Usage
 
 Example::
 
-   python export_code.py --help
+   python gpipe_export_code.py --help
 
 Type::
 
-   python export_code.py --help
+   python gpipe_export_code.py --help
 
 for command line help.
 
@@ -101,11 +101,11 @@ Unpack code into a directory of your choice:
 
 Check if all python system libraries are present:
 
-        python %(dir)s/check_setup.py
+        python %(dir)s/check_gpipe_setup.py
 
 Setup the master makefile:
 
-        python %(dir)s/setup.py
+        python %(dir)s/gpipe_setup.py
 
 This will create a Makefile in the current directory, which will then be used
 as the build directory. Use the -d option to use a different directory or call
@@ -249,7 +249,7 @@ def getModules( modules, scriptdirs, libdirs):
 
 if __name__ == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: export_code.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: gpipe_export_code.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-t", "--tool-set", dest="tool_set",
                       help="set to use.", type="choice",
@@ -355,7 +355,7 @@ if __name__ == "__main__":
             nmissed_scripts += 1
 
     ## Writing setup check file
-    outfile = open( target_directory + "check_setup.py", "w")
+    outfile = open( target_directory + "check_gpipe_setup.py", "w")
     for module in system_modules:
         outfile.write("import %s\n" % module[:-3] )
 
@@ -364,8 +364,8 @@ if __name__ == "__main__":
     outfile.close()
 
     ## Writing setup file.
-    outfile = open( target_directory + "setup.py", "w")
-    infile = open( source_directory + "setup.py" )
+    outfile = open( target_directory + "gpipe_setup.py", "w")
+    infile = open( source_directory + "gpipe_setup.py" )
     for line in infile:
         if re.search("method = None", line):
             line = line[line.find(method):] + "method = '%s',\n" % method

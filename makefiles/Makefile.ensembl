@@ -211,7 +211,7 @@ predictions.load: reference.exons reference.pep.fa.gz
 	@$(PSQL_CONNECTION) "DELETE FROM $(PARAM_TABLE_NAME_PREDICTIONS);" > /dev/null
 	@cat $< $(PSEUDOGENES_EXONS) |\
 	grep -v "#" |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)gff2predictions.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_gff2predictions.py \
 		--format="exons" \
 		--genome-file=$(PARAM_GENOME_FILE) \
 		--filename-peptides=reference.pep.fa.gz \
@@ -264,7 +264,7 @@ genes.load: peptides2genes
 geneinfo.load: genes.load quality.load predictions.load
 	$(PRELOG)
 	@$(PSQL_CONNECTION) "DELETE FROM $(PARAM_TABLE_NAME_GENEINFO);" > /dev/null
-	@python $(DIR_SCRIPTS_GENEPREDICTION)genes2quality.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_genes2quality.py \
 		--connection=$(PARAM_PSQL_HOST):$(PARAM_PSQL_DATABASE) \
 		--table-genes=$(PARAM_TABLE_NAME_GENES) \
 		--table-quality=$(PARAM_TABLE_NAME_QUALITY) \
@@ -283,7 +283,7 @@ exons.load: reference.exons
 	$(PRELOG)
 	@$(PSQL_CONNECTION) "DELETE FROM $(PARAM_TABLE_NAME_EXONS);" > /dev/null
 	@cat $< $(PSEUDOGENES_EXONS) |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)gff2predictions.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_gff2predictions.py \
 		--format="exons" \
 		--output-format="exontable" \
 		--genome-file=$(PARAM_GENOME_FILE) \
@@ -349,7 +349,7 @@ cds.load: reference.exons
 	@$(PSQL_CONNECTION) "DELETE FROM $(PARAM_TABLE_NAME_CDS);" > /dev/null
 	@cat $< $(PSEUDOGENES_EXONS) |\
 	grep -v "#" |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)gff2predictions.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_gff2predictions.py \
 		--format="exons" \
 		--output-format="cds" \
 		--log=$@.log \
@@ -385,7 +385,7 @@ transcripts.load: predictions.load
 map_rep2mem: reference.exons
 	$(PRELOG)
 	@cat $< $(PSEUDOGENES_EXONS) |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)exons2clusters.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_gpipe_exonerate_combine_regions.py \
 		--genome-file=genome \
 		--verbose=2 \
 		--overlap=0 \

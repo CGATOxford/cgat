@@ -101,7 +101,8 @@ edges                           = edge list (weighted)
 
 """ % sys.argv[0]
 
-param_long_options = ["help", "verbose=", "method=", "lambda=", "k=", "self-scores=", "expected=", "distance=" ]
+param_long_options = ["help", "verbose=", "method=", "lambda=", "k=", "self-scores=", "expected=", "distance=",
+                      "version"]
 
 param_short_options = "hv:m:f:o:d:"
 
@@ -133,6 +134,9 @@ if __name__ == "__main__":
     for o,a in optlist:
         if o in ( "-v", "--verbose" ):
             param_loglevel = int(a)
+        elif o in ( "--version", ):
+            print "version="
+            sys.exit(0)
         elif o in ( "-h", "--help" ):
             print USAGE
             sys.exit(0)

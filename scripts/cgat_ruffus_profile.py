@@ -1,7 +1,7 @@
 #!/bin/env python
 
 '''
-ruffus_profile.py - analyze ruffus logfile
+cgat_ruffus_profile.py - analyze ruffus logfile
 ==================================================
 
 :Author: Andreas Heger

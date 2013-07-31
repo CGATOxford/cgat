@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-analyze_orthology_multiple.py - 
+optic_analyze_orthology_multiple.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python analyze_orthology_multiple.py --help
+   python optic_analyze_orthology_multiple.py --help
 
 Type::
 
-   python analyze_orthology_multiple.py --help
+   python optic_analyze_orthology_multiple.py --help
 
 for command line help.
 
@@ -70,7 +70,7 @@ import cStringIO
 
 from types import *
 
-"""program $Id: analyze_orthology_multiple.py 2781 2009-09-10 11:33:14Z andreas $
+"""program $Id: optic_analyze_orthology_multiple.py 2781 2009-09-10 11:33:14Z andreas $
 
 analyse orthology sets.
 
@@ -2801,7 +2801,7 @@ def processGeneTrees( gene_nexus, options ):
 ##------------------------------------------------------------------------------------------
 if __name__ == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: analyze_orthology_multiple.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: optic_analyze_orthology_multiple.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option( "--species-regex", dest="species_regex", type="string" ,
                        help="regular expression to extract species from identifier.")

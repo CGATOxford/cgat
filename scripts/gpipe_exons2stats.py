@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-exons2stats.py - 
+gpipe_exons2stats.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python exons2stats.py --help
+   python gpipe_exons2stats.py --help
 
 Type::
 
-   python exons2stats.py --help
+   python gpipe_exons2stats.py --help
 
 for command line help.
 
@@ -73,7 +73,7 @@ import pgdb
 import CGAT.Experiment as E
 import CGAT.Exons as Exons
 
-parser = E.OptionParser( version = "%prog version: $Id: exons2stats.py 2781 2009-09-10 11:33:14Z andreas $")
+parser = E.OptionParser( version = "%prog version: $Id: gpipe_exons2stats.py 2781 2009-09-10 11:33:14Z andreas $")
 
 if __name__ == "__main__":
 

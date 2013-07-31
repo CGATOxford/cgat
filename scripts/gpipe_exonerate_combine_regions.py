@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-exonerate_combine_regions.py - 
+gpipe_exonerate_combine_regions.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python exonerate_combine_regions.py --help
+   python gpipe_exonerate_combine_regions.py --help
 
 Type::
 
-   python exonerate_combine_regions.py --help
+   python gpipe_exonerate_combine_regions.py --help
 
 for command line help.
 
@@ -64,7 +64,7 @@ import getopt
 
 USAGE="""python %s [OPTIONS] < exonerate_output > filtered
 
-Version: $Id: exonerate_combine_regions.py 18 2005-08-09 15:32:24Z andreas $
+Version: $Id: gpipe_exonerate_combine_regions.py 18 2005-08-09 15:32:24Z andreas $
 
 Analyse exonerate matches and calculate summary statistics
 for an alignment.
@@ -129,7 +129,9 @@ param_min_coverage_query = 10
 ## check for stop codons within exons
 param_border_stop_codon = 3
 
-param_long_options=["verbose=", "help", "genome=", "peptides=", "max-percent-overlap=", "min-coverage-query=", "min-score="]
+param_long_options=["verbose=", "help", "genome=", "peptides=", 
+                    "max-percent-overlap=", "min-coverage-query=", "min-score=",
+                    "version"]
 param_short_options="v:hg:p:e:fo:c:s:"
 
 param_filename_peptides = None
@@ -282,6 +284,9 @@ if __name__ == '__main__':
     for o,a in optlist:
         if o in ( "-v", "--verbose" ):
             param_loglevel = int(a)
+        elif o in ( "--version", ):
+            print "version="
+            sys.exit(0)
         elif o in ( "-h", "--help" ):
             print USAGE
             sys.exit(0)

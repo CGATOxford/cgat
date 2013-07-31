@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-get_genes.py - get genes from database and print in gff format
+gpipe_get_genes.py - get genes from database and print in gff format
 ===============================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python get_genes.py --help
+   python gpipe_get_genes.py --help
 
 Type::
 
-   python get_genes.py --help
+   python gpipe_get_genes.py --help
 
 for command line help.
 
@@ -67,7 +67,7 @@ USAGE="""python %s [OPTIONS] < exonerate_output > filtered
 
 Get genes from database and print in gff format.
 
-Version = $Id: get_genes.py 1799 2008-03-28 11:44:19Z andreas $
+Version = $Id: gpipe_get_genes.py 1799 2008-03-28 11:44:19Z andreas $
 
 Options:
 -h, --help                      print this message.
@@ -107,7 +107,8 @@ param_long_options=["verbose=", "help", "boundaries=", "exons=", "peptides=", "f
                     "filter=", "filter-gene=", "filter-region=", "filter-prediction=", "add-filter-query=",
                     "table-predictions=", "table-genes=", "table-reference=", "table-exons=", "table-quality=",
                     "ucsc-assembly=", "schema=", "guess-names", "restrict-good-exons", "from-file",
-                    "restrict-selected" ]
+                    "restrict-selected",
+                    "version"]
 
 param_short_options="v:hb:e:p:g:E:P:G:i:a:S:nl"
 
@@ -486,6 +487,9 @@ if __name__ == '__main__':
             param_loglevel = int(a)
         elif o in ( "-h", "--help" ):
             print USAGE
+            sys.exit(0)
+        elif o in ( "--version", ):
+            print "version="
             sys.exit(0)
         elif o in ("-C", "--connection"):
             param_connection = a

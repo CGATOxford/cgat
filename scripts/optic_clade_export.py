@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-clade_export.py - 
+optic_clade_export.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python clade_export.py --help
+   python optic_clade_export.py --help
 
 Type::
 
-   python clade_export.py --help
+   python optic_clade_export.py --help
 
 for command line help.
 
@@ -73,7 +73,7 @@ import CGAT.Experiment as E
 
 import pgdb
 
-""" program $Id: clade_export.py 2781 2009-09-10 11:33:14Z andreas $
+""" program $Id: optic_clade_export.py 2781 2009-09-10 11:33:14Z andreas $
 
 Export data for a clade.
 
@@ -364,7 +364,7 @@ Column  Content
 
 if __name__ == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: clade_export.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: optic_clade_export.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-r", "--release", dest="release", type="string",
                       help="release.")

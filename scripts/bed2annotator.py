@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-bed2annotator.py - convert bed to annotator format
+bed2annotator2tsv.py - convert bed to annotator format
 ==================================================
 
 :Author: Andreas Heger
@@ -49,11 +49,11 @@ Usage
 
 Example::
 
-   python bed2annotator.py --help
+   python bed2annotator2tsv.py --help
 
 Type::
 
-   python bed2annotator.py --help
+   python bed2annotator2tsv.py --help
 
 for command line help.
 
@@ -84,7 +84,7 @@ import CGAT.IOTools as IOTools
 
 if __name__ == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: bed2annotator.py 2885 2010-04-07 08:46:50Z andreas $", 
+    parser = E.OptionParser( version = "%prog version: $Id: bed2annotator2tsv.py 2885 2010-04-07 08:46:50Z andreas $", 
                                     usage = globals()["__doc__"])
         
     parser.add_option( "-g", "--genome-file", dest="genome_file", type="string",

@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-extract_clade_data.py - 
+optic_export_clade_data.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python extract_clade_data.py --help
+   python optic_export_clade_data.py --help
 
 Type::
 
-   python extract_clade_data.py --help
+   python optic_export_clade_data.py --help
 
 for command line help.
 
@@ -75,7 +75,7 @@ import CGAT.Regions as Regions
 
 USAGE="""python %s [OPTIONS] 
 
-Version: $Id: extract_clade_data.py 2781 2009-09-10 11:33:14Z andreas $
+Version: $Id: optic_export_clade_data.py 2781 2009-09-10 11:33:14Z andreas $
 
 extract data from clades.
 
@@ -110,7 +110,7 @@ members.group_id = '%(group_id)s'"""
 
 if __name__ == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: extract_clade_data.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: optic_export_clade_data.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-g", "--filename-groups", dest="filename_groups", type="string",
                       help="filename with orthologous groups to extract."  )

@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-analyze_codeml_sites.py - analyze results from site-specific codeml run
+codemls2tsv.py - analyze results from site-specific codeml run
 =======================================================================
 
 :Author: Andreas Heger
@@ -45,11 +45,11 @@ Usage
 
 Example::
 
-   python analyze_codeml_sites.py --help
+   python codemls2tsv.py --help
 
 Type::
 
-   python analyze_codeml_sites.py --help
+   python codemls2tsv.py --help
 
 for command line help.
 
@@ -208,7 +208,7 @@ def convertMali2Mali( mali ):
 
 if __name__ == "__main__":
     
-    parser = E.OptionParser( version = "%prog version: $Id: analyze_codeml_sites.py 2781 2009-09-10 11:33:14Z andreas $" )
+    parser = E.OptionParser( version = "%prog version: $Id: codemls2tsv.py 2781 2009-09-10 11:33:14Z andreas $" )
 
     parser.add_option("--methods", dest="methods", type="choice", action="append",
                       choices=("summary-numbers", "jalview",

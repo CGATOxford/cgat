@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-transcripts2links.py - 
+optic_transcripts2links.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python transcripts2links.py --help
+   python optic_transcripts2links.py --help
 
 Type::
 
-   python transcripts2links.py --help
+   python optic_transcripts2links.py --help
 
 for command line help.
 
@@ -68,7 +68,7 @@ import math
 import tempfile
 import warnings
 
-""" program $Id: transcripts2links.py 2781 2009-09-10 11:33:14Z andreas $
+""" program $Id: optic_transcripts2links.py 2781 2009-09-10 11:33:14Z andreas $
 
 Given a list of transcripts, create links between them.
 
@@ -87,7 +87,7 @@ def WriteLinks( outfile, chunk, weight = 0.0, separator = "|"):
     
 if __name__ == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: transcripts2links.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: optic_transcripts2links.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-w", "--weight", dest="weight", type="float",
                       help="weight to assign each pair."  )

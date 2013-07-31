@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-analyze_clusters.py - 
+optic_annotate_clusters.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python analyze_clusters.py --help
+   python optic_annotate_clusters.py --help
 
 Type::
 
-   python analyze_clusters.py --help
+   python optic_annotate_clusters.py --help
 
 for command line help.
 
@@ -56,7 +56,7 @@ Code
 ----
 
 '''
-USAGE="""python analyze_clusters.py [OPTIONS] < clusters > output
+USAGE="""python optic_annotate_clusters.py [OPTIONS] < clusters > output
 
 annotate a selection of clusters with external information such as INTERPRO or PFAM.
 
@@ -148,7 +148,7 @@ def printAnnotations( outfile, annotations, options ):
 ##------------------------------------------------------------------------------------------
 if __name__ == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: analyze_clusters.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: optic_annotate_clusters.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option( "-r", "--species-regex", dest="species_regex", type="string" ,
                        help="regular expression to extractspecies from identifier.")

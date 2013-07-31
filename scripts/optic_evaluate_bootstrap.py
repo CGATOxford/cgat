@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-evaluate_bootstrap.py - evaluate bootstrap results against reference
+optic_evaluate_bootstrap.py - evaluate bootstrap results against reference
 ====================================================================
 
 :Author: Andreas Heger
@@ -58,11 +58,11 @@ Usage
 
 Example::
 
-   python evaluate_bootstrap.py --help
+   python optic_evaluate_bootstrap.py --help
 
 Type::
 
-   python evaluate_bootstrap.py --help
+   python optic_evaluate_bootstrap.py --help
 
 for command line help.
 
@@ -94,7 +94,7 @@ param_long_options=["verbose=", "help", "pattern-species=",
                     "min-cluster-support=", "min-report-support=",
                     "file-clusters=" , "file-inconsistencies=",
                     "file-subtrees=",
-                    "prefix="]
+                    "prefix=", "version"]
 
 param_short_options="v:hp:f:r:c:i:x:s:"
 
@@ -806,6 +806,9 @@ if __name__ == "__main__":
     for o,a in optlist:
         if o in ( "-v", "--verbose" ):
             param_loglevel = int(a)
+        elif o in ( "--version", ):
+            print "version="
+            sys.exit(0)
         elif o in ( "-h", "--help" ):
             print globals()["__doc__"]
             sys.exit(0)

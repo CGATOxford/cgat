@@ -71,7 +71,9 @@ import os
 import getopt
 import time
 
-param_long_options = ["missing=", "headers=", "titles", "normalize", "format=", "format-bin=", "format-value=", "sort=", "help"]
+param_long_options = ["missing=", "headers=", "titles", "normalize", 
+                      "format=", "format-bin=", "format-value=", "sort=", "help",
+                      "version"]
 param_short_options = "v:ht:m:h:s:f:"
 
 param_headers = None
@@ -106,6 +108,9 @@ if __name__ == '__main__':
     for o,a in optlist:
         if o in ( "--help",):
             print globals()["__doc__"]
+            sys.exit(0)
+        elif o in ( "--version", ):
+            print "version="
             sys.exit(0)
         elif o in ("-h", "--headers"):
             param_headers = string.split( a, "," )

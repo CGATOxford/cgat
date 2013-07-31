@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-analyze_synteny.py - 
+optic_analyze_synteny.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python analyze_synteny.py --help
+   python optic_analyze_synteny.py --help
 
 Type::
 
-   python analyze_synteny.py --help
+   python optic_analyze_synteny.py --help
 
 for command line help.
 
@@ -68,7 +68,7 @@ import math
 import tempfile
 import bisect
 
-""" program $Id: analyze_synteny.py 2781 2009-09-10 11:33:14Z andreas $
+""" program $Id: optic_analyze_synteny.py 2781 2009-09-10 11:33:14Z andreas $
 
 Methods:
 
@@ -85,7 +85,7 @@ import CGAT.GFF as GFF
 
 if __name__ == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: analyze_synteny.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: optic_analyze_synteny.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option( "--method", dest="methods", type="string",
                       help="methods to apply [off-diagonal].")

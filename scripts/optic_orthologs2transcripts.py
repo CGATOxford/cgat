@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-orthologs2transcripts.py - 
+optic_orthologs2transcripts.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python orthologs2transcripts.py --help
+   python optic_orthologs2transcripts.py --help
 
 Type::
 
-   python orthologs2transcripts.py --help
+   python optic_orthologs2transcripts.py --help
 
 for command line help.
 
@@ -65,7 +65,7 @@ import tempfile
 
 USAGE="""python %s [OPTIONS] < orthologs > genes
 
-Version: $Id: orthologs2transcripts.py 2774 2009-09-10 10:00:32Z andreas $
+Version: $Id: optic_orthologs2transcripts.py 2774 2009-09-10 10:00:32Z andreas $
 
 Convert a list of orthologous sequences into a list of orthologous transcripts.
 
@@ -132,7 +132,8 @@ param_long_options=["verbose=", "help", "map1=", "map2=",
                     "missing-max-missing=", "missing-min-present=",
                     "compress", "min-coverage=", "mode=",
                     "min-exon-size=", "min-alignment-exon-overlap="
-                    "mode-genome1=", "mode-genome2="]
+                    "mode-genome1=", "mode-genome2=",
+                    "version"]
                     
 
 param_short_options="v:hg:"
@@ -1064,6 +1065,9 @@ if __name__ == '__main__':
     for o,a in optlist:
         if o in ( "-v", "--verbose" ):
             param_loglevel = int(a)
+        elif o in ( "--version", ):
+            print "version="
+            sys.exit(0)
         elif o in ( "-h", "--help" ):
             print USAGE
             sys.exit(0)

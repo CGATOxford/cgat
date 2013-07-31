@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-make2help.py - 
+cgat_make2help.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python make2help.py --help
+   python cgat_make2help.py --help
 
 Type::
 
-   python make2help.py --help
+   python cgat_make2help.py --help
 
 for command line help.
 
@@ -67,7 +67,7 @@ import time
 """
 
 import CGAT.Experiment as E
-from export_code import getMakefiles
+from gpipe_export_code import getMakefiles
 
 class Parameter:
     def __init__(self, name, comment, default_value = "na"):
@@ -112,7 +112,7 @@ class Target:
 
 if __name__  == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: make2help.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: cgat_make2help.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option( "-m", "--method", dest="method", type="choice",
                        help="method to use [t-test=t-test]",

@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-select_transcripts_per_gene.py - 
+gpipe_select_transcripts_per_gene.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python select_transcripts_per_gene.py --help
+   python gpipe_select_transcripts_per_gene.py --help
 
 Type::
 
-   python select_transcripts_per_gene.py --help
+   python gpipe_select_transcripts_per_gene.py --help
 
 for command line help.
 
@@ -67,7 +67,7 @@ import optparse
 import math
 import tempfile
 
-""" program $Id: select_transcripts_per_gene.py 2781 2009-09-10 11:33:14Z andreas $
+""" program $Id: gpipe_select_transcripts_per_gene.py 2781 2009-09-10 11:33:14Z andreas $
 
 Remove transcripts from a gene that are likely predictions by paralogs.
 
@@ -105,7 +105,7 @@ def Write( outfile, gene_id, qualities, priority ):
         
 if __name__ == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: select_transcripts_per_gene.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: gpipe_select_transcripts_per_gene.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-i", "--priority", dest="priority", type="string",
                       help="quality priority."  )

@@ -148,7 +148,7 @@ step11.run-hook : $(STEP11_TARGETS)
 step11_%.result: step11_%.chunk
 	$(PRELOG)
 	@$(CMD_REMOTE_SUBMIT) \
-	python $(DIR_SCRIPTS_GENEPREDICTION)select_transcripts.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_select_transcripts.py \
 	$(PYTHON_OPTIONS) \
 	--exons=../step11.exons \
 	--peptides=../step9.predictions \
@@ -194,7 +194,7 @@ step11.redundant.members: step11.run
 old_step11.redundant.members: step10 step9.predictions.fasta
 	$(PRELOG)
 	@$(CMD_REMOTE_SUBMIT) \
-	python $(DIR_SCRIPTS_GENEPREDICTION)select_transcripts.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_select_transcripts.py \
 	$(PYTHON_OPTIONS) \
 	--connection=$(PARAM_PSQL_HOST):$(PARAM_PSQL_DATABASE) \
 	--table-overview=$(PARAM_TABLE_NAME_OVERVIEW) \
@@ -275,7 +275,7 @@ step11.genes.matches: step11.redundant.load
 	ORDER BY p.prediction_id, e.genome_exon_from" \
 	$(CONNECTION_OPTIONS) |\
 	$(CMD_REMOTE_SUBMIT) \
-	python $(DIR_SCRIPTS_GENEPREDICTION)exons2clusters.py > $@
+	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_gpipe_exonerate_combine_regions.py > $@
 	$(EPILOG)
 
 ## 3. load genes. 
@@ -299,7 +299,7 @@ step11.genes.load: step11.genes.matches
 
 step11.geneinfo: step11.genes.load
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)genes2quality.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_genes2quality.py \
 		$(PSQL_PYTHON_OPTIONS) \
 		--table-predictions=$(PARAM_TABLE_NAME_PREDICTIONS) \
 		--table-genes=$(PARAM_TABLE_NAME_GENES) \

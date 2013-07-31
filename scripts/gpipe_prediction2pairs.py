@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-prediction2pairs.py - 
+gpipe_prediction2pairs.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python prediction2pairs.py --help
+   python gpipe_prediction2pairs.py --help
 
 Type::
 
-   python prediction2pairs.py --help
+   python gpipe_prediction2pairs.py --help
 
 for command line help.
 
@@ -64,7 +64,7 @@ import optparse
 
 USAGE="""python %s [OPTIONS] < assignments > pairs
 
-Version: $Id: prediction2pairs.py 2031 2008-07-15 09:19:05Z andreas $
+Version: $Id: gpipe_prediction2pairs.py 2031 2008-07-15 09:19:05Z andreas $
 
 Take genewise predictions and write aligned pairs of genomic dnas. This
 step assumes that there are no frameshifts in the cds sequences. Frameshifts
@@ -81,7 +81,7 @@ import alignlib
 ##------------------------------------------------------------
 if __name__ == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: prediction2pairs.py 2031 2008-07-15 09:19:05Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: gpipe_prediction2pairs.py 2031 2008-07-15 09:19:05Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option( "-g", "--genome-file", dest="genome_file", type="string",
                        help="filename with genomic data (indexed)." )

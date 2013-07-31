@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-pairs2gene_structure.py - 
+gpipe_pairs2gene_structure.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python pairs2gene_structure.py --help
+   python gpipe_pairs2gene_structure.py --help
 
 Type::
 
-   python pairs2gene_structure.py --help
+   python gpipe_pairs2gene_structure.py --help
 
 for command line help.
 
@@ -64,7 +64,7 @@ import getopt
 
 USAGE="""python %s [OPTIONS] < assignments > pairs
 
-Version: $Id: pairs2gene_structure.py 1799 2008-03-28 11:44:19Z andreas $
+Version: $Id: gpipe_pairs2gene_structure.py 1799 2008-03-28 11:44:19Z andreas $
 
 Take a list of orthologous transcripts and write out a list
 of orthologous transcripts.
@@ -85,7 +85,7 @@ import CGAT.PredictionParser as PredictionParser
 import alignlib
 
 param_long_options=["verbose=", "help", "genome-file=", "format=",
-                    "cds="]
+                    "cds=", "version"]
 param_short_options="v:hg:f:c:"
 
 param_loglevel = 0
@@ -118,6 +118,9 @@ if __name__ == '__main__':
             param_loglevel = int(a)
         elif o in ( "-h", "--help" ):
             print USAGE
+            sys.exit(0)
+        elif o in ( "--version", ):
+            print "version="
             sys.exit(0)
         elif o in ("-g", "--genome-file"):
             param_genome_file = a

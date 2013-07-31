@@ -130,10 +130,10 @@ non_exonic.workspace: $(PARAM_GENOME_REGIONS)
 	$(CMD_REMOTE_SUBMIT) -l mem_free=4000M \
 	"java -Xmx1000M -cp $(PARAM_DIR_ANNOTATOR)commons-cli-1.0.jar:$(PARAM_DIR_ANNOTATOR)Annotator.jar app.Annotator \
 			-verbose 4 -iterations $(PARAM_ANNOTATOR_ITERATIONS) \
-			-annotation <( python $(DIR_SCRIPTS_GENEPREDICTION)gff2annotator.py --log=$@.log --section=annotations --annotations=$${filename_annotation} < $${filename_annotation}) \
+			-annotation <( python $(DIR_SCRIPTS_GENEPREDICTION)gff2annotator2tsv.py --log=$@.log --section=annotations --annotations=$${filename_annotation} < $${filename_annotation}) \
 			-segments <( python $(DIR_SCRIPTS_GENEPREDICTION)gtf2gtf.py --log=$@.log --filter=gene \
 					--apply=<( s3 $(PARAM_DATABASE) \"SELECT gene_id FROM $${set_segments}_annotations WHERE $${where}\") < $${filename_segments} |  
-				     python $(DIR_SCRIPTS_GENEPREDICTION)gff2annotator.py --log=$@.log --section=segments) \
+				     python $(DIR_SCRIPTS_GENEPREDICTION)gff2annotator2tsv.py --log=$@.log --section=segments) \
 			-workspace $(PARAM_ANNOTATOR_WORKSPACE)" \
 	< /dev/null >& $@
 	$(EPILOG)
@@ -153,7 +153,7 @@ all.annotations: $(INPUT)
 			options="$${options} --subset=$${d}.gtf,$${d}:$${c},$@.tmp.$${d}:$${c}"; \
 		done; \
 	done; \
-	python $(DIR_SCRIPTS_GENEPREDICTION)gff2annotator.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)gff2annotator2tsv.py \
 		--section=annotations-genes \
 		--log=$@.log \
 		$${options} \
@@ -170,7 +170,7 @@ all.annotations: $(INPUT)
 ###############################################
 architecture.annotations:
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)gff2annotator.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)gff2annotator2tsv.py \
 		--section=annotations-gff \
 		--log=$@.log \
 	< $(PARAM_GENOME_REGIONS) > $@
@@ -190,7 +190,7 @@ architecture.annotations:
 		s3v $(PARAM_DATABASE) "SELECT gene_id FROM $${d}_annotation as a WHERE $${where}" >> $@.tmp.$${d}:$${c}; \
 		options="$${options} --subset=$${d}.gtf,$${d}:$${c},$@.tmp.$${d}:$${c}"; \
 	done; \
-	python $(DIR_SCRIPTS_GENEPREDICTION)gff2annotator.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)gff2annotator2tsv.py \
 		--section=annotations-genes \
 		--log=$@.log \
 		$${options} \
@@ -206,7 +206,7 @@ architecture.annotations:
 ###############################################
 go_genes.annotations:
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)gff2annotator.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)gff2annotator2tsv.py \
 		--section=annotations-go \
 		--input-filename-map=<(tawk '{printf("%s\t%s\n", $$2, $$4); }' < $(PARAM_FILENAME_GO)) \
 		--log=$@.log \
@@ -223,7 +223,7 @@ allgoslim_territories.annotations: $(PARAM_FILENAME_GOSLIM)
 
 all%_territories.annotations:
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)gff2annotator.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)gff2annotator2tsv.py \
 		--section=annotations-go \
 		--input-filename-map=<(tawk '{printf("%s\t%s\n", $$2, $$4); }' < $< ) \
 		--log=$@.log \
@@ -242,7 +242,7 @@ intronicgoslim_territories.annotations: $(PARAM_FILENAME_GOSLIM)
 intronic%_territories.annotations:
 	$(PRELOG)
 	@grep "intronic" $(PARAM_GENOME_REGIONS) |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)gff2annotator.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)gff2annotator2tsv.py \
 		--section=annotations-go \
 		--input-filename-map=<(tawk '{printf("%s\t%s\n", $$2, $$4); }' < $<) \
 		--log=$@.log \
@@ -261,7 +261,7 @@ intergenicgoslim_territories.annotations: $(PARAM_FILENAME_GOSLIM)
 intergenic%_territories.annotations:
 	$(PRELOG)
 	@grep "intergenic" $(PARAM_GENOME_REGIONS) |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)gff2annotator.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)gff2annotator2tsv.py \
 		--section=annotations-go \
 		--input-filename-map=<(tawk '{printf("%s\t%s\n", $$2, $$4); }' < $<) \
 		--log=$@.log \
@@ -373,7 +373,7 @@ go_results_%.svg:
 			-verbose 4 -iterations $(PARAM_ANNOTATOR_ITERATIONS) \
 			-annotation $(ANNOTATIONS) \
 			-segments <( python $(DIR_SCRIPTS_GENEPREDICTION)gtf2gtf.py --log=$@.log --filter=gene --apply=$@.tmp < $${set}.gtf |\
-				     python $(DIR_SCRIPTS_GENEPREDICTION)gff2annotator.py --log=$@.log --section=segments) \
+				     python $(DIR_SCRIPTS_GENEPREDICTION)gff2annotator2tsv.py --log=$@.log --section=segments) \
 			-workspace $${workspace}.workspace \
 			$${workspace2_option} \
 			$(EXTRA_ANNOTATOR_OPTIONS)" \
@@ -445,8 +445,8 @@ redo-annotators:
 		s3 $(PARAM_DATABASE) "SELECT a.gene_id FROM $${set}_annotation AS a, $${subtable} as b WHERE a.gene_id = b.gene_id AND $${where}" > $@.tmp; \
 	fi; \
 	python $(DIR_SCRIPTS_GENEPREDICTION)gtf2gtf.py --log=$@.log --filter=gene --apply=$@.tmp < $${set}.gtf |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)gff2annotator.py --log=$@.log --section=segments > $@.segments; \
-	python $(DIR_SCRIPTS_GENEPREDICTION)annotator.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)gff2annotator2tsv.py --log=$@.log --section=segments > $@.segments; \
+	python $(DIR_SCRIPTS_GENEPREDICTION)annotator2tsv.py \
 		--segments=$@.segments \
 		--segments-gtf=$${set}.gtf \
 		--annotations=$(ANNOTATIONS) \
@@ -465,7 +465,7 @@ redo-annotators:
 ########################################################
 %_annotators.import: $(wildcard *_%.annotators)
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)annotator.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)annotator2tsv.py \
 		--method=fdr-table \
 		--fdr-qvalue=0.05 \
 		--fdr-method=annotator \

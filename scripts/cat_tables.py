@@ -2,7 +2,7 @@
 #
 #   MRC FGU Computational Genomics Group
 #
-#   $Id: script_template.py 2781 2009-09-10 11:33:14Z andreas $
+#   $Id: cgat_script_template.py 2781 2009-09-10 11:33:14Z andreas $
 #
 #   Copyright (C) 2009 Andreas Heger
 #
@@ -25,7 +25,7 @@ cat_tables.py - concatenate tables
 ==================================
 
 :Author: Andreas Heger
-:Release: $Id: script_template.py 2781 2009-09-10 11:33:14Z andreas $
+:Release: $Id: cgat_script_template.py 2781 2009-09-10 11:33:14Z andreas $
 :Date: |today|
 :Tags: Python
 
@@ -65,7 +65,7 @@ def main( argv = None ):
     if not argv: argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser( version = "%prog version: $Id: script_template.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"] )
+    parser = E.OptionParser( version = "%prog version: $Id: cgat_script_template.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"] )
 
     parser.set_defaults(
         )

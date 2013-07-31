@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-annotator.py - analyse annotator results
+annotator2tsv.py - analyse annotator results
 ========================================
 
 :Author: Andreas Heger
@@ -40,11 +40,11 @@ Usage
 
 Example::
 
-   python annotator.py --help
+   python annotator2tsv.py --help
 
 Type::
 
-   python annotator.py --help
+   python annotator2tsv.py --help
 
 for command line help.
 
@@ -70,7 +70,7 @@ parse annotator files and compute overlap.
 Note: this currently does a brute force overlap. In the future
 use bme or rtree indices.
 
-Version: $Id: annotator.py 2861 2010-02-23 17:36:32Z andreas $
+Version: $Id: annotator2tsv.py 2861 2010-02-23 17:36:32Z andreas $
 """ % sys.argv[0]
 
 import CGAT.Experiment as E
@@ -548,7 +548,7 @@ def doFDR( options, args ):
                                        extra_values) )
 
 def main():
-    parser = E.OptionParser( version = "%prog version: $Id: annotator.py 2861 2010-02-23 17:36:32Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: annotator2tsv.py 2861 2010-02-23 17:36:32Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-g", "--filename-gtf", dest="filename_gtf", type="string",
                       help="filename with gtf information. Used to map a segment to a gene name [default=%default]." )

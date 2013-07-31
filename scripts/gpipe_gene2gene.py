@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-gene2gene.py - 
+gpipe_gene2gene.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python gene2gene.py --help
+   python gpipe_gene2gene.py --help
 
 Type::
 
-   python gene2gene.py --help
+   python gpipe_gene2gene.py --help
 
 for command line help.
 
@@ -74,7 +74,7 @@ import CGAT.Experiment as E
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = E.OptionParser( version = "%prog version: $Id: gene2gene.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: gpipe_gene2gene.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option( "-q", "--restrict-quality", dest="restrict_quality", type="string",
                        help="restrict genes to given quality codes." )

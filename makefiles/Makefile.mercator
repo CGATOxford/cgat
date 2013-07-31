@@ -84,7 +84,7 @@ prepare_anchors:
 	done
 
 prepare_links:
-	python $(DIR_SCRIPTS_GENEPREDICTION)links2exons.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)optic_links2exons.py \
 	--cds=../../exon_boundaries --map=peptides2cds < ../../blast_asymmetric.links > all.links
 
 prepare.links2:

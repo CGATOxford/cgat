@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-list2regions.py - predict genes from a list of associations
+gpipe_list2regions.py - predict genes from a list of associations
 ===========================================================
 
 :Author: Andreas Heger
@@ -49,11 +49,11 @@ Usage
 
 Example::
 
-   python list2regions.py 
+   python gpipe_list2regions.py 
 
 Type::
 
-   python list2regions.py --help
+   python gpipe_list2regions.py --help
 
 for command line help.
 
@@ -78,7 +78,7 @@ import CGAT.PredictionParser as PredictionParser
 param_long_options=["verbose=", "help", "max-percent-overlap=",
                     "min-coverage-query=", "min-score=", "min-percent-identity=",
                     "max-matches=", "peptides=", "genome-file=",
-                    "map="]
+                    "map=","version"]
 
 param_short_options="v:ho:c:s:i:m:p:"
 
@@ -92,7 +92,7 @@ param_loglevel = 2
 
 param_border = 100
 
-from predict_genes import PredictorExonerate, PredictorGenewise
+from gpipe_predict_genes import PredictorExonerate, PredictorGenewise
 
 ##------------------------------------------------------------
 if __name__ == '__main__':
@@ -107,6 +107,9 @@ if __name__ == '__main__':
     for o,a in optlist:
         if o in ( "-v", "--verbose" ):
             param_loglevel = int(a)
+        elif o in ( "--version", ):
+            print "version="
+            sys.exit(0)
         elif o in ( "-h", "--help" ):
             print globals()["__doc__"]
             sys.exit(0)

@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-plot_duplications.py - 
+optic_plot_duplications.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python plot_duplications.py --help
+   python optic_plot_duplications.py --help
 
 Type::
 
-   python plot_duplications.py --help
+   python optic_plot_duplications.py --help
 
 for command line help.
 
@@ -67,7 +67,7 @@ import math
 import tempfile
 import bisect
 
-USAGE="""python plot_duplications.py [OPTIONS] < stdin > stdout
+USAGE="""python optic_plot_duplications.py [OPTIONS] < stdin > stdout
 
 plots a wheel plot of duplications in SVG format.
 
@@ -769,7 +769,7 @@ class DuplicationPlot:
 
 if __name__ == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: plot_duplications.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: optic_plot_duplications.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-e", "--headers", dest="headers", action="store_true",
                       help="first row is a header [ignored]."  )

@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-analyze_codonbias_tables.py - 
+codonbias_weights2tsv.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python analyze_codonbias_tables.py --help
+   python codonbias_weights2tsv.py --help
 
 Type::
 
-   python analyze_codonbias_tables.py --help
+   python codonbias_weights2tsv.py --help
 
 for command line help.
 
@@ -189,7 +189,7 @@ def WriteOverviewFrequencies( fields, table, options ):
     
 if __name__ == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: analyze_codonbias_tables.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: codonbias_weights2tsv.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option( "--methods", dest="methods", type="string",
                       help="methods to apply.")

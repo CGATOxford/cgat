@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-regions2gff.py - 
+optic_regions2gff.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python regions2gff.py --help
+   python optic_regions2gff.py --help
 
 Type::
 
-   python regions2gff.py --help
+   python optic_regions2gff.py --help
 
 for command line help.
 
@@ -77,7 +77,7 @@ import CGAT.Intervals as Intervals
 
 USAGE="""python %s [OPTIONS] 
 
-Version: $Id: regions2gff.py 2781 2009-09-10 11:33:14Z andreas $
+Version: $Id: optic_regions2gff.py 2781 2009-09-10 11:33:14Z andreas $
 
 extract features from the genomic database and save as a gff file. 
 
@@ -607,7 +607,7 @@ def processPredictions( dbhandle, schema, options, prediction_ids, taboo_regions
 
 if __name__ == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: regions2gff.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: optic_regions2gff.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="pattern to look for sequence filename."  )

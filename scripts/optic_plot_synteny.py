@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-plot_synteny.py - 
+optic_plot_synteny.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python plot_synteny.py --help
+   python optic_plot_synteny.py --help
 
 Type::
 
-   python plot_synteny.py --help
+   python optic_plot_synteny.py --help
 
 for command line help.
 
@@ -68,7 +68,7 @@ import math
 import tempfile
 import bisect
 
-""" program $Id: plot_synteny.py 2781 2009-09-10 11:33:14Z andreas $
+""" program $Id: optic_plot_synteny.py 2781 2009-09-10 11:33:14Z andreas $
 
 """
 import CGAT.Experiment as E
@@ -491,7 +491,7 @@ class PlotSyntenyGenomic( PlotSynteny ):
     
 if __name__ == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: plot_synteny.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: optic_plot_synteny.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-e", "--headers", dest="headers", action="store_true",
                       help="first row is a header [ignored]."  )

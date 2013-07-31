@@ -260,7 +260,7 @@ stats: $(TARGET_STATS)
 
 %.counts:
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codeml_sites.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)codemls2tsv.py \
 		--filter-probability=$(PARAM_FILTER_SITES_PROBABILITY) \
 		--filter-omega=$(PARAM_FILTER_SITES_OMEGA) \
 		--models=`echo $(PARAM_FILTER_MODELS) | perl -p -e "chop; s/\s+/,/g"` \
@@ -276,7 +276,7 @@ stats: $(TARGET_STATS)
 #######################################################################################
 
 analysis.dir/counts.table:
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_sites_slr.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic_analyze_sites_slr.py \
 			--method=summary-slr \
 			--only-header \
 			--prefix=test \
@@ -285,7 +285,7 @@ analysis.dir/counts.table:
 		echo $${dir}; \
 		cluster_id=$${dir#data.dir/cluster_}; \
 		cluster_id=$${cluster_id%.dir}; \
-		python $(DIR_SCRIPTS_GENEPREDICTION)analyze_sites_slr.py \
+		python $(DIR_SCRIPTS_GENEPREDICTION)optic_analyze_sites_slr.py \
 			--filename-log=data.dir/cluster_$${cluster_id}.dir/cluster_$${cluster_id}.sites \
 			--filename-sites=data.dir/cluster_$${cluster_id}.dir/cluster_$${cluster_id}.slr \
 			--filename-mali=data.dir/cluster_$${cluster_id}.dir/cluster_$${cluster_id}.cleaned_fasta \
@@ -301,7 +301,7 @@ analysis.dir/filtered_counts.table:
 	$(PREPLOG)
 	@grep -v "#" input.map | cut -f 2  | perl -p -e "s/_.*//" | sort -k1,1n | uniq |\
 	awk 'BEGIN {printf("prefix\n"); } {print;}' |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)analyze_sites_slr.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)optic_analyze_sites_slr.py \
 		--filename-log=data.dir/cluster_%s.dir/cluster_%s.sites \
 		--filename-sites=data.dir/cluster_%s.dir/cluster_%s.slr \
 		--filename-mali=data.dir/cluster_%s.dir/cluster_%s.cleaned_fasta \
@@ -315,7 +315,7 @@ analysis.dir/filtered_null_counts.table:
 	$(PREPLOG)
 	@grep -v "#" input.map | cut -f 2  | perl -p -e "s/_.*//" | sort -k1,1n | uniq |\
 	awk 'BEGIN {printf("prefix\n"); } {print;}' |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)analyze_sites_slr.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)optic_analyze_sites_slr.py \
 		--filename-log=data.dir/cluster_%s.dir/cluster_%s_null.sites \
 		--filename-sites=data.dir/cluster_%s.dir/cluster_%s_null.slr \
 		--filename-mali=data.dir/cluster_%s.dir/cluster_%s.cleaned_fasta \
@@ -326,7 +326,7 @@ analysis.dir/filtered_null_counts.table:
 
 analysis.dir/filtered_overrepresented.table: analysis.dir/filtered_counts.table
 	$(PREPLOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_sites_slr.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic_analyze_sites_slr.py \
 		--method=over-representation \
 		--significance-threshold=$(PARAM_ANALYSIS_SIGNIFICANCE_THRESHOLD) \
 	< $< > $@
@@ -339,7 +339,7 @@ analysis.dir/filtered_overrepresented.table: analysis.dir/filtered_counts.table
 #######################################################################################
 analysis.dir/positive_sites.table: analysis.dir/filtered_overrepresented.table
 	$(PREPLOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_sites_slr.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic_analyze_sites_slr.py \
 		--method=positive-site-table \
 		--filename-log=data.dir/cluster_%s.dir/cluster_%s.sites \
 		--filename-sites=data.dir/cluster_%s.dir/cluster_%s.slr \

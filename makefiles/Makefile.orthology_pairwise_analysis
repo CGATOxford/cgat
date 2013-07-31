@@ -260,7 +260,7 @@ duplications_%.dir/data:
 ## count the number of observations in each category 
 duplications_%.dir/counts: duplications_%.dir/data
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_duplications.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic_analyze_duplications.py \
 	--species=$(GENOMES_COMMA) \
 	--method=counts \
 	--functions=$(ANALYSIS_DUPLICATIONS_FUNCTIONS) \
@@ -277,7 +277,7 @@ duplications_%.dir/counts: duplications_%.dir/data
 duplications_%.dir/medians: duplications_%.dir/data
 	$(PRELOG)
 	@awk '$$6 > 0' < duplications_$*.dir/data |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)analyze_duplications.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)optic_analyze_duplications.py \
 	--species=$(GENOMES_COMMA) \
 	--method=medians \
 	--functions=$(ANALYSIS_DUPLICATIONS_FUNCTIONS) \
@@ -293,7 +293,7 @@ duplications_%.dir/medians: duplications_%.dir/data
 ## write duplicated genes for each pairwise comparison
 duplications_%.dir/lists: duplications_%.dir/data
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_duplications.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic_analyze_duplications.py \
 	--species=$(GENOMES_COMMA) \
 	--method=lists \
 	--functions=$(ANALYSIS_DUPLICATIONS_FUNCTIONS) \
@@ -306,7 +306,7 @@ duplications_%.dir/lists: duplications_%.dir/data
 ## write duplicated genes for each species
 duplications_%.dir/ulists: duplications_%.dir/data
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_duplications.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic_analyze_duplications.py \
 	--species=$(GENOMES_COMMA) \
 	--method=lists-union \
 	--functions=$(ANALYSIS_DUPLICATIONS_FUNCTIONS) \
@@ -319,7 +319,7 @@ duplications_%.dir/ulists: duplications_%.dir/data
 ## write links between duplicated genes
 duplications_%.dir/links: duplications_%.dir/data
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_duplications.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic_analyze_duplications.py \
 	--species=$(GENOMES_COMMA) \
 	--method=links \
 	--functions=$(ANALYSIS_DUPLICATIONS_FUNCTIONS) \
@@ -335,7 +335,7 @@ duplications_%.dir/links: duplications_%.dir/data
 ## write pairs between duplicated genes
 duplications_%.dir/pairs: duplications_%.dir/data
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_duplications.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic_analyze_duplications.py \
 	--species=$(GENOMES_COMMA) \
 	--method=pairs \
 	--functions=$(ANALYSIS_DUPLICATIONS_FUNCTIONS) \
@@ -357,7 +357,7 @@ duplications_%.dir/pairs: duplications_%.dir/data
 ## the melanogaster lineage when compared to each species.
 duplications_%.dir/hists: duplications_%.dir/data
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_duplications.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic_analyze_duplications.py \
 	--species=$(GENOMES_COMMA) \
 	--method=hists \
 	--functions=$(ANALYSIS_DUPLICATIONS_FUNCTIONS) \
@@ -366,7 +366,7 @@ duplications_%.dir/hists: duplications_%.dir/data
 	--min-value=0.0 \
 	--filename-output="duplications_$*.dir/absolute-%(s)s-%(l)s-%(f)s.hist" \
 	< duplications_$*.dir/data > $@
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_duplications.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic_analyze_duplications.py \
 	--species=$(GENOMES_COMMA) \
 	--method=hists \
 	--functions=$(ANALYSIS_DUPLICATIONS_FUNCTIONS) \
@@ -376,7 +376,7 @@ duplications_%.dir/hists: duplications_%.dir/data
 	--use-relative-height \
 	--filename-output="duplications_$*.dir/relative-%(s)s-%(l)s-%(f)s.hist" \
 	< duplications_$*.dir/data >> $@
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_duplications.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic_analyze_duplications.py \
 	--species=$(GENOMES_COMMA) \
 	--method=hists \
 	--functions=$(ANALYSIS_DUPLICATIONS_FUNCTIONS) \
@@ -399,7 +399,7 @@ duplications.images:
 		if [ ! -e $${x}.svg ]; then \
 		    $(CMD_MSG2) "processing $${x}"; \
 		    genome=`echo $${x} | perl -p -e "s/[^\-]+\-[^\-]+\-//; s/\-.+//"`; \
-		    $(YT)plot_duplications.py \
+		    $(YT)optic_plot_duplications.py \
 			    --increment=100 \
 			    --url="http://wwwfgu.anat.ox.ac.uk/cgi-bin/gbrowse/$${genome}/?name=dmel_vs_dmel4_%s" \
 			    --radius=2000 \
@@ -1891,7 +1891,7 @@ separation_%:
 			    fi; \
 			    $(ANALYSIS_SEPARATION_CMD) < $${links_file} |\
 			    head -n $(ANALYSIS_SEPARATION_MAX_LINKS) |\
-			    python $(DIR_SCRIPTS_GENEPREDICTION)analyze_clustering.py \
+			    python $(DIR_SCRIPTS_GENEPREDICTION)optic_analyze_clustering.py \
 				--pattern=$@.dir/$${method}_$${genome1}-$${genome2}_%s.%s \
 				--methods=hists,stats \
 				--map=$${components_file} \

@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-grep_predictions.py - 
+gpipe_grep_predictions.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python grep_predictions.py --help
+   python gpipe_grep_predictions.py --help
 
 Type::
 
-   python grep_predictions.py --help
+   python gpipe_grep_predictions.py --help
 
 for command line help.
 
@@ -65,7 +65,7 @@ import math
 
 USAGE="""python %s [OPTIONS] < exonerate_output > filtered
 
-Version: $Id: grep_predictions.py 18 2005-08-09 15:32:24Z andreas $
+Version: $Id: gpipe_grep_predictions.py 18 2005-08-09 15:32:24Z andreas $
 
 Grep predictions from a predictions file.
 
@@ -77,7 +77,7 @@ Options:
 -o, --format=                   format [predictions|matches]
 """ % sys.argv[0]
 
-param_long_options=["verbose=", "help", "file=", "invert-match", "keys=", "format="]
+param_long_options=["verbose=", "help", "file=", "invert-match", "keys=", "format=", "version"]
 param_short_options="v:hf:k:"
 
 param_keep = 1
@@ -100,6 +100,9 @@ if __name__ == '__main__':
     for o,a in optlist:
         if o in ( "-v", "--verbose" ):
             param_loglevel = int(a)
+        elif o in ( "--version", ):
+            print "version="
+            sys.exit(0)
         elif o in ( "-h", "--help" ):
             print USAGE
             sys.exit(0)

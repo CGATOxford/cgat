@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-id2genes.py - 
+gpipe_id2genes.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python id2genes.py --help
+   python gpipe_id2genes.py --help
 
 Type::
 
-   python id2genes.py --help
+   python gpipe_id2genes.py --help
 
 for command line help.
 
@@ -85,7 +85,8 @@ OPTIONS:
 
 param_long_options = ["create=", "regex-token=", "pattern-sub=",
                       "apply=", "invert", "multiple", "columns-token=", "echo",
-                      "filter", "inplace", "backup", "skip", "error=", "help" ]
+                      "filter", "inplace", "backup", "skip", "error=", "help",
+                      "version"]
 param_short_options = "c:r:p:a:imo:fnbsh"
 
 param_create = None
@@ -119,6 +120,9 @@ if __name__ == "__main__":
     for o,a in optlist:
         if o in ("-h", "--help"):
             print USAGE
+            sys.exit(0)
+        elif o in ( "--version", ):
+            print "version="
             sys.exit(0)
         if o in ("-c", "--create"):
             param_create = a

@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-regions2predictions.py - 
+optic_regions2predictions.py - 
 ======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python regions2predictions.py --help
+   python optic_regions2predictions.py --help
 
 Type::
 
-   python regions2predictions.py --help
+   python optic_regions2predictions.py --help
 
 for command line help.
 
@@ -65,7 +65,7 @@ import tempfile
 
 USAGE="""python %s [OPTIONS] < exonerate_output > filtered
 
-Version: $Id: regions2predictions.py 1799 2008-03-28 11:44:19Z andreas $
+Version: $Id: optic_regions2predictions.py 1799 2008-03-28 11:44:19Z andreas $
 
 Resolve conflicts of overlapping exonerate segments.
 
@@ -130,7 +130,7 @@ param_long_options=["verbose=", "help", "max-percent-overlap=",
                     "max-matches=", "peptides=", "min-length=",
                     "disable-conflict", "disable-overlap", "disable-suboptimal", "disable-activation",
                     "join-regions=", "conserve-memory",
-                    "benchmark=", "benchmark-synonyms=", "test="]
+                    "benchmark=", "benchmark-synonyms=", "test=", "version"]
 param_short_options="v:ho:c:s:i:m:p:j:xb:s:t:"
 
 param_filename_peptides = None
@@ -713,6 +713,9 @@ if __name__ == '__main__':
     for o,a in optlist:
         if o in ( "-v", "--verbose" ):
             param_loglevel = int(a)
+        elif o in ( "--version", ):
+            print "version="
+            sys.exit(0)
         elif o in ( "-h", "--help" ):
             print USAGE
             sys.exit(0)
