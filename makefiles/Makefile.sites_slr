@@ -374,14 +374,14 @@ analysis.dir/%.go: analysis.dir/%.table
 		perl -p -e "s/>$(PARAM_ANALYSIS_MASTER_SCHEMA).[^|]+[|]//; s/[|].*//; s/\-.*//" > $@.dir/bg; \
 	fi
 	@if ! test -e $@.dir/go; then \
-		python $(DIR_SCRIPTS_GENEPREDICTION)GO.py \
+		python $(DIR_SCRIPTS_GENEPREDICTION)runGO.py \
 		    --user=$(PARAM_ANALYSIS_ENSEMBL_USER) \
 		    --password=$(PARAM_ANALYSIS_ENSEMBL_PASSWORD) \
 		    --host=$(PARAM_ANALYSIS_ENSEMBL_HOST) \
 		    --database=$(PARAM_ANALYSIS_ENSEMBL_DATABASE) \
 		    --filename-dump=$@.dir/go > /dev/null; \
 	fi
-	python $(DIR_SCRIPTS_GENEPREDICTION)GO.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)runGO.py \
 		    --genes=$@.dir/fg \
 		    --background=$@.dir/bg \
 		    --user=$(PARAM_ANALYSIS_ENSEMBL_USER) \

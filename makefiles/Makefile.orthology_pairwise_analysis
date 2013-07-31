@@ -1450,7 +1450,7 @@ orphans_missed_class:
 master_%.go: master_%.list $(ANALYSIS_GO_BACKGROUND)
 	$(PRELOG)
 	@-mkdir $@.dir
-	@python $(DIR_SCRIPTS_GENEPREDICTION)GO.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)runGO.py \
 			    --user=andreas \
 			    --password=HeinBloed \
 			    --database=$(PARAM_ANALYSIS_GO_ENSEMBL) \
@@ -1473,7 +1473,7 @@ master_%.go: master_%.list $(ANALYSIS_GO_BACKGROUND)
 		    nfg=`wc -l < $@_fg_tmp`; \
 		    $(CMD_LOG2) "starting GO analysis: fg=$${nfg} bg=`wc -l < $@_bg_tmp`."; \
 		    if [[ $${nfg} > 0 ]]; then \
-			python $(DIR_SCRIPTS_GENEPREDICTION)GO.py \
+			python $(DIR_SCRIPTS_GENEPREDICTION)runGO.py \
 				--genes=$@_fg_tmp \
 				--background=$@_bg_tmp \
 				--user=andreas \
@@ -1499,7 +1499,7 @@ master_%.go: master_%.list $(ANALYSIS_GO_BACKGROUND)
 	nfg=`wc -l < $@_fg`; \
 	$(CMD_LOG2) "starting GO analysis: fg=$${nfg} bg=`wc -l < $@_bg`."; \
 	if [[ $${nfg} > 0 ]]; then \
-	    python $(DIR_SCRIPTS_GENEPREDICTION)GO.py \
+	    python $(DIR_SCRIPTS_GENEPREDICTION)runGO.py \
 		    --genes=$@_fg \
 		    --background=$@_bg \
 		    --user=andreas \
