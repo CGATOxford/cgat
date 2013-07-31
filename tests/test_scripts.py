@@ -66,6 +66,8 @@ def test_scripts():
     '''yield list of scripts to test.'''
     scriptdirs = glob.glob( "tests/*.py" )
 
+    scriptdirs.sort()
+
     for scriptdir in scriptdirs:
         fn = '%s/tests.yaml' % scriptdir
         if not os.path.exists( fn ): continue

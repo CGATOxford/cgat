@@ -67,7 +67,7 @@ import time
 """
 
 import CGAT.Experiment as E
-from gpipe_export_code import getMakefiles
+from CGAT.CGAT import getMakefiles, getScripts, getModules
 
 class Parameter:
     def __init__(self, name, comment, default_value = "na"):

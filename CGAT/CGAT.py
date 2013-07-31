@@ -165,3 +165,119 @@ def publish_report( prefix = "",
                 outf.close()
 
     E.info( "report has been published at http://www.cgat.org/downloads/%(project_id)s/%(dest_report)s" % locals())
+
+def getMakefiles( makefiles, source_directory = "", ignore_missing = False):
+    """get all makefiles that are included in a set of makefiles.
+
+    Keep the order of inclusion.
+    """
+
+    read_makefiles = set()
+    output_makefiles = []
+
+    def __getMakefiles( makefiles ):
+
+        new_makefiles = []
+        for makefile in makefiles:
+            if makefile in read_makefiles: continue
+            print makefile
+            if os.path.exists( makefile ):
+                fn = makefile
+            elif os.path.exists( os.path.join( source_directory, makefile) ):
+                fn = os.path.join( source_directory, makefile  )
+            else:
+                if ignore_missing:
+                    continue
+                else:
+                    raise IOError, "could not find %s in %s" % (makefile, source_directory)
+                
+            output_makefiles.append( fn )
+            infile = open(fn, "r")
+            
+            for line in infile:
+                if re.match("include\s+(\S+)", line):
+                    fn = re.search("include\s+(\S+)", line).groups()[0]
+                    # add explicitely given files
+                    if os.path.exists( fn ):
+                        new_makefile = fn
+                    else:
+                        new_makefile = os.path.basename( fn )
+                        # remove any path name variables
+                        new_makefile = new_makefile[new_makefile.find(")")+1:]
+                    if new_makefile not in read_makefiles:
+                        new_makefiles.append( new_makefile )
+            infile.close()
+
+            read_makefiles.add( makefile )
+            
+        if new_makefiles:
+            __getMakefiles( new_makefiles )
+
+    __getMakefiles( makefiles )
+    
+    return output_makefiles
+
+def getScripts( makefiles, source_directory ):
+    """extract all python and perl scripts from a set of makefiles."""
+    
+    scripts = set()
+    
+    for makefile in makefiles:
+        for line in open( makefile,"r"):        
+            if re.search( "python", line):
+                try:
+                    python_scripts = re.search( "python\s+(\S+.py)", line ).groups()
+                except AttributeError:
+                    continue
+                
+                for s in python_scripts: scripts.add( ("python", s) )
+    
+            if re.search( "perl", line):
+                try:
+                    perl_scripts = re.search( "perl\s+(\S+.pl)", line ).groups()
+                except AttributeError:
+                    continue
+                
+                for s in perl_scripts: scripts.add( ("perl", s) )
+    
+    return scripts
+
+def getModules( modules, scriptdirs, libdirs):
+    """extract all imported libraries (modules) from a set of (python) scripts.
+
+    Libraries that are not found are ignored and assumed to be
+    installed systemwide.
+    """
+
+    read_modules = set()
+    system_modules = set()
+    
+    def __getModules( modules ):
+        
+        new_modules = set()
+
+        for lib in modules:
+            if lib in read_modules or lib in system_modules: continue
+            for x in scriptdirs + libdirs:
+                if os.path.exists( x + lib ):
+                    for line in open( x + lib,"r"):
+                        if re.match("import\s+(\S+)", line):
+                            ll = re.search("import\s+(\S+)", line).groups()[0]
+                            ll = filter( lambda x: x != "", map(lambda x: x.strip(), ll.split(",")))
+                            for l in ll:
+                                new_modules.add( l + ".py" )
+                                
+                    read_modules.add( lib )                                
+                    break
+            else:
+                system_modules.add( lib )
+
+        if new_modules:
+            __getModules( new_modules )
+
+    __getModules( modules )
+
+    read_modules = read_modules.difference( modules )
+    
+    return read_modules, system_modules
+
