@@ -165,7 +165,7 @@ orthologs.links.gz: $(PARAM_DIR_ORTHOLOGS)summary.dir/orthologs_first.links.gz $
 	done;
 	@gunzip < $@ |\
 		perl $(DIR_SCRIPTS_TOOLS)graph_links2tokens.pl |\
-		python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_gene2gene.py \
+		python $(DIR_SCRIPTS_GENEPREDICTION)gpipe/gene2gene.py \
 			--log=$@.log |\
 		gzip > $@.tmp
 	@cat $@.tmp >> $@
@@ -173,7 +173,7 @@ orthologs.links.gz: $(PARAM_DIR_ORTHOLOGS)summary.dir/orthologs_first.links.gz $
 	@if test -e $(PARAM_DIR_ORTHOLOGS)summary.dir/besthits.links.gz; then \
 		gunzip < $(PARAM_DIR_ORTHOLOGS)summary.dir/besthits.links.gz |\
 		perl $(DIR_SCRIPTS_TOOLS)graph_links2tokens.pl |\
-		python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_gene2gene.py \
+		python $(DIR_SCRIPTS_GENEPREDICTION)gpipe/gene2gene.py \
 			--log=$@.log \
 			--restrict-quality=$(PARAM_RESTRICT_QUALITY) |\
 		gzip >> $@; \
@@ -470,7 +470,7 @@ all_predictions2queries:
 	$(PRELOG)
 	@grep -v "#" $*.components.map |\
 	sort -k 2,2n |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)optic_count_orgs.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)optic/count_orgs.py \
 	--filename-patterns=$*.patterns \
 	--format=map \
 	--reference-tree="$(PARAM_SPECIES_TREE)" \
@@ -666,7 +666,7 @@ analysis.dir/separation_%:
 	    $(CMD_LOG2) "calculating histograms for all within clusters"; \
 	    (for x in $(PARAM_DIR_SRC)pair*/$(ANALYSIS_SEPARATION_FILE); do \
 		$(ANALYSIS_SEPARATION_CMD) < $${x} | head -n $(ANALYSIS_SEPARATION_MAX_LINKS); done) |\
-	    python $(DIR_SCRIPTS_GENEPREDICTION)optic_analyze_clustering.py \
+	    python $(DIR_SCRIPTS_GENEPREDICTION)optic/analyze_clustering.py \
 		    --pattern=$@.dir/within_%s.%s \
 		    --methods=hists,stats \
 		    --map=orthologs.components.map \
@@ -679,7 +679,7 @@ analysis.dir/separation_%:
 	    $(CMD_LOG2) "calculating histograms for all between clusters"; \
 	    (for x in $(PARAM_DIR_SRC)pair*/$(ANALYSIS_SEPARATION_FILE); do \
 		$(ANALYSIS_SEPARATION_CMD) < $${x} | head -n $(ANALYSIS_SEPARATION_MAX_LINKS); done) |\
-	    python $(DIR_SCRIPTS_GENEPREDICTION)optic_analyze_clustering.py \
+	    python $(DIR_SCRIPTS_GENEPREDICTION)optic/analyze_clustering.py \
 		    --pattern=$@.dir/between_%s.%s \
 		    --methods=hists,stats \
 		    --map=orthologs.components.map \

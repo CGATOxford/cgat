@@ -89,14 +89,14 @@ all.fasta: map_old2new
 
 update-blast.prepare: map_old2new new.fasta all.fasta
 	$(PRELOG)
-	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_setup.py -f -m blast -p all_vs_new -d all_vs_new \
+	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe/setup.py -f -m blast -p all_vs_new -d all_vs_new \
 		PARAM_BLASTP_NUMFIELDS="$(PARAM_BLASTP_NUMFIELDS)" \
 		PARAM_BLASTP_PARSING="$(PARAM_BLASTP_PARSING)" \
 		PARAM_BLASTP_OPTIONS="$(PARAM_BLASTP_OPTIONS) -z $(PARAM_EFFECTIVE_LENGTH)" \
 		PARAM_PRIORITY=$(PARAM_PRIORITY) > new_vs_all.log
 	-ln -s ../new.fasta all_vs_new/sbjcts.fasta
 	-ln -s ../all.fasta all_vs_new/queries.fasta
-	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_setup.py -f -m blast -p new_vs_all -d new_vs_all \
+	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe/setup.py -f -m blast -p new_vs_all -d new_vs_all \
 		PARAM_BLASTP_NUMFIELDS="$(PARAM_BLASTP_NUMFIELDS)" \
 		PARAM_BLASTP_PARSING="$(PARAM_BLASTP_PARSING)" \
 		PARAM_BLASTP_OPTIONS="$(PARAM_BLASTP_OPTIONS) -z $(PARAM_EFFECTIVE_LENGTH)" \

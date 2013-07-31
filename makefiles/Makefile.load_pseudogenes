@@ -162,7 +162,7 @@ export: reference.exons peptides.fasta peptides2genes
 
 reference.exons: pseudogenes.predictions
 	$(PRELOG)
-	@python ~/gpipe/gpipe_predictions2cds.py \
+	@python ~/gpipe/gpipe/predictions2cds.py \
 		--format=exons \
 		--genome-file=$(PARAM_GENOME_FILE) \
 		--reset-query \

@@ -240,7 +240,7 @@ peptides2cds: peptides.fasta cds.fasta
 codons.fasta: cds.fasta peptides2cds
 	$(PRELOG)
 	@$(CMD_REMOTE_SUBMIT)\
-	python $(DIR_SCRIPTS_GENEPREDICTION)optic_cds2codons.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)optic/cds2codons.py \
 	--map=peptides2cds --codons\
 	< cds.fasta > $@
 	$(EPILOG)
@@ -997,7 +997,7 @@ randoms_%.zscore:
 		--input-file-genes=random$*.acai_genes \
 		--input-file-trace=random$*.acai_trace \
 		--select="CAIEXT" < /dev/null |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)optic_analyze_ribosomes.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)optic/analyze_ribosomes.py \
 		--field-compare=CAIEXT \
 		--filename-identifiers=random$*.set \
 		--field-extract=%sCAIEXT \

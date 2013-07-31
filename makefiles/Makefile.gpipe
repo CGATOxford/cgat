@@ -572,7 +572,7 @@ gaps:
 	$(PRELOG)
 	@rm -rf $@.dir
 	@mkdir $@.dir
-	@python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_setup.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)gpipe/setup.py \
 		-m gaps \
 		-d $@.dir \
 		-p $(PARAM_PROJECT_NAME) \

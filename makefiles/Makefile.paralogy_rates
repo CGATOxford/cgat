@@ -808,7 +808,7 @@ endif
 
 CMD_ANALYSIS_DUPLICATIONS=cat filtered |\
 	$(CMD_REMOTE_SUBMIT) \
-	python $(DIR_SCRIPTS_GENEPREDICTION)optic_analyze_orthology_multiple.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)optic/analyze_orthology_multiple.py \
 		--filename-species-tree=$(PARAM_ANALYSIS_DUPLICATIONS_TREE) \
 		$(DUPLICATIONS_EXTRA_OPTIONS) \
 		--output-pattern=$@.dir/%s.data \
@@ -871,7 +871,7 @@ duplications_filtered_pseudos.summary:
 duplications.analysis:
 	$(PRELOG)
 	@$(CMD_REMOTE_SUBMIT) \
-	python $(DIR_SCRIPTS_GENEPREDICTION)optic_analyze_orthology_multiple.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)optic/analyze_orthology_multiple.py \
 		--filename-species-tree=$(PARAM_ANALYSIS_DUPLICATIONS_TREE) \
 		$(DUPLICATIONS_EXTRA_OPTIONS) \
 		--output-pattern=%s.analysis \
@@ -892,7 +892,7 @@ duplications.analysis:
 count_orgs: trees
 	$(PRELOG)
 	@$(CMD_REMOTE_SUBMIT) \
-	python $(DIR_SCRIPTS_GENEPREDICTION)optic_count_orgs.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)optic/count_orgs.py \
 		--reference-tree=$(PARAM_ANALYSIS_DUPLICATIONS_TREE) \
 		--format=trees \
 		--filename-patterns=$@.patterns \
@@ -924,10 +924,10 @@ endif
 #######################################################################################
 ## Examine branch length of trees
 #######################################################################################
-CMD_ANALYSIS_TREES=python $(DIR_SCRIPTS_TOOLS)gpipe_filter_fasta.py \
+CMD_ANALYSIS_TREES=python $(DIR_SCRIPTS_TOOLS)gpipe/filter_fasta.py \
 		--method=ids --parameter=clusters_with_outgroups < $< |\
 	$(CMD_REMOTE_SUBMIT) \
-	python $(DIR_SCRIPTS_GENEPREDICTION)optic_analyze_genetrees.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)optic/analyze_genetrees.py \
 		--filename-species-tree=$(PARAM_ANALYSIS_DUPLICATIONS_TREE) \
 		$(DUPLICATIONS_EXTRA_OPTIONS) \
 		--output-pattern=$@.dir/%s.data \
@@ -1126,7 +1126,7 @@ tree_%.stats:
 subtrees.plot:
 	$(PRELOG)
 	@find data.dir -name "subtree_*_fixed_w_ml.tree" -exec cat {} \; |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)optic_analyze_orthology_multiple.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)optic/analyze_orthology_multiple.py \
 		--filename-species-tree=$(PARAM_ANALYSIS_DUPLICATIONS_TREE) \
 		$(DUPLICATIONS_EXTRA_OPTIONS) \
 		--output-pattern=$@_%s \
@@ -1168,7 +1168,7 @@ malis.summary:
 #######################################################################################
 summary.dir/%_trees: analysis-%.dir/trees all.map_id2pos
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)optic_analyze_orthology_multiple.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic/analyze_orthology_multiple.py \
 		--filename-species-tree=$(PARAM_ANALYSIS_DUPLICATIONS_TREE) \
 		--filename-species2colour=$(PARAM_ANALYSIS_DUPLICATIONS_COLOURS) \
 		--filename-species2url=$(PARAM_ANALYSIS_DUPLICATIONS_URLS) \

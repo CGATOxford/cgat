@@ -35,7 +35,7 @@ Code
 '''
 import os, sys, string, re, getopt, time, optparse, math, tempfile, bisect
 
-USAGE="""python optic_plot_duplications.py [OPTIONS] < stdin > stdout
+USAGE="""python optic/plot_duplications.py [OPTIONS] < stdin > stdout
 
 plots a wheel plot of duplications in SVG format.
 The script requirse the following input files:

@@ -38,7 +38,7 @@ stepx1.run: stepx1.prepare
 step1.prepare: step1.queries.fasta step1.representatives.fasta
 	$(PRELOG)
 	@rm -rf stepx1.dir
-	@python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_setup.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)gpipe/setup.py \
 		-m blast \
 		-d stepx1.dir \
 		-p $(PARAM_PROJECT_NAME)_blast \
@@ -56,7 +56,7 @@ step1.prepare: step1.queries.fasta step1.representatives.fasta
 stepx1.prepare: step1.queries.fasta 
 	$(PRELOG)
 	@rm -rf stepx1.dir
-	@python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_setup.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)gpipe/setup.py \
 		-m blast \
 		-d stepx1.dir \
 		-p $(PARAM_PROJECT_NAME)_blast \
@@ -139,7 +139,7 @@ blast_nonredundant.links: blast_asymmetric.links
 		{ print;} }' > $@
 
 blast_asymmetric_exons.links: blast_asymmetric.links
-	python $(DIR_SCRIPTS_PREDICTIONS)optic_links2exons.py exon_boundaries < blast_asymmetric.links > $@
+	python $(DIR_SCRIPTS_PREDICTIONS)optic/links2exons.py exon_boundaries < blast_asymmetric.links > $@
 
 blast_%.pairs: blast_%.links
 	awk '{p = (100.0 - $$11) / 100.0; \
@@ -240,7 +240,7 @@ blast_normalized.links: blast_asymmetric.links
 
 # %.filtered_links: %.links
 # 	$(CMD_REMOTE_SUBMIT) \
-# 	python $(DIR_SCRIPTS_GENEPREDICTION)optic_filter_paralogous_links.py \
+# 	python $(DIR_SCRIPTS_GENEPREDICTION)optic/filter_paralogous_links.py \
 # 	--cds=$(DIR_TMP_SHARED_REMOTE)exon_boundaries \
 # 	--verbose=3 \
 # 	< $*.links > $@
@@ -299,7 +299,7 @@ blast_normalized.links: blast_asymmetric.links
 # 	< blast_nonparalogs.components.map |\
 # 	grep -v "#" |\
 # 	sort -k 2,2n |\
-# 	python $(DIR_SCRIPTS_GENEPREDICTION)optic_count_orgs.py \
+# 	python $(DIR_SCRIPTS_GENEPREDICTION)optic/count_orgs.py \
 # 	--patterns=patterns --format=map > $@
 
 # ################################################

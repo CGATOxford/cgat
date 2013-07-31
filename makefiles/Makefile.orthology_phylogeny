@@ -346,7 +346,7 @@ trees.diff: trees reference.tree
 %.correct.trees: %.trees
 	$(PRELOG)
 	@perl -p -e "s/\|[^|]+\|[^|]+\|X//g" < $^ |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)optic_evaluate_trees.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)optic/evaluate_trees.py \
 		--reference=reference_tree > $@
 	$(EPILOG)
 
@@ -364,7 +364,7 @@ trees.diff: trees reference.tree
 	$(PRELOG)
 	@grep -v "#" $*.components.map |\
 	sort -k 2,2n |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)optic_count_orgs.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)optic/count_orgs.py \
 	--patterns=$*.patterns \
 	--format=map \
 	--reference-tree="$(PARAM_SPECIES_TREE)" \

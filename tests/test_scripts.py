@@ -74,9 +74,18 @@ def test_scripts():
         
         for test, values in script_tests.items():
             check_script.description = os.path.join( scriptdir, test)
+            script_name = os.path.basename(scriptdir)
+
+            # deal with scripts in subdirectories. These are prefixed by a "<subdir>_" 
+            # for example: optic_compare_projects.py is optic/compare_procjets.py
+            if "_" in script_name:
+                parts = script_name.split("_")
+                if os.path.exists( os.path.join( "scripts", parts[0], "_".join(parts[1:]))):
+                    script_name = os.path.join(parts[0], "_".join(parts[1:]))
+                    
             yield( check_script,
                    test,
-                   os.path.abspath( os.path.join( "scripts", os.path.basename(scriptdir))),
+                   os.path.abspath( os.path.join( "scripts", script_name )),
                    values.get('stdin', None), 
                    values['options'], 
                    values['outputs'], 

@@ -2,7 +2,7 @@
 cimport cython
 
 ###############################
-# Could not make .pxd file to be found in gpipe_setup.py, so including it here:
+# Could not make .pxd file to be found in gpipe/setup.py, so including it here:
 # Fields to extension classed have been added to each class.
 ###############################
 cdef extern from "string.h":

@@ -127,7 +127,7 @@ export_cdnas.fasta:
 	FROM $(PARAM_TABLE_NAME_OVERVIEW) AS o $(PARAM_EXPORT_FILTER) \
 	ORDER BY o.sbjct_token " \
 	$(CONNECTION_OPTIONS) |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_assignments2pairs.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe/assignments2pairs.py \
 	--format=fasta \
 	--genome-file=$(PARAM_ASSEMBLY_PATTERN) \
 	--input-format=minimal \
@@ -258,7 +258,7 @@ export_clustering_cdnas.fasta:
 	FROM $(PARAM_TABLE_NAME_OVERVIEW) AS o \
 	ORDER BY o.sbjct_token " \
 	$(CONNECTION_OPTIONS) |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_assignments2pairs.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe/assignments2pairs.py \
 	--format=fasta \
 	--genome-file=$(PARAM_ASSEMBLY_PATTERN) \
 	--input-format=minimal \

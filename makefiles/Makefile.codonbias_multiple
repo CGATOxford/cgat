@@ -157,7 +157,7 @@ prepare: create-schema create-tables reference.weights
 		if [ ! -e $${target_dir} ]; then \
 		    echo "setting up $${target_dir}" $(TOLOG); \
 		    mkdir $${target_dir}; \
-		    python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_setup.py \
+		    python $(DIR_SCRIPTS_GENEPREDICTION)gpipe/setup.py \
 		    -f \
 		    -m codonbias \
 		    -p bias_$${genomes[$$x]} \
@@ -1104,7 +1104,7 @@ analysis.dir/orthologs.filter_shannon_%: analysis.dir/orthologs.shannon
 #########################################################################
 analysis.dir/orthologs.filter_length: analysis.dir/orthologs.shannon
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)optic_analyze_ribosomes.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic/analyze_ribosomes.py \
 		--field-compare="%s_length" \
 		--field-extract="%s_length" \
 		--filter-min-ratio=$(PARAM_ANALYSIS_FILTER_LENGTH_MIN_RATIO) \
@@ -1219,7 +1219,7 @@ analysis.dir/orthologs.random:
 # histogram over a CAIBIAS with length filtered orthologs
 analysis.dir/orthologs_%_length.hist: analysis.dir/orthologs.all analysis.dir/orthologs.filter_length 
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)optic_analyze_ribosomes.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic/analyze_ribosomes.py \
 		--filename-subset=analysis.dir/orthologs.filter_length \
 		--field-extract="%s_$*" \
 	        --output-format="table" \
@@ -1238,7 +1238,7 @@ analysis.dir/orthologs_%_length.hist: analysis.dir/orthologs.all analysis.dir/or
 # the same histogram as above, but allow all orthologs
 analysis.dir/orthologs_%.hist: analysis.dir/orthologs.all 
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)optic_analyze_ribosomes.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic/analyze_ribosomes.py \
 		--field-extract="%s_$*" \
 	        --output-format="table" \
 	        --format="%6.4f" \
@@ -1260,7 +1260,7 @@ analysis.dir/orthologs_%.hist: analysis.dir/orthologs.all
 #########################################################################
 analysis.dir/orthologs_%.stats: analysis.dir/orthologs.all 
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)optic_analyze_ribosomes.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic/analyze_ribosomes.py \
 		--field-extract="%s_$*" \
 	        --output-format="table" \
 	        --format="%6.4f" \
@@ -1280,7 +1280,7 @@ analysis.dir/orthologs_%.stats: analysis.dir/orthologs.all
 #########################################################################
 analysis.dir/orthologs_%.table: analysis.dir/orthologs.all
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)optic_analyze_ribosomes.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic/analyze_ribosomes.py \
 		--filename-subset=analysis.dir/orthologs.filter_length \
 		--field-extract="%s_$*" \
 	        --output-format="table" \
@@ -1441,7 +1441,7 @@ analysis.dir/shuffled_%.table:
 ## is used as the reference in the linear effects model
 analysis.dir/orthologs_%.effects:
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)optic_analyze_ribosomes.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic/analyze_ribosomes.py \
 		--field-extract="%s_$*" \
 		--schemas="$(GENOMES_COMMA)" \
 		--output-format="list" \
@@ -1520,7 +1520,7 @@ analysis.dir/orthologs_%.effects:
 # ## effects based on ribosomal criterion: z-score
 # analysis.dir/effects.ribosomes_ml3:
 # 	$(PRELOG)
-# 	@python $(DIR_SCRIPTS_GENEPREDICTION)optic_analyze_ribosomes.py \
+# 	@python $(DIR_SCRIPTS_GENEPREDICTION)optic/analyze_ribosomes.py \
 # 		--filename-subset=analysis.dir/orthologs.filter_length \
 # 		--filename-identifiers=ribosomes/flybase/ribosomes.genes \
 # 		--field-extract="%s_ml3" \
@@ -1532,7 +1532,7 @@ analysis.dir/orthologs_%.effects:
 # ## effects based on ribosomal criterion: z-score
 # analysis.dir/effects.ribosomes_enc:
 # 	$(PRELOG)
-# 	@python $(DIR_SCRIPTS_GENEPREDICTION)optic_analyze_ribosomes.py \
+# 	@python $(DIR_SCRIPTS_GENEPREDICTION)optic/analyze_ribosomes.py \
 # 		--filename-subset=analysis.dir/orthologs.filter_length \
 # 		--filename-identifiers=ribosomes/flybase/ribosomes.genes \
 # 		--field-extract="%s_ENC" \

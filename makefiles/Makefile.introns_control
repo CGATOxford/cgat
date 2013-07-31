@@ -151,7 +151,7 @@ prepare: create-log all_on_all
 			target_dir=$${genomes[$$x]}-$${genomes[$$y]}.dir; \
 			echo "setting up $${target_dir}" $(TOLOG); \
 			mkdir $${target_dir}; \
-			python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_setup.py --method=introns \
+			python $(DIR_SCRIPTS_GENEPREDICTION)gpipe/setup.py --method=introns \
 				--project=introns_$${genomes[$$x]}_vs_$${genomes[$$y]} \
 				$(CURDIR)/$${target_dir} \
 				QUERY1=$${genomes[$$x]} \

@@ -13,7 +13,7 @@ pygr is available under the New BSD license.
 
 Note:
 
-I had trouble packaging this, the .pxd file was not found through gpipe_setup.py, though
+I had trouble packaging this, the .pxd file was not found through gpipe/setup.py, though
 cythoning the file itself worked fine. As a temporary fix, I added all declarations
 of the .pxd file to the .pyx file and renamed the former to _cnestedlist.pxd
 

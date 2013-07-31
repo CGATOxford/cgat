@@ -33,7 +33,7 @@
 ##
 ##      2. Create makefile:
 ##
-##        python src/gpipe_setup.py -m map_transcripts_454 -d . > setup.log
+##        python src/gpipe/setup.py -m map_transcripts_454 -d . > setup.log
 ##
 ##      3. Add or link fasta files of reads into directory. These should end
 ##          with the suffix .fasta. The pipeline will process several files at the same time.

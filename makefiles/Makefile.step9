@@ -34,7 +34,7 @@ step9.exons: step8.predictions.gz
 	$(PRELOG)
 	@$(CMD_REMOTE_SUBMIT) \
 	"gunzip < $< | sort -k{3,3} |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_compare_predictions2exons.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe/compare_predictions2exons.py \
 		$(PYTHON_OPTIONS) \
 		--peptides=$(STEP8_MERGE_PEPTIDES) \
 		--boundaries=reference.exons \
@@ -85,7 +85,7 @@ step9.overlaps.matches: step9.exons.load step9.predictions.fasta
 	e.is_ok = TRUE AND e.exon_to > 0" \
 	$(CONNECTION_OPTIONS) |\
 	$(CMD_REMOTE_SUBMIT) \
-	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_gpipe_exonerate_combine_regions.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe_gpipe/exonerate_combine_regions.py \
 	--peptides=step9.predictions.fasta \
 	--alignment=80.0 \
 	--overlap=1 > $@
