@@ -102,23 +102,27 @@ def main( argv = None ):
     if len(args) == 0:
         raise ValueError("setup_test.py requires one or more command line arguments")
 
+    targetdir = os.path.dirname(__file__)
+
     counter = E.Counter()
 
     for arg in args:
         counter.input += 1
-        dirname, basename = os.path.split(arg)
-        
-        if os.path.exists( basename ):
+        script_dirname, basename = os.path.split(arg)
+
+        dirname = os.path.join( targetdir, basename )
+
+        if os.path.exists( dirname ):
             E.warn( "%s already exists - skipping" % basename )
             counter.skipped += 1
             continue
 
-        os.mkdir( basename )
+        os.mkdir( dirname )
         
-        with open( os.path.join( basename, "tests.yaml" ), "w" ) as outf:
+        with open( os.path.join( dirname, "tests.yaml" ), "w" ) as outf:
             outf.write( YAML_TEMPLATE )
         
-        with open( os.path.join( basename, "version_test.out" ), "w") as outf:
+        with open( os.path.join( dirname, "version_test.out" ), "w") as outf:
             outf.write("")
 
         counter.created += 1
