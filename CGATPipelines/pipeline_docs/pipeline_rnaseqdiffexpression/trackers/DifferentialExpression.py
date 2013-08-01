@@ -12,7 +12,7 @@ from RnaseqDiffExpressionReport import *
 class TrackerDESeqFit( Tracker ):
     method = "deseq"
     tracks = [ x.asFile() for x in DESIGNS ]
-    slices = [ x.asFile() for x in GENESETS ]
+    slices = [ x.asTable() for x in GENESETS ]
 
     def __call__(self, track, slice = None ):
         design = track
