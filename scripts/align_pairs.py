@@ -61,7 +61,7 @@ import re
 import getopt
 import tempfile
 import optparse
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.AlignedPairs as AlignedPairs
 import CGAT.Blat as Blat
 import CGAT.FastaIterator as FastaIterator
@@ -175,7 +175,7 @@ if __name__ == '__main__':
         anchor_alignment = 0,
         options_blastz = "C=2 B=1 T=0 W=6 K=2200" )
 
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
     if len(options.methods) == 0:
         print USAGE

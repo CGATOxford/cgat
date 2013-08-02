@@ -134,7 +134,7 @@ prepare:
 		if [ ! -e $${target_dir} ]; then \
 		    echo "setting up $${target_dir}" $(TOLOG); \
 		    mkdir $${target_dir}; \
-		    python $(DIR_SCRIPTS_GENEPREDICTION)setup.py \
+		    python $(DIR_SCRIPTS_GENEPREDICTION)gpipe/setup.py \
 		    -f \
 		    -m introns \
 		    -p introns_$${genome} \

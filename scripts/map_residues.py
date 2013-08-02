@@ -81,7 +81,7 @@ if __name__ == '__main__':
         optlist, args = getopt.getopt(sys.argv[1:],
                                       "V:m:f:h",
                                       ["Verbose=", "master=", 
-                                       "format=", "help"])
+                                       "format=", "help", "version"])
                                        
     except getopt.error, msg:
         print globals()["__doc__"], msg
@@ -91,7 +91,9 @@ if __name__ == '__main__':
         if o in ("-h", "--help"):
             print globals()["__doc__"]
             sys.exit(0)
-
+        elif o in ( "--version", ):
+            print "version="
+            sys.exit(0)
         elif o in ("-f", "--format"):
             param_format = a
         elif o in ("-m", "--master"):

@@ -66,7 +66,7 @@ Code
 '''
 import optparse
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.GFF as GFF
 import CGAT.GTF as GTF
 
@@ -189,7 +189,7 @@ if __name__ == "__main__":
         as_gtf = False,
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if len(args) != 2:
         print USAGE
@@ -446,4 +446,4 @@ if __name__ == "__main__":
     if outfile != options.stdout: outfile.close()
 
     
-    Experiment.Stop()    
+    E.Stop()    

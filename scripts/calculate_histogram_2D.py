@@ -64,7 +64,7 @@ import getopt
 import time
 import optparse
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Histogram2D as Histogram2D
 
 USAGE = """python calculate_histogram.py < stdin > stdout
@@ -111,7 +111,7 @@ if __name__ == '__main__':
         titles = True )
 
 
-    (options, args) = Experiment.Start( parser )                                  
+    (options, args) = E.Start( parser )                                  
     options.column1 -= 1
     options.column2 -= 1
 
@@ -154,5 +154,5 @@ if __name__ == '__main__':
     if options.loglevel >= 1:
         options.stdlog.write( "# ninput=%i, noutput=%i, nskipped=%i\n" % (ninput,noutput,nskipped) )
 
-    Experiment.Stop()
+    E.Stop()
 

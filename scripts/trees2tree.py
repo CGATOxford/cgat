@@ -67,7 +67,7 @@ import math
 
 import scipy
 import scipy.stats
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.TreeTools as TreeTools
 import CGAT.IOTools as IOTools
 import CGAT.WrapperPhylip as WrapperPhylip
@@ -115,7 +115,7 @@ if __name__ == "__main__":
         separator=":",
         )
 
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
     if options.loglevel >= 2:
         options.stdlog.write( "# reading trees from stdin.\n" )
@@ -285,4 +285,4 @@ if __name__ == "__main__":
     if options.loglevel >= 1:
         options.stdlog.write( "# ntotal=%i, nskipped=%i, noutput=%i, nerrors=%i\n" % (ninput, nskipped, noutput, nerrors))
         
-    Experiment.Stop()
+    E.Stop()

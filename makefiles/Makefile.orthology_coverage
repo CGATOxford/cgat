@@ -245,7 +245,7 @@ found.summary:
 ## summary for all genes
 classes_genes.summary:
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_genes.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic/analyze_genes.py \
 	--genomes="$(SCHEMAS_COMMA)" \
 	$(CMD_FILTER) > $@
 	$(EPILOG)
@@ -327,7 +327,7 @@ dubious_exons.distn:
 ## number of queries that have no predictions in the database.
 missed_queries.summary:
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_queries.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)gpipe/analyze_queries.py \
 	--peptides=$(PARAM_SRC_PEPTIDES) \
 	--methods=missed \
 	--genomes="$(SCHEMAS_COMMA)" \
@@ -337,7 +337,7 @@ missed_queries.summary:
 
 queries.summary:
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)compare_projects.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic/compare_projects.py \
 	--connection=$(PARAM_PSQL_HOST):$(PARAM_PSQL_DATABASE) \
 	--report=queries \
 	--fields=npredictions,nr_npredictions$(CMD_FIELDS_QUALITY) \
@@ -346,7 +346,7 @@ queries.summary:
 
 queries.report:
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)compare_projects.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic/compare_projects.py \
 	--connection=$(PARAM_PSQL_HOST):$(PARAM_PSQL_DATABASE) \
 	--report=queries \
 	--fields=npredictions,nr_npredictions$(CMD_FIELDS_QUALITY) \
@@ -358,7 +358,7 @@ queries.report:
 ## the schemas.
 queries_counts.data:
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)compare_projects.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic/compare_projects.py \
 	--connection=$(PARAM_PSQL_HOST):$(PARAM_PSQL_DATABASE) \
 	--report=queries \
 	--fields=npredictions,nr_npredictions$(CMD_FIELDS_QUALITY) \
@@ -546,13 +546,13 @@ images: images.dir $(IMAGE_TARGETS)
 ################################################
 ## Summary on domains
 domains.report:
-	python $(DIR_SCRIPTS_GENEPREDICTION)compare_projects.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)optic/compare_projects.py \
 	--report=domains \
 	--fields=ndomains,npredictions,nr_ndomains,nr_npredictions \
 	$(PARAM_SRC_SCHEMAS) > $@
 
 domains.report_summary:
-	python $(DIR_SCRIPTS_GENEPREDICTION)compare_projects.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)optic/compare_projects.py \
 	--report=domains \
 	--fields=ndomains,npredictions,nr_ndomains,nr_npredictions \
 	--summary=min,max,count,mean \

@@ -66,7 +66,7 @@ USAGE="""python %s [OPTIONS] target reference
 
 """ % sys.argv[0]
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.PredictionParser as PredictionParser
 import CGAT.GFF as GFF
 import numpy
@@ -317,7 +317,7 @@ if __name__ == "__main__":
         outfile_pattern = "%s.info",
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if len(args) != 2:
         print USAGE
@@ -873,6 +873,6 @@ if __name__ == "__main__":
                float(missed_genes) / (tp + fn),
                float(wrong_genes) / (tp + fp) )
 
-    Experiment.Stop()    
+    E.Stop()    
 
 

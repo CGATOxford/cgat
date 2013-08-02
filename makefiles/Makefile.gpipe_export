@@ -222,7 +222,7 @@ export_aaa.prepare:
 export_aaa.run:
 	$(PRELOG)
 	@if [ -s aaa.table ]; then \
-		python $(DIR_SCRIPTS_GENEPREDICTION)export_aaa.py \
+		python $(DIR_SCRIPTS_GENEPREDICTION)gpipe/export_aaa.py \
 			--filename-batch=aaa.table \
 			--set=filtered \
 			--tablename-orthologs=$(PARAM_TABLE_NAME_ORTHOLOGLINKS) \
@@ -879,14 +879,14 @@ export_gbrowser.run:
 	@for schema in $(PARAM_SRC_SCHEMAS); do \
 		prefix=$(CMD_PREFIX); \
 		if [ ! -s export_gbrowser.dir/gbrowser_$${schema}_sequence.fasta ]; then \
-			python $(DIR_SCRIPTS_GENEPREDICTION)export_predictions.py \
+			python $(DIR_SCRIPTS_GENEPREDICTION)gpipe/export_predictions.py \
 				--format=fasta \
 				--verbose=0 \
 				$(PARAM_SRC_DIR_PREDICTIONS)$${schema}/genome*.fasta \
 			> export_gbrowser.dir/gbrowser_$${schema}_sequence.fasta; \
 		fi; \
 		if [ ! -s export_gbrowser.dir/gbrowser_$${schema}_contigs.gff ]; then \
-			python $(DIR_SCRIPTS_GENEPREDICTION)export_predictions.py \
+			python $(DIR_SCRIPTS_GENEPREDICTION)gpipe/export_predictions.py \
 			        --connection=$(PARAM_PSQL_HOST):$(PARAM_PSQL_USER) \
 				--schema=$${schema} \
 				--species-id=$${schema} \
@@ -899,7 +899,7 @@ export_gbrowser.run:
 		fi; \
 		for set in $(PARAM_SETS); do \
 			if [ ! -s export_gbrowser.dir/gbrowser_$${schema}_$${set}_predictions.gff ]; then \
-			    	python $(DIR_SCRIPTS_GENEPREDICTION)export_predictions.py \
+			    	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe/export_predictions.py \
 			       		--connection=$(PARAM_PSQL_HOST):$(PARAM_PSQL_USER) \
 				    	--schema=$${schema} \
 				    	--species-id=$${schema} \
@@ -968,14 +968,14 @@ export_gtf.run:
 	$(PRELOG)
 	@for schema in $(PARAM_SRC_SCHEMAS); do \
 		if [ ! -s export_gtf.dir/gtf_$${schema}_sequence.fasta ]; then \
-			python $(DIR_SCRIPTS_GENEPREDICTION)export_predictions.py \
+			python $(DIR_SCRIPTS_GENEPREDICTION)gpipe/export_predictions.py \
 				--format=fasta \
 				--verbose=0 \
 				$(PARAM_SRC_DIR_PREDICTIONS)$${schema}/genome*.fasta \
 			> export_gtf.dir/gtf_$${schema}_sequence.fasta; \
 		fi; \
 		if [ ! -s export_gtf.dir/gtf_$${schema}_contigs.gff ]; then \
-			python $(DIR_SCRIPTS_GENEPREDICTION)export_predictions.py \
+			python $(DIR_SCRIPTS_GENEPREDICTION)gpipe/export_predictions.py \
 				--connection=$(PSQL_PYTHON_OPTIONS) \
 				--schema=$${schema} \
 				--species-id=ox_$${schema} \
@@ -988,7 +988,7 @@ export_gtf.run:
 		fi; \
 		for set in $(PARAM_SETS); do \
 			if [ ! -s export_gtf.dir/gtf_$${schema}_$${set}_predictions.gff ]; then \
-			    	python $(DIR_SCRIPTS_GENEPREDICTION)export_predictions.py \
+			    	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe/export_predictions.py \
 				    --connection=$(PSQL_PYTHON_OPTIONS) \
 				    --schema=$${schema} \
 				    --species-id=ox_$${schema} \

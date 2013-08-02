@@ -409,6 +409,7 @@ class SequencePropertiesCpg(SequenceProperties):
         fields.append( "%i" % (self.mCountsC + self.mCountsG))
         fields.append( "%i" % (self.mCountsA + self.mCountsT))
         fields.append( "%i" % self.mCountsCpG )
+
         if self.mLength > 0:
             fields.append( "%f" % (float(self.mCountsC) / float(self.mLength) ))
             fields.append( "%f" % (float(self.mCountsG) / float(self.mLength) ))
@@ -419,6 +420,10 @@ class SequencePropertiesCpg(SequenceProperties):
             fields.append( "%f" % (float(self.mCountsC + self.mCountsG) / float(self.mLength) ))
             fields.append( "%f" % (float(self.mCountsA + self.mCountsT) / float(self.mLength) ))
             fields.append( "%f" % (float(self.mCountsCpG) / (float(self.mLength)/2.0) ))
+            if (self.mCountsC*self.mCountsG)/self.mLength > 0:
+                fields.append( "%f" % ( (float(self.mCountsCpG)) / ((float(self.mCountsC)*float(self.mCountsG))/float(self.mLength)) ) )
+            else:
+                fields.append( "%f" % 0.0 )
         else:
             fields.append( "%f" % 0.0 )
             fields.append( "%f" % 0.0 )
@@ -430,10 +435,8 @@ class SequencePropertiesCpg(SequenceProperties):
             fields.append( "%f" % 0.0 )
             fields.append( "%f" % 0.0 )
             fields.append( "%f" % 0.0 )
-        if (self.mCountsC*self.mCountsG)/self.mLength > 0:
-            fields.append( "%f" % ( (float(self.mCountsCpG)) / ((float(self.mCountsC)*float(self.mCountsG))/float(self.mLength)) ) )
-        else:
             fields.append( "%f" % 0.0 )
+
         return fields
 
     def getHeaders( self ):

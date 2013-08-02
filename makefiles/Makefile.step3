@@ -107,7 +107,7 @@ step3_%.matches: step3_%.chunk
 		--query step3_$(CMD_PREFIX_PEPTIDES) \
 		--target $(CMD_PREFIX_GENOME) \
 	|\
-	python $(DIR_SCRIPTS_GENEPREDICTION)exonerate2regions.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe/exonerate2regions.py \
 		--force-contiguous \
 		--peptides=step3_$(CMD_PREFIX_PEPTIDES) \
 		--genome=$(CMD_PREFIX_GENOME) \
@@ -167,7 +167,7 @@ step3.recall: step3.predictions.gz
 	$(PRELOG)
 	gunzip < $< | grep "# received" |\
 	perl -p -e "s/# received\t//" |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)exonerate2regions.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe/exonerate2regions.py \
 	--force-contiguous \
 	--peptides=peptides.fasta \
 	--max-intron=$(PARAM_EXONERATE_MAX_INTRON) \
@@ -249,7 +249,7 @@ step3.gff: step3.predictions.gz
 	$(PRELOG)
 	@gunzip < $< | grep -v "#" |\
 	sort -k3,3 -k4,4 |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)predictions2cds.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe/predictions2cds.py \
 	--format=gff-exon --forward-coordinates > $@
 	$(EPILOG)
 

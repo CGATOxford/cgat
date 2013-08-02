@@ -65,7 +65,7 @@ import tempfile
 import time
 import optparse
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.BlastAlignments as BlastAlignments
 import alignlib
 import CGAT.Genomics as Genomics
@@ -274,7 +274,7 @@ if __name__ == '__main__':
         one_based_coordinates = False,
         filename_filter = None)
 
-    (options, args) = Experiment.Start( parser, add_mysql_options = True )
+    (options, args) = E.Start( parser, add_mysql_options = True )
 
     t0 = time.time()
     if options.filename_sequences:
@@ -526,4 +526,4 @@ if __name__ == '__main__':
         options.stdlog.write("# %s\n" % ", ".join( map( lambda x,y: "%s=%i" % (x,y), counts.keys(), counts.values() ) ))
         options.stdlog.write("# ninput=%i, noutput=%i, nskipped=%i\n" % (ninput, noutput, nskipped) )
 
-    Experiment.Stop()
+    E.Stop()

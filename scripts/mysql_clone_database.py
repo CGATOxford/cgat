@@ -61,7 +61,7 @@ import sys
 import string
 import re
 import optparse
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import MySQLdb
 import _mysql
 
@@ -125,7 +125,7 @@ if __name__ == "__main__":
         dry_run = False,
     )
 
-    (options, args) = Experiment.Start( parser, add_mysql_options = True )
+    (options, args) = E.Start( parser, add_mysql_options = True )
 
     if len(args) != 2:
         print USAGE
@@ -138,7 +138,7 @@ if __name__ == "__main__":
             options.stdlog.write("# src and dest identical - no copying performed")            
         
         sys.exit(0)
-        Experiment.Stop()
+        E.Stop()
 
     dbhandle = MySQLdb.Connect( host = options.host,
                                 user = options.user,
@@ -168,4 +168,4 @@ if __name__ == "__main__":
 
     copyTables( dbhandle, dest, src, options.dry_run )
         
-    Experiment.Stop()
+    E.Stop()

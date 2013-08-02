@@ -60,9 +60,9 @@ import string
 import re
 import getopt
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 
-param_long_options=["verbose=", "help" ]
+param_long_options=["verbose=", "help", "version" ]
 param_short_options="v:h"
 
 param_loglevel = 1
@@ -79,6 +79,9 @@ if __name__ == '__main__':
     for o,a in optlist:
         if o in ( "-v", "--verbose" ):
             param_loglevel = int(a)
+        elif o in ( "--version", ):
+            print "version="
+            sys.exit(0)
         elif o in ( "-h", "--help" ):
             print globals()["__doc__"]
             sys.exit(0)
@@ -87,8 +90,8 @@ if __name__ == '__main__':
         print USAGE, "no arguments required."
         sys.exit(1)
 
-    print Experiment.GetHeader()
-    print Experiment.GetParams()
+    print E.GetHeader()
+    print E.GetParams()
 
     print "token1\ttoken2\tmin\tmax\tcount\ttotal\tavg"
 
@@ -125,4 +128,4 @@ if __name__ == '__main__':
         print string.join( map(str, (last[0], last[1], mmin, mmax, n, mtotal, mtotal/n)), "\t" )        
             
             
-    print Experiment.GetFooter()        
+    print E.GetFooter()        

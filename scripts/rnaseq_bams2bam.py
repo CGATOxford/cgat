@@ -2,7 +2,7 @@
 #
 #   MRC FGU Computational Genomics Group
 #
-#   $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $
+#   $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $
 #
 #   Copyright (C) 2009 Andreas Heger
 #
@@ -56,11 +56,11 @@ Usage
 
 Example::
 
-   python script_template.py bamT.bam bamG.bam
+   python cgat_script_template.py bamT.bam bamG.bam
 
 Type::
 
-   python script_template.py --help
+   python cgat_script_template.py --help
 
 for command line help.
 
@@ -104,7 +104,7 @@ def main( argv = None ):
     if not argv: argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser( version = "%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
+    parser = E.OptionParser( version = "%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
                                     usage = globals()["__doc__"] )
 
     parser.add_option( "-g", "--filename-gtf", dest="filename_gtf", type="string",

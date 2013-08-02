@@ -65,7 +65,7 @@ import time
 import optparse
 import math
 import glob
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
 
 if __name__ == "__main__":
@@ -80,7 +80,7 @@ if __name__ == "__main__":
         gap_char = "NnXx"
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     fasta = IndexedFasta.IndexedFasta( options.genome_file )
     contigs = fasta.getContigSizes()
@@ -108,4 +108,4 @@ if __name__ == "__main__":
         if first_res > 0:
             options.stdout.write( "%s\t%i\t%i\n" % (contig, first_res, x))
 
-    Experiment.Stop()
+    E.Stop()

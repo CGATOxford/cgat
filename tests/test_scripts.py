@@ -18,7 +18,7 @@ from nose.tools import assert_equal
 # 5. List of reference files
 import yaml
 
-def check_script( script, stdin, options, outputs, references, workingdir ):
+def check_script( test_name, script, stdin, options, outputs, references, workingdir ):
     
     tmpdir = tempfile.mkdtemp()
 
@@ -38,6 +38,10 @@ def check_script( script, stdin, options, outputs, references, workingdir ):
                               shell = True,
                               cwd = tmpdir )
     assert retval == 0
+
+    # for version tests, do not compare output
+    if test_name == "version":
+        return
     
     # compare line by line, ignoring comments
     for output, reference in zip( outputs, references ):
@@ -62,6 +66,8 @@ def test_scripts():
     '''yield list of scripts to test.'''
     scriptdirs = glob.glob( "tests/*.py" )
 
+    scriptdirs.sort()
+
     for scriptdir in scriptdirs:
         fn = '%s/tests.yaml' % scriptdir
         if not os.path.exists( fn ): continue
@@ -70,8 +76,18 @@ def test_scripts():
         
         for test, values in script_tests.items():
             check_script.description = os.path.join( scriptdir, test)
+            script_name = os.path.basename(scriptdir)
+
+            # deal with scripts in subdirectories. These are prefixed by a "<subdir>_" 
+            # for example: optic_compare_projects.py is optic/compare_procjets.py
+            if "_" in script_name:
+                parts = script_name.split("_")
+                if os.path.exists( os.path.join( "scripts", parts[0], "_".join(parts[1:]))):
+                    script_name = os.path.join(parts[0], "_".join(parts[1:]))
+                    
             yield( check_script,
-                   os.path.abspath( os.path.join( "scripts", os.path.basename(scriptdir))),
+                   test,
+                   os.path.abspath( os.path.join( "scripts", script_name )),
                    values.get('stdin', None), 
                    values['options'], 
                    values['outputs'], 

@@ -63,7 +63,7 @@ import os
 import optparse
 import CGAT.FastaIterator as FastaIterator
 import CGAT.IOTools as IOTools
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 
 class Files:
 
@@ -191,7 +191,7 @@ if __name__ == "__main__":
         num_sequences = None,
         output_pattern = "%s" )
 
-    (options, args) = Experiment.Start( parser ) 
+    (options, args) = E.Start( parser ) 
 
     if options.input_filename:
         infile = IOTools.openFile( options.input_filename, "r")
@@ -258,4 +258,4 @@ if __name__ == "__main__":
     if options.loglevel >= 1:
         print "# input=%i, output=%i, ndeleted=%i" % (ninput, noutput, ndeleted)
         
-    Experiment.Stop()
+    E.Stop()

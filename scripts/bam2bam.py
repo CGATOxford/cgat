@@ -2,7 +2,7 @@
 #
 #   MRC FGU Computational Genomics Group
 #
-#   $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $
+#   $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $
 #
 #   Copyright (C) 2009 Andreas Heger
 #
@@ -32,8 +32,8 @@ bam2bam.py - modify bam files
 Purpose
 -------
 
-This script modifies a bam file by going through the whole file
-and updating each line.
+This script reads a :term:`bam` formatted file from stdin and outputs a
+modified :term:`bam` formatted file on stdout.
 
 .. note::
    You need to redirect logging information to a file or turn it off
@@ -44,11 +44,11 @@ Usage
 
 Example::
 
-   python script_template.py --help
+   python bam2bam.py < in.bam > out.bam
 
 Type::
 
-   python script_template.py --help
+   python bam2bam.py --help
 
 for command line help.
 
@@ -95,21 +95,22 @@ def main( argv = None ):
     if not argv: argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser( version = "%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
+    parser = E.OptionParser( version = "%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
                                     usage = globals()["__doc__"] )
 
     parser.add_option( "--set-nh", dest="set_nh", action="store_true",
                        help = "sets the NH flag. The file needs to be sorted by readname [%default]" )
 
     parser.add_option( "--unset-unmapped-mapq", dest="unset_unmapped_mapq", action="store_true",
-                       help = "sets the mapping quality of unmapped to 0 [%default]" )
-
-    parser.add_option( "--reference-bam", dest="reference_bam", type="string",
-                       help = "bam-file to filter with [%default]" )
+                       help = "sets the mapping quality of unmapped reads to 0 [%default]" )
 
     parser.add_option( "--filter", dest="filter", action="append", type="choice",
                        choices=('NM', 'CM', 'mapped', 'unique' ),
-                       help = "flag to use to determine better match [%default]" )
+                       help = "filter bam file. The option denotes the property that is  "
+                       "used to determine better match [%default]" )
+
+    parser.add_option( "--reference-bam", dest="reference_bam", type="string",
+                       help = "bam-file to filter with [%default]" )
     
     parser.add_option( "--sam", dest="output_sam", action="store_true",
                        help = "output in sam format [%default]" )
@@ -134,9 +135,11 @@ def main( argv = None ):
         pysam_out = pysam.Samfile( "-", "wb", template = pysam_in )
 
     if options.filter:
+
         if "NM" in options.filter:
             remove_mismatches = True
             colour_mismatches = False
+
         elif "CM" in options.filter:
             remove_mismatches = True
             colour_mismatches = True

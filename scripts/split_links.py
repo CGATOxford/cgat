@@ -65,7 +65,7 @@ import subprocess
 import optparse
 import time
 import math
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.WrapperAdaptiveCAI as WrapperAdaptiveCAI
 import numpy
 
@@ -105,7 +105,7 @@ if __name__ == "__main__":
 
     parser.set_defaults()
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if options.targets: options.targets = options.targets.split(",")
 
@@ -133,7 +133,7 @@ if __name__ == "__main__":
 
     print "nsame=%i, ndiff=%i" % (nsame, ndiff )
 
-    Experiment.Stop()
+    E.Stop()
             
         
     

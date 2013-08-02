@@ -39,10 +39,7 @@ import os, sys, string, re, tempfile, optparse, subprocess
 """
 
 import Genomics
-import alignlib
-import Experiment
-
-parser = E.OptionParser( version = "%prog version: $Id: WrapperBlastZ.py 2781 2009-09-10 11:33:14Z andreas $")
+import Experiment as E
 
 class BlastZError(Exception):
     pass
@@ -161,6 +158,8 @@ class BlastZ:
      
 if __name__ == "__main__":
 
+    parser = E.OptionParser( version = "%prog version: $Id: WrapperBlastZ.py 2781 2009-09-10 11:33:14Z andreas $")
+
     parser.add_option("-i", "--input-file-seq1", dest="input_filename_seq1", type="string",
                       help="input filename for sequence 1.",
                       metavar="FILE" )
@@ -177,10 +176,11 @@ if __name__ == "__main__":
         input_filename_seq2 = None,
         options = "B=0 C=2")
     
-    (options, args) = Experiment.Start( parser ) 
+    (options, args) = E.Start( parser ) 
     
     wrapper = BlastZ( options.options )
 
+    import alignlib
     seqs1 = Genomics.ReadPeptideSequences( open(options.input_filename_seq1, "r") )
     seqs2 = Genomics.ReadPeptideSequences( open(options.input_filename_seq2, "r") )
     seq1 = seqs1[seqs1.keys()[0]]
@@ -192,7 +192,7 @@ if __name__ == "__main__":
                                                  alignlib.makeSequence( seq1 ),
                                                  alignlib.makeSequence( seq2 ) ) )
     
-    Experiment.Stop()
+    E.Stop()
         
             
         

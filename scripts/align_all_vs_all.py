@@ -33,7 +33,7 @@ Purpose
 -------
 
 This script computes all-vs-all alignments between
-sequnces in a :term:`fasta` formatted file.
+sequences in a :term:`fasta` formatted file.
 
 Currently only Smith-Waterman protein alignment is
 implemented.
@@ -68,7 +68,7 @@ import optparse
 import math
 import tempfile
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 
 import alignlib
 import CGAT.FastaIterator as FastaIterator
@@ -88,7 +88,7 @@ if __name__ == "__main__":
         gep = -1.0,
         )
 
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
     if options.filename_sequences:
         infile = open(options.filename_sequences, "r")
@@ -130,8 +130,6 @@ if __name__ == "__main__":
                 100 * alignlib.calculatePercentIdentity( map_a2b, sequences[x][1], sequences[y][1]),
                 sequences[x][1].getLength(),
                 sequences[y][1].getLength() ))
-                
-                                  
             
 
-    Experiment.Stop()
+    E.Stop()

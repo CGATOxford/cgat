@@ -62,7 +62,7 @@ import optparse
 import math
 import time
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import CGAT.Mali as Mali
 import alignlib
@@ -114,7 +114,7 @@ if __name__ == '__main__':
         alignment_method = "sw",
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     options.parameters = options.parameters.split(",")    
 
@@ -169,5 +169,5 @@ if __name__ == '__main__':
             
         mali.writeToFile( sys.stdout, format = options.output_format )
         
-    Experiment.Stop()
+    E.Stop()
     

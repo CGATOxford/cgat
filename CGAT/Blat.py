@@ -35,7 +35,9 @@ Code
 '''
 import copy, string, collections
 
-import alignlib
+try: import alignlib
+except ImportError: pass
+
 import Components
 import Experiment as E
 

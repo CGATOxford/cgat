@@ -62,7 +62,7 @@ import string
 import re
 import random
 import optparse
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import MySQLdb
 import _mysql
 
@@ -86,7 +86,7 @@ data = (
 #data = ( ( "Monodelphis", "mono_p1" ), )
 #data = ( ( "Dsimulans", "dsim_vs_dmel6"), )
 
-USAGE="""python gbrowser_clone_devel.py
+USAGE="""python gpipe/gbrowser_clone_devel.py
 
 Clone the devel installation into the target installation.
 
@@ -121,7 +121,7 @@ if __name__ == "__main__":
         target_database = "gbrowser_%s",        
     )
 
-    (options, args) = Experiment.Start( parser, add_mysql_options = True )
+    (options, args) = E.Start( parser, add_mysql_options = True )
 
     dbhandle = MySQLdb.Connect( host = options.host,
                                 user = options.user,
@@ -180,4 +180,4 @@ if __name__ == "__main__":
             
         cc.close()
         
-    Experiment.Stop()
+    E.Stop()

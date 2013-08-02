@@ -406,11 +406,9 @@ def loadBAMStats( infiles, outfile ):
                 >> %(outfile)s """
         P.run()
 
-#########################################################################
 
-#IMS: Don't leave this like this.
-@follows(buildBAM)
-@transform( "bam/*-*-R?.bam", suffix( ".bam"), ".dedup.bam")
+#########################################################################
+@transform( buildBAM, suffix( ".bam"), ".dedup.bam")
 def dedup(infiles, outfile):
         '''Remove duplicate alignments from BAM files.'''
         to_cluster = USECLUSTER
@@ -685,7 +683,7 @@ def runMACSsolo( infile, outfile ):
     
 ############################################################
 @transform( runMACSsolo, regex(r"macs/no_input/(\S+).solo.macs"),
-            inputs( (r"macs/no_input/\1.solo.macs", r"bam/\1.bam")), 
+            inputs( (r"macs/no_input/\1.solo.macs", r"bam/\1.norm.bam")), 
             r"macs/no_input/\1.solo_macs.load" )
 def loadMACSsolo( infiles, outfile ):
     infile, bamfile = infiles

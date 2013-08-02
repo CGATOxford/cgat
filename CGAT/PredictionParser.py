@@ -32,7 +32,8 @@ PredictionParser.py - Parser for exonerate/genewise output
 import os, sys, string, re, getopt, tempfile, copy
 
 import Genomics, GFF
-import alignlib
+try: import alignlib
+except ImportError: pass
 
 ## number of nucleotides to ignore for counting stop-codons
 ## This used to be three, but is now set to 0 in order to keep

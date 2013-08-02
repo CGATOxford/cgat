@@ -70,7 +70,7 @@ Version: $Id: mali2cleaned_mali.py 2781 2009-09-10 11:33:14Z andreas $
 
 """ % sys.argv[0]
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Mali as Mali
 import CGAT.Exons as Exons
 
@@ -392,7 +392,7 @@ if __name__ == "__main__":
         gene_mode = False,
         separator = "|")
         
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     ###############################################################
     ###############################################################
@@ -540,4 +540,4 @@ if __name__ == "__main__":
         options.stdlog.write( "# input=%i, output=%i, removed=%i, ncomponents=%i\n" % (len(all_identifiers), len(new_identifiers), len(removed_transcripts), len(components) ))
         options.stdlog.write( "# final component sizes: %s\n" % ",".join(map( lambda x: str(len(x)), components)))
 
-    Experiment.Stop()
+    E.Stop()

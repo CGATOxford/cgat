@@ -2,7 +2,7 @@
 #
 #   MRC FGU Computational Genomics Group
 #
-#   $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $
+#   $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $
 #
 #   Copyright (C) 2009 Andreas Heger
 #
@@ -64,11 +64,11 @@ Usage
 
 Example::
 
-   python script_template.py --help
+   python cgat_script_template.py --help
 
 Type::
 
-   python script_template.py --help
+   python cgat_script_template.py --help
 
 for command line help.
 
@@ -84,6 +84,7 @@ import optparse
 import sys
 import os.path as op
 import scipy.stats as ss
+import CGAT.Experiment as E
 
 def hypergeom(m, n, n1, n2, p=False):
     """
@@ -146,7 +147,8 @@ def with_genes(fftot, ffa, ffb, asfile=True):
 
 
 def main():
-    p = E.OptionParser(__doc__)
+    p = E.OptionParser(__doc__,
+                       version = "%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $", )
     opts, args = p.parse_args()
     if (len(args) not in (3, 4)):
         sys.exit(not p.print_help())

@@ -307,7 +307,7 @@ def buildAnnotatorAnnotations( tmpdir, outfile,
     if annotations == "architecture":
         statement = '''
          cat %(promotors)s %(annotation)s 
-         | python %(scriptsdir)s/gff2annotator.py 
+         | python %(scriptsdir)s/gff2annotator2tsv.py 
          	--section=annotations-gff 
          	--log=%(outfile)s.log 
                 --remove-regex='%(annotator_remove_pattern)s'
@@ -315,7 +315,7 @@ def buildAnnotatorAnnotations( tmpdir, outfile,
         '''
     elif annotations=="go":
         statement = '''
-        python %(scriptsdir)s/gff2annotator.py 
+        python %(scriptsdir)s/gff2annotator2tsv.py 
         --section=annotations-go 
         --input-filename-map=<(cut -f 2,4 < %(gofile)s) 
         --log=%(outfile)s.log
@@ -327,7 +327,7 @@ def buildAnnotatorAnnotations( tmpdir, outfile,
         bedfiles = " ".join(bedfiles)
         statement = '''
         cat %(bedfiles)s 
-        | python %(scriptsdir)s/bed2annotator.py 
+        | python %(scriptsdir)s/bed2annotator2tsv.py 
         --max-length=0 
         --merge 
         --section=annotations 
@@ -378,7 +378,7 @@ def buildGeneSetAnnotations( infiles, outfile, slice ):
 
     to_cluster = True
     statement = '''
-	python %(scriptsdir)s/gff2annotator.py 
+	python %(scriptsdir)s/gff2annotator2tsv.py 
 		--section=annotations-genes 
 		--log=%(outfile)s.log 
                 --remove-regex='%(annotator_remove_pattern)s'
@@ -413,7 +413,7 @@ def buildAnnotatorSlicedSegments( tmpdir, outfile, track, slice ):
         %(cmd-sql)s %(database)s 
         "SELECT g.* FROM %(track)s_gtf as g, %(track)s_annotation AS a WHERE a.gene_id = g.gene_id AND %(where)s"
         | python %(scriptsdir)s/gtf2tab.py --invert 
-	| python %(scriptsdir)s/gff2annotator.py 
+	| python %(scriptsdir)s/gff2annotator2tsv.py 
                --remove-regex='%(annotator_remove_pattern)s'
                --log=%(outfile)s.log 
                --section=segments 
@@ -442,7 +442,7 @@ def buildAnnotatorSegments(tmpdir, infile, outfile ):
     
     statement = '''
         python %(scriptsdir)s/bed2gff.py < %(infile)s 
-	| python %(scriptsdir)s/gff2annotator.py 
+	| python %(scriptsdir)s/gff2annotator2tsv.py 
                 --remove-regex='%(annotator_remove_pattern)s'
                 --log=%(outfile)s.log --section=segments 
     > %(tmpsegments)s
@@ -508,7 +508,7 @@ def genericImportAnnotator( infiles, outfile, table, workspace, slice, subset, f
     tmpfilename = P.getTempFilename()
 
     statement = '''
-	python %(scriptsdir)s/annotator.py \
+	python %(scriptsdir)s/annotator2tsv.py \
 		--method=fdr-table \
 		--fdr-method=%(fdr_method)s \
 		--log=%(outfile)s.log \
@@ -559,7 +559,7 @@ def importAnnotator( infiles, outfile, regex_id, table,
         transform = '''sed "s/^id/track/"'''
 
     statement = '''
-	python %(scriptsdir)s/annotator.py 
+	python %(scriptsdir)s/annotator2tsv.py 
 		--method=fdr-table 
 		--fdr-method=%(fdr_method)s 
 		--log=%(outfile)s.log 

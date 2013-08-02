@@ -102,7 +102,7 @@ nop:
 ## output help - a list of primary targets, parameters and rules defined
 ## in the makefile.
 help:
-	@python $(DIR_SCRIPTS_GENEPREDICTION)make2help.py
+	@python $(DIR_SCRIPTS_GENEPREDICTION)cgat_make2help.py
 
 #########################################################################
 ## Setting up logfiles

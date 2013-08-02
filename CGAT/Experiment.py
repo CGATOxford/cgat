@@ -289,10 +289,14 @@ class BetterFormatter(optparse.IndentedHelpFormatter):
 #################################################################
 #################################################################
 class AppendCommaOption(optparse.Option):
-    '''add ability of providing "," separated arguments to options
-    that have action "append".
+    '''Option with additional parsing capabilities.
 
-    This is what galaxy does, but generally convenient.
+    * "," in arguments to options that have the action 'append' 
+      are treated as a list of options. This is what galaxy does, 
+      but generally convenient.
+
+    * Option values of "None" and "" are treated as default values.
+    
     
     '''
 #    def check_value( self, opt, value ):
@@ -311,21 +315,26 @@ class AppendCommaOption(optparse.Option):
 #                self, action, dest, opt, value, values, parser)
 #
 
-
     def convert_value( self, opt, value ):
         if value is not None:
             if self.nargs == 1:
-                if self.action == "append" and "," in value:
-                    return [self.check_value(opt, v ) for v in value.split(",")]
+                if self.action == "append":
+                    if "," in value:
+                        return [self.check_value(opt, v ) for v in value.split(",") if v != ""]
+                    else:
+                        if value != "":
+                            return self.check_value( opt, value )
+                        else:
+                            return value
                 else:
                     return self.check_value( opt, value )
             else:
                 return tuple( [self.check_value(opt, v) for v in value] )
 
-
-# why is it necessary to pass action and dest to this function when
-# they could be accessed as self.action and self.dest? 
+    # why is it necessary to pass action and dest to this function when
+    # they could be accessed as self.action and self.dest? 
     def take_action( self, action, dest, opt, value, values, parser):
+
         if action == "append" and type( value ) == list: 
             values.ensure_value(dest, []).extend( value )
         else:

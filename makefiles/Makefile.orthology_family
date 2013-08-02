@@ -236,7 +236,7 @@ malis: $(MALIS_TARGETS)
 ## pruning multiple alignment to make sure that there are codons
 %.na_mali: %.raw_mali
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)prune_multiple_alignment.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic/prune_multiple_alignment.py \
 	--translate=$*.aa_mali \
 	--master-pattern="$(PARAM_PATTERN_GENOME_MASTER)" \
 	--mark-codons \
@@ -302,7 +302,7 @@ clusters_upgma.tree: clusters.links clusters.map_members
 %.map_cluster2colour_ht: %.components.map
 	$(PRELOG)
 	@cut -f 2 $*.components.map |\
-	python $(DIR_SCRIPTS_TOOLS)map_numbers.py \
+	python $(DIR_SCRIPTS_TOOLS)numbers2rgb.py \
 	--method=random_rgb > $@
 	$(EPILOG)
 

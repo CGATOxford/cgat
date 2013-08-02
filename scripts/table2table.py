@@ -356,7 +356,7 @@ if __name__ == "__main__":
                       choices=( "transpose", "normalize-by-max","normalize-by-value","multiply-by-value",
                                "percentile","remove-header","normalize-by-table",
                                "upper-bound","lower-bound","kullback-leibler",
-                                "expand","compress", "fdr", ),
+                                "expand","compress", "fdr", "grep" ),
                       help="""actions to perform on table.""")
     
     parser.add_option("-s", "--scale", dest="scale", type="float",
@@ -389,6 +389,17 @@ if __name__ == "__main__":
 
     parser.add_option("--columns", dest="columns", type="string",
                       help="columns to use."  )
+
+    parser.add_option( "--file", dest="file", type="string",
+                      help="columns to test from table.",
+                      metavar="FILE" )
+
+    parser.add_option("-d", "--delimiter", dest="delimiter", type="string",
+                      help="delimiter of columns." ,
+                      metavar="DELIM" )
+
+    parser.add_option("-V", "--invert-match", dest="invert_match", action="store_true",
+                      help="invert match." )
 
     parser.add_option("--sort-by-rows", dest="sort_rows", type="string",
                       help="output order for rows."  )
@@ -460,6 +471,9 @@ if __name__ == "__main__":
         id_column=None,
         variable_name="column",
         value_name="value",
+        file=None,
+        delimiter = "\t",
+        invert_match = False,
         )
     
     (options, args) = E.Start( parser, add_pipe_options = True )
@@ -487,6 +501,7 @@ if __name__ == "__main__":
     elif options.transpose or "transpose" in options.methods:
 
         readAndTransposeTable( options.stdin, options )
+
 
     elif options.flatten_table:
         #IMS: bug fixed to make work. Also added options for keying on a particular
@@ -550,6 +565,33 @@ if __name__ == "__main__":
     elif options.expand_table:
         readAndExpandTable( options.stdin, options )
 
+    elif options.method == "grep":
+
+        options.columns = map(lambda x: int(x)-1, options.columns.split(","))
+
+        patterns = []
+
+        if options.file:
+            infile = open( options.file, "r")
+            for line in infile:
+                if line[0] == "#": continue
+                patterns.append( line[:-1].split(options.delimiter)[0] )
+        else:
+            patterns=args
+
+        for line in options.stdin:
+
+            data = line[:-1].split(options.delimiter)
+            found = False
+
+            for c in options.columns:
+
+                if data[c] in patterns:
+                    found = True
+                    break
+
+            if (not found and options.invert_match) or (found and not options.invert_match):
+                print line[:-1]
     else:
 
         ######################################################################

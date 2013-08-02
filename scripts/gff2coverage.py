@@ -66,7 +66,7 @@ import tempfile
 import math
 import collections
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.GFF as GFF
 import CGAT.IndexedFasta as IndexedFasta
 
@@ -182,7 +182,7 @@ if __name__ == "__main__":
         method = "genomic",
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if options.genome_file:
         fasta = IndexedFasta.IndexedFasta( options.genome_file )
@@ -239,7 +239,7 @@ if __name__ == "__main__":
             else: options.stdout.write( "\n" )
                                      
             
-    Experiment.Stop()
+    E.Stop()
 
 
 

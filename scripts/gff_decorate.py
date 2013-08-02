@@ -79,7 +79,7 @@ import shutil
 import tempfile
 import math
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.GFF as GFF
 import CGAT.Genomics as Genomics
 import CGAT.IndexedFasta as IndexedFasta
@@ -390,7 +390,7 @@ if __name__ == "__main__":
         is_gtf = False,
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     #    test_transform_third_codon()
     
@@ -477,6 +477,6 @@ if __name__ == "__main__":
         options.stdout.write( "# ninput_windows=%i, noutput_contigs=%i, ninput_contigs=%i, nskipped_windows=%i, nskipped_data=%i\n" %\
                                   ( len(windows), noutput_contigs, len(contigs), ncontigs_skipped_windows, ncontigs_skipped_data ) )
 
-    Experiment.Stop()
+    E.Stop()
 
 

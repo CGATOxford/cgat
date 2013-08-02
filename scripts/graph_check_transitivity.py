@@ -75,7 +75,7 @@ for every two edges A->B and B->C check whether A->C exists.
 
 Edges are taken to be undirected.
 """
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Histogram as Histogram
 
 if __name__ == "__main__":
@@ -101,7 +101,7 @@ if __name__ == "__main__":
         subsets = False,
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     # retrieve data
     vals = {}
@@ -200,4 +200,4 @@ if __name__ == "__main__":
     if options.filename_found:
         outfile_found.close()
         
-    Experiment.Stop()
+    E.Stop()

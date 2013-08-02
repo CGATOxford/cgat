@@ -71,7 +71,7 @@ goslim.import: $(PARAM_FILENAME_GOSLIM)
 		FROM $(TABLE_GO) AS go, $${background}_territories AS t WHERE t.territories = go.gene_id" > $@.dir/goa; \
 	$(CMD_LOG2) set=$${set} subset=$${subset} subtable=$${subtable} background=$${background} foreground=`wc -l < $@.dir/foreground` background=`wc -l < $@.dir/background`; \
 	$(CMD_REMOTE_SUBMIT) \
-	"python $(DIR_SCRIPTS_GENEPREDICTION)GO.py \
+	"python $(DIR_SCRIPTS_GENEPREDICTION)runGO.py \
 		--filename-input=$@.dir/goa \
 		--genes=$@.dir/foreground \
 		--background=$@.dir/background \
@@ -135,7 +135,7 @@ goslim.import: $(PARAM_FILENAME_GOSLIM)
 		FROM $(TABLE_GO) AS go, $${background}_territories AS t WHERE t.territories = go.gene_id" > $@.dir/goa; \
 	$(CMD_LOG2) set=$${set} subset=$${subset} subtable=$${subtable} background=$${background} foreground=`wc -l < $@.dir/foreground` background=`wc -l < $@.dir/background`; \
 	$(CMD_REMOTE_SUBMIT) \
-	"python $(DIR_SCRIPTS_GENEPREDICTION)GO.py \
+	"python $(DIR_SCRIPTS_GENEPREDICTION)runGO.py \
 		--filename-input=$@.dir/goa \
 		--genes=$@.dir/foreground \
 		--background=$@.dir/background \

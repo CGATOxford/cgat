@@ -478,7 +478,7 @@ duplications-hook: $(TARGET_SUBDIR)
 #################################################################################
 %.bootstrap: %.mali
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)setup.py -f -m analyze_bootstrap -d $@.dir -p $@ > $@.log
+	@python $(DIR_SCRIPTS_GENEPREDICTION)gpipe/setup.py -f -m analyze_bootstrap -d $@.dir -p $@ > $@.log
 	if test -e $@.dir; then \
 		ln -f -s ../$< $@.dir/input.fasta; \
 		$(MAKE) -C $@.dir bootstrap; \
@@ -801,7 +801,7 @@ endif
 %.duplications: %.tree %.map_id2pos
 	$(PRELOG)
 	@grep -v -e "^#" -e "^>" $< |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)analyze_orthology_multiple.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)optic/analyze_orthology_multiple.py \
 		--filename-species-tree=$(PARAM_ANALYSIS_DUPLICATIONS_TREE) \
 		--filename-species2colour=$(PARAM_ANALYSIS_DUPLICATIONS_COLOURS) \
 		--filename-species2url=$(PARAM_ANALYSIS_DUPLICATIONS_URLS) \
@@ -882,7 +882,7 @@ PARAM_SUBTREES_THRESHOLD_OPTIMIZATION?=.5e-4
 %.subtrees.finish: %.map_id2pos
 	$(PRELOG)
 	@find $*.subtrees.dir -name "subtree_$*_*_fixed_w_ml.tree" -exec cat {} \; |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)analyze_orthology_multiple.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)optic/analyze_orthology_multiple.py \
 		--filename-species-tree=$(PARAM_ANALYSIS_DUPLICATIONS_TREE) \
 		--filename-species2colour=$(PARAM_ANALYSIS_DUPLICATIONS_COLOURS) \
 		--filename-species2url=$(PARAM_ANALYSIS_DUPLICATIONS_URLS) \
@@ -1099,7 +1099,7 @@ subtree.finish: subtree.run
 ###########################################################################
 %_fixed_w_ml.tree: %_fixed_w.paml 
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codeml_kaks.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)codeml2tsv.py \
 		--prefix=$*_fixed_w \
 		--method=write-ks-tree \
 		$*_fixed_w.output |\
@@ -1115,7 +1115,7 @@ subtree.finish: subtree.run
 ###########################################################################
 subtree_%.lrt: subtree_%_fixed_w.paml subtree_%_variable_w.paml
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codeml_kaks.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)codeml2tsv.py \
 		--prefix=subtree_$* \
 		--method=lrt \
 		subtree_$*_fixed_w.output subtree_$*_variable_w.output > $@
@@ -1139,7 +1139,7 @@ stats: $(TARGET_STATS)
 
 %.counts:
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codeml_sites.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)codemls2tsv.py \
 		--filter-probability=$(PARAM_FILTER_SITES_PROBABILITY) \
 		--filter-omega=$(PARAM_FILTER_SITES_OMEGA) \
 		--models=`echo $(PARAM_FILTER_MODELS) | perl -p -e "chop; s/\s+/,/g"` \
@@ -1315,7 +1315,7 @@ endif
 
 CMD_ANALYSIS_DUPLICATIONS=cat filtered |\
 	$(CMD_REMOTE_SUBMIT) \
-	python $(DIR_SCRIPTS_GENEPREDICTION)analyze_orthology_multiple.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)optic/analyze_orthology_multiple.py \
 		--filename-species-tree=$(PARAM_ANALYSIS_DUPLICATIONS_TREE) \
 		$(DUPLICATIONS_EXTRA_OPTIONS) \
 		--output-pattern=$@.dir/%s.data \
@@ -1389,7 +1389,7 @@ trees.recall: data
 count_orgs: data
 	$(PRELOG)
 	@$(CMD_REMOTE_SUBMIT) \
-	python $(DIR_SCRIPTS_GENEPREDICTION)count_orgs.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)optic/count_orgs.py \
 		--reference-tree=$(PARAM_ANALYSIS_DUPLICATIONS_TREE) \
 		--format=trees \
 		--filename-patterns=$@.patterns \
@@ -1438,7 +1438,7 @@ full_inparalogs.gz: data
 #######################################################################################
 CMD_ANALYSIS_TREES=cat filtered |\
 	$(CMD_REMOTE_SUBMIT) \
-	python $(DIR_SCRIPTS_GENEPREDICTION)analyze_genetrees.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)optic/analyze_genetrees.py \
 		--filename-species-tree=$(PARAM_ANALYSIS_DUPLICATIONS_TREE) \
 		$(DUPLICATIONS_EXTRA_OPTIONS) \
 		--output-pattern=$@.dir/%s.data \
@@ -1615,7 +1615,7 @@ analysis.dir/tree_%.stats:
 subtrees.plot:
 	$(PRELOG)
 	@find data.dir -name "subtree_*_fixed_w_ml.tree" -exec cat {} \; |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)analyze_orthology_multiple.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)optic/analyze_orthology_multiple.py \
 		--filename-species-tree=$(PARAM_ANALYSIS_DUPLICATIONS_TREE) \
 		$(DUPLICATIONS_EXTRA_OPTIONS) \
 		--output-pattern=$@_%s \
@@ -1869,7 +1869,7 @@ summary.dir/paralog_trees:
 			printf "%s\t" $${cluster_id} >> $@; \
 			perl -p -e "s/[\t\n]/ /g" < $${file} >> $@; \
 			printf "\t" >> $@; \
-			python $(DIR_SCRIPTS_GENEPREDICTION)analyze_orthology_multiple.py \
+			python $(DIR_SCRIPTS_GENEPREDICTION)optic/analyze_orthology_multiple.py \
 				--filename-species-tree=$(PARAM_ANALYSIS_DUPLICATIONS_TREE) \
 				--filename-species2colour=$(PARAM_ANALYSIS_DUPLICATIONS_COLOURS) \
 				--filename-species2url=$(PARAM_ANALYSIS_DUPLICATIONS_URLS) \

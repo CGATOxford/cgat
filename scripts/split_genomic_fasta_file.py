@@ -62,7 +62,7 @@ import string
 import re
 import optparse
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 
 USAGE="""python %s [OPTIONS] [genomic_sequence] [ < genomic sequence]
 
@@ -174,7 +174,7 @@ if __name__ == '__main__':
         filename_mask_regions = None,
         mask_char = "N" )
 
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
     ## read segments to mask
     
@@ -243,4 +243,4 @@ if __name__ == '__main__':
     if options.loglevel >= 1:
         options.stdlog.write( "# nkeys=%i, nwritten=%i, nmasked=%i\n" % (total_keys, total_written, total_masked))
 
-    Experiment.Stop()
+    E.Stop()
