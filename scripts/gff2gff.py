@@ -286,7 +286,9 @@ def cropGFF( gffs, options ):
         options.stdlog.write( "# ninput=%i, noutput=%i, ncropped=%i, ndeleted=%i\n" % (ninput, noutput, ncropped, ndeleted) )
 
 ##------------------------------------------------------------------------
-if __name__ == "__main__":
+def main( argv = None ):
+    
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: gff2gff.py 2868 2010-03-03 10:19:52Z andreas $")
 
@@ -379,7 +381,7 @@ a,b=minimum,maximum number of features.""" )
         is_gtf = False,
         )
 
-    (options, args) = E.Start( parser )
+    (options, args) = E.Start( parser, argv = argv )
 
     if options.input_filename_contigs:
         contigs = Genomics.ReadContigSizes( IOTools.openFile( options.input_filename_contigs, "r") )
@@ -621,3 +623,5 @@ a,b=minimum,maximum number of features.""" )
 
     E.Stop()
     
+if __name__ == "__main__":
+    sys.exit( main( sys.argv ))

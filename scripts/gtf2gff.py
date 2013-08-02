@@ -996,7 +996,9 @@ def annotateGenes( iterator, fasta, options ):
     E.info( "ngenes=%i, ntranscripts=%i, nskipped=%i\n" % (ngenes, ntranscripts, nskipped) )
 
 ##------------------------------------------------------------
-if __name__ == '__main__':
+def main( argv = None ):
+
+    if not argv: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: gtf2gff.py 2861 2010-02-23 17:36:32Z andreas $", usage = globals()["__doc__"] )
 
@@ -1103,4 +1105,7 @@ if __name__ == '__main__':
 
 
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
 

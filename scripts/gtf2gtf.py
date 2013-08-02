@@ -100,9 +100,12 @@ import CGAT.Components as Components
 ##------------------------------------------------------------
 ## This script needs some attention.
 ##------------------------------------------------------------
-if __name__ == '__main__':
+def main( argv = None ):
 
-    parser = E.OptionParser( version = "%prog version: $Id: gtf2gtf.py 2861 2010-02-23 17:36:32Z andreas $", usage = globals()["__doc__"])
+    if not argv: argv = sys.argv
+
+    parser = E.OptionParser( version = "%prog version: $Id: gtf2gtf.py 2861 2010-02-23 17:36:32Z andreas $", 
+                             usage = globals()["__doc__"])
 
     parser.add_option("-m", "--merge-exons", dest="merge_exons", action="store_true",
                       help="merge overlapping exons of all transcripts within a gene. "
@@ -242,7 +245,7 @@ if __name__ == '__main__':
                        help="cluster overlapping transcripts into genes." )
 
     parser.add_option( "--reset-strand", dest="reset_strand", action="store_true",
-                       help="remove strandedness of features (set to '.') "
+                       help="remove strandedness of features (set to '.') when using --transcripts2genes"
                        "[default=%default]."  )
 
     parser.add_option( "--remove-overlapping", dest="remove_overlapping", type="string",
@@ -295,7 +298,7 @@ if __name__ == '__main__':
         intersect_transcripts = False,
         )
 
-    (options, args) = E.Start( parser )
+    (options, args) = E.Start( parser, argv = argv )
     
     ninput, noutput, nfeatures, ndiscarded = 0, 0, 0, 0
 
@@ -925,7 +928,6 @@ if __name__ == '__main__':
             result = []
 
             if options.merge_exons:
-
                 # need to combine per feature - skip
                 # utr_ranges = Intervals.combineAtDistance( utr_ranges, options.merge_exons_distance )
 
@@ -985,3 +987,7 @@ if __name__ == '__main__':
 
     E.info("ninput=%i, noutput=%i, nfeatures=%i, ndiscarded=%i" % (ninput, noutput, nfeatures, ndiscarded) )
     E.Stop()
+
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv ))

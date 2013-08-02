@@ -137,8 +137,8 @@ MAP_FORMATS = {
     }
 
 MAP_TYPE2FORMAT = {
-    'gff' : 'gff',
-    'gtf' : 'gtf',
+    'gff' : 'gff,gtf',
+    'gtf' : 'gff,gtf',
     'bam' : 'bam',
     'sam' : 'sam',
     'bigwig': 'bigWig',
@@ -457,7 +457,7 @@ def processScript( script_name, outfile, options ):
     stdin['label'] = 'input file'
     stdin['description'] = 'input file'
     stdin['choices'] = None
-    stdin['format'] = input_format
+    stdin['format'] = MAP_TYPE2FORMAT.get( input_format, input_format )
     stdin['rank'] = 1
     stdin['display'] = 'show'
     stdin['min_occurrence'] = 1
@@ -475,7 +475,7 @@ def processScript( script_name, outfile, options ):
     stdout['label'] = 'table'
     stdout['description'] = 'bam file'
     stdout['choices'] = None
-    stdout['format'] = output_format
+    stdout['format'] = MAP_TYPE2FORMAT.get( output_format, output_format )
     stdout['rank'] = 1
     stdout['display'] = 'show'
     stdout['min_occurrence'] = 1
@@ -646,8 +646,8 @@ def processScript( script_name, outfile, options ):
             
             data['parameters'].append( param )
         
-        # point to wrapper
-        data['binary'] = os.path.join( dirname, "cgat_galaxy_wrapper.py" )
+            # point to wrapper
+            data['binary'] = os.path.join( dirname, "cgat_galaxy_wrapper.py" )
 
         displayMap = collections.defaultdict( list )
 

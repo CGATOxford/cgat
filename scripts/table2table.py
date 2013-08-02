@@ -565,7 +565,7 @@ if __name__ == "__main__":
     elif options.expand_table:
         readAndExpandTable( options.stdin, options )
 
-    elif options.method == "grep":
+    elif "grep" in options.methods:
 
         options.columns = map(lambda x: int(x)-1, options.columns.split(","))
 
