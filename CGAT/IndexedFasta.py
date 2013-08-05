@@ -597,8 +597,9 @@ class CGATIndexedFasta:
                     self.mIndex[identifier] = struct.pack( "QQi", pos_id, pos_seq, lsequence)
                     
 
+        self._addSynonyms()
         self.mIsLoaded = True
-
+        
     def _addSynonyms( self ):
         '''add synonyms to indices.
         '''
