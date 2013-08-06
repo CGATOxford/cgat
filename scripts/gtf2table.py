@@ -38,7 +38,7 @@ formatted file and output them in tabular format.
 Quantities can be either computed per gene (all exons across all transcripts)
 or per transcript. The input needs to be sorted accordingly.
 
-The following methods are available:
+The following methods (see option ``--counter``) are available:
 
 bigwig-counts 
    collect density values from bigwig file and output
@@ -217,13 +217,113 @@ import pyximport
 pyximport.install(build_in_temp=False)
 import _gtf2table
 
+def readIntervalsFromGFF( filename_gff, source, feature, 
+			  with_values = False, with_records = False, fasta = None, 
+			  merge_genes = False, format = "gtf", use_strand = False ):
+    """read intervals from a file or list.
+    """
+
+    assert not (with_values and with_records), "both with_values and with_records are true."
+
+    ninput = 0
+
+    if format == None:
+        if type(filename_gff) == types.StringType:
+            fn = filename_gff
+            if fn.endswith( ".gtf" ) or fn.endswith( ".gtf.gz"):
+                format = "gtf"
+            elif fn.endswith( ".gff" ) or fn.endswith( ".gff.gz"):
+                format = "gff"
+            elif fn.endswith( ".bed" ) or fn.endswith( ".bed.gz"):
+                format = "bed"
+        else:
+            format = "gff"
+
+    if format in ("gtf", "gff"):
+        infile = None
+        # read data without value
+        if type(filename_gff) == types.StringType:
+            E.info(  "loading data from %s for source '%s' and feature '%s'" % (filename_gff, source, feature) )
+
+            infile = IOTools.openFile( filename_gff, "r")        
+            if format == "gtf":
+                iterator_gff = GTF.iterator(infile)
+            elif format == "gff":
+                iterator_gff = GTF.iterator(infile)
+
+        elif type(filename_gff) in (types.TupleType, types.ListType):
+
+            E.info( "loading data from cache for source '%s' and feature '%s'" % (source, feature) )
+
+            # from preparsed gff entries
+            iterator_gff = filename_gff
+
+        gff_iterator = GFF.iterator_filtered( iterator_gff,
+                                              feature = feature,
+                                              source = source )
+
+        if format == "gtf":
+            e = GTF.readAsIntervals( gff_iterator, 
+                                     with_values = with_values, 
+                                     with_records = with_records,
+                                     merge_genes = merge_genes,
+                                     use_strand = use_strand )
+        elif format == "gff":
+            e = GFF.readAsIntervals( gff_iterator, 
+                                     with_values = with_values, 
+                                     with_records = with_records,
+                                     use_strand = use_strand )
+
+        if infile: infile.close()
+
+    elif format == "bed":
+        if merge_genes: raise ValueError("can not merge genes from bed format" )
+        if use_strand: raise NotImplementedError( "stranded comparison not implemented for bed format")
+        iterator = Bed.iterator( IOTools.openFile(filename_gff, "r") )
+        e = collections.defaultdict( list )
+        if with_values:
+            for bed in iterator:
+                ninput += 1
+                e[bed.contig].append( (bed.start,bed.end,bed.fields[0]) )
+        elif with_records:
+            for bed in iterator:
+                ninput += 1
+                bed.gene_id = bed.fields[0]
+                bed.transcript_id = bed.gene_id
+                e[bed.contig].append( (bed.start,bed.end,bed) )
+        else:
+            for bed in iterator:
+                ninput += 1
+                e[bed.contig].append( (bed.start,bed.end) )
+        E.info("read intervals for %i contigs from %s: %i intervals" % (len(e), filename_gff, ninput) )
+
+    else:
+        raise ValueError("unknown format %s" % format )
+
+    # translate names of contigs
+    if fasta:
+        if use_strand:
+            for contig,strand in e.keys():
+                if  contig in fasta:
+                    x = e[contig]
+                    del e[contig,strand]
+                    e[fasta.getToken(contig),strand] = x
+        else:
+            for contig in e.keys():
+                if  contig in fasta:
+                    x = e[contig]
+                    del e[contig]
+                    e[fasta.getToken(contig)] = x
+
+    return e
+
 class CounterIntronsExons(_gtf2table.Counter):
     """count number of introns and exons.
     """
 
     header = ( "ntranscripts", "nexons", "nintrons", )
     def __init__(self, *args, **kwargs):
-        Counter.__init__(self, *args, **kwargs )
+        _gtf2table.Counter.__init__(self, *args, **kwargs )
 
     def count(self):
         segments = self.getSegments()
@@ -239,7 +339,7 @@ class CounterPosition(_gtf2table.Counter):
     header = ( "contig", "strand", "start", "end" )
 
     def __init__(self, *args, **kwargs ):
-        Counter.__init__(self, *args, **kwargs )
+        _gtf2table.Counter.__init__(self, *args, **kwargs )
 
     def count(self):
 
@@ -388,8 +488,11 @@ class CounterOverlap(_gtf2table.Counter):
         if len(filename_gff) != 1:
             raise ValueError("expected one gff file" )
         
-        e = readIntervalsFromGFF( filename_gff[0], source, feature, 
-                                  self.mWithValues, self.mWithRecords, 
+        e = readIntervalsFromGFF( filename_gff[0], 
+				  source, 
+				  feature, 
+                                  self.mWithValues, 
+				  self.mWithRecords, 
                                   self.fasta, 
                                   format = self.options.filename_format,
                                   use_strand = self.mUseStrand )
@@ -732,10 +835,10 @@ class Classifier(_gtf2table.Counter):
 
     def __init__(self, filename_gff, *args, **kwargs ):
 
-        Counter.__init__(self, *args, **kwargs )
+        _gtf2table.Counter.__init__(self, *args, **kwargs )
 
         if len(filename_gff) != 1:
-            raise ValueError("expected only one gff file" )
+            raise ValueError("expected one gff file, received %i" % len(filename_gff) )
 
         E.info( "loading data from %s" % (filename_gff[0]) )
             
@@ -822,7 +925,7 @@ class Classifier(_gtf2table.Counter):
         return "\t".join( h )
 
     def getHeader(self):
-        h = [Counter.getHeader( self ) ]
+        h = [_gtf2table.Counter.getHeader( self ) ]
 
         for key in self.mKeys:
             h.append( self.mCounters[key].getHeader() )

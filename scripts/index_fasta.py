@@ -33,17 +33,21 @@ Purpose
 -------
 
 This script indexes one or more :term:`fasta` formatted files into a 
-database that can be used by :mod:`IndexedFasta` for quick acces to
-sequences.
+database that can be used by other scripts in the CGAT code collection
+and :mod:`IndexedFasta` for quick acces to sequence fragments.
 
-By default, the database itself is a :term:`fasta` formatted file
-itself. Compression methods are available to conserve disk space,
+By default, the database is itself a :term:`fasta` formatted file in which
+all line breaks and other white space characters have been removed.
+ Compression methods are available to conserve disk space,
 though they do come at a performance penalty.
 
-See also http://pypi.python.org/pypi/pyfasta for a similar
-implementation.
+See also http://pypi.python.org/pypi/pyfasta for another implementation. 
+Samtools provides similar functionality with the ``samtools faidx`` command.
 
-For example, to index a collection of fasta files::
+Examples
+--------
+
+Index a collection of fasta files::
 
   python index_fasta.py oa_ornAna1_softmasked ornAna1.fa.gz > oa_ornAna1_softmasked.log
 
@@ -51,12 +55,16 @@ To retrieve a segment::
 
   python index_fasta.py --extract=chr5:1000:2000 oa_ornAna1_softmasked 
 
+Indexing from a tar file:
+
+  python index_fasta.py oa_ornAna1_softmasked ornAna1.tar.gz > oa_ornAna1_softmasked.log
+
+Indexing from stdin:
+
+  zcat ornAna1.fa.gz | python index_fasta.py oa_ornAna1_softmasked - > oa_ornAna1_softmasked.log
+
 Usage
 -----
-
-Example::
-
-   python index_fasta.py oa_ornAna1_softmasked /net/cpp-mirror/ucsc/ornAna1/bigZips/ornAna1.fa.gz > oa_ornAna1_softmasked.log
 
 Type::
 
@@ -64,11 +72,8 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-
-Code
-----
+Command line options
+--------------------
 
 '''
 import CGAT.IndexedFasta as IndexedFasta
@@ -112,6 +117,10 @@ def main():
     parser.add_option( "--verify", dest="verify", type="string",
                        help="verify against other database [default=%default].")
 
+    parser.add_option( "--file-format", dest="file_format", type="choice",
+                       choices = ("fasta", "auto", "fasta.gz", "tar", "tar.gz"),
+                       help="file format of input. Supply if data comes from stdin [default=%default].")
+
     parser.add_option( "-a", "--clean-sequence", dest="clean_sequence", action="store_true",
                        help="remove X/x from DNA sequences - they cause errors in exonerate [default=%default]." )
 
@@ -148,6 +157,7 @@ def main():
         allow_duplicates = False,
         regex_identifier = None,
         compress_index = False,
+        file_format = "auto",
         force = False,
         translator = None )
     
@@ -228,17 +238,18 @@ def main():
             sys.exit(1)
             
         iterator = IndexedFasta.MultipleFastaIterator( args[1:],     
-                                                       regex_identifier = options.regex_identifier )
+                                                       regex_identifier = options.regex_identifier,
+                                                       format = options.file_format )
 
-        IndexedFast.createDatabase( args[0], 
-                                    iterator, 
-                                    synonyms = synonyms,
-                                    random_access_points = options.random_access_points,
-                                    compression = options.compression,
-                                    clean_sequence = options.clean_sequence,
-                                    allow_duplicates = options.allow_duplicates,
-                                    translator = options.translator,
-                                    force = options.force )
+        IndexedFasta.createDatabase( args[0], 
+                                     iterator, 
+                                     synonyms = synonyms,
+                                     random_access_points = options.random_access_points,
+                                     compression = options.compression,
+                                     clean_sequence = options.clean_sequence,
+                                     allow_duplicates = options.allow_duplicates,
+                                     translator = options.translator,
+                                     force = options.force )
 
     
     E.Stop()

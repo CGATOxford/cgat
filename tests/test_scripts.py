@@ -3,6 +3,7 @@ import tempfile
 import os
 import shutil
 import re
+import sys
 import glob
 import gzip
 from nose.tools import assert_equal
@@ -64,9 +65,21 @@ def check_script( test_name, script, stdin, options, outputs, references, workin
 
 def test_scripts():
     '''yield list of scripts to test.'''
+
     scriptdirs = glob.glob( "tests/*.py" )
 
-    scriptdirs.sort()
+    if os.path.exists( "tests/test_scripts.yaml" ):
+        config = yaml.load( open( "tests/test_scripts.yaml" ) )
+        if "restrict" in config:
+            values = config["restrict"]
+            if "glob" in values:
+                scriptdirs = glob.glob( "tests/*.py" )
+                
+            if "regex" in values:
+                rx = re.compile( values["regex"] )
+                scriptdirs = filter( rx.search, scriptdirs )
+
+    scriptdirs.sort()        
 
     for scriptdir in scriptdirs:
         fn = '%s/tests.yaml' % scriptdir

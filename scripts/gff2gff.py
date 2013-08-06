@@ -34,24 +34,59 @@ Purpose
 This scripts reads a :term:`gff` formatted file, operates
 on it and outputs the new intervals in :term:`gff` format.
 
+Extension options:
+
+--extend
+   extend existing features
+
+--add-up-flank/--add-down-flank
+   add an upstream/downstearm flanking segment to first/last exon of a group.
+
+Segment transformations:
+
+--crop
+   crop features according to features in a separate gff file.
+
+--crop-unique
+   remove non-unique features from gff file.
+
+--merge-features
+   merge consecutive features.
+
+--join-features
+   group consecutive features
+
+Filtering options:
+
+--filter-range
+   extract features overlapping a chromosomal range.
+
+--sanitize
+   reconcile chromosome names between ENSEMBL/UCSC or with an indexed
+   genomic fasta file (see :doc:`index_fasta`). Raises an exception if
+   an unknown contig is found (unless --skip-missing is set).
+
+--remove-contigs
+   remove contig matching to a series of regular expressions.
+
+
+
 Usage
 -----
 
-Example::
+Make sure that a :term:`gff` formatted file contains only features on placed chromosomes::
 
-   python <script_name>.py --help
+   cat in.gff | gff2gff.py --sanitize=genome --genome-file=hg19 --skip-missing 
+   | gff2gff.py --remove-contigs="chrUn,_random" > gff.out
 
 Type::
 
-   python <script_name>.py --help
+   python gff2gff.py --help
 
 for command line help.
 
-Documentation
--------------
-
-Code
-----
+Command line options
+--------------------
 
 '''
 
@@ -333,13 +368,16 @@ def main( argv = None ):
 
     parser.add_option( "--join-features", dest="join_features", type="string",
                        help="join features into a single transcript. Consecutive features are grouped "
-                       " into the same transcript/gene. The options expects a,b,c,d as input; "
+                       " into the same transcript/gene. This metdo expects a string of for numbers ``a,b,c,d`` " 
+                       " as input with:"
                        " a,b=minimum/maximum distance between features, "
                        " c,d=minimum,maximum number of features.""" )
 
     parser.add_option( "--merge-features", dest="merge_features", type="string",
-                       help="""merge features. Consecutive features are merged into a single feature. The options expects a,b,c,d as input; a,b=minimum/maximum distance between features, 
-a,b=minimum,maximum number of features.""" )
+                       help="merge features. Consecutive features are merged into a single feature. "
+                       "This method expects a string of four numbers ``a,b,c,d`` as input; "
+                       "a,b=minimum/maximum distance between features, "
+                       "c,d=minimum,maximum number of features." )
 
     parser.add_option( "--crop-unique", dest="crop_unique", action="store_true",
                        help = "crop overlapping intervals, keeping only intervals that are unique [default=%default]" )
@@ -389,10 +427,11 @@ a,b=minimum,maximum number of features.""" )
     if options.genome_file:
         genome_fasta = IndexedFasta.IndexedFasta( options.genome_file )
         contigs = genome_fasta.getContigSizes()
-        
+    else:
+        genome_fasta = None
+
     if (options.forward_coordinates or options.forward_strand) and not contigs: 
         raise ValueError( "inverting coordinates requires genome file")
-
 
     if options.input_filename_agp:
         agp = AGP.AGP()
@@ -553,6 +592,8 @@ a,b=minimum,maximum number of features.""" )
             return id
 
         if options.sanitize == "genome":
+            if genome_fasta == None:
+                raise ValueError("please specify --genome-file= when using --sanitize=genome")
             f = genome_fasta.getToken
         elif options.sanitize == "ucsc":
             f = toUCSC

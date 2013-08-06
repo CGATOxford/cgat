@@ -6,6 +6,9 @@ from Cython.Distutils import build_ext
 
 import glob, sys, os
 
+# Perform a CGAT Code Collection Installation
+INSTALL_CGAT = True
+
 major, minor1, minor2, s, tmp = sys.version_info
 
 if major==2:
@@ -25,12 +28,37 @@ shared_dependencies = [
     'matplotlib>=1.2.1', 
     'sqlalchemy>=0.7.0', 
     'pysam>=0.7',
-    'openpyxl>=1.5.7' ]
+    'openpyxl>=1.5.7',
+    'MySQL-python>1.2.3',
+    'biopython>=1.61',
+    'scipy>=0.7.0',
+    'bx-python>=0.7.1',
+    'networkx>=1.8.1',
+    'PyGreSQL>=4.1.1',
+    'drmaa>=0.5',
+    'ruffus>=2.2',
+    'pybedtools>=0.6.2',
+    'rdflib>=0.4.1',
+    'hgapi>=1.3.0',
+    'threadpool>=1.2.7',]
 
 # check if within CGAT, do not install dependencies
-curdir = os.getcwd()
-if curdir.startswith("/ifs" ):
-    extra_dependencies, shared_dependencies = [], []
+# curdir = os.getcwd()
+# if curdir.startswith("/ifs" ):
+#    extra_dependencies, shared_dependencies = [], []
+
+###########################################################
+# Define scripts that are part of the CGAT code collection
+if INSTALL_CGAT:
+    cgat_scripts = []
+    with open( "MANIFEST.in" ) as inf:
+        for line in inf:
+            if not line.startswith("include scripts/"): continue
+            cgat_scripts.append( line[:-1].split(" ")[1].strip())
+else:
+    cgat_scripts=glob.glob( 'scripts/*.py' ) +\
+        glob.glob( 'CGATPipelines/pipeline*.py')
+
 
 if major==2 and minor1<6 or major<2:
     raise SystemExit("""CGAT requires Python 2.6 or later.""")
@@ -95,7 +123,7 @@ Nubiscan = Extension(
 
 setup(name='CGAT',
       version='0.1',
-      description='CGAT : the CGAT code collection',
+      description='CGAT : the Computational Genomics Analysis Toolkit',
       author='Andreas Heger',
       author_email='andreas.heger@gmail.com',
       packages=find_packages(), 
@@ -103,14 +131,14 @@ setup(name='CGAT',
                       'Pipelines' : 'CGATPipelines' },
       url="http://code.google.com/p/sphinx-report/",
       package_data={'glob.glob': ['./templates/*', './images/*']},
-      scripts=glob.glob( 'scripts/*.py' ) +\
-          glob.glob( 'CGATPipelines/pipeline*.py'),
+      scripts = cgat_scripts,
       license="BSD",
       platforms=["any",],
-      keywords="report generator sphinx matplotlib sql",
+      keywords="computational genomics",
       long_description='CGAT : the CGAT code collection',
       classifiers = filter(None, classifiers.split("\n")),
-      install_requires = shared_dependencies + extra_dependencies,
+      install_requires=shared_dependencies, 
+      ## shared_dependencies,# + extra_dependencies,
       zip_safe = False,
       include_package_data = True,
       ext_modules=[Components, NCL, Nubiscan],

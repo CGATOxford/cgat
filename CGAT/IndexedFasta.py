@@ -215,22 +215,26 @@ class TranslatorBytes(Translator):
 ##------------------------------------------------------------
 class MultipleFastaIterator:
 
-    def __init__(self, filenames, regex_identifier = None ):
+    def __init__(self, 
+                 filenames, 
+                 regex_identifier = None,
+                 format = "auto" ):
 
         if type(filenames) == types.StringType:
-            self.mFilenames = [filenames]
+            self.filenames = [filenames]
         else:
-            self.mFilenames = filenames
+            self.filenames = filenames
 
-        self.mRegexIdentifier = regex_identifier
-        self.mIterator = self._iterate()
-        
+        self.regexIdentifier = regex_identifier
+        self.iterator = self._iterate()
+        self.format = format
+
     def __iter__(self):
         return self
 
     def next(self):
         try:
-            return self.mIterator.next( )
+            return self.iterator.next( )
         except StopIteration:
             return None
 
@@ -245,9 +249,9 @@ class MultipleFastaIterator:
                 if line.startswith("#"):  continue
                 if line.startswith(">"):
 
-                    if self.mRegexIdentifier:
+                    if self.regexIdentifier:
                         try:
-                            identifier = re.search(regex_identifier, line[1:-1]).groups()[0]
+                            identifier = re.search(self.regexIdentifier, line[1:-1]).groups()[0]
                         except AttributeError:
                             raise ValueError("could not parse identifier from line %s - check the input" % line[1:-1])
                     else:
@@ -258,9 +262,12 @@ class MultipleFastaIterator:
                         raise ValueError("refusing to emit sequence without identifier - check the input")
                     yield identifier, line.strip()
 
-        for filename in self.mFilenames:
-            if filename.endswith( "tar.gz" ):
-                tf = tarfile.open( filename, "r" )
+        for filename in self.filenames:
+            if self.format == "tar.gz" or self.format == "tar" or (self.format == "auto" and filename.endswith( "tar.gz" )):
+                if filename == "-":
+                    tf = tarfile.open( fileobj = sys.stdin, mode = "r|*" ) 
+                else:
+                    tf = tarfile.open( filename, mode = "r" )
                 for f in tf:
                     b, ext = os.path.splitext( f.name )
                     if ext.lower() in ( ".fasta", ".fa" ):
@@ -270,9 +277,9 @@ class MultipleFastaIterator:
                     else:
                         E.info( "skipping %s" % f.name )
 
-                tf.close()
+                if tf != sys.stdin: tf.close()
                 continue
-            elif filename.endswith(".gz"):
+            elif self.format == "fasta.gz" or (self.format == "auto" and filename.endswith(".gz")):
                 infile = gzip.open( filename, "r" )
             elif filename == "-":
                 infile = sys.stdin
