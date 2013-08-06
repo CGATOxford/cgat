@@ -54,7 +54,6 @@ import optparse
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Bed as Bed
 import CGAT.Experiment as E
-import CGAT.GFF as GFF
 
 def getFixedWidthWindows( map_contig2size, window_size ):
     """return a list of fixed contig sizes."""
@@ -64,7 +63,7 @@ def getFixedWidthWindows( map_contig2size, window_size ):
         E.info("processing %s" % contig)
         for x in range(0, size, window_increment):
             if x + window_size > size: continue
-            gff = GFF.Entry()
+            gff = GTF.Entry()
             gff.feature = "window"
             gff.source = "window"
             gff.contig = contig
@@ -122,7 +121,7 @@ def main( argv = None ):
 
     if options.gff_file:
         infile = open( options.gff_file, "r" )
-        gff = GFF.readFromFile( infile )   
+        gff = GTF.readFromFile( infile )   
         infile.close()
         for g in gff:
             try:

@@ -74,7 +74,6 @@ Version: $Id: annotator2tsv.py 2861 2010-02-23 17:36:32Z andreas $
 """ % sys.argv[0]
 
 import CGAT.Experiment as E
-import CGAT.GFF as GFF
 import CGAT.GTF as GTF
 import numpy
 import CGAT.Stats as Stats

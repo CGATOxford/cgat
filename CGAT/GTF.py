@@ -13,7 +13,6 @@ The default GTF version is 2.2.
 import string, sys, re, copy, types, collections
 import Intervals
 import Genomics
-import GFF
 import IndexedGenome
 import pysam
 
@@ -34,6 +33,18 @@ class ParsingError(Error):
 
     def __init__(self, message):
         self.message = message
+
+def toDot( v ):
+    '''convert value to '.' if None'''
+    if v == None: return "." 
+    else: return str(v)
+
+def quote( v ):
+    '''return a quoted attribute.'''
+    if type(v) in types.StringTypes:
+        return '"%s"' % v
+    else: 
+        return str(v)
 
 class Entry:
     """read/write gtf formatted entry.
@@ -216,6 +227,11 @@ class Entry:
     def addAttribute( self, key, value = None):
         self.attributes[key] = value
 
+    def __cmp__(self, other):
+        ## note: does compare by strand as well!
+        return cmp( (self.contig, self.strand, self.start),
+                    (other.contig, other.strand, other.start))
+
     def __setitem__(self, key, value):
         self.addAttribute( key, value )
         
@@ -247,6 +263,31 @@ class Entry:
                     ( abs(self.end - other.end) < max_slippage or \
                           abs(self.start - other.start < max_slippage) ) )
 
+def Overlap( entry1, entry2, min_overlap = 0 ):
+    """returns true, if entry1 and entry2 overlap.
+    """
+
+    return (entry1.contig == entry2.contig and entry1.strand == entry2.strand and \
+            min(entry1.end, entry2.end) - max(entry1.start, entry2.start) > min_overlap)
+
+def Identity( entry1, entry2, max_slippage = 0 ):
+    """returns true, if entry1 and entry2 overlap.
+    """
+
+    return (entry1.contig == entry2.contig and \
+            entry1.strand == entry2.strand and \
+            abs(entry1.end - entry2.end) < max_slippage and \
+            abs(entry1.start - entry2.start < max_slippage) )
+
+def HalfIdentity( entry1, entry2, max_slippage = 0 ):
+    """returns true, if entry1 and entry2 overlap.
+    """
+
+    return (entry1.contig == entry2.contig and \
+            entry1.strand == entry2.strand and \
+            ( abs(entry1.end - entry2.end) < max_slippage or \
+              abs(entry1.start - entry2.start < max_slippage) ) )
+
 def asRanges( gffs, feature = None ):
     """return ranges within a set of gffs.
 
@@ -272,9 +313,80 @@ def readFromFile( infile ):
         result.append( gff )
     return result
 
+def CombineOverlaps( old_gff, method = "combine" ):
+    """combine overlapping entries for a list of gffs.
+
+    method can be any of combine|longest|shortest
+    only the first letter is important.
+    """
+
+    old_gff.sort( lambda x,y: cmp( (x.contig, x.strand, x.start, x.end),
+                                   (y.contig, y.strand, y.start, y.end) ) )
+    
+    new_gff = []
+
+    last_e = old_gff[0]
+
+    for e in old_gff[1:]:
+        if not Overlap( last_e, e):
+            new_gff.append( last_e )
+            last_e = e
+        else:
+            if method[0] == "c":
+                last_e.start = min( last_e.start, e.start )
+                last_e.end = max( last_e.end, e.end )
+                last_e.mInfo += " ; " + e.mInfo
+
+    new_gff.append( last_e )
+    
+    return new_gff
+    
+def SortPerContig( gff ):
+    """sort gff entries per contig and return a dictionary mapping a
+    contig to the begin of the list."""
+    map_contig2start = {}
+
+    if len(gff) == 0: return map_contig2start
+    
+    gff.sort( lambda x,y: cmp( x.contig, y.contig) )
+
+    last_contig = None
+    start = 0
+    for x in range( len(gff)):
+        if last_contig != gff[x].contig:
+            map_contig2start[last_contig] = (start, x)
+            start = x
+            last_contig = gff[x].contig
+
+    map_contig2start[last_contig] = (start, x)
+
+    return map_contig2start
+
+####################################################
+####################################################
+####################################################
+## Iterators
+####################################################
 def iterator( infile ):
     """return a simple iterator over all entries in a file."""
     return pysam.tabix_iterator(infile, pysam.asGTF())
+
+def track_iterator( infile ):
+    """a simple iterator over all entries in a file."""
+    # note: taken from GFF.py
+    ntracks = 0
+    while 1:
+        line = infile.readline()
+        if not line: return
+        if line[0] == "#": continue
+        if len(line.strip()) == 0: continue
+        if line.startswith("track"):
+            ntracks += 1
+            if ntracks > 1: raise ValueError( "more than one track in %s" % infile)
+            continue
+        gff = Entry()
+        gff.read( line )
+        yield gff
 
 def chunk_iterator( gff_iterator ):
     """iterate over the contents of a gff file.
@@ -283,6 +395,25 @@ def chunk_iterator( gff_iterator ):
     """
     for gff in gff_iterator:
         yield [gff,]
+
+def iterator_contigs( gffs ):
+    """iterate over contigs.
+    
+    TODO: implement as coroutines
+    """
+
+    last_contig, data = None, []
+    found = set()
+    for gff in gffs:
+        if last_contig != gff.contig:
+            if last_contig: yield last_contig, data
+            last_contig = gff.contig
+            assert last_contig not in found, "input not sorted by contig."
+            found.add(last_contig) 
+
+        data.append( gff )
+
+    if last_contig: yield last_contig, data
 
 def transcript_iterator(gff_iterator, strict = True ):
     """iterate over the contents of a gtf file.
@@ -306,6 +437,32 @@ def transcript_iterator(gff_iterator, strict = True ):
             last = this
         matches.append( gff )
     if last: yield matches
+
+def joined_iterator(gffs, group_field = None):
+    """iterate over the contents of a gff file.
+
+    return a list of entries with the same group id.
+    Note: the entries have to be consecutive in
+    the file.
+    """
+    last_group_id = None
+    matches = []
+
+    for gff in gffs:
+        
+        if group_field:
+            group_id = gff.fields[group_field]
+        else:
+            group_id = gff.attributes
+                
+        if last_group_id != group_id:
+            if last_group_id: yield matches
+            matches = []
+            last_group_id = group_id
+                
+        matches.append( gff )
+
+    if last_group_id: yield matches
 
 def gene_iterator( gff_iterator, strict = True ):
     """iterate over the contents of a gtf file.
@@ -379,14 +536,20 @@ def merged_gene_iterator( gff_iterator ):
         gff.end = max( [x.end for x in m ] )
         yield gff
 
-def iterator_filtered( gff_iterator, feature = None, source = None):
+def iterator_filtered( gff_iterator, feature = None, source = None, contig = None, interval = None, strand = None):
     """iterate over the contents of a gff file.
 
     yield only entries for a given feature
     """
+    if interval: start, end = interval
+    if strand == ".": strand = None
+
     for gff in gff_iterator:
         if feature and gff.feature != feature: continue
         if source and gff.source != source: continue
+        if contig and gff.contig != contig: continue
+        if strand and gff.strand != strand: continue
+        if interval and min(end,gff.end) - max(start,gff.start) < 0: continue
         yield gff
 
 def iterator_sorted_chunks( gff_iterator, sort_by = "contig-start" ):
@@ -491,6 +654,8 @@ def iterator_overlapping_genes( gtf_iterator, min_overlap = 0 ):
        
     if last_contig: yield ovl
 
+
+
 ##----------------------------------------------------------------------------------------
 def iterator_transcripts2genes( gtf_iterator, min_overlap = 0 ):
     """cluster transcripts by exon overlap.
@@ -503,7 +668,7 @@ def iterator_transcripts2genes( gtf_iterator, min_overlap = 0 ):
     map_transcript2gene = {}
     gene_ids = collections.defaultdict( list )
 
-    for chunk in GFF.iterator_overlaps( gtf_iterator ):
+    for chunk in iterator_overlaps( gtf_iterator ):
         transcript_ids = list(set( [x.transcript_id for x in chunk ] ))
         contig = chunk[0].contig
 
@@ -584,6 +749,32 @@ def readAsIntervals( gff_iterator,
             intervals[keyf(gff)].append( (gff.start,gff.end) )
         
     return intervals
+
+def iterator_overlaps( gff_iterator, min_overlap = 0 ):
+    """iterate over gff file and return a list of features that
+    are overlapping.
+
+    The input should be sorted by contig,start
+    """
+    
+    last = gff_iterator.next()
+    matches = [last]
+    end = last.end
+    for this in gff_iterator:
+        if last.contig != this.contig or \
+                end - this.start <= min_overlap:
+            yield matches
+            matches = [this]
+            end = this.end
+            last = this
+            continue
+
+        assert last.start <= this.start, "input file needs to be sorted by contig, start:\n%s\n%s\n" % (str(last), str(this) )
+        matches.append( this )
+        last = this
+        end = max( end, this.end )
+
+    yield matches
 
 def readAndIndex( iterator, with_value = True ):
     '''read from gtf stream and index.

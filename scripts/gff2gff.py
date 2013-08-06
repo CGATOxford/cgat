@@ -36,10 +36,10 @@ on it and outputs the new intervals in :term:`gff` format.
 
 Extension options:
 
---extend
+`--extend`
    extend existing features
 
---add-up-flank/--add-down-flank
+``--add-up-flank/--add-down-flank``
    add an upstream/downstearm flanking segment to first/last exon of a group.
 
 Segment transformations:
@@ -98,7 +98,6 @@ import optparse
 
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
-import CGAT.GFF as GFF
 import CGAT.GTF as GTF
 import CGAT.AGP as AGP
 import CGAT.Genomics as Genomics
@@ -268,8 +267,8 @@ def cropGFF( gffs, options ):
     # read regions to crop with and convert intervals to intersectors
     E.info( "reading gff for cropping: started." )
 
-    other_gffs = GFF.iterator( IOTools.openFile( options.crop, "r") )
-    cropper = GFF.readAsIntervals( other_gffs )
+    other_gffs = GTF.iterator( IOTools.openFile( options.crop, "r") )
+    cropper = GTF.readAsIntervals( other_gffs )
     ntotal = 0
     for contig in cropper.keys():
         intersector = bx.intervals.intersection.Intersecter()
@@ -442,14 +441,14 @@ def main( argv = None ):
     if options.is_gtf:
         gffs = GTF.iterator( options.stdin )
     else:
-        gffs = GFF.iterator( options.stdin )
+        gffs = GTF.iterator( options.stdin )
 
     if options.add_up_flank or options.add_down_flank:
         
         if options.is_gtf:
             iterator = GTF.flat_gene_iterator( gffs )
         else:
-            iterator = GFF.joined_iterator( gffs )
+            iterator = GTF.joined_iterator( gffs )
         
         for chunk in iterator:
             is_positive = Genomics.IsPositiveStrand( chunk[0].strand )
@@ -469,28 +468,28 @@ def main( argv = None ):
                         chunk[0].start = max( 0, chunk[0].start - options.add_down_flank )
             else:
                 if options.add_up_flank:
-                    gff = GFF.Entry()
+                    gff = GTF.Entry()
                     if is_positive:
-                        gff.Fill( chunk[0] )
+                        gff.copy( chunk[0] )
                         gff.end = gff.start
                         gff.start = max( 0, gff.start - options.add_up_flank )
                         chunk.insert(0, gff)
                     else:
-                        gff.Fill( chunk[-1] )
+                        gff.copy( chunk[-1] )
                         gff.start = gff.end
                         gff.end = min( lcontig, gff.end + options.add_up_flank )
                         chunk.append( gff )
                     gff.feature = "5-Flank"
                     gff.mMethod = "gff2gff"
                 if options.add_down_flank:
-                    gff = GFF.Entry()
+                    gff = GTF.Entry()
                     if is_positive:
-                        gff.Fill( chunk[-1] )
+                        gff.copy( chunk[-1] )
                         gff.start = gff.end
                         gff.end = min( lcontig, gff.end + options.add_up_flank )
                         chunk.append( gff )
                     else:
-                        gff.Fill( chunk[0] )
+                        gff.copy( chunk[0] )
                         gff.end = gff.start
                         gff.start = max( 0, gff.start - options.add_up_flank )
                         chunk.insert(0, gff)
@@ -504,11 +503,11 @@ def main( argv = None ):
 
     elif options.complement_groups:
         
-        iterator = GFF.joined_iterator( gffs )
+        iterator = GTF.joined_iterator( gffs )
         for chunk in iterator:
             chunk.sort()
-            x = GFF.Entry()
-            x.Fill( chunk[0] )
+            x = GTF.Entry()
+            x.copy( chunk[0] )
             x.start = x.end
             x.feature = "intron"
             for c in chunk[1:]:
@@ -518,12 +517,12 @@ def main( argv = None ):
             
     elif options.combine_groups:
         
-        iterator = GFF.joined_iterator( gffs )
+        iterator = GTF.joined_iterator( gffs )
 
         for chunk in iterator:
             chunk.sort()
-            x = GFF.Entry()
-            x.Fill( chunk[0] )
+            x = GTF.Entry()
+            x.copy( chunk[0] )
             x.end = chunk[-1].end
             x.feature = "segment"
             options.stdout.write( str(x) + "\n" )
@@ -576,7 +575,7 @@ def main( argv = None ):
             options.stdlog.write("# filter: contig=%s, strand=%s, interval=%s\n" % (str(contig), str(strand), str(interval)))
             options.stdlog.flush()
 
-        for gff in GFF.iterator_filtered( gffs, contig = contig, strand = strand, interval = interval ):
+        for gff in GTF.iterator_filtered( gffs, contig = contig, strand = strand, interval = interval ):
             options.stdout.write( str(gff) + "\n" )
 
     elif options.sanitize:

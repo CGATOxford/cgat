@@ -61,7 +61,6 @@ import string
 import re
 import optparse
 import CGAT.Experiment as E
-import CGAT.GFF as GFF
 import CGAT.GTF as GTF
 import CGAT.Genomics as Genomics
 import CGAT.AGP as AGP
@@ -134,17 +133,17 @@ if __name__ == "__main__":
     if options.is_gtf:
         iterator = GTF.transcript_iterator( GTF.iterator( sys.stdin ) )
     else:
-        gffs = GFF.iterator( sys.stdin )
+        gffs = GTF.iterator( sys.stdin )
         if options.merge:
-            iterator = GFF.joined_iterator( gffs )
+            iterator = GTF.joined_iterator( gffs )
         else:
-            iterator =  GFF.chunk_iterator( gffs )
+            iterator =  GTF.chunk_iterator( gffs )
 
     masks = None
     if options.filename_masks:
         masks = {}
         with open( options.filename_masks, "r") as infile:
-            e = GFF.readAsIntervals( GFF.iterator( infile ) )
+            e = GTF.readAsIntervals( GFF.iterator( infile ) )
 
         # convert intervals to intersectors
         for contig in e.keys():

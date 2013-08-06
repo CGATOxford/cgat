@@ -88,7 +88,6 @@ import random
 import collections
 import itertools
 
-import CGAT.GFF as GFF
 import CGAT.GTF as GTF
 import CGAT.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
@@ -832,7 +831,7 @@ def main( argv = None ):
 
     elif options.remove_overlapping:
         
-        index = GFF.readAndIndex( GFF.iterator( IOTools.openFile( options.remove_overlapping, "r" ) ) )
+        index = GTF.readAndIndex( GFF.iterator( IOTools.openFile( options.remove_overlapping, "r" ) ) )
         
         for gffs in GTF.transcript_iterator(GTF.iterator(options.stdin)):
             ninput += 1

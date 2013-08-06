@@ -68,7 +68,6 @@ import CGAT.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Blat as Blat
 import CGAT.Genomics as Genomics
-import CGAT.GFF as GFF
 import CGAT.GTF as GTF
 import alignlib
 import CGAT.Intervals as Intervals
@@ -116,7 +115,7 @@ if __name__ == '__main__':
         iterator = GTF.transcript_iterator( GTF.iterator_filtered( GTF.iterator( sys.stdin ), feature="exon" ), 
                                             strict = not options.allow_duplicates )
     else:
-        iterator = GFF.joined_iterator( GFF.iterator(sys.stdin) )
+        iterator = GTF.joined_iterator( GFF.iterator(sys.stdin) )
 
     if options.with_header:
         options.stdout.write( Blat.Match().getHeader() + "\n" )

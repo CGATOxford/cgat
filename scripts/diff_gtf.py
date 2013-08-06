@@ -73,7 +73,6 @@ import re
 import optparse
 import collections
 import CGAT.Experiment as E
-import CGAT.GFF as GFF
 import CGAT.GTF as GTF
 import bx.intervals.intersection
 

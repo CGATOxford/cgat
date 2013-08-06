@@ -68,7 +68,6 @@ import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Genomics as Genomics
-import CGAT.GFF as GFF
 import CGAT.GTF as GTF
 import CGAT.Variants as Variants
 import alignlib
@@ -161,7 +160,7 @@ def main( argv = None ):
     if options.is_gtf:
         infile_gff = GTF.iterator( options.stdin)
     else:
-        infile_gff = GFF.iterator( options.stdin)
+        infile_gff = GTF.iterator( options.stdin)
 
     dbhandle = sqlite3.connect( options.database )
 

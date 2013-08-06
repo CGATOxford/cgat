@@ -80,7 +80,6 @@ import itertools
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import pysam
-import CGAT.GFF as GFF
 
 import pyximport
 pyximport.install(build_in_temp=False)

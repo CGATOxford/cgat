@@ -38,8 +38,8 @@ and :mod:`IndexedFasta` for quick acces to sequence fragments.
 
 By default, the database is itself a :term:`fasta` formatted file in which
 all line breaks and other white space characters have been removed.
- Compression methods are available to conserve disk space,
-though they do come at a performance penalty.
+Compression methods are available to conserve disk space, though they do 
+come at a performance penalty.
 
 See also http://pypi.python.org/pypi/pyfasta for another implementation. 
 Samtools provides similar functionality with the ``samtools faidx`` command.

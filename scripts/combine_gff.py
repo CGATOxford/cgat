@@ -60,7 +60,6 @@ import re
 import optparse
 import CGAT.Experiment as E
 import CGAT.PredictionParser as PredictionParser
-import CGAT.GFF as GFF
 
 if __name__ == "__main__":
 
@@ -79,9 +78,9 @@ if __name__ == "__main__":
     for line in sys.stdin:
         if line[0] == "#" : continue
         if options.format in ("full", "first" ):
-            last_e = GFF.Entry()
+            last_e = GTF.Entry()
         else:
-            last_e = GFF.Entry()
+            last_e = GTF.Entry()
         last_e.Read(line)
         break
     
@@ -90,12 +89,12 @@ if __name__ == "__main__":
         if line[0] == "#" : continue
 
         if options.format in ("full", "first" ):
-            e = GFF.Entry()
+            e = GTF.Entry()
         else:
-            e = GFF.Entry()
+            e = GTF.Entry()
         e.Read(line)
 
-        if not GFF.Overlap( last_e, e):
+        if not GTF.Overlap( last_e, e):
             print str(last_e)
             last_e = e
         else:

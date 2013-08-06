@@ -40,7 +40,8 @@ shared_dependencies = [
     'pybedtools>=0.6.2',
     'rdflib>=0.4.1',
     'hgapi>=1.3.0',
-    'threadpool>=1.2.7',]
+    'threadpool>=1.2.7',
+    'PyYAML>=3.1.0']
 
 # check if within CGAT, do not install dependencies
 # curdir = os.getcwd()

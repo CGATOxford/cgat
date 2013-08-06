@@ -41,7 +41,6 @@ import time
 import os
 import itertools
 import CGAT.Experiment as E
-import CGAT.GFF as GFF
 import CGAT.GTF as GTF
 import CGAT.Bed as Bed
 
@@ -80,7 +79,7 @@ def main( argv = sys.argv ):
     if is_gtf:
         iterator = GTF.iterator( options.stdin )
     else:
-        iterator = GFF.iterator( options.stdin )
+        iterator = GTF.iterator( options.stdin )
 
     if options.track:
         all_input = list( iterator )

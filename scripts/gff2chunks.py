@@ -66,7 +66,6 @@ import re
 import optparse
 import os
 import CGAT.Experiment as E
-import CGAT.GFF as GFF
 
 class OutputChunk:
     def __init__(self, options):
@@ -136,7 +135,7 @@ if __name__ == "__main__":
 
     (options, args) = E.Start( parser )
 
-    gffs = GFF.iterator( sys.stdin )
+    gffs = GTF.iterator( sys.stdin )
     
     ninput, noutput, nchunks = 0, 0, 0
 

@@ -31,7 +31,7 @@ PredictionParser.py - Parser for exonerate/genewise output
 """
 import os, sys, string, re, getopt, tempfile, copy
 
-import Genomics, GFF
+import Genomics, GTF
 try: import alignlib
 except ImportError: pass
 
@@ -1937,13 +1937,13 @@ class PredictionParserGFF(PredictionParser):
         for line in lines:
             if line[0] == "#": continue
         
-            gff_entry = GFF.Entry()
-            gff_entry.Read( line )
+            gff_entry = GTF.Entry()
+            gff_entry.read( line )
 
             entry = PredictionParserEntry()
-            entry.mSbjctToken = gff_entry.mName
-            entry.mSbjctGenomeFrom = gff_entry.mFrom
-            entry.mSbjctGenomeTo = gff_entry.mTo
+            entry.mSbjctToken = gff_entry.name
+            entry.mSbjctGenomeFrom = gff_entry.from
+            entry.mSbjctGenomeTo = gff_entry.to
             
             (query, sbjct_token, sbjct_strand,
              phase, exon_id, peptide_from, peptide_to,

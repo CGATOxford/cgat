@@ -70,7 +70,6 @@ Version: $Id: gff2exons.py 2447 2009-01-27 17:12:48Z andreas $
 """ % sys.argv[0]
 
 import CGAT.Experiment as E
-import CGAT.GFF as GFF
 import CGAT.Genomics as Genomics
 import CGAT.IndexedFasta as IndexedFasta
 
@@ -185,7 +184,7 @@ if __name__ == "__main__":
     if (options.remove_unknown_contigs or options.translate_contigs) and not fasta:
         raise ValueError("please supply genomic sequence.")
 
-    gffs = GFF.iterator( sys.stdin )
+    gffs = GTF.iterator( sys.stdin )
 
     map_peptides2genes = {}
 

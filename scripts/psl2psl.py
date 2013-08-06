@@ -105,7 +105,6 @@ import CGAT.Experiment as E
 import CGAT.Stats as Stats
 import CGAT.Genomics as Genomics
 import CGAT.Blat as Blat
-import CGAT.GFF as GFF
 import CGAT.GTF as GTF
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.IndexedGenome as IndexedGenome
@@ -148,7 +147,7 @@ def readIntervals( infile, options ):
 
         index = IndexedGenome.Simple()
 
-        for g in GFF.iterator(infile):
+        for g in GTF.iterator(infile):
         
             index.add( g.contig, g.start, g.end )
             ninput += 1

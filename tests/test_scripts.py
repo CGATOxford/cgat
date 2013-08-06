@@ -24,17 +24,22 @@ def check_script( test_name, script, stdin, options, outputs, references, workin
     tmpdir = tempfile.mkdtemp()
 
     stdout = os.path.join( tmpdir, 'stdout' )
-    if stdin: stdin = '< %s'
+    if stdin: 
+        if stdin.endswith( ".gz"):
+            stdin = '< <( zcat %s/%s)' % (os.path.abspath(workingdir), stdin)
+        else:
+            stdin = '< %s/%s' % (os.path.abspath(workingdir), stdin)
     else: stdin = ""
         
     options = re.sub( "%TMP%", tmpdir, options )
     options = re.sub( "%DIR%", os.path.abspath(workingdir), options )
 
-    statement = ( 'python %(script)s '
-                  ' %(options)s'
-                  ' %(stdin)s'
-                  ' > %(stdout)s' ) % locals()
-    
+    # use /bin/bash in order to enable "<( )" syntax in shells 
+    statement = ( "/bin/bash -c 'python %(script)s "
+                  " %(options)s"
+                  " %(stdin)s"
+                  " > %(stdout)s'" ) % locals()
+
     retval = subprocess.call( statement, 
                               shell = True,
                               cwd = tmpdir )

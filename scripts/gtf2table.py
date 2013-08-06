@@ -193,7 +193,6 @@ import bisect
 import array
 import collections
 import itertools
-import CGAT.GFF as GFF
 import CGAT.GTF as GTF
 import CGAT.Bed as Bed
 import CGAT.IOTools as IOTools
@@ -258,7 +257,7 @@ def readIntervalsFromGFF( filename_gff, source, feature,
             # from preparsed gff entries
             iterator_gff = filename_gff
 
-        gff_iterator = GFF.iterator_filtered( iterator_gff,
+        gff_iterator = GTF.iterator_filtered( iterator_gff,
                                               feature = feature,
                                               source = source )
 
@@ -269,7 +268,7 @@ def readIntervalsFromGFF( filename_gff, source, feature,
                                      merge_genes = merge_genes,
                                      use_strand = use_strand )
         elif format == "gff":
-            e = GFF.readAsIntervals( gff_iterator, 
+            e = GTF.readAsIntervals( gff_iterator, 
                                      with_values = with_values, 
                                      with_records = with_records,
                                      use_strand = use_strand )

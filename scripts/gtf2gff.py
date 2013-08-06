@@ -284,7 +284,6 @@ import types
 import collections
 import itertools
 
-import CGAT.GFF as GFF
 import CGAT.GTF as GTF
 import CGAT.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
@@ -405,7 +404,7 @@ def buildTerritories( iterator, fasta, method, options ):
         last_end, prev_end = 0, 0
         last_contig = None
         last = None
-        for matches in GFF.iterator_overlaps( iterator ):
+        for matches in GTF.iterator_overlaps( iterator ):
 
             this_start = min( [ x.start for x in matches ] )
             this_end = max( [ x.end for x in matches ] )
@@ -757,7 +756,7 @@ def annotateGREATDomains( iterator, fasta, options ):
     regions.sort( key = lambda x: (x.contig, x.start ) )
 
     # iterate within groups of overlapping basal regions
-    groups = list( GFF.iterator_overlaps( iter(regions) ))
+    groups = list( GTF.iterator_overlaps( iter(regions) ))
     counter.groups = len(groups)
 
     last_end = 0

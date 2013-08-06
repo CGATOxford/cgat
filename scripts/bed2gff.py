@@ -59,7 +59,6 @@ import shutil
 
 import CGAT.Experiment as E
 import CGAT.Stats as Stats
-import CGAT.GFF as GFF
 import CGAT.GTF as GTF
 import CGAT.Bed as Bed
 import CGAT.IndexedFasta as IndexedFasta
@@ -85,7 +84,7 @@ def main( argv = sys.argv ):
     if as_gtf:
         gff = GTF.Entry()
     else:
-        gff = GFF.Entry()
+        gff = GTF.Entry()
 
     gff.source = "bed"
     gff.feature = "exon"

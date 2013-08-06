@@ -4,3 +4,9 @@ version:
     outputs: [stdout]
     references: []
     options: --version
+
+complement_groups:
+    stdin: hg19.chr19.gtf.gz
+    outputs: [stdout]
+    references: [test1.gtf]
+    options: --is-gtf --complement-groups
