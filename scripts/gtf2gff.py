@@ -268,12 +268,13 @@ Usage
 -----
 
 Type::
-    python gtf2gff.py --method=genome < geneset.gtf > annotations.gff
+    python gtf2gff.py --method=genome --genome-file=hg19 < geneset.gtf > annotations.gff
 
 for command line help.
 
-Code
-----
+Command line options
+---------------------
+
 """
 
 import os
@@ -552,7 +553,7 @@ def annotateExons( iterator, fasta, options ):
                 intervals[ (e.start, e.end) ].append( (i+1,nexons) )
 
         gtf = GTF.Entry()
-        gtf.fromGFF( this[0][0], this[0][0].gene_id, this[0][0].gene_id )
+        gtf.fromGTF( this[0][0], this[0][0].gene_id, this[0][0].gene_id )
         gtf.addAttribute( "ntranscripts", ntranscripts )        
 
         gtfs = []
@@ -614,7 +615,7 @@ def annotatePromoters( iterator, fasta, options ):
             transcript_ids = ["%i" % (x+1) for x in range(len(promotors) )]
             
         gtf = GTF.Entry()
-        gtf.fromGFF( gene[0][0], gene[0][0].gene_id, gene[0][0].gene_id )
+        gtf.fromGTF( gene[0][0], gene[0][0].gene_id, gene[0][0].gene_id )
         gtf.source = "promotor"
 
         x = 0
@@ -674,7 +675,7 @@ def annotateRegulons( iterator, fasta, tss, options ):
             transcript_ids = ["%i" % (x+1) for x in range(len(regulons) )]
             
         gtf = GTF.Entry()
-        gtf.fromGFF( gene[0][0], gene[0][0].gene_id, gene[0][0].gene_id )
+        gtf.fromGTF( gene[0][0], gene[0][0].gene_id, gene[0][0].gene_id )
         gtf.source = "regulon"
 
         x = 0
@@ -739,7 +740,7 @@ def annotateGREATDomains( iterator, fasta, options ):
         start, end = min( x[0] for x in regulons), max(x[1] for x in regulons )
         
         gtf = GTF.Entry()
-        gtf.fromGFF( gene[0][0], gene[0][0].gene_id, gene[0][0].gene_id )
+        gtf.fromGTF( gene[0][0], gene[0][0].gene_id, gene[0][0].gene_id )
         gtf.source = "greatdomain"
         gtf.start, gtf.end = start, end
         regions.append( gtf )
@@ -858,7 +859,7 @@ def annotateTTS( iterator, fasta, options ):
             transcript_ids = ["%i" % (x+1) for x in range(len(tts) )]
             
         gtf = GTF.Entry()
-        gtf.fromGFF( gene[0][0], gene[0][0].gene_id, gene[0][0].gene_id )
+        gtf.fromGTF( gene[0][0], gene[0][0].gene_id, gene[0][0].gene_id )
         gtf.source = "tts"
 
         x = 0
@@ -1049,6 +1050,10 @@ def main( argv = None ):
     parser.add_option( "--min-intron-length", dest="min_intron_length", type="int",
                       help="minimum intron length. If the distance between two consecutive exons is smaller, the region will be marked 'unknown' [default=%default]."  )
 
+    parser.add_option("-o", "--sort", dest="sort", action="store_true",
+                      help="sort input before processing. Otherwise, the input is assumed "
+                      "to be sorted [default=%default]."  )
+
     parser.set_defaults(
         genome_file = None,
         flank = 1000,
@@ -1064,6 +1069,7 @@ def main( argv = None ):
         upstream = 5000,
         downstream = 5000,
         detail = "exons",
+        sort = False,
         )
 
     (options, args) = E.Start( parser )
@@ -1071,7 +1077,7 @@ def main( argv = None ):
     if options.genome_file:
         fasta = IndexedFasta.IndexedFasta( options.genome_file )
     else:
-        fasta = None
+        raise ValueError("please specify a --genome-file")
 
     if options.restrict_source:
         iterator = GTF.iterator_filtered( GTF.iterator(options.stdin), 
@@ -1080,6 +1086,10 @@ def main( argv = None ):
         iterator = GTF.iterator_filtered( GTF.iterator(options.stdin), source = "protein_coding" )
     else:
         iterator = GTF.iterator(options.stdin)
+
+    if options.sort:
+        print "here"
+        iterator = GTF.iterator_sorted( iterator, sort_order = "position" )
 
     if options.method == "full" or options.method == "genome":
         segmentor = annotateGenome( iterator, fasta, options )

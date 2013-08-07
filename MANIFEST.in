@@ -19,3 +19,7 @@ include scripts/gff2gff.py
 include scripts/gtf2gff.py
 include scripts/gtf2table.py
 
+# extensions
+include scripts/*.pyxbld
+include scripts/*.pyx
+

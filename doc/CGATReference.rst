@@ -8,17 +8,26 @@ collection.
 Genomics
 ========
 
-:doc:`scripts/index_fasta`
-    Build an index for a fasta file. Pre-requisite for many CGAT tools.
-	
+:doc:`scripts/bed2gff`
+    Convert a :term:`bed` formatted file to a :term:`gff` or
+    :term:`gtf` formatted file.
+
 :doc:`scripts/gff2gff`
     Work on :term:`gff` formatted files with genomic features. This 
     tools sorts/renames feature files, reconciles chromosome names,
     and more.
 
-:doc:`scripts/bed2gff`
-    Convert a :term:`bed` formatted file to a :term:`gff` or
-    :term:`gtf` formatted file.
+:doc:`scripts/gtf2gff`
+    Translate a gene set into genomic annotations such as introns,
+    intergenic regions, regulatory domains, etc.
+
+:doc:`scripts/gtf2table`
+    Annotate transcripts in a :term:`gtf` formatted file. Annotations
+    can be in reference to a second gene set (fragments, extensions), 
+    aligned reads (coverage, intron overrun, ...) or densities.
+
+:doc:`scripts/index_fasta`
+    Build an index for a fasta file. Pre-requisite for many CGAT tools.
 	
 NGS
 ===
@@ -133,8 +142,6 @@ Unsorted
 :doc:`scripts/gtf2gtf`
 
 :doc:`scripts/gtf2tab`
-
-:doc:`scripts/gtf2table`
 
 :doc:`scripts/gtfs2graph`
 

@@ -42,3 +42,71 @@ following are true:
    the test works.
 	
 
+Building extensions
+===================
+
+Using pyximport_, it is (relatively) straight-forward to add optimized
+C-code to python scripts and, for example, access pysam internals and
+the underlying samtools library. See for example :doc:`bam2stats`.
+
+To add an extension, the following needs to be in place:
+
+1. The main script (:file:`bam2stats.py`). The important lines in this script
+   are::
+
+      try:
+          import pyximport
+          pyximport.install()
+          import _bam2stats
+      except ImportError:
+          import CGAT._bam2stats as _bam2stats
+
+   The snippet first attempts to build and import the extension by
+   setting up pyximport_ and then importing the cython module
+   as :file:`_bam2stats`. 
+   In case this fails, as is the case for an installed code, it 
+   looks for a pre-built extension (by ``setup.py``) in the CGAT 
+   pacakge.
+ 
+2. The cython implementation :file:`_bam2stats.pyx`. This script imports the pysam API via::
+
+      from csamtools cimport *
+
+   This statement imports, amongst others, :class:`AlignedRead` into the namespace. Speed can be
+   gained from declaring variables. For example, to efficiently iterate
+   over a file, an :class:`AlignedRead` object is declared::
+
+      # loop over samfile
+      cdef AlignedRead read
+      for read in samfile:
+          ...
+
+3. A :file:`pyxbld` providing pyximport_ with build information. 
+   Required are the locations of the samtools and pysam header libraries 
+   of a source installation of pysam plus the :file:`csamtools.so` 
+   shared library. For example::
+
+     def make_ext(modname, pyxfilename):
+	 from distutils.extension import Extension
+	 import pysam, os
+	 dirname = os.path.dirname( pysam.__file__ )[:-len("pysam")]
+	 return Extension(name = modname,
+			  sources=[pyxfilename],
+			  extra_link_args=[ os.path.join( dirname,
+			  	 "csamtools.so")],
+			  include_dirs =  pysam.get_include(),
+			  define_macros = pysam.get_defines() )
+
+
+If the script :file:`pysam_flagstat.py` is called the first time, pyximport_ will 
+compile the cython_ extension :file:`_pysam_flagstat.pyx` and make it available 
+to the script. Compilation requires a working compiler and cython_ installation.
+Each time :file:`_pysam_flagstat.pyx` is modified, a new compilation will take place.
+
+pyximport_ comes with cython_.
+
+.. _cython: http://cython.org/
+
+.. _pyximport: http://www.prescod.net/pyximport/
+
+

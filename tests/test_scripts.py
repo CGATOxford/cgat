@@ -30,9 +30,12 @@ def check_script( test_name, script, stdin, options, outputs, references, workin
         else:
             stdin = '< %s/%s' % (os.path.abspath(workingdir), stdin)
     else: stdin = ""
-        
-    options = re.sub( "%TMP%", tmpdir, options )
-    options = re.sub( "%DIR%", os.path.abspath(workingdir), options )
+
+    if options:
+        options = re.sub( "%TMP%", tmpdir, options )
+        options = re.sub( "%DIR%", os.path.abspath(workingdir), options )
+    else:
+        options = ""
 
     # use /bin/bash in order to enable "<( )" syntax in shells 
     statement = ( "/bin/bash -c 'python %(script)s "
@@ -75,7 +78,7 @@ def test_scripts():
 
     if os.path.exists( "tests/test_scripts.yaml" ):
         config = yaml.load( open( "tests/test_scripts.yaml" ) )
-        if "restrict" in config:
+        if "restrict" in config and config["restrict"]:
             values = config["restrict"]
             if "glob" in values:
                 scriptdirs = glob.glob( "tests/*.py" )

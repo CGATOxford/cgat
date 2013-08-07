@@ -36,7 +36,7 @@ on it and outputs the new intervals in :term:`gff` format.
 
 Extension options:
 
-`--extend`
+``--extend``
    extend existing features
 
 ``--add-up-flank/--add-down-flank``
@@ -44,29 +44,29 @@ Extension options:
 
 Segment transformations:
 
---crop
+``--crop``
    crop features according to features in a separate gff file.
 
---crop-unique
+``--crop-unique``
    remove non-unique features from gff file.
 
---merge-features
+``--merge-features``
    merge consecutive features.
 
---join-features
+``--join-features``
    group consecutive features
 
 Filtering options:
 
---filter-range
+``--filter-range``
    extract features overlapping a chromosomal range.
 
---sanitize
+``--sanitize``
    reconcile chromosome names between ENSEMBL/UCSC or with an indexed
    genomic fasta file (see :doc:`index_fasta`). Raises an exception if
-   an unknown contig is found (unless --skip-missing is set).
+   an unknown contig is found (unless ``--skip-missing`` is set).
 
---remove-contigs
+``--remove-contigs``
    remove contig matching to a series of regular expressions.
 
 
@@ -76,7 +76,8 @@ Usage
 
 Make sure that a :term:`gff` formatted file contains only features on placed chromosomes::
 
-   cat in.gff | gff2gff.py --sanitize=genome --genome-file=hg19 --skip-missing 
+   cat in.gff 
+   | gff2gff.py --sanitize=genome --genome-file=hg19 --skip-missing 
    | gff2gff.py --remove-contigs="chrUn,_random" > gff.out
 
 Type::
@@ -156,7 +157,7 @@ def combineGFF( gffs, options, merge = True ):
             ninput += 1
             y = GTF.Entry()
             t = options.output_format % id
-            y.fromGFF( to_join[0], t, t )
+            y.fromGTF( to_join[0], t, t )
             y.start = to_join[0].start
             y.end = to_join[-1].end
             
@@ -173,7 +174,7 @@ def combineGFF( gffs, options, merge = True ):
             for x in to_join:
                 y = GTF.Entry()
                 t = options.output_format % id
-                y.fromGFF( x, t, t )
+                y.fromGTF( x, t, t )
                 options.stdout.write( "%s\n" % str(y ) )
                 nfeatures += 1
 

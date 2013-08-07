@@ -10,14 +10,15 @@ intervalaccuracy:
     outputs: [tssprofile.lengths.tsv.gz, geneprofile.lengths.tsv.gz, tssprofile.none.tsv.gz, geneprofile.none.tsv.gz]
     references: [test1.tssprofile.lengths.tsv.gz, test1.geneprofile.lengths.tsv.gz, test1.tssprofile.none.tsv.gz, test1.geneprofile.none.tsv.gz]
 
+# do not compare pngs
 baseaccuracy:
     stdin: null 
     options: --force --method=geneprofile -b %DIR%/multipleReadsSplicedOutAllIntronsAndSecondExon.bam -g %DIR%/onegene.gtf.gz --reporter=gene --resolution-cds=1400 --base-accuracy
-    outputs: [geneprofile.detail.png, geneprofile.full.png, geneprofile.lengths.tsv.gz, geneprofile.none.tsv.gz]
-    references: [test2.geneprofile.detail.png, test2.geneprofile.full.png, test2.geneprofile.lengths.tsv.gz, test2.geneprofile.none.tsv.gz]
+    outputs: [geneprofile.lengths.tsv.gz, geneprofile.none.tsv.gz]
+    references: [test2.geneprofile.lengths.tsv.gz, test2.geneprofile.none.tsv.gz]
 
 introns:
     stdin: null
     options: --force -b %DIR%/multipleReadsSplicedOutAllIntronsAndSecondExon.bam -g %DIR%/onegene.gtf.gz --method=geneprofilewithintrons  --reporter=gene --resolution-cds=1400 --resolution-introns=1400 --base-accuracy
-    outputs: [geneprofilewithintrons.detail.png, geneprofilewithintrons.full.png, geneprofilewithintrons.lengths.tsv.gz, geneprofilewithintrons.none.tsv.gz]
-    references: [test3.geneprofilewithintrons.detail.png, test3.geneprofilewithintrons.full.png, test3.geneprofilewithintrons.lengths.tsv.gz, test3.geneprofilewithintrons.none.tsv.gz]
+    outputs: [geneprofilewithintrons.lengths.tsv.gz, geneprofilewithintrons.none.tsv.gz]
+    references: [test3.geneprofilewithintrons.lengths.tsv.gz, test3.geneprofilewithintrons.none.tsv.gz]

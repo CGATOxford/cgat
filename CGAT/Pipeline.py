@@ -49,7 +49,7 @@ import drmaa
 import hgapi
 
 # CGAT specific options - later to be removed
-from CGAT import *
+from Local import *
 
 from ruffus import *
 
@@ -93,8 +93,8 @@ PARAMS = {
 
 # path until parameter sharing is resolved between CGAT module
 # and the pipelines module.
-import CGAT
-CGAT.PARAMS = PARAMS
+import Local
+Local.PARAMS = PARAMS
 
 hostname = os.uname()[0]
 

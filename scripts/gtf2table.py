@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-gtf2table.py - annotate genes/transrcipts
+gtf2table.py - annotate genes/transcripts
 =========================================
 
 :Author: Andreas Heger
@@ -168,11 +168,8 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-
-Code
-----
+Command line options
+--------------------
 
 '''
 
@@ -212,9 +209,12 @@ import numpy
 import CGAT.IndexedGenome as IndexedGenome
 import pysam
 
-import pyximport
-pyximport.install(build_in_temp=False)
-import _gtf2table
+try:
+    import pyximport
+    pyximport.install(build_in_temp=False)
+    import _gtf2table
+except ImportError:
+    import CGAT._gtf2table as _gtf2table
 
 def readIntervalsFromGFF( filename_gff, source, feature, 
 			  with_values = False, with_records = False, fasta = None, 

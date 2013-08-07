@@ -90,9 +90,12 @@ import pysam
 import CGAT.Bed as Bed
 import numpy
 
-import pyximport
-pyximport.install(build_in_temp=False)
-import _bam2peakshape
+try:
+    import pyximport
+    pyximport.install(build_in_temp=False)
+    import _bam2peakshape
+except ImportError:
+    import CGAT._bam2peakshape as _bam2peakshape
 
 def main( argv = None ):
     """script main.

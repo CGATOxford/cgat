@@ -389,24 +389,7 @@ def main( argv = None ):
 
     elif options.sort:
 
-        entries = list(GTF.iterator(options.stdin))
-        if options.sort == "gene":
-            entries.sort( key = lambda x: (x.gene_id, x.transcript_id, x.contig, x.start) )
-        elif options.sort == "gene":
-            entries.sort( key = lambda x: (x.gene_id, x.contig, x.start) )
-        elif options.sort == "contig+gene":
-            entries.sort( key = lambda x: (x.contig,x.gene_id,x.transcript_id,x.start) )
-        elif options.sort == "transcript":
-            entries.sort( key = lambda x: (x.transcript_id, x.contig, x.start) )
-        elif options.sort == "position":
-            entries.sort( key = lambda x: (x.contig, x.start) )
-        elif options.sort == "position+gene":
-            entries.sort( key = lambda x: (x.gene_id, x.start) )
-            genes = list( GTF.flat_gene_iterator(entries) )
-            genes.sort( key = lambda x: (x[0].contig, x[0].start) )
-            entries = IOTools.flatten( genes )
-
-        for gff in entries:
+        for gff in iterator_sorted( GTF.iterator( options.stdin ), sort_order = options.sort ):
             ninput += 1
             options.stdout.write( "%s\n" % str(gff) )                
             noutput += 1
@@ -528,7 +511,7 @@ def main( argv = None ):
 
             for start, end in intervals:
                 y = GTF.Entry()
-                y.fromGFF( chunks[0][0], gene_id, transcript_id )
+                y.fromGTF( chunks[0][0], gene_id, transcript_id )
                 y.start = start
                 y.end = end
                 y.strand = strand

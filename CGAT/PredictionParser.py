@@ -1942,8 +1942,8 @@ class PredictionParserGFF(PredictionParser):
 
             entry = PredictionParserEntry()
             entry.mSbjctToken = gff_entry.name
-            entry.mSbjctGenomeFrom = gff_entry.from
-            entry.mSbjctGenomeTo = gff_entry.to
+            entry.mSbjctGenomeFrom = gff_entry.start
+            entry.mSbjctGenomeTo = gff_entry.end
             
             (query, sbjct_token, sbjct_strand,
              phase, exon_id, peptide_from, peptide_to,

@@ -74,8 +74,8 @@ import CGAT.PredictionParser as PredictionParser
 import CGAT.Genomics as Genomics
 import CGAT.Exons as Exons
 import CGAT.IndexedFasta as IndexedFasta
-import CGAT.GFF as GFF
 import CGAT.IOTools as IOTools
+import CGAT.GTF as GTF
 
 from predict_genes import PredictorExonerate
 
@@ -459,25 +459,25 @@ if __name__ == "__main__":
     elif options.output_format == "fasta":
         
         if options.format == "gff":
-            gff_entries = GFF.readFromFile( sys.stdin )
+            gff_entries = GTF.readFromFile( sys.stdin )
             n = 0
             ninput = len(gff_entries)
             for e in gff_entries:
 
-                sequence = fasta.getSequence( e.mName, e.strand,
+                sequence = fasta.getSequence( e.name, e.strand,
                                               e.start, e.end,
                                               converter )
 
                 n += 1
                 try:
-                    id = e.mFields[options.gff_field_id]
+                    id = e.fields[options.gff_field_id]
                 except KeyError:
                     nskipped += 1
                     continue
 
                 noutput += 1
-                options.stdout.write( ">%s %s:%s:%s:%s\n%s\n" % (e.mFields[options.gff_field_id],
-                                                                 e.mName, e.strand,
+                options.stdout.write( ">%s %s:%s:%s:%s\n%s\n" % (e.fields[options.gff_field_id],
+                                                                 e.name, e.strand,
                                                                  e.start, e.end, sequence ) )
         else:
             raise"unknown format %s for output option %s" % (options.format, options.output_format)

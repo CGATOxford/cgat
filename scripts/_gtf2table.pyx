@@ -19,7 +19,6 @@ import bisect
 import array
 import collections
 import itertools
-import CGAT.GFF as GFF
 import CGAT.GTF as GTF
 import CGAT.Bed as Bed
 import CGAT.IOTools as IOTools

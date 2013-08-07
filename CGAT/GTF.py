@@ -178,7 +178,7 @@ class Entry:
             self.start = lcontig - y
             self.end   = lcontig - x
 
-    def fromGFF( self, other, gene_id, transcript_id ):
+    def fromGTF( self, other, gene_id, transcript_id ):
         """fill from other entry."""
         self.contig = other.contig
         self.source = other.source
@@ -588,6 +588,28 @@ def iterator_min_feature_length( gff_iterator, min_length, feature="exon" ):
         intervals = Intervals.combine( intervals )
         t = sum( ( x[1] - x[0] for x in intervals ) )
         if t >= min_length: yield gffs
+
+def iterator_sorted( gff_iterator, sort_order = "gene" ):
+    '''sort input and yield sorted output.'''
+    entries = list(gff_iterator)
+    if sort_order == "gene":
+        entries.sort( key = lambda x: (x.gene_id, x.transcript_id, x.contig, x.start) )
+    elif sort_order == "gene":
+        entries.sort( key = lambda x: (x.gene_id, x.contig, x.start) )
+    elif sort_order == "contig+gene":
+        entries.sort( key = lambda x: (x.contig,x.gene_id,x.transcript_id,x.start) )
+    elif sort_order == "transcript":
+        entries.sort( key = lambda x: (x.transcript_id, x.contig, x.start) )
+    elif sort_order == "position":
+        entries.sort( key = lambda x: (x.contig, x.start) )
+    elif sort_order == "position+gene":
+        entries.sort( key = lambda x: (x.gene_id, x.start) )
+        genes = list( flat_gene_iterator(entries) )
+        genes.sort( key = lambda x: (x[0].contig, x[0].start) )
+        entries = IOTools.flatten( genes )
+
+    for entry in entries:
+        yield entry
 
 def toIntronIntervals( chunk ):
     '''convert a set of gtf elements within a transcript to intron coordinates.
