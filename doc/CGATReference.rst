@@ -32,6 +32,8 @@ Genomics
 :doc:`scripts/index_fasta`
     Build an index for a fasta file. Pre-requisite for many CGAT tools.
 	
+:doc:`fasta2kmercontent`
+    Count kmer content in a set of :term:`fasta` sequences.
 
 
 NGS
