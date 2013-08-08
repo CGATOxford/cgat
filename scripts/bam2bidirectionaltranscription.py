@@ -32,12 +32,15 @@ bam2bidirectionaltranscription.py
 Purpose
 -------
 
-In an RNA-seq experiment transcripts are often built using assembly software results in
-many single exons transfrags. These may be artifacts due to the parameters used to build
-models or they may be real RNA molecules. eRNAs are often bidirectional, producing
-short transcripts from each strand of the DNA. This script is used to assess the 
-ratio of binding between sense and antisense transcripts emanating from single exon
-transcripts defined in a gtf file.
+The purpose of this script is two-fold.
+
+1. Stranded RNA-seq libraries are becoming more and more commonplace. As such, a prudent 
+   quality control step after alignment to assess the observed strandedness across a set of transcripts of
+   interest (GTF file as input).
+
+2. Bidirectional transcription at intergenic loci is an area of interest across biological science.
+   This script allows the user to assess the level of bidirectional transcription across a set
+   of intervals of interest (GTF file as input).
 
 
 Usage
@@ -56,6 +59,12 @@ for command line help.
 Documentation
 -------------
 
+Requires both the NH and XS flags to be set in the bam file.
+This is specific to the aligner used. TopHat will add an XS and NH
+flag for example.
+
+Doesn't use paired information.
+ 
 
 Code
 ----
@@ -125,7 +134,7 @@ def main( argv = None ):
     parser.add_option("-u", "--unique", dest="unique", action="store_true"
                       , help="only use unique alignments"  )
     parser.add_option("-t", "--tag-count", dest="tag_count", type="int"
-                      , help="minimum tag count to be included"  )
+                      , help="minimum tag count to allow inclusion in analysis"  )
     parser.add_option("-l", "--length", dest="tag_count", type="int"
                       , help="minimum length"  )
     parser.add_option("-n", "--analysis-type", dest = "analysis_type", type = "choice", choices = ("ratio", "profile", "shape"))
@@ -155,7 +164,7 @@ def main( argv = None ):
     else:
         iterable = GTF.iterator(gtffile)
 
-    E.info("initiating gtf set")
+    E.info("filtering gtf set")
     gtf_set = filterGtf(iterable, bam, tag_count = options.tag_count, length = options.length, unique = options.unique)
 
     # reinitiate iterable
@@ -173,15 +182,23 @@ def main( argv = None ):
         E.info("calculating ratio of sense / antisense")
         outf = open(options.outbase + "_ratio.tsv", "w")
         outf.write("gene_id\ttranscript_id\tasratio\n")
+        total_unmapped = 0
+        total_no_xs = 0
+        total_reads_in = 0
         for gtf in iterable:
             if gtf.gene_id not in gtf_set: continue
             transcription = {"sense": 0, "antisense": 0}
             start, end = gtf.start-1, gtf.end
             for alignment in bam.fetch(gtf.contig, start, end):
+                total_reads_in += 1
+                if alignment.is_unmapped:
+                    total_unmapped += 1
+                    continue
                 # get the strand origin
                 xs = [x for x in alignment.tags if x[0] == "XS"]
                 if len(xs) == 0:
                     E.warn("No XS tag present, read %s not included in the analysis" % alignment.qname)
+                    total_no_xs += 1
                     continue
                 xs = xs[0][1]
                 if xs == "+":
@@ -207,12 +224,14 @@ def main( argv = None ):
     ####################################################
     elif options.analysis_type == "profile":
         profile = {}
-        E.info("assessing shape over intervals in %i bins" % options.bin_number)
+        E.info("assessing profile over intervals in %i bins" % options.bin_number)
+        total_unmapped = 0
+        total_no_xs = 0
+        total_reads_in = 0
         for gtf in iterable:
             if gtf.gene_id not in gtf_set: continue
             start, end = gtf.start-1, gtf.end
             bins = np.histogram(range(start, end), bins = options.bin_number)[1]
-
             bin_as = []
             for x in range(len(bins)):
                 if x < len(bins)-1:
@@ -220,13 +239,21 @@ def main( argv = None ):
                     c_sense = 0
                     c_antisense = 0
                     for alignment in bam.fetch(gtf.contig, int(bins[x]), int(bins[x+1])):
+                        total_reads_in += 1
+                        if alignment.is_unmapped:
+                            total_unmapped += 1
+                            continue
+                        # number of hits
                         nh = [x for x in alignment.tags if x[0] == "NH"]
                         nh = nh[0][1]
                         if options.unique:
                             if nh != 1: continue
                         # get the strand origin
                         xs = [x for x in alignment.tags if x[0] == "XS"]
-                        if len(xs) == 0: continue
+                        if len(xs) == 0: 
+                            E.warn("No XS tag present, read %s not included in the analysis" % alignment.qname)
+                            total_no_xs += 1
+                            continue
                         xs = xs[0][1]
                         if xs == "+":
                             c_sense += 1
@@ -252,20 +279,21 @@ def main( argv = None ):
             outf.write("\t".join(map(str,list(x))) + "\n")
         outf.close()
 
-
     ####################################################
-    # provide table with normalised sense and antisense
+    # provide table with sense and antisense
     # counts
     ####################################################
     elif options.analysis_type == "shape":
         sense = {}
         antisense = {}
         E.info("assessing shape over intervals in %i bins" % options.bin_number)
+        total_unmapped = 0
+        total_no_xs = 0 
+        total_reads_in = 0
         for gtf in iterable:
             if gtf.gene_id not in gtf_set: continue
             start, end = gtf.start-1, gtf.end
             bins = np.histogram(range(start, end), bins = options.bin_number)[1]
-
             bin_as = []
             bin_s = []
             for x in range(len(bins)):
@@ -274,13 +302,21 @@ def main( argv = None ):
                     c_sense = 0
                     c_antisense = 0
                     for alignment in bam.fetch(gtf.contig, int(bins[x]), int(bins[x+1])):
+                        total_reads_in += 1
+                        if alignment.is_unmapped:
+                            total_unmapped += 1
+                            continue
+                        # number of hist
                         nh = [x for x in alignment.tags if x[0] == "NH"]
                         nh = nh[0][1]
                         if options.unique:
                             if nh != 1: continue
                         # get the strand origin
                         xs = [x for x in alignment.tags if x[0] == "XS"]
-                        if len(xs) == 0: continue
+                        if len(xs) == 0: 
+                            E.warn("No XS tag present, read %s not included in the analysis" % alignment.qname)
+                            total_no_xs += 1
+                            continue
                         xs = xs[0][1]
                         if xs == "+":
                             c_sense += 1
@@ -288,8 +324,8 @@ def main( argv = None ):
                             c_antisense += 1
                         else:
                             raise ValueError("no such strand %s" % xs)
-                    bin_as.append(c_sense)
-                    bin_s.append(c_antisense)
+                    bin_s.append(c_sense)
+                    bin_as.append(c_antisense)
             sense[gtf.gene_id] = bin_s
             antisense[gtf.gene_id] = bin_as
 
@@ -300,6 +336,10 @@ def main( argv = None ):
         for x in zip(*antisense.values()):
             outf.write("\t".join(map(str,list(x))) + "\tantisense" + "\n")
         outf.close()
+
+    E.info("number of reads in: %i" % total_reads_in)
+    E.info("number of unmapped reads in bam file: %i" % total_unmapped)
+    E.info("number of reads with no XS tag %i" % total_no_xs)
 
     ## write footer and output benchmark information.
     E.Stop()
