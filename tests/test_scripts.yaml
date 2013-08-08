@@ -1,5 +1,5 @@
 
 restrict:
-        regex: fasta2kmercontent.py
+        regex: bed2fasta.py
 
 
