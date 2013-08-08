@@ -44,8 +44,8 @@ n3
 where n is the kmer and contig is the fasta entry
 
 The user can specify the nucleotides that are to be searched for example
-tetra, pentamer etc in which case all tetramers from the ATCG will be computed
-and tested.
+tetramers, pentamers etc. Note that the script will take a long time to run
+with longer kmers.
 
 
 Usage
@@ -92,7 +92,7 @@ def main( argv = None ):
     parser.add_option("-k", "--kmer", dest="kmer", type="int",
                       help="supply kmer length")
     parser.add_option("-p", dest = "proportion", action="store_true",
-                      help="output proportions")
+                      help="output proportions - overides the default output")
     
 
     # add common options (-h/--help, ...) and parse command line 
@@ -118,7 +118,9 @@ def main( argv = None ):
     result = {}
 
     # NB assume that non fasta files are caught by FastaIterator
+    total_entries = 0
     for fasta in FastaIterator.iterate(options.stdin):
+        total_entries += 1
         result[fasta.title] = {}
         for kmer in kmers:
             counts = [m.start() for m in re.finditer("".join(kmer), fasta.sequence)]
@@ -148,6 +150,7 @@ def main( argv = None ):
         else:
             options.stdout.write("\t".join([row] + [str(result[header][tuple(row)]) for header in headers]) + "\n")
 
+    E.info("written kmer counts for %i contigs" % total_entries)
     # write footer and output benchmark information.
     E.Stop()
 
