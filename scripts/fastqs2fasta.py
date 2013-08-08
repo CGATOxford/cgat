@@ -32,20 +32,17 @@ fastqs2fasta.py
 Purpose
 -------
 
-The input into some genomics software e.g. assembly software is often a single .fasta file. Paired
-fastq files must therefore be interleaved into a single fasta file whilst conserving the read order.
-
-This script is used to interleave two fastq files into a single fasta file. Read1 is followed by 
+This script is used to interleave two :term:`fastq`-formatted files (paired data) into a single :term:`fasta`-formatted file. Read1 is followed by 
 read2 in the resultant file. 
 
-Fastq files MUST be sorted by read identifier.
+:term:`fastq` files MUST be sorted by read identifier.
 
 Usage
 -----
 
 Example::
 
-   python fastqs2fasta.py --help
+   python fastqs2fasta.py --fastq1 in.fastq.1.gz --fastq2 in.fastq.2.gz > out.fasta
 
 Type::
 
@@ -53,8 +50,6 @@ Type::
 
 for command line help.
 
-Documentation
--------------
 
 Code
 ----
