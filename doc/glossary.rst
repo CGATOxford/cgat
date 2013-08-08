@@ -68,7 +68,8 @@ File formats
         pass
 
     fastq
-        fastq
+        Sequence format containing qualit scores
+	`(http://www.ncbi.nlm.nih.gov/pmc/articles/PMC2847217/)`_.
 
     sra
         sra

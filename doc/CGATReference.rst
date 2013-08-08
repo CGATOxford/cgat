@@ -32,11 +32,16 @@ Genomics
 :doc:`scripts/index_fasta`
     Build an index for a fasta file. Pre-requisite for many CGAT tools.
 	
+
+
 NGS
 ===
 
 :doc:`scripts/bam2geneprofile`
      Compute and plot a meta-gene profile from aligned reads.
+
+:doc:`scripts/fastqs2fasta`
+    Interleave paired reads from two fastq files into a single fasta file.
 
 
 Unsorted
