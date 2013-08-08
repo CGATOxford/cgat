@@ -28,7 +28,7 @@ following are true:
 4. The scripts follows the :ref:`styleguide`.
 
 5. The script implements the ``-h/--help`` options. Ideally, the
-   script has been derived :file:`script_template.py`.
+   script has been derived from :file:`scripts/cgat_script_template.py`.
 
 6. The script can be imported. Ideally, it imports without performing
    any actions or writing output.
@@ -39,19 +39,18 @@ following are true:
    :file:`doc/scripts/newscript.py`.
 
 8. The script has at least one test case added to :file:`tests` - and
-   the test works.
-	
+   the test works (see :ref:`Testing`).
 
 Building extensions
 ===================
 
 Using pyximport_, it is (relatively) straight-forward to add optimized
 C-code to python scripts and, for example, access pysam internals and
-the underlying samtools library. See for example :doc:`bam2stats`.
+the underlying samtools library. See for example :doc:`scripts/bam2stats`.
 
 To add an extension, the following needs to be in place:
 
-1. The main script (:file:`bam2stats.py`). The important lines in this script
+1. The main script (:file:`scripts/bam2stats.py`). The important lines in this script
    are::
 
       try:
@@ -98,15 +97,12 @@ To add an extension, the following needs to be in place:
 			  define_macros = pysam.get_defines() )
 
 
-If the script :file:`pysam_flagstat.py` is called the first time, pyximport_ will 
-compile the cython_ extension :file:`_pysam_flagstat.pyx` and make it available 
+If the script :file:`bam2stats.py` is called the first time, pyximport_ will 
+compile the cython_ extension :file:`_bam2stats.pyx` and make it available 
 to the script. Compilation requires a working compiler and cython_ installation.
-Each time :file:`_pysam_flagstat.pyx` is modified, a new compilation will take place.
+Each time :file:`_bam2stats.pyx` is modified, a new compilation will take place.
 
 pyximport_ comes with cython_.
 
-.. _cython: http://cython.org/
-
-.. _pyximport: http://www.prescod.net/pyximport/
 
 

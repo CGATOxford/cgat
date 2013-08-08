@@ -147,15 +147,6 @@ for pyx_file in pyx_files:
                    define_macros = pysam.get_defines() )
         )
 
-print Nubiscan
-print script_extensions
-
-pass
-
-print cgat_scripts
-print cgat_package_dirs
-print cgat_packages
-
 setup(## package information
     name='CGAT',
     version='0.1',

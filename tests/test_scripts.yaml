@@ -1,5 +1,5 @@
 
 restrict:
-        #regex: gtf2gff.py
+        regex: beds2counts.py
 
 

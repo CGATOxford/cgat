@@ -21,8 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-bed2counts.py
-=============================================
+beds2counts.py - compute overlap stats between multiple bed files
+==================================================================
 
 :Author: Nick Ilott 
 :Release: $Id$
@@ -43,11 +43,11 @@ Usage
 
 Example::
 
-   python bed2counts.py --help
+   python beds2counts.py file1.bed file2.bed > output.bed
 
 Type::
 
-   python bed2counts.py --help
+   python beds2counts.py --help
 
 for command line help.
 
@@ -83,10 +83,16 @@ def main( argv = None ):
                                     usage = globals()["__doc__"] )
 
     parser.add_option("-i", "--infiles", dest="infiles", type="string",
+                      metavar = "bed",
                       action="append", help="supply list of bed files"  )
 
+    parser.set_defaults( infiles = [] )
     ## add common options (-h/--help, ...) and parse command line 
     (options, args) = E.Start( parser, argv = argv )
+
+    options.infiles.extend( args )
+    if len(options.infiles) == 0:
+        raise ValueError( 'please provide at least 1 bed file' )
 
     E.info("concatenating bed files")
     # concatenate the list of files

@@ -12,6 +12,9 @@ Genomics
     Convert a :term:`bed` formatted file to a :term:`gff` or
     :term:`gtf` formatted file.
 
+:doc:`scripts/beds2counts`
+    Compute overlap statistics of multiple :term:`bed` files.
+
 :doc:`scripts/gff2gff`
     Work on :term:`gff` formatted files with genomic features. This 
     tools sorts/renames feature files, reconciles chromosome names,
@@ -56,8 +59,6 @@ Unsorted
 :doc:`scripts/bam2wiggle`
 
 :doc:`scripts/bed2bed`
-
-:doc:`scripts/bed2counts`
 
 :doc:`scripts/bed2fasta`
 

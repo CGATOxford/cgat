@@ -33,7 +33,9 @@ def check_script( test_name, script, stdin, options, outputs, references, workin
 
     if options:
         options = re.sub( "%TMP%", tmpdir, options )
+        options = re.sub( "<TMP>", tmpdir, options )
         options = re.sub( "%DIR%", os.path.abspath(workingdir), options )
+        options = re.sub( "<DIR>", os.path.abspath(workingdir), options )
     else:
         options = ""
 

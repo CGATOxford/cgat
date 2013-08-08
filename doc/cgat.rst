@@ -11,6 +11,10 @@ as part of the `CGAT Training programme`_.
 The tools work from the command line, but can readily be installed
 within frameworks such as `galaxy`_.
 
+Please note that the tools are part of a larger code base also
+including genomics and NGS pipelines. More information about these
+is here (:ref:`here <contents>`).
+
 Detailed instructions on installation, usage and tools are below,
 followed by a quickstart guide.
 
@@ -19,6 +23,7 @@ followed by a quickstart guide.
 
    CGATInstallation
    CGATUsage
+   CGATRecipes
    CGATReference
    
 Quickstart
@@ -102,7 +107,6 @@ be easily combined with other tools such as bedtools (Quinlan and
 Hall, 2010) or UCSC tools (Kuhn et al. 2013).
 
 
-.. _CGAT Training Programme: www.cgat.org
 .. _Heger & Ponting, 2007: 
 .. _Warren et al., 2008:
 .. _Ramagopalan et al., 2010:

@@ -132,7 +132,7 @@ http://wwwfgu.anat.ox.ac.uk/~andreas/documentation/cgat/pipelines/Gpipe.html
 
 """
 
-from CGAT.CGAT import getMakefiles, getScripts, getModules
+from CGAT.Local import getMakefiles, getScripts, getModules
 
 if __name__ == "__main__":
 

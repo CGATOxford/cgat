@@ -13,7 +13,7 @@ Downloading and installing the source code
 
 To obtain the latest code, check it out from the public mercurial_ repository at::
 
-   hg clone http://www.cgat.org/hg/cgat/ src
+   hg clone http://www.cgat.org/hg/cgat/ cgat
 
 Once checked-out, you can get the latest changes via pulling and updating::
 
@@ -24,7 +24,7 @@ Some scripts contain cython code that needs to be recompiled if the
 script or the pysam_ installation has changed. To rebuild all scripts,
 for example after updating the repository, type::
 
-   python src/rebuild_extensions.py
+   python cgat/scripts/cgat_rebuild_extensions.py
 
 Recompilation requires a C compiler to be installed. 
 
@@ -36,7 +36,7 @@ might work, but expect to be disappointed. The pipeline is started on a
 :term:`submit host` assuming a default queue ``all.q``. Other queues can be specified on the
 command line, for example::
 
-    python <src>pipeline_<name>.py --cluster-queue=medium_jobs.q
+    python cgat/CGATPipelines/pipeline_<name>.py --cluster-queue=medium_jobs.q
 
 A pipeline might start up to ``-p/--multiprocess`` processes. Preferentially,
 tasks are sent to the cluster, but for some tasks this is not possible. 
@@ -232,14 +232,8 @@ CGAT requires the following in-house python libraries to be installed:
 +--------------------+-------------------+----------------------------------------+-------------------------------------------------------------------------------------------------------------------------------+
 |pysam_              |0.6.0              |python bindings for samtools            |hg clone https://code.google.com/p/pysam/ pysam                                                                                |
 +--------------------+-------------------+----------------------------------------+-------------------------------------------------------------------------------------------------------------------------------+
-|ncl_                |0.1                |nested containment lists                |hg clone http://www.cgat.org/hg/ncl ncl                                                                                        |
-+--------------------+-------------------+----------------------------------------+-------------------------------------------------------------------------------------------------------------------------------+
-|fastgtf_            |0.1                |fast gtf parsing                        |hg clone http:://www.cgat.org/hg/fastgtf fastgtf                                                                               |
-+--------------------+-------------------+----------------------------------------+-------------------------------------------------------------------------------------------------------------------------------+
 |alignlib_           |0.4.5              |C++ sequence alignment library with     |wget http://downloads.sourceforge.net/project/alignlib/alignlib/alignlib-0.4.5.tar.gz                                          |
 |                    |                   |python bindings.                        |                                                                                                                               |
-+--------------------+-------------------+----------------------------------------+-------------------------------------------------------------------------------------------------------------------------------+
-|components          |0.1                |connected components computation        |hg clone http://www.cgat.org/hg/components components                                                                          |
 +--------------------+-------------------+----------------------------------------+-------------------------------------------------------------------------------------------------------------------------------+
 |sphinxreport_       |latest             |report generator                        |svn checkout https://sphinx-report.googlecode.com/svn/trunk/ sphinx-report                                                     |
 +--------------------+-------------------+----------------------------------------+-------------------------------------------------------------------------------------------------------------------------------+
@@ -351,8 +345,6 @@ Method : Installation method (E = easy_install/setuptools, S =
 setup.py/distutils, C = CGAT)
 
 .. _alignlib: http://wwwfgu.anat.ox.ac.uk/~andreas/alignlib
-.. _ncl: http://www.cgat.org/~andreas/documentation/ncl/contents.html
-.. _fastgtf: http://www.cgat.org/~andreas/documentation/fastgtf/contents.html
 .. _pysam: http://code.google.com/p/pysam/
 .. _sphinxreport: http://code.google.com/p/sphinx-report/
 .. _cufflinks: http://cufflinks.cbcb.umd.edu/index.html

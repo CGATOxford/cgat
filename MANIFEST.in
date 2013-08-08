@@ -22,4 +22,8 @@ include scripts/gtf2table.py
 # extensions
 include scripts/*.pyxbld
 include scripts/*.pyx
-
+include CGAT/Components/*.h
+include CGAT/Components/*.cpp
+include CGAT/NCL/*.h
+include CGAT/NCL/*.pxd
+include CGAT/NCL/intervaldb.c
