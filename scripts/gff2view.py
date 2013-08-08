@@ -77,7 +77,6 @@ with UCSC and genome browser.
 TODO: add support for ensembl
 """ % sys.argv[0]
 
-import CGAT.GFF as GFF
 import CGAT.GTF as GTF
 import CGAT.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
@@ -145,11 +144,11 @@ if __name__ == '__main__':
         entry_iterator = GTF.iterator
         chunk_iterator = GTF.flat_gene_iterator
     else:
-        entry_iterator = GFF.iterator
+        entry_iterator = GTF.iterator
         if options.joined:
-            chunk_iterator = GFF.joined_iterator
+            chunk_iterator = GTF.joined_iterator
         else:
-            chunk_iterator = GFF.chunk_iterator
+            chunk_iterator = GTF.chunk_iterator
 
     if len(args) == "0" or args[0] == "-":
         iterator = chunk_iterator( entry_iterator( sys.stdin) )

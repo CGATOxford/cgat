@@ -81,7 +81,7 @@ import numpy
 import CGAT.Synteny as Synteny
 import scipy
 import scipy.stats
-import CGAT.GFF as GFF
+import CGAT.GTF as GTF
 
 if __name__ == "__main__":
 
@@ -189,22 +189,22 @@ if __name__ == "__main__":
 
                     outfile_gff = open( filename, "w" )
                     
-                    entry = GFF.Entry()
+                    entry = GTF.Entry()
                     entry.source = "gpipe"
                     entry.feature = "synteny"
                     
                     for b in range(len(blocks) ):
                         block = blocks[b]
                         if first:
-                            entry.mName = block.contig1
+                            entry.name = block.contig1
                             entry.start = block.mFrom1
                             entry.end = block.mTo1
                         else:
-                            entry.mName = block.contig2
+                            entry.name = block.contig2
                             entry.start = block.mFrom2
                             entry.end = block.mTo2
                             
-                        entry.mInfo = "Block=%i" % block.mBlockId
+                        entry.info = "Block=%i" % block.mBlockId
 
                         outfile_gff.write( str(entry) + "\n" )
 

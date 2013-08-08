@@ -72,7 +72,7 @@ import CGAT.GenomicIO as GenomicIO
 import CGAT.IOTools as IOTools
 import pgdb
 import CGAT.Regions as Regions
-import CGAT.GFF as GFF
+import CGAT.GTF as GTF
 import CGAT.Intervals as Intervals
 
 USAGE="""python %s [OPTIONS] 
@@ -559,9 +559,9 @@ def processPredictions( dbhandle, schema, options, prediction_ids, taboo_regions
 
         output_regions.add( k )
 
-        gff = GFF.Entry()
-        gff.mName = token
-        gff.mStand = strand
+        gff = GTF.Entry()
+        gff.name = token
+        gff.stand = strand
         gff.start = start
         gff.strand = strand
         gff.end = end

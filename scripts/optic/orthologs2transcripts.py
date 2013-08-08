@@ -116,7 +116,8 @@ import alignlib
 
 import CGAT.WrapperDialign as WrapperDialign
 import CGAT.WrapperDBA as WrapperDBA
-import CGAT.WrapperClustal as WrapperClustal
+# clustalw wrapper not up-to-date
+#import CGAT.WrapperClustal as WrapperClustal
 import CGAT.AlignedPairs as AlignedPairs
 
 param_long_options=["verbose=", "help", "map1=", "map2=",
@@ -407,7 +408,7 @@ def WriteExons( token1, peptide1, cds1, transcript1,
     dialign = WrapperDialign.Dialign( "-n" )
     dialignlgs = WrapperDialign.Dialign( "-n -it -thr 2 -lmax 30 -smin 8" )    
     dba = WrapperDBA.DBA()    
-    clustal = WrapperClustal.Clustal()
+    #clustal = WrapperClustal.Clustal()
 
     matrix, gop, gep = global_substitution_matrix
     alignator_nw = alignlib.makeAlignatorDPFullDP( alignlib.ALIGNMENT_GLOBAL, gop, gep, matrix )

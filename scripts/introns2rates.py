@@ -84,7 +84,8 @@ import alignlib
 
 import CGAT.WrapperDialign as WrapperDialign
 import CGAT.WrapperDBA as WrapperDBA
-import CGAT.WrapperClustal as WrapperClustal
+# clustalw wrapper not up-to-date
+# import CGAT.WrapperClustal as WrapperClustal
 
 param_long_options=["verbose=", "help",
                     "write-exons=", "write-introns=",
@@ -326,6 +327,7 @@ def AlignPair( pair, anchor = 0 ):
     elif param_method == "dbaligned":
         dba.Align( s1, s2, map_intron_a2b )
     elif param_method == "clusaligned":
+        raise NotImplementedError("clustalw wrapper not up-to-date")
         clustal.Align( s1, s2, map_intron_a2b )
 
     if anchor:

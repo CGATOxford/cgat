@@ -204,8 +204,9 @@ Other guidelines
   not add .pyc files, backup files created by your editor or other 
   files.
 
-* In order to build documentation, each script and module needs to
-  be importable from anywhere. 
+* In order to build documentation, each script, module and pipeline needs to
+  be importable. Thus, make sure that when your pipeline depends on
+  specific files, it does not fail when imported but not executed.
   
 Documentation
 =============
@@ -227,6 +228,25 @@ restructured text. For example::
 	:returns:  int -- the value
 	:raises: AttributeError, KeyError
 
+Writing documentation for scripts
+---------------------------------
+
+Please follow the example in :doc:`cgat_script_template` for
+documenting scripts. In addition, please pay attention to the following:
+
+* Declare input data types for genomic data sets in optparse using 
+  the `metavar` keyword. For example::
+
+      parser.add_option( "--extra-intervals", dest = "extra_intervals",
+                      metavar="bed", help = "..." )
+
+  Setting the type permits the script to be integrated into workflow
+  sytemns such as galaxy_.
+
+* Please provide a meaningful example in the command line help.
+
+* Be verbose. Something that is not documented within a script
+  will not be used.
 
 
 

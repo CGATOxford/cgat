@@ -117,7 +117,7 @@ import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Exons as Exons
 import CGAT.Intervals as Intervals
 import alignlib
-import CGAT.GFF as GFF
+import CGAT.GTF as GTF
 
 ##---------------------------------------------------------------------------------------------
 def getRangesFromExons( exons, both_strands = False, contig_sizes = None ):
@@ -859,7 +859,7 @@ if __name__ == '__main__':
             self.end = gff.end
             self.mQuality = gff['class']
             
-    for gff in GFF.iterator( sys.stdin ):
+    for gff in GTF.iterator( sys.stdin ):
         data.append( Entry(gff) )
 
     if options.loglevel >= 1:

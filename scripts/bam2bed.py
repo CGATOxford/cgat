@@ -57,9 +57,12 @@ import pysam
 
 import CGAT.Experiment as E
 
-import pyximport
-pyximport.install(build_in_temp=False)
-import _bam2bed
+try:
+    import pyximport
+    pyximport.install(build_in_temp=False)
+    import _bam2bed
+except ImportError:
+    import CGAT._bam2bed as _bam2bed
 
 def main( argv = None ):
     """script main.

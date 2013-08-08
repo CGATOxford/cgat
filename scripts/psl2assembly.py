@@ -84,7 +84,6 @@ import numpy
 import CGAT.Intervals as Intervals
 import CGAT.Experiment as E
 import CGAT.Histogram as Histogram
-import CGAT.GFF as GFF
 import CGAT.Blat as Blat
 import CGAT.IndexedFasta as IndexedFasta
 import alignlib

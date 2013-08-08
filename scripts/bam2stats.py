@@ -170,11 +170,13 @@ import collections
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import pysam
-import CGAT.GFF as GFF
 
-import pyximport
-pyximport.install(build_in_temp=False)
-import _bam2stats
+try:
+    import pyximport
+    pyximport.install(build_in_temp=False)
+    import _bam2stats
+except ImportError:
+    import CGAT._bam2stats as _bam2stats
 
 FLAGS = {
     1: 'paired',
@@ -261,7 +263,7 @@ def main( argv = None ):
     (options, args) = E.Start( parser, argv = argv, add_output_options = True )
 
     if options.filename_rna:
-        rna = GFF.readAndIndex( GFF.iterator( IOTools.openFile( options.filename_rna ) ) )
+        rna = GTF.readAndIndex( GFF.iterator( IOTools.openFile( options.filename_rna ) ) )
     else:
         rna = None
 

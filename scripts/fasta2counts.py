@@ -104,7 +104,7 @@ if __name__ == "__main__":
     (options, args) = E.Start( parser )
 
     fasta = IndexedFasta.IndexedFasta( options.genome_file )
-    contigs = fasta.getContigSizes()
+    contigs = fasta.getContigSizes( with_synonyms = False )
 
     totals = { 'A' : 0, 'C': 0, 'G' : 0, 'T' : 0, 'X' : 0, 'N' : 0 }
     nothers_total = 0

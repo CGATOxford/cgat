@@ -1,0 +1,5 @@
+
+restrict:
+        regex: beds2counts.py
+
+

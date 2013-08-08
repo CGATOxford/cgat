@@ -4,3 +4,9 @@ version:
     outputs: [stdout]
     references: []
     options: --version
+
+index:
+    stdin: null
+    outputs: [test1_sc.fasta, test1_sc.idx]
+    references: [test1.fasta, test1.idx]
+    options: test1_sc %DIR%/test1_sc.tar.gz > test1.log

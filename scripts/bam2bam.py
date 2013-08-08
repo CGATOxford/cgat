@@ -80,11 +80,13 @@ import itertools
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import pysam
-import CGAT.GFF as GFF
 
-import pyximport
-pyximport.install(build_in_temp=False)
-import _bam2bam
+try:
+    import pyximport
+    pyximport.install(build_in_temp=False)
+    import _bam2bam
+except ImportError:
+    import CGAT._bam2bam as _bam2bam
 
 def main( argv = None ):
     """script main.

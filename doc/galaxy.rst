@@ -63,9 +63,9 @@ visible in the ``CGAT`` section.
 Automatic conversion of scripts
 ===============================
 
-The CGAT tool collection contains a script called :doc:`cgat2rdf` that can create
+The CGAT tool collection contains a script called :doc:`scripts/cgat2rdf` that can create
 and xml file for inclusion into galaxy. To create a wrapper for
-:doc:`bam2stats`, run::
+:doc:`scripts/bam2stats`, run::
 
     python <cgat-scripts>cgat2rdf.py --format=galaxy <cgat-scripts>bam2stats.py > <cgat-xml>bam2stats.xml
 
@@ -97,7 +97,7 @@ help.
 
 3. Follow the CGAT script naming convention. If possible, scripts
    should be named ``<format_in>2<format_out>.py``. Formats can
-   be mapped to other types in :doc:`cgat2rdf`. For example,
+   be mapped to other types in :doc:`scripts/cgat2rdf`. For example,
    ``stats`` and ``table`` are both mapped to the format ``tabular``.
 
    

@@ -91,9 +91,12 @@ import CGAT.Bed as Bed
 import pysam
 import CGAT.IndexedGenome as IndexedGenome
 
-import pyximport
-pyximport.install(build_in_temp=False)
-import _rnaseq_bams2bam
+try:
+    import pyximport
+    pyximport.install(build_in_temp=False)
+    import _rnaseq_bams2bam
+except ImportError:
+    import CGAT._rnaseq_bams2bam as _rnaseq_bams2bam
 
 def main( argv = None ):
     """script main.

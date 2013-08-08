@@ -129,7 +129,6 @@ import CGAT.FastaIterator as FastaIterator
 import CGAT.Genomics as Genomics
 import CGAT.IOTools as IOTools
 import CGAT.Database as Database
-import CGAT.GFF as GFF
 import CGAT.GTF as GTF
 import CGAT.Database as Database
 
@@ -262,14 +261,14 @@ def buildRepeatTrack( infile, outfile ):
     '''build a repeat track as negative control.'''
 
     nrepeats = 0
-    for gff in GFF.iterator( gzip.open(infile, "r" ) ): nrepeats+=1
+    for gff in GTF.iterator( gzip.open(infile, "r" ) ): nrepeats+=1
     sample = set( random.sample( xrange( nrepeats), PARAMS["ancestral_repeats_samplesize"]) )
 
     outf = gzip.open( outfile, "w" )
     gtf = GTF.Entry()
-    for x,gff in enumerate( GFF.iterator( gzip.open(infile, "r" ) ) ):
+    for x,gff in enumerate( GTF.iterator( gzip.open(infile, "r" ) ) ):
         if not x in sample: continue
-        gtf.fromGFF( gff, "%08i" % x, "%08i" % x )
+        gtf.fromGTF( gff, "%08i" % x, "%08i" % x )
         outf.write( "%s\n" % str(gtf) )
     outf.close()
 

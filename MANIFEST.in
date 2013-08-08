@@ -9,3 +9,21 @@ include INSTALL
 include README.txt
 include KNOWN_BUGS
 include THANKS.txt
+
+# CGAT scripts to include - note that these
+# are named explicitely to avoid unnecessary
+# clutter in users bin directories.
+include scripts/index_fasta.py
+include scripts/bed2gff.py
+include scripts/gff2gff.py
+include scripts/gtf2gff.py
+include scripts/gtf2table.py
+
+# extensions
+include scripts/*.pyxbld
+include scripts/*.pyx
+include CGAT/Components/*.h
+include CGAT/Components/*.cpp
+include CGAT/NCL/*.h
+include CGAT/NCL/*.pxd
+include CGAT/NCL/intervaldb.c
