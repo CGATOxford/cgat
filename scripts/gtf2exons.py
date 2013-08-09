@@ -63,7 +63,7 @@ import string
 import re
 import optparse
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Exons as Exons
 import CGAT.IndexedFasta as IndexedFasta
 
@@ -89,7 +89,7 @@ if __name__ == "__main__":
         genome_file = None,
         extract_id = None )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
     
     if options.genome_file:
         fasta = IndexedFasta.IndexedFasta( options.genome_file )
@@ -137,4 +137,4 @@ if __name__ == "__main__":
     if options.loglevel >= 1:
         options.stdlog.write("# ntranscripts=%i, nexons=%i, nerrors=%i\n" % (ntranscripts, nexons, nerrors))
     
-    Experiment.Stop()
+    E.Stop()

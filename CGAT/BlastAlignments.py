@@ -35,7 +35,8 @@ Code
 '''
 import re, string, sys
 
-import alignlib
+try: import alignlib
+except ImportError: pass
 
 class Map:
     '''a blast alignment.'''

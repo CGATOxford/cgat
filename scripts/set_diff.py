@@ -77,7 +77,7 @@ import string
 import re
 import optparse
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 
 if __name__ == "__main__":
@@ -111,7 +111,7 @@ if __name__ == "__main__":
         with_title = True,
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if options.add_header:
         options.stdout.write("set1\tset2\tn1\tn2\tunion\tinter\tunique1\tunique2" )
@@ -184,4 +184,4 @@ if __name__ == "__main__":
             
             options.stdout.write("\n")
     
-    Experiment.Stop()
+    E.Stop()

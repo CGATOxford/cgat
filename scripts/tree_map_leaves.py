@@ -84,13 +84,14 @@ Options:
 -b, --strip-branches            remove branch lengths
 """ % sys.argv[0]
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.TreeTools as TreeTools
 
 param_loglevel = 1
 
 param_long_options=["verbose=", "help", "pattern-species=",
-                    "invert", "create=", "apply=", "strip-brances"]
+                    "invert", "create=", "apply=", "strip-brances",
+                    "version"]
 
 param_short_options="v:hp:a:c:i"
 
@@ -110,6 +111,9 @@ if __name__ == "__main__":
     for o,a in optlist:
         if o in ( "-v", "--verbose" ):
             param_loglevel = int(a)
+        elif o in ( "--version", ):
+            print "version="
+            sys.exit(0)
         elif o in ( "-h", "--help" ):
             print USAGE
             sys.exit(0)
@@ -122,8 +126,8 @@ if __name__ == "__main__":
         elif o in ("-b", "--strip-branches"):
             param_remove_branch_lengths = True
 
-    print Experiment.GetHeader()
-    print Experiment.GetParams()
+    print E.GetHeader()
+    print E.GetParams()
 
     keys = {}
     if param_apply:
@@ -162,4 +166,4 @@ if __name__ == "__main__":
             outfile.write("%s\t%s\n" % (key, keys[key]))
         outfile.close()
 
-    print Experiment.GetFooter()
+    print E.GetFooter()

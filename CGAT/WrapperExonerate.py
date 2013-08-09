@@ -38,11 +38,9 @@ import os, sys, string, re, tempfile, subprocess, optparse
 """Wrapper for Exonerate
 """
 
-import Experiment
+import Experiment as E
 import PredictionParser
 import Genomics
-
-parser = E.OptionParser( version = "%prog version: $Id: WrapperExonerate.py 2781 2009-09-10 11:33:14Z andreas $")
 
 class ExonerateError(Exception):
     pass
@@ -155,6 +153,8 @@ class Exonerate:
 
 if __name__ == "__main__":
 
+    parser = E.OptionParser( version = "%prog version: $Id: WrapperExonerate.py 2781 2009-09-10 11:33:14Z andreas $")
+
     parser.add_option("-p", "--peptide", dest="input_filename_peptide", type="string",
                       help="input filename with peptide sequence.",
                       metavar="FILE" )
@@ -188,7 +188,7 @@ if __name__ == "__main__":
         output_options = []
         )
 
-    (options, args) = Experiment.Start( parser ) 
+    (options, args) = E.Start( parser ) 
 
     if options.range_genome: options.range_genome = map(int, options.range_genome.split(","))
     if options.range_peptide: options.range_peptide = map(int, options.range_peptide.split(","))    
@@ -224,6 +224,6 @@ if __name__ == "__main__":
 
             print result
             
-    Experiment.Stop()
+    E.Stop()
         
 

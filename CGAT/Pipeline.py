@@ -49,7 +49,7 @@ import drmaa
 import hgapi
 
 # CGAT specific options - later to be removed
-from CGAT import *
+from Local import *
 
 from ruffus import *
 
@@ -93,8 +93,8 @@ PARAMS = {
 
 # path until parameter sharing is resolved between CGAT module
 # and the pipelines module.
-import CGAT
-CGAT.PARAMS = PARAMS
+import Local
+Local.PARAMS = PARAMS
 
 hostname = os.uname()[0]
 
@@ -1141,7 +1141,8 @@ def peekParameters( workingdir, pipeline ):
 
     assert os.path.exists( workingdir ), "can't find working dir %s" % workingdir
 
-    process = subprocess.Popen(  "python %s -f -v 0 dump" % pipeline,
+    statement = "python %s -f -v 0 dump" % pipeline
+    process = subprocess.Popen(  statement,
                                  cwd = workingdir, 
                                  shell = True,
                                  stdin = subprocess.PIPE,
@@ -1268,7 +1269,8 @@ def main( args = sys.argv ):
                       help="perform a dry run (do not execute any shell commands) [default=%default]." )
 
     parser.add_option( "-f", "--force", dest="force", action="store_true",
-                      help="force running the pipeline even if there are uncommited changes in the repository [default=%default]." )
+                      help="force running the pipeline even if there are uncommited changes "
+                           "in the repository [default=%default]." )
 
     parser.add_option( "-l", "--local", dest="without_cluster", action="store_true",
                       help="execute all jobs locally [default=%default]." )

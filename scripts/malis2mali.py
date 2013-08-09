@@ -91,7 +91,7 @@ import random
 import types
 
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import CGAT.Mali as Mali
 
@@ -136,7 +136,7 @@ if __name__ == '__main__':
         mask_acgtn = False,
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     options.parameters = options.parameters.split(",")    
 
@@ -367,5 +367,5 @@ if __name__ == '__main__':
     if options.loglevel >= 1:
         options.stdlog.write("# nsample=%i, nskipped=%i\n" % (len(component_ids), nskipped))
 
-    Experiment.Stop()
+    E.Stop()
     

@@ -66,7 +66,7 @@ import optparse
 import math
 
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Blat as Blat
 import CGAT.IOTools as IOTools
 
@@ -85,7 +85,7 @@ if __name__ == "__main__":
     parser.set_defaults(
         )
     
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     query_bitsets, target_bitsets = {}, {}
 
@@ -131,4 +131,4 @@ if __name__ == "__main__":
     options.stdout.write("# target\n" )
     printBitset( options.stdout, target_bitsets )
 
-    Experiment.Stop()
+    E.Stop()

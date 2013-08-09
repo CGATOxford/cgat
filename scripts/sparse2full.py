@@ -62,7 +62,7 @@ import string
 import re
 import random
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 
 def CountElements( matrix, default_value ):
     """count elements that are of default value and those that aren't."""
@@ -359,7 +359,7 @@ if __name__ == '__main__':
         write_separators = True,
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if options.full2sparse:
         # convert a full matrix to a sparse matrix
@@ -468,4 +468,4 @@ if __name__ == '__main__':
         if options.filename_map:
             outfile_map.close()
                 
-    Experiment.Stop()
+    E.Stop()

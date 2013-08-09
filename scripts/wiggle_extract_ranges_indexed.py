@@ -19,6 +19,7 @@ WARNING: bz2/bz2t support and file cache support are new and not as well
 Note: this requires a patched bx/wiggle.py
 
 usage: %prog wiggle_fname1 wiggle_fname2 ... [options] < interval_file
+   -v, --version:    Output version
    -s, --src=s:      Use this src for all intervals
    -p, --prefix=p:   Prepend this to each src before lookup
    -S, --strand:     Strand is included as an additional column.
@@ -36,6 +37,8 @@ import os.path
 def main():
     # Parse Command Line
     options, args = doc_optparse.parse( __doc__ )
+    if options.version: return
+
     try:
         wiggle_files = args
         if options.src: fixed_src = options.src

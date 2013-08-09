@@ -71,7 +71,9 @@ import os
 import getopt
 import time
 
-param_long_options = ["missing=", "headers=", "titles", "normalize", "format=", "format-bin=", "format-value=", "sort=", "help"]
+param_long_options = ["missing=", "headers=", "titles", "normalize", 
+                      "format=", "format-bin=", "format-value=", "sort=", "help",
+                      "version"]
 param_short_options = "v:ht:m:h:s:f:"
 
 param_headers = None
@@ -87,7 +89,7 @@ param_format_value = None
 
 param_sort = None
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Histogram as Histogram
 
 ##---------------------------------------------------------------------------------------------------------        
@@ -106,6 +108,9 @@ if __name__ == '__main__':
     for o,a in optlist:
         if o in ( "--help",):
             print globals()["__doc__"]
+            sys.exit(0)
+        elif o in ( "--version", ):
+            print "version="
             sys.exit(0)
         elif o in ("-h", "--headers"):
             param_headers = string.split( a, "," )
@@ -135,8 +140,8 @@ if __name__ == '__main__':
 
     param_filenames = args
 
-    print Experiment.GetHeader()
-    print Experiment.GetParams()    
+    print E.GetHeader()
+    print E.GetParams()    
 
     histograms = []
 
@@ -231,6 +236,6 @@ if __name__ == '__main__':
                      format_value=param_format_value,
                      )
 
-    print Experiment.GetFooter()
+    print E.GetFooter()
 
 

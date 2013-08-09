@@ -21,8 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 """
-gtf2gff.py - flatten a gtf file
-===============================
+gtf2gff.py - convert a transcript set to genomic features
+=========================================================
 
 :Author: Andreas Heger
 :Release: $Id: gtf2gff.py 2861 2010-02-23 17:36:32Z andreas $
@@ -32,31 +32,34 @@ gtf2gff.py - flatten a gtf file
 Purpose
 -------
 
-This scripts converts a :term:`gtf` formatted file into a :term:`gff` formatted file. 
-In other words, a gene set (gtf), which constitutes a hierarchal set of annotations, 
-will be converted in into a flat list of genomic segments.
+This scripts converts a transcript set in a :term:`gtf` formatted file into a set
+of features in a :term:`gff` formatted file. 
 
-Various methods can be used to do the conversion (see command line argument *method*):
+In other words, a gene set (gtf), which constitutes a hierarchical set of 
+annotations, will be converted into a non-hierarchical list of genomic segments.
 
-genome
+Various methods can be used to do the conversion (see command line argument 
+``--method``):
+
+exons
+   annotate exons. Exonic segments are classified according 
+   to the transcript structure.
+
+genome/full
    annotate genome with gene set. Genomic segments are labeled 
    ``intronic``, ``intergenic``, etc. This annotation aggregates
    the information of multiple genes such that each annotation
    is either valid or ambiguous.
 
-gene
+genes
     annotate genome using the information on a gene-by-gene basis.
     Multiple overlapping annotations will be created for each transcript.
     Redundant annotations will be merged.
 
-territories
-   build gene territories around gene set.
+great-domains
+   regulatory domains using the basal+extended model according to GREAT.
 
-exons
-   annotate exons. Exonic segments are classified according 
-   to the transcript structure
-
-promoters
+promotors
    declare promoter regions. These segments might be overlapping. A promotor
    is the region x kb upstream of a transcription start site. The option
    ``--promotor`` sets the region width.
@@ -70,6 +73,13 @@ tts-regulons
    declare tts regulatory regions. tts-regulatory regions contain the region x kb of
    upstream and downstream of a transciption termination site. The options ``--upstream``
    and ``-downstream`` set the region width.
+
+territories
+   build gene territories around full length genes.
+
+tss-territories
+   build gene territories around transcription start sites.
+
 
 Genome
 ++++++
@@ -121,7 +131,7 @@ downstream_gene_id.
 Genes
 +++++
 
-If ``--method=genome``, the gene set is used to annotate the complete genome.
+If ``--method=genes``, the gene set is used to annotate the complete genome.
 
 .. note::
    The gtf file has to be sorted by gene.
@@ -164,7 +174,7 @@ extent of a territory is limited by the option ``--radius``
 TSSTerritories
 ++++++++++++++
 
-If ``--method=tssterritories``, the gene set is used to define gene territories. 
+If ``--method=tss-territories``, the gene set is used to define gene territories. 
 Instead of the full gene length as in :ref:`territories`, only the tss is used to 
 define a territory. Territories are segments around genes and are non-overlapping.
 Overlapping territories are divided at the midpoint between the two genes. The maximum
@@ -226,20 +236,20 @@ The following example uses an ENSEMBL gene set::
 Promoters
 +++++++++
 
-If ``--method=promotors``, putative promotor regions are output. A promoter is
-a x kb segment upstream of the transcription start site. As the actual start site
-is usually not known, the start of the first exon within a transcript is used as a proxy.
-A gene can have several promotors associated with it, but overlapping promotor
-regions of the same gene will be merged. A promoter can extend into an adjacent
-upstream gene.
+If ``--method=promotors``, putative promotor regions are output. A
+promoter is a pre-defined segment upstream of the transcription start
+site. As the actual start site is usually not known, the start of the
+first exon within a transcript is used as a proxy. A gene can have
+several promotors associated with it, but overlapping promotor regions
+of the same gene will be merged. A promoter can extend into an
+adjacent upstream gene.
 
 Only protein coding genes are used to annotate promotors.
 
 The size of the promotor region can be specified by the command line
-argument ``--promotor``
+argument ``--promotor``.
 
 Regulons
-
 +++++++++
 
 If ``--method=regulons``, putative regulon regions are output. This is similar
@@ -250,29 +260,31 @@ Only protein coding genes are used to annotate regulons.
 
 The size of the promotor region can be specified by the command line
 argument ``--upstream`` and ``--downstream``
+
+If ``--method=tts-regulons``, regulons will be defined around the transcription
+termination site.
  
 Usage
 -----
 
 Type::
-   python <script_name>.py --help
+    python gtf2gff.py --method=genome --genome-file=hg19 < geneset.gtf > annotations.gff
 
 for command line help.
 
-Code
-----
+Command line options
+---------------------
+
 """
 
 import os
 import sys
 import string
 import re
-import optparse
 import types
 import collections
 import itertools
 
-import CGAT.GFF as GFF
 import CGAT.GTF as GTF
 import CGAT.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
@@ -393,7 +405,7 @@ def buildTerritories( iterator, fasta, method, options ):
         last_end, prev_end = 0, 0
         last_contig = None
         last = None
-        for matches in GFF.iterator_overlaps( iterator ):
+        for matches in GTF.iterator_overlaps( iterator ):
 
             this_start = min( [ x.start for x in matches ] )
             this_end = max( [ x.end for x in matches ] )
@@ -541,7 +553,7 @@ def annotateExons( iterator, fasta, options ):
                 intervals[ (e.start, e.end) ].append( (i+1,nexons) )
 
         gtf = GTF.Entry()
-        gtf.fromGFF( this[0][0], this[0][0].gene_id, this[0][0].gene_id )
+        gtf.fromGTF( this[0][0], this[0][0].gene_id, this[0][0].gene_id )
         gtf.addAttribute( "ntranscripts", ntranscripts )        
 
         gtfs = []
@@ -603,7 +615,7 @@ def annotatePromoters( iterator, fasta, options ):
             transcript_ids = ["%i" % (x+1) for x in range(len(promotors) )]
             
         gtf = GTF.Entry()
-        gtf.fromGFF( gene[0][0], gene[0][0].gene_id, gene[0][0].gene_id )
+        gtf.fromGTF( gene[0][0], gene[0][0].gene_id, gene[0][0].gene_id )
         gtf.source = "promotor"
 
         x = 0
@@ -663,7 +675,7 @@ def annotateRegulons( iterator, fasta, tss, options ):
             transcript_ids = ["%i" % (x+1) for x in range(len(regulons) )]
             
         gtf = GTF.Entry()
-        gtf.fromGFF( gene[0][0], gene[0][0].gene_id, gene[0][0].gene_id )
+        gtf.fromGTF( gene[0][0], gene[0][0].gene_id, gene[0][0].gene_id )
         gtf.source = "regulon"
 
         x = 0
@@ -728,7 +740,7 @@ def annotateGREATDomains( iterator, fasta, options ):
         start, end = min( x[0] for x in regulons), max(x[1] for x in regulons )
         
         gtf = GTF.Entry()
-        gtf.fromGFF( gene[0][0], gene[0][0].gene_id, gene[0][0].gene_id )
+        gtf.fromGTF( gene[0][0], gene[0][0].gene_id, gene[0][0].gene_id )
         gtf.source = "greatdomain"
         gtf.start, gtf.end = start, end
         regions.append( gtf )
@@ -745,7 +757,7 @@ def annotateGREATDomains( iterator, fasta, options ):
     regions.sort( key = lambda x: (x.contig, x.start ) )
 
     # iterate within groups of overlapping basal regions
-    groups = list( GFF.iterator_overlaps( iter(regions) ))
+    groups = list( GTF.iterator_overlaps( iter(regions) ))
     counter.groups = len(groups)
 
     last_end = 0
@@ -847,7 +859,7 @@ def annotateTTS( iterator, fasta, options ):
             transcript_ids = ["%i" % (x+1) for x in range(len(tts) )]
             
         gtf = GTF.Entry()
-        gtf.fromGFF( gene[0][0], gene[0][0].gene_id, gene[0][0].gene_id )
+        gtf.fromGTF( gene[0][0], gene[0][0].gene_id, gene[0][0].gene_id )
         gtf.source = "tts"
 
         x = 0
@@ -984,7 +996,9 @@ def annotateGenes( iterator, fasta, options ):
     E.info( "ngenes=%i, ntranscripts=%i, nskipped=%i\n" % (ngenes, ntranscripts, nskipped) )
 
 ##------------------------------------------------------------
-if __name__ == '__main__':
+def main( argv = None ):
+
+    if not argv: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: gtf2gff.py 2861 2010-02-23 17:36:32Z andreas $", usage = globals()["__doc__"] )
 
@@ -999,8 +1013,10 @@ if __name__ == '__main__':
                       help="restrict input by source [default=%default]."  )
 
     parser.add_option("-m", "--method", dest="method", type="choice",
-                      choices=("full", "genome", "exons", "promotors", "tts", 
-                               "regulons", "tts-regulons", "genes",
+                      choices=("full", "genome", "exons", 
+                               "promotors", "tts", 
+                               "regulons", "tts-regulons", 
+                               "genes",
                                "territories", "tss-territories",
                                "great-domains",
                                ),
@@ -1034,6 +1050,10 @@ if __name__ == '__main__':
     parser.add_option( "--min-intron-length", dest="min_intron_length", type="int",
                       help="minimum intron length. If the distance between two consecutive exons is smaller, the region will be marked 'unknown' [default=%default]."  )
 
+    parser.add_option("-o", "--sort", dest="sort", action="store_true",
+                      help="sort input before processing. Otherwise, the input is assumed "
+                      "to be sorted [default=%default]."  )
+
     parser.set_defaults(
         genome_file = None,
         flank = 1000,
@@ -1049,6 +1069,7 @@ if __name__ == '__main__':
         upstream = 5000,
         downstream = 5000,
         detail = "exons",
+        sort = False,
         )
 
     (options, args) = E.Start( parser )
@@ -1056,7 +1077,7 @@ if __name__ == '__main__':
     if options.genome_file:
         fasta = IndexedFasta.IndexedFasta( options.genome_file )
     else:
-        fasta = None
+        raise ValueError("please specify a --genome-file")
 
     if options.restrict_source:
         iterator = GTF.iterator_filtered( GTF.iterator(options.stdin), 
@@ -1065,6 +1086,10 @@ if __name__ == '__main__':
         iterator = GTF.iterator_filtered( GTF.iterator(options.stdin), source = "protein_coding" )
     else:
         iterator = GTF.iterator(options.stdin)
+
+    if options.sort:
+        print "here"
+        iterator = GTF.iterator_sorted( iterator, sort_order = "position" )
 
     if options.method == "full" or options.method == "genome":
         segmentor = annotateGenome( iterator, fasta, options )
@@ -1089,4 +1114,7 @@ if __name__ == '__main__':
 
 
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
 

@@ -66,7 +66,7 @@ import subprocess
 
 import scipy.stats
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.TreeTools as TreeTools
 import CGAT.IOTools as IOTools
 
@@ -462,7 +462,7 @@ if __name__ == "__main__":
         merge_mode = "ignore",
         )
 
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
     ########################################################################
     ########################################################################
@@ -489,4 +489,4 @@ if __name__ == "__main__":
     else:
         processGeneTrees( chunks, lines, map_strain2species, options )
 
-    Experiment.Stop()
+    E.Stop()

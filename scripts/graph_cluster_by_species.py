@@ -81,7 +81,7 @@ Cluster transcripts based on a distance measure. The transcripts can be clustere
         
 """ % sys.argv[0]
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import networkx
 
 ###########################################################
@@ -441,7 +441,7 @@ if __name__ == "__main__":
         max_weight = None,
         separator = "|")
         
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     options.quality_priority = options.quality_priority.split(",")
 
@@ -517,4 +517,4 @@ if __name__ == "__main__":
         options.stdlog.write( "# ncomponents=%i, nsynonyms=%i\n" % (len(components), len(map_synonyms)))
         options.stdlog.write( "# final component sizes: %s\n" % ",".join(map( lambda x: str(len(x)), components)))
 
-    Experiment.Stop()
+    E.Stop()

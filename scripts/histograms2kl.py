@@ -65,7 +65,7 @@ import random
 
 import math
 import numpy
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import pgdb
 import CGAT.IOTools as IOTools
 
@@ -93,7 +93,7 @@ if __name__  == "__main__":
         number_format = "%6.4f"
         )
     
-    (options, args) = Experiment.Start( parser,
+    (options, args) = E.Start( parser,
                                         add_pipe_options = True )
 
     if options.xrange: options.xrange = map(float, options.xrange.split(","))
@@ -132,4 +132,4 @@ if __name__  == "__main__":
                                       (legend[y], legend[x],
                                        options.number_format % d2) )
                             
-    Experiment.Stop()
+    E.Stop()

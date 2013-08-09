@@ -62,7 +62,7 @@ import tempfile
 import subprocess
 import optparse
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 
 import CGAT.FastaIterator as FastaIterator
@@ -206,7 +206,7 @@ if __name__ == "__main__":
         filename_map = None,
         )
     
-    (options, args) = Experiment.Start( parser, add_mysql_options = True )
+    (options, args) = E.Start( parser, add_mysql_options = True )
 
     iterator = FastaIterator.FastaIterator( options.stdin )
 
@@ -227,4 +227,4 @@ if __name__ == "__main__":
         
         print cur_record.title + "\t" + str(s)
 
-    Experiment.Stop()
+    E.Stop()

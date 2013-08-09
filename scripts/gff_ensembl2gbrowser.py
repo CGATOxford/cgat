@@ -67,8 +67,7 @@ import optparse
 import math
 import tempfile
 
-import CGAT.Experiment as Experiment
-import CGAT.GFF as GFF
+import CGAT.Experiment as E
 
 USAGE="""
 
@@ -98,9 +97,9 @@ if __name__ == "__main__":
         feature = "CDS",
         )
 
-    (options, args) = Experiment.Start( parser, add_csv_options  = True)
+    (options, args) = E.Start( parser, add_csv_options  = True)
 
-    input_gffs = GFF.readFromFile( sys.stdin, separator = " " )
+    input_gffs = GTF.readFromFile( sys.stdin, separator = " " )
 
     ## sort by genes
     input_gffs.sort( lambda x,y: cmp( (x["gene_id"], x["transcript_id"], x.start), (y["gene_id"], y["transcript_id"], y.start) ) )
@@ -120,7 +119,7 @@ if __name__ == "__main__":
 
         if last_g:
             if last_g["transcript_id"] != g["transcript_id"]:
-                n = GFF.Entry()
+                n = GTF.Entry()
                 n.Fill(last_g)
                 n.clearAttributes()                
                 n.feature = "mRNA"
@@ -133,7 +132,7 @@ if __name__ == "__main__":
                 mrna_from, mrna_to = g.start, g.end
                 
             if last_g["gene_id"] != g["gene_id"]:
-                n = GFF.Entry()
+                n = GTF.Entry()
                 n.Fill(last_g)
                 n.clearAttributes()
                 n.feature = "gene"                
@@ -148,7 +147,7 @@ if __name__ == "__main__":
             gene_from, gene_to = g.start, g.end
             mrna_from, mrna_to = gene_from, gene_to
                 
-        n = GFF.Entry()            
+        n = GTF.Entry()            
 
         n.Fill( g )
         n.clearAttributes()
@@ -168,4 +167,4 @@ if __name__ == "__main__":
         n.source = options.source_id
         options.stdout.write(str(n) + "\n")
         
-    Experiment.Stop()
+    E.Stop()

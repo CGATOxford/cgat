@@ -1,0 +1,15 @@
+{% extends "!layout.html" %}
+
+{% block rootrellink %}
+        <li><a href="{{ pathto('index') }}">home</a>|&nbsp;</li>
+        <li><a href="{{ pathto('search') }}">search</a>|&nbsp;</li>
+	<li><a href="{{ pathto('analysis') }}">analysis</a>|&nbsp;</li>
+        <li><a href="{{ pathto('pipeline') }}">pipeline</a>|&nbsp;</li>
+	<li><a href="{{ pathto('gallery') }}">gallery</a>|&nbsp;</li>
+	<li><a href="{{ pathto('contents') }}">contents</a> &raquo;</li>
+
+{% endblock %}
+
+
+
+

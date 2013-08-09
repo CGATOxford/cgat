@@ -38,9 +38,7 @@ import os, sys, string, re, tempfile, subprocess, optparse
 """Wrapper for adaptive codon bias program
 """
 
-import Experiment
-
-parser = E.OptionParser( version = "%prog version: $Id: WrapperAdaptiveCAI.py 756 2006-09-20 16:38:02Z andreas $")
+import Experiment as E
 
 class CAIError(Exception):
     pass
@@ -306,6 +304,8 @@ class AdaptiveCAI:
      
 if __name__ == "__main__":
 
+    parser = E.OptionParser( version = "%prog version: $Id: WrapperAdaptiveCAI.py 756 2006-09-20 16:38:02Z andreas $")
+
     parser.add_option("-f", "--input-file", dest="input_filename", type="string",
                       help="input filename. If not given, stdin is used.",
                       metavar="FILE" )
@@ -338,7 +338,7 @@ if __name__ == "__main__":
         output_filename_codons = None,                
         iterations = 10),
 
-    (options, args) = Experiment.Start( parser ) 
+    (options, args) = E.Start( parser ) 
 
     wrapper = AdaptiveCAI( iterations=options.iterations )
 
@@ -393,5 +393,5 @@ if __name__ == "__main__":
     if file_weights and file_weights != sys.stdin:
         file_weights.close()
 
-    Experiment.Stop()
+    E.Stop()
         

@@ -2,7 +2,7 @@
 #
 #   MRC FGU Computational Genomics Group
 #
-#   $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $
+#   $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $
 #
 #   Copyright (C) 2009 Andreas Heger
 #
@@ -37,11 +37,11 @@ Usage
 
 Example::
 
-   python script_template.py --help
+   python cgat_script_template.py --help
 
 Type::
 
-   python script_template.py --help
+   python cgat_script_template.py --help
 
 for command line help.
 
@@ -60,7 +60,7 @@ import os
 import optparse
 import math
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import scipy
 import scipy.stats
 import CGAT.IOTools as IOTools
@@ -102,7 +102,7 @@ if __name__ == '__main__':
         display_tree = False,
         )
 
-    (options, args) = Experiment.Start( parser, quiet = True )
+    (options, args) = E.Start( parser, quiet = True )
 
     if options.columns not in ( "all", "all-but-first"):
         options.columns = map(lambda x: int(x) -1 , options.columns.split(","))

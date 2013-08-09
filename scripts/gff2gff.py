@@ -34,24 +34,60 @@ Purpose
 This scripts reads a :term:`gff` formatted file, operates
 on it and outputs the new intervals in :term:`gff` format.
 
+Extension options:
+
+``--extend``
+   extend existing features
+
+``--add-up-flank/--add-down-flank``
+   add an upstream/downstearm flanking segment to first/last exon of a group.
+
+Segment transformations:
+
+``--crop``
+   crop features according to features in a separate gff file.
+
+``--crop-unique``
+   remove non-unique features from gff file.
+
+``--merge-features``
+   merge consecutive features.
+
+``--join-features``
+   group consecutive features
+
+Filtering options:
+
+``--filter-range``
+   extract features overlapping a chromosomal range.
+
+``--sanitize``
+   reconcile chromosome names between ENSEMBL/UCSC or with an indexed
+   genomic fasta file (see :doc:`index_fasta`). Raises an exception if
+   an unknown contig is found (unless ``--skip-missing`` is set).
+
+``--remove-contigs``
+   remove contig matching to a series of regular expressions.
+
+
+
 Usage
 -----
 
-Example::
+Make sure that a :term:`gff` formatted file contains only features on placed chromosomes::
 
-   python <script_name>.py --help
+   cat in.gff 
+   | gff2gff.py --sanitize=genome --genome-file=hg19 --skip-missing 
+   | gff2gff.py --remove-contigs="chrUn,_random" > gff.out
 
 Type::
 
-   python <script_name>.py --help
+   python gff2gff.py --help
 
 for command line help.
 
-Documentation
--------------
-
-Code
-----
+Command line options
+--------------------
 
 '''
 
@@ -63,7 +99,6 @@ import optparse
 
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
-import CGAT.GFF as GFF
 import CGAT.GTF as GTF
 import CGAT.AGP as AGP
 import CGAT.Genomics as Genomics
@@ -122,7 +157,7 @@ def combineGFF( gffs, options, merge = True ):
             ninput += 1
             y = GTF.Entry()
             t = options.output_format % id
-            y.fromGFF( to_join[0], t, t )
+            y.fromGTF( to_join[0], t, t )
             y.start = to_join[0].start
             y.end = to_join[-1].end
             
@@ -139,7 +174,7 @@ def combineGFF( gffs, options, merge = True ):
             for x in to_join:
                 y = GTF.Entry()
                 t = options.output_format % id
-                y.fromGFF( x, t, t )
+                y.fromGTF( x, t, t )
                 options.stdout.write( "%s\n" % str(y ) )
                 nfeatures += 1
 
@@ -233,8 +268,8 @@ def cropGFF( gffs, options ):
     # read regions to crop with and convert intervals to intersectors
     E.info( "reading gff for cropping: started." )
 
-    other_gffs = GFF.iterator( IOTools.openFile( options.crop, "r") )
-    cropper = GFF.readAsIntervals( other_gffs )
+    other_gffs = GTF.iterator( IOTools.openFile( options.crop, "r") )
+    cropper = GTF.readAsIntervals( other_gffs )
     ntotal = 0
     for contig in cropper.keys():
         intersector = bx.intervals.intersection.Intersecter()
@@ -286,7 +321,9 @@ def cropGFF( gffs, options ):
         options.stdlog.write( "# ninput=%i, noutput=%i, ncropped=%i, ndeleted=%i\n" % (ninput, noutput, ncropped, ndeleted) )
 
 ##------------------------------------------------------------------------
-if __name__ == "__main__":
+def main( argv = None ):
+    
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: gff2gff.py 2868 2010-03-03 10:19:52Z andreas $")
 
@@ -331,13 +368,16 @@ if __name__ == "__main__":
 
     parser.add_option( "--join-features", dest="join_features", type="string",
                        help="join features into a single transcript. Consecutive features are grouped "
-                       " into the same transcript/gene. The options expects a,b,c,d as input; "
+                       " into the same transcript/gene. This metdo expects a string of for numbers ``a,b,c,d`` " 
+                       " as input with:"
                        " a,b=minimum/maximum distance between features, "
                        " c,d=minimum,maximum number of features.""" )
 
     parser.add_option( "--merge-features", dest="merge_features", type="string",
-                       help="""merge features. Consecutive features are merged into a single feature. The options expects a,b,c,d as input; a,b=minimum/maximum distance between features, 
-a,b=minimum,maximum number of features.""" )
+                       help="merge features. Consecutive features are merged into a single feature. "
+                       "This method expects a string of four numbers ``a,b,c,d`` as input; "
+                       "a,b=minimum/maximum distance between features, "
+                       "c,d=minimum,maximum number of features." )
 
     parser.add_option( "--crop-unique", dest="crop_unique", action="store_true",
                        help = "crop overlapping intervals, keeping only intervals that are unique [default=%default]" )
@@ -379,7 +419,7 @@ a,b=minimum,maximum number of features.""" )
         is_gtf = False,
         )
 
-    (options, args) = E.Start( parser )
+    (options, args) = E.Start( parser, argv = argv )
 
     if options.input_filename_contigs:
         contigs = Genomics.ReadContigSizes( IOTools.openFile( options.input_filename_contigs, "r") )
@@ -387,10 +427,11 @@ a,b=minimum,maximum number of features.""" )
     if options.genome_file:
         genome_fasta = IndexedFasta.IndexedFasta( options.genome_file )
         contigs = genome_fasta.getContigSizes()
-        
+    else:
+        genome_fasta = None
+
     if (options.forward_coordinates or options.forward_strand) and not contigs: 
         raise ValueError( "inverting coordinates requires genome file")
-
 
     if options.input_filename_agp:
         agp = AGP.AGP()
@@ -401,14 +442,14 @@ a,b=minimum,maximum number of features.""" )
     if options.is_gtf:
         gffs = GTF.iterator( options.stdin )
     else:
-        gffs = GFF.iterator( options.stdin )
+        gffs = GTF.iterator( options.stdin )
 
     if options.add_up_flank or options.add_down_flank:
         
         if options.is_gtf:
             iterator = GTF.flat_gene_iterator( gffs )
         else:
-            iterator = GFF.joined_iterator( gffs )
+            iterator = GTF.joined_iterator( gffs )
         
         for chunk in iterator:
             is_positive = Genomics.IsPositiveStrand( chunk[0].strand )
@@ -428,28 +469,28 @@ a,b=minimum,maximum number of features.""" )
                         chunk[0].start = max( 0, chunk[0].start - options.add_down_flank )
             else:
                 if options.add_up_flank:
-                    gff = GFF.Entry()
+                    gff = GTF.Entry()
                     if is_positive:
-                        gff.Fill( chunk[0] )
+                        gff.copy( chunk[0] )
                         gff.end = gff.start
                         gff.start = max( 0, gff.start - options.add_up_flank )
                         chunk.insert(0, gff)
                     else:
-                        gff.Fill( chunk[-1] )
+                        gff.copy( chunk[-1] )
                         gff.start = gff.end
                         gff.end = min( lcontig, gff.end + options.add_up_flank )
                         chunk.append( gff )
                     gff.feature = "5-Flank"
                     gff.mMethod = "gff2gff"
                 if options.add_down_flank:
-                    gff = GFF.Entry()
+                    gff = GTF.Entry()
                     if is_positive:
-                        gff.Fill( chunk[-1] )
+                        gff.copy( chunk[-1] )
                         gff.start = gff.end
                         gff.end = min( lcontig, gff.end + options.add_up_flank )
                         chunk.append( gff )
                     else:
-                        gff.Fill( chunk[0] )
+                        gff.copy( chunk[0] )
                         gff.end = gff.start
                         gff.start = max( 0, gff.start - options.add_up_flank )
                         chunk.insert(0, gff)
@@ -463,11 +504,11 @@ a,b=minimum,maximum number of features.""" )
 
     elif options.complement_groups:
         
-        iterator = GFF.joined_iterator( gffs )
+        iterator = GTF.joined_iterator( gffs )
         for chunk in iterator:
             chunk.sort()
-            x = GFF.Entry()
-            x.Fill( chunk[0] )
+            x = GTF.Entry()
+            x.copy( chunk[0] )
             x.start = x.end
             x.feature = "intron"
             for c in chunk[1:]:
@@ -477,12 +518,12 @@ a,b=minimum,maximum number of features.""" )
             
     elif options.combine_groups:
         
-        iterator = GFF.joined_iterator( gffs )
+        iterator = GTF.joined_iterator( gffs )
 
         for chunk in iterator:
             chunk.sort()
-            x = GFF.Entry()
-            x.Fill( chunk[0] )
+            x = GTF.Entry()
+            x.copy( chunk[0] )
             x.end = chunk[-1].end
             x.feature = "segment"
             options.stdout.write( str(x) + "\n" )
@@ -535,7 +576,7 @@ a,b=minimum,maximum number of features.""" )
             options.stdlog.write("# filter: contig=%s, strand=%s, interval=%s\n" % (str(contig), str(strand), str(interval)))
             options.stdlog.flush()
 
-        for gff in GFF.iterator_filtered( gffs, contig = contig, strand = strand, interval = interval ):
+        for gff in GTF.iterator_filtered( gffs, contig = contig, strand = strand, interval = interval ):
             options.stdout.write( str(gff) + "\n" )
 
     elif options.sanitize:
@@ -551,6 +592,8 @@ a,b=minimum,maximum number of features.""" )
             return id
 
         if options.sanitize == "genome":
+            if genome_fasta == None:
+                raise ValueError("please specify --genome-file= when using --sanitize=genome")
             f = genome_fasta.getToken
         elif options.sanitize == "ucsc":
             f = toUCSC
@@ -621,3 +664,5 @@ a,b=minimum,maximum number of features.""" )
 
     E.Stop()
     
+if __name__ == "__main__":
+    sys.exit( main( sys.argv ))

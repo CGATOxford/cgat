@@ -61,7 +61,6 @@ import sys
 import optparse
 import collections
 import itertools
-import CGAT.GFF as GFF
 import CGAT.GTF as GTF
 import CGAT.Bed as Bed
 import CGAT.Intervals as Intervals
@@ -140,7 +139,7 @@ def readWorkspace( infile,
         info_f = lambda x: x.gene_id
         
     if workspace_builder == "gff":
-        workspace = GFF.readAsIntervals( GFF.iterator( infile ) )
+        workspace = GTF.readAsIntervals( GFF.iterator( infile ) )
 
     elif workspace_builder == "gtf-intergenic":
 

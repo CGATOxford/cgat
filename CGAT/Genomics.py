@@ -35,7 +35,8 @@ Code
 
 import numpy
 import os, sys, string, re, time, array, hashlib, base64, tempfile, math
-import alignlib
+try: import alignlib
+except ImportError: pass
 
 import AString
 import Bio.Alphabet

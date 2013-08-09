@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-gff2annotator.py - convert from gff to annotator format
+gff2annotator2tsv.py - convert from gff to annotator format
 =======================================================
 
 :Author: Andreas Heger
@@ -41,11 +41,11 @@ Usage
 
 Example::
 
-   python gff2annotator.py --help
+   python gff2annotator2tsv.py --help
 
 Type::
 
-   python gff2annotator.py --help
+   python gff2annotator2tsv.py --help
 
 for command line help.
 
@@ -70,7 +70,6 @@ import glob
 import collections
 
 import CGAT.Experiment as E
-import CGAT.GFF as GFF
 import CGAT.GTF as GTF
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.IOTools as IOTools
@@ -106,7 +105,7 @@ this script will create:
 
 if __name__ == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: gff2annotator.py 2861 2010-02-23 17:36:32Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: gff2annotator2tsv.py 2861 2010-02-23 17:36:32Z andreas $", usage = globals()["__doc__"])
 
         
     parser.add_option( "-g", "--genome-file", dest="genome_file", type="string",
@@ -188,7 +187,7 @@ if __name__ == "__main__":
 
     if options.section in ("segments", "workspace"):
 
-        iterator = GFF.iterator_filtered( GFF.iterator( options.stdin ),
+        iterator = GTF.iterator_filtered( GFF.iterator( options.stdin ),
                                           feature=options.feature )
 
         if options.output_filename_synonyms:
@@ -198,7 +197,7 @@ if __name__ == "__main__":
             outfile_synonyms = None
             with_records = False
 
-        intervals =GFF.readAsIntervals( iterator, with_records = with_records )
+        intervals =GTF.readAsIntervals( iterator, with_records = with_records )
         ninput, nsegments, ndiscarded, ncontigs = \
             PipelineEnrichment.outputSegments( options.stdout,
                                                intervals,
@@ -246,7 +245,7 @@ if __name__ == "__main__":
             is_gtf = False
 
             if filename == "-":
-                iterator = GFF.iterator_filtered( GFF.iterator( sys.stdin ),
+                iterator = GTF.iterator_filtered( GFF.iterator( sys.stdin ),
                                                   feature=options.feature )
                 filename = options.annotations
             elif filename.endswith(".gtf"):
@@ -257,13 +256,13 @@ if __name__ == "__main__":
                 
             else:
                 with open( filename, "r") as infile:
-                    iterator = GFF.iterator_filtered( GFF.iterator( infile ),
+                    iterator = GTF.iterator_filtered( GFF.iterator( infile ),
                                                       feature=options.feature )
            
             E.debug("processing %s" % (filename))
 
             if not options.subsets or filename not in options.subsets:
-                for contig, gffs in GFF.readAsIntervals( iterator ).items():
+                for contig, gffs in GTF.readAsIntervals( iterator ).items():
                     if options.remove_regex and options.remove_regex.search( contig ): continue
 
                     for x in gffs:
@@ -280,9 +279,9 @@ if __name__ == "__main__":
 
         for filename in options.files:
             if filename == "-":
-                iterator = GFF.iterator( sys.stdin )
+                iterator = GTF.iterator( sys.stdin )
             else:
-                iterator = GFF.iterator_filtered( GFF.iterator( open( filename, "r") ) )
+                iterator = GTF.iterator_filtered( GFF.iterator( open( filename, "r") ) )
 
             segments = collections.defaultdict( list )
             for gff in iterator:
@@ -327,7 +326,7 @@ if __name__ == "__main__":
             
             if not options.subsets or filename not in options.subsets:
                 ## output all
-                for contig, gffs in GFF.readAsIntervals( iterator ).items():
+                for contig, gffs in GTF.readAsIntervals( iterator ).items():
                     if options.remove_regex and options.remove_regex.search( contig ): continue
 
                     for x in gffs:

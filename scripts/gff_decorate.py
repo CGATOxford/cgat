@@ -79,15 +79,13 @@ import shutil
 import tempfile
 import math
 
-import CGAT.Experiment as Experiment
-import CGAT.GFF as GFF
+import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.IndexedGenome as IndexedGenome
 
 import CGAT.Intervals as Intervals
 import CGAT.Stats as Stats
-import CGAT.GFF as GFF
 
 #########################################################
 #########################################################
@@ -217,7 +215,7 @@ def test_transform_third_codon():
 
     def test_entry( frame, strand, xfrom, xto, start, end, ref ):
 
-        entry = GFF.Entry()
+        entry = GTF.Entry()
         entry.frame = frame
         entry.strand = strand
         entry.start = xfrom
@@ -243,7 +241,7 @@ def annotateWindows( contig, windows, gff_data, fasta, options ):
     for g in gff_data:
         index.add( g.contig, g.start, g.end, g )
     
-    w = GFF.Entry()
+    w = GTF.Entry()
     w.contig = contig
     w.feature = "count"
 
@@ -390,7 +388,7 @@ if __name__ == "__main__":
         is_gtf = False,
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     #    test_transform_third_codon()
     
@@ -401,7 +399,7 @@ if __name__ == "__main__":
         options.stdlog.write("# reading windows..." )
         options.stdlog.flush()
         
-    windows = GFF.readAsIntervals( GFF.iterator( open(options.filename_windows, "r" ) ) )
+    windows = GTF.readAsIntervals( GFF.iterator( open(options.filename_windows, "r" ) ) )
 
     if options.loglevel >= 1:
         options.stdlog.write("done\n" )
@@ -415,13 +413,13 @@ if __name__ == "__main__":
         if options.is_gtf:
             gff_data = GTF.readFromFile( open( options.filename_data, "r" ) )
         else: 
-            gff_data = GFF.readFromFile( open( options.filename_data, "r" ) )
+            gff_data = GTF.readFromFile( open( options.filename_data, "r" ) )
 
         if options.loglevel >= 1:
             options.stdlog.write("done\n" )
             options.stdlog.flush()
         
-        data_ranges = GFF.SortPerContig( gff_data )
+        data_ranges = GTF.SortPerContig( gff_data )
     else:
         ## use windows to compute properties
         ## by supplying no data and asking for the complement = original window
@@ -477,6 +475,6 @@ if __name__ == "__main__":
         options.stdout.write( "# ninput_windows=%i, noutput_contigs=%i, ninput_contigs=%i, nskipped_windows=%i, nskipped_data=%i\n" %\
                                   ( len(windows), noutput_contigs, len(contigs), ncontigs_skipped_windows, ncontigs_skipped_data ) )
 
-    Experiment.Stop()
+    E.Stop()
 
 

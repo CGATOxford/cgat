@@ -15,9 +15,8 @@ output. The tests are implemented in the script
 This script collects tests from subdirectories in the :file:`tests`
 directory. Each test is named by the name of the script it tests.
 
-
-Adding a new test
------------------
+Adding a new test manually
+--------------------------
 
 To add a new test for a CGAT script, create a new :term:`test
 directory` in the directory :file:`tests`. The name of the :term:`test
@@ -64,12 +63,14 @@ To illustrate, we will be creating tests for the scripts
        outputs: [stdout]
        stdin: null 
        references: [test1.tsv]
-       options: --genome-file=%DIR%/small_genome
+       options: --genome-file=<DIR>/small_genome
 
 ``basic_test`` is the name of the test. There is no standard input
 and the output of the script goes to stdout. Stdout will be compared to
 the file :file:`test1.tsv`. The script requires the ``--genome-file``
-option, which we supply in the ``options`` field.
+option, which we supply in the ``options`` field. The ``<DIR>`` prefix
+will be expanded to the directory that contains the file
+:file:`tests.yaml`.
 
 Finally, we create the required input and reference files in the
 :term:`test directory`. Our directory structure looks thus::
@@ -87,16 +88,51 @@ the :file:`tests.yaml` file.
 Please write abundant tests, but keep test data to a minimum. Thus,
 instead of running on a large bam file, create stripped down versions
 containing only relevant data that is sufficient for the test at hand.
-Re-use test data as much as possible.
+
+Re-use test data as much as possible. Some
+generic test data used by multiple tests is in the :file:`tests/data`
+directory. 
+
+Creating a test
+---------------
+
+The script :file:`tests/setup_test.py` can be used to set up 
+a testing stub. For example::
+
+   python tests/setup_test.py scripts/bam2bam.py
+
+will add a new test for the script :file:`bam2bam.py`.
+
+The script will create a new testing directory for each script passed
+on the command line and create a simple :file:`tests.yaml` file. The
+basic test will simply call a script to check if starts without error
+and returns a version string.
 
 Running tests
 -------------
 
 In order to run the tests on CGAT scripts, type::
 
-   nosetest tests/test_scripts.py
+   nosetests tests/test_scripts.py
 
+In order to get more information, type::
+
+   nosetests -v tests/test_scripts.py
+
+To run individual tests, edit the file
+:file:`tests/test_scripts.yaml`. In order to restrict testing to
+a single script, for example ``beds2counts.py``, add the following::
+
+   restrict:
+         regex: beds2counts.py
+   
 Testing modules
 ===============
 
 TODO 
+
+
+Testing pipelines
+=================
+
+TODO - describe pipeline_testing

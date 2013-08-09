@@ -52,7 +52,6 @@ import re
 import optparse
 
 import CGAT.IndexedFasta as IndexedFasta
-import CGAT.GFF as GFF
 import CGAT.Experiment as E
 
 def main( argv = None ):
@@ -82,7 +81,7 @@ def main( argv = None ):
 
     fasta = IndexedFasta.IndexedFasta( options.genome_file )
 
-    entry = GFF.Entry()
+    entry = GTF.Entry()
     entry.start = 0
     entry.feature = "contig"
     entry.source = "genome"

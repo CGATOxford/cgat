@@ -141,7 +141,6 @@ import pysam
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.IndexedGenome as IndexedGenome
 import CGAT.Genomics as Genomics
-import CGAT.GFF as GFF
 
 def readJunctions( filename_junctions ):
     '''read junctions from a tab-separated file.
@@ -227,7 +226,7 @@ class BaseAnnotatorExons( BaseAnnotator ):
 
         exons = IndexedGenome.IndexedGenome()
         nexons = 0
-        for g in GFF.iterator( open( filename_exons, "r") ):
+        for g in GTF.iterator( open( filename_exons, "r") ):
             exons.add( g.contig, g.start, g.end, g )
             nexons += 1
 

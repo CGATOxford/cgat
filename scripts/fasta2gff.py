@@ -68,7 +68,6 @@ import glob
 
 import CGAT.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
-import CGAT.GFF as GFF
 import CGAT.GTF as GTF
 
 USAGE="""python %s [OPTIONS] 
@@ -121,7 +120,7 @@ def main():
     if options.as_gtf:
         entry = GTF.Entry()
     else:
-        entry = GFF.Entry()
+        entry = GTF.Entry()
 
     n = 0
     entry.feature = "exon"

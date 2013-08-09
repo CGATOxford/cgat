@@ -67,7 +67,7 @@ import tempfile
 import subprocess
 
 from types import *
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.TreeTools as TreeTools
 
 TEMPLATE = """
@@ -249,7 +249,7 @@ if __name__ == "__main__":
     parser.set_defaults(
         )
 
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
     lines = filter( lambda x: x[0] != "#", sys.stdin.readlines())
 
@@ -261,4 +261,4 @@ if __name__ == "__main__":
 
     print treegraph.Run( input_tree )
 
-    Experiment.Stop()
+    E.Stop()

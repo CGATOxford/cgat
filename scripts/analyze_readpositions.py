@@ -69,7 +69,7 @@ USAGE=""" program $Id: analyze_readpositions.py 2781 2009-09-10 11:33:14Z andrea
 
 
 """
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.CSV as CSV
 import CGAT.IOTools as IOTools
 import CGAT.Stats as Stats
@@ -90,7 +90,7 @@ def main():
         normalize = True,
         )
 
-    (options, args) = Experiment.Start( parser, add_csv_options = True )
+    (options, args) = E.Start( parser, add_csv_options = True )
 
     fields, table = CSV.ReadTable( sys.stdin, dictreader=CSV.DictReaderLarge )
     
@@ -198,7 +198,7 @@ def main():
     E.info( "ninput=%i, noutput=%i, nmaxreads=%i, nfull=%i, nmincov=%i, nskipped=%i, nlength=%i" %\
                 (ninput, noutput, nmaxreads, nfull, nmincov, nskipped, nlength) )
     
-    Experiment.Stop()
+    E.Stop()
 
 if __name__ == "__main__":
     sys.exit( main() )

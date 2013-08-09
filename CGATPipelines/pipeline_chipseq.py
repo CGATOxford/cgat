@@ -214,7 +214,6 @@ import CGAT.FastaIterator as FastaIterator
 import CGAT.Genomics as Genomics
 import CGAT.IOTools as IOTools
 import CGAT.GTF as GTF
-import CGAT.GFF as GFF
 import CGAT.Bed as Bed
 import pysam
 import numpy
@@ -594,7 +593,7 @@ def makeReadCorrelation( infiles, outfile ):
     infiles = " ".join(infiles)
 
     statement = '''
-    python %(scriptsdir)s/bam_correlation.py 
+    python %(scriptsdir)s/bams2correlation.py 
            --log=%(outfile)s.log 
            --genome=%(genome_dir)s/%(genome)s 
            %(infiles)s 

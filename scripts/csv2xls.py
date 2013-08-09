@@ -66,7 +66,7 @@ import optparse
 import math
 import tempfile
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import csv
 import CGAT.CSV as CSV
 
@@ -83,7 +83,7 @@ if __name__ == "__main__":
         output_filename=None,
         )
 
-    (options, args) = Experiment.Start( parser, add_csv_options  = True)
+    (options, args) = E.Start( parser, add_csv_options  = True)
 
     if not options.output_filename:
         raise ValueError("please specify an output filename.")
@@ -127,6 +127,6 @@ if __name__ == "__main__":
     
     w.save(options.output_filename)
         
-    Experiment.Stop()
+    E.Stop()
 
 

@@ -118,7 +118,7 @@ structures.fasta: structures.ids
 map_queries2structures.dir:
 	$(PRELOG)
 	@rm -rf $@.dir
-	@python $(DIR_SCRIPTS_GENEPREDICTION)setup.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)gpipe/setup.py \
 		--method=blast \
 		--project=$(PARAM_PROJECT_NAME)structures \
 		-d $(CURDIR)/$@ \

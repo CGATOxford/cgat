@@ -67,7 +67,7 @@ import optparse
 import glob
 import subprocess
 import os.path
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 
 def getLastLine( filename, read_size = 1024 ):
   """return last line of a file.
@@ -127,7 +127,7 @@ if __name__ == '__main__':
                          dry_run = False,
                          )
 
-    (options, args) = Experiment.Start( parser, 
+    (options, args) = E.Start( parser, 
                                         add_pipe_options = True )
 
     if args:
@@ -166,4 +166,4 @@ if __name__ == '__main__':
         options.stdlog.write("# ndirs=%i, nfiles=%i, ndeleted=%i\n" %\
                                  (ndirs, nfiles, ndeleted) )
 
-    Experiment.Stop()
+    E.Stop()

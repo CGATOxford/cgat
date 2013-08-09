@@ -34,7 +34,8 @@ Code
 
 '''
 import string, sys, re
-import alignlib
+try: import alignlib
+except ImportError: pass
 
 ##---------------------------------------------------------------------------------------
 def writeFasta( outfile,

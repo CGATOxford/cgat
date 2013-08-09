@@ -76,7 +76,7 @@ Options:
 -c, --components                filename with components to be analyses separately in the multiple alignment
 """ % sys.argv[0]
 
-param_long_options=["verbose=", "help", "subset=", "components=" ]
+param_long_options=["verbose=", "help", "subset=", "components=", "version" ]
 
 param_short_options="v:ho:s:c::"
 
@@ -88,7 +88,7 @@ param_mask_char = "x"
 param_subset = None
 param_filename_components = None
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.MaliIO as MaliIO
             
 ##------------------------------------------------------------
@@ -103,6 +103,9 @@ if __name__ == '__main__':
     for o,a in optlist:
         if o in ( "-v", "--verbose" ):
             param_loglevel = int(a)
+        elif o in ( "--version", ):
+            print "version="
+            sys.exit(0)
         elif o in ( "-h", "--help" ):
             print USAGE
             sys.exit(0)
@@ -112,8 +115,8 @@ if __name__ == '__main__':
             param_filename_components = a
 
     if param_loglevel >= 1:
-        print Experiment.GetHeader()
-        print Experiment.GetParams()
+        print E.GetHeader()
+        print E.GetParams()
             
     ## 1. read multiple alignment in fasta format
     all_mali, all_identifiers = MaliIO.readFasta( sys.stdin )
@@ -151,6 +154,6 @@ if __name__ == '__main__':
             print ">%s\n%s\n" % (i, mali[i] )
 
     if param_loglevel >= 1:        
-        print Experiment.GetFooter()
+        print E.GetFooter()
     
     

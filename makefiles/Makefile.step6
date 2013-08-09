@@ -67,7 +67,7 @@ step6.graph.gz: step5
 	$(PRELOG)
 	@$(CMD_REMOTE_SUBMIT) \
 	"gunzip < step4.predictions.gz |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)regions2graph.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)optic/regions2graph.py \
 	$(PYTHON_OPTIONS) \
 	--min-score=$(PARAM_STEP6_GRAPH_MIN_SCORE) \
 	--join-regions=$(PARAM_STEP6_GRAPH_JOIN_REGIONS) \
@@ -98,7 +98,7 @@ step6.split: step6.graph.gz
 	gunzip < $< |\
 	grep -v "#" |\
 	sort -k4,4n -k1,1n -k2,2n -t'	' |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)assignments2pairs.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe/assignments2pairs.py \
 	$(PYTHON_OPTIONS) \
 	--min-margin=$(PARAM_STEP6_MIN_MARGIN) \
 	--default-margin=$(PARAM_STEP6_MARGIN) \
@@ -131,7 +131,7 @@ step6.run-hook : $(STEP6_TARGETS)
 
 step6_%.matches: step6_%.chunk
 	@$(CMD_REMOTE_SUBMIT) \
-	python $(DIR_SCRIPTS_GENEPREDICTION)predict_genes.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe/predict_genes.py \
 		$(PYTHON_OPTIONS) \
 		$(STEP6_PREDICTION_OPTIONS) \
 	< step6_$*.chunk > $@
@@ -238,7 +238,7 @@ step6.stats: step6.matches.gz
 	$(CMD_MSG) "calculate before/after"
 	grep -v "#" step6.graph |\
 	sort -k4,4n -k1,1n -k2,2n -t'	' |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)assignments2pairs.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe/assignments2pairs.py \
 	--min-margin=$(PARAM_STEP6_MIN_MARGIN) \
 	--default-margin=$(PARAM_STEP6_MARGIN) \
 	--genome-file=$(PARAM_INPUT_GENOME) \

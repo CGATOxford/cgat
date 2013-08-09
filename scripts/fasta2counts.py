@@ -73,7 +73,7 @@ import optparse
 import math
 import glob
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
 
 def writeHeader( outfile ):
@@ -101,10 +101,10 @@ if __name__ == "__main__":
         filename_total = None,
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     fasta = IndexedFasta.IndexedFasta( options.genome_file )
-    contigs = fasta.getContigSizes()
+    contigs = fasta.getContigSizes( with_synonyms = False )
 
     totals = { 'A' : 0, 'C': 0, 'G' : 0, 'T' : 0, 'X' : 0, 'N' : 0 }
     nothers_total = 0
@@ -176,4 +176,4 @@ if __name__ == "__main__":
         
         outfile.close()
         
-    Experiment.Stop()
+    E.Stop()

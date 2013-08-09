@@ -91,7 +91,8 @@ param_long_options=["verbose=", "help", "file-output=",
                     "min-coverage-residues=", "min-coverage-percent=",
                     "components=",
                     "species-pattern=", "master-pattern=", "output-pattern=",
-                    "exons=", "cluster", "remove-fragments", "prefix="
+                    "exons=", "cluster", "remove-fragments", "prefix=",
+                    "version"
                     ]
 
 param_short_options="v:ho:s:p:e:"
@@ -135,7 +136,7 @@ param_remove_fragments = False
 
 param_pattern_prefix = ""
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.MaliIO as MaliIO
 import scipy
 import CGAT.Exons as Exons
@@ -1035,6 +1036,9 @@ if __name__ == '__main__':
         elif o in ( "-h", "--help" ):
             print USAGE
             sys.exit(0)
+        elif o in ( "--version", ):
+            print "version="
+            sys.exit(0)
         elif o in ("-o", "--file-output"):
             param_filename_output = a
         elif o == "--min-overlap-residues":
@@ -1060,8 +1064,8 @@ if __name__ == '__main__':
         elif o == "--components":
             param_filename_components = a
 
-    print Experiment.GetHeader()
-    print Experiment.GetParams()
+    print E.GetHeader()
+    print E.GetParams()
             
     ## 1. read multiple alignment in fasta format
     all_mali, all_identifiers = MaliIO.readFasta( sys.stdin )
@@ -1245,6 +1249,6 @@ if __name__ == '__main__':
                     outfile.write( ">%s\n%s\n" % (id, core_mali[id]))
                 outfile.close()
 
-    print Experiment.GetFooter()
+    print E.GetFooter()
     
     

@@ -66,9 +66,8 @@ USAGE="""python %s [OPTIONS] target reference
 
 """ % sys.argv[0]
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.PredictionParser as PredictionParser
-import CGAT.GFF as GFF
 import numpy
 
 ##------------------------------------------------------------------------
@@ -237,10 +236,10 @@ def CountMatchesPerGene( gffs,
                     if other_gene not in info[2]: info[2][other_gene] = 0
                     if other_gene not in info[3]: info[3][other_gene] = 0
 
-                    if GFF.Identity( x, y, max_slippage=options.max_exon_slippage ):
+                    if GTF.Identity( x, y, max_slippage=options.max_exon_slippage ):
                         info[2][other_gene] += 1
                         info[3][other_gene] += 1                    
-                    elif GFF.HalfIdentity( x, y, max_slippage=options.max_exon_slippage ):
+                    elif GTF.HalfIdentity( x, y, max_slippage=options.max_exon_slippage ):
                         info[3][other_gene] += 1
         except AttributeError:
             print "Programming ERROR: no mStatus for ", str(x)
@@ -317,7 +316,7 @@ if __name__ == "__main__":
         outfile_pattern = "%s.info",
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if len(args) != 2:
         print USAGE
@@ -331,7 +330,7 @@ if __name__ == "__main__":
         print "# reading target entries ...",
         sys.stdout.flush()
         
-    gff_targets = GFF.readFromFile( open( input_filename_target, "r" ) )
+    gff_targets = GTF.readFromFile( open( input_filename_target, "r" ) )
     
     if options.loglevel >= 1:
         print "finished: %i" % (len(gff_targets))
@@ -342,15 +341,15 @@ if __name__ == "__main__":
         print "# reading reference entries ...",
         sys.stdout.flush()    
 
-    gff_references = GFF.readFromFile( open( input_filename_reference, "r" ) )
+    gff_references = GTF.readFromFile( open( input_filename_reference, "r" ) )
 
     if options.loglevel >= 1:
         print "finished: %i" % (len(gff_references))
         sys.stdout.flush()
 
     if options.remove_redundancy:
-        gff_targets = GFF.CombineOverlaps( gff_targets )
-        gff_references = GFF.CombineOverlaps( gff_references )    
+        gff_targets = GTF.CombineOverlaps( gff_targets )
+        gff_references = GTF.CombineOverlaps( gff_references )    
 
         if options.loglevel >= 1:    
             print "# after filtering: targets=%i, references=%i" % (len(gff_targets), len(gff_references))
@@ -582,7 +581,7 @@ if __name__ == "__main__":
                     for rr in ref_overlaps:
                         xfound = False
                         for tt in target_overlaps:
-                            if GFF.Identity( rr, tt, max_slippage=options.max_exon_slippage ):
+                            if GTF.Identity( rr, tt, max_slippage=options.max_exon_slippage ):
                                 xfound = True
                                 break
                         if xfound:
@@ -607,7 +606,7 @@ if __name__ == "__main__":
                         for rr in ref_overlaps:
                             xfound = False
                             for tt in target_overlaps:
-                                if GFF.HalfIdentity( rr, tt, max_slippage=options.max_exon_slippage ):
+                                if GTF.HalfIdentity( rr, tt, max_slippage=options.max_exon_slippage ):
                                     xfound = True
                                     break
                             if xfound:
@@ -873,6 +872,6 @@ if __name__ == "__main__":
                float(missed_genes) / (tp + fn),
                float(wrong_genes) / (tp + fp) )
 
-    Experiment.Stop()    
+    E.Stop()    
 
 

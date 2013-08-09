@@ -67,7 +67,7 @@ step7.split: step6
 	gunzip |\
 	sort -k3,3 -t'	' |\
 	awk '$$14 > $(PARAM_MEMBERS_MIN_COVERAGE)' |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)assignments2pairs.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe/assignments2pairs.py \
 	$(PYTHON_OPTIONS) \
 	--default-margin=$(PARAM_MEMBERS_MARGIN) \
 	--genome-file=$(PARAM_INPUT_GENOME) \
@@ -98,7 +98,7 @@ step7.run-hook : $(STEP7_TARGETS)
 
 step7_%.matches: step7_%.chunk
 	@$(CMD_REMOTE_SUBMIT) \
-	python $(DIR_SCRIPTS_GENEPREDICTION)predict_genes.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe/predict_genes.py \
 		$(PYTHON_OPTIONS) \
 		$(STEP7_PREDICTION_OPTIONS) \
 		-\

@@ -21,8 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-gtf2gtf.py - manipulate gtf files
-=================================
+gtf2gtf.py - manipulate transcript models
+=========================================
 
 :Author: Andreas Heger
 :Release: $Id$
@@ -32,22 +32,42 @@ gtf2gtf.py - manipulate gtf files
 Purpose
 -------
 
-This scripts reads a :term:`gtf` formatted file from stdin, applies some
-transformation, and outputs a new :term:`gtf` formatted file to stdout.
+This script reads a gene set in :term:`gtf` format from stdin,
+applies some transformation, and outputs a new geneset in
+:term:`gtf` format to stdout.
 
-This script expects the gtf file to be sorted by genes and then by 
-position.
+Typical operations are:
+
+* merging exons/introns within a transcript/gene, such as:
+   ``--merge-exons``, ``--merge-transcripts``, ``--merge-genes``,
+   ``--exons2introns``. ``--join-exons``, ``--intersect-transcripts``,
+   ``--merge-introns``.
+
+* sorting the input (``--sort``)
+
+* filtering/sampling transcripts/genes (``--filter``, ``--sample-size``,
+   ``--remove-overlapping``)
+
+* renaming transcripts/genes (``--unset-genes``, ``--set-protein-to-transcript``,
+  ``--set-gene-to-transcript``, --add-protein-id``, ``--set-transcript-to-gene``.
+  ``--rename``, ``--renumber-genes``, ``--renumber-transcripts``, 
+  ``--transcript2genes``)
+
+* others, such ass ``--reset-strand``.
+
+Most of the transformations require the input to be sorted 
+by gene and postion.
 
 Usage
 -----
 
 Example::
 
-   python <script_name>.py --help
+   python gtf2gtf.py --merge-exons < in.gtf > out.gtf
 
 Type::
 
-   python <script_name>.py --help
+   python gtf2gtf.py --help
 
 for command line help.
 
@@ -68,7 +88,6 @@ import random
 import collections
 import itertools
 
-import CGAT.GFF as GFF
 import CGAT.GTF as GTF
 import CGAT.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
@@ -80,46 +99,69 @@ import CGAT.Components as Components
 ##------------------------------------------------------------
 ## This script needs some attention.
 ##------------------------------------------------------------
-if __name__ == '__main__':
+def main( argv = None ):
 
-    parser = E.OptionParser( version = "%prog version: $Id: gtf2gtf.py 2861 2010-02-23 17:36:32Z andreas $", usage = globals()["__doc__"])
+    if not argv: argv = sys.argv
+
+    parser = E.OptionParser( version = "%prog version: $Id: gtf2gtf.py 2861 2010-02-23 17:36:32Z andreas $", 
+                             usage = globals()["__doc__"])
 
     parser.add_option("-m", "--merge-exons", dest="merge_exons", action="store_true",
-                      help="merge overlapping exons of all transcripts within a gene [default=%default]."  )
-
-    parser.add_option("-j", "--join-exons", dest="join_exons", action="store_true",
-                      help="join all exons per transcript [default=%default]."  )
-
-    parser.add_option( "--merge-exons-distance", dest="merge_exons_distance", type="int",
-                      help="distance to merge exons over [default=%default]."  )
-
-    parser.add_option( "--unset-genes", dest="unset_genes", type="string",
-                      help="unset gene identifiers, keeping transcripts intact,"
-                       " set to pattern [default=%default]."  )
-
-    parser.add_option( "--merge-genes", dest="merge_genes", action="store_true",
-                      help="merge overlapping genes if their exons overlap. This ignores the strand [default=%default]."  )
-
-    parser.add_option( "--sort", dest="sort", type="choice",
-                       choices=("gene", "transcript", "position", "contig+gene", "position+gene", "gene+position" ),
-                       help="sort input [default=%default]."  )
-
-    parser.add_option("-u", "--with-utr", dest="with_utr", action="store_true",
-                      help="include utr in merged transcripts [default=%default]."  )
+                      help="merge overlapping exons of all transcripts within a gene. "
+                           "The merged exons will be output. "
+                           "Input needs to sorted by gene [default=%default]."  )
 
     parser.add_option("-t", "--merge-transcripts", dest="merge_transcripts", action="store_true",
                       help="merge all transcripts within a gene. The entry will span the whole gene (exons and introns). "
                            "The transcript does not include the UTR unless --with-utr is set. [default=%default]."  )
 
+    parser.add_option( "--merge-genes", dest="merge_genes", action="store_true",
+                       help="merge overlapping genes if their exons overlap. "
+                       "A gene with a single transcript containing all exons "
+                       "of the overlapping transcripts will be output. "
+                       "This operation ignores strand information "
+                       "The input needs te sorted by transcript [default=%default]."  )
+
+    parser.add_option( "--merge-exons-distance", dest="merge_exons_distance", type="int",
+                      help="distance in nucleotides between exons to be merged [default=%default]."  )
+
+    parser.add_option("-j", "--join-exons", dest="join_exons", action="store_true",
+                      help="join all exons per transcript. A new transcript will be "
+                           "output that spans a whole transcript. "
+                           "Input needs to be sorted by transcript [default=%default]."  )
+
+    parser.add_option( "--unset-genes", dest="unset_genes", type="string",
+                       help="unset gene identifiers, keeping transcripts intact. "
+                       "New gene identifiers are set to the pattern given. For example, "
+                       "'--unset-genes=%06i' [default=%default]."  )
+
+    parser.add_option( "--sort", dest="sort", type="choice",
+                       choices=("gene", 
+                                "transcript", 
+                                "position", 
+                                "contig+gene", 
+                                "position+gene", 
+                                "gene+position" ),
+                       help="sort input data [default=%default]."  )
+
+    parser.add_option("-u", "--with-utr", dest="with_utr", action="store_true",
+                      help="include utr in merged transcripts [default=%default]."  )
+
+
     parser.add_option( "--intersect-transcripts", dest="intersect_transcripts", action="store_true",
                       help="intersect all transcripts within a gene. The entry will only span those bases "
-                      " that are covered by all transcrips."
-                      " The transcript does not include the UTR unless --with-utr is set. This options"
-                      " will remove all other features (stop_codon, etc.) "
-                      " [default=%default]."  )
+                      "that are covered by all transcrips."
+                      "The transcript does not include the UTR unless --with-utr is set. This method"
+                      "will remove all other features (stop_codon, etc.) "
+                      "The input needs to be sorted by gene. "
+                      "[default=%default]."  )
 
     parser.add_option("-i", "--merge-introns", dest="merge_introns", action="store_true",
-                      help="merge all introns within a gene [default=%default]."  )
+                      help="merge and output all introns within a gene. The output will contain "
+                      "all intronic regions within a gene. Single exon genes "
+                      "are skipped. "
+                      "The input needs to be sorted by gene. "
+                      "[default=%default]."  )
 
     parser.add_option("-g", "--set-transcript-to-gene", "--set-transcript2gene", dest="set_transcript2gene", action="store_true",
                       help="set the transcript_id to the gene_id [default=%default]."  )
@@ -128,69 +170,100 @@ if __name__ == '__main__':
                       help="set the protein_id to the transcript_id [default=%default]."  )
 
     parser.add_option( "--add-protein-id", dest="add_protein_id", type="string",
-                      help="add the protein_id for each transcript_id. The argument is a filename with a map [default=%default]."  )
+                      help="add a protein_id for each transcript_id. "
+                           "The argument is a filename containing a mapping between "
+                           "transcript_id to protein_id [default=%default]."  )
 
     parser.add_option("-G", "--set-gene-to-transcript", "--set-gene2transcript", dest="set_gene2transcript", action="store_true",
                       help="set the gene_id to the transcript_id [default=%default]."  )
 
     parser.add_option("-d", "--set-score2distance", dest="set_score2distance", action="store_true",
-                      help="set the score field to the distance to transcription start [default=%default]."  )
+                      help="set the score field for each feature to the distance to "
+                           "transcription start site [default=%default]."  )
 
     parser.add_option( "--exons2introns", dest="exons2introns", action="store_true",
-                       help="convert exons to introns for a gene. Introns are labelled with the feature 'intron'." )
+                       help="for each gene build an 'intronic' transcript "
+                       "containing the union of all intronic regions "
+                       "of all transcripts in a gene."
+                       "The features are labeled as 'intron'." 
+                       "The input needs to be sorted by gene. "
+                      "[default=%default]."  )
 
     parser.add_option("-f", "--filter", dest="filter", type="choice",
                       choices=("gene", "transcript", "longest-gene", "longest-transcript", "representative-transcript" ),
-                      help="filter by gene-id or transcript-id or other [default=%default]"
-                           " `longest-gene`: the longest gene is kept case of overlapping genes ." 
-                           " `longest-transcript`: the longest transcript per gene is kept." 
-                           " `representative-transcript`: the representative transcript per gene is kept (shared exons)" )
+                      help="apply a filter to the input file. Available filters are: "
+                      "'gene-id': filter by gene_id, "
+                      "'transcript-id': filter by transcript_id, "
+                      "'longest-gene': output the longest gene for overlapping genes ," 
+                      "'longest-transcript': output the longest transcript per gene," 
+                      "'representative-transcript': output the representative transcript per gene. "
+                      "The representative transcript is the transcript that shares most exons with "
+                      "the other transcripts in a gene. "
+                      "The input needs to be sorted by gene. "
+                      "[default=%default]."  )
+                      
 
     parser.add_option("-r", "--rename", dest="rename", type="choice",
                       choices=("gene", "transcript","longest-gene"),
-                      help="rename genes or transcripts with a map given in apply. Those that can not be renamed are removed [default=%default]."  )
+                      help="rename genes or transcripts with a map given by the option `--apply`. "
+                      "Those that can not be renamed are removed "
+                      "[default=%default]."  )
 
     parser.add_option( "--renumber-genes", dest="renumber_genes", type="string", 
-                      help="renumber genes according to pattern [default=%default]."  )
-
+                       help="renumber genes according to the given pattern. "
+                       "[default=%default]."  )
+    
     parser.add_option( "--renumber-transcripts", dest="renumber_transcripts", type="string", 
-                      help="renumber transcripts according to pattern [default=%default]."  )
+                       help="renumber transcripts according to the given pattern. "
+                       "[default=%default]."  )
 
     parser.add_option("-a", "--apply", dest="filename_filter", type="string",
-                      help="filename to filter with [default=%default]."  )
-
+                      metavar="tsv",
+                      help="filename of ids to map/filter [default=%default]." )
+    
     parser.add_option( "--invert-filter", dest="invert_filter", action="store_true",
-                      help="invert filter (like grep -v) [default=%default]."  )
+                       help="when using --filter, invert selection (like grep -v). "
+                       "[default=%default]."  )
 
     parser.add_option("--sample-size", dest="sample_size", type="int",
-                      help="extract a random sample of size # if the option --filter is set[default=%default]." )
+                      help="extract a random sample of size # if the option "
+                      "'--filter' is set[default=%default]." )
 
     parser.add_option("--intron-min-length", dest="intron_min_length", type="int",
-                      help="minimum length for introns [default=%default]."  )
+                      help="minimum length for introns (for --exons2introns) "
+                      "[default=%default]."  )
 
     parser.add_option("--min-exons-length", dest="min_exons_length", type="int",
-                      help="minimum length for gene (sum of exons) [default=%default]."  )
+                      help="minimum length for gene (sum of exons) (--sample-size) [default=%default]."  )
 
     parser.add_option("--intron-border", dest="intron_border", type="int",
-                      help="number of residues to exclude at intron at either end [default=%default]."  )
+                      help="number of residues to exclude at intron at either end "
+                      "(--exons2introns) [default=%default]."  )
 
     parser.add_option( "--transcripts2genes", dest="transcripts2genes", action="store_true",
                        help="cluster overlapping transcripts into genes." )
 
     parser.add_option( "--reset-strand", dest="reset_strand", action="store_true",
-                       help="remove strandedness of features." )
+                       help="remove strandedness of features (set to '.') when using --transcripts2genes"
+                       "[default=%default]."  )
 
     parser.add_option( "--remove-overlapping", dest="remove_overlapping", type="string",
-                       help="remove all transcripts that overlap intervals in a gff-formatted file."
-                       " The comparison ignores strand [%default]." )
+                       metavar = "gff",
+                       help="remove all transcripts that overlap intervals "
+                       "in a gff-formatted file."
+                       "The comparison ignores strand "
+                       "[default=%default]." )
 
     parser.add_option( "--permit-duplicates", dest="strict", action="store_false",
-                       help="permit duplicate genes (on different chromosomes, ...) [default=%default]" )
+                       help="permit duplicate genes. "
+                       "[default=%default]" )
 
     parser.add_option( "--remove-duplicates", dest="remove_duplicates", type="choice",
-                       choices=("gene", "transcript", "ucsc","coordinates"),
-                       help="remove duplicates by gene/transcript. If ``ucsc`` is chosen, transcripts ending on _dup# are removed" 
-                       " this is necessary to remove duplicate entries that are next to each other in the sort order [%default]" )
+                       choices=("gene", "transcript", "ucsc", "coordinates"),
+                       help="remove duplicates by gene/transcript. "
+                       "If ``ucsc`` is chosen, transcripts ending on _dup# are "
+                       "removed. This is necessary to remove duplicate entries "
+                       "that are next to each other in the sort order [%default]" )
 
     parser.set_defaults(
         sort = None,
@@ -224,7 +297,7 @@ if __name__ == '__main__':
         intersect_transcripts = False,
         )
 
-    (options, args) = E.Start( parser )
+    (options, args) = E.Start( parser, argv = argv )
     
     ninput, noutput, nfeatures, ndiscarded = 0, 0, 0, 0
 
@@ -316,24 +389,7 @@ if __name__ == '__main__':
 
     elif options.sort:
 
-        entries = list(GTF.iterator(options.stdin))
-        if options.sort == "gene":
-            entries.sort( key = lambda x: (x.gene_id, x.transcript_id, x.contig, x.start) )
-        elif options.sort == "gene":
-            entries.sort( key = lambda x: (x.gene_id, x.contig, x.start) )
-        elif options.sort == "contig+gene":
-            entries.sort( key = lambda x: (x.contig,x.gene_id,x.transcript_id,x.start) )
-        elif options.sort == "transcript":
-            entries.sort( key = lambda x: (x.transcript_id, x.contig, x.start) )
-        elif options.sort == "position":
-            entries.sort( key = lambda x: (x.contig, x.start) )
-        elif options.sort == "position+gene":
-            entries.sort( key = lambda x: (x.gene_id, x.start) )
-            genes = list( GTF.flat_gene_iterator(entries) )
-            genes.sort( key = lambda x: (x[0].contig, x[0].start) )
-            entries = IOTools.flatten( genes )
-
-        for gff in entries:
+        for gff in iterator_sorted( GTF.iterator( options.stdin ), sort_order = options.sort ):
             ninput += 1
             options.stdout.write( "%s\n" % str(gff) )                
             noutput += 1
@@ -455,7 +511,7 @@ if __name__ == '__main__':
 
             for start, end in intervals:
                 y = GTF.Entry()
-                y.fromGFF( chunks[0][0], gene_id, transcript_id )
+                y.fromGTF( chunks[0][0], gene_id, transcript_id )
                 y.start = start
                 y.end = end
                 y.strand = strand
@@ -758,7 +814,7 @@ if __name__ == '__main__':
 
     elif options.remove_overlapping:
         
-        index = GFF.readAndIndex( GFF.iterator( IOTools.openFile( options.remove_overlapping, "r" ) ) )
+        index = GTF.readAndIndex( GFF.iterator( IOTools.openFile( options.remove_overlapping, "r" ) ) )
         
         for gffs in GTF.transcript_iterator(GTF.iterator(options.stdin)):
             ninput += 1
@@ -854,7 +910,6 @@ if __name__ == '__main__':
             result = []
 
             if options.merge_exons:
-
                 # need to combine per feature - skip
                 # utr_ranges = Intervals.combineAtDistance( utr_ranges, options.merge_exons_distance )
 
@@ -914,3 +969,7 @@ if __name__ == '__main__':
 
     E.info("ninput=%i, noutput=%i, nfeatures=%i, ndiscarded=%i" % (ninput, noutput, nfeatures, ndiscarded) )
     E.Stop()
+
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv ))

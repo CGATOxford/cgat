@@ -68,7 +68,8 @@ File formats
         pass
 
     fastq
-        fastq
+        Sequence format containing qualit scores
+	`(http://www.ncbi.nlm.nih.gov/pmc/articles/PMC2847217/)`_.
 
     sra
         sra
@@ -153,5 +154,20 @@ Other terms
         A pipeline that is project specific. Usually code is developed
 	first inside a project pipeline. When it becomes generally
         useful, it may be refactored into a production pipeline.
-	
+	 
+    stdin
+        Unix standard input. Most CGAT tools read data from stdin.
+
+    stdout
+        Unix standard output. Most CGAT tools output data to stdout.
+
+    stderr
+        Unix standard error. This is where errors go.
+  
+    loglevel
+        Verbosity of logging information. The logging level can be
+        determined by the ``--verbose`` option. A
+	level of ``0`` means no logging output, while ``1`` is information
+	messages only, while ``2`` outputs also debugging information.
+
  

@@ -77,7 +77,6 @@ import types
 import bisect
 import array
 import collections
-import CGAT.GFF as GFF
 import CGAT.GTF as GTF
 import CGAT.Bed as Bed
 import CGAT.Experiment as E

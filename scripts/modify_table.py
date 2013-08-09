@@ -74,7 +74,7 @@ import math
 '#' at start of line is a comment
 """
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import numpy
 import scipy
 
@@ -105,12 +105,12 @@ if __name__ == '__main__':
         format="%5.2f",
         methods=[])
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
     
     options.columns = map( lambda x: int(x)-1, options.columns.split(","))
 
-    print Experiment.GetHeader()
-    print Experiment.GetParams()
+    print E.GetHeader()
+    print E.GetParams()
 
     vals = []
     
@@ -163,7 +163,7 @@ if __name__ == '__main__':
     for d in zip( *new_columns ):
         print string.join( map(str, d), "\t")
     
-    Experiment.Stop()
+    E.Stop()
 
 
 

@@ -188,7 +188,7 @@ synteny_plots: pairwise_data synteny_plots.dir
 			genome1=$${genomes[$$x]}; \
 			genome2=$${genomes[$$y]}; \
 			if [ ! -e $@.dir/$${genome1}-$${genome2}.svg ] ; then \
-				python $(DIR_SCRIPTS_GENEPREDICTION)plot_synteny.py \
+				python $(DIR_SCRIPTS_GENEPREDICTION)optic/plot_synteny.py \
 				pairwise_data.dir/$${genome1}-$${genome2}-a.dots \
 				pairwise_data.dir/$${genome1}-$${genome2}-b.dots |\
 				grep -v "#" > $@.dir/$${genome1}-$${genome2}.svg ; \
@@ -262,7 +262,7 @@ breakers_stats: ANALYSIS_METHOD=breakers
 			    genome2=$${genomes[$$y]}; \
 			    target_file=$*.dir/$${genome1}-$${genome2}; \
 			    printf "%s\t%s\t" $${genome1} $${genome2} > $${target_file}; \
-			    python $(DIR_SCRIPTS_GENEPREDICTION)analyze_synteny.py \
+			    python $(DIR_SCRIPTS_GENEPREDICTION)optic/analyze_synteny.py \
 				    --method=$(ANALYSIS_METHOD) \
 				    --max-look-ahead=$(PARAM_MAX_LOOK_AHEAD) \
 				    --max-synteny-distance=$(PARAM_MAX_SYNTENY_DISTANCE) \
@@ -272,7 +272,7 @@ breakers_stats: ANALYSIS_METHOD=breakers
 			    > $${target_file}; \
 			    target_file=$*.dir/$${genome2}-$${genome1}; \
 			    printf "%s\t%s\t" $${genome2} $${genome1} > $${target_file}; \
-			    python $(DIR_SCRIPTS_GENEPREDICTION)analyze_synteny.py \
+			    python $(DIR_SCRIPTS_GENEPREDICTION)optic/analyze_synteny.py \
 				    --method=$(ANALYSIS_METHOD) \
 				    --max-look-ahead=$(PARAM_MAX_LOOK_AHEAD) \
 				    --max-synteny-distance=$(PARAM_MAX_SYNTENY_DISTANCE) \

@@ -2,7 +2,7 @@
 #
 #   MRC FGU Computational Genomics Group
 #
-#   $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $
+#   $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $
 #
 #   Copyright (C) 2009 Andreas Heger
 #
@@ -90,9 +90,12 @@ import pysam
 import CGAT.Bed as Bed
 import numpy
 
-import pyximport
-pyximport.install(build_in_temp=False)
-import _bam2peakshape
+try:
+    import pyximport
+    pyximport.install(build_in_temp=False)
+    import _bam2peakshape
+except ImportError:
+    import CGAT._bam2peakshape as _bam2peakshape
 
 def main( argv = None ):
     """script main.
@@ -103,7 +106,7 @@ def main( argv = None ):
     if not argv: argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser( version = "%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
+    parser = E.OptionParser( version = "%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
                                     usage = globals()["__doc__"] )
 
     parser.add_option( "-o", "--only-interval", dest="only_interval", action="store_true",

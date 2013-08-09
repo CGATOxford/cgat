@@ -54,7 +54,7 @@ step12.fasta: $(PARAM_INPUT_CDNAS) step8.predictions.gz step11.redundant.members
 	--log=$@.log \
 	--apply=<(grep -v '^0' step11.redundant.members) --columns=1 |\
 	sort -k{3,3} |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)prediction2pairs.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)gpipe/prediction2pairs.py \
 	$(PYTHON_OPTIONS) \
 	--cds=$(PARAM_INPUT_CDNAS) \
 	--log=$@.log \
@@ -150,7 +150,7 @@ step12.load: step12.matches
 ## Use kaks to get best transcript per gene
 step12.filter: step12.load
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)genes2quality.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)gpipe/genes2quality.py \
 		--table-predictions=$(PARAM_TABLE_NAME_PREDICTIONS) \
 		--table-genes=$(PARAM_TABLE_NAME_GENES) \
 		--table-quality=$(PARAM_TABLE_NAME_QUALITY) \
@@ -180,7 +180,7 @@ step12.filter.apply: step12.filter
 #########################################################################
 step12.geneinfo: step11.genes.load
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)genes2quality.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)gpipe/genes2quality.py \
 		--table-predictions=$(PARAM_TABLE_NAME_PREDICTIONS) \
 		--table-genes=$(PARAM_TABLE_NAME_GENES) \
 		--table-quality=$(PARAM_TABLE_NAME_QUALITY) > $@

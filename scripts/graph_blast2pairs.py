@@ -83,6 +83,8 @@ Options:
 --evalue-to-log                 convert evalue to log
 --effective-length=             calculate evalue from bitscore based on effective sbjct length
 --min-evalue=                   minimum evalue (after which it is truncated)
+--version                       ouptut version
+
 new scores are saved in third column (overwriting the E-Value)
 
 Methods:
@@ -100,8 +102,9 @@ gapless-score                   = score of alignment without the gaps
 reset-evalue                    = reset evalue based on bitscore
 """ % sys.argv[0]
 
-param_long_options = ["help", "verbose=", "method=", "lambda=", "k=", "self-scores=", "expected=", "append", "evalue-to-log",
-                      "effective-length="]
+param_long_options = ["help", "verbose=", "method=", "lambda=", "k=", "self-scores=", 
+                      "expected=", "append", "evalue-to-log",
+                      "effective-length=", "version" ]
 
 param_short_options = "hv:m:f:o:a"
 
@@ -110,7 +113,7 @@ param_loglevel = 1
 param_method = "bitscore"
 param_filename_self_scores = None
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.BlastAlignments as BlastAlignments
 import math
 
@@ -147,6 +150,9 @@ if __name__ == "__main__":
     for o,a in optlist:
         if o in ( "-v", "--verbose" ):
             param_loglevel = int(a)
+        elif o in ( "--version", ):
+            print "version="
+            sys.exit(0)
         elif o in ( "-h", "--help" ):
             print USAGE
             sys.exit(0)
@@ -170,8 +176,8 @@ if __name__ == "__main__":
             param_min_evalue = float(a)
             
     if param_loglevel >= 1:
-        print Experiment.GetHeader()
-        print Experiment.GetParams()
+        print E.GetHeader()
+        print E.GetParams()
 
     if param_filename_self_scores:
         self_scores = {}
@@ -283,6 +289,6 @@ if __name__ == "__main__":
         ninput, noutput, nskipped, nfailed )
 
     if param_loglevel >= 1:    
-        print Experiment.GetFooter()
+        print E.GetFooter()
 
 

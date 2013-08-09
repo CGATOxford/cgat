@@ -72,7 +72,7 @@ from types import *
 
 arrange png files in an svg image.
 """
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import CGAT.SVGdraw as SVGdraw
 
@@ -433,7 +433,7 @@ if __name__ == "__main__":
         canvas_height = 1000,
         )
 
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
     if len(args) > 0:
         ## read filenames from the command line
@@ -466,4 +466,4 @@ if __name__ == "__main__":
 
     plot.writeToFile(sys.stdout)
     
-    Experiment.Stop()
+    E.Stop()

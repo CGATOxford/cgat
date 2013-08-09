@@ -486,7 +486,9 @@ def main(argv = None ):
     if not argv: argv = sys.argv
     
     #get the options
-    parser = OptionParser()
+    parser = OptionParser(version = "%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
+                          usage = globals()["__doc__"] )
+
     parser.add_option("-c", "--chainfile", dest="chainfile", type="string",
                       help="the chain file to analyse", metavar="FILE")
     parser.add_option("-p", "--perchrom", dest="perchrom", action="store_true",

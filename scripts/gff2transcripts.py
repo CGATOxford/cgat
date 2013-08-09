@@ -77,7 +77,8 @@ Options:
 
 
 
-param_long_options=["verbose=", "help", "table-predictions=", "table-contigs=", "file-map="]
+param_long_options=["verbose=", "help", "table-predictions=", "table-contigs=", "file-map=",
+                    "version"]
 param_short_options="v:hP:C:m:"
 
 param_tablename_predictions = None
@@ -88,7 +89,7 @@ param_connection = "db:andreas"
 
 import pgdb
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.PredictionParser as PredictionParser
 
 def ProcessChunk( chunk, prediction_id, lcontig  ):
@@ -168,6 +169,9 @@ if __name__ == "__main__":
         elif o in ( "-h", "--help" ):
             print USAGE
             sys.exit(0)
+        elif o in ( "--version", ):
+            print "version="
+            sys.exit(0)
         elif o in ("-P", "--table-predictions"):
             param_tablename_predictions = a
         elif o in ("-P", "--table-contigs"):
@@ -175,8 +179,8 @@ if __name__ == "__main__":
         elif o in ("-m", "--file-map"):
             param_filename_map = a
 
-    print Experiment.GetHeader()
-    print Experiment.GetParams()
+    print E.GetHeader()
+    print E.GetParams()
 
     dbhandle = pgdb.connect( param_connection )
 

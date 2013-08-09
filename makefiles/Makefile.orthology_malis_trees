@@ -130,7 +130,7 @@ else
 #######################################################################
 %.na_mali: %.raw_mali
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)prune_multiple_alignment.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic/prune_multiple_alignment.py \
 	--translate=$*.aa_mali \
 	--master-species="$(PARAM_TREES_MASTER_SPECIES)" \
 	--exons=$*.exons \

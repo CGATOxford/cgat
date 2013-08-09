@@ -64,7 +64,7 @@ import getopt
 import time
 import optparse
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.FastaIterator as FastaIterator
 
@@ -179,7 +179,7 @@ if __name__ == "__main__":
         default_value = None,
         )
     
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     ninput, noutput = 0, 0
     
@@ -230,4 +230,4 @@ if __name__ == "__main__":
                                    iterator.mNOverFlow, 
                                    iterator.mNUnderFlow ))
 
-    Experiment.Stop()
+    E.Stop()

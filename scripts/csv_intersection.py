@@ -66,7 +66,7 @@ import optparse
 import math
 import tempfile
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.CSV as CSV
 import csv
 import hashlib
@@ -95,7 +95,7 @@ if __name__ == "__main__":
         unique = False,
         )
 
-    (options, args) = Experiment.Start( parser, add_csv_options  = True)
+    (options, args) = E.Start( parser, add_csv_options  = True)
 
     if len(args) != 2:
         raise "please specify two files to join."
@@ -152,4 +152,4 @@ if __name__ == "__main__":
             row = CSV.ConvertDictionary( row )
             writer.writerow(row)
 
-    Experiment.Stop()
+    E.Stop()

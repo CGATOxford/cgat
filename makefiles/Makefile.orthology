@@ -324,7 +324,7 @@ interpretation: full_tree
 
 components: interpretation
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)orthologs2list.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic/orthologs2list.py \
 		$(PYTHON_OPTIONS) \
 		--format=components \
 		< interpretation > $@

@@ -65,7 +65,7 @@ import subprocess
 import optparse
 import math
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Blat as Blat
 import CGAT.Genomics as Genomics
@@ -120,7 +120,7 @@ if __name__ == "__main__":
         forward_query = False,
         )
     
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if options.filename_query:
         query = IndexedFasta.IndexedFasta( options.filename_query )
@@ -157,4 +157,4 @@ if __name__ == "__main__":
                                   sbjct_ali ) )
         id += 1
 
-    Experiment.Stop()
+    E.Stop()

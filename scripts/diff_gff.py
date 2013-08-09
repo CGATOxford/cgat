@@ -66,8 +66,7 @@ Code
 '''
 import optparse
 
-import CGAT.Experiment as Experiment
-import CGAT.GFF as GFF
+import CGAT.Experiment as E
 import CGAT.GTF as GTF
 
 def GetNextLine( infile ):
@@ -189,7 +188,7 @@ if __name__ == "__main__":
         as_gtf = False,
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if len(args) != 2:
         print USAGE
@@ -211,8 +210,8 @@ if __name__ == "__main__":
         gff2 = GTF.readFromFile( open( input_filename2, "r" ) )
         overlaps_genes = []
     else:
-        gff1 = GFF.readFromFile( open( input_filename1, "r" ) )
-        gff2 = GFF.readFromFile( open( input_filename2, "r" ) )    
+        gff1 = GTF.readFromFile( open( input_filename1, "r" ) )
+        gff2 = GTF.readFromFile( open( input_filename2, "r" ) )    
 
     if options.loglevel >= 1:
         options.stdlog.write("finished\n")
@@ -446,4 +445,4 @@ if __name__ == "__main__":
     if outfile != options.stdout: outfile.close()
 
     
-    Experiment.Stop()    
+    E.Stop()    

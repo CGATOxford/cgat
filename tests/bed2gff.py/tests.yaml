@@ -1,0 +1,24 @@
+
+version:
+    stdin: null
+    outputs: [stdout]
+    references: []
+    options: --version
+
+gff:
+    stdin: bed3.bed.gz
+    outputs: [stdout]
+    references: [test1.gff]
+    options: 
+
+gtf:
+    stdin: bed3.bed.gz
+    outputs: [stdout]
+    references: [test2.gtf]
+    options: --as-gtf
+
+gtf_name:
+    stdin: bed4.bed.gz
+    outputs: [stdout]
+    references: [test3.gtf]
+    options: --as-gtf

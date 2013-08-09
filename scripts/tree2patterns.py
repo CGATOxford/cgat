@@ -24,7 +24,7 @@ tree2patterns.py - convert trees to taxon patterns
 ==================================================
 
 :Author: Andreas Heger
-:Release: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $
+:Release: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $
 :Date: |today|
 :Tags: Python
 
@@ -73,70 +73,8 @@ import tempfile
 from Bio.Nexus import Nexus
 from Bio.Nexus.Nodes import Node
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.TreeTools as TreeTools
-
-def traverseGraph( graph, start, block = []):
-    """traverse graph, go not passed nodes in block.
-    """
-    
-    to_visit = [start,]
-    visited = {}
-
-    while to_visit:
-        v = to_visit[0]
-        del to_visit[0]
-        visited[v] = 1
-        for n in graph[v]:
-            if n not in visited and n not in block:
-                to_visit.append(n)
-        
-    return visited
-    
-def convertTree2Graph( tree ):
-    """convert tree to a graph."""
-
-    graph={}
-    edges=[]
-    for i, n in tree.chain.items():
-        if i not in graph: graph[i] = []
-        for nn in n.succ:
-            if nn not in graph: graph[nn] = []
-            graph[nn].append(i)
-            graph[i].append(nn)            
-            edges.append( (i, nn) )
-            
-    return graph,edges
-
-def getPattern( tree, nodes, map_taxon2position ):
-
-    pattern = ["0"] * len(map_taxon2position)
-    for n in nodes:
-        t = tree.node( n ).get_data().taxon
-        if t != None:
-            pattern[map_taxon2position[t]] = "1"
-    return "".join(pattern)
-
-
-def calculatePatternsFromTree( tree, sort_order ):
-    """calculate patterns from a tree."""
-    
-    notus = len(sort_order)
-
-    map_taxon2position = {}
-    for x in range(notus):
-        map_taxon2position[sort_order[x]] = x
-
-    graph,edges = convertTree2Graph(tree)
-    patterns = []
-    for a,b in edges:
-        result = traverseGraph( graph, a, [b,])
-        patterns.append( getPattern( tree, result.keys(), map_taxon2position) )
-        result = traverseGraph( graph, b, [a,])
-        patterns.append( getPattern( tree, result.keys(), map_taxon2position) )
-
-    patterns.append( "1" * notus )
-    return patterns
 
 if __name__ == "__main__":
 
@@ -154,7 +92,7 @@ if __name__ == "__main__":
         sort_order = [],
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if not options.sort_order:
         for nx in reference_tree.get_terminals():
@@ -172,12 +110,12 @@ if __name__ == "__main__":
         print "# reference tree:"
         print reference_tree.display()
 
-    patterns = calculatePatternsFromTree( tree, options.sort_order )
+    patterns = TreeTools.calculatePatternsFromTree( tree, options.sort_order )
 
     for p in patterns:
         print p
 
-    Experiment.Stop()
+    E.Stop()
 
 
 

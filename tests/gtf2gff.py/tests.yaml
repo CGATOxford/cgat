@@ -1,0 +1,18 @@
+version:
+    stdin: null
+    outputs: [stdout]
+    references: []
+    options: --version
+
+genome:
+    stdin: hg19.chr19.gtf.gz
+    outputs: [stdout]
+    references: [genome.gff]
+    options: --sort --genome-file=%DIR%/hg19.chr19 --method=genome
+
+great_domains:
+    stdin: hg19.chr19.gtf.gz
+    outputs: [stdout]
+    references: [great_domains.gff]
+    options: --genome-file=%DIR%/hg19.chr19 --method=great-domains
+

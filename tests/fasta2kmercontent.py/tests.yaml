@@ -1,0 +1,5 @@
+basic_test:
+    stdin: test.fasta.gz
+    outputs: [stdout]
+    references: [basic_test_reference_content.tsv]
+    options: --kmer 4

@@ -3,7 +3,7 @@
 #
 #   MRC FGU Computational Genomics Group
 #
-#   $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $
+#   $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $
 #
 #   Copyright (C) 2009 Andreas Heger
 #
@@ -117,6 +117,7 @@ import sys
 import re
 import optparse
 import collections
+import CGAT.Experiment as E
 
 BlastResult = collections.namedtuple( "blastresult",
                                       "qseqid qstart qend sseqid sstart send evalue bitscore pident score qseq sseq" )

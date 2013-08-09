@@ -1523,3 +1523,66 @@ def GetDistanceToRoot( tree ):
     TreeDFS( tree, tree.root, pre_function = record_distance )
 
     return distance_to_root
+
+
+def traverseGraph( graph, start, block = []):
+    """traverse graph, go not passed nodes in block.
+    """
+    
+    to_visit = [start,]
+    visited = {}
+
+    while to_visit:
+        v = to_visit[0]
+        del to_visit[0]
+        visited[v] = 1
+        for n in graph[v]:
+            if n not in visited and n not in block:
+                to_visit.append(n)
+        
+    return visited
+
+def getPattern( tree, nodes, map_taxon2position ):
+
+    pattern = ["0"] * len(map_taxon2position)
+    for n in nodes:
+        t = tree.node( n ).get_data().taxon
+        if t != None:
+            pattern[map_taxon2position[t]] = "1"
+    return "".join(pattern)
+
+def convertTree2Graph( tree ):
+    """convert tree to a graph."""
+
+    graph={}
+    edges=[]
+    for i, n in tree.chain.items():
+        if i not in graph: graph[i] = []
+        for nn in n.succ:
+            if nn not in graph: graph[nn] = []
+            graph[nn].append(i)
+            graph[i].append(nn)            
+            edges.append( (i, nn) )
+            
+    return graph,edges
+
+
+def calculatePatternsFromTree( tree, sort_order ):
+    """calculate patterns from a tree."""
+    
+    notus = len(sort_order)
+
+    map_taxon2position = {}
+    for x in range(notus):
+        map_taxon2position[sort_order[x]] = x
+
+    graph,edges = convertTree2Graph(tree)
+    patterns = []
+    for a,b in edges:
+        result = traverseGraph( graph, a, [b,])
+        patterns.append( getPattern( tree, result.keys(), map_taxon2position) )
+        result = traverseGraph( graph, b, [a,])
+        patterns.append( getPattern( tree, result.keys(), map_taxon2position) )
+
+    patterns.append( "1" * notus )
+    return patterns
