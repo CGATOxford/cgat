@@ -32,8 +32,8 @@ fasta2composition.py
 Purpose
 -------
 
-This script takes as input a multi-fasta file from stdin and computes a k-nucleotide
-composition for each contig in the set. The output is a tab-delimited file of kmer comunts:
+This script takes as input a :term:`fasta` file from stdin and computes a k-nucleotide
+content for each contig in the file. The output is a tab-delimited file of kmer counts:
 
      contig1  contig2  contig3  contig4  
 n1
@@ -41,11 +41,10 @@ n2
 n3
 
 
-where n is the kmer and contig is the fasta entry
+where n is the kmer and contig is the fasta entry.
 
-The user can specify the nucleotides that are to be searched for example
-tetra, pentamer etc in which case all tetramers from the ATCG will be computed
-and tested.
+The user specifies the kmer that is to be searched. Note that the longer the kmer, the
+longer the script will take to run.
 
 
 Usage
@@ -53,7 +52,20 @@ Usage
 
 Example::
 
-   python fasta2composition.py --help
+   zcat in.fasta.gz | python fasta2kmercontent.py --kmer 4 > tetranucleotide_counts.tsv
+
+In this example, for each contig in in.fasta.gz we count the occurrence of each four base
+combination.
+
+
+Alternative example::
+
+   zcat in.fasta.gz | python fasta2kmercontent.py --kmer 4 --proportion > tetranucleotide_proportions.tsv
+
+In this example, for each contig in in.fasta.gz we return the proportion of each four base
+combination out of the total tetranucleotide occurences. --proportion overides the count
+output. 
+
 
 Type::
 
@@ -61,8 +73,6 @@ Type::
 
 for command line help.
 
-Documentation
--------------
 
 Code
 ----
@@ -92,7 +102,7 @@ def main( argv = None ):
     parser.add_option("-k", "--kmer", dest="kmer", type="int",
                       help="supply kmer length")
     parser.add_option("-p", dest = "proportion", action="store_true",
-                      help="output proportions")
+                      help="output proportions - overides the default output")
     
 
     # add common options (-h/--help, ...) and parse command line 
@@ -118,7 +128,9 @@ def main( argv = None ):
     result = {}
 
     # NB assume that non fasta files are caught by FastaIterator
+    total_entries = 0
     for fasta in FastaIterator.iterate(options.stdin):
+        total_entries += 1
         result[fasta.title] = {}
         for kmer in kmers:
             counts = [m.start() for m in re.finditer("".join(kmer), fasta.sequence)]
@@ -148,6 +160,7 @@ def main( argv = None ):
         else:
             options.stdout.write("\t".join([row] + [str(result[header][tuple(row)]) for header in headers]) + "\n")
 
+    E.info("written kmer counts for %i contigs" % total_entries)
     # write footer and output benchmark information.
     E.Stop()
 

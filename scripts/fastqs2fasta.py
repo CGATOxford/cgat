@@ -32,16 +32,17 @@ fastqs2fasta.py
 Purpose
 -------
 
-This script is used to interleave two fastq files into a single fasta file. Read1 is followed by 
-read2 in the resultant file. Fastq files must be sorted by read identifier.
-Writes the output to stdout.
+This script is used to interleave two :term:`fastq`-formatted files (paired data) into a single :term:`fasta`-formatted file. Read1 is followed by 
+read2 in the resultant file. 
+
+:term:`fastq` files MUST be sorted by read identifier.
 
 Usage
 -----
 
 Example::
 
-   python fastqs2fasta.py --help
+   python fastqs2fasta.py --fastq1 in.fastq.1.gz --fastq2 in.fastq.2.gz > out.fasta
 
 Type::
 
@@ -49,8 +50,6 @@ Type::
 
 for command line help.
 
-Documentation
--------------
 
 Code
 ----
@@ -66,6 +65,13 @@ import CGAT.IOTools as IOTools
 import CGAT.Fastq as Fastq
 
 import CGAT.Experiment as E
+
+class PairedReadError(Exception):
+    '''
+    exception raised when reads aren't paired -
+    could be not sorted or files of different lengths
+    '''
+    pass
 
 def main( argv = None ):
     """script main.
@@ -90,12 +96,22 @@ def main( argv = None ):
     fastq1 = IOTools.openFile(options.fastq1)
     fastq2 = IOTools.openFile(options.fastq2)
 
-    E.info("reading fastq files")
-    for f1, f2 in itertools.izip(Fastq.iterate(fastq1), Fastq.iterate(fastq2)):
-        assert f1.identifier[:-1] == f2.identifier[:-1], "fastq entries are not sorted"
-        options.stdout.write(">%s\n%s\n>%s\n%s\n" % (f1.identifier, f1.seq, f2.identifier, f2.seq))
+    E.info("iterating over fastq files")
+    f1_count = 0
+    for f1, f2 in itertools.izip_longest(Fastq.iterate(fastq1), Fastq.iterate(fastq2)):
+        if not (f1 and f2) or (not f2 and f1):
+            try:
+                raise PairedReadError("unpaired reads detected. Are files sorted? are files of equal length?")
+            except PairedReadError, e:
+                raise PairedReadError(e), None, sys.exc_info()[2]
+        else:
+            assert f1.identifier.endswith("/1") and f2.identifier.endswith("/2"), "Reads in file 1 must end with /1 and reads in file 2 with /2"
+            options.stdout.write(">%s\n%s\n>%s\n%s\n" % (f1.identifier, f1.seq, f2.identifier, f2.seq))
+            f1_count += 1
 
-## write footer and output benchmark information.
+    E.info("output: %i pairs" % f1_count)
+
+    ## write footer and output benchmark information.
     E.Stop()
 
 if __name__ == "__main__":
