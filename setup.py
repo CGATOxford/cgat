@@ -49,6 +49,8 @@ shared_dependencies = [
     'hgapi>=1.3.0',
     'threadpool>=1.2.7',
     'PyYAML>=3.1.0',
+    'pandas>=0.12.0',
+    'weblogo>=3.0',
     'sphinxcontrib-programoutput>=0.8']
 
 # check if within CGAT, do not install dependencies

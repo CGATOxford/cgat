@@ -486,9 +486,6 @@ def Start( parser = None,
        ``-P/--output-filename-pattern``
             Pattern to use for output filenames.
 
-
-
-
     """
     
     if not parser:

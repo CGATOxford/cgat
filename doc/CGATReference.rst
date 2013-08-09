@@ -15,6 +15,17 @@ Genomics
 :doc:`scripts/beds2counts`
     Compute overlap statistics of multiple :term:`bed` files.
 
+:doc:`scripts/diff_bed`
+    Compare multiple sets of bed files in pairwise fashion.
+    Permits incremental updates of similarity table.
+
+:doc:`scripts/diff_fasta`
+    Compare two sets of sequences. Outputs missing, identical
+    and fragment sequences.
+
+:doc:`scripts/diff_gtf`
+    Compare two gene sets - output common and unique genes by overlap.
+
 :doc:`scripts/gff2gff`
     Work on :term:`gff` formatted files with genomic features. This 
     tools sorts/renames feature files, reconciles chromosome names,
@@ -75,12 +86,6 @@ Unsorted
 :doc:`scripts/diff_bed`
 
 :doc:`scripts/diff_chains`
-
-:doc:`scripts/diff_fasta`
-
-:doc:`scripts/diff_gff`
-
-:doc:`scripts/diff_gtf`
 
 :doc:`scripts/diff_gtfs`
 

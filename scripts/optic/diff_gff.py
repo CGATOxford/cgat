@@ -32,6 +32,10 @@ Purpose
 
 This script compares the intervals in two :term:`gff` formatted files.
 
+.. note::
+
+    This script only works with non-overlapping features.
+
 The script outputs the following symbols::
 
     >: an entry unique to the second file
@@ -50,11 +54,11 @@ Usage
 
 Example::
 
-   python <script_name>.py --help
+   python diff_gff.py a.gtf.gz b.gtf.gz
 
 Type::
 
-   python <script_name>.py --help
+   python diff_gff.py --help
 
 for command line help.
 
@@ -64,10 +68,13 @@ Documentation
 Code
 ----
 '''
-import optparse
+import sys
+import re
+import os
 
 import CGAT.Experiment as E
 import CGAT.GTF as GTF
+import CGAT.IOTools as IOTools
 
 def GetNextLine( infile ):
     for line in infile:
@@ -144,14 +151,18 @@ class Counts:
 
 def getFile( options, section ):
 
-    if options.output_pattern:
-        outfile = open(options.output_pattern % section, "w")
-        if options.loglevel >= 1:
-            options.stdlog.write("# output for section '%s' goes to file %s\n" % (section, options.output_pattern % section) )
+    if options.output_filename_pattern:
+        outfile = open(options.output_filename_pattern % section, "w")
+        E.info( "output for section '%s' goes to file %s" % (section, options.output_filename_pattern % section) )
     else:
         outfile = options.stdout
         outfile.write( "## section: %s\n" % section)
     return outfile
+
+def _cmp(this, other):
+    '''compare to gtf entries'''
+    return cmp( (this.contig, this.strand, this.start),
+                (other.contig, other.strand, other.start))
 
 if __name__ == "__main__":
 
@@ -169,11 +180,8 @@ if __name__ == "__main__":
     parser.add_option("-p", "--add-percent", dest="add_percent", action="store_true",
                       help="add percentage columns [default=%default]." )
 
-    parser.add_option("-a", "--as-gtf", dest="as_gtf", action="store_true",
+    parser.add_option("-a", "--as-gtf", "--is-gtf", dest="as_gtf", action="store_true",
                       help="input is in gtf format. Output on overlapping genes will be output [default=%default]." )
-
-    parser.add_option("-t", "--output-pattern", dest="output_pattern", type="string",
-                      help="pattern for output files (should contain one %s). The output will be  [default=%default].")
 
     parser.add_option("-s", "--ignore-strand", dest="ignore_strand", action="store_true",
                       help="ignore strand information [default=%default]." )
@@ -183,17 +191,14 @@ if __name__ == "__main__":
         write_full = False,
         format="flat",
         add_percent=False,
-        output_pattern = None,
         ignore_strand = False,
         as_gtf = False,
         )
 
-    (options, args) = E.Start( parser )
+    (options, args) = E.Start( parser, add_output_options = True)
 
     if len(args) != 2:
-        print USAGE
-        print "two arguments required"
-        sys.exit(1)
+        raise ValueError("two arguments required")
 
     input_filename1, input_filename2 = args
 
@@ -201,36 +206,34 @@ if __name__ == "__main__":
     ## features are non-overlapping by running
     ## gff_combine.py on GFF files first.
 
-    if options.loglevel >= 1:
-        options.stdlog.write( "# reading data ..." )
-        options.stdlog.flush()
+    E.info( "reading data" )
 
     if options.as_gtf:
-        gff1 = GTF.readFromFile( open( input_filename1, "r" ) )
-        gff2 = GTF.readFromFile( open( input_filename2, "r" ) )
+        gff1 = GTF.readFromFile( IOTools.openFile( input_filename1, "r" ) )
+        gff2 = GTF.readFromFile( IOTools.openFile( input_filename2, "r" ) )
         overlaps_genes = []
     else:
-        gff1 = GTF.readFromFile( open( input_filename1, "r" ) )
-        gff2 = GTF.readFromFile( open( input_filename2, "r" ) )    
+        gff1 = GTF.readFromFile( IOTools.openFile( input_filename1, "r" ) )
+        gff2 = GTF.readFromFile( IOTools.openFile( input_filename2, "r" ) )    
 
-    if options.loglevel >= 1:
-        options.stdlog.write("finished\n")
-        options.stdlog.flush()
+    E.info( "reading data finished: %i, %i" % (len(gff1), len(gff2) ))
+
+    # removing everything but exons
+    gff1 = [ x for x in gff1 if x.feature == "exon" ]
+    gff2 = [ x for x in gff2 if x.feature == "exon" ]
+
+    E.info( "after keeping only 'exons': %i, %i" % (len(gff1), len(gff2) ))
 
     if options.ignore_strand:
         for e in gff1: e.strand = "."
         for e in gff2: e.strand = "."
 
-    if options.loglevel >= 1:
-        options.stdlog.write("# sorting exons ...")
-        options.stdlog.flush()
+    E.info( "sorting exons" )
 
     gff1.sort( key = lambda x: (x.contig, x.strand, x.start, x.end) )
     gff2.sort( key = lambda x: (x.contig, x.strand, x.start, x.end) )
 
-    if options.loglevel >= 1:
-        options.stdlog.write("finished\n")
-        options.stdlog.flush()
+    E.info( "sorting exons finished" )
 
     subtotals = []
     subtotal = Counts( add_percent = options.add_percent )
@@ -247,14 +250,14 @@ if __name__ == "__main__":
     n1 = len(gff1)
     n2 = len(gff2)
     first_entry2, first_entry1 = None, None
+
     while i1 < n1 and i2 < n2:
             
         entry1 = gff1[i1]
         entry2 = gff2[i2]
-
-        if options.loglevel >= 3:
-            options.stdlog.write( "# 1: i1=%i n1=%i entry1=%s\n" % (i1, n1, str(entry1)))
-            options.stdlog.write( "# 2: i2=%i n2=%i entry2=%s\n" % (i2, n2, str(entry2)))
+        
+        E.debug( "1: i1=%i n1=%i entry1=%s" % (i1, n1, str(entry1)))
+        E.debug( "2: i2=%i n2=%i entry2=%s" % (i2, n2, str(entry2)))
 
         ## when chromosome/strand have changed in both (and are the same), print summary info:
         if first_entry1:
@@ -277,11 +280,11 @@ if __name__ == "__main__":
                 
         output_1, output_2 = None, None
 
-        if entry1.hasOverlap(entry2):
+        if GTF.Overlap(entry1, entry2):
             
             ## collect multiple matches
             last_l = True
-            while entry1.hasOverlap(entry2):
+            while GTF.Overlap(entry1, entry2):
 
                 if overlapping_genes != None:
                     overlapping_genes.append( (entry1.gene_id, entry2.gene_id) )
@@ -310,7 +313,7 @@ if __name__ == "__main__":
                         break
                         
                     entry1 = gff1[i1]
-                    if entry1.hasOverlap(entry2):
+                    if GTF.Overlap(entry1,entry2):
                         symbol = "/"
                         # outfile.write( "# split right\n" )
                         subtotal.nsplit_right+=1
@@ -325,7 +328,7 @@ if __name__ == "__main__":
                         break
                     
                     entry2 = gff2[i2]
-                    if entry1.hasOverlap(entry2):
+                    if GTF.Overlap(entry1, entry2):
                         symbol = "\\"
                         # outfile.write("# split left\n")
                         subtotal.nsplit_left+=1
@@ -353,20 +356,18 @@ if __name__ == "__main__":
                 i1 += 1
                 subtotal.nleft += 1
                 
-        elif entry1 < entry2:
+        elif _cmp( entry1, entry2 ) < 0:
             outfile_diff.write("<\t%s\n" % str(entry1))
             subtotal.nunique_left += 1
             i1 += 1
             subtotal.nleft += 1
             
-        elif entry1 > entry2:
+        elif _cmp( entry1, entry2) > 0:
             outfile_diff.write(">\t%s\n" % str(entry2))
             subtotal.nunique_right += 1
             i2 += 1
             subtotal.nright += 1
             
-        options.stdlog.flush()
-        
     while i1 < n1:
         outfile_diff.write( "<\t%s\n" % str(entry1))
         subtotal.nunique_left += 1
@@ -411,7 +412,7 @@ if __name__ == "__main__":
         outfile.write( "\n".join( d ) + "\n" )
         if outfile != options.stdout: outfile.close()
         outfile_total.write( "%s\t%i\t%i\t%5.2f\t%i\t%5.2f\n" % (
-                input_filename1, len(a), len(b), 100.0 * len(b) / len(a),
+                os.path.basename(input_filename1), len(a), len(b), 100.0 * len(b) / len(a),
                 len(d), 100.0 * len(d) / len(a) ) )
 
         outfile = getFile( options, "genes_uniq2" )
@@ -423,7 +424,7 @@ if __name__ == "__main__":
         if outfile != options.stdout: outfile.close()
 
         outfile_total.write( "%s\t%i\t%i\t%5.2f\t%i\t%5.2f\n" % (
-                input_filename2, len(a), len(b), 100.0 * len(b) / len(a),
+                os.path.basename(input_filename2), len(a), len(b), 100.0 * len(b) / len(a),
                 len(d), 100.0 * len(d) / len(a) ) )
         if outfile_total != options.stdout: outfile_total.close()
         

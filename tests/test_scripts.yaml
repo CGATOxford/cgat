@@ -1,5 +1,5 @@
 
 restrict:
-        regex: beds2counts.py
+        regex: diff_bed.py
 
 
