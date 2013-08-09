@@ -1,5 +1,5 @@
 
 restrict:
-        regex: bed2fasta.py
+        regex: fasta2table.py
 
 
