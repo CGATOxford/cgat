@@ -1,3 +1,4 @@
+.. _bed2fasta.py:
 
 .. automodule:: bed2fasta
 

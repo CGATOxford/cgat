@@ -37,16 +37,27 @@ a :term:`bed` formatted file using.
 Usage
 -----
 
+A required input to bed2fasta.py is a CGAT indexed genome. To obtain an
+idexed human reference genome we would type
+
 Example::
+   cat hg19.fasta | index_fasta.py hg19 > hg19.log
+
+This file would then serve as the --genome-file when we wish to extract
+sequences from a :term:`bed` formatted file.
+
+
+For example we could now type::
 
    cat in.bed | python bed2fasta.py --genome-file hg19 > out.fasta
 
-In this example we take a set of genomic intervals (e.g. from a human ChIP-seq experiment)
-and output their respective nucleotide sequences (in this case using the human hg19 assembly).
+Where we take a set of genomic intervals (e.g. from a human ChIP-seq experiment)
+and output their respective nucleotide sequences.
+
 
 Type::
 
-   python <script_name>.py --help
+   python bed2fasta.py --help
 
 for command line help.
 

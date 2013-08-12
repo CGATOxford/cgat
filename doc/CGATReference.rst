@@ -8,12 +8,22 @@ collection.
 Genomics
 ========
 
+:doc:`scripts/bed2fasta`
+    Convert :term:`bed` formatted file into :term:`fasta` formatted
+    file.
+
 :doc:`scripts/bed2gff`
     Convert a :term:`bed` formatted file to a :term:`gff` or
     :term:`gtf` formatted file.
 
 :doc:`scripts/beds2counts`
     Compute overlap statistics of multiple :term:`bed` files.
+
+:doc:`scripts/fasta2table`
+    Compute features of sequences in :term:`fasta` formatted files
+
+:doc:`scripts/fastqs2fasta`
+    Interleave paired reads from two fastq files into a single fasta file.
 
 :doc:`scripts/gff2gff`
     Work on :term:`gff` formatted files with genomic features. This 
@@ -42,8 +52,6 @@ NGS
 :doc:`scripts/bam2geneprofile`
      Compute and plot a meta-gene profile from aligned reads.
 
-:doc:`scripts/fastqs2fasta`
-    Interleave paired reads from two fastq files into a single fasta file.
 
 
 Unsorted
@@ -66,8 +74,6 @@ Unsorted
 :doc:`scripts/bam2wiggle`
 
 :doc:`scripts/bed2bed`
-
-:doc:`scripts/bed2fasta`
 
 :doc:`scripts/bed2graph`
 
@@ -102,8 +108,6 @@ Unsorted
 :doc:`scripts/fasta2properties`
 
 :doc:`scripts/fasta2spliced`
-
-:doc:`scripts/fasta2table`
 
 :doc:`scripts/fasta2variants`
 

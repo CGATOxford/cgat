@@ -25,6 +25,8 @@ followed by a quickstart guide.
    CGATUsage
    CGATRecipes
    CGATReference
+
+.. _quickstart:
    
 Quickstart
 ==========
