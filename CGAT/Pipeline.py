@@ -70,13 +70,18 @@ GLOBAL_SESSION = None
 
 class PipelineError( Exception ): pass
 
-# possible to use defaultdict, but then statements will
-# fail on execution if a parameter does not exists, and not
-# while building the statement. Hence, use dict.
+# Sort out the important paths
 LIB_DIR=os.path.dirname( __file__ )
 ROOT_DIR=os.path.dirname( LIB_DIR )
 SCRIPTS_DIR=os.path.join( ROOT_DIR, "scripts" )
-
+# if Pipeline.py is from an installed version,
+# scripts are located in the "bin" directory.
+if not os.path.exists( SCRIPTS_DIR):
+    SCRIPTS_DIR = os.path.join(sys.exec_prefix, "bin")
+    
+# possible to use defaultdict, but then statements will
+# fail on execution if a parameter does not exists, and not
+# while building the statement. Hence, use dict.
 PARAMS = { 
     'scriptsdir' : SCRIPTS_DIR,
     'toolsdir' : SCRIPTS_DIR,
@@ -1126,14 +1131,24 @@ def peekParameters( workingdir, pipeline ):
     '''peak configuration parameters from an external directory.
     '''
     
+    # attempt to locate directory with pipeline source code
+    # This is a patch as pipelines might be called within the repository directory
+    # or from an installed location
     dirname = os.path.dirname( __file__ )
 
+    # called without a directory, use current directory
     if dirname == "":
-        # special case: pipeline called in source directory
         dirname = os.path.abspath(".")
     else:
-        # point towards location of CGAT pipelines
-        dirname = os.path.join( os.path.dirname( dirname ), "CGATPipelines")
+        # else: use location of Pipeline.py
+        # remove CGAT part, add CGATPipelines
+        dirname = os.path.join( os.path.dirname(dirname), "CGATPipelines")
+        # if not exists, assume we want version located
+        # in directory of calling script.
+        if not os.path.exists( dirname ):
+            # directory is path of calling script
+            v = getCallerLocals()
+            dirname = os.path.dirname(v['__file__'])
 
     pipeline = os.path.join( dirname, pipeline )
     assert os.path.exists( pipeline ), "can't find pipeline source %s" % pipeline
@@ -1298,17 +1313,20 @@ def main( args = sys.argv ):
 
     GLOBAL_OPTIONS, GLOBAL_ARGS = options, args
     PARAMS["dryrun"] = options.dry_run
-    
-    # get mercurial version
-    repo = hgapi.Repo( PARAMS["scriptsdir"] )
-    version = repo.hg_id()
-    
-    status = repo.hg_status()
-    if status["M"] or status["A"]:
-        if not options.force:
-            raise ValueError( "uncommitted change in code repository at '%s'. Either commit or use --force" % PARAMS["scriptsdir"])
-        else:
-            E.warn( "uncommitted changes in code repository - ignored ")
+
+    try:
+        # get mercurial version
+        repo = hgapi.Repo( PARAMS["scriptsdir"] )
+        version = repo.hg_id()
+
+        status = repo.hg_status()
+        if status["M"] or status["A"]:
+            if not options.force:
+                raise ValueError( "uncommitted change in code repository at '%s'. Either commit or use --force" % PARAMS["scriptsdir"])
+            else:
+                E.warn( "uncommitted changes in code repository - ignored ")
+    except:
+        pass
 
     if args: 
         options.pipeline_action = args[0]

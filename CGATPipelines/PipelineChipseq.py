@@ -30,7 +30,7 @@ import CGAT.Genomics as Genomics
 import CGAT.IOTools as IOTools
 import CGAT.GTF as GTF
 import CGAT.Bed as Bed
-import MACS
+import CGAT.WrapperMACS as WrapperMACS
 import CGAT.WrapperZinba as WrapperZinba
 # import Stats
 
@@ -860,7 +860,7 @@ def summarizeMACSFDR( infiles, outfile ):
         track = P.snip( os.path.basename(infile), ".macs" )
         infilename = infile + "_peaks.xls.gz"
         inf = IOTools.openFile( infilename )
-        peaks = list( MACS.iteratePeaks(inf) )
+        peaks = list( WrapperMACS.iteratePeaks(inf) )
         
         for threshold in fdr_thresholds:
             called.append( len( [ x for x in peaks if x.fdr <= threshold ] ) )
@@ -956,7 +956,7 @@ def loadMACS( infile, outfile, bamfile, tablename = None ):
     
     counter = E.Counter()
     with IOTools.openFile( infilename, "r" ) as ins:
-        for peak in MACS.iteratePeaks( ins ):
+        for peak in WrapperMACS.iteratePeaks( ins ):
 
             if peak.fdr > max_qvalue:
                 counter.removed_qvalue += 1

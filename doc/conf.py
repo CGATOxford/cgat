@@ -76,6 +76,7 @@ rst_epilog='''
 .. _galaxy: https://main.g2.bx.psu.edu/
 .. _cython: http://cython.org/
 .. _pyximport: http://www.prescod.net/pyximport/
+.. _sphinx: http://sphinx-doc.org/
 '''
 
 

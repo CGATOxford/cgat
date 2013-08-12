@@ -1,5 +1,5 @@
 
 restrict:
-        regex: fasta2table.py
+        regex: diff_bed.py
 
 

@@ -10,6 +10,8 @@ written before and during CGAT.
 .. note::
    The documentation is under construction.
 
+The CGAT Code collection is documented :ref:`here <cgat>`.
+
 Overview
 ========
 
@@ -62,7 +64,9 @@ Developer's guide
    developing.rst
    testing.rst
    styleguide.rst
+   documenting.rst
    release.rst
+   galaxy.rst
 
 Glossary
 ========

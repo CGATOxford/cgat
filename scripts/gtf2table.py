@@ -56,7 +56,7 @@ binding-pattern
 classifier
    classify transcripts according to genomic annotation 
    Requires a :term:`gff` file with genomic annotations
-   (see :py:doc:`gtf2gff`.)
+   (see :doc:`gtf2gff`.)
 
 classifier-chipseq
    classify chipseq intervals
@@ -204,7 +204,12 @@ import bx
 import bx.bbi.bigwig_file
 import bx.intervals.io
 import bx.intervals.intersection
-import alignlib
+
+try:
+    import alignlib
+except ImportError:
+    pass
+
 import numpy
 import CGAT.IndexedGenome as IndexedGenome
 import pysam

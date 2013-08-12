@@ -4,3 +4,9 @@ version:
     outputs: [stdout]
     references: []
     options: --version
+
+diff:
+    stdin: null
+    outputs: [stdout]
+    references: [diff.tsv]
+    options: --pattern-id=".*/(.*).bed.gz" <DIR>/srf.hg19.bed.gz <DIR>/srf.hg19.bed.gz

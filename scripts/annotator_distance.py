@@ -78,14 +78,6 @@ import scipy.stats
 import matplotlib.pyplot as plt
 from matplotlib import _pylab_helpers
 
-import progressbar
-
-USAGE="""python %s [OPTIONS]
-
-
-""" % sys.argv[0]
-
-
 ## global functions, defined once for optimization purposes
 normalize_transform = lambda x, y: numpy.array( x, float) / ( sum(x) + y)
 cumulative_transform = lambda x, y: numpy.cumsum( numpy.array( x, float) / (sum(x) + y) )
@@ -935,15 +927,12 @@ def main( argv = sys.argv ):
 
         if len(vv) == 0: continue
 
-        pbar = progressbar.ProgressBar( maxval = len(vv), widgets = ["# %s :" % contig, progressbar.Percentage(),], fd=options.stdlog ).start()
-
         iteration1 = 0
         for work_start, work_end, v in vv:
             
             left_labels, right_labels = v[0], v[1]
 
             iteration1 += 1
-            pbar.update( iteration1 )
 
             # ignore empty segments
             if contig not in indexed_segments: 
@@ -981,8 +970,6 @@ def main( argv = sys.argv ):
                 simulated = s.sample()
                 for counter in counters:
                     counter.mSimulatedCounts[iteration].addCounts( simulated, work_start, work_end, left_labels, right_labels )
-
-        pbar.finish()
 
     E.info( "counting finished" )
     E.info( "nworkspaces=%i, nmiddle=%i, nempty_workspaces=%i, nempty_contigs=%i" % (nworkspaces, nmiddle, nempty_workspaces, nempty_contigs) )

@@ -32,19 +32,31 @@ diff_fasta.py - compare contents of two fasta files
 Purpose
 -------
 
-This script takes two sets of fasta sequences and compares the
-identifiers. It outputs
+This script takes two sets of fasta sequences and matches the
+identifiers. It then comparse the sequences associated with the
+identifiers and outputs
 
    * which sequences are missing
    * which sequences are identical
    * which sequences are prefixes/suffixes of each other
+
+Depending on the option ``--output`` the following are output:
+
+diff
+   identifiers of sequences that are different
+
+seqdiff
+   sequences of sequences that are different
+
+missed
+   seqences that are missing from set or the other
 
 Usage
 -----
 
 Example::
 
-   python diff_fasta.py --help
+   python diff_fasta.py a.fasta b.fasta
 
 Type::
 
@@ -67,7 +79,6 @@ import getopt
 import optparse
 
 import CGAT.Genomics as Genomics
-import alignlib
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 
@@ -89,14 +100,18 @@ if __name__ == "__main__":
     parser = E.OptionParser( version = "%prog version: $Id: diff_fasta.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-s", "--correct-gap-shift", dest="correct_shift", action="store_true",
-                      help="correct gap length shifts in alignments.")
+                      help="correct gap length shifts in alignments. Requires alignlib. "
+                      "[%default]")
     parser.add_option("-1", "--pattern1", dest="pattern1", type="string",
-                      help="pattern to extract identifier from in identifiers1.")
+                      help="pattern to extract identifier from in identifiers1. "
+                      "[%default]")
     parser.add_option("-2", "--pattern2", dest="pattern2", type="string",
-                      help="pattern to extract identifier from in identifiers2.")
+                      help="pattern to extract identifier from in identifiers2. "
+                      "[%default]")
+
     parser.add_option("-o", "--output", dest="output", type="choice", action="append",
                       choices=("diff", "missed", "seqdiff"),
-                      help="what to output.")
+                      help="what to output [%default]")
                       
     parser.set_defaults( correct_shift = False,
                          pattern1 = "(\S+)",
@@ -108,6 +123,12 @@ if __name__ == "__main__":
 
     if len(args) != 2:
         raise ValueError( "two files needed to compare." )
+
+    if options.correct_shift:
+        try:
+            import alignlib
+        except ImportError:
+            raise ImportError("option --correct-shift requires alignlib, but alignlib not found" )
 
     seqs1 = Genomics.ReadPeptideSequences( IOTools.openFile(args[0], "r") )
     seqs2 = Genomics.ReadPeptideSequences( IOTools.openFile(args[1], "r") )    
@@ -249,12 +270,12 @@ if __name__ == "__main__":
 # fixed:          fixed differences
 # other:          other differences
 """)
-    
-    options.stdlog.write( "# seqs1=%i, seqs2=%i, same=%i, ndiff=%i, nmissed1=%i, nmissed2=%i\n" %\
-          (len(seqs1), len(seqs2), nsame, ndiff, nmissed1, nmissed2) )
-    options.stdlog.write( "# ndiff=%i: first=%i, last=%i, prefix=%i, selenocysteine=%i, masked=%i, fixed=%i, other=%i\n" %\
-          (ndiff, ndiff_first, ndiff_last, ndiff_prefix, ndiff_selenocysteine, ndiff_masked, nfixed,
-           ndiff - ndiff_first - ndiff_last - ndiff_prefix - ndiff_selenocysteine - ndiff_masked - nfixed) )
+
+    E.info( "seqs1=%i, seqs2=%i, same=%i, ndiff=%i, nmissed1=%i, nmissed2=%i" %\
+                (len(seqs1), len(seqs2), nsame, ndiff, nmissed1, nmissed2) )
+    E.info( "ndiff=%i: first=%i, last=%i, prefix=%i, selenocysteine=%i, masked=%i, fixed=%i, other=%i" %\
+                (ndiff, ndiff_first, ndiff_last, ndiff_prefix, ndiff_selenocysteine, ndiff_masked, nfixed,
+                 ndiff - ndiff_first - ndiff_last - ndiff_prefix - ndiff_selenocysteine - ndiff_masked - nfixed) )
     
     E.Stop()
         

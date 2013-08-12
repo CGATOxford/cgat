@@ -8,6 +8,9 @@ collection.
 Genomics
 ========
 
+:doc:`scripts/beds2counts`
+    Compute overlap statistics of multiple :term:`bed` files.
+
 :doc:`scripts/bed2fasta`
     Convert :term:`bed` formatted file into :term:`fasta` formatted
     file.
@@ -16,14 +19,9 @@ Genomics
     Convert a :term:`bed` formatted file to a :term:`gff` or
     :term:`gtf` formatted file.
 
-:doc:`scripts/beds2counts`
-    Compute overlap statistics of multiple :term:`bed` files.
-
-:doc:`scripts/fasta2table`
-    Compute features of sequences in :term:`fasta` formatted files
-
-:doc:`scripts/fastqs2fasta`
-    Interleave paired reads from two fastq files into a single fasta file.
+:doc:`scripts/diff_bed`
+    Compare multiple sets of bed files in pairwise fashion.
+    Permits incremental updates of similarity table.
 
 :doc:`scripts/gff2gff`
     Work on :term:`gff` formatted files with genomic features. This 
@@ -39,11 +37,24 @@ Genomics
     can be in reference to a second gene set (fragments, extensions), 
     aligned reads (coverage, intron overrun, ...) or densities.
 
+:doc:`scripts/diff_gtf`
+    Compare two gene sets - output common and unique genes by overlap.
+
+:doc:`scripts/fastqs2fasta`
+    Interleave paired reads from two fastq files into a single fasta file.
+
 :doc:`scripts/index_fasta`
     Build an index for a fasta file. Pre-requisite for many CGAT tools.
-	
-:doc:`fasta2kmercontent`
+
+:doc:`scripts/fasta2kmercontent`
     Count kmer content in a set of :term:`fasta` sequences.
+
+:doc:`scripts/fasta2table`
+    Compute features of sequences in :term:`fasta` formatted files
+
+:doc:`scripts/diff_fasta`
+    Compare two sets of sequences. Outputs missing, identical
+    and fragment sequences.
 
 
 NGS
@@ -88,12 +99,6 @@ Unsorted
 :doc:`scripts/diff_bed`
 
 :doc:`scripts/diff_chains`
-
-:doc:`scripts/diff_fasta`
-
-:doc:`scripts/diff_gff`
-
-:doc:`scripts/diff_gtf`
 
 :doc:`scripts/diff_gtfs`
 
