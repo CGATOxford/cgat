@@ -1088,7 +1088,6 @@ def main( argv = None ):
         iterator = GTF.iterator(options.stdin)
 
     if options.sort:
-        print "here"
         iterator = GTF.iterator_sorted( iterator, sort_order = "position" )
 
     if options.method == "full" or options.method == "genome":

@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-cgat_script_template.py - template for CGAT scipts
+bam2fastq.py - 
 =============================================
 
 :Author: Andreas Heger

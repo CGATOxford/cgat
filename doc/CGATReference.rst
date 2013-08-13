@@ -60,8 +60,6 @@ NGS
 Unsorted
 =========
 
-:doc:`scripts/bam_correlation`
-
 :doc:`scripts/bam2bam`
 
 :doc:`scripts/bam2bed`
@@ -126,8 +124,6 @@ Unsorted
 
 :doc:`scripts/gff2coverage`
 
-:doc:`scripts/gff2exons`
-
 :doc:`scripts/gff2fasta`
 
 :doc:`scripts/gff2histogram`
@@ -139,8 +135,6 @@ Unsorted
 :doc:`scripts/gff2stats`
 
 :doc:`scripts/gff2table`
-
-:doc:`scripts/gff2transcripts`
 
 :doc:`scripts/gff2wiggle_stats`
 
@@ -174,4 +168,3 @@ Unsorted
 
 :doc:`scripts/vcf2vcf`
 
-:doc:`scripts/windows2gff`

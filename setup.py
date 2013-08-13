@@ -39,7 +39,8 @@ shared_dependencies = [
     'MySQL-python>1.2.3',
     'biopython>=1.61',
     'scipy>=0.7.0',
-    'bx-python>=0.7.1',
+    # Out of date, install manually latest version
+    # 'bx-python>=0.7.1',
     'networkx>=1.8.1',
     'PyGreSQL>=4.1.1',
     'drmaa>=0.5',
@@ -51,7 +52,8 @@ shared_dependencies = [
     'PyYAML>=3.1.0',
     'pandas>=0.12.0',
     'weblogo>=3.0',
-    'sphinxcontrib-programoutput>=0.8']
+    'sphinxcontrib-programoutput>=0.8',
+    'alignlib>=0.1']
 
 # check if within CGAT, do not install dependencies
 # curdir = os.getcwd()
