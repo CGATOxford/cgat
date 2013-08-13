@@ -10,6 +10,8 @@ include README.txt
 include KNOWN_BUGS
 include THANKS.txt
 
+include install_requisites.sh
+
 # CGAT scripts to include - note that these
 # are named explicitely to avoid unnecessary
 # clutter in users bin directories.

@@ -12,6 +12,12 @@ pypi first::
    pip install numpy
    pip install pysam
 
+Also, bx-python needs to be installed. The current version on pypi is
+currently out of date, so to install, do::
+
+   pip install https://bitbucket.org/james_taylor/bx-python/get/tip.tar.bz2
+
+
 Installation
 ============
 

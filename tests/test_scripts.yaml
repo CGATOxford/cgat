@@ -1,5 +1,5 @@
 
 restrict:
-        regex: diff_bed.py
+        regex: diff_gtf.py
 
 

@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-bed2annotator2tsv.py - convert bed to annotator format
+bed2annotator.py - convert bed to annotator format
 ==================================================
 
 :Author: Andreas Heger
