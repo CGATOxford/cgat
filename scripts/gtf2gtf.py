@@ -389,7 +389,7 @@ def main( argv = None ):
 
     elif options.sort:
 
-        for gff in iterator_sorted( GTF.iterator( options.stdin ), sort_order = options.sort ):
+        for gff in GTF.iterator_sorted( GTF.iterator( options.stdin ), sort_order = options.sort ):
             ninput += 1
             options.stdout.write( "%s\n" % str(gff) )                
             noutput += 1

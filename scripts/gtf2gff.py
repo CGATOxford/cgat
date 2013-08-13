@@ -244,7 +244,8 @@ several promotors associated with it, but overlapping promotor regions
 of the same gene will be merged. A promoter can extend into an
 adjacent upstream gene.
 
-Only protein coding genes are used to annotate promotors.
+The ``--restrict-source`` option determines which GTF entries are output. The default
+is to output all entries but the user can choose from protein_coding, pseudogene or lncRNA.
 
 The size of the promotor region can be specified by the command line
 argument ``--promotor``.
@@ -254,9 +255,10 @@ Regulons
 
 If ``--method=regulons``, putative regulon regions are output. This is similar
 to a ``promotor``, but the region extends both upstream and downstream from
-the transcriptsion start site.
+the transcription start site.
 
-Only protein coding genes are used to annotate regulons.
+The ``--restrict-source`` option determines which GTF entries are output. The default
+is to output all entries but the user can choose from protein_coding, pseudogene or lncRNA.
 
 The size of the promotor region can be specified by the command line
 argument ``--upstream`` and ``--downstream``
@@ -584,7 +586,7 @@ def annotateExons( iterator, fasta, options ):
 def annotatePromoters( iterator, fasta, options ):
     """annotate promoters within iterator.
 
-    Only protein_coding genes are annotated.
+    Entries specied with ``--restrict-source`` are annotated.
     """
 
     gene_iterator = GTF.gene_iterator( iterator )
@@ -631,7 +633,7 @@ def annotatePromoters( iterator, fasta, options ):
 def annotateRegulons( iterator, fasta, tss, options ):
     """annotate regulons within iterator.
 
-    Only protein_coding genes are annotated.
+    Entries specied with ``--restrict-source`` are annotated.
     """
 
     gene_iterator = GTF.gene_iterator( iterator )
@@ -826,7 +828,7 @@ def annotateGREATDomains( iterator, fasta, options ):
 def annotateTTS( iterator, fasta, options ):
     """annotate termination sites within iterator.
 
-    Only protein_coding genes are annotated.
+    Entries specified with ``--restrict-source are annotated``.
     """
 
     gene_iterator = GTF.gene_iterator( iterator )
@@ -1009,7 +1011,7 @@ def main( argv = None ):
                       help="Ignore transcripts on contigs that are not in the genome-file [default=%default]."  )
 
     parser.add_option("-s", "--restrict-source", dest="restrict_source", type="choice",
-                      choices=("protein_coding", "pseudogene" ),
+                      choices=("protein_coding", "pseudogene", "lncRNA"),
                       help="restrict input by source [default=%default]."  )
 
     parser.add_option("-m", "--method", dest="method", type="choice",
@@ -1079,13 +1081,17 @@ def main( argv = None ):
     else:
         raise ValueError("please specify a --genome-file")
 
-    if options.restrict_source:
+    if not options.restrict_source:
+        iterator = GTF.iterator(options.stdin)
+
+    elif options.restrict_source:
         iterator = GTF.iterator_filtered( GTF.iterator(options.stdin), 
                                           source = options.restrict_source )
-    elif options.method in ("promotors", "tts", "regulons"):
-        iterator = GTF.iterator_filtered( GTF.iterator(options.stdin), source = "protein_coding" )
-    else:
-        iterator = GTF.iterator(options.stdin)
+
+    # elif options.method in ("promotors", "tts", "regulons"):
+    #     iterator = GTF.iterator_filtered( GTF.iterator(options.stdin), source = "protein_coding")
+    # else:
+    #     iterator = GTF.iterator(options.stdin)
 
     if options.sort:
         iterator = GTF.iterator_sorted( iterator, sort_order = "position" )

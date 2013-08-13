@@ -8,23 +8,20 @@ collection.
 Genomics
 ========
 
+:doc:`scripts/beds2counts`
+    Compute overlap statistics of multiple :term:`bed` files.
+
+:doc:`scripts/bed2fasta`
+    Convert :term:`bed` formatted file into :term:`fasta` formatted
+    file.
+
 :doc:`scripts/bed2gff`
     Convert a :term:`bed` formatted file to a :term:`gff` or
     :term:`gtf` formatted file.
 
-:doc:`scripts/beds2counts`
-    Compute overlap statistics of multiple :term:`bed` files.
-
 :doc:`scripts/diff_bed`
     Compare multiple sets of bed files in pairwise fashion.
     Permits incremental updates of similarity table.
-
-:doc:`scripts/diff_fasta`
-    Compare two sets of sequences. Outputs missing, identical
-    and fragment sequences.
-
-:doc:`scripts/diff_gtf`
-    Compare two gene sets - output common and unique genes by overlap.
 
 :doc:`scripts/gff2gff`
     Work on :term:`gff` formatted files with genomic features. This 
@@ -40,11 +37,24 @@ Genomics
     can be in reference to a second gene set (fragments, extensions), 
     aligned reads (coverage, intron overrun, ...) or densities.
 
+:doc:`scripts/diff_gtf`
+    Compare two gene sets - output common and unique genes by overlap.
+
+:doc:`scripts/fastqs2fasta`
+    Interleave paired reads from two fastq files into a single fasta file.
+
 :doc:`scripts/index_fasta`
     Build an index for a fasta file. Pre-requisite for many CGAT tools.
-	
-:doc:`fasta2kmercontent`
+
+:doc:`scripts/fasta2kmercontent`
     Count kmer content in a set of :term:`fasta` sequences.
+
+:doc:`scripts/fasta2table`
+    Compute features of sequences in :term:`fasta` formatted files
+
+:doc:`scripts/diff_fasta`
+    Compare two sets of sequences. Outputs missing, identical
+    and fragment sequences.
 
 
 NGS
@@ -53,8 +63,6 @@ NGS
 :doc:`scripts/bam2geneprofile`
      Compute and plot a meta-gene profile from aligned reads.
 
-:doc:`scripts/fastqs2fasta`
-    Interleave paired reads from two fastq files into a single fasta file.
 
 
 Unsorted
@@ -75,8 +83,6 @@ Unsorted
 :doc:`scripts/bam2wiggle`
 
 :doc:`scripts/bed2bed`
-
-:doc:`scripts/bed2fasta`
 
 :doc:`scripts/bed2graph`
 
@@ -105,8 +111,6 @@ Unsorted
 :doc:`scripts/fasta2properties`
 
 :doc:`scripts/fasta2spliced`
-
-:doc:`scripts/fasta2table`
 
 :doc:`scripts/fasta2variants`
 
