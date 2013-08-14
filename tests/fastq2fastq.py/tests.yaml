@@ -1,6 +1,21 @@
 
-version:
-    stdin: null
+paired_sort_test:
+    stdin: sim.50K.fastq.1.gz
+    outputs: [stdout, sorted.sim.50K.fastq.2.gz]
+    references: [reference_sorted.sim.50K.fastq.1.gz, reference_sorted.sim.50K.fastq.2.gz]
+    options: --sort --pair <DIR>/sim.50K.fastq.2.gz --outfile-pair sorted.sim.50K.fastq.2.gz
+    description: sort pair of fastq files by read identifier
+
+single_sort_test:
+    stdin: sim.50K.fastq.1.gz
     outputs: [stdout]
-    references: []
-    options: --version
+    references: [reference_sorted.sim.50K.fastq.1.gz]
+    options: --sort 
+    description: sort single fastq file by read identifier
+
+trim_test:
+    stdin: sim.50K.fastq.1.gz
+    outputs: [stdout]
+    references: [reference_trim25.sim.50K.fastq.1.gz]
+    options: --trim3 25
+    description: trim 25 bases from 3'end of each read

@@ -1,5 +1,5 @@
 
 restrict:
-        regex: diff_gtf.py
+        regex: fastq2fastq.py
 
 
