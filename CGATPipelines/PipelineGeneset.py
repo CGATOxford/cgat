@@ -701,7 +701,7 @@ def loadProteinStats( infile, outfile ):
 
     statement = '''
     gunzip < %(infile)s |
-    python %(scriptsdir)s/fasta2properties.py 
+    python %(scriptsdir)s/fasta2table.py 
           --log=%(outfile)s
           --type=aa 
           --section=length 
