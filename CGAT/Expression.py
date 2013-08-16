@@ -66,11 +66,17 @@ from rpy2.robjects import r as R
 import rpy2.robjects as ro
 import rpy2.robjects.numpy2ri
 
-import Experiment as E
-import Pipeline as P
-import Database
-import IOTools
-import Stats
+try:
+    import CGAT.Experiment as E
+    import CGAT.Pipeline as P
+    import CGAT.Database as Database
+    import CGAT.IOTools as IOTools
+    import CGAT.Stats as Stats
+except ImportError:
+    import Experiment as E
+    import Pipeline as P
+    import Database,IOTools,Stats
+
 import sqlite3
 
 try:
@@ -1340,6 +1346,82 @@ def loadCuffdiff( infile, outfile ):
          '''
         
         P.run()
+
+
+    # Jethro - load tables of sample specific cuffdiff fpkm values into csvdb
+    for fn, level in ( ("cds.read_group_tracking", "cds" ),
+                       ("genes.read_group_tracking", "gene"),
+                       ("isoforms.read_group_tracking", "isoform"),
+                       ("tss_groups.read_group_tracking", "tss") ):
+
+        tablename = prefix + "_" + level + "sample_fpkms"
+        
+        tmpf = P.getTempFilename(".")
+        inf = IOTools.openFile( os.path.join( indir, fn ) ).readlines()
+        outf = IOTools.openFile( tmpf, "w" )
+
+        samples = []
+        genes= {}
+
+        x = 0
+        for line in inf:
+            if x == 0:
+                x += 1
+                continue
+            line = line.split()  
+            gene_id = line[0]
+            condition = line[1]
+            replicate = line[2]
+            fpkm = line[6]
+            status = line[8]
+    
+            sample_id = condition + "_" + replicate
+            
+            if sample_id not in samples:
+                samples.append( sample_id )
+                
+                if gene_id not in genes:
+                    genes[gene_id] = {}
+                    genes[gene_id][sample_id] = fpkm
+                else: 
+                    if sample_id in genes[gene_id]:
+                        raise ValueError(
+                            'sample_id %s appears twice in file for gene_id %s'
+                            % ( sample_id, gene_id ) )
+                    else:
+                        if status != "OK":
+                            genes[gene_id][sample_id] = status
+                        else:
+                            genes[gene_id][sample_id] = fpkm 
+
+
+        samples = sorted( samples )
+
+        headers = "gene_id\t" + "\t".join( [ x for x in samples ] )
+        outf.write( headers + "\n" )
+
+        for gene in genes.iterkeys():
+            outf.write( gene + "\t" )
+            x = 0
+            while x < len( samples ) - 1:
+                outf.write( genes[gene][samples[x]] + "\t" )
+                x += 1
+                outf.write( genes[gene][samples[len(samples)-1]] + "\n" )
+
+        outf.close()
+
+
+        statement = ( "cat %(tmpf)s |"
+                      " python %(scriptsdir)s/csv2db.py "
+                      "  %(csv2db_options)s"
+                      "  --allow-empty"
+                      "  --index=gene_id"
+                      "  --table=%(tablename)s"
+                      " >> %(outfile)s.log" )
+        P.run()
+
+        os.unlink( tmpf )
+
 
     ## build convenience table with tracks
     tablename = prefix + "_isoform_levels"

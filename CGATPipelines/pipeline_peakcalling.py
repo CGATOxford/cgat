@@ -966,6 +966,94 @@ def loadPeakRangerSummaryCCAT( infile, outfile ):
 ######################################################################
 ######################################################################
 ##                                                                  ##
+##                           BroadPeak                              ## 
+##                                                                  ##
+######################################################################
+######################################################################
+
+@follows( mkdir( "broadpeak.dir" ), normalizeBAM ) 
+@files( os.path.join( PARAMS["genome_dir"], PARAMS["genome"] + ".fasta" ),
+        "broadpeak.dir/genome_windows.bed.gz" )
+def buildBroadPeakGenomeWindows( infile, outfile ):
+    windows = PARAMS["broadpeak_genome_windows"]
+    tmpf = P.getTempFilename( "." )
+    PipelinePeakcalling.createGenomeWindows( infile, outfile, windows )
+
+
+@transform( [ "%s.call.bam" % x.asFile() for x in TRACKS ], 
+            regex( "(.+)/(.+).call.bam" ), 
+            add_inputs( buildBroadPeakGenomeWindows ),
+            r"./broadpeak.dir/\2.bedgraph" )
+def buildBroadPeakBedgraphFiles( infiles, outfile ):
+    logfile = outfile + ".log"
+    overlap = str( float( PARAMS["broadpeak_read_length"] )
+                   / float( 2*PARAMS["broadpeak_genome_windows"] ) )
+    if PARAMS["broadpeak_remove_background"]:
+        remove_background = "true"
+        track = P.snip( infile, ".call.bam" )
+        controlfile = "%s.call.bam" % getControl( Sample( track) ).asFile()
+        infiles.append( controlfile )
+    else: 
+        remove_background = "false"
+
+
+    params = [ overlap, remove_background ]
+
+    P.info( "Creating BroadPeak bedgraph with the following options:\n"
+            " subtract INPUT from SAMPLE = %s\n"
+            " create .bdg file with window size of %s\n"
+            " reads must overlap window by %s bases to be counted"  
+            % ( params[1], 
+                PARAMS["broadpeak_genome_windows"], 
+                params[0] ) )
+
+    P.submit( "/ifs/devel/projects/proj010/PipelineProj010", 
+              "createBroadPeakBedgraphFile", 
+              params, 
+              infiles, 
+              outfile, 
+              toCluster = True, 
+              logfile = logfile,
+              jobOptions = "-l mem_free=20G" )
+
+@transform( buildBroadPeakBedgraphFiles, 
+            regex( "(.+)/(.+).bedgraph" ),
+            r"\1/\2" )
+def callPeaksWithBroadPeak( infile, outfile ):
+    if isinstance(PARAMS["broadpeak_genome_size"], int):
+        genome_size = PARAMS["broadpeak_genome_size"]
+    elif PARAMS["broadpeak_genome_size"].startswith( "hg" ):
+        genome_size = 3107677273
+    elif PARAMS["broadpeak_genome_size"].startswith( "mm" ):
+        genome_size = 2730871774
+    else:
+        ValueError( "Broadpeak genome size not recognised,"
+                    " try entering a numeric value" )
+
+    training_set = PARAMS["broadpeak_intervals"]
+
+    logfile = P.snip( infile, ".bedgraph" ) + ".log"
+
+    PipelinePeakcalling.runBroadPeak( infile, 
+                                      outfile, 
+                                      logfile, 
+                                      genome_size, 
+                                      training_set)
+
+@merge( callPeaksWithBroadPeak, "./broadpeak.dir/broadpeak.stats" )
+def summarizeBroadPeak( infiles, outfile):
+    if PARAMS["broadpeak_intervals"]:
+        PipelinePeakcalling.summarizeBroadPeak( infiles, outfile, intervals)
+    else:
+        PipelinePeakcalling.summarizeBroadPeak( infiles, outfile )
+
+@transform( summarizeBroadPeak, suffix( ".stats" ), ".load" )
+def loadBroadPeak( infile, outfile ):
+    P.load( infile, outfile )
+
+######################################################################
+######################################################################
+##                                                                  ##
 ##                              SPP                                 ## 
 ##                                                                  ##
 ######################################################################
