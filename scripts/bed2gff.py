@@ -12,8 +12,8 @@
 ####
 ####
 """
-bed2gff.py - convert bed to gff
-===============================
+bed2gff.py - convert bed to gff/gtf
+===================================
 
 :Author: Andreas Heger
 :Release: $Id$
@@ -23,27 +23,29 @@ bed2gff.py - convert bed to gff
 Purpose
 -------
 
-This script converts a bed-formatted file to
-a gff-formatted file.
+This script converts a :term:`bed`-formatted file to a :term:`gff` or :term:`gtf`-formatted file.
+
+It aims to populate the appropriate fields in the :term:`gff` file with columns in the :term:`bed` file.
+
+If ``--is-gtf`` is set and a name column in the :term:`bed` file is present, its contents will be set 
+as ``gene_id`` and ``transcript_id``. Otherwise, a numeric ``gene_id`` or ``transcript_id`` will be set 
+according to ``--id-format``.
 
 Usage
 -----
 
 Example::
 
-   python <script_name>.py --help
+   python bed2gff.py < in.bed > out.gff
 
 Type::
 
-   python <script_name>.py --help
+   python bed2gff.py --help
 
 for command line help.
 
-Documentation
--------------
-
-Code
-----
+Command line options
+--------------------
 
 """ 
 import sys
@@ -59,7 +61,6 @@ import shutil
 
 import CGAT.Experiment as E
 import CGAT.Stats as Stats
-import CGAT.GFF as GFF
 import CGAT.GTF as GTF
 import CGAT.Bed as Bed
 import CGAT.IndexedFasta as IndexedFasta
@@ -73,6 +74,9 @@ def main( argv = sys.argv ):
     parser.add_option("-a", "--as-gtf", dest="as_gtf", action="store_true",
                       help="output as gtf."  )
 
+    parser.add_option("-f", "--id-format", dest="id_format", type="string",
+                      help="format for numeric identifier if --as-gtf is set and no name in bed file [%default]."  )
+
     parser.set_defaults( as_gtf = False,
                          id_format = "%08i",
                          test = None )
@@ -85,7 +89,7 @@ def main( argv = sys.argv ):
     if as_gtf:
         gff = GTF.Entry()
     else:
-        gff = GFF.Entry()
+        gff = GTF.Entry()
 
     gff.source = "bed"
     gff.feature = "exon"
@@ -107,7 +111,6 @@ def main( argv = sys.argv ):
 
         if bed.fields and len(bed.fields) >= 2:
             gff.score = bed.fields[1]
-        
         
         if as_gtf:
             if bed.fields:

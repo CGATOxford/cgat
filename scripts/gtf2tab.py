@@ -65,7 +65,6 @@ import sys
 import string
 import re
 import optparse
-import CGAT.GFF as GFF
 import CGAT.GTF as GTF
 import CGAT.Experiment as E
 
@@ -218,7 +217,7 @@ def main():
             attributes = []
             for a in gtf.keys():
                 if a in ("gene_id", "transcript_id"): continue
-                attributes.append( '%s %s' % (a, GFF.quote(gtf[a])) )
+                attributes.append( '%s %s' % (a, GTF.quote(gtf[a])) )
 
             attributes = "; ".join( attributes )
             
@@ -227,7 +226,7 @@ def main():
                                                        gtf.feature,
                                                        gtf.start,
                                                        gtf.end,
-                                                       GFF.toDot( gtf.score ),
+                                                       GTF.toDot( gtf.score ),
                                                        gtf.strand,
                                                        gtf.frame,
                                                        gtf.gene_id,

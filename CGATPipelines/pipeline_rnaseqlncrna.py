@@ -183,7 +183,6 @@ import CGATPipelines.PipelineMappingQC as PipelineMappingQC
 import CGAT.GTF as GTF
 import CGAT.IOTools as IOTools
 import gzip
-import CGAT.GFF as GFF
 import CGATPipelines.PipelineRnaseq as PipelineRnaseq
 import sys
 import os

@@ -73,7 +73,7 @@ import shutil
 
 import farm
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import threadpool
 
@@ -82,7 +82,7 @@ def main():
 
     parser = farm.getOptionParser()
 
-    (options, args) = Experiment.Start( parser, 
+    (options, args) = E.Start( parser, 
                                         add_cluster_options = True )
 
 
@@ -97,7 +97,7 @@ def main():
                                stdout = sys.stdout,
                                cwd = os.getcwd(),
                                close_fds = True)                              
-    Experiment.Stop()
+    E.Stop()
 
 if __name__ == '__main__':
     main()

@@ -310,6 +310,20 @@ ILLUMINA_ADAPTORS = { "Genomic-DNA-Adaptor" : "GATCGGAAGAGCTCGTATGCCGTCTTCTGCTTG
                       "Small-RNA-v1-RT-Primer" : "CAAGCAGAAGACGGCATACGA",
                       "Small-RNA-PCR-Primer" : "AATGATACGGCGACCACCGACAGGTTCAGAGTTCTACAGTCCGA",
                       "ScriptSeq-Adaptor-I6" : "CAAGCAGAAGACGGCATACGAGATNNNNNNGTGACTGGAGTTCAGACGTGTGCTCTTCCGATCT",
+                      "Exo_WTCHG_V.1_IlluminaWTCHGPrimer1" : "AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCT",
+                      "Exo_WTCHG_V.1_WTCHGIndex1" : "CAAGCAGAAGACGGCATACGAGATAGTTAACAGTGACTGGAGTTCAGACGTGTGCTCTTCCGATCT",
+                      "Exo_WTCHG_V.1_ChIP_exo_Adapt1" : "AGATCGGAAGA",
+                      "Exo_WTCHG_V.1_ChIP_exo_Adapt1.1" : "TCCCTACACGACGCTCTTCCGATCT",
+                      "Exo_WTCHG_V.1_ExtPr1" : "CCTACACGACGCTCTTCCGATCT",
+                      "Exo_WTCHG_V.1_ChIP_exo_Adapt2" : "GTGACTGGAGTTCAGACGTGTGCTCTTCCGATCT",
+                      "Exo_WTCHG_V.1_ChIP_exo_Adapt2.1" : "AGATCGGAAGAGCACACGTCTGAACTCCAGTC",
+                      "Exo_WTCHG_V.2_IlluminaWTCHGPrimer1" : "AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCT",
+                      "Exo_WTCHG_V.2_WTCHGIndex1" : "CAAGCAGAAGACGGCATACGAGATAGTTAACAGTGACTGGAGTTCAGACGTGTGCTCTTCCGATCT", 
+                      "Exo_WTCHG_V.2_ChIP_exo_Adapt1" : "GATCGGAAGAGCGTCGTGTAGGGA", 
+                      "Exo_WTCHG_V.2_ChIP_exo_Adapt1.1" : "TCCCTACACGACGCTCTTCCGATCT",
+                      "Exo_WTCHG_V.2_ExtPr1" : "CCTACACGACGCTCTTCCGATCT",
+                      "Exo_WTCHG_V.2_ChIP_exo_Adapt2" : "GTGACTGGAGTTCAGACGTGTGCTCTTCCGATCT", 
+                      "Exo_WTCHG_V.2_ChIP_exo_Adapt2.1" : "GATCGGAAGAGCACACGTCTGAACTCCAGTC",
                       "SmartIIA": "AAGCAGTGGTATCAACGCAGAGTAC",
                       }
 
@@ -460,6 +474,11 @@ def processReads( infiles, outfile ):
 
     if PARAMS["process_trim"]:
         s.append( 'fastx_trimmer -Q %(offset)i -v %(trim_options)s 2>> %(outfile)s_trim.log' )
+        do_sth = True
+
+    # NICK - may replace fastx trimmer
+    if PARAMS["process_trim_quality"]:
+        s.append( 'fastq_quality_trimmer -Q %(offset)i  -v %(trim_options)s 2>> %(outfile)s_trim.log' )
         do_sth = True
 
     if PARAMS["process_filter"]:

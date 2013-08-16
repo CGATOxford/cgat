@@ -67,6 +67,19 @@ master_doc = 'contents'
 project = u'CGAT'
 copyright = u'2011, Andreas Heger'
 
+
+# Included at the end of each rst file
+rst_epilog='''
+.. _CGAT Training Programme: www.cgat.org
+.. _pysam: http://code.google.com/p/pysam/
+.. _samtools: http://samtools.sourceforge.net/
+.. _galaxy: https://main.g2.bx.psu.edu/
+.. _cython: http://cython.org/
+.. _pyximport: http://www.prescod.net/pyximport/
+.. _sphinx: http://sphinx-doc.org/
+'''
+
+
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.

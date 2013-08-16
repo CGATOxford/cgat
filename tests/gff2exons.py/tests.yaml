@@ -1,0 +1,6 @@
+
+version:
+    stdin: null
+    outputs: [stdout]
+    references: []
+    options: --version

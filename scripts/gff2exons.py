@@ -69,8 +69,7 @@ Can also create a file peptides2genes.
 Version: $Id: gff2exons.py 2447 2009-01-27 17:12:48Z andreas $
 """ % sys.argv[0]
 
-import CGAT.Experiment as Experiment
-import CGAT.GFF as GFF
+import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.IndexedFasta as IndexedFasta
 
@@ -173,7 +172,7 @@ if __name__ == "__main__":
         convert_to_cds = False,
         genome_file = None )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if options.genome_file:
         fasta = IndexedFasta.IndexedFasta( options.genome_file ) 
@@ -185,7 +184,7 @@ if __name__ == "__main__":
     if (options.remove_unknown_contigs or options.translate_contigs) and not fasta:
         raise ValueError("please supply genomic sequence.")
 
-    gffs = GFF.iterator( sys.stdin )
+    gffs = GTF.iterator( sys.stdin )
 
     map_peptides2genes = {}
 
@@ -254,7 +253,7 @@ if __name__ == "__main__":
                                   ntranslated,
                                   len(genes),
                                   len(map_peptides2genes) ) )
-    Experiment.Stop()
+    E.Stop()
 
 
 

@@ -1,7 +1,7 @@
 #
 #   MRC FGU Computational Genomics Group
 #
-#   $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $
+#   $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $
 #
 #   Copyright (C) 2009 Andreas Heger
 #
@@ -38,11 +38,11 @@ Usage
 
 Example::
 
-   python script_template.py --help
+   python cgat_script_template.py --help
 
 Type::
 
-   python script_template.py --help
+   python cgat_script_template.py --help
 
 for command line help.
 
@@ -77,18 +77,22 @@ def main( argv = None ):
     if not argv: argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser( version = "%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
+    parser = E.OptionParser( version = "%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
                                     usage = globals()["__doc__"] )
 
     parser.add_option("-m", "--method", dest="method", type="choice",
                       choices = ('reconcile', ),
                       help="method to apply [default=%default]."  )
+                      
+    parser.add_option("-c", "--chop", dest="chop", action="store_true",
+                      help="whether or not to trim last character of sequence name (sometimes used to indicte end) [default=%default]."  )
 
     parser.add_option("-o", "--output-pattern", dest="output_pattern", type="string",
                       help="pattern for output files [default=%default]."  )
 
     parser.set_defaults(
         method = "reconcile",
+        chop = False,
         output_pattern = "%i.fastq.gz",
         )
 
@@ -106,26 +110,22 @@ def main( argv = None ):
         def getIds( infile ):
             '''return ids in infile.'''
             aread = infile.readline
-            chop = None
             while True:
                 l = [aread().rstrip("\r\n") for i in range(4)]
                 if not l[0]: break
                 r = l[0].split()[0]
                 # decide if to chop read number off
-                if chop == None: chop = r[-1] in '12'
-                if chop:  yield r[:-1]
+                if options.chop: yield r[:-1]
                 else: yield r
 
         def write( outfile, infile, take ):
             '''filter fastq files with ids in take.'''
             aread = infile.readline
-            chop = None
             while True:
                 l = [aread().rstrip("\r\n") for i in range(4)]
                 if not l[0]: break
                 r = l[0].split()[0]
-                if chop == None: chop = r[-1] in '12'
-                if chop: r = r[:-1]
+                if options.chop: r = r[:-1]
                 if r not in take: continue
                 outfile.write("\n".join(l) + "\n" )
 

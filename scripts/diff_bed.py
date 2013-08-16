@@ -32,6 +32,15 @@ diff_bed.py - count differences between several bed files
 Purpose
 -------
 
+Compute overlap statistics between multiple bed files. For each pairwise
+comparison, this script outputs the number of intervals (exons) and
+bases overlapping.
+
+Using the ``--update`` option, a table can be incrementally updated with
+additional comparisons.
+
+The strand of intervals is ignored in comparisons.
+
 Usage
 -----
 
@@ -236,9 +245,6 @@ def main( argv = None ):
     # setup command line parser
     parser = E.OptionParser( version = "%prog version: $Id: diff_bed.py 2866 2010-03-03 10:18:49Z andreas $", usage = globals()["__doc__"] )
 
-    parser.add_option("-s", "--ignore-strand", dest="ignore_strand", action="store_true",
-                      help="ignore strand information [default=%default]." )
-
     parser.add_option("-u", "--update", dest="filename_update", type="string",
                       help="if filename is given, previous results will be read from there and only changed sets will be computed [default=%default]." )
 
@@ -249,7 +255,6 @@ def main( argv = None ):
                       help="compare files against all tracks in the first file [default=%default]" )
     
     parser.set_defaults(
-        ignore_strand = False,
         filename_update = None,
         pattern_id = "(.*).bed",
         tracks = None,

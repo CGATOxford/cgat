@@ -21,7 +21,6 @@ Genomics
    modules/Masker.rst
    modules/SequencePairProperties.rst
    modules/SequenceProperties.rst
-   modules/GFF.rst
    modules/GTF.rst
    modules/Bed.rst
    modules/GO.rst
@@ -185,7 +184,7 @@ Modules not sorted into categories.
    modules/Bioprospector.rst
    modules/BlatTest.rst 
    modules/CBioPortal.rst 
-   modules/CGAT.rst
+   modules/Local.rst
    modules/CSV2DB.rst 
    modules/Expression.rst 
    modules/Fastq.rst 

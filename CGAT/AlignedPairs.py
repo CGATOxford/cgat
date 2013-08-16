@@ -30,13 +30,17 @@ AlignedPairs.py -
 
 """
 import sys, os, string
-import alignlib
+try: import alignlib
+except ImportError: pass
 
 import WrapperDialign
 import WrapperDBA
-import WrapperClustal
 import WrapperBlastZ
 import Genomics
+
+# Wrapper for clustal needs to be updated
+# import WrapperClustal
+
 
 class Error(Exception):
     """Base class for exceptions in this module."""
@@ -393,6 +397,7 @@ class AlignedPair( UnalignedPair ):
             dba = WrapperDBA.DBA()
             dba.Align( s1, s2, map_a2b )
         elif method == "clustal":
+            raise NotImplementedError( "clustal wrapper needs to be updated")
             clustal = WrapperClustal.Clustal()
             clustal.Align( s1, s2, map_a2b )
         elif method == "nw":

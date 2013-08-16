@@ -1033,7 +1033,7 @@ sequences will be aligned to the cds sequences. This produces better coordinates
 
     if options.stop_at == "aligned":
         aligned.writeToFile( options.stdout, format=options.output_format)
-        Experiment.Stop()
+        E.Stop()
         sys.exit(0)
 
     ##########################################################################
@@ -1176,7 +1176,7 @@ sequences will be aligned to the cds sequences. This produces better coordinates
 
     if options.stop_at == "unpacked":
         aligned.writeToFile( options.stdout, format=options.output_format)
-        Experiment.Stop()
+        E.Stop()
         sys.exit(0)
 
     # perform sanity checks

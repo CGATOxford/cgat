@@ -99,7 +99,7 @@ USAGE="""python trees2sets.py < stdin
 
 """
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.TreeTools as TreeTools
 import CGAT.SetTools as SetTools
 import CGAT.IOTools as IOTools
@@ -582,7 +582,7 @@ if __name__ == "__main__":
         reroot = None,
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if len(options.methods) == 0:
         options.methods.append("strict")
@@ -674,4 +674,4 @@ if __name__ == "__main__":
                                method = method,
                                outgroups = options.outgroups )
     
-    Experiment.Stop()
+    E.Stop()

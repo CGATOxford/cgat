@@ -1,0 +1,13 @@
+
+version:
+    stdin: null
+    outputs: [stdout]
+    references: []
+    options: --version
+
+same:
+    stdin: null
+    outputs: [stdout]
+    references: [same.bed]
+    options: <DIR>/srf.hg19.bed.gz <DIR>/srf.hg19.bed.gz
+

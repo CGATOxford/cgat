@@ -157,7 +157,7 @@ prepare: create-schema create-tables reference.weights
 		if [ ! -e $${target_dir} ]; then \
 		    echo "setting up $${target_dir}" $(TOLOG); \
 		    mkdir $${target_dir}; \
-		    python $(DIR_SCRIPTS_GENEPREDICTION)setup.py \
+		    python $(DIR_SCRIPTS_GENEPREDICTION)gpipe/setup.py \
 		    -f \
 		    -m codonbias \
 		    -p bias_$${genomes[$$x]} \
@@ -198,7 +198,7 @@ clean:
 #########################################################################
 ## dump reference weights
 reference.weights:
-	python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 		--reference=$(PARAM_CAI_REFERENCE) | grep -v "#" > $@
 
 #########################################################################
@@ -363,7 +363,7 @@ analysis.dir/weights_%.table:
 	@genomes=( $(PARAM_SRC_SCHEMAS) ); \
 	for (( x = 0; x < $(PARAM_NUM_GENOMES); ++x )); do \
 		genome=$${genomes[$$x]} ; \
-		python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+		python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 			--weights-matrix2table \
 		< bias_$${genome}/$*.weights |\
 		perl -p -e "s/WEIGHT/$${genome}/" \
@@ -565,7 +565,7 @@ analysis.dir/cai_%.hist:
 	@genomes=( $(PARAM_SRC_SCHEMAS) ); \
 	for (( x = 0; x < $(PARAM_NUM_GENOMES); ++x )); do \
 		genome1=$${genomes[$$x]} ; \
-		python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+		python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 			--select="$(ANALYSIS_FIELD) AS $${genome1}" \
 			--input-file-genes=bias_$${genome1}/$(ANALYSIS_FILE_GENES) |\
 		$(ANALYSIS_CMD_FILTER) |\
@@ -593,7 +593,7 @@ analysis.dir/cai_%.raw_hist:
 	@genomes=( $(PARAM_SRC_SCHEMAS) ); \
 	for (( x = 0; x < $(PARAM_NUM_GENOMES); ++x )); do \
 		genome1=$${genomes[$$x]} ; \
-		python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+		python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 			--select="$(ANALYSIS_FIELD) AS $${genome1}" \
 			--input-file-genes=bias_$${genome1}/$(ANALYSIS_FILE_GENES) |\
 		$(ANALYSIS_CMD_FILTER) |\
@@ -620,7 +620,7 @@ analysis.dir/cai_%.cumul_hist:
 	@genomes=( $(PARAM_SRC_SCHEMAS) ); \
 	for (( x = 0; x < $(PARAM_NUM_GENOMES); ++x )); do \
 		genome1=$${genomes[$$x]} ; \
-		python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+		python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 			--select="$(ANALYSIS_FIELD) AS $${genome1}" \
 			--input-file-genes=bias_$${genome1}/$(ANALYSIS_FILE_GENES) |\
 		$(ANALYSIS_CMD_FILTER) |\
@@ -664,7 +664,7 @@ analysis.dir/cai_%.stats:
 	for (( x = 0; x < $(PARAM_NUM_GENOMES); ++x )); do \
 		genome1=$${genomes[$$x]} ; \
 		printf "category\t%s\n" $${genome1} > $@.tmp_$${genome1}; \
-		python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+		python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 			--select="$(ANALYSIS_FIELD) AS $${genome1}" \
 			--input-file-genes=bias_$${genome1}/$(ANALYSIS_FILE_GENES) |\
 		$(ANALYSIS_CMD_FILTER) |\
@@ -980,7 +980,7 @@ analysis.dir/weights.table:
 	@genomes=( $(PARAM_SRC_SCHEMAS) ); \
 	for (( x = 0; x < $(PARAM_NUM_GENOMES); ++x )); do \
 		genome1=$${genomes[$$x]} ; \
-		python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+		python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 			--input-file-trace=bias_$${genome1}/selected.acai_trace \
 			--weights=final-list |\
 			perl -p -e "s/WEIGHT/$${genome1}/" > $@.tmp_$${genome1}; \
@@ -1104,7 +1104,7 @@ analysis.dir/orthologs.filter_shannon_%: analysis.dir/orthologs.shannon
 #########################################################################
 analysis.dir/orthologs.filter_length: analysis.dir/orthologs.shannon
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_ribosomes.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic/analyze_ribosomes.py \
 		--field-compare="%s_length" \
 		--field-extract="%s_length" \
 		--filter-min-ratio=$(PARAM_ANALYSIS_FILTER_LENGTH_MIN_RATIO) \
@@ -1195,13 +1195,13 @@ analysis.dir/orthologs.random:
 	@genomes=( $(PARAM_SRC_SCHEMAS) ); \
 	for (( x = 0; x < $(PARAM_NUM_GENOMES); ++x )); do \
 		genome=$${genomes[$$x]} ; \
-		python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+		python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 		--input-file-codons=bias_$${genome}/random.acai_codons \
 		--input-file-genes=bias_$${genome}/random.acai_genes \
 		--input-file-trace=bias_$${genome}/random.acai_trace \
 		--select="GENELENGTH AS $${genome}_length,CAIEXT AS $${genome}_CAIRAND" > $@_$${genome}_tmp; \
 		for (( y = 1; y <= $(PARAM_RANDOM_ITERATIONS); ++y )); do \
-			python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+			python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 			--input-file-codons=bias_$${genome}/random$${y}.acai_codons \
 			--input-file-genes=bias_$${genome}/random$${y}.acai_genes \
 			--input-file-trace=bias_$${genome}/random$${y}.acai_trace \
@@ -1219,7 +1219,7 @@ analysis.dir/orthologs.random:
 # histogram over a CAIBIAS with length filtered orthologs
 analysis.dir/orthologs_%_length.hist: analysis.dir/orthologs.all analysis.dir/orthologs.filter_length 
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_ribosomes.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic/analyze_ribosomes.py \
 		--filename-subset=analysis.dir/orthologs.filter_length \
 		--field-extract="%s_$*" \
 	        --output-format="table" \
@@ -1238,7 +1238,7 @@ analysis.dir/orthologs_%_length.hist: analysis.dir/orthologs.all analysis.dir/or
 # the same histogram as above, but allow all orthologs
 analysis.dir/orthologs_%.hist: analysis.dir/orthologs.all 
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_ribosomes.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic/analyze_ribosomes.py \
 		--field-extract="%s_$*" \
 	        --output-format="table" \
 	        --format="%6.4f" \
@@ -1260,7 +1260,7 @@ analysis.dir/orthologs_%.hist: analysis.dir/orthologs.all
 #########################################################################
 analysis.dir/orthologs_%.stats: analysis.dir/orthologs.all 
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_ribosomes.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic/analyze_ribosomes.py \
 		--field-extract="%s_$*" \
 	        --output-format="table" \
 	        --format="%6.4f" \
@@ -1280,7 +1280,7 @@ analysis.dir/orthologs_%.stats: analysis.dir/orthologs.all
 #########################################################################
 analysis.dir/orthologs_%.table: analysis.dir/orthologs.all
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_ribosomes.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic/analyze_ribosomes.py \
 		--filename-subset=analysis.dir/orthologs.filter_length \
 		--field-extract="%s_$*" \
 	        --output-format="table" \
@@ -1319,7 +1319,7 @@ analysis.dir/unequal_weights.table:
 	@genomes=( $(PARAM_SRC_SCHEMAS) ); \
 	for (( x = 0; x < $(PARAM_NUM_GENOMES); ++x )); do \
 		genome1=$${genomes[$$x]} ; \
-		python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+		python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 			--input-file-trace=bias_$${genome1}/selected.acai_trace \
 			--weights=final-list |\
 			perl -p -e "s/WEIGHT/$${genome1}/" > $@.tmp_$${genome1}; \
@@ -1373,7 +1373,7 @@ analysis.dir/dominant_set.list:
 	@genomes=( $(PARAM_SRC_SCHEMAS) ); \
 	for (( x = 0; x < $(PARAM_NUM_GENOMES); ++x )); do \
 		genome1=$${genomes[$$x]} ; \
-		python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+		python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 			--select=CAICLASS \
 			--dominant-set=0.1 \
 			--input-file-genes=bias_$${genome1}/selected.acai_genes |\
@@ -1441,7 +1441,7 @@ analysis.dir/shuffled_%.table:
 ## is used as the reference in the linear effects model
 analysis.dir/orthologs_%.effects:
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_ribosomes.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic/analyze_ribosomes.py \
 		--field-extract="%s_$*" \
 		--schemas="$(GENOMES_COMMA)" \
 		--output-format="list" \
@@ -1472,7 +1472,7 @@ analysis.dir/orthologs_%.effects:
 # 	@genomes=( $(PARAM_SRC_SCHEMAS) ); \
 # 	for (( x = 0; x < $(PARAM_NUM_GENOMES); ++x )); do \
 # 		genome=$${genomes[$$x]} ; \
-# 		python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+# 		python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 # 		--select=CAICLASS \
 # 		--input-file-genes=bias_$${genome}/selected.acai_genes |\
 # 		awk -v g=$${genome} \
@@ -1487,7 +1487,7 @@ analysis.dir/orthologs_%.effects:
 # 	@genomes=( $(PARAM_SRC_SCHEMAS) ); \
 # 	for (( x = 0; x < $(PARAM_NUM_GENOMES); ++x )); do \
 # 		genome=$${genomes[$$x]} ; \
-# 		python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+# 		python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 # 		--select=CAIEXT \
 # 		--input-file-genes=bias_$${genome}/external.acai_genes |\
 # 		python $(DIR_SCRIPTS_TOOLS)filter_tokens.py \
@@ -1505,7 +1505,7 @@ analysis.dir/orthologs_%.effects:
 # 	@genomes=( $(PARAM_SRC_SCHEMAS) ); \
 # 	for (( x = 0; x < $(PARAM_NUM_GENOMES); ++x )); do \
 # 		genome=$${genomes[$$x]} ; \
-# 		python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+# 		python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 # 		--select=CAIEXT \
 # 		--input-file-genes=bias_$${genome}/biased.acai_genes |\
 # 		python $(DIR_SCRIPTS_TOOLS)filter_tokens.py \
@@ -1520,7 +1520,7 @@ analysis.dir/orthologs_%.effects:
 # ## effects based on ribosomal criterion: z-score
 # analysis.dir/effects.ribosomes_ml3:
 # 	$(PRELOG)
-# 	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_ribosomes.py \
+# 	@python $(DIR_SCRIPTS_GENEPREDICTION)optic/analyze_ribosomes.py \
 # 		--filename-subset=analysis.dir/orthologs.filter_length \
 # 		--filename-identifiers=ribosomes/flybase/ribosomes.genes \
 # 		--field-extract="%s_ml3" \
@@ -1532,7 +1532,7 @@ analysis.dir/orthologs_%.effects:
 # ## effects based on ribosomal criterion: z-score
 # analysis.dir/effects.ribosomes_enc:
 # 	$(PRELOG)
-# 	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_ribosomes.py \
+# 	@python $(DIR_SCRIPTS_GENEPREDICTION)optic/analyze_ribosomes.py \
 # 		--filename-subset=analysis.dir/orthologs.filter_length \
 # 		--filename-identifiers=ribosomes/flybase/ribosomes.genes \
 # 		--field-extract="%s_ENC" \
@@ -1572,7 +1572,7 @@ analysis.dir/cai_per_cluster.table:
 	@genomes=( $(PARAM_SRC_SCHEMAS) ); \
 	for (( x = 0; x < $(PARAM_NUM_GENOMES); ++x )); do \
 		genome1=$${genomes[$$x]} ; \
-		python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+		python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 			--invert-map \
 			--map=components.map \
 			--select=CAICLASS \
@@ -1583,7 +1583,7 @@ analysis.dir/cai_per_cluster.table:
 	rm -f $@_*.tmp
 
 cai_for_selected_pdmel:
-	python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 		--invert-map \
 		--map=components.map \
 		--select=CAICLASS \
@@ -1595,7 +1595,7 @@ cai_for_selected_pdmel:
 ## cai values based on D_mel for all species
 cai_melanogaster.table:
 	for x in input_*.cai_genes; do  \
-		python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+		python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 			--invert-map \
 			--map=components.map \
 			--select=caiext \
@@ -1632,7 +1632,7 @@ analysis.dir/cai_vs_ks:
 	@genomes=( $(PARAM_SRC_SCHEMAS) ); \
 	for (( x = 0; x < $(PARAM_NUM_GENOMES); ++x )); do \
 		genome1=$${genomes[$$x]} ; \
-		python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+		python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 			--select=caiclass \
 			--input-file-genes=bias_$${genome1}/all.acai_genes \
 			> $@_tmp.$${genome1}; \
@@ -1651,7 +1651,7 @@ analysis.dir/cai_vs_ks:
 cai_vs_d4: input.d4
 	rm -rf $@; mkdir $@
 	for x in input_*.cai_genes; do  \
-		python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+		python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 			--select=caiclass \
 			--input-file-genes=$$x \
 			>> $@/tmp; \
@@ -1832,7 +1832,7 @@ d4_cai.veo:
 	> $@
 
 cai_for_pdmel:
-	python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codonbias.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)codonbias_acai2tsv.py \
 		--invert-map \
 		--map=components.map \
 		--select=caiclass \

@@ -78,7 +78,7 @@ python graph_check.py < graph.in
 Check graph for completeness.
 
 """
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 
 def writeSet( outfile, outset ):
@@ -148,7 +148,7 @@ if __name__ == "__main__":
         sort_order = "alphanumeric",
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if options.loglevel >= 1:
         options.stdlog.write("# output goes to:\n" )
@@ -235,4 +235,4 @@ if __name__ == "__main__":
     if missed_self:        
         writeSet( open( options.filename_output_pattern % "missed_self", "w" ), missed_self )
 
-    Experiment.Stop()
+    E.Stop()

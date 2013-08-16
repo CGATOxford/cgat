@@ -15,6 +15,7 @@ Genomics
    scripts/bam2geneprofile.rst
    scripts/bed2bed.rst
    scripts/bed2gff.rst
+
    scripts/gff2bed.rst
    scripts/psl2assembly.rst
    scripts/psl2psl.rst
@@ -22,7 +23,6 @@ Genomics
    scripts/psl2map.rst
    scripts/psl2wiggle.rst
    scripts/psl2wiggle_stats.rst
-   scripts/diff_gff.rst
    scripts/diff_gtf.rst
    scripts/diff_gtfs.rst
    scripts/fasta2counts.rst
@@ -55,15 +55,12 @@ Genomics
    scripts/psl2table.rst
    scripts/maq2assembly.rst
    scripts/maq2psl.rst
-   scripts/windows2gff.rst
    scripts/analyze_readpositions.rst
    scripts/combine_gff.rst
    scripts/quality2fasta.rst
-   scripts/convert_geneatlas.rst
    scripts/wiggle_build_index.rst
    scripts/wiggle_extract_ranges_indexed.rst
    scripts/bam2wiggle.rst
-   scripts/bam_correlation.rst
    scripts/bed2annotator.rst
    scripts/bed2graph.rst
    scripts/bed2psl.rst
@@ -96,12 +93,10 @@ Trees
    scripts/trees2sets.rst
    scripts/trees2tree.rst
    scripts/trees2trees.rst
-   scripts/data2contrasts.rst
    scripts/tree_species2genes.rst
    scripts/matrix2tree.rst
    scripts/fasta2nj.rst
    scripts/tree2patterns.rst
-   scripts/evaluate_bootstrap.rst
    scripts/tree_species2genes.rst
 
 Alignment
@@ -112,16 +107,6 @@ Alignment
 
    scripts/align_transcripts.rst
    scripts/peptides2cds.rst
-
-Annotator
----------
-
-.. toctree::
-   :maxdepth: 1
-
-   scripts/annotator.rst
-   scripts/gff2annotator.rst
-   scripts/annotator_distance.rst
 
 Visualization
 -------------
@@ -156,9 +141,7 @@ Sequences and rates
    scripts/align_pairs.rst
    scripts/align_all_vs_all.rst
    scripts/concatenate_sequences.rst
-   scripts/filter_fasta.rst
    scripts/jalview.rst
-   scripts/get_sequences_from_www.rst
    scripts/mali2bootstrap.rst
    scripts/mali2mali.rst
    scripts/mali2malis.rst
@@ -176,11 +159,7 @@ Sequences and rates
    scripts/mali2rates.rst
    scripts/malis2masks.rst
    scripts/diff_fasta.rst
-   scripts/analyze_codeml_kaks.rst
-   scripts/analyze_codeml_sites.rst
-   scripts/analyze_sites_slr.rst
    scripts/rates2rates.rst
-   scripts/analyze_pairs.rst
    scripts/introns2rates.rst
    scripts/nr2table.rst
    scripts/extractseq.rst
@@ -210,7 +189,6 @@ Matrices and Tables
    scripts/filter_tokens.rst
    scripts/table2graph.rst
    scripts/table2table.rst
-   scripts/tgrep.rst
    scripts/join_tables.rst
    scripts/substitute_tokens.rst
 
@@ -233,7 +211,6 @@ Stats
    scripts/r_mann_whitney_u.rst
    scripts/r_table2scatter.rst
    scripts/r_test.rst
-   scripts/append_histogram.rst
    scripts/calculate_histogram.rst
    scripts/calculate_histogram_2D.rst
    scripts/nmf.rst
@@ -266,8 +243,8 @@ Cluster and jobs
    scripts/run.rst
    scripts/submit.rst
    scripts/clean.rst
-   scripts/cluster_distribute.rst
-   scripts/analyze_logfiles.rst
+   scripts/cgat_cluster_distribute.rst
+   scripts/cgat_logfiles2tsv.rst
    scripts/split_file.rst
 
 Other
@@ -277,201 +254,200 @@ Other
    :maxdepth: 1
 
    scripts/rename_links.rst
-   scripts/log2wiki.rst
-   scripts/script_template.rst
+   scripts/cgat_log2wiki.rst
+   scripts/cgat_script_template.rst
    scripts/linezip.rst
    scripts/convert_time2seconds.rst
-   scripts/html_add_toc.rst
+   scripts/cgat_html_add_toc.rst
    scripts/set_diff.rst
-   scripts/script_template.rst
    scripts/map_numbers.rst
-   scripts/add_script_template.rst
+   scripts/cgat_add_script_template.rst
 
-Pipelines
----------
+.. Pipelines
+.. ---------
 
-The following sections lists scripts that are specific to certain
-pipelines.
+.. The following sections lists scripts that are specific to certain
+.. pipelines.
 
-Gene prediction pipeline
-+++++++++++++++++++++++++
+.. Gene prediction pipeline
+.. +++++++++++++++++++++++++
 
-Scripts that are specific for the `gpipe` gene prediction pipeline.
+.. Scripts that are specific for the `gpipe` gene prediction pipeline.
 
-.. toctree::
-   :maxdepth: 1
+.. .. toctree::
+..    :maxdepth: 1
 
 
-   scripts/select_transcripts.rst
-   scripts/select_transcripts_per_gene.rst
-   scripts/gff_ensembl2gbrowser.rst
-   scripts/psl2predictions.rst
-   scripts/gff2exons.rst
-   scripts/regions2gff.rst
-   scripts/regions2graph.rst
-   scripts/regions2predictions.rst
-   scripts/predict_genes.rst
-   scripts/cdhit2clusters.rst
-   scripts/prediction2pairs.rst
-   scripts/predictions2assembly.rst
-   scripts/predictions2cds.rst
-   scripts/predictions2disruptions.rst
-   scripts/predictions2genes.rst
-   scripts/predictions2introns.rst
-   scripts/predictions2pseudogenes.rst
-   scripts/predictions2transcripts.rst
-   scripts/compare_predictions.rst
-   scripts/compare_predictions2exons.rst
-   scripts/compare_projects.rst
-   scripts/count_orgs.rst
-   scripts/liftover_predictions.rst
-   scripts/mali_evaluate.rst
-   scripts/analyze_predictions.rst
-   scripts/analyze_queries.rst
-   scripts/analyze_duplications.rst
-   scripts/analyze_genes.rst
-   scripts/analyze_genetrees.rst
-   scripts/setup.rst
-   scripts/split_fasta.rst
-   scripts/split_genome.rst
-   scripts/split_genomic_fasta_file.rst
-   scripts/get_predictions.rst
-   scripts/get_genes.rst
-   scripts/grep_predictions.rst
-   scripts/exonerate2regions.rst
-   scripts/exonerate_combine_regions.rst
-   scripts/exons2clusters.rst
-   scripts/exons2exons.rst
-   scripts/exons2genes.rst
-   scripts/exons2map.rst
-   scripts/exons2stats.rst
-   scripts/gene2gene.rst
-   scripts/genes2quality.rst
-   scripts/pairs2gene_structure.rst
-   scripts/list2regions.rst
-   scripts/cds2codons.rst
-   scripts/assignments2pairs.rst
-   scripts/mali2predictions.rst
-   scripts/components2clusters.rst
-   scripts/extract_regions.rst
-   scripts/id2genes.rst
-   scripts/translate_forward2backward.rst
+..    scripts/select_transcripts.rst
+..    scripts/select_transcripts_per_gene.rst
+..    scripts/gff_ensembl2gbrowser.rst
+..    scripts/psl2predictions.rst
+..    scripts/gff2exons.rst
+..    scripts/regions2gff.rst
+..    scripts/regions2graph.rst
+..    scripts/regions2predictions.rst
+..    scripts/predict_genes.rst
+..    scripts/cdhit2clusters.rst
+..    scripts/prediction2pairs.rst
+..    scripts/predictions2assembly.rst
+..    scripts/predictions2cds.rst
+..    scripts/predictions2disruptions.rst
+..    scripts/predictions2genes.rst
+..    scripts/predictions2introns.rst
+..    scripts/predictions2pseudogenes.rst
+..    scripts/predictions2transcripts.rst
+..    scripts/compare_predictions.rst
+..    scripts/compare_predictions2exons.rst
+..    scripts/compare_projects.rst
+..    scripts/count_orgs.rst
+..    scripts/liftover_predictions.rst
+..    scripts/mali_evaluate.rst
+..    scripts/analyze_predictions.rst
+..    scripts/analyze_queries.rst
+..    scripts/analyze_duplications.rst
+..    scripts/analyze_genes.rst
+..    scripts/analyze_genetrees.rst
+..    scripts/setup.rst
+..    scripts/split_fasta.rst
+..    scripts/split_genome.rst
+..    scripts/split_genomic_fasta_file.rst
+..    scripts/get_predictions.rst
+..    scripts/get_genes.rst
+..    scripts/grep_predictions.rst
+..    scripts/exonerate2regions.rst
+..    scripts/exonerate_combine_regions.rst
+..    scripts/exons2clusters.rst
+..    scripts/exons2exons.rst
+..    scripts/exons2genes.rst
+..    scripts/exons2map.rst
+..    scripts/exons2stats.rst
+..    scripts/gene2gene.rst
+..    scripts/genes2quality.rst
+..    scripts/pairs2gene_structure.rst
+..    scripts/list2regions.rst
+..    scripts/cds2codons.rst
+..    scripts/assignments2pairs.rst
+..    scripts/mali2predictions.rst
+..    scripts/components2clusters.rst
+..    scripts/extract_regions.rst
+..    scripts/id2genes.rst
+..    scripts/translate_forward2backward.rst
 
-OPTIC pipeline
-+++++++++++++++
+.. OPTIC pipeline
+.. +++++++++++++++
 
-Scripts that are specific for the `optic` orthology assignment pipeline.
+.. Scripts that are specific for the `optic` orthology assignment pipeline.
 
-.. toctree::
-   :maxdepth: 1
+.. .. toctree::
+..    :maxdepth: 1
 
-   scripts/blast2alignments.rst
-   scripts/prune_multiple_alignment.rst
-   scripts/gff2predictions.rst
-   scripts/gff2transcripts.rst
-   scripts/gff_compare.rst
-   scripts/clade_export.rst
-   scripts/clone_run.rst
-   scripts/gtf2exons.rst
-   scripts/export_aaa.rst
-   scripts/export_all.rst
-   scripts/export_code.rst
-   scripts/export_predictions.rst
-   scripts/extract_clade_data.rst
-   scripts/filter_paralogous_links.rst
-   scripts/mysql_copy_tables.rst
-   scripts/plot_duplications.rst
-   scripts/graph_group_links_by_taxonomy.rst
-   scripts/graph_cluster_by_species.rst
-   scripts/mali2cleaned_mali.rst
-   scripts/create_gbrowser_files.rst
-   scripts/analyze_multiple_orthologs.rst
-   scripts/analyze_orthology.rst
-   scripts/analyze_orthology_multiple.rst
-   scripts/analyze_orthology_pairwise.rst
-   scripts/update_orthology.rst
-   scripts/analyze_cluster_expansion.rst
-   scripts/analyze_clustering.rst
-   scripts/analyze_clusters.rst
-   scripts/plot_multiple_synteny.rst
-   scripts/plot_synteny.rst
-   scripts/prune_fasta.rst
-   scripts/gbrowser_clone_devel.rst
-   scripts/gbrowser_delete_features.rst
-   scripts/analyze_sequences.rst
-   scripts/make2help.rst
-   scripts/cluster_genes_by_category.rst
-   scripts/correlate_fasta_identifier.rst
-   scripts/diff_transcript_sets.rst
-   scripts/mask_fasta.rst
-   scripts/orthologs2genes.rst
-   scripts/orthologs2list.rst
-   scripts/orthologs2transcripts.rst
-   scripts/patch_translations.rst
-   scripts/analyze_synteny.rst
-   scripts/evaluate_mali.rst
-   scripts/evaluate_trees.rst
-   scripts/split_links.rst
-   scripts/links2exons.rst
-   scripts/links2fasta.rst
-   scripts/sequences2graph.rst
-   scripts/transcripts2links.rst
-   scripts/update_blast.rst
+..    scripts/blast2alignments.rst
+..    scripts/prune_multiple_alignment.rst
+..    scripts/gff2predictions.rst
+..    scripts/gff2transcripts.rst
+..    scripts/gff_compare.rst
+..    scripts/clade_export.rst
+..    scripts/clone_run.rst
+..    scripts/gtf2exons.rst
+..    scripts/export_aaa.rst
+..    scripts/export_all.rst
+..    scripts/export_code.rst
+..    scripts/export_predictions.rst
+..    scripts/extract_clade_data.rst
+..    scripts/filter_paralogous_links.rst
+..    scripts/mysql_copy_tables.rst
+..    scripts/plot_duplications.rst
+..    scripts/graph_group_links_by_taxonomy.rst
+..    scripts/graph_cluster_by_species.rst
+..    scripts/mali2cleaned_mali.rst
+..    scripts/create_gbrowser_files.rst
+..    scripts/analyze_multiple_orthologs.rst
+..    scripts/analyze_orthology.rst
+..    scripts/analyze_orthology_multiple.rst
+..    scripts/analyze_orthology_pairwise.rst
+..    scripts/update_orthology.rst
+..    scripts/analyze_cluster_expansion.rst
+..    scripts/analyze_clustering.rst
+..    scripts/analyze_clusters.rst
+..    scripts/plot_multiple_synteny.rst
+..    scripts/plot_synteny.rst
+..    scripts/prune_fasta.rst
+..    scripts/gbrowser_clone_devel.rst
+..    scripts/gbrowser_delete_features.rst
+..    scripts/analyze_sequences.rst
+..    scripts/make2help.rst
+..    scripts/cluster_genes_by_category.rst
+..    scripts/correlate_fasta_identifier.rst
+..    scripts/diff_transcript_sets.rst
+..    scripts/mask_fasta.rst
+..    scripts/orthologs2genes.rst
+..    scripts/orthologs2list.rst
+..    scripts/orthologs2transcripts.rst
+..    scripts/patch_translations.rst
+..    scripts/analyze_synteny.rst
+..    scripts/evaluate_mali.rst
+..    scripts/evaluate_trees.rst
+..    scripts/split_links.rst
+..    scripts/links2exons.rst
+..    scripts/links2fasta.rst
+..    scripts/sequences2graph.rst
+..    scripts/transcripts2links.rst
+..    scripts/update_blast.rst
 
-Codon bias analysis
-+++++++++++++++++++
+.. Codon bias analysis
+.. +++++++++++++++++++
 
-Scripts relevant to codon bias analysis.
+.. Scripts relevant to codon bias analysis.
 
-.. toctree::
-   :maxdepth: 1
+.. .. toctree::
+..    :maxdepth: 1
 
-   scripts/analyze_codonbias.rst
-   scripts/analyze_codonbias_orthology.rst
-   scripts/analyze_codonbias_tables.rst
-   scripts/analyze_ribosomes.rst
+..    scripts/analyze_codonbias.rst
+..    scripts/analyze_codonbias_orthology.rst
+..    scripts/analyze_codonbias_tables.rst
+..    scripts/analyze_ribosomes.rst
 
-Unsorted
---------
+.. Unsorted
+.. --------
 
-.. toctree::
-   :maxdepth: 1
+.. .. toctree::
+..    :maxdepth: 1
 
-Other
------
+.. Other
+.. -----
 
-.. toctree::
-   :maxdepth: 1
+.. .. toctree::
+..    :maxdepth: 1
 
-   scripts/run_nubiscan.rst
-   scripts/adda2coverage.rst
-   scripts/radar.rst
-   scripts/tbl2veo.rst
-   scripts/check_blast_run.rst
-   scripts/graph2besthits.rst
-   scripts/graph_blast2besthits.rst
-   scripts/graph_blast2pairs.rst
-   scripts/graph_check.rst
-   scripts/graph_check_transitivity.rst
-   scripts/graph_map_links.rst
-   scripts/graph_reweight_links.rst
+..    scripts/run_nubiscan.rst
+..    scripts/adda2coverage.rst
+..    scripts/radar.rst
+..    scripts/tbl2veo.rst
+..    scripts/check_blast_run.rst
+..    scripts/graph2besthits.rst
+..    scripts/graph_blast2besthits.rst
+..    scripts/graph_blast2pairs.rst
+..    scripts/graph_check.rst
+..    scripts/graph_check_transitivity.rst
+..    scripts/graph_map_links.rst
+..    scripts/graph_reweight_links.rst
 
-Obsolete
---------
+.. Obsolete
+.. --------
 
-This section contains obsolete or incomplete scripts.
+.. This section contains obsolete or incomplete scripts.
 
-.. toctree::
-   :maxdepth: 1
+.. .. toctree::
+..    :maxdepth: 1
 
-   scripts/analyze_go.rst
-   scripts/tree_map_leaves.rst
-   scripts/liftover.rst
-   scripts/go2plot.rst
-   scripts/mali_extract.rst
-   scripts/mali_phylip2fasta.rst
-   scripts/mali_plain2aln.rst
-   scripts/mali_remove_gaps.rst
+..    scripts/analyze_go.rst
+..    scripts/tree_map_leaves.rst
+..    scripts/liftover.rst
+..    scripts/go2plot.rst
+..    scripts/mali_extract.rst
+..    scripts/mali_phylip2fasta.rst
+..    scripts/mali_plain2aln.rst
+..    scripts/mali_remove_gaps.rst
 
 Unsorted
 --------
@@ -490,7 +466,7 @@ Unsorted
    scripts/bam2stats.rst
    scripts/bam2transcriptContribution.rst
    scripts/barplotGo.rst
-   scripts/bed2counts.rst
+   scripts/beds2counts.rst
    scripts/bed2fasta.rst
    scripts/bed2summary.rst
    scripts/bed2table.rst
@@ -512,7 +488,7 @@ Unsorted
    scripts/genome_bed.rst
    scripts/go2plot.rst
    scripts/gtf2overlap.rst
-   scripts/import_extensions.rst
+   scripts/cgat_import_extensions.rst
    scripts/index2bed.rst
    scripts/intervaltable2bed.rst
    scripts/liftover.rst
@@ -524,19 +500,18 @@ Unsorted
    scripts/mali_remove_gaps.rst
    scripts/medip_merge_intervals.rst
    scripts/probeset2gene.rst
-   scripts/rebuild_extensions.rst
+   scripts/cgat_rebuild_extensions.rst
    scripts/revigo.rst
    scripts/rnaseq_bam_vs_bed.rst
    scripts/rnaseq_bam_vs_exons.rst
    scripts/rnaseq_bams2bam.rst
    scripts/rnaseq_bams_vs_bams.rst
    scripts/rnaseq_junction_bam2bam.rst
-   scripts/ruffus_profile.rst
+   scripts/cgat_ruffus_profile.rst
    scripts/run_function.rst
    scripts/snp2snp.rst
    scripts/softmask.rst
    scripts/solexa2stats.rst
-   scripts/tophat_segment_juncs.rst
    scripts/tree_map_leaves.rst
    scripts/vcf2vcf.rst
    scripts/vcfstats2db.rst

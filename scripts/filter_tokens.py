@@ -69,7 +69,7 @@ filter lines where pattern matches
 
 """ % sys.argv[0]
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 
 
 if __name__ == "__main__":
@@ -103,7 +103,7 @@ if __name__ == "__main__":
         tokens = None,
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     if options.columns:
         options.columns=map(lambda x: int(x) -1, options.columns.split(","))
@@ -180,4 +180,4 @@ if __name__ == "__main__":
     if options.loglevel >= 1:
         options.stdlog.write( "# input=%i, kept=%i, discarded=%i\n" % (ninput, nkept, ninput-nkept) )
         
-    Experiment.Stop()
+    E.Stop()

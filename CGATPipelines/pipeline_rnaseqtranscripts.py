@@ -279,7 +279,6 @@ import random
 
 import numpy
 import sqlite3
-import CGAT.GFF as GFF
 import CGAT.GTF as GTF
 import CGAT.IOTools as IOTools
 import CGAT.IndexedFasta as IndexedFasta
@@ -432,7 +431,7 @@ def mergeAndFilterGTF( infile, outfile, logfile ):
         if not os.path.exists( rna_file ):
             E.warn( "file '%s' to remove repetetive rna does not exist" % rna_file )
         else:
-            rna_index = GFF.readAndIndex( GFF.iterator( IOTools.openFile( rna_file, "r" ) ) )
+            rna_index = GTF.readAndIndex( GTF.iterator( IOTools.openFile( rna_file, "r" ) ) )
             E.info( "removing ribosomal RNA in %s" % rna_file )
     
     gene_ids = {}
@@ -914,7 +913,7 @@ def compareTranscriptsBetweenExperiments( infiles, outfile ):
     reffile = "refcoding.gtf.gz"
     runCuffCompare( infiles, outfile, reffile )
 
-@merge (METHODTARGET,"%s.merged" % ALL.asFile())
+@merge (METHODTARGET,"%s.merged.gtf.gz" % ALL.asFile())
 def mergeUsingCuffmerge(infiles,outfile):
     ''' use cuffmerge to reassemble transcripts from independent assemblies
     on each sample
@@ -1518,7 +1517,7 @@ def buildNovelGeneSet( infiles, outfile ):
         
     E.info( "build indices for %i features" % len(indices))
 
-    repeats = GFF.readAndIndex( GFF.iterator( IOTools.openFile( repeats_gff) ),
+    repeats = GTF.readAndIndex( GTF.iterator( IOTools.openFile( repeats_gff) ),
                                 with_value = False )
 
     E.info( "build index for repeats" )
@@ -1586,7 +1585,7 @@ def buildLincRNAGeneSet( infiles, outfile ):
         
     E.info( "built indices for %i features" % len(indices))
 
-    indices["repeats"] = GFF.readAndIndex( GFF.iterator( IOTools.openFile( repeats_gff) ), with_value = False )
+    indices["repeats"] = GTF.readAndIndex( GTF.iterator( IOTools.openFile( repeats_gff) ), with_value = False )
     
     E.info( "added index for repeats" )
 
@@ -1811,7 +1810,8 @@ def loadGeneSetStats( infile, outfile ):
 #########################################################################
 @transform( GENESETTARGETS + [
         buildReferenceGeneSet,
-        buildCodingGeneSet],
+        buildCodingGeneSet,
+        mergeUsingCuffmerge],
             suffix(".gtf.gz"),
             "_geneinfo.load" )
 def loadGeneSetGeneInformation( infile, outfile ):
@@ -1822,7 +1822,7 @@ def loadGeneSetGeneInformation( infile, outfile ):
 #########################################################################
 @transform( GENESETTARGETS + [
         buildReferenceGeneSet,
-        buildCodingGeneSet ],
+        buildCodingGeneSet, mergeUsingCuffmerge ],
             suffix(".gtf.gz"),
             "_transcript2gene.load" )
 def loadGeneInformation( infile, outfile ):
@@ -1833,7 +1833,8 @@ def loadGeneInformation( infile, outfile ):
 #########################################################################
 @transform( GENESETTARGETS + [
         buildReferenceGeneSet,
-        buildCodingGeneSet ],
+        buildCodingGeneSet,
+        mergeUsingCuffmerge],
             suffix(".gtf.gz"),
             "_transcriptinfo.load" )
 def loadGeneSetTranscriptInformation( infile, outfile ):
@@ -1842,7 +1843,7 @@ def loadGeneSetTranscriptInformation( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@transform( GENESETTARGETS + [buildTranscriptsWithCufflinks,],
+@transform( GENESETTARGETS + [buildTranscriptsWithCufflinks, mergeUsingCuffmerge],
             suffix(".gtf.gz"), 
             add_inputs( buildReferenceGeneSetWithCDS ),
             ".class.tsv.gz" )

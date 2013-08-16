@@ -572,7 +572,7 @@ gaps:
 	$(PRELOG)
 	@rm -rf $@.dir
 	@mkdir $@.dir
-	@python $(DIR_SCRIPTS_GENEPREDICTION)setup.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)gpipe/setup.py \
 		-m gaps \
 		-d $@.dir \
 		-p $(PARAM_PROJECT_NAME) \
@@ -639,7 +639,7 @@ cpu_info:
 	$(PRELOG)
 	@$(MAKE) $@.dir
 	@for file in $(CPU_INFO); do \
-		python $(DIR_SCRIPTS_GENEPREDICTION)analyze_logfiles.py \
+		python $(DIR_SCRIPTS_GENEPREDICTION)cgat_logfiles2tsv.py \
 			--mode=node \
 			--glob=$${file} \
 		> $@.dir/$${file} ; \

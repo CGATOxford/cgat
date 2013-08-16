@@ -340,7 +340,7 @@ endef
 %.orgs_per_cluster: %.components
 	grep -v "#" $*.components.map |\
 	sort -k 2,2n |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)count_orgs.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)optic/count_orgs.py \
 	--patterns=$*.patterns --format=map > $@
 
 ## check: CG predictions should be in the same cluster as their query.

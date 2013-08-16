@@ -2,7 +2,7 @@ import os, sys, re, types, itertools, math, sqlite3
 
 from SphinxReport.Tracker import *
 from SphinxReport.Utils import PARAMS as P
-from SphinxReport.odict import OrderedDict as odict
+from collections import OrderedDict as odict
 
 from RnaseqDiffExpressionReport import *
 
@@ -12,7 +12,7 @@ from RnaseqDiffExpressionReport import *
 class TrackerDESeqFit( Tracker ):
     method = "deseq"
     tracks = [ x.asFile() for x in DESIGNS ]
-    slices = [ x.asFile() for x in GENESETS ]
+    slices = [ x.asTable() for x in GENESETS ]
 
     def __call__(self, track, slice = None ):
         design = track
@@ -42,15 +42,15 @@ class TrackerDESeqFit( Tracker ):
 ##############################################################
 class TrackerDESummaryDESeq( RnaseqTracker, SingleTableTrackerRows ):
     table = "deseq_stats"
-    fields = ("level", "geneset", "treatment_name", "control_name" )
+    fields = ("level", "geneset", "treatment_name", "control_name", "design" )
 
 class TrackerDESummaryEdgeR( RnaseqTracker, SingleTableTrackerRows ):
     table = "edger_stats"
-    fields = ("level", "geneset", "treatment_name", "control_name" )
+    fields = ("level", "geneset", "treatment_name", "control_name" ,"design")
 
 class TrackerDESummaryCuffdiff( RnaseqTracker, SingleTableTrackerRows ):
     table = "cuffdiff_stats"
-    fields = ("level", "geneset", "treatment_name", "control_name" )
+    fields = ("level", "geneset", "treatment_name", "control_name", "design" )
 
 ##############################################################
 ##############################################################
@@ -147,7 +147,7 @@ class DifferentialExpressionComparison( RnaseqTracker ):
 
     tracks = list( itertools.combinations( ("deseq", "cuffdiff", "edger"), 3 ))
  
-    slices = [ x.asFile() for x in GENESETS ]
+    slices = [ "%s_%s" % (y,x.asFile()) for x,y in itertools.product(GENESETS,DESIGNS) ]
 
 class DifferentialExpressionOverlap( DifferentialExpressionComparison ):
 
@@ -156,9 +156,9 @@ class DifferentialExpressionOverlap( DifferentialExpressionComparison ):
         pair1, pair2, pair3 = track
         
 
-        a = self.get('''SELECT test_id FROM design_%(slice)s_%(pair1)s_gene_diff WHERE significant = 1''')
-        b = self.get('''SELECT test_id FROM design_%(slice)s_%(pair2)s_gene_diff WHERE significant = 1''')
-        c = self.get('''SELECT test_id FROM design_%(slice)s_%(pair3)s_gene_diff WHERE significant = 1''')
+        a = self.get('''SELECT test_id FROM %(slice)s_%(pair1)s_gene_diff WHERE significant = 1''')
+        b = self.get('''SELECT test_id FROM %(slice)s_%(pair2)s_gene_diff WHERE significant = 1''')
+        c = self.get('''SELECT test_id FROM %(slice)s_%(pair3)s_gene_diff WHERE significant = 1''')
 
         a = set(map(str,a))
         b = set(map(str,b))
@@ -187,8 +187,8 @@ class DifferentialExpressionCorrelationPValueCuffdiffDeseq( DifferentialExpressi
         pvalues = {pair1:[], pair2: []}
         for pvals in cc.execute("""
                    SELECT a.pvalue, b.pvalue
-                          FROM design_%s_%s_gene_diff AS a, 
-                          design_%s_%s_gene_diff AS b
+                          FROM %s_%s_gene_diff AS a, 
+                          %s_%s_gene_diff AS b
                           WHERE a.test_id = b.test_id
                           AND ABS( a.l2fold ) != 10
                           AND ABS( b.l2fold ) != 10
@@ -232,7 +232,7 @@ class DifferentialExpressionCorrelationFoldChangeCuffdiffDeseq( DifferentialExpr
         for folds in cc.execute("""
                    SELECT a.l2fold, b.l2fold
                           FROM design_%s_%s_gene_diff AS a, 
-                          design_%s_%s_gene_diff AS b
+                          %s_%s_gene_diff AS b
                           WHERE a.test_id = b.test_id
                           AND ABS( a.l2fold ) < 10
                           AND ABS( b.l2fold ) < 10

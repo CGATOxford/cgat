@@ -64,11 +64,10 @@ import time
 import os
 import glob
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Blat as Blat
 import CGAT.Genomics as Genomics
-import CGAT.GFF as GFF
 import CGAT.GTF as GTF
 import alignlib
 import CGAT.Intervals as Intervals
@@ -98,7 +97,7 @@ if __name__ == '__main__':
                          allow_duplicates = False,
                          test = None )
     
-    (options, args) = Experiment.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start( parser, add_pipe_options = True )
 
     if options.genome_file:
         genome_fasta = IndexedFasta.IndexedFasta( options.genome_file )
@@ -116,7 +115,7 @@ if __name__ == '__main__':
         iterator = GTF.transcript_iterator( GTF.iterator_filtered( GTF.iterator( sys.stdin ), feature="exon" ), 
                                             strict = not options.allow_duplicates )
     else:
-        iterator = GFF.joined_iterator( GFF.iterator(sys.stdin) )
+        iterator = GTF.joined_iterator( GFF.iterator(sys.stdin) )
 
     if options.with_header:
         options.stdout.write( Blat.Match().getHeader() + "\n" )
@@ -166,4 +165,4 @@ if __name__ == '__main__':
     if options.loglevel >= 1:
         options.stdlog.write( "# ninput=%i, noutput=%i, nskipped=%i\n" % (ninput, noutput, nskipped) )
 
-    Experiment.Stop()
+    E.Stop()

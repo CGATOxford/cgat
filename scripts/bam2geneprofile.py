@@ -2,7 +2,7 @@
 #
 #   MRC FGU Computational Genomics Group
 #
-#   $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $
+#   $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $
 #
 #   Copyright (C) 2009 Andreas Heger
 #
@@ -155,9 +155,14 @@ import pysam
 import CGAT.GTF as GTF
 import numpy
 
-import pyximport
-pyximport.install(build_in_temp=False)
-import _bam2geneprofile
+try:
+    import pyximport
+    pyximport.install(build_in_temp=False)
+    import _bam2geneprofile
+except ImportError:
+    import CGAT._bam2geneprofile as _bam2geneprofile
+
+
 from bx.bbi.bigwig_file import BigWigFile
 
 def main( argv = None ):
@@ -169,7 +174,7 @@ def main( argv = None ):
     if not argv: argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser( version = "%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
+    parser = E.OptionParser( version = "%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
                                     usage = globals()["__doc__"] )
 
     parser.add_option( "-m", "--method", dest="methods", type = "choice", action = "append",
@@ -206,11 +211,13 @@ midpointprofile - aggregate over midpoint of gene model.
 [%default]''' )
 
     parser.add_option( "-b", "--bamfile", "--bedfile", "--bigwigfile", dest="infiles", 
+                       metavar = "BAM",
                        type = "string", action = "append",
                        help = "BAM/bed/bigwig files to use. Do not mix different types"
                               "[%default]" )
 
     parser.add_option( "-g", "--gtffile", dest="gtffile", type = "string",
+                       metavar = "GTF",
                        help = "GTF file to use. "
                               "[%default]" )
 
@@ -248,7 +255,7 @@ The options are:
 
     parser.add_option( "-i", "--shift", dest="shifts", type = "int", action = "append",
                        help = "shift reads in :term:`bam` formatted file before computing densities (ChIP-Seq). "
-                              "[%default]" )
+                       "[%default]" )
 
     parser.add_option( "-a", "--merge-pairs", dest="merge_pairs", action = "store_true",
                        help = "merge pairs in :term:`bam` formatted file before computing"

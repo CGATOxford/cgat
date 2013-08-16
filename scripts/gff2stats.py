@@ -73,7 +73,6 @@ import re
 import optparse
 import collections
 import CGAT.Experiment as E
-import CGAT.GFF as GFF
 import CGAT.GTF as GTF
 import CGAT.Stats as Stats
 import CGAT.IOTools as IOTools
@@ -219,7 +218,7 @@ def main( argv = sys.argv ):
             counters.append( counter_gff( iterator ) )
             counters.append( counter_exons( counters[0] ) )
         else:
-            iterator = GFF.iterator( infile )
+            iterator = GTF.iterator( infile )
             counters.append( counter_gff( iterator ) )
 
         c = counters[-1]

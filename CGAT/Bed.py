@@ -64,8 +64,8 @@ class Bed(object):
     def __str__(self):
         return "\t".join( (self.contig, str(self.start), str(self.end) ) + tuple(map(str, self.fields)))
 
-    def fromGFF( self, gff, is_gtf = False, name=None ):
-        """fill from gff formatted entry."""
+    def fromGTF( self, gff, is_gtf = False, name=None ):
+        """fill from gtf formatted entry."""
         self.contig, self.start, self.end = gff.contig, gff.start, gff.end
         try:
             self.fields = [getattr( gff, name), 

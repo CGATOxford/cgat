@@ -60,7 +60,7 @@
 ##         svn co svn://fgu204/andreas/gpipe/trunk src
 ##
 ##    The makefile is initialized by running
-##        python src/setup.py -m compare_transcripts -d . > setup.log
+##        python src/gpipe/setup.py -m compare_transcripts -d . > setup.log
 ##
 ##    Create various input files. These files can be either physically
 ##	present or simply linked into the directory. See the Input section.

@@ -83,7 +83,7 @@ that the edit operations are called upon.
 
 """ % sys.argv[0]
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import CGAT.Genomics as Genomics
 import CGAT.FastaIterator as FastaIterator
@@ -122,7 +122,7 @@ if __name__ == '__main__':
         gap_chars = "-.",
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
     
     iterator = FastaIterator.FastaIterator( sys.stdin)
 
@@ -155,4 +155,4 @@ if __name__ == '__main__':
         for x in range(l):
             print x, distances[x]
                 
-    Experiment.Stop()
+    E.Stop()

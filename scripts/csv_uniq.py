@@ -66,7 +66,7 @@ import optparse
 import math
 import tempfile
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import csv
 
 
@@ -94,7 +94,7 @@ if __name__ == "__main__":
         unique = False,
         )
 
-    (options, args) = Experiment.Start( parser, add_csv_options  = True)
+    (options, args) = E.Start( parser, add_csv_options  = True)
 
     input_fields = args
 
@@ -119,4 +119,4 @@ if __name__ == "__main__":
             row = ConvertDictionary( row )
             writer.writerow(row)
 
-    Experiment.Stop()
+    E.Stop()

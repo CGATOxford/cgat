@@ -74,7 +74,7 @@ import optparse
 import math
 import tempfile
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import csv
 import _csv
 import hashlib
@@ -134,9 +134,9 @@ if __name__ == "__main__":
         filename_fields = None,
         )
 
-    (options, args) = Experiment.Start( parser,
-                                        add_csv_options  = True,
-                                        quiet = True )
+    (options, args) = E.Start( parser,
+                               add_csv_options  = True,
+                               quiet = True )
 
     input_fields = args
 
@@ -154,7 +154,7 @@ if __name__ == "__main__":
         line = sys.stdin.readline()
         
         if not line:
-            Experiment.Stop()
+            E.Stop()
             sys.exit(0)
         
         if line[0] == "#": continue
@@ -217,4 +217,4 @@ if __name__ == "__main__":
     if options.loglevel >= 1:
         options.stdlog.write( "# ninput=%i, noutput=%i, nerrors=%i\n" % (ninput, noutput, nerrors) )
 
-    Experiment.Stop()
+    E.Stop()

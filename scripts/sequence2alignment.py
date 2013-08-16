@@ -68,7 +68,7 @@ import time
 import random
 import types
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import alignlib
 import CGAT.FastaIterator as FastaIterator
@@ -81,7 +81,7 @@ if __name__ == '__main__':
     parser.set_defaults(
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     iterator = FastaIterator.FastaIterator( sys.stdin )
 
@@ -115,5 +115,5 @@ if __name__ == '__main__':
     if options.loglevel >= 1:
         options.stdlog.write("# ninput=%i, noutput=%i, nskipped=%i.\n" % (ninput, noutput, nskipped))
         
-    Experiment.Stop()
+    E.Stop()
     

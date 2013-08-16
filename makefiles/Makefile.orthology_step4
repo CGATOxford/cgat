@@ -62,7 +62,7 @@ step4.prepare: $(STEP4_INPUT_SEED)
 				mkdir $${target_dir}; \
 				touch $${target_dir}/filtered; \
 			fi; \
-			python src/setup.py \
+			python src/gpipe/setup.py \
 			-f \
 			-m orthology \
 			-p orthology_$${genomes[$$x]}-$${genomes[$$y]} \
@@ -161,7 +161,7 @@ orthologs.links:
 	$(PRELOG)
 	@rm -f $@
 	@find . -name "interpretation" -maxdepth 2 -exec cat {} \; |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)orthologs2list.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)optic/orthologs2list.py \
 	--species-regex="^([^$(PARAM_SEPARATOR)]+)\$(PARAM_SEPARATOR)" \
 	--gene-regex="^[^$(PARAM_SEPARATOR)]+\$(PARAM_SEPARATOR)[^$(PARAM_SEPARATOR)]+\$(PARAM_SEPARATOR)([^$(PARAM_SEPARATOR)]+)\$(PARAM_SEPARATOR)" |\
 	grep -v "#" > $@
@@ -399,7 +399,7 @@ endef
 	$(PRELOG)
 	@grep -v "#" $*.components.map |\
 	sort -k 2,2n |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)count_orgs.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)optic/count_orgs.py \
 	--patterns=$*.patterns \
 	--format=map \
 	--reference-tree="$(PARAM_SPECIES_TREE)" \
@@ -499,7 +499,7 @@ step4.bits:
 		$(CMD_LOG2) "collecting data"; \
 	fi
 	$(CMD_LOG) "calculating histograms for all within clusters"
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_clustering.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic/analyze_clustering.py \
 		--pattern=$@/analysis_bits_within_%s.%s \
 		--methods=hists,stats \
 		--map=orthologs.components.map \
@@ -508,7 +508,7 @@ step4.bits:
 		--minbin=0.0 --maxbin=1.0 --binsize=0.01 \
 	< $(STEP4_INPUT_ALL) > $@/analysis_bits_within.out
 	$(CMD_LOG) "calculating histograms for all between clusters"
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_clustering.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic/analyze_clustering.py \
 		--pattern=$@/analysis_bits_between_%s.%s \
 		--methods=hists,stats \
 		--map=orthologs.components.map \

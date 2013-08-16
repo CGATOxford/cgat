@@ -158,7 +158,7 @@ step6.show_progress:
 ## pruning multiple alignment to make sure that there are codons
 %.na_mali: %.raw_mali
 	$(CMD_MSG) "pruning of cluster $* started."
-	@python $(DIR_SCRIPTS_GENEPREDICTION)prune_multiple_alignment.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic/prune_multiple_alignment.py \
 	--translate=$*.aa_mali \
 	--master-pattern="$(PARAM_INPUT_GENOME_MASTER)" \
 	--exons=$*.exons \
@@ -231,7 +231,7 @@ step6.show_progress:
 
 %.bs_evaluate: %.bs_partitions
 	@rm -f $@.*
-	@python $(DIR_SCRIPTS_GENEPREDICTION)evaluate_bootstrap.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic/evaluate_bootstrap.py \
 		--prefix=$* \
 		--reference-tree="$(PARAM_SPECIES_TREE)" \
 		--file-clusters=$@.components \
@@ -248,7 +248,7 @@ step6.show_progress:
 %.qc: %.mali %.bs 
 	$(CMD_MSG) "quality controlling of cluster $* started." >> $*.log
 	@$(CMD_REMOTE_SUBMIT) \
-		python $(DIR_SCRIPTS_GENEPREDICTION)evaluate_mali.py \
+		python $(DIR_SCRIPTS_GENEPREDICTION)optic/evaluate_mali.py \
 		--components=$*.bs_evaluate.components \
 		--prefix= \
 		--cluster \
@@ -288,7 +288,7 @@ step6.qc: step6.run
 		find step6.dir -name "*.qc" -exec cat {} \; |\
 		grep -v -e "#" -e "genepair" > $@/data; \
 	fi
-	@python $(DIR_SCRIPTS_GENEPREDICTION)evaluate_mali.py --only-headers | grep -v "#" > $@/headers
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic/evaluate_mali.py --only-headers | grep -v "#" > $@/headers
 	$(CMD_LOG) "splitting data into sections."
 	@rm -f $@/*.data
 	@cat $@/headers $@/data |\
@@ -414,7 +414,7 @@ step6.bs:
 		awk -v ng=$$x '!/^#/ && !/cluster_.*_0\y/ && $$2==ng {printf("%f\n", $$5);}' \
 		< $@/data |\
 		sort | uniq -c | awk '{printf("%s\t%s\n", $$2, $$1);}' |\
-		python $(DIR_SCRIPTS_TOOLS)append_histogram.py > $@/coefficients_$$x.hist; \
+		python $(DIR_SCRIPTS_TOOLS)histogram2histogram.py > $@/coefficients_$$x.hist; \
 	done
 	@rm -f $@/coefficients_cumul.hist
 	@for file in $@/coefficients_*.hist; do \
@@ -478,42 +478,42 @@ step6.kaks:
 	a.ptest                >= $(PARAM_STEP6_SELECTION_MIN_BOOTSTRAP_PTEST)" \
 	$(CMD_PSQL_DUMP_OPTIONS) > $@/map_prediction2subcluster_selected
 	$(CMD_LOG) "calculating histograms for best ka per cluster"
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_clustering.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic/analyze_clustering.py \
 		$(STEP6_KAKS_ANALYSIS_OPTIONS) \
 		--pattern=$@/analysis_ka_cluster_%s.%s \
 		--columns=3 \
 		--map=$@/map_prediction2cluster \
 	< $@/data > $@/analysis_ka_cluster.out
 	$(CMD_LOG) "calculating histograms for best ka per subcluster"
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_clustering.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic/analyze_clustering.py \
 		$(STEP6_KAKS_ANALYSIS_OPTIONS) \
 		--pattern=$@/analysis_ka_subcluster_%s.%s \
 		--columns=3 \
 		--map=$@/map_prediction2subcluster \
 	< $@/data > $@/analysis_ka_subcluster.out
 	$(CMD_LOG) "calculating histograms for best ks per cluster"
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_clustering.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic/analyze_clustering.py \
 		$(STEP6_KAKS_ANALYSIS_OPTIONS) \
 		--pattern=$@/analysis_ks_cluster_%s.%s \
 		--columns=4 \
 		--map=$@/map_prediction2cluster \
 	< $@/data > $@/analysis_ks_cluster.out
 	$(CMD_LOG) "calculating histograms for best ks per subcluster"
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_clustering.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic/analyze_clustering.py \
 		$(STEP6_KAKS_ANALYSIS_OPTIONS) \
 		--pattern=$@/analysis_ks_subcluster_%s.%s \
 		--columns=4 \
 		--map=$@/map_prediction2subcluster \
 	< $@/data > $@/analysis_ks_subcluster.out
 	$(CMD_LOG) "calculating histograms for best ka per selected subcluster"
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_clustering.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic/analyze_clustering.py \
 		$(STEP6_KAKS_ANALYSIS_OPTIONS) \
 		--pattern=$@/analysis_ka_selected_subcluster_%s.%s \
 		--columns=3 \
 		--map=$@/map_prediction2subcluster_selected \
 	< $@/data > $@/analysis_ka_selected_subcluster.out
 	$(CMD_LOG) "calculating histograms for best ks per selected subcluster"
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_clustering.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic/analyze_clustering.py \
 		$(STEP6_KAKS_ANALYSIS_OPTIONS) \
 		--pattern=$@/analysis_ks_selected_subcluster_%s.%s \
 		--columns=4 \
@@ -565,13 +565,13 @@ step6.pide:
 		    END { printf("# ntotal=%i, nerrors=%i", ntotal, nerrors); }' > $@/data; \
 	fi
 	$(CMD_LOG) "calculating histograms for all ka"
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_clustering.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic/analyze_clustering.py \
 		--pattern=$@/analysis_ka_all_%s.%s \
 		--methods=hist,stats \
 		--columns=3 \
 	< $@/data > $@/analysis_ka_all.out
 	$(CMD_LOG) "calculating histograms for best ka per cluster"
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_clustering.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic/analyze_clustering.py \
 		--pattern=$@/analysis_ka_best_%s.%s \
 		--methods=hist,stats \
 		--map=x \
@@ -579,13 +579,13 @@ step6.pide:
 		--columns=3 \
 	< $@/data > $@/analysis_ka_best.out
 	$(CMD_LOG) "calculating histograms for all ks"
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_clustering.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic/analyze_clustering.py \
 		--pattern=$@/analysis_ka_all_%s.%s \
 		--methods=hist,stats \
 		--columns=4 \
 	< $@/data > $@/analysis_ks_all.out
 	$(CMD_LOG) "calculating histograms for best ks per cluster"
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_clustering.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)optic/analyze_clustering.py \
 		--pattern=$@/analysis_ka_best_%s.%s \
 		--methods=hist,stats \
 		--map=x \
@@ -963,7 +963,7 @@ bootstrap_files:
 
 
 bootstrap: bootstrap_files
-	python $(DIR_SCRIPTS_GENEPREDICTION)evaluate_bootstrap.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)optic/evaluate_bootstrap.py \
 		--reference-tree="$(PARAM_SPECIES_TREE)" \
 		--file-clusters=$@.components \
 		--file-inconsistencies=$@.inconsistencies \

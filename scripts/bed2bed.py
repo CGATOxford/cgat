@@ -77,7 +77,6 @@ import shutil
 
 import CGAT.Experiment as E
 import CGAT.Stats as Stats
-import CGAT.GFF as GFF
 import CGAT.GTF as GTF
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.IOTools as IOTools

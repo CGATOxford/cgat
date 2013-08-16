@@ -58,7 +58,6 @@ import glob
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import CGAT.Blat as Blat
-import CGAT.GFF as GFF
 import CGAT.GTF as GTF
 
 def main():
@@ -90,7 +89,7 @@ def main():
     if options.as_gtf:
         gff = GTF.Entry()
     else:
-        gff = GFF.Entry()
+        gff = GTF.Entry()
 
     gff.source = "psl"
     gff.feature = "exon"

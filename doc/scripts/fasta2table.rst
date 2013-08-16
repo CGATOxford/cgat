@@ -1,3 +1,4 @@
+.. _fasta2table.py:
 
 .. automodule:: fasta2table
 

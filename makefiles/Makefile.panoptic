@@ -163,7 +163,7 @@ test_%:
 step1.prepare: step1.ancestral.fasta 
 	$(PRELOG)
 	@rm -rf step1.dir
-	@python $(DIR_SCRIPTS_GENEPREDICTION)setup.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)gpipe/setup.py \
 		-m blast \
 		-d step1.dir \
 		-p $(PARAM_PROJECT_NAME)_blast \

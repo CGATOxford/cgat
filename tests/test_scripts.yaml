@@ -1,0 +1,5 @@
+
+restrict:
+        regex: fastq2fastq.py
+
+

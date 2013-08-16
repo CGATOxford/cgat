@@ -65,7 +65,7 @@ import math
 import time
 import random
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import CGAT.Mali as Mali
 
@@ -95,7 +95,7 @@ if __name__ == '__main__':
         pattern_mali= "%s.fasta",
         )
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
 
     ## read coordinates
     if options.filename_coordinates:
@@ -132,5 +132,5 @@ if __name__ == '__main__':
     if options.loglevel >= 1:
         options.stdlog.write("# input=%i, output=%i\n" % (ninput, noutput) )
 
-    Experiment.Stop()
+    E.Stop()
     

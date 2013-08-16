@@ -66,7 +66,7 @@ import tempfile
 import subprocess
 
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import Bio
 import CGAT.FastaIterator as FastaIterator
 
@@ -77,7 +77,7 @@ if __name__ == '__main__':
 
     parser.set_defaults()
 
-    (options, args) = Experiment.Start( parser )
+    (options, args) = E.Start( parser )
     
     iterator = FastaIterator.FastaIterator( sys.stdin )
 
@@ -124,6 +124,6 @@ if __name__ == '__main__':
     if options.loglevel >= 1:
         options.stdlog.write( "# ninput=%i, noutput=%i, nentries=%i\n" % (ninput, noutput, nentries ))
         
-    Experiment.Stop()
+    E.Stop()
     
     

@@ -19,7 +19,6 @@ import CGAT.IOTools as IOTools
 import CGAT.Pipeline as P
 import CGAT.Experiment as E
 import CGAT.GTF as GTF
-import CGAT.GFF as GFF
 import CGAT.IndexedFasta as IndexedFasta
 
 import CGATPipelines.PipelineUCSC as PipelineUCSC
@@ -702,7 +701,7 @@ def loadProteinStats( infile, outfile ):
 
     statement = '''
     gunzip < %(infile)s |
-    python %(scriptsdir)s/fasta2properties.py 
+    python %(scriptsdir)s/fasta2table.py 
           --log=%(outfile)s
           --type=aa 
           --section=length 

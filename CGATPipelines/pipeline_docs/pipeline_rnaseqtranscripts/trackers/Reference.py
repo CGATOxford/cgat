@@ -3,7 +3,7 @@ import os, sys, re, types, itertools, math
 from RnaseqTranscriptsReport import *
 from SphinxReport.ResultBlock import ResultBlock, ResultBlocks
 
-import Stats
+import CGAT.Stats as Stats
 
 ##################################################################################
 ##################################################################################

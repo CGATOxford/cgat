@@ -72,7 +72,7 @@ import CGAT.Experiment as E
 import CGAT.Histogram as Histogram
 import CGAT.MatlabTools as MatlabTools
 import numpy
-import matplotlib.numerix.ma as MA
+import numpy.ma as MA
 
 def readTable( file,
                separator = "\t",

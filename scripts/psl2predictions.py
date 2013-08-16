@@ -74,12 +74,12 @@ Options:
 """ % sys.argv[0]
 
 
-param_long_options=["verbose=", "help", "trans"]
+param_long_options=["verbose=", "help", "trans", "version"]
 param_short_options="v:ht"
 
 param_trans = None
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 import CGAT.PredictionParser as PredictionParser
 
 if __name__ == "__main__":
@@ -93,14 +93,17 @@ if __name__ == "__main__":
     for o,a in optlist:
         if o in ( "-v", "--verbose" ):
             param_loglevel = int(a)
+        elif o in ( "--version", ):
+            print "version="
+            sys.exit(0)
         elif o in ( "-h", "--help" ):
             print USAGE
             sys.exit(0)
         elif o in ( "-t", "--trans"):
             param_trans = 1
 
-    print Experiment.GetHeader()
-    print Experiment.GetParams()
+    print E.GetHeader()
+    print E.GetParams()
 
     if param_trans:
         parser = PredictionParser.PredictionParserBlatTrans()
@@ -126,6 +129,6 @@ if __name__ == "__main__":
             
         print str(entries)
 
-    print Experiment.GetFooter()
+    print E.GetFooter()
 
     

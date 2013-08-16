@@ -60,7 +60,8 @@ This is version $Id: ProfileLibrary.py 2781 2009-09-10 11:33:14Z andreas $.
 #--------------------------------------------------------
 import Experiment
 import Mali
-import alignlib
+try: import alignlib
+except ImportError: pass
 
 class ProfileLibrary:
 

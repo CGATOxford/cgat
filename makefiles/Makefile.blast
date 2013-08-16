@@ -154,7 +154,7 @@ blast.links.gz: blast.run
 	$(PRELOG)
 	@rm -f $(DIR_TMP)$@_$$$$; \
 	$(CMD_BENCHMARK) \
-		$(DIR_SCRIPTS_GENEPREDICTION)combine_blast_results.bash \
+		$(DIR_SCRIPTS_GENEPREDICTION)optic/combine_blast_results.bash \
 		$(DIR_TMP)$@_$$$$ $@.error blast.dir/ $(PARAM_BLASTP_NUMFIELDS); \
 	if test -e blast.recover.links.gz; then \
 		cat blast.recover.links.gz >> $(DIR_TMP)$@_$$$$; \
@@ -185,7 +185,7 @@ blast.clean:
 blast.recover:
 	$(CMD_LOG) "$@ : starting."
 	touch $@.links.new
-	$(DIR_SCRIPTS_GENEPREDICTION)combine_blast_results.bash $@.links.new $@.error blast.dir/ $(PARAM_BLASTP_NUMFIELDS)
+	$(DIR_SCRIPTS_GENEPREDICTION)optic/combine_blast_results.bash $@.links.new $@.error blast.dir/ $(PARAM_BLASTP_NUMFIELDS)
 	if test -e $@.links; then \
 		cat $@.links.new >> $@.links; \
 		rm -f $@.links.new; \

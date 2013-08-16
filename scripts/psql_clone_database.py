@@ -69,7 +69,7 @@ import subprocess
 
 import pgdb
 
-import CGAT.Experiment as Experiment
+import CGAT.Experiment as E
 
 ##---------------------------------------------------------------------------------------------
 def DbExecute( dbhandle, statement ):
@@ -97,7 +97,7 @@ if __name__ == "__main__":
         start = None,
         fields = [] )
 
-    (options, args) = Experiment.Start( parser, add_psql_options = True )
+    (options, args) = E.Start( parser, add_psql_options = True )
     
     dbhandle = pgdb.connect( options.psql_connection )
 
@@ -133,6 +133,6 @@ if __name__ == "__main__":
                           shell = True )
     sts = os.waitpid(p.pid, 0)
 
-    Experiment.Stop()
+    E.Stop()
 
     
