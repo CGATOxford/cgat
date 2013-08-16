@@ -388,6 +388,9 @@ def connect():
 #########################################################################
 ## Definition of targets
 ## Differential expression: design vs geneset
+## BE WARNED: 
+### TARGETS_DE is overwritten as part of loadAggregateExonLevelReadCounts
+
 TARGETS_DE = [ ( (x, y, glob.glob("*.bam") ), 
                  "%s_%s.diff" % (P.snip(x, ".tsv"), P.snip(y,".gtf.gz") )) 
                for x,y in itertools.product( glob.glob( "design*.tsv"),
@@ -510,7 +513,7 @@ def loadCufflinks( infile, outfile ):
 @follows( mkdir( "cuffdiff.dir" ), buildMaskGtf )
 @files( [ (x, os.path.join( "cuffdiff.dir", y)) for x, y in TARGETS_DE ] )
 def runCuffdiff( infiles, outfile ):
-    '''perform differential expression analysis using deseq.'''
+    '''perform differential expression analysis using cuffdiff.'''
     
     design_file = infiles[0]
     geneset_file = infiles[1]
@@ -1123,7 +1126,7 @@ def runDESeq( infiles, outfile ):
     design_file, geneset_file, bamfiles, count_file = infiles
 
     track = P.snip( outfile, ".diff")
-
+    
     statement = '''python %(scriptsdir)s/Expression.py
               --method=deseq
               --filename-tags=%(count_file)s
@@ -1136,7 +1139,6 @@ def runDESeq( infiles, outfile ):
               > %(outfile)s.log '''
 
     P.run()
-
 
 #########################################################################
 #########################################################################
@@ -1179,19 +1181,18 @@ def loadDESeqStats( infile, outfile ):
 #########################################################################
 #########################################################################
 @follows( mkdir("edger.dir") )
-@files( [ ((x, aggregateExonLevelReadCounts), os.path.join( "edger.dir", y)) for x, y in TARGETS_DE ] )
+@files( [ ( x, os.path.join( "edger.dir", y ) ) for x, y in TARGETS_DE ] )
 def runEdgeR( infiles, outfile ):
     '''perform differential expression analysis using edger.'''
 
     to_cluster = True 
-    design_file, geneset_file, bamfiles = infiles[0]
-    infile = infiles[1]
 
+    design_file, geneset_file, bamfiles, count_file  = infiles
     track = P.snip( outfile, ".diff")
 
     statement = '''python %(scriptsdir)s/Expression.py
               --method=edger
-              --filename-tags=%(infile)s
+              --filename-tags=%(count_file)s
               --filename-design=%(design_file)s
               --output-filename-pattern=%(track)s_
               --outfile=%(outfile)s
@@ -1199,7 +1200,7 @@ def runEdgeR( infiles, outfile ):
               > %(outfile)s.log '''
 
     P.run()
-    
+
 #########################################################################
 #########################################################################
 #########################################################################
@@ -1260,8 +1261,10 @@ def diff_expression(): pass
 @files( [ (x, os.path.join( "tagplots.dir", y)) for x, y in TARGETS_DE ] )
 def plotRNASEQTagData( infiles, outfile ):
     '''perform differential expression analysis using deseq.'''
-    
-    design_file, geneset_file, bamfiles = infiles
+
+    design_file = infiles[0]
+    geneset_file = infiles[1]
+    bamfiles = infiles[2]
 
     infile = os.path.join( "exon_counts.dir", P.snip( geneset_file, ".gtf.gz") + ".exon_counts.tsv.gz" )
     Expression.plotTagStats( infile, design_file, outfile )
