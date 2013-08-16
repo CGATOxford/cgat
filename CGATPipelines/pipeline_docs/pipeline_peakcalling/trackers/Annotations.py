@@ -7,7 +7,7 @@ import Histogram
 import PeakcallingReport
 
 from SphinxReport.Tracker import *
-from SphinxReport.odict import OrderedDict as odict
+from collections import OrderedDict as odict
 
 ##################################################################################
 ##################################################################################
