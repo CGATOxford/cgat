@@ -221,7 +221,7 @@ def annotateGeneStructure( infile, outfile,
             | %(filter_cmd)s 
             | python %(scriptsdir)s/gtf2gtf.py --sort=gene
             | awk '$3 == "exon"' 
-            | python /ifs/devel/andreas/cgat/gtf2gtf.py --filter=representative-transcript
+            | python %(scriptsdir)s/gtf2gtf.py --filter=representative-transcript
             | python %(scriptsdir)s/gtf2gtf.py --filter=longest-gene --log=%(outfile)s.log 
             | python %(scriptsdir)s/gtf2gtf.py --sort=position
             | python %(scriptsdir)s/gtf2gff.py --genome-file=%(genome_dir)s/%(genome)s 
