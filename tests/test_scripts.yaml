@@ -1,9 +1,0 @@
-
-restrict:
-<<<<<<< local
-        regex: gtf2gff.py
-=======
-        regex: fastq2fastq.py
->>>>>>> other
-
-
