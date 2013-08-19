@@ -101,7 +101,7 @@ def main( argv = None ):
                                     usage = globals()["__doc__"] )
     parser.add_option("-k", "--kmer", dest="kmer", type="int",
                       help="supply kmer length")
-    parser.add_option("-p", dest = "proportion", action="store_true",
+    parser.add_option("-p", "--proportion", dest = "proportion", action="store_true",
                       help="output proportions - overides the default output")
     
 
