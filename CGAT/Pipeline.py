@@ -1203,6 +1203,7 @@ def run_report( clean = True):
     # if there is no DISPLAY variable set, xvfb runs, but
     # exits with error when killing process. Thus, ignore return
     # value.
+    print os.getenv("DISPLAY"), "command=", xvfb_command
     if not os.getenv("DISPLAY"):
         erase_return = "|| true"
     else:

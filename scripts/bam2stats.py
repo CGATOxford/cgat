@@ -169,6 +169,7 @@ import optparse
 import collections
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
+import CGAT.GTF as GTF
 import pysam
 
 try:
@@ -263,7 +264,7 @@ def main( argv = None ):
     (options, args) = E.Start( parser, argv = argv, add_output_options = True )
 
     if options.filename_rna:
-        rna = GTF.readAndIndex( GFF.iterator( IOTools.openFile( options.filename_rna ) ) )
+        rna = GTF.readAndIndex( GTF.iterator( IOTools.openFile( options.filename_rna ) ) )
     else:
         rna = None
 

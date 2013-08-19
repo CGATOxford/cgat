@@ -36,9 +36,7 @@ In our example our lncRNA transcript models are from an RNA-seq experiment in hu
 human hg19 reference genome by downloading the :term:`fasta` formatted genome from the UCSC website 
 and running index_fasta.py::
 
-
     wget http://hgdownload.cse.ucsc.edu/goldenPath/hg19/bigZips/chromFa.tar.gz | index_fasta.py hg19 > hg19.log
-    
 
 We can then use this indexed genome as additional input when required. The code to generate a table with GC content and CpG
 composition looks like::
