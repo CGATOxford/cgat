@@ -19,7 +19,6 @@ import CGAT.IOTools as IOTools
 import CGAT.Pipeline as P
 import CGAT.Experiment as E
 import CGAT.GTF as GTF
-import CGAT.GFF as GFF
 import CGAT.IndexedFasta as IndexedFasta
 
 import CGATPipelines.PipelineUCSC as PipelineUCSC
@@ -222,7 +221,7 @@ def annotateGeneStructure( infile, outfile,
             | %(filter_cmd)s 
             | python %(scriptsdir)s/gtf2gtf.py --sort=gene
             | awk '$3 == "exon"' 
-            | python /ifs/devel/andreas/cgat/gtf2gtf.py --filter=representative-transcript
+            | python %(scriptsdir)s/gtf2gtf.py --filter=representative-transcript
             | python %(scriptsdir)s/gtf2gtf.py --filter=longest-gene --log=%(outfile)s.log 
             | python %(scriptsdir)s/gtf2gtf.py --sort=position
             | python %(scriptsdir)s/gtf2gff.py --genome-file=%(genome_dir)s/%(genome)s 
@@ -702,7 +701,7 @@ def loadProteinStats( infile, outfile ):
 
     statement = '''
     gunzip < %(infile)s |
-    python %(scriptsdir)s/fasta2properties.py 
+    python %(scriptsdir)s/fasta2table.py 
           --log=%(outfile)s
           --type=aa 
           --section=length 

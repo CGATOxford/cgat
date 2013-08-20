@@ -31,7 +31,6 @@ import CGAT.Genomics as Genomics
 import CGAT.Database as Database
 import CGAT.IOTools as IOTools
 import CGAT.GTF as GTF
-import CGAT.GFF as GFF
 import CGAT.Bed as Bed
 # import Stats
 

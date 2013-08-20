@@ -83,8 +83,9 @@ if __name__ == "__main__":
 
     parser.add_option("-i", "--is-int", dest="is_ints", action="store_true",
                       help="categories are integers."  )
-    parser.add_option("-m", "--method", dest="method", type="string",
-                       help="method(s) to apply." )
+    parser.add_option("-m", "--method", dest="method", type="choice",
+                      choices = ("append", "cumul", "rcumul", "normalize" ),
+                      help="method(s) to apply." )
     parser.add_option("--no-headers", dest="headers", action="store_false",
                       help="histogram has no headers.")
     parser.add_option("-c", "--columns", dest="columns", type="string",
@@ -100,7 +101,7 @@ if __name__ == "__main__":
 
     parser.set_defaults(
         is_ints = False,
-        method = "cumul",
+        method = "append",
         columns = "all",
         headers = True,
         truncate = None,
@@ -111,58 +112,109 @@ if __name__ == "__main__":
 
     (options, args) = E.Start( parser )
 
-    if options.truncate: options.truncate = map(float, options.truncate.split(","))
-    options.method = options.method.split(",")
-    data, legend = IOTools.readTable( sys.stdin,
-                                      numeric_type=numpy.float32,
-                                      take=options.columns,
-                                      headers = options.headers,
-                                      truncate= options.truncate,
-                                      cumulate_out_of_range = options.cumulate_out_of_range )
+    # old histogram2histogram.py semantics - need to merged with newer
+    # code below.
+    if options.method == "append":
 
-    nfields = len(legend)
+        vals = []
 
-    ## note: because of MA, iteration makes copy of slices
-    ## Solution: inplace edits.
-    nrows, ncols = data.shape
+        # retrieve histogram
+        lines = filter( lambda x: x[0] <> "#", sys.stdin.readlines())
 
-    for method in options.method:
-        if method == "cumul":
-            l = [0] * ncols
-            for x in range(nrows):
-                for y in range(1, ncols):
-                    data[x,y] += l[y]
-                    l[y] = data[x,y]
+        # check if first line contains a header
+        d = string.split(lines[0][:-1], "\t")[0]
+        try:
+            if options.is_ints:
+                value = int(d)
+            else:
+                value = float( d )
+        except ValueError:
+            print string.join( (d, "counts", "frequency",
+                                "cumulative counts", "increasing cumulative frequency",
+                                "cumulative counts", "decreasing cumulative frequency"), "\t")
+            del lines[0]
 
-        elif method == "rcumul":
-            l = [0] * ncols
-            for x in range(nrows-1,0,-1):
-                for y in range(1, ncols):
-                    data[x,y] += l[y]
-                    l[y] = data[x,y]
+        data = map( lambda x: map(float, string.split(x[:-1], "\t")), lines)
 
-        elif method == "normalize":
-            m = [0] * ncols
-            for x in range(nrows):
-                for y in range(1, ncols):
-                    ## the conversion to float is necessary
-                    m[y] = max( m[y], float(data[x,y]) )
+        if len(data) == 0:
+            raise "No data found."
 
-            for y in range(1, ncols):
-                if m[y] == 0: m[y] = 1.0
+        total = float(reduce( lambda x,y: x+y, map( lambda x: x[1], data)))
 
-            for x in range(nrows):
-                for y in range(1, ncols):
-                    data[x,y] = data[x,y] / m[y]
+        cumul_down = int(total)
+        cumul_up = 0
+
+        if options.is_ints:
+            form = "%i\t%i\t%6.4f\t%i\t%6.4f\t%i\t%6.4f"         
         else:
-            raise "unknown method %s" % method
+            form = "%6.4f\t%6.4f\t%6.4f\t%6.4f\t%6.4f\t%6.4f\t%6.4f" 
 
-    print "\t".join(legend)
+        for bin,val in data:
+            percent     = float(val) / total
+            cumul_up   += val
+            percent_cumul_up = float(cumul_up) / total
+            percent_cumul_down = float(cumul_down) / total        
 
-    format = options.format_bin + "\t" + "\t".join( [options.format_val] * (nfields-1)) 
-    
-    for d in data:
-        print format % tuple(d)
+            print form % \
+                  (bin, val, percent, cumul_up, percent_cumul_up, cumul_down, percent_cumul_down)
+
+            cumul_down -= val
+        
+    else:
+
+        if options.truncate: options.truncate = map(float, options.truncate.split(","))
+
+        options.method = options.method.split(",")
+        data, legend = IOTools.readTable( sys.stdin,
+                                          numeric_type=numpy.float32,
+                                          take=options.columns,
+                                          headers = options.headers,
+                                          truncate= options.truncate,
+                                          cumulate_out_of_range = options.cumulate_out_of_range )
+
+        nfields = len(legend)
+
+        ## note: because of MA, iteration makes copy of slices
+        ## Solution: inplace edits.
+        nrows, ncols = data.shape
+
+        for method in options.method:
+            if method == "cumul":
+                l = [0] * ncols
+                for x in range(nrows):
+                    for y in range(1, ncols):
+                        data[x,y] += l[y]
+                        l[y] = data[x,y]
+
+            elif method == "rcumul":
+                l = [0] * ncols
+                for x in range(nrows-1,0,-1):
+                    for y in range(1, ncols):
+                        data[x,y] += l[y]
+                        l[y] = data[x,y]
+
+            elif method == "normalize":
+                m = [0] * ncols
+                for x in range(nrows):
+                    for y in range(1, ncols):
+                        ## the conversion to float is necessary
+                        m[y] = max( m[y], float(data[x,y]) )
+
+                for y in range(1, ncols):
+                    if m[y] == 0: m[y] = 1.0
+
+                for x in range(nrows):
+                    for y in range(1, ncols):
+                        data[x,y] = data[x,y] / m[y]
+            else:
+                raise "unknown method %s" % method
+
+        print "\t".join(legend)
+
+        format = options.format_bin + "\t" + "\t".join( [options.format_val] * (nfields-1)) 
+
+        for d in data:
+            print format % tuple(d)
     
     E.Stop()
 

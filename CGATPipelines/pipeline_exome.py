@@ -202,7 +202,7 @@ def getGATKOptions():
 #########################################################################
 #########################################################################
 ## Load target and sample data
-@files( PARAMS["roi_roi"], "roi.load" )
+@files( PARAMS["roi_bed"], "roi.load" )
 def loadROI( infile, outfile ):
     '''Import regions of interest bed file into SQLite.'''
     scriptsdir = PARAMS["general_scriptsdir"]
@@ -701,7 +701,6 @@ def mapping(): pass
           dedup,
           addReadGroups,
           loadPicardDuplicateStats)
-
 def processBAMs(): pass
 
 @follows( mapping,

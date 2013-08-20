@@ -40,7 +40,12 @@ Usage
 
 Example::
 
-   python fasta2table.py --sections=length
+   python cat in.fasta | fasta2table.py --sections=cpg
+
+In this example we inout a fasta file and compute the sequence composition i.e.
+%C, %G, %A, %T as well as dinucleotide (CpG) composition for each sequence in the 
+set.
+
 
 Type::
 

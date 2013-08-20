@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-gtf2table.py - annotate genes/transrcipts
+gtf2table.py - annotate genes/transcripts
 =========================================
 
 :Author: Andreas Heger
@@ -32,36 +32,46 @@ gtf2table.py - annotate genes/transrcipts
 Purpose
 -------
 
-compute properties of genes of given in a gtf file and output them in 
-tabular format. 
+compute properties of genes or transcripts given in a :term:`gtf` 
+formatted file and output them in tabular format. 
 
-The following methods are available:
+Quantities can be either computed per gene (all exons across all transcripts)
+or per transcript. The input needs to be sorted accordingly.
 
-position
-   output genomic coordinates of gene
+The following methods (see option ``--counter``) are available:
 
-length
-   output length summary of gene
+bigwig-counts 
+   collect density values from bigwig file and output
+   summary statistics and percentage of bases covered (``pcovered``)
+   by value in bigwig file.
+   
+binding-pattern 
+   given a list of intervals, determine the binding
+   pattern within and surrounding the gene. For each gene, intervals
+   overlapping the CDS, introns, UTRs and the flank are collected and
+   recorded. The binding is summarized with a binding pattern, a
+   binary pattern indicating overlap/no overlap with 5' flank, 5' UTR,
+   CDS, Introns, 3' UTR, 3' flank.
 
-splice
-   output splicing summary of gene
+classifier
+   classify transcripts according to genomic annotation 
+   Requires a :term:`gff` file with genomic annotations
+   (see :doc:`gtf2gff`.)
 
-quality
-   output base-quality information summary of gene. Needs quality scores.
+classifier-chipseq
+   classify chipseq intervals
 
-overrun
-   output intron overrun
+classifier-rnaseq
+   classify rnaseq transcripts with respect to a reference
+   geneset. Requires a :term:`gtf` file with a reference
+   gene set.
 
-read-coverage
-   output read coverage summary of gene
-
-read-extension
-
-read-counts
-
-bigwig-counts
-
-splice-comparison
+classifier-polii classify 
+   according to PolII transcripts. A
+   gene/transcript is transcribed, if it is covered by large PolII
+   intervals over 80% of its length. A gene/transript is primed if its
+   promotor/UTR is covered by 50% of its length, while the rest of the
+   gene body isn't.
 
 composition-na
    output nucleotide composition of gene
@@ -69,53 +79,88 @@ composition-na
 composition-cgp
    output cpg composition of gene
 
-overlap
-
-overlap-stranded
-
-proximity
-
-proximity-exclusive
-
-proximity-lengthmatched
-
-neighbours
-
-territories
+coverage
+   compute nucleotide coverage of input with segments in another file.
+   The values are output in 5' to 3' order for each nucleotide. Requires
+   a second :term:`gff` formatted file with features to cover.
 
 distance
+   compute distance of genes to features in a second file. Requires
+   a second :term:`gff` formatted file with transcripts. The strand
+   information of the features is ignored.
 
 distance-genes
+   compute distance of genes to genes in a second file. Requires a 
+   second :term:`gtf` formatted file with genes. The counter distinguishes
+   a variety of cases (closest upstream/downstream).
 
 distance-tss
+   compute distance of genes to transcription start sites. Requires a
+   second :term:`gtf` formatted file with genes.
 
-coverage
+length
+   output exon length summary of gene.
 
-classifier
+neighbours
+    output features in second stream that are in proximity to genes
+    in input. Requires a :term:`gtf` formatted file with genes.
 
-classifier-chipseq
-   classify chipseq intervals
+overlap
+    compute overlap of genes in input with features in second stream.
+    Requires a :term:`gff` formatted file with gene territories.
 
-classifier-rnaseq
-   classify rnaseq transcripts
+overlap-stranded
+    count overlap with genomic features in second another file. Outputs
+    the number of overlapping exons. Records the direction of overlap
+    (sense/antisense). Requires a :term:`gff` formatted file with 
+    features.
 
-classifier-polii
-   classify according to PolII transcripts. A gene/transcript is transcribed, if it is covered
-   by large PolII intervals over 80% of its length. A gene/transript is primed if its promotor/UTR
-   is covered by 50% of its length, while the rest of the gene body isn't.
+overlap-transcripts
+    count overlap of genes with transcripts in another set.
+    Requires a :term:`gtf` formatted file.
 
-binding-pattern
-   given a list of intervals, determine the binding pattern within and surrounding the gene. For each
-   gene, intervals overlapping the CDS, introns, UTRs and the flank are collected and recorded. The binding
-   is summarized with a binding pattern, a binary pattern indicating overlap/no overlap with
-   5' flank, 5' UTR, CDS, Introns, 3' UTR, 3' flank.
+overrun
+   output intron overrun, exons in the input gene set extending
+   into the introns of a reference gene set. Requries a :term:`gtf`
+   formatted file with a reference gene set.
+
+position
+   output genomic coordinates of gene
+
+proximity
+   report summary stats (lengths,values) of features in proximity to 
+   genes input gene set. Requires a :term:`gff` formatted file with
+   genomic features.
+
+proximity-exclusive
+   as proximity, but exclude any ranges overlapping the gene set.
+
+proximity-lengthmatched
+  as proximity-exclusive, but length-match features with genes.
+
+quality
+   output base-quality information summary of gene. Needs quality scores.
+
+read-coverage
+   output read coverage summary statistics of gene
+
+read-extension
+
+read-counts
+
+splice
+   output splicing summary of gene
+
+splice-comparison
+
+territories
 
 Usage
 -----
 
 Example::
 
-   python gtf2table.py --help
+   python gtf2table.py --counter=length < geneset.gtf > geneset.tsv
 
 Type::
 
@@ -123,11 +168,8 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-
-Code
-----
+Command line options
+--------------------
 
 '''
 
@@ -148,7 +190,6 @@ import bisect
 import array
 import collections
 import itertools
-import CGAT.GFF as GFF
 import CGAT.GTF as GTF
 import CGAT.Bed as Bed
 import CGAT.IOTools as IOTools
@@ -163,14 +204,122 @@ import bx
 import bx.bbi.bigwig_file
 import bx.intervals.io
 import bx.intervals.intersection
-import alignlib
+
+try:
+    import alignlib
+except ImportError:
+    pass
+
 import numpy
 import CGAT.IndexedGenome as IndexedGenome
 import pysam
 
-import pyximport
-pyximport.install(build_in_temp=False)
-import _gtf2table
+try:
+    import pyximport
+    pyximport.install(build_in_temp=False)
+    import _gtf2table
+except ImportError:
+    import CGAT._gtf2table as _gtf2table
+
+def readIntervalsFromGFF( filename_gff, source, feature, 
+			  with_values = False, with_records = False, fasta = None, 
+			  merge_genes = False, format = "gtf", use_strand = False ):
+    """read intervals from a file or list.
+    """
+
+    assert not (with_values and with_records), "both with_values and with_records are true."
+
+    ninput = 0
+
+    if format == None:
+        if type(filename_gff) == types.StringType:
+            fn = filename_gff
+            if fn.endswith( ".gtf" ) or fn.endswith( ".gtf.gz"):
+                format = "gtf"
+            elif fn.endswith( ".gff" ) or fn.endswith( ".gff.gz"):
+                format = "gff"
+            elif fn.endswith( ".bed" ) or fn.endswith( ".bed.gz"):
+                format = "bed"
+        else:
+            format = "gff"
+
+    if format in ("gtf", "gff"):
+        infile = None
+        # read data without value
+        if type(filename_gff) == types.StringType:
+            E.info(  "loading data from %s for source '%s' and feature '%s'" % (filename_gff, source, feature) )
+
+            infile = IOTools.openFile( filename_gff, "r")        
+            if format == "gtf":
+                iterator_gff = GTF.iterator(infile)
+            elif format == "gff":
+                iterator_gff = GTF.iterator(infile)
+
+        elif type(filename_gff) in (types.TupleType, types.ListType):
+
+            E.info( "loading data from cache for source '%s' and feature '%s'" % (source, feature) )
+
+            # from preparsed gff entries
+            iterator_gff = filename_gff
+
+        gff_iterator = GTF.iterator_filtered( iterator_gff,
+                                              feature = feature,
+                                              source = source )
+
+        if format == "gtf":
+            e = GTF.readAsIntervals( gff_iterator, 
+                                     with_values = with_values, 
+                                     with_records = with_records,
+                                     merge_genes = merge_genes,
+                                     use_strand = use_strand )
+        elif format == "gff":
+            e = GTF.readAsIntervals( gff_iterator, 
+                                     with_values = with_values, 
+                                     with_records = with_records,
+                                     use_strand = use_strand )
+
+        if infile: infile.close()
+
+    elif format == "bed":
+        if merge_genes: raise ValueError("can not merge genes from bed format" )
+        if use_strand: raise NotImplementedError( "stranded comparison not implemented for bed format")
+        iterator = Bed.iterator( IOTools.openFile(filename_gff, "r") )
+        e = collections.defaultdict( list )
+        if with_values:
+            for bed in iterator:
+                ninput += 1
+                e[bed.contig].append( (bed.start,bed.end,bed.fields[0]) )
+        elif with_records:
+            for bed in iterator:
+                ninput += 1
+                bed.gene_id = bed.fields[0]
+                bed.transcript_id = bed.gene_id
+                e[bed.contig].append( (bed.start,bed.end,bed) )
+        else:
+            for bed in iterator:
+                ninput += 1
+                e[bed.contig].append( (bed.start,bed.end) )
+        E.info("read intervals for %i contigs from %s: %i intervals" % (len(e), filename_gff, ninput) )
+
+    else:
+        raise ValueError("unknown format %s" % format )
+
+    # translate names of contigs
+    if fasta:
+        if use_strand:
+            for contig,strand in e.keys():
+                if  contig in fasta:
+                    x = e[contig]
+                    del e[contig,strand]
+                    e[fasta.getToken(contig),strand] = x
+        else:
+            for contig in e.keys():
+                if  contig in fasta:
+                    x = e[contig]
+                    del e[contig]
+                    e[fasta.getToken(contig)] = x
+
+    return e
 
 class CounterIntronsExons(_gtf2table.Counter):
     """count number of introns and exons.
@@ -178,7 +327,7 @@ class CounterIntronsExons(_gtf2table.Counter):
 
     header = ( "ntranscripts", "nexons", "nintrons", )
     def __init__(self, *args, **kwargs):
-        Counter.__init__(self, *args, **kwargs )
+        _gtf2table.Counter.__init__(self, *args, **kwargs )
 
     def count(self):
         segments = self.getSegments()
@@ -194,7 +343,7 @@ class CounterPosition(_gtf2table.Counter):
     header = ( "contig", "strand", "start", "end" )
 
     def __init__(self, *args, **kwargs ):
-        Counter.__init__(self, *args, **kwargs )
+        _gtf2table.Counter.__init__(self, *args, **kwargs )
 
     def count(self):
 
@@ -343,8 +492,11 @@ class CounterOverlap(_gtf2table.Counter):
         if len(filename_gff) != 1:
             raise ValueError("expected one gff file" )
         
-        e = readIntervalsFromGFF( filename_gff[0], source, feature, 
-                                  self.mWithValues, self.mWithRecords, 
+        e = readIntervalsFromGFF( filename_gff[0], 
+				  source, 
+				  feature, 
+                                  self.mWithValues, 
+				  self.mWithRecords, 
                                   self.fasta, 
                                   format = self.options.filename_format,
                                   use_strand = self.mUseStrand )
@@ -500,7 +652,9 @@ class CounterOverlapTranscripts(CounterOverlap):
     Nover1 and nover2 now count "transcripts".
     """
 
-    headerTemplate = ( "ngenes", "ntranscripts", "nexons", "nbases", "pover1", "pover2" )
+    headerTemplate = ( "ngenes", "ntranscripts", 
+		       "nexons", "nbases", 
+		       "pover1", "pover2" )
 
     ## save value for intervals
     mWithValues = False
@@ -567,8 +721,8 @@ class CounterOverlapTranscripts(CounterOverlap):
 
 ##-----------------------------------------------------------------------------------
 class CounterCoverage(CounterOverlap):
-    """compute base coverage with segments in another file.
-    The values are output in 5' to 3' order for each base.
+    """compute nucleotide coverage of input with segments in another file.
+    The values are output in 5' to 3' order for each nucleotide.
     """
 
     headerTemplate = ["cov_%s" % x for x in Stats.Summary().getHeaders()+ ("covered", "values",) ]
@@ -685,10 +839,10 @@ class Classifier(_gtf2table.Counter):
 
     def __init__(self, filename_gff, *args, **kwargs ):
 
-        Counter.__init__(self, *args, **kwargs )
+        _gtf2table.Counter.__init__(self, *args, **kwargs )
 
         if len(filename_gff) != 1:
-            raise ValueError("expected only one gff file" )
+            raise ValueError("expected one gff file, received %i" % len(filename_gff) )
 
         E.info( "loading data from %s" % (filename_gff[0]) )
             
@@ -775,7 +929,7 @@ class Classifier(_gtf2table.Counter):
         return "\t".join( h )
 
     def getHeader(self):
-        h = [Counter.getHeader( self ) ]
+        h = [_gtf2table.Counter.getHeader( self ) ]
 
         for key in self.mKeys:
             h.append( self.mCounters[key].getHeader() )
@@ -3258,26 +3412,37 @@ def main( argv = None ):
                       help="select range on which counters will operate [default=%default]."  )
 
     parser.add_option("-c", "--counter", dest="counters", type="choice", action="append",
-                      choices=("length", "splice", "composition-na", "composition-cpg", 
-                               "overlap", 
-                               "classifier", 
-                               "classifier-chipseq",
-                               "classifier-rnaseq",
-			       "classifier-rnaseq-splicing",
-                               "overlap-stranded",
-                               "overlap-transcripts",
-                               "read-coverage", 
-                               "read-extension", 
-                               "read-counts",
-                               "bigwig-counts",
-                               'neighbours',
-                               "proximity", "proximity-exclusive", "proximity-lengthmatched",
-                               "position", "territories", "splice-comparison", 
-                               "distance", "distance-genes", "distance-tss",
-                               "coverage", "quality", "overrun",
-                               "classifier-polii",
-                               "binding-pattern" ),
-                      help="select counters to apply [default=%default]."  )
+                      choices=(	"bigwig-counts",
+				"binding-pattern",
+				"classifier", 
+				"classifier-chipseq",
+				"classifier-rnaseq",
+				"classifier-rnaseq-splicing",
+				"classifier-polii",
+				"composition-na", 
+				"composition-cpg", 
+				"coverage", 
+				"distance", 
+				"distance-genes", 
+				"distance-tss",
+				"length", 
+				'neighbours',
+				"overlap", 
+				"overlap-stranded",
+				"overlap-transcripts",
+				"overrun",
+				"position", 
+				"proximity", 
+				"proximity-exclusive", 
+				"proximity-lengthmatched",
+				"quality",
+				"read-coverage", 
+				"read-extension", 
+				"read-counts",
+				"splice", 
+				"splice-comparison", 
+				"territories"),
+		      help="select counters to apply to input [default=%default]."  )
 
     parser.add_option( "--add-gtf-source", dest="add_gtf_source", action="store_true",
                       help="add gtf field of source to output [default=%default]."  )

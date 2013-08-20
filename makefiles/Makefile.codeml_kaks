@@ -317,7 +317,7 @@ samples.run-subhook: $(TARGETS_SUBDIR)
 lrt: $(TARGETS_SUBDIR)
 	$(PRELOG)
 	@$(CMD_REMOTE_SUBMIT) \
-	python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codeml_kaks.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)codeml2tsv.py \
 		--method=lrt \
 		--mode=1xn \
 		fixed_w.output variable_w.output $(OUTPUT_FILES) > $@
@@ -819,7 +819,7 @@ data-hook: $(DATA_TARGETS_SUBDIR)
 ###########################################################################
 %.tree: %.paml 
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codeml_kaks.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)codeml2tsv.py \
 		--prefix=$* \
 		--method=write-ks-tree \
 		$*.output |\

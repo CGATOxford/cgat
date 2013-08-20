@@ -91,7 +91,8 @@ param_long_options=["verbose=", "help", "file-output=",
                     "min-coverage-residues=", "min-coverage-percent=",
                     "components=",
                     "species-pattern=", "master-pattern=", "output-pattern=",
-                    "exons=", "cluster", "remove-fragments", "prefix="
+                    "exons=", "cluster", "remove-fragments", "prefix=",
+                    "version"
                     ]
 
 param_short_options="v:ho:s:p:e:"
@@ -1034,6 +1035,9 @@ if __name__ == '__main__':
             param_loglevel = int(a)
         elif o in ( "-h", "--help" ):
             print USAGE
+            sys.exit(0)
+        elif o in ( "--version", ):
+            print "version="
             sys.exit(0)
         elif o in ("-o", "--file-output"):
             param_filename_output = a

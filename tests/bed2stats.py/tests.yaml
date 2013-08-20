@@ -1,0 +1,12 @@
+
+version:
+    stdin: null
+    outputs: [stdout]
+    references: []
+    options: --version
+
+percontig:
+   stdin: srf.hg19.bed.gz
+   outputs: [stdout]
+   references: [percontig.tsv]
+   options: --per-contig

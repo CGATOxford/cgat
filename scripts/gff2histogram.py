@@ -75,7 +75,6 @@ Version: $Id: gff2histogram.py 2781 2009-09-10 11:33:14Z andreas $
 """ % sys.argv[0]
 
 import CGAT.Experiment as E
-import CGAT.GFF as GFF
 import CGAT.GTF as GTF
 import CGAT.Bed as Bed
 import CGAT.Histogram as Histogram
@@ -137,9 +136,9 @@ if __name__ == "__main__":
         raise ValueError( "please provide counting method using --method option" )
 
     if options.format == "gff":
-        gffs = GFF.iterator( options.stdin )
+        gffs = GTF.iterator( options.stdin )
     elif options.format == "gtf":
-        gffs = GFF.iterator( options.stdin )
+        gffs = GTF.iterator( options.stdin )
     elif options.format == "bed":
         gffs = Bed.iterator( options.stdin )
 

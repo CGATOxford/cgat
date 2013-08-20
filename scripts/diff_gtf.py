@@ -20,7 +20,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-diff_gtf.py - compare two gtf files
+diff_gtf.py - compare two genesets
 ===================================
 
 :Author: Andreas Heger
@@ -31,20 +31,23 @@ diff_gtf.py - compare two gtf files
 Purpose
 -------
 
-This script compares two gtf files.
+This script compares two genesets in :term:`gtf`-formatted files.
 
-The script outputs the following symbols::
+It outputs the results of the comparison into various sections. The sections are
+split into separate output files whose names are determined by the ``--output-filename-pattern`` 
+option. The sections are:
 
-  >: an entry unique to the second file
-  <: an entry unique to the first file
+genes_ovl
+   Table with overlapping genes
 
-  if --write-equivalent is set, then it also outputs overlapping entries:
+genes_total
+   Summary statistic of overlapping genes
 
-  ~: partially overlapping entries
-  /: an entry that is split in the first file (split_right)
-  \: an entry that is split in the second file (split_left)
-  =: identical entries
-  |: half-identical entries, only one boundary is matching
+genes_uniq1
+   List of genes uniq in set 1
+
+genes_uniq2
+   List of genes uniq in set 2
 
 
 Usage
@@ -52,29 +55,27 @@ Usage
 
 Example::
 
-   python <script_name>.py --help
+   python diff_gtf.py a.gtf b.gtf
 
 Type::
 
-   python <script_name>.py --help
+   python diff_gtf.py --help
 
 for command line help.
 
-Documentation
--------------
-
-Code
-----
+Command line options
+--------------------
 
 '''
 import sys
 import string
 import re
+import os
 import optparse
 import collections
 import CGAT.Experiment as E
-import CGAT.GFF as GFF
 import CGAT.GTF as GTF
+import CGAT.IOTools as IOTools
 import bx.intervals.intersection
 
 def GetNextLine( infile ):
@@ -145,10 +146,9 @@ class Counts:
 
 def getFile( options, section ):
 
-    if options.output_pattern:
-        outfile = open(options.output_pattern % section, "w")
-        if options.loglevel >= 1:
-            options.stdlog.write("# output for section '%s' goes to file %s\n" % (section, options.output_pattern % section) )
+    if options.output_filename_pattern:
+        outfile = IOTools.openFile(options.output_filename_pattern % section, "w")
+        E.info( "output for section '%s' goes to file %s" % (section, options.output_filename_pattern % section) )
     else:
         outfile = options.stdout
         outfile.write( "## section: %s\n" % section)
@@ -160,7 +160,9 @@ def writeDiff( outfile, symbol, genes ):
         for exon in gene:
             outfile.write("%s\t%s\n" % (symbol, str(exon)))
 
-if __name__ == "__main__":
+def main( argv = None ):
+
+    if not argv: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: diff_gtf.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
@@ -176,9 +178,6 @@ if __name__ == "__main__":
     parser.add_option("-p", "--add-percent", dest="add_percent", action="store_true",
                       help="add percentage columns [default=%default]." )
 
-    parser.add_option("-t", "--output-pattern", dest="output_pattern", type="string",
-                      help="pattern for output files (should contain one %s). The output will be  [default=%default].")
-
     parser.add_option("-s", "--ignore-strand", dest="ignore_strand", action="store_true",
                       help="ignore strand information [default=%default]." )
 
@@ -187,17 +186,14 @@ if __name__ == "__main__":
         write_full = False,
         format="flat",
         add_percent=False,
-        output_pattern = None,
         ignore_strand = False,
         as_gtf = False,
         )
 
-    (options, args) = E.Start( parser )
+    (options, args) = E.Start( parser, argv, add_output_options = True )
 
     if len(args) != 2:
-        print USAGE
-        print "two arguments required"
-        sys.exit(1)
+        raise ValueError( "two arguments required" )
 
     input_filename1, input_filename2 = args
 
@@ -208,7 +204,7 @@ if __name__ == "__main__":
     E.info( "reading data started" )
 
     idx, genes2 = {}, set()
-    for e in GTF.readFromFile( open( input_filename2, "r" ) ):
+    for e in GTF.readFromFile( IOTools.openFile( input_filename2, "r" ) ):
         genes2.add( e.gene_id )
         if e.contig not in idx: idx[e.contig] = bx.intervals.intersection.Intersecter()
         idx[e.contig].add_interval( bx.intervals.Interval(e.start,e.end,value=e) )
@@ -219,15 +215,16 @@ if __name__ == "__main__":
 
     subtotals = []
     subtotal = Counts( add_percent = options.add_percent )
-
-    outfile_diff = getFile( options, "diff" )
-    outfile_overlap = getFile( options, "overlap" )
+    
+    # outfile_diff and outfile_overlap not implemented
+    # outfile_diff = getFile( options, "diff" )
+    # outfile_overlap = getFile( options, "overlap" )
     overlapping_genes = set()
 
     genes1 = set()
 
     # iterate over exons
-    with open( input_filename1, "r" ) as infile:
+    with IOTools.openFile( input_filename1, "r" ) as infile:
         for this in GTF.iterator( infile ):
 
             genes1.add( this.gene_id )
@@ -255,8 +252,8 @@ if __name__ == "__main__":
                 else:
                     symbol = "~"
 
-    if outfile_diff != options.stdout: outfile_diff.close()
-    if outfile_overlap != options.stdout: outfile_overlap.close()
+    # if outfile_diff != options.stdout: outfile_diff.close()
+    # if outfile_overlap != options.stdout: outfile_overlap.close()
 
     outfile = None
     ##################################################################
@@ -280,7 +277,7 @@ if __name__ == "__main__":
         outfile.write( "\n".join( d ) + "\n" )
         if outfile != options.stdout: outfile.close()
         outfile_total.write( "%s\t%i\t%i\t%5.2f\t%i\t%5.2f\n" % (
-                input_filename1, len(genes1), len(b), 100.0 * len(b) / len(a),
+                os.path.basename(input_filename1), len(genes1), len(b), 100.0 * len(b) / len(a),
                 len(d), 100.0 * len(d) / len(genes1) ) )
 
         outfile = getFile( options, "genes_uniq2" )
@@ -291,7 +288,7 @@ if __name__ == "__main__":
         if outfile != options.stdout: outfile.close()
 
         outfile_total.write( "%s\t%i\t%i\t%5.2f\t%i\t%5.2f\n" % (
-                input_filename2, len(genes2), len(b), 100.0 * len(b) / len(a),
+                os.path.basename(input_filename2), len(genes2), len(b), 100.0 * len(b) / len(a),
                 len(d), 100.0 * len(d) / len(genes2) ) )
         if outfile_total != options.stdout: outfile_total.close()
         
@@ -300,15 +297,18 @@ if __name__ == "__main__":
     ##################################################################
     ## print totals
     ##################################################################    
-    #outfile = getFile(options, "total" )
-    #outfile.write("chr\tstrand\t%s\n" % Counts( add_percent = options.add_percent ).getHeader())
+    outfile = getFile(options, "total" )
+    outfile.write("chr\tstrand\t%s\n" % Counts( add_percent = options.add_percent ).getHeader())
 
-    #total = Counts( add_percent = options.add_percent )
-    #for x in subtotals:
-    #    outfile.write( "\t".join( (x[0], x[1], str(x[2])) ) + "\n" )
-    #    total += x[2]
+    total = Counts( add_percent = options.add_percent )
+    for x in subtotals:
+       outfile.write( "\t".join( (x[0], x[1], str(x[2])) ) + "\n" )
+       total += x[2]
 
-    #outfile.write("\t".join( ("all", "all", str(total)) ) + "\n")
-    #if outfile != options.stdout: outfile.close()
+    outfile.write("\t".join( ("all", "all", str(total)) ) + "\n")
+    if outfile != options.stdout: outfile.close()
     
     E.Stop()    
+
+if __name__ == "__main__":
+    sys.exit( main() )

@@ -32,7 +32,7 @@
 %.cleaned_fasta: %.fasta
 	$(PRELOG)
 	@if test -n "$(PARAM_MASK_MALI)"; then \
-		python $(DIR_SCRIPTS_GENEPREDICTION)prune_multiple_alignment.py \
+		python $(DIR_SCRIPTS_GENEPREDICTION)optic/prune_multiple_alignment.py \
 			--log=$@.log \
 			--exons=$*.exons \
 			--master-species=$(PARAM_ANALYSIS_MASTER_SCHEMA) \

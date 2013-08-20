@@ -1,0 +1,13 @@
+
+version:
+    stdin: null
+    outputs: [stdout]
+    references: []
+    options: --version
+
+
+name:
+    stdin: null
+    outputs: [stdout]
+    references: [name.tsv]
+    options: --output=name <DIR>/srf.hg19.bed.gz <DIR>/srf.hg19.bed.gz

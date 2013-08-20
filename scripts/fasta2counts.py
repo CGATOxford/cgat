@@ -1,5 +1,5 @@
 ################################################################################
-#   Gene prediction pipeline 
+#   MRC FGU Computational Genomics Group
 #
 #   $Id: fasta2counts.py 2781 2009-09-10 11:33:14Z andreas $
 #
@@ -20,18 +20,24 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
+Antonio changes up to 15/08/13:
+- edits to documentation, modified header, added tags after Python, added under Usage, added under Example
+- added code (commented)
+ 
+
+
 fasta2counts.py - basic stats from collection of sequences
 ==========================================================
 
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Python, fasta, counts, contigs, residues, gaps
 
 Purpose
 -------
 
-This script computes same basic counts from a fasta-formatted file. For each sequence in
+This script computes some basic counts from a fasta-formatted file. For each sequence in
 the :term:`fasta` formatted and indexed input file it will output in a :term:`tsv` formatted table:
 
 contig
@@ -50,9 +56,33 @@ nA, nC, nG, nT, nN, nX, nO
 Usage
 -----
 
+-g, --genome-file is a positional argument which requires an indexed fasta file created with index_fasta.py
+
+
 Example::
 
-   python fasta2counts.py h19
+#Download the example data here:
+
+   wget ftp://ftp.ncbi.nih.gov/genomes/Bacteria/Pseudomonas_aeruginosa_PAO1_uid57945/NC_002516.fna
+
+#Index your fasta file:
+
+   python /ifs/devel/antoniob/cgat/scripts/index_fasta.py NC_002516_db NC_002516.fna 
+
+#which outputs:
+
+NC_002516_db.fasta
+NC_002516_db.idx
+
+#Run fasta2counts.py:
+
+   python /ifs/devel/antoniob/cgat/scripts/fasta2counts.py --stdin=NC_002516.fna --log=fasta2counts_NC_002516.log --error=fasta2counts_NC_002516.error --stdout=fasta2counts_NC_002516.output --genome-file=NC_002516_db.fasta 
+
+#Results should look like:
+
+   cat fasta2counts_NC_002516.output 
+contig	nresidues	ngaps	nseqregions	ngapregions	nA	nC	nG	nT	nN	nX	nO
+gi|110645304|ref|NC_002516.2|	6264404	0	1	0	1056134	2102687	2066633	1038950	0	0	0
 
 Type::
 
@@ -90,10 +120,12 @@ def writeHeader( outfile ):
 
 if __name__ == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: fasta2counts.py 2781 2009-09-10 11:33:14Z andreas $")
+#added ' usage = globals()["__doc__"]) '
+    parser = E.OptionParser( version = "%prog version: $Id: fasta2counts.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
+#added ' ..., requires indexed fasta file" ' 
     parser.add_option( "-g", "--genome-file", dest="genome_file", type="string",
-                       help="filename with genome."  )
+                       help="filename with genome, requires indexed fasta file"  )
 
     parser.set_defaults(
         genome_file = None,
@@ -104,7 +136,7 @@ if __name__ == "__main__":
     (options, args) = E.Start( parser )
 
     fasta = IndexedFasta.IndexedFasta( options.genome_file )
-    contigs = fasta.getContigSizes()
+    contigs = fasta.getContigSizes( with_synonyms = False )
 
     totals = { 'A' : 0, 'C': 0, 'G' : 0, 'T' : 0, 'X' : 0, 'N' : 0 }
     nothers_total = 0
@@ -177,3 +209,4 @@ if __name__ == "__main__":
         outfile.close()
         
     E.Stop()
+

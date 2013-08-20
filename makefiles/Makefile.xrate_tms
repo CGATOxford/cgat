@@ -853,7 +853,7 @@ data-hook: $(DATA_TARGETS_SUBDIR)
 ###########################################################################
 %.tree: %.paml 
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)analyze_codeml_kaks.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)codeml2tsv.py \
 		--prefix=$* \
 		--method=write-ks-tree \
 		$*.output |\

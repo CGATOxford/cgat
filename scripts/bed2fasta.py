@@ -31,24 +31,35 @@ bed2fasta.py - get sequences from bed file
 Purpose
 -------
 
-This script outputs sequences for intervals within
-a :term:`bed` formatted file.
+This script outputs nucleotide sequences for intervals within
+a :term:`bed` formatted file using.
 
 Usage
 -----
 
-Example::
+A required input to bed2fasta.py is a CGAT indexed genome. To obtain an
+idexed human reference genome we would type
 
-   python <script_name>.py --help
+Example::
+   cat hg19.fasta | index_fasta.py hg19 > hg19.log
+
+This file would then serve as the --genome-file when we wish to extract
+sequences from a :term:`bed` formatted file.
+
+
+For example we could now type::
+
+   cat in.bed | python bed2fasta.py --genome-file hg19 > out.fasta
+
+Where we take a set of genomic intervals (e.g. from a human ChIP-seq experiment)
+and output their respective nucleotide sequences.
+
 
 Type::
 
-   python <script_name>.py --help
+   python bed2fasta.py --help
 
 for command line help.
-
-Documentation
--------------
 
 Code
 ----

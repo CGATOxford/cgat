@@ -1,0 +1,6 @@
+old	new
+gipe_exonerate_combine_regions.py	gpipe_exonerate_combine_regions.py
+links2exons.py	optic_links2exons.py
+compare_predictions2exons.py	gpipe_compare_predictions2exons.py
+compare_predictions.py	gpipe_compare_predictions.py
+compare_projects.py	optic_compare_projects.py

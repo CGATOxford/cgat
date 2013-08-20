@@ -14,7 +14,7 @@ CountResult = collections.namedtuple( "Counts", "upstream upstream_utr cds downs
 
 class RangeCounter:
     
-    def __init__(self ):
+    def __init__(self, *args, **kwargs ):
         pass
 
     def setup( self, ranges ):

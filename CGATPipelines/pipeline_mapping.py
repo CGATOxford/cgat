@@ -209,7 +209,6 @@ import random
 
 import numpy
 import sqlite3
-import CGAT.GFF as GFF
 import CGAT.GTF as GTF
 import CGAT.IOTools as IOTools
 import CGAT.IndexedFasta as IndexedFasta
@@ -247,6 +246,8 @@ PARAMS = P.PARAMS
 
 PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],
                                        "pipeline_annotations.py" )
+
+
 
 ###################################################################
 ###################################################################
@@ -334,7 +335,7 @@ def mergeAndFilterGTF( infile, outfile, logfile ):
         if not os.path.exists( rna_file ):
             E.warn( "file '%s' to remove repetetive rna does not exist" % rna_file )
         else:
-            rna_index = GFF.readAndIndex( GFF.iterator( IOTools.openFile( rna_file, "r" ) ) )
+            rna_index = GTF.readAndIndex( GTF.iterator( IOTools.openFile( rna_file, "r" ) ) )
             E.info( "removing ribosomal RNA in %s" % rna_file )
     
     gene_ids = {}

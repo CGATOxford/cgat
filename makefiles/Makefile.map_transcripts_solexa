@@ -500,13 +500,13 @@ view-introns_%:
 	' < $< > $@
 	@printf "## histogram of mismatches\n" >> $@
 	@csv_cut nmismatch < $< | d2h -v 0 --on-the-fly --bin-size=1 --min-value=0 --max-value=10 |\
-	python $(DIR_SCRIPTS_TOOLS)append_histogram.py --is-int -v 0 >> $@
+	python $(DIR_SCRIPTS_TOOLS)histogram2histogram.py --is-int -v 0 >> $@
 	@printf "## histogram of mismatch qualities\n" >> $@
 	@csv_cut nmisqual < $< | d2h -v 0 --on-the-fly --bin-size=1 --min-value=0 --max-value=100 |\
-	python $(DIR_SCRIPTS_TOOLS)append_histogram.py --is-int -v 0 >> $@
+	python $(DIR_SCRIPTS_TOOLS)histogram2histogram.py --is-int -v 0 >> $@
 	@printf "## histogram of map qualities\n" >> $@
 	@csv_cut qual < $< | d2h -v 0 --on-the-fly --bin-size=1 --min-value=0 --max-value=100 |\
-	python $(DIR_SCRIPTS_TOOLS)append_histogram.py --is-int -v 0 >> $@
+	python $(DIR_SCRIPTS_TOOLS)histogram2histogram.py --is-int -v 0 >> $@
 	$(EPILOG)
 
 ####################################################################
@@ -538,13 +538,13 @@ view-introns_%:
 	' < $< > $@
 	@printf "## histogram of mismatches\n" >> $@
 	@csv_cut nmismatch < $< | d2h -v 0 --on-the-fly --bin-size=1 --min-value=0 --max-value=10 |\
-	python $(DIR_SCRIPTS_TOOLS)append_histogram.py --is-int -v 0 >> $@
+	python $(DIR_SCRIPTS_TOOLS)histogram2histogram.py --is-int -v 0 >> $@
 	@printf "## histogram of mismatch qualities\n" >> $@
 	@csv_cut nmisqual < $< | d2h -v 0 --on-the-fly --bin-size=1 --min-value=0 --max-value=100 |\
-	python $(DIR_SCRIPTS_TOOLS)append_histogram.py --is-int -v 0 >> $@
+	python $(DIR_SCRIPTS_TOOLS)histogram2histogram.py --is-int -v 0 >> $@
 	@printf "## histogram of map qualities\n" >> $@
 	@csv_cut qual < $< | d2h -v 0 --on-the-fly --bin-size=1 --min-value=0 --max-value=100 |\
-	python $(DIR_SCRIPTS_TOOLS)append_histogram.py --is-int -v 0 >> $@
+	python $(DIR_SCRIPTS_TOOLS)histogram2histogram.py --is-int -v 0 >> $@
 	$(EPILOG)
 
 ###########################################################################

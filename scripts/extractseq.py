@@ -67,7 +67,6 @@ import optparse
 import math
 
 import CGAT.Experiment as E
-import CGAT.GFF as GFF
 import CGAT.IndexedFasta as IndexedFasta
 
 if __name__ == "__main__":

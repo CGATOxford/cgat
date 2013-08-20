@@ -98,7 +98,8 @@ param_reverse_cumulative = False
 
 param_long_options = ["Verbose=", "nonull", "fill","take=", "column=", "show_empty",
                       "upper=", "lower=", "bin-size=", "scale=", "normalize", "append=", "titles",
-                      "cumulative", "reverse-cumulative", "help"]
+                      "cumulative", "reverse-cumulative", "help",
+                      "version"]
 
 param_short_options = "v:nft:c:eu:l:b:a:ioh"
 
@@ -119,6 +120,9 @@ if __name__ == '__main__':
             param_loglevel = int(a)
         elif o in ( "-h", "--help" ):
             print globals()["__doc__"]
+            sys.exit(0)
+        elif o in ( "--version", ):
+            print "version="
             sys.exit(0)
         elif o in ("-t", "--take"):
             param_take = map(string.atoi, string.split(a, ","))

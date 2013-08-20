@@ -1,0 +1,13 @@
+
+version:
+    stdin: null
+    outputs: [stdout]
+    references: []
+    options: --version
+
+length:
+    stdin: hg19.chr19.gtf.gz
+    outputs: [stdout]
+    references: [test1.tsv]
+    options: --counter=length --counter=position --counter=composition-na --counter=composition-cpg --genome-file=%DIR%/hg19.chr19
+    

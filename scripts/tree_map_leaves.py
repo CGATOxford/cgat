@@ -90,7 +90,8 @@ import CGAT.TreeTools as TreeTools
 param_loglevel = 1
 
 param_long_options=["verbose=", "help", "pattern-species=",
-                    "invert", "create=", "apply=", "strip-brances"]
+                    "invert", "create=", "apply=", "strip-brances",
+                    "version"]
 
 param_short_options="v:hp:a:c:i"
 
@@ -110,6 +111,9 @@ if __name__ == "__main__":
     for o,a in optlist:
         if o in ( "-v", "--verbose" ):
             param_loglevel = int(a)
+        elif o in ( "--version", ):
+            print "version="
+            sys.exit(0)
         elif o in ( "-h", "--help" ):
             print USAGE
             sys.exit(0)

@@ -21,8 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-histograms2kl.py - compute Kullback-Leibler distance
-====================================================
+histograms2distance.py - compute Kullback-Leibler distance
+==========================================================
 
 :Author: Andreas Heger
 :Release: $Id$

@@ -2,7 +2,7 @@
 #
 #   MRC FGU Computational Genomics Group
 #
-#   $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $
+#   $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $
 #
 #   Copyright (C) 2009 Andreas Heger
 #
@@ -128,11 +128,11 @@ Usage
 
 Example::
 
-   python script_template.py --help
+   python cgat_script_template.py --help
 
 Type::
 
-   python script_template.py --help
+   python cgat_script_template.py --help
 
 for command line help.
 
@@ -169,12 +169,15 @@ import optparse
 import collections
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
+import CGAT.GTF as GTF
 import pysam
-import CGAT.GFF as GFF
 
-import pyximport
-pyximport.install(build_in_temp=False)
-import _bam2stats
+try:
+    import pyximport
+    pyximport.install(build_in_temp=False)
+    import _bam2stats
+except ImportError:
+    import CGAT._bam2stats as _bam2stats
 
 FLAGS = {
     1: 'paired',
@@ -233,7 +236,7 @@ def main( argv = None ):
     if not argv: argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser( version = "%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
+    parser = E.OptionParser( version = "%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
                                     usage = globals()["__doc__"] )
 
     parser.add_option( "-r", "--filename-rna", dest="filename_rna", type="string", metavar='GFF',
@@ -261,7 +264,7 @@ def main( argv = None ):
     (options, args) = E.Start( parser, argv = argv, add_output_options = True )
 
     if options.filename_rna:
-        rna = GFF.readAndIndex( GFF.iterator( IOTools.openFile( options.filename_rna ) ) )
+        rna = GTF.readAndIndex( GTF.iterator( IOTools.openFile( options.filename_rna ) ) )
     else:
         rna = None
 

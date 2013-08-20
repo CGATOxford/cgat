@@ -138,10 +138,10 @@ import cStringIO
 import numpy
 import CGAT.Masker as Masker
 import fileinput
-import gff2annotator
+#import CGAT.gff2annotator
 import CGAT.Experiment as E
-import logging as L
-import PipelineChipseq as PIntervals
+#import CGAT.logging as L
+import CGATPipelines.PipelinePeakcalling as PIntervals
 import CGATPipelines.PipelineTracks as PipelineTracks
 import CGATPipelines.PipelineMapping as PipelineMapping
 import CGATPipelines.PipelineGO as PipelineGO
@@ -1552,7 +1552,7 @@ def loadPredictedCGIIntervals(infile, outfile):
                    < %(tmpfilename)s > %(outfile)s '''
     P.run()
     os.unlink( tmpfile.name )
-    L.info( "%s\n" % str(c) )
+    #L.info( "%s\n" % str(c) )
     
 ############################################################
 ## Load external bed file stats
@@ -2694,7 +2694,39 @@ def getGenesetCapseqOverlapList( infile, outfile ):
         outs.write("\n")
     cc.close()
     outs.close()
-    
+
+########################################################################################################################
+## Added 24-07-2013 For Hannahs thesis
+@follows( mkdir("overlapped_genes") )
+@transform( loadGenesetCapseqOverlap, regex(r"(\S+).replicated.genes_capseq_overlap.load"), r"overlapped_genes/\1.overlapped_genes_50.genelist" )
+def getGenesetCapseqOverlapList50( infile, outfile ):
+    '''Generate text file of all genes overlapped by >50% by CAPseq intervals'''
+    # Connect to DB
+    dbhandle = sqlite3.connect( PARAMS["database"] )
+    track = P.snip( os.path.basename( infile ), ".replicated.genes_capseq_overlap.load" ).replace("-","_").replace(".","_")
+    geneset_name = PARAMS["geneset_name"]
+    cc = dbhandle.cursor()
+    statement = "ATTACH DATABASE '%s' AS annotations; "  % (PARAMS["geneset_database"])
+    cc.execute(statement)
+    # Extract data from db
+    query = '''select distinct o.gene_id 
+               from %(track)s_replicated_%(geneset_name)s_genes_capseq_overlap o, annotations.transcript_info i
+               where capseq_pover1>50
+               and o.gene_id=i.gene_id
+               and o.length > 1000
+               order by length desc''' % locals()
+    cc.execute( query )
+    # Write to file
+    outs = open( outfile, "w")
+    for result in cc:
+        pre = ""
+        for r in result:
+            outs.write("%s%s" % (pre, str(r)) )
+            pre = "\t"
+        outs.write("\n")
+    cc.close()
+    outs.close()
+        
 ############################################################
 @follows( mkdir("overlapped_genes") )
 @transform( loadGenesetCapseqOverlap, regex(r"(\S+).replicated.genes_capseq_overlap.load"), r"overlapped_genes/\1.overlapped_genes.control.genelist" )

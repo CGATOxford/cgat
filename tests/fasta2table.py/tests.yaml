@@ -1,0 +1,6 @@
+
+cpg_test:
+    stdin: test.fasta
+    outputs: [stdout]
+    references: [test_reference_cpg.tsv]
+    options: -s cpg --log=test_cpg.log

@@ -279,7 +279,6 @@ import random
 
 import numpy
 import sqlite3
-import CGAT.GFF as GFF
 import CGAT.GTF as GTF
 import CGAT.IOTools as IOTools
 import CGAT.IndexedFasta as IndexedFasta
@@ -432,7 +431,7 @@ def mergeAndFilterGTF( infile, outfile, logfile ):
         if not os.path.exists( rna_file ):
             E.warn( "file '%s' to remove repetetive rna does not exist" % rna_file )
         else:
-            rna_index = GFF.readAndIndex( GFF.iterator( IOTools.openFile( rna_file, "r" ) ) )
+            rna_index = GTF.readAndIndex( GTF.iterator( IOTools.openFile( rna_file, "r" ) ) )
             E.info( "removing ribosomal RNA in %s" % rna_file )
     
     gene_ids = {}
@@ -1518,7 +1517,7 @@ def buildNovelGeneSet( infiles, outfile ):
         
     E.info( "build indices for %i features" % len(indices))
 
-    repeats = GFF.readAndIndex( GFF.iterator( IOTools.openFile( repeats_gff) ),
+    repeats = GTF.readAndIndex( GTF.iterator( IOTools.openFile( repeats_gff) ),
                                 with_value = False )
 
     E.info( "build index for repeats" )
@@ -1586,7 +1585,7 @@ def buildLincRNAGeneSet( infiles, outfile ):
         
     E.info( "built indices for %i features" % len(indices))
 
-    indices["repeats"] = GFF.readAndIndex( GFF.iterator( IOTools.openFile( repeats_gff) ), with_value = False )
+    indices["repeats"] = GTF.readAndIndex( GTF.iterator( IOTools.openFile( repeats_gff) ), with_value = False )
     
     E.info( "added index for repeats" )
 

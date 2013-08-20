@@ -64,7 +64,6 @@ import shutil
 import CGAT.Intervals as Intervals
 import CGAT.Experiment as E
 import CGAT.Histogram as Histogram
-import CGAT.GFF as GFF
 import CGAT.Blat as Blat
 import CGAT.IndexedFasta as IndexedFasta
 
@@ -429,7 +428,7 @@ if __name__ == '__main__':
         except ImportError:
             raise "filtering for intervals requires the bx tools."
 
-        intervals = GFF.readGFFFromFileAsIntervals( open( options.filename_filter_sbjct, "r" ) )
+        intervals = GTF.readGFFFromFileAsIntervals( open( options.filename_filter_sbjct, "r" ) )
 
         intersectors = {}
 

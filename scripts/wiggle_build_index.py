@@ -7,6 +7,8 @@ wiggle_build_index.py - build an index for a wiggle track
 If index_file is not provided wiggle_file.index is used.
 
 usage: %prog wiggle_file index_file
+--version: version string
+
 """
 
 import psyco_full
@@ -24,6 +26,7 @@ def main():
     # Parse command line
 
     options, args = doc_optparse.parse( __doc__ )
+    if options.version: return
 
     try:
         wiggle_file = args[0]

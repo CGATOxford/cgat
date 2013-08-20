@@ -77,7 +77,8 @@ Options:
 
 
 
-param_long_options=["verbose=", "help", "table-predictions=", "table-contigs=", "file-map="]
+param_long_options=["verbose=", "help", "table-predictions=", "table-contigs=", "file-map=",
+                    "version"]
 param_short_options="v:hP:C:m:"
 
 param_tablename_predictions = None
@@ -167,6 +168,9 @@ if __name__ == "__main__":
             param_loglevel = int(a)
         elif o in ( "-h", "--help" ):
             print USAGE
+            sys.exit(0)
+        elif o in ( "--version", ):
+            print "version="
             sys.exit(0)
         elif o in ("-P", "--table-predictions"):
             param_tablename_predictions = a

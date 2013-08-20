@@ -67,7 +67,6 @@ import math
 import collections
 
 import CGAT.Experiment as E
-import CGAT.GFF as GFF
 import CGAT.IndexedFasta as IndexedFasta
 
 USAGE="""python %s [OPTIONS] < stdin > stdout
@@ -191,7 +190,7 @@ if __name__ == "__main__":
         
     if options.method == "histogram":
 
-        gff = GFF.readFromFile( sys.stdin )
+        gff = GTF.readFromFile( sys.stdin )
 
         gff.sort( lambda x,y: cmp( (x.contig, x.start), (y.contig, y.start) ) )
 
@@ -213,7 +212,7 @@ if __name__ == "__main__":
         intervals = collections.defaultdict( int )
         bases = collections.defaultdict( int )
         total = 0
-        for entry in GFF.iterator( sys.stdin ):
+        for entry in GTF.iterator( sys.stdin ):
             intervals[ (entry.contig, entry.source, entry.feature) ] += 1
             bases[ (entry.contig, entry.source, entry.feature) ] += entry.end - entry.start
             total += entry.end - entry.start

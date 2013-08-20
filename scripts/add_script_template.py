@@ -2,7 +2,7 @@
 #
 #   MRC FGU Computational Genomics Group
 #
-#   $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $
+#   $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $
 #
 #   Copyright (C) 2009 Andreas Heger
 #
@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-add_script_template.py - add template to python scipts
+add_cgat_script_template.py - add template to python scipts
 ======================================================
 
 :Author: Andreas Heger
@@ -32,20 +32,19 @@ add_script_template.py - add template to python scipts
 Purpose
 -------
 
-.. todo::
-   
-   describe purpose of the script.
+adds a preamble to python scripts. The original scripts
+are saved as ``.bak`` files.
 
 Usage
 -----
 
 Example::
 
-   python <script_name>.py --help
+   python add_cgat_script_template.py script1.py script2.py
 
 Type::
 
-   python <script_name>.py --help
+   python add_cgat_script_template.py --help
 
 for command line help.
 
@@ -171,7 +170,7 @@ def main( argv = None ):
     if not argv: argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser( version = "%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
+    parser = E.OptionParser( version = "%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
                                     usage = globals()["__doc__"] )
 
     parser.add_option("-t", "--template", dest="template", type="choice",

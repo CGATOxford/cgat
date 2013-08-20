@@ -2,7 +2,7 @@
 #
 #   MRC FGU Computational Genomics Group
 #
-#   $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $
+#   $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $
 #
 #   Copyright (C) 2009 Andreas Heger
 #
@@ -32,25 +32,24 @@ fastq2fastq.py - manipulate fastq files
 Purpose
 -------
 
-.. todo::
-   
-   describe purpose of the script.
+This script performs manipulations on :term:`fastq` formatted files. For example
+it can be used to change the quality score format or sample a subset of reads.
 
 Usage
 -----
 
 Example::
 
-   python script_template.py --help
+   cat in.fastq.1 | python fastq2fastq.py --sample 0.5 --pair in.fastq.2 --outfile-pair out.fastq.2  > out.fastq.1
+
+In this example we randomly sample 50% of reads from paired data provided in two files.
 
 Type::
 
-   python script_template.py --help
+   python fastq2fastq.py --help
 
 for command line help.
 
-Documentation
--------------
 
 Code
 ----
@@ -64,7 +63,6 @@ import optparse
 import math
 import random
 import itertools
-
 import CGAT.IOTools as IOTools
 import CGAT.Experiment as E
 import CGAT.Fastq as Fastq
@@ -78,7 +76,7 @@ def main( argv = None ):
     if not argv: argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser( version = "%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
+    parser = E.OptionParser( version = "%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
                                     usage = globals()["__doc__"] )
 
     parser.add_option("-f", "--change-format", dest="change_format", type="choice",
@@ -108,6 +106,7 @@ def main( argv = None ):
 
     parser.add_option( "--trim3", dest="trim3", type="int",
                        help="trim # bases from 3' end [default=%default]."  )
+
     parser.add_option( "--sort", dest="sort", action="store_true",
                        help="sort fastq by sequence id [default=%default]."  )
 
@@ -121,7 +120,7 @@ def main( argv = None ):
         apply = None,
         uniq = False,
         outfile_pair = None,
-        )
+        sort = None)
 
     ## add common options (-h/--help, ...) and parse command line 
     (options, args) = E.Start( parser, argv = argv )
@@ -185,9 +184,29 @@ def main( argv = None ):
             options.stdout.write( "%s\n" % record )
             c.output += 1
         
+    # Need to change this to incorporate both pairs
     elif options.sort:
-        statement = "paste - - - - | sort -k1,1 -t ' ' | tr '\t' '\n'"
-        os.system(statement)
+        if not options.pair:
+            # This is quicker for a single fastq file
+            statement = "paste - - - - | sort -k1,1 -t ' ' | tr '\t' '\n'"
+            os.system(statement)
+        else:
+            if not options.outfile_pair:
+                raise ValueError( "please specify output filename for second pair (--outfile-pair)")
+            
+            entries1 = {}
+            entries2 = {}
+            for record1, record2 in itertools.izip( Fastq.iterate( options.stdin ), Fastq.iterate( IOTools.openFile( options.pair) ) ):
+                entries1[record1.identifier[:-2]] = (record1.seq, record1.quals)
+                entries2[record2.identifier[:-2]] = (record2.seq, record2.quals)
+            
+            outfile1 = options.stdout
+            outfile2 = IOTools.openFile(options.outfile_pair, "w")
+            assert len(set(entries1.keys()).intersection(set(entries2.keys()))) == len(entries1), """paired files do not contain the same reads
+                                                                                                     need to reconcile files"""
+            for entry in sorted(entries1):
+                outfile1.write("@%s/1\n%s\n+\n%s\n" % (entry, entries1[entry][0], entries1[entry][1]))
+                outfile2.write("@%s/2\n%s\n+\n%s\n" % (entry, entries2[entry][0], entries2[entry][1]))
 
     ## write footer and output benchmark information.
     E.info( "%s" % str(c) )

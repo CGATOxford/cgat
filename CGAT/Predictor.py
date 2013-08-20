@@ -63,9 +63,10 @@ import Genomics
 import IndexedFasta
 import Prediction
 import PredictionParser
-import alignlib
+try: import alignlib
+except ImportError: pass
 import Cluster
-import GFF
+import GTF
 import threading
 
 class Error(Exception):
@@ -1518,18 +1519,18 @@ def predictFromGFF( options ):
     options.stdout.write( "%s\n" % Prediction.Prediction().getHeader() )
 
     prediction_id = 0
-    for gffs in GFF.joined_iterator( GFF.iterator( infile ) ): 
+    for gffs in GTF.joined_iterator( GTF.iterator( infile ) ): 
 
         ninput += 1
 
         gffs.sort( lambda x,y: cmp(x.start, y.start) )
 
         g = gffs[0]
-        contig, strand = g.mName, g.strand
+        contig, strand = g.name, g.strand
         if "Query" in g:
             query = g["Query"]
         else:
-            query = g.mInfo
+            query = g.info
 
         if "Id" in g:
             id = g["Id"]

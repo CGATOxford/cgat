@@ -33,7 +33,7 @@
 ##
 ##      2. Create makefile:
 ##
-##        python src/setup.py -m ancestral_repeats -d . > setup.log
+##        python src/gpipe/setup.py -m ancestral_repeats -d . > setup.log
 ##
 ##      3. Download repeatmasker tracks from the ucsc genome browser (track = rmsk)
 ##        save the full table in gzip format and name as ucsc_$($PARAM_SPECIES1)_repeats.table.gz

@@ -62,7 +62,6 @@ import optparse
 import CGAT.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Genomics as Genomics
-import CGAT.GFF as GFF
 
 if __name__ == "__main__":
 
@@ -106,7 +105,7 @@ if __name__ == "__main__":
 
     assert options.filename_regions != None, "please supply a gff formatted filename with regions"
 
-    regions = GFF.readAsIntervals( GFF.iterator( open(options.filename_regions, "r" ) ) )
+    regions = GTF.readAsIntervals( GFF.iterator( open(options.filename_regions, "r" ) ) )
 
     # build pairs for complement
     reverse_splice_pairs = []

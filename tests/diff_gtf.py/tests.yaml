@@ -1,0 +1,12 @@
+
+version:
+    stdin: null
+    outputs: [stdout]
+    references: []
+    options: --version
+
+diff:
+    stdin: null
+    outputs: [genes_ovl, genes_total, genes_uniq1, genes_uniq2]
+    references: [genes_ovl, genes_total, genes_uniq1, genes_uniq2]
+    options: <DIR>/hg19.small.gtf.gz <DIR>/hg19.small.gtf.gz 

@@ -130,7 +130,7 @@ def fetch_DataFrame(query, database=PARAMS.get("database",""), attach=False):
     cc = dbhandle.cursor()
 
     if attach:
-        db_execute(attach)
+        db_execute(cc,attach)
 
     sqlresult = cc.execute(query).fetchall()
     cc.close()

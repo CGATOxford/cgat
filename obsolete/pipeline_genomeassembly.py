@@ -217,6 +217,9 @@ TISSUES = PipelineTracks.Aggregate( TRACKS, labels = ("tissue", ) )
 ###################################################################
 ## Global flags
 ###################################################################
+ASSEMBLERS = P.asList( PARAMS["general_assemblers"] )
+METAGENOME = "meta-velvet" in ASSEMBLERS or "ibda" in ASSEMBLERS or "cortex_var" in ASSEMBLERS
+
 ASSEMBLERS = P.asList( PARAMS["assemblers"] )
 MAPPER = PARAMS["coverage_mapper"]
 BOWTIE = MAPPER == "bowtie"

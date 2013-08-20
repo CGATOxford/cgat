@@ -1,0 +1,254 @@
+2013-07-31 13:23:28,871 INFO initialising plugins
+2013-07-31 13:23:30,396 DEBUG found plugins: 3 capabilites and 59 plugins
+2013-07-31 13:23:30,397 DEBUG instantiating class 
+2013-07-31 13:23:30,397 DEBUG entered getModule with `barplot`
+2013-07-31 13:23:30,397 DEBUG searching for module name=barplot at path=None
+2013-07-31 13:23:30,685 WARNING could not find module barplot: msg=No module named barplot
+2013-07-31 13:23:36,229 INFO initialising plugins
+2013-07-31 13:23:37,598 DEBUG found plugins: 3 capabilites and 59 plugins
+2013-07-31 13:23:37,599 DEBUG disp72411600: 72411600: starting renderer '<SphinxReportPlugins.Plotter.BarPlot object at 0x450e9d0>'
+2013-07-31 13:23:37,600 DEBUG entered getModule with `GenomeCoverage`
+2013-07-31 13:23:37,600 DEBUG searching for module name=GenomeCoverage at path=None
+2013-07-31 13:23:37,601 DEBUG loading module: GenomeCoverage: <open file '/ifs/devel/nicki/cgat/pipeline_docs/pipeline_metagenomebenchmark/trackers/GenomeCoverage.py', mode 'U' at 0x2ba39e1d0540>, /ifs/devel/nicki/cgat/pipeline_docs/pipeline_metagenomebenchmark/trackers/GenomeCoverage.py, ('.py', 'U', 1)
+2013-07-31 13:23:37,608 DEBUG disp72411856: starting dispatcher '<SphinxReport.Dispatcher.Dispatcher object at 0x450ead0>': tracker='<GenomeCoverage.GenomeCoverage object at 0x450e910>', renderer='<SphinxReportPlugins.Plotter.BarPlot object at 0x450e9d0>', transformer:='[]'
+2013-07-31 13:23:37,681 DEBUG disp72409424: using cache _cache/GenomeCoverage_GenomeCoverage
+2013-07-31 13:23:37,682 DEBUG disp72409424: keys in cache: []
+2013-07-31 13:23:37,682 DEBUG disp72411856: profile: started: tracker: <GenomeCoverage.GenomeCoverage object at 0x450e910>
+2013-07-31 13:23:37,682 DEBUG disp72411856: <GenomeCoverage.GenomeCoverage object at 0x450e910>: collecting data paths.
+2013-07-31 13:23:37,682 DEBUG disp72411856: <GenomeCoverage.GenomeCoverage object at 0x450e910>: collected data paths.
+2013-07-31 13:23:37,682 DEBUG disp72411856: <GenomeCoverage.GenomeCoverage object at 0x450e910>: filtering data paths.
+2013-07-31 13:23:37,682 DEBUG disp72411856: <GenomeCoverage.GenomeCoverage object at 0x450e910>: filtered data paths.
+2013-07-31 13:23:37,682 DEBUG disp72411856: <GenomeCoverage.GenomeCoverage object at 0x450e910>: building all_paths
+2013-07-31 13:23:37,682 DEBUG disp72411856: <GenomeCoverage.GenomeCoverage object at 0x450e910>: collecting data started for 1 data paths
+2013-07-31 13:23:37,683 DEBUG disp72409424: key 'all' not found in cache
+2013-07-31 13:23:37,683 DEBUG connecting to sqlite:///./csvdb
+2013-07-31 13:23:37,696 DEBUG connected to sqlite:///./csvdb
+2013-07-31 13:23:37,707 DEBUG disp72409424: saved data for key 'all' in cache
+2013-07-31 13:23:37,708 DEBUG disp72411856: <GenomeCoverage.GenomeCoverage object at 0x450e910>: collecting data finished for 1 data paths
+2013-07-31 13:23:37,708 DEBUG disp72411856: profile: finished: tracker: <GenomeCoverage.GenomeCoverage object at 0x450e910>
+2013-07-31 13:23:37,708 DEBUG disp72411856: <SphinxReport.Dispatcher.Dispatcher object at 0x450ead0>: after collection: 1 data_paths: [['all']]
+2013-07-31 13:23:37,709 DEBUG disp72411856: <SphinxReport.Dispatcher.Dispatcher object at 0x450ead0>: after transformation: 1 data_paths: [['all']]
+2013-07-31 13:23:37,709 DEBUG disp72411856: <SphinxReport.Dispatcher.Dispatcher object at 0x450ead0>: after restrict: 1 data_paths: [['all']]
+2013-07-31 13:23:37,709 DEBUG disp72411856: <SphinxReport.Dispatcher.Dispatcher object at 0x450ead0>: after exclude: 1 data_paths: [['all']]
+2013-07-31 13:23:37,709 DEBUG disp72411856: <SphinxReport.Dispatcher.Dispatcher object at 0x450ead0>: after pruning: 1 data_paths: [['all']]
+2013-07-31 13:23:37,709 WARNING disp72411856: grouping by slice, but only 1 levels in data tree - all are grouped
+2013-07-31 13:23:37,709 DEBUG disp72411856: <SphinxReport.Dispatcher.Dispatcher object at 0x450ead0>: after grouping: 1 data_paths: [['all']]
+2013-07-31 13:23:37,709 DEBUG disp72411856: profile: started: renderer: <SphinxReportPlugins.Plotter.BarPlot object at 0x450e9d0>
+2013-07-31 13:23:37,709 DEBUG disp72411856: <SphinxReport.Dispatcher.Dispatcher object at 0x450ead0>: rendering data started for 1 items
+2013-07-31 13:23:37,710 DEBUG disp72411856: <SphinxReport.Dispatcher.Dispatcher object at 0x450ead0>: rendering data started. levels=1, required levels>=2, group_level=-1, data_paths=[['all']]
+2013-07-31 13:23:37,710 DEBUG disp72411600: creating matrix: taking=None, ignoring=None
+2013-07-31 13:23:37,710 DEBUG disp72411600: constructing matrix
+2013-07-31 13:23:37,710 WARNING disp72411600: exeception raised in rendering for path: ('all',)
+2013-07-31 13:23:37,710 ERROR disp72411856: <SphinxReport.Dispatcher.Dispatcher object at 0x450ead0>: exception in rendering
+2013-07-31 13:23:37,713 DEBUG disp72411856: profile: finished: renderer: <SphinxReportPlugins.Plotter.BarPlot object at 0x450e9d0>
+2013-07-31 13:23:50,373 INFO initialising plugins
+2013-07-31 13:23:51,742 DEBUG found plugins: 3 capabilites and 59 plugins
+2013-07-31 13:23:51,743 DEBUG disp69896656: 69896656: starting renderer '<SphinxReportPlugins.Plotter.LinePlot object at 0x42a89d0>'
+2013-07-31 13:23:51,744 DEBUG entered getModule with `GenomeCoverage`
+2013-07-31 13:23:51,744 DEBUG searching for module name=GenomeCoverage at path=None
+2013-07-31 13:23:51,745 DEBUG loading module: GenomeCoverage: <open file '/ifs/devel/nicki/cgat/pipeline_docs/pipeline_metagenomebenchmark/trackers/GenomeCoverage.py', mode 'U' at 0x2b13177f5540>, /ifs/devel/nicki/cgat/pipeline_docs/pipeline_metagenomebenchmark/trackers/GenomeCoverage.py, ('.py', 'U', 1)
+2013-07-31 13:23:51,747 DEBUG disp69896336: starting dispatcher '<SphinxReport.Dispatcher.Dispatcher object at 0x42a8890>': tracker='<GenomeCoverage.GenomeCoverage object at 0x42a8910>', renderer='<SphinxReportPlugins.Plotter.LinePlot object at 0x42a89d0>', transformer:='[]'
+2013-07-31 13:23:51,769 DEBUG disp69894480: using cache _cache/GenomeCoverage_GenomeCoverage
+2013-07-31 13:23:51,769 DEBUG disp69894480: keys in cache: ['all']
+2013-07-31 13:23:51,769 DEBUG disp69896336: profile: started: tracker: <GenomeCoverage.GenomeCoverage object at 0x42a8910>
+2013-07-31 13:23:51,769 DEBUG disp69896336: <GenomeCoverage.GenomeCoverage object at 0x42a8910>: collecting data paths.
+2013-07-31 13:23:51,770 DEBUG disp69896336: <GenomeCoverage.GenomeCoverage object at 0x42a8910>: collected data paths.
+2013-07-31 13:23:51,770 DEBUG disp69896336: <GenomeCoverage.GenomeCoverage object at 0x42a8910>: filtering data paths.
+2013-07-31 13:23:51,770 DEBUG disp69896336: <GenomeCoverage.GenomeCoverage object at 0x42a8910>: filtered data paths.
+2013-07-31 13:23:51,770 DEBUG disp69896336: <GenomeCoverage.GenomeCoverage object at 0x42a8910>: building all_paths
+2013-07-31 13:23:51,770 DEBUG disp69896336: <GenomeCoverage.GenomeCoverage object at 0x42a8910>: collecting data started for 1 data paths
+2013-07-31 13:23:51,770 DEBUG disp69894480: retrieved data for key 'all' from cache
+2013-07-31 13:23:51,770 DEBUG disp69896336: <GenomeCoverage.GenomeCoverage object at 0x42a8910>: collecting data finished for 1 data paths
+2013-07-31 13:23:51,770 DEBUG disp69896336: profile: finished: tracker: <GenomeCoverage.GenomeCoverage object at 0x42a8910>
+2013-07-31 13:23:51,771 DEBUG disp69896336: <SphinxReport.Dispatcher.Dispatcher object at 0x42a8890>: after collection: 1 data_paths: [['all']]
+2013-07-31 13:23:51,771 DEBUG disp69896336: <SphinxReport.Dispatcher.Dispatcher object at 0x42a8890>: after transformation: 1 data_paths: [['all']]
+2013-07-31 13:23:51,771 DEBUG disp69896336: <SphinxReport.Dispatcher.Dispatcher object at 0x42a8890>: after restrict: 1 data_paths: [['all']]
+2013-07-31 13:23:51,771 DEBUG disp69896336: <SphinxReport.Dispatcher.Dispatcher object at 0x42a8890>: after exclude: 1 data_paths: [['all']]
+2013-07-31 13:23:51,771 DEBUG disp69896336: <SphinxReport.Dispatcher.Dispatcher object at 0x42a8890>: after pruning: 1 data_paths: [['all']]
+2013-07-31 13:23:51,771 WARNING disp69896336: grouping by slice, but only 1 levels in data tree - all are grouped
+2013-07-31 13:23:51,772 DEBUG disp69896336: <SphinxReport.Dispatcher.Dispatcher object at 0x42a8890>: after grouping: 1 data_paths: [['all']]
+2013-07-31 13:23:51,772 DEBUG disp69896336: profile: started: renderer: <SphinxReportPlugins.Plotter.LinePlot object at 0x42a89d0>
+2013-07-31 13:23:51,772 DEBUG disp69896336: <SphinxReport.Dispatcher.Dispatcher object at 0x42a8890>: rendering data started for 1 items
+2013-07-31 13:23:51,772 DEBUG disp69896336: <SphinxReport.Dispatcher.Dispatcher object at 0x42a8890>: rendering data started. levels=1, required levels>=2, group_level=-1, data_paths=[['all']]
+2013-07-31 13:23:51,792 WARNING disp69896656: could not plot all: not enough columns: OrderedDict([('all', [0.57845, 0.005572, 0.005561, 0.00181, 0.005526, 0.005533, 0.003658, 0.00369, 0.001777, 0.005466, 0.001802, 0.003602, 0.007319, 0.007275, 0.005548, 0.007279, 0.003566, 0.007256, 0.00552, 0.001814, 0.301313, 0.001801, 0.003675, 0.007275, 0.007259, 0.00367, 0.007313, 0.001869, 0.0036, 0.007359, 0.007226, 0.005454, 0.005369, 0.001806, 0.004069, 0.255371, 0.005426, 0.003645, 0.001809, 0.007296, 0.001795, 0.0055, 0.007269, 0.007221, 0.001839, 0.003641, 0.003645, 0.001847, 0.001781, 0.34854, 0.003616, 0.005468, 0.007365, 0.007273, 0.007217, 0.001837, 0.005432, 0.001842, 0.361875, 0.001844, 0.007282, 0.007242, 0.00182, 0.001767, 0.007338, 0.005418, 0.007258, 0.003618, 0.003623, 0.001848, 0.003638, 0.023602, 0.007178, 0.007292, 0.00548, 0.007242, 0.00183, 0.005457, 0.001817, 0.001813, 0.007353, 0.005451, 0.005482, 0.005384, 0.001794, 0.007257, 0.005474, 0.005475, 0.005465, 0.600351, 0.003567, 0.0055, 0.003623, 0.001833, 0.003637, 0.007342, 0.007316, 0.005456, 0.005457, 0.005469, 0.001806, 0.007183, 0.007334])])
+2013-07-31 13:23:51,853 DEBUG disp69896336: <GenomeCoverage.GenomeCoverage object at 0x42a8910>: rendering data finished with 1 blocks
+2013-07-31 13:23:51,853 DEBUG disp69896336: profile: finished: renderer: <SphinxReportPlugins.Plotter.LinePlot object at 0x42a89d0>
+2013-07-31 13:24:20,547 INFO initialising plugins
+2013-07-31 13:24:21,916 DEBUG found plugins: 3 capabilites and 59 plugins
+2013-07-31 13:24:21,916 DEBUG instantiating class 
+2013-07-31 13:24:21,917 DEBUG entered getModule with `histogram`
+2013-07-31 13:24:21,917 DEBUG searching for module name=histogram at path=None
+2013-07-31 13:24:21,964 WARNING could not find module histogram: msg=No module named histogram
+2013-07-31 13:24:26,109 INFO initialising plugins
+2013-07-31 13:24:27,487 DEBUG found plugins: 3 capabilites and 59 plugins
+2013-07-31 13:24:27,488 DEBUG disp89819600: 89819600: starting renderer '<SphinxReportPlugins.Plotter.HistogramPlot object at 0x55a89d0>'
+2013-07-31 13:24:27,489 DEBUG entered getModule with `GenomeCoverage`
+2013-07-31 13:24:27,490 DEBUG searching for module name=GenomeCoverage at path=None
+2013-07-31 13:24:27,490 DEBUG loading module: GenomeCoverage: <open file '/ifs/devel/nicki/cgat/pipeline_docs/pipeline_metagenomebenchmark/trackers/GenomeCoverage.py', mode 'U' at 0x2b29b36cb540>, /ifs/devel/nicki/cgat/pipeline_docs/pipeline_metagenomebenchmark/trackers/GenomeCoverage.py, ('.py', 'U', 1)
+2013-07-31 13:24:27,498 DEBUG disp89819856: starting dispatcher '<SphinxReport.Dispatcher.Dispatcher object at 0x55a8ad0>': tracker='<GenomeCoverage.GenomeCoverage object at 0x55a8910>', renderer='<SphinxReportPlugins.Plotter.HistogramPlot object at 0x55a89d0>', transformer:='[]'
+2013-07-31 13:24:27,526 DEBUG disp89817424: using cache _cache/GenomeCoverage_GenomeCoverage
+2013-07-31 13:24:27,526 DEBUG disp89817424: keys in cache: ['all']
+2013-07-31 13:24:27,527 DEBUG disp89819856: profile: started: tracker: <GenomeCoverage.GenomeCoverage object at 0x55a8910>
+2013-07-31 13:24:27,527 DEBUG disp89819856: <GenomeCoverage.GenomeCoverage object at 0x55a8910>: collecting data paths.
+2013-07-31 13:24:27,527 DEBUG disp89819856: <GenomeCoverage.GenomeCoverage object at 0x55a8910>: collected data paths.
+2013-07-31 13:24:27,527 DEBUG disp89819856: <GenomeCoverage.GenomeCoverage object at 0x55a8910>: filtering data paths.
+2013-07-31 13:24:27,527 DEBUG disp89819856: <GenomeCoverage.GenomeCoverage object at 0x55a8910>: filtered data paths.
+2013-07-31 13:24:27,527 DEBUG disp89819856: <GenomeCoverage.GenomeCoverage object at 0x55a8910>: building all_paths
+2013-07-31 13:24:27,527 DEBUG disp89819856: <GenomeCoverage.GenomeCoverage object at 0x55a8910>: collecting data started for 1 data paths
+2013-07-31 13:24:27,528 DEBUG disp89817424: retrieved data for key 'all' from cache
+2013-07-31 13:24:27,528 DEBUG disp89819856: <GenomeCoverage.GenomeCoverage object at 0x55a8910>: collecting data finished for 1 data paths
+2013-07-31 13:24:27,528 DEBUG disp89819856: profile: finished: tracker: <GenomeCoverage.GenomeCoverage object at 0x55a8910>
+2013-07-31 13:24:27,528 DEBUG disp89819856: <SphinxReport.Dispatcher.Dispatcher object at 0x55a8ad0>: after collection: 1 data_paths: [['all']]
+2013-07-31 13:24:27,528 DEBUG disp89819856: <SphinxReport.Dispatcher.Dispatcher object at 0x55a8ad0>: after transformation: 1 data_paths: [['all']]
+2013-07-31 13:24:27,528 DEBUG disp89819856: <SphinxReport.Dispatcher.Dispatcher object at 0x55a8ad0>: after restrict: 1 data_paths: [['all']]
+2013-07-31 13:24:27,528 DEBUG disp89819856: <SphinxReport.Dispatcher.Dispatcher object at 0x55a8ad0>: after exclude: 1 data_paths: [['all']]
+2013-07-31 13:24:27,528 DEBUG disp89819856: <SphinxReport.Dispatcher.Dispatcher object at 0x55a8ad0>: after pruning: 1 data_paths: [['all']]
+2013-07-31 13:24:27,529 WARNING disp89819856: grouping by slice, but only 1 levels in data tree - all are grouped
+2013-07-31 13:24:27,529 DEBUG disp89819856: <SphinxReport.Dispatcher.Dispatcher object at 0x55a8ad0>: after grouping: 1 data_paths: [['all']]
+2013-07-31 13:24:27,529 DEBUG disp89819856: profile: started: renderer: <SphinxReportPlugins.Plotter.HistogramPlot object at 0x55a89d0>
+2013-07-31 13:24:27,529 DEBUG disp89819856: <SphinxReport.Dispatcher.Dispatcher object at 0x55a8ad0>: rendering data started for 1 items
+2013-07-31 13:24:27,529 DEBUG disp89819856: <SphinxReport.Dispatcher.Dispatcher object at 0x55a8ad0>: rendering data started. levels=1, required levels>=2, group_level=-1, data_paths=[['all']]
+2013-07-31 13:24:27,546 WARNING disp89819600: could not plot all: not enough columns: OrderedDict([('all', [0.57845, 0.005572, 0.005561, 0.00181, 0.005526, 0.005533, 0.003658, 0.00369, 0.001777, 0.005466, 0.001802, 0.003602, 0.007319, 0.007275, 0.005548, 0.007279, 0.003566, 0.007256, 0.00552, 0.001814, 0.301313, 0.001801, 0.003675, 0.007275, 0.007259, 0.00367, 0.007313, 0.001869, 0.0036, 0.007359, 0.007226, 0.005454, 0.005369, 0.001806, 0.004069, 0.255371, 0.005426, 0.003645, 0.001809, 0.007296, 0.001795, 0.0055, 0.007269, 0.007221, 0.001839, 0.003641, 0.003645, 0.001847, 0.001781, 0.34854, 0.003616, 0.005468, 0.007365, 0.007273, 0.007217, 0.001837, 0.005432, 0.001842, 0.361875, 0.001844, 0.007282, 0.007242, 0.00182, 0.001767, 0.007338, 0.005418, 0.007258, 0.003618, 0.003623, 0.001848, 0.003638, 0.023602, 0.007178, 0.007292, 0.00548, 0.007242, 0.00183, 0.005457, 0.001817, 0.001813, 0.007353, 0.005451, 0.005482, 0.005384, 0.001794, 0.007257, 0.005474, 0.005475, 0.005465, 0.600351, 0.003567, 0.0055, 0.003623, 0.001833, 0.003637, 0.007342, 0.007316, 0.005456, 0.005457, 0.005469, 0.001806, 0.007183, 0.007334])])
+2013-07-31 13:24:27,607 DEBUG disp89819856: <GenomeCoverage.GenomeCoverage object at 0x55a8910>: rendering data finished with 1 blocks
+2013-07-31 13:24:27,608 DEBUG disp89819856: profile: finished: renderer: <SphinxReportPlugins.Plotter.HistogramPlot object at 0x55a89d0>
+2013-07-31 13:25:03,580 INFO initialising plugins
+2013-07-31 13:25:05,053 DEBUG found plugins: 3 capabilites and 59 plugins
+2013-07-31 13:25:05,054 DEBUG instantiating class 
+2013-07-31 13:25:05,054 DEBUG entered getModule with `scatterplot`
+2013-07-31 13:25:05,054 DEBUG searching for module name=scatterplot at path=None
+2013-07-31 13:25:05,098 WARNING could not find module scatterplot: msg=No module named scatterplot
+2013-07-31 13:25:09,281 INFO initialising plugins
+2013-07-31 13:25:10,655 DEBUG found plugins: 3 capabilites and 59 plugins
+2013-07-31 13:25:10,656 DEBUG disp72370640: 72370640: starting renderer '<SphinxReportPlugins.Plotter.ScatterPlot object at 0x45049d0>'
+2013-07-31 13:25:10,657 DEBUG entered getModule with `GenomeCoverage`
+2013-07-31 13:25:10,657 DEBUG searching for module name=GenomeCoverage at path=None
+2013-07-31 13:25:10,657 DEBUG loading module: GenomeCoverage: <open file '/ifs/devel/nicki/cgat/pipeline_docs/pipeline_metagenomebenchmark/trackers/GenomeCoverage.py', mode 'U' at 0x2b4d50a37540>, /ifs/devel/nicki/cgat/pipeline_docs/pipeline_metagenomebenchmark/trackers/GenomeCoverage.py, ('.py', 'U', 1)
+2013-07-31 13:25:10,660 DEBUG disp72370320: starting dispatcher '<SphinxReport.Dispatcher.Dispatcher object at 0x4504890>': tracker='<GenomeCoverage.GenomeCoverage object at 0x4504910>', renderer='<SphinxReportPlugins.Plotter.ScatterPlot object at 0x45049d0>', transformer:='[]'
+2013-07-31 13:25:10,684 DEBUG disp72368464: using cache _cache/GenomeCoverage_GenomeCoverage
+2013-07-31 13:25:10,685 DEBUG disp72368464: keys in cache: ['all']
+2013-07-31 13:25:10,685 DEBUG disp72370320: profile: started: tracker: <GenomeCoverage.GenomeCoverage object at 0x4504910>
+2013-07-31 13:25:10,685 DEBUG disp72370320: <GenomeCoverage.GenomeCoverage object at 0x4504910>: collecting data paths.
+2013-07-31 13:25:10,685 DEBUG disp72370320: <GenomeCoverage.GenomeCoverage object at 0x4504910>: collected data paths.
+2013-07-31 13:25:10,685 DEBUG disp72370320: <GenomeCoverage.GenomeCoverage object at 0x4504910>: filtering data paths.
+2013-07-31 13:25:10,685 DEBUG disp72370320: <GenomeCoverage.GenomeCoverage object at 0x4504910>: filtered data paths.
+2013-07-31 13:25:10,685 DEBUG disp72370320: <GenomeCoverage.GenomeCoverage object at 0x4504910>: building all_paths
+2013-07-31 13:25:10,685 DEBUG disp72370320: <GenomeCoverage.GenomeCoverage object at 0x4504910>: collecting data started for 1 data paths
+2013-07-31 13:25:10,686 DEBUG disp72368464: retrieved data for key 'all' from cache
+2013-07-31 13:25:10,686 DEBUG disp72370320: <GenomeCoverage.GenomeCoverage object at 0x4504910>: collecting data finished for 1 data paths
+2013-07-31 13:25:10,686 DEBUG disp72370320: profile: finished: tracker: <GenomeCoverage.GenomeCoverage object at 0x4504910>
+2013-07-31 13:25:10,686 DEBUG disp72370320: <SphinxReport.Dispatcher.Dispatcher object at 0x4504890>: after collection: 1 data_paths: [['all']]
+2013-07-31 13:25:10,686 DEBUG disp72370320: <SphinxReport.Dispatcher.Dispatcher object at 0x4504890>: after transformation: 1 data_paths: [['all']]
+2013-07-31 13:25:10,686 DEBUG disp72370320: <SphinxReport.Dispatcher.Dispatcher object at 0x4504890>: after restrict: 1 data_paths: [['all']]
+2013-07-31 13:25:10,686 DEBUG disp72370320: <SphinxReport.Dispatcher.Dispatcher object at 0x4504890>: after exclude: 1 data_paths: [['all']]
+2013-07-31 13:25:10,687 DEBUG disp72370320: <SphinxReport.Dispatcher.Dispatcher object at 0x4504890>: after pruning: 1 data_paths: [['all']]
+2013-07-31 13:25:10,687 WARNING disp72370320: grouping by slice, but only 1 levels in data tree - all are grouped
+2013-07-31 13:25:10,687 DEBUG disp72370320: <SphinxReport.Dispatcher.Dispatcher object at 0x4504890>: after grouping: 1 data_paths: [['all']]
+2013-07-31 13:25:10,687 DEBUG disp72370320: profile: started: renderer: <SphinxReportPlugins.Plotter.ScatterPlot object at 0x45049d0>
+2013-07-31 13:25:10,687 DEBUG disp72370320: <SphinxReport.Dispatcher.Dispatcher object at 0x4504890>: rendering data started for 1 items
+2013-07-31 13:25:10,687 DEBUG disp72370320: <SphinxReport.Dispatcher.Dispatcher object at 0x4504890>: rendering data started. levels=1, required levels>=2, group_level=-1, data_paths=[['all']]
+2013-07-31 13:25:10,705 WARNING disp72370640: exeception raised in rendering for path: ('all',)
+2013-07-31 13:25:10,705 ERROR disp72370320: <SphinxReport.Dispatcher.Dispatcher object at 0x4504890>: exception in rendering
+2013-07-31 13:25:10,708 DEBUG disp72370320: profile: finished: renderer: <SphinxReportPlugins.Plotter.ScatterPlot object at 0x45049d0>
+2013-07-31 13:27:43,187 INFO initialising plugins
+2013-07-31 13:27:44,690 DEBUG found plugins: 3 capabilites and 59 plugins
+2013-07-31 13:27:44,691 DEBUG disp83438032: 83438032: starting renderer '<SphinxReportPlugins.Plotter.ScatterPlot object at 0x4f929d0>'
+2013-07-31 13:27:44,692 DEBUG entered getModule with `GenomeCoverage`
+2013-07-31 13:27:44,692 DEBUG searching for module name=GenomeCoverage at path=None
+2013-07-31 13:27:44,693 DEBUG loading module: GenomeCoverage: <open file '/ifs/devel/nicki/cgat/pipeline_docs/pipeline_metagenomebenchmark/trackers/GenomeCoverage.py', mode 'U' at 0x2b9325df3540>, /ifs/devel/nicki/cgat/pipeline_docs/pipeline_metagenomebenchmark/trackers/GenomeCoverage.py, ('.py', 'U', 1)
+2013-07-31 13:27:44,706 DEBUG disp83699024: starting dispatcher '<SphinxReport.Dispatcher.Dispatcher object at 0x4fd2550>': tracker='<GenomeCoverage.GenomeCoverage object at 0x4fd2f90>', renderer='<SphinxReportPlugins.Plotter.ScatterPlot object at 0x4f929d0>', transformer:='[]'
+2013-07-31 13:27:44,752 DEBUG disp83698896: using cache _cache/GenomeCoverage_GenomeCoverage
+2013-07-31 13:27:44,753 DEBUG disp83698896: keys in cache: []
+2013-07-31 13:27:44,753 DEBUG disp83699024: profile: started: tracker: <GenomeCoverage.GenomeCoverage object at 0x4fd2f90>
+2013-07-31 13:27:44,754 DEBUG disp83699024: <GenomeCoverage.GenomeCoverage object at 0x4fd2f90>: collecting data paths.
+2013-07-31 13:27:44,754 DEBUG disp83699024: <GenomeCoverage.GenomeCoverage object at 0x4fd2f90>: collected data paths.
+2013-07-31 13:27:44,754 DEBUG disp83699024: <GenomeCoverage.GenomeCoverage object at 0x4fd2f90>: filtering data paths.
+2013-07-31 13:27:44,754 DEBUG disp83699024: <GenomeCoverage.GenomeCoverage object at 0x4fd2f90>: filtered data paths.
+2013-07-31 13:27:44,754 DEBUG disp83699024: <GenomeCoverage.GenomeCoverage object at 0x4fd2f90>: building all_paths
+2013-07-31 13:27:44,754 DEBUG disp83699024: <GenomeCoverage.GenomeCoverage object at 0x4fd2f90>: collecting data started for 1 data paths
+2013-07-31 13:27:44,754 DEBUG disp83698896: key 'all' not found in cache
+2013-07-31 13:27:44,754 DEBUG connecting to sqlite:///./csvdb
+2013-07-31 13:27:44,763 DEBUG connected to sqlite:///./csvdb
+2013-07-31 13:27:44,784 DEBUG disp83698896: saved data for key 'all' in cache
+2013-07-31 13:27:44,787 DEBUG disp83699024: <GenomeCoverage.GenomeCoverage object at 0x4fd2f90>: collecting data finished for 1 data paths
+2013-07-31 13:27:44,788 DEBUG disp83699024: profile: finished: tracker: <GenomeCoverage.GenomeCoverage object at 0x4fd2f90>
+2013-07-31 13:27:44,788 DEBUG disp83699024: <SphinxReport.Dispatcher.Dispatcher object at 0x4fd2550>: after collection: 2 data_paths: [['all'], ['observed', 'expected']]
+2013-07-31 13:27:44,788 DEBUG disp83699024: <SphinxReport.Dispatcher.Dispatcher object at 0x4fd2550>: after transformation: 2 data_paths: [['all'], ['observed', 'expected']]
+2013-07-31 13:27:44,788 DEBUG disp83699024: <SphinxReport.Dispatcher.Dispatcher object at 0x4fd2550>: after restrict: 2 data_paths: [['all'], ['observed', 'expected']]
+2013-07-31 13:27:44,788 DEBUG disp83699024: <SphinxReport.Dispatcher.Dispatcher object at 0x4fd2550>: after exclude: 2 data_paths: [['all'], ['observed', 'expected']]
+2013-07-31 13:27:44,788 DEBUG disp83699024: <SphinxReport.Dispatcher.Dispatcher object at 0x4fd2550>: after pruning: 2 data_paths: [['all'], ['observed', 'expected']]
+2013-07-31 13:27:44,789 WARNING disp83699024: grouping by slice, but only 2 levels in data tree - all are grouped
+2013-07-31 13:27:44,789 DEBUG disp83699024: <SphinxReport.Dispatcher.Dispatcher object at 0x4fd2550>: after grouping: 2 data_paths: [['all'], ['observed', 'expected']]
+2013-07-31 13:27:44,789 DEBUG disp83699024: profile: started: renderer: <SphinxReportPlugins.Plotter.ScatterPlot object at 0x4f929d0>
+2013-07-31 13:27:44,789 DEBUG disp83699024: <SphinxReport.Dispatcher.Dispatcher object at 0x4fd2550>: rendering data started for 1 items
+2013-07-31 13:27:44,789 DEBUG disp83699024: <SphinxReport.Dispatcher.Dispatcher object at 0x4fd2550>: rendering data started. levels=2, required levels>=2, group_level=-1, data_paths=[['all'], ['observed', 'expected']]
+2013-07-31 13:27:44,921 DEBUG disp83699024: <GenomeCoverage.GenomeCoverage object at 0x4fd2f90>: rendering data finished with 1 blocks
+2013-07-31 13:27:44,921 DEBUG disp83699024: profile: finished: renderer: <SphinxReportPlugins.Plotter.ScatterPlot object at 0x4f929d0>
+2013-07-31 13:28:17,740 INFO initialising plugins
+2013-07-31 13:28:19,105 DEBUG found plugins: 3 capabilites and 59 plugins
+2013-07-31 13:28:19,106 DEBUG disp79546832: 79546832: starting renderer '<SphinxReportPlugins.Plotter.HistogramPlot object at 0x4bdc9d0>'
+2013-07-31 13:28:19,107 DEBUG entered getModule with `GenomeCoverage`
+2013-07-31 13:28:19,107 DEBUG searching for module name=GenomeCoverage at path=None
+2013-07-31 13:28:19,108 DEBUG loading module: GenomeCoverage: <open file '/ifs/devel/nicki/cgat/pipeline_docs/pipeline_metagenomebenchmark/trackers/GenomeCoverage.py', mode 'U' at 0x2afaaabb8540>, /ifs/devel/nicki/cgat/pipeline_docs/pipeline_metagenomebenchmark/trackers/GenomeCoverage.py, ('.py', 'U', 1)
+2013-07-31 13:28:19,114 DEBUG disp79816016: starting dispatcher '<SphinxReport.Dispatcher.Dispatcher object at 0x4c1e550>': tracker='<GenomeCoverage.GenomeCoverage object at 0x4c1ef90>', renderer='<SphinxReportPlugins.Plotter.HistogramPlot object at 0x4bdc9d0>', transformer:='[]'
+2013-07-31 13:28:19,143 DEBUG disp79815888: using cache _cache/GenomeCoverage_GenomeCoverage
+2013-07-31 13:28:19,144 DEBUG disp79815888: keys in cache: []
+2013-07-31 13:28:19,144 DEBUG disp79816016: profile: started: tracker: <GenomeCoverage.GenomeCoverage object at 0x4c1ef90>
+2013-07-31 13:28:19,145 DEBUG disp79816016: <GenomeCoverage.GenomeCoverage object at 0x4c1ef90>: collecting data paths.
+2013-07-31 13:28:19,145 DEBUG disp79816016: <GenomeCoverage.GenomeCoverage object at 0x4c1ef90>: collected data paths.
+2013-07-31 13:28:19,145 DEBUG disp79816016: <GenomeCoverage.GenomeCoverage object at 0x4c1ef90>: filtering data paths.
+2013-07-31 13:28:19,145 DEBUG disp79816016: <GenomeCoverage.GenomeCoverage object at 0x4c1ef90>: filtered data paths.
+2013-07-31 13:28:19,145 DEBUG disp79816016: <GenomeCoverage.GenomeCoverage object at 0x4c1ef90>: building all_paths
+2013-07-31 13:28:19,145 DEBUG disp79816016: <GenomeCoverage.GenomeCoverage object at 0x4c1ef90>: collecting data started for 1 data paths
+2013-07-31 13:28:19,145 DEBUG disp79815888: key 'all' not found in cache
+2013-07-31 13:28:19,145 DEBUG connecting to sqlite:///./csvdb
+2013-07-31 13:28:19,153 DEBUG connected to sqlite:///./csvdb
+2013-07-31 13:28:19,167 DEBUG disp79815888: saved data for key 'all' in cache
+2013-07-31 13:28:19,169 DEBUG disp79816016: <GenomeCoverage.GenomeCoverage object at 0x4c1ef90>: collecting data finished for 1 data paths
+2013-07-31 13:28:19,169 DEBUG disp79816016: profile: finished: tracker: <GenomeCoverage.GenomeCoverage object at 0x4c1ef90>
+2013-07-31 13:28:19,170 DEBUG disp79816016: <SphinxReport.Dispatcher.Dispatcher object at 0x4c1e550>: after collection: 2 data_paths: [['all'], ['observed', 'expected']]
+2013-07-31 13:28:19,170 DEBUG disp79816016: <SphinxReport.Dispatcher.Dispatcher object at 0x4c1e550>: after transformation: 2 data_paths: [['all'], ['observed', 'expected']]
+2013-07-31 13:28:19,170 DEBUG disp79816016: <SphinxReport.Dispatcher.Dispatcher object at 0x4c1e550>: after restrict: 2 data_paths: [['all'], ['observed', 'expected']]
+2013-07-31 13:28:19,170 DEBUG disp79816016: <SphinxReport.Dispatcher.Dispatcher object at 0x4c1e550>: after exclude: 2 data_paths: [['all'], ['observed', 'expected']]
+2013-07-31 13:28:19,170 DEBUG disp79816016: <SphinxReport.Dispatcher.Dispatcher object at 0x4c1e550>: after pruning: 2 data_paths: [['all'], ['observed', 'expected']]
+2013-07-31 13:28:19,170 WARNING disp79816016: grouping by slice, but only 2 levels in data tree - all are grouped
+2013-07-31 13:28:19,171 DEBUG disp79816016: <SphinxReport.Dispatcher.Dispatcher object at 0x4c1e550>: after grouping: 2 data_paths: [['all'], ['observed', 'expected']]
+2013-07-31 13:28:19,171 DEBUG disp79816016: profile: started: renderer: <SphinxReportPlugins.Plotter.HistogramPlot object at 0x4bdc9d0>
+2013-07-31 13:28:19,171 DEBUG disp79816016: <SphinxReport.Dispatcher.Dispatcher object at 0x4c1e550>: rendering data started for 1 items
+2013-07-31 13:28:19,171 DEBUG disp79816016: <SphinxReport.Dispatcher.Dispatcher object at 0x4c1e550>: rendering data started. levels=2, required levels>=2, group_level=-1, data_paths=[['all'], ['observed', 'expected']]
+2013-07-31 13:28:19,188 WARNING disp79546832: exeception raised in rendering for path: ()
+2013-07-31 13:28:19,188 ERROR disp79816016: <SphinxReport.Dispatcher.Dispatcher object at 0x4c1e550>: exception in rendering
+2013-07-31 13:28:19,191 DEBUG disp79816016: profile: finished: renderer: <SphinxReportPlugins.Plotter.HistogramPlot object at 0x4bdc9d0>
+2013-07-31 13:28:37,425 INFO initialising plugins
+2013-07-31 13:28:38,792 DEBUG found plugins: 3 capabilites and 59 plugins
+2013-07-31 13:28:38,793 DEBUG disp79817168: 79817168: starting renderer '<SphinxReportPlugins.Plotter.ScatterPlot object at 0x4c1e9d0>'
+2013-07-31 13:28:38,794 DEBUG entered getModule with `GenomeCoverage`
+2013-07-31 13:28:38,794 DEBUG searching for module name=GenomeCoverage at path=None
+2013-07-31 13:28:38,794 DEBUG loading module: GenomeCoverage: <open file '/ifs/devel/nicki/cgat/pipeline_docs/pipeline_metagenomebenchmark/trackers/GenomeCoverage.py', mode 'U' at 0x2b3227135540>, /ifs/devel/nicki/cgat/pipeline_docs/pipeline_metagenomebenchmark/trackers/GenomeCoverage.py, ('.py', 'U', 1)
+2013-07-31 13:28:38,800 DEBUG disp80078160: starting dispatcher '<SphinxReport.Dispatcher.Dispatcher object at 0x4c5e550>': tracker='<GenomeCoverage.GenomeCoverage object at 0x4c5ef90>', renderer='<SphinxReportPlugins.Plotter.ScatterPlot object at 0x4c1e9d0>', transformer:='[]'
+2013-07-31 13:28:38,829 DEBUG disp80078032: using cache _cache/GenomeCoverage_GenomeCoverage
+2013-07-31 13:28:38,830 DEBUG disp80078032: keys in cache: []
+2013-07-31 13:28:38,830 DEBUG disp80078160: profile: started: tracker: <GenomeCoverage.GenomeCoverage object at 0x4c5ef90>
+2013-07-31 13:28:38,830 DEBUG disp80078160: <GenomeCoverage.GenomeCoverage object at 0x4c5ef90>: collecting data paths.
+2013-07-31 13:28:38,830 DEBUG disp80078160: <GenomeCoverage.GenomeCoverage object at 0x4c5ef90>: collected data paths.
+2013-07-31 13:28:38,830 DEBUG disp80078160: <GenomeCoverage.GenomeCoverage object at 0x4c5ef90>: filtering data paths.
+2013-07-31 13:28:38,830 DEBUG disp80078160: <GenomeCoverage.GenomeCoverage object at 0x4c5ef90>: filtered data paths.
+2013-07-31 13:28:38,830 DEBUG disp80078160: <GenomeCoverage.GenomeCoverage object at 0x4c5ef90>: building all_paths
+2013-07-31 13:28:38,830 DEBUG disp80078160: <GenomeCoverage.GenomeCoverage object at 0x4c5ef90>: collecting data started for 1 data paths
+2013-07-31 13:28:38,831 DEBUG disp80078032: key 'all' not found in cache
+2013-07-31 13:28:38,831 DEBUG connecting to sqlite:///./csvdb
+2013-07-31 13:28:38,839 DEBUG connected to sqlite:///./csvdb
+2013-07-31 13:28:38,852 DEBUG disp80078032: saved data for key 'all' in cache
+2013-07-31 13:28:38,855 DEBUG disp80078160: <GenomeCoverage.GenomeCoverage object at 0x4c5ef90>: collecting data finished for 1 data paths
+2013-07-31 13:28:38,855 DEBUG disp80078160: profile: finished: tracker: <GenomeCoverage.GenomeCoverage object at 0x4c5ef90>
+2013-07-31 13:28:38,855 DEBUG disp80078160: <SphinxReport.Dispatcher.Dispatcher object at 0x4c5e550>: after collection: 2 data_paths: [['all'], ['observed', 'expected']]
+2013-07-31 13:28:38,855 DEBUG disp80078160: <SphinxReport.Dispatcher.Dispatcher object at 0x4c5e550>: after transformation: 2 data_paths: [['all'], ['observed', 'expected']]
+2013-07-31 13:28:38,855 DEBUG disp80078160: <SphinxReport.Dispatcher.Dispatcher object at 0x4c5e550>: after restrict: 2 data_paths: [['all'], ['observed', 'expected']]
+2013-07-31 13:28:38,855 DEBUG disp80078160: <SphinxReport.Dispatcher.Dispatcher object at 0x4c5e550>: after exclude: 2 data_paths: [['all'], ['observed', 'expected']]
+2013-07-31 13:28:38,856 DEBUG disp80078160: <SphinxReport.Dispatcher.Dispatcher object at 0x4c5e550>: after pruning: 2 data_paths: [['all'], ['observed', 'expected']]
+2013-07-31 13:28:38,856 WARNING disp80078160: grouping by slice, but only 2 levels in data tree - all are grouped
+2013-07-31 13:28:38,856 DEBUG disp80078160: <SphinxReport.Dispatcher.Dispatcher object at 0x4c5e550>: after grouping: 2 data_paths: [['all'], ['observed', 'expected']]
+2013-07-31 13:28:38,856 DEBUG disp80078160: profile: started: renderer: <SphinxReportPlugins.Plotter.ScatterPlot object at 0x4c1e9d0>
+2013-07-31 13:28:38,856 DEBUG disp80078160: <SphinxReport.Dispatcher.Dispatcher object at 0x4c5e550>: rendering data started for 1 items
+2013-07-31 13:28:38,856 DEBUG disp80078160: <SphinxReport.Dispatcher.Dispatcher object at 0x4c5e550>: rendering data started. levels=2, required levels>=2, group_level=-1, data_paths=[['all'], ['observed', 'expected']]
+2013-07-31 13:28:38,985 DEBUG disp80078160: <GenomeCoverage.GenomeCoverage object at 0x4c5ef90>: rendering data finished with 1 blocks
+2013-07-31 13:28:38,985 DEBUG disp80078160: profile: finished: renderer: <SphinxReportPlugins.Plotter.ScatterPlot object at 0x4c1e9d0>
