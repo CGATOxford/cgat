@@ -117,6 +117,7 @@ import sys
 import re
 import optparse
 import collections
+import CGAT.Experiment as E
 
 BlastResult = collections.namedtuple( "blastresult",
                                       "qseqid qstart qend sseqid sstart send evalue bitscore pident score qseq sseq" )

@@ -311,6 +311,13 @@ ILLUMINA_ADAPTORS = { "Genomic-DNA-Adaptor" : "GATCGGAAGAGCTCGTATGCCGTCTTCTGCTTG
                       "Small-RNA-PCR-Primer" : "AATGATACGGCGACCACCGACAGGTTCAGAGTTCTACAGTCCGA",
                       "ScriptSeq-Adaptor-I6" : "CAAGCAGAAGACGGCATACGAGATNNNNNNGTGACTGGAGTTCAGACGTGTGCTCTTCCGATCT",
                       "SmartIIA": "AAGCAGTGGTATCAACGCAGAGTAC",
+                      "Illumina-Nextera-v2-Primer1" : "GTCTCGTGGGCTCGGAGATGTGTATAAGAGACAG",
+                      "Illumina-Nextera-v2-Primer2" : "TCGTCGGCAGCGTCAGATGTGTATAAGAGACAG",
+                      "Nextera-Transposon-End-Sequence" : "AGATGTGTATAAGAGACAG",
+                      "Epicentre-Nextera-Primer1" : "AATGATACGGCGACCACCGA",
+                      "Epicentre-Nextera-Primer2" : "CAAGCAGAAGACGGCATACGA",
+                      "Epicentre-Nextera-Read1" : "GCCTCCCTCGCGCCATC",
+                      "Epicentre-Nextera-Read2" : "GCCTTGCCAGCCCGCTC"
                       }
 
 #########################################################################

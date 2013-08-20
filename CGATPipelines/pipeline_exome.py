@@ -43,10 +43,17 @@ and phased.
    1. Align to genome using gapped alignment (BWA)
    2. Check alignment quality and target region coverage (Picard)
    3. Local realignment and BQSR in GATK
-   4. Variant calling (SNVs & indels) using SAMtools and GATK
-   5. Variant annotation using SNPeff and GATK VariantAnnotator
-   6. Phasing using GATK PhaseByTransmission and ReadBackedPhasing
-   7. Further annotation using SnpSift
+   4. Variant calling (SNVs & indels) using GATK
+   5. Variant annotation using SNPeff, GATK VariantAnnotator, and SnpSift
+   6. For trios only, phasing genotypes using GATK and calling de novos using GATK and denovogear
+   7. Flags variants within genes of interest (such as known disease genes) (GATK) (optional)
+
+To do:
+   1. Allow users to add other training sets for variant quality score recalibration
+   2. Allow users to add annotations using SnpSift
+   3. Add job options to all functions
+   4. Add denovogear for X chromosome
+   5. Add report functions
 
 Usage
 =====
@@ -83,14 +90,21 @@ fastq.1.gz, fastq2.2.gz
    Quality scores need to be of the same scale for all input files. Thus it might be
    difficult to mix different formats.
 
-If submitting trios or multiplex samples then a ped file must also be supplied.  This is a tab-delimited file with
-no header and one individual per line according to the following pattern:
+If you are submitting families then a .ped file for each family must be supplied within your working firectory. 
+This is a tab-delimited file named <family>.ped (where <family> is the family ID in the title of the corresponding 
+fastq files) with no header and one individual per line according to the following pattern:
 
 family_id sample_id father_id mother_id sex phenotype
 
-family_id and sample_id should correspond to <family> and <sample> in the sra/fastq filenames, father_id and mother_id
-should be '0' if unknown, sex should be '1' if male and '2' if female, and phenotype should be '0' if unaffected and
-'1' if affected.
+family_id and sample_id should correspond to <family> and <family>-<sample> in the sra/fastq filenames, father_id and 
+mother_id should be '0' if unknown, sex should be '1' if male, '2' if female and '0' if unknown, and phenotype 
+should be '1' if unaffected, '2' if affected and '0' if unknown.
+
+Documentation
+-------------
+
+If you would like the genes of interest to be flagged in your vcf, make add_genes_of_interest=1 (default=0) and
+provide a list of comma separated genes (without spaces) to the ini file.
 
 Requirements
 ------------
@@ -242,6 +256,7 @@ def loadSamples( infile, outfile ):
 def mapReads(infiles, outfile):
     '''Map reads to the genome using BWA (output=SAM), convert to BAM, sort and index BAM file '''
     to_cluster = USECLUSTER
+    job_options= "-pe dedicated 4 -R y -l mem_free=8G"
     track = P.snip( os.path.basename(outfile), ".bam" )
     m = PipelineMapping.BWA( remove_unique = PARAMS["bwa_remove_non_unique"] )
     statement = m.build((infiles,), outfile) 
@@ -416,6 +431,7 @@ def listOfBAMs( infiles, outfile ):
 def haplotypeCaller(infile, outfile):
     '''Call SNVs and indels using GATK HaplotypeCaller in all members of a family together'''
     to_cluster = USECLUSTER
+    job_options = getGATKOptions
     dbsnp = PARAMS["gatk_dbsnp"]
     intervals = PARAMS["roi_intervals"]
     padding = PARAMS["roi_padding"]
@@ -423,23 +439,14 @@ def haplotypeCaller(infile, outfile):
     P.run()
 
 ##########################################################################
-@follows( haplotypeCaller )
-@collate( bqsr, regex( r"bam/(\S+?)-(\S+).bqsr.bam"), r"variants/\1.samtools.bcf")
-def callVariantsSAMtools(infiles, outfile):
-    '''Perform SNV and indel calling separately for each bam using SAMtools. '''
-    to_cluster = USECLUSTER
-    inputfiles = " ".join(infiles)
-    statement = '''samtools mpileup -gDf %%(genome_dir)s/hg19.fa %(inputfiles)s > %(outfile)s 2>>%(outfile)s.log;''' % locals()
-    P.run()
-
 ##########################################################################
 ##########################################################################
-##########################################################################
-## Variant Annotation
+## Variant Annotation and Recalibration
 @transform( haplotypeCaller, regex( r"variants/(\S+).haplotypeCaller.vcf"), r"variants/\1.haplotypeCaller.snpeff.vcf")
 def annotateVariantsSNPeff( infile, outfile ):
     '''Annotate variants using SNPeff'''
     to_cluster = USECLUSTER
+    job_options= "-pe dedicated 4 -R y -l mem_free=6G"
     snpeff_genome = PARAMS["annotation_snpeff_genome"]
     config = PARAMS["annotation_snpeff_config"]
     statement = '''snpEff.sh eff -c %(config)s -v %(snpeff_genome)s -o gatk %(infile)s > %(outfile)s''' % locals()
@@ -495,20 +502,29 @@ def applyVariantRecalibration( infiles, outfile ):
     P.run()
 
 #########################################################################
+@transform(applyVariantRecalibration, regex( r"variants/(\S+).haplotypeCaller.vqsr.vcf"), r"variants/\1.haplotypeCaller.snpsift.vcf")
+def annotateVariantsSNPsift( infile, outfile ):
+    '''Add annotations using SNPsift'''
+    to_cluster = USECLUSTER
+    job_options= "-pe dedicated 4 -R y -l mem_free=6G"
+    dbNSFP = PARAMS["annotation_snpsift_dbnsfp"]
+    statement = '''SnpSift.sh dbnsfp -v %(dbNSFP)s %(infile)s > %(outfile)s''' % locals()
+    P.run()
+
+#########################################################################
 #########################################################################
 #########################################################################
 ## Phasing
-@active_if(PARAMS["gatk_phasing"]==1)
-@transform(applyVariantRecalibration, regex(r"variants/(\S+).haplotypeCaller.vqsr.vcf"), add_inputs(r"\1.ped"), r"variants/\1.haplotypeCaller.pbt.vcf")
+@transform(annotateVariantsSNPsift, regex(r"variants/(\S+Trio\S+).haplotypeCaller.snpsift.vcf"), add_inputs(r"\1.ped"), r"variants/\1.haplotypeCaller.pbt.vcf")
 def phaseByTransmission(infiles, outfile):
     '''Infer phase based on pedigree information'''
     to_cluster = USECLUSTER
     infile, pedfile = infiles
-    statement = '''GenomeAnalysisTK -T PhaseByTransmission -R %%(bwa_index_dir)s/%%(genome)s.fa -V %(infile)s -ped %(pedfile)s -o %(outfile)s''' % locals()
+    track = P.snip( os.path.basename(outfile), ".vcf" )
+    statement = '''GenomeAnalysisTK -T PhaseByTransmission -R %%(bwa_index_dir)s/%%(genome)s.fa -V %(infile)s -ped %(pedfile)s -mvf %(track)s.mvf -o %(outfile)s''' % locals()
     P.run()
 
 #########################################################################
-@active_if(PARAMS["gatk_phasing"]==1)
 @transform(phaseByTransmission, 
            regex(r"variants/(\S+).haplotypeCaller.pbt.vcf"), 
            add_inputs(r"bam/\1.list"), 
@@ -520,23 +536,28 @@ def readBackedPhasing(infiles, outfile):
     statement = '''GenomeAnalysisTK -T ReadBackedPhasing -R %%(bwa_index_dir)s/%%(genome)s.fa -I %(bamlist)s -V %(infile)s -o %(outfile)s --respectPhaseInInput''' % locals()
     P.run()
 
-######################################################################### 
-CALIBRATION= {1: readBackedPhasing
-              , 0: applyVariantRecalibration}
-
-@transform(CALIBRATION[PARAMS["gatk_phasing"]], regex( r"variants/(\S+).haplotypeCaller.(\S+).vcf"), r"variants/\1.haplotypeCaller.snpsift.vcf")
-def annotateVariantsSNPsift( infile, outfile ):
-    '''Add annotations using SNPsift'''
+#########################################################################
+#########################################################################
+#########################################################################
+## Genes of interest
+@active_if(PARAMS["annotation_add_genes_of_interest"]==1)
+@transform((annotateVariantsSNPsift, readBackedPhasing), regex( r"variants/((\S+Multiplex\S+|\S+Single\S+).haplotypeCaller.snpsift|(\S+Trio\S+).haplotypeCaller.rbp).vcf"), r"variants/\1.genes.vcf")
+def findGenes(infile, outfile):
+    '''Adds expression "GENE_OF_INTEREST" to the FILTER column of the vcf if variant is within a gene of interest as defined in the ini file'''
     to_cluster = USECLUSTER
-    dbNSFP = PARAMS["annotation_snpsift_dbnsfp"]
-    statement = '''SnpSift.sh dbnsfp -v %(dbNSFP)s %(infile)s > %(outfile)s''' % locals()
+    geneList = P.asList( PARAMS["annotation_genes_of_interest"] )
+    expression = '\'||SNPEFF_GENE_NAME==\''.join(geneList)
+    statement = '''GenomeAnalysisTK -T VariantFiltration -R %%(bwa_index_dir)s/%%(genome)s.fa --variant %(infile)s --filterExpression "SNPEFF_GENE_NAME=='%(expression)s'" --filterName "GENE_OF_INTEREST" -o %(outfile)s''' % locals()
     P.run()
 
 #########################################################################
 #########################################################################
 #########################################################################
-## Tabulation
-@transform( annotateVariantsSNPsift, regex( r"variants/(\S+).haplotypeCaller.snpsift.vcf"), r"variants/\1.haplotypeCaller.snpsift.table")
+##Tabulation
+CALIBRATION = {0: (annotateVariantsSNPsift, readBackedPhasing),
+              1: findGenes}
+
+@transform(CALIBRATION[PARAMS["annotation_add_genes_of_interest"]], regex( r"variants/((\S+Multiplex\S+|\S+Single\S+).haplotypeCaller.snpsift|(\S+Trio\S+).haplotypeCaller.rbp|(\S+).genes).vcf"), r"variants/\1.table")
 def vcfToTable( infile, outfile ):
     '''Convert vcf to tab-delimited file'''
     to_cluster = USECLUSTER
@@ -544,19 +565,106 @@ def vcfToTable( infile, outfile ):
     P.run()
 
 #########################################################################
-@transform( vcfToTable, regex( r"variants/(\S+).haplotypeCaller.snpsift.table"), r"variants/\1.haplotypeCaller.snpsift.table.load")
+@transform( vcfToTable, regex( r"variants/(\S+).table"), r"variants/\1.table.load")
 def loadVariantAnnotation( infile, outfile ):
     '''Load VCF annotations into database'''
     scriptsdir = PARAMS["general_scriptsdir"]
     tablename = P.toTable(outfile)
     statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py --table %(tablename)s --retry --ignore-empty > %(outfile)s''' % locals()
     P.run()
-            
+
+#########################################################################
+#########################################################################
+#########################################################################
+## De novos            
+@transform(annotateVariantsSNPsift, regex( r"variants/(\S+Trio\S+).haplotypeCaller.snpsift.vcf"), add_inputs(r"\1.ped"), r"variants/\1.mendelianViolations.vcf")
+def mendelianViolations( infiles, outfile ):
+    '''Call de novos by selecting Mendelian violations'''
+    to_cluster = USECLUSTER
+    infile, pedfile = infiles
+    statement = '''GenomeAnalysisTK -T SelectVariants -R %%(bwa_index_dir)s/%%(genome)s.fa --variant %(infile)s -ped %(pedfile)s --mendelianViolation -o %(outfile)s''' % locals()
+    P.run()
+
+#########################################################################
+@transform(mendelianViolations, regex( r"variants/(\S+).mendelianViolations.vcf"), r"variants/\1.mendelianViolations.table")
+def tabulateMendelianViolations( infile, outfile ):
+    '''Convert vcf to tab-delimited file with de novo variants'''
+    to_cluster = USECLUSTER
+    statement = '''GenomeAnalysisTK -T VariantsToTable -R %%(bwa_index_dir)s/%%(genome)s.fa -V %(infile)s --showFiltered --allowMissingData -F CHROM -F POS -F ID -F REF -F ALT -F QUAL -F FILTER -F AC -F AF -F AN -F BaseQRankSum -F DB -F DP -F Dels -F FS -F HaplotypeScore -F MLEAC -F MLEAF -F MQ -F MQ0 -F MQRankSum -F QD -F ReadPosRankSum -F SB -F SNPEFF_EFFECT -F SNPEFF_IMPACT -F SNPEFF_FUNCTIONAL_CLASS -F SNPEFF_CODON_CHANGE -F SNPEFF_AMINO_ACID_CHANGE -F SNPEFF_GENE_NAME -F SNPEFF_GENE_BIOTYPE -F SNPEFF_TRANSCRIPT_ID -F SNPEFF_EXON_ID -F dbNSFP_GERP++_RS -F dbNSFP_GERP++_NR -F dbNSFP_Ensembl_transcriptid -F dbNSFP_Uniprot_acc -F dbNSFP_Interpro_domain -F dbNSFP_SIFT_score -F dbNSFP_Polyphen2_HVAR_pred -F dbNSFP_29way_logOdds -F dbNSFP_1000Gp1_AF -F dbNSFP_1000Gp1_AFR_AF -F dbNSFP_1000Gp1_EUR_AF -F dbNSFP_1000Gp1_AMR_AF -F dbNSFP_1000Gp1_ASN_AF -F dbNSFP_ESP6500_AA_AF -F dbNSFP_ESP6500_EA_AF -GF GT -GF AD -GF GQ -GF PL -GF PQ -GF TP -o %(outfile)s''' % locals()
+    P.run()
+
+#########################################################################
+@transform(tabulateMendelianViolations, regex( r"variants/(\S+).mendelianViolations.table"), r"variants/\1.mendelianViolations.table.load")
+def loadMendelianViolations( infile, outfile ):
+    '''Load de novos into database'''
+    scriptsdir = PARAMS["general_scriptsdir"]
+    tablename = P.toTable(outfile)
+    statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py --table %(tablename)s --retry --ignore-empty > %(outfile)s''' % locals()
+    P.run()
+
+#########################################################################
+@collate( bqsr, regex( r"bam/(\S+Trio\S+?)-(\S+).bqsr.bam"), r"variants/\1.samtools.bcf")
+def callVariantsSAMtools(infiles, outfile):
+    '''Perform SNV and indel calling separately for each bam using SAMtools. '''
+    to_cluster = USECLUSTER
+    inputfiles = " ".join(infiles)
+    statement = '''samtools mpileup -gDf %%(genome_dir)s/%%(genome)s.fa %(inputfiles)s > %(outfile)s 2>>%(outfile)s.log;''' % locals()
+    P.run()
+
+#########################################################################
+##Calling de novo variants using denovogear - at present only autosomes, X chromosome calling to be added
+@transform( callVariantsSAMtools, regex( r"variants/(\S+).samtools.bcf"), add_inputs(r"\1.ped"), r"variants/\1.dnm_auto.vcf")
+def callDeNovosAuto(infiles, outfile):
+    '''Call de novo mutations in autosomes using DeNovoGear'''
+    to_cluster = USECLUSTER
+    infile, pedfile = infiles
+    statement = '''denovogear dnm auto --ped %(pedfile)s --bcf %(infile)s --output_vcf %(outfile)s''' % locals()
+    P.run()
+
+#########################################################################
+@transform( callDeNovosAuto, regex( r"variants/(\S+).dnm_auto.vcf"), r"variants/\1.dnm_snpEff.vcf")
+def annotateDeNovosSNPeff(infile, outfile):
+    '''Add snpEff annotations to putative de novo variants'''
+    to_cluster = USECLUSTER
+    job_options= "-pe dedicated 4 -R y -l mem_free=6G"
+    snpeff_genome = PARAMS["annotation_snpeff_genome"]
+    config = PARAMS["annotation_snpeff_config"]
+    statement = '''snpEff.sh eff -c %(config)s -v %(snpeff_genome)s %(infile)s > %(outfile)s''' % locals()
+    P.run()
+
+#########################################################################
+@transform( annotateDeNovosSNPeff, regex( r"variants/(\S+).dnm_snpEff.vcf"), r"variants/\1.dnm_snpsift.vcf")
+def annotateDeNovosSnpSift(infile, outfile):
+    '''Add SnpSift annotations to putative de novo variants'''
+    to_cluster = USECLUSTER
+    job_options= "-pe dedicated 4 -R y -l mem_free=6G"
+    dbNSFP = PARAMS["annotation_snpsift_dbnsfp"]
+    statement = '''SnpSift.sh dbnsfp -v %(dbNSFP)s %(infile)s > %(outfile)s''' % locals()
+    P.run()
+
+#########################################################################
+@transform( annotateDeNovosSnpSift, regex( r"variants/(\S+).dnm_snpsift.vcf"), r"variants/\1.dnm.table")
+def tabulateDeNovos(infile, outfile):
+    '''Convert de novo vcf into tabular form'''
+    to_cluster = USECLUSTER
+    job_options= "-pe dedicated 4 -R y -l mem_free=6G"
+    statement = '''cat %(infile)s | sed 's/dbNSFP_GERP++/dbNSFP_GERP/g' | /ifs/apps/bio/snpEff-3.1/scripts/vcfEffOnePerLine.pl | SnpSift.sh extractFields - CHROM POS ID REF ALT FILTER RD_MOM RD_DAD MQ_MOM MQ_DAD NULL_CONFIG PP_NULL SNPcode "EFF[*].EFFECT" "EFF[*].IMPACT" "EFF[*].FUNCLASS" "EFF[*].CODON" "EFF[*].AA" "EFF[*].AA_LEN" "EFF[*].GENE" "EFF[*].BIOTYPE" "EFF[*].CODING" "EFF[*].TRID" "EFF[*].RANK" dbNSFP_GERP_RS dbNSFP_GERP_NR dbNSFP_Ensembl_transcriptid dbNSFP_Uniprot_acc dbNSFP_Interpro_domain dbNSFP_SIFT_score dbNSFP_Polyphen2_HVAR_pred dbNSFP_29way_logOdds dbNSFP_1000Gp1_AF dbNSFP_1000Gp1_AFR_AF dbNSFP_1000Gp1_EUR_AF dbNSFP_1000Gp1_AMR_AF dbNSFP_1000Gp1_ASN_AF dbNSFP_ESP6500_AA_AF dbNSFP_ESP6500_EA_AF "GEN[0].DNM_CONFIG[*]" "GEN[0].PP_DNM[*]" "GEN[0].RD[*]" "GEN[0].MQ[*]" > %(outfile)s''' % locals()
+    P.run()
+
+#########################################################################
+@transform( tabulateDeNovos, regex( r"variants/(\S+).dnm.table"), r"variants/\1.dnm.table.load")
+def loadDeNovos(infile, outfile):
+    '''load de novo variants into the database'''
+    scriptsdir = PARAMS["general_scriptsdir"]
+    tablename = P.toTable(outfile)
+    statement = '''cat %(infile)s | sed 's/#CHROM/CHROM/g;s/EFF\[\*\]/EFF/g;s/GEN\[0\]/GEN/g' | python %(scriptsdir)s/csv2db.py --table %(tablename)s --retry --ignore-empty > %(outfile)s''' % locals()
+    P.run()
+
 #########################################################################
 #########################################################################
 #########################################################################
 ## vcf statistics
-@transform(annotateVariantsSNPsift, regex( r"variants/(\S+).vcf"), r"variants/\1.vcfstats")
+@transform((annotateVariantsSNPsift, mendelianViolations), regex( r"variants/(\S+).vcf"), r"variants/\1.vcfstats")
 def buildVCFstats(infile, outfile):
     '''Calculate statistics on VCF file'''
     to_cluster = USECLUSTER
@@ -611,26 +719,36 @@ def postMappingQC(): pass
           listOfBAMs)
 def gatk(): pass
 
-@follows( haplotypeCaller,
-          callVariantsSAMtools )
+@follows( haplotypeCaller )
 def callVariants(): pass
 
 @follows( annotateVariantsSNPeff,
-          variantAnnotator)
+          variantAnnotator,
+          variantRecalibrator,
+          applyVariantRecalibration,
+          annotateVariantsSNPsift )
 def annotation(): pass
 
-@follows( variantRecalibrator,
-          applyVariantRecalibration )
-def vqsr(): pass
-
 @follows( phaseByTransmission,
-          readBackedPhasing,
-          annotateVariantsSNPsift )
+          readBackedPhasing )
 def phasing(): pass
+
+@follows( findGenes )
+def genesOfInterest(): pass
 
 @follows( vcfToTable,
           loadVariantAnnotation )
 def tabulation(): pass
+
+@follows( mendelianViolations,
+          tabulateMendelianViolations,
+          loadMendelianViolations,
+          callDeNovosAuto,
+          annotateDeNovosSNPeff,
+          annotateDeNovosSnpSift,
+          tabulateDeNovos,
+          loadDeNovos )
+def denovos(): pass
 
 @follows( buildVCFstats,
           loadVCFstats )
@@ -643,9 +761,10 @@ def vcfstats(): pass
           gatk,
           callVariants,
           annotation,
-          vqsr,
           phasing,
+          genesOfInterest,
           tabulation,
+          denovos,
           vcfstats)  
 def full(): pass
 
