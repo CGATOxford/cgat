@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-bed2summary.py - count intervals in bed file
+bed2stats.py - summary of bed file contents
 ============================================
 
 :Author: Andreas Heger
@@ -33,8 +33,8 @@ Purpose
 -------
 
 This script takes a bed-formatted file as input and outputs the number
-of intervals in the bed file.
-
+of intervals and bases in the bed file. Counts can be computed per
+contig or per track in the bed file.
 
 Usage
 -----
@@ -60,16 +60,7 @@ import os
 import sys
 import string
 import re
-import optparse
-import math
-import time
-import tempfile
-import subprocess
-import types
-import bisect
-import array
 import collections
-import CGAT.GTF as GTF
 import CGAT.Bed as Bed
 import CGAT.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
@@ -82,7 +73,7 @@ class Counter:
         self.intervals_per_contig = collections.defaultdict(int)
         self.bases_per_contig = collections.defaultdict(int)
         
-    def add( self, b ):
+    def add( self, bed ):
         self.intervals_per_contig[bed.contig] += 1
         self.bases_per_contig[bed.contig] += bed.end - bed.start
 
@@ -93,7 +84,9 @@ class Counter:
 
 
 ##------------------------------------------------------------
-if __name__ == '__main__':
+def main( argv = None ):
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: gtf2table.py 2888 2010-04-07 08:48:36Z andreas $", usage = globals()["__doc__"])
 
@@ -102,6 +95,9 @@ if __name__ == '__main__':
 
     parser.add_option("-n", "--per-name", dest="per_name", action="store_true",
                       help="compute counts per name [default=%default]."  )
+
+    parser.add_option("-c", "--per-contig", dest="per_contig", action="store_true",
+                      help="compute counts per contig [default=%default]."  )
 
     parser.add_option("-t", "--per-track", dest="per_track", action="store_true",
                       help="compute counts per track [default=%default]."  )
@@ -112,7 +108,7 @@ if __name__ == '__main__':
         per_track = False,
         )
 
-    (options, args) = E.Start( parser )
+    (options, args) = E.Start( parser, argv )
 
     # get files
     if options.genome_file:
@@ -122,14 +118,17 @@ if __name__ == '__main__':
 
     counts = collections.defaultdict( Counter )
 
-    per_track, per_name = options.per_track, options.per_name
+    if options.per_track:
+        keyf = lambda x: x.track
+    elif options.per_name:
+        keyf = lambda x: x.name
+    elif options.per_contig:
+        keyf = lambda x: x.contig
+    else:
+        keyf = lambda x: "all"
 
     for bed in Bed.iterator(options.stdin):
-        if per_name: key = bed.name
-        elif per_track: key = bed.track
-        else: key = "all"
-            
-        counts[key].add( bed )
+        counts[keyf(bed)].add( bed )
 
     outf = options.stdout
 
@@ -140,3 +139,6 @@ if __name__ == '__main__':
         outf.write( "%s\t%s\n" % ( key, str(count)) )
         
     E.Stop()
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv))
