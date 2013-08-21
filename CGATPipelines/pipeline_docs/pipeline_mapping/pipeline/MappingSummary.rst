@@ -63,3 +63,20 @@ of :term:`reads`.
    :split-at: 10
 
    Number of reads per number of alignments (hits) per read.
+
+Insert sizes
+============
+
+.. report:: Mapping.PicardInsertSizeMetrics
+   :render: table
+   :force:
+
+   Insert size summary
+
+.. report:: Mapping.PicardInsertSizeHistogram
+   :render: line-plot
+   :as-lines:
+   :yrange: 0,
+
+   Histogram of insert sizes
+

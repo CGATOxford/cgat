@@ -3,25 +3,50 @@ import os, sys, re, types, itertools
 from SphinxReport.Tracker import *
 from MappingReport import *
 
-class MappingSummary( RnaseqTracker, SingleTableTrackerRows ):
+class MappingSummary( MappingTracker, SingleTableTrackerRows ):
     table = "view_mapping"
 
-class TophatSummary( RnaseqTracker, SingleTableTrackerRows ):
+class TophatSummary( MappingTracker, SingleTableTrackerRows ):
     table = "tophat_stats"
 
-class StarSummary( RnaseqTracker, SingleTableTrackerRows ):
+class StarSummary( MappingTracker, SingleTableTrackerRows ):
     table = "star_stats"
 
-class BamSummary( RnaseqTracker, SingleTableTrackerRows ):
+class BamSummary( MappingTracker, SingleTableTrackerRows ):
     table = "bam_stats"
 
-class PicardSummary( RnaseqTracker, SingleTableTrackerRows ):
+class PicardSummary( MappingTracker, SingleTableTrackerRows ):
     table = "picard_stats_alignment_summary_metrics"
 
-class PicardDuplicationSummary( RnaseqTracker, SingleTableTrackerRows ):
+class PicardDuplicationSummary( MappingTracker, SingleTableTrackerRows ):
     table = "picard_duplication_stats_duplication_metrics"
 
-class DuplicationMetricsTable( RnaseqTracker, SingleTableTrackerHistogram ):
+class PicardAlignmentSummaryMetrics( MappingTracker, SingleTableTrackerRows ):
+    table = "picard_stats_alignment_summary_metrics"
+
+class PicardInsertSizeMetrics( MappingTracker, SingleTableTrackerRows ):
+    table = "picard_stats_insert_size_metrics"
+
+class PicardDuplicatesMetrics( MappingTracker, SingleTableTrackerRows ):
+    table = "picard_duplicates_duplicate_metrics"
+
+class PicardInsertSizeHistogram( MappingTracker, SingleTableTrackerHistogram ):
+    table = "picard_stats_insert_size_histogram"
+    column = "insert_size"
+
+class PicardDuplicatesHistogram( MappingTracker, SingleTableTrackerHistogram ):
+    table = "picard_duplicates_duplicate_histogram"
+    column = "duplicates"
+
+class PicardQualityByCycleHistogram( MappingTracker, SingleTableTrackerHistogram ):
+    table = "picard_stats_quality_by_cycle_histogram"
+    column = "cycle"
+
+class PicardQualityDistributionHistogram( MappingTracker, SingleTableTrackerHistogram ):
+    table = "picard_stats_quality_distribution_histogram"
+    column = "quality"
+
+class DuplicationMetricsTable( MappingTracker, SingleTableTrackerHistogram ):
 
     table = "picard_duplication_stats_duplication_histogram"
 
@@ -32,36 +57,36 @@ class DuplicationMetricsTable( RnaseqTracker, SingleTableTrackerHistogram ):
         return data
 
 
-class MappingFlagsMismatches( RnaseqTracker, SingleTableTrackerHistogram ):
+class MappingFlagsMismatches( MappingTracker, SingleTableTrackerHistogram ):
     table = "bam_stats_nm"
     column = "nm"
 
-class MappingFlagsHits( RnaseqTracker, SingleTableTrackerHistogram ):
+class MappingFlagsHits( MappingTracker, SingleTableTrackerHistogram ):
     table = "bam_stats_nh"
     column = "nh"
 
-class AlignmentQualityByCycle( RnaseqTracker, SingleTableTrackerHistogram ):
+class AlignmentQualityByCycle( MappingTracker, SingleTableTrackerHistogram ):
     table = "picard_stats_quality_by_cycle_histogram"
     column = "cycle"
 
-class DuplicationMetrics( RnaseqTracker, SingleTableTrackerHistogram ):
+class DuplicationMetrics( MappingTracker, SingleTableTrackerHistogram ):
     table = "picard_duplication_stats_duplication_histogram"
     column = "coverage_multiple"
 
-class AlignmentQualityDistribution( RnaseqTracker, SingleTableTrackerHistogram ):
+class AlignmentQualityDistribution( MappingTracker, SingleTableTrackerHistogram ):
     table = "picard_stats_quality_distribution_histogram"
     column = "quality"
 
-class MappingContext( RnaseqTracker, SingleTableTrackerRows ):
+class MappingContext( MappingTracker, SingleTableTrackerRows ):
     table = "context_stats"
 
-class FilteringSummary( RnaseqTracker, SingleTableTrackerRows ):
+class FilteringSummary( MappingTracker, SingleTableTrackerRows ):
     table = "mapping_stats"
 
 ##############################################################
 ##############################################################
 ##############################################################
-class BamReport( RnaseqTracker ):
+class BamReport( MappingTracker ):
     tracks = [ "all" ]
 
     slices = ("genome", "accepted", "mismapped" )
@@ -94,7 +119,7 @@ class BamReport( RnaseqTracker ):
 ##############################################################
 ##############################################################
 ##############################################################
-class FastQCReport( RnaseqTracker ):
+class FastQCReport( MappingTracker ):
     tracks = [ "all" ]
 
     def __call__(self, track, slice = None ):
