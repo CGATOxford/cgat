@@ -89,12 +89,18 @@ def main( argv = None ):
                        help = "only merge paired-end reads if they are at least # bases apart. "
                               " 0 turns of this filter. [default=%default]" )
 
+    parser.add_option( "--bed-format", dest="bed_format", type = "choice", 
+                       choices = ('3','4','5','6'),
+                       help = "bed format to output. "
+                              " [default=%default]" )
+
     parser.set_defaults(
         region = None,
-        merge_pairs = None,
         call_peaks = None,
+        merge_pairs = None,
         min_insert_size = 0,
         max_insert_size = 0,
+        bed_format = '6',
         )
 
     (options, args) = E.Start( parser, argv = argv )
@@ -104,11 +110,14 @@ def main( argv = None ):
     
     samfile = pysam.Samfile( args[0], "rb" )
 
+    options.bed_format = int(options.bed_format)
+
     if options.merge_pairs != None:
         counter = _bam2bed.merge_pairs( samfile, 
                                         options.stdout,
                                         min_insert_size = options.min_insert_size,
-                                        max_insert_size = options.max_insert_size )
+                                        max_insert_size = options.max_insert_size,
+                                        bed_format = options.bed_format )
 
         options.stdlog.write( "category\tcounts\n%s\n" % counter.asTable() )
 

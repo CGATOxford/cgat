@@ -6,7 +6,8 @@ import CGAT.Experiment as E
 def merge_pairs( Samfile input_samfile,
                  outfile,
                  min_insert_size = 0,
-                 max_insert_size = 400 ):
+                 max_insert_size = 400,
+                 bed_format = None ):
     '''merge paired ended data.
 
     For speed reasons, the aligned region is only approximated using
@@ -16,6 +17,8 @@ def merge_pairs( Samfile input_samfile,
     The strand is always set to '+'.
 
     Pairs with a maximum insert size larger than *max_insert_size* are removed.
+
+    If `bed_format` is a number, only the first x columns will be output.
     '''
 
     cdef int ninput = 0
@@ -30,6 +33,12 @@ def merge_pairs( Samfile input_samfile,
     cdef int c_max_insert_size = max_insert_size
     cdef int c_min_insert_size = min_insert_size
     cdef int start, end
+    cdef int take_columns = 6
+    
+    if bed_format != None:
+        if bed_format < 3 or bed_format > 6: 
+            raise ValueError("a bed file must have at least 3 and at most 6 columns")
+        take_columns = bed_format
 
     for read in input_samfile:
 
@@ -68,13 +77,30 @@ def merge_pairs( Samfile input_samfile,
         # count output pair as two so that it squares with ninput
         noutput += 2
 
-        outfile.write( "%s\t%i\t%i\t%s\t%i\t%s\n" % 
-                       (input_samfile.getrname( read.tid ),
-                        start, end,
-                        read.qname,
-                        read.mapq,
-                        "+"
-                        ) )
+        if take_columns == 3:
+            outfile.write( "%s\t%i\t%i\n" %
+                           (input_samfile.getrname( read.tid ),
+                            start, end))
+        elif take_columns == 4:
+            outfile.write( "%s\t%i\t%i\t%s\n" % 
+                           (input_samfile.getrname( read.tid ),
+                            start, end,
+                            read.qname))
+        elif take_columns == 5:
+            outfile.write( "%s\t%i\t%i\t%s\t%i\n" % 
+                           (input_samfile.getrname( read.tid ),
+                            start, end,
+                            read.qname,
+                            read.mapq,
+                            ) )
+        else:
+            outfile.write( "%s\t%i\t%i\t%s\t%i\t%s\n" % 
+                           (input_samfile.getrname( read.tid ),
+                            start, end,
+                            read.qname,
+                            read.mapq,
+                            "+"
+                            ) )
 
     c = E.Counter()
     c.input = ninput
