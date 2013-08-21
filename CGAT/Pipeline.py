@@ -228,8 +228,14 @@ def clone( infile, outfile ):
     '''create a clone of ``infile`` named ``outfile``
     by creating a soft-link.
     '''
+    # link via relative paths, otherwise it 
+    # fails if infile and outfile are in different
+    # directories or in a subdirectory
+    relpath = os.path.relpath( os.path.dirname(infile), os.path.dirname(outfile) )
+    target = os.path.join( relpath, os.path.basename( infile ) )
+
     try:
-        os.symlink( infile, outfile )
+        os.symlink( target, outfile )
     except OSError:
         pass
     
