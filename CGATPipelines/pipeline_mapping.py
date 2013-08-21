@@ -1096,8 +1096,9 @@ if "merge_pattern_input" in PARAMS and PARAMS["merge_pattern_input"]:
     if "merge_pattern_output" not in PARAMS or not PARAMS["merge_pattern_output"]:
         raise ValueError("no output pattern 'merge_pattern_output' specificied")
     @collate( MAPPINGTARGETS, 
-              regex( "%s.bam" % PARAMS["merge_pattern_input"] ),
-              r"%s.bam" % PARAMS["merge_pattern_output"],
+              regex( "%s.([^.]+).bam" % PARAMS["merge_pattern_input"] ),
+              # the last expression counts number of groups in pattern_input
+              r"%s.\%i.bam" % (PARAMS["merge_pattern_output"], PARAMS["merge_pattern_input"].count("(")+1),
               )
     def mergeBAMFiles( infiles, outfile ):
         '''merge BAM files from the same experiment.'''
