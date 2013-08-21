@@ -82,6 +82,8 @@ import subprocess
 import CGAT.Experiment as E
 import pysam
 import CGAT.IOTools as IOTools
+# for merging pairs
+import bam2bed
 
 class SpanWriter(object):
     '''output values within spans.
@@ -193,6 +195,15 @@ def main( argv = None ):
     parser.add_option( "-p", "--span", dest="span", type = "int",
                        help = "span of a window in wiggle tracks [%default]" )
 
+    parser.add_option("-m", "--merge-pairs", dest="merge_pairs", action="store_true",
+                      help="merge paired-ended reads into a single bed interval [default=%default]. " )
+
+    parser.add_option( "--max-insert-size", dest="max_insert_size", type = "int",
+                      help = "only merge if insert size less that # bases. 0 turns of this filter [default=%default]."  )
+
+    parser.add_option( "--min-insert-size", dest="min_insert_size", type = "int",
+                       help = "only merge paired-end reads if they are at least # bases apart. "
+                              " 0 turns of this filter. [default=%default]" )
     parser.set_defaults(
         samfile = None,
         output_format = "wiggle",
@@ -200,6 +211,9 @@ def main( argv = None ):
         shift = 0,
         extend = 0,
         span = 1,
+        merge_pairs = None,
+        min_insert_size = 0,
+        max_insert_size = 0,
         )
 
     ## add common options (-h/--help, ...) and parse command line 
@@ -275,28 +289,36 @@ def main( argv = None ):
 
     ninput, nskipped, ncontigs = 0, 0, 0
 
-    if options.shift > 0 or options.extend > 0:
+    if options.shift > 0 or options.extend > 0 or options.merge_pairs:
 
-        # create bed file with shifted tags
-        shift, extend = options.shift, options.extend
-        shift_extend = shift + extend
+        if options.merge_pairs:
+            E.info( "merging pairs to temporary file" )
+            counter = bam2bed._bam2bed.merge_pairs( samfile, 
+                                                    outfile,
+                                                    min_insert_size = options.min_insert_size,
+                                                    max_insert_size = options.max_insert_size,
+                                                    bed_format = 3)
+        else:
+            # create bed file with shifted tags
+            shift, extend = options.shift, options.extend
+            shift_extend = shift + extend
 
-        for contig in samfile.references:
-            E.debug("output for %s" % contig )
-            lcontig = contig_sizes[contig]
-            
-            for read in samfile.fetch( contig ):
-                pos = read.pos
-                if read.is_reverse:
-                    start = max(0, read.pos + read.alen - shift_extend )
-                else: 
-                    start = max(0, read.pos + shift)
+            for contig in samfile.references:
+                E.debug("output for %s" % contig )
+                lcontig = contig_sizes[contig]
 
-                # intervals extending beyond contig are removed
-                if start >= lcontig: continue
+                for read in samfile.fetch( contig ):
+                    pos = read.pos
+                    if read.is_reverse:
+                        start = max(0, read.pos + read.alen - shift_extend )
+                    else: 
+                        start = max(0, read.pos + shift)
 
-                end = min( lcontig, start + extend )
-                outfile.write( "%s\t%i\t%i\n" % (contig, start, end))
+                    # intervals extending beyond contig are removed
+                    if start >= lcontig: continue
+
+                    end = min( lcontig, start + extend )
+                    outfile.write( "%s\t%i\t%i\n" % (contig, start, end))
                 
         outfile.close()
 
