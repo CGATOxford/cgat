@@ -231,7 +231,10 @@ def clone( infile, outfile ):
     # link via relative paths, otherwise it 
     # fails if infile and outfile are in different
     # directories or in a subdirectory
-    relpath = os.path.relpath( os.path.dirname(infile), os.path.dirname(outfile) )
+    if os.path.dirname(infile) != os.path.dirname(outfile):
+        relpath = os.path.relpath( os.path.dirname(infile), os.path.dirname(outfile) )
+    else:
+        relpath = "."
     target = os.path.join( relpath, os.path.basename( infile ) )
 
     try:
