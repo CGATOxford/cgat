@@ -30,20 +30,79 @@
 Purpose
 -------
 
-Convert BAM into BED.
-
-The fragment length of paired-end reads is the read lengths of both pairs
-plus the insert size. 
+Convert BAM files into BED files.
 
 Usage
 -----
 
+Example::
+
+   python bam2bed.py in.bam > out.bed
+
+This command converts the BAM file in.bam into a BED file named out.bed.
+
 Type::
 
-   python <script_name>.py --help
+   python bam2bed.py --help
 
 for command line help.
 
+Documentation
+-------------
+
+This tool converts BAM files into BED files supplying the intervals for each read in the BAM file.  BAM files must
+have a corresponding index file ie. example.bam and example.bam.bai
+
+For example::
+
+   samtools view example.bam
+
+   READ1     163     1       13040   15      76M     =       13183   219     ...
+   READ2     99      1       13120   0       76M     =       13207   163     ...
+   READ1     83      1       13183   7       76M     =       13040   -219    ...
+   READ2     147     1       13207   0       76M     =       13120   -163    ...
+
+   python bam2bed.py example.bam 
+
+   1       13039   13115   READ1     15      +
+   1       13119   13195   READ2     0       +
+   1       13182   13258   READ1     7       -
+   1       13206   13282   READ2     0       -
+
+Options
+^^^^^^^
++-------------------+------------------------------------------------------------------+
+|--region, -r       |output read intervals that overlap a specified region             |
++-------------------+------------------------------------------------------------------+
+|--merge-pairs, -m  |merge paired-end reads and output interval for entire fragment    |
++-------------------+------------------------------------------------------------------+
+|--max-insert-size  |only merge if insert size is less than specified no. of bases     |
++-------------------+------------------------------------------------------------------+
+|--min-insert-size  |only merge if insert size is greater than specified no. of bases  |
++-------------------+------------------------------------------------------------------+
+
+For example,
+
+To output read intervals that overlap chromosome 1, coordinates 13000-13100::
+
+   samtools view example.bam
+
+   READ1     163     1       13040   15      76M     =       13183   219     ...
+   READ2     99      1       13120   0       76M     =       13207   163     ...
+   READ1     83      1       13183   7       76M     =       13040   -219    ...
+   READ2     147     1       13207   0       76M     =       13120   -163    ...
+
+   python bam2bed.py example.bam --region '1:13000:13100'
+
+   1       13039   13115   READ1     15      +
+
+To merge paired-end reads and output fragment interval ie. leftmost mapped base to rightmost mapped base::
+
+   python bam2bed.py example.bam --merge-pairs
+
+   1       13119   13282   READ2     0       +
+   1       13039   13258   READ1     7       +
+   
 Code
 ----
 
@@ -77,17 +136,18 @@ def main( argv = None ):
 
 
     parser.add_option("-r", "--region", dest="region", type="string",
-                      help="samtools region string [default=%default]."  )
+                      help = "samtools region string [default=%default]. " )
 
     parser.add_option("-m", "--merge-pairs", dest="merge_pairs", action="store_true",
-                      help="merge paired-ended reads into a single bed interval [default=%default]. " )
+                      help = "merge paired-ended reads into a single bed interval [default=%default]. " )
 
     parser.add_option( "--max-insert-size", dest="max_insert_size", type = "int",
-                      help = "only merge if insert size less that # bases. 0 turns of this filter [default=%default]."  )
+                      help = "only merge paired-end reads if they are less than # bases apart. " 
+                             " 0 turns off this filter [default=%default]. " )
 
     parser.add_option( "--min-insert-size", dest="min_insert_size", type = "int",
                        help = "only merge paired-end reads if they are at least # bases apart. "
-                              " 0 turns of this filter. [default=%default]" )
+                              " 0 turns off this filter [default=%default]. " )
 
     parser.add_option( "--bed-format", dest="bed_format", type = "choice", 
                        choices = ('3','4','5','6'),
@@ -129,7 +189,7 @@ def main( argv = None ):
             it = samfile.fetch()
 
         # more comfortable cigar parsing will
-        # come with the next pysam elease
+        # come with the next pysam release
         BAM_CMATCH = 0
         BAM_CDEL = 2
         BAM_CREF_SKIP = 3
