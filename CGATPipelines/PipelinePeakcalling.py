@@ -1822,6 +1822,7 @@ def runPeakRanger( infile, outfile, controlfile):
     '''run peak ranger
     '''
     
+    to_cluster = True
     assert controlfile != None, "peakranger requires a control"
 
     statement = '''peakranger ranger
@@ -1979,7 +1980,8 @@ def summarizePeakRanger( infiles, outfile ):
 def runPeakRangerCCAT( infile, outfile, controlfile):
     '''run peak ranger
     '''
-    
+    to_cluster = True
+
     assert controlfile != None, "peakranger requires a control"
 
     statement = '''peakranger ccat
