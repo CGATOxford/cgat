@@ -31,15 +31,19 @@ fasta2spliced.py - extract splice junctions from fasta file
 Purpose
 -------
 
-Based on a gene set and a genome assembly, this script
-outputs the sequences and coordinates of all possible splice junctions.
+Based on a set of exons and a genome assembly, this script
+outputs the sequences and coordinates of all possible splice 
+junctions.
+
+This script was used to determine exon boundaries from very fragmentory
+data. It is now obsolete.
 
 Usage
 -----
 
 Example::
 
-   python <script_name>.py --help
+   python fasta2spliced.py --genome-file=hg19
 
 Type::
 
@@ -105,7 +109,7 @@ if __name__ == "__main__":
 
     assert options.filename_regions != None, "please supply a gff formatted filename with regions"
 
-    regions = GTF.readAsIntervals( GFF.iterator( open(options.filename_regions, "r" ) ) )
+    regions = GTF.readAsIntervals( GFF.iterator( IOTools.openFile(options.filename_regions, "r" ) ) )
 
     # build pairs for complement
     reverse_splice_pairs = []
@@ -131,7 +135,7 @@ if __name__ == "__main__":
     ninput, noutput = 0, 0
 
     if joined:
-        outfile_coordinates = open( options.output_filename_pattern % "coords", "w" )
+        outfile_coordinates = IOTools.openFile( options.output_filename_pattern % "coords", "w" )
         outfile_coordinates.write( "segment\tpos\tcontig\t5start\t3start\n" )
         out_contig = 1
         options.stdout.write( ">%s\n" % (options.format_id % out_contig ))
@@ -147,14 +151,12 @@ if __name__ == "__main__":
 
         nintrons = 0
         if contig not in regions:
-            if options.loglevel >= 2:
-                options.stdlog.write("# skipped %s - no intervals defined\n" % (contig))
+            E.debug( "skipped %s - no intervals defined" % (contig))
             continue
 
         sequence = genome.getSequence( contig, as_array = True )
 
-        if options.loglevel >= 2:
-            options.stdlog.write("# processing %s of length %i\n" % (contig, len(sequence)))
+        E.debug( "processing %s of length %i" % (contig, len(sequence)))
 
         regions[contig].sort()
         
@@ -194,8 +196,7 @@ if __name__ == "__main__":
                 addPositions( intron_end-search_area, intron_end+search_area, right_tokens, right_positions, forward=True, first = False )
             intron_start = exon_end
 
-        if options.loglevel >= 2:
-            options.stdlog.write("# %s: left=%i, right=%i\n" % (contig, len(left_positions), len(right_positions) ))
+        E.debug("%s: left=%i, right=%i" % (contig, len(left_positions), len(right_positions) ))
         
         # build possible introns
         #
@@ -248,10 +249,8 @@ if __name__ == "__main__":
                     noutput += 1
                 rri += 1
 
-        if options.loglevel >= 1:
-            options.stdlog.write( "# contig %s: %i introns\n" % (contig, nintrons))
+        E.info( "contig %s: %i introns" % (contig, nintrons))
         
-    if options.loglevel >= 1:
-        options.stdlog.write( "# ninput=%i, noutput=%i\n" % (ninput, noutput) )
+    E.info( "ninput=%i, noutput=%i" % (ninput, noutput) )
 
     E.Stop()
