@@ -142,6 +142,15 @@ path:
 |bamstats_           |>=1.22             |from CGR, Liverpool                             |
 +--------------------+-------------------+------------------------------------------------+
 
+Merging bam files
+-----------------
+
+The pipeline has the ability to merge data post-mapping. This is useful if data have
+been split over several lanes and have been provide as separate fastq files.
+
+To enable merging, set regular expression for the input and output in the [merge] section 
+of the configuration file.
+
 Pipeline output
 ===============
 
@@ -1102,6 +1111,11 @@ if "merge_pattern_input" in PARAMS and PARAMS["merge_pattern_input"]:
               )
     def mergeBAMFiles( infiles, outfile ):
         '''merge BAM files from the same experiment.'''
+        if len(infiles) == 1:
+            E.info("%(outfile)s: only one file for merging - creating softlink" % locals() )
+            P.clone( infiles[0], outfile )
+            P.clone( infiles[0] + ".bai", outfile + ".bai" )
+            return
         
         to_cluster = True
 
@@ -1570,6 +1584,51 @@ def loadReadCounts( infiles, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
+## various export functions
+###################################################################
+@transform( MAPPINGTARGETS,
+            regex(".bam"),
+            ".bw" )
+def buildBigWig( infile, outfile ):
+    '''build wiggle files from bam files.'''
+    to_cluster = True
+
+    statement = '''python %(scriptsdir)s/bam2wiggle.py 
+                         --output-format=bigwig 
+                         %(bigwig_options)s
+                         %(infile)s 
+                         %(outfile)s
+                   > %(outfile)s.log''' 
+    P.run()
+
+@transform( MAPPINGTARGETS,
+            regex(".bam"),
+            ".bed.gz" )
+def buildBed( infile, outfile ):
+    '''build bed files from bam files.'''
+    to_cluster = True
+
+    statement = '''
+    cat %(infile)s 
+    | python %(scriptsdir)s/bam2bed.py
+          %(bed_options)s
+          --log=%(outfile)s.log
+          -
+    | sort -k1,1 -k2,2n
+    | bgzip 
+    > %(outfile)s
+    '''
+    P.run()
+
+    statement = '''
+    tabix -p bed %(outfile)s
+    '''
+    P.run()
+
+
+###################################################################
+###################################################################
+###################################################################
 @follows( loadReadCounts, 
           loadPicardStats, 
           loadBAMStats, 
@@ -1588,6 +1647,9 @@ def qc(): pass
 
 @follows( loadPicardDuplicationStats )
 def duplication(): pass
+
+@follows( buildBigWig )
+def wig(): pass
 
 ###################################################################
 ###################################################################
