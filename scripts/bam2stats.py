@@ -117,7 +117,7 @@ This script takes a bam file as input and computes a few metrics:
 
 Additionally, the script outputs histograms for the following tags and
 scores. These histograms are only computed for alignments not within
-regions of repetetive RNA.
+regions of repetitive RNA.
 
 * NM: number of mismatches in alignments.
 * NH: number of hits of reads.
@@ -128,7 +128,10 @@ Usage
 
 Example::
 
-   python cgat_script_template.py --help
+   cat in.bam | python bam2stats.py -
+
+This command will generate various statistics based on the supplied BAM file, such as
+percentage reads mapped and percentage reads mapped in pairs.
 
 Type::
 

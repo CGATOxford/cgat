@@ -21,8 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 """
-bams2correlation.py - compute coverage correlation between bam files
-===================================================================
+bams2correlation.py
+===================
 
 :Author: Andreas Heger
 :Release: $Id: bams2correlation.py 2861 2010-02-23 17:36:32Z andreas $
@@ -32,14 +32,31 @@ bams2correlation.py - compute coverage correlation between bam files
 Purpose
 -------
 
+Compare per base coverage between BAM files.
+
 Usage
 -----
+
+Example::
+
+   python bams2correlation.py in1.bam in2.bam -g reference.fasta
+
+This command generates a tab delimited output with columns chromosome, base coordinate, number of overlapping reads
+in in1.bam, and number of overlapping reads in in2.bam.
 
 Type::
 
    python <script_name>.py --help
 
 for command line help.
+
+Documentation
+-------------
+
+This tools allows users to obtain per base coverage over the genome for one or more BAM files.  The output includes
+all bases in the supplied reference fasta except those with no coverage in the input BAM or BAMs.
+
+At present the --interval or -i option has not been implemented.  
 
 Code
 ----
@@ -86,7 +103,8 @@ def main( argv = None ):
     for f in args:
         samfiles.append( pysam.Samfile( f, "rb" ) )
         
-    if options.filename_intervals: pass
+    if options.filename_intervals:
+        raise NotImplementedError( "It is not yet possible to specify intervals of interest.  Repeat command without intervals option." )
     
     if options.genome_file:
         fasta = IndexedFasta.IndexedFasta( options.genome_file )

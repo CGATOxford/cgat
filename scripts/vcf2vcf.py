@@ -18,11 +18,17 @@ vcf2vcf.py - manipulate vcf files
 Purpose
 -------
 
-manipulate vcf-formatted files.
+Manipulate vcf-formatted files.
 
 
 Usage
 -----
+
+Example::
+
+   cat in.vcf | python vcf2vcf.py - --reorder alphabetical > sorted.vcf
+
+This command generates a sorted vcf with the sample columns in in.vcf in alphabetical order.
 
 Type::
 
@@ -33,10 +39,36 @@ for command line usage.
 Methods
 -------
 
-This script provides several methods:
+This script provides the following methods:
 
 re-order
-   reorder columns in vcf formatted file according to a given sort order.
+   reorder sample columns in vcf formatted file according to a given sort order
+
+Documentation
+-------------
+
+This is a tool for manipulating vcf-formatted files.  The following options are available:
+
++-----------+-------------------------+
+|--reorder  |reorders sample columns  |
++-----------+-------------------------+
+
+Reorder
+^^^^^^^
+
+To sort sample columns into alphabetical order::
+
+   cat example.vcf | python vcf2vcf.py - --reorder alphabetical
+
+This will sort the columns in the example.vcf into the order "#CHROM, POS, ID, REF, ALT, QUAL, FILTER, INFO, FORMAT,
+SAMPLE_A, SAMPLE_B, SAMPLE_C, ..."
+
+To specify a non-alphabetical order::
+
+   cat example.vcf | python vcf2vcf.py - --reorder SAMPLE_C,SAMPLE_A,SAMPLE_B,...
+
+This will sort the columns in the example.vcf into the order "#CHROM, POS, ID, REF, ALT, QUAL, FILTER, INFO, FORMAT,  |
+SAMPLE_C, SAMPLE_A, SAMPLE_B, ..."
 
 Code
 ----
@@ -71,8 +103,8 @@ def main( argv = sys.argv ):
 
 
     noutput = 0
-
-    infile = VCF.VCFFile( sys.stdin )
+    
+    infile = VCF.VCFFile( open(args[0], "r") )
 
     if options.reorder: 
         order = options.reorder.split(",")
