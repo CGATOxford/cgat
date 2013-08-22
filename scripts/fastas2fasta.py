@@ -44,7 +44,7 @@ Usage
 
 Example::
 
-   python concatenate_sequences.py --help
+   python concatenate_sequences.py a.fasta b.fasta > c.fasta
 
 Type::
 
@@ -61,13 +61,7 @@ Code
 '''
 import os
 import sys
-import string
 import re
-import optparse
-import math
-import time
-import tempfile
-import subprocess
 
 USAGE="""python %s [OPTIONS] in1 in2 [...]
 
@@ -77,31 +71,21 @@ USAGE="""python %s [OPTIONS] in1 in2 [...]
 
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
-import CGAT.Genomics as Genomics
 import CGAT.FastaIterator as FastaIterator
-import CGAT.Masker as Masker
 
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
     parser = E.OptionParser( version = "%prog version: $Id: concatenate_sequences.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
 
-    parser.add_option("-m", "--method", dest="method", type="choice",
-                      choices=("in-order",),
-                      help="method on how to decide which sequences to concatenate."  )
-    
-    parser.set_defaults(
-        method = "in-order",
-        )
-
     (options, args) = E.Start( parser )
 
     if len(args) < 2:
-        raise "please supply at least two filenames to concatenate."
+        raise ValueError("please supply at least two filenames to concatenate.")
 
     iterators = []
     for a in args:
-        iterators.append(FastaIterator.FastaIterator( open(a,"r") ) )
+        iterators.append(FastaIterator.FastaIterator( IOTools.openFile(a,"r") ) )
 
     ninput, noutput, nerrors = 0, 0, 0
     
@@ -130,9 +114,8 @@ if __name__ == '__main__':
         options.stdout.write( ">%s\n%s\n" % (ids[0],
                                              "".join( sequences )))
 
-    if options.loglevel >= 1:
-        options.stdlog.write( "# ninput=%i, noutput=%i, nerrors=%i\n" % (ninput, noutput, nerrors) )
-        
+    E.info( "ninput=%i, noutput=%i, nerrors=%i" % (ninput, noutput, nerrors) )
+    
     E.Stop()
     
     

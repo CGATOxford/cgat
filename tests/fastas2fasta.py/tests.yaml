@@ -1,0 +1,12 @@
+
+version:
+    stdin: null
+    outputs: [stdout]
+    references: []
+    options: --version
+
+version:
+        stdin: null
+        outputs: [stdout]
+        references: [out.fasta]
+        options: <DIR>/a.fasta <DIR>/b.fasta
