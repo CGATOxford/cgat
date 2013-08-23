@@ -225,7 +225,7 @@ fit-tree: $(TARGET_SUBDIR)
 ## create input data
 %.mapped_mali: %.na_mali
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_TOOLS)sequence2sequence.py \
+	@python $(DIR_SCRIPTS_TOOLS)fasta2fasta.py \
 		--method=build-map \
 		--parameters=$*.map_old2new \
 	< $< |\

@@ -59,7 +59,7 @@ step12.fasta: $(PARAM_INPUT_CDNAS) step8.predictions.gz step11.redundant.members
 	--cds=$(PARAM_INPUT_CDNAS) \
 	--log=$@.log \
 	--genome-file=$(PARAM_ASSEMBLY_PATTERN) |\
-	python $(DIR_SCRIPTS_TOOLS)sequence2sequence.py \
+	python $(DIR_SCRIPTS_TOOLS)fasta2fasta.py \
 	$(PYTHON_OPTIONS) \
 	--method=mask-seg \
 	--log=$@.log |\

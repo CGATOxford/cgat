@@ -1023,7 +1023,7 @@ $(PARAM_SET_MERGED).derivedcoverage: $(PARAM_SET_MERGED).gtf $(INPUT_COVERAGES:%
 	$(PRELOG)
 	@rm -rf $@.*
 	@$(DIR_SCRIPTS_TOOLS)cpc.sh $< $@.forward.table $@.tmp.dir $@.forward.evidence $(PARAM_CPC_UNIREF) > $@.log
-	@python $(DIR_SCRIPTS_TOOLS)sequence2sequence.py \
+	@python $(DIR_SCRIPTS_TOOLS)fasta2fasta.py \
 		--method=reverse-complement --log=$@.log < $< > $@.tmp.reverse.fasta
 	@$(DIR_SCRIPTS_TOOLS)cpc.sh $@.tmp.reverse.fasta $@.reverse.table $@.tmp.dir $@.reverse.evidence $(PARAM_CPC_UNIREF) >> $@.log
 	@printf "gene_id\tlength\tf_iscoding\tf_value\tf_orfstart\tf_orfend\tf_orfval1\tf_orfval2\tf_orf\tr_iscoding\tr_value\tr_orfstart\tr_orfend\tr_orfval1\tr_orfval2\tr_orf\n" > $@

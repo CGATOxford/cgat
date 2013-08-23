@@ -89,7 +89,7 @@ cds:
 		if [[ $${nempty} -gt 0 ]]; then \
 			printf "empty alignment: %s\n" $${file} >> $@.log; \
 		else \
-		    python $(DIR_SCRIPTS_TOOLS)sequence2sequence.py \
+		    python $(DIR_SCRIPTS_TOOLS)fasta2fasta.py \
 			    --verbose=0  < $${file} |\
 		    awk -v qq="$(PARAM_QUALITIES)" -v file=$${file} -v nspecies=$(PARAM_NUM_SPECIES) \
 			    'BEGIN { keep=1; split( qq, q, ","); for (x in q) { qualities[q[x]] = 1; } } \
@@ -112,7 +112,7 @@ peptides: cds
 	@for file in export_clustering_*_cds.fasta; do \
 		rest=$${file#export_clustering_}; \
 		schema=$${rest%_cds.fasta}; \
-		python $(DIR_SCRIPTS_TOOLS)sequence2sequence.py \
+		python $(DIR_SCRIPTS_TOOLS)fasta2fasta.py \
 			--verbose=0  --method=translate \
 		< $${file} > export_clustering_$${schema}_peptides.fasta; \
 	done

@@ -1033,7 +1033,7 @@ def makeCodingPotential( infile, outfile ):
     P.run()
 
     tmpfilename = P.getTempFilename( "." )
-    statement = '''python %(toolsdir)s/sequence2sequence.py 
+    statement = '''python %(toolsdir)s/fasta2fasta.py 
                           --method=reverse-complement -v 0
                   < %(infile)s
                   > %(tmpfilename)s'''
