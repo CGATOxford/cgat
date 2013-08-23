@@ -56,22 +56,22 @@ Here is an example of a track file::
     ################################################
     ## tracks
     [paralogs-ds]
-    filename=paralogs_ds_median_score.dff
+    filename=paralogs_ds_median_score.gff
     style=matrix
 
     [orthologs-ds]
-    filename=orthologs_ds_median_score.dff
+    filename=orthologs_ds_median_score.gff
     style=matrix
 
     [variable-ds]
-    filename=variable_ds_median_score.dff
+    filename=variable_ds_median_score.gff
     style=matrix                                                                                                                                                                                                               
 
     [median<intronic>]
-    filename=regions_intronic_median_score.dff
+    filename=regions_intronic_median_score.gff
 
     [<intronic>]
-    filename=regions_intronic_mean_score.dff
+    filename=regions_intronic_mean_score.gff
 
     ## add multi-track tracks
     [median ds]
@@ -141,6 +141,7 @@ import scipy.stats
 import numpy
 
 import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
 
 def formatGenomicCoordinate( value, pos = None ):
     
@@ -483,56 +484,17 @@ if __name__ == "__main__":
 
     parser.add_option("-f", "--file", dest="filenames", type="string",
                       help="files[s] to take data from,stdin = -."  )
-    parser.add_option("-l", "--legend", dest="legend", type="string",
-                      help="legend for plot."  )
-    parser.add_option("-t", "--title", dest="title", type="string",
-                      help="title for plot."  )
-    parser.add_option("-p", "--hardcopy", dest="hardcopy", type="string",
-                      help="filename for hardcopy.", metavar = "FILE"  )
-    parser.add_option("", "--xrange", dest="xrange", type="string",
-                      help="xrange."  )
-    parser.add_option("", "--yrange", dest="yrange", type="string",
-                      help="yrange."  )
-    parser.add_option("-o", "--logscale", dest="logscale", type="string",
-                      help="log-transform one or both axes"  )
-    parser.add_option("-x", "--xtitle", dest="xtitle", type="string",
-                      help="title for x axis"  )
-    parser.add_option("-y", "--ytitle", dest="ytitle", type="string",
-                      help="title for y axis"  )
-    parser.add_option("", "--legend-location", dest="legend_location", type="string",
-                      help="location of legend"  )
-    parser.add_option("", "--backend", dest="backend", type="string",
-                      help="backend to use [Agg|SVG|PS]"  )
     parser.add_option("", "--symbols", dest="symbols", type="string",
                       help="symbols to use for each histogram [steps|...]."  )
-    parser.add_option("", "--dump", dest="dump", action="store_true",
-                      help="dump data for debug purposes."  )
-    parser.add_option("-c", "--columns", dest="columns", type="string",
-                      help="columns to use for plotting.")
-    parser.add_option("--transpose", dest="transpose", action="store_true",
-                      help="transpose values (swop x and y axis).")
-    parser.add_option("--truncate", dest="truncate", action="store_true",
-                      help="truncate histogram before plotting to xrange.")
-    parser.add_option("--layout", dest="layout", type="string",
-                      help="layout.")
-    parser.add_option("--scatter", dest="scatter", action="store_true",
-                      help="do a scatter plot.")
-    parser.add_option("--point-size", dest="point_size", type="int",
-                      help="point-size.")
-    parser.add_option("--add-function", dest="function", type="string",
-                      help="add a function to the plot." )
-    parser.add_option("--add-error-bars", dest="error_bars", type="choice",
-                      choices=("interleaved", "block"),
-                      help="add error bars." )
     parser.add_option( "--slide-show", dest="slide_show", type="choice",
                        choices=("first", "all", "sequence" ),
                        help="do a slide show - otherwise, write image to file." )
-    parser.add_option("--window-size", dest="window_size", type="int",
-                      help="window-size.")
     parser.add_option("--config", dest="filename_config", type="string",
                       help="filename of track configuration file.")
     parser.add_option("--dpi", dest="dpi", type="int",
                       help="dpi for hardcopy output." )
+    parser.add_option("--window-size", dest="window_size", type="int",
+                      help="window-size.")
     parser.add_option("--output-pattern", dest="output_pattern_image", type="string",
                       help="output pattern for images. Should contain a '%(contig)s' pattern .")
     parser.add_option("--global-colours", dest="global_colours", action="store_true",
@@ -541,28 +503,7 @@ if __name__ == "__main__":
     
     parser.set_defaults(
         filenames = None,
-        legend = None,
-        title = None,
-        hardcopy = None,
-        logscale = None,
-        xtitle = None,
-        ytitle = None,
-        xrange = None,
-        yrange = None,        
-        normalize = None,
-        columns = "all",
-        headers = True,
-        legend_location = "upper right",
-        backend = "Agg",
         symbols = "k-,b-,r-,c-,m-,y-,g-",
-        dump = False,
-        truncate = False,
-        layout = "1,1",
-        scatter = False,
-        point_size=0,
-        transpose = False,
-        function = None,
-        error_bars = None,
         output_pattern_image="%(contig)s.png",
         slide_show = None,
         window_size = None,
@@ -594,7 +535,7 @@ if __name__ == "__main__":
             if filename == "-":
                 infile = sys.stdin
             else:
-                infile = open(filename)
+                infile = IOTools.openFile(filename)
 
             data = readData( infile )
 
@@ -611,7 +552,7 @@ if __name__ == "__main__":
         # first extract special sections
         for section in config.sections():
             if section == "vlines":
-                infile = open(config.get( section, "filename" ), "r")
+                infile = IOTools.openFile(config.get( section, "filename" ), "r")
                 data = readData(infile)
                 infile.close()
                 extra_features[section] = Track( title = section,
@@ -627,7 +568,7 @@ if __name__ == "__main__":
         for section in config.sections():
             
             if config.has_option( section, "filename" ):
-                infile = open( config.get( section, "filename"), "r" )
+                infile = IOTools.openFile( config.get( section, "filename"), "r" )
                 data = readData( infile )
                 infile.close()
 
@@ -683,15 +624,14 @@ if __name__ == "__main__":
         for contig, figure in zip(contigs, figures):
             params = { 'contig' : contig }
             filename = options.output_pattern_image % params
-            options.stdlog.write("# creating image: %s\n" % filename )
+            E.info("# creating image: %s" % filename )
             figure.savefig( os.path.expanduser( filename ), **extra_args )
         if legend:
             params = { 'contig' : "legend" }
             filename = options.output_pattern_image % params
-            options.stdlog.write("# creating image: %s\n" % filename )
+            E.info("creating image: %s" % filename )
             legend.savefig( os.path.expanduser( filename ), **extra_args )
 
-    if options.loglevel >= 1:
-        options.stdlog.write( "# ninput=%i, ncontigs=%i, nplots=%i\n" % (len(tracks), nplots, len(contigs) ) )
+    E.info( "ninput=%i, ncontigs=%i, nplots=%i" % (len(tracks), nplots, len(contigs) ) )
 
     E.Stop()

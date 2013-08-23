@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-sequence2sequence.py - operate on sequences
+fasta2fasta.py - operate on sequences
 ======================================================
 
 :Author: Andreas Heger
