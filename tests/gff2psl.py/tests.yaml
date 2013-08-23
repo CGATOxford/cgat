@@ -4,3 +4,9 @@ version:
     outputs: [stdout]
     references: []
     options: --version
+
+withoutseqs:
+        stdin: hg19.small.gtf.gz
+        outputs: [stdout]
+        references: [withoutseqs.psl.gz]
+        options: 

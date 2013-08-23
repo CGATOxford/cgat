@@ -115,7 +115,7 @@ if __name__ == '__main__':
         iterator = GTF.transcript_iterator( GTF.iterator_filtered( GTF.iterator( sys.stdin ), feature="exon" ), 
                                             strict = not options.allow_duplicates )
     else:
-        iterator = GTF.joined_iterator( GFF.iterator(sys.stdin) )
+        iterator = GTF.joined_iterator( GTF.iterator(sys.stdin) )
 
     if options.with_header:
         options.stdout.write( Blat.Match().getHeader() + "\n" )
@@ -162,7 +162,6 @@ if __name__ == '__main__':
         options.stdout.write (str(entry) + "\n" )
         noutput += 1
 
-    if options.loglevel >= 1:
-        options.stdlog.write( "# ninput=%i, noutput=%i, nskipped=%i\n" % (ninput, noutput, nskipped) )
+    E.info( "ninput=%i, noutput=%i, nskipped=%i" % (ninput, noutput, nskipped) )
 
     E.Stop()

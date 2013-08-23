@@ -922,7 +922,7 @@ def runMACS( infile, outfile, controlfile = None ):
     '''
     to_cluster = True
 
-    job_options= "-l mem_free=4G"
+    job_options= "-l mem_free=8G"
 
     if controlfile: control = "--control=%s" % controlfile
     else: control = ""
@@ -1073,7 +1073,7 @@ def runMACS2( infile, outfile, controlfile = None ):
     if controlfile: control = "%s" % controlfile
     else: control = ""
 
-    job_options= "-l mem_free=4G"
+    job_options= "-l mem_free=8G"
 
     # example statement: macs2 callpeak -t R1-paupar-R1.call.bam -c R1-lacZ-R1.call.bam -f BAMPE -g 2.39e9 --verbose 5 --bw 150 -q 0.01 -m 10 100000 --name test
 
@@ -1645,7 +1645,7 @@ def loadZinba( infile, outfile, bamfile,
 def runSICER( infile, outfile, controlfile = None, mode = "narrow" ):
     '''run sicer on infile.'''
     
-    job_options= "-l mem_free=4G"
+    job_options= "-l mem_free=8G"
 
     to_cluster = True
 
@@ -1826,7 +1826,7 @@ def runPeakRanger( infile, outfile, controlfile):
     '''run peak ranger
     '''
 
-    job_options= "-l mem_free=4G"
+    job_options= "-l mem_free=8G"
     
     to_cluster = True
     assert controlfile != None, "peakranger requires a control"
@@ -1988,7 +1988,7 @@ def runPeakRangerCCAT( infile, outfile, controlfile):
     '''
     to_cluster = True
 
-    job_options= "-l mem_free=4G"
+    job_options= "-l mem_free=8G"
 
     assert controlfile != None, "peakranger requires a control"
 
