@@ -983,9 +983,11 @@ class Experiment:
         print "# valid short options are:", self.mShortOptions
         print "# valid long options are:", str(self.mLongOptions)
     
-def run( cmd ):
+def run( cmd, **kwargs ):
     '''executed a command line cmd.
     
+    ``kwargs`` are fed to the subprocess.call call.
+
     raises OSError if process failed or was terminated.
     '''
 
@@ -996,7 +998,7 @@ def run( cmd ):
         if "'" in cmd: raise ValueError( "advanced bash syntax combined with single quotes" )
         cmd = """/bin/bash -c '%s'""" % cmd
 
-    retcode = subprocess.call( cmd, shell=True)
+    retcode = subprocess.call( cmd, shell=True, **kwargs)
     if retcode < 0:
         raise OSError( "process was terminated by signal %i" % -retcode )
     return retcode

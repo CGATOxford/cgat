@@ -4,3 +4,9 @@ version:
     outputs: [stdout]
     references: []
     options: --version
+
+chain:
+        stdin: mm10ToMm9.over.chain.gz
+        outputs: [stdout]
+        references: [out.psl]
+        options: 

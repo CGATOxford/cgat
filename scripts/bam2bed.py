@@ -182,11 +182,13 @@ def main( argv = None ):
         options.stdlog.write( "category\tcounts\n%s\n" % counter.asTable() )
 
     else:
-
         if options.region != None:
+            if args[0] == "-":
+                raise ValueError("can't use region with a file from stdin" )
             it = samfile.fetch( region = options.region )
         else:
-            it = samfile.fetch()
+            # use until_eof. Files from stdin have no index
+            it = samfile.fetch( until_eof = True )
 
         # more comfortable cigar parsing will
         # come with the next pysam release
@@ -214,6 +216,8 @@ def main( argv = None ):
                             read.qname,
                             read.mapq,
                             strand) )            
+
+    E.Stop()
 
 if __name__ == "__main__":
     sys.exit( main( sys.argv) )

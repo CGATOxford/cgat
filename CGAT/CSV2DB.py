@@ -288,6 +288,8 @@ def run( infile, options ):
         existing_tables = set( [ x[0] for x in cc ] )
         cc.close()
 
+        quick_import_statement = "sqlite3 -header -csv -separator '\t' %s '.import %%s %s'" % (options.database, options.tablename)
+
     if options.header != None:
         options.header = [x.strip() for x in options.header.split(",")]
 
@@ -302,6 +304,8 @@ def run( infile, options ):
 
     if options.replace_header:
         reader.next()
+
+    E.info("reading %i columns to guess column types" % options.guess_size)
 
     rows = []
     for row in reader:
@@ -318,10 +322,13 @@ def run( infile, options ):
         if len(rows) >= options.guess_size:
             break
 
+    E.info("read %i rows for type guessing" % len(rows) )
+    E.info("creating table" )
+
     if len(rows) == 0:
         if options.allow_empty:
             if not reader.fieldnames:
-                E.warn( "do data - no table created")
+                E.warn( "no data - no table created")
             else:
                 # create empty table and exit
                 take, map_column2type, ignored = createTable( dbhandle, error, headers = reader.fieldnames,
@@ -338,7 +345,6 @@ def run( infile, options ):
                                                       existing_tables = existing_tables )
 
 
-    E.info("read %i rows for type guessing" % len(rows) )
     def row_iter( rows, reader):
         for row in rows: 
             yield quoteRow( row, take, map_column2type, 
@@ -353,10 +359,14 @@ def run( infile, options ):
 
     ninput = 0
 
+    E.info("inserting data")
+
     if options.insert_quick:
+        E.info( "using quick insert" )
+
         outfile, filename = tempfile.mkstemp()
-        
-        E.info("dumping data into %s" % filename )
+
+        E.debug("dumping data into %s" % filename )
 
         for d in row_iter( rows, reader ):
 
@@ -369,14 +379,13 @@ def run( infile, options ):
 
         os.close( outfile )
 
-        statement = "sqlite3 -header -csv -separator '\t' %s '.import %s %s'" % (options.database, filename, options.tablename)
+        statement = quick_import_statement % filename
+        E.debug( statement )
 
         # infinite loop possible
         while 1:
-            retcode = subprocess.call( statement,
-                                       shell = True,
-                                       cwd = os.getcwd(),
-                                       close_fds = True)
+            
+            retcode = E.run( statement, cwd = os.getcwd(), close_fds = True)
         
             if retcode != 0:
                 E.warn("import error using statement: %s" % statement)
@@ -446,6 +455,7 @@ def run( infile, options ):
             if options.loglevel >= 1 and ninput % options.report_step == 0:
                 E.info("iteration %i" % ninput )
 
+    E.info("building indices")
     nindex = 0
     for index in options.indices:
         

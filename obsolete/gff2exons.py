@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-gff2exons.py - 
+gff2exons.py - convert a gff file to exons
 ======================================================
 
 :Author: Andreas Heger
@@ -32,9 +32,8 @@ gff2exons.py -
 Purpose
 -------
 
-.. todo::
-   
-   describe purpose of the script.
+gff2exons.py takes set of transcripts in :term:`gtf` format and outputs 
+a table of exon information.
 
 Usage
 -----
@@ -91,11 +90,9 @@ def processEntries( name, entries, options, fasta, contigs ):
 
     for gff in entries:
         if gff.end > lcontig or gff.start >= lcontig:
-            if options.loglevel >= 1:
-                options.stdlog.write( "# coordinates for %s on %s out of bounds (%i:%i > %i)\n" % \
-                                          (str(gff.mAttributes), contig, gff.start, gff.end, lcontig) )
+            E.warn( "coordinates for %s on %s out of bounds (%i:%i > %i)" % \
+                        (str(gff.mAttributes), contig, gff.start, gff.end, lcontig) )
             return False
-
         
     if options.convert_to_cds:
         cds_start = 0
@@ -156,6 +153,8 @@ if __name__ == "__main__":
                       help="filename in which to output peptides2genes information."  )
     parser.add_option("-r", "--remove-unknown-contigs", dest="remove_unknown_contigs", action="store_true",
                       help="remove contigs that are in the genomic database."  )
+    parser.add_option("-a", "--attribute", dest="id_attribute", type="string",
+                      help="GTF attribute to use as transcript identifier. [%default]"  )
     parser.add_option("-s", "--reset-coordinates", dest="reset_coordinates", action="store_true",
                       help="all coordinates start 0. Use this for cds based assemblies."  )
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
@@ -166,6 +165,7 @@ if __name__ == "__main__":
     parser.set_defaults(
         filename_peptides2genes = None,
         separator = " ",
+        attribute = "transcript_id",
         translate_contigs = True,
         remove_unknown_contigs = False,
         reset_coordinates = False,
@@ -205,16 +205,15 @@ if __name__ == "__main__":
 
             if gff.contig not in contigs:
                 if options.remove_unknown_contigs:
-                    if options.loglevel >= 1:
-                        options.stdlog.write( "# contig %s for %s unknown\n" %\
-                                          (gff.contig, str(gff.mAttributes) ) )
+                    E.info( "contig %s for %s unknown\n" %\
+                                (gff.contig, str(gff.mAttributes) ) )
                     
                     nskipped += 1
                     continue
                 else:
                     raise IndexError("unknown contig %s in %s" % (gff.contig, str(gff)))
 
-        name = gff.mAttributes["protein_id"]
+        name = gff.mAttributes[options.attribute]
 
         if name != last_name:
             if last_name:
@@ -238,21 +237,20 @@ if __name__ == "__main__":
         nskipped += 1
         
     if options.filename_peptides2genes:
-        outfile = open(options.filename_peptides2genes, "w")
+        outfile = IOTools.openFile(options.filename_peptides2genes, "w")
         for peptide, gene in map_peptides2genes.items():
             outfile.write( "%s\t%s\n" % (peptide,gene) )
         outfile.close()
         
     genes = set(map_peptides2genes.values())
-    
-    if options.loglevel >= 1:
-        options.stdlog.write("# ninput=%i, noutput=%i, nskipped=%i, ntranslated=%i, ngenes=%i, npeptides=%i\n" %\
-                                 (ninput,
-                                  noutput,
-                                  nskipped,
-                                  ntranslated,
-                                  len(genes),
-                                  len(map_peptides2genes) ) )
+
+    E.info( "ninput=%i, noutput=%i, nskipped=%i, ntranslated=%i, ngenes=%i, npeptides=%i" %\
+                (ninput,
+                 noutput,
+                 nskipped,
+                 ntranslated,
+                 len(genes),
+                 len(map_peptides2genes) ) )
     E.Stop()
 
 

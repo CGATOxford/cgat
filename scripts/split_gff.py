@@ -34,36 +34,32 @@ Purpose
 This scripts splits a gff file into chunks. 
 The input file needs to be sorted appropriately.
 
-Methods:
-
-overlap
-   split into chunks ensuring that overlapping intervals
-   are part of the same chunk
+The gff file is split into chunks ensuring that 
+overlapping intervals are part of the same chunk
 
 Usage
 -----
 
 Example::
 
-   python <script_name>.py --help
+   python gff2chunk.py < in.gff 
 
 Type::
 
-   python <script_name>.py --help
+   python gff2chunk.py --help
 
 for command line help.
 
 Documentation
 -------------
 
-Code
-----
+Command line options
+--------------------
 
 '''
 
 import sys
 import re
-import optparse
 import os
 import CGAT.Experiment as E
 
@@ -112,10 +108,6 @@ if __name__ == "__main__":
 
     parser = E.OptionParser( version = "%prog version: $Id: gff2chunks.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"] )
 
-    parser.add_option( "-m", "--method", dest="method", type="choice",
-                       choices=("overlap",),
-                       help="method to use for splitting [default=%default]." )
-
     parser.add_option( "-p", "--output-pattern", dest="output_pattern", type="string",
                        help="output pattern for filenames. Should contain a '%i' [default=%default]." )
 
@@ -124,7 +116,6 @@ if __name__ == "__main__":
 
     parser.add_option( "-n", "--dry-run", dest="dry_run", action="store_true",
                        help="do not create any files [default=%default]." )
-
 
     parser.set_defaults(
         method = "overlap",
