@@ -34,14 +34,33 @@ Purpose
 
 This script computes distribution interval sizes, intersegmental distances
 and interval overlap from a list of intervals in :term:`gff` or :term:`bed` 
-format.
+format. 
+
+The output will be written into separate files. Filenames are given by 
+``--ouput-filename-pattern``.
+
+Available methods are:
+
+hist
+    Output a histogram of interval sizes and distances between intervals
+    in nucleotides.
+
+stats
+    Output summary statistics of interval sizes and distances between
+    intervals
+
+values
+    Output distances, sizes, and overlap values to separate files.
+
+all
+    all of the above.
 
 Usage
 -----
 
 Example::
 
-   python gff2histogram.py --help
+   python gff2histogram.py < in.bed 
 
 Type::
 
@@ -135,9 +154,7 @@ if __name__ == "__main__":
     if len(options.methods) == 0:
         raise ValueError( "please provide counting method using --method option" )
 
-    if options.format == "gff":
-        gffs = GTF.iterator( options.stdin )
-    elif options.format == "gtf":
+    if options.format in ( "gff", "gtf" ):
         gffs = GTF.iterator( options.stdin )
     elif options.format == "bed":
         gffs = Bed.iterator( options.stdin )
@@ -170,10 +187,10 @@ if __name__ == "__main__":
                 continue
             else:
                 values_between.append( this.start - last.end )
-                if this.start - last.end < 10: 
-                    print str(last)
-                    print str(this)
-                    print "=="
+                # if this.start - last.end < 10: 
+                #     print str(last)
+                #     print str(this)
+                #     print "=="
                 values_overlaps.append( 0 )
 
         last = this

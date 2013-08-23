@@ -27,10 +27,10 @@ PARAM_ANNODIST_BINS?=1000
 	if [[ "$${subset}" == "all" || "$${subset}" == "$${set}" ]]; then where="1"; else where="is_$${subset}"; fi; \
 	if [[ "$${subtable}" == "all" ]]; then \
 		s3 $(PARAM_DATABASE) "SELECT g.* FROM $${set}_annotation AS a, $${set}_gtf AS g WHERE g.gene_id = a.gene_id AND $${where}" |\
-		python $(DIR_SCRIPTS_GENEPREDICTION)gtf2tab.py --invert > $@.tmp; \
+		python $(DIR_SCRIPTS_GENEPREDICTION)gtf2tsv.py --invert > $@.tmp; \
 	else \
 		s3 $(PARAM_DATABASE) "SELECT g.* FROM $${set}_annotation AS a, $${subtable} as b, $${set}_gtf AS g WHERE g.gene_id = a.gene_id AND a.gene_id = b.gene_id AND $${where}" |\
-		python $(DIR_SCRIPTS_GENEPREDICTION)gtf2tab.py --invert > $@.tmp; \
+		python $(DIR_SCRIPTS_GENEPREDICTION)gtf2tsv.py --invert > $@.tmp; \
 	fi; \
 	if [[ "$${workspace}" == "intergenic" ]]; then options="--workspace-builder=gtf-intergenic --resolution=$(PARAM_ANNODIST_RESOLUTION_INTERGENIC)"; \
 		else options="--workspace-builder=gtf-intronic --resolution=$(PARAM_ANNODIST_RESOLUTION_INTRONIC)"; fi; \

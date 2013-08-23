@@ -170,7 +170,7 @@ peptides2genes: reference.gtf.gz
 	$(PRELOG)
 	@zcat reference.gtf.gz |\
 	awk '$$2 == "protein_coding" && $$3 == "CDS"' |\
-	python $(DIR_SCRIPTS)gtf2tab.py --map=peptide2gene --log=$@.log \
+	python $(DIR_SCRIPTS)gtf2tsv.py --map=peptide2gene --log=$@.log \
 	> $@
 	$(EPILOG)	
 

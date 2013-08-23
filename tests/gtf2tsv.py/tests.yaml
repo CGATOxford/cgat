@@ -1,0 +1,12 @@
+
+version:
+    stdin: null
+    outputs: [stdout]
+    references: []
+    options: --version
+
+tsv:
+        stdin: hg19.small.gtf.gz
+        outputs: [stdout]
+        references: [out.tsv]
+        options:

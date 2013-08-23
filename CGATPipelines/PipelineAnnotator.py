@@ -387,7 +387,7 @@ def buildAnnotatorSlicedSegments( tmpdir, outfile, track, slice ):
     statement = '''
         %(cmd-sql)s %(database)s 
         "SELECT g.* FROM %(track)s_gtf as g, %(track)s_annotation AS a WHERE a.gene_id = g.gene_id AND %(where)s"
-        | python %(scriptsdir)s/gtf2tab.py --invert 
+        | python %(scriptsdir)s/gtf2tsv.py --invert 
 	| python %(scriptsdir)s/gff2annotator2tsv.py 
                --remove-regex='%(annotator_remove_pattern)s'
                --log=%(outfile)s.log 
