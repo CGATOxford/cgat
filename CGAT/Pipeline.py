@@ -950,8 +950,13 @@ def run( **kwargs ):
             
         session.deleteJobTemplate(jt)
 
-    # run a single parallel job
-    elif (options.get( "job_queue" ) or options.get( "to_cluster" )) \
+    # Run a single parallel job if
+    #   1. job_queue is set, or
+    #   2. to_cluster is not defined or to_cluster is set to True.
+    # If the cluster has not been disabled through the command line, do not
+    #     run on cluster
+    elif (options.get( "job_queue" ) or 
+          ("to_cluster" not in options or options.get( "to_cluster" ))) \
             and not GLOBAL_OPTIONS.without_cluster:
 
         statement = buildStatement( **options )
