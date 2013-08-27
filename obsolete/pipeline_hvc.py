@@ -74,7 +74,7 @@ def importSegments( infile, outfile ):
     tablename = outfile[:-len(".import")]
 
     statement = '''
-    python %(scriptsdir)s/gtf2tab.py < %(infile)s |\
+    python %(scriptsdir)s/gtf2tsv.py < %(infile)s |\
    python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
               --index=gene_id \
               --table=%(tablename)s \

@@ -11,7 +11,7 @@ import CGAT.Stats
 ## Trackers that access reference statistics
 ##################################################################################
 
-class ReferenceData(RnaseqTracker):
+class ReferenceData(MappingTracker):
     """Base class f or Trackers accessing reference table."""
     pattern = "(.*)_transcript_counts$" 
     reference = "refcoding"
@@ -67,7 +67,7 @@ class MeanVsMedianReadDepth( ReferenceData ):
 ## Directionality
 ##=================================================================
 
-class ReadDirectionality(RnaseqTracker):
+class ReadDirectionality(MappingTracker):
     '''return antisense / sense direction of reads in introns/genes.
 
     +1 is added as pseudo-count.
@@ -83,7 +83,7 @@ class ReadDirectionality(RnaseqTracker):
                       FROM %(track)s_%(slice)s_counts """ )
         return odict( ( ( "direction", data) ,) )
 
-class IntronicExonicReadDepth(RnaseqTracker):
+class IntronicExonicReadDepth(MappingTracker):
     '''return the maximum read depth in introns
     and exons of a gene.
 
@@ -174,7 +174,7 @@ class UTRReadDensityTable( Tracker ):
 
         return odict( (("text", rst_text),) )
 
-class UTRExtension( RnaseqTracker ):
+class UTRExtension( MappingTracker ):
     
     pattern = "(.*)_extension_counts_utr$" 
     slices = ( "5utr", "3utr" )

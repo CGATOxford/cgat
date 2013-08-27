@@ -37,6 +37,9 @@ PyGreSQL
 PyGTK
     not installable via setuptools, install separately.
 
+biopython
+    pip occasionally fails. If so, try installing manually.
+
 .. _GalaxyInstallation:
 
 Installing in Galaxy

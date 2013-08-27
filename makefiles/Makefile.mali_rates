@@ -202,9 +202,9 @@ data-hook: $(DATA_TARGETS_SUBDIR)
 #################################################################################
 %.masked_mali: %.fasta
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_TOOLS)sequence2sequence.py --method=translate -v 0 < $< |\
-	python $(DIR_SCRIPTS_TOOLS)sequence2sequence.py --method=mask-seg -v 0	> $@_tmp
-	@python $(DIR_SCRIPTS_TOOLS)sequence2sequence.py \
+	@python $(DIR_SCRIPTS_TOOLS)fasta2fasta.py --method=translate -v 0 < $< |\
+	python $(DIR_SCRIPTS_TOOLS)fasta2fasta.py --method=mask-seg -v 0	> $@_tmp
+	@python $(DIR_SCRIPTS_TOOLS)fasta2fasta.py \
 		--method=mask-codons \
 		--parameters=$@_tmp \
 		--method=mask-incomplete-codons \

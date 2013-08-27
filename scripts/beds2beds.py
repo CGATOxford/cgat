@@ -32,30 +32,51 @@ beds2beds.py - decompose bed files
 Purpose
 -------
 
-decompose a collection of bed-files.
+decompose a collection of bed-files into a collection unions/intersections.
 
 merged-combinations
-   merge intervals across tracks and only report those
-   that appear in every other track.
+   merge intervals across :term:`bed` files and only report those
+   that appear in every file.
 
 unmerged-combinations
-   for each track, report intervals that overlap with intervals
-   in every other track.
+   for each :term:`bed` file, report intervals that overlap with intervals
+   in every other :term:`bed` file.
 
-If the ``--exclusive`` option is set, only intervals are reported
-that do not overlap with intervals in the background set.
+If the ``--exclusive`` option is set, report exclusive overlap. Only intervals 
+will be reported that overlap in a pairwise comparison but do not overlap with 
+intervals in any of the other sets.
+
+This script requires bed files indexed by :term:`tabix`.
 
 Usage
 -----
 
+For example, you have ChIP-Seq data for PolII and two transcription factors tf1 and tf2.
+The following statement will output four :term:`bed` files::
+
+   python beds2beds.py polii.bed.gz tf1.bed.gz tf2.bed.gz
+
+The four files are containing intervals, that
+
+1. have PolII and tf1 present,
+2. have PolII and tf2 present,
+3. have tf1 and tf2 present, or
+4. have PolII and tf1 and tf2 present.
+
+If the --exclusive option is set, three sets will be output with intervals that
+
+1. have PolII and tf1 present but no tf2,
+2. have PolII and tf2 present but no tf1,
+3. have tf1 and tf2 present bu no PolII.
+
 Type::
 
-   python <script_name>.py --help
+   python beds2beds.py --help
 
 for command line help.
 
-Code
-----
+Command line options
+--------------------
 
 """ 
 
@@ -155,9 +176,6 @@ def main( argv = None ):
     # setup command line parser
     parser = E.OptionParser( version = "%prog version: $Id: diff_bed.py 2866 2010-03-03 10:18:49Z andreas $", usage = globals()["__doc__"] )
 
-    parser.add_option("-s", "--ignore-strand", dest="ignore_strand", action="store_true",
-                      help="ignore strand information [default=%default]." )
-
     parser.add_option("-e", "--exclusive", dest="exclusive", action="store_true",
                       help="Intervals reported will be merged across the positive set"
                            " and do not overlap any interval in any of the other sets"
@@ -166,21 +184,15 @@ def main( argv = None ):
     parser.add_option("-p", "--pattern-id", dest="pattern_id", type="string",
                       help="pattern to convert a filename to an id [default=%default]." )
 
-    parser.add_option("-t", "--tracks", dest="tracks", action="store_true",
-                      help="compare files against all tracks in the first file [default=%default]" )
-    
     parser.add_option( "-m", "--method", dest="method", type="choice",
                        choices = ("merged-combinations", 
                                   "unmerged-combinations" ),
                        help = "method to perform [default=%default]" )
     
     parser.set_defaults(
-        ignore_strand = False,
-        filename_update = None,
         pattern_id = "(.*).bed.gz",
         exclusive = False,
-        tracks = None,
-        method = None,
+        method = "merged-combinations",
         )
 
     ## add common options (-h/--help, ...) and parse command line 

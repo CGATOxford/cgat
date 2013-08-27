@@ -79,7 +79,7 @@ def linkToEnsembl( id ):
     return link
 
 ###########################################################################
-class RnaseqTracker( TrackerSQL ):
+class MappingTracker( TrackerSQL ):
     '''Define convenience tracks for plots'''
     def __init__(self, *args, **kwargs ):
         TrackerSQL.__init__(self, *args, backend = DATABASE, **kwargs )

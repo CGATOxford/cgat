@@ -169,6 +169,8 @@ import collections, types, subprocess, gzip
 import optparse
 import textwrap
 
+import IOTools as IOTools
+
 class DefaultOptions:
     stdlog = sys.stdout
     stdout = sys.stdout
@@ -607,16 +609,16 @@ def Start( parser = None,
 
     if add_pipe_options:
         if global_options.stdout != sys.stdout: 
-            global_options.stdout = open(global_options.stdout, "w")
+            global_options.stdout = IOTools.openFile(global_options.stdout, "w")
         if global_options.stderr != sys.stderr:
             if global_options.stderr == "stderr":
                 global_options.stderr = global_options.stderr
             else:
-                global_options.stderr = open(global_options.stderr, "w")
+                global_options.stderr = IOTools.openFile(global_options.stderr, "w")
         if global_options.stdlog != sys.stdout:
-            global_options.stdlog = open(global_options.stdlog, "a")            
+            global_options.stdlog = IOTools.openFile(global_options.stdlog, "a")            
         if global_options.stdin != sys.stdin: 
-            global_options.stdin = open(global_options.stdin, "r")
+            global_options.stdin = IOTools.openFile(global_options.stdin, "r")
     else:
         global_options.stderr = sys.stderr
         global_options.stdout = sys.stdout
@@ -981,9 +983,11 @@ class Experiment:
         print "# valid short options are:", self.mShortOptions
         print "# valid long options are:", str(self.mLongOptions)
     
-def run( cmd ):
+def run( cmd, **kwargs ):
     '''executed a command line cmd.
     
+    ``kwargs`` are fed to the subprocess.call call.
+
     raises OSError if process failed or was terminated.
     '''
 
@@ -994,7 +998,7 @@ def run( cmd ):
         if "'" in cmd: raise ValueError( "advanced bash syntax combined with single quotes" )
         cmd = """/bin/bash -c '%s'""" % cmd
 
-    retcode = subprocess.call( cmd, shell=True)
+    retcode = subprocess.call( cmd, shell=True, **kwargs)
     if retcode < 0:
         raise OSError( "process was terminated by signal %i" % -retcode )
     return retcode

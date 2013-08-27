@@ -320,7 +320,7 @@ def buildMalisCodon( infile, outfile ):
     
     statement = '''
     cat %(infile)s
-    | python %(scriptsdir)s/sequence2sequence.py --method=translate 
+    | python %(scriptsdir)s/fasta2fasta.py --method=translate 
     | perl -p -e "s/[a-z]/-/g unless (/^>/)"
     | python %(scriptsdir)s/mali2mali.py --method=remove-all-gaps --log=%(outfile)s.log --allow-duplicates
 
@@ -345,7 +345,7 @@ def buildMalisAA( infile, outfile ):
     cat %(infile)s
     | perl -p -e "s/[a-z]/-/g unless (/^>/)"
     | python %(scriptsdir)s/mali2mali.py --method=remove-all-gaps --log=%(outfile)s.log --allow-duplicates
-    | python %(scriptsdir)s/sequence2sequence.py --method=translate 
+    | python %(scriptsdir)s/fasta2fasta.py --method=translate 
     > %(outfile)s
     '''
     
@@ -367,7 +367,7 @@ def computeColumnStatsNA( infile, outfile ):
     cat %(infile)s
     | perl -p -e "s/[a-z]/-/g unless (/^>/)"
     | python %(scriptsdir)s/mali2mali.py --method=remove-all-gaps --log=%(outfile)s.log --allow-duplicates
-    | python %(scriptsdir)s/sequence2sequence.py --exclude="(^mouse)" --log=%(outfile)s.log
+    | python %(scriptsdir)s/fasta2fasta.py --exclude="(^mouse)" --log=%(outfile)s.log
     | python %(scriptsdir)s/mali2table.py --section=all --log=%(outfile)s.log --allow-duplicates
     > %(outfile)s
     '''
@@ -388,7 +388,7 @@ def computeColumnStatsAA( infile, outfile ):
     statement = '''
     cat %(infile)s
     | perl -p -e "s/[X?]/-/g unless (/^>/)"
-    | python %(scriptsdir)s/sequence2sequence.py --exclude="(^mouse)" --log=%(outfile)s.log
+    | python %(scriptsdir)s/fasta2fasta.py --exclude="(^mouse)" --log=%(outfile)s.log
     | python %(scriptsdir)s/mali2table.py --section=all --log=%(outfile)s.log --allow-duplicates --alphabet=aa
     > %(outfile)s
     '''

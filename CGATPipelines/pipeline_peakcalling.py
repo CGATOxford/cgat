@@ -1101,7 +1101,10 @@ def loadSPPSummary( infile, outfile ):
 @files( [ ("%s.call.bam" % (x.asFile()), 
            "spp.dir/%s.qual" % x.asFile() ) for x in TRACKS ] )
 def estimateSPPQualityMetrics( infile, outfile ):
+    '''estimate ChIP-Seq quality metrics using SPP'''
 
+    to_cluster = True
+    job_options= "-l mem_free=4G"
     track = P.snip(infile, ".call.bam" )
 
     controlfile = "%s.call.bam" % getControl(Sample(track)).asFile()
@@ -1150,6 +1153,9 @@ def callPeaksWithSPPForIDR( infile, outfile ):
     '''run SICER for peak detection.'''
     track = P.snip( infile, ".call.bam" )
     controlfile = "%s.call.bam" % getControl(Sample(track)).asFile()
+    job_options= "-l mem_free=4G"
+
+    to_cluster = True
 
     if not os.path.exists( controlfile ):
         L.warn( "no controlfile '%s' for track '%s' not found " % (controlfile, track ) )
@@ -1177,6 +1183,8 @@ def callPeaksWithSPPForIDR( infile, outfile ):
           r"idr.dir/\1.idr")
 def applyIDR( infiles, outfile ):
     '''apply IDR analysis.'''
+
+    job_options= "-l mem_free=4G"
 
     to_cluster = True
     chromosome_table = os.path.join(PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_contigs"])

@@ -4,3 +4,15 @@ version:
     outputs: [stdout]
     references: []
     options: --version
+
+sort_test:
+    stdin: example_human_g1k.vcf
+    outputs: [stdout]
+    references: [example_human_g1k_sorted.vcf]
+    options: --reorder trio1-father-filt-1,trio1-mother-filt-1,trio1-daughter-filt-1
+
+alphabetical_test:
+    stdin: example_human_g1k_sorted.vcf
+    outputs: [stdout]
+    references: [example_human_g1k_alphabetical.vcf]
+    options: --reorder alphabetical

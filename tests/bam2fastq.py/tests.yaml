@@ -4,3 +4,9 @@ version:
     outputs: [stdout]
     references: []
     options: --version
+
+default_test:
+    stdin: example_human_g1k.bam
+    outputs: [example_human_g1k.1.fastq,example_human_g1k.2.fastq]
+    references: [example_human_g1k.1.fastq,example_human_g1k.2.fastq]
+    options:

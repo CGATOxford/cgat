@@ -17,6 +17,4 @@ would like a use case then please post a request on the `CGAT users group`_ webs
    recipes/lncrna_cpg
    recipes/metagenome_contigs_kmers
 
-
-
 .. _CGAT users group: https://groups.google.com/forum/?fromgroups#!forum/cgat-user-group

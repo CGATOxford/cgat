@@ -16,3 +16,9 @@ great_domains:
     references: [great_domains.gff]
     options: --genome-file=%DIR%/hg19.chr19 --method=great-domains
 
+fromfile:
+    stdin: null
+    outputs: [stdout]
+    references: [genome.gff]
+    options: --stdin=%DIR%/hg19.chr19.gtf.gz --sort --genome-file=%DIR%/hg19.chr19 --method=genome       
+

@@ -402,7 +402,7 @@ rates-hook: rates.prepare rates.run rates.finish
 #################################################################################
 %.masked_mali: %.fasta
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_TOOLS)sequence2sequence.py --method=mask-seg --log=$@.log < $< > $@
+	@python $(DIR_SCRIPTS_TOOLS)fasta2fasta.py --method=mask-seg --log=$@.log < $< > $@
 	$(EPILOG)
 
 #################################################################################
@@ -494,7 +494,7 @@ rates.finish: rates.run
 		--method=remove-unaligned-pairs,remove-all-gaps \
 		--verbose=0 \
 	< $< |\
-	python $(DIR_SCRIPTS_TOOLS)sequence2sequence.py \
+	python $(DIR_SCRIPTS_TOOLS)fasta2fasta.py \
 		    --method=build-map \
 		    --parameters=$*.map_old2new |\
 	python $(DIR_SCRIPTS_TOOLS)mali2mali.py \

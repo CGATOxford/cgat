@@ -4,3 +4,27 @@ version:
     outputs: [stdout]
     references: []
     options: --version
+
+default_test:
+    stdin: example_human_g1k.bam
+    outputs: [stdout]
+    references: [example_human_g1k.tsv]
+    options:
+
+merge_min100_test:
+    stdin: example_human_g1k.bam
+    outputs: [stdout]
+    references: [example_human_g1k_merge_min100.tsv]
+    options: --merge-pairs --min-insert-size 100
+
+merge_max150_test:
+    stdin: example_human_g1k.bam
+    outputs: [stdout]
+    references: [example_human_g1k_merge_max150.tsv]
+    options: --merge-pairs --max-insert-size 150
+
+region_test:
+    stdin: example_human_g1k.bam
+    outputs: [stdout]
+    references: [example_human_g1k_region.tsv]
+    options: --region '1:69100:69200'

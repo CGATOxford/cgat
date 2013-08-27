@@ -566,7 +566,7 @@ def buildReferenceTranscriptome( infile, outfile ):
         --genome=%(genome_dir)s/%(genome)s
         --log=%(outfile)s.log
     | perl -p -e "if (/^>/) { s/ .*$// }"
-    | python %(scriptsdir)s/sequence2sequence.py -v 0
+    | python %(scriptsdir)s/fasta2fasta.py -v 0
     | fold 
     > %(outfile)s;
     checkpoint; 

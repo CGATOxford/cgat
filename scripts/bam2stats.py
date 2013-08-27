@@ -117,7 +117,7 @@ This script takes a bam file as input and computes a few metrics:
 
 Additionally, the script outputs histograms for the following tags and
 scores. These histograms are only computed for alignments not within
-regions of repetetive RNA.
+regions of repetitive RNA.
 
 * NM: number of mismatches in alignments.
 * NH: number of hits of reads.
@@ -128,7 +128,10 @@ Usage
 
 Example::
 
-   python cgat_script_template.py --help
+   cat in.bam | python bam2stats.py -
+
+This command will generate various statistics based on the supplied BAM file, such as
+percentage reads mapped and percentage reads mapped in pairs.
 
 Type::
 
@@ -169,6 +172,7 @@ import optparse
 import collections
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
+import CGAT.GTF as GTF
 import pysam
 
 try:
@@ -263,7 +267,7 @@ def main( argv = None ):
     (options, args) = E.Start( parser, argv = argv, add_output_options = True )
 
     if options.filename_rna:
-        rna = GTF.readAndIndex( GFF.iterator( IOTools.openFile( options.filename_rna ) ) )
+        rna = GTF.readAndIndex( GTF.iterator( IOTools.openFile( options.filename_rna ) ) )
     else:
         rna = None
 

@@ -57,12 +57,12 @@ Usage
 
 Type::
 
-   python <script_name>.py --help
+   python chain2psl.py --help
 
 for command line help.
 
-Code
-----
+Command line options
+--------------------
 
 """ 
 

@@ -446,7 +446,7 @@ duplications-hook: $(TARGET_SUBDIR)
 #################################################################################
 %.masked_mali: %.fasta
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_TOOLS)sequence2sequence.py --log=$@.log --method=mask-seg < $< > $@
+	@python $(DIR_SCRIPTS_TOOLS)fasta2fasta.py --log=$@.log --method=mask-seg < $< > $@
 	$(EPILOG)
 
 #################################################################################
@@ -783,7 +783,7 @@ subtree.finish: subtree.run
 		--method=remove-unaligned-pairs,remove-all-gaps \
 		--verbose=0 \
 	< $< |\
-	python $(DIR_SCRIPTS_TOOLS)sequence2sequence.py \
+	python $(DIR_SCRIPTS_TOOLS)fasta2fasta.py \
 		    --method=build-map \
 		    --parameters=$*.map_old2new |\
 	python $(DIR_SCRIPTS_TOOLS)mali2mali.py \

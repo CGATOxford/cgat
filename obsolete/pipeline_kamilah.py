@@ -206,7 +206,7 @@ def importLincRNA( infile, outfile ):
     # output gtf file
     statement = '''%(cmd-sql)s %(database)s "SELECT g.* FROM %(track)s_gtf as g, %(table)s AS t
                           WHERE t.gene_id = g.gene_id" 
-                | python %(scriptsdir)s/gtf2tab.py --invert --log=%(outfile)s
+                | python %(scriptsdir)s/gtf2tsv.py --invert --log=%(outfile)s
                 | gzip
                 > %(outgtf)s'''
     
@@ -552,7 +552,7 @@ def importGTF( infile, outfile ):
 
     statement = '''gunzip
         < %(infile)s
-        | python %(scriptsdir)s/gtf2tab.py 
+        | python %(scriptsdir)s/gtf2tsv.py 
         |python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
               --index=gene_id 
               --map=gene_id:str 
@@ -1033,7 +1033,7 @@ def makeCodingPotential( infile, outfile ):
     P.run()
 
     tmpfilename = P.getTempFilename( "." )
-    statement = '''python %(toolsdir)s/sequence2sequence.py 
+    statement = '''python %(toolsdir)s/fasta2fasta.py 
                           --method=reverse-complement -v 0
                   < %(infile)s
                   > %(tmpfilename)s'''

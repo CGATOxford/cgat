@@ -174,6 +174,14 @@ def joinTables( outfile, options, args ):
         # tables with max 100 columns
         take = None
 
+    if options.prefixes:
+        prefixes = [ x.strip() for x in options.prefixes.split(",") ]
+        if len(prefixes) != len(options.filenames):
+            raise ValueError("number of prefixes (%i) and tables (%i) do not match" % (len(prefixes), 
+                                                                                       len(options.filenames)))
+    else:
+        prefixes = None
+
     E.debug("joining on columns %s and taking columns %s" % (options.columns, options.take))
 
     for nindex, filename in enumerate(options.filenames):
@@ -200,6 +208,7 @@ def joinTables( outfile, options, args ):
             if not titles:
                 key = "-".join( [data[x] for x in options.columns] )                
                 titles = [key]
+            
             for x in range(len(data)):
                 if x in options.columns or (take and x not in take): continue
                 ncolumns += 1
@@ -217,6 +226,8 @@ def joinTables( outfile, options, args ):
                         E.warn( "can't extract title from filename %s" % prefix )
                         p = "unknown"
                     titles.append( "%s" % p )
+                elif prefixes:
+                    titles.append( "%s_%s" % (prefixes[nindex], data[x]) )
                 else:
                     titles.append( data[x] )
                 
@@ -448,6 +459,10 @@ def main( argv = sys.argv ):
     parser.add_option( "--use-file-prefix", dest="use_file_prefix", action="store_true",
                       help="use file prefix as column headers. Suitable for two-column tables [default=%default]" )
 
+    parser.add_option( "--prefixes", dest="prefixes", type="string",
+                       help="list of prefixes to use. , separated list of prefixes. The number "
+                       "of prefixes need to correspond to the number of input files [default=%default]" )
+
     parser.add_option( "--regex-filename", dest="regex_filename", type="string",
                       help="pattern to apply to filename to build prefix [default=%default]" )
 
@@ -474,7 +489,8 @@ def main( argv = sys.argv ):
         use_file_prefix = False,
         cat = None,
         take = [],
-        regex_filename = "(.*)"
+        regex_filename = "(.*)",
+        prefixes = None,
         )
 
     (options, args) = E.Start( parser, argv = argv )

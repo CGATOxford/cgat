@@ -208,7 +208,7 @@ step1.ancestral.fasta:
 		$(PSQL_SELECT) \
 		"SELECT '>$${schema}$(PARAM_SEPARATOR)' || group_id || E'\n' || sequence \
 		FROM $${schema}.ancestral_sequences" |\
-		python $(DIR_SCRIPTS_TOOLS)sequence2sequence.py -v 0 --method=translate >> $@; \
+		python $(DIR_SCRIPTS_TOOLS)fasta2fasta.py -v 0 --method=translate >> $@; \
 	done
 	$(CMD_LOG) "number of sequences per clade in $@"	
 	@grep ">" $@ | perl -p -e "s/>//; s/[$(PARAM_SEPARATOR)].*//" | sort | uniq -c $(TOLOG)

@@ -221,7 +221,7 @@ def annotateGeneStructure( infile, outfile,
             | %(filter_cmd)s 
             | python %(scriptsdir)s/gtf2gtf.py --sort=gene
             | awk '$3 == "exon"' 
-            | python /ifs/devel/andreas/cgat/gtf2gtf.py --filter=representative-transcript
+            | python %(scriptsdir)s/gtf2gtf.py --filter=representative-transcript
             | python %(scriptsdir)s/gtf2gtf.py --filter=longest-gene --log=%(outfile)s.log 
             | python %(scriptsdir)s/gtf2gtf.py --sort=position
             | python %(scriptsdir)s/gtf2gff.py --genome-file=%(genome_dir)s/%(genome)s 
@@ -325,7 +325,7 @@ def loadGeneInformation( infile, outfile, only_proteincoding = False ):
     gunzip < %(infile)s 
     | %(filter_cmd)s 
     | python %(scriptsdir)s/gtf2gtf.py --sort=gene
-    | python %(scriptsdir)s/gtf2tab.py --full --only-attributes -v 0
+    | python %(scriptsdir)s/gtf2tsv.py --full --only-attributes -v 0
     | python %(toolsdir)s/csv_cut.py --remove exon_number transcript_id transcript_name protein_id
     | %(scriptsdir)s/hsort 1 | uniq 
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
@@ -359,7 +359,7 @@ def loadTranscriptInformation( infile, outfile,
     | %(filter_cmd)s 
     | awk '$3 == "CDS"' 
     | python %(scriptsdir)s/gtf2gtf.py --sort=gene
-    | python %(scriptsdir)s/gtf2tab.py --full --only-attributes -v 0
+    | python %(scriptsdir)s/gtf2tsv.py --full --only-attributes -v 0
     | python %(toolsdir)s/csv_cut.py --remove exon_number 
     | %(scriptsdir)s/hsort 1 | uniq 
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
@@ -630,7 +630,7 @@ def loadTranscripts( infile, outfile ):
     
     statement = '''
     gunzip < %(infile)s 
-    | python %(scriptsdir)s/gtf2tab.py
+    | python %(scriptsdir)s/gtf2tsv.py
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
               --index=transcript_id 
               --index=gene_id 
@@ -648,7 +648,7 @@ def loadTranscript2Gene( infile, outfile ):
     
     statement = '''
     gunzip < %(infile)s
-    | python %(scriptsdir)s/gtf2tab.py --map transcript2gene -v 0
+    | python %(scriptsdir)s/gtf2tsv.py --map transcript2gene -v 0
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
               --index=transcript_id 
               --index=gene_id 

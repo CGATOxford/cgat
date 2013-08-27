@@ -4,3 +4,10 @@ version:
     outputs: [stdout]
     references: []
     options: --version
+
+gaps:
+        stdin: in.fasta
+        outputs: [stdout]
+        references: [gaps.bed]
+        options:
+      

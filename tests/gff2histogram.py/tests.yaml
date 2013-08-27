@@ -4,3 +4,10 @@ version:
     outputs: [stdout]
     references: []
     options: --version
+
+
+all:
+        stdin: hg19.chr19.gtf.gz
+        outputs: [hist,stats]
+        references: [hist,stats]
+        options: --method=stats --method=hist

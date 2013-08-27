@@ -1,0 +1,12 @@
+
+version:
+    stdin: null
+    outputs: [stdout]
+    references: []
+    options: --version
+
+translate:
+        stdin: in.fasta
+        outputs: [stdout]
+        references: [trans.fasta]
+        options: --method=translate

@@ -922,6 +922,8 @@ def runMACS( infile, outfile, controlfile = None ):
     '''
     to_cluster = True
 
+    job_options= "-l mem_free=8G"
+
     if controlfile: control = "--control=%s" % controlfile
     else: control = ""
         
@@ -1071,11 +1073,14 @@ def runMACS2( infile, outfile, controlfile = None ):
     if controlfile: control = "%s" % controlfile
     else: control = ""
 
+    job_options= "-l mem_free=8G"
+
     # example statement: macs2 callpeak -t R1-paupar-R1.call.bam -c R1-lacZ-R1.call.bam -f BAMPE -g 2.39e9 --verbose 5 --bw 150 -q 0.01 -m 10 100000 --name test
 
-    
     # used to set the option --format=bampe
     # removed to let macs2 detect the format.
+
+    # -B --SPMR: ask macs to create a bed-graph file with fragment pileup per million reads
     statement = '''
                     macs2 callpeak 
                     -t %(infile)s 
@@ -1083,10 +1088,10 @@ def runMACS2( infile, outfile, controlfile = None ):
                     --verbose=10 
                     --name=%(outfile)s 
                     --qvalue=%(macs2_max_qvalue)s
+                    -B --SPMR
                     %(macs2_options)s 
                     >& %(outfile)s
                 ''' 
-    
     P.run() 
     
     # compress macs bed files and index with tabix
@@ -1106,8 +1111,6 @@ def runMACS2( infile, outfile, controlfile = None ):
                    rm -f %(outfile)s_%(suffix)s
                 '''
     P.run()
-
-
 
 ############################################################
 ############################################################
@@ -1204,7 +1207,6 @@ def loadMACS( infile, outfile, bamfile, controlfile = None ):
     # create plot by calling R
     if os.path.exists( filename_r ):
         statement = '''R --vanilla < %(filename_r)s > %(filename_rlog)s; mv %(filename_pdf)s %(exportdir)s'''
-        P.run()
         P.run()
 
     ###############################################################
@@ -1643,6 +1645,8 @@ def loadZinba( infile, outfile, bamfile,
 def runSICER( infile, outfile, controlfile = None, mode = "narrow" ):
     '''run sicer on infile.'''
     
+    job_options= "-l mem_free=8G"
+
     to_cluster = True
 
     workdir = outfile + ".dir" 
@@ -1821,7 +1825,10 @@ def summarizeSICER( infiles, outfile ):
 def runPeakRanger( infile, outfile, controlfile):
     '''run peak ranger
     '''
+
+    job_options= "-l mem_free=8G"
     
+    to_cluster = True
     assert controlfile != None, "peakranger requires a control"
 
     statement = '''peakranger ranger
@@ -1979,7 +1986,10 @@ def summarizePeakRanger( infiles, outfile ):
 def runPeakRangerCCAT( infile, outfile, controlfile):
     '''run peak ranger
     '''
-    
+    to_cluster = True
+
+    job_options= "-l mem_free=8G"
+
     assert controlfile != None, "peakranger requires a control"
 
     statement = '''peakranger ccat

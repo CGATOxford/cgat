@@ -32,16 +32,17 @@ bam2fastq.py -
 Purpose
 -------
 
-.. todo::
-   
-   describe purpose of the script.
+Convert a BAM file to a FASTQ files.
 
 Usage
 -----
 
 Example::
 
-   python cgat_script_template.py --help
+   python bam2fastq.py in.bam out.1.fastq out.2.fastq
+
+This command converts the BAM file in.bam into fastq files containing forward reads (out.1.fastq) and reverse reads 
+(out.2.fastq). 
 
 Type::
 
@@ -51,6 +52,12 @@ for command line help.
 
 Documentation
 -------------
+
+This tool converts a BAM file containing paired-end reads into forward and reverse fastq files.
+
+For example::
+
+   python bam2fastq.py in.bam out.1.fastq out.2.fastq 
 
 Code
 ----

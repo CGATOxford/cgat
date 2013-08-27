@@ -88,7 +88,7 @@ step11.split: step10
 		FROM $(PARAM_TABLE_NAME_OVERVIEW) \
 	ORDER BY sbjct_token, export_sbjct_genome_from" \
 	$(PSQL_CONNECTION_OPTIONS) |\
-	python $(DIR_SCRIPTS_GENEPREDICTION)gff2chunks.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)split_gff.py \
 		--output-pattern=step11.dir/step11_%06i.chunk \
 		--method=overlap \
 		--min-chunk-size=$(PARAM_STEP11_CHUNK_SIZE) \

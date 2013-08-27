@@ -950,7 +950,7 @@ $(PARAM_SET_MERGED).derivedcoverage: $(PARAM_SET_MERGED).gtf $(INPUT_COVERAGES:%
 ########################################################
 %_gtf.import: %.gtf
 	$(PRELOG)
-	@python	$(DIR_SCRIPTS_GENEPREDICTION)gtf2tab.py < $< |\
+	@python	$(DIR_SCRIPTS_GENEPREDICTION)gtf2tsv.py < $< |\
 	csv2db.py --map contig:str --map gene_id:str --map transcript_id:str \
 		-b sqlite --index=gene_id --index=transcript_id --table=$*_gtf > $@	
 	$(EPILOG)
@@ -1023,7 +1023,7 @@ $(PARAM_SET_MERGED).derivedcoverage: $(PARAM_SET_MERGED).gtf $(INPUT_COVERAGES:%
 	$(PRELOG)
 	@rm -rf $@.*
 	@$(DIR_SCRIPTS_TOOLS)cpc.sh $< $@.forward.table $@.tmp.dir $@.forward.evidence $(PARAM_CPC_UNIREF) > $@.log
-	@python $(DIR_SCRIPTS_TOOLS)sequence2sequence.py \
+	@python $(DIR_SCRIPTS_TOOLS)fasta2fasta.py \
 		--method=reverse-complement --log=$@.log < $< > $@.tmp.reverse.fasta
 	@$(DIR_SCRIPTS_TOOLS)cpc.sh $@.tmp.reverse.fasta $@.reverse.table $@.tmp.dir $@.reverse.evidence $(PARAM_CPC_UNIREF) >> $@.log
 	@printf "gene_id\tlength\tf_iscoding\tf_value\tf_orfstart\tf_orfend\tf_orfval1\tf_orfval2\tf_orf\tr_iscoding\tr_value\tr_orfstart\tr_orfend\tr_orfval1\tr_orfval2\tr_orf\n" > $@
@@ -1089,7 +1089,7 @@ alignment_filtered.psl: $(PARAM_FILE_ALIGNMENTS) $(PARAM_MASTER_SET_GENES).gtf
 ########################################################
 territories.import: $(PARAM_FILENAME_TERRITORIES)
 	$(PRELOG)
-	@python $(DIR_SCRIPTS_GENEPREDICTION)gtf2tab.py \
+	@python $(DIR_SCRIPTS_GENEPREDICTION)gtf2tsv.py \
 	< $< |\
 	csv2db.py --map contig:str --map gene_id:str --map transcript_id:str \
 		-b sqlite --index=gene_id --index=transcript_id --table=territories > $@	
@@ -2081,7 +2081,7 @@ sizes.table:
 	$(PRELOG)
 	@s3 $(PARAM_DATABASE) "SELECT * FROM $*_gtf ORDER BY contig, start" |\
 	$(CMD_REMOTE_SUBMIT) "\
-	python $(DIR_SCRIPTS_GENEPREDICTION)gtf2tab.py --invert |\
+	python $(DIR_SCRIPTS_GENEPREDICTION)gtf2tsv.py --invert |\
 	python $(DIR_SCRIPTS_GENEPREDICTION)gff2histogram.py \
 		--method=values \
 		--output-filename-pattern="$@.%s" \
@@ -2090,7 +2090,7 @@ sizes.table:
 	> $@"
 	@s3 $(PARAM_DATABASE) "SELECT * FROM $*_gtf ORDER BY gene_id, start" |\
 	$(CMD_REMOTE_SUBMIT) "\
-	python $(DIR_SCRIPTS_GENEPREDICTION)gtf2tab.py --invert |\
+	python $(DIR_SCRIPTS_GENEPREDICTION)gtf2tsv.py --invert |\
 	python $(DIR_SCRIPTS_GENEPREDICTION)gtf2gtf.py --merge-transcripts |\
 	$(DIR_SCRIPTS_GENEPREDICTION)gff_sort pos |\
 	python $(DIR_SCRIPTS_GENEPREDICTION)gff2histogram.py \
@@ -2128,7 +2128,7 @@ sizes.table:
 	@s3 $(PARAM_DATABASE) "SELECT g.* FROM $*_gtf AS g, $*_annotation AS a \
 		WHERE a.gene_id = g.gene_id AND NOT a.is_known" |\
 	$(CMD_REMOTE_SUBMIT) "\
-	python $(DIR_SCRIPTS_GENEPREDICTION)gtf2tab.py --invert --log=$@.log |\
+	python $(DIR_SCRIPTS_GENEPREDICTION)gtf2tsv.py --invert --log=$@.log |\
 	python $(DIR_SCRIPTS_GENEPREDICTION)gff2blat.py --log=$@.log --is-gtf --allow-duplicates --no-header |\
 	sort -k 14,14 -k 16,16n" > $@.tmp
 	@cat $@.tmp |\
@@ -2155,7 +2155,7 @@ sizes.table:
 	@s3 $(PARAM_DATABASE) "SELECT g.* FROM $*_gtf AS g, $*_annotation AS a \
 		WHERE a.gene_id = g.gene_id AND a.is_known" |\
 	$(CMD_REMOTE_SUBMIT) "\
-	python $(DIR_SCRIPTS_GENEPREDICTION)gtf2tab.py --invert --log=$@.log |\
+	python $(DIR_SCRIPTS_GENEPREDICTION)gtf2tsv.py --invert --log=$@.log |\
 	python $(DIR_SCRIPTS_GENEPREDICTION)gff2blat.py --log=$@.log --is-gtf --allow-duplicates --no-header |\
 	sort -k 14,14 -k 16,16n" > $@.tmp
 	@cat $@.tmp |\

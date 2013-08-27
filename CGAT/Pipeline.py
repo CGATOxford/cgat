@@ -228,8 +228,17 @@ def clone( infile, outfile ):
     '''create a clone of ``infile`` named ``outfile``
     by creating a soft-link.
     '''
+    # link via relative paths, otherwise it 
+    # fails if infile and outfile are in different
+    # directories or in a subdirectory
+    if os.path.dirname(infile) != os.path.dirname(outfile):
+        relpath = os.path.relpath( os.path.dirname(infile), os.path.dirname(outfile) )
+    else:
+        relpath = "."
+    target = os.path.join( relpath, os.path.basename( infile ) )
+
     try:
-        os.symlink( infile, outfile )
+        os.symlink( target, outfile )
     except OSError:
         pass
     
@@ -418,7 +427,13 @@ def load( infile,
 
     run()
 
-def concatenateAndLoad( infiles, outfile, regex_filename = None, header = None, cat = None, titles = False, options = "" ):
+def concatenateAndLoad( infiles, 
+                        outfile, 
+                        regex_filename = None, 
+                        header = None, 
+                        cat = None, 
+                        titles = False, 
+                        options = "" ):
     '''concatenate categorical tables and load into a database.
 
     Concatenation assumes that the header is the same in all files.
@@ -465,20 +480,28 @@ def mergeAndLoad( infiles,
                   suffix = None, 
                   columns=(0,1), 
                   regex = None, 
-                  row_wise = True ):
+                  row_wise = True,
+                  options = "",
+                  prefixes = None ):
     '''merge categorical tables and load into a database.
-
-    Columns denotes the columns to be taken.
 
     The tables are merged and entered row-wise, i.e each file is 
     a row unless *row_wise* is set to False. The latter is useful if 
     histograms are being merged.
 
-    Filenames are stored in a ``track`` column. Directory names
-    are chopped off.
+    `columns` denotes the columns to be taken. By default, the first
+    two columns are taken with the first being the key. Filenames are 
+    stored in a ``track`` column. Directory names are chopped off.
+
+    If `columns` is set to None, all columns will be taken. Here, column
+    names will receive a prefix. If ``prefixes`` is None, the filename
+    will be added as a prefix. If ``prefixes`` is a list, the respective
+    prefix will be added to each column. The length of ``prefixes`` and
+    ``infiles`` need to be the same.
     '''
     if len(infiles) == 0:
         raise ValueError( "no files for merging")
+
     if suffix:
         header = ",".join( [ os.path.basename( snip( x, suffix) ) for x in infiles] )
     elif regex:
@@ -486,12 +509,22 @@ def mergeAndLoad( infiles,
     else:
         header = ",".join( [ os.path.basename( x ) for x in infiles] )
 
-    columns = ",".join( map(str, [ x + 1 for x in columns ]))
+    header_stmt = "--header=%s" % header
+
+    if columns:
+        column_filter = "| cut -f %s" % ",".join( map(str, [ x + 1 for x in columns ]))
+    else:
+        column_filter = ""
+        if prefixes:
+            assert len(prefixes) == len(infiles)
+            header_stmt = "--prefixes=%s" % ",".join( prefixes)
+        else:
+            header_stmt = "--add-file-prefix"
 
     if infiles[0].endswith(".gz"):
-        filenames = " ".join( [ "<( zcat %s | cut -f %s )" % (x,columns) for x in infiles ] )
+        filenames = " ".join( [ "<( zcat %s %s )" % (x,column_filter) for x in infiles ] )
     else:
-        filenames = " ".join( [ "<( cat %s | cut -f %s )" % (x,columns) for x in infiles ] )
+        filenames = " ".join( [ "<( cat %s %s )" % (x,column_filter) for x in infiles ] )
 
     tablename = toTable( outfile )
 
@@ -501,7 +534,7 @@ def mergeAndLoad( infiles,
         transform = ""
 
     statement = """python %(scriptsdir)s/combine_tables.py
-                      --headers=%(header)s
+                      %(header_stmt)s
                       --skip-titles
                       --missing=0
                       --ignore-empty
@@ -510,6 +543,7 @@ def mergeAndLoad( infiles,
                 | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
                       --index=track
                       --table=%(tablename)s 
+                      %(options)s
                 > %(outfile)s
             """
     run()
@@ -916,8 +950,13 @@ def run( **kwargs ):
             
         session.deleteJobTemplate(jt)
 
-    # run a single parallel job
-    elif (options.get( "job_queue" ) or options.get( "to_cluster" )) \
+    # Run a single parallel job if
+    #   1. job_queue is set, or
+    #   2. to_cluster is not defined or to_cluster is set to True.
+    # If the cluster has not been disabled through the command line, do not
+    #     run on cluster
+    elif (options.get( "job_queue" ) or 
+          ("to_cluster" not in options or options.get( "to_cluster" ))) \
             and not GLOBAL_OPTIONS.without_cluster:
 
         statement = buildStatement( **options )
@@ -1203,6 +1242,7 @@ def run_report( clean = True):
     # if there is no DISPLAY variable set, xvfb runs, but
     # exits with error when killing process. Thus, ignore return
     # value.
+    print os.getenv("DISPLAY"), "command=", xvfb_command
     if not os.getenv("DISPLAY"):
         erase_return = "|| true"
     else:

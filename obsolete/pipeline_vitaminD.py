@@ -2146,7 +2146,7 @@ def importTranscripts( infile, outfile ):
 
     statement = '''
     gunzip < %(infile)s |\
-    python %(scriptsdir)s/gtf2tab.py |\
+    python %(scriptsdir)s/gtf2tsv.py |\
    python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
               --index=interval_id \
               --index=transcript_id \
@@ -2567,7 +2567,7 @@ def importProbesetLocations( infile, outfile ):
     tablename = outfile[:-len(".import")]
 
     statement = '''
-    python %(scriptsdir)s/gtf2tab.py < %(infile)s |\
+    python %(scriptsdir)s/gtf2tsv.py < %(infile)s |\
    python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
               --index=id \
               --index=probeset \
