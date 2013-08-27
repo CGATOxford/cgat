@@ -401,7 +401,7 @@ if __name__ == "__main__":
         options.stdlog.write("# reading windows..." )
         options.stdlog.flush()
         
-    windows = GTF.readAsIntervals( GFF.iterator( open(options.filename_windows, "r" ) ) )
+    windows = GTF.readAsIntervals( GFF.iterator( IOTools.openFile(options.filename_windows, "r" ) ) )
 
     if options.loglevel >= 1:
         options.stdlog.write("done\n" )
@@ -413,9 +413,9 @@ if __name__ == "__main__":
             options.stdlog.flush()
 
         if options.is_gtf:
-            gff_data = GTF.readFromFile( open( options.filename_data, "r" ) )
+            gff_data = GTF.readFromFile( IOTools.openFile( options.filename_data, "r" ) )
         else: 
-            gff_data = GTF.readFromFile( open( options.filename_data, "r" ) )
+            gff_data = GTF.readFromFile( IOTOols.openFile( options.filename_data, "r" ) )
 
         if options.loglevel >= 1:
             options.stdlog.write("done\n" )

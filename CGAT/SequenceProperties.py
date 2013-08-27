@@ -340,7 +340,8 @@ class SequencePropertiesNA(SequenceProperties):
 
 #######################################################################
 class SequencePropertiesCpg(SequenceProperties):
-    
+    '''compute CpG frequencies as well as nucleotide frequencies.'''
+
     def __init__(self, reference_usage = [] ):
         
         SequenceProperties.__init__(self)
@@ -368,9 +369,13 @@ class SequencePropertiesCpg(SequenceProperties):
         self.mCountsT = other.mCountsT
         self.mCountsN = other.mCountsN
 
-    def loadSequence( self, sequence ):
-        
-        """load sequence properties from a sequence."""
+    def loadSequence( self, sequence, next_char = None ):
+        """load sequence properties from a sequence.
+
+        If next_char is given and a 'G' and last char in sequence is 'C',
+        an additional CpG will be counted in order to correctly account
+        for CpG at sequence boundaries.
+        """
         SequenceProperties.loadSequence( self, sequence )              
 
         # Single nucleotide counts

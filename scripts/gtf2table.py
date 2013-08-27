@@ -444,6 +444,15 @@ class CounterCompositionNucleotides(_gtf2table.Counter):
 
 ##-----------------------------------------------------------------------------------
 class CounterCompositionCpG(_gtf2table.Counter):
+    '''compute CpG frequencies as well as nucleotide frequencies.
+
+    Note that CpG density is calculated across the merged exons
+    of a transcript. Thus, there might be difference between the CpG 
+    on a genomic level and on the transrcipt level depending on how
+    many genomic CpG are lost across an intron-exon boundary or how
+    many transcript CpG are created by exon fusion.
+    '''
+
     header = SequenceProperties.SequencePropertiesCpg().getHeaders() 
 
     def __init__(self, *args, **kwargs ):

@@ -44,6 +44,12 @@ peaks
     counter can also count within an secondary set of bam-files (--control-bam-file)
     and add this to the output.
 
+composition-na
+    compute nucleotide frequencies in intervals.
+
+composition-cpg
+    compute CpG densities and nucleotide frequencies in intervals. 
+
 Usage
 -----
 
@@ -91,8 +97,8 @@ import pysam
 
 class Counter( object ):
     
-    def __init__(self, *args, **kwargs ):
-        pass
+    def __init__(self, fasta = None, *args, **kwargs ):
+        self.fasta = fasta
 
 class CounterOverlap( Counter ):
     '''count overlap for each interval in tracks.'''
@@ -258,6 +264,43 @@ class CounterPeaks(Counter):
         else:
             return "\t".join( map(str, self.result ) )
 
+##-----------------------------------------------------------------------------------
+class CounterCompositionNucleotides(Counter):
+
+    headers = SequenceProperties.SequencePropertiesNA().getHeaders() 
+
+    def __init__(self, *args, **kwargs ):
+        Counter.__init__(self, *args, **kwargs )
+        self.result = SequenceProperties.SequencePropertiesNA() 
+        
+    def update(self, bed):
+        s = self.fasta.getSequence( bed.contig, "+", bed.start, bed.end)
+        self.result.loadSequence( s )
+
+    def __str__(self):
+        return str(self.result)
+
+##-----------------------------------------------------------------------------------
+class CounterCompositionCpG(CounterCompositionNucleotides):
+    '''compute CpG frequencies as well as nucleotide frequencies.
+
+    Note that CpG density is calculated across the merged exons
+    of a transcript. Thus, there might be difference between the CpG 
+    on a genomic level and on the transrcipt level depending on how
+    many genomic CpG are lost across an intron-exon boundary or how
+    many transcript CpG are created by exon fusion.
+    '''
+
+    headers = SequenceProperties.SequencePropertiesCpg().getHeaders() 
+
+    def __init__(self, *args, **kwargs ):
+        CounterCompositionNucleotides.__init__(self, *args, **kwargs )
+        self.result = SequenceProperties.SequencePropertiesCpg()
+
+    def update(self, bed):
+        s = self.fasta.getSequence( bed.contig, "+", bed.start, bed.end+1)
+        self.result.loadSequence( s[:-1], next_char = s[-1] )
+
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
@@ -273,7 +316,7 @@ if __name__ == '__main__':
                       help="filename with read mapping information for input/control. Multiple files can be submitted in a comma-separated list [default=%default]."  )
 
     parser.add_option("-c", "--counter", dest="counters", type="choice", action="append",
-                      choices=( "overlap", "peaks", ),
+                      choices=( "overlap", "peaks", "composition-na", "composition-cpg" ),
                       help="select counters to apply [default=%default]."  )
 
     parser.add_option("-o", "--offset", dest="offsets", type="int", action="append",
@@ -334,6 +377,13 @@ if __name__ == '__main__':
                                            control_bam_files,
                                            options.control_offsets,
                                            options = options ) )
+        elif c == "composition-na":
+            counters.append( CounterCompositionNucleotides( fasta=fasta,
+                                                            options = options ))
+        elif c == "composition-cpg":
+            counters.append( CounterCompositionCpG( fasta=fasta,
+                                                    options = options ) )
+
 
     options.stdout.write( "\t".join( [x.strip() for x in options.bed_headers.split(",") ] ) )
     for counter in counters: 
