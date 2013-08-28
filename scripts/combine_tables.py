@@ -407,7 +407,8 @@ def joinTables( outfile, options, args ):
 ##---------------------------------------------------------------------------------------------------------        
 def main( argv = sys.argv ):
 
-    parser = E.OptionParser( version = "%prog version: $Id: combine_tables.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: combine_tables.py 2782 2009-09-10 11:40:29Z andreas $", 
+                             usage = globals()["__doc__"])
 
     parser.add_option("-t", "--no-titles", dest="titles", action="store_false",
                       help="no titles in input."  )
@@ -520,8 +521,7 @@ def main( argv = sys.argv ):
     options.filenames += args
 
     if len(options.filenames) < 1:
-        print USAGE, "no tables specified/found."
-        sys.exit(1)
+        raise ValueError( "no tables found." )
 
     E.info( "combining %i tables" % len(options.filenames) )
 
@@ -529,7 +529,6 @@ def main( argv = sys.argv ):
         concatenateTables( options.stdout, options, args )
     else:
         joinTables( options.stdout, options, args )
-
     
     E.Stop()
 

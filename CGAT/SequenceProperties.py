@@ -401,6 +401,10 @@ class SequencePropertiesCpg(SequenceProperties):
             else:
                 self.mCountsOthers +=1
                 lastc = False
+
+        if next_char:
+            if lastc and next_char.upper() == "G":
+                self.mCountsCpG += 1
                
     def getFields(self):
 

@@ -4,3 +4,31 @@ version:
     outputs: [stdout]
     references: []
     options: --version
+
+
+BamOnlyInterval:
+    stdin: null 
+    options: --force --only-interval <DIR>/small.bam <DIR>/onepeak.bed
+    outputs: [stdout, matrix_unsorted.gz ]
+    references: [bamOnlyInterval.tsv, bam_matrix_unsorted.gz]
+
+
+BamOnlyIntervalWithControlLibrary:
+    stdin: null 
+    options: --force --only-interval <DIR>/small.bam <DIR>/onepeak.bed --control-file=<DIR>/small.bam
+    outputs: [stdout, matrix_unsorted.gz, control_unsorted.gz]
+    references: [bamOnlyIntervalWithControl.tsv, bam_matrix_unsorted.gz, bam_control_unsorted.gz]
+
+WigOnlyInterval:
+    stdin: null
+    options: --format=bigwig --force --only-interval <DIR>/small.bw <DIR>/onepeak.bed
+    outputs: [stdout, matrix_unsorted.gz ]
+    references: [wigOnlyInterval.tsv, wig_matrix_unsorted.gz]
+
+
+WigOnlyIntervalWithControlLibrary:
+    stdin: null
+    options: --format=bigwig --force --only-interval <DIR>/small.bw <DIR>/onepeak.bed --control-file=<DIR>/small.bw
+    outputs: [stdout, matrix_unsorted.gz, control_unsorted.gz]
+    references: [wigOnlyIntervalWithControl.tsv, wig_matrix_unsorted.gz, wig_control_unsorted.gz]
+

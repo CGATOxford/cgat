@@ -271,10 +271,11 @@ class CounterCompositionNucleotides(Counter):
 
     def __init__(self, *args, **kwargs ):
         Counter.__init__(self, *args, **kwargs )
-        self.result = SequenceProperties.SequencePropertiesNA() 
+        self.result_class = SequenceProperties.SequencePropertiesNA() 
         
     def update(self, bed):
         s = self.fasta.getSequence( bed.contig, "+", bed.start, bed.end)
+        self.result = self.result_class()
         self.result.loadSequence( s )
 
     def __str__(self):
@@ -295,11 +296,19 @@ class CounterCompositionCpG(CounterCompositionNucleotides):
 
     def __init__(self, *args, **kwargs ):
         CounterCompositionNucleotides.__init__(self, *args, **kwargs )
-        self.result = SequenceProperties.SequencePropertiesCpg()
+        self.result_class = SequenceProperties.SequencePropertiesCpg
 
     def update(self, bed):
-        s = self.fasta.getSequence( bed.contig, "+", bed.start, bed.end+1)
-        self.result.loadSequence( s[:-1], next_char = s[-1] )
+        try:
+            s = self.fasta.getSequence( bed.contig, "+", bed.start, bed.end+1)
+            s = s[:-1]
+            next_char = s[-1]
+        except ValueError:
+            s = self.fasta.getSequence( bed.contig, "+", bed.start, bed.end)
+            next_char = None
+
+        self.result = self.result_class()
+        self.result.loadSequence( s, next_char = next_char )
 
 ##------------------------------------------------------------
 if __name__ == '__main__':
