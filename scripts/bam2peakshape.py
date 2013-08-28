@@ -208,6 +208,7 @@ def buildOptionParser( argv ):
         random_shift = False,
         strand_specific = False,
         format = "bam",
+        report_step = 100,
         )
 
     return parser
@@ -333,6 +334,9 @@ def buildResults( bedfile, fg_file, control_file, counter, options ):
         #if bed.contig not in contigs: 
         #    c.skipped += 1
         #    continue
+
+        if c.input % options.report_step == 0:
+            E.info( "iteration: %i" % c.input )
         
         features = counter.countInInterval( fg_file, bed.contig, bed.start, bed.end, 
                                             window_size = options.window_size,

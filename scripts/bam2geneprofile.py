@@ -43,6 +43,18 @@ of interest such as transcription start sites.
 The script can be used to visualize binding profiles of a chromatin mark in gene 
 bodies, binding of transcription factors in promotors or 3' bias in RNASeq data.
 
+This script is designed with a slight emphasis on RNA-Seq datasets. For example, it
+takes care of spliced reads, by using the CIGAR string in the BAM file to accurately
+define aligned bases (when the --base-accurate-off is not specified, currently it is not specified by default).
+
+Alternatively, for the purpose of visualizing binding profiles of transcription factors
+ChIP-Seq without the need to use any genomic annotations (ENSEMBL, or refseq), you may
+also consider using :doc:`bam2peakshape`, which is
+designed with a slight emphasis on Chip-Seq datasets, for example, :doc:`bam2peakshape` is able to
+center the counting window to the summit of every individual peak. :doc:`bam2peakshape` is also able
+to: (1) plot the control RNA-Seq library to enable side-by-side comparison; (2) randomize
+the given regions to provide a semi-control.
+
 Background
 ---------- 
 
@@ -71,6 +83,39 @@ Options
 -------
 
 The behaviour of the script can be modified by several options.
+
+Profiles
+++++++++
+
+Different profiles are accessible through the ``--counter`` option. Multiple
+counters can be applied at the same time. While ``upstream`` and ``downstream``
+typically have a fixed size, the other regions such as ``CDS``, ``UTR`` will be
+scaled to a common size.
+
+utrprofile
+    UPSTREAM - UTR5 - CDS - UTR3 - DOWNSTREAM
+    gene models with UTR. Separate the coding section from the non-coding part.
+
+geneprofile 
+    upstream - EXON - downstream
+    simple exonic gene models
+
+geneprofilewithintrons 
+     UPSTREAM - EXON - INTRON - DOWNSTREAM
+     gene models containing also intronic sequence
+
+tssprofile
+     UPSTREAM - DOWNSTREAM
+     transcription start/stop sites
+
+intervalprofile 
+     upstream - INTERVAL - downstream
+     Similar to geneprofile, but count over the complete span of the gene
+     (including introns).
+
+midpointprofile
+     UPSTREAM  - DOWNSTREAM
+     aggregate over midpoint of gene model
 
 Genes versus transcripts
 ++++++++++++++++++++++++
@@ -106,28 +151,31 @@ Bed and wiggle files
 
 The densities can be computed from :term:`bed` or :term:`wiggle` formatted files.
 If a :term:`bed` formatted file is supplied, it must be compressed with and indexed with :file:`tabix`.
-
-
 .. todo::
    
    * paired-endedness is ignored. Both ends of a paired-ended read are treated 
      individually.
 
-   * use CIGAR string to accurately define aligned regions. Currently only the
-     full extension of the alignment is used. Thus, results from RNASEQ experiments
-     might be mis-leading.
-  
-
--N/--normalize-profiles
-
-   several options can be combined.
 
 Usage
 -----
 
-Example::
+The following command will generate the gene profile from RNA-Seq data:
 
-   python bam2geneprofile.py reads.bam genes.gtf
+   python bam2geneprofile.py --bamfile=rnaseq.bam -g geneset.gtf.gz 
+                     --method=geneprofilewithintrons  --reporter=gene 
+                     --resolution-cds=1400 --resolution-introns=2000
+
+The output will contain read coverage over genes, merging all transcripts within
+a gene into a single chain of exons. The profile will contain four separate
+segments:
+
+1. the upstream region of a gene (default = 1000bp)
+2. the transcribed region of a gene. The transcribed region of every gene will be 
+   scaled to 1400 bp (``--resolution-cds=1400``), 
+   shrinking longer transcripts and expanding shorter transcripts.
+3. the intronic regions of a gene. These will be scaled to 2kb (``-resolution-introns=2000``).
+4. the downstream region of a gene (default = 1000bp).
 
 Type::
 
@@ -135,12 +183,8 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-
-
-Code
-----
+Command line options
+--------------------
 
 '''
 
@@ -182,33 +226,8 @@ def main( argv = None ):
                                   "intervalprofile", "midpointprofile",
                                   "geneprofilewithintrons", 
                                   ),
-                       help = '''counters to use. Counters describe the meta-gene structure to use
-
-utrprofile - aggregate over gene models with UTR. 
-
-             upstream - UTR5 - CDS - UTR3 - downstream
-
-geneprofile - aggregate over exonic gene models. 
-
-             upstream - EXON - downstream
-
-geneprofilewithintrons - aggregate over exonic, intron gene models. 
-
-             upstream - EXON - INTRON - downstream
-
-tssprofile  - aggregate over transcription start/stop
-
-             upstream - TSS/TTS - downstream
-
-intervalprofile - aggregate over interval
-
-             upstream - EXON - downstream
-
-midpointprofile - aggregate over midpoint of gene model.
-
-             upstream - downstream
-
-[%default]''' )
+                       help = 'counters to use. Counters describe the meta-gene structure to use '
+                       '[%default]' )
 
     parser.add_option( "-b", "--bamfile", "--bedfile", "--bigwigfile", dest="infiles", 
                        metavar = "BAM",

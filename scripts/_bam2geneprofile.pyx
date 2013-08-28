@@ -831,7 +831,7 @@ class RegionCounter( GeneCounter ):
 
         GeneCounter.__init__(self, *args, **kwargs )
 
-        # substitute field name 'exons' with 'exon'
+        # substitute field name 'exons' with 'interval'
         assert self.fields[1] == "exons"
         self.fields[1] = "interval"
 
