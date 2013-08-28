@@ -301,8 +301,8 @@ class CounterCompositionCpG(CounterCompositionNucleotides):
     def update(self, bed):
         try:
             s = self.fasta.getSequence( bed.contig, "+", bed.start, bed.end+1)
-            s = s[:-1]
             next_char = s[-1]
+            s = s[:-1]
         except ValueError:
             s = self.fasta.getSequence( bed.contig, "+", bed.start, bed.end)
             next_char = None

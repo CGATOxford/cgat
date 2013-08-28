@@ -4,3 +4,9 @@ version:
     outputs: [stdout]
     references: []
     options: --version
+
+cpg:
+        stdin: test_cpg.bed
+        outputs: [stdout]
+        references: [test_cpg.tsv]
+        options: --genome=<DIR>/hg19.chr19 --counter=composition-cpg
