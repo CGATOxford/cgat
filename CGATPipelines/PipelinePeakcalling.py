@@ -2171,6 +2171,269 @@ def summarizeSPP( infiles, outfile ):
 ############################################################
 ############################################################
 ############################################################
+## Run broadpeak
+############################################################
+def createGenomeWindows( genome, outfile, windows ):
+    to_cluster = True
+    statement = '''
+        python %(scriptsdir)s/windows2gff.py
+            --genome=%(genome)s
+            --output-format=bed
+            --fixed-width-windows=%(windows)s
+            --log=%(outfile)s.log |
+        bedtools sort -i stdin |
+        gzip > %(outfile)s
+        '''
+    P.run()
+
+def normalize( infile, larger_nreads, outfile, smaller_nreads ):
+    threshold = float(smaller_nreads) / float(larger_nreads)
+
+    pysam_in = pysam.Samfile( infile, "rb" )
+    pysam_out = pysam.Samfile( outfile, "wb", template = pysam_in )
+
+    for read in pysam_in.fetch():
+         if random.random() <= threshold:
+             pysam_out.write( read )
+
+    pysam_in.close()
+    pysam_out.close()
+    pysam.index( outfile )
+
+    return outfile
+
+def normalizeFileSize( sample_file, input_file, sample_outfile, input_outfile ):
+    sample_sam = pysam.Samfile( sample_file, "rb" )
+    sample_nreads = 0
+    for read in sample_sam:
+        sample_nreads += 1
+
+    input_sam = pysam.Samfile( input_file, "rb" )
+    input_nreads = 0
+    for read in input_sam:
+        input_nreads += 1
+
+    if input_nreads > sample_nreads: 
+        P.info( "INPUT bam has %s reads, SAMPLE bam has %s reads"
+                % ( input_nreads, sample_nreads ) )
+        P.info( "INPUT being downsampled to match SAMPLE" )
+        input_outfile = normalize( input_file,
+                                   input_nreads, 
+                                   input_outfile, 
+                                   sample_nreads )
+        shutil.copyfile( sample_file, sample_outfile )
+        pysam.index( sample_outfile )
+        
+        return sample_outfile, input_outfile
+        
+    elif sample_nreads > input_nreads:
+        P.info( "SAMPLE bam has %s reads, INPUT bam has %s reads"
+                % ( sample_nreads, input_nreads ) )
+        P.info( "SAMPLE being downsampled to match INPUT" )
+        sample_outfile = normalize( sample_file, 
+                                    sample_nreads, 
+                                    sample_outfile, 
+                                    input_nreads )
+        shutil.copyfile( input_file, input_outfile )
+        pysam.index( input_outfile )
+        
+        return sample_outfile, input_outfile
+
+    else: 
+        P.warn( "WARNING: input and sample bamfiles are the same size!!" )
+        shutil.copyfile( sample_file, sample_outfile )
+        pysam.index( sample_outfile )
+        shutil.copyfile( input_file, input_outfile  )
+        pysam.index( input_outfile )
+
+        return sample_outfile, input_outfile
+
+
+def buildBedFile( infile, outfile ): 
+        statement = ( "python %(scriptsdir)s/bam2bed.py %(infile)s"
+                      " | sortBed -i stdin"
+                      " > %(outfile)s" )
+        P.run()
+        return( outfile )
+
+def createBedgraphFile( infile, outfile, windows_file, overlap ):
+    statement = ( "intersectBed"
+                      " -c"
+                      " -f %(overlap)s"
+                      " -a %(windows_file)s"
+                      " -b %(infile)s"
+                  " | sortBed -i stdin"
+                  " > %(outfile)s" )
+    P.run()
+    return( outfile )
+
+def removeBackground( sample_bedgraph, input_bedgraph, outfile ): 
+    inf = IOTools.openFile( sample_bedgraph, "r" ).readlines()
+    contf = IOTools.openFile( input_bedgraph, "r" ).readlines()
+    outf = IOTools.openFile( outfile, "w" )
+
+    for i in range( 0, len(inf) ):
+        line_inf = inf[i].split()
+        line_contf = contf[i].split()
+        if line_inf[0] == line_contf[0] and line_inf[1] == line_contf[1]:
+            if int( line_inf[3] ) >= int( line_contf[3] ):
+                outf.write( str( line_inf[0] ) 
+                            + "\t" + str( line_inf[1] ) 
+                            + "\t" + str( line_inf[2] ) 
+                            + "\t" +str( int( line_inf[3] ) 
+                                        - int( line_contf[3] ) ) + "\n" )
+            else: 
+                outf.write( str( line_inf[0] )
+                            + "\t" + str( line_inf[1] )
+                            + "\t" + str( line_inf[2] )
+                            + "\t0" + "\n" )
+        else: 
+            raise Exception( "Windows in '%s' aren't aligned with windows in %s"
+                              % ( sample_bedgraph, input_bedgraph )  )
+    return outfile
+
+def removeEmptyBins( infile, outfile ):
+    statement =  ''' cat %(infile)s
+                     | awk '$4!=0 {print $1"\t"$2"\t"$3"\t"$4}'
+                     > %(outfile)s '''
+    P.run()
+
+def createBroadPeakBedgraphFile( infiles, outfile, params ):
+    tmpdir = P.getTempDir("/scratch")
+    P.info( "Creating tempdir: %s" % tmpdir )
+    sample_bed = P.getTempFilename( tmpdir )
+    sample_bedgraph = P.getTempFilename( tmpdir )
+    input_bed = P.getTempFilename( tmpdir )
+    input_bedgraph = P.getTempFilename( tmpdir )
+    bgremoved_bedgraph = P.getTempFilename( tmpdir )
+
+    overlap, remove_background = params
+
+    if remove_background == "true":
+        sample_file, windows_file, input_file = infiles
+        P.info( "Background removal:"
+                " Input reads will be deducted from sample reads\n"
+                "Normalizing size of bamfiles by down-sampling larger file" )
+
+        sample_norm = P.snip( sample_file, ".call.bam" ) + "_normalized.bam"
+        input_norm =  P.snip( input_file, ".call.bam" ) + "_normalized.bam"
+        sample_norm, input_norm = normalizeFileSize( sample_file, 
+                                                     input_file,
+                                                     sample_norm,
+                                                     input_norm )
+        P.info( "Created normalized SAMPLE bam:\t %s "
+                "\nCreated normalized INPUT bam:\t %s"
+                % ( sample_norm, input_norm ) )
+
+        P.info( "Creating bed file from SAMPLE bam file" )
+        sample_bed = buildBedFile( sample_norm, sample_bed )
+
+        P.info( "Created SAMPLE bed file:\t %s \nCreating SAMPLE bedgraph file.\n"
+                "Reads must have coverage >= %s*bin width in order to be binned"
+                % ( sample_bed, overlap ) )
+        sample_bedgraph = createBedgraphFile( sample_bed,
+                                              sample_bedgraph,
+                                              windows_file,
+                                              overlap ) 
+
+        P.info( "Created SAMPLE bedgraph file:\t %s\nCreating INPUT bed file"
+                % sample_bedgraph )
+        input_bed = buildBedFile( input_norm, input_bed )
+
+        P.info( "Created INPUT bed file:\t %s \nCreating INPUT bedgraph file\n"
+                "Reads must have coverage >= %s*bin width in order to be binned"
+                % ( input_bed, overlap ) )
+        input_bedgraph = createBedgraphFile( input_bed,
+                                             input_bedgraph,
+                                             windows_file,
+                                             overlap ) 
+
+        P.info( "Created INPUT bedgraph file:\t %s "
+                "\nSubtracting INPUT bedgraph from SAMPLE bedgraph"
+                % input_bedgraph )
+        bgremoved_bedgraph = removeBackground( sample_bedgraph,
+                                               input_bedgraph,
+                                               bgremoved_bedgraph )
+        removeEmptyBins( bgremoved_bedgraph, outfile )
+
+        P.info( "Created SAMPLE bedgraph with INPUT removed:\t %s" % outfile )
+        shutil.rmtree( os.path.abspath( tmpdir ) )
+
+    else: 
+        sample_file, windowsfile = infiles
+        P.info( "Background ignored: bedgraph file does not account for INPUT" )
+        P.info( "Creating bed file from SAMPLE bam file" )
+        sample_bed = buildBedFile( sample_file, sample_bed )
+
+        P.info( "Created SAMPLE bed file:\n %s \nCreating SAMPLE bedgraph file"
+                % sample_bed )
+        sample_bedgraph = createBedgraphFile( sample_bed, 
+                                              sample_bedgraph,
+                                              windows_file, 
+                                              overlap )
+        removeEmptyBins( sample_bedgraph, outfile )
+        P.info( "Created SAMPLE bedgraph (without accounting for INPUT):\n" 
+                "%s" % outfile )
+
+        shutil.rmtree( os.path.abspath( tmpdir ) )
+
+
+def runBroadPeak( infile, stub, logfile, genome_size, training_set=False ):
+    to_cluster = True
+    job_options = "-l mem_free=10G"
+
+    if training_set:
+        statement = ( "BroadPeak -i %(infile)s"
+                      " -m %(stub)s"
+                      " -b 200"
+                      " -g %(genome_size)s"
+                      " -t supervised" 
+                      " -r (training_set)s"
+                      " &> %(logfile)s" )
+    else:
+        statement = ( "BroadPeak -i %(infile)s"
+                      " -m %(stub)s"
+                      " -b 200"
+                      " -g %(genome_size)s"
+                      " -t unsupervised" 
+                      " &> %(logfile)s" )
+
+    P.run()
+
+
+def summarizeBroadPeak( infiles, outfile, intervals=False ):
+    if intervals:
+        P.warn( "Pipeline for summarizing supervised broadpeak runs"
+                " has not yet been written... summary file will be"
+                " empty" )
+        IOTools.openFile( oufitle, "w" ).close()
+
+    else:
+        outf = IOTools.openFile( outfile, "w" )
+        outf.write( "track\tnpeaks\tp\tq\ts1\ts2\n" )
+        for infile in infiles:
+            for root, dirs, filenames in os.walk( infile ):
+                for f in filenames: 
+                    if f.endswith( "_broadpeak_broad_peak_unsupervised.bed" ):
+                        track = P.snip( f, "_broadpeak_broad_peak_unsupervised.bed" )
+                        os.symlink( os.path.join(root, f ),
+                                    track + "_broadpeak_unsupervised.bed" )
+                        npeaks = len( open( os.path.join( root, f ), "r" ).readlines() )
+                    elif f.endswith( "_parameter_score.txt" ):
+                        params = open( os.path.join( root, f ), "r" ).readlines()
+                        p = params[0].split()[1]
+                        q = params[1].split()[1]
+                        s1 = params[2].split()[1]
+                        s2 = params[3].split()[1]
+                    else:
+                        continue
+            outf.write( track+"\t"+str( npeaks )+"\t"+p+"\t"+q+"\t"+s1+"\t"+s2+"\n" )
+        outf.close()
+
+
+############################################################
+############################################################
+############################################################
 ##
 ############################################################
 def makeIntervalCorrelation( infiles, outfile, field, reference ):

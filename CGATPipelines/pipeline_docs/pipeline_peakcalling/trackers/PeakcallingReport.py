@@ -2,13 +2,13 @@ import os, sys, re, types, itertools, glob
 import matplotlib.pyplot as plt
 import numpy
 import numpy.ma
-import Stats
-import Histogram
+import CGAT.Stats
+import CGAT.Histogram
 import sqlalchemy
 
 from SphinxReport.Tracker import *
 from SphinxReport.Utils import PARAMS as P
-from SphinxReport.odict import OrderedDict as odict
+from collections import OrderedDict as odict
 
 ###################################################################
 ###################################################################
@@ -22,11 +22,11 @@ DATABASE=P['calling_backend']
 # cf. pipeline_chipseq.py
 # This should be automatically gleaned from pipeline_chipseq.py
 ###################################################################
-import Pipeline
+import CGAT.Pipeline as Pipeline
 PARAMS_PIPELINE = Pipeline.peekParameters( ".",
                                            "pipeline_chipseq.py" )
 
-import PipelineTracks
+import CGATPipelines.PipelineTracks as PipelineTracks
 
 Sample = PipelineTracks.Sample3
 

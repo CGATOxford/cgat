@@ -1190,7 +1190,7 @@ def peekParameters( workingdir, pipeline ):
             dirname = os.path.dirname(v['__file__'])
 
     pipeline = os.path.join( dirname, pipeline )
-    assert os.path.exists( pipeline ), "can't find pipeline source %s" % pipeline
+    assert os.path.exists( pipeline ), "can't find pipeline source %s" % ( dirname, pipeline )
     if workingdir == "": workingdir = os.path.abspath(".")
 
     assert os.path.exists( workingdir ), "can't find working dir %s" % workingdir

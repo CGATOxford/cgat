@@ -307,7 +307,7 @@ def buildCodingGeneSet(infiles, outfile):
 ##########################################################
 ##########################################################
 @follows(buildCodingGeneSet)
-@transform(PARAMS["genesets_refcoding"], regex(r"(\S+)/(\S+).gtf.gz"), add_inputs(buildCodingGeneSet), r"gtfs/\2.gtf.gz")
+@transform(PARAMS["genesets_refcoding"], regex(r"(\S+).gtf.gz"), add_inputs(buildCodingGeneSet), r"gtfs/\1.gtf.gz")
 def buildRefcodingGeneSet(infiles, outfile):
     '''
     builds a refcoding geneset based on the genes that are present in
@@ -454,24 +454,24 @@ def buildLncRNAFasta(infile, outfile):
 ##########################################################################
 ##########################################################################
 ##########################################################################
-@transform(buildLncRNAFasta, regex(r"fasta/(\S+).fasta"), r"cpc/\1.result")
+@transform(buildLncRNAFasta, regex(r"fasta/(\S+).fasta"), r"cpc/\1_cpc.result")
 def runCPC(infile, outfile):
     '''
     run coding potential calculations on lncRNA geneset
     '''
-    result_table = P.snip(infile, ".fasta") + ".result"
+#    result_table = P.snip(outfile, ".fasta") + ".result"
     result_evidence = P.snip(outfile, ".result") + ".evidence"
     working_dir = "cpc"
-    statement = '''%(scriptsdir)s/cpc.sh %(infile)s %(result_table)s %(working_dir)s %(result_evidence)s '''
+    statement = '''%(scriptsdir)s/cpc.sh %(infile)s %(outfile)s %(working_dir)s %(result_evidence)s '''
     P.run()
-    statement = '''mv %(result_table)s cpc/'''
+#    statement = '''mv %(result_table)s cpc/'''
     P.run()
 
 ##########################################################################
 ##########################################################################
 ##########################################################################
 @follows(runCPC)
-@transform(runCPC, regex("cpc/(\S+).result"), r".load")       
+@transform(runCPC, regex("cpc/(\S+).result"), r"\1.load")       
 def loadCPCResults(infile, outfile):
     '''
     load the results of the cpc analysis
