@@ -17,7 +17,6 @@ currently out of date, so to install, do::
 
    pip install https://bitbucket.org/james_taylor/bx-python/get/tip.tar.bz2
 
-
 Installation
 ============
 
@@ -25,6 +24,27 @@ Once the pre-requisites have been installed, installing CGAT should
 be straight-forward::
 
    pip install cgat
+
+Initialization
+==============
+
+In order to run pipelines and code directly from the CGAT script
+repository, you need to perform the following initializations::
+
+   python setup.py develop --multi-version
+
+This will compile all the extension modules without installing 
+anything. To use, add the CGAT directory to ``$PYTHONPATH``
+environment variable::
+
+   export PYTHONPATH=$PYTHONPATH:/location/to/cgat
+
+You might also want to run the script::
+
+   python scripts/cgat_build_extensions.py 
+
+to test if all the scripts with associated cython_ code compile
+cleanly.
 
 Troubleshooting
 ===============

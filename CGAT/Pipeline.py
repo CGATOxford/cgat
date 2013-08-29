@@ -669,9 +669,14 @@ def execute( statement, **kwargs ):
     kwargs = dict( PARAMS.items() + kwargs.items() )    
 
     L.debug("running %s" % (statement % kwargs))
+    
+    if "cwd" not in kwargs:
+        cwd = os.getcwd()
+    else:
+        cwd = kwargs["cwd"]
 
     process = subprocess.Popen(  statement % kwargs,
-                                 cwd = os.getcwd(), 
+                                 cwd = cwd, 
                                  shell = True,
                                  stdin = subprocess.PIPE,
                                  stdout = subprocess.PIPE,
@@ -1350,11 +1355,13 @@ def main( args = sys.argv ):
     (options, args) = E.Start( parser, 
                                add_cluster_options = True )
 
-
     GLOBAL_OPTIONS, GLOBAL_ARGS = options, args
     PARAMS["dryrun"] = options.dry_run
 
+    version = None
+
     try:
+        # this is for backwards compatibility
         # get mercurial version
         repo = hgapi.Repo( PARAMS["scriptsdir"] )
         version = repo.hg_id()
@@ -1365,8 +1372,14 @@ def main( args = sys.argv ):
                 raise ValueError( "uncommitted change in code repository at '%s'. Either commit or use --force" % PARAMS["scriptsdir"])
             else:
                 E.warn( "uncommitted changes in code repository - ignored ")
+        version = version[:-1]
     except:
-        pass
+        # try git:
+        try:
+            stdout, stderr = execute( "git rev-parse HEAD", cwd = PARAMS["scriptsdir"] )
+        except: 
+            stdout = "NA"
+        version = stdout
 
     if args: 
         options.pipeline_action = args[0]
@@ -1396,7 +1409,7 @@ def main( args = sys.argv ):
                 
                 L.info( E.GetHeader() )
                 L.info( "code location: %s" % PARAMS["scriptsdir"] )
-                L.info( "code version: %s" % version[:-1] )
+                L.info( "code version: %s" % version )
 
                 pipeline_run( options.pipeline_targets, 
                               multiprocess = options.multiprocess, 
