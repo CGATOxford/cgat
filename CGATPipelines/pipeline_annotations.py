@@ -1993,6 +1993,7 @@ def buildGFFSummary( infile, outfile ):
 ## build bed summary
 ##################################################################
 @transform( (buildContigBed,
+             buildUngappedContigBed,
              buildPromotorRegions,
              buildTranscriptTSS,
              buildGeneTSS,
@@ -2022,6 +2023,7 @@ def loadIntervalSummary( infile, outfile ):
 ##################################################################
 @follows( buildContigSizes,
           buildContigBed,
+          buildUngappedContigBed,
           loadGenomeInformation )
 def genome():
     '''import information on geneset.'''
