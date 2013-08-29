@@ -271,7 +271,7 @@ class CounterCompositionNucleotides(Counter):
 
     def __init__(self, *args, **kwargs ):
         Counter.__init__(self, *args, **kwargs )
-        self.result_class = SequenceProperties.SequencePropertiesNA() 
+        self.result_class = SequenceProperties.SequencePropertiesNA
         
     def update(self, bed):
         s = self.fasta.getSequence( bed.contig, "+", bed.start, bed.end)

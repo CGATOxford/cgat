@@ -272,7 +272,6 @@ class SequencePropertiesNA(SequenceProperties):
     def loadSequence( self, sequence ):
         
         """load sequence properties from a sequence."""
-
         SequenceProperties.loadSequence( self, sequence )        
 
         ## counts of amino acids
@@ -288,7 +287,6 @@ class SequencePropertiesNA(SequenceProperties):
                 self.mCountsNA[na] += 1
             except KeyError:
                 self.mCountsOthers +=1 
-        
                     
     def getFields(self):
 

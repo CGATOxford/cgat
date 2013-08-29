@@ -121,9 +121,13 @@ def main( argv = sys.argv ):
 
     c = E.Counter()
     for bed in Bed.iterator(options.stdin):
-        
+
         c.input += 1
-        E.info( "going to %s:%i-%i for %s" % (bed.contig, bed.start, bed.end, bed.name))
+
+        # IGV can not deal with white-space in filenames
+        name = re.sub("\s", "_", bed.name)
+        
+        E.info( "going to %s:%i-%i for %s" % (bed.contig, bed.start, bed.end, name))
 
         start, end = bed.start, bed.end
         extend = options.extend
@@ -136,7 +140,7 @@ def main( argv = sys.argv ):
 
         igv.go( "%s:%i-%i" % (bed.contig, start, end ))
 
-        fn = "%s.%s" % (bed.name, options.format)
+        fn = "%s.%s" % (name, options.format)
         E.info( "writing snapshot to '%s'" % fn )
         igv.save( fn )
     

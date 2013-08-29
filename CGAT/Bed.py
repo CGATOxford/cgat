@@ -82,9 +82,11 @@ class Bed(object):
     def __getitem__(self, key):
         return self.fields[self.map_key2field[key]]
 
+    def __setitem__(self, key, value):
+        self.fields[self.map_key2field[key]] = value
+
     def __getattr__(self, key ):
         return self.fields[self.map_key2field[key]]
-        
 
     @property
     def columns(self):
