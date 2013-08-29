@@ -2048,7 +2048,9 @@ def genome():
           buildTranscripts,
           buildTranscriptsBed,
           buildNoncodingTranscripts,
-          buildNoncodingTranscriptsBed)
+          buildNoncodingTranscriptsBed,
+          annotateGeneStructure,
+          )
 def geneset():
     '''import information on geneset.'''
     pass
