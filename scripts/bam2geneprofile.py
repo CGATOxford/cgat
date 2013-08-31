@@ -97,25 +97,30 @@ utrprofile
     gene models with UTR. Separate the coding section from the non-coding part.
 
 geneprofile 
-    upstream - EXON - downstream
+    UPSTREAM - EXON - DOWNSTREAM
     simple exonic gene models
 
 geneprofilewithintrons 
-     UPSTREAM - EXON - INTRON - DOWNSTREAM
-     gene models containing also intronic sequence
-
+    UPSTREAM - EXON - INTRON - DOWNSTREAM
+    gene models containing also intronic sequence, only correct if used with --base-accuracy
+     
+geneprofileabsolutedistancefromthreeprimeend
+    UPSTREAM - EXON(AbsoluteFromThreePrimeEnd) - INTRON(AbsoluteFromThreePrimeEnd) - DOWNSTREAM
+    For EXON region, the script counts over the mRNA transcript only, skipping introns. 
+    Designed to visualize the 3 prime bias in RNASeq data, only correct if used with --base-accuracy
+    
 tssprofile
-     UPSTREAM - DOWNSTREAM
-     transcription start/stop sites
+    UPSTREAM - DOWNSTREAM
+    transcription start/stop sites
 
 intervalprofile 
-     upstream - INTERVAL - downstream
-     Similar to geneprofile, but count over the complete span of the gene
-     (including introns).
+    UPSTREAM - INTERVAL - DOWNSTREAM
+    Similar to geneprofile, but count over the complete span of the gene
+    (including introns).
 
 midpointprofile
-     UPSTREAM  - DOWNSTREAM
-     aggregate over midpoint of gene model
+    UPSTREAM  - DOWNSTREAM
+    aggregate over midpoint of gene model
 
 Genes versus transcripts
 ++++++++++++++++++++++++
@@ -225,9 +230,10 @@ def main( argv = None ):
                        choices = ("geneprofile", "tssprofile", "utrprofile", 
                                   "intervalprofile", "midpointprofile",
                                   "geneprofilewithintrons", 
+                                  "geneprofileabsolutedistancefromthreeprimeend",
                                   ),
                        help = 'counters to use. Counters describe the meta-gene structure to use '
-                       '[%default]' )
+                       '[%default]. \n Note using geneprofilewithintrons, or geneprofileabsolutedistancefromthreeprimeend will automatically turn on the --base-accuracy option' )
 
     parser.add_option( "-b", "--bamfile", "--bedfile", "--bigwigfile", dest="infiles", 
                        metavar = "BAM",
@@ -313,7 +319,23 @@ The options are:
     parser.add_option("--resolution-introns", dest="resolution_introns", type = "int",
                        help = "resolution of introns region in bp "
                               "[%default]" )
+                              
+    parser.add_option("--resolution-exons-absolute-distance-topolya", dest="resolution_exons_absolute_distance_topolya", type = "int",
+                       help = "resolution of exons absolute distance topolya in bp "
+                              "[%default]" )                    
+                       
+    parser.add_option("--resolution-introns-absolute-distance-topolya", dest="resolution_introns_absolute_distance_topolya", type = "int",
+                       help = "resolution of introns absolute distance topolya in bp "
+                              "[%default]" )
+                       
+    parser.add_option("--extension-exons-absolute-distance-topolya", dest="extension_exons_absolute_distance_topolya", type = "int",
+                       help = "extension for exons from the absolute distance from the topolya in bp"
+                              "[%default]" )
 
+    parser.add_option("--extension-introns-absolute-distance-topolya", dest="extension_introns_absolute_distance_topolya", type = "int",
+                       help = "extension for introns from the absolute distance from the topolya in bp"
+                              "[%default]" )                
+                              
     parser.add_option("--extension-upstream", dest = "extension_upstream", type = "int",
                        help = "extension upstream from the first exon in bp"
                               "[%default]" )
@@ -346,6 +368,10 @@ The options are:
         reporter = "transcript",
         resolution_cds = 1000,
         resolution_introns = 1000,
+        resolution_exons_absolute_distance_topolya = 3000,    #3kb is a good balance of seeing long enough 3 prime bias and not omit too many genes. Tim 31th Aug 2013
+        resolution_introns_absolute_distance_topolya = 500,   #introns is only for assess the noise level, thus do ont need a long region, a long region has the side effect of omit more genes. Tim 31th Aug 2013
+        extension_exons_absolute_distance_topolya = 3000,     #3kb is a good balance of seeing long enough 3 prime bias and not omit too many genes. Tim 31th Aug 2013
+        extension_introns_absolute_distance_topolya = 500,    #introns is only for assess the noise level, thus do ont need a long region, a long region has the side effect of omit more genes. Tim 31th Aug 2013
         resolution_upstream_utr = 1000,
         resolution_downstream_utr = 1000,
         resolution_upstream = 1000,
@@ -382,6 +408,15 @@ The options are:
 
     if len(options.infiles) == 0:
         raise ValueError("no bam/wig/bed files specified" )
+    
+    for methodsRequiresBaseAccuracy in ["geneprofilewithintrons", 
+                                        "geneprofileabsolutedistancefromthreeprimeend",
+                                       ]:
+        # If you implemented any methods that you do not want the spliced out introns 
+        # or exons appear to be covered by non-existent reads, it is better you let those
+        # methods imply --base-accurarcy by add them here.
+        if methodsRequiresBaseAccuracy in options.methods:
+            options.base_accuracy=True
 
     if options.reporter == "gene":
         gtf_iterator = GTF.flat_gene_iterator( GTF.iterator( IOTools.openFile( options.gtffile ) ) )
@@ -451,6 +486,30 @@ The options are:
                                                            options.extension_upstream,
                                                            options.extension_downstream,
                                                            options.scale_flanks ) )
+
+        elif method == "geneprofileabsolutedistancefromthreeprimeend":
+            counters.append( _bam2geneprofile.GeneCounterAbsoluteDistanceFromThreePrimeEnd( range_counter, 
+                                                           options.resolution_upstream,                                                           
+                                                           options.resolution_downstream,
+                                                           options.resolution_exons_absolute_distance_topolya,
+                                                           options.resolution_introns_absolute_distance_topolya,
+                                                           # options.resolution_exons_absolute_distance_tostartsite,   
+                                                           # options.resolution_introns_absolute_distance_tostartsite,             
+                                                           # Tim 31th Aug 2013: a possible feature for future,  if five prime bias is of your interest. 
+                                                           #(you need to create another class). It is not very difficult to derive from this class, but is not implemented yet
+                                                           # This future feature is slightly different the TSS profile already implemented, because in this future feature introns are skipped, 
+                                                           options.extension_upstream,
+                                                           options.extension_downstream,
+                                                           options.extension_exons_absolute_distance_topolya,
+                                                           options.extension_introns_absolute_distance_topolya,
+                                                           # options.extension_exons_absolute_distance_tostartsite,   
+                                                           # options.extension_introns_absolute_distance_tostartsite,                                           
+                                                           # Tim 31th Aug 2013: a possible feature for future,  if five prime bias is of your interest. 
+                                                           #(you need to create another class). It is not very difficult to derive from this class, but is not implemented yet
+                                                           # This future feature is slightly different the TSS profile already implemented, because in this future feature introns are skipped, 
+                                                           options.scale_flanks ) )
+             
+
         elif method == "tssprofile":
             counters.append( _bam2geneprofile.TSSCounter( range_counter, 
                                                            options.extension_outward,
@@ -501,7 +560,7 @@ The options are:
         
         for method, counter in zip(options.methods, counters):
 
-            if method in ("geneprofile", "geneprofilewithintrons", "utrprofile", "intervalprofile" ):
+            if method in ("geneprofile", "geneprofilewithintrons", "geneprofileabsolutedistancefromthreeprimeend", "utrprofile", "intervalprofile" ):
 
                 plt.figure()
                 plt.subplots_adjust( wspace = 0.05)

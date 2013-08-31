@@ -19,6 +19,12 @@ baseaccuracy:
 
 introns:
     stdin: null
-    options: --force -b %DIR%/multipleReadsSplicedOutAllIntronsAndSecondExon.bam -g %DIR%/onegene.gtf.gz --method=geneprofilewithintrons  --reporter=gene --resolution-cds=1400 --resolution-introns=1400 --base-accuracy
+    options: --force -b %DIR%/multipleReadsSplicedOutAllIntronsAndSecondExon.bam -g %DIR%/onegeneWithoutAnyCDS.gtf.gz --method=geneprofilewithintrons  --reporter=gene --resolution-cds=1200 --resolution-introns=2800
     outputs: [geneprofilewithintrons.lengths.tsv.gz, geneprofilewithintrons.none.tsv.gz]
     references: [test3.geneprofilewithintrons.lengths.tsv.gz, test3.geneprofilewithintrons.none.tsv.gz]
+
+geneprofileabsolutedistancefromthreeprimeend:
+    stdin: null
+    options: --force -b %DIR%/multipleReadsSplicedOutAllIntronsAndSecondExon.bam -g %DIR%/onegeneWithoutAnyCDS.gtf.gz --method=geneprofileabsolutedistancefromthreeprimeend --reporter=gene --normalization=total-max --extension-exons-absolute-distance-topolya 1200 --extension-introns-absolute-distance-topolya 2800 --resolution-exons-absolute-distance-topolya 1200 --resolution-introns-absolute-distance-topolya 2800
+    outputs: [geneprofileabsolutedistancefromthreeprimeend.lengths.tsv.gz, geneprofileabsolutedistancefromthreeprimeend.none.tsv.gz]
+    references: [test4.geneprofileabsolutedistancefromthreeprimeend.lengths.tsv.gz, test4.geneprofileabsolutedistancefromthreeprimeend.none.tsv.gz]
