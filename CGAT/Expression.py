@@ -114,7 +114,7 @@ def buildProbeset2Gene( infile,
                  len(set(result["ensembl_id"])) ) )
 
 GeneExpressionResult = collections.namedtuple( "GeneExpressionResult", \
-                                               "test_id treatment_name treatment_mean treatment_std " \
+                                                   "test_id treatment_name treatment_mean treatment_std " \
                                                    " control_name control_mean control_std " \
                                                    " pvalue qvalue l2fold fold significant status" )
 
@@ -506,7 +506,6 @@ def loadTagData( tags_filename, design_filename ):
     R('''groups <- factor(pheno2$group[ includedSamples ])''')
     R('''conds <- pheno2$group[ includedSamples ]''')
     R('''pairs = factor(pheno2$pair[ includedSamples ])''')
-
  
     E.info( "filtered data: %i observations for %i samples" % tuple( R('''dim(countsTable)''') ) )
 
@@ -559,15 +558,12 @@ def groupTagData(ref_group = None):
         has_pairs = min_per_pair >= 2
 
     return groups, pairs, has_replicates, has_pairs
-
     
-def plotHeatmap( outfile ):
+def plotHeatmap():
     '''plot a heatmap.'''
     
     R('''dists <- dist( t(as.matrix(countsTable)) )''')
-    R.png( outfile )
     R('''heatmap( as.matrix( dists ), symm=TRUE )''' )
-    R['dev.off']()
 
 def runEdgeR( infile, 
               design_file, 
@@ -621,7 +617,9 @@ def runEdgeR( infile,
                                                             ",".join( sample_names)))
 
     # output heatmap plot
-    plotHeatmap( '%(outfile_prefix)sheatmap.png' % locals() )
+    R.png( '%(outfile_prefix)sheatmap.png' % locals() )
+    plotHeatmap()
+    R['dev.off']()    
 
     E.info('running EdgeR: groups=%s, pairs=%s, replicates=%s, pairs=%s' % \
                (groups, pairs, has_replicates, has_pairs))
@@ -801,8 +799,8 @@ def runEdgeR( infile,
             # if out of range set to 0
             fold = 0
             
-        # note that fold change is computed as second group divided by first
-        # no it isn't, its set by alphabetical order of the factors. But I will fix it - IMS
+        # fold change is determined by the alphabetical order of the factors. 
+        # Is the following correct?
         results.append( GeneExpressionResult._make( ( \
                     interval,
                     groups[1],
@@ -883,7 +881,38 @@ def deseqPlotPairs( outfile ):
     R('''pairs( countsTable, lower.panel = panel.pearson, pch=".", log="xy" )''')
     R['dev.off']()
 
-def deseqParseResults( track1, track2, fdr):
+def deseqParseResults( control_name, treatment_name, fdr):
+    '''parse deseq output.
+
+    retrieve deseq results from object 'res' in R namespace.
+
+    The 'res' object is a dataframe with the following columns (from the DESeq manual):
+
+    id: The ID of the observable, taken from the row names of the
+          counts slots.
+
+    baseMean: The base mean (i.e., mean of the counts divided by the size
+          factors) for the counts for both conditions
+
+    baseMeanA: The base mean (i.e., mean of the counts divided by the size
+          factors) for the counts for condition A
+
+    baseMeanB: The base mean for condition B
+
+    foldChange: The ratio meanB/meanA
+
+    log2FoldChange: The log2 of the fold change
+
+    pval: The p value for rejecting the null hypothesis 'meanA==meanB'
+
+    padj: The adjusted p values (adjusted with 'p.adjust( pval,
+          method="BH")')
+
+    Here, 'conditionA' is 'control' and 'conditionB' is 'treatment' such that
+    a foldChange of 2 means that treatment is twice upregulated compared to control.
+
+    Returns a list of results.
+    '''
 
     results = []
     isna = R["is.na"]
@@ -903,7 +932,9 @@ def deseqParseResults( track1, track2, fdr):
     
     for data in zip( *R['res']) :
         counts.input += 1
+
         d = rtype._make( data )
+
         # set significant flag
         if d.padj <= fdr: 
             signif = 1
@@ -932,14 +963,18 @@ def deseqParseResults( track1, track2, fdr):
 
         counts.output += 1
 
-        # note that fold change is computed as second group divided by first
+        # check if our assumptions about the direction of fold change
+        # are correct
+        assert (d.foldChange > 1) == (d.baseMeanB > d.baseMeanA )
+
+        # note that fold change is computed as second group (B) divided by first (A)
         results.append( GeneExpressionResult._make( ( \
                     d.id,
-                    track2,
-                    d.baseMeanA,
-                    0,
-                    track1,
+                    treatment_name,
                     d.baseMeanB,
+                    0,
+                    control_name,
+                    d.baseMeanA,
                     0,
                     d.pval,
                     d.padj,
@@ -948,7 +983,6 @@ def deseqParseResults( track1, track2, fdr):
                     str(signif),
                     status) ) )
                     
-
     return results, counts
 
 def runDESeq( infile, 
@@ -1011,7 +1045,8 @@ def runDESeq( infile,
        column of the diagnostics data frame are uniform, as they should be. One may simply look at the
        histogram of diagForGB$pchisq but a more convenient way is the function residualsEcdfPlot,
        which show empirical cumulative density functions (ECDF) strati?ed by base level.
-       
+
+    The output is treatment and control. Fold change values are computed as treatment divided by control.
     '''
 
     # load library 
@@ -1098,12 +1133,12 @@ def runDESeq( infile,
     
     all_results = []
     for combination in itertools.combinations(groups,2):
-        g1, g2 = combination
-        gfix = "%s_vs_%s_" % (g1,g2)
+        control, treatment = combination
+        gfix = "%s_vs_%s_" % (control,treatment)
 
         outfile_groups_prefix = outfile_prefix + gfix
-        E.info("calling differential expression for %s vs %s" % (g1, g2))
-        R('''res <- nbinomTest( cds, '%s', '%s' )''' % (g1,g2) )
+        E.info("calling differential expression for control=%s vs treatment=%s" % (control, treatment))
+        R('''res <- nbinomTest( cds, '%s', '%s' )''' % (control,treatment) )
 
         # Plot significance
         R.png( '''%(outfile_groups_prefix)ssignificance.png''' % locals() )
@@ -1114,10 +1149,10 @@ def runDESeq( infile,
         outf = IOTools.openFile( "%(outfile_groups_prefix)sall.txt" % locals(), "w" )
         isna = R["is.na"]
 
-        E.info("Generating output (%s vs %s)" % (g1, g2))
+        E.info("Generating output (%s vs %s)" % (control, treatment))
 
         # Parse results and parse to file
-        results, counts = deseqParseResults( g1, g2, fdr = fdr )
+        results, counts = deseqParseResults( control, treatment, fdr = fdr )
 
         all_results += results
 
@@ -1541,3 +1576,47 @@ def runCuffdiff( bamfiles,
         with IOTools.openFile( outfile, "w" ) as outf:
             writeExpressionResults( outf, results )
     
+def outputTagSummary( filename_tags, outfile, output_filename_pattern ):
+    '''output summary values for a count table.'''
+
+    E.info( "loading tag data from %s" % filename_tags)
+    
+    outfile.write( "metric\tvalues\n" )
+
+    R( '''countsTable = read.delim( '%(filename_tags)s', 
+                                     header = TRUE,
+                                     row.names = 1,
+                                     stringsAsFactors = TRUE,
+                                     comment.char = '#' )''' % locals() )
+
+    nrows, ncolumns = tuple(R('''dim(countsTable)'''))
+    E.info( "read data: %i observations for %i samples" % (nrows,ncolumns))
+    E.debug( "sample names: %s" % R('''colnames(countsTable)'''))
+
+    outfile.write( "number of rows\t%i\n" % nrows )
+    outfile.write( "number of columns\t%i\n" % ncolumns )
+    
+    # Count windows with no data
+    R( '''max_counts = apply(countsTable,1,max)''' )
+    
+    # output distribution of maximum number of counts per window
+    outfilename = output_filename_pattern + "max_counts.tsv.gz"
+    E.info( "outputting maximum counts per window to %s" % outfilename )
+    R( '''write.table( table(max_counts), file='%(outfilename)s', sep="\t", row.names=FALSE, quote=FALSE)''' % locals())
+
+    # removing empty rows
+    E.info( "removing rows with no counts" )
+    R( '''countsTable = countsTable[max_counts>0,]''')
+
+    for x in range( 0,20):
+        nempty = tuple( R('''sum(max_counts <= %i)''' % x))[0]
+        outfile.write( "max<=%i\t%i\t%f\n" % (x, nempty, 100.0 * nempty / nrows ) )
+                       
+    E.info( "removed %i empty rows" % tuple( R('''sum(max_counts == 0)''') ) )
+    observations, samples = tuple( R('''dim(countsTable)'''))
+    E.info( "trimmed data: %i observations for %i samples" % (observations, samples ))
+
+    outfilename = output_filename_pattern + "heatmap.svg"
+    R.svg( outfilename )
+    plotHeatmap()
+    R['dev.off']()    

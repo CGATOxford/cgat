@@ -32,13 +32,48 @@ runExpression.py - wrap various differential expression tools
 Purpose
 -------
 
-This script provides a wrapper for differential expression analysis 
+This script provides a convenience wrapper for differential expression analysis 
 for a variety of methods.
 
 Methods implemented are:
 
    DESeq
    EdgeR
+
+The aim of this script is to provide a common tabular output format that is consistent
+between the different methods. The columns in the output are:
+
++--------------+------------------------------------------------------+
+|*Column name* |*Content*                                             |
++--------------+------------------------------------------------------+
+|test_id       |Name of the test (gene name, ...                      |
++--------------+------------------------------------------------------+
+|treatment_name|Name of the treatment condition                       |
++--------------+------------------------------------------------------+
+|treatment_mean|Estimated expression value for treatment              |
++--------------+------------------------------------------------------+
+|treatment_std |Standard deviation                                    |
++--------------+------------------------------------------------------+
+|control_name  |Name of the control condition                         |
++--------------+------------------------------------------------------+
+|control_mean  |Estimated expression value for control                |
++--------------+------------------------------------------------------+
+|control_std   |Standard deviation                                    |
++--------------+------------------------------------------------------+
+|pvalue        |The p value for rejecting the null hypothesis         |
++--------------+------------------------------------------------------+
+|qvalue        |Multiple testing correction                           |
++--------------+------------------------------------------------------+
+|l2fold        |log2 foldchange of treatment/control                  |
++--------------+------------------------------------------------------+
+|fold          |foldchange of treatment/control                       |
++--------------+------------------------------------------------------+
+|significant   |Flag, 1 if test called significant according to FDR   |
++--------------+------------------------------------------------------+
+|status        |test status (OK|FAIL)                                 |
++--------------+------------------------------------------------------+
+
+The script will call each of the method and output a variety of diagnostic plots.
 
 Usage
 -----
@@ -104,7 +139,7 @@ def main( argv = None ):
                       help="output filename [default=%default]."  )
 
     parser.add_option("-m", "--method", dest="method", type="choice",
-                      choices = ("deseq", "edger", "cuffdiff"),
+                      choices = ("deseq", "edger", "cuffdiff", "summary" ),
                       help="differential expression method to apply [default=%default]."  )
 
     parser.add_option( "--deseq-dispersion-method", dest="deseq_dispersion_method", type="choice",
@@ -165,6 +200,12 @@ def main( argv = None ):
                              options.output_filename_pattern,
                              fdr = options.fdr,
                              ref_group = options.ref_group)
+
+    elif options.method == "summary":
+        assert options.input_filename_tags and os.path.exists(options.input_filename_tags)
+        Expression.outputTagSummary( options.input_filename_tags,
+                                     options.stdout,
+                                     options.output_filename_pattern )
 
     if fh and os.path.exists( fh.name): os.unlink( fh.name )
 
