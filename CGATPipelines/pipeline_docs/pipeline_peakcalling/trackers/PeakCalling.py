@@ -4,12 +4,6 @@ The data are specific for each caller.
 '''
 
 import os, sys, re, types, itertools
-import matplotlib.pyplot as plt
-import numpy, scipy.stats
-import numpy.ma
-import Stats
-import Histogram
-
 from SphinxReport.Tracker import *
 from PeakcallingReport import *
 
@@ -75,7 +69,7 @@ class Macs2Summary(MacsSummary):
 class Macs2Diagnostics(MacsDiagnostics):
     pattern = "(.*)_macs2_diagnostics"
 
-class Mac2sFiltering(MacsFiltering):
+class Macs2Filtering(MacsFiltering):
     table = 'macs2_fdr'
 
 class SPPSummary( DefaultTracker, SingleTableTrackerRows ):

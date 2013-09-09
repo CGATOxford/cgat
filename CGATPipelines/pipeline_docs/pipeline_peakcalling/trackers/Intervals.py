@@ -1,6 +1,6 @@
 from PeakcallingReport import *
 
-import IOTools
+import CGAT.IOTools
 
 class FoldChangeTracker( TrackerSQL ):
     '''the fold change tracker ignores unstimulated tracks.'''

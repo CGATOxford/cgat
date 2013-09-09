@@ -27,6 +27,14 @@ MACS
 
    Status of peak calling
 
+MACS2
+-----
+
+.. report:: Status.PeakCallingStatusMACS2
+   :render: status
+
+   Status of peak calling
+
 SPP
 ---
 

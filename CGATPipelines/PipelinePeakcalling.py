@@ -978,11 +978,11 @@ def summarizeMACS2( infiles, outfile ):
     # mapping patternts to values.
     # tuples of pattern, label, subgroups
     map_targets = [
-        ("fragments after filtering in treatment: (\d+)", "fragment_treatment_filtered",()),
-        ("total fragments in treatment: (\d+)", "fragment_treatment_total",()),
-        ("fragments after filtering in control: (\d+)", "fragment_control_filtered",()),
-        ("total fragments in control: (\d+)", "fragment_control_total",()),
-        ("#2   Use 0 as shiftsize, (\d+)","fragment_length", ()),
+        ("tags after filtering in treatment:\s+(\d+)", "fragment_treatment_filtered",()),
+        ("total tags in treatment:\s+(\d+)", "fragment_treatment_total",()),
+        ("tags after filtering in control:\s+(\d+)", "fragment_control_filtered",()),
+        ("total tags in control:\s+(\d+)", "fragment_control_total",()),
+        ("predicted fragment length is (\d+) bps","fragment_length", ()),
 # Number of peaks doesn't appear to be reported!.
 #        ("#3 Total number of candidates: (\d+)", "ncandidates",("positive", "negative") ),
 #        ("#3 Finally, (\d+) peaks are called!",  "called", ("positive", "negative") ) 
@@ -1381,7 +1381,7 @@ def loadMACS2( infile, outfile, bamfile, controlfile = None ):
     filename_r = infile + "_model.r"
     filename_rlog = infile + ".r.log"
     filename_pdf = infile + "_model.pdf"
-    filename_subpeaks = P.snip( infile, ".macs2", ) + ".subpeaks.macs_peaks.bed" 
+    filename_subpeaks = infile + "_summits.bed.gz" 
 
     if not os.path.exists(filename_bed):
         E.warn("could not find %s" % infilename )
@@ -1503,8 +1503,8 @@ def loadMACS2( infile, outfile, bamfile, controlfile = None ):
 
         # add a peak identifier and remove header
         statement = '''
-                    awk '/Chromosome/ {next; } {printf("%%s\\t%%i\\t%%i\\t%%i\\t%%i\\t%%i\\n", $1,$2,$3,++a,$4,$5)}'
-                    < %(filename_subpeaks)s
+                    zcat %(filename_subpeaks)s
+                    | awk '/Chromosome/ {next; } {printf("%%s\\t%%i\\t%%i\\t%%i\\t%%i\\t%%i\\n", $1,$2,$3,++a,$4,$5)}'
                     | python %(scriptsdir)s/bed2table.py 
                                --counter=peaks
                                --bam-file=%(bamfile)s
