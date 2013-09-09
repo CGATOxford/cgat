@@ -57,8 +57,19 @@ It aggregates the following:
    * l2fold: min/max (depending on enrichment/depletion)
 
 The analysis outputs bed files with intervals that are
-potentially activated (low methylation signal and differentially
-methylated).
+potentially activated in one of the conditions. Windows
+with a positive fold change are collected in the ``treatment``,
+while windows with a negative fold change are collected in the
+``control``.
+
+For methylation analysis, it might be more interesting
+to report windows that are depleted (instead of enriched)
+of signal. Thus, if the option ``--invert`` is given,
+windows with a negative l2fold change are labeled ``treatment``.
+Less methylation means that this region is "active" in the
+``treatment`` condition.
+
+Note that the input is assumed to be sorted by coordinate.
 
 Usage
 -----
@@ -73,11 +84,9 @@ Type::
  
 for command line help.
 
-Documentation
--------------
 
-Code
-----
+Command line options
+--------------------
 
 '''
 
@@ -107,15 +116,29 @@ def main( argv = None ):
     parser.add_option("-o", "--min-overlap", dest="min_overlap", type="int",
                       help="minimum overlap"  )
 
-    parser.set_defaults( min_overlap = 10 )
+    parser.add_option("-w", "--pattern-window", dest="pattern_window", type="string",
+                      help="regular expression to extract window coordinates from test id [%default]"  )
 
+    parser.add_option("-i", "--invert", dest="invert", action = "store_true",
+                      help="invert treatment/control such that significant windows in control are reported as treatment [%default]"  )
+
+    parser.set_defaults( min_overlap = 10,
+                         invert = False,
+                         pattern_window = "(\S+):(\d+)-(\d+)"),
+    
     ## add common options (-h/--help, ...) and parse command line 
     (options, args) = E.Start( parser, argv = argv, add_output_options = True )
 
     outfiles = IOTools.FilePool( options.output_filename_pattern )
     
+    if options.invert:
+        test_f = lambda l2fold: l2fold < 0
+    else:
+        test_f = lambda l2fold: l2fold > 0
+
     def read():
-        
+
+        rx_window = re.compile(options.pattern_window)
         # filter any of the DESeq/EdgeR message that end up at the top of the output file
         keep = False
         invert = False
@@ -143,7 +166,7 @@ def main( argv = None ):
                 E.warn('parsing error in line %s' % line )
                 continue
 
-            contig, start, end = re.match("(\S+):(\d+)-(\d+)", test_id ).groups()
+            contig, start, end = rx_window.match(test_id ).groups()
             significant = int(significant)
             start, end = map( int, (start, end ) )
             pvalue, qvalue, l2fold, fold = map( float, (pvalue, qvalue, l2fold, fold) )
@@ -191,6 +214,9 @@ def main( argv = None ):
 
     options.stdout.write( "\t".join( DATA._fields ) + "\n" )
 
+    # set of all sample names - used to create empty files
+    samples = set()
+
     # need to sort by coordinate
     all_data = list( read() )
     all_data.sort( key = lambda x: (x.contig, x.start) )
@@ -226,8 +252,10 @@ def main( argv = None ):
                                 g.status,
                                 int(n)) )
                               
+        samples.add( g.treatment_name )
+        samples.add( g.control_name )
         if g.significant:
-            if g.l2fold < 0:
+            if test_f(g.l2fold):
                 # treatment lower methylation than control
                 outfiles.write( g.treatment_name, "%s\t%i\t%i\t%s\t%f\n" % (g.contig, g.start, g.end, 
                                                                             g.treatment_name,
@@ -241,6 +269,9 @@ def main( argv = None ):
         options.stdout.write("\t".join( map(str, outdata) ) + "\n" )
 
         counter.output += 1
+
+    for sample in samples:
+        outfiles.write( sample, "")
 
     outfiles.close()
     E.info( "%s" % counter )
