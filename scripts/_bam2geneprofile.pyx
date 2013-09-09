@@ -616,12 +616,16 @@ class GeneCounter( IntervalsCounter ):
         return 1
 
 class GeneCounterWithIntrons( IntervalsCounter ):
-    '''count reads in exons and upstream/downstream of genes/transcripts.
+    '''count reads in exons, in introns and the upstream/downstream of genes/transcripts.
     
-    Only protein coding transcripts are counted (i.e. those with a CDS)
+    Assumes all the behavior of GeneCounter class, because the code is modified based on 
+    GeneCounter Class. Class created by Tim on 16 May. 2013.
+    
+    Both  protein coding transcripts, and non coding transcripts are counted.
+    (i.e. both those with a CDS, and those without a CDS are counted)
     '''
     
-    name = "geneprofilewithintrons" #Tim 16 May. 2013. for introns
+    name = "geneprofilewithintrons"
     
     def __init__(self, counter, 
                  int resolution_upstream,
@@ -656,7 +660,7 @@ class GeneCounterWithIntrons( IntervalsCounter ):
     def count( self, gtf ):
         '''build ranges to be analyzed from a gene model.
 
-        Returns a tuple with ranges for exons, upstream, downstream.
+        Returns a tuple with ranges for upstream, exons, introns, downstream.
         '''
 
         contig = gtf[0].contig 
@@ -667,12 +671,15 @@ class GeneCounterWithIntrons( IntervalsCounter ):
             E.warn( "no exons in gene %s:%s" % (gtf[0].gene_id, gtf[0].transcript_id))
             return 0
             
-        #Tim 16 May. 2013. for introns. 
-        #Genes have no introns are removed completely because include them will distort 
-        #the relative height of exons/introns in the profile 
-        #(when user use norm total-max, most likely the relative height is very important info)
+        # Tim 16 May. 2013. for introns. 
+        # Genes have no introns are omitted for counting in all other regions. Because 
+        # include them will distort the relative height of exons/introns in the profile.
+        # In most gene profile plots, the relative height of different regions 
+        # is very important info, thus omit the gene will ensure the correctness for the 
+        # relative height across different regions.
+        # Particularly true when user use normalization method: total-max.
         if len(introns) == 0:   
-            E.warn( "no introns in gene %s:%s" % (gtf[0].gene_id, gtf[0].transcript_id))
+            E.debug( "Omitted this gene entirely because there are no introns in gene %s:%s" % (gtf[0].gene_id, gtf[0].transcript_id))
             return 0
 
         exon_start, exon_end = exons[0][0], exons[-1][1]
@@ -714,6 +721,292 @@ class GeneCounterWithIntrons( IntervalsCounter ):
                         self.counts_downstream )
 
         return 1
+
+
+
+class GeneCounterAbsoluteDistanceFromThreePrimeEnd( IntervalsCounter ):
+    '''count reads in exons of genes/transcripts from the three prime polyA tail,
+    without shrinking or lengthening the gene as it would in other genecounter mode
+    in this script.
+    i.e. Only count the reads that fall on the exons of the (virtual maximal) mNRA transcript. 
+    Note that the distance is relative to TTS (three prime polyA tail) on the mNRA 
+    transcript, insteads of on the genomic assembly is used for the counting and plotting.
+    
+    For mRNA with multiple exons, the exons are first stiched together into one 
+    piece of mRNA (the virtual maximal transcript for each gene). Subsequently, the mNRA is being 
+    used for counting. This is the (only) proper way to avoid counting in introns, which screw up the 
+    actual genebody coverage profile. And this only works with --base-accuracy option, 
+    because otherwise spliced reads will be considered as covering the entire intron, or 
+    spliced out introns will be counted as covered by reads.
+    (this option imply the --base-accuracy option). 
+    
+    Also count reads in introns (in exctly the same manner as if they are exons described above ) 
+    of genes/transcripts from the three prime polyA tail.
+    
+    
+    NOTE:
+    (*) Both protein coding transcripts, and non coding transcripts are counted.
+    i.e. both those with a CDS, and those without a CDS are counted.
+    
+    (*) Only genes/transcripts with total length longer than the 
+    --extension-exons-absolute-distance-topolya is counted 
+    (i.e. those genes/transcripts shorter than this is omitted because they will only 
+    contribute to the last len(gene) base pair of the graph, thus end-up ploting a 
+    graph appears to have three prime bias even when there is no three prime bias at all.
+    
+    There is one alternative way of dealing with this issue: is to count the number of times 
+    a nucleotide is being visited, and normalize against the counts curve with the visits counting 
+    curve. However, under current architecture of the counter, it seems hard to support this method.
+    Assumeing you get enough number of genes longer than 4000b (in hg19) to plot the three 
+    prime bias to satisfactory quality, it seems not really worth the effort to implement 
+    the alternative way, 
+    
+    '''
+    
+    name = "geneprofileabsolutedistancefromthreeprimeend"   #Tim 31th Aug 2013
+    
+    def __init__(self, counter, 
+                 int resolution_upstream,
+                 int resolution_downstream,
+                 int resolution_exons_absolute_distance_topolya,
+                 int resolution_introns_absolute_distance_topolya,
+                 # int resolution_exons_absolute_distance_tostartsite,   # Tim 31th Aug 2013: 
+                                                                         # a possible feature for future,  if five prime bias is of your interest. 
+                                                                         #(you need to create another class). It is not very difficult to derive from this class, but is not implemented yet
+                                                                         # This future feature is slightly different the TSS profile already implemented, because in this future feature introns are skipped, 
+                 # int resolution_introns_absolute_distance_tostartsite, # feature not implemented yet
+                 
+                 int extension_upstream = 0, 
+                 int extension_downstream = 0,
+                 int extension_exons_absolute_distance_topolya = 0,
+                 int extension_introns_absolute_distance_topolya = 0,
+                 # int extension_exons_absolute_distance_tostartsite = 0,   # feature not implemented yet
+                 # int extension_introns_absolute_distance_tostartsite = 0, # feature not implemented yet
+                 
+                 int scale_flanks = 0,
+                 *args,
+                 **kwargs ):
+
+        IntervalsCounter.__init__(self, *args, **kwargs )
+
+        self.counter = counter
+        self.extension_upstream = extension_upstream
+        self.extension_downstream = extension_downstream 
+        self.resolution_upstream = resolution_upstream
+        self.resolution_downstream = resolution_downstream
+        
+        self.resolution_exons_absolute_distance_topolya = resolution_exons_absolute_distance_topolya     #Tim 31th Aug 2013
+        self.resolution_introns_absolute_distance_topolya = resolution_introns_absolute_distance_topolya #Tim 31th Aug 2013
+        self.extension_exons_absolute_distance_topolya = extension_exons_absolute_distance_topolya       #Tim 31th Aug 2013
+        self.extension_introns_absolute_distance_topolya = extension_introns_absolute_distance_topolya   #Tim 31th Aug 2013
+        
+        self.scale_flanks = scale_flanks
+
+        for field, length in zip(   ("upstream%dbp_zoomedTo%dbp"%(extension_upstream, resolution_upstream),
+                                     "exonsLast%dbp_zoomedTo%dbp"%(extension_exons_absolute_distance_topolya, resolution_exons_absolute_distance_topolya) ,
+                                     "intronsLast%dbp_zoomedTo%dbp"%(extension_introns_absolute_distance_topolya, resolution_introns_absolute_distance_topolya) ,
+                                     "downstream%dbp_zoomedTo%dbp"%(extension_downstream, resolution_downstream),
+                                    ),
+                                    (resolution_upstream,
+                                     resolution_exons_absolute_distance_topolya,
+                                     resolution_introns_absolute_distance_topolya,
+                                     resolution_downstream) 
+                                ):
+            self.add( field, length )
+
+            
+    #Tim 31th Aug 2013: Important function in this class to stich together the exons into one  complete of mRNA
+    def __chopAllTranscriptToAFixedLengthForTheThreePrimeBiasCounting(self, gtf , exons, extension_threePrimeBiasNotZoomed ):
+        '''
+        works for both exons and introns, the varible name exons is only symolic here,
+        it means either exons, or introns depending on the regions you passed in 
+        during function call
+        
+        in order to use the gene2profile code to plot 3prime bias plot, 
+        if a gene is longer than my plotting size (e.g. 5kb), because I 
+        do not want to let the code to shrink the gene, I need to create 
+        a "chopped gene" that only has the first several bp (e.g. 5kb) 
+        closest to the 3prime, so the gene always appears to be of the length 
+        "extension_threePrimeBiasNotZoomed", (e.g. 5kb)
+        
+        In this version, shorter genes are omitted at count() becase len([])==0.
+        It is oimitted in the same mannar that was used to
+        omit the genes without any exons, by returnning [], which can be interpreted
+        by the calling function as omit, or take any other further actions.
+       
+        '''
+        
+        if len(exons)==0: return []  # this is to cater for the case where there's 
+                                     # one exon, and no intron, but I am plotted\
+                                     # unzoomed introns as well
+        
+        leftoverBasepairAllowance = extension_threePrimeBiasNotZoomed
+        exons_chopped = []
+        if gtf[0].strand == "-":
+            for exon in exons:
+                exonSize = exon[1]-exon[0]
+                if leftoverBasepairAllowance > exonSize:
+                    leftoverBasepairAllowance -= exonSize
+                    exons_chopped.append( exon )            # append is the correct way, coz we process the first exon first. 
+                                                            # so subsequent exons shall be appended so that the basepair ordering 
+                                                            # is in reverse ordering alone the gene body, likewise, the exon 
+                                                            # ordering is also the reverse ordering alone the gene body. In the 
+                                                            # end, just before counts are aggregated, there will be code:
+                                                            # if "-": counts_exons_NotZoomedAndChopped_ForThreePrimeBias[::-1] to flip 
+                                                            # everything in base pair resolution.
+                    E.debug( str(exons_chopped) )
+                else:
+                    E.debug( "Exon intervals preparation function: gene %s:%s, leftoverBasepairAllowance= %s " % (gtf[0].transcript_id, gtf[0].strand, leftoverBasepairAllowance)  )
+                    E.debug( "Exon intervals preparation function: The potential half exon: "+str(exon) )
+                    exon_chopped = (exon[0], exon[0]+leftoverBasepairAllowance)
+                    exons_chopped.append( exon_chopped )    # append is the correct way, same as above
+                    exon_choppedSize = exon_chopped[1]-exon_chopped[0]
+                    leftoverBasepairAllowance -= exon_choppedSize
+                    E.debug( "Exon intervals preparation function: gene %s:%s, leftoverBasepairAllowance= %s " % (gtf[0].transcript_id, gtf[0].strand, leftoverBasepairAllowance)  )
+                    E.debug( str(exons_chopped) )
+                    break
+                    # gene is longer than my window, thus chopped, 
+                    # once in this section of code, exons_chopped is the final chopped gene, thus break from loop
+                    # and later, exons_chopped is being return at the end of the function.
+
+        elif gtf[0].strand == "+":
+            for exon in exons[::-1]:
+                exonSize = exon[1]-exon[0]
+                if leftoverBasepairAllowance > exonSize:
+                    leftoverBasepairAllowance -= exonSize
+                    exons_chopped.insert(0, exon)#prepend is the correct way, coz we process the last exon first. so subsequent exons shall be prepended so that the basepair ordering is the same as exon ordering.
+                    E.debug( str(exons_chopped) )
+                else:
+                    E.debug( "Exon intervals preparation function: gene %s:%s, leftoverBasepairAllowance= %s " % (gtf[0].transcript_id, gtf[0].strand, leftoverBasepairAllowance)  )
+                    E.debug( "Exon intervals preparation function: The potential half exon: "+str(exon) )
+                    exon_chopped = (exon[1]-leftoverBasepairAllowance, exon[1])
+                    exons_chopped.insert(0,exon_chopped)#prepend is the correct way, same as above
+                    exon_choppedSize = exon_chopped[1]-exon_chopped[0]
+                    leftoverBasepairAllowance -= exon_choppedSize
+                    E.debug( "Exon intervals preparation function: gene %s:%s, leftoverBasepairAllowance= %s " % (gtf[0].transcript_id, gtf[0].strand, leftoverBasepairAllowance)  )
+                    E.debug( str(exons_chopped) )
+                    break
+                    # gene is longer than my window, thus chopped, 
+                    # once in this section of code, exons_chopped is the final chopped gene, thus break from loop
+                    # and later, exons_chopped is being return at the end of the function.
+        else:
+            E.error( "In exon intervals preparation function: strand is neither + nor - in gene %s:%s" % (gtf[0].gene_id, gtf[0].transcript_id) )
+            # in this situation, gene direction column in the GTF file have some problems, 
+            # exons_chopped is still [], and is being return 
+            # at the end of the function. 
+            # so that his componet is skipped by the counter
+            
+        #gene is nicely chopped, so that no alloance is left.
+        if leftoverBasepairAllowance==0: 
+            return exons_chopped
+            
+        # gene is shorter than my window, thus it is not chopped to any shorter at all.
+        # you can return three different signals to the caller function, and they have different meanings:
+        # if you return the gene, it will be expanded and counted, thus might not be your desired behaviour.
+        # if you return None, it will be throwing an exception in count()
+        # if you return [], thus len([])==0, the whole gene will be quitely omitted. 
+        elif leftoverBasepairAllowance>0: 
+            E.debug( "In exon intervals preparation function: gene %s:%s is shorter than the defined threeprimebiaswindow: %s ." % (gtf[0].gene_id, gtf[0].transcript_id, extension_threePrimeBiasNotZoomed) )            
+            return []
+        
+        #leftoverBasepairAllowance is neither ==0 nor >0, there must be a bug in the code.
+        else: 
+            E.error( "In exon intervals preparation function: leftoverBasepairAllowance after chopping is neither ==0 nor >0 in gene %s:%s. It must be a bug" % (gtf[0].gene_id, gtf[0].transcript_id) )
+            E.error( "In exon intervals preparation function: details:: before: s%, after: s%, strand: s%."%(str(exons), str(exons_chopped), gtf[0].strand)    )  
+            
+        #the __chopgenestoshowthreePrimeBiasNotZoomed subfunction ends here # this return below is never be used according to the logic above. i.e. unless it enters the else: warn due to a bug, this return statement is never executed.
+        return
+        
+            
+    def count( self, gtf ):
+        '''build ranges to be analyzed from a gene model.
+
+        Returns a tuple with ranges for upstream, exons, introns, downstream.
+        '''
+
+        contig = gtf[0].contig 
+        exons = GTF.asRanges( gtf, "exon" )
+        introns = Intervals.complement(exons) #Tim 31th Aug 2013
+        
+        if len(exons) == 0:
+            E.warn( "In counter function: seems like a seriouse problem, there are no exons in gene %s:%s" % (gtf[0].gene_id, gtf[0].transcript_id))
+            return 0
+            
+        if len(introns) == 0:
+            E.debug( "In counter function: no introns in gene %s:%s" % (gtf[0].gene_id, gtf[0].transcript_id))
+            # Tim 31th Aug 2013 :
+            # do not warn here because there could be many single exon genes.
+            # return 0 here because if no intron, we do not want to count this whole gene.
+            # otherwise, the relative height among intron, exon, upstream, downstream will be wrong
+            return 0
+            
+        exon_start, exon_end = exons[0][0], exons[-1][1]
+        if self.scale_flanks > 0:
+            self.extension_downstream = (exon_end - exon_start)*self.scale_flanks
+            self.extension_upstream = (exon_end - exon_start)*self.scale_flanks
+            E.debug("In counter function: scale flanks")
+
+        if gtf[0].strand == "-":
+            downstream = [ ( max(0, exon_start - self.extension_downstream), exon_start ), ] 
+            upstream = [ ( exon_end, exon_end + self.extension_upstream ), ]
+        else:
+            upstream = [ ( max(0, exon_start - self.extension_upstream), exon_start ), ] 
+            downstream = [ ( exon_end, exon_end + self.extension_downstream ), ]
+        
+        # within the __chopAllTranscriptToAFixedLengthForTheThreePrimeBiasCounting function, the flipping for genes on "-" strand is already taken care of. Tim 31th Aug 2013
+        exons_NotZoomedAndChopped_ForThreePrimeBias   = self.__chopAllTranscriptToAFixedLengthForTheThreePrimeBiasCounting( gtf, exons,   self.extension_exons_absolute_distance_topolya   )
+        introns_NotZoomedAndChopped_ForThreePrimeBias = self.__chopAllTranscriptToAFixedLengthForTheThreePrimeBiasCounting( gtf, introns, self.extension_introns_absolute_distance_topolya )
+        if len(exons_NotZoomedAndChopped_ForThreePrimeBias) == 0:
+            E.debug( "In counter function: after exons concat together, it is not long enough in gene %s:%s" % (gtf[0].gene_id, gtf[0].transcript_id))
+            # Tim 31th Aug 2013 :
+            # do not warn here because there are many genes's total exon length might be short.
+            # return 0 here because if no exons, we do not want to count this whole gene.
+            # otherwise, the relative height of intron and exon will be wrong
+            return 0        
+        if len(introns_NotZoomedAndChopped_ForThreePrimeBias) == 0:
+            E.debug( "In counter function: after introns concat together, it is not long enough in gene %s:%s" % (gtf[0].gene_id, gtf[0].transcript_id))
+            # Tim 31th Aug 2013  :
+            # do not warn here because there are many genes's total exon length might be short.
+            # return 0 here because if no intron, we do not want to count this whole gene.
+            # otherwise, the relative height of intron and exon will be wrong
+            return 0
+                        
+            
+        E.debug("counting upstream" )
+        self.counts_upstream = self.counter.getCounts( contig, upstream, self.resolution_upstream ) 
+        E.debug("counting downstream" )
+        self.counts_downstream = self.counter.getCounts( contig, downstream, self.resolution_downstream )
+        E.debug("counting exons NotZoomedAndChopped ForThreePrimeBias" )
+        self.counts_exons_NotZoomedAndChopped_ForThreePrimeBias = self.counter.getCounts( contig, exons_NotZoomedAndChopped_ForThreePrimeBias, self.resolution_exons_absolute_distance_topolya )
+        E.debug("counting introns NotZoomedAndChopped ForThreePrimeBias" )
+        self.counts_introns_NotZoomedAndChopped_ForThreePrimeBias = self.counter.getCounts( contig, introns_NotZoomedAndChopped_ForThreePrimeBias, self.resolution_introns_absolute_distance_topolya )
+        E.debug("counting finished" )
+
+        
+        if gtf[0].strand == "+":
+            # nothings needs to be flipped for positive strand gene 
+            pass 
+        elif gtf[0].strand == "-":
+            # flip for negative strand genes
+            self.counts_upstream = self.counts_upstream[::-1]
+            self.counts_downstream = self.counts_downstream[::-1]
+            #Tim 31th Aug 2013 
+            self.counts_exons_NotZoomedAndChopped_ForThreePrimeBias   = self.counts_exons_NotZoomedAndChopped_ForThreePrimeBias[::-1]
+            self.counts_introns_NotZoomedAndChopped_ForThreePrimeBias = self.counts_introns_NotZoomedAndChopped_ForThreePrimeBias[::-1]
+          
+        self.addLengths( upstream, 
+                         exons_NotZoomedAndChopped_ForThreePrimeBias, 
+                         introns_NotZoomedAndChopped_ForThreePrimeBias, 
+                         downstream )                   #Tim 31th Aug 2013 
+                
+        self.aggregate( self.counts_upstream,
+                        self.counts_exons_NotZoomedAndChopped_ForThreePrimeBias,
+                        self.counts_introns_NotZoomedAndChopped_ForThreePrimeBias,                        
+                        self.counts_downstream )        #Tim 31th Aug 2013 
+
+        return 1
+
+
 
 class UTRCounter( IntervalsCounter ):
     '''counts reads in 3'UTR and 5'UTR in addition
