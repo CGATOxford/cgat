@@ -328,8 +328,17 @@ def critical( message):
     E.critical( message )
 
 def isEmpty( filename ):
-    '''return true if file *filename* is empty.'''
-    return os.stat(filename)[6]==0
+    '''return true if file *filename* is empty.
+    
+    If filename ends in .gz, it checks if the contents are empty
+    by opening it.
+    '''
+    if filename.endswith(".gz"):
+        n = 0
+        with gzip.open(filename) as inf:
+            return len(inf.read(10)) == 0
+    else:
+        return os.stat(filename)[6]==0
 
 def asList( param ):
     '''return a param as a list'''
