@@ -72,99 +72,8 @@ from types import *
 
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
+import CGAT.Logfile as Logfile
 
-class LogFileData:
-    mRegex = re.compile("# job finished in (\d+) seconds at (.*) --\s+([.\d]+)\s+([.\d]+)\s+([.\d]+)\s+([.\d]+)")
-    mFormat = "%6.2f"
-    mDivider = 1.0
-    
-    def __init__(self):
-
-        self.mWall = 0
-        self.mUser = 0
-        self.mSys = 0
-        self.mChildUser = 0
-        self.mChildSys = 0
-        self.mNChunks = 0
-
-    def add( self, line ):
-
-        if not self.mRegex.match(line): return
-        t_wall, date, t_user, t_sys, t_child_user, t_child_sys = self.mRegex.match(line).groups()
-
-        self.mWall += int(t_wall)
-        self.mUser += float(t_user)
-        self.mSys += float(t_sys)
-        self.mChildUser += float(t_child_user)
-        self.mChildSys += float(t_child_sys)
-        self.mNChunks += 1
-
-    def __getitem__( self, key ):
-        
-        if key == "wall":
-            return self.mWall
-        elif key == "user":
-            return self.mUser
-        elif key == "sys":
-            return self.mSys
-        elif key == "cuser":
-            return self.mChildUser
-        elif key == "csys":
-            return self.mChildSys
-        elif key == "nchunks":
-            return self.mNChunks
-        else:
-            raise ValueError("key %s not found" % key)
-
-    def __add__(self, other ):
-
-        self.mWall += other.mWall
-        self.mUser += other.mUser
-        self.mSys += other.mSys
-        self.mChildUser += other.mChildUser
-        self.mChildSys += other.mChildSys
-        self.mNChunks += other.mNChunks
-
-        return self
-    
-    def __str__(self):
-        
-        return "%i\t%s" % (
-            self.mNChunks,
-            "\t".join( map( lambda x: self.mFormat % (float(x)/self.mDivider), \
-                                (self.mWall, self.mUser, self.mSys,
-                                 self.mChildUser, self.mChildSys ) ) ) )
-
-    def getHeader(self):
-        return "\t".join( ("chunks", "wall", "user", "sys", "cuser", "csys") )
-
-
-class LogFileDataLines(LogFileData):
-    """record lines."""
-    def __init__(self):
-        LogFileData.__init__(self)
-        self.mNLines = 0
-
-    def add( self, line ):
-        if line[0] != "#":
-            self.mNLines += 1
-        else:
-            return LogFileData.add( self, line )
-    def __getitem__( self, key ):
-        if key == "lines":
-            return self.mNLines
-        else:
-            return LogFileData.__getitem__( self, key )
-    def __add__(self, other ):
-        self.mNLines += other.mNLines
-        return LogFileData.__add__( self, other )
-
-    def __str__(self):
-        return "%s\t%i" % (LogFileData.__str__(self), self.mNLines )
-                          
-    def getHeader(self):
-        return "%s\t%s" % (LogFileData.getHeader(self), "lines" )
-    
 if __name__ == "__main__":
     
     parser = E.OptionParser( version = "%prog version: $Id: cgat_logfiles2tsv.py 2781 2009-09-10 11:33:14Z andreas $" )
@@ -200,7 +109,7 @@ if __name__ == "__main__":
         raise "no files to analyse"
 
     if options.mode == "file":
-        totals = LogFileData()
+        totals = Logfile.LogFileData()
 
         options.stdout.write( "file\t%s\n" % totals.getHeader() )
 
@@ -212,7 +121,7 @@ if __name__ == "__main__":
             else:
                 infile = open(filename, "r" )
 
-            subtotals = LogFileData()
+            subtotals = Logfile.LogFileData()
             for line in infile:
                 subtotals.add( line )
 
@@ -237,13 +146,13 @@ if __name__ == "__main__":
             else:
                 infile = open(filename, "r" )
                 
-            data = LogFileDataLines()
+            data = Logfile.LogFileDataLines()
                
             for line in infile:
                 
                 if rx_node.match(line):
                     node_id = rx_node.match(line).groups()[0]
-                    data = LogFileDataLines()
+                    data = Logfile.LogFileDataLines()
                     if node_id not in chunks_per_node:
                         chunks_per_node[node_id] = []
                     chunks_per_node[node_id].append( data )
@@ -252,10 +161,10 @@ if __name__ == "__main__":
                 data.add( line )
 
         options.stdout.write( "node\t%s\n" % data.getHeader() )
-        total = LogFileDataLines()
+        total = Logfile.LogFileDataLines()
                    
         for node, data in sorted(chunks_per_node.items()):
-            subtotal = LogFileDataLines()
+            subtotal = Logfile.LogFileDataLines()
             for d in data:
                 # options.stdout.write( "%s\t%s\n" % (node, str(d) ) )  
                 subtotal += d

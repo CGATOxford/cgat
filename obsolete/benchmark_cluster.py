@@ -21,8 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-benchmark_cluster.py - script for testing the speed of nodes
-============================================================
+benchmark_cluster.py - script for testing CPU speed in SGE cluster
+=====================================================================
 
 :Author: Andreas Heger
 :Release: $Id$
@@ -34,12 +34,24 @@ Purpose
 
 Benchmark CPU speed of nodes in the cluster.
 
+The script sends off a script to compute fibonacci numbers to
+all nodes in the cluster. 
+
+Testing is done in multiple iterations and on host-by-host basis.
+Several hosts are run and the order of hosts is randomized at each
+step.
+
+More jobs than slots are send to each host.
+
+The output is a collection of tab separated tables with benchmarking
+data for each iteration separately and a combined analysis.
+
 Usage
 -----
 
 Example::
 
-   python benchmark_cluster.py --help
+   python benchmark_cluster.py 
 
 Type::
 
@@ -50,8 +62,8 @@ for command line help.
 Documentation
 -------------
 
-Code
-----
+Command line options
+---------------------
 
 '''
 import sys
@@ -69,13 +81,11 @@ from threading import Thread as Process
 
 import CGAT.Experiment as E
 import CGAT.Stats as Stats
-
-USAGE = """benchmark the relative speed of nodes on the cluster.
-
-execute in a networked directory available on all nodes.
-"""
+import CGAT.Logfile as Logfile
 
 CODE_CPU="""
+import sys
+sys.path.append( "/ifs/devel/andreas/cgat" )
 import CGAT.Experiment as E
 import operator
 
@@ -93,9 +103,14 @@ for i in range(%(iterations)s):
 E.Stop()
 """
 
-class Host: pass
+CODE_SCRIPT="""
+#! /bin/bash
 
-from analyze_logfiles import LogFileData
+python %(dir)s/benchmarkscript.py
+"""
+
+HOST = collections.namedtuple("HOST", "host arch ncpu load memtot memuse swapto swapus")
+class Host: pass
 
 def getSGEHosts():
     """get sun grid engine hosts."""
@@ -114,13 +129,17 @@ def getSGEHosts():
         if line.startswith("HOSTNAME"): continue
         if line.startswith("global"): continue
         if line.startswith("-"): continue
-        x = Host()
-        x.mHost, x.mArch, x.mNCpu, x.mLoad, x.mMemtot, x.mMemuse, x.mSwapto, x.mSwapus = re.split( "\s+", line[:-1] )
-        if x.mNCpu == "-" or x.mArch == "-": continue
-        try: x.mNCpu = int(x.mNCpu )
+        x = HOST( *re.split( "\s+", line[:-1] ) )
+        if x.ncpu == "-" or x.arch == "-": continue
+
+        try: x = x._replace( ncpu = int(x.ncpu ),  )
         except ValueError: pass
 
+        assert x.memtot.endswith("G")
+        x = x._replace( memtot = float(x.memtot[:-1] ) )
+
         hosts.append( x )
+
     return hosts
 
 def writeResults( outfile, results ):
@@ -144,7 +163,7 @@ def main():
     parser = optparse.OptionParser( version = "%prog version: $Id: benchmark_cluster.py 2794 2009-09-16 15:27:49Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option( "-s", "--suite", dest="suite", type="choice",
-                       choices=("CPU",),
+                       choices=("CPU", "hosts"),
                        help="suite to use [default=%default]." )
 
     parser.set_defaults(
@@ -153,67 +172,81 @@ def main():
         saturation = 2,
         host_block = 10,
         suite = "CPU",
-        cluster_prefix = """qrsh -q benchmark_jobs.q@%(host)s -cwd -v BASH_ENV=~/.bashrc -now n 'python %(script)s | grep -e "job started" -e "job finished"'""",
+        cluster_prefix = """qrsh -q %(queue)s@%(host)s -cwd -now n 'python %(script)s | grep -e "job started" -e "job finished"'""",
         )
 
-    (options, args) = E.Start( parser )
+    (options, args) = E.Start( parser, add_cluster_options = True )
 
-    hosts = [ x for x in getSGEHosts() if x.mNCpu != "-" ]
-
+    hosts = [ x for x in getSGEHosts() if x.ncpu != "-" ]
     E.info( "found %i active hosts" % len(hosts) )
 
-    script = os.path.abspath( os.path.join( "benchmarkscript" ) )
+    curdir = os.path.abspath( os.getcwd() )
 
-    if os.path.exists( script ):
-        raise OSError( "file %s already exists - not overwritten" % script )
+    outfile = options.stdout
 
-    outfile = open(script,"w")
-    if options.suite == "CPU":
-        iterations = options.iterations_cpu
-        outfile.write( CODE_CPU % locals() )
-    outfile.close()
+    if options.suite == "hosts":
+        outfile.write( "%s\n" % "\t".join(HOST._fields))
+        for host in hosts:
+            outfile.write( "%s\n" % "\t".join(map(str, host )))
+    elif suite == "CPU":
 
-    results = collections.defaultdict( list )
+        pythonscript = os.path.join( curdir, "benchmarkscript.py" ) 
 
-    def run( script, host, options ):
-        """run python script on node in the cluster.
-        """
+        if os.path.exists( pythonscript ):
+            raise OSError( "file %s already exists - not overwritten" % pythonscript )
 
-        command = options.cluster_prefix % locals()
+        with open(pythonscript,"w") as outfile:
+            if options.suite == "CPU":
+                iterations = options.iterations_cpu
+                outfile.write( CODE_CPU % locals() )
 
-        try:
-            child = subprocess.Popen( command, 
-                                       shell=True,
-                                       stdout=subprocess.PIPE,
-                                       close_fds = True )
-            (stdout, stderr) = child.communicate()
-        except OSError, e:
-            E.warn( "execution of %s failed" % cmd)
-            raise
+        results = collections.defaultdict( list )
 
-        data = LogFileData()
-        for line in stdout.split("\n"): 
-            data.add( line )
-        results[host].append( data )
+        def run( script, host, options ):
+            """run python script on node in the cluster.
+            """
 
-    # do on host-by-host basis, as otherwise 
-    # we run out of ports. Several hosts are run
-    # as one block. The order of hosts is randomized
-    # at each step.
-    idx = 0
-    for n in range(0,options.iterations_sample):
-        myhosts = list( hosts[:] )
-        random.shuffle( myhosts )
+            queue = options.cluster_queue
 
-        for h in range(0, len(myhosts), options.host_block) :
-            for host in (myhosts[x] for x in range(h, min(len(myhosts), h+options.host_block))):
-                processes = [] 
-                for cpu in range(0, int( host.mNCpu * options.saturation) ):
-                    p = Process( target = run, args = ( script, host.mHost, options ) )
-                    processes.append( p )
-                    p.start()
-                E.info( "iteration %i: host %s: started %i threads" % (n, host.mHost, len(processes)))
-            for p in processes: p.join()
+            command = options.cluster_prefix % locals()
+            E.debug( "started: %s" % command )
+
+            try:
+                child = subprocess.Popen( command, 
+                                          shell=True,
+                                          stdout=subprocess.PIPE,
+                                          stdin=None,
+                                          close_fds = True )
+                (stdout, stderr) = child.communicate()
+            except OSError, e:
+                E.warn( "execution of %s failed" % cmd)
+                raise
+
+            E.debug( "finished: %s" % command )
+
+            data = Logfile.LogFileData()
+            for line in stdout.split("\n"): 
+                data.add( line )
+            results[host].append( data )
+
+        # do on host-by-host basis, as otherwise 
+        # we run out of ports. Several hosts are run
+        # as one block. The order of hosts is randomized
+        # at each step.
+        idx = 0
+        for n in range(0,options.iterations_sample):
+            myhosts = list( hosts[:] )
+            random.shuffle( myhosts )
+
+            for h in range(0, len(myhosts), options.host_block) :
+                for host in (myhosts[x] for x in range(h, min(len(myhosts), h+options.host_block))):
+                    processes = [] 
+                    for cpu in range(0, int( host.ncpu * options.saturation) ):
+                        p = Process( target = run, args = ( pythonscript, host.host, options ) )
+                        processes.append( p )
+                        p.start()
+                    E.info( "iteration %i: host %s: started %i threads" % (n, host.host, len(processes)))
+                for p in processes: p.join()
 
             filename = "results_%i.table" % idx
             E.info( "iteration %i: output goes to %s" % (n, filename ))
@@ -222,7 +255,9 @@ def main():
             writeResults( outfile, results )
             outfile.close()
 
-    writeResults( options.stdout, results )
+        writeResults( options.stdout, results )
+
+    E.Stop()
 
 if __name__ == "__main__":
     sys.exit(main())
