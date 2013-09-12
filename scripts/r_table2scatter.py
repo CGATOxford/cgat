@@ -182,7 +182,9 @@ def FuncScatterDiagonal( data ):
     R.points( data )
     R.abline( 0, 1 )
 
-def main():
+def main( argv = None ):
+    
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: r_table2scatter.py 2782 2009-09-10 11:40:29Z andreas $")
 

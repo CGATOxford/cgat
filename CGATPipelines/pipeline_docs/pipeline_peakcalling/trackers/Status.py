@@ -40,8 +40,10 @@ class PeakCallingStatusZinba( PeakCallingStatus ):
     pattern = ("(.*)_zinba_regions$" )
 
 class PeakCallingStatusPeakRanger( PeakCallingStatus ):
-    pattern = ("(.*)_peakranger_regions$" )
+    pattern = ("(.*)_peakranger_peaks$" )
 
+class PeakCallingStatusCCAT( PeakCallingStatus ):
+    pattern = ("(.*)_ccat_peaks$" )
 
 class EncodeQualityMetrics( Status ):
     '''

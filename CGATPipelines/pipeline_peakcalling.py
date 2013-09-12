@@ -39,36 +39,66 @@ Overview
 pipeline_peakcalling takes as input reads aligned to genomic sequence as :term:`bam` formatted files
 and calls peaks. The pipeline implements several peak callers:
 
-macs_
-   Model-based Analysis of ChIP-Seq (MACS), for identifying transcript factor binding sites. MACS captures the influence of genome complexity to evaluate the significance of enriched ChIP regions, and MACS improves the spatial resolution of binding sites through combining the information of both sequencing tag position and orientation. MACS can be easily used for ChIP-Seq data alone, or with control sample with the increase of specificity.
+macs_ 
+   Model-based Analysis of ChIP-Seq (MACS), for identifying
+   transcript factor binding sites. MACS captures the influence of
+   genome complexity to evaluate the significance of enriched ChIP
+   regions, and MACS improves the spatial resolution of binding sites
+   through combining the information of both sequencing tag position
+   and orientation. MACS can be easily used for ChIP-Seq data alone,
+   or with control sample with the increase of specificity.
 
-macs2_
-   MACS 2 is the new release of the MACS peak caller. Among other improvements it adds support for handling paired end reads.
+macs2_ 
+   MACS 2 is the new release of the MACS peak caller. Among other
+   improvements it adds support for handling paired end reads.
 
-spp_
-   SPP is a R package especially designed for the analysis of Chip-Seq data from Illummina platform. The package was developed by Peter Park's group from Harvard Medical School.
+spp_ 
+   SPP is a R package especially designed for the analysis of
+   Chip-Seq data from Illummina platform. The package was developed by
+   Peter Park's group from Harvard Medical School.
 
-zinba_
-   ZINBA (Zero Inflated Negative Binomial Algorithm) is a computational and statistical framework used to call regions of the genome enriched for sequencing reads originating from a diverse array of biological experiments. We collectively refer to the sequencing data derived from these experiments as DNA-seq, including FAIRE-seq, ChIP-seq, and DNAase-seq experiments
+zinba_ 
+   ZINBA (Zero Inflated Negative Binomial Algorithm) is a
+   computational and statistical framework used to call regions of the
+   genome enriched for sequencing reads originating from a diverse
+   array of biological experiments. We collectively refer to the
+   sequencing data derived from these experiments as DNA-seq,
+   including FAIRE-seq, ChIP-seq, and DNAase-seq experiments
 
-sicer_ narrow
-    A clustering approach for identification of enriched domains from histone modification ChIP-Seq data.
-    The types of region called by the sicer alogrithm reflect the paramaters it is run with. In this pipeline sicer is run by default with two different parameter sets, to allow the simultaneous detection of narrower and broader regions of enrichmnet.
+sicer_narrow 
+    A clustering approach for identification of enriched
+    domains from histone modification ChIP-Seq data.  The types of
+    region called by the sicer alogrithm reflect the paramaters it is
+    run with. In this pipeline sicer is run by default with two
+    different parameter sets, to allow the simultaneous detection of
+    narrower and broader regions of enrichmnet.
 
-sicer_ broad
+sicer_broad
     (See above)
 
-peakranger_ ranger
-    PeakRanger is a multi-purpose, ultrafast ChIP Seq peak caller. It is used in the modENCODE project and included in the iPlant pipeline system.
-    PeakRanger v1.02 was developed in Dr.Lincoln Stein's lab at OICR and is now in continual development at Dr.Helen Hobbs's lab of the McDermott Center of UT Southwestern.
-    PeakRanger can run two separate algorithms for peak detection, "ranger" for point-source binding event detection and "ccat" for the detection of broader regions of enrichment. In this pipeline, both alorighms are presented as separate peak callers for convience.
+peakranger_ranger 
+    PeakRanger is a multi-purpose, ultrafast ChIP Seq
+    peak caller. It is used in the modENCODE project and included in
+    the iPlant pipeline system.  PeakRanger v1.02 was developed in
+    Dr.Lincoln Stein's lab at OICR and is now in continual development
+    at Dr.Helen Hobbs's lab of the McDermott Center of UT
+    Southwestern.  PeakRanger can run two separate algorithms for peak
+    detection, "ranger" for point-source binding event detection and
+    "ccat" for the detection of broader regions of enrichment.  In
+    this pipeline, both alorighms are presented as separate peak
+    callers for convience.
 
-peakranger_ ccat
-    PeakRanger is here run using the CCAT alogorithm (See: Xu, H., L. Handoko, et al. (2010).A signal-noise model for significance analysis of ChIP-seq with negative control.Bioinformatics 26(9): 1199-1204)
+peakranger_ccat 
+    PeakRanger is here run using the CCAT alogorithm (See:
+    Xu, H., L. Handoko, et al. (2010).A signal-noise model for
+    significance analysis of ChIP-seq with negative
+    control.Bioinformatics 26(9): 1199-1204)
 
-Peak callers have different strengths and weaknesses. Some might work well on broad peaks such as some histone
-marks, others work better for narrow, sharp peaks. Many callers these days attempt to call both types of peaks.
-This pipeline implements the following nomenclature for peaks:
+Peak callers have different strengths and weaknesses. Some might work
+well on broad peaks such as some histone marks, others work better for
+narrow, sharp peaks. Many callers these days attempt to call both
+types of peaks.  This pipeline implements the following nomenclature
+for peaks:
 
 .. glossary::
 
@@ -106,8 +136,9 @@ NSC
 RSC
   relative strand correlacion.
 
-The pipeline will also do and IDR analysis (see https://sites.google.com/site/anshulkundaje/projects/idr)
-for spp called peaks. 
+The pipeline will also do and IDR analysis (see
+https://sites.google.com/site/anshulkundaje/projects/idr) for spp
+called peaks.
 
 Usage
 =====

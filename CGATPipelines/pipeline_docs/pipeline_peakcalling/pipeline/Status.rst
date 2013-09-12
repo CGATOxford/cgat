@@ -59,10 +59,18 @@ Zinba
 
    Status of peak calling
 
-PeakRanger
-----------
+PeakRanger / Ranger
+-------------------
 
 .. report:: Status.PeakCallingStatusPeakRanger
+   :render: status
+
+   Status of peak calling
+
+PeakRanger / CCAT
+-----------------
+
+.. report:: Status.PeakCallingStatusCCAT
    :render: status
 
    Status of peak calling
