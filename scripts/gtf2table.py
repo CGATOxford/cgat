@@ -3459,6 +3459,10 @@ def main( argv = None ):
     parser.add_option( "--proximal-distance", dest="proximal_distance", type="int",
                       help="distance to be considered proximal to an interval [default=%default]."  )
 
+    parser.add_option( "--weight-multi-mapping", dest="weight_multi_mapping", action="store_true",
+		       help="weight multi-mapping reads is read-counts counter. Requires "
+		       "the NH flag to be set by the mapper [default=%default]."  )
+
     parser.add_option( "--prefix", dest="prefixes", type="string", action="append",
                       help="add prefix to column headers - prefixes are used in the same order as the counters [default=%default]."  )
 
@@ -3475,6 +3479,7 @@ def main( argv = None ):
         add_gtf_source = False,
         proximal_distance = 10000, 
         bam_files = None,
+	weight_multi_mapping = False,
         prefixes = []
         )
 
@@ -3550,7 +3555,9 @@ def main( argv = None ):
                                                    prefix = prefix ) )
         elif c == "read-counts":
             counters.append( _gtf2table.CounterReadCounts( bam_files,
-							   options = options, prefix = prefix ) )
+							   weight_multi_mapping = options.weight_multi_mapping,
+							   options = options, 
+							   prefix = prefix ) )
         elif c == "bigwig-counts":
             counters.append( CounterBigwigCounts( bigwig_file,
                                                   options = options, prefix = prefix ) )
