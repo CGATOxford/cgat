@@ -1350,6 +1350,12 @@ def main( args = sys.argv ):
     parser.add_option( "-t", "--tempdir", dest="tempdir", type="string",
                        help="temporary directory to use [default=%default].")
 
+    parser.add_option( "-e", "--exceptions", dest="log_exceptions", action="store_true",
+                      help="echo exceptions immediately as they occur [default=%default]." )
+
+    parser.add_option( "-i", "--terminate", dest="terminate", action="store_true",
+                      help="terminate immediately at the first exception [default=%default]." )
+
     parser.set_defaults(
         pipeline_action = None,
         pipeline_format = "svg",
@@ -1359,6 +1365,8 @@ def main( args = sys.argv ):
         dry_run = False,
         without_cluster = False,
         force = False,
+        log_exceptions = False,
+        exceptions_terminate_immediately = False,
         )
 
     (options, args) = E.Start( parser, 
@@ -1423,7 +1431,10 @@ def main( args = sys.argv ):
                 pipeline_run( options.pipeline_targets, 
                               multiprocess = options.multiprocess, 
                               logger = logger,
-                              verbose = options.loglevel )
+                              verbose = options.loglevel,
+                              log_exceptions = options.log_exceptions,
+                              exceptions_terminate_immediately = options.exceptions_terminate_immediately,
+                              )
 
                 L.info( E.GetFooter() )
 
