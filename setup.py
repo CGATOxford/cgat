@@ -1,15 +1,50 @@
 import glob
 import sys
 import os
-import numpy
-import pysam
 
-from distribute_setup import use_setuptools
-use_setuptools()
+#######################################################################
+## Check for dependencies
+##
+## Is there a way to do this more elegantly?
+##     1. Run "pip install numpy"
+##     2. Wrap inside functions (works for numpy/pysam, but not cython)
+#######################################################################
+#######################################################################
+#######################################################################
+try:
+    import numpy
+except ImportError:
+    raise ImportError("the CGAT code collection requires numpy to be installed before running setup.py (pip install numpy)" )
 
-from setuptools import Extension, setup, find_packages
+try:
+    import Cython
+except ImportError:
+    raise ImportError("the CGAT code collection requires cython to be installed before running setup.py (pip install cython)" )
+
+try: 
+    import pysam
+except ImportError:
+    raise ImportError("the CGAT code collection requires pysam to be installed before running setup.py (pip install pysam)" )
+
+########################################################################
+########################################################################
+## Import setuptools
+## Use existing setuptools
+try:
+    from setuptools import setup, find_packages, Extension
+except ImportError:
+    ## try to get via ez_setup
+    ## ez_setup did not work on all machines tested as
+    ## it uses curl with https protocol, which is not
+    ## enabled in ScientificLinux
+    import ez_setup
+    ez_setup.use_setuptools()
+    from setuptools import setup, find_packages, Extension
+
 from Cython.Distutils import build_ext
 
+###############################################################
+###############################################################
 # Perform a CGAT Code Collection Installation
 INSTALL_CGAT = True
 
@@ -22,7 +57,7 @@ if major==2:
 elif major==3:
     extra_dependencies = []
 
-if major==2 and minor1<6 or major<2:
+if major==2 and minor1<7 or major<2:
     raise SystemExit("""CGAT requires Python 2.6 or later.""")
 
 # Dependencies shared between python 2 and 3
