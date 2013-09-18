@@ -66,3 +66,15 @@ for a definition of the field contents.
 
    quality score distribution
 
+
+Coverages
+=========
+
+The following coverages are computed from bigwig files.
+
+.. report:: Mapping.BigwigSummary
+   :render: table
+   :force:
+
+   Coverage summary computed from bigwig files.
+

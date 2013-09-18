@@ -83,6 +83,9 @@ class MappingContext( MappingTracker, SingleTableTrackerRows ):
 class FilteringSummary( MappingTracker, SingleTableTrackerRows ):
     table = "mapping_stats"
 
+class BigwigSummary( MappingTracker, SingleTableTrackerRows ):
+    table = "bigwig_stats"
+
 ##############################################################
 ##############################################################
 ##############################################################

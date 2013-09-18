@@ -29,7 +29,11 @@ threshold
 Usage
 -----
 
+Bigwig files need to be supplied by the --bigwig-file options.
 
+For example::
+
+    python wig2bed.py --threshold=10 --method=threshold --genome-file=mm10 --bigwig-file=in.bw > out.bed
 
 Command line options
 --------------------

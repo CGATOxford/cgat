@@ -1601,6 +1601,38 @@ def buildBigWig( infile, outfile ):
                    > %(outfile)s.log''' 
     P.run()
 
+###################################################################
+###################################################################
+###################################################################
+## 
+###################################################################
+@merge( buildBigWig,
+        "bigwig_stats.load" )
+def loadBigWigStats( infiles, outfile ):
+    '''load bigwig summary for all wiggle files.'''
+
+    to_cluster = True
+    
+    data = " ".join( [ '<( bigWigInfo %s | perl -p -e "s/:/\\t/; s/ //g; s/,//g")' % x for x in infiles] )
+    headers = ",".join( [P.snip(os.path.basename(x), ".bw") for x in infiles] )
+
+    tablename = P.toTable( outfile)
+
+    statement = '''python %(scriptsdir)s/combine_tables.py 
+                         --header=%(headers)s
+                         --skip-titles
+                         --missing=0
+                         --ignore-empty
+                         %(data)s 
+                | perl -p -e "s/bin/track/" | python %(scriptsdir)s/table2table.py --transpose
+                | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+                      --index=track
+                      --table=%(tablename)s 
+                > %(outfile)s
+    '''
+
+    P.run()
+
 @transform( MAPPINGTARGETS,
             regex(".bam"),
             ".bed.gz" )
@@ -1648,7 +1680,7 @@ def qc(): pass
 @follows( loadPicardDuplicationStats )
 def duplication(): pass
 
-@follows( buildBigWig )
+@follows( buildBigWig, loadBigWigStats )
 def wig(): pass
 
 ###################################################################
