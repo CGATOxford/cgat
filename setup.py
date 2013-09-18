@@ -108,7 +108,8 @@ if INSTALL_CGAT:
             cgat_scripts.append( script_name )
 
     cgat_packages= find_packages( exclude=["CGATPipelines*"])
-    cgat_package_dirs = { 'CGAT': 'CGAT' }
+    cgat_package_dirs = { 'CGAT': 'CGAT',
+                          'CGAT.scripts' : 'scripts' }
 else:
     cgat_scripts=glob.glob( 'scripts/*.py' ) +\
         glob.glob( 'CGATPipelines/pipeline*.py')
@@ -201,11 +202,22 @@ setup(## package information
     ## package contents
     packages=cgat_packages, 
     package_dir=cgat_package_dirs,
-    scripts = cgat_scripts,
-    package_data={'glob.glob': ['./templates/*', './images/*', 
-                                './scripts/*.pyx', './scripts/*.pyxbld' ]},
-    data_files = [ ('bin', glob.glob( './scripts/*.pyx') + glob.glob('./scripts/*.pyxbld' ) ) ],
+    package_data={ 'glob.glob': ['./templates/*', './images/*', 
+                                 './scripts/*.pyx', './scripts/*.pyxbld' ]},
+    # install CGAT scripts
+    data_files = [ ('CGAT/scripts', 
+                    glob.glob( './scripts/*.pyx') +\
+                    glob.glob('./scripts/*.pyxbld' ) +\
+                    glob.glob('./scripts/*.py' ) +\
+                    glob.glob('./scripts/*.pl' ) )
+                   ],
+    
     include_package_data = True,
+
+    entry_points = {
+        'console_scripts': ['cgat = CGAT.cgat:main' ]
+        },
+
     ## dependencies
     install_requires=shared_dependencies + extra_dependencies, 
     ## extension modules

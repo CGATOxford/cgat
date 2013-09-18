@@ -111,16 +111,21 @@ def main( argv = sys.argv ):
     parser.add_option("-i", "--bigwig-file", dest="bigwig_file", type="string", metavar="bigwig",
                       help="filename with bigwig information [default=%default]."  )
 
+    parser.add_option("-b", "--bigwig", dest="bigwig", action = "store_true",
+                      help="input is bigwig [default=%default]."  )
+
     parser.set_defaults( methods = [],
                          genome_file = None,
                          threshold = 10,
+                         bigwig = False,
                          max_distance = 0)
     
     (options, args) = E.Start( parser, add_pipe_options = True )
 
-    contigs = None
-
-    bigwig_file = bx.bbi.bigwig_file.BigWigFile( open(options.bigwig_file ) )
+    if options.bigwig_file:
+        bigwig_file = bx.bbi.bigwig_file.BigWigFile( open(options.bigwig_file ) )
+    else:
+        bigwig_file = None
 
     if options.genome_file:
         genome_fasta = IndexedFasta.IndexedFasta( options.genome_file )
@@ -129,6 +134,7 @@ def main( argv = sys.argv ):
     for method in options.methods:
         if method ==  "threshold":
             if not contigs: raise ValueError("please supply contig sizes" )
+            if not bigwig_file: raise NotImplementedError( "threshold not implemented for wig files")
             processor = applyThreshold( bigwig_file, 
                                         genome_fasta, 
                                         threshold = options.threshold,
