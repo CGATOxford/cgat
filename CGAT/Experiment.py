@@ -1008,10 +1008,15 @@ class Experiment:
         print "# valid short options are:", self.mShortOptions
         print "# valid long options are:", str(self.mLongOptions)
     
-def run( cmd, **kwargs ):
+def run( cmd, return_stdout = False, **kwargs ):
     '''executed a command line cmd.
     
-    ``kwargs`` are fed to the subprocess.call call.
+    returns the return code.
+
+    If *return_stdout* is True, the contents of stdout
+    are returned.
+
+    ``kwargs`` are passed on to subprocess.call or subprocess.check_output.
 
     raises OSError if process failed or was terminated.
     '''
@@ -1023,7 +1028,11 @@ def run( cmd, **kwargs ):
         if "'" in cmd: raise ValueError( "advanced bash syntax combined with single quotes" )
         cmd = """/bin/bash -c '%s'""" % cmd
 
-    retcode = subprocess.call( cmd, shell=True, **kwargs)
-    if retcode < 0:
-        raise OSError( "process was terminated by signal %i" % -retcode )
-    return retcode
+    if return_stdout:
+        return subprocess.check_output( cmd, shell = True, **kwargs )
+    else:
+        retcode = subprocess.call( cmd, shell=True, **kwargs)
+        if retcode < 0:
+            raise OSError( "process was terminated by signal %i" % -retcode )
+        return retcode
+

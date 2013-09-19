@@ -50,7 +50,7 @@ def main():
 
     argv = sys.argv
 
-    path = os.path.abspath( os.path.join( os.path.dirname(__file__), "scripts"))
+    path = os.path.abspath( os.path.dirname(__file__) )
 
     if argv[1] == "--help" or argv[1] == "-h":
         print(globals()["__doc__"])

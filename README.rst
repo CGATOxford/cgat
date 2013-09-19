@@ -1,5 +1,5 @@
 ===========================
-CGAT - CGAT code collection
+The CGAT code collection
 ===========================
 
 The CGAT code collection has grown out of the work in comparative
@@ -12,6 +12,10 @@ is a collection of pipelines. While both components are part of this
 collection, we are currently concentrating on publishing the CGAT
 tools.
 
+For questions, please subscribe and contact us at the 
+`CGAT user group
+<https://groups.google.com/forum/?fromgroups#!forum/cgat-user-group>`_.
+
 CGAT Tools
 ==========
 
@@ -19,7 +23,7 @@ The CGAT tools can be installed from pypi::
 
    pip install cgat
 
-To use CGAT Tools, use the :file:`cgat` front-end. For example, to
+To use CGAT Tools, use the ``cgat`` front-end. For example, to
 strip sequence and quality information from a bam_ file, type:
 
    cgat bam2bam --strip=sequence < in.bam > out.bam

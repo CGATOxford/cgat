@@ -90,32 +90,13 @@ shared_dependencies = [
     'sphinxcontrib-programoutput>=0.8',
     'alignlib>=0.1']
 
-# check if within CGAT, do not install dependencies
-# curdir = os.getcwd()
-# if curdir.startswith("/ifs" ):
-#    extra_dependencies, shared_dependencies = [], []
+cgat_packages= find_packages( exclude=["CGATPipelines*", "scripts*"])
+# rename scripts
+cgat_packages.append( "CGATScripts" )
+cgat_package_dirs = { 'CGAT': 'CGAT',
+                      'CGATScripts' : 'scripts' }
 
-###########################################################
-# Define scripts explicitely that are part of the CGAT 
-# code collection
-if INSTALL_CGAT:
-    cgat_scripts = []
-    with open( "MANIFEST.in" ) as inf:
-        for line in inf:
-            if not line.startswith("include scripts/"): continue
-            script_name = line[:-1].split(" ")[1].strip()
-            if not script_name.endswith(".py"): continue
-            cgat_scripts.append( script_name )
-
-    cgat_packages= find_packages( exclude=["CGATPipelines*"])
-    cgat_package_dirs = { 'CGAT': 'CGAT',
-                          'CGAT.scripts' : 'scripts' }
-else:
-    cgat_scripts=glob.glob( 'scripts/*.py' ) +\
-        glob.glob( 'CGATPipelines/pipeline*.py')
-    cgat_packages= find_packages()
-    cgat_package_dirs = { 'CGAT': 'CGAT',
-                          'Pipelines' : 'CGATPipelines' },
+print cgat_packages
 
 classifiers="""
 Development Status :: 3 - Alpha
@@ -189,33 +170,27 @@ for pyx_file in pyx_files:
 
 setup(## package information
     name='CGAT',
-    version='0.1',
+    version='0.1.2',
     description='CGAT : the Computational Genomics Analysis Toolkit',
     author='Andreas Heger',
     author_email='andreas.heger@gmail.com',
     license="BSD",
     platforms=["any",],
     keywords="computational genomics",
-    long_description='CGAT : the CGAT code collection',
+    long_description='CGAT : the Computational Genomics Analysis Toolkit',
     classifiers = filter(None, classifiers.split("\n")),
     url="http://www.cgat.org/cgat/Tools/",
     ## package contents
-    packages=cgat_packages, 
-    package_dir=cgat_package_dirs,
-    package_data={ 'glob.glob': ['./templates/*', './images/*', 
-                                 './scripts/*.pyx', './scripts/*.pyxbld' ]},
-    # install CGAT scripts
-    data_files = [ ('CGAT/scripts', 
-                    glob.glob( './scripts/*.pyx') +\
-                    glob.glob('./scripts/*.pyxbld' ) +\
-                    glob.glob('./scripts/*.py' ) +\
-                    glob.glob('./scripts/*.pl' ) )
-                   ],
-    
+    packages = cgat_packages, 
+    package_dir= cgat_package_dirs,
+    # package_data = { 'CGATScripts' : ['./scripts/*.py', './scripts/*.pyx', 
+    #                                   './scripts/*.pyxbld', './scripts/*.pl' ],
+    #                },
+
     include_package_data = True,
 
     entry_points = {
-        'console_scripts': ['cgat = CGAT.cgat:main' ]
+        'console_scripts': ['cgat = CGATScripts.cgat:main' ]
         },
 
     ## dependencies
