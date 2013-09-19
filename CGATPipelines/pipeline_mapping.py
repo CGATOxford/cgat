@@ -1568,7 +1568,7 @@ def loadIntronLevelReadCounts( infile, outfile ):
 def loadReadCounts( infiles, outfile ):
     '''load read counts into database.'''
 
-    outf = P.getTempFile()
+    outf = P.getTempFile( "." )
     outf.write( "track\ttotal_reads\n")
     for infile in infiles:
         track = P.snip(infile, ".nreads")
