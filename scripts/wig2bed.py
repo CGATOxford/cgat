@@ -26,6 +26,13 @@ threshold
     output windows that contain values above a certain
     threshold.
 
+std-above-mean
+    output windows that are a certain number of standard deviations 
+    above the mean. 
+
+multiple-of-mean
+    output windows that are a certain times above the mean.
+
 Usage
 -----
 
@@ -50,6 +57,7 @@ import itertools
 import tempfile
 import subprocess
 import shutil
+import collections
 
 import CGAT.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
@@ -97,20 +105,37 @@ def applyThreshold( infile, fasta, threshold, max_distance = 0 ):
 
     E.info( str(c) )
 
+def getBigwigSummary( bigwig_file ):
+    '''return summary of bigwig contents.
+
+    This method uses the bigWigInfo UCSC utility
+    '''
+    
+    results = E.run( "bigWigInfo %(bigwig_file)s" % locals(), return_stdout = True )
+
+    data = [ x.split( ":") for x in results.split( "\n" ) if x != "" ]
+    fields = [ x[0] for x in data]
+    Results = collections.namedtuple( "BigwigInfo", fields )
+    def conv( v ):
+        return IOTools.str2val( re.sub( ",", "", v.strip()) )
+
+    results = Results( *[ conv(x[1]) for x in data] )
+    return results
+
 def main( argv = sys.argv ):
 
     parser = E.OptionParser( version = "%prog version: $Id: bed2bed.py 2861 2010-02-23 17:36:32Z andreas $", 
                                     usage = globals()["__doc__"] )
 
     parser.add_option( "-m", "--method", dest="methods", type="choice", action="append",
-                       choices=("threshold", ),
+                       choices=("threshold", "stddev-above-mean", "multiple-of-mean"),
                        help="method to apply [default=%default]"  )
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genome."  )
 
     parser.add_option("-t", "--threshold", dest="threshold", type="float",
-                      help="threshold to apply for 'threshold' method [default=%default]"  )
+                      help="threshold to apply [default=%default]"  )
 
     parser.add_option("-i", "--bigwig-file", dest="bigwig_file", type="string", metavar="bigwig",
                       help="filename with bigwig information [default=%default]."  )
@@ -142,6 +167,27 @@ def main( argv = sys.argv ):
             processor = applyThreshold( bigwig_file, 
                                         genome_fasta, 
                                         threshold = options.threshold,
+                                        max_distance = options.max_distance )
+        elif method ==  "stddev-above-mean":
+            if not contigs: raise ValueError("please supply contig sizes" )
+            if not bigwig_file: raise NotImplementedError( "threshold not implemented for wig files")
+            summary = getBigwigSummary( options.bigwig_file )
+            threshold = summary.mean + options.threshold * summary.std
+            E.info( "applying threshold %f: mean=%f, std=%f" % (threshold, summary.mean, summary.std) )
+            processor = applyThreshold( bigwig_file, 
+                                        genome_fasta, 
+                                        threshold = threshold,
+                                        max_distance = options.max_distance )
+
+        elif method ==  "multiple-of-mean":
+            if not contigs: raise ValueError("please supply contig sizes" )
+            if not bigwig_file: raise NotImplementedError( "threshold not implemented for wig files")
+            summary = getBigwigSummary( options.bigwig_file )
+            threshold = summary.mean * options.threshold 
+            E.info( "applying threshold %f: mean=%f, std=%f" % (threshold, summary.mean, summary.std) )
+            processor = applyThreshold( bigwig_file, 
+                                        genome_fasta, 
+                                        threshold = threshold,
                                         max_distance = options.max_distance )
 
 
