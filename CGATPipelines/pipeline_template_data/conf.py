@@ -129,6 +129,8 @@ master_doc = 'contents'
 # List of directories, relative to source directory, that shouldn't be searched
 # for source files.
 exclude_trees = ['_build']
+# ignore emacs autosave files
+exclude_patterns = ["**/.*.rst" ]
 
 # The reST default role (used for this markup: `text`) to use for all documents.
 #default_role = None
