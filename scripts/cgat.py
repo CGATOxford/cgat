@@ -52,7 +52,7 @@ def main():
 
     path = os.path.abspath( os.path.dirname(__file__) )
 
-    if argv[1] == "--help" or argv[1] == "-h":
+    if len(argv) == 1 or argv[1] == "--help" or argv[1] == "-h":
         print(globals()["__doc__"])
         print("The list of available commands is:\n" )
         print( "\n".join( sorted([os.path.basename(x)[:-3] for x in glob.glob( os.path.join( path, "*.py") )]) ) )

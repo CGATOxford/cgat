@@ -91,12 +91,11 @@ shared_dependencies = [
     'alignlib>=0.1']
 
 cgat_packages= find_packages( exclude=["CGATPipelines*", "scripts*"])
-# rename scripts
+# rename scripts to CGATScripts
 cgat_packages.append( "CGATScripts" )
+
 cgat_package_dirs = { 'CGAT': 'CGAT',
                       'CGATScripts' : 'scripts' }
-
-print cgat_packages
 
 classifiers="""
 Development Status :: 3 - Alpha
@@ -170,7 +169,7 @@ for pyx_file in pyx_files:
 
 setup(## package information
     name='CGAT',
-    version='0.1.2',
+    version='0.1.4',
     description='CGAT : the Computational Genomics Analysis Toolkit',
     author='Andreas Heger',
     author_email='andreas.heger@gmail.com',
