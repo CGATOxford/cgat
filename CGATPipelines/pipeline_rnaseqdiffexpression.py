@@ -1036,7 +1036,6 @@ def buildTranscriptLevelReadCounts( infiles, outfile):
     '''
     
     P.run()
-
 #########################################################################
 #########################################################################
 #########################################################################
@@ -1045,6 +1044,85 @@ def buildTranscriptLevelReadCounts( infiles, outfile):
             ".load" )
 def loadTranscriptLevelReadCounts( infile, outfile ):
     P.load( infile, outfile, options="--index=transcript_id" )
+
+#########################################################################
+#########################################################################
+#########################################################################
+@follows(mkdir("feature_counts.dir") )
+@files( [ ( ("%s.bam" % x.asFile(), "%s.gtf.gz" % y.asFile() ),
+            ("feature_counts.dir/%s_vs_%s.tsv.gz" % (x.asFile(),y.asFile() ) ) )
+          for x,y in itertools.product( TRACKS, GENESETS) ] )
+def buildFeatureCounts(infiles, outfile):
+    '''counts reads falling into "features", which by default are genes.
+
+    A read overlaps if at least one bp overlaps.
+
+    Pairs and strandedness can be used to resolve reads falling into more
+    than one feautre. Reads that cannot be resolved to a single feature 
+    are ignored.  '''
+
+    infile, annotations = infiles
+
+    # featureCounts cannot handle gzipped in or out files
+    outfile = P.snip(outfile,".gz")
+    annotations_tmp = P.getTempFilename()
+
+    # -p -B specifies count fragments rather than reads, and both reads must map to the feature
+    if PARAMS['featurecounts_paired'] == "1":
+        paired = "-p -B"
+    else:
+        paired = ""
+
+    job_options = "-pe dedicated %i" % PARAMS['featurecounts_threads']
+
+    statement = '''zcat %(annotations)s > %(annotations_tmp)s; 
+                   checkpoint;
+                   featureCounts %(featurecounts_options)s
+                                 -T %(featurecounts_threads)s
+                                 -s %(featurecounts_strand)s
+                                 -b 
+                                 -a %(annotations_tmp)s
+                                 -i %(infile)s
+                                 -o %(outfile)s > %(outfile)s.log;
+                    checkpoint;
+                    gzip %(outfile)s;
+                    checkpoint;
+                    rm %(annotations_tmp)s '''
+
+    P.run()
+#########################################################################
+#########################################################################
+#########################################################################
+@collate(buildFeatureCounts, 
+         regex("feature_counts.dir/(.+)_vs_(.+).tsv.gz"),
+         r"feature_counts.dir/\2.feature_counts.tsv.gz")
+def aggregateFeatureCounts(infiles,outfile):
+    ''' build a matrix of counts with genes and tracks dimensions '''
+
+
+    infiles = " ".join(infiles)
+    statement = '''python %(scriptsdir)s/combine_tables.py
+                                            -c 1
+                                            -k 3
+                                            
+                                            --use-file-prefix
+                                            --regex-filename='(.+)_vs.+.tsv.gz'
+                                            -L %(outfile)s.log
+                                             %(infiles)s 
+                  | sed 's/geneid/gene_id/'
+                  | gzip > %(outfile)s '''
+
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform(aggregateFeatureCounts, suffix(".tsv.gz"),
+           ".load")
+def loadFeatureCounts(infile, outfile):
+    P.load(infile,outfile, "-i gene_id")
+
+
 
 #########################################################################
 #########################################################################
@@ -1107,8 +1185,9 @@ def aggregateExonLevelReadCounts( infiles, outfile ):
 def loadAggregateExonLevelReadCounts( infile, outfile ):
     P.load( infile, outfile, options="--index=gene_id" )
 
+#IMS: switch exon counts to feature counts
 TARGETS_DE = [ ( (x, y, glob.glob("*.bam"),
-                  "exon_counts.dir/%s.exon_counts.tsv.gz" % P.snip(y,
+                  "feature_counts.dir/%s.feature_counts.tsv.gz" % P.snip(y,
                                                     ".gtf.gz",path=True)),
                  "%s_%s.diff" % (P.snip(x, ".tsv"), P.snip(y,".gtf.gz") )) 
                for x,y in itertools.product( glob.glob( "design*.tsv"),
@@ -1117,7 +1196,7 @@ TARGETS_DE = [ ( (x, y, glob.glob("*.bam"),
 #########################################################################
 #########################################################################
 #########################################################################
-@follows( mkdir("deseq.dir"), loadAggregateExonLevelReadCounts )
+@follows( mkdir("deseq.dir"), loadFeatureCounts)
 @files( [ (x, os.path.join( "deseq.dir", y)) for x, y in TARGETS_DE ] )
 def runDESeq( infiles, outfile ):
     '''perform differential expression analysis using deseq.'''
@@ -1127,7 +1206,7 @@ def runDESeq( infiles, outfile ):
 
     track = P.snip( outfile, ".diff")
     
-    statement = '''python %(scriptsdir)s/Expression.py
+    statement = '''python %(scriptsdir)s/runExpression.py
               --method=deseq
               --filename-tags=%(count_file)s
               --filename-design=%(design_file)s
@@ -1180,7 +1259,7 @@ def loadDESeqStats( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@follows( aggregateExonLevelReadCounts, mkdir("edger.dir") )
+@follows( aggregateFeatureCounts, mkdir("edger.dir") )
 @files( [ (x, os.path.join( "edger.dir", y)) for x, y in TARGETS_DE ] )
 
 def runEdgeR( infiles, outfile ):
@@ -1191,7 +1270,7 @@ def runEdgeR( infiles, outfile ):
     design_file, geneset_file, bamfiles, count_file  = infiles
     track = P.snip( outfile, ".diff")
 
-    statement = '''python %(scriptsdir)s/Expression.py
+    statement = '''python %(scriptsdir)s/runExpression.py
               --method=edger
               --filename-tags=%(count_file)s
               --filename-design=%(design_file)s
@@ -1258,7 +1337,7 @@ def diff_expression(): pass
 ###################################################################
 ###################################################################
 @jobs_limit(1,"R")
-@follows( mkdir("tagplots.dir"), aggregateExonLevelReadCounts )
+@follows( mkdir("tagplots.dir"), aggregateFeatureCounts )
 @files( [ (x, os.path.join( "tagplots.dir", y)) for x, y in TARGETS_DE ] )
 def plotRNASEQTagData( infiles, outfile ):
     '''perform differential expression analysis using deseq.'''
