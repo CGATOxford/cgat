@@ -608,6 +608,10 @@ class FilePoolMemory( FilePool ):
         self.mCounts[filename] += 1
 
 def val2str( val, format = "%5.2f", na = "na" ):
+    '''return formatted value.
+    
+    If value does not fit format string, return "na"
+    '''
     if type(val) == int: return format % val
     elif type(val) == float: return format % val
 
@@ -615,6 +619,17 @@ def val2str( val, format = "%5.2f", na = "na" ):
         x = format % val
     except (ValueError, TypeError):
         x = na
+    return x
+
+def str2val( val, format = "%5.2f", na = "na" ):
+    '''guess type of value.'''
+    try:
+        x = int( val )
+    except ValueError:
+        try:
+            x = float( val )
+        except ValueError:
+            return val
     return x
 
 def prettyFloat( val, format = "%5.2f" ):

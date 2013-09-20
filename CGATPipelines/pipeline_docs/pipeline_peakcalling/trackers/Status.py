@@ -27,6 +27,9 @@ class PeakCallingStatus( Status ):
 class PeakCallingStatusMACS( PeakCallingStatus ):
     pattern = ("(.*)_macs_regions$" )
 
+class PeakCallingStatusMACS2( PeakCallingStatus ):
+    pattern = ("(.*)_macs2_regions$" )
+
 class PeakCallingStatusSPP( PeakCallingStatus ):
     pattern = ("(.*)_spp_regions$" )
 
@@ -37,8 +40,10 @@ class PeakCallingStatusZinba( PeakCallingStatus ):
     pattern = ("(.*)_zinba_regions$" )
 
 class PeakCallingStatusPeakRanger( PeakCallingStatus ):
-    pattern = ("(.*)_peakranger_regions$" )
+    pattern = ("(.*)_peakranger_peaks$" )
 
+class PeakCallingStatusCCAT( PeakCallingStatus ):
+    pattern = ("(.*)_ccat_peaks$" )
 
 class EncodeQualityMetrics( Status ):
     '''

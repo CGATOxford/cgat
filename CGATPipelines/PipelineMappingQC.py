@@ -243,7 +243,7 @@ def loadPicardMetrics( infiles, outfile, suffix, pipeline_suffix = ".picard_stat
     tablename = P.toTable( outfile )
     tname = "%s_%s" % (tablename, suffix)
 
-    outf = P.getTempFile()
+    outf = P.getTempFile( "." )
 
     filenames = [ "%s.%s" % (x, suffix) for x in infiles ]
 

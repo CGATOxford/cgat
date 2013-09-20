@@ -22,7 +22,7 @@
 #################################################################################
 """
 ====================
-MeDIP pipeline
+MeDIP-Seq pipeline
 ====================
 
 :Author: David Sims
@@ -905,7 +905,7 @@ def runDE( infiles, outfile, method ):
                   --log=%(outfile)s.log
                   --output-pattern=%(outdir)s%%s
                   --subdirs
-              "python %(scriptsdir)s/Expression.py
+              "python %(scriptsdir)s/runExpression.py
               --method=%(method)s
               --filename-tags=-
               --filename-design=%(design_file)s
@@ -967,6 +967,7 @@ def mergeDMRWindows( infile, outfile ):
     zcat %(infile)s
     | python %(scriptsdir)s/medip_merge_intervals.py
           --log=%(outfile)s.log
+          --invert
           --output-filename-pattern=%(outfile)s.%%s.bed.gz
     | gzip
     > %(outfile)s

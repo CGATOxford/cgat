@@ -106,6 +106,11 @@ def main( argv = None ):
     parser.add_option( "--unset-unmapped-mapq", dest="unset_unmapped_mapq", action="store_true",
                        help = "sets the mapping quality of unmapped reads to 0 [%default]" )
 
+    parser.add_option( "--strip", dest="strip", type="choice",
+                       choices = ("sequence", "quality" ),
+                       help = "remove parts of the bam-file. Note that stripping the sequence will "
+                       "also strip the quality values [%default]" )
+
     parser.add_option( "--filter", dest="filter", action="append", type="choice",
                        choices=('NM', 'CM', 'mapped', 'unique' ),
                        help = "filter bam file. The option denotes the property that is  "
@@ -123,6 +128,7 @@ def main( argv = None ):
         unset_unmapped_mapq = False,
         output_sam = False,
         reference_bam = None,
+        strip = None,
         )
 
     ## add common options (-h/--help, ...) and parse command line 
@@ -188,6 +194,22 @@ def main( argv = None ):
                             read.tags = list(t.iteritems())
                         yield read
             it = set_nh( it )
+
+        if options.strip != None:
+            def strip_sequence( i ):
+                for read in i:
+                    read.seq = None
+                    yield read
+
+            def strip_quality( read ):
+                for read in i:
+                    read.qual = None
+                    yield read
+
+            if options.strip == "sequence":
+                it = strip_sequence( it )
+            elif options.strip == "quality":
+                it = strip_quality( it )
 
         if options.set_nh:
             it = _bam2bam.SetNH( it )

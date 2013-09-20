@@ -72,7 +72,7 @@ import numpy
 
 if __name__ == "__main__":
 
-    parser = Experiment.OptionParser( version = "%prog version: $Id: data2histogram.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: data2histogram.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option("-r", "--range", dest="range", type="string",
                       help="range to calculate histogram for."  )

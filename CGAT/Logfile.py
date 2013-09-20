@@ -104,3 +104,96 @@ def parse( filename ):
             
     return results
 
+
+class LogFileData:
+    mRegex = re.compile("# job finished in (\d+) seconds at (.*) --\s+([.\d]+)\s+([.\d]+)\s+([.\d]+)\s+([.\d]+)")
+    mFormat = "%6.2f"
+    mDivider = 1.0
+    
+    def __init__(self):
+
+        self.mWall = 0
+        self.mUser = 0
+        self.mSys = 0
+        self.mChildUser = 0
+        self.mChildSys = 0
+        self.mNChunks = 0
+
+    def add( self, line ):
+
+        if not self.mRegex.match(line): return
+        t_wall, date, t_user, t_sys, t_child_user, t_child_sys = self.mRegex.match(line).groups()
+
+        self.mWall += int(t_wall)
+        self.mUser += float(t_user)
+        self.mSys += float(t_sys)
+        self.mChildUser += float(t_child_user)
+        self.mChildSys += float(t_child_sys)
+        self.mNChunks += 1
+
+    def __getitem__( self, key ):
+        
+        if key == "wall":
+            return self.mWall
+        elif key == "user":
+            return self.mUser
+        elif key == "sys":
+            return self.mSys
+        elif key == "cuser":
+            return self.mChildUser
+        elif key == "csys":
+            return self.mChildSys
+        elif key == "nchunks":
+            return self.mNChunks
+        else:
+            raise ValueError("key %s not found" % key)
+
+    def __add__(self, other ):
+
+        self.mWall += other.mWall
+        self.mUser += other.mUser
+        self.mSys += other.mSys
+        self.mChildUser += other.mChildUser
+        self.mChildSys += other.mChildSys
+        self.mNChunks += other.mNChunks
+
+        return self
+    
+    def __str__(self):
+        
+        return "%i\t%s" % (
+            self.mNChunks,
+            "\t".join( map( lambda x: self.mFormat % (float(x)/self.mDivider), \
+                                (self.mWall, self.mUser, self.mSys,
+                                 self.mChildUser, self.mChildSys ) ) ) )
+
+    def getHeader(self):
+        return "\t".join( ("chunks", "wall", "user", "sys", "cuser", "csys") )
+
+
+class LogFileDataLines(LogFileData):
+    """record lines."""
+    def __init__(self):
+        LogFileData.__init__(self)
+        self.mNLines = 0
+
+    def add( self, line ):
+        if line[0] != "#":
+            self.mNLines += 1
+        else:
+            return LogFileData.add( self, line )
+    def __getitem__( self, key ):
+        if key == "lines":
+            return self.mNLines
+        else:
+            return LogFileData.__getitem__( self, key )
+    def __add__(self, other ):
+        self.mNLines += other.mNLines
+        return LogFileData.__add__( self, other )
+
+    def __str__(self):
+        return "%s\t%i" % (LogFileData.__str__(self), self.mNLines )
+                          
+    def getHeader(self):
+        return "%s\t%s" % (LogFileData.getHeader(self), "lines" )
+    

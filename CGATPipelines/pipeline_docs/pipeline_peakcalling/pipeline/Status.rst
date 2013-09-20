@@ -27,6 +27,14 @@ MACS
 
    Status of peak calling
 
+MACS2
+-----
+
+.. report:: Status.PeakCallingStatusMACS2
+   :render: status
+
+   Status of peak calling
+
 SPP
 ---
 
@@ -51,10 +59,18 @@ Zinba
 
    Status of peak calling
 
-PeakRanger
-----------
+PeakRanger / Ranger
+-------------------
 
 .. report:: Status.PeakCallingStatusPeakRanger
+   :render: status
+
+   Status of peak calling
+
+PeakRanger / CCAT
+-----------------
+
+.. report:: Status.PeakCallingStatusCCAT
    :render: status
 
    Status of peak calling

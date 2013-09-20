@@ -1,11 +1,11 @@
 import os, sys, re, types, itertools
-import Stats
-import IndexedGenome
-import PipelineTracks
+import numpy
+
+import CGAT.Stats as Stats
+import CGAT.IndexedGenome as IndexedGenome
 
 from SphinxReport.Tracker import *
 from PeakcallingReport import *
-import numpy
 
 ##################################################################################
 ##################################################################################

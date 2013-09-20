@@ -57,6 +57,7 @@ import sys
 import re
 import os
 import optparse
+import shutil
 
 def main( argv = sys.argv ):
 
@@ -85,7 +86,7 @@ def main( argv = sys.argv ):
     reportdir = os.path.abspath( "src/pipeline_docs/pipeline_%s" % options.name )
     confdir = os.path.abspath( "src/pipeline_%s" % (options.name))
 
-    dest = options.destination
+    destination_dir = options.destination
     name = options.name
 
     # create directories
@@ -97,7 +98,7 @@ def main( argv = sys.argv ):
               "%s/pipeline" % reportdir,
               "%s/trackers" % reportdir ):
 
-        dd = os.path.join( dest, d )
+        dd = os.path.join( destination_dir, d )
         if not os.path.exists( dd ): os.makedirs( dd )
         
     # copy files
@@ -110,8 +111,8 @@ def main( argv = sys.argv ):
     srcdir = os.path.dirname( __file__ )
 
     def copy( src, dst ):
-        fn_dest = os.path.join( dest, dst, rx_file.sub(name, src) )
-                                    
+
+        fn_dest = os.path.join( destination_dir, dst, rx_file.sub(name, src) )
         fn_src = os.path.join( srcdir, "pipeline_template_data", src)
 
         if os.path.exists( fn_dest ) and not options.force:
@@ -126,6 +127,17 @@ def main( argv = sys.argv ):
         outfile.close()
         infile.close()
 
+    def copytree( src, dst ):
+
+        fn_dest = os.path.join( destination_dir, dst, rx_file.sub(name, src) )
+        fn_src = os.path.join( srcdir, "pipeline_template_data", src)
+
+        print fn_dest, fn_src
+        if os.path.exists( fn_dest ) and not options.force:
+            raise OSError( "file %s already exists - not overwriting." % fn_dest )
+
+        shutil.copytree( fn_src, fn_dest )
+
     for f in ( "sphinxreport.ini",
                "conf.py",
                "pipeline.ini" ):
@@ -135,16 +147,22 @@ def main( argv = sys.argv ):
         copy( f, 'src' )
 
     # create links
-    for src,dest in ( ("sphinxreport.ini", "sphinxreport.ini"),
+    for src, dest in ( ("sphinxreport.ini", "sphinxreport.ini"),
                       ("conf.py", "conf.py"),
                       ( "pipeline.ini", "pipeline.ini" )):
-        os.symlink( os.path.join( confdir, src), os.path.join( "report", dest ) )
+        d = os.path.join( "report", dest )
+        if os.path.exists( d ) and options.force: 
+            os.unlink( d )
+        os.symlink( os.path.join( confdir, src), d )
 
     for f in ( "cgat_logo.png",
                "index.html",
                "gallery.html" ):
         copy( f, "%s/_templates" % reportdir )
 
+    for f in ("themes",):
+        copytree( f, "src/pipeline_docs" )
+        
     for f in ( "contents.rst",
                "pipeline.rst",
                "analysis.rst",
@@ -158,15 +176,15 @@ def main( argv = sys.argv ):
     for f in ( "TemplateReport.py", ):
         copy( f, "%s/trackers" % reportdir )
 
-    absdest = os.path.abspath( dest )
+    absdest = os.path.abspath( destination_dir )
 
     print """
 Welcome to your new %(name)s CGAT pipeline.
 
-All files have been successfully copied to `%(dest)s`. In order to start
-the pipeline, go to `%(dest)s/report`
+All files have been successfully copied to `%(destination_dir)s`. In order to start
+the pipeline, go to `%(destination_dir)s/report`
 
-   cd %(dest)s/report
+   cd %(destination_dir)s/report
 
 You can start the pipeline by typing:
 
@@ -178,7 +196,7 @@ To build the report, type:
 
 The report will be in file:/%(absdest)s/report/report/html/index.html.
 
-The source code for the pipeline is in %(dest)s/src.
+The source code for the pipeline is in %(destination_dir)s/src.
 
 """ % locals()
 

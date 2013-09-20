@@ -201,7 +201,7 @@ class CounterReadCoverage(Counter):
         self.mBamFiles = bamfiles
 
     def count(self):
-
+        
         segments = self.getSegments()
 
         cdef AlignedRead read
@@ -281,17 +281,91 @@ class CounterReadCounts(Counter):
     is simply checked through alignment start position.
 
     Counts are separated into sense, antisense and any sense.
+
+    If ``weight_multi_mapping`` is set, counts are weigthed by the NH flag.
     '''
     
     header = ( [ "%s_%s" % (x,y) for x,y in itertools.product( ( "sense", "antisense", "anysense"),
                                                                 ( "unique_counts", "all_counts") ) ] )
     
-    def __init__(self, bamfiles, *args, **kwargs ):
+    def __init__(self, bamfiles, *args, weight_multi_mapping = False, **kwargs ):
         Counter.__init__(self, *args, **kwargs )
         if not bamfiles: raise ValueError("supply --bam-file options for readcoverage")
         self.mBamFiles = bamfiles
+        self.weight_multi_mapping = weight_multi_mapping
 
     def count(self):
+        '''count reads.'''
+        # For performance reasons, two separate counting implementations.
+        if self.weight_multi_mapping:
+            self.countFloat()
+        else:
+            self.countInteger()
+
+    def countFloat(self):
+        '''count by weighting multi-mapping reads.'''
+
+        
+        segments = self.getSegments()
+        contig = self.getContig()
+
+        cdef float nsense_unique_counts = 0
+        cdef float nsense_all_counts = 0
+        cdef float nantisense_unique_counts = 0
+        cdef float nantisense_all_counts = 0
+        cdef float nanysense_unique_counts = 0
+        cdef float nanysense_all_counts = 0
+        cdef float weight = 0
+        cdef int nh = 0
+        cdef long last_any_pos = -1 
+        cdef long last_sense_pos = -1
+        cdef long last_anti_pos = -1
+
+        if self.getStrand() == "+":
+            is_reverse = False
+        else:
+            is_reverse = True
+
+        for start, end in segments:
+            for samfile in self.mBamFiles:
+                last_any_pos = -1
+                last_sense_pos = -1
+                last_anti_pos = -1
+                for read in samfile.fetch( contig, start, end ):
+                    if not read.overlap( start, end ): continue
+                    try:
+                        nh = read.opt( 'NH' )
+                    except KeyError:
+                        nh = 1
+                    
+                    weight = 1.0/nh
+                        
+                    nanysense_all_counts += weight
+                    if last_any_pos != read.pos:
+                        last_any_pos = read.pos
+                        nanysense_unique_counts += weight
+                        
+                    if is_reverse == read.is_reverse:
+                        nsense_all_counts += weight
+                        if last_sense_pos != read.pos:
+                            last_sense_pos = read.pos
+                            nsense_unique_counts += weight
+                    else:
+                        nantisense_all_counts += weight
+                        if last_anti_pos != read.pos:
+                            last_anti_pos = read.pos
+                            nantisense_unique_counts += weight
+
+        self.result = (nsense_unique_counts,
+                       nsense_all_counts,
+                       nantisense_unique_counts,
+                       nantisense_all_counts,
+                       nanysense_unique_counts,
+                       nanysense_all_counts )
+
+    def countInteger(self):
+        '''count all reads equally.'''
+
         segments = self.getSegments()
         contig = self.getContig()
 
@@ -317,7 +391,7 @@ class CounterReadCounts(Counter):
                 last_anti_pos = -1
                 for read in samfile.fetch( contig, start, end ):
                     if not read.overlap( start, end ): continue
-                    
+
                     nanysense_all_counts += 1
                     if last_any_pos != read.pos:
                         last_any_pos = read.pos
@@ -340,5 +414,6 @@ class CounterReadCounts(Counter):
                        nantisense_all_counts,
                        nanysense_unique_counts,
                        nanysense_all_counts )
+
     def __str__(self):
         return "\t".join( map(str, (self.result)))

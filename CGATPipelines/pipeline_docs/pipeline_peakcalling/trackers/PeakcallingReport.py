@@ -2,8 +2,6 @@ import os, sys, re, types, itertools, glob
 import matplotlib.pyplot as plt
 import numpy
 import numpy.ma
-import CGAT.Stats
-import CGAT.Histogram
 import sqlalchemy
 
 from SphinxReport.Tracker import *

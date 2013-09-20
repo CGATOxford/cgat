@@ -978,11 +978,11 @@ def summarizeMACS2( infiles, outfile ):
     # mapping patternts to values.
     # tuples of pattern, label, subgroups
     map_targets = [
-        ("fragments after filtering in treatment: (\d+)", "fragment_treatment_filtered",()),
-        ("total fragments in treatment: (\d+)", "fragment_treatment_total",()),
-        ("fragments after filtering in control: (\d+)", "fragment_control_filtered",()),
-        ("total fragments in control: (\d+)", "fragment_control_total",()),
-        ("#2   Use 0 as shiftsize, (\d+)","fragment_length", ()),
+        ("tags after filtering in treatment:\s+(\d+)", "fragment_treatment_filtered",()),
+        ("total tags in treatment:\s+(\d+)", "fragment_treatment_total",()),
+        ("tags after filtering in control:\s+(\d+)", "fragment_control_filtered",()),
+        ("total tags in control:\s+(\d+)", "fragment_control_total",()),
+        ("predicted fragment length is (\d+) bps","fragment_length", ()),
 # Number of peaks doesn't appear to be reported!.
 #        ("#3 Total number of candidates: (\d+)", "ncandidates",("positive", "negative") ),
 #        ("#3 Finally, (\d+) peaks are called!",  "called", ("positive", "negative") ) 
@@ -1058,6 +1058,28 @@ def summarizeMACS2FDR( infiles, outfile ):
     outf.close()
 
 
+############################################################
+############################################################
+############################################################
+def bedGraphtoBigwig( infile, contigsfile, outfile, remove = True ):
+    '''convert a bedgraph file to a bigwig file.
+
+    The bedgraph file is deleted on success.
+    '''
+    
+    if not os.path.exists( infile ):
+        raise OSError( "bedgraph file %s does not exist" % infile )
+
+    if not os.path.exists( contigfile ):
+        raise OSError( "contig size file %s does not exist" % infile )
+    
+    statement = '''
+         bedGraphToBigWig %(infile)s %(contigsfile)s %(outfile)s
+    '''
+    P.run()
+    
+    if os.path.exists( outfile ) and not P.isEmpty(outfile):
+        os.remove(infile)
 
 ############################################################
 ############################################################
@@ -1067,6 +1089,8 @@ def runMACS2( infile, outfile, controlfile = None ):
 
     The output bed files contain the P-value as their score field.
     Output bed files are compressed and indexed.
+
+    Build bedgraph files and convert to bigwig files.
     '''
     to_cluster = True
 
@@ -1101,7 +1125,18 @@ def runMACS2( infile, outfile, controlfile = None ):
         tabix -f -p bed %(outfile)s_%(suffix)s.bed.gz
         '''
         P.run()
-        
+    
+    # convert normalized bed graph to bigwig
+    # saves 75% of space
+    # compressing only saves 60%   
+    bedGraphToBigwig( outfile + "_treat_pileup.bgd", 
+                      os.path.join(PARAMS["annotations_dir"], "contigs.tsv"),
+                      outfile + "_treat_pileup.bw" )
+    bedGraphToBigwig( outfile + "_control_lambda.bgd", 
+                      os.path.join(PARAMS["annotations_dir"], "contigs.tsv"),
+                      outfile + "_control_lambda.bw" )
+
+    # index and compress peak file
     suffix = 'peaks.xls'
     statement = '''grep -v "^$" 
                    < %(outfile)s_%(suffix)s 
@@ -1353,35 +1388,34 @@ def loadMACS( infile, outfile, bamfile, controlfile = None ):
 ############################################################
 ############################################################
 def loadMACS2( infile, outfile, bamfile, controlfile = None ):
-    '''load MACS 2 results in *tablename*
+    '''load MACS 2 results.
 
     This method loads only positive peaks. It filters peaks by p-value,
     q-value and fold change and loads the diagnostic data and
     re-calculates peakcenter, peakval, ... using the supplied bamfile.
 
-    If *tablename* is not given, it will be :file:`<track>_intervals`
-    where track is derived from ``infile`` and assumed to end
-    in :file:`.macs`.
+    It maps the following MACS2 output files to tables:
+    * _peaks: MACS2 peaks
+    * _summits: MACS2 sub-peaks
+    * _regions: MACS2 broad peaks 
 
     This method creates two optional additional files:
 
-       * if the file :file:`<track>_diag.xls` is present, load MACS 
-         diagnostic data into the table :file:`<track>_macsdiag`.
-    
        * if the file :file:`<track>_model.r` is present, call R to
          create a MACS peak-shift plot and save it as :file:`<track>_model.pdf`
          in the :file:`export/MACS` directory.
 
     This method creates :file:`<outfile>.tsv.gz` with the results
     of the filtering.
+
     '''
     track = P.snip( os.path.basename(infile), ".macs2" )
     filename_bed = infile + "_peaks.xls.gz"
-    filename_diag = infile + "_diag.xls"
     filename_r = infile + "_model.r"
     filename_rlog = infile + ".r.log"
     filename_pdf = infile + "_model.pdf"
-    filename_subpeaks = P.snip( infile, ".macs2", ) + ".subpeaks.macs_peaks.bed" 
+    filename_broadpeaks = infile + "_broad_peaks.bed"
+    filename_subpeaks = infile + "_summits.bed.gz" 
 
     if not os.path.exists(filename_bed):
         E.warn("could not find %s" % infilename )
@@ -1503,8 +1537,39 @@ def loadMACS2( infile, outfile, bamfile, controlfile = None ):
 
         # add a peak identifier and remove header
         statement = '''
-                    awk '/Chromosome/ {next; } {printf("%%s\\t%%i\\t%%i\\t%%i\\t%%i\\t%%i\\n", $1,$2,$3,++a,$4,$5)}'
-                    < %(filename_subpeaks)s
+                    zcat %(filename_subpeaks)s
+                    | awk '/Chromosome/ {next; } {printf("%%s\\t%%i\\t%%i\\t%%i\\t%%i\\t%%i\\n", $1,$2,$3,++a,$4,$5)}'
+                    | python %(scriptsdir)s/bed2table.py 
+                               --counter=peaks
+                               --bam-file=%(bamfile)s
+                               --offset=%(shift)i
+                               %(control)s
+                               --all-fields 
+                               --bed-header=%(headers)s
+                               --log=%(outfile)s
+                    | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
+                           --index=contig,start
+                           --index=interval_id
+                           --table=%(tablename)s
+                           --allow-empty 
+                    > %(outfile)s'''
+    
+        P.run()
+
+    ############################################################
+    if os.path.exists( filename_broadpeaks ):
+        
+        headers = ",".join( (
+                "contig", "start", "end",
+                "interval_id",
+                "Height" ))
+
+        tablename = P.toTable( outfile ) + "_regions"
+
+        # add a peak identifier and remove header
+        statement = '''
+                    cat %(filename_broadpeaks)s
+                    | awk '/Chromosome/ {next; } {printf("%%s\\t%%i\\t%%i\\t%%i\\t%%i\\n", $1,$2,$3,++a,$4)}'
                     | python %(scriptsdir)s/bed2table.py 
                                --counter=peaks
                                --bam-file=%(bamfile)s
@@ -1522,22 +1587,6 @@ def loadMACS2( infile, outfile, bamfile, controlfile = None ):
     
         P.run()
     
-    ############################################################
-    # load diagnostic data
-    if os.path.exists( filename_diag ):
-
-        tablename = P.toTable( outfile ) + "_diagnostics"
-        statement = '''
-        cat %(filename_diag)s 
-        | sed "s/FC range.*/fc\\tnpeaks\\tp90\\tp80\\tp70\\tp60\\tp50\\tp40\\tp30\\tp20/" 
-        | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
-                  --map=fc:str 
-                  --table=%(tablename)s 
-        >> %(outfile)s
-        '''
-        P.run()        
-
-
 ############################################################
 ############################################################
 ############################################################

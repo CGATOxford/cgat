@@ -328,8 +328,17 @@ def critical( message):
     E.critical( message )
 
 def isEmpty( filename ):
-    '''return true if file *filename* is empty.'''
-    return os.stat(filename)[6]==0
+    '''return true if file *filename* is empty.
+    
+    If filename ends in .gz, it checks if the contents are empty
+    by opening it.
+    '''
+    if filename.endswith(".gz"):
+        n = 0
+        with gzip.open(filename) as inf:
+            return len(inf.read(10)) == 0
+    else:
+        return os.stat(filename)[6]==0
 
 def asList( param ):
     '''return a param as a list'''
@@ -1341,6 +1350,12 @@ def main( args = sys.argv ):
     parser.add_option( "-t", "--tempdir", dest="tempdir", type="string",
                        help="temporary directory to use [default=%default].")
 
+    parser.add_option( "-e", "--exceptions", dest="log_exceptions", action="store_true",
+                      help="echo exceptions immediately as they occur [default=%default]." )
+
+    parser.add_option( "-i", "--terminate", dest="terminate", action="store_true",
+                      help="terminate immediately at the first exception [default=%default]." )
+
     parser.set_defaults(
         pipeline_action = None,
         pipeline_format = "svg",
@@ -1350,6 +1365,8 @@ def main( args = sys.argv ):
         dry_run = False,
         without_cluster = False,
         force = False,
+        log_exceptions = False,
+        exceptions_terminate_immediately = False,
         )
 
     (options, args) = E.Start( parser, 
@@ -1414,7 +1431,10 @@ def main( args = sys.argv ):
                 pipeline_run( options.pipeline_targets, 
                               multiprocess = options.multiprocess, 
                               logger = logger,
-                              verbose = options.loglevel )
+                              verbose = options.loglevel,
+                              log_exceptions = options.log_exceptions,
+                              exceptions_terminate_immediately = options.exceptions_terminate_immediately,
+                              )
 
                 L.info( E.GetFooter() )
 

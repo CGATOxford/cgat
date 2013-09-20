@@ -169,8 +169,6 @@ import collections, types, subprocess, gzip
 import optparse
 import textwrap
 
-import IOTools as IOTools
-
 class DefaultOptions:
     stdlog = sys.stdout
     stdout = sys.stdout
@@ -363,7 +361,34 @@ class OptionParser( optparse.OptionParser ):
         # parser.formatter.set_parser(parser)
 
 
+#################################################################
+def openFile( filename, mode = "r", create_dir = False ):
+    '''open file in *filename* with mode *mode*.
 
+    If *create* is set, the directory containing filename
+    will be created if it does not exist.
+
+    gzip - compressed files are recognized by the
+    suffix ``.gz`` and opened transparently.
+
+    Note that there are differences in the file
+    like objects returned, for example in the
+    ability to seek.
+
+    returns a file or file-like object.
+    '''
+    
+    _, ext = os.path.splitext( filename )
+
+    if create_dir:
+        dirname = os.path.dirname( filename )
+        if dirname and not os.path.exists( dirname ):
+            os.makedirs( dirname )
+            
+    if ext.lower() in (".gz", ".z"):
+        return gzip.open( filename, mode )
+    else:
+        return open( filename, mode )
 
 #################################################################
 def getHeader():
@@ -609,16 +634,16 @@ def Start( parser = None,
 
     if add_pipe_options:
         if global_options.stdout != sys.stdout: 
-            global_options.stdout = IOTools.openFile(global_options.stdout, "w")
+            global_options.stdout = openFile(global_options.stdout, "w")
         if global_options.stderr != sys.stderr:
             if global_options.stderr == "stderr":
                 global_options.stderr = global_options.stderr
             else:
-                global_options.stderr = IOTools.openFile(global_options.stderr, "w")
+                global_options.stderr = openFile(global_options.stderr, "w")
         if global_options.stdlog != sys.stdout:
-            global_options.stdlog = IOTools.openFile(global_options.stdlog, "a")            
+            global_options.stdlog = openFile(global_options.stdlog, "a")            
         if global_options.stdin != sys.stdin: 
-            global_options.stdin = IOTools.openFile(global_options.stdin, "r")
+            global_options.stdin = openFile(global_options.stdin, "r")
     else:
         global_options.stderr = sys.stderr
         global_options.stdout = sys.stdout
@@ -983,10 +1008,15 @@ class Experiment:
         print "# valid short options are:", self.mShortOptions
         print "# valid long options are:", str(self.mLongOptions)
     
-def run( cmd, **kwargs ):
+def run( cmd, return_stdout = False, **kwargs ):
     '''executed a command line cmd.
     
-    ``kwargs`` are fed to the subprocess.call call.
+    returns the return code.
+
+    If *return_stdout* is True, the contents of stdout
+    are returned.
+
+    ``kwargs`` are passed on to subprocess.call or subprocess.check_output.
 
     raises OSError if process failed or was terminated.
     '''
@@ -998,7 +1028,11 @@ def run( cmd, **kwargs ):
         if "'" in cmd: raise ValueError( "advanced bash syntax combined with single quotes" )
         cmd = """/bin/bash -c '%s'""" % cmd
 
-    retcode = subprocess.call( cmd, shell=True, **kwargs)
-    if retcode < 0:
-        raise OSError( "process was terminated by signal %i" % -retcode )
-    return retcode
+    if return_stdout:
+        return subprocess.check_output( cmd, shell = True, **kwargs )
+    else:
+        retcode = subprocess.call( cmd, shell=True, **kwargs)
+        if retcode < 0:
+            raise OSError( "process was terminated by signal %i" % -retcode )
+        return retcode
+
