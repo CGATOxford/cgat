@@ -109,7 +109,7 @@ def count( Samfile samfile,
 
         # note: does not take into account gaps within reads
         # or partial overlap.
-        if rna and rna.contains( contig, read.pos, read.pos + read.qlen ):
+        if rna and rna.contains( contig, read.pos, read.pos + read.alen ):
             nrna += 1
             if _remove_rna: continue
         

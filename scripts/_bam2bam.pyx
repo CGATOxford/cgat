@@ -155,7 +155,11 @@ def filter_bam( Samfile input_samfile,
 
         # remove non-unique alignments
         if c_remove_nonunique:
+            # check either NH or X0 (bwa) flag
             v = bam_aux_get(read._delegate, 'NH')
+            if v == NULL:
+                v = bam_aux_get(read._delegate, 'X0')
+            
             if v != NULL:
                 nh = <int32_t>bam_aux2i(v)
                 if nh > 1: 
