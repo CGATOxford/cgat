@@ -2,7 +2,7 @@
 
 from pysam.csamtools cimport *
 
-import collections, array, struct
+import collections, array, struct, sys
 import CGAT.Experiment as E
 
 FLAGS = {
@@ -18,9 +18,21 @@ FLAGS = {
     512: 'qc_fail',
     1024: 'duplicate'  }
 
+cdef struct CountsType:
+    int is_unmapped
+    int mate_is_unmapped
+    int is_paired
+    int is_read1
+    int is_read2
+    int is_proper_pair
+    int is_qcfail
+    int is_duplicate
+
 def count( Samfile samfile,
            remove_rna,
-           rna):
+           rna,
+           filename_fastq = None,
+           outfile_details = None):
     '''
 
     '''
@@ -61,8 +73,48 @@ def count( Samfile samfile,
     cdef int lflags = len(FLAGS)
     cdef int f
 
+    # detailed counting
+    cdef FastqProxy fq
+    cdef int64_t index, fastq_nreads
+    cdef CountsType * fastq_counts
+    cdef CountsType * fastq_count
+    cdef char * read_name
+    cdef int count_fastq = filename_fastq != None
+
+    if count_fastq:
+        E.info( "reading fastq file" )
+        reads = {}
+        fastqfile = Fastqfile( filename_fastq )
+        fastq_nreads = 0
+        for fq in fastqfile:
+            reads[fq.name] = fastq_nreads
+            fastq_nreads += 1
+        
+        E.info( "read %i reads" % fastq_nreads )
+
+        E.info( "allocating %i bytes" % (fastq_nreads * sizeof(CountsType) ) )
+
+        fastq_counts = <CountsType *>calloc( fastq_nreads, sizeof( CountsType ) )
+        if fastq_counts == NULL:
+            raise ValueError( "could not allocated memory: %i bytes" % (fastq_nreads * sizeof(CountsType) ))
+ 
     for read in samfile:
 
+        if count_fastq:
+            try:
+                fastq_count = &fastq_counts[ reads[read.qname] ]
+            except KeyError:
+                continue
+        
+            if read.is_unmapped: fastq_count.is_unmapped += 1
+            if read.mate_is_unmapped: fastq_count.mate_is_unmapped += 1
+            if read.is_paired: fastq_count.is_paired += 1
+            if read.is_read1: fastq_count.is_read1 += 1
+            if read.is_read2: fastq_count.is_read2 += 1
+            if read.is_proper_pair: fastq_count.is_proper_pair += 1
+            if read.is_qcfail: fastq_count.is_qcfail += 1
+            if read.is_duplicate: fastq_count.is_duplicate += 1
+ 
         flag = read._delegate.core.flag
 
         # is paired and read2
@@ -132,12 +184,12 @@ def count( Samfile samfile,
         count = 1
         last_tid, last_pos = read.tid, read.pos
 
-    c = E.Counter()
+    counter = E.Counter()
     
-    c.input = ninput
-    c.filtered = nfiltered
-    c.rna = nrna
-    c.duplicates = nduplicates
+    counter.input = ninput
+    counter.filtered = nfiltered
+    counter.rna = nrna
+    counter.duplicates = nduplicates
 
     # convert flags to labels
     t = {}
@@ -146,4 +198,92 @@ def count( Samfile samfile,
         t[FLAGS[f]] = flags_counts[x]
         f = f << 1
 
-    return c, t, nh_filtered, nh_all, nm_filtered, nm_all, mapq_filtered, mapq_all, max_hi
+    # count based on fastq data
+    cdef int total_pairs = 0
+    cdef int total_pair_is_unmapped = 0
+    cdef int total_pair_is_proper_uniq = 0
+    cdef int total_pair_is_proper_mmap = 0
+    cdef int total_pair_is_proper_duplicate = 0
+    cdef int total_pair_not_proper_uniq = 0
+    cdef int total_pair_is_incomplete = 0
+    cdef int total_pair_is_other = 0
+
+    if count_fastq:
+        for qname, index in reads.items():
+            fastq_count = &fastq_counts[index]
+
+            # paired read counting
+            if fastq_count.is_paired : 
+                total_pairs += 1
+
+                if fastq_count.is_unmapped == 2:
+                    # an unmapped read pair
+                    total_pair_is_unmapped += 1
+                elif fastq_count.is_proper_pair == 2: 
+                    # a unique proper pair
+                    total_pair_is_proper_uniq +=1
+                    # a duplicate unique proper pair
+                    if fastq_count.is_duplicate == 2:
+                        total_pair_is_proper_duplicate +=1
+                elif fastq_count.is_proper_pair > 2:
+                    # proper pairs that map to mulitple locations
+                    total_pair_is_proper_mmap +=1
+                elif fastq_count.is_read1 == 1 \
+                        and fastq_count.is_read2 == 2 \
+                        and fastq_count.is_proper_pair == 0:
+                    # pair which map each read once, but not uniquely
+                    total_pair_not_proper_uniq += 1
+                elif (fastq_count.is_read1 == 1 and fastq_count.is_read2 == 0) \
+                        or (fastq_count.is_read1 == 0 and fastq_count.is_read2 == 1):
+                    # an incomplete pair - one read of a pair matches uniquel, but not the other
+                    total_pair_is_incomplete += 1
+                else:
+                    total_pair_is_other += 1
+
+        counter.total_pairs = total_pairs
+        counter.total_pair_is_unmapped = total_pair_is_unmapped
+        counter.total_pair_is_proper_uniq = total_pair_is_proper_uniq
+        counter.total_pair_is_incomplete = total_pair_is_incomplete
+        counter.total_pair_is_proper_duplicate = total_pair_is_proper_duplicate
+        counter.total_pair_is_proper_mmap = total_pair_is_proper_mmap
+        counter.total_pair_not_proper_uniq = total_pair_not_proper_uniq
+        counter.total_pair_is_other = total_pair_is_other
+
+        if outfile_details:
+            if outfile_details != sys.stdout:
+                # later: get access FILE * object
+                outfile_details.write( "read\tis_unmapped\tmate_is_unmapped\tis_paired\tis_read1\tis_read2\tis_proper_pair\tis_qcfail\tis_duplicate\n" )
+                for qname, index in reads.items():
+                    fastq_count = &fastq_counts[index]
+
+                    outfile_details.write( "%s\t%s\n" % (qname, "\t".join( \
+                                map(str,
+                                    (fastq_count.is_unmapped,
+                                     fastq_count.mate_is_unmapped,
+                                     fastq_count.is_paired,
+                                     fastq_count.is_read1,
+                                     fastq_count.is_read2,
+                                     fastq_count.is_proper_pair,
+                                     fastq_count.is_qcfail,
+                                     fastq_count.is_duplicate
+                                    ) )) ))
+
+            else:
+                # output to stdout much quicker
+                printf("read\tis_unmapped\tmate_is_unmapped\tis_paired\tis_read1\tis_read2\tis_proper_pair\tis_qcfail\tis_duplicate\n" )
+                for qname, index in reads.items():
+                    fastq_count = &fastq_counts[index]
+                    read_name = qname
+                    printf( "%s\t%i\t%i\t%i\t%i\t%i\t%i\t%i\t%i\n",
+                            read_name,
+                            fastq_count.is_unmapped,
+                            fastq_count.mate_is_unmapped,
+                            fastq_count.is_paired,
+                            fastq_count.is_read1,
+                            fastq_count.is_read2,
+                            fastq_count.is_proper_pair,
+                            fastq_count.is_qcfail,
+                            fastq_count.is_duplicate )
+
+
+    return counter, t, nh_filtered, nh_all, nm_filtered, nm_all, mapq_filtered, mapq_all, max_hi

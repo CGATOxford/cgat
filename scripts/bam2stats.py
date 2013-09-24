@@ -32,8 +32,8 @@ bam2stats.py - compute stats from a bam-file
 Purpose
 -------
 
-This script takes a bam file as input and computes a few metrics:
-
+This script takes a bam file as input and computes a few metrics by
+iterating over the file. The metrics output are:
 
 +------------------------+------------------------------------------+
 |*Category*              |*Content*                                 |
@@ -108,11 +108,11 @@ This script takes a bam file as input and computes a few metrics:
 |                        |regions.                                  |
 +------------------------+------------------------------------------+
 |pairs_total             |number of total pairs - this is the number|
-|                        |of reads_total divide d by two. If there  |
+|                        |of reads_total divided by two. If there   |
 |                        |were no pairs, pairs_total will be 0.     |
 +------------------------+------------------------------------------+
 |pairs_mapped            |number of mapped pairs - this is the same |
-|                        |as the number of prope r pairs.           |
+|                        |as the number of proper pairs.            |
 +------------------------+------------------------------------------+
 
 Additionally, the script outputs histograms for the following tags and
@@ -122,6 +122,34 @@ regions of repetitive RNA.
 * NM: number of mismatches in alignments.
 * NH: number of hits of reads.
 * mapq: mapping quality of alignments.
+
+If a fastq file is supplied (``--filename-fastq``), the script will
+compute some additional summary statistics. However, as it builds a dictionary
+of all sequences, it will also require a good  amount of memory. The additional
+metrics output are:
+
++------------------------------+--------------------------------------------------+
+|*Category*                    |*Content*                                         |
++------------------------------+--------------------------------------------------+
+|pairs_total                   |total number of pairs in input data               |
++------------------------------+--------------------------------------------------+
+|pairs_unmapped                |pairs in which neither read maps                  |
++------------------------------+--------------------------------------------------+
+|pairs_proper_unique           |pairs which are proper and map uniquely.          |
++------------------------------+--------------------------------------------------+
+|pairs_incomplete              |pairs in which one of the reads maps uniquel, but |
+|                              |the other does not map.                           |
++------------------------------+--------------------------------------------------+
+|pairs_proper_duplicate        |pairs which are proper and unique, but marked as  |
+|                              |duplicates.                                       |
++------------------------------+--------------------------------------------------+
+|pairs_proper_multimapping     |pairs which are proper, but map to multiple       |
+|                              |locations.                                        |
++------------------------------+--------------------------------------------------+
+|pairs_not_proper_unique       |pairs mapping uniquely, but not flagged as proper |
++------------------------------+--------------------------------------------------+
+|pairs_other                   |pairs not in any of the above categories          |
++------------------------------+--------------------------------------------------+
 
 Usage
 -----
@@ -160,8 +188,8 @@ Multi-matching counts after filtering are really guesswork. Basically,
 the assumption is that filtering is consistent and will tend to remove
 all alignments of a query.
 
-Code
-----
+Command line options
+--------------------
 
 '''
 
@@ -251,16 +279,19 @@ def main( argv = None ):
                        help = "the number of reads - if given, used to provide percentages [%default]" )
     parser.add_option( "--force-output", dest="force_output", action="store_true",
                        help = "output nh/nm stats even if there is only a single count [%default]" )
+    parser.add_option( "-d", "--output-details", dest="output_details", action="store_true",
+                       help = "output per-read details [%default]" )
 
-#    parser.add_option( "-p", "--ignore-pairs", dest="ignore_pairs", action="store_true",
-#                       help = "if set, pairs will be counted individually. The default is to count a pair as one [%default]" )
-                       
+    parser.add_option( "-q", "--filename-fastq", dest = "filename_fastq",
+                       help = "filename with fasta sequences [%default]" )
+
     parser.set_defaults(
         filename_rna = None,
         remove_rna = False,
-        ignore_pairs = False,
         input_reads = 0,
         force_output = False,
+        filename_fastq = None,
+        output_details = False,
         )
 
     ## add common options (-h/--help, ...) and parse command line 
@@ -273,8 +304,17 @@ def main( argv = None ):
 
     pysam_in = pysam.Samfile( "-", "rb" )
 
-    c, flags_counts, nh_filtered, nh_all, nm_filtered, nm_all, mapq, mapq_all, max_hi = \
-        _bam2stats.count( pysam_in, options.remove_rna, rna )
+    if options.output_details:
+        outfile_details = E.openOutputFile( "details", "w")
+    else:
+        outfile_details = None
+
+    counter, flags_counts, nh_filtered, nh_all, nm_filtered, nm_all, mapq, mapq_all, max_hi = \
+        _bam2stats.count( pysam_in, 
+                          options.remove_rna, 
+                          rna,
+                          filename_fastq = options.filename_fastq,
+                          outfile_details = outfile_details )
 
     if max_hi > 0 and max_hi != max( nh_all.keys() ):
         E.warn( "max_hi(%i) is inconsistent with max_nh (%i) - counts will be corrected" \
@@ -283,18 +323,18 @@ def main( argv = None ):
 
     outs = options.stdout
     outs.write( "category\tcounts\tpercent\tof\n" )
-    outs.write( "alignments_total\t%i\t%5.2f\ttotal\n" % (c.input, 100.0 ) )
-    if c.input == 0: 
+    outs.write( "alignments_total\t%i\t%5.2f\ttotal\n" % (counter.input, 100.0 ) )
+    if counter.input == 0: 
         E.warn( "no input - skipped" )
         E.Stop()
         return
 
     nalignments_unmapped = flags_counts["unmapped"]
-    nalignments_mapped = c.input - nalignments_unmapped
+    nalignments_mapped = counter.input - nalignments_unmapped
     outs.write( "alignments_mapped\t%i\t%5.2f\ttotal\n" % \
-                    (nalignments_mapped, 100.0 * nalignments_mapped / c.input ) )
+                    (nalignments_mapped, 100.0 * nalignments_mapped / counter.input ) )
     outs.write( "alignments_unmapped\t%i\t%5.2f\ttotal\n" % \
-                    ( nalignments_unmapped, 100.0 * nalignments_unmapped / c.input ) )
+                    ( nalignments_unmapped, 100.0 * nalignments_unmapped / counter.input ) )
 
     if nalignments_mapped == 0: 
         E.warn( "no alignments - skipped" )
@@ -306,16 +346,16 @@ def main( argv = None ):
         outs.write( "%s\t%i\t%5.2f\talignments_mapped\n" % ( flag, counts, 100.0 * counts / nalignments_mapped ) )
 
     if options.filename_rna:
-        outs.write( "alignments_rna\t%i\t%5.2f\talignments_mapped\n" % (c.rna, 100.0 * c.rna / nalignments_mapped ) )
-        outs.write( "alignments_no_rna\t%i\t%5.2f\talignments_mapped\n" % (c.filtered, 100.0 * c.filtered / nalignments_mapped ) )
+        outs.write( "alignments_rna\t%i\t%5.2f\talignments_mapped\n" % (counter.rna, 100.0 * counter.rna / nalignments_mapped ) )
+        outs.write( "alignments_no_rna\t%i\t%5.2f\talignments_mapped\n" % (counter.filtered, 100.0 * counter.filtered / nalignments_mapped ) )
         normby = "norna"
     else:
         normby = "mapped"
     
-    if c.filtered > 0:
-        outs.write( "alignments_duplicates\t%i\t%5.2f\t%s\n" % (c.duplicates, 100.0* c.duplicates / c.filtered, normby))
-        outs.write( "alignments_unique\t%i\t%5.2f\t%s\n" % (c.filtered - c.duplicates,
-                                                            100.0*(c.filtered - c.duplicates)/c.filtered,
+    if counter.filtered > 0:
+        outs.write( "alignments_duplicates\t%i\t%5.2f\t%s\n" % (counter.duplicates, 100.0* counter.duplicates / counter.filtered, normby))
+        outs.write( "alignments_unique\t%i\t%5.2f\t%s\n" % (counter.filtered - counter.duplicates,
+                                                            100.0*(counter.filtered - counter.duplicates)/counter.filtered,
                                                             normby) )
 
     # derive the number of mapped reads in file from alignment counts
@@ -350,7 +390,7 @@ def main( argv = None ):
     # compute after filtering
     # not that these are rough guesses
     if options.filename_rna:
-        nreads_norna = computeMappedReadsFromAlignments( c.filtered, nh_filtered, max_hi )
+        nreads_norna = computeMappedReadsFromAlignments( counter.filtered, nh_filtered, max_hi )
 
         outs.write( "reads_norna\t%i\t%5.2f\treads_mapped\n" % (nreads_norna, 100.0 * nreads_norna / nreads_mapped ) )
 
@@ -359,12 +399,31 @@ def main( argv = None ):
 
     pysam_in.close()
 
-    # output paired end data
+    # output paired end data 
     if flags_counts["read2"] > 0:
-        pairs_total = nreads_total // 2
-        pairs_mapped = flags_counts["proper_pair"] // 2
-        outs.write( "pairs_total\t%i\t%5.2f\tpairs_total\n" % (pairs_total, 100.0))
-        outs.write( "pairs_mapped\t%i\t%5.2f\tpairs_total\n" % (pairs_mapped, 100.0 * pairs_mapped / pairs_total))
+        if options.filename_fastq:
+            outs.write( "pairs_total\t%i\t%5.2f\tpairs_total\n" % \
+                            (counter.total_pairs, 100.0 * counter.total_pairs / counter.total_pairs ) )
+            outs.write( "pairs_unmapped\t%i\t%5.2f\tpairs_total\n" % \
+                            ( counter.total_pairs_unmapped, 100.0 * counter.total_pairs_unmapped / counter.total_pairs ) )
+            outs.write( "pairs_proper_unique\t%i\t%5.2f\tpairs_total\n" % \
+                            ( counter.total_pair_is_proper_uniq, 100.0 * counter.total_pair_is_proper_uniq / counter.total_pairs ) )
+            outs.write( "pairs_incomplete\t%i\t%5.2f\tpairs_total\n" % \
+                            ( counter.total_pair_is_incomplete, 100.0 * counter.total_pair_is_incomplete / counter.total_pairs ) )
+            outs.write( "pairs_proper_duplicate\t%i\t%5.2f\tpairs_total\n" % \
+                            ( counter.total_pair_is_proper_duplicate, 100.0 * counter.total_pair_is_proper_duplicate / counter.total_pairs ) )
+            outs.write( "pairs_proper_multimapping\t%i\t%5.2f\tpairs_total\n" % \
+                            ( counter.total_pair_is_proper_mmap, 100.0 * counter.total_pair_is_proper_mmap / counter.total_pairs ) )
+            outs.write( "pairs_not_proper_unique\t%i\t%5.2f\tpairs_total\n" % \
+                            ( counter.total_pair_not_proper_uniq, 100.0 * counter.total_pair_not_proper_uniq / counter.total_pairs ) )
+            outs.write( "pairs_other\t%i\t%5.2f\tpairs_total\n" % \
+                            ( counter.total_pair_is_other, 100.0 * counter.total_pair_is_other / counter.total_pairs ) )
+        else:
+            # approximate counts
+            pairs_total = nreads_total // 2
+            pairs_mapped = flags_counts["proper_pair"] // 2
+            outs.write( "pairs_total\t%i\t%5.2f\tpairs_total\n" % (pairs_total, 100.0))
+            outs.write( "pairs_mapped\t%i\t%5.2f\tpairs_total\n" % (pairs_mapped, 100.0 * pairs_mapped / pairs_total))
     else:
         pairs_total = pairs_mapped = 0
         outs.write( "pairs_total\t%i\t%5.2f\tpairs_total\n" % (pairs_total,0.0))
@@ -376,7 +435,7 @@ def main( argv = None ):
         if len(nm_filtered) > 0:
             for x in xrange( 0, max( nm_filtered.keys() ) + 1 ): outfile.write("%i\t%i\n" % (x, nm_filtered[x]))
         else:
-            outfile.write( "0\t%i\n" % (c.filtered) )
+            outfile.write( "0\t%i\n" % (counter.filtered) )
         outfile.close()
 
     if options.force_output or len(nh_all) > 1:
@@ -386,7 +445,7 @@ def main( argv = None ):
             writeNH( outfile, nh_all, max_hi )
         else:
             # assume all are unique if NH flag not set
-            outfile.write( "1\t%i\n" % (c.mapped_reads) )
+            outfile.write( "1\t%i\n" % (counter.mapped_reads) )
         outfile.close()
 
     if options.force_output or len(nh_filtered) > 1:
@@ -396,7 +455,7 @@ def main( argv = None ):
             writeNH( outfile, nh_filtered, max_hi )
         else:
             # assume all are unique if NH flag not set
-            outfile.write( "1\t%i\n" % (c.filtered) )
+            outfile.write( "1\t%i\n" % (counter.filtered) )
         outfile.close()
 
     if options.force_output or len(mapq_all) > 1:
