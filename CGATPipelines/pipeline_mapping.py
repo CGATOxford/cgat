@@ -1303,12 +1303,29 @@ def buildBAMStats( infiles, outfile ):
     rna_file = os.path.join( PARAMS["annotations_dir"],
                              PARAMS_ANNOTATIONS["interface_rna_gff"] )
 
+    job_options = "-l mem_free=8G"
+
     bamfile, readsfile = infiles
 
     nreads = PipelineMappingQC.getNumReadsFromReadsFile( readsfile )
+    track = P.snip( readsfile, ".nreads" )
+
+    # if a fastq file exists, submit for counting
+    if os.path.exists( track + ".fastq.gz" ):
+        fastqfile = track + ".fastq.gz"
+    elif os.path.exists( track + ".fastq.1.gz" ):
+        fastqfile = track + ".fastq.1.gz"
+    else:
+        fastqfile = None
+
+    if fastqfile != None:
+        fastq_option = "--filename-fastq=%s" % fastqfile
+    else:
+        fastq_option = ""
 
     statement = '''python
     %(scriptsdir)s/bam2stats.py
+         %(fastq_option)s
          --force
          --filename-rna=%(rna_file)s
          --remove-rna

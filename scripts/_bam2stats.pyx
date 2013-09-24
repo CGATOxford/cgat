@@ -229,7 +229,7 @@ def count( Samfile samfile,
                     # proper pairs that map to mulitple locations
                     total_pair_is_proper_mmap +=1
                 elif fastq_count.is_read1 == 1 \
-                        and fastq_count.is_read2 == 2 \
+                        and fastq_count.is_read2 == 1 \
                         and fastq_count.is_proper_pair == 0:
                     # pair which map each read once, but not uniquely
                     total_pair_not_proper_uniq += 1

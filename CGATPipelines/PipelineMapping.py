@@ -530,7 +530,7 @@ class BWA( Mapper ):
             strip_cmd = '| python %%(scriptsdir)s/bam2bam.py --strip=sequence --log=%(outfile)s.log' % locals()
 
         statement = '''
-                samtools view -bS %(tmpdir)s/%(track)s.sam 
+                samtools view -uS %(tmpdir)s/%(track)s.sam 
                 %(unique_cmd)s
                 %(strip_cmd)s
                 | samtools sort - %(outf)s 2>>%(outfile)s.bwa.log;
@@ -924,7 +924,7 @@ class GSNAP( Mapper ):
         
 
         statement = '''
-                samtools view -buS %(tmpdir)s/%(track)s.sam 
+                samtools view -uS %(tmpdir)s/%(track)s.sam 
                 %(unique_cmd)s
                 %(strip_cmd)s
                 | samtools sort - %(outf)s 2>>%(outfile)s.log; 
@@ -1037,7 +1037,7 @@ class STAR( Mapper ):
                 cp %(tmpdir)s/SJ.out.tab %(outfile)s.junctions;
                 cat %(tmpdir)s/Log.out >> %(outfile)s.log;
                 cp %(tmpdir)s/Log.progress.out %(outfile)s.progress;
-                samtools view -buS %(tmpdir)s/%(track)s.sam
+                samtools view -uS %(tmpdir)s/%(track)s.sam
                 %(unique_cmd)s
                 %(strip_cmd)s
                 | samtools sort - %(outf)s 2>>%(outfile)s.log; 
