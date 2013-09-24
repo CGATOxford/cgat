@@ -75,6 +75,7 @@ def publish_report( prefix = "",
                     patterns = [], 
                     project_id = None,
                     prefix_project = "/ifs/projects",
+                    export_files = None,
                     ):
     '''publish report into web directory.
 
@@ -90,6 +91,16 @@ def publish_report( prefix = "",
 
     If *project_id* is not given, it will be looked up. This requires
     that this method is called within a subdirectory of PROJECT_ROOT.
+
+    *export_files* is a dictionary of files to be exported. The key
+    of the dictionary denotes the targetdirectory within the web
+    directory. The values in the dictionary are the files to be
+    linked to in the direcotry. For example::
+
+        exportfiles = {
+            "bamfiles" : glob.glob( "*/*.bam" ) + glob.glob( "*/*.bam.bai" ),
+            "bigwigfiles" : glob.glob( "*/*.bw" ),
+            }
 
     .. note::
        This function is CGAT specific.
@@ -163,6 +174,36 @@ def publish_report( prefix = "",
                 outf = open( fn, "w" )
                 outf.write( data )
                 outf.close()
+
+    if export_files:
+        bigwigs, bams = [], []
+
+        for targetdir, filenames in export_files.items():
+            for src in filenames:
+                dest = "%s/%s/%s" % (web_dir, targetdir, os.path.basename(src))
+                if dest.endswith( ".bam"): bams.append( (targetdir, dest ))
+                elif dest.endswith( ".bw"): bigwigs.append( (targetdir, dest ))
+                dest = os.path.abspath( dest )
+                if not os.path.exists( dest ):
+                    try:
+                        os.symlink( os.path.abspath(src), dest )
+                    except OSError, msg:
+                        E.warn( "could not create symlink to %s: %s" % (dest, msg))
+                        
+        # output ucsc links
+        with open( "urls.txt", "w" ) as outfile:
+            for targetdir, fn in bams: 
+                filename = os.path.basename( fn )
+                track = filename[:-len(".bam")]
+                outfile.write( """track type=bam name="%(track)s" bigDataUrl=http://www.cgat.org/downloads/%(project_id)s/%(targetdir)s/%(filename)s\n""" % locals())
+
+            for targetdir, fn in bigwigs: 
+                filename = os.path.basename( fn )
+                track = filename[:-len(".bw")]
+                outfile.write( """track type=bigWig name="%(track)s" bigDataUrl=http://www.cgat.org/downloads/%(project_id)s/%(targetdir)s/%(filename)s\n""" % locals() )
+
+        
+        E.info( "UCSC urls are in urls.txt" )
 
     E.info( "report has been published at http://www.cgat.org/downloads/%(project_id)s/%(dest_report)s" % locals())
 
