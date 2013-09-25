@@ -20,11 +20,6 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-Antonio changes up to 15/08/13:
-- edits to documentation, modified header, added tags after Python, added under Usage, added under Example
-- added code (commented)
- 
-
 
 fasta2counts.py - basic stats from collection of sequences
 ==========================================================
@@ -120,10 +115,8 @@ def writeHeader( outfile ):
 
 if __name__ == "__main__":
 
-#added ' usage = globals()["__doc__"]) '
     parser = E.OptionParser( version = "%prog version: $Id: fasta2counts.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
-#added ' ..., requires indexed fasta file" ' 
     parser.add_option( "-g", "--genome-file", dest="genome_file", type="string",
                        help="filename with genome, requires indexed fasta file"  )
 
