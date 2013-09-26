@@ -4,3 +4,121 @@ version:
     outputs: [stdout]
     references: []
     options: --version
+
+#merge
+#######
+
+
+#test: overlaps are merged
+#      bookends are merged
+#      bookends +1 are not merged
+# c.f. output from bedTools mergeBed
+merge_simple:
+    outputs: [stdout]
+    stdin: null
+    references: [chip_peaks_merged_simple.bed]
+    options: --method=merge -L /dev/null -I %DIR%/chip_peaks_sanitized.bed | cut -f1,2,3
+
+#tests: merging at a distance
+# c.f. output from bedTools mergeBed
+merge_1kb:
+   outputs: [stdout]
+   stdin: null
+   references: [chip_peaks_merged_1kb.bed]
+   options: --method=merge --merge-distance=1000 -L /dev/null -I %DIR%/chip_peaks_sanitized.bed | cut -f1,2,3
+
+#test: only outputting merged intervals
+
+merge_only_merged:
+   outputs: [stdout]
+   stdin: chip_peaks.bed
+   references: [chip_peaks_only_merged.bed]
+   options: --method=merge --merge-min-intervals=2 -L /dev/null
+
+
+#test: things of the same name are merged,
+#       overlaps of different names aren't
+
+merge_by_name:
+   outputs: [stdout]
+   stdin: chip_peaks.bed
+   references: [chip_peaks_merged_by_name.bed]
+   options: --method=merge --merge-by-name -L /dev/null
+
+
+#filterGenome
+#############
+
+#test: remove bed interval that overlaps start of contig
+#      remove interval that overlaps end of contig
+#      remove interval that is on a non-existant contig
+
+filterGenome:
+    outputs: [stdout]
+    stdin: chip_peaks.bed
+    references: [chip_peaks_filtered.bed]
+    options: --method=filter-genome --genome-file=%DIR%/../data/hg19.chr19.fasta -L /dev/null
+
+#sanitizeGenome
+###############
+
+#test: truncate intervals that overlap start of contig
+#      truncate intervals that overlap end of contig
+#      remove intervals that are on non-existant contig
+#      remove zero length intervals
+ 
+sanitizeGenome:
+    outputs: [stdout]
+    stdin: chip_peaks.bed
+    references: [chip_peaks_sanitized.bed]
+    options: --method=sanitize-genome --genome-file=%DIR%/../data/hg19.chr19.fasta -L /dev/null
+
+#block
+######
+
+# wanted to test the roundtrip, using bedtools bed12tobed6, but can't get the resulting 
+# sort order right.
+
+block:
+    outputs: [stdout]
+    stdin: chip_peaks.bed
+    references: [chip_peaks.blocked.bed]
+    options: --method=block -L /dev/null
+
+
+#shift
+######
+
+#check that interval at end isn't moved
+
+shift:
+    outputs: [stdout]
+    stdin: chip_peaks.bed
+    references: [chip_peaks.shifted.bed]
+    options: --method=shift --offset=10 -g %DIR%/../data/hg19.chr19.fasta -L /dev/null
+
+#TODO: Find some way to verify the correctness of the bins methods
+
+bins-bases:
+    outputs: [stdout]
+    stdin: chip_peaks.bed
+    references: [chip_peaks.binned.equal-bases.bed]
+    options: --method=bins
+
+bins-intervals:
+    outputs: [stdout]
+    stdin: chip_peaks.bed
+    references: [chip_peaks.binned.equal-intervals.bed]
+    options: --method=bins --binning-method=equal-intervals
+
+bins-range:
+    outputs: [stdout]
+    stdin: chip_peaks.bed
+    references: [chip_peaks.binned.equal-range.bed]
+    options: --method=bins --binning-method=equal-range
+
+bins-manual:
+    outputs: [stdout]
+    stdin: chip_peaks.bed
+    references: [chip_peaks.binned.manual.bed]
+    options: --method=bins --bin-edges=0,5,10,100 --num-bins=3
