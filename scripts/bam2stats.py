@@ -128,28 +128,29 @@ compute some additional summary statistics. However, as it builds a dictionary
 of all sequences, it will also require a good  amount of memory. The additional
 metrics output are:
 
-+------------------------------+--------------------------------------------------+
-|*Category*                    |*Content*                                         |
-+------------------------------+--------------------------------------------------+
-|pairs_total                   |total number of pairs in input data               |
-+------------------------------+--------------------------------------------------+
-|pairs_unmapped                |pairs in which neither read maps                  |
-+------------------------------+--------------------------------------------------+
-|pairs_proper_unique           |pairs which are proper and map uniquely.          |
-+------------------------------+--------------------------------------------------+
-|pairs_incomplete              |pairs in which one of the reads maps uniquel, but |
-|                              |the other does not map.                           |
-+------------------------------+--------------------------------------------------+
-|pairs_proper_duplicate        |pairs which are proper and unique, but marked as  |
-|                              |duplicates.                                       |
-+------------------------------+--------------------------------------------------+
-|pairs_proper_multimapping     |pairs which are proper, but map to multiple       |
-|                              |locations.                                        |
-+------------------------------+--------------------------------------------------+
-|pairs_not_proper_unique       |pairs mapping uniquely, but not flagged as proper |
-+------------------------------+--------------------------------------------------+
-|pairs_other                   |pairs not in any of the above categories          |
-+------------------------------+--------------------------------------------------+
++-------------------------+----------------------------------------+
+|*Category*               |*Content*                               |
++-------------------------+----------------------------------------+
+|pairs_total              |total number of pairs in input data     |
++-------------------------+----------------------------------------+
+|pairs_unmapped           |pairs in which neither read maps        |
++-------------------------+----------------------------------------+
+|pairs_proper_unique      |pairs which are proper and map uniquely.|
++-------------------------+----------------------------------------+
+|pairs_incomplete         |pairs in which one of the reads maps    |
+|                         |uniquel, but the other does not map.    |
++-------------------------+----------------------------------------+
+|pairs_proper_duplicate   |pairs which are proper and unique, but  |
+|                         |marked as duplicates.                   |
++-------------------------+----------------------------------------+
+|pairs_proper_multimapping|pairs which are proper, but map to      |
+|                         |multiple locations.                     |
++-------------------------+----------------------------------------+
+|pairs_not_proper_unique  |pairs mapping uniquely, but not flagged |
+|                         |as proper                               |
++-------------------------+----------------------------------------+
+|pairs_other              |pairs not in any of the above categories|
++-------------------------+----------------------------------------+
 
 Usage
 -----
@@ -405,7 +406,7 @@ def main( argv = None ):
             outs.write( "pairs_total\t%i\t%5.2f\tpairs_total\n" % \
                             (counter.total_pairs, 100.0 * counter.total_pairs / counter.total_pairs ) )
             outs.write( "pairs_unmapped\t%i\t%5.2f\tpairs_total\n" % \
-                            ( counter.total_pairs_unmapped, 100.0 * counter.total_pairs_unmapped / counter.total_pairs ) )
+                            ( counter.total_pair_is_unmapped, 100.0 * counter.total_pair_is_unmapped / counter.total_pairs ) )
             outs.write( "pairs_proper_unique\t%i\t%5.2f\tpairs_total\n" % \
                             ( counter.total_pair_is_proper_uniq, 100.0 * counter.total_pair_is_proper_uniq / counter.total_pairs ) )
             outs.write( "pairs_incomplete\t%i\t%5.2f\tpairs_total\n" % \

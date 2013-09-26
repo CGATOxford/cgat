@@ -32,6 +32,7 @@ The script currently implements the following methods:
    
 4. filter-genome: remove all intervals on unknown contigs or extending beyond 
    contigs.
+
 5. extend: extend the start and end of each interval by a specified distance.
    Note: currently this method does not check that new interval is outside the confines of the contig
 

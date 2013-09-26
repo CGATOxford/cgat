@@ -35,9 +35,12 @@ Code
 '''
 import os, sys, string, re, tempfile
 
-from Bio.Clustalw import MultipleAlignCL
-from Bio.Clustalw import do_alignment
-
+try:
+    from Bio.Clustalw import MultipleAlignCL
+    from Bio.Clustalw import do_alignment
+except ImportError:
+    # code needs updating for newer biopython versions
+    pass
 """Wrapper for Clustal based on Biopython
 """
 

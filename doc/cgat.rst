@@ -14,11 +14,11 @@ The tools work from the command line, but can readily be installed
 within frameworks such as `galaxy`_.
 
 Please note that the tools are part of a larger code base also
-including genomics and NGS pipelines. More information about these
-is here (:ref:`here <contents>`).
+including genomics and NGS pipelines. More information about those
+is :ref:`here <contents>`.
 
-Detailed instructions on installation, usage and tools are below,
-followed by a quickstart guide.
+Detailed instructions on installation, on usage and a tool reference
+are below, followed by a :ref:`quickstart` guide.
 
 .. toctree::
    :maxdepth: 2
@@ -35,7 +35,7 @@ Quickstart
 
 To install the CGAT tools, type::
 
-   pip install CGAT
+   pip install cgat
 
 This will install the CGAT scripts and libraries together with the
 required dependencies. See :ref:`Installation Instructions` for
@@ -59,15 +59,14 @@ through various GAT tools::
    wget -qO- ftp://ftp.ensembl.org/pub/release-72/gtf/homo_sapiens/Homo_sapiens.GRCh37.72.gtf.gz
    | gunzip
    | awk '$2 == "protein_coding"' 
-   | gff2gff.py --genome-file=hg19 --sanitize=ucsc --skip-missing
-   | gtf2gtf.py --sort=gene
-   | gtf2gtf.py --merge-exons --with-utr
-   | gtf2gtf.py --filter=longest-gene
-   | gtf2gtf.py --sort=position
-   | gtf2gff.py --genome-file=hg19 --flank=5000 --method=genome
+   | cgat gff2ff --genome-file=hg19 --sanitize=ucsc --skip-missing
+   | cgat gtf2gtf --sort=gene
+   | cgat gtf2gtf --merge-exons --with-utr
+   | cgat gtf2gtf --filter=longest-gene
+   | cgat gtf2gtf --sort=position
+   | cgat gtf2gff --genome-file=hg19 --flank=5000 --method=genome
    | gzip
    > annotations.gff.gz
-
 
 .. note::
    The statements above need an indexed genome. To create such an
@@ -91,19 +90,19 @@ analysis.
 
 Choosing different options can provide different sets of
 answers. Instead of merging all exons per gene, the longest transcript
-might be selected by replacing (2) with ``gtf2gtf.py
+might be selected by replacing (2) with ``gtf2gtf
 --filter=longest-transcript``. 
 Or, instead of genomic annotations, regulatory domains such as defined by GREAT might be obtained by
-removing (3) and replacing (4) with ``gtf2gff.py --method=great-domains``.
+removing (3) and replacing (4) with ``gtf2gff --method=great-domains``.
 
 The generated annotations in annotations.gff can then be used to count
 the number of transcription factor binding sites using bed-tools or
 other interval intersections. Here, we will use another CGAT tool,
-``gtf2table.py``, to do the counting and classification::
+``gtf2table``, to do the counting and classification::
 
    zcat /ifs/devel/gat/tutorial/data/srf.hg19.bed 
-   | bed2gff.py --as-gtf 
-   | gtf2table.py --counter=classifier-chipseq --filename-gff=annotations.gff.gz
+   | cgat bed2gff --as-gtf 
+   | cgat gtf2table --counter=classifier-chipseq --filename-gff=annotations.gff.gz
 
 The scripts follow a consistent naming scheme centered around common
 genomic formats. Because of the common genomic formats, the tools can
