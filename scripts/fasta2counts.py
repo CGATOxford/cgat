@@ -20,12 +20,6 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-Antonio changes up to 15/08/13:
-- edits to documentation, modified header, added tags after Python, added under Usage, added under Example
-- added code (commented)
- 
-
-
 fasta2counts.py - basic stats from collection of sequences
 ==========================================================
 

@@ -102,6 +102,7 @@ Sequence data
     and fragmented sequences.
 
 :doc:`scripts/fasta2bed`
+    Segment sequences based on G+C content, gaps, ...
 
 :doc:`scripts/fasta2counts`
 
