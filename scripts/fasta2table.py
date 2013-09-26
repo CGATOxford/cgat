@@ -27,25 +27,58 @@ fasta2table.py - analyze sequences for codon bias and other sequence properties
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Genomics Sequences
 
 Purpose
 -------
 
-This script reads a collection of sequences in :term:`fasta` format and computes
-various sequence properties (length, information content, codon bias, ...).
+This script reads a collection of sequences in :term:`fasta` format, computes
+various sequence properties and outputs them to a tab-separated file.
+
+Counters implemented are:
+
+length
+   sequence lengths
+
+sequence
+   adds the sequence
+
+hid
+   a hash identifier for the sequence
+
+na
+   nucleic acid composition
+
+cpg
+   CpG counts
+
+aa
+   amino acid composition
+
+codons
+   codon composition
+
+codon-usage
+    output codon frequencies for each sequence
+
+degeneracy
+    count the number of degenerate sites   
+
+gaps
+    number of gaps and gapped/ungapped regions in the sequences
+
+The codon counters assume that sequences are codons. 
 
 Usage
 -----
 
 Example::
 
-   python cat in.fasta | fasta2table.py --sections=cpg
+   python fasta2table.py --sections=cpg < in.fasta > out.tsv
 
-In this example we inout a fasta file and compute the sequence composition i.e.
+In this example we input a fasta file and compute the sequence composition, i.e.
 %C, %G, %A, %T as well as dinucleotide (CpG) composition for each sequence in the 
 set.
-
 
 Type::
 
@@ -53,13 +86,8 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-
-This script was formerly called :file:`analyze_codonbias_shannon.py`.
-
-Code
-----
+Command line options
+--------------------
 
 '''
 import os
@@ -87,8 +115,12 @@ def main( argv = None ):
     parser.add_option("-w", "--filename-weights", dest="filename_weights", type="string",
                       help="filename with codon frequencies. Multiple filenames can be separated by comma." )
     
-    parser.add_option("-s", "--section", dest="sections", type="string", action="append",
-                      help="which sections to output. Possible choices are length|na|aa|cpg|degeneracy|bias|codons|codon-usage|codon-translator|sequence, [%default]" )
+    parser.add_option("-s", "--section", dest="sections", type="choice", action="append",
+                      choices = ("length","hid", "na","aa","cpg",
+                                 "degeneracy","bias",
+                                 "codons","codon-usage","codon-translator",
+                                 "gaps", "sequence"),
+                      help="which sections to output [%default]" )
 
     parser.add_option("-t", "--type", dest="seqtype", type="choice",
                       choices=("na", "aa"),
@@ -98,20 +130,21 @@ def main( argv = None ):
                       help="regular expression to extract identifier from fasta description line." )
 
     parser.set_defaults(
-        filename_weights = "uniform",
+        filename_weights = None,
         pseudocounts = 1,
         sections = [],
         regex_identifier = "(.+)",
         seqtype = "na",
+        gap_chars = 'xXnN',
         )
     
     (options, args) = E.Start( parser, argv = argv )
-    options.filename_weights = options.filename_weights.split(",")
 
     rx = re.compile( options.regex_identifier )
 
     reference_codons = []
     if options.filename_weights:
+        options.filename_weights = options.filename_weights.split(",")
         for filename in options.filename_weights:
             if filename == "uniform":
                 reference_codons.append( Genomics.GetUniformCodonUsage() )
@@ -162,6 +195,8 @@ def main( argv = None ):
                 s = SequencePropertiesCodonUsage()
             elif section == "codon-translator":
                 s = SequencePropertiesCodonTranslator()
+            elif section == "gaps":
+                s = SequencePropertiesGaps( options.gap_chars )
             else:
                 raise ValueError("unknown section %s" % section)
         elif options.seqtype == "aa":
