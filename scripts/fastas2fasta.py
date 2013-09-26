@@ -21,13 +21,13 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-concatenate_sequences.py - concatenate sequences from multiple fasta files
+fastas2fasta.py - concatenate sequences from multiple fasta files
 ==========================================================================
 
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Genomics Sequences MultipleAlignments
 
 Purpose
 -------
@@ -44,11 +44,11 @@ Usage
 
 Example::
 
-   python concatenate_sequences.py a.fasta b.fasta > c.fasta
+   python fastas2fasta.py a.fasta b.fasta > c.fasta
 
 Type::
 
-   python concatenate_sequences.py --help
+   python fastas2fasta.py --help
 
 for command line help.
 
@@ -63,12 +63,6 @@ import os
 import sys
 import re
 
-USAGE="""python %s [OPTIONS] in1 in2 [...]
-
-
-
-""" % sys.argv[0]
-
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import CGAT.FastaIterator as FastaIterator
@@ -76,7 +70,8 @@ import CGAT.FastaIterator as FastaIterator
 ##------------------------------------------------------------
 if __name__ == '__main__':
 
-    parser = E.OptionParser( version = "%prog version: $Id: concatenate_sequences.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: fastas2fasta.py 2782 2009-09-10 11:40:29Z andreas $", 
+                             usage = globals()["__doc__"])
 
     (options, args) = E.Start( parser )
 

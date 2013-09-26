@@ -104,17 +104,13 @@ Sequence data
 :doc:`scripts/fasta2bed`
     Segment sequences based on G+C content, gaps, ...
 
-:doc:`scripts/fasta2table`
+:doc:`scripts/fastas2fasta`
 
-:doc:`scripts/fasta2gaps`
-
-:doc:`scripts/fasta2gff`
-
-:doc:`scripts/fasta2properties`
-
-:doc:`scripts/fasta2spliced`
 
 :doc:`scripts/fasta2variants`
+
+
+
 
 
 NGS data
@@ -157,18 +153,30 @@ NGS data
 
 :doc:`scripts/fastqs2fastq`
 
+:doc:`scripts/rnaseq_bam_vs_bed`
+
+:doc:`scripts/rnaseq_bam_vs_exons`
+
+:doc:`scripts/rnaseq_bams2bam`
+
+:doc:`scripts/rnaseq_junction_bam2bam`
+
+:doc:`scripts/diff_bam`
+    Perform read-by-read comparison of two bam-files.
+
 Unsorted
 =========
 
-:doc:`scripts/bam2UniquePairs`
+:doc:`scripts/fasta2gff`
+    Remove?
 
-:doc:`scripts/concatenate_sequences`
+:doc:`scripts/bam2UniquePairs`
 
 :doc:`scripts/diff_chains`
 
 :doc:`scripts/gff2bed`
 
-:doc:`scripts/gff2chunks`
+:doc:`scripts/split_gff`
 
 :doc:`scripts/gff2coverage`
 
@@ -184,23 +192,9 @@ Unsorted
 
 :doc:`scripts/gff2table`
 
-:doc:`scripts/gff2wiggle_stats`
-
 :doc:`scripts/go2plot`
 
 :doc:`scripts/go2svg`
-
-:doc:`scripts/rnaseq_bam_vs_bed`
-
-:doc:`scripts/rnaseq_bam_vs_exons`
-
-:doc:`scripts/rnaseq_bams_vs_bams`
-
-:doc:`scripts/rnaseq_bams2bam`
-
-:doc:`scripts/rnaseq_junction_bam2bam`
-
-:doc:`scripts/shuffle_fasta`
 
 :doc:`scripts/softmask`
 

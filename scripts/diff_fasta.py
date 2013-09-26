@@ -27,13 +27,13 @@ diff_fasta.py - compare contents of two fasta files
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Genomics Sequence
 
 Purpose
 -------
 
 This script takes two sets of fasta sequences and matches the
-identifiers. It then comparse the sequences associated with the
+identifiers. It then compares the sequences with the same
 identifiers and outputs
 
    * which sequences are missing
@@ -51,12 +51,16 @@ seqdiff
 missed
    seqences that are missing from set or the other
 
+This script is of specialized interest and has been used
+in the past to check if ENSEMBL gene models had been
+correctly mapped into a database schema.
+
 Usage
 -----
 
 Example::
 
-   python diff_fasta.py a.fasta b.fasta
+   python diff_fasta.py a.fasta b.fasta 
 
 Type::
 

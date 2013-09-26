@@ -46,20 +46,16 @@ Usage
 
 Example::
 
-   python cgat_script_template.py in.bam in.bed.gz
+   python bam_vs_bed.py in.bam in.bed.gz
 
 Type::
 
-   python cgat_script_template.py --help
+   python bam_vs_bed.py --help
 
 for command line help.
 
-Documentation
--------------
-
-
-Code
-----
+Command line options
+--------------------
 
 '''
 

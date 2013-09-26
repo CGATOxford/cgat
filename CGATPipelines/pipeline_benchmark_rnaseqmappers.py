@@ -1133,7 +1133,7 @@ def buildReadCorrespondence( infiles, outfile ):
     sorters = " ".join([ "<( samtools view -h %s | %s/hsort 0 )" % (x, PARAMS["scriptsdir"]) for x in infiles ] )
 
     statement = '''
-    python %(scriptsdir)s/rnaseq_bams_vs_bams.py
+    python %(scriptsdir)s/diff_bam.py
          --headers=%(headers)s
          --log=%(outfile)s.log
        %(sorters)s

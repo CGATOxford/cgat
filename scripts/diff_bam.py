@@ -172,7 +172,7 @@ def main( argv = None ):
         raise ValueError( "please specify at least two BAM files" )
 
     infiles = []
-    for arg in args: infiles.append( pysam.Samfile( arg, 'r' ) )
+    for arg in args: infiles.append( pysam.Samfile( arg, 'rb' ) )
 
     if options.headers:
         headers = options.headers.split(",")

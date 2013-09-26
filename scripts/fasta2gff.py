@@ -39,11 +39,11 @@ Usage
 
 Example::
 
-   python <script_name>.py --help
+   python fasta2gff.py --help
 
 Type::
 
-   python <script_name>.py --help
+   python fasta2gff.py --help
 
 for command line help.
 
