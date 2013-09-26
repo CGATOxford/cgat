@@ -145,6 +145,12 @@ NGS data
     Convert read coverage in a :term:`bam` formatted file into
     a :term:`wiggle` or :term:`bigwig` formatted file.
 
+:doc:`scripts/bam_vs_gtf`
+    Compute stats on exon over-/underrun and spliced reads.
+
+:doc:`scripts/bam_vs_bed`
+    Compute coverage of reads within multiple interval types.
+ 
 :doc:`scripts/fastq2fastq`
 
 :doc:`scripts/fastq2N`
@@ -153,9 +159,9 @@ NGS data
 
 :doc:`scripts/fastqs2fastq`
 
-:doc:`scripts/rnaseq_bam_vs_bed`
 
-:doc:`scripts/rnaseq_bam_vs_exons`
+
+
 
 :doc:`scripts/rnaseq_bams2bam`
 

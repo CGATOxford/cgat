@@ -529,7 +529,7 @@ def buildContextStats( infiles, outfile ):
 
     to_cluster = True
     statement = '''
-       python %(scriptsdir)s/rnaseq_bam_vs_bed.py
+       python %(scriptsdir)s/bam_vs_bed.py
               --min-overlap=%(min_overlap)f
               --log=%(outfile)s.log
               %(infile)s %(reffile)s

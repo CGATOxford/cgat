@@ -57,11 +57,11 @@ Usage
 
 Example::
 
-   python cgat_script_template.py --help
+   cat in.bam | python bam_vs_gtf.py --filename-gtf=exons.gtf.gz
 
 Type::
 
-   python cgat_script_template.py --help
+   python bam_vs_gtf.py --help
 
 for command line help.
 

@@ -21,23 +21,24 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-rnaseq_bam_vs_bed.py - count context that reads map to
+bam_vs_bed.py - count context that reads map to
 ======================================================
 
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Genomics NGS Intervals
 
 Purpose
 -------
 
 This script takes as input a :term:`BAM` file from an RNASeq experiment 
-and a :term:`bed` formatted file.
+and a :term:`bed` formatted file. The :term:`bed` formatted file needs
+at least four columns. The fourth (name) column is used to group counts.
 
 It counts the number of alignments overlapping between the :term:`bam`
 file and the :term:`bed` file. Annotations in the :term:`bed` file can
-be overlapping - they are counted independently per name.
+be overlapping - they are counted independently.
 
 This scripts requires bedtools to be installed.
 
@@ -92,19 +93,37 @@ def main( argv = None ):
     parser.add_option( "-k", "--keep-temp", dest="keep_temp", action="store_true",
                        help = "do not delete temporary files [%default]" )
 
+    parser.add_option( "-a", "--filename-bam", dest="filename_bam", metavar="bam", type="string",
+                       help = "bam-file to use [%default]" )
+
+    parser.add_option( "-b", "--filename-bed", dest="filename_bed", metavar="bam", type="string",
+                       help = "bed-file to use [%default]" )
+
     parser.set_defaults(
         min_overlap = 0.5,
         keep_temp = False,
+        filename_bam = None,
+        filename_bed = None,
         )
 
     ## add common options (-h/--help, ...) and parse command line 
     (options, args) = E.Start( parser, argv = argv )
 
-    if len(args) != 2:
-        raise ValueError( "please supply a bam and a bed file or two bed-files." )
+    filename_bam = options.filename_bam
+    filename_bed = options.filename_bed
+
+    if filename_bam == None and filename_bed == None:
+        if len(args) != 2:
+            raise ValueError( "please supply a bam and a bed file or two bed-files." )
     
-    bamfile, bedfile = args
-    
+        filename_bam, filename_bed = args
+
+    if filename_bed == None:
+        raise ValueError( "please supply a bed file to compare to." )
+
+    if filename_bam == None:
+        raise ValueError( "please supply a bam file to compare with." )
+
     E.info( "intersecting the two files" )
 
     tmpfile = tempfile.NamedTemporaryFile( delete=False )
@@ -116,18 +135,18 @@ def main( argv = None ):
     options.stdout.write( "category\talignments\n" )
 
     # get number of columns of reference bed file
-    for bed in Bed.iterator(IOTools.openFile( bedfile )):
+    for bed in Bed.iterator(IOTools.openFile( filename_bed )):
         ncolumns_bed = bed.columns
         break
-    E.info( "assuming %s is bed%i format" % (bedfile, ncolumns_bed))
+    E.info( "assuming %s is bed%i format" % (filename_bed, ncolumns_bed))
 
     if ncolumns_bed < 4:
         raise ValueError("please supply a name attribute in the bed file")
 
     # get information about 
-    if bamfile.endswith(".bam"):
+    if filename_bam.endswith(".bam"):
         format = "-abam"
-        samfile = pysam.Samfile( bamfile, "rb" )
+        samfile = pysam.Samfile( filename_bam, "rb" )
         total = samfile.mapped
         # latest bedtools uses bed12 format when bam is input
         ncolumns_bam = 12
@@ -135,15 +154,15 @@ def main( argv = None ):
         sort_key = lambda x: x.name
     else: 
         format = "-a"
-        total = IOTools.getNumLines( bamfile )
+        total = IOTools.getNumLines( filename_bam )
         # get bed format
         ncolumns_bam = 0
-        for bed in Bed.iterator(IOTools.openFile( bamfile )):
+        for bed in Bed.iterator(IOTools.openFile( filename_bam )):
             ncolumns_bam = bed.columns
             break
 
         if ncolumns_bam > 0:
-            E.info( "assuming %s is bed%i fomat" % (bamfile, ncolumns_bam ))
+            E.info( "assuming %s is bed%i fomat" % (filename_bam, ncolumns_bam ))
             if ncolumns_bam == 3:
                 # count per interval
                 sort_key = lambda x: (x.contig, x.start, x.end)
@@ -169,10 +188,10 @@ def main( argv = None ):
     options.stdout.write( "total\t%i\n" % total )
 
     if total == 0:
-        E.warn( "no data in %s" % bamfile )
+        E.warn( "no data in %s" % filename_bam )
         return
 
-    statement = """intersectBed %(format)s %(bamfile)s -b %(bedfile)s -bed -wo -f %(min_overlap)f > %(tmpfilename)s""" % locals()
+    statement = """intersectBed %(format)s %(filename_bam)s -b %(filename_bed)s -bed -wo -f %(min_overlap)f > %(tmpfilename)s""" % locals()
 
     E.info( "running %s" % statement )
     retcode = E.run( statement )
