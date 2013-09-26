@@ -231,7 +231,7 @@ class DifferentialExpressionCorrelationFoldChangeCuffdiffDeseq( DifferentialExpr
         fold_changes = {pair1:[], pair2: []}
         for folds in cc.execute("""
                    SELECT a.l2fold, b.l2fold
-                          FROM design_%s_%s_gene_diff AS a, 
+                          FROM %s_%s_gene_diff AS a, 
                           %s_%s_gene_diff AS b
                           WHERE a.test_id = b.test_id
                           AND ABS( a.l2fold ) < 10
