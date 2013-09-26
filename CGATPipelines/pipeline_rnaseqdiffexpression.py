@@ -820,102 +820,102 @@ def buildUnionExons( infile, outfile ):
 #########################################################################
 #########################################################################
 # note - needs better implementation, currently no dependency checks.
-@follows( buildUnionExons, mkdir( "exon_counts.dir" ) )
-@files( [ ( ("%s.bam" % x.asFile(), "%s.union.bed.gz" % y.asFile() ),
-            ("exon_counts.dir/%s_vs_%s.bed.gz" % (x.asFile(),y.asFile() ) ) )
-          for x,y in itertools.product( TRACKS, GENESETS) ] )
-def buildExonLevelReadCounts( infiles, outfile ):
-    '''compute coverage of exons with reads.
-    '''
+# @follows( buildUnionExons, mkdir( "exon_counts.dir" ) )
+# @files( [ ( ("%s.bam" % x.asFile(), "%s.union.bed.gz" % y.asFile() ),
+#             ("exon_counts.dir/%s_vs_%s.bed.gz" % (x.asFile(),y.asFile() ) ) )
+#           for x,y in itertools.product( TRACKS, GENESETS) ] )
+# def buildExonLevelReadCounts( infiles, outfile ):
+#     '''compute coverage of exons with reads.
+#     '''
 
-    infile, exons = infiles
+#     infile, exons = infiles
 
-    to_cluster = True
+#     to_cluster = True
 
-    # note: needs to set flags appropriately for
-    # single-end/paired-end data sets
-    # set filter options
-    # for example, only properly paired reads
-    paired = False
-    if paired:
-        flag_filter = "-f 0x2"
-    else:
-        flag_filter = ""
+#     # note: needs to set flags appropriately for
+#     # single-end/paired-end data sets
+#     # set filter options
+#     # for example, only properly paired reads
+#     paired = False
+#     if paired:
+#         flag_filter = "-f 0x2"
+#     else:
+#         flag_filter = ""
 
-    # note: the -split option only concerns the stream in A - multiple
-    # segments in B are not split. Hence counting has to proceed via
-    # single exons - this can lead to double counting if exon counts
-    # are later aggregated.
+#     # note: the -split option only concerns the stream in A - multiple
+#     # segments in B are not split. Hence counting has to proceed via
+#     # single exons - this can lead to double counting if exon counts
+#     # are later aggregated.
 
-    statement = '''
-    samtools view -b %(flag_filter)s -q %(deseq_min_mapping_quality)s %(infile)s
-    | coverageBed -abam stdin -b %(exons)s -split
-    | sort -k1,1 -k2,2n
-    | gzip
-    > %(outfile)s
-    '''
+#     statement = '''
+#     samtools view -b %(flag_filter)s -q %(deseq_min_mapping_quality)s %(infile)s
+#     | coverageBed -abam stdin -b %(exons)s -split
+#     | sort -k1,1 -k2,2n
+#     | gzip
+#     > %(outfile)s
+#     '''
 
-    P.run()
+#     P.run()
 
-#########################################################################
-#########################################################################
-#########################################################################
-@collate(buildExonLevelReadCounts,
-         regex(r"exon_counts.dir/(.+)_vs_(.+)\.bed.gz"),  
-         r"\2.exon_counts.load")
-def loadExonLevelReadCounts( infiles, outfile ):
-    '''load exon level read counts.
-    '''
+# #########################################################################
+# #########################################################################
+# #########################################################################
+# @collate(buildExonLevelReadCounts,
+#          regex(r"exon_counts.dir/(.+)_vs_(.+)\.bed.gz"),  
+#          r"\2.exon_counts.load")
+# def loadExonLevelReadCounts( infiles, outfile ):
+#     '''load exon level read counts.
+#     '''
     
-    to_cluster = True
+#     to_cluster = True
 
-    # aggregate not necessary for bed12 files, but kept in
-    # ims: edited so that picks up chromosome, start pos and end pos for downstream use.
-    src = " ".join( [ "<( zcat %s | cut -f 1,2,3,4,7 )" % x for x in infiles] )
+#     # aggregate not necessary for bed12 files, but kept in
+#     # ims: edited so that picks up chromosome, start pos and end pos for downstream use.
+#     src = " ".join( [ "<( zcat %s | cut -f 1,2,3,4,7 )" % x for x in infiles] )
 
-    tmpfile = P.getTempFilename( "." )
-    tmpfile2 = P.getTempFilename( "." )
+#     tmpfile = P.getTempFilename( "." )
+#     tmpfile2 = P.getTempFilename( "." )
     
-    statement = '''paste %(src)s 
-                > %(tmpfile)s'''
+#     statement = '''paste %(src)s 
+#                 > %(tmpfile)s'''
     
-    P.run()
+#     P.run()
 
-    tracks = [P.snip(x, ".bed.gz" ) for x in infiles ]
-    tracks = [re.match( "exon_counts.dir/(\S+)_vs.*", x).groups()[0] for x in tracks ]
+#     tracks = [P.snip(x, ".bed.gz" ) for x in infiles ]
+#     tracks = [re.match( "exon_counts.dir/(\S+)_vs.*", x).groups()[0] for x in tracks ]
 
-    outf = IOTools.openFile( tmpfile2, "w")
-    outf.write( "gene_id\tchromosome\tstart\tend\t%s\n" % "\t".join( tracks ) )
+#     outf = IOTools.openFile( tmpfile2, "w")
+#     outf.write( "gene_id\tchromosome\tstart\tend\t%s\n" % "\t".join( tracks ) )
     
-    for line in open( tmpfile, "r" ):
-        data = line[:-1].split("\t")
-        # ims: edit so that now skips five and ens_id is in 3rd index
-        genes = list(set([ data[x] for x in range(3,len(data), 5 ) ]))
-        # ims: add entries for chromosome, start and ends
-        chrom = list(set( [data[x] for x in range(0,len(data), 5 ) ]))
-        starts = list(set( [data[x] for x in range(1,len(data), 5 ) ]))
-        ends = list(set( [data[x] for x in range(2,len(data), 5 ) ]))
-        # ims: edit as value is now in postion 4 and there are 5 columns per line
-        values = [ data[x] for x in range(4,len(data), 5 ) ]
-        # ims: extra assets for chrom, starts and ends
-        assert len(genes) == 1, "paste command failed, wrong number of genes per line"
-        assert len(chrom) == 1, "paste command failed, wrong number of chromosomes per line"
-        assert len(starts) == 1, "paste command failed, wrong number of starts per line"
-        assert len(ends) == 1, "paste command failed, wrong number of ends per line"
-        # ims: add extra coloumns into output
-        outf.write( "%s\t%s\t%s\t%s\t%s\n" % (genes[0], chrom[0], starts[0], ends[0], "\t".join(map(str, values) ) ) )
+#     for line in open( tmpfile, "r" ):
+#         data = line[:-1].split("\t")
+#         # ims: edit so that now skips five and ens_id is in 3rd index
+#         genes = list(set([ data[x] for x in range(3,len(data), 5 ) ]))
+#         # ims: add entries for chromosome, start and ends
+#         chrom = list(set( [data[x] for x in range(0,len(data), 5 ) ]))
+#         starts = list(set( [data[x] for x in range(1,len(data), 5 ) ]))
+#         ends = list(set( [data[x] for x in range(2,len(data), 5 ) ]))
+#         # ims: edit as value is now in postion 4 and there are 5 columns per line
+#         values = [ data[x] for x in range(4,len(data), 5 ) ]
+#         # ims: extra assets for chrom, starts and ends
+#         assert len(genes) == 1, "paste command failed, wrong number of genes per line"
+#         assert len(chrom) == 1, "paste command failed, wrong number of chromosomes per line"
+#         assert len(starts) == 1, "paste command failed, wrong number of starts per line"
+#         assert len(ends) == 1, "paste command failed, wrong number of ends per line"
+#         # ims: add extra coloumns into output
+#         outf.write( "%s\t%s\t%s\t%s\t%s\n" % (genes[0], chrom[0], starts[0], ends[0], "\t".join(map(str, values) ) ) )
     
-    outf.close()
+#     outf.close()
 
-    P.load( tmpfile2, outfile )
+#     P.load( tmpfile2, outfile )
 
-    os.unlink( tmpfile )
-    os.unlink( tmpfile2 )
+#     os.unlink( tmpfile )
+#     os.unlink( tmpfile2 )
 
 #########################################################################
 #########################################################################
 #########################################################################
-@follows( buildUnionExons, mkdir( "gene_counts.dir" ) )
+@follows( mkdir( "gene_counts.dir" ) )
 @files( [ ( ("%s.bam" % x.asFile(), "%s.gtf.gz" % y.asFile() ),
             ("gene_counts.dir/%s_vs_%s.tsv.gz" % (x.asFile(),y.asFile() ) ) )
           for x,y in itertools.product( TRACKS, GENESETS) ] )
@@ -1127,63 +1127,63 @@ def loadFeatureCounts(infile, outfile):
 #########################################################################
 #########################################################################
 #########################################################################
-@collate(buildExonLevelReadCounts,
-         regex(r"exon_counts.dir/(.+)_vs_(.+)\.bed.gz"),  
-         r"exon_counts.dir/\2.exon_counts.tsv.gz")
-def aggregateExonLevelReadCounts( infiles, outfile ):
-    '''aggregate exon level tag counts for each gene.
+# @collate(buildExonLevelReadCounts,
+#          regex(r"exon_counts.dir/(.+)_vs_(.+)\.bed.gz"),  
+#          r"exon_counts.dir/\2.exon_counts.tsv.gz")
+# def aggregateExonLevelReadCounts( infiles, outfile ):
+#     '''aggregate exon level tag counts for each gene.
 
-    coverageBed adds the following four columns:
+#     coverageBed adds the following four columns:
 
-    1) The number of features in A that overlapped (by at least one base pair) the B interval.
-    2) The number of bases in B that had non-zero coverage from features in A.
-    3) The length of the entry in B.
-    4) The fraction of bases in B that had non-zero coverage from features in A.
+#     1) The number of features in A that overlapped (by at least one base pair) the B interval.
+#     2) The number of bases in B that had non-zero coverage from features in A.
+#     3) The length of the entry in B.
+#     4) The fraction of bases in B that had non-zero coverage from features in A.
 
-    For bed6: use column 7
-    For bed12: use column 13
+#     For bed6: use column 7
+#     For bed12: use column 13
 
-    This method uses the maximum number of reads found in any exon as the tag count.
+#     This method uses the maximum number of reads found in any exon as the tag count.
 
-    '''
+#     '''
     
-    to_cluster = True
+#     to_cluster = True
 
-    # aggregate not necessary for bed12 files, but kept in
-    src = " ".join( [ "<( zcat %s | sort -k4,4 | groupBy -i stdin -g 4 -c 7 -o %s | sort -k1,1)" % (x,PARAMS['counting_aggregate']) for x in infiles ] )
+#     # aggregate not necessary for bed12 files, but kept in
+#     src = " ".join( [ "<( zcat %s | sort -k4,4 | groupBy -i stdin -g 4 -c 7 -o %s | sort -k1,1)" % (x,PARAMS['counting_aggregate']) for x in infiles ] )
 
-    tmpfile = P.getTempFilename( "." )
+#     tmpfile = P.getTempFilename( "." )
     
-    statement = '''paste %(src)s 
-                > %(tmpfile)s''' % locals()
+#     statement = '''paste %(src)s 
+#                 > %(tmpfile)s''' % locals()
     
-    P.run()
+#     P.run()
 
-    tracks = [P.snip(x, ".bed.gz" ) for x in infiles ]
-    tracks = [re.match( "exon_counts.dir/(\S+)_vs.*", x).groups()[0] for x in tracks ]
+#     tracks = [P.snip(x, ".bed.gz" ) for x in infiles ]
+#     tracks = [re.match( "exon_counts.dir/(\S+)_vs.*", x).groups()[0] for x in tracks ]
 
-    outf = IOTools.openFile( outfile, "w")
-    outf.write( "gene_id\t%s\n" % "\t".join( tracks ) )
+#     outf = IOTools.openFile( outfile, "w")
+#     outf.write( "gene_id\t%s\n" % "\t".join( tracks ) )
     
-    for line in open( tmpfile, "r" ):
-        data = line[:-1].split("\t")
-        genes = list(set([ data[x] for x in range(0,len(data), 2 ) ]))
-        values = [ data[x] for x in range(1,len(data), 2 ) ]
-        assert len(genes) == 1, "paste command failed, wrong number of genes per line"
-        outf.write( "%s\t%s\n" % (genes[0], "\t".join(map(str, values) ) ) )
+#     for line in open( tmpfile, "r" ):
+#         data = line[:-1].split("\t")
+#         genes = list(set([ data[x] for x in range(0,len(data), 2 ) ]))
+#         values = [ data[x] for x in range(1,len(data), 2 ) ]
+#         assert len(genes) == 1, "paste command failed, wrong number of genes per line"
+#         outf.write( "%s\t%s\n" % (genes[0], "\t".join(map(str, values) ) ) )
     
-    outf.close()
+#     outf.close()
 
-    os.unlink( tmpfile )
+#     os.unlink( tmpfile )
 
-#########################################################################
-#########################################################################
-#########################################################################
-@transform( ( aggregateExonLevelReadCounts),
-            suffix(".tsv.gz"),
-            ".load" )
-def loadAggregateExonLevelReadCounts( infile, outfile ):
-    P.load( infile, outfile, options="--index=gene_id" )
+# #########################################################################
+# #########################################################################
+# #########################################################################
+# @transform( ( aggregateExonLevelReadCounts),
+#             suffix(".tsv.gz"),
+#             ".load" )
+# def loadAggregateExonLevelReadCounts( infile, outfile ):
+#     P.load( infile, outfile, options="--index=gene_id" )
 
 #IMS: switch exon counts to feature counts
 TARGETS_DE = [ ( (x, y, glob.glob("*.bam"),
@@ -1346,7 +1346,8 @@ def plotRNASEQTagData( infiles, outfile ):
     geneset_file = infiles[1]
     bamfiles = infiles[2]
 
-    infile = os.path.join( "exon_counts.dir", P.snip( geneset_file, ".gtf.gz") + ".exon_counts.tsv.gz" )
+    #IMS: now running on feature counts
+    infile = os.path.join( "feature_counts.dir", P.snip( geneset_file, ".gtf.gz") + ".feature_counts.tsv.gz" )
     Expression.plotTagStats( infile, design_file, outfile )
 
     P.touch( outfile )
