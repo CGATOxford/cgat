@@ -282,7 +282,6 @@ def main( argv = None ):
                        help = "output nh/nm stats even if there is only a single count [%default]" )
     parser.add_option( "-d", "--output-details", dest="output_details", action="store_true",
                        help = "output per-read details [%default]" )
-
     parser.add_option( "-q", "--filename-fastq", dest = "filename_fastq",
                        help = "filename with fasta sequences [%default]" )
 

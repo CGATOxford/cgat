@@ -21,8 +21,8 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-rnaseq_bams_vs_bams.py - compare multiple bam files against each other
-=======================================================================
+diff_bam.py - compare multiple bam files against each other
+===========================================================
 
 :Author: Andreas Heger
 :Release: $Id$

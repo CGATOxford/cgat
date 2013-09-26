@@ -21,13 +21,13 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-rnaseq_bam_vs_exons.py - compare bam file against exons
-=======================================================
+bam_vs_gtf.py - compare bam file against gene set
+=================================================
 
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Genomics NGS Genesets
 
 Purpose
 -------
@@ -50,7 +50,7 @@ This script is for validation purposes:
 
 The script requires a list of non-overlapping exons.
 
-
+For read counts to be correct the NH flag to be set correctly.
 
 Usage
 -----
@@ -65,13 +65,8 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-
-For read counts to be correct the NH flag to be set correctly.
-
-Code
-----
+Command line options
+--------------------
 
 '''
 
@@ -97,7 +92,7 @@ def main( argv = None ):
     parser = E.OptionParser( version = "%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
                                     usage = globals()["__doc__"] )
 
-    parser.add_option( "-e", "--filename-exons", dest="filename_exons", type="string",
+    parser.add_option( "-e", "--filename-exons", "--filename-gtf", dest="filename_exons", type="string",
                        help = "gtf formatted file with exons locations. [%default]" )
 
     parser.set_defaults(
