@@ -83,6 +83,12 @@ def count( Samfile samfile,
 
     if count_fastq:
         E.info( "reading fastq file" )
+        # Using a python dictionary here is due
+        # for a large amount of memory usage.
+        # Alternatives to dictionary
+        # 1. POSIX hash tables (hsearch,...) or trees: very slow
+        # 2. custom hash implementation: worth the effort?
+        # 3. Sorted list and binary search: too slow for many lookups
         reads = {}
         fastqfile = Fastqfile( filename_fastq )
         fastq_nreads = 0
@@ -184,6 +190,8 @@ def count( Samfile samfile,
         count = 1
         last_tid, last_pos = read.tid, read.pos
 
+    E.info( "finished computing counts" )
+
     counter = E.Counter()
     
     counter.input = ninput
@@ -209,6 +217,7 @@ def count( Samfile samfile,
     cdef int total_pair_is_other = 0
 
     if count_fastq:
+        E.info( "aggregating counts" )
         for qname, index in reads.items():
             fastq_count = &fastq_counts[index]
 

@@ -144,9 +144,10 @@ def main( argv = None ):
 
     if options.filter:
 
+        remove_mismatches, colour_mismatches = False, False
+
         if "NM" in options.filter:
             remove_mismatches = True
-            colour_mismatches = False
 
         elif "CM" in options.filter:
             remove_mismatches = True

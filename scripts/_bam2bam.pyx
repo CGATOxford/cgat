@@ -84,7 +84,7 @@ def filter_bam( Samfile input_samfile,
     # build index
     # this method will start indexing from the current file position
     # if you decide
-    cdef int ret = 1#
+    cdef int ret = 1
     cdef int x
     cdef bam1_t * b = <bam1_t*>calloc(1, sizeof( bam1_t) )
     cdef uint64_t pos
@@ -109,6 +109,7 @@ def filter_bam( Samfile input_samfile,
         tag = nm_tag
 
     if c_remove_mismatches:
+        E.info( "building index" )
         if not reference_samfile:
             raise ValueError("require another bam file for mismatch filtering" )
 
@@ -127,17 +128,16 @@ def filter_bam( Samfile input_samfile,
                 nm = <int32_t>bam_aux2i(v)
                 index[qname].append( nm )
 
+        E.info( "built index for %i reads" % len(index))
+        bam_destroy1( b )
+
     # setup list of contigs to remove:
     if remove_contigs:
         nremove_contig_tids = len(remove_contigs)
         remove_contig_tids = <int*>malloc( sizeof(int) * nremove_contig_tids )
         for x, rname in enumerate( remove_contigs):
             remove_contig_tids[x] = input_samfile.gettid( rname )
-
-    bam_destroy1( b )
-    
-    E.info( "built index for %i reads" % len(index))
-    
+                
     E.info( "starting filtering" )
 
     for read in input_samfile:
