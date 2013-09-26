@@ -791,7 +791,7 @@ def compareGeneSets( infiles, outfile ):
     infiles = " ".join(infiles)
     to_cluster = True
     statement = '''
-        python %(scriptsdir)s/diff_gtfs.py 
+        python %(scriptsdir)s/diff_gtf.py 
         %(infiles)s
     > %(outfile)s
     '''

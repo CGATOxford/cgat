@@ -73,12 +73,14 @@ Gene sets
 :doc:`scripts/gtf2tsv`
     convert gene set in :term:`gtf` format to tabular format.
 
-:doc:`scripts/gtfs2graph`
+:doc:`scripts/gtfs2tsv`
+    Compare two gene sets - output common and unique lists of genes.
 
-:doc:`scripts/diff_gtf`
-    Compare two gene sets - output common and unique genes by overlap.
+:doc:`scripts/diff_gtf` 
+    Compare multiple gene sets. The tools computes all-vs-all pairwise
+    overlap of exons, bases and genes. Permits incremental updates of
+    similarity table.
 
-:doc:`scripts/diff_gtfs`
 
 Sequence data
 =============
