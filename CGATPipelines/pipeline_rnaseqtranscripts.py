@@ -949,7 +949,7 @@ def mergeUsingCuffmerge(infiles,outfile):
                     %(tmp)s
         >& %(outfile)s.log;
         checkpoint;
-        perl -p -e "s/\\0/./g" < %(outfile)s.dir/merged.gtf | gzip > %(outfile)s.gtf.gz;
+        perl -p -e "s/\\0/./g" < %(outfile)s.dir/merged.gtf | gzip > %(outfile)s;
         checkpoint;
         rm -f %(tmp2)s;
         rm -rf %(outfile)s.dir;
@@ -978,9 +978,9 @@ def loadTranscriptComparison( infile, outfile ):
     <track>_tracking 
     '''
     
-    tmpfile = P.getTempFilename()
-    tmpfile2 = P.getTempFilename()
-    tmpfile3 = P.getTempFilename()
+    tmpfile = P.getTempFilename(dir = ".")
+    tmpfile2 = P.getTempFilename(dir = ".")
+    tmpfile3 = P.getTempFilename(dir = ".")
 
     
     #cuffcompare doesn't output stats if there are too many input files
@@ -1246,9 +1246,9 @@ def buildAndLoadFullGeneSetTracking (infiles, outfile):
     inGTFIt = GTF.transcript_iterator(GTF.iterator(IOTools.openFile( in_gtf)))
     kept_genes = set([gtf[0].gene_id for gtf in inGTFIt])
 
-    tmpfile = P.getTempFilename()
-    tmpfile2 = P.getTempFilename()
-    tmpfile3 = P.getTempFilename()
+    tmpfile = P.getTempFilename(dir=".")
+    tmpfile2 = P.getTempFilename(dir=".")
+    tmpfile3 = P.getTempFilename(dir=".")
 
     tracks = [str(t) for t in PipelineTracks.Aggregate(TRACKS, track = PipelineTracks.Sample3(P.snip(infile, ".cuffcompare")))[P.snip(infile, ".cuffcompare")]]
 

@@ -108,8 +108,11 @@ def fetch_with_names(query, database=PARAMS.get("database",""), attach=False):
     '''Fetch query results and returns them as an array of row arrays, 
        in which the first entry is an array of the field names'''
 
-    dbhandle = sqlite3.connect( database )
-    cc = dbhandle.cursor()
+    try:
+        cc=database.cursor()
+    except:
+        dbhandle = sqlite3.connect( database )
+        cc = dbhandle.cursor()
 
     if attach: db_execute(cc, attach)
 
