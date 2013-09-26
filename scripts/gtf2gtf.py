@@ -814,7 +814,7 @@ def main( argv = None ):
 
     elif options.remove_overlapping:
         
-        index = GTF.readAndIndex( GFF.iterator( IOTools.openFile( options.remove_overlapping, "r" ) ) )
+        index = GTF.readAndIndex( GTF.iterator( IOTools.openFile( options.remove_overlapping, "r" ) ) )
         
         for gffs in GTF.transcript_iterator(GTF.iterator(options.stdin)):
             ninput += 1
