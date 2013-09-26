@@ -38,6 +38,35 @@ of gtf files.
 If results from a previous run are present, existing
 pairs are not re-computed but simply echoed.
 
+The output is a tab-separated table with counts for each pair
+of files being compared. The fields are:
+
++--------------+----------------------------------+
+|*Column*      |*Content*                         |
++--------------+----------------------------------+
+|set           |Name of the set                   |
++--------------+----------------------------------+
+|ngenes_total  |number of genes in set            |
++--------------+----------------------------------+
+|ngenes_ovl    |number of genes overlapping       |
++--------------+----------------------------------+
+|ngenes_unique |number of unique genes            |
++--------------+----------------------------------+
+|nexons_total  |number of exons in set            |
++--------------+----------------------------------+
+|nexons_ovl    |number of exons overlapping       |
++--------------+----------------------------------+
+|nexons_unique |number of unique exons            |
++--------------+----------------------------------+
+|nbases_total  |number of bases in gene set       |
++--------------+----------------------------------+
+|nbases_ovl    |number of bases overlapping       |
++--------------+----------------------------------+
+|nbases_unique |number of unique bases            |
++--------------+----------------------------------+
+
+Fields starting with a ``p`` are the corresponding percentage values.
+
 Usage
 -----
 
@@ -55,11 +84,8 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-
-Code
-----
+Command line options
+--------------------
 
 '''
 
@@ -81,7 +107,7 @@ class Counter:
 
     def __init__(self):
         pass
-        
+
     def getHeader( self ):
         h = []
         for a in ("genes", "exons", "bases" ):
@@ -103,7 +129,7 @@ class Counter:
         idx = {}
         infile = IOTools.openFile(filename, "r")
         for e in GTF.readFromFile(infile):
-            if e.contig not in idx: idx[e.contig] = ncl.NCLSimple()
+            if e.contig not in idx: idx[e.contig] = NCL.NCLSimple()
             idx[e.contig].add( e.start,e.end )
         infile.close()
         return idx
@@ -120,23 +146,23 @@ class Counter:
         nbases, nbases_overlapping = 0, 0
         for this in it:
             nexons += 1
-            nbases += this.end - this.start 
+            nbases += this.end - this.start
             genes.add( this.gene_id )
-            
+
             try:
                 intervals = list(idx[this.contig].find( this.start, this.end ))
             except KeyError:
                 continue
-            
-            if len(intervals) == 0: 
+
+            if len(intervals) == 0:
                 continue
 
             overlapping_genes.add( this.gene_id )
             nexons_overlapping += 1
-            start, end = this.start, this.end 
+            start, end = this.start, this.end
             counts = numpy.zeros( end - start, numpy.int )
             for other_start,other_end,other_value in intervals:
-                for x in range( max(start, other_start ) - start, min(end, other_end ) - start ): 
+                for x in range( max(start, other_start ) - start, min(end, other_end ) - start ):
                     counts[x] += 1
             nbases_overlapping += sum( [1 for x in counts if x > 0 ] )
 
@@ -165,7 +191,7 @@ class Counter:
         (self.mGenes2, self.mGenesOverlapping2,
          self.mExons2, self.mExonsOverlapping2,
          self.mBases2, self.mBasesOverlapping2 ) = \
-         self._count( filename2, idx1 ) 
+         self._count( filename2, idx1 )
 
         self.mGenesUnique2 = self.mGenes2 - self.mGenesOverlapping2
         self.mExonsUnique2 = self.mExons2 - self.mExonsOverlapping2
@@ -186,20 +212,20 @@ class Counter:
               "\t".join( map( lambda x: IOTools.prettyPercent( *x), (
                     (self.mGenesOverlapping1, self.mGenes1),
                     (self.mGenesOverlapping2, self.mGenes2),
-                    (self.mGenesUnique1, self.mGenes1), 
+                    (self.mGenesUnique1, self.mGenes1),
                     (self.mGenesUnique2, self.mGenes2),
-                    (self.mExonsOverlapping1, self.mExons1), 
+                    (self.mExonsOverlapping1, self.mExons1),
                     (self.mExonsOverlapping2, self.mExons2),
-                    (self.mExonsUnique1, self.mExons1), 
+                    (self.mExonsUnique1, self.mExons1),
                     (self.mExonsUnique2, self.mExons2),
-                    (self.mBasesOverlapping1, self.mBases1), 
+                    (self.mBasesOverlapping1, self.mBases1),
                     (self.mBasesOverlapping2, self.mBases2),
-                    (self.mBasesUnique1, self.mBases1), 
+                    (self.mBasesUnique1, self.mBases1),
                     (self.mBasesUnique2, self.mBases2)  ) ) )
 
 class CounterGenes(Counter):
     """output only genes."""
-    
+
     mSeparator = ";"
 
     def __init__(self, *args, **kwargs ):
@@ -219,13 +245,13 @@ class CounterGenes(Counter):
 
         for this in it:
             genes.add( this.gene_id )
-            
+
             try:
                 intervals = idx[this.contig].find( this.start, this.end )
             except KeyError:
                 continue
 
-            if len(intervals) == 0: 
+            if len(intervals) == 0:
                 continue
 
             overlapping_genes.add( this.gene_id )
@@ -244,13 +270,13 @@ class CounterGenes(Counter):
         (self.mGenes1, self.mGenesOverlapping1 ) =  self._count( filename1, idx2 )
 
         idx1 = self.buildIndex( filename1 )
-        (self.mGenes2, self.mGenesOverlapping2) = self._count( filename2, idx1 )    
+        (self.mGenes2, self.mGenesOverlapping2) = self._count( filename2, idx1 )
 
     def __str__(self):
 
         uniq1 = self.mGenes1.difference(self.mGenesOverlapping)
         uniq2 = self.mGenes2.difference(self.mGenesOverlapping)
-        
+
         return "\t".join( map(str, ( \
                     len(self.mGenes1),
                     len(self.mGenes2),
@@ -260,7 +286,7 @@ class CounterGenes(Counter):
                     len(uniq2),
                     self.mSeparator.join( self.mGenesOverlapping1),
                     self.mSeparator.join( self.mGenesOverlapping2),
-                    self.mSeparator.join( uniq1 ), 
+                    self.mSeparator.join( uniq1 ),
                     self.mSeparator.join( uniq2 ) ) ) )
 
 if __name__ == "__main__":
@@ -308,7 +334,7 @@ if __name__ == "__main__":
 
             previous_results[set1][set2] = "\t".join( data[2:] )
             rev = [ (data[x+1], data[x]) for x in range( 2, len(data), 2 ) ]
-            previous_results[set2][set1] = "\t".join( IOTools.flatten(rev) ) 
+            previous_results[set2][set1] = "\t".join( IOTools.flatten(rev) )
     else:
         previous_results = {}
 
@@ -334,7 +360,7 @@ if __name__ == "__main__":
             title2 = getTitle( args[y] )
             if previous_results:
                 try:
-                    prev = previous_results[title1][title2] 
+                    prev = previous_results[title1][title2]
                 except KeyError:
                     pass
                 else:
@@ -348,4 +374,4 @@ if __name__ == "__main__":
 
     E.info( "nupdated=%i, ncomputed=%i" % (nupdated, ncomputed))
 
-    E.Stop()    
+    E.Stop()
