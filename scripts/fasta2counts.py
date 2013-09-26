@@ -26,7 +26,7 @@ fasta2counts.py - basic stats from collection of sequences
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Python, fasta, counts, contigs, residues, gaps
+:Tags: Genomics Sequences
 
 Purpose
 -------
@@ -114,10 +114,8 @@ def writeHeader( outfile ):
 
 if __name__ == "__main__":
 
-#added ' usage = globals()["__doc__"]) '
     parser = E.OptionParser( version = "%prog version: $Id: fasta2counts.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
-#added ' ..., requires indexed fasta file" ' 
     parser.add_option( "-g", "--genome-file", dest="genome_file", type="string",
                        help="filename with genome, requires indexed fasta file"  )
 
