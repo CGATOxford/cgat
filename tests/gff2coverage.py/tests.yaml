@@ -4,3 +4,16 @@ version:
     outputs: [stdout]
     references: []
     options: --version
+
+genomic:
+    stdin: hg19.chr19.gtf.test
+    outputs: [stdout]
+    references: [genomic.test.hg19]
+    options: --method=genomic --genome-file=%DIR%/hg19.chr19.fasta.test
+
+histogram:
+    stdin: hg19.chr19.gtf.test
+    outputs: [19.hist]
+    references: [histogram.test.hg19]
+    options: --method=histogram --window=1 --genome-file=%DIR%/hg19.chr19.fasta.test --features=exon
+
