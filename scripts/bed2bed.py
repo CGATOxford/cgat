@@ -15,54 +15,94 @@
 bed2bed.py - manipulate bed files
 =================================
 
-Purpose
+Purpose 
 -------
 
-manipulate bed-formatted files.
+This script provides various methods for merging (by position, by name
+or by score), filtering and moving bed formatted intervals and
+outputting the results as a bed file
 
-The script currently implements the following methods:
-
-1. merge: merge adjacent intervals. The option ``--merge-distance``
-   permits the merging of segments that are up to a certain distance apart.
-
-2. block: build blocked bed file (bed12 format) from individual blocks.
-
-3. sanitize-genome: remove all empty intervals and intervals on unknown contigs. 
-   Intervals extending beyond a contig a truncated. 
-   
-4. filter-genome: remove all intervals on unknown contigs or extending beyond 
-   contigs.
-
-5. extend: extend the start and end of each interval by a specified distance.
-   Note: currently this method does not check that new interval is outside the confines of the contig
-
-Usage
+Usage 
 -----
 
-Type::
-
-   python bed2bed.py --help
-
-for command line usage.
-
-Methods
--------
+   python bed2bed.py --method=[METHOD] [options]
 
 This script provides several methods:
 
-merge
+merge 
++++++
 
-filter-genome
+Merge together overlapping or adjecent intervals. The basic
+functionality is similar to bedtools merge, but with some additions: 
+* _merging by name_ specifiying the --merge-by-name option will mean
+  that only overlaping (or adjacent intervals) with the same value in
+  the 5th column of the bed will be merged 
 
-bins
-   merge adjacent bins by score. Several merging regimes are possible.
-   equal-base, equal-intervals.
-   This options requires the fifth field of the bed input file to be
-   present.
+.. caution:: Intervals of the same name will only be merged if they 
+   are consequtive in the bed file.
 
+* _Only output merged intervals_ By specifiying the --merge-min-intervals=n
+  options, only those intervals that were created by merging at least n
+  intervals together will be output
 
-Code
-----
+bins 
+++++
+
+Merges together overlapping or adjecent intervals only if they have
+"similar" scores. Score similarity is assessed by creating a number of
+score bins and assigning each interval to a bin. If too adjacent
+intervals are in the same bin, the intervals are merged. Note that in
+contrast to merge-by-name above, two intervals do not need to be
+overlapping or within a certain distance to be merged.
+
+There are several methods to create the bins: 
+* _equal-bases_: Bins
+  are created to that they contain the same number of bases.  Specified
+  by passing "equal-bases" to --binning-method. This is the default.  
+* _equal-intervals_: Score bins are create so that each bin contains the
+  same number of intervals. Specified by passing "equal-intervals" to
+  --binning-method.  
+* _equal-range_: Score bins are created so that
+  each bin covers the same fraction of the total range of
+  scores. Specified by passing "equal-range" to --binning-method.  
+* _bin-edges_: Score binds can be specified by manually passing a comma
+  seperated list of bin edges to --bin-edges.
+
+The number of bins is specified by the --num-bins options, and the
+default is 5.
+
+block 
++++++
+
+Creates blocked bed12 outputs from a bed6, where intervals with the
+same name are merged together to create a single bed12 entry.
+
+.. caution:: NOTE: Input must be sorted so that entries of the same
+name are together.
+
+filter-genome 
++++++++++++++
+
+Removes intervals that are on unknown contigs or extend off the 3' or
+5' end of the contig.  Requires a tab seperated input file to -g which
+lists the contigs in the genome, plus their lengths.
+
+sanitize-genome 
++++++++++++++++
+
+As above, but instead of removing intervals overlapping the ends of
+contigs, truncates them.  Also removes empty intervals.
+
+shift 
++++++
+
+Moves intervals by the specified amount, but will not allow them to be
+shifted off the end of contigs. Thus if a shift will shift the start
+of end of the contig, the interval is only moved as much as is
+possible without doing this.
+
+Command line options
+--------------------
 '''
 
 import sys
@@ -149,7 +189,13 @@ def filterGenome( iterator, contigs ):
         if bed.contig not in contigs: 
             nskipped_contig += 1
             continue
-        if bed.end >= contigs[bed.contig]:
+        #IMS: add filtering for filtering <0 co-ordinates
+        if bed.start < 0 or bed.end < 0:
+            nskipped_range +=1
+            continue
+        # should this not be just >, as co-ordinates are half-closed, so 
+        # if end = contigs[bed.contig], then interval ends on last base?
+        if bed.end > contigs[bed.contig]:
             nskipped_range += 1
             continue
         if bed.end == 0:
@@ -177,7 +223,9 @@ def sanitizeGenome( iterator, contigs ):
         if bed.contig not in contigs: 
             nskipped_contig += 1
             continue
-        if bed.end >= contigs[bed.contig]:
+        #IMS: changing >= to > in if statement: next line sets bed.end = contigs[bed.contig]
+        # this shouldn't count as a truncation.
+        if bed.end > contigs[bed.contig]:
             bed.end = contigs[bed.contig]
             ntruncated_contig += 1
         if bed.start < 0:
@@ -208,7 +256,13 @@ def shiftIntervals( iterator, contigs, offset ):
         if bed.contig not in contigs: 
             nskipped_contig += 1
             continue
-        if bed.end >= contigs[bed.contig]:
+        #IMS: if we skip intervals off the end of the contig we should skipp ones
+        # off the start as well
+        if bed.start < 0 or bed.end < 0:
+            nskipped_range += 1
+            continue
+        #IMS: changing >= to > as bed is half-open
+        if bed.end > contigs[bed.contig]:
             nskipped_range += 1
             continue
         noutput += 1
@@ -238,12 +292,25 @@ def extendInterval(iterator, distance):
     ninput, noutput, nskipped = 0, 0, 0
     for bed in iterator:
         ninput += 1
+
+        if bed.contig not in contigs:
+            nskipped_contig += 1
+            continue
+        if bed.start <0 or bed.end < 0:
+            nskipped_range += 1
+            continue
+        if bed.end > contigs[bed.contig]:
+            nskipped_range += 1
+            continue
+        
         newstart = bed.start - distance
         newend = bed.end + distance
 
         if newstart < 0:
-            nskipped += 1
-            continue
+            newstart = 0
+
+        if newend > contigs[bed.contig]:
+            newend = contigs[bed.contig]
 
         bed.start = newstart
         bed.end = newend
@@ -291,10 +358,7 @@ def main( argv = sys.argv ):
 
     parser.add_option("-b", "--bam-file", dest="bam_file", type="string",
                       help="bam-formatted filename with genome."  )
-    #IMS: new method: extend intervals by set amount
-    parser.add_option("--extend-distance",dest="extend_distance", type="int",
-                      help = "distance by which to extend intervals on either side for method=extend [default=%default]")
-
+   
     parser.set_defaults( methods = [],
                          merge_distance = 0,
                          binning_method = "equal-bases",
@@ -311,6 +375,7 @@ def main( argv = sys.argv ):
 
     contigs = None
 
+    ## Why provide full indexed genome, when a tsv of contig sizes would do? 
     if options.genome_file:
         genome_fasta = IndexedFasta.IndexedFasta( options.genome_file )
         contigs = genome_fasta.getContigSizes()
@@ -333,7 +398,11 @@ def main( argv = sys.argv ):
                                by_name = options.merge_by_name,
                                min_intervals = options.merge_min_intervals )
         elif method == "bins":
-            if options.bin_edges: bin_edges = map(float, options.bin_edges.split(","))
+            if options.bin_edges:
+                bin_edges = map(float, options.bin_edges.split(","))
+                #IMS: check bin edges are valid
+                if not(len(bin_edges) == options.num_bins +1): raise ValueError(
+                    "Number of bin edge must be one more than number of bins")
             else: bin_edges = None
             processor, bin_edges = Bed.binIntervals( processor,
                                                      num_bins = options.num_bins,
@@ -344,10 +413,13 @@ def main( argv = sys.argv ):
         elif method == "block":
             processor = Bed.blocked_iterator( processor )
         elif method == "shift":
+            #IMS: test that contig sizes are availible
+            if not contigs: raise ValueError("please supply genome file")
             processor = shiftIntervals( processor, contigs, offset=options.offset )
         #IMS: new method: extend intervals by set amount
         elif method == "extend":
-            processor = extendInterval( processor, options.extend_distance )
+            if not contigs: raise ValueError("please supply genome file")
+            processor = extendInterval( processor, contigs, options.offset )
             
     noutput = 0
     for bed in processor:
