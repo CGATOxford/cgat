@@ -133,6 +133,8 @@ metrics output are:
 +-------------------------+----------------------------------------+
 |pairs_total              |total number of pairs in input data     |
 +-------------------------+----------------------------------------+
+|pairs_mapped             |pairs in which both reads map           |
++-------------------------+----------------------------------------+
 |pairs_unmapped           |pairs in which neither read maps        |
 +-------------------------+----------------------------------------+
 |pairs_proper_unique      |pairs which are proper and map uniquely.|
@@ -402,8 +404,11 @@ def main( argv = None ):
     # output paired end data 
     if flags_counts["read2"] > 0:
         if options.filename_fastq:
+            pairs_mapped = counter.total_pairs - counter.total_pair_is_unmapped
             outs.write( "pairs_total\t%i\t%5.2f\tpairs_total\n" % \
                             (counter.total_pairs, 100.0 * counter.total_pairs / counter.total_pairs ) )
+            outs.write( "pairs_mapped\t%i\t%5.2f\tpairs_total\n" % \
+                            (pairs_mapped, 100.0 * pairs_mapped / counter.total_pairs))
             outs.write( "pairs_unmapped\t%i\t%5.2f\tpairs_total\n" % \
                             ( counter.total_pair_is_unmapped, 100.0 * counter.total_pair_is_unmapped / counter.total_pairs ) )
             outs.write( "pairs_proper_unique\t%i\t%5.2f\tpairs_total\n" % \
@@ -422,8 +427,10 @@ def main( argv = None ):
             # approximate counts
             pairs_total = nreads_total // 2
             pairs_mapped = flags_counts["proper_pair"] // 2
-            outs.write( "pairs_total\t%i\t%5.2f\tpairs_total\n" % (pairs_total, 100.0))
-            outs.write( "pairs_mapped\t%i\t%5.2f\tpairs_total\n" % (pairs_mapped, 100.0 * pairs_mapped / pairs_total))
+            outs.write( "pairs_total\t%i\t%5.2f\tpairs_total\n" % \
+                            (pairs_total, 100.0))
+            outs.write( "pairs_mapped\t%i\t%5.2f\tpairs_total\n" % \
+                            (pairs_mapped, 100.0 * pairs_mapped / pairs_total))
     else:
         pairs_total = pairs_mapped = 0
         outs.write( "pairs_total\t%i\t%5.2f\tpairs_total\n" % (pairs_total,0.0))

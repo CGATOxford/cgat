@@ -327,69 +327,54 @@ def prepareTags( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
+@follows( mkdir( "background.dir" ))
+@transform( "*input*.bw",
+            regex("(.*).bw"),
+            r"background.dir/\1.bed.gz" )
+def buildBackgroundWindows( infile, outfile ):
+    '''compute regions with high background count in input 
+    '''
+    
+    statement = '''
+    python %(scriptsdir)s/wig2bed.py 
+             --bigwig-file=%(infile)s 
+             --genome-file=%(genome_dir)s/%(genome)s
+             --threshold=%(windows_background_density)f
+             --method=threshold
+             --log=%(outfile)s.log
+    | bgzip
+    > %(outfile)s
+    '''
+
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@merge( buildBackgroundWindows, "background.dir/merged.bed.gz" )
+def mergeBackgroundWindows( infiles, outfile ):
+    '''build a single bed file of regions with elevated background.'''
+
+    infiles = " ".join(infiles)
+    genomefile = os.path.join( PARAMS["annotations_dir"], PARAMS_ANNOTATIONS['interface_contigs'])
+    statement = '''
+    zcat %(infiles)s 
+    | bedtools slop -i stdin -b %(windows_background_extension)i -g %(genomefile)s
+    | mergeBed 
+    | bgzip
+    > %(outfile)s
+    '''
+    
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
 @merge( prepareTags, "picard_duplicates.load" )
 def loadPicardDuplicateStats( infiles, outfile ):
     '''Merge Picard duplicate stats into single table and load into SQLite.
     '''
     PipelineMappingQC.loadPicardDuplicateStats( infiles, outfile )
-
-#########################################################################
-#########################################################################
-#########################################################################
-## Methylation analysis
-@transform( prepareTags, suffix(".bam"), ".medips")
-def runMEDIPS( infile, outfile ):
-    '''run MEDIPS analysis - 
-    outputs methylation profiles.
-    '''
-
-    to_cluster = True
-
-    job_options = "-l mem_free=23G"
-
-    statement = '''
-    zcat %(infile)s 
-    | python %(scriptsdir)s/WrapperMEDIPS.py
-         --ucsc-genome=%(genome)s
-         --genome-file=%(genome_dir)s/%(genome)s
-         --bigwig
-         --input-format=bed 
-         --extension=%(medips_extension)i
-         --fragment-length=%(medips_fragment_length)i
-         --force
-         --bin-size=%(medips_bin_size)i
-         --output-filename-pattern="%(outfile)s_%%s"
-         -
-    >& %(outfile)s
-    '''
-
-    P.run()
-
-#########################################################################
-#########################################################################
-#########################################################################
-@transform( runMEDIPS, suffix(".medips"), "_medips.load")
-def loadMEDIPS( infile, outfile ):
-    '''load medips results'''
-
-    table_prefix = re.sub( "_prep", "", P.toTable( outfile ))
-    
-    table = table_prefix + "_coveredpos" 
-
-    statement = """
-    cat %(infile)s_saturation_coveredpos.csv
-    | tail -n 3 
-    | perl -p -e 's/\\"//g; s/[,;]/\\t/g; '
-    | python %(scriptsdir)s/table2table.py --transpose
-    | python %(scriptsdir)s/csv2db.py 
-           %(csv2db_options)s
-           --table=%(table)s
-           --replace-header
-           --header=coverage,ncovered,pcovered
-    >> %(outfile)s
-    """
-    
-    P.run()
 
 #########################################################################
 #########################################################################
@@ -456,12 +441,13 @@ def loadCpGCoverage( infiles, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@follows( buildCoverageBed )
-@files( (( None, "windows.bed.gz"),) )
-def buildWindows( infile, outfile ):
+@merge( (buildCoverageBed, buildBackgroundWindows), "windows.bed.gz")
+def buildWindows( infiles, outfile ):
     '''build tiling windows according to parameter tiling_method.'''
     
     tiling_method = PARAMS["tiling_method"]
+
+    coverage_bed, background_bed = infiles
 
     to_cluster = True
     
@@ -476,20 +462,15 @@ def buildWindows( infile, outfile ):
               --method=merge
               --merge-distance=0
               --log=%(outfile)s.log
-        | awk '$1 !~ /%(tiling_remove_contigs)s/'
-        | gzip
-        > %(outfile)s
         '''
+
     elif tiling_method == "fixed_width_nooverlap":
         
         statement = '''python %(scriptsdir)s/genome_bed.py
                       -g %(genome_dir)s/%(genome)s
                       --window=%(tiling_nonoverlapping_window)i
                       --shift=%(tiling_window_size)i
-                      --log=%(outfile)s.log
-                | awk '$1 !~ /%(tiling_remove_contigs)s/'
-                | gzip
-                > %(outfile)s'''
+                      --log=%(outfile)s.log'''
         
     elif tiling_method == "fixed_width_nooverlap":
 
@@ -500,10 +481,14 @@ def buildWindows( infile, outfile ):
                       -g %(genome_dir)s/%(genome)s
                       --window=%(tiling_window_size)i
                       --shift=%(shift)i
-                      --log=%(outfile)s.log
-                | awk '$1 !~ /%(tiling_remove_contigs)s/'
-                | gzip
-                > %(outfile)s'''
+                      --log=%(outfile)s.log'''
+
+    statement += '''
+        | awk '$1 !~ /%(tiling_remove_contigs)s/'
+        | bedtools intersect -v -wa -a stdin -b %(background_bed)s
+        | gzip
+        > %(outfile)s
+    '''
 
     P.run()
 
@@ -665,6 +650,65 @@ def summarizeWindowsReadCounts( infile, outfile ):
 #########################################################################
 def loadWindowSummary( infile, outfile ):
     pass
+
+#########################################################################
+#########################################################################
+#########################################################################
+## Methylation analysis
+@transform( prepareTags, suffix(".bam"), ".medips")
+def runMEDIPS( infile, outfile ):
+    '''run MEDIPS analysis - 
+    outputs methylation profiles.
+    '''
+
+    to_cluster = True
+
+    job_options = "-l mem_free=23G"
+
+    statement = '''
+    zcat %(infile)s 
+    | python %(scriptsdir)s/WrapperMEDIPS.py
+         --ucsc-genome=%(genome)s
+         --genome-file=%(genome_dir)s/%(genome)s
+         --bigwig
+         --input-format=bed 
+         --extension=%(medips_extension)i
+         --fragment-length=%(medips_fragment_length)i
+         --force
+         --bin-size=%(medips_bin_size)i
+         --output-filename-pattern="%(outfile)s_%%s"
+         -
+    >& %(outfile)s
+    '''
+
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( runMEDIPS, suffix(".medips"), "_medips.load")
+def loadMEDIPS( infile, outfile ):
+    '''load medips results'''
+
+    table_prefix = re.sub( "_prep", "", P.toTable( outfile ))
+    
+    table = table_prefix + "_coveredpos" 
+
+    statement = """
+    cat %(infile)s_saturation_coveredpos.csv
+    | tail -n 3 
+    | perl -p -e 's/\\"//g; s/[,;]/\\t/g; '
+    | python %(scriptsdir)s/table2table.py --transpose
+    | python %(scriptsdir)s/csv2db.py 
+           %(csv2db_options)s
+           --table=%(table)s
+           --replace-header
+           --header=coverage,ncovered,pcovered
+    >> %(outfile)s
+    """
+    
+    P.run()
+
 
 #########################################################################
 def loadMethylationData( infile, design_file ):

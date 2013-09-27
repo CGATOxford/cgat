@@ -21,13 +21,13 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 """
-chain2psl.py - convert a chain file to a psl file
+diff_chains.py - compare to chain formatted files
 =================================================
 
 :Author: Andreas Heger
-:Release: $Id: chain2psl.py 2899 2010-04-13 14:37:37Z andreas $
+:Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Genomics GenomeAlignment
 
 Purpose
 -------
@@ -35,17 +35,54 @@ Purpose
 compare two `chain <http://www.breyer.com/ucsc/htdocs/goldenPath/help/chain.html>`_ 
 formatted files.
 
+Outputs a table with the following columns:
+
++-----------+-------------------------------+
+|*Column*   |*Content*                      |
++-----------+-------------------------------+
+|contig1    |contig name                    |
++-----------+-------------------------------+
+|contig2    |contig name                    |
++-----------+-------------------------------+
+|strand     |strand                         |
++-----------+-------------------------------+
+|mapped1    |mapped residues                |
++-----------+-------------------------------+
+|identical1 |identically mapped residues    |
++-----------+-------------------------------+
+|different1 |differently mapped residues    |
++-----------+-------------------------------+
+|unique1    |residues mapped only from set1 |
++-----------+-------------------------------+
+|pmapped1   |percentage of mapped residues  |
++-----------+-------------------------------+
+|pidentical1|percentage of identically      |
+|           |mapped residues                |
++-----------+-------------------------------+
+|pdifferent1|percentage of differently      |
+|           |mapped residues                |
++-----------+-------------------------------+
+
+Similar columns exist for data set 2
+
 Usage
 -----
 
 Type::
 
-   python <script_name>.py --help
+   python diff_chains.py hg19ToMm10v1.chain.over.gz hg19ToMm10v2.chain.over.gz
+
+This will compare the locations that regions within the genome hg19 map to between
+two different mappings to the genome mm10.
+
+Type::
+
+   python diff_chains.py --help
 
 for command line help.
 
-Code
-----
+Command line options
+--------------------
 
 """ 
 
@@ -232,7 +269,6 @@ DiffResult = collections.namedtuple( "DiffResult","total same different unique")
 def compareChains( pairs1, pairs2 ):
     '''compare chains in pairs1 versus those in pairs2'''
     
-
     result = {}
     for key1, chain1 in pairs1.iteritems():
         E.debug( "comparing %s" % str(key1) )

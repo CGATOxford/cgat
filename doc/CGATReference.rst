@@ -5,8 +5,8 @@ Tool reference
 This page summarizes prominent tools within the CGAT Code
 collection. The tools are grouped losely by functionality.
 
-Genomic intervals
-=================
+Genomic intervals/features
+==========================
 
 :doc:`scripts/beds2counts`
     Compute overlap statistics of multiple :term:`bed` files.
@@ -45,6 +45,29 @@ Genomic intervals
     Compare multiple sets of interval data sets. The tools computes
     all-vs-all pairwise overlap summaries. Permits incremental updates
     of similarity table.
+
+:doc:`scripts/gff2bed`
+    Convert between formats
+
+:doc:`scripts/split_gff`
+    Split a file in gff format into smaller files. The script ensures
+    that overlapping intervals remain in the same file.
+
+:doc:`scripts/gff2coverage`
+
+
+:doc:`scripts/gff2fasta`
+    Output genomic sequences from intervals.
+
+:doc:`scripts/gff2histogram`
+    Compute distributions of interval sizes, intersegmental distances
+    and interval ovelap from list of intervals.
+
+:doc:`scripts/gff2stats`
+    Summarize features within a :term:`gff` formatted file.	
+
+:doc:`scripts/gff2psl`
+    Convert between formats.
 
 Gene sets
 =========
@@ -105,12 +128,9 @@ Sequence data
     Segment sequences based on G+C content, gaps, ...
 
 :doc:`scripts/fastas2fasta`
-
+    Concatentate sequences from multiple files.
 
 :doc:`scripts/fasta2variants`
-
-
-
 
 
 NGS data
@@ -159,12 +179,6 @@ NGS data
 
 :doc:`scripts/fastqs2fastq`
 
-
-
-
-
-:doc:`scripts/rnaseq_bams2bam`
-
 :doc:`scripts/rnaseq_junction_bam2bam`
 
 :doc:`scripts/diff_bam`
@@ -179,30 +193,22 @@ Unsorted
 :doc:`scripts/bam2UniquePairs`
 
 :doc:`scripts/diff_chains`
-
-:doc:`scripts/gff2bed`
-
-:doc:`scripts/split_gff`
-
-:doc:`scripts/gff2coverage`
-
-:doc:`scripts/gff2fasta`
-
-:doc:`scripts/gff2histogram`
-
-:doc:`scripts/gff2plot`
-
-:doc:`scripts/gff2psl`
-
-:doc:`scripts/gff2stats`
-
-:doc:`scripts/gff2table`
+     Compare two UCSC liftover chain files.
 
 :doc:`scripts/go2plot`
 
 :doc:`scripts/go2svg`
 
-:doc:`scripts/softmask`
-
 :doc:`scripts/vcf2vcf`
+
+
+Unpublished
+===========
+
+:doc:`scripts/bams2bam`
+     Reconcile genomic reads with reads mapped against a transcriptome.
+
+:doc:`scripts/gff2table`
+    Output annotations for intervals
+
 

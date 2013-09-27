@@ -255,6 +255,7 @@ documenting scripts. In addition, please pay attention to the following:
   * Genomics
   * NGS
   * MultipleAlignment
+  * GenomeAlignment
   * Intervals
   * Genesets
   * Sequences

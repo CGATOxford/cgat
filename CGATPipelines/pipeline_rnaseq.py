@@ -1389,7 +1389,7 @@ def buildBAMs( infiles, outfile):
         os.remove( "%(outfile)s.log" % locals() )
 
     statement = ''' 
-      python %(scriptsdir)s/rnaseq_bams2bam.py 
+      python %(scriptsdir)s/bams2bam.py 
        --force
        --filename-gtf=%(reffile)s
        --filename-mismapped=%(outfile_mismapped)s

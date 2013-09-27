@@ -50,12 +50,12 @@ Usage
 If you have two sorted :term:`sam` or :term:`bam` formatted
 files, type::
 
-   python rnaseq_bams_vs_bams.py a.bam b.bam > out
+   python diff_bam.py a.bam b.bam > out
 
 If they are not sorted, you can use samtools sort to do an
 inplace sort::
 
-   python rnaseq_bams_vs_bams.py <( samtools view -h a.bam | hsort 0 -k1,1) 
+   python diff_bam.py <( samtools view -h a.bam | hsort 0 -k1,1) 
                   <( samtools view -h b.bam | hsort 0 -k1,1) 
 
 The ``-h`` option outputs the header, and the hsort command sorts without 
@@ -63,7 +63,7 @@ disturbing the header.
 
 Type::
 
-   python rnaseq_bams_vs_bams.py --help
+   python diff_bam.py --help
 
 for command line help.
 

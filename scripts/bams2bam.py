@@ -21,13 +21,13 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-rnaseq_bams2bam.py - merge genomic and transcriptome mapped bamfiles
+bams2bam.py - merge genomic and transcriptome mapped bamfiles
 ====================================================================
 
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Genomics NGS Geneset
 
 Purpose
 -------
@@ -56,11 +56,11 @@ Usage
 
 Example::
 
-   python cgat_script_template.py bamT.bam bamG.bam
+   python bams2bam.py bamT.bam bamG.bam
 
 Type::
 
-   python cgat_script_template.py --help
+   python bams2bam.py --help
 
 for command line help.
 
@@ -73,8 +73,8 @@ an index of reads mapping
 This script requires the NM attributes to be set. If it is not 
 set, you will need to set a policy.
 
-Code
-----
+Command line options
+--------------------
 
 '''
 
@@ -94,9 +94,9 @@ import CGAT.IndexedGenome as IndexedGenome
 try:
     import pyximport
     pyximport.install(build_in_temp=False)
-    import _rnaseq_bams2bam
+    import _bams2bam
 except ImportError:
-    import CGAT._rnaseq_bams2bam as _rnaseq_bams2bam
+    import CGAT._bams2bam as _bams2bam
 
 def main( argv = None ):
     """script main.
@@ -238,19 +238,19 @@ def main( argv = None ):
     else:
         junctions_samfile = None
 
-    c = _rnaseq_bams2bam.filter( genome_samfile, 
-                                 output_samfile, 
-                                 output_mismapped,
-                                 transcripts_samfile,
-                                 junctions_samfile,
-                                 transcripts,
-                                 regions = regions_to_remove,
-                                 unique = options.unique,
-                                 remove_contigs = options.remove_contigs,
-                                 colour_mismatches = options.colour_mismatches,
-                                 ignore_mismatches = options.ignore_mismatches,
-                                 ignore_transcripts = transcripts_samfile == None,
-                                 ignore_junctions = junctions_samfile == None)
+    c = _bams2bam.filter( genome_samfile, 
+                          output_samfile, 
+                          output_mismapped,
+                          transcripts_samfile,
+                          junctions_samfile,
+                          transcripts,
+                          regions = regions_to_remove,
+                          unique = options.unique,
+                          remove_contigs = options.remove_contigs,
+                          colour_mismatches = options.colour_mismatches,
+                          ignore_mismatches = options.ignore_mismatches,
+                          ignore_transcripts = transcripts_samfile == None,
+                          ignore_junctions = junctions_samfile == None)
 
     if options.filename_stats:
         outf = IOTools.openFile( options.filename_stats, "w" )

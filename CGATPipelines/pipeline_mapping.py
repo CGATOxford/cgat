@@ -1634,6 +1634,8 @@ def buildBigWig( infile, outfile ):
     '''build wiggle files from bam files.'''
     to_cluster = True
 
+    job_options = "-l mem_free=4G"
+
     statement = '''python %(scriptsdir)s/bam2wiggle.py 
                          --output-format=bigwig 
                          %(bigwig_options)s

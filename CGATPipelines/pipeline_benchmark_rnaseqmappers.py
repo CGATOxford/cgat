@@ -606,7 +606,7 @@ def mapReadsWithBowtieAgainstTranscriptome( infiles, outfile ):
     '''
 
     # Mapping will permit up to one mismatches. This is sufficient
-    # as the downstream filter in rnaseq_bams2bam requires the
+    # as the downstream filter in bams2bam requires the
     # number of mismatches less than the genomic number of mismatches.
     # Change this, if the number of permitted mismatches for the genome
     # increases.
@@ -689,7 +689,7 @@ def checkMappedReadsAgainstTranscriptome( infiles, outfile):
     # * not all have CM (tophat does not). 
 
     statement = '''
-    python %(scriptsdir)s/rnaseq_bams2bam.py 
+    python %(scriptsdir)s/bams2bam.py 
        --force
        --filename-gtf=%(reffile)s
        --filename-mismapped=%(outfile_mismapped)s
