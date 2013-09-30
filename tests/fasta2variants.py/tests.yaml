@@ -4,3 +4,15 @@ version:
     outputs: [stdout]
     references: []
     options: --version
+
+basic_test:
+    outputs: [stdout]
+    stdin: small_genome.fasta 
+    references: [test_basic.tsv]
+    options:
+
+cds_test:
+    outputs: [stdout]
+    stdin: CCDS_nucleotide.short.fna 
+    references: [test_cds.tsv]
+    options: -c
