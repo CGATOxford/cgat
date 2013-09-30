@@ -1,0 +1,2 @@
+restrict:
+        regex: fasta2variants.py

@@ -14,5 +14,5 @@ basic_test:
 cds_test:
     outputs: [stdout]
     stdin: CCDS_nucleotide.short.fna 
-    references: [test_cds.tsv]
+    references: [test_cds.tsv.gz]
     options: -c
