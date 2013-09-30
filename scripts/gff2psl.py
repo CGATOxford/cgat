@@ -27,7 +27,7 @@ gff2psl.py - convert from gff to psl
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Genomics Intervals
 
 Purpose
 -------
@@ -40,20 +40,16 @@ Usage
 
 Example::
 
-   python <script_name>.py --help
+   python gff2psl.py < in.gff > out.psl
 
 Type::
 
-   python <script_name>.py --help
+   python gff2psl.py --help
 
 for command line help.
 
-Documentation
--------------
-
-Code
-----
-
+Command line options
+--------------------
 '''
 
 import sys
@@ -112,7 +108,8 @@ if __name__ == '__main__':
     ninput, noutput, nskipped = 0, 0, 0
 
     if options.is_gtf:
-        iterator = GTF.transcript_iterator( GTF.iterator_filtered( GTF.iterator( sys.stdin ), feature="exon" ), 
+        iterator = GTF.transcript_iterator( GTF.iterator_filtered( GTF.iterator( sys.stdin ), 
+                                                                   feature="exon" ), 
                                             strict = not options.allow_duplicates )
     else:
         iterator = GTF.joined_iterator( GTF.iterator(sys.stdin) )

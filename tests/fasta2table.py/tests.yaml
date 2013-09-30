@@ -1,6 +1,19 @@
+version:
+    stdin: null
+    outputs: [stdout]
+    references: []
+    options: --version
 
 cpg_test:
     stdin: test.fasta
     outputs: [stdout]
     references: [test_reference_cpg.tsv]
-    options: -s cpg --log=test_cpg.log
+    options: --section=cpg 
+
+gaps_test:
+    stdin: hg19.chr19.fasta
+    outputs: [stdout]
+    references: [gaps.tsv]
+    options: --section=gaps
+
+

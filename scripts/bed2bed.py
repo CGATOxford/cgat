@@ -27,9 +27,6 @@ Usage
 
    python bed2bed.py --method=[METHOD] [options]
 
-Methods
--------
-
 This script provides several methods:
 
 merge 
@@ -104,7 +101,8 @@ shifted off the end of contigs. Thus if a shift will shift the start
 of end of the contig, the interval is only moved as much as is
 possible without doing this.
 
-
+Command line options
+--------------------
 '''
 
 import sys

@@ -606,7 +606,7 @@ def mapReadsWithBowtieAgainstTranscriptome( infiles, outfile ):
     '''
 
     # Mapping will permit up to one mismatches. This is sufficient
-    # as the downstream filter in rnaseq_bams2bam requires the
+    # as the downstream filter in bams2bam requires the
     # number of mismatches less than the genomic number of mismatches.
     # Change this, if the number of permitted mismatches for the genome
     # increases.
@@ -689,7 +689,7 @@ def checkMappedReadsAgainstTranscriptome( infiles, outfile):
     # * not all have CM (tophat does not). 
 
     statement = '''
-    python %(scriptsdir)s/rnaseq_bams2bam.py 
+    python %(scriptsdir)s/bams2bam.py 
        --force
        --filename-gtf=%(reffile)s
        --filename-mismapped=%(outfile_mismapped)s
@@ -1086,7 +1086,7 @@ def buildExonValidation( infiles, outfile ):
     to_cluster = USECLUSTER
     infile, exons = infiles
     statement = '''cat %(infile)s
-    | python %(scriptsdir)s/rnaseq_bam_vs_exons.py
+    | python %(scriptsdir)s/bam_vs_gtf.py
          --filename-exons=%(exons)s
          --force
          --log=%(outfile)s.log
@@ -1133,7 +1133,7 @@ def buildReadCorrespondence( infiles, outfile ):
     sorters = " ".join([ "<( samtools view -h %s | %s/hsort 0 )" % (x, PARAMS["scriptsdir"]) for x in infiles ] )
 
     statement = '''
-    python %(scriptsdir)s/rnaseq_bams_vs_bams.py
+    python %(scriptsdir)s/diff_bam.py
          --headers=%(headers)s
          --log=%(outfile)s.log
        %(sorters)s

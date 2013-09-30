@@ -1389,7 +1389,7 @@ def buildBAMs( infiles, outfile):
         os.remove( "%(outfile)s.log" % locals() )
 
     statement = ''' 
-      python %(scriptsdir)s/rnaseq_bams2bam.py 
+      python %(scriptsdir)s/bams2bam.py 
        --force
        --filename-gtf=%(reffile)s
        --filename-mismapped=%(outfile_mismapped)s
@@ -1723,7 +1723,7 @@ def buildContextStats( infiles, outfile ):
 
     to_cluster = USECLUSTER
     statement = '''
-       python %(scriptsdir)s/rnaseq_bam_vs_bed.py
+       python %(scriptsdir)s/bam_vs_bed.py
               --min-overlap=%(min_overlap)f
               --log=%(outfile)s.log
               %(infile)s %(reffile)s
@@ -3296,7 +3296,7 @@ def buildExonValidation( infiles, outfile ):
     to_cluster = USECLUSTER
     infile, exons = infiles
     statement = '''cat %(infile)s
-    | python %(scriptsdir)s/rnaseq_bam_vs_exons.py
+    | python %(scriptsdir)s/bam_vs_gtf.py
          --filename-exons=%(exons)s
          --force
          --log=%(outfile)s.log

@@ -46,7 +46,7 @@ from Cython.Distutils import build_ext
 ###############################################################
 ###############################################################
 # Perform a CGAT Code Collection Installation
-INSTALL_CGAT = True
+INSTALL_CGAT_CODE_COLLECTION = True
 
 major, minor1, minor2, s, tmp = sys.version_info
 
@@ -90,12 +90,17 @@ shared_dependencies = [
     'sphinxcontrib-programoutput>=0.8',
     'alignlib>=0.1']
 
-cgat_packages= find_packages( exclude=["CGATPipelines*", "scripts*"])
+if INSTALL_CGAT_CODE_COLLECTION:
+    cgat_packages= find_packages( exclude=["CGATPipelines*", "scripts*"])
+else:
+    cgat_packages= find_packages( exclude=["scripts*"])
+
 # rename scripts to CGATScripts
 cgat_packages.append( "CGATScripts" )
 
 cgat_package_dirs = { 'CGAT': 'CGAT',
-                      'CGATScripts' : 'scripts' }
+                      'CGATScripts' : 'scripts',
+                      'CGATPipelines': 'CGATPipelines' }
 
 classifiers="""
 Development Status :: 3 - Alpha

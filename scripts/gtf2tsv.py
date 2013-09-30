@@ -27,7 +27,7 @@ gtf2tsv.py - convert gtf file to a tab-separated table
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Genomics Genesets
 
 Purpose
 -------

@@ -10,7 +10,7 @@ class MappingStatus( Status ):
         d = self.get( "SELECT DISTINCT track FROM view_mapping" )
         return tuple( [x[0] for x in d ] )
 
-    slices = ("Mapping", "RepetetiveRNA", "SplicedAlignments" )
+    slices = ("Mapping", "PairMapping", "RepetetiveRNA", "SplicedAlignments" )
     
     def testMapping( self, track ):
         '''proportion of reads mapped.

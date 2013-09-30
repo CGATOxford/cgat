@@ -248,6 +248,19 @@ documenting scripts. In addition, please pay attention to the following:
 * Be verbose. Something that is not documented within a script
   will not be used.
 
+* Add meaningful tags to your scripts (``:Tags:``) so that they can be grouped into
+  categories. Please choose from the following controlled
+  vocabulary. If needed, additional terms can be added to this list.
+
+  * Genomics
+  * NGS
+  * MultipleAlignment
+  * GenomeAlignment
+  * Intervals
+  * Genesets
+  * Sequences
+  * Statistics
+  * Summary
 
 
 
