@@ -291,6 +291,7 @@ def loadPicardMetrics( infiles, outfile, suffix, pipeline_suffix = ".picard_stat
 
     tmpfilename = outf.name
 
+    to_cluster = False
     statement = '''cat %(tmpfilename)s
                 | python %(scriptsdir)s/csv2db.py
                       --index=track
