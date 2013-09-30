@@ -57,7 +57,7 @@ for command line help.
 
 Documentation
 -------------
-Compressed (.gz) and various fasta format files (.fasta, .fna) are accepted. An input file is required (-I). If the -c option is specified and the file is not a CDS sequence the script will throw an error ('length of sequence '<input_file>' is not a multiple of 3').
+Compressed (.gz) and various fasta format files (.fasta, .fna) are accepted. If the -c option is specified and the file is not a CDS sequence the script will throw an error ('length of sequence '<input_file>' is not a multiple of 3').
 
 Code
 ----
