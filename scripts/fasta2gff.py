@@ -129,6 +129,7 @@ def main():
     for x in range( options.sample_size):
 
         entry.contig, entry.strand, entry.start, entry.end = fasta.getRandomCoordinates( options.fragment_size )
+
         if entry.strand == "-":
             l = contigs[entry.contig]
             entry.start, entry.end = l-entry.end, l-entry.start

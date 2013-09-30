@@ -52,6 +52,10 @@ for a definition of the field contents.
 
    Percentage quantities
 
+The following plots show the distribution of quality scores. Note that
+if the bam-files have been stripped of sequence and quality
+information the plots below will contain meaningless values.
+
 .. report:: Mapping.AlignmentQualityByCycle
    :render: line-plot
    :as-lines:
@@ -65,7 +69,6 @@ for a definition of the field contents.
    :yrange: 0,
 
    quality score distribution
-
 
 Coverages
 =========

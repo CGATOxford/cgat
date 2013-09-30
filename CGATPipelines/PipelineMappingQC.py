@@ -148,14 +148,11 @@ def buildPicardAlignmentStats( infile, outfile, genome_file ):
         P.touch( outfile )
         return
 
-    # Whether or not to remove reads without quality information.
-    # Reads without quality information might cause Picard to fail.
-    # The default is to remove.
-    remove_seqs_without_quality = True
-
-    if remove_seqs_without_quality:
-        statement = '''samtools view -h %(infile)s 
-                       | awk '$11 != "*"' 
+    # Picard seems to have problem if quality information is missing
+    # or there is no sequence/quality information within the bam file.
+    # Thus, add it explicitely.
+    statement = '''cat %(infile)s 
+                       | python %(scriptsdir)s/bam2bam.py -v 0 --set-sequence --sam 
                        | CollectMultipleMetrics 
                                        INPUT=/dev/stdin 
                                        REFERENCE_SEQUENCE=%(genome_file)s
@@ -163,15 +160,6 @@ def buildPicardAlignmentStats( infile, outfile, genome_file ):
                                        OUTPUT=%(outfile)s 
                                        VALIDATION_STRINGENCY=SILENT 
                        >& %(outfile)s'''
-
-    else:
-        statement = '''CollectMultipleMetrics 
-                                       INPUT=%(infile)s 
-                                       REFERENCE_SEQUENCE=%(genome_file)s
-                                       ASSUME_SORTED=true 
-                                       OUTPUT=%(outfile)s 
-                                       VALIDATION_STRINGENCY=SILENT 
-                   >& %(outfile)s'''
 
     P.run()
 

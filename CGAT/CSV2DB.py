@@ -477,21 +477,7 @@ def run( infile, options ):
     
     E.info("ninput=%i, noutput=%i, nskipped_columns=%i" % (ninput, noutput, len(ignored)) )
 
-    #IMS: retry commit if locked
-
-    i=20
-    while i>0:
-        try:
-            dbhandle.commit()
-        except error, msg:
-            E.warn("table creation failed: msg=%s, statement=\n  %s" % (msg, statement ) )
-            if not options.retry:
-                raise error, msg
-            if not re.search("locked", str(msg)):
-                raise error( "%s: %s" % (msg, statement))
-            time.sleep(5)
-            continue
-        break
+    dbhandle.commit()
 
 def buildParser( ):
 
