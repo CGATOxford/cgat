@@ -4,3 +4,17 @@ version:
     outputs: [stdout]
     references: []
     options: --version
+    
+convert_gtf:
+    stdin: mm9_ens67_geneset_100.gtf
+    outputs: [stdout]
+    references: [mm9_ens67_geneset_100.bed]
+    options: --is-gtf --name=gene_id
+
+convert_gtf_feature:
+    stdin: mm9_ens67_geneset_100.gtf
+    outputs: [stdout]
+    references: [mm9_ens67_geneset_100_feature.bed]
+    options: --is-gtf --name=gene_id --track=feature
+    
+    

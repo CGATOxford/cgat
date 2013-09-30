@@ -6,7 +6,13 @@ version:
     options: --version
 
 translate:
-        stdin: in.fasta
-        outputs: [stdout]
-        references: [trans.fasta]
-        options: --method=translate
+    stdin: in.fasta
+    outputs: [stdout]
+    references: [trans.fasta]
+    options: --method=translate
+
+softmask:
+    stdin: unmasked.fasta
+    outputs: [stdout]
+    references: [softmasked.fasta]
+    options: --method=mask-soft --p=<DIR>/hardmasked.fasta
