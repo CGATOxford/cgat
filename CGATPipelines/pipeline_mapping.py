@@ -1244,22 +1244,6 @@ def loadPicardDuplicationStats( infiles, outfile ):
     #separate load function while testing
     PipelineMappingQC.loadPicardDuplicationStats( infiles, outfile )
 
-############################################################
-############################################################
-############################################################
-@transform( MAPPINGTARGETS,
-            suffix(".bam"),
-            ".mapped" )
-def buildMappedReads( infiles, outfile ):
-    '''output a list of mapped reads.
-
-    This is an optional target.
-    '''
-    
-    
-
-
-     
 # ############################################################
 # ############################################################
 # ############################################################
@@ -1634,7 +1618,8 @@ def buildBigWig( infile, outfile ):
     '''build wiggle files from bam files.'''
     to_cluster = True
 
-    job_options = "-l mem_free=4G"
+    # wigToBigWig observed to use 16G
+    job_options = "-l mem_free=16G"
 
     statement = '''python %(scriptsdir)s/bam2wiggle.py 
                          --output-format=bigwig 

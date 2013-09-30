@@ -184,22 +184,25 @@ NGS data
 :doc:`scripts/diff_bam`
     Perform read-by-read comparison of two bam-files.
 
-Unsorted
-=========
+Variants
+========
 
-:doc:`scripts/fasta2gff`
-    Remove?
+:doc:`scripts/vcf2vcf`
 
-:doc:`scripts/bam2UniquePairs`
+Genomics
+========
 
 :doc:`scripts/diff_chains`
      Compare two UCSC liftover chain files.
 
+Unsorted
+=========
+
+:doc:`scripts/bam2UniquePairs`
+
 :doc:`scripts/go2plot`
 
 :doc:`scripts/go2svg`
-
-:doc:`scripts/vcf2vcf`
 
 
 Unpublished

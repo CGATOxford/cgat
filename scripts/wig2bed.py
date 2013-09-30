@@ -66,6 +66,16 @@ import CGAT.IOTools as IOTools
 import bx
 import bx.bbi.bigwig_file
 
+# block iterator for bigwig data
+def block_iterator( infile, contig, size, chunk_size = 10000000 ):
+    
+    for x in range( 0, size, chunk_size ):
+        iterator = infile.get( contig, x, x+chunk_size )
+        if iterator == None: 
+            raise StopIteration
+        for v in iterator:
+            yield v
+
 def applyThreshold( infile, fasta, threshold, max_distance = 0 ):
     '''apply threshold to a wig file writing a
     bed-formatted file as output.'''
@@ -76,16 +86,10 @@ def applyThreshold( infile, fasta, threshold, max_distance = 0 ):
         c.contigs += 1
 
         E.debug( "processing %s" % contig )
-        
-        iterator = infile.get( contig, 0, size )
-        if iterator == None: 
-            c.skipped += 1
-            E.warn( "skipping %s" % contig )
-            continue
 
         last_start, last_end = -1, 0
 
-        for start, end, value in iterator:
+        for start, end, value in block_iterator( infile, contig, size ):
             d = start - last_end
             if (d > 0 or value < threshold): 
                 if last_start >= 0:
