@@ -21,11 +21,13 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 """
+bam2bed.py - convert bam formatted file to bed formatted file
+=============================================================
 
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Genomics NGS Intervals
 
 Purpose
 -------
@@ -58,7 +60,6 @@ For example::
    samtools view example.bam
 
    READ1     163     1       13040   15      76M     =       13183   219     ...
-   READ2     99      1       13120   0       76M     =       13207   163     ...
    READ1     83      1       13183   7       76M     =       13040   -219    ...
    READ2     147     1       13207   0       76M     =       13120   -163    ...
 
@@ -103,8 +104,8 @@ To merge paired-end reads and output fragment interval ie. leftmost mapped base 
    1       13119   13282   READ2     0       +
    1       13039   13258   READ1     7       +
    
-Code
-----
+Command line options
+--------------------
 
 """ 
 

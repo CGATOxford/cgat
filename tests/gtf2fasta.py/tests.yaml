@@ -4,3 +4,9 @@ version:
     outputs: [stdout]
     references: []
     options: --version
+
+basic:
+    stdin: hg19.chr19.gtf.gz 
+    outputs: [stdout]
+    references: [hg19.fasta.gz]
+    options: --genome-file=<DIR>/hg19.chr19

@@ -26,7 +26,7 @@ bed2fasta.py - get sequences from bed file
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Genomics Intervals Sequences
 
 Purpose
 -------

@@ -116,7 +116,7 @@ import CGAT.Database as Database
 ###################################################
 
 # load options from the config file
-import Pipeline as P
+import CGAT.Pipeline as P
 P.getParameters( 
     ["%s.ini" % __file__[:-len(".py")],
      "../pipeline.ini",
@@ -130,7 +130,7 @@ PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],
 ###################################################################
 ## Helper functions mapping tracks to conditions, etc
 ###################################################################
-import PipelineTracks
+import CGATPipelines.PipelineTracks as PipelineTracks
 
 # define some tracks if needed
 TRACKS = PipelineTracks.Tracks( PipelineTracks.Sample ).loadFromDirectory( 
@@ -209,8 +209,8 @@ def update_report():
     P.run_report( clean = False )
 
 @follows( update_report )
-def publish_report():
-    '''publish report.'''
+def publish():
+    '''publish report and data.'''
 
     E.info( "publishing report" )
     P.publish_report()

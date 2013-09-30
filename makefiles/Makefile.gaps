@@ -110,7 +110,7 @@ gaps_matches.data:
 gaps_summary.data: 
 	$(PRELOG)
 	@$(CMD_REMOTE_SUBMIT) \
-	python $(DIR_SCRIPTS_GENEPREDICTION)fasta2counts.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)fasta2tsv.py \
 		--genome-file=$(PARAM_INPUT_GENOME) \
 	> $@
 	$(EPILOG)

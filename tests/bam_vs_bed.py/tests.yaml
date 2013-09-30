@@ -1,0 +1,12 @@
+
+version:
+    stdin: null
+    outputs: [stdout]
+    references: []
+    options: --version
+
+paired:
+        stdin: null
+        outputs: [stdout]
+        references: [paired.tsv]
+        options: <DIR>/paired.bam <DIR>/context.paired.bed.gz

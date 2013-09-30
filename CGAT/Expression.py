@@ -1456,6 +1456,13 @@ def loadCuffdiff( infile, outfile ):
 
         samples = sorted( samples )
 
+        # IMS - CDS files might be empty if not cds has been calculated for the genes
+        # in the long term need to add CDS annotation to denovo predicted genesets
+        # in meantime just skip if cds tracking file is empty
+
+        if len(samples) == 0:
+            continue
+
         headers = "gene_id\t" + "\t".join( [ x for x in samples ] )
         outf.write( headers + "\n" )
 
@@ -1487,7 +1494,7 @@ def loadCuffdiff( infile, outfile ):
     tracks = Database.getColumnNames( dbhandle, tablename )
     tracks = [ x[:-len("_FPKM")] for x in tracks if x.endswith("_FPKM") ]
     
-    tmpfile = P.getTempFile()
+    tmpfile = P.getTempFile(dir=".")
     tmpfile.write( "track\n" )
     tmpfile.write("\n".join(tracks) + "\n" )
     tmpfile.close()

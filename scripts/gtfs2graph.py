@@ -33,16 +33,14 @@ Purpose
 -------
 
 This script compares two :term:`gtf` output files and outputs a bi-partite
-graph connecting overlapping genes/exons/...
-
-This script needs some work, only gene-gene output works.
+graph connecting overlapping genes.
 
 Usage
 -----
 
 Example::
 
-   python gtfs2graph.py --help
+   python gtfs2graph.py a.gtf b.gtf > out.tsv
 
 Type::
 
@@ -149,7 +147,7 @@ class Counter:
 
         return len(genes), len( overlapping_genes), nexons, nexons_overlapping, nbases, nbases_overlapping
 
-    def count( self, filename1, filename2 ):
+    def run( self, filename1, filename2 ):
         """count overlap between two gtf files."""
 
         E.info( "counting started for %s versus %s" % (filename1, filename2))
@@ -217,7 +215,7 @@ class CounterGenes(Counter):
     def _run( self, filename, idx ):
 
         # iterate over exons
-        infile = open( filename, "r" )
+        infile = IOTools.openFile( filename, "r" )
         it = GTF.iterator( infile )
 
         keys = set()

@@ -784,7 +784,7 @@ def _makeOverlap( infiles, outfile, subset = "all" ):
 		    --filter=gene 
 		> %(outfile)s_tmp_${d}.xgtf ;
 	done;
-	python %(scriptsdir)s/diff_gtfs.py
+	python %(scriptsdir)s/gtfs2tsv.py
 		%(extra_options)s 
 		--pattern-id='%(outfile)s_tmp_(.*).xgtf'
 		--log=%(outfile)s.log 

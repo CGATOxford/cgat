@@ -4,3 +4,15 @@ version:
     outputs: [stdout]
     references: []
     options: --version
+
+basic:
+        stdin: paired.bam
+        outputs: [stdout]
+        references: [basic.tsv]
+        options:
+
+fastq:
+        stdin: paired.bam
+        outputs: [stdout, details]
+        references: [fastq.tsv, details]
+        options: --output-details --filename-fastq=<DIR>/paired.fastq.gz

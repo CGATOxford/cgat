@@ -145,15 +145,29 @@ class Mapper( object ):
     # By default, they are converted to fastq.
     preserve_colourspace = False
 
-    # compress fastq files with gzip
+    # compress temporary fastq files with gzip
     compress = False
 
     # convert to sanger quality scores
     convert = False
 
-    def __init__(self, executable = None):
+    # strip bam files of sequenca and quality information
+    strip_sequence = False
+
+    # remove non-unique matches in a post-processing step.
+    # Many aligners offer this option in the mapping stage
+    # If only unique matches are required, it is better to
+    # configure the aligner as removing in post-processing
+    # adds to processing time.
+    remove_non_unique = False
+
+    def __init__(self, executable = None, 
+                 strip_sequence = False,
+                 remove_non_unique = False ):
         if executable:
             self.executable = executable
+        self.strip_sequence = strip_sequence
+        self.remove_non_unique = remove_non_unique
 
     def quoteFile( self, filename ):
         '''add uncompression for compressed files.
@@ -385,6 +399,7 @@ class FastQc( Mapper ):
     compress = True
 
     def __init__( self, nogroup = False, *args, **kwargs ):
+        Mapper.__init__(self, *args, **kwargs)
         self.nogroup = nogroup
 
     def mapper( self, infiles, outfile ):
@@ -429,6 +444,8 @@ class BWA( Mapper ):
     '''
 
     def __init__(self, remove_unique = False, *args, **kwargs):
+        Mapper.__init__(self, *args, **kwargs)
+
         self.remove_unique = remove_unique
     
     def mapper( self, infiles, outfile ):
@@ -504,19 +521,19 @@ class BWA( Mapper ):
         outf = P.snip( outfile, ".bam" )
         tmpdir = self.tmpdir
 
-        if self.remove_unique: 
-            # \s does not work - not a recognized escape in awk regex?
-            statement = '''
-                samtools view -hS %(tmpdir)s/%(track)s.sam 
-                         | awk '$1 ~ /^@/ || /\\tX0:i:1\\t/'
-                         | samtools view -bS - 
-                         | samtools sort - %(outf)s 2>>%(outfile)s.bwa.log; 
-                samtools index %(outfile)s;''' % locals()
+        strip_cmd, unique_cmd = "", ""
 
-        else:
-            statement = '''
-                samtools view -buS %(tmpdir)s/%(track)s.sam 
-                         | samtools sort - %(outf)s 2>>%(outfile)s.bwa.log; 
+        if self.remove_non_unique:
+            unique_cmd = '| python %%(scriptsdir)s/bam2bam.py --filter=unique --log=%(outfile)s.log' % locals()
+            
+        if self.strip_sequence:
+            strip_cmd = '| python %%(scriptsdir)s/bam2bam.py --strip=sequence --log=%(outfile)s.log' % locals()
+
+        statement = '''
+                samtools view -uS %(tmpdir)s/%(track)s.sam 
+                %(unique_cmd)s
+                %(strip_cmd)s
+                | samtools sort - %(outf)s 2>>%(outfile)s.bwa.log;
                 samtools index %(outfile)s;''' % locals()
 
         return statement
@@ -693,9 +710,9 @@ class Tophat( Mapper ):
         tmpdir_tophat = self.tmpdir_tophat
 
         statement = '''
-            mv %(tmpdir_tophat)s/accepted_hits.bam %(outfile)s; 
             gzip < %(tmpdir_tophat)s/junctions.bed > %(track)s.junctions.bed.gz; 
             mv %(tmpdir_tophat)s/logs %(outfile)s.logs;
+            mv %(tmpdir_tophat)s/accepted_hits.bam %(outfile)s; 
             samtools index %(outfile)s;
             ''' % locals()
 
@@ -897,8 +914,20 @@ class GSNAP( Mapper ):
         outf = P.snip( outfile, ".bam" )
         tmpdir = self.tmpdir_fastq
 
+        strip_cmd, unique_cmd = "", ""
+
+        if self.remove_non_unique:
+            unique_cmd = '| python %%(scriptsdir)s/bam2bam.py --filter=unique --log=%(outfile)s.log' % locals()
+            
+        if self.strip_sequence:
+            strip_cmd = '| python %%(scriptsdir)s/bam2bam.py --strip=sequence --log=%(outfile)s.log' % locals()
+        
+
         statement = '''
-                samtools view -buS %(tmpdir)s/%(track)s.sam | samtools sort - %(outf)s 2>>%(outfile)s.log; 
+                samtools view -uS %(tmpdir)s/%(track)s.sam 
+                %(unique_cmd)s
+                %(strip_cmd)s
+                | samtools sort - %(outf)s 2>>%(outfile)s.log; 
                 samtools index %(outfile)s;''' % locals()
 
         return statement
@@ -994,13 +1023,24 @@ class STAR( Mapper ):
         outf = P.snip( outfile, ".bam" )
         tmpdir = self.tmpdir_fastq
 
+        strip_cmd, unique_cmd = "", ""
+
+        if self.remove_non_unique:
+            unique_cmd = '| python %%(scriptsdir)s/bam2bam.py --filter=unique --log=%(outfile)s.log' % locals()
+            
+        if self.strip_sequence:
+            strip_cmd = '| python %%(scriptsdir)s/bam2bam.py --strip=sequence --log=%(outfile)s.log' % locals()
+
         statement = '''
                 cp %(tmpdir)s/Log.std.out %(outfile)s.std.log;
                 cp %(tmpdir)s/Log.final.out %(outfile)s.final.log;
                 cp %(tmpdir)s/SJ.out.tab %(outfile)s.junctions;
                 cat %(tmpdir)s/Log.out >> %(outfile)s.log;
                 cp %(tmpdir)s/Log.progress.out %(outfile)s.progress;
-                samtools view -buS %(tmpdir)s/%(track)s.sam | samtools sort - %(outf)s 2>>%(outfile)s.log; 
+                samtools view -uS %(tmpdir)s/%(track)s.sam
+                %(unique_cmd)s
+                %(strip_cmd)s
+                | samtools sort - %(outf)s 2>>%(outfile)s.log; 
                 samtools index %(outfile)s;''' % locals()
 
         return statement
@@ -1012,6 +1052,9 @@ class Bowtie( Mapper ):
     preserve_colourspace = True
 
     executable = "bowtie"
+
+    def __init__( self, *args, **kwargs ):
+        Mapper.__init__(self, *args, **kwargs)
 
     def mapper( self, infiles, outfile ):
         '''build mapping statement on infiles.
@@ -1104,10 +1147,18 @@ class Bowtie( Mapper ):
         track = P.snip( outfile, ".bam" )
         tmpdir_fastq = self.tmpdir_fastq
 
+        if self.remove_non_unique:
+            unique_cmd = '| python %%(scriptsdir)s/bam2bam.py --filter=unique --log=%(outfile)s.log' % locals()
+            
+        if self.strip_sequence:
+            strip_cmd = '| python %%(scriptsdir)s/bam2bam.py --strip=sequence --log=%(outfile)s.log' % locals()
+
         statement = '''cat %(tmpdir_fastq)s/out.bam
-             | python %%(scriptsdir)s/bam2bam.py --set-nh --log=%(outfile)s.log
-             | samtools sort - %(track)s;
-             samtools index %(outfile)s;
+                | python %%(scriptsdir)s/bam2bam.py --set-nh --log=%(outfile)s.log
+                %(unique_cmd)s
+                %(strip_cmd)s
+                | samtools sort - %(track)s;
+                samtools index %(outfile)s;
              ''' % locals()
 
         return statement
@@ -1121,6 +1172,9 @@ class BowtieTranscripts( Mapper ):
     compress = True
 
     executable = "bowtie"
+
+    def __init__( self, *args, **kwargs ):
+        Mapper.__init__(self, *args, **kwargs)
 
     def mapper( self, infiles, outfile ):
         '''build mapping statement on infiles.
@@ -1203,10 +1257,21 @@ class BowtieTranscripts( Mapper ):
         track = P.snip( outfile, ".bam" )
         tmpdir_fastq = self.tmpdir_fastq
 
-        statement = '''
-             samtools sort %(tmpdir_fastq)s/out.bam %(track)s;
+        strip_cmd, unique_cmd = "", ""
+
+        if self.remove_non_unique:
+            unique_cmd = '| python %%(scriptsdir)s/bam2bam.py --filter=unique --log=%(outfile)s.log' % locals()
+            
+        if self.strip_sequence:
+            strip_cmd = '| python %%(scriptsdir)s/bam2bam.py --strip=sequence --log=%(outfile)s.log' % locals()
+
+        statement = '''cat %(tmpdir_fastq)s/out.bam
+             %(unique_cmd)s
+             %(strip_cmd)s
+             | samtools sort - %(outf)s 2>>%(outfile)s.bwa.log;
              samtools index %(outfile)s;
              ''' % locals()
+
         return statement
 
 class BowtieJunctions( BowtieTranscripts ):
@@ -1222,8 +1287,18 @@ class BowtieJunctions( BowtieTranscripts ):
         track = P.snip( outfile, ".bam" )
         tmpdir_fastq = self.tmpdir_fastq
 
+        strip_cmd, unique_cmd = "", ""
+
+        if self.remove_non_unique:
+            unique_cmd = '| python %%(scriptsdir)s/bam2bam.py --filter=unique --log=%(outfile)s.log' % locals()
+            
+        if self.strip_sequence:
+            strip_cmd = '| python %%(scriptsdir)s/bam2bam.py --strip=sequence --log=%(outfile)s.log' % locals()
+
         statement = '''
              cat %(tmpdir_fastq)s/out.bam
+             %(unique_cmd)s
+             %(strip_cmd)s
              | python %%(scriptsdir)s/bam2bam.py --set-nh --log=%(outfile)s.log
              | python %%(scriptsdir)s/rnaseq_junction_bam2bam.py --contig-sizes=%%(contigsfile)s --log=%(outfile)s.log
              | samtools sort - %(track)s;
