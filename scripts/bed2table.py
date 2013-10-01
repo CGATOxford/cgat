@@ -27,7 +27,7 @@ bed2table.py - annotate intervals
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Intervals Summary
+:Tags: Genomics Intervals Summary
 
 Purpose
 -------

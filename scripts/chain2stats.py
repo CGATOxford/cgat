@@ -27,7 +27,7 @@ chain2stats.py
 :Author: Stephen Sansom
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Genomics GenomeAlignment Summary
 
 Purpose
 -------

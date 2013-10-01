@@ -166,8 +166,8 @@ def main( argv = None ):
 
     (options, args) = E.Start( parser, argv = argv )
 
-    if len(args) != 1:
-        raise ValueError( "no samfile specified - see --help for usage" )
+    if len(args) == 0:
+        args.append( "-" )
     
     samfile = pysam.Samfile( args[0], "rb" )
 

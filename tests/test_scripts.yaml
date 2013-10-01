@@ -1,2 +1,3 @@
 restrict:
-        regex: chain2stats.py
+        #manifest:
+        regex: bam2bed.py
