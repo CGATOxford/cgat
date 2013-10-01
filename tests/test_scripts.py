@@ -86,15 +86,16 @@ def test_scripts():
                 if "glob" in values:
                     scriptdirs = glob.glob( "tests/*.py" )
                 
-                if "regex" in values:
-                    rx = re.compile( values["regex"] )
-                    scriptdirs = filter( rx.search, scriptdirs )
-                    
                 if "manifest" in values:
                     # take scripts defined in the MANIFEST.in file
                     scriptdirs = [x for x in open( "MANIFEST.in" ) if x.startswith("include scripts") and x.endswith(".py\n") ]
                     scriptdirs = [re.sub( "include\s*scripts/", "tests/", x[:-1] ) for x in scriptdirs ]
                 #sys.stderr.write("%s\n" % scriptdirs )
+
+                if "regex" in values:
+                    rx = re.compile( values["regex"] )
+                    scriptdirs = filter( rx.search, scriptdirs )
+                    
 
     scriptdirs.sort()        
 

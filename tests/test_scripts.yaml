@@ -1,3 +1,3 @@
 restrict:
-        #manifest:
-        regex: bam2bed.py
+        manifest:
+        regex: bam2fastq.py
