@@ -21,13 +21,13 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-fastq2table.py - compute stats on fastq files
-=============================================
+fastq2table.py - compute stats on reads in fastq files
+======================================================
 
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Genomics NGS Sequence
 
 Purpose
 -------
@@ -40,11 +40,11 @@ Usage
 
 Example::
 
-   python cgat_script_template.py --help
+   python fastq2table.py < in.fastq > out.tsv
 
 Type::
 
-   python cgat_script_template.py --help
+   python fastq2table.py --help
 
 for command line help.
 
