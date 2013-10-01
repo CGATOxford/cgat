@@ -35,6 +35,10 @@ Purpose
 This script performs manipulations on :term:`fastq` formatted files. For example
 it can be used to change the quality score format or sample a subset of reads.
 
+The script predominantly is used for manipulation of single fastq files. However,
+for some of its functionality it will take paired data using the --pair and --outfile-pair
+options. This applies to the --sample and --sort options.
+
 Usage
 -----
 
@@ -200,7 +204,7 @@ def main( argv = None ):
         else:
             if not options.outfile_pair:
                 raise ValueError( "please specify output filename for second pair (--outfile-pair)")
-            
+            E.warn("consider sorting individual fastq files - this is memory intensive")
             entries1 = {}
             entries2 = {}
             for record1, record2 in itertools.izip( Fastq.iterate( options.stdin ), Fastq.iterate( IOTools.openFile( options.pair) ) ):
