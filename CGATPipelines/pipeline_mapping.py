@@ -810,7 +810,8 @@ def mapReadsWithTophat( infiles, outfile ):
         job_options += " -l mem_free=%s" % PARAMS["tophat_memory"]
 
     to_cluster = True
-    m = PipelineMapping.Tophat( executable = P.substituteParameters( **locals() )["tophat_executable"] )
+    m = PipelineMapping.Tophat( executable = P.substituteParameters( **locals() )["tophat_executable"],
+                                strip_sequence = PARAMS["strip_sequence"] )
     infile, reffile, transcriptfile = infiles
     tophat_options = PARAMS["tophat_options"] + " --raw-juncs %(reffile)s " % locals()
     
@@ -920,7 +921,8 @@ def mapReadsWithGSNAP( infiles, outfile ):
     job_options= "-pe dedicated %i -R y -l mem_free=%s" % (PARAMS["gsnap_threads"],
                                                            PARAMS["gsnap_memory"])
     to_cluster = True
-    m = PipelineMapping.GSNAP( executable = P.substituteParameters( **locals() )["gsnap_executable"] )
+    m = PipelineMapping.GSNAP( executable = P.substituteParameters( **locals() )["gsnap_executable"],
+                               strip_sequence = PARAMS["strip_sequence"] )
     
     if PARAMS["gsnap_include_known_splice_sites"]:
         gsnap_options = PARAMS["gsnap_options"] + " --use-splicing=%(infile_splices)s " % locals()
@@ -947,7 +949,8 @@ def mapReadsWithSTAR( infile, outfile ):
     
     star_mapping_genome = PARAMS["star_genome"] or PARAMS["genome"]
     
-    m = PipelineMapping.STAR( executable = P.substituteParameters( **locals() )["star_executable"] )
+    m = PipelineMapping.STAR( executable = P.substituteParameters( **locals() )["star_executable"],
+                              strip_sequence = PARAMS["strip_sequence"] )
     
     statement = m.build( (infile,), outfile ) 
     P.run()
@@ -1014,7 +1017,8 @@ def mapReadsWithBowtieAgainstTranscriptome( infiles, outfile ):
     # reads would be filtered out).
     job_options= "-pe dedicated %i -R y" % PARAMS["bowtie_threads"]
     to_cluster = True
-    m = PipelineMapping.BowtieTranscripts( executable = P.substituteParameters( **locals() )["bowtie_executable"] )
+    m = PipelineMapping.BowtieTranscripts( executable = P.substituteParameters( **locals() )["bowtie_executable"],
+                                           strip_sequence = PARAMS["strip_sequence"] )
     infile, reffile = infiles
     prefix = P.snip( reffile, ".fa" )
     #IMS: moved reporting options to ini
@@ -1037,7 +1041,8 @@ def mapReadsWithBowtie( infiles, outfile ):
 
     job_options= "-pe dedicated %i -R y" % PARAMS["bowtie_threads"]
     to_cluster = True
-    m = PipelineMapping.Bowtie( executable = P.substituteParameters( **locals() )["bowtie_executable"] )
+    m = PipelineMapping.Bowtie( executable = P.substituteParameters( **locals() )["bowtie_executable"],
+                                strip_sequence = PARAMS["strip_sequence"] )
     infile, reffile = infiles
     #IMS remove reporting options to the ini
     #bowtie_options = "%s --best --strata -a" % PARAMS["bowtie_options"] 
@@ -1060,7 +1065,9 @@ def mapReadsWithBWA( infile, outfile ):
     job_options= "-pe dedicated %i -R y -l mem_free=%s" % (PARAMS["bwa_threads"],
                                                            PARAMS["bwa_memory"] )
     to_cluster = True
-    m = PipelineMapping.BWA( remove_unique = PARAMS["bwa_remove_non_unique"] )
+    m = PipelineMapping.BWA( remove_non_unique = PARAMS["remove_non_unique"],
+                             strip_sequence = PARAMS["strip_sequence"] )
+
     statement = m.build( (infile,), outfile ) 
     P.run()
 
@@ -1079,7 +1086,7 @@ def mapReadsWithStampy( infile, outfile ):
     job_options= "-pe dedicated %i -R y -l mem_free=%s" % ( PARAMS["stampy_threads"],
                                                             PARAMS["stampy_memory"] )
     to_cluster = True
-    m = PipelineMapping.Stampy()
+    m = PipelineMapping.Stampy( strip_sequence = PARAMS["strip_sequence"] )
     statement = m.build( (infile,), outfile ) 
     P.run()
 
@@ -1236,7 +1243,7 @@ def loadPicardDuplicationStats( infiles, outfile ):
     '''merge alignment stats into single tables.'''
     #separate load function while testing
     PipelineMappingQC.loadPicardDuplicationStats( infiles, outfile )
-     
+
 # ############################################################
 # ############################################################
 # ############################################################
@@ -1280,12 +1287,29 @@ def buildBAMStats( infiles, outfile ):
     rna_file = os.path.join( PARAMS["annotations_dir"],
                              PARAMS_ANNOTATIONS["interface_rna_gff"] )
 
+    job_options = "-l mem_free=8G"
+
     bamfile, readsfile = infiles
 
     nreads = PipelineMappingQC.getNumReadsFromReadsFile( readsfile )
+    track = P.snip( readsfile, ".nreads" )
+
+    # if a fastq file exists, submit for counting
+    if os.path.exists( track + ".fastq.gz" ):
+        fastqfile = track + ".fastq.gz"
+    elif os.path.exists( track + ".fastq.1.gz" ):
+        fastqfile = track + ".fastq.1.gz"
+    else:
+        fastqfile = None
+
+    if fastqfile != None:
+        fastq_option = "--filename-fastq=%s" % fastqfile
+    else:
+        fastq_option = ""
 
     statement = '''python
     %(scriptsdir)s/bam2stats.py
+         %(fastq_option)s
          --force
          --filename-rna=%(rna_file)s
          --remove-rna
@@ -1332,7 +1356,7 @@ def buildContextStats( infiles, outfile ):
 
     to_cluster = True
     statement = '''
-       python %(scriptsdir)s/rnaseq_bam_vs_bed.py
+       python %(scriptsdir)s/bam_vs_bed.py
               --min-overlap=%(min_overlap)f
               --log=%(outfile)s.log
               %(infile)s %(reffile)s
@@ -1379,6 +1403,7 @@ def loadContextStats( infiles, outfile ):
     cc = Database.executewait( dbhandle, statement )
     dbhandle.commit()
 
+
 ###################################################################
 ###################################################################
 ###################################################################
@@ -1398,7 +1423,7 @@ def buildExonValidation( infiles, outfile ):
     to_cluster = True
     infile, exons = infiles
     statement = '''cat %(infile)s
-    | python %(scriptsdir)s/rnaseq_bam_vs_exons.py
+    | python %(scriptsdir)s/bam_vs_gtf.py
          --filename-exons=%(exons)s
          --force
          --log=%(outfile)s.log
@@ -1593,6 +1618,9 @@ def buildBigWig( infile, outfile ):
     '''build wiggle files from bam files.'''
     to_cluster = True
 
+    # wigToBigWig observed to use 16G
+    job_options = "-l mem_free=16G"
+
     statement = '''python %(scriptsdir)s/bam2wiggle.py 
                          --output-format=bigwig 
                          %(bigwig_options)s
@@ -1753,46 +1781,21 @@ def update_report():
 ###################################################################
 ###################################################################
 @follows( mkdir( "%s/bamfiles" % PARAMS["web_dir"]), 
-          mkdir("%s/genesets" % PARAMS["web_dir"]),
-          mkdir("%s/classification" % PARAMS["web_dir"]),
-          mkdir("%s/differential_expression" % PARAMS["web_dir"]),
+          mkdir( "%s/bigwigfiles" % PARAMS["web_dir"]), 
           update_report,
           )
 def publish():
     '''publish files.'''
-    # publish web pages
-    P.publish_report()
-
-    # publish additional data
-    web_dir = PARAMS["web_dir"]
-    project_id = P.getProjectId()
 
     # directory, files
-    exportfiles = {
+    export_files = {
         "bamfiles" : glob.glob( "*/*.bam" ) + glob.glob( "*/*.bam.bai" ),
-        "genesets": [ "lincrna.gtf.gz", "abinitio.gtf.gz" ],
-        "classification": glob.glob("*.class.tsv.gz") ,
-        "differential_expression" : glob.glob( "*.cuffdiff.dir" ),
+        "bigwigfiles" : glob.glob( "*/*.bw" ),
         }
-    
-    bams = []
 
-    for targetdir, filenames in exportfiles.iteritems():
-        for src in filenames:
-            dest = "%s/%s/%s" % (web_dir, targetdir, os.path.basename(src))
-            if dest.endswith( ".bam"): bams.append( dest )
-            dest = os.path.abspath( dest )
-            if not os.path.exists( dest ):
-                try:
-                    os.symlink( os.path.abspath(src), dest )
-                except OSError, msg:
-                    E.warn( "could not create symlink to %s: %s" % (dest, msg))
+    # publish web pages
+    P.publish_report( export_files = export_files)
 
-    # output ucsc links
-    for bam in bams: 
-        filename = os.path.basename( bam )
-        track = P.snip( filename, ".bam" )
-        print """track type=bam name="%(track)s" bigDataUrl=http://www.cgat.org/downloads/%(project_id)s/bamfiles/%(filename)s""" % locals()
 
 if __name__== "__main__":
     sys.exit( P.main(sys.argv) )

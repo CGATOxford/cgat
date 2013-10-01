@@ -64,19 +64,33 @@ of :term:`reads`.
 
    Number of reads per number of alignments (hits) per read.
 
-Insert sizes
-============
+Fragment lengths
+================
 
-.. report:: Mapping.PicardInsertSizeMetrics
-   :render: table
-   :force:
-
-   Insert size summary
+This section shows the fragment size distribution. 
 
 .. report:: Mapping.PicardInsertSizeHistogram
    :render: line-plot
    :as-lines:
    :yrange: 0,
 
-   Histogram of insert sizes
+   Histogram of fragment sizes
 
+.. report:: Mapping.PicardInsertSizeMetrics
+   :render: table
+   :force:
+
+   Fragment size summary
+
+Mapping qualities
+=================
+
+.. report:: Mapping.MappingQuality
+   :render: line-plot
+   :as-lines:
+   :layout: column-3
+   :width: 200
+   :split-at: 10
+   :logscale: y
+
+   Distribution of mapping qualities

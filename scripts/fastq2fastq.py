@@ -27,13 +27,19 @@ fastq2fastq.py - manipulate fastq files
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Genomics NGS Sequence
 
 Purpose
 -------
 
-This script performs manipulations on :term:`fastq` formatted files. For example
-it can be used to change the quality score format or sample a subset of reads.
+This script performs manipulations on :term:`fastq` formatted
+files. For example it can be used to change the quality score format
+or sample a subset of reads.
+
+The script predominantly is used for manipulation of single fastq
+files. However, for some of its functionality it will take paired data
+using the --pair and --outfile-pair options. This applies to the
+--sample and --sort options.
 
 Usage
 -----
@@ -51,8 +57,8 @@ Type::
 for command line help.
 
 
-Code
-----
+Command line options
+--------------------
 
 '''
 
@@ -110,6 +116,9 @@ def main( argv = None ):
     parser.add_option( "--sort", dest="sort", action="store_true",
                        help="sort fastq by sequence id [default=%default]."  )
 
+    parser.add_option( "--seed", dest="seed", type="int",
+                       help="seed for random number generator [default=%default]."  )
+
 
     parser.set_defaults(
         change_format = None,
@@ -120,7 +129,8 @@ def main( argv = None ):
         apply = None,
         uniq = False,
         outfile_pair = None,
-        sort = None)
+        sort = None,
+        seed = None )
 
     ## add common options (-h/--help, ...) and parse command line 
     (options, args) = E.Start( parser, argv = argv )
@@ -137,6 +147,8 @@ def main( argv = None ):
                                                                    
     elif options.sample:
         sample_threshold = min( 1.0, options.sample)
+
+        random.seed( options.seed )
         
         if options.pair:
             if not options.outfile_pair:
@@ -193,7 +205,7 @@ def main( argv = None ):
         else:
             if not options.outfile_pair:
                 raise ValueError( "please specify output filename for second pair (--outfile-pair)")
-            
+            E.warn("consider sorting individual fastq files - this is memory intensive")
             entries1 = {}
             entries2 = {}
             for record1, record2 in itertools.izip( Fastq.iterate( options.stdin ), Fastq.iterate( IOTools.openFile( options.pair) ) ):

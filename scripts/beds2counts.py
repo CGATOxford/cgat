@@ -22,7 +22,7 @@
 #################################################################################
 '''
 beds2counts.py - compute overlap stats between multiple bed files
-==================================================================
+=================================================================
 
 :Author: Nick Ilott 
 :Release: $Id$
@@ -54,8 +54,8 @@ for command line help.
 Documentation
 -------------
 
-Code
-----
+Command line options
+--------------------
 
 '''
 import tempfile

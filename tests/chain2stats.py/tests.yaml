@@ -4,3 +4,10 @@ version:
     outputs: [stdout]
     references: []
     options: --version
+
+yeast:
+        stdin: sacCer3ToSacCer1.over.chain.gz
+        outputs: [stdout]
+        references: [sacCer3ToSacCer1.tsv]
+        options: 
+        

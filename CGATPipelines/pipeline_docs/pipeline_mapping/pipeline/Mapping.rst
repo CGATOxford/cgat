@@ -63,6 +63,46 @@ number of pairs submitted as a pair might map to multiple locations.
 
    Mapping results in terms of pairs
 
+Detailed summary
+-----------------
+
+The following table breaks down the number of reads mapped into several
+categories.
+
++-------------------------+----------------------------------------+
+|*Column*                 |*Content*                               |
++-------------------------+----------------------------------------+
+|pairs_unmapped           |pairs in which neither read maps        |
++-------------------------+----------------------------------------+
+|pairs_proper_unique      |pairs which are proper and map uniquely.|
++-------------------------+----------------------------------------+
+|pairs_incomplete         |pairs in which one of the reads maps    |
+|                         |uniquel, but the other does not map.    |
++-------------------------+----------------------------------------+
+|pairs_proper_duplicate   |pairs which are proper and unique, but  |
+|                         |marked as duplicates.                   |
++-------------------------+----------------------------------------+
+|pairs_proper_multimapping|pairs which are proper, but map to      |
+|                         |multiple locations.                     |
++-------------------------+----------------------------------------+
+|pairs_not_proper_unique  |pairs mapping uniquely, but not flagged |
+|                         |as proper                               |
++-------------------------+----------------------------------------+
+|pairs_other              |pairs not in any of the above categories|
++-------------------------+----------------------------------------+
+
+.. report:: Mapping.MappingSummary
+   :render: table
+   :slices: pairs_proper_unique_alignments,pairs_unmapped,pairs_incomplete,pairs_not_proper_unique_alignments,pairs_other,pairs_proper_duplicate,pairs_proper_multimapping
+
+   Mapping results in terms of pairs
+
+.. report:: Mapping.MappingSummary
+   :render: stacked-bar-plot
+   :slices: pairs_proper_unique_alignments,pairs_unmapped,pairs_incomplete,pairs_not_proper_unique_alignments,pairs_other,pairs_proper_duplicate,pairs_proper_multimapping
+
+   Mapping results in terms of pairs
+
 
 
 

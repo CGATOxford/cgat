@@ -36,6 +36,7 @@ def filter_bam( Samfile input_samfile,
                 Samfile output_samfile,
                 Samfile reference_samfile,
                 remove_nonunique = False,
+                remove_unique = False,
                 remove_contigs = None,
                 remove_unmapped = False,
                 remove_mismatches = False,
@@ -62,6 +63,19 @@ def filter_bam( Samfile input_samfile,
     to count differences. By default, the ``NM`` tag is used.
     The tag that is used needs to present in both *input_samfile*
     and *reference_samfile*.
+
+    Detecting non-unique matches:
+    
+    This method first checks for the NH flag - if set, a unique match 
+    should have at most NH=1 hits.
+
+    If not set, the method checks for BWA flags. Currently it checks
+    if X0 is set (X0=Number of best hits found by BWA). Other relevant
+    flags but currently not tested:
+
+    * X1 = Number of suboptimal hits found by BWA
+    * XT = Type: Unique/Repeat/N/Mate-sw
+    
     '''
 
     cdef int ninput = 0
@@ -69,9 +83,11 @@ def filter_bam( Samfile input_samfile,
     cdef int nmismatches = 0
     cdef int noutput = 0
     cdef int nnonunique = 0
+    cdef int nunique = 0
     cdef int nremoved_contigs = 0
 
     cdef bint c_remove_nonunique = remove_nonunique
+    cdef bint c_remove_unique = remove_unique
     cdef bint c_remove_mismatches = remove_mismatches
     cdef bint c_remove_unmapped = remove_unmapped
 
@@ -84,7 +100,7 @@ def filter_bam( Samfile input_samfile,
     # build index
     # this method will start indexing from the current file position
     # if you decide
-    cdef int ret = 1#
+    cdef int ret = 1
     cdef int x
     cdef bam1_t * b = <bam1_t*>calloc(1, sizeof( bam1_t) )
     cdef uint64_t pos
@@ -109,6 +125,7 @@ def filter_bam( Samfile input_samfile,
         tag = nm_tag
 
     if c_remove_mismatches:
+        E.info( "building index" )
         if not reference_samfile:
             raise ValueError("require another bam file for mismatch filtering" )
 
@@ -127,17 +144,16 @@ def filter_bam( Samfile input_samfile,
                 nm = <int32_t>bam_aux2i(v)
                 index[qname].append( nm )
 
+        E.info( "built index for %i reads" % len(index))
+        bam_destroy1( b )
+
     # setup list of contigs to remove:
     if remove_contigs:
         nremove_contig_tids = len(remove_contigs)
         remove_contig_tids = <int*>malloc( sizeof(int) * nremove_contig_tids )
         for x, rname in enumerate( remove_contigs):
             remove_contig_tids[x] = input_samfile.gettid( rname )
-
-    bam_destroy1( b )
-    
-    E.info( "built index for %i reads" % len(index))
-    
+                
     E.info( "starting filtering" )
 
     for read in input_samfile:
@@ -155,11 +171,27 @@ def filter_bam( Samfile input_samfile,
 
         # remove non-unique alignments
         if c_remove_nonunique:
+            # check either NH or X0 (bwa) flag
             v = bam_aux_get(read._delegate, 'NH')
+            if v == NULL:
+                v = bam_aux_get(read._delegate, 'X0')
+            
             if v != NULL:
                 nh = <int32_t>bam_aux2i(v)
                 if nh > 1: 
                     nnonunique += 1
+                    continue
+        # remove unique alignments
+        elif c_remove_unique:
+            # check either NH or X0 (bwa) flag
+            v = bam_aux_get(read._delegate, 'NH')
+            if v == NULL:
+                v = bam_aux_get(read._delegate, 'X0')
+            
+            if v != NULL:
+                nh = <int32_t>bam_aux2i(v)
+                if nh == 1: 
+                    nunique += 1
                     continue
 
         # remove reads matched to certain contigs
@@ -184,11 +216,14 @@ def filter_bam( Samfile input_samfile,
                     nmismatches += 1
                     continue
                 
+        
+
         noutput += 1
         output_samfile.write( read )
 
     c = E.Counter()
     c.input = ninput
+    c.removed_unique = nunique
     c.removed_nonunique = nnonunique
     c.removed_contigs = nremoved_contigs
     c.output = noutput

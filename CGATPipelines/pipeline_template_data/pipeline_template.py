@@ -209,8 +209,8 @@ def update_report():
     P.run_report( clean = False )
 
 @follows( update_report )
-def publish_report():
-    '''publish report.'''
+def publish():
+    '''publish report and data.'''
 
     E.info( "publishing report" )
     P.publish_report()

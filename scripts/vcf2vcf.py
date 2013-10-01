@@ -70,8 +70,8 @@ To specify a non-alphabetical order::
 This will sort the columns in the example.vcf into the order "#CHROM, POS, ID, REF, ALT, QUAL, FILTER, INFO, FORMAT,  |
 SAMPLE_C, SAMPLE_A, SAMPLE_B, ..."
 
-Code
-----
+Command line options
+--------------------
 '''
 
 import sys
@@ -92,7 +92,7 @@ import CGAT.VCF as VCF
 def main( argv = sys.argv ):
 
     parser = E.OptionParser( version = "%prog version: $Id: bed2bed.py 2861 2010-02-23 17:36:32Z andreas $", 
-                                    usage = globals()["__doc__"] )
+                             usage = globals()["__doc__"] )
 
     parser.add_option( "--reorder", dest="reorder", type="string",
                        help="reorder columns. Give column names as comma-separated list or specify ``alphabetical`` [default=%default]"  )

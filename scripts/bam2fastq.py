@@ -21,18 +21,19 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-bam2fastq.py - 
-=============================================
+bam2fastq.py - output fastq files from a bam-file
+=================================================
 
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Genomics NGS Sequence
 
 Purpose
 -------
 
-Convert a BAM file to a FASTQ files.
+Convert a BAM file to a FASTQ files. This script ouputs
+fastq records from a aligned reads in a bam file.
 
 Usage
 -----
@@ -46,7 +47,7 @@ This command converts the BAM file in.bam into fastq files containing forward re
 
 Type::
 
-   python cgat_script_template.py --help
+   python bam2fastq.py --help
 
 for command line help.
 
@@ -59,8 +60,8 @@ For example::
 
    python bam2fastq.py in.bam out.1.fastq out.2.fastq 
 
-Code
-----
+Command line options
+--------------------
 
 '''
 
@@ -87,11 +88,7 @@ def main( argv = None ):
     parser = E.OptionParser( version = "%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
                                     usage = globals()["__doc__"] )
 
-    parser.add_option("-i", "--test-option", dest="test_option", type="string",
-                      help="test option [default=%default]."  )
-
     parser.set_defaults(
-        test_option = "test"
         )
 
     ## add common options (-h/--help, ...) and parse command line 

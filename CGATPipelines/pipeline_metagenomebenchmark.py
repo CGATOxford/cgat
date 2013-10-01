@@ -102,7 +102,6 @@ import random
 
 import numpy
 import sqlite3
-import CGAT.GFF as GFF
 import CGAT.GTF as GTF
 import CGAT.IOTools as IOTools
 import CGAT.IndexedFasta as IndexedFasta
@@ -120,7 +119,7 @@ import pysam
 import CGAT.Fastq as Fastq
 import sqlite3
 import CGATPipelines.PipelineMetagenomeBenchmark as PipelineMetagenomeBenchmark
-import CGATPipelines.PipelineGenomeAssembly as PipelineGenomeAssembly
+import CGATPipelines.PipelineMetagenomeAssembly as PipelineMetagenomeAssembly
 
 ###################################################
 ###################################################
@@ -159,78 +158,53 @@ def dbList(xset):
 ######################################################
 ######################################################
 @follows(mkdir("taxonomy.dir"))
-@transform(os.path.join(PARAMS["taxonomy_taxdir"], "names.dmp")
-           , regex("(\S+)/(\S+).dmp")
-           , r"taxonomy.dir/\2.dmp.gz")
-def parseTaxonomyNamesFile(infile, outfile):
+@merge(GENOMES
+       , r"taxonomy.dir/gi_accessions.tsv")
+def buildGiAccessionNumbers(infiles, outfile):
     '''
-    parse the ncbi taxonomy file
+    build a list of gi accession numbers from the genomes
+    in order to get assignments of taxa from them
     '''
-    inf = open(infile)
-    header = inf.readline()
-    outf = gzip.open(outfile, "w")
-    outf.write("taxid\ttaxname\tdescription\n")
-    for line in inf.readlines():
-        data = "".join(line[:-1].split("\t")).split("|")
-        taxid, name, description = data[0], data[1], data[3]
-        outf.write("%s\t%s\t%s\n" % (taxid, name, description))
+    # first line in each file is the contig name
+    outf = open(outfile, "w")
+    for inf in infiles:
+        outf.write(open(inf).readline().split("|")[1] + "\n")
     outf.close()
-
+        
 ######################################################
 ######################################################
 ######################################################
-@transform(parseTaxonomyNamesFile, suffix(".dmp.gz"), ".load")
-def loadTaxonomyNames(infile, outfile):
+@merge([buildGiAccessionNumbers] + [os.path.join(PARAMS["taxonomy_taxdir"], x) for x in ["ncbi.map", "gi_taxid_nucl.dmp.gz", "ncbi.lvl", "nodes.dmp"]]
+       , "taxonomy.dir/gi2taxa.tsv")
+def buildGi2Taxa(infiles, outfile):
     '''
-    load taxonomic names
-    '''
-    to_cluster = True
-    P.load(infile, outfile, "--index=taxid")
-
-######################################################
-######################################################
-######################################################
-@follows(mkdir("taxonomy.dir"))
-@transform(os.path.join(PARAMS["taxonomy_taxdir"], "categories.dmp")
-           , regex("(\S+)/(\S+).dmp")
-           , r"taxonomy.dir/\2.dmp.gz")
-def parseCategoriesFile(infile, outfile):
-    '''
-    parse categories file
-    '''
-    inf = open(infile)
-    outf = gzip.open(outfile, "w")
-    outf.write("kingdom\tspecies_id\ttaxid\n")
-    for line in inf.readlines():
-        data = line[:-1].split("\t")
-        outf.write("%s\t%s\t%s\n" % (data[0], data[1], data[2]))
-    outf.close()
-
-######################################################
-######################################################
-######################################################
-@follows(mkdir("taxonomy.dir"))
-@transform(parseCategoriesFile, suffix(".dmp.gz"), ".load")
-def loadCategoriesFile(infile, outfile):
-    '''
-    load the taxonomic categories file
+    associate each input genome gi identifier to
+    different taxonomic levels
     '''
     to_cluster = True
-    P.load(infile, outfile, "--index=taxid")
+    gi_accessions = infiles[0]
+    ncbi_map = infiles[1]
+    gi2taxid_map = infiles[2]
+    codes = infiles[3]
+    nodes = infiles[4]
+    statement = '''python %(scriptsdir)s/gi2parents.py 
+                   -g %(gi_accessions)s
+                   -m %(ncbi_map)s
+                   -n %(gi2taxid_map)s
+                   -c %(codes)s
+                   -t %(nodes)s 
+                   --log=%(outfile)s.log > %(outfile)s'''
+    P.run()
 
-###################################################
-###################################################
-###################################################
-@follows(mkdir("taxonomy.dir"))
-@transform(os.path.join(PARAMS["taxonomy_taxdir"], "gi_taxid_nucl.dmp.gz")
-           , regex("(\S+)/(\S+).dmp.gz")
-           , r"taxonomy.dir/\2.load")
-def loadGi2Taxid(infile, outfile):
+######################################################
+######################################################
+######################################################
+@transform(buildGiAccessionNumbers, suffix(".tsv"), ".load")
+def loadGiAccessionNumbers(infile, outfile):
     '''
-    load gi to taxid mapping
+    load the gi acesssion numbers
     '''
-    to_cluster = True
-    P.load(infile, outfile, "--header=gi,taxid --index=taxid")
+    P.load(infile, outfile)
 
 ###################################################
 ###################################################
@@ -316,10 +290,7 @@ def loadFalsePositiveRate(infile, outfile):
 ###################################################
 ###################################################
 ###################################################
-@follows(loadTaxonomyNames
-         ,loadCategoriesFile
-         ,loadGi2Taxid
-         , loadFalsePositiveRate
+@follows(loadFalsePositiveRate
          , plotRelativeAbundanceCorrelations)
 def taxonomy():
     pass

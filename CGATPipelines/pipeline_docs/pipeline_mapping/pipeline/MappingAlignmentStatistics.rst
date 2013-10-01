@@ -14,20 +14,20 @@ This section brings together various alignment statistics.
 
 ..    bamstats results
 
-FastQC
-======
+.. FastQC
+.. ======
 
-The following list presents links to the results of the :term:`fastqc` tool.
-The fastqc tool is run over aligned reads only.
+.. The following list presents links to the results of the :term:`fastqc` tool.
+.. The fastqc tool is run over aligned reads only.
 
-.. report:: Mapping.FastQCReport
-   :render: user
+.. .. report:: Mapping.FastQCReport
+..    :render: user
 
-   fastqc results
+..    fastqc results
 
 
-Picard
-======
+Picard metrics
+==============
 
 The following table present an overview of the alignments in the 
 BAM files for each :term:`track`. See the 
@@ -52,6 +52,10 @@ for a definition of the field contents.
 
    Percentage quantities
 
+The following plots show the distribution of base quality scores in
+reads. Note that if the bam-files have been stripped of sequence and
+quality information the plots below will contain meaningless values.
+
 .. report:: Mapping.AlignmentQualityByCycle
    :render: line-plot
    :as-lines:
@@ -66,11 +70,11 @@ for a definition of the field contents.
 
    quality score distribution
 
-
 Coverages
 =========
 
-The following coverages are computed from bigwig files.
+The following base coverage summaries are computed from bigwig files.
+This report might be empty if no bigwig files have been computed.
 
 .. report:: Mapping.BigwigSummary
    :render: table
