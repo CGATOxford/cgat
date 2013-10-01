@@ -27,7 +27,7 @@ bed2table.py - annotate intervals
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Intervals Summary
 
 Purpose
 -------
@@ -63,11 +63,8 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-
-Code
-----
+Command line options
+---------------------
 
 '''
 import os

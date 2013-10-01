@@ -1,2 +1,2 @@
 restrict:
-        regex: bam2stats.py  
+        regex: chain2stats.py

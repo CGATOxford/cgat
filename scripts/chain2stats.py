@@ -32,16 +32,15 @@ chain2stats.py
 Purpose
 -------
 
-.. todo::
-   
-   This script computes the coverage of the target and query genomes represented by a UCSC chain file. 
+This script computes the coverage of the target and query genomes
+represented by a UCSC chain file.
 
 Usage
 -----
 
 Example::
 
-   python chain2stats.py -c chainfile
+   python chain2stats.py < sacCer3ToSacCer1.over.chain.gz
 
 Type::
 
@@ -52,10 +51,11 @@ for command line help.
 Documentation
 -------------
 
-For large chain file this script requires a substantial amount of memory for chromosome pair analysis.
+For large chain file this script requires a substantial amount of
+memory for chromosome pair analysis.
 
-Code
-----
+Command line options
+---------------------
 '''
 
 #import modules
@@ -70,13 +70,14 @@ import bx.bitset_builders
 import collections
 
 import CGAT.Experiment as E
-from CGAT.IndexedFasta import IndexedFasta
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.IOTools as IOTools
 
 ############################ Functions/Generators ############################
 
 def chain_iterator(infile):
     lines = []
-    for line in open(infile,'r'):
+    for line in infile:
         if line.startswith("#"): continue
         if line.strip() == "": continue 
         if line.startswith("chain"):
@@ -508,8 +509,6 @@ def main(argv = None ):
     parser.add_option("-r", "--report", dest="report", action="store_true",
                       help="Write out tab-delimited reports for each analysis",default=False)
 
-
-
     (options, args) = E.Start(parser, argv = argv, add_output_options = True )
     
     #make a list of counting objects
@@ -538,7 +537,7 @@ def main(argv = None ):
         counters.append(CounterOfErrors(options))
 
     #iterate over the chains and counters
-    for chain in chain_iterator(options.chainfile):
+    for chain in chain_iterator(options.stdin):
         c = Chain(chain)
         for counter in counters:
             counter.add(c)
