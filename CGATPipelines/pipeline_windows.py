@@ -316,6 +316,7 @@ def prepareTags( infile, outfile ):
         | sort -k1,1 -k2,2n
         | bgzip > %(outfile)s''')
 
+    statement.append( "tabix -p bed %(outfile)s" )
     statement.append( "rm -rf %(tmpdir)s" )
 
     statement = " ; ".join( statement )

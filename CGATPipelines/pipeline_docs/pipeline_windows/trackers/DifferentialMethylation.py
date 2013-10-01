@@ -2,7 +2,6 @@ import os, sys, re, types, itertools, math
 
 from SphinxReport.Tracker import *
 from SphinxReport.Utils import PARAMS as P
-from SphinxReport.odict import OrderedDict as odict
 
 from MedipReport import *
 

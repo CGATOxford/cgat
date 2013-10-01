@@ -1,7 +1,6 @@
 import os, sys, re, types, itertools, glob
 
 from SphinxReport.Tracker import *
-from SphinxReport.odict import OrderedDict as odict
 
 ###################################################################
 ###################################################################
