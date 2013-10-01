@@ -1,0 +1,2 @@
+restrict:
+        regex: bam_vs_bam.py  

@@ -67,6 +67,10 @@ class MappingFlagsHits( MappingTracker, SingleTableTrackerHistogram ):
     table = "bam_stats_nh"
     column = "nh"
 
+class MappingQuality( MappingTracker, SingleTableTrackerHistogram ):
+    table = "bam_stats_mapq"
+    column = "mapq"
+
 class AlignmentQualityByCycle( MappingTracker, SingleTableTrackerHistogram ):
     table = "picard_stats_quality_by_cycle_histogram"
     column = "cycle"

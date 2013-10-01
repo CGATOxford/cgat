@@ -169,7 +169,13 @@ def joinTables( outfile, options, args ):
     headers_to_delete = []
 
     if options.take:
-        take = [ x - 1 for x in options.take]
+        take = []
+        # convert numeric columns for filtering
+        for x in options.take:
+            try:
+                take.append( int(x) - 1 )
+            except ValueError:
+                take.append( x )
     else:
         # tables with max 100 columns
         take = None
@@ -210,7 +216,7 @@ def joinTables( outfile, options, args ):
                 titles = [key]
             
             for x in range(len(data)):
-                if x in options.columns or (take and x not in take): continue
+                if x in options.columns or (take and x not in take ): continue
                 ncolumns += 1
                 if options.add_file_prefix:
                     try:
@@ -428,8 +434,9 @@ def main( argv = sys.argv ):
     parser.add_option( "-c", "--columns", dest="columns", type="string",
                       help="columns to use for joining. Multiple columns can be specified as a comma-separated list [default=%default]."  )
     
-    parser.add_option( "-k", "--take", dest="take", type=int, action="append",
-                       help = "columns to take. If not set, all columns except for the join columns are taken [%default]" )
+    parser.add_option( "-k", "--take", dest="take", type="string", action="append",
+                       help = "columns to take. If not set, all columns except for "
+                       "the join columns are taken [%default]" )
 
     parser.add_option( "-g", "--glob", dest="glob", type="string",
                       help="wildcard expression for table names."  )
