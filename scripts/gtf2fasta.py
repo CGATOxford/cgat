@@ -27,7 +27,7 @@ gtf2fasta.py - annotate genomic bases from a gene set
 :Author: Andreas Heger
 :Release: $Id: gtf2fasta.py 2861 2010-02-23 17:36:32Z andreas $
 :Date: |today|
-:Tags: Python
+:Tags: Genomics Genesets Sequences
 
 Purpose
 -------
@@ -39,54 +39,54 @@ referring to the reverse strand.
 
 The codes and their meaning are:
 
-+---------------+----------------------------------------------------------------------+                                                                                                                                                                   
-|code           | description                                                          |
-+---------------+----------------------------------------------------------------------+                                                                                                                                                                   
-|a              | first codon position within a complete codon                         |                                                                                                                                                                   
-+---------------+----------------------------------------------------------------------+                                                                                                                                                                   
-|b              | second codon position within a complete codon                        |
-+---------------+----------------------------------------------------------------------+
-|c              | third codon position within a complete codon                         |
-+---------------+----------------------------------------------------------------------+
-|d              | coding base, but in multiple frames or strands                       |
-+---------------+----------------------------------------------------------------------+
-|e              | non-coding base in exon                                              |
-+---------------+----------------------------------------------------------------------+
-|f              | frame-shifted base                                                   |
-+---------------+----------------------------------------------------------------------+
-|g              | intergenic base                                                      |
-+---------------+----------------------------------------------------------------------+
-|i              | intronic base                                                        |
-+---------------+----------------------------------------------------------------------+
-|l              | base in other RNA                                                    |
-+---------------+----------------------------------------------------------------------+
-|m              | base in miRNA                                                        |
-+---------------+----------------------------------------------------------------------+
-|n              | base in snRNA                                                        |
-+---------------+----------------------------------------------------------------------+
-|o              | base in snoRNA                                                       |
-+---------------+----------------------------------------------------------------------+
-|r              | base in rRNA (both genomic and mitochondrial)                        |
-+---------------+----------------------------------------------------------------------+
-|p              | base in pseudogene (including transcribed, unprocessed and processed)|
-+---------------+----------------------------------------------------------------------+
-|q              | base in retrotransposon                                              |
-+---------------+----------------------------------------------------------------------+
-|s              | base within a splice signal (GT/AG)                                  |
-+---------------+----------------------------------------------------------------------+
-|t              | base in tRNA (both genomic and mitochondrial)                        |
-+---------------+----------------------------------------------------------------------+
-|u              | base in 5' UTR                                                       |
-+---------------+----------------------------------------------------------------------+
-|v              | base in 3' UTR                                                       |
-+---------------+----------------------------------------------------------------------+
-|x              | ambiguous base with multiple functions.                              |
-+---------------+----------------------------------------------------------------------+
-|y              | unknown base                                                         |
-+---------------+----------------------------------------------------------------------+
++-----+----------------------------------------------------------------------+                                                                                                                                                                   
+|code | description                                                          |
++-----+----------------------------------------------------------------------+                                                                                                                                                                   
+|a    | first codon position within a complete codon                         |                                                                                                                                                                   
++-----+----------------------------------------------------------------------+                                                                                                                                                                   
+|b    | second codon position within a complete codon                        |
++-----+----------------------------------------------------------------------+
+|c    | third codon position within a complete codon                         |
++-----+----------------------------------------------------------------------+
+|d    | coding base, but in multiple frames or strands                       |
++-----+----------------------------------------------------------------------+
+|e    | non-coding base in exon                                              |
++-----+----------------------------------------------------------------------+
+|f    | frame-shifted base                                                   |
++-----+----------------------------------------------------------------------+
+|g    | intergenic base                                                      |
++-----+----------------------------------------------------------------------+
+|i    | intronic base                                                        |
++-----+----------------------------------------------------------------------+
+|l    | base in other RNA                                                    |
++-----+----------------------------------------------------------------------+
+|m    | base in miRNA                                                        |
++-----+----------------------------------------------------------------------+
+|n    | base in snRNA                                                        |
++-----+----------------------------------------------------------------------+
+|o    | base in snoRNA                                                       |
++-----+----------------------------------------------------------------------+
+|r    | base in rRNA (both genomic and mitochondrial)                        |
++-----+----------------------------------------------------------------------+
+|p    | base in pseudogene (including transcribed, unprocessed and processed)|
++-----+----------------------------------------------------------------------+
+|q    | base in retrotransposon                                              |
++-----+----------------------------------------------------------------------+
+|s    | base within a splice signal (GT/AG)                                  |
++-----+----------------------------------------------------------------------+
+|t    | base in tRNA (both genomic and mitochondrial)                        |
++-----+----------------------------------------------------------------------+
+|u    | base in 5' UTR                                                       |
++-----+----------------------------------------------------------------------+
+|v    | base in 3' UTR                                                       |
++-----+----------------------------------------------------------------------+
+|x    | ambiguous base with multiple functions.                              |
++-----+----------------------------------------------------------------------+
+|y    | unknown base                                                         |
++-----+----------------------------------------------------------------------+
 
 This script can be used for a quick-and-dirty annotation of variants in a genome.
-For a better prediction of variant effects in coding variants, see :doc:`gtf2alleles`.
+For a better prediction of variant effects in coding sequences, see :doc:`gtf2alleles`.
 
 Output files
 ++++++++++++
@@ -120,25 +120,28 @@ Known problems
 
 The stop-codon is part of the UTR. This has the following effects:
 
-   * On the mitochondrial chromosome, the
-     stop-codon might be used for ncRNA transcripts and thus the base is
-     recorded as ambiguous. 
+   * On the mitochondrial chromosome, the stop-codon might be used for
+     ncRNA transcripts and thus the base is recorded as ambiguous.
 
-   * On the mitochondrial chromosome, alternative transcripts might read
-     through a stop-codon (RNA editing). The codon itself will be recorded
-     as ambiguous.
+   * On the mitochondrial chromosome, alternative transcripts might
+     read through a stop-codon (RNA editing). The codon itself will be
+     recorded as ambiguous.
 
 Usage
 -----
 
+For example::
+
+   zcat hg19.gtf.gz | python gtf2fasta.py --genome-file=hg19
+
 Type::
 
-   python <script_name>.py --help
+   python gtf2fasta.py --help
 
 for command line help.
 
-Code
-----
+Command line options
+--------------------
 
 """ 
 
@@ -473,7 +476,6 @@ def annotateGenome( iterator, fasta, options, default_code = DEFAULT_CODE ):
     E.info( "started output" )
     for k in sorted(annotations.keys()):
         options.stdout.write( ">%s\n%s\n" % (k,annotations[k].tostring()) )
-
     
 def main( argv = None ):
     """script main.

@@ -1,0 +1,12 @@
+
+version:
+    stdin: null
+    outputs: [stdout]
+    references: []
+    options: --version
+
+same:
+    stdin: null
+    outputs: [stdout]
+    references: [same.tsv]
+    options: <DIR>/sorted.bam <DIR>/sorted.bam

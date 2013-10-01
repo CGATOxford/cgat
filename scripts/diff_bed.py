@@ -41,17 +41,43 @@ additional comparisons.
 
 The strand of intervals is ignored in comparisons.
 
++--------------+----------------------------------+
+|*Column*      |*Content*                         |
++--------------+----------------------------------+
+|set           |Name of the set                   |
++--------------+----------------------------------+
+|nexons_total  |number of intervals in set        |
++--------------+----------------------------------+
+|nexons_ovl    |number of intervals overlapping   |
++--------------+----------------------------------+
+|nexons_unique |number of unique intervals        |
++--------------+----------------------------------+
+|nbases_total  |number of bases in gene set       |
++--------------+----------------------------------+
+|nbases_ovl    |number of bases overlapping       |
++--------------+----------------------------------+
+|nbases_unique |number of unique bases            |
++--------------+----------------------------------+
+
 Usage
 -----
 
+For example::
+
+   python diff_bed.py *.bed.gz > out.tsv
+
+To update results from a previous run, type::
+
+   python diff_bed.py --update=out.tsv *.bed.gz > new.tsv
+
 Type::
 
-   python <script_name>.py --help
+   python diff_bed.py --help
 
 for command line help.
 
-Code
-----
+Command line options
+--------------------
 
 """ 
 
@@ -127,7 +153,7 @@ class Counter:
         return nexons, nexons_overlapping, nbases, nbases_overlapping
 
     def count( self, filename1, filename2 ):
-        """count overlap between two gtf files."""
+        """count overlap between two bed files."""
 
         E.info( "counting started for %s versus %s" % (filename1, filename2))
 

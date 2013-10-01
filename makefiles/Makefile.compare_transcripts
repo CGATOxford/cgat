@@ -2356,7 +2356,7 @@ overlaps_%.table: $(wildcard *.gtf) $(ANNOTATIONS:%.annotation=%_annotation.impo
 			--filter=gene \
 		< \$${d}.gtf > $@_tmp_\$${d}.xgtf ; \
 	done; \
-	python $(DIR_SCRIPTS_GENEPREDICTION)diff_gtfs.py \
+	python $(DIR_SCRIPTS_GENEPREDICTION)gtfs2tsv.py \
 		$${extra_options} \
 		--pattern-id='$@_tmp_(.*).xgtf' \
 		--log=$@.log $@_tmp_*.xgtf > $@"

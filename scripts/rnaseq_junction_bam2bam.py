@@ -21,13 +21,13 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-rnaseq_bams2bam.py - convert mappings against junctions to genomic coordinates
-================================================================================
+rnaseq_junction_bams2bam.py - convert mappings against junctions to genomic coordinates
+========================================================================================
 
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Genomics NGS Geneset
 
 Purpose
 -------
@@ -47,7 +47,7 @@ The contigs should be of the format
 Strand can be either ``fwd`` or ``rev``, though sequences in the database
 and coordinates are all on the forward strand.
 
-For example ``chr1|1244933|1244982-1245060|1245110|GTAG|fwd`` tranlates to the
+For example ``chr1|1244933|1244982-1245060|1245110|GTAG|fwd`` translates to the
 intron ``chr1:1244983-1245060`` in python coordinates.
 
 The input bam-file is supposed to be sorted by read. Only the best matches

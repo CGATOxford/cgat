@@ -15,6 +15,7 @@ import Intervals
 import Genomics
 import IndexedGenome
 import pysam
+import IOTools
 
 class Error(Exception):
     """Base class for exceptions in this module."""

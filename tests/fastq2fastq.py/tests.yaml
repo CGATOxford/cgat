@@ -1,21 +1,35 @@
 
+version:
+    stdin: null
+    outputs: [stdout]
+    references: []
+    options: --version
+
 paired_sort_test:
-    stdin: sim.50K.fastq.1.gz
-    outputs: [stdout, sorted.sim.50K.fastq.2.gz]
-    references: [reference_sorted.sim.50K.fastq.1.gz, reference_sorted.sim.50K.fastq.2.gz]
-    options: --sort --pair <DIR>/sim.50K.fastq.2.gz --outfile-pair sorted.sim.50K.fastq.2.gz
+    stdin: WTCHG_45714_249_1_sequence.short.fastq.gz
+    outputs: [stdout, out_pair_2.sort.tsv.gz]
+    references: [test_out_pair_1.sort.tsv.gz, test_out_pair_2.sort.tsv.gz]
+    options: --sort --pair <DIR>/WTCHG_45714_249_2_sequence.short.fastq.gz --outfile-pair out_pair_2.sort.tsv.gz
     description: sort pair of fastq files by read identifier
 
 single_sort_test:
-    stdin: sim.50K.fastq.1.gz
+    stdin: THP1-stimulated-R1.short.fastq.gz
     outputs: [stdout]
-    references: [reference_sorted.sim.50K.fastq.1.gz]
+    references: [test_out_single_end.sort.tsv.gz]
     options: --sort 
     description: sort single fastq file by read identifier
 
-trim_test:
-    stdin: sim.50K.fastq.1.gz
+single_trim_test:
+    stdin: THP1-stimulated-R1.short.fastq.gz
     outputs: [stdout]
-    references: [reference_trim25.sim.50K.fastq.1.gz]
-    options: --trim3 25
-    description: trim 25 bases from 3'end of each read
+    references: [test_out_single_end.trim6.tsv.gz]
+    options: --trim3 6
+    description: trim 6 bases from 3 prime end of each read, single end files only
+
+single_uniq_test:
+    stdin: THP1-stimulated-R1.short.fastq.gz
+    outputs: [stdout]
+    references: [test_out_single_end.uniq.tsv.gz]
+    options: --uniq
+    description: remove duplicate reads (by name)
+

@@ -49,7 +49,7 @@ Some specifics for the CGAT code base are:
    
 * Glossary terms (``:term:``) are defined in
   :file:`glossary.rst`.
-  
+
 Adding documentation
 ====================
 

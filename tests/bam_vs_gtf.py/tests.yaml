@@ -1,0 +1,12 @@
+
+version:
+    stdin: null
+    outputs: [stdout]
+    references: []
+    options: --version
+
+small:
+    stdin: small.bam
+    outputs: [stdout, overrun]
+    references: [small.tsv, overrun]
+    options: --filename-gtf=<DIR>/hg19.chr19.gtf.gz

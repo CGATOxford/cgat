@@ -27,12 +27,12 @@ gff2histogram.py - compute histograms from intervals in gff or bed format
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Genomics Intervals
 
 Purpose
 -------
 
-This script computes distribution interval sizes, intersegmental distances
+This script computes distributions of interval sizes, intersegmental distances
 and interval overlap from a list of intervals in :term:`gff` or :term:`bed` 
 format. 
 

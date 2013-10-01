@@ -124,7 +124,6 @@ class SequencePropertiesLength(SequenceProperties):
     
     def loadSequence( self, sequence ):
         """load sequence properties from a sequence."""
-        
         SequenceProperties.loadSequence( self, sequence )
 
     def getFields(self):
@@ -1119,4 +1118,71 @@ class SequencePropertiesAminoAcids(SequenceProperties):
             fields.append( "p%s" % x )
 
         return fields
+
+class SequencePropertiesGaps(SequenceProperties):
+    '''counter for genomic sequences.
+
+    Counts gap characters and gap regions
+    '''
+
+    gap_chars = 'xXnN'
+
+    def __init__(self,  gap_chars = 'xXnN', *args, **kwargs ):
+        SequenceProperties.__init__(self, *args, **kwargs)
+        self.gap_chars = gap_chars
+
+        self.ngaps = 0
+        self.nseq_regions = 0
+        self.ngap_regions = 0
+
+
+    def getFields(self):
+        
+        fields = SequenceProperties.getFields(self)
+        return fields + ["%i" % self.ngaps,
+                         "%i" % self.nseq_regions,
+                         "%i" % self.ngap_regions]
+    
+    def getHeaders( self ):
+        
+        fields = SequenceProperties.getHeaders(self)
+        return fields + ["ngaps", "nseq_regions", "ngap_regions"]
+
+    def loadSequence( self, sequence ):
+        """load sequence properties from a sequence."""
+        SequenceProperties.loadSequence( self, sequence )
+        
+        totals = { 'A' : 0, 'C': 0, 'G' : 0, 'T' : 0, 'X' : 0, 'N' : 0 }
+
+        gap_chars = self.gap_chars
+        ngaps = 0
+        was_gap = not (sequence[0] in gap_chars)
+        
+        ngap_regions = 0
+        nseq_regions = 0
+
+        x = 0
+        xx = len(sequence)
+        for x, c in enumerate( sequence ):
+
+            is_gap = c in gap_chars
+            if is_gap:
+                ngaps += 1
+                if not was_gap: ngap_regions += 1
+            else:
+                if was_gap: nseq_regions += 1
+            was_gap = is_gap
+            
+        self.ngaps = ngaps
+        self.ngap_regions = ngap_regions
+        self.nseq_regions = nseq_regions
+    
+    def addProperties( self, other ):
+        SequenceProperties.addProperties( self, other )
+
+        self.ngaps += other.ngaps
+        self.nseq_regions += other.nseq_regions
+        self.ngap_regions += other.ngap_regions
+
+    
 

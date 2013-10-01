@@ -49,15 +49,20 @@ Code
 
 """
 import sqlite3
-import CGAT.Pipeline as P
+try:
+    import CGAT.Pipeline as P
+except AttributeError,OSError:
+    pass
+import CGAT.IOTools as IOTools
 import rpy2.robjects as R
 import pickle
 from pandas import DataFrame
 
 try:
     PARAMS = P.getParameters()
-except IOError:
-    pass
+except:
+    PARAMS = {}
+    
 
 #######################################################################
 #################### Database Queries #################################
@@ -103,8 +108,11 @@ def fetch_with_names(query, database=PARAMS.get("database",""), attach=False):
     '''Fetch query results and returns them as an array of row arrays, 
        in which the first entry is an array of the field names'''
 
-    dbhandle = sqlite3.connect( database )
-    cc = dbhandle.cursor()
+    try:
+        cc=database.cursor()
+    except:
+        dbhandle = sqlite3.connect( database )
+        cc = dbhandle.cursor()
 
     if attach: db_execute(cc, attach)
 
@@ -147,7 +155,7 @@ def fetch_DataFrame(query, database=PARAMS.get("database",""), attach=False):
 
 def write(outfile, lines, header=False):
     ''' expects [[[line1-field1],[line1-field2 ] ],... ]'''
-    handle = open(outfile,"w")
+    handle = IOTools.openFile(outfile,"w")
 
     if header:
         handle.write("\t".join([str(title) for title in header])+"\n")

@@ -7,10 +7,17 @@ Command line usage
 
 CGAT tools are written for command line usage with a consistent
 interface that makes them amenable to integration in pipelines.
+Tools can be accessed through the :file:`cgat` front-end that will
+be installed in your PATH.
 
-Command line help is available through the ``--help`` option::
+To get a list of all available commands, type::
 
-   python gff2gff.py --help
+   cgat --help
+
+Command line help for individual tools is available through 
+each tool's ``--help`` option::
+
+   cgat gff2gff --help
 
 Logging
 -------

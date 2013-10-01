@@ -14,7 +14,6 @@ ALLSPHINXOPTS   = -d _build/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 DIR_PUBLISH=/ifs/home/andreas/public_html/documentation/cgat/
 URL_SUB="s/\/ifs\/devel\/cgat\/doc/http:\/\/www.cgat.org\/~andreas\/documentation\/cgat/"                                                                                  
 
-
 .PHONY: help clean html dirhtml pickle json htmlhelp qthelp latex changes linkcheck doctest
 
 help:

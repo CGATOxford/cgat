@@ -5,8 +5,8 @@ version:
     references: []
     options: --version
 
-diff:
+same:
     stdin: null
-    outputs: [genes_ovl, genes_total, genes_uniq1, genes_uniq2]
-    references: [genes_ovl, genes_total, genes_uniq1, genes_uniq2]
-    options: <DIR>/hg19.small.gtf.gz <DIR>/hg19.small.gtf.gz 
+    outputs: [stdout]
+    references: [same.tsv]
+    options:  --pattern-id=".*/(.*).gtf.gz" <DIR>/hg19.small.gtf.gz <DIR>/hg19.small.gtf.gz 

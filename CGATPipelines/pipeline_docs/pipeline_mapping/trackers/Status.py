@@ -10,21 +10,38 @@ class MappingStatus( Status ):
         d = self.get( "SELECT DISTINCT track FROM view_mapping" )
         return tuple( [x[0] for x in d ] )
 
-    slices = ("Mapping", "RepetetiveRNA", "SplicedAlignments" )
+    slices = ("Mapping", "PairMapping", "RepetetiveRNA", "SplicedAlignments" )
     
     def testMapping( self, track ):
         '''proportion of reads mapped.
 
-        PASS : >=60% reads mapped
+        PASS : >=80% reads mapped
         WARN : >=40% reads mapped
         FAIL : < 40% reads mapped
 
         '''
-        print "SELECT reads_mapped/CAST( reads_total AS FLOAT) from view_mapping WHERE track = '%(track)s'" % locals()        
-
         value = self.getValue( "SELECT reads_mapped/CAST( reads_total AS FLOAT) from view_mapping WHERE track = '%(track)s'" )
 
-        if value >= 0.6: status= "PASS"
+        if value >= 0.8: status= "PASS"
+        elif value >= 0.4: status= "WARNING"
+        else: status= "FAIL"
+
+        return status, "%5.2f%%" % (100.0 * value)
+
+    def testPairMapping( self, track ):
+        '''proportion of pairs mapped.
+
+        PASS : >=80% pairs mapped
+        WARN : >=40% pairs mapped
+        FAIL : < 40% pairs mapped
+
+        Note that the number of mapped pairs is the number of reads 
+        in proper pairs divided by 2. It is just an estimated and does
+        not reflect reads mapping to multiple locations.
+        '''
+        value = self.getValue( "SELECT pairs_mapped/CAST( pairs_total AS FLOAT) from view_mapping WHERE track = '%(track)s'" )
+
+        if value >= 0.8: status= "PASS"
         elif value >= 0.4: status= "WARNING"
         else: status= "FAIL"
 

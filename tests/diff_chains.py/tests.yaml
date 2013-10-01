@@ -4,3 +4,16 @@ version:
     outputs: [stdout]
     references: []
     options: --version
+
+
+same:
+    stdin: null
+    outputs: [stdout]
+    references: [same.tsv]
+    options: <DIR>/sacCer3ToSacCer1.over.chain.gz <DIR>/sacCer3ToSacCer1.over.chain.gz
+
+diff:
+    stdin: null
+    outputs: [stdout]
+    references: [compare.tsv]
+    options: <DIR>/sacCer3ToSacCer1.over.chain.gz <DIR>/sacCer3ToSacCer2.over.chain.gz  

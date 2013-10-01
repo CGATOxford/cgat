@@ -32,14 +32,21 @@ bam2UniquePairs.py - filter/report uniquely mapped read pairs from a (bwa!) bam-
 Purpose
 -------
 
-Simply utitily script to report and/or filter out "uniquely mapped" properly paired reads
+Utitily script to report and/or filter out "uniquely mapped" properly paired reads
 
-Reports:
-1. The percentage of properly mapped read pairs with at least one uniquely mapped (XT=U) read
-2. The percentage of properly mapped read pairs with at least one best mapped (X0-1) read
-3. The percentage of properly mapped read pairs with at least one uniquely or best mapped (X0-1) read
+Reports: 
+1. The percentage of properly mapped read pairs with at least
+   one uniquely mapped (XT=U) read 
 
-If outfile is specified, reads are emitted when they are properly paired and the pair has at least one read that is either best or uniquely mapped.
+2. The percentage of properly mapped read pairs with at least one best
+   mapped (X0-1) read
+
+3. The percentage of properly mapped read pairs with at least one
+   uniquely or best mapped (X0-1) read
+
+If outfile is specified, reads are emitted when they are properly
+paired and the pair has at least one read that is either best or
+uniquely mapped.
 
 Duplication is ignored.
 
