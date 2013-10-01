@@ -54,7 +54,7 @@ Genomic intervals/features
     that overlapping intervals remain in the same file.
 
 :doc:`scripts/gff2coverage`
-    
+    Output proportion of genome covered by various features.
 
 :doc:`scripts/gff2fasta`
     Output genomic sequences from intervals.
@@ -179,13 +179,15 @@ NGS data
     Perform quality score conversion between :term:`fastq` 
     formatted files.
 
-:doc:`scripts/fastqs2fastq`
+:doc:`scripts/fastqs2fasta`
+    Interleave paired end data.
+
+:doc:`scripts/fastq2table`
+    Output bases below quality threshold, number of N's, quality score distribution.    
 
 :doc:`scripts/fastqs2fastqs`
     Ensure that paired read :term:`fastq` formatted files are consistent
     after filtering on the individual files.
-
-:doc:`scripts/fastq2table`
 
 :doc:`scripts/diff_bam`
     Perform read-by-read comparison of two bam-files.

@@ -57,8 +57,8 @@ The input is expected to be in tab delimited text format (no header line)
 
           <contig><base-position><coverage>
 
-Code
-----
+Command line options
+--------------------
 
 '''
 

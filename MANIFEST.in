@@ -38,7 +38,6 @@ include scripts/diff_fasta.py
 include scripts/diff_gtf.py
 include scripts/diff_gtfs.py
 include scripts/fasta2bed.py
-include scripts/fasta2counts.py
 include scripts/fasta2fasta.py
 include scripts/fasta2gff.py
 include scripts/fasta2kmercontent.py
@@ -66,12 +65,9 @@ include scripts/gtf2tsv.py
 include scripts/gtf2table.py
 include scripts/gtfs2graph.py
 include scripts/index_fasta.py
-include scripts/rnaseq_bam_vs_bed.py
-include scripts/rnaseq_bam_vs_exons.py
-include scripts/rnaseq_bams_vs_bams.py
-include scripts/rnaseq_bams2bam.py
-include scripts/rnaseq_junction_bam2bam.py
-include scripts/softmask.py
+include scripts/bam_vs_bed.py
+include scripts/bam_vs_gtf.py
+include scripts/diff_bam.py
 include scripts/split_gff.py
 include scripts/vcf2vcf.py
 

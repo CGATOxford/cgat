@@ -173,8 +173,8 @@ Other options
 
 The script can accept other ontologies than just GO ontologies. 
 
-Code
-----
+Command line options
+--------------------
 
 '''
 import os, sys, string, re, getopt, time, optparse, math, tempfile, subprocess, random

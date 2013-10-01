@@ -1,5 +1,5 @@
 
 .. automodule:: nofarm
 
-.. program-output:: python ../scripts/nofarm.py --help
+.. program-output:: python ../scripts/nofarm.py --no-usage --help
 

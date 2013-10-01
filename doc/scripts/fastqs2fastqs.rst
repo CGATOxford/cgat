@@ -1,5 +1,5 @@
 
-.. automodule:: fastqs2fastq
+.. automodule:: fastqs2fastqs
 
-.. program-output:: python ../scripts/fastqs2fastq.py --help
+.. program-output:: python ../scripts/fastqs2fastqs.py --no-usage --help
 

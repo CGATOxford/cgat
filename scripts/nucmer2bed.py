@@ -54,8 +54,8 @@ Documentation
 Read from stdin and output to stdout. Requires that the -T option in 
 show-coords was used to produce tabular output.
 
-Code
-----
+Command line options
+--------------------
 
 '''
 

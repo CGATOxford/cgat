@@ -72,8 +72,8 @@ Documentation
 
 For read counts to be correct the NH flag to be set correctly.
 
-Code
-----
+Command line options
+--------------------
 
 '''
 

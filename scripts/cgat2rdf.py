@@ -92,8 +92,8 @@ of other formats:
 galaxy
     Galaxy xml file.
 
-Code
-----
+Command line options
+--------------------
 
 '''
 

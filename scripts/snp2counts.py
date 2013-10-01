@@ -54,8 +54,8 @@ Type::
 
 for command line help.
 
-Code
-----
+Command line options
+--------------------
 
 .. note::
    The script currently uses ``variant`` in two meanings:

@@ -55,8 +55,8 @@ The script has currently only been tested with single input/output.
 Documentation
 -------------
 
-Code
-----
+Command line options
+--------------------
 
 '''
 

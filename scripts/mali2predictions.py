@@ -52,8 +52,8 @@ for command line help.
 Documentation
 -------------
 
-Code
-----
+Command line options
+--------------------
 
 '''
 USAGE="""convert a multiply aligned genomic segment to predictions.

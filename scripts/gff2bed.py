@@ -44,8 +44,8 @@ Type::
 
 for command line usage.
 
-Code
-----
+Command line options
+--------------------
 '''
 
 import sys

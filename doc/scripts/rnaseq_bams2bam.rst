@@ -1,5 +1,5 @@
 
 .. automodule:: rnaseq_bams2bam
 
-.. program-output:: python ../scripts/rnaseq_bams2bam.py --help
+.. program-output:: python ../scripts/rnaseq_bams2bam.py --no-usage --help
 

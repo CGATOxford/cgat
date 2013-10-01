@@ -62,8 +62,8 @@ The contigs file is read from stdin and writes the result to stdout.
 The species map MUST be in the format "contig" "species" and the species MUST be the 
 contig identifier of the respective genome.
 
-Code
-----
+Command line options
+--------------------
 
 '''
 

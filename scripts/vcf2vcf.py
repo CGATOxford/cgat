@@ -87,6 +87,7 @@ import shutil
 
 import CGAT.Experiment as E
 import CGAT.Stats as Stats
+import CGAT.IOTools as IOTools
 import CGAT.VCF as VCF
     
 def main( argv = sys.argv ):
