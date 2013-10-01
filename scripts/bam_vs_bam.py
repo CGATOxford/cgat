@@ -89,12 +89,13 @@ def main( argv = None ):
 
     parser.add_option("-i", "--intervals", dest="filename_intervals", type="string",
                       help="filename with intervals to use [default=%default]."  )
-    parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
-                      help="filename with genome [default=%default]."  )
+
+    parser.add_option("-e", "--regex-identifier", dest="regex_identifier", type="string",
+                      help="regular expression to extract identifier from filename [default=%default]." )
 
     parser.set_defaults(
         filename_intervals = None,
-        genome_file = None,
+        regex_identifier = "(.*)",
         )
 
     ## add common options (-h/--help, ...) and parse command line 
@@ -109,13 +110,14 @@ def main( argv = None ):
     if options.filename_intervals:
         raise NotImplementedError( "It is not yet possible to specify intervals of interest.  Repeat command without intervals option." )
     
-    if options.genome_file:
-        fasta = IndexedFasta.IndexedFasta( options.genome_file )
+    titles = [ re.search( options.regex_identifier, x ).groups()[0] for x in args ]
 
-    options.stdout.write( "contig\tpos\t%s\n" % "\t".join(args))
+    options.stdout.write( "contig\tpos\t%s\n" % "\t".join(titles))
 
     ninput, nskipped, noutput = 0, 0, 0
-    for contig in fasta.getContigs():
+    contigs = samfiles[0].references
+
+    for contig in contigs:
         
         missing_contig = False
 

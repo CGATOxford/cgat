@@ -5,8 +5,8 @@ version:
     references: []
     options: --version
 
-2bams_test:
-    stdin: example_g1k_1.bam example_g1k_2.bam
+same:
+    stdin: null
     outputs: [stdout]
-    references: [example_g1k_correlations.tsv]
-    options: -g /ifs/mirror/genomes/bwa/human_g1k_v37.fa
+    references: [same.tsv]
+    options: --regex-id=".*/(.*.bam)" <DIR>/small.bam <DIR>/small.bam 
