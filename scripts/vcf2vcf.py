@@ -104,7 +104,7 @@ def main( argv = sys.argv ):
 
     noutput = 0
     
-    infile = VCF.VCFFile( IOTools.openFile(args[0], "r") )
+    infile = VCF.VCFFile( options.stdin )
 
     if options.reorder: 
         order = options.reorder.split(",")
