@@ -590,6 +590,7 @@ def loadLncRNAClass(infile, outfile):
     '''
     tablename = os.path.basename(filenameToTablename(P.snip(infile, ".gtf.gz")))
     
+    to_cluster = False
     # just load each transcript with its classification
     temp = P.getTempFile()
     for transcript in GTF.transcript_iterator(GTF.iterator(IOTools.openFile(infile))):
