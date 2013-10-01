@@ -27,7 +27,7 @@ bam2stats.py - compute stats from a bam-file
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: NGS Summary
 
 Purpose
 -------
@@ -73,7 +73,7 @@ iterating over the file. The metrics output are:
 +------------------------+------------------------------------------+
 |secondary               |alignment is not primary alignment        |
 +------------------------+------------------------------------------+
-|alignments_rna          |          alignments mapping to regions of|
+|alignments_rna          |alignments mapping to regions of          |
 |                        |repetitive RNA                            |
 +------------------------+------------------------------------------+
 |alignments_no_rna       |alignments mapping not to regions of      |

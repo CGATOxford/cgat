@@ -39,7 +39,7 @@ Usage
 
 Example::
 
-   python bam_vs_bam.py in1.bam in2.bam -g reference.fasta
+   python bam_vs_bam.py in1.bam in2.bam 
 
 This command generates a tab delimited output with columns chromosome,
 base coordinate, number of overlapping reads in in1.bam, and number of

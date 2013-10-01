@@ -1,2 +1,2 @@
 restrict:
-        regex: bam_vs_bam.py  
+        regex: bam2stats.py  
