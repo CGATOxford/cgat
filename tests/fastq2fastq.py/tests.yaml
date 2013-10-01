@@ -33,3 +33,11 @@ single_uniq_test:
     options: --uniq
     description: remove duplicate reads (by name)
 
+sample:
+   stdin: THP1-stimulated-R1.short.fastq.gz
+   outputs: [stdout]
+   references: [test_out_single_end.sample.tsv.gz]
+   options: --sample=0.50 --seed=123
+   description: test sampling
+        
+

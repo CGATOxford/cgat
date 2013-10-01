@@ -148,8 +148,7 @@ def main( argv = None ):
     elif options.sample:
         sample_threshold = min( 1.0, options.sample)
 
-        seed = random.seed( options.seed )
-        E.info( "random seed: %i" % seed )
+        random.seed( options.seed )
         
         if options.pair:
             if not options.outfile_pair:
