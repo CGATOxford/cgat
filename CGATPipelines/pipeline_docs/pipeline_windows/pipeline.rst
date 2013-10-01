@@ -11,7 +11,7 @@ plots from the MeDIP-Seq pipeline.
    :maxdepth: 2
 
    pipeline/Status.rst
-   
+   pipeline/CpGCoverage.rst
    pipeline/DifferentialMethylation.rst
 
 .. errorlist::

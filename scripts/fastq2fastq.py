@@ -110,6 +110,9 @@ def main( argv = None ):
     parser.add_option( "--sort", dest="sort", action="store_true",
                        help="sort fastq by sequence id [default=%default]."  )
 
+    parser.add_option( "--seed", dest="seed", type="int",
+                       help="seed for random number generator [default=%default]."  )
+
 
     parser.set_defaults(
         change_format = None,
@@ -120,7 +123,8 @@ def main( argv = None ):
         apply = None,
         uniq = False,
         outfile_pair = None,
-        sort = None)
+        sort = None,
+        seed = None )
 
     ## add common options (-h/--help, ...) and parse command line 
     (options, args) = E.Start( parser, argv = argv )
@@ -137,6 +141,9 @@ def main( argv = None ):
                                                                    
     elif options.sample:
         sample_threshold = min( 1.0, options.sample)
+
+        seed = random.seed( options.seed )
+        E.info( "random seed: %i" % seed )
         
         if options.pair:
             if not options.outfile_pair:
