@@ -54,7 +54,7 @@ Genomic intervals/features
     that overlapping intervals remain in the same file.
 
 :doc:`scripts/gff2coverage`
-
+    
 
 :doc:`scripts/gff2fasta`
     Output genomic sequences from intervals.
@@ -104,7 +104,6 @@ Gene sets
     overlap of exons, bases and genes. Permits incremental updates of
     similarity table.
 
-
 Sequence data
 =============
 
@@ -131,7 +130,8 @@ Sequence data
     Concatentate sequences from multiple files.
 
 :doc:`scripts/fasta2variants`
-
+    In-silico creation of variants of protein coding
+    sequences.
 
 NGS data
 ========
@@ -170,16 +170,22 @@ NGS data
 
 :doc:`scripts/bam_vs_bed`
     Compute coverage of reads within multiple interval types.
- 
+
+:doc:`scripts/bam_vs_bam`
+    Outputs side-by-side comparison of residue level counts
+    between multiple :term:`bam` formatted files.
+	 
 :doc:`scripts/fastq2fastq`
-
-:doc:`scripts/fastq2N`
-
-:doc:`scripts/fastq2table`
+    Perform quality score conversion between :term:`fastq` 
+    formatted files.
 
 :doc:`scripts/fastqs2fastq`
 
-:doc:`scripts/rnaseq_junction_bam2bam`
+:doc:`scripts/fastqs2fastqs`
+    Ensure that paired read :term:`fastq` formatted files are consistent
+    after filtering on the individual files.
+
+:doc:`scripts/fastq2table`
 
 :doc:`scripts/diff_bam`
     Perform read-by-read comparison of two bam-files.
@@ -188,30 +194,18 @@ Variants
 ========
 
 :doc:`scripts/vcf2vcf`
+    Sort a vcf file.
 
 Genomics
 ========
 
 :doc:`scripts/diff_chains`
-     Compare two UCSC liftover chain files.
+    How many residues to the same locations, do different locations,
+    etc.
 
-Unsorted
-=========
-
-:doc:`scripts/bam2UniquePairs`
-
-:doc:`scripts/go2plot`
-
-:doc:`scripts/go2svg`
+:doc:`scripts/chain2stats`
+    Output coverage statistics for a UCSC liftover chain file.
 
 
-Unpublished
-===========
-
-:doc:`scripts/bams2bam`
-     Reconcile genomic reads with reads mapped against a transcriptome.
-
-:doc:`scripts/gff2table`
-    Output annotations for intervals
 
 

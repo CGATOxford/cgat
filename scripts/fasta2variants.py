@@ -27,7 +27,7 @@ fasta2variants.py - create sequence variants from a set of sequences
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Python Fasta Variants Coding CDS Protein
+:Tags: Genomics Variants Protein
 
 Purpose
 -------
@@ -36,9 +36,9 @@ This script reads a collection of sequences in :term:`fasta` format and
 outputs a table of possible variants. It outputs for each position in
 a protein sequence the number of variants.
 
-If the input sequences are nucleotide coding (CDS) sequences, for each variant a weight
-is output indicating the number of times that variant can occur
-from single nucleotide changes.
+If the input sequences are nucleotide coding (CDS) sequences, for each
+variant a weight is output indicating the number of times that variant
+can occur from single nucleotide changes.
 
 Usage
 -----
@@ -47,7 +47,8 @@ Example::
 
     python fasta2variants.py -I CCDS_nucleotide.current.fna.gz -L CDS.log -S CDS.output -c
 
-This will take a CDS file as input, save the log and output files, and count variants based on single nucleotide changes using the -c option. 
+This will take a CDS file as input, save the log and output files, and
+count variants based on single nucleotide changes using the -c option.
 
 Type::
 

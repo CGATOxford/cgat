@@ -48,7 +48,7 @@ include scripts/fastas2fasta.py
 include scripts/fastq2fastq.py
 include scripts/fastq2table.py
 include scripts/fastqs2fasta.py
-include scripts/fastqs2fastq.py
+include scripts/fastqs2fastqs.py
 include scripts/gff2bed.py
 include scripts/gff2coverage.py
 include scripts/gff2fasta.py
