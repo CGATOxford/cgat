@@ -101,10 +101,9 @@ def main( argv = sys.argv ):
     
     (options, args) = E.Start( parser, add_pipe_options = True )
 
-
     noutput = 0
     
-    infile = VCF.VCFFile( open(args[0], "r") )
+    infile = VCF.VCFFile( IOTools.openFile(args[0], "r") )
 
     if options.reorder: 
         order = options.reorder.split(",")

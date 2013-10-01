@@ -351,14 +351,26 @@ class OptionParser( optparse.OptionParser ):
     '''
     
     def __init__(self, *args, **kwargs):
+        # if "--short" is a command line option
+        # remove usage from kwargs
+        if "--no-usage" in sys.argv:
+            kwargs["usage"] = None
+            
         optparse.OptionParser.__init__(self, *args, 
                                        option_class = AppendCommaOption,
                                        formatter = BetterFormatter(),
                                        **kwargs)
 
+        
         # set new option parser
         # parser.formatter = BetterFormatter()
         # parser.formatter.set_parser(parser)
+
+        if "--no-usage" in sys.argv:
+            self.add_option( "--no-usage", dest = "help_no_usage",
+                             action = "store_true",
+                             help = "output help without usage information" )
+
 
 
 #################################################################
