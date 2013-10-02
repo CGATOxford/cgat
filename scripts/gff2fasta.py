@@ -186,7 +186,7 @@ if __name__ == "__main__":
         if options.is_gtf:
             name = chunk[0].transcript_id
         else:
-            name = str(chunk[0].mAttributes)
+            name = str(chunk[0].attributes)
 
         lcontig = contigs[contig]
         positive = Genomics.IsPositiveStrand( strand )
@@ -250,3 +250,4 @@ if __name__ == "__main__":
                 (ninput, noutput, nmasked, nskipped_noexons, nskipped_masked, nskipped_length ) )
 
     E.Stop()
+    

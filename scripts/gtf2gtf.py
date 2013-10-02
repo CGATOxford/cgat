@@ -218,9 +218,6 @@ Example::
 Type::
     python gtf2gtf.py --help
 
-for command line help
-
-
 Command line Options
 --------------------
 
