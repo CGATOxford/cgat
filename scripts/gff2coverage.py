@@ -195,7 +195,7 @@ def processChunk( contig, chunk, options, fasta = None ):
     
     if len(chunk) == 0: return
 
-    # check whether the features are overlapping
+    # check whether there are overlapping features or not
     checked = []
     for feature in chunk:
         checked.append(feature)

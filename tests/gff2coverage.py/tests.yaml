@@ -6,14 +6,14 @@ version:
     options: --version
 
 genomic:
-    stdin: hg19.chr19.gtf.test
+    stdin: hg19.chr19.gtf.test.gff2coverage
     outputs: [stdout]
     references: [genomic.test.hg19]
-    options: --method=genomic --genome-file=%DIR%/hg19.chr19.fasta.test
+    options: --method=genomic --genome-file=%DIR%/hg19.chr19.fasta.test.gff2coverage
 
 histogram:
-    stdin: hg19.chr19.gtf.test
+    stdin: hg19.chr19.gtf.test.gff2coverage
     outputs: [19.hist]
     references: [histogram.test.hg19]
-    options: --method=histogram --window=1 --genome-file=%DIR%/hg19.chr19.fasta.test --features=exon
+    options: --method=histogram --window=1 --genome-file=%DIR%/hg19.chr19.fasta.test.gff2coverage --features=exon
 
