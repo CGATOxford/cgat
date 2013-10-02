@@ -261,6 +261,8 @@ documenting scripts. In addition, please pay attention to the following:
   * Sequences
   * Statistics
   * Summary
+  * Variants
+  * Protein
 
 
 

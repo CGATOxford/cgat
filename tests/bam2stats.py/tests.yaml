@@ -9,10 +9,10 @@ basic:
         stdin: paired.bam
         outputs: [stdout]
         references: [basic.tsv]
-        options:
+        options: --force
 
 fastq:
         stdin: paired.bam
         outputs: [stdout, details]
         references: [fastq.tsv, details]
-        options: --output-details --filename-fastq=<DIR>/paired.fastq.gz
+        options: --output-details --filename-fastq=<DIR>/paired.fastq.gz --force

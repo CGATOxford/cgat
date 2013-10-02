@@ -273,7 +273,7 @@ orthologs_vertex.links: $(INPUT_ORTHOLOGS)
 	@awk '$$3 >= $(PARAM_STEP1_ORTHOLOGS_MIN_PERCENT_OVERLAP)' < $*_bygenes.clusters2clusters.links |\
 		grep -v "#" | cut -f 1,2,5 | ga_components -i -M - > $@_map
 	@python $(DIR_SCRIPTS_TOOLS)substitute_tokens.py --apply=$@_map --columns=2 < $*.components.map > $@.map
-	@cut -f2 $@.map | python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py | grep -v "#" > $@.sizes
+	@cut -f2 $@.map | python $(DIR_SCRIPTS_TOOLS)data2histogram.py | grep -v "#" > $@.sizes
 	@touch $@
 	$(EPILOG)
 
@@ -310,7 +310,7 @@ orthologs_vertex.links: $(INPUT_ORTHOLOGS)
 	grep -v "#" | cut -f 1,2,5 |\
 	ga_components -i -M - > $@_map
 	python $(DIR_SCRIPTS_TOOLS)substitute_tokens.py --apply=$@_map --columns=2 < $*.components.map > $@.map
-	cut -f2 $@.map | python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py | grep -v "#" > $@.sizes
+	cut -f2 $@.map | python $(DIR_SCRIPTS_TOOLS)data2histogram.py | grep -v "#" > $@.sizes
 	touch $@
 	$(CMD_LOG) "finished building $@"
 	$(EPILOG)
@@ -343,7 +343,7 @@ orthologs_vertex.links: $(INPUT_ORTHOLOGS)
 # 	awk '$$3 >= $(PARAM_STEP1_ORTHOLOGS_MIN_ORPHANS) && $$4 >= $(PARAM_STEP1_ORTHOLOGS_MIN_ORPHANS)' < $*_orphans.orphans2clusters | \
 # 	sort -k1,1 -k2,2 -k3,3nr |\
 # 	awk 'BEGIN { l=0; } { if ($$1==l) { next; } printf("%s\t%s\n", $$1, $$2); l=$$1; }' >> $@.map
-# 	cut -f2 $@.map | python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py | grep -v "#" > $@.sizes
+# 	cut -f2 $@.map | python $(DIR_SCRIPTS_TOOLS)data2histogram.py | grep -v "#" > $@.sizes
 # 	touch $@
 # 	$(CMD_LOG) "finished building $@"
 define run_add_orphans
@@ -376,7 +376,7 @@ define run_add_orphans
 		fi; \
 	done; \
 	mv $@_$${y}.map $@.map
-	cut -f2 $@.map | python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py | grep -v "#" > $@.sizes
+	cut -f2 $@.map | python $(DIR_SCRIPTS_TOOLS)data2histogram.py | grep -v "#" > $@.sizes
 	touch $@
 	$(EPILOG)
 endef
@@ -418,7 +418,7 @@ endef
 		fi; \
 	done; \
 	mv $@_$$y.map $@.map
-	@cut -f2 $@.map | python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py | grep -v "#" > $@.sizes
+	@cut -f2 $@.map | python $(DIR_SCRIPTS_TOOLS)data2histogram.py | grep -v "#" > $@.sizes
 	@touch $@
 	$(EPILOG)
 
@@ -522,10 +522,10 @@ LOGSUMMARY_HR2v?=echo "\#-------------------------------------------------------
 	$(LOGSUMMARY_HR1)
 	$(LOGSUMMARY_HR2)
 	@echo -e "# Ten largest clusters (counting by transcripts)\nsize\tclusters" $(TO_LOGSUMMARY)
-	@cut -f 2 $*.components.sizes | python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py | grep -v "#" | tail -n 10 $(TO_LOGSUMMARY)
+	@cut -f 2 $*.components.sizes | python $(DIR_SCRIPTS_TOOLS)data2histogram.py | grep -v "#" | tail -n 10 $(TO_LOGSUMMARY)
 	$(LOGSUMMARY_HR2)
 	@echo -e "# Ten largest clusters (counting by genes)\nsize\tclusters" $(TO_LOGSUMMARY)
-	@cut -f 2 $*_genes.components.sizes | python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py | grep -v "#" | tail -n 10 $(TO_LOGSUMMARY)
+	@cut -f 2 $*_genes.components.sizes | python $(DIR_SCRIPTS_TOOLS)data2histogram.py | grep -v "#" | tail -n 10 $(TO_LOGSUMMARY)
 	$(LOGSUMMARY_HR2)
 	@echo -e "# Size distribution (number of sequenes) of clusters" $(TO_LOGSUMMARY)
 	@cut -f 2 $*.components.sizes | python $(DIR_SCRIPTS_TOOLS)data2stats.py --flat | grep -v "#" $(TO_LOGSUMMARY)
@@ -562,7 +562,7 @@ LOGSUMMARY_HR2v?=echo "\#-------------------------------------------------------
 	@echo -e "# number of taxa per cluster\ntaxa\tclusters\trfreq\tcafreq\tcfreq" $(TO_LOGSUMMARY)
 	@perl $(DIR_SCRIPTS_TOOLS)reghead.pl "^species" 1 < $*.orgs_per_cluster |\
 	python $(DIR_SCRIPTS_TOOLS)csv_cut.py -v 0 present |\
-	python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py |\
+	python $(DIR_SCRIPTS_TOOLS)data2histogram.py |\
 	python $(DIR_SCRIPTS_TOOLS)histogram2histogram.py |\
 	awk '!/^#/ { printf("%i\t%i\t%5.2f\t%i\t%5.2f\n", $$1, $$2, $$3, $$6, $$7 ); }' $(TO_LOGSUMMARY)
 	$(LOGSUMMARY_HR2)
@@ -588,7 +588,7 @@ LOGSUMMARY_HR2v?=echo "\#-------------------------------------------------------
 	@grep "$(PARAM_INPUT_GENOME_MASTER)" $*.components.map |\
 	python $(DIR_SCRIPTS_TOOLS)substitute_tokens.py --column=1 --apply=predictions2genes |\
 	sort -k2,2n | uniq | uniq -f 1 -c | awk '{printf("%s\n", $$1);}' |\
-	python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py --append=normalize |\
+	python $(DIR_SCRIPTS_TOOLS)data2histogram.py --append=normalize |\
 	grep -v "#" $(TO_LOGSUMMARY);
 	$(LOGSUMMARY_HR1)
 	$(EPILOG)
@@ -789,7 +789,7 @@ step1.xstats: step1.stats.steps
 	< $*.components.map |\
 	sort | uniq > $@.map
 	@cut -f2 $@.map |\
-	python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py | grep -v "#" > $@.sizes
+	python $(DIR_SCRIPTS_TOOLS)data2histogram.py | grep -v "#" > $@.sizes
 	@touch $@
 	$(EPILOG)
 
@@ -847,7 +847,7 @@ analysis.dir/sizes_%.hist:
 	$(PRELOG)
 	@for x in $(ANALYSIS_RESULTS); do \
 		printf "bin\t$${x}\n" > $@.tmp_$${x}; \
-		python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py \
+		python $(DIR_SCRIPTS_TOOLS)data2histogram.py \
 		--column=2 \
 		< $${x}$(ANALYSIS_SIZES_SUFFIX).components.sizes | grep -v "#" >> $@.tmp_$${x}; \
 	done

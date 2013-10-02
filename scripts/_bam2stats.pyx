@@ -43,7 +43,11 @@ def count( Samfile samfile,
     # counters
     cdef int ninput = 0
     cdef int nduplicates = 0
+    # number of reads overlapping RNA (if rna != None)
     cdef int nrna = 0
+    # number of reads not overlap RNA (if rna != None)
+    cdef int n_norna = 0
+    # number of reads present after filtering
     cdef int nfiltered = 0
 
     cdef int max_hi = 0
@@ -51,6 +55,7 @@ def count( Samfile samfile,
     nh_filtered, nm_filtered = collections.defaultdict( int ), collections.defaultdict( int )
     nh_all, nm_all = collections.defaultdict( int ), collections.defaultdict( int )
     mapq_filtered, mapq_all = collections.defaultdict( int ), collections.defaultdict( int )
+    
 
     cdef int * flags_counts = <int*>calloc( len(FLAGS), sizeof(int) )
 
@@ -167,10 +172,13 @@ def count( Samfile samfile,
 
         # note: does not take into account gaps within reads
         # or partial overlap.
-        if rna and rna.contains( contig, read.pos, read.pos + read.alen ):
-            nrna += 1
-            if _remove_rna: continue
-        
+        if rna:
+            if rna.contains( contig, read.pos, read.pos + read.alen ):
+                nrna += 1
+                if _remove_rna: continue
+            else:
+                n_norna += 1
+
         nfiltered += 1
 
         if nh >= 0: nh_filtered[nh] += 1
@@ -197,6 +205,7 @@ def count( Samfile samfile,
     counter.input = ninput
     counter.filtered = nfiltered
     counter.rna = nrna
+    counter.no_rna = n_norna
     counter.duplicates = nduplicates
 
     # convert flags to labels

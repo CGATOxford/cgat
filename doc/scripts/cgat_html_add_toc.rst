@@ -1,5 +1,5 @@
 
 .. automodule:: cgat_html_add_toc
 
-.. program-output:: python ../scripts/cgat_html_add_toc.py --help
+.. program-output:: python ../scripts/cgat_html_add_toc.py --no-usage --help
 

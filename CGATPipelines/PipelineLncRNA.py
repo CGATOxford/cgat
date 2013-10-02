@@ -176,11 +176,12 @@ def buildLncRNAGeneSet( abinitio_lincrna, reference, refnoncoding, pseudogenes_g
         outf.write("%s\t%s\n" % (x, ",".join(y)))
 
     # write out transcripts that are not in removed set
-    temp = P.getTempFile()
+    temp = P.getTempFile(dir=".")
     for entry in GTF.iterator(IOTools.openFile(infile_abinitio)):
         if entry.transcript_id in remove_transcripts: continue
         temp.write("%s\n" % str(entry))
     temp.close()
+    to_cluster = False
 
     filename = temp.name
     statement = '''cat %(filename)s | python %(scriptsdir)s/gtf2gtf.py
@@ -218,7 +219,7 @@ def buildFilteredLncRNAGeneSet(flagged_gtf, outfile, genesets_previous):
                 previous_single.add(transcript[0].contig,transcript[0].start,transcript[0].end,[transcript[0].strand, transcript[0].gene_id])
 
     # create sets for keeping and discarding genes
-    temp = P.getTempFile()
+    temp = P.getTempFile(dir = ".")
     keep = set()
     known = set()
     novel = set()
@@ -317,10 +318,10 @@ def buildFinalLncRNAGeneSet(filteredLncRNAGeneSet, cpc_table, outfile, filter_cp
         remove = set()
     
     # get temporary file for built lncrna
-    temp = P.getTempFile()
+    temp = P.getTempFile(dir=".")
     
     # get temporary file for known lncrna
-    temp2 = P.getTempFile()
+    temp2 = P.getTempFile(dir = ".")
         
     for gtf in GTF.iterator(IOTools.openFile(filteredLncRNAGeneSet)):
         if gtf.gene_id in remove: continue

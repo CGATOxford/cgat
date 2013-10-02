@@ -48,11 +48,8 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-
-Code
-----
+Command line options
+--------------------
 
 '''
 import os
@@ -70,7 +67,9 @@ import CGAT.Experiment as E
 import CGAT.Histogram as Histogram
 import numpy
 
-if __name__ == "__main__":
+def main( argv = None ):
+
+    if not argv: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: data2histogram.py 2782 2009-09-10 11:40:29Z andreas $")
 
@@ -80,6 +79,8 @@ if __name__ == "__main__":
                       help="bin size."  )
     parser.add_option("-i", "--titles", dest ="titles", action="store_true",
                       help="use supplied column titles." )
+    parser.add_option( "--no-null", dest ="nonull", action="store_true",
+                      help="do not output null values" )
     parser.add_option( "--no-titles", dest ="titles", action="store_false",
                       help="no column titles given." )
     parser.add_option("-c", "--columns", dest="columns", type="string",
@@ -147,7 +148,6 @@ if __name__ == "__main__":
         
     if options.on_the_fly:
         if options.min_value == None or options.max_value == None or options.bin_size == None:
-            print USAGE
             raise "please supply columns, min-value, max-value and bin-size for on-the-fly computation."
 
         # try to glean titles from table:
@@ -284,8 +284,9 @@ if __name__ == "__main__":
 
     E.Stop()
 
-
-
+if __name__ == "__main__":
+    sys.exit( main( sys.argv ) )
+    
 
 
 

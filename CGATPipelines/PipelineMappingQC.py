@@ -148,14 +148,11 @@ def buildPicardAlignmentStats( infile, outfile, genome_file ):
         P.touch( outfile )
         return
 
-    # Whether or not to remove reads without quality information.
-    # Reads without quality information might cause Picard to fail.
-    # The default is to remove.
-    remove_seqs_without_quality = True
-
-    if remove_seqs_without_quality:
-        statement = '''samtools view -h %(infile)s 
-                       | awk '$11 != "*"' 
+    # Picard seems to have problem if quality information is missing
+    # or there is no sequence/quality information within the bam file.
+    # Thus, add it explicitely.
+    statement = '''cat %(infile)s 
+                       | python %(scriptsdir)s/bam2bam.py -v 0 --set-sequence --sam 
                        | CollectMultipleMetrics 
                                        INPUT=/dev/stdin 
                                        REFERENCE_SEQUENCE=%(genome_file)s
@@ -163,15 +160,6 @@ def buildPicardAlignmentStats( infile, outfile, genome_file ):
                                        OUTPUT=%(outfile)s 
                                        VALIDATION_STRINGENCY=SILENT 
                        >& %(outfile)s'''
-
-    else:
-        statement = '''CollectMultipleMetrics 
-                                       INPUT=%(infile)s 
-                                       REFERENCE_SEQUENCE=%(genome_file)s
-                                       ASSUME_SORTED=true 
-                                       OUTPUT=%(outfile)s 
-                                       VALIDATION_STRINGENCY=SILENT 
-                   >& %(outfile)s'''
 
     P.run()
 
@@ -291,6 +279,7 @@ def loadPicardMetrics( infiles, outfile, suffix, pipeline_suffix = ".picard_stat
 
     tmpfilename = outf.name
 
+    to_cluster = False
     statement = '''cat %(tmpfilename)s
                 | python %(scriptsdir)s/csv2db.py
                       --index=track
@@ -420,6 +409,28 @@ def loadBAMStats( infiles, outfile ):
                       --skip-titles
                       --missing=0
                       --ignore-empty
+                   %(filenames)s
+                | perl -p -e "s/bin/%(suffix)s/"
+                | python %(scriptsdir)s/csv2db.py
+                      --table=%(tname)s 
+                      --allow-empty
+                >> %(outfile)s """
+        P.run()
+
+    # load mapping qualities, there are two columns per row
+    # 'all_reads' and 'filtered_reads'
+    # Here, only filtered_reads are used (--take=3)
+    for suffix in ("mapq",):
+        E.info( "loading bam stats - %s" % suffix )
+        filenames = " ".join( [ "%s.%s" % (x, suffix) for x in infiles ] )
+        tname = "%s_%s" % (tablename, suffix)
+        
+        statement = """python %(scriptsdir)s/combine_tables.py
+                      --header=%(header)s
+                      --skip-titles
+                      --missing=0
+                      --ignore-empty
+                      --take=3
                    %(filenames)s
                 | perl -p -e "s/bin/%(suffix)s/"
                 | python %(scriptsdir)s/csv2db.py

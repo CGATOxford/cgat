@@ -6,7 +6,7 @@ version:
     options: --version
 
 tsv:
-        stdin: hg19.small.gtf.gz
+        stdin: 
         outputs: [stdout]
         references: [out.tsv]
-        options:
+        options: <DIR>/hg19.small.gtf.gz <DIR>/hg19.small.gtf.gz

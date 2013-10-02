@@ -49,11 +49,8 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-
-Code
-----
+Command line options
+--------------------
 
 '''
 USAGE="""python submit.py [OPTIONS] 

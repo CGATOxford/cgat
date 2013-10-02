@@ -63,11 +63,8 @@ for command line help.
    Currently files are copied to all nodes. This is potentially
    wasteful if jobs will only be executed on a few nodes.
 
-Documentation
--------------
-
-Code
-----
+Command line options
+--------------------
 
 '''
 

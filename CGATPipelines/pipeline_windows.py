@@ -316,6 +316,7 @@ def prepareTags( infile, outfile ):
         | sort -k1,1 -k2,2n
         | bgzip > %(outfile)s''')
 
+    statement.append( "tabix -p bed %(outfile)s" )
     statement.append( "rm -rf %(tmpdir)s" )
 
     statement = " ; ".join( statement )
@@ -334,12 +335,14 @@ def prepareTags( infile, outfile ):
 def buildBackgroundWindows( infile, outfile ):
     '''compute regions with high background count in input 
     '''
-    
+
+    job_options = "-l mem_free=16G"
+
     statement = '''
     python %(scriptsdir)s/wig2bed.py 
              --bigwig-file=%(infile)s 
              --genome-file=%(genome_dir)s/%(genome)s
-             --threshold=%(windows_background_density)f
+             --threshold=%(filtering_background_density)f
              --method=threshold
              --log=%(outfile)s.log
     | bgzip
@@ -359,7 +362,7 @@ def mergeBackgroundWindows( infiles, outfile ):
     genomefile = os.path.join( PARAMS["annotations_dir"], PARAMS_ANNOTATIONS['interface_contigs'])
     statement = '''
     zcat %(infiles)s 
-    | bedtools slop -i stdin -b %(windows_background_extension)i -g %(genomefile)s
+    | bedtools slop -i stdin -b %(filtering_background_extension)i -g %(genomefile)s
     | mergeBed 
     | bgzip
     > %(outfile)s
@@ -375,6 +378,32 @@ def loadPicardDuplicateStats( infiles, outfile ):
     '''Merge Picard duplicate stats into single table and load into SQLite.
     '''
     PipelineMappingQC.loadPicardDuplicateStats( infiles, outfile )
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( os.path.join( PARAMS["annotations_dir"], 
+                          PARAMS_ANNOTATIONS["interface_cpg_bed"] ),
+            regex(".*/([^/]*).bed.gz"), 
+            add_inputs( os.path.join( PARAMS["annotations_dir"],
+                                      PARAMS_ANNOTATIONS["interface_genomic_context_bed"]) ),
+            "cpg_context.tsv.gz" )
+def buildCpGAnnotation( infiles, outfile ):
+    '''annotate the location of CpGs within the genome.'''
+    
+    cpg_bed, context_bed = infiles
+
+    statement = '''
+    python %(scriptsdir)s/bam_vs_bed.py --min-overlap=0.5 %(cpg_bed)s %(context_bed)s
+    | gzip 
+    > %(outfile)s'''
+
+    P.run()
+
+@transform( buildCpGAnnotation, suffix( ".tsv.gz" ), ".load" )
+def loadCpGAnnotation( infile, outfile ):
+    '''load CpG annotations.'''
+    P.load( infile, outfile )
 
 #########################################################################
 #########################################################################
@@ -406,7 +435,8 @@ def buildCoverageBed( infile, outfile ):
 #########################################################################
 @transform( prepareTags, 
             suffix(".bed.gz"), 
-            add_inputs( os.path.join( PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_cpg_bed"] ) ),
+            add_inputs( os.path.join( PARAMS["annotations_dir"], 
+                                      PARAMS_ANNOTATIONS["interface_cpg_bed"] ) ),
             ".cpg_coverage.gz" )
 def buildCpGCoverage( infiles, outfile ):
     '''count number times certain CpG are covered by reads.
@@ -414,10 +444,14 @@ def buildCpGCoverage( infiles, outfile ):
     Reads are processed in the same way as by buildCoverageBed.
     '''
     
+    # coverageBed is inefficient. If bedfile and cpgfile
+    # were sorted correspondingly the overlap analysis
+    # could be done in very little memory.
+
     infile, cpg_file = infiles
     to_cluster = True
 
-    job_options = "-l mem_free=10G"
+    job_options = "-l mem_free=16G"
 
     statement = '''
     zcat %(infile)s 
@@ -429,19 +463,22 @@ def buildCpGCoverage( infiles, outfile ):
     '''
     P.run()
 
+
+
 #########################################################################
 #########################################################################
 #########################################################################
 @merge( buildCpGCoverage, "cpg_coverage.load" )
 def loadCpGCoverage( infiles, outfile ):
     '''load cpg coverag data.'''
-    P.mergeAndLoad( infiles, outfile, regex="/(.*).prep.cpg_coverage.gz",
+    P.mergeAndLoad( infiles, outfile, 
+                    regex="/(.*).cpg_coverage.gz",
                     row_wise = False )
 
 #########################################################################
 #########################################################################
 #########################################################################
-@merge( (buildCoverageBed, buildBackgroundWindows), "windows.bed.gz")
+@merge( (buildCoverageBed, mergeBackgroundWindows), "windows.bed.gz")
 def buildWindows( infiles, outfile ):
     '''build tiling windows according to parameter tiling_method.'''
     
@@ -553,28 +590,11 @@ def buildBigBed( infile, outfile ):
             r".counts.bed.gz" )
 def countReadsWithinWindows(infiles, outfile ):
     '''build read counds for variable width windows.'''
-
-    to_cluster = True
-
     bedfile, windowfile = infiles
-
-    if PARAMS["tiling_counting_method"] == "midpoint":
-        f = '''awk '{a = $2+($3-$2)/2; printf("%%s\\t%%i\\t%%i\\n", $1, a, a+1)}' '''
-    elif PARAMS["tiling_counting_method"] == "nucleotide":
-        f = ""
-    else: 
-        raise ValueError("unknown counting method: %s" % PARAMS["tiling_counting_method"])
-
-    statement = '''
-    zcat %(bedfile)s
-    %(f)s
-    | coverageBed -a stdin -b %(windowfile)s -split
-    | sort -k1,1 -k2,2n 
-    | awk 'BEGIN{OFS="\\t"};{print $4,$7}'
-    | gzip
-    > %(outfile)s
-    '''
-    P.run()
+    PipelineWindows.countReadsWithinWindows( bedfile,
+                                             windowfile,
+                                             outfile,
+                                             counting_method = PARAMS['tiling_counting_method'] )
 
 #########################################################################
 @follows( mkdir( "diff_methylation" ) )
@@ -602,30 +622,7 @@ def aggregateWindowsReadCounts( infiles, outfile ):
 
     Tiles with no counts will not be output.
     '''
-    
-    to_cluster = True
-
-    src = " ".join( [ '''<( zcat %s | awk '{printf("%%s:%%i-%%i\\t%%i\\n", $1,$2,$3,$4 );}' ) ''' % x for x in infiles] )
-    tmpfile = P.getTempFilename( "." )
-    statement = '''paste %(src)s > %(tmpfile)s'''
-    P.run()
-    
-    tracks = [ re.sub( "\..*", '', os.path.basename(x) ) for x in infiles ]
-
-    outf = IOTools.openFile( outfile, "w")
-    outf.write( "interval_id\t%s\n" % "\t".join( tracks ) )
-    
-    for line in open( tmpfile, "r" ):
-        data = line[:-1].split("\t")
-        genes = list(set([ data[x] for x in range(0,len(data), 2 ) ]))
-        values = [ int(data[x]) for x in range(1,len(data), 2 ) ]
-        if sum(values) == 0: continue
-        assert len(genes) == 1, "paste command failed, wrong number of genes per line: '%s'" % line
-        outf.write( "%s\t%s\n" % (genes[0], "\t".join(map(str, values) ) ) )
-    
-    outf.close()
-
-    os.unlink(tmpfile)
+    PipelineWindows.aggregateWindowsReadCounts( infiles, outfile )
 
 #########################################################################
 #########################################################################
@@ -650,65 +647,6 @@ def summarizeWindowsReadCounts( infile, outfile ):
 #########################################################################
 def loadWindowSummary( infile, outfile ):
     pass
-
-#########################################################################
-#########################################################################
-#########################################################################
-## Methylation analysis
-@transform( prepareTags, suffix(".bam"), ".medips")
-def runMEDIPS( infile, outfile ):
-    '''run MEDIPS analysis - 
-    outputs methylation profiles.
-    '''
-
-    to_cluster = True
-
-    job_options = "-l mem_free=23G"
-
-    statement = '''
-    zcat %(infile)s 
-    | python %(scriptsdir)s/WrapperMEDIPS.py
-         --ucsc-genome=%(genome)s
-         --genome-file=%(genome_dir)s/%(genome)s
-         --bigwig
-         --input-format=bed 
-         --extension=%(medips_extension)i
-         --fragment-length=%(medips_fragment_length)i
-         --force
-         --bin-size=%(medips_bin_size)i
-         --output-filename-pattern="%(outfile)s_%%s"
-         -
-    >& %(outfile)s
-    '''
-
-    P.run()
-
-#########################################################################
-#########################################################################
-#########################################################################
-@transform( runMEDIPS, suffix(".medips"), "_medips.load")
-def loadMEDIPS( infile, outfile ):
-    '''load medips results'''
-
-    table_prefix = re.sub( "_prep", "", P.toTable( outfile ))
-    
-    table = table_prefix + "_coveredpos" 
-
-    statement = """
-    cat %(infile)s_saturation_coveredpos.csv
-    | tail -n 3 
-    | perl -p -e 's/\\"//g; s/[,;]/\\t/g; '
-    | python %(scriptsdir)s/table2table.py --transpose
-    | python %(scriptsdir)s/csv2db.py 
-           %(csv2db_options)s
-           --table=%(table)s
-           --replace-header
-           --header=coverage,ncovered,pcovered
-    >> %(outfile)s
-    """
-    
-    P.run()
-
 
 #########################################################################
 def loadMethylationData( infile, design_file ):

@@ -1499,7 +1499,7 @@ def loadCuffdiff( infile, outfile ):
     tmpfile.write("\n".join(tracks) + "\n" )
     tmpfile.close()
     
-    statement = P.load( tmpfile.name, outfile )
+    statement = P.load( tmpfile.name, outfile)
     os.unlink( tmpfile.name )
 
 def runCuffdiff( bamfiles, 
@@ -1559,7 +1559,8 @@ def runCuffdiff( bamfiles,
         extra_options.append( " -M %s" % os.path.abspath( mask_file ) )
 
     extra_options = " ".join( extra_options )
-
+    
+    #IMS added a checkpoint to catch cuffdiff errors
     statement = '''date > %(outfile)s.log; hostname >> %(outfile)s.log;
     cuffdiff --output-dir %(outdir)s
              --verbose
@@ -1571,6 +1572,7 @@ def runCuffdiff( bamfiles,
              <(gunzip < %(geneset_file)s )
              %(reps)s
     >> %(outfile)s.log 2>&1;
+    checkpoint;
     date >> %(outfile)s.log;
     '''
     P.run()

@@ -27,7 +27,7 @@ bam2stats.py - compute stats from a bam-file
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: NGS Summary
 
 Purpose
 -------
@@ -73,7 +73,7 @@ iterating over the file. The metrics output are:
 +------------------------+------------------------------------------+
 |secondary               |alignment is not primary alignment        |
 +------------------------+------------------------------------------+
-|alignments_rna          |          alignments mapping to regions of|
+|alignments_rna          |alignments mapping to regions of          |
 |                        |repetitive RNA                            |
 +------------------------+------------------------------------------+
 |alignments_no_rna       |alignments mapping not to regions of      |
@@ -349,13 +349,17 @@ def main( argv = None ):
 
     if options.filename_rna:
         outs.write( "alignments_rna\t%i\t%5.2f\talignments_mapped\n" % (counter.rna, 100.0 * counter.rna / nalignments_mapped ) )
-        outs.write( "alignments_no_rna\t%i\t%5.2f\talignments_mapped\n" % (counter.filtered, 100.0 * counter.filtered / nalignments_mapped ) )
-        normby = "norna"
+        outs.write( "alignments_no_rna\t%i\t%5.2f\talignments_mapped\n" % (counter.no_rna, 100.0 * counter.no_rna / nalignments_mapped ) )
+
+    outs.write( "alignments_filtered\t%i\t%5.2f\talignments_mapped\n" % (counter.filtered, 100.0 * counter.filtered / nalignments_mapped ) )
+    if counter.filtered == nalignments_mapped:
+        normby = "alignments_mapped"
     else:
-        normby = "mapped"
-    
+        normby = "alignments_filtered"
+
     if counter.filtered > 0:
-        outs.write( "alignments_duplicates\t%i\t%5.2f\t%s\n" % (counter.duplicates, 100.0* counter.duplicates / counter.filtered, normby))
+        outs.write( "alignments_duplicates\t%i\t%5.2f\t%s\n" % (counter.duplicates, 100.0* counter.duplicates / counter.filtered, 
+                                                                normby))
         outs.write( "alignments_unique\t%i\t%5.2f\t%s\n" % (counter.filtered - counter.duplicates,
                                                             100.0*(counter.filtered - counter.duplicates)/counter.filtered,
                                                             normby) )

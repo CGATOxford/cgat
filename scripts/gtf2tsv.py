@@ -1,10 +1,9 @@
 ################################################################################
+#   Gene prediction pipeline 
 #
-#   MRC FGU Computational Genomics Group
+#   $Id: diff_gtf.py 2781 2009-09-10 11:33:14Z andreas $
 #
-#   $Id$
-#
-#   Copyright (C) 2009 Andreas Heger
+#   Copyright (C) 2004 Andreas Heger
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -21,218 +20,276 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-gtf2tsv.py - convert gtf file to a tab-separated table
-======================================================
+gtf2tsv.py - compare two genesets
+==================================
 
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Genomics Genesets
+:Tags: Python
 
 Purpose
 -------
 
-convert gtf formatted file to tab-separated table with column headers for 
-table import.
+This script compares two genesets in :term:`gtf`-formatted files and output lists
+of shared and unique genes.
 
-Note that coordinates are converted to 0-based open/closed notation (all on
-the forward strand).
+It outputs the results of the comparison into various sections. The sections are
+split into separate output files whose names are determined by the ``--output-filename-pattern`` 
+option. The sections are:
 
-If -a/--attributes is set, attributes are converted into separate columns.
+genes_ovl
+   Table with overlapping genes
+
+genes_total
+   Summary statistic of overlapping genes
+
+genes_uniq1
+   List of genes unique in set 1
+
+genes_uniq2
+   List of genes unique in set 2
 
 Usage
 -----
 
 Example::
 
-   python gtf2tsv.py < in.gtf > out.tsv
+   python gtfs2tsv.py a.gtf b.gtf
 
 Type::
 
-   python gtf2tsv.py --help
+   python gtfs2tsv.py --help
 
 for command line help.
 
 Command line options
----------------------
+--------------------
 
 '''
-import os
 import sys
 import string
 import re
+import os
 import optparse
-import CGAT.GTF as GTF
+import collections
 import CGAT.Experiment as E
+import CGAT.GTF as GTF
+import CGAT.IOTools as IOTools
+import bx.intervals.intersection
 
-def main():
-    '''
-    main function
-    '''
-    parser = E.OptionParser( version = "%prog version: $Id: gtf2tsv.py 2887 2010-04-07 08:48:04Z andreas $", usage = globals()["__doc__"])
+def GetNextLine( infile ):
+    for line in infile:
+        if line[0] == "#": continue
+        return line
+    return None
 
-    parser.add_option( "-o", "--only-attributes", dest="only_attributes", action="store_true",
-                       help="output attributes as separate columns [default=%default]." )
-    parser.add_option( "-f", "--full", dest="full", action="store_true",
-                       help="output attributes as separate columns [default=%default]." )
-    parser.add_option( "-i", "--invert", dest="invert", action = "store_true",
-                       help="convert tab-separated table back to gtf [default=%default]." ) 
-    parser.add_option( "-m", "--map", dest="map", type="choice",
-                       choices=("transcript2gene", "peptide2gene", "peptide2transcript"),
-                       help="output a map mapping transcripts to genes [default=%default]." ) 
+class Counts:
 
+    mPercentFormat = "%.2f"
 
+    def __init__(self, add_percent ):
+
+        self.nleft, self.nright, self.noverlap = 0, 0, 0
+        self.nunique_left = 0
+        self.nunique_right = 0
+        self.nidentical = 0
+        self.nhalf = 0
+        self.nsplit_left = 0
+        self.nsplit_right = 0
+        self.mAddPercent = add_percent
+        
+    def __add__(self, other):
+        self.nleft += other.nleft
+        self.nright += other.nright
+        self.noverlap += other.noverlap
+        self.nunique_left += other.nunique_left
+        self.nunique_right += other.nunique_right
+        self.nidentical += other.nidentical
+        self.nhalf += other.nhalf
+        self.nsplit_left += other.nsplit_left
+        self.nsplit_right += other.nsplit_right
+        return self
+    
+    def getHeader( self ):
+        h = "total_left\ttotal_right\tnoverlap\tnidentical\tnhalf\tunique_left\tunique_right\tsplit_left\tsplit_right"        
+        if self.mAddPercent:
+            h += "\t" + self.getHeaderPercent()
+        return h
+
+    def __str__( self ):
+        h = "\t".join(map(str, \
+                             (self.nleft, self.nright,
+                              self.noverlap, self.nidentical, self.nhalf,
+                              self.nunique_left, self.nunique_right,
+                              self.nsplit_left, self.nsplit_right)))
+        if self.mAddPercent:
+            h += "\t" + self.asPercent()
+            
+        return h 
+
+    def getHeaderPercent( self ):
+        return "\t".join( map( lambda x: "pl%s\tpr%s" % (x,x), ("overlap", "identical", "half", "unique", "split")))
+    
+    def asPercent( self ):
+        return "\t".join( map( lambda x: self.mPercentFormat % (100.0 * x),
+                               ( float(self.noverlap) / self.nleft,
+                                 float(self.noverlap) / self.nright,    
+                                 float(self.nidentical) / self.nleft,
+                                 float(self.nidentical) / self.nright,    
+                                 float(self.nhalf) / self.nleft,
+                                 float(self.nhalf) / self.nright,    
+                                 float(self.nunique_left) / self.nleft,
+                                 float(self.nunique_right) / self.nright,    
+                                 float(self.nsplit_left) / self.nleft,
+                                 float(self.nsplit_right) / self.nright )))
+
+def getFile( options, section ):
+
+    if options.output_filename_pattern:
+        outfile = IOTools.openFile(options.output_filename_pattern % section, "w")
+        E.info( "output for section '%s' goes to file %s" % (section, options.output_filename_pattern % section) )
+    else:
+        outfile = options.stdout
+        outfile.write( "## section: %s\n" % section)
+    return outfile
+
+def writeDiff( outfile, symbol, genes ):
+
+    for gene in genes:
+        for exon in gene:
+            outfile.write("%s\t%s\n" % (symbol, str(exon)))
+
+def main( argv = None ):
+
+    if not argv: argv = sys.argv
+
+    parser = E.OptionParser( version = "%prog version: $Id: diff_gtf.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
+
+    parser.add_option("-e", "--write-equivalent", dest="write_equivalent", 
+                      help="write equivalent entries [default=%default].", action="store_true"  )
+
+    parser.add_option("-f", "--write-full", dest="write_full",
+                      help="write full gff entries [default=%default].", action="store_true"  )
+
+    parser.add_option("-o", "--format=", dest="format",
+                      help="output format [flat|multi-line] [default=%default]" )
+
+    parser.add_option("-p", "--add-percent", dest="add_percent", action="store_true",
+                      help="add percentage columns [default=%default]." )
+
+    parser.add_option("-s", "--ignore-strand", dest="ignore_strand", action="store_true",
+                      help="ignore strand information [default=%default]." )
 
     parser.set_defaults(
-        only_attributes = False,
-        full = False,
-        invert = False,
-        map = None,
+        write_equivalent = False,
+        write_full = False,
+        format="flat",
+        add_percent=False,
+        ignore_strand = False,
+        as_gtf = False,
         )
 
+    (options, args) = E.Start( parser, argv, add_output_options = True )
 
-    (options,args) = E.Start( parser )
+    if len(args) != 2:
+        raise ValueError( "two arguments required" )
 
-    if options.full:
+    input_filename1, input_filename2 = args
 
-        # output full table with column for each attribute
-        attributes = set()
-        data = []
-        for gtf in GTF.iterator( options.stdin ):
-            data.append(gtf)
-            attributes = attributes.union( set(gtf.keys()) )
+    ## duplicated features cause a problem. Make sure
+    ## features are non-overlapping by running
+    ## gff_combine.py on GFF files first.
 
-        # remove gene_id and transcript_id, as they are used
-        # explicitely later
-        attributes.difference_update( ["gene_id", "transcript_id"] ) 
-            
-        attributes = sorted(list(attributes))
+    E.info( "reading data started" )
 
-        if options.only_attributes:
-            header = [ "gene_id", "transcript_id"] + attributes
-        else:
-            header = [ "contig","source","feature","start","end","score","strand","frame","gene_id",
-                       "transcript_id", ] + attributes
+    idx, genes2 = {}, set()
+    for e in GTF.readFromFile( IOTools.openFile( input_filename2, "r" ) ):
+        genes2.add( e.gene_id )
+        if e.contig not in idx: idx[e.contig] = bx.intervals.intersection.Intersecter()
+        idx[e.contig].add_interval( bx.intervals.Interval(e.start,e.end,value=e) )
 
-        options.stdout.write("\t".join( header ) + "\n" )
+    overlaps_genes = []
 
-        if options.only_attributes:
-            for gtf in data:
-                options.stdout.write( "\t".join( map(str, (gtf.gene_id,
-                                                           gtf.transcript_id,
-                                                           ))))
-                for a in attributes:
-                    if a in ("gene_id", "transcript_id"): continue
-                    try:
-                        val = getattr( gtf, a )
-                    except AttributeError:
-                        val = ""
-                    options.stdout.write( "\t%s" % val )
-                options.stdout.write("\n")
-        else:
-            for gtf in data:
-                options.stdout.write( "\t".join( map(str, (gtf.contig,
-                                                           gtf.source,
-                                                           gtf.feature,
-                                                           gtf.start,
-                                                           gtf.end,
-                                                           gtf.score,
-                                                           gtf.strand,
-                                                           gtf.frame,
-                                                           gtf.gene_id,
-                                                           gtf.transcript_id,
-                                                           ))))
-                for a in attributes:
-                    try:
-                        val = getattr( gtf, a )
-                    except AttributeError:
-                        val = ""
-                    options.stdout.write( "\t%s" % val )
-                options.stdout.write("\n")
-                
-    elif options.invert:
+    E.info( "reading data finished: %i contigs" % len(idx))
 
-        gtf = GTF.Entry()
-        header = None
-        for line in options.stdin:
-            if line.startswith("#"): continue
-            data = line[:-1].split("\t")
-            if not header:
-                header = data
-                map_header2column = dict( [(y,x) for x,y in enumerate( header )] )
+    # outfile_diff and outfile_overlap not implemented
+    # outfile_diff = getFile( options, "diff" )
+    # outfile_overlap = getFile( options, "overlap" )
+    overlapping_genes = set()
+
+    genes1 = set()
+
+    # iterate over exons
+    with IOTools.openFile( input_filename1, "r" ) as infile:
+        for this in GTF.iterator( infile ):
+
+            genes1.add( this.gene_id )
+
+            try:
+                intervals = idx[this.contig].find( this.start, this.end )
+            except KeyError:
                 continue
-            
-            # fill gtf entry with data
-            try:
-                gtf.contig = data[map_header2column["contig"]]
-                gtf.source = data[map_header2column["source"]]
-                gtf.feature = data[map_header2column["feature"]]
-                # subtract -1 to start for 0-based coordinates
-                gtf.start = int(data[map_header2column["start"]])
-                gtf.end = int(data[map_header2column["end"]])
-                gtf.score = data[map_header2column["score"]]
-                gtf.strand = data[map_header2column["strand"]]
-                gtf.frame = data[map_header2column["frame"]]
-                gtf.gene_id = data[map_header2column["gene_id"]]
-                gtf.transcript_id = data[map_header2column["transcript_id"]]
-                gtf.parseInfo( data[map_header2column["attributes"]], line )
-            except KeyError, msg:
-                raise KeyError( "incomplete entry %s: %s: %s" % (str(data), str(map_header2column), msg))
-            # output gtf entry in gtf format
-            options.stdout.write( "%s\n" % str(gtf) )
 
-    elif options.map:
+            others = [ x.value for x in intervals ]
+            for other in others:
+                overlapping_genes.add( (this.gene_id, other.gene_id) )
+
+            # check for identical/half-identical matches
+            output = None
+            for other in others:
+                if this.start == other.start and this.end == other.end:
+                    output, symbol = other, "="
+                    break
+            else:
+                for other in others:
+                    if this.start == other.start or this.end == other.end:
+                        output, symbol = other, "|"
+                        break
+                else:
+                    symbol = "~"
+
+    # if outfile_diff != options.stdout: outfile_diff.close()
+    # if outfile_overlap != options.stdout: outfile_overlap.close()
+
+    outfile = None
+    ##################################################################
+    ##################################################################
+    ##################################################################
+    ## print gene based information
+    ##################################################################    
+    if overlapping_genes:
+        outfile = getFile( options, "genes_ovl" )
+        outfile.write ("gene_id1\tgene_id2\n" )
+        for a, b in overlapping_genes: outfile.write( "%s\t%s\n" % (a,b) )
+        if outfile != options.stdout: outfile.close()
+
+        outfile_total = getFile(options, "genes_total" )
+        outfile_total.write("set\tngenes\tnoverlapping\tpoverlapping\tnunique\tpunique\n" )
+
+        outfile = getFile( options, "genes_uniq1" )
+        b = set( [ x[0] for x in overlapping_genes ] )
+        d = genes1.difference(b)
+        outfile.write ("gene_id1\n" )
+        outfile.write( "\n".join( d ) + "\n" )
+        if outfile != options.stdout: outfile.close()
+        outfile_total.write( "%s\t%i\t%i\t%5.2f\t%i\t%5.2f\n" % (
+                os.path.basename(input_filename1), len(genes1), len(b), 100.0 * len(b) / len(a),
+                len(d), 100.0 * len(d) / len(genes1) ) )
+
+        outfile = getFile( options, "genes_uniq2" )
+        b = set( [ x[1] for x in overlapping_genes ] )
+        d = genes2.difference(b)
+        outfile.write ("gene_id2\n" )
+        outfile.write( "\n".join( d ) + "\n" )
+        if outfile != options.stdout: outfile.close()
+
+        outfile_total.write( "%s\t%i\t%i\t%5.2f\t%i\t%5.2f\n" % (
+                os.path.basename(input_filename2), len(genes2), len(b), 100.0 * len(b) / len(a),
+                len(d), 100.0 * len(d) / len(genes2) ) )
+        if outfile_total != options.stdout: outfile_total.close()
         
-        if options.map == "transcript2gene":
-            fr = lambda x: x.transcript_id
-            to = lambda x: x.gene_id
-            options.stdout.write("transcript_id\tgene_id\n" )            
-        elif options.map == "peptide2gene":
-            fr = lambda x: x.protein_id
-            to = lambda x: x.gene_id
-            options.stdout.write("peptide_id\tgene_id\n" )            
-        elif options.map == "peptide2transcript":
-            fr = lambda x: x.protein_id
-            to = lambda x: x.transcript_id
-            options.stdout.write("peptide_id\ttranscript_id\n" )            
-            
-        map_fr2to = {}
-        for gtf in GTF.iterator( options.stdin ):
-            try:
-                map_fr2to[fr(gtf)] = to(gtf)
-            except AttributeError:
-                pass
+    E.Stop()    
 
-        for x,y in sorted(map_fr2to.iteritems()):
-            options.stdout.write("%s\t%s\n" % (x,y) )
-    else:
-        header = ( "contig","source","feature","start","end","score","strand","frame","gene_id","transcript_id","attributes"  )
-        options.stdout.write("\t".join( header ) + "\n" )
-
-        for gtf in GTF.iterator( options.stdin ):
-            
-            attributes = []
-            for a in gtf.keys():
-                if a in ("gene_id", "transcript_id"): continue
-                attributes.append( '%s %s' % (a, GTF.quote(gtf[a])) )
-
-            attributes = "; ".join( attributes )
-            
-            options.stdout.write( "\t".join( map(str, (gtf.contig,
-                                                       gtf.source,
-                                                       gtf.feature,
-                                                       gtf.start,
-                                                       gtf.end,
-                                                       GTF.toDot( gtf.score ),
-                                                       gtf.strand,
-                                                       gtf.frame,
-                                                       gtf.gene_id,
-                                                       gtf.transcript_id,
-                                                       attributes,
-                                                       ) ) ) + "\n" )
-    E.Stop()
-
-if __name__ == '__main__':
-    sys.exit(main())
-
-
+if __name__ == "__main__":
+    sys.exit( main() )

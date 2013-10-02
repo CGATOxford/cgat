@@ -316,16 +316,16 @@ step6.qc: step6.run
 	$(CMD_LOG) "resultant multiple alignments: `wc -l < $@/codons.data`"  $(TOLOG)
 	$(CMD_LOG) "number of input sequences per cluster" 
 	@echo -e "nsequences\tnclusters" $(TOLOG)
-	@python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py -v 0 --column=3 < $@/summary.data $(TOLOG)
+	@python $(DIR_SCRIPTS_TOOLS)data2histogram.py -v 0 --column=3 < $@/summary.data $(TOLOG)
 	$(CMD_LOG) "number of assigned sequences per clusters."
 	@echo -e "nsequences\tnclusters" $(TOLOG)
-	@python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py -v 0 --column=4 < $@/summary.data $(TOLOG)
+	@python $(DIR_SCRIPTS_TOOLS)data2histogram.py -v 0 --column=4 < $@/summary.data $(TOLOG)
 	$(CMD_LOG) "number of unassigned sequences per clusters."
 	@echo -e "nsequences\tnclusters" $(TOLOG)
-	@python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py -v 0 --column=6 < $@/summary.data $(TOLOG)
+	@python $(DIR_SCRIPTS_TOOLS)data2histogram.py -v 0 --column=6 < $@/summary.data $(TOLOG)
 	$(CMD_LOG) "number of clusters per cluster"
 	@echo -e "nsequences\tnclusters" $(TOLOG)
-	@python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py -v 0 --column=5 < $@/summary.data $(TOLOG)
+	@python $(DIR_SCRIPTS_TOOLS)data2histogram.py -v 0 --column=5 < $@/summary.data $(TOLOG)
 	$(CMD_LOG) "number of sequences within/without clusters."
 	@nunassigned=`cut -f 6 $@/summary.data | awk '{n+=$$1;} END { printf("%s\n", n)}'`; \
 	ninput=`cut -f 3 $@/summary.data | awk '{n+=$$1;} END { printf("%s\n", n)}'`; \
@@ -334,7 +334,7 @@ step6.qc: step6.run
 	$(CMD_LOG2) "unassigned sequences: unassigned=$${nunassigned} assigned=$${nassigned} input=$${ninput} clusters=$${nclusters}"
 	$(CMD_LOG) "species distribution (over all split clusters)."
 	@echo -e "nspecies\tcounts" $(TOLOG)
-	@python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py -v 0 --column=3 < $@/species.data $(TOLOG)
+	@python $(DIR_SCRIPTS_TOOLS)data2histogram.py -v 0 --column=3 < $@/species.data $(TOLOG)
 	@awk 'BEGIN { l="";m=0;} \
 		{ split($$1,a,"_"); if (l != a[2]) { \
 					if (l) { printf("%s\t%s\t%i\n", ll, l, m); } \
@@ -346,7 +346,7 @@ step6.qc: step6.run
 	< $@/species.data > $@/species_full.data
 	$(CMD_LOG) "species distribution (max per split cluster)." 
 	@echo -e "nspecies\tcounts" $(TOLOG)
-	@python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py -v 0 --column=3 < $@/species_full.data $(TOLOG)
+	@python $(DIR_SCRIPTS_TOOLS)data2histogram.py -v 0 --column=3 < $@/species_full.data $(TOLOG)
 	$(CMD_LOG) "computing perfect clusters."
 	@awk '$$3 == $(PARAM_NUM_GENOMES)' \
 	< $@/species.data > $@/species_perfect.data
@@ -408,7 +408,7 @@ step6.bs:
 		wc -l >> $@/splits.hist ; \
 	done
 	$(CMD_LOG) "building histogram of taxa per cluster"
-	@grep -v "#" $@/data | cut -f 2 | python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py > $@/taxa_per_cluster.hist
+	@grep -v "#" $@/data | cut -f 2 | python $(DIR_SCRIPTS_TOOLS)data2histogram.py > $@/taxa_per_cluster.hist
 	$(CMD_LOG) "building histograms of coefficient >ptotal< per taxa per cluster"
 	@for (( x = 2; x <= $(PARAM_NUM_GENOMES); ++x)); do \
 		awk -v ng=$$x '!/^#/ && !/cluster_.*_0\y/ && $$2==ng {printf("%f\n", $$5);}' \
@@ -973,7 +973,7 @@ bootstrap: bootstrap_files
 		--min-cluster-support=$(PARAM_BOOTSTRAP_MIN_CLUSTER_SUPPORT) \
 		< bootstrap_files > $@ 
 	grep -v ">" $@.components | python $(DIR_SCRIPTS_TOOLS)substitute_tokens.py --column=2 --create=$@.map_id2components > $@.components.map
-	cut -f2 $@.components.map | python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py | grep -v "#" > $@.components.sizes
+	cut -f2 $@.components.map | python $(DIR_SCRIPTS_TOOLS)data2histogram.py | grep -v "#" > $@.components.sizes
 
 
 

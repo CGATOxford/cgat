@@ -54,8 +54,8 @@ Documentation
 
 Takes input from stdin and outputs to stdout
 
-Code
-----
+Command line options
+--------------------
 
 '''
 

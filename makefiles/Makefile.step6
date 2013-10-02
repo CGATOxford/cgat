@@ -212,7 +212,7 @@ step6.stats: step6.matches.gz
 	' |\
 	sort -k1,1n >> $@/steps
 	$(CMD_MSG) "calculate summaries"
-	python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py --column=6,11 < $@/steps |\
+	python $(DIR_SCRIPTS_TOOLS)data2histogram.py --column=6,11 < $@/steps |\
 	python $(DIR_SCRIPTS_TOOLS)plot_histogram.py --logscale=xy --legend=time,probe,refine
 	python $(DIR_SCRIPTS_TOOLS)data2stats.py --column=6,11,16,19 --headers=probe,refine,result,region < $@/steps | grep -v "#" > $@/times
 	$(CMD_LOG) "processing times for step6"

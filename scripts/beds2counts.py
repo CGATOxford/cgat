@@ -51,9 +51,6 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-
 Command line options
 --------------------
 
@@ -63,7 +60,13 @@ import os
 import sys
 import re
 import optparse
-import pybedtools
+
+# importing pybedtools within sphinx does not work
+try:
+    import pybedtools
+except ImportError:
+    pass
+
 import CGAT.Experiment as E
 import CGAT.Bed as Bed
 import collections

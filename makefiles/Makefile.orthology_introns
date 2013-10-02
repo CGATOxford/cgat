@@ -473,7 +473,7 @@ exons.lengths: orthologous_segments.pairs
 
 gene_length_differences.png: cds.lengths
 	awk '{printf("%i\n", $$1 - $$2)'} < orthologs.lengths | \
-	python /net/cpp-group/scripts/tools/calculate_histogram.py --bin-size=200 |\
+	python /net/cpp-group/scripts/tools/data2histogram.py --bin-size=200 |\
 	python /net/cpp-group/scripts/tools/plot_histogram.py --logscale=y --hardcopy=$@
 
 gene_length_correlation.png: orthologs.lengths
@@ -482,7 +482,7 @@ gene_length_correlation.png: orthologs.lengths
 
 $(QUERY1)_gene_length.hist: orthologs.lengths
 	cut -f 1 orthologs.lengths |\
-	python /net/cpp-group/scripts/tools/calculate_histogram.py --bin-size=200 > $@
+	python /net/cpp-group/scripts/tools/data2histogram.py --bin-size=200 > $@
 
 $(QUERY1)_gene_length_cumul.hist: $(QUERY1)_gene_length.hist
 	python /net/cpp-group/scripts/tools/histogram2histogram.py < $(QUERY1)_gene_length.hist |\
@@ -490,7 +490,7 @@ $(QUERY1)_gene_length_cumul.hist: $(QUERY1)_gene_length.hist
 
 $(QUERY2)_gene_length.hist: orthologs.lengths
 	cut -f 2 orthologs.lengths |\
-	python /net/cpp-group/scripts/tools/calculate_histogram.py --bin-size=200 > $@
+	python /net/cpp-group/scripts/tools/data2histogram.py --bin-size=200 > $@
 
 $(QUERY2)_gene_length_cumul.hist: $(QUERY2)_gene_length.hist
 	python /net/cpp-group/scripts/tools/histogram2histogram.py < $(QUERY2)_gene_length.hist |\
@@ -539,7 +539,7 @@ combined_genes.stats: $(QUERY1)_genes.stats $(QUERY2)_genes.stats
 	for x in `cut -f $(INTRONS_COLUMN_TOKEN1) $@_tmp | sort | uniq `; do \
 		echo -e "# bin\trate" > $@_$${x}.hist; \
 		grep -v "#" $@_tmp | cut -f $(INTRONS_COLUMN_TOKEN1),$(INTRONS_COLUMN_RATE) | grep "$${x}" | cut -f 2 |\
-		python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py --scale=20.0 | \
+		python $(DIR_SCRIPTS_TOOLS)data2histogram.py --scale=20.0 | \
 		grep -v "#" >> $@_$$x.hist; \
 	done
 	python $(DIR_SCRIPTS_TOOLS)combine_histograms.py \
@@ -606,12 +606,12 @@ $(QUERY2)_%_rates_per_chromosome.stats: %.rates
 $(QUERY1)_%_aligned.hist: %.rates
 	awk '!/^#/ { if ($$$(INTRONS_COLUMN_LEN_QUERY1) > 0 ) \
 	{printf("%5.4f\n", $$$(INTRONS_COLUMN_ALIGNED) / $$$(INTRONS_COLUMN_LEN_QUERY1));}}' < $*.rates |\
-	python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py --scale=100.0 > $@
+	python $(DIR_SCRIPTS_TOOLS)data2histogram.py --scale=100.0 > $@
 
 $(QUERY2)_%_aligned.hist: %.rates
 	awk '!/^#/ { if ($$$(INTRONS_COLUMN_LEN_QUERY2) > 0 ) \
 	{printf("%5.4f\n", $$$(INTRONS_COLUMN_ALIGNED) / $$$(INTRONS_COLUMN_LEN_QUERY2));}}' < $*.rates |\
-	python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py --scale=100.0 > $@
+	python $(DIR_SCRIPTS_TOOLS)data2histogram.py --scale=100.0 > $@
 
 %_aligned.stats: %.rates
 	awk '!/^#/ { \
@@ -630,19 +630,19 @@ $(QUERY2)_%_aligned.hist: %.rates
 	awk '!/^#/ { split($$$(INTRONS_COLUMN_BLOCK_SIZES),a,","); \
 	for (x in a) { printf("%i\n", a[x]); }; }' \
 	< $*.rates |\
-	python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py > $@	
+	python $(DIR_SCRIPTS_TOOLS)data2histogram.py > $@	
 
 %_lgap_sizes.hist: %.rates
 	awk '!/^#/ { split($$$(INTRONS_COLUMN_LGAP_SIZES),a,","); \
 	for (x in a) { printf("%i\n", a[x]); }; }' \
 	< $*.rates |\
-	python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py > $@	
+	python $(DIR_SCRIPTS_TOOLS)data2histogram.py > $@	
 
 %_rgap_sizes.hist: %.rates
 	awk '!/^#/ { split($$$(INTRONS_COLUMN_RGAP_SIZES),a,","); \
 	for (x in a) { printf("%i\n", a[x]); }; }' \
 	< $*.rates |\
-	python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py > $@	
+	python $(DIR_SCRIPTS_TOOLS)data2histogram.py > $@	
 
 %_sizes.png: %_block_sizes.hist %_lgap_sizes.hist %_rgap_sizes.hist
 	python $(DIR_SCRIPTS_TOOLS)combine_histograms.py $*_block_sizes.hist $*_lgap_sizes.hist $*_rgap_sizes.hist |\
@@ -663,13 +663,13 @@ splice_sites.pairs: orthologs.transcripts
 ## Distance plots
 %_dist.hist: %.rates
 	grep -v "#" $*.rates | cut -f $(INTRONS_COLUMN_RATE) |\
-	python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py --scale=20.0 > $@
+	python $(DIR_SCRIPTS_TOOLS)data2histogram.py --scale=20.0 > $@
 
 %_rate_by_position.hist: %.rates
 	for ((x = 1; x <= 6; ++x)); do \
 		echo -e "# bin\trate" > $@_$$x.hist; \
 		grep -v "#" $*.rates | cut -f 4,$(INTRONS_COLUMN_RATE) | grep "^$$x[^0-9]" | cut -f 2 |\
-		python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py --scale=20.0 | \
+		python $(DIR_SCRIPTS_TOOLS)data2histogram.py --scale=20.0 | \
 		grep -v "#" >> $@_$$x.hist; \
 	done
 	python $(DIR_SCRIPTS_TOOLS)combine_histograms.py \
@@ -681,7 +681,7 @@ splice_sites.pairs: orthologs.transcripts
 ## percent identity plots
 %_pide.hist: %.rates
 	grep -v "#" $*.rates | cut -f $(INTRONS_COLUMN_RATE_IDENTITY) |\
-	python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py --scale=100.0 > $@
+	python $(DIR_SCRIPTS_TOOLS)data2histogram.py --scale=100.0 > $@
 
 ###########################################################
 ## plot transition and transversions versus distance
@@ -705,7 +705,7 @@ splice_sites.pairs: orthologs.transcripts
 			{ last = 0; a = $$$(INTRONS_COLUMN_TOKEN1); b = $$$(INTRONS_COLUMN_TOKEN2);} \
 		  if (last != 0) printf("%f\n", $$$(INTRONS_COLUMN_RATE) - last); \
 		  last=$$$(INTRONS_COLUMN_RATE) } ' |\
-	python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py --scale=100.0 >> $@
+	python $(DIR_SCRIPTS_TOOLS)data2histogram.py --scale=100.0 >> $@
 
 ## plot of difference in rates of 3' introns to first intron
 %_diff_first_per_gene.hist: %.rates
@@ -717,7 +717,7 @@ splice_sites.pairs: orthologs.transcripts
 				a = $$$(INTRONS_COLUMN_TOKEN1); b = $$$(INTRONS_COLUMN_TOKEN2);} else { first = 0;} }\
 		  if (first != 0 && $$4 > 1 && $$8 > 1) printf("%f\n", $$$(INTRONS_COLUMN_RATE) - first); \
 		  } ' |\
-	python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py --scale=100.0 >> $@
+	python $(DIR_SCRIPTS_TOOLS)data2histogram.py --scale=100.0 >> $@
 
 
 ###########################################################

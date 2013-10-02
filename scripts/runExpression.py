@@ -78,9 +78,6 @@ The script will call each of the method and output a variety of diagnostic plots
 Usage
 -----
 
-Documentation
--------------
-
 Command line options
 --------------------
 

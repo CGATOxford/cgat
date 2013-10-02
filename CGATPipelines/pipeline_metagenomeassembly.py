@@ -170,21 +170,9 @@ import logging as L
 import CGAT.Database as Database
 import CGAT.CSV as CSV
 
-import sys
-import os
-import re
-import shutil
-import itertools
-import math
-import glob
-import time
-import gzip
-import collections
-import random
+import sys, os, re, shutil, itertools, math, glob, time, gzip, collections, random
 
-import numpy
-import sqlite3
-import CGAT.GFF as GFF
+import numpy, sqlite3
 import CGAT.GTF as GTF
 import CGAT.IOTools as IOTools
 import CGAT.IndexedFasta as IndexedFasta
@@ -219,7 +207,7 @@ PARAMS = P.PARAMS
 ###################################################################
 ## Helper functions mapping tracks to conditions, etc
 ###################################################################
-import CGATPipelines.PipelineTracks as PipelineTracks
+import PipelineTracks
 
 # collect fastq.gz tracks
 TRACKS = PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
@@ -403,7 +391,7 @@ def loadMetavelvetStats(infile, outfile):
 ###################################################################                                                                                                                                                                          
 @active_if("idba" in ASSEMBLERS)
 @follows(mkdir("idba.dir"))
-@transform(preprocessReads, regex("(\S+).fa"), r"idba.dir/\1..contigs.fa")
+@transform(preprocessReads, regex("(\S+).fa"), r"idba.dir/\1.contigs.fa")
 def runIdba(infile, outfile):
     '''
     run idba on each track
@@ -861,6 +849,31 @@ def countUniqueAlignments(infile, outfile):
 ###################################################################                                                                                                                                                                          
 @transform(ALIGNMENT_TARGETS
            , regex("(\S+).dir/(\S+).bam")
+           , r"\1.dir/\1_\2.alignment_stats")
+def buildAlignmentStats(infile, outfile):
+    '''
+    use bam2stats to get alignment statistics
+    '''
+    statement = '''cat %(infile)s | python %(scriptsdir)s/bam2stats.py 
+                   --log=%(outfile)s.log - 
+                   > %(outfile)s'''
+    P.run()
+
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+@transform(buildAlignmentStats, suffix("_stats"), "_stats.load")
+def loadAlignmentStats(infile, outfile):
+    '''
+    load bam2stats results
+    '''
+    P.load(infile, outfile)
+
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+@transform(ALIGNMENT_TARGETS
+           , regex("(\S+).dir/(\S+).bam")
            , r"\1.dir/\1_\2.picard_stats")
 def buildPicardStats(infile, outfile):
     '''build alignment stats using picard.
@@ -874,7 +887,7 @@ def buildPicardStats(infile, outfile):
 ###################################################################                                                                                                                                                                          
 ###################################################################                                                                                                                                                                          
 ###################################################################                                                                                                                                                                          
-@jobs_limit( 1, "db" )
+#@jobs_limit( 1, "db" )
 @merge( buildPicardStats, "picard_stats.load" )
 def loadPicardStats( infiles, outfile ):
     '''merge alignment stats into single tables.'''

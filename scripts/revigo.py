@@ -94,8 +94,8 @@ The output of this program is similar but not identical to revigo. The algorithm
 and the input data are not identical. It seems that simrel values in this script are lower and thus the
 clustering is more conservative compared to revigo.
 
-Code
-----
+Command line options
+--------------------
 
 This module depends on unreleased code from http://code.google.com/p/gographer for parsing of the
 GO graph. The code has been modified to allow parsing of relationship information and record synonyms

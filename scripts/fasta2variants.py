@@ -27,37 +27,42 @@ fasta2variants.py - create sequence variants from a set of sequences
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Genomics Variants Protein
 
 Purpose
 -------
 
 This script reads a collection of sequences in :term:`fasta` format and
 outputs a table of possible variants. It outputs for each position in
-a protein sequence the number of variants. 
+a protein sequence the number of variants.
 
-If the input sequences are cds sequences, for each variant a weight
-is output indicating the number of times that variant can occur
-from single nucleotide changes.
+If the input sequences are nucleotide coding (CDS) sequences, for each
+variant a weight is output indicating the number of times that variant
+can occur from single nucleotide changes.
 
 Usage
 -----
 
 Example::
 
-   python fasta2variants.py
+    python fasta2variants.py -I CCDS_nucleotide.current.fna.gz -L CDS.log -S CDS.output -c
+
+This will take a CDS file as input, save the log and output files, and
+count variants based on single nucleotide changes using the -c option.
 
 Type::
 
-   python fasta2variants.py --help
+    python fasta2variants.py --help
 
 for command line help.
 
-Documentation
--------------
+Compressed (.gz) and various fasta format files (.fasta, .fna) are
+accepted. If the -c option is specified and the file is not a CDS
+sequence the script will throw an error ('length of sequence
+'<input_file>' is not a multiple of 3').
 
-Code
-----
+Command line options
+--------------------
 
 '''
 import os
@@ -83,7 +88,7 @@ def main( argv = None ):
                                     usage = globals()["__doc__"] )
 
     parser.add_option( "-c", "--is-cds", dest="is_cds", action="store_true",
-                       help = "input are cds sequences [%default]" )
+                       help = "input are cds (nucleotide) sequences [%default]" )
     
     parser.set_defaults(
         is_cds = False,

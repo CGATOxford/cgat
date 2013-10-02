@@ -28,6 +28,7 @@ fasta2fasta.py - operate on sequences
 :Release: $Id$
 :Date: |today|
 :Tags: Python
+:Tags: Sequences
 
 Purpose
 -------
@@ -90,8 +91,9 @@ mask-codons
 mask-incomplete-codons
    mask codons that are partially masked or gapped
 
-mask-stops
-   mask stop codons
+mask-soft
+   combine hard-masked (NNN) sequences with unmasked sequences to generate 
+   soft masked sequence (masked regions in lower case)
  
 remove-stops
    remove stop codons
@@ -129,9 +131,6 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-
 Command line options
 ---------------------
 
@@ -152,6 +151,7 @@ import CGAT.Genomics as Genomics
 import CGAT.FastaIterator as FastaIterator
 import CGAT.Masker as Masker
 import random
+import itertools
 
 def getCodons( sequence, gap_chars = "-." ):
     """get codons in sequence."""
@@ -196,6 +196,7 @@ if __name__ == '__main__':
                                "mask-codons", 
                                "mask-incomplete-codons",
                                "mask-stops", 
+                               "mask-soft", 
                                "remove-stops",
                                "upper", 
                                "lower",
@@ -271,6 +272,11 @@ if __name__ == '__main__':
         map_codon2code = IOTools.ReadMap( open(options.parameters[0], "r") )
         del options.parameters[0]
 
+    if "mask-soft" in options.methods:
+        f = options.parameters[0]
+        del options.parameters[0]
+        hard_masked_iterator = FastaIterator.FastaIterator( open(f, "r") )
+        
     if "mask-codons" in options.methods or "back-translate" in options.methods:
 
         ## open a second stream to read sequences from
@@ -422,6 +428,31 @@ if __name__ == '__main__':
 
                 sequence = "".join(new_sequence)
 
+            elif method == "mask-soft":
+                # Get next hard masked record and extract sequence and length
+                try:
+                    cur_hm_record = hard_masked_iterator.next()
+                except StopIteration:
+                    break
+                hm_sequence = re.sub( " ", "", cur_hm_record.sequence)
+                lhm = len(hm_sequence)
+                new_sequence = []
+                
+                # Check lengths of unmasked and soft masked sequences the same
+                if l != lhm:
+                    raise ValueError, "length of unmasked and hard masked sequences not identical for record %s" % (cur_record.title)
+                
+                # Check if hard masked seq contains repeat (N), if so replace N with lowercase sequence from unmasked version
+                if sequence==hm_sequence:
+                    pass
+                else:
+                    for x, y in itertools.izip_longest(sequence, hm_sequence):
+                        if y=="N":
+                            new_sequence += x.lower()
+                        else:
+                            new_sequence += x.upper()
+                sequence = "".join(new_sequence)
+                
             elif method == "map-codons":
 
                 seq = []

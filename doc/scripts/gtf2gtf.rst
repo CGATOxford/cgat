@@ -1,5 +1,5 @@
 
 .. automodule:: gtf2gtf
 
-.. program-output:: python ../scripts/gtf2gtf.py --help
+.. program-output:: python ../scripts/gtf2gtf.py --no-usage --help
 

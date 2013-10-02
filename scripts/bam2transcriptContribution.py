@@ -35,8 +35,6 @@ Purpose
 Computes the total number of reads from a BAM alignment file that contribute to
 transcripts provided in a gtf file.
 
-
-
 Usage
 -----
 
@@ -50,11 +48,8 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-
-Code
-----
+Command line options
+--------------------
 
 '''
 
@@ -63,13 +58,19 @@ import sys
 import re
 import optparse
 import collections
+import tempfile
+import numpy
+# importing pybedtools within sphinx does not work
+try:
+    import pybedtools
+except ImportError:
+    pass
+
+import pysam
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
-import pysam
 import CGAT.GTF as GTF
-import numpy
-import pybedtools
-import tempfile
+
 import pyximport
 pyximport.install(build_in_temp=False)
 import CGAT.Pipeline as P
