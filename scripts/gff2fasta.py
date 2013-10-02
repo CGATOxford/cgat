@@ -73,7 +73,7 @@ import bx.intervals.intersection
 ##------------------------------------------------------------------------
 if __name__ == "__main__":
 
-    parser = E.OptionParser( version = "%prog version: $Id: gff2fasta.py 2861 2010-02-23 17:36:32Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: gff2fasta.py 2861 2010-02-23 17:36:32Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option( "--is-gtf", dest="is_gtf", action="store_true",
                       help="input is gtf instead of gff."  )
@@ -158,6 +158,16 @@ if __name__ == "__main__":
 
     feature = options.feature
 
+#    for item in iterator:
+#	print len(item) # 3, 2
+#	for i in item:
+#	   print len(i) # 9, 9, 9, 9, 9
+#	   print i.contig
+#	   print i.strand
+#	   print i.transcript_id
+
+    # iterator is a list containing groups (lists) of features.
+    # Each group of features have in common the same transcript ID, in case of GTF files.
     for ichunk in iterator:
 
         ninput += 1
