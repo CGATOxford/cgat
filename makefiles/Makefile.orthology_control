@@ -570,7 +570,7 @@ define run_pairs_hists
 	python $(DIR_SCRIPTS_TOOLS)split_file.py --column=1 --pattern-output="$@/%s.ks" < $@/all > /dev/null; \
 	for file in $@/*.ks; do \
 		cut -f 2 < $$file |\
-		python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py --scale=$${scale} > $${file}_tmp; \
+		python $(DIR_SCRIPTS_TOOLS)data2histogram.py --scale=$${scale} > $${file}_tmp; \
 	done; \
 	echo "`date`: $@ : combining histograms"; \
 	for org in $(PARAM_GENOMES); do \
@@ -583,10 +583,10 @@ define run_pairs_hists
 	echo "`date`: $@ : building cluster summaries"; \
 	awk '{split($$1, a, "-"); if (a[1] > a[2]) { next; } print; }' < $@/all |\
 	python $(DIR_SCRIPTS_TOOLS)data2stats.py --column=2 --aggregate-column=3 > $@/summary; \
-	python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py --scale=$${scale} --column=3 < $@/summary > $@/cluster_min.hist; \
-	python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py --scale=$${scale} --column=4 < $@/summary > $@/cluster_max.hist; \
-	python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py --scale=$${scale} --column=5 < $@/summary > $@/cluster_avg.hist; \
-	python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py --scale=$${scale} --column=7 < $@/summary > $@/cluster_sum.hist; \
+	python $(DIR_SCRIPTS_TOOLS)data2histogram.py --scale=$${scale} --column=3 < $@/summary > $@/cluster_min.hist; \
+	python $(DIR_SCRIPTS_TOOLS)data2histogram.py --scale=$${scale} --column=4 < $@/summary > $@/cluster_max.hist; \
+	python $(DIR_SCRIPTS_TOOLS)data2histogram.py --scale=$${scale} --column=5 < $@/summary > $@/cluster_avg.hist; \
+	python $(DIR_SCRIPTS_TOOLS)data2histogram.py --scale=$${scale} --column=7 < $@/summary > $@/cluster_sum.hist; \
 	echo "`date`: $@ : finished"
 endef
 
@@ -705,7 +705,7 @@ orthologs_weighted.links: orthologs.links
 ## combine clusters of orphans and of non-orphans
 %_addorphans.components: %_orphans2clusters.map %.components
 	cat $*_orphans2clusters.map $*.components.map | cut -f1,2 > $@.map
-	cut -f2 $@.map | python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py | grep -v "#" > $@.sizes
+	cut -f2 $@.map | python $(DIR_SCRIPTS_TOOLS)data2histogram.py | grep -v "#" > $@.sizes
 	touch $@
 
 
