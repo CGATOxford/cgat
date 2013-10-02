@@ -50,9 +50,6 @@ for command line help.
 
 This script was formerly called :file:`compare_histograms.py`.
 
-Documentation
--------------
-
 Command line options
 --------------------
 

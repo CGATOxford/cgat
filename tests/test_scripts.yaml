@@ -1,3 +1,3 @@
 restrict:
-        # manifest:
-        regex: data2histogram.py
+        manifest:
+        regex: fastq2table.py

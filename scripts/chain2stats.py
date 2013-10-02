@@ -61,7 +61,6 @@ Command line options
 #import modules
 import os
 import sys
-from optparse import OptionParser
 from operator import add
 from numpy import *
 from operator import itemgetter,attrgetter
@@ -487,8 +486,8 @@ def main(argv = None ):
     if not argv: argv = sys.argv
     
     #get the options
-    parser = OptionParser(version = "%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
-                          usage = globals()["__doc__"] )
+    parser = E.OptionParser(version = "%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
+                            usage = globals()["__doc__"] )
 
     parser.add_option("-c", "--chainfile", dest="chainfile", type="string",
                       help="the chain file to analyse", metavar="FILE")

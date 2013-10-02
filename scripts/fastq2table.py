@@ -33,23 +33,20 @@ Purpose
 -------
 
 This script iterates over a fastq file and outputs
-read statistits for each read.
+statistics for each read.
 
 Usage
 -----
 
 Example::
 
-   python fastq2table.py < in.fastq > out.tsv
+   python fastq2table.py --guess-format=sanger < in.fastq > out.tsv
 
 Type::
 
    python fastq2table.py --help
 
 for command line help.
-
-Documentation
--------------
 
 Command line options
 --------------------
@@ -103,7 +100,9 @@ def main( argv = None ):
                                           format = options.change_format,
                                           guess = options.guess_format )
     else:
-        iterator = Fastq.iterate_guess( options.stdin )
+        print options.guess_format
+        iterator = Fastq.iterate_guess( options.stdin,
+                                        guess = options.guess_format )
 
     options.stdout.write( "read\tnfailed\tnN\t%s\n" % ("\t".join(Stats.Summary().getHeaders()) ) )
 

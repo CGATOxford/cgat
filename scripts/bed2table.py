@@ -55,7 +55,7 @@ Usage
 
 Example::
 
-   python bed2table.py --help
+   python bed2table.py --counter=overlap < in.bed > out.tsv
 
 Type::
 

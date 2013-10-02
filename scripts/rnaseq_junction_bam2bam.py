@@ -67,9 +67,6 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-
 Command line options
 --------------------
 
@@ -87,10 +84,6 @@ import CGAT.GTF as GTF
 import CGAT.IOTools as IOTools
 import pysam
 
-import pyximport
-pyximport.install(build_in_temp=False)
-import _rnaseq_bams2bam
-
 def main( argv = None ):
     """script main.
 
@@ -101,8 +94,8 @@ def main( argv = None ):
 
     # setup command line parser
     parser = E.OptionParser( version = "%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
-                                    usage = globals()["__doc__"] )
-
+                             usage = globals()["__doc__"] )
+    
     parser.add_option( "-t", "--template-bam", dest="filename_genome_bam", type="string",
                        help = "input bam file for header information [%default]" )
 

@@ -4,3 +4,9 @@ version:
     outputs: [stdout]
     references: []
     options: --version
+
+small:
+        stdin: small.fastq.gz
+        outputs: [stdout]
+        references: [small.tsv]
+        options: --guess-format=sanger

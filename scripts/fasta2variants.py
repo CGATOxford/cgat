@@ -56,9 +56,6 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-
 Compressed (.gz) and various fasta format files (.fasta, .fna) are
 accepted. If the -c option is specified and the file is not a CDS
 sequence the script will throw an error ('length of sequence

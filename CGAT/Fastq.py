@@ -116,12 +116,11 @@ def iterate( infile ):
         yield Record( line1[1:-1], line2[:-1], line4[:-1])
 
 
-def iterate_guess( infile, max_tries = 10000):
+def iterate_guess( infile, max_tries = 10000, guess = None):
     '''iterate over contents of fastq file.
 
     guess quality format.
     '''
-    
     quals = set( RANGES.keys() )
     cache = []
     myiter = iterate(infile)
@@ -139,8 +138,10 @@ def iterate_guess( infile, max_tries = 10000):
     if len(quals) == 1:
         ref_format = list(quals)[0]
     else:
-        raise ValueError( "could not guess format - could be one of %s." % str(quals) )
-            
+        if guess == None:
+            raise ValueError( "could not guess format - could be one of %s." % str(quals) )
+        ref_format = guess
+
     for r in cache:
         r.format = ref_format
         yield r

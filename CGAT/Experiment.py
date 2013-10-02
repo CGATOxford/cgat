@@ -478,7 +478,7 @@ def Start( parser = None,
     *add_cluster_options* add common options for scripts submitting jobs to the cluster
     *add_output_options* add commond options for working with multiple output files
     *returns* a tuple (options,args) with options (a :py:class:`E.OptionParser` object 
-              and a list of positional arguments.
+        and a list of positional arguments.
 
     The :py:func:`Start` method will also set up a file logger.
 

@@ -83,8 +83,8 @@ def main( argv = None ):
     if not argv: argv = sys.argv
 
     # setup command line parser
-    parser = optparse.OptionParser( version = "%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
-                                    usage = globals()["__doc__"] )
+    parser = E.OptionParser( version = "%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
+                             usage = globals()["__doc__"] )
 
     parser.add_option("-a", "--fastq1", dest="fastq1", type="string",
                       help="supply read1 fastq file"  )
