@@ -58,22 +58,24 @@ Command line options
 import sys
 import re
 import os
+import CGAT.GTF as GTF
+import CGAT.IOTools as IOTools
 import CGAT.Experiment as E
 
 class OutputChunk:
     def __init__(self, options):
-        self.mNChunk = 0
-        self.mOptions = options
+        self.nchunk = 0
+        self.options = options
 
     def createOpen( self, mode = "w" , header = None):
         """open file. Check first, if directory exists.
         """
 
-        self.mNChunk += 1
-        filename = self.mOptions.output_pattern % self.mNChunk
+        self.nchunk += 1
+        filename = self.options.output_pattern % self.nchunk
 
-        if self.mOptions.dry_run:
-            self.mOptions.stdlog.write("# opening file %s\n" % filename )
+        if self.options.dry_run:
+            self.options.stdlog.write("# opening file %s\n" % filename )
             return open("/dev/null", mode)
 
         if mode in ("w", "a"):
@@ -86,7 +88,7 @@ class OutputChunk:
         else:
             existed = False
         
-        f = open( filename, mode )
+        f = IOTools.openFile( filename, mode )
 
         if header and not existed:
             f.write( header + "\n" )
