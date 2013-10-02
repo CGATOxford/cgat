@@ -1,16 +1,15 @@
 import glob
 import sys
 import os
+import subprocess
 
+########################################################################
 #######################################################################
 ## Check for dependencies
 ##
 ## Is there a way to do this more elegantly?
 ##     1. Run "pip install numpy"
 ##     2. Wrap inside functions (works for numpy/pysam, but not cython)
-#######################################################################
-#######################################################################
-#######################################################################
 try:
     import numpy
 except ImportError:
@@ -29,9 +28,9 @@ except ImportError:
 ########################################################################
 ########################################################################
 ## Import setuptools
-## Use existing setuptools
+## Use existing setuptools, otherwise try ez_setup.
 try:
-    from setuptools import setup, find_packages, Extension
+    import setuptools
 except ImportError:
     ## try to get via ez_setup
     ## ez_setup did not work on all machines tested as
@@ -39,12 +38,53 @@ except ImportError:
     ## enabled in ScientificLinux
     import ez_setup
     ez_setup.use_setuptools()
-    from setuptools import setup, find_packages, Extension
+
+from setuptools import setup, find_packages, Extension
+major, minor = map(int, setuptools.__version__.split(".")[:2])
+if major < 1 or (major == 1 and minor < 1):
+    raise ImportError("the CGAT code collection requires setuptools 1.1 higher")
 
 from Cython.Distutils import build_ext
 
+########################################################################
+########################################################################
+# collect CGAT version
+sys.path.insert( 0, "scripts")
+import version
+
+version = version.__version__
+
 ###############################################################
 ###############################################################
+# Check for external dependencies
+#
+# Not exhaustive, simply execute a representative tool from a toolkit.
+external_dependencies = ( 
+    ("wigToBigWig", "UCSC tools", 255),
+    ("bedtools", "bedtools", 0 ),
+    )
+
+for tool, toolkit, expected in external_dependencies:
+    try:
+        from subprocess import DEVNULL # py3k
+    except ImportError:
+        import os
+        DEVNULL = open(os.devnull, 'wb')
+
+    try:
+        retcode = subprocess.call( tool, shell = True, stdout=DEVNULL, stderr=DEVNULL )
+    except OSError, msg:
+        raise ValueError( "depency check for %s failed: %s" % (toolkit, msg ) )
+
+    # UCSC tools return 255 when called without arguments
+    if retcode != expected:
+        raise ValueError( "depency check for %s(%s) failed, error %i" % \
+                              (toolkit, tool, retcode ) )
+
+###############################################################
+###############################################################
+# Define dependencies 
+#
 # Perform a CGAT Code Collection Installation
 INSTALL_CGAT_CODE_COLLECTION = True
 
@@ -62,6 +102,8 @@ if major==2 and minor1<7 or major<2:
 
 # Dependencies shared between python 2 and 3
 shared_dependencies = [
+    # required fon the cython part
+    'setuptools>=1.1',
     'sphinx>=1.0.5',
     'SphinxReport>=2.0',
     'rpy2>=2.3.4',
@@ -102,6 +144,9 @@ cgat_package_dirs = { 'CGAT': 'CGAT',
                       'CGATScripts' : 'scripts',
                       'CGATPipelines': 'CGATPipelines' }
 
+##########################################################
+##########################################################
+# Classifiers
 classifiers="""
 Development Status :: 3 - Alpha
 Intended Audience :: Science/Research
@@ -173,13 +218,13 @@ for pyx_file in pyx_files:
         )
 
 setup(## package information
-    name='CGAT',
-    version='0.1.4',
-    description='CGAT : the Computational Genomics Analysis Toolkit',
-    author='Andreas Heger',
-    author_email='andreas.heger@gmail.com',
-    license="BSD",
-    platforms=["any",],
+    name = 'CGAT',
+    version= version,
+    description = 'CGAT : the Computational Genomics Analysis Toolkit',
+    author = 'Andreas Heger',
+    author_email = 'andreas.heger@gmail.com',
+    license = "BSD",
+    platforms = ["any",],
     keywords="computational genomics",
     long_description='CGAT : the Computational Genomics Analysis Toolkit',
     classifiers = filter(None, classifiers.split("\n")),
