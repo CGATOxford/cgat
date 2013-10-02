@@ -4,4 +4,23 @@ version:
     references: []
     options: --version
 
+merged_exons:
+    stdin: hg19.chr19.gtf.gz
+    outputs: [stdout]
+    references: [merge_exons.gtf.gz]
+    options: --merge-exons
+
+renumber:
+    stdin: hg19.chr19.gtf.gz
+    outputs: [stdout]
+    references: [renumber.gtf.gz]
+    options: --renumber-transcripts=%05i --renumber-genes=%05i
+
+sorted_transcript:
+    stdin: hg19.chr19.gtf.gz
+    outputs: [stdout]
+    references: [sorted_transcript.gtf.gz]
+    options: --sort=transcript
+
+
 

@@ -33,8 +33,7 @@ Purpose
 -------
 
 This script reads a gene set in :term:`gtf` format from stdin, applies some 
- transformation, and outputs a new gene set in :term:`gtf format to stdout. 
-
+transformation, and outputs a new gene set in :term:`gtf format to stdout. 
 
 Options
 -------
@@ -218,6 +217,7 @@ Example::
 
 Type::
     python gtf2gtf.py --help
+
 for command line help
 
 
