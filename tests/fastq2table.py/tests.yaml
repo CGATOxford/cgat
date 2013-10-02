@@ -1,6 +1,14 @@
 
-version:
-    stdin: null
+test_specifying_format:
+    stdin: 50K.fastq.gz
     outputs: [stdout]
-    references: []
-    options: --version
+    references: [50K_format_reference.tsv]
+    options: --format illumina-1.8 --log=test.log
+    description: build summary when format of quality scores is known
+
+test_changing_format:
+    stdin: 50K.fastq.gz
+    outputs: [stdout]
+    references: [50K_changeformat_reference.tsv]
+    options: --format illumina-1.8 --change-format sanger --log=test.log
+    description: build summary when format of quality scores is changed from a known format
