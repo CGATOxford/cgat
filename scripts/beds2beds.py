@@ -46,7 +46,7 @@ If the ``--exclusive`` option is set, report exclusive overlap. Only intervals
 will be reported that overlap in a pairwise comparison but do not overlap with 
 intervals in any of the other sets.
 
-This script requires bed files indexed by :term:`tabix`.
+This script requires bed files indexed by tabix_.
 
 Usage
 -----

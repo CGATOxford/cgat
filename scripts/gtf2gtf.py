@@ -54,6 +54,7 @@ Sort gene sets
 
 ``--sort``
    Sorts entries in gtf file by one or more fields      
+
       +---------------+---------------------------------------+
       | option        | order in which fields are sorted      | 
       +===============|=======================================+
@@ -67,7 +68,7 @@ Sort gene sets
       +---------------+---------------------------------------+
       | position+gene | contig( gene_id, start )              |
       +---------------+---------------------------------------+
-      | gene+position | gene_id, contig, start                | # currently non-existant 
+      | gene+position | gene_id, contig, start                | 
       +---------------+---------------------------------------+
    
    N.B. position+gene sorts by gene_id, start, then subsequently sorts
@@ -125,18 +126,21 @@ Input gtfs need to be sorted so that features for a gene or transcript
     pysam.TabProxies.GTFProxy has no attribute 'gene_id'    
     May be used in conjunction with ``--reset-strand``    
 
-Note: The option ``--permit-duplicates`` may be specified in order to allow gene-ids
- to be duplicated within the input :term:`gtf` file (i.e. for the same gene-id to
- appear non-consecutively within the input file). However, this option currently 
- only works for ``--merge-exons``, ``--merge-transcripts``, ``--merge-introns``, 
- and ``--intersect-transcripts``. It DOES NOT work for ``--merge-genes``, 
- ``--join-exons``, or ``--exons2introns``.
+Note: The option ``--permit-duplicates`` may be specified in order to
+allow gene-ids to be duplicated within the input :term:`gtf` file
+(i.e. for the same gene-id to appear non-consecutively within the
+input file). However, this option currently only works for
+``--merge-exons``, ``--merge-transcripts``, ``--merge-introns``, and
+``--intersect-transcripts``. It DOES NOT work for ``--merge-genes``,
+``--join-exons``, or ``--exons2introns``.
 
 
 Filter gene sets
+
 ++++++++++++++++
-Options that can be used to filter :term:`gtf` files. For further detail see command 
- line options.
+
+Options that can be used to filter :term:`gtf` files. For further
+detail see command line options.
 
 Input gtfs need to be sorted so that features for a gene or transcript 
  appear consecutively within the file. This can be achevied using ``--sort``.
@@ -170,6 +174,7 @@ Input gtfs need to be sorted so that features for a gene or transcript
 
 Set/reset fields
 ++++++++++++++++
+
 Options for altering fields within :term:`gtf`. For further details see command 
  line options.
 
@@ -213,9 +218,11 @@ Usage
 -----
 
 Example::
+
     python gtf2gtf.py --sort=gene | python gtf2gtf.py --intersect-transcripts --with-utr --renumber-transcripts= MERGED%s
 
 Type::
+
     python gtf2gtf.py --help
 
 Command line Options

@@ -73,10 +73,12 @@ rst_epilog='''
 .. _CGAT Training Programme: http://www.cgat.org
 .. _pysam: http://code.google.com/p/pysam/
 .. _samtools: http://samtools.sourceforge.net/
+.. _tabix: http://samtools.sourceforge.net/tabix.shtml/
 .. _galaxy: https://main.g2.bx.psu.edu/
 .. _cython: http://cython.org/
 .. _pyximport: http://www.prescod.net/pyximport/
 .. _sphinx: http://sphinx-doc.org/
+.. _ruffus: http://www.ruffus.org.uk/
 '''
 
 sys.path.insert( 0, "../scripts")

@@ -40,7 +40,7 @@ and consistent methods for
    * `Logging`_
    * `Benchmarking`_
 
-See :doc:`../scripts/script_template` on how to use this module.
+See :doc:`../scripts/cgat_script_template` on how to use this module.
 
 The basic usage of this module within a script is::
 

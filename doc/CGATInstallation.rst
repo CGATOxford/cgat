@@ -89,10 +89,10 @@ The sequence of commands is:
       </section>
 
 
-A list of galaxy compatible scripts is here_. This file is part of the
+A list of galaxy compatible scripts is in file :file:`galaxy.list`. This file is part of the
 CGAT repository and can be used to create all wrappers in one go::
 
-   cat /ifs/devel/andreas/cgat/galaxy/galaxy.list
+   cat galaxy.list
    | cgat2rdf.py
         --source-dir=<cgat-scripts>  --input-regex="(.*).py"
 	--output-pattern=<galaxy-xml>/%s.xml --format=galaxy

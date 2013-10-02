@@ -38,7 +38,7 @@ To install the CGAT tools, type::
    pip install cgat
 
 This will install the CGAT scripts and libraries together with the
-required dependencies. See :ref:`Installation Instructions` for
+required dependencies. See :ref:`CGATInstallation` for
 dependencies and troubleshooting.
 
 CGAT tools are run from the unix command line. Lets assume we have
