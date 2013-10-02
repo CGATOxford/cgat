@@ -124,8 +124,8 @@ base_qualities
 
 See the samtools documentation for the meaning of these.
 
-Code
-----
+Command line options
+--------------------
 
 """ 
 

@@ -1,5 +1,5 @@
 
 .. automodule:: jalview
 
-.. program-output:: python ../scripts/jalview.py --help
+.. program-output:: python ../scripts/jalview.py --no-usage --help
 

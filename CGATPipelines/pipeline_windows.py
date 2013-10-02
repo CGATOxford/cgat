@@ -382,6 +382,32 @@ def loadPicardDuplicateStats( infiles, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
+@transform( os.path.join( PARAMS["annotations_dir"], 
+                          PARAMS_ANNOTATIONS["interface_cpg_bed"] ),
+            regex(".*/([^/]*).bed.gz"), 
+            add_inputs( os.path.join( PARAMS["annotations_dir"],
+                                      PARAMS_ANNOTATIONS["interface_genomic_context_bed"]) ),
+            "cpg_context.tsv.gz" )
+def buildCpGAnnotation( infiles, outfile ):
+    '''annotate the location of CpGs within the genome.'''
+    
+    cpg_bed, context_bed = infiles
+
+    statement = '''
+    python %(scriptsdir)s/bam_vs_bed.py --min-overlap=0.5 %(cpg_bed)s %(context_bed)s
+    | gzip 
+    > %(outfile)s'''
+
+    P.run()
+
+@transform( buildCpGAnnotation, suffix( ".tsv.gz" ), ".load" )
+def loadCpGAnnotation( infile, outfile ):
+    '''load CpG annotations.'''
+    P.load( infile, outfile )
+
+#########################################################################
+#########################################################################
+#########################################################################
 @transform( prepareTags, suffix(".bed.gz"), ".covered.bed.gz" )
 def buildCoverageBed( infile, outfile ):
     '''build bed file with regions covered by reads.
@@ -436,6 +462,8 @@ def buildCpGCoverage( infiles, outfile ):
     > %(outfile)s
     '''
     P.run()
+
+
 
 #########################################################################
 #########################################################################

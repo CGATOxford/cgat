@@ -53,8 +53,8 @@ This script was formerly called :file:`compare_histograms.py`.
 Documentation
 -------------
 
-Code
-----
+Command line options
+--------------------
 
 '''
 import os

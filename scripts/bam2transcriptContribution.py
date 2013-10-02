@@ -35,8 +35,6 @@ Purpose
 Computes the total number of reads from a BAM alignment file that contribute to
 transcripts provided in a gtf file.
 
-
-
 Usage
 -----
 
@@ -53,8 +51,8 @@ for command line help.
 Documentation
 -------------
 
-Code
-----
+Command line options
+--------------------
 
 '''
 

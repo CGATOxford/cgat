@@ -26,7 +26,7 @@ fastqs2fastqs.py - reconcile reads from a pair of fastq files
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Genomics NGS
 
 Purpose
 -------
@@ -55,9 +55,8 @@ Type::
 
 for command line help.
 
-
-Code
-----
+Command line options
+--------------------
 
 '''
 

@@ -66,8 +66,8 @@ flag for example.
 Doesn't use paired information.
  
 
-Code
-----
+Command line options
+--------------------
 
 '''
 

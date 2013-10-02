@@ -27,7 +27,7 @@ fasta2kmercontent.py
 :Author: Nick Ilott
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Genomics Sequence
 
 Purpose
 -------
@@ -74,8 +74,8 @@ Type::
 for command line help.
 
 
-Code
-----
+Command line options
+--------------------
 
 '''
 

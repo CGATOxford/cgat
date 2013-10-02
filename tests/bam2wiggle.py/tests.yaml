@@ -4,3 +4,15 @@ version:
     outputs: [stdout]
     references: []
     options: --version
+
+bigwig:
+        stdin: null
+        outputs: [ paired.bw ]
+        references: [paired.bw]
+        options: --output-format=bigwig <DIR>/paired.bam paired.bw
+
+wig:
+        stdin: null
+        outputs: [stdout]
+        references: [paired.wig.gz]
+        options: --output-format=wiggle <DIR>/paired.bam

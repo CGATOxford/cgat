@@ -86,8 +86,8 @@ A table is started by the line ``table=#`` where ``#`` is an integer number. The
 a tab-separated table with the first line being interpreted as a header. Lines starting with ``#`` are
 ignored.
 
-Code
-----
+Command line options
+--------------------
 '''
 
 import os

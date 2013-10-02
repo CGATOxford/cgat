@@ -27,17 +27,19 @@ fastq2fastq.py - manipulate fastq files
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Genomics NGS Sequence
 
 Purpose
 -------
 
-This script performs manipulations on :term:`fastq` formatted files. For example
-it can be used to change the quality score format or sample a subset of reads.
+This script performs manipulations on :term:`fastq` formatted
+files. For example it can be used to change the quality score format
+or sample a subset of reads.
 
-The script predominantly is used for manipulation of single fastq files. However,
-for some of its functionality it will take paired data using the --pair and --outfile-pair
-options. This applies to the --sample and --sort options.
+The script predominantly is used for manipulation of single fastq
+files. However, for some of its functionality it will take paired data
+using the --pair and --outfile-pair options. This applies to the
+--sample and --sort options.
 
 Usage
 -----
@@ -55,8 +57,8 @@ Type::
 for command line help.
 
 
-Code
-----
+Command line options
+--------------------
 
 '''
 
@@ -146,8 +148,7 @@ def main( argv = None ):
     elif options.sample:
         sample_threshold = min( 1.0, options.sample)
 
-        seed = random.seed( options.seed )
-        E.info( "random seed: %i" % seed )
+        random.seed( options.seed )
         
         if options.pair:
             if not options.outfile_pair:

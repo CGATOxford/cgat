@@ -417,4 +417,26 @@ def loadBAMStats( infiles, outfile ):
                 >> %(outfile)s """
         P.run()
 
+    # load mapping qualities, there are two columns per row
+    # 'all_reads' and 'filtered_reads'
+    # Here, only filtered_reads are used (--take=3)
+    for suffix in ("mapq",):
+        E.info( "loading bam stats - %s" % suffix )
+        filenames = " ".join( [ "%s.%s" % (x, suffix) for x in infiles ] )
+        tname = "%s_%s" % (tablename, suffix)
+        
+        statement = """python %(scriptsdir)s/combine_tables.py
+                      --header=%(header)s
+                      --skip-titles
+                      --missing=0
+                      --ignore-empty
+                      --take=3
+                   %(filenames)s
+                | perl -p -e "s/bin/%(suffix)s/"
+                | python %(scriptsdir)s/csv2db.py
+                      --table=%(tname)s 
+                      --allow-empty
+                >> %(outfile)s """
+        P.run()
+
 

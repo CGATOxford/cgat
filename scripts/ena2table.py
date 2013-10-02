@@ -95,8 +95,8 @@ library_selection:
     other (Other library enrichment, screening, or selection process)
     unspecified (Library enrichment, screening, or selection is not specified)
 
-Code
-----
+Command line options
+--------------------
 
 '''
 

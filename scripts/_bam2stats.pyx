@@ -55,6 +55,7 @@ def count( Samfile samfile,
     nh_filtered, nm_filtered = collections.defaultdict( int ), collections.defaultdict( int )
     nh_all, nm_all = collections.defaultdict( int ), collections.defaultdict( int )
     mapq_filtered, mapq_all = collections.defaultdict( int ), collections.defaultdict( int )
+    
 
     cdef int * flags_counts = <int*>calloc( len(FLAGS), sizeof(int) )
 

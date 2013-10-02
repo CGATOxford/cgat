@@ -21,19 +21,20 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-fastqs2fasta.py
+fastqs2fasta.py - interleave two fastq files
 =============================================
 
 :Author: Nick Ilott
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Genomics NGS
 
 Purpose
 -------
 
-This script is used to interleave two :term:`fastq`-formatted files (paired data) into a single :term:`fasta`-formatted file. Read1 is followed by 
-read2 in the resultant file. 
+This script is used to interleave two :term:`fastq`-formatted files
+(paired data) into a single :term:`fasta`-formatted file. Read1 is
+followed by read2 in the resultant file.
 
 :term:`fastq` files MUST be sorted by read identifier.
 
@@ -51,8 +52,8 @@ Type::
 for command line help.
 
 
-Code
-----
+Command line options
+--------------------
 
 '''
 

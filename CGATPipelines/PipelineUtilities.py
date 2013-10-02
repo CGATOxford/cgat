@@ -94,8 +94,13 @@ def execute(queries, database=PARAMS.get("database",""), attach=False):
 
 def fetch(query, database=PARAMS.get("database",""), attach=False):
     '''Fetch all query results and return'''
-    dbhandle = sqlite3.connect( database )
-    cc = dbhandle.cursor()
+    
+    try:
+        cc=database.cursor()
+    except AttributeError:
+
+        dbhandle = sqlite3.connect( database )
+        cc = dbhandle.cursor()
 
     if attach: db_execute(cc, attach)
 
@@ -110,7 +115,7 @@ def fetch_with_names(query, database=PARAMS.get("database",""), attach=False):
 
     try:
         cc=database.cursor()
-    except:
+    except AttributeError:
         dbhandle = sqlite3.connect( database )
         cc = dbhandle.cursor()
 
@@ -134,8 +139,11 @@ def fetch_with_names(query, database=PARAMS.get("database",""), attach=False):
 def fetch_DataFrame(query, database=PARAMS.get("database",""), attach=False):
     '''Fetch query results and returns them as a pandas dataframe'''
 
-    dbhandle = sqlite3.connect( database )
-    cc = dbhandle.cursor()
+    try:
+        cc=database.cursor()
+    except AttributeError:
+        dbhandle = sqlite3.connect( database )
+        cc = dbhandle.cursor()
 
     if attach:
         db_execute(cc,attach)

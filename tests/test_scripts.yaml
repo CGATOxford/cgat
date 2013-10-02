@@ -1,0 +1,3 @@
+restrict:
+        manifest:
+        regex: vcf2vcf.py

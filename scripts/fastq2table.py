@@ -21,13 +21,13 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-fastq2table.py - compute stats on fastq files
-=============================================
+fastq2table.py - compute stats on reads in fastq files
+======================================================
 
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Genomics NGS Sequence
 
 Purpose
 -------
@@ -56,7 +56,7 @@ Usage
 
 Example::
 
-   python cat in.fastq | fastq2table.py --format illumina-1.8 > out.tsv
+   python fastq2table.py --format < in.fastq > out.tsv
 
 In this example we know that our data have quality scores formatted as illumina-1.8. Given that
 sanger quality scores are highly overlapping with illumina-1.8, this option forces the 
@@ -71,8 +71,8 @@ for command line help.
 
 
 
-Code
-----
+Command line options
+--------------------
 
 '''
 

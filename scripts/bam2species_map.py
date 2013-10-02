@@ -56,8 +56,8 @@ a mapping between contigs and species that are represented in those contigs i.e.
 a metagenomic simulation study the majority species for a contig will be returned with
 the contig.
 
-Code
-----
+Command line options
+--------------------
 
 '''
 

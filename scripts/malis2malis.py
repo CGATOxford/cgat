@@ -59,8 +59,8 @@ for command line help.
 Documentation
 -------------
 
-Code
-----
+Command line options
+--------------------
 
 '''
 import os

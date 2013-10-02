@@ -21,45 +21,48 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 """
-bams2correlation.py
-===================
+bam_vs_bam.py - compute coverage correlation between bam files
+==============================================================
 
 :Author: Andreas Heger
-:Release: $Id: bams2correlation.py 2861 2010-02-23 17:36:32Z andreas $
+:Release: $Id: bam_vs_bam.py 2861 2010-02-23 17:36:32Z andreas $
 :Date: |today|
-:Tags: Python
+:Tags: NGS
 
 Purpose
 -------
 
-Compare per base coverage between BAM files.
+Compare per base coverage between two :term:`bam` formatted files.
 
 Usage
 -----
 
 Example::
 
-   python bams2correlation.py in1.bam in2.bam -g reference.fasta
+   python bam_vs_bam.py in1.bam in2.bam 
 
-This command generates a tab delimited output with columns chromosome, base coordinate, number of overlapping reads
-in in1.bam, and number of overlapping reads in in2.bam.
+This command generates a tab delimited output with columns chromosome,
+base coordinate, number of overlapping reads in in1.bam, and number of
+overlapping reads in in2.bam.
 
 Type::
 
-   python <script_name>.py --help
+   python bam_vs_bam.py --help
 
 for command line help.
 
 Documentation
 -------------
 
-This tools allows users to obtain per base coverage over the genome for one or more BAM files.  The output includes
-all bases in the supplied reference fasta except those with no coverage in the input BAM or BAMs.
+This tools allows users to obtain per base coverage over the genome
+for one or more BAM files.  The output includes all bases in the
+supplied reference fasta except those with no coverage in the input
+BAM or BAMs.
 
 At present the --interval or -i option has not been implemented.  
 
-Code
-----
+Command line options
+--------------------
 
 """ 
 
@@ -82,16 +85,17 @@ def main( argv = None ):
     if not argv: argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser( version = "%prog version: $Id: bams2correlation.py 2861 2010-02-23 17:36:32Z andreas $", usage = globals()["__doc__"] )
+    parser = E.OptionParser( version = "%prog version: $Id: bam_vs_bam.py 2861 2010-02-23 17:36:32Z andreas $", usage = globals()["__doc__"] )
 
     parser.add_option("-i", "--intervals", dest="filename_intervals", type="string",
                       help="filename with intervals to use [default=%default]."  )
-    parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
-                      help="filename with genome [default=%default]."  )
+
+    parser.add_option("-e", "--regex-identifier", dest="regex_identifier", type="string",
+                      help="regular expression to extract identifier from filename [default=%default]." )
 
     parser.set_defaults(
         filename_intervals = None,
-        genome_file = None,
+        regex_identifier = "(.*)",
         )
 
     ## add common options (-h/--help, ...) and parse command line 
@@ -106,13 +110,14 @@ def main( argv = None ):
     if options.filename_intervals:
         raise NotImplementedError( "It is not yet possible to specify intervals of interest.  Repeat command without intervals option." )
     
-    if options.genome_file:
-        fasta = IndexedFasta.IndexedFasta( options.genome_file )
+    titles = [ re.search( options.regex_identifier, x ).groups()[0] for x in args ]
 
-    options.stdout.write( "contig\tpos\t%s\n" % "\t".join(args))
+    options.stdout.write( "contig\tpos\t%s\n" % "\t".join(titles))
 
     ninput, nskipped, noutput = 0, 0, 0
-    for contig in fasta.getContigs():
+    contigs = samfiles[0].references
+
+    for contig in contigs:
         
         missing_contig = False
 

@@ -65,8 +65,8 @@ Type::
 
 for command line help.
 
-Code
-----
+Command line options
+--------------------
 
 """ 
 
@@ -285,9 +285,11 @@ def main( argv = None ):
         outf = lambda outfile, contig, start, end, val: \
             outfile.write("%s\t%i\t%i\t%i\n" % (contig, start, end,val))
 
-    output_filename = os.path.abspath( options.output_filename )
-
     ninput, nskipped, ncontigs = 0, 0, 0
+
+    output_filename = options.output_filename 
+    if output_filename:
+        output_filename = os.path.abspath( output_filename )
 
     if options.shift > 0 or options.extend > 0 or options.merge_pairs:
 

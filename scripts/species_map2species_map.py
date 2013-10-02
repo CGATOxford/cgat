@@ -60,8 +60,8 @@ gi number as the common identifier.
 
 Reads from stdin and outputs to stdout.
 
-Code
-----
+Command line options
+--------------------
 
 '''
 

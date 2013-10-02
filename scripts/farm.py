@@ -88,8 +88,8 @@ The following command will split a fasta file at every 10 sequences::
    implement better error messages
    use sge array jobs for job control
 
-Code
-----
+Command line options
+--------------------
 
 '''
 

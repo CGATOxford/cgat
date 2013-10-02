@@ -1,5 +1,5 @@
 
 .. automodule:: softmask
 
-.. program-output:: python ../scripts/softmask.py --help
+.. program-output:: python ../scripts/softmask.py --no-usage --help
 
