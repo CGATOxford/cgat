@@ -33,23 +33,43 @@ Purpose
 -------
 
 This script iterates over a fastq file and outputs
-read statistits for each read.
+summary statistics for each read.
+
+The output is a tab-delimited text file with the following columns:
+
+read - read identifier present in input fastq file
+nfailed - number of reads that fall below Q10
+nN - number of ambiguous base calls (N)
+nval - number of bases in the read
+min - minimum base quality score for the read
+max - maximum base quality for the read
+mean - mean base quality for the read
+median - median base quality for the read
+stddev - standard devitation of quality scores for the read
+sum - sum of quality scores for the read
+q1 - 25th percentile of quality scores for the read
+q3 - 25th percentile of quality scores for the read
+
 
 Usage
 -----
 
 Example::
 
-   python cgat_script_template.py --help
+   python cat in.fastq | fastq2table.py --format illumina-1.8 > out.tsv
+
+In this example we know that our data have quality scores formatted as illumina-1.8. Given that
+sanger quality scores are highly overlapping with illumina-1.8, this option forces the 
+use of illumina-1.8 qualities. In default mode the script may not be able to distinguish
+highly overlapping sets of quality scores.
 
 Type::
 
-   python cgat_script_template.py --help
+   python fastq2table.py --help
 
 for command line help.
 
-Documentation
--------------
+
 
 Code
 ----
@@ -79,17 +99,20 @@ def main( argv = None ):
     parser = E.OptionParser( version = "%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
                                     usage = globals()["__doc__"] )
 
-    parser.add_option( "--guess-format", dest="guess_format", type="choice",
-                      choices = ('sanger', 'solexa', 'phred64', 'integer' ),
-                      help="quality score format to assume if ambiguous [default=%default]."  )
+    parser.add_option( "--format", dest="format", type="choice",
+                      choices = ('sanger', 'solexa', 'phred64', 'illumina-1.8', 'integer' ),
+                      help="The default behaviour of the script is to guess the quality format of the input fastq file. The user can specify \
+                            the quality format of the input file using the --format option. The script will use this format if the \
+                            sequence qualities are ambiguous.[default=%default]."  )
 
     parser.add_option("-f", "--change-format", dest="change_format", type="choice",
-                      choices = ('sanger', 'solexa', 'phred64', 'integer' ),
-                      help="guess quality score format and set quality scores to format [default=%default]."  )
+                      choices = ('sanger', 'solexa', 'phred64', 'illumina-1.8', 'integer' ),
+                      help="The script will guess the quality format of the input file and convert \
+                            quality scores to the destination format unless --format is specified [default=%default]."  )
 
     parser.set_defaults(
         change_format = None,
-        guess_format = None,
+        format = None,
         min_quality = 10,
         )
 
@@ -101,10 +124,10 @@ def main( argv = None ):
     if options.change_format:
         iterator = Fastq.iterate_convert( options.stdin, 
                                           format = options.change_format,
-                                          guess = options.guess_format )
+                                          guess = options.format )
     else:
-        iterator = Fastq.iterate_guess( options.stdin )
-
+        iterator = Fastq.iterate_guess( options.stdin, guess = options.format )
+    
     options.stdout.write( "read\tnfailed\tnN\t%s\n" % ("\t".join(Stats.Summary().getHeaders()) ) )
 
     min_quality = options.min_quality
