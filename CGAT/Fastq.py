@@ -35,6 +35,7 @@ Code
 '''
 
 from math import log
+import CGAT.Experiment as E
 # see http://en.wikipedia.org/wiki/FASTQ_format
 # ranges are conservative - they are open-ended
 RANGES = {
@@ -74,6 +75,8 @@ class Record:
         assert self.format != None, "format needs to be set for conversion"
         if self.format == "sanger":
             return [ ord(x) - 33 for x in self.quals ]
+        elif self.format == "illumina-1.8":
+            return [ ord(x) - 33 for x in self.quals ]
         elif self.format == "solexa":
             # from -5 to 40 (i.e., can be negative)
             log10x = log(10.0) + .499
@@ -88,6 +91,8 @@ class Record:
         assert len(quals) == len(self.seq) or len(quals) == len(self.seq) - 1
         if self.format == "sanger":
             self.quals = "".join( [ chr(33 + x) for x in quals ] )
+        elif self.format == "illumina-1.8":
+            return [ chr(33 + x) for x in self.quals ]
         elif self.format == "solexa":
             log10x = log(10.0, 10) / 10.0
             q = [int(10.0 * (log( 10 ** (x * log10x) - 1.0, 10 ))) for x in quals ] 
@@ -116,15 +121,15 @@ def iterate( infile ):
         yield Record( line1[1:-1], line2[:-1], line4[:-1])
 
 
-def iterate_guess( infile, max_tries = 10000):
+def iterate_guess( infile, max_tries = 10000, guess = None):
     '''iterate over contents of fastq file.
 
     guess quality format.
     '''
-    
     quals = set( RANGES.keys() )
     cache = []
     myiter = iterate(infile)
+    lengths = []
     for c, record in enumerate(myiter):
         quals.intersection_update( set(record.guessFormat()) )
         if len(quals) == 0:
@@ -132,12 +137,15 @@ def iterate_guess( infile, max_tries = 10000):
         if len(quals) == 1:
             break
         cache.append( record )
-
+        lengths.append( len(record.seq) )
         if c > max_tries: 
             break
 
     if len(quals) == 1:
         ref_format = list(quals)[0]
+    elif guess in quals:
+        E.warn("multiple input formats possible: %s. Continuing with %s" % (", ".join(quals), guess))
+        ref_format = guess
     else:
         raise ValueError( "could not guess format - could be one of %s." % str(quals) )
             
@@ -158,6 +166,7 @@ def iterate_convert( infile, format, max_tries = 10000, guess = None ):
     quals = set( RANGES.keys() )
     cache = []
     myiter = iterate(infile)
+    lengths = []
     for c, record in enumerate(myiter):
         quals.intersection_update( set(record.guessFormat()) )
 
@@ -173,9 +182,10 @@ def iterate_convert( infile, format, max_tries = 10000, guess = None ):
     if len(quals) == 1:
         ref_format = list(quals)[0]
     elif guess in quals:
+        E.warn("multiple input formats possible: %s. Continuing with %s" % (", ".join(quals), guess))
         ref_format = guess
     else:
-        raise ValueError( "could not guess format - could be one of %s." % str(quals) )
+        raise ValueError( "could not guess format - could be one of %s. If you know the format use the --format option" % str(quals) )
             
     for r in cache:
         r.format = ref_format
