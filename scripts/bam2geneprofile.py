@@ -558,8 +558,6 @@ The options are:
             for norm in options.profile_normalizations:
                 with IOTools.openFile( E.getOutputFile( counter.name ) + ".%s.tsv.gz" % norm, "w") as outfile:
                     counter.writeMatrix( outfile, normalize=norm )
-            with IOTools.openFile( E.getOutputFile( counter.name ) + ".lengths.tsv.gz", "w") as outfile:
-                counter.writeLengthStats( outfile )
 
         elif options.matrix_format == "single":
             # build a single output
@@ -587,6 +585,9 @@ The options are:
                 for row, cols in enumerate(zip( fields, bins, matrix)):
                     outfile.write( "%i\t%s\t" % (row, "\t".join( [ str(x) for x in cols[:-1]  ]) ))
                     outfile.write( "%s\n" % ("\t".join( [ str(x) for x in cols[-1]  ]) ))
+
+        with IOTools.openFile( E.getOutputFile( counter.name ) + ".lengths.tsv.gz", "w") as outfile:
+            counter.writeLengthStats( outfile )
 
     if options.plot:
 
