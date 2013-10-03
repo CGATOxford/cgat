@@ -342,7 +342,13 @@ def annotateWindows( contig, windows, gff_data, fasta, options ):
                       score,
                       extra_info) ) ) + "\n" )
                       
-if __name__ == "__main__":
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: gff2table.py 2861 2010-02-23 17:36:32Z andreas $", 
                                     usage = globals()["__doc__"])
@@ -478,10 +484,11 @@ if __name__ == "__main__":
                              options )
             
 
-    if options.loglevel >= 1:
-        options.stdout.write( "# ninput_windows=%i, noutput_contigs=%i, ninput_contigs=%i, nskipped_windows=%i, nskipped_data=%i\n" %\
-                                  ( len(windows), noutput_contigs, len(contigs), ncontigs_skipped_windows, ncontigs_skipped_data ) )
+    E.info("ninput_windows=%i, noutput_contigs=%i, ninput_contigs=%i, nskipped_windows=%i, nskipped_data=%i" %\
+               ( len(windows), noutput_contigs, len(contigs), ncontigs_skipped_windows, ncontigs_skipped_data ) )
 
     E.Stop()
 
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
 

@@ -108,7 +108,8 @@ def maskSequences( sequences, masker = None):
     return masked_seq
 
 ##------------------------------------------------------------------------
-if __name__ == "__main__":
+def main( argv = None ):
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: gff2fasta.py 2861 2010-02-23 17:36:32Z andreas $")
 
@@ -200,5 +201,7 @@ if __name__ == "__main__":
 
     E.Stop()
 
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
 
 

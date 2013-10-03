@@ -175,9 +175,11 @@ def getCodons( sequence, gap_chars = "-." ):
     return full_codons, codons
 
 ##------------------------------------------------------------
-if __name__ == '__main__':
+def main( argv = None ):
+    if argv == None: argv = sys.argv
 
-    parser = E.OptionParser( version = "%prog version: $Id: fasta2fasta.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser( version = "%prog version: $Id: fasta2fasta.py 2782 2009-09-10 11:40:29Z andreas $", 
+                             usage = globals()["__doc__"])
 
     parser.add_option("-m", "--method", dest="methods", type="choice", action="append",
                       choices=("translate", 
@@ -609,4 +611,5 @@ if __name__ == '__main__':
         
     E.Stop()
     
-    
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )

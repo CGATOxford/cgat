@@ -410,6 +410,8 @@ class IntervalsCounter:
         self.counts = []
         # lengths of items counted in each category
         self.lengths = []
+        # number of bins in this category
+        self.nbins = []
         # aggregate counts
         self.aggregate_counts = []
         # number of aggregates skipped due to shape mismatch
@@ -421,6 +423,7 @@ class IntervalsCounter:
         self.counts.append( 0 )
         self.lengths.append( [] )
         self.fields.append( field )
+        self.nbins.append( length )
         if self.normalization in ("max", "sum", "total-max", "total-sum" ):
             self.dtype = numpy.float
         else:

@@ -37,7 +37,6 @@ This module is imported by most CGAT scripts. It provides convenient
 and consistent methods for
 
    * `Record keeping`_
-   * `Logging`_
    * `Benchmarking`_
 
 See :doc:`../scripts/cgat_script_template` on how to use this module.
@@ -297,8 +296,6 @@ class AppendCommaOption(optparse.Option):
       but generally convenient.
 
     * Option values of "None" and "" are treated as default values.
-    
-    
     '''
 #    def check_value( self, opt, value ):
 #        # do not check type for ',' separated lists
@@ -347,7 +344,6 @@ class AppendCommaOption(optparse.Option):
 #################################################################
 class OptionParser( optparse.OptionParser ):
     '''CGAT derivative of OptionParser.
-
     '''
     
     def __init__(self, *args, **kwargs):

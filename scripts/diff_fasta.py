@@ -96,9 +96,12 @@ def MapIdentifiers( seqs, pattern):
         del seqs[k]
         seqs[nk] = s
         
-if __name__ == "__main__":
+def main( argv = None ):
 
-    parser = E.OptionParser( version = "%prog version: $Id: diff_fasta.py 2781 2009-09-10 11:33:14Z andreas $")
+    if argv == None: argv = sys.argv 
+
+    parser = E.OptionParser( version = "%prog version: $Id: diff_fasta.py 2781 2009-09-10 11:33:14Z andreas $",
+                             usage = globals()["__doc__"] )
 
     parser.add_option("-s", "--correct-gap-shift", dest="correct_shift", action="store_true",
                       help="correct gap length shifts in alignments. Requires alignlib. "
@@ -280,3 +283,5 @@ if __name__ == "__main__":
     
     E.Stop()
         
+if __name__ == "__main__":
+    sys.exit(main( sys.argv ))

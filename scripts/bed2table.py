@@ -308,7 +308,8 @@ class CounterCompositionCpG(CounterCompositionNucleotides):
         self.result.loadSequence( s, next_char = next_char )
 
 ##------------------------------------------------------------
-if __name__ == '__main__':
+def main( argv = None ):
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: gtf2table.py 2888 2010-04-07 08:48:36Z andreas $", usage = globals()["__doc__"])
 
@@ -410,3 +411,6 @@ if __name__ == '__main__':
         options.stdout.write("\n")
 
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )

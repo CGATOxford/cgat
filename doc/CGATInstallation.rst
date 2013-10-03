@@ -1,32 +1,25 @@
+.. _CGATInstallation:
+
 =========================
 Installation instructions
 =========================
 
+Quick installation
+==================
+
 Pre-install dependencies
-========================
+------------------------
 
-In order to install CGAT, please install the following packages from
-pypi first::
-
-   pip install cython
-   pip install numpy
-   pip install pysam
-
-Also, bx-python needs to be installed. The current version on pypi is
-currently out of date, so to install, do::
-
-   pip install https://bitbucket.org/james_taylor/bx-python/get/tip.tar.bz2
-
-Installation
-============
-
-Once the pre-requisites have been installed, installing CGAT should
-be straight-forward::
+Installing CGAT should be straight-forward::
 
    pip install cgat
 
+CGAT depends on numerous other python packages which themselves might require
+manual intervention. Please see :ref:`Manual installation` for a
+step-by-step installation approach.
+
 Initialization
-==============
+--------------
 
 In order to run pipelines and code directly from the CGAT script
 repository, you need to perform the following initializations::
@@ -46,10 +39,40 @@ You might also want to run the script::
 to test if all the scripts with associated cython_ code compile
 cleanly.
 
-Troubleshooting
-===============
+Manual installation
+===================
 
-The following depencies might cause problems:
+CGAT depends on numerous other python packages not all of which
+might install cleanly. Here, we give some more detailed instructions.
+Generally we recommend when troubleshooting CGAT installation to do so
+within a virtual environment. To create a clean environment, type::
+
+    virtualenv --no-site-packages cgat-python
+    source cgat-python/bin/activate
+
+Now, download the list of required packages::
+
+    wget https://raw.github.com/CGATOxford/cgat/master/requires.txt
+
+To install the required basic packages::
+
+    pip install -r requires.txt
+
+Also, bx-python needs to be installed. The current version on pypi is
+currently out of date, so to install, do::
+
+    pip install https://bitbucket.org/james_taylor/bx-python/get/tip.tar.bz2
+
+If all of that works, installing the CGAT tools should now be
+straight-forward::
+
+    pip install cgat
+
+Troubleshooting
+---------------
+
+Some packages will require additional system-level packages to 
+be installed. The following depencies might cause problems:
 
 PyGreSQL
     requires postgres-devel
@@ -58,7 +81,8 @@ PyGTK
     not installable via setuptools, install separately.
 
 biopython
-    pip occasionally fails. If so, try installing manually.
+    pip occasionally fails for biopython. If so, try installing 
+    manually.
 
 .. _GalaxyInstallation:
 

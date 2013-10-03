@@ -68,8 +68,8 @@ File formats
         pass
 
     fastq
-        Sequence format containing qualit scores
-	`(http://www.ncbi.nlm.nih.gov/pmc/articles/PMC2847217/)`_.
+        Sequence format containing quality scores, more background is
+	`here <http://en.wikipedia.org/wiki/FASTQ_format>`_
 
     sra
         sra
@@ -81,7 +81,10 @@ File formats
         maf
    
     fastq
-        pass
+        
+
+    rdf
+        `Resource description framework <http://en.wikipedia.org/wiki/Resource_Description_Framework>`_
 
 Other terms
 ===========

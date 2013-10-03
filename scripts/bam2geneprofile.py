@@ -156,16 +156,16 @@ Bed and wiggle files
 
 The densities can be computed from :term:`bed` or :term:`wiggle` formatted files.
 If a :term:`bed` formatted file is supplied, it must be compressed with and indexed with :file:`tabix`.
-.. todo::
-   
-   * paired-endedness is ignored. Both ends of a paired-ended read are treated 
-     individually.
 
+.. note::
+   
+   Paired-endedness is ignored. Both ends of a paired-ended read are treated 
+   individually.
 
 Usage
 -----
 
-The following command will generate the gene profile from RNA-Seq data:
+The following command will generate the gene profile from RNA-Seq data::
 
    python bam2geneprofile.py --bamfile=rnaseq.bam -g geneset.gtf.gz 
                      --method=geneprofilewithintrons  --reporter=gene 
@@ -176,10 +176,13 @@ a gene into a single chain of exons. The profile will contain four separate
 segments:
 
 1. the upstream region of a gene (default = 1000bp)
+
 2. the transcribed region of a gene. The transcribed region of every gene will be 
    scaled to 1400 bp (``--resolution-cds=1400``), 
    shrinking longer transcripts and expanding shorter transcripts.
+
 3. the intronic regions of a gene. These will be scaled to 2kb (``-resolution-introns=2000``).
+
 4. the downstream region of a gene (default = 1000bp).
 
 Type::
@@ -356,6 +359,11 @@ The options are:
                        help = "scale flanks to (integer multiples of) gene length"
                               "[%default]" )
 
+    parser.add_option( "--matrix-format", dest="matrix_format", type = "choice", 
+                       choices = ("multiple", "single" ),
+                       help = "matrix output format, either 'multiple' files or a 'single' file "
+                       "[%default]" )
+
     parser.set_defaults(
         remove_rna = False,
         ignore_pairs = False,
@@ -392,6 +400,7 @@ The options are:
         min_insert_size = 0,
         max_insert_size = 1000,
         base_accuracy = False,
+        matrix_format = "single",
         )
 
     ## add common options (-h/--help, ...) and parse command line 
@@ -538,18 +547,46 @@ The options are:
 
     _bam2geneprofile.count( counters, gtf_iterator )
 
-    for method, counter in zip(options.methods, counters):
-        if not options.profile_normalizations:
-            options.profile_normalizations.append( "none" )
+    # output matrices
+    if not options.profile_normalizations:
+        options.profile_normalizations.append( "none" )
+    elif "all" in options.profile_normalizations:
+        options.profile_normalizations = ["none", "area", "counts" ]
 
-        for norm in options.profile_normalizations:
-            outfile = IOTools.openFile( E.getOutputFile( counter.name ) + ".%s.tsv.gz" % norm, "w")
-            counter.writeMatrix( outfile, normalize=norm )
-            outfile.close()
-            
-        outfile = IOTools.openFile( E.getOutputFile( counter.name ) + ".lengths.tsv.gz", "w")
-        counter.writeLengthStats( outfile )
-        outfile.close()
+    for method, counter in zip(options.methods, counters):
+        if options.matrix_format == "multiple":
+            for norm in options.profile_normalizations:
+                with IOTools.openFile( E.getOutputFile( counter.name ) + ".%s.tsv.gz" % norm, "w") as outfile:
+                    counter.writeMatrix( outfile, normalize=norm )
+            with IOTools.openFile( E.getOutputFile( counter.name ) + ".lengths.tsv.gz", "w") as outfile:
+                counter.writeLengthStats( outfile )
+
+        elif options.matrix_format == "single":
+            # build a single output
+            matrices = []
+            for norm in options.profile_normalizations:
+                matrix = counter.buildMatrix( normalize = norm )
+                nrows, ncols = matrix.shape
+                matrix.shape = (nrows * ncols, 1 )
+                matrices.append( matrix )
+
+            for x in range(1,len(matrices)):
+                assert matrices[0].shape == matrices[x].shape
+                
+            # build a single matrix
+            matrix = numpy.hstack( matrices )
+            nrows, ncols = matrix.shape
+            with IOTools.openFile( E.getOutputFile( counter.name ) + ".matrix.tsv.gz", "w" ) as outfile:
+                outfile.write( "bin\tregion\tregion_bin\t%s\n" % "\t".join( options.profile_normalizations) )
+                fields = []
+                bins = []
+                for field, nbins in zip( counter.fields, counter.nbins ):
+                    fields.extend( [field] * nbins )
+                    bins.extend( list(range(nbins)) )
+
+                for row, cols in enumerate(zip( fields, bins, matrix)):
+                    outfile.write( "%i\t%s\t" % (row, "\t".join( [ str(x) for x in cols[:-1]  ]) ))
+                    outfile.write( "%s\n" % ("\t".join( [ str(x) for x in cols[-1]  ]) ))
 
     if options.plot:
 

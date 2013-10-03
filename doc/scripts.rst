@@ -492,3 +492,17 @@ Unsorted
    scripts/vcf2vcf.rst
    scripts/vcfstats2db.rst
    scripts/wig2wig.rst
+   scripts/bam_vs_bam.rst
+   scripts/bam_vs_bed.rst
+   scripts/bam_vs_gtf.rst
+   scripts/cgat2rdf.rst
+   scripts/diff_bam.rst
+   scripts/fasta2fasta.rst
+   scripts/fasta2kmercontent.rst
+   scripts/fastas2fasta.rst
+   scripts/fastqs2fasta.rst
+   scripts/fastqs2fastqs.rst
+   scripts/gtf2tsv.rst
+   scripts/gtfs2tsv.rst
+   scripts/rnaseq_junction_bam2bam.rst
+   scripts/split_gff.rst

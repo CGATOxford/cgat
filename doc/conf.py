@@ -79,6 +79,12 @@ rst_epilog='''
 .. _pyximport: http://www.prescod.net/pyximport/
 .. _sphinx: http://sphinx-doc.org/
 .. _ruffus: http://www.ruffus.org.uk/
+.. _sphinxreport: http://code.google.com/p/sphinx-report/
+.. _sqlite: http://www.sqlite.org/
+.. _make: http://www.gnu.org/software/make
+.. _ucsc: http://genome.ucsc.edu
+.. _mysql: https://mariadb.org/
+.. _postgres: http://www.postgresql.org/
 '''
 
 sys.path.insert( 0, "../scripts")

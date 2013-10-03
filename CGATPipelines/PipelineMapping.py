@@ -1147,6 +1147,8 @@ class Bowtie( Mapper ):
         track = P.snip( outfile, ".bam" )
         tmpdir_fastq = self.tmpdir_fastq
 
+        unique_cmd, strip_cmd = "", ""
+
         if self.remove_non_unique:
             unique_cmd = '| python %%(scriptsdir)s/bam2bam.py --filter=unique --log=%(outfile)s.log' % locals()
             

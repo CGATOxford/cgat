@@ -75,7 +75,7 @@ class OutputChunk:
         filename = self.options.output_pattern % self.nchunk
 
         if self.options.dry_run:
-            self.options.stdlog.write("# opening file %s\n" % filename )
+            E.info( "opening file %s" % filename )
             return open("/dev/null", mode)
 
         if mode in ("w", "a"):
@@ -102,8 +102,13 @@ class OutputChunk:
         outfile.close()
         return len(chunk)
 
-##------------------------------------------------------------------------
-if __name__ == "__main__":
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: gff2chunks.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"] )
 
@@ -150,8 +155,11 @@ if __name__ == "__main__":
             
         noutput += outputChunk( chunk )
         nchunks += 1
-        
-    if options.loglevel >= 1:
-        options.stdlog.write( "# ninput=%i, noutput=%i, nchunks=%i\n" % (ninput, noutput, nchunks ) )
+
+    E.info( "ninput=%i, noutput=%i, nchunks=%i" % (ninput, noutput, nchunks ) )
 
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

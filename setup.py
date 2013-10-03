@@ -74,12 +74,12 @@ for tool, toolkit, expected in external_dependencies:
     try:
         retcode = subprocess.call( tool, shell = True, stdout=DEVNULL, stderr=DEVNULL )
     except OSError, msg:
-        raise ValueError( "depency check for %s failed: %s" % (toolkit, msg ) )
+        print( "WARNING: depency check for %s failed: %s" % (toolkit, msg ) )
 
     # UCSC tools return 255 when called without arguments
     if retcode != expected:
-        raise ValueError( "depency check for %s(%s) failed, error %i" % \
-                              (toolkit, tool, retcode ) )
+        print ( "WARNING: depency check for %s(%s) failed, error %i" % \
+                    (toolkit, tool, retcode ) )
 
 ###############################################################
 ###############################################################
@@ -90,47 +90,22 @@ INSTALL_CGAT_CODE_COLLECTION = True
 
 major, minor1, minor2, s, tmp = sys.version_info
 
+if major==3:
+    raise SystemExit("""CGAT is not fully python3 compatible""")
+
+if (major==2 and minor1<7) or major<2:
+    raise SystemExit("""CGAT requires Python 2.7 or later.""")
+
+
+dependencies = open( "requires.txt" ).readlines() 
+dependencies = [x[:-1] for x in dependencies if x.startswith("#")]
+
 if major==2:
-    extra_dependencies = [ 'web.py>=0.37',
+    dependencies.extend( [ 'web.py>=0.37',
                            'xlwt>=0.7.4', 
-                           'matplotlib-venn>=0.5' ]
+                           'matplotlib-venn>=0.5' ] )
 elif major==3:
-    extra_dependencies = []
-
-if major==2 and minor1<7 or major<2:
-    raise SystemExit("""CGAT requires Python 2.6 or later.""")
-
-# Dependencies shared between python 2 and 3
-shared_dependencies = [
-    # required fon the cython part
-    'setuptools>=1.1',
-    'sphinx>=1.0.5',
-    'SphinxReport>=2.0',
-    'rpy2>=2.3.4',
-    'numpy>=1.7',
-    'scipy>=0.11',
-    'matplotlib>=1.2.1', 
-    'sqlalchemy>=0.7.0', 
-    'pysam>=0.7',
-    'openpyxl>=1.5.7',
-    'MySQL-python>1.2.3',
-    'biopython>=1.61',
-    'scipy>=0.7.0',
-    # Out of date, install manually latest version
-    # 'bx-python>=0.7.1',
-    'networkx>=1.8.1',
-    'PyGreSQL>=4.1.1',
-    'drmaa>=0.5',
-    'ruffus>=2.2',
-    'pybedtools>=0.6.2',
-    'rdflib>=0.4.1',
-    'hgapi>=1.3.0',
-    'threadpool>=1.2.7',
-    'PyYAML>=3.1.0',
-    'pandas>=0.12.0',
-    'weblogo>=3.0',
-    'sphinxcontrib-programoutput>=0.8',
-    'alignlib>=0.1']
+    pass
 
 if INSTALL_CGAT_CODE_COLLECTION:
     cgat_packages= find_packages( exclude=["CGATPipelines*", "scripts*"])
@@ -161,14 +136,7 @@ Operating System :: Unix
 Operating System :: MacOS
 """
 
-# external dependencies
-# R
-# sqlite
-# R - ggplot2
-# R - RSqlite
-# R - gplots (for r-heatmap)
-# graphvis - for dependency graphs in documentation
-
+##########################################################
 ##########################################################
 ## Extensions
 # Connected components cython extension
@@ -243,7 +211,7 @@ setup(## package information
         },
 
     ## dependencies
-    install_requires=shared_dependencies + extra_dependencies, 
+    install_requires=dependencies,
     ## extension modules
     ext_modules=[Components, NCL, Nubiscan] + script_extensions,
     cmdclass = {'build_ext': build_ext},

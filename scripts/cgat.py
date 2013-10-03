@@ -27,10 +27,14 @@ cgat.py - Computational Genomics Analysis Tools
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Genomics
 
-The tools are grouped by keywords. For this message 
-and a list of available tools type::
+To use a specific tool, type::
+
+    cgat <tool> [tool options] [tool arguments]
+
+Tools are grouped by keywords. For this message and a list of
+available keywords type::
     
     cgat --help
 
@@ -38,15 +42,15 @@ For a list of tools matching a certain keyword, type::
 
    cgat --help <keyword>
 
-Use::
+or::
 
    cgat --help all
 
 for a list of all available tools.
 
-To get help for a specific command, type::
+To get help for a specific tool, type::
 
-    cgat <command> --help
+    cgat <tool> --help
 '''
 
 import os
@@ -94,12 +98,12 @@ def printListInColumns( l, ncolumns ):
     # put it all together
     return '\n'.join( [ pattern % row for row in rows ] )
 
-def main():
+def main(argv = None):
 
     argv = sys.argv
 
     path = os.path.abspath( os.path.dirname(__file__) )
-
+ 
     if len(argv) == 1 or argv[1] == "--help" or argv[1] == "-h":
         print(globals()["__doc__"])
 
