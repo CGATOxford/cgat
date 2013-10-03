@@ -26,7 +26,7 @@ gff2chunks.py - split a gff file into chunks
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Genomics Intervals Genesets
 
 Purpose
 -------

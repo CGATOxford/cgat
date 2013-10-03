@@ -25,7 +25,7 @@ gff2coverage.py - compute genomic coverage of gff intervals
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Genomics Intervals
 
 Purpose
 -------

@@ -85,6 +85,8 @@ rst_epilog='''
 .. _ucsc: http://genome.ucsc.edu
 .. _mysql: https://mariadb.org/
 .. _postgres: http://www.postgresql.org/
+.. _bedtools: http://bedtools.readthedocs.org/en/latest/
+.. _UCSC Tools: http://genome.ucsc.edu/admin/git.html
 '''
 
 sys.path.insert( 0, "../scripts")

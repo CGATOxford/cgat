@@ -106,8 +106,8 @@ other interval intersections. Here, we will use another CGAT tool,
 
 The scripts follow a consistent naming scheme centered around common
 genomic formats. Because of the common genomic formats, the tools can
-be easily combined with other tools such as bedtools (Quinlan and
-Hall, 2010) or UCSC tools (Kuhn et al. 2013).
+be easily combined with other tools such as bedtools_ (Quinlan and
+Hall, 2010) or `UCSC Tools`_ (Kuhn et al. 2013).
 
 
 .. _Heger & Ponting, 2007: 

@@ -199,6 +199,7 @@ setup(## package information
     url="http://www.cgat.org/cgat/Tools/",
     ## package contents
     packages = cgat_packages, 
+
     package_dir= cgat_package_dirs,
     # package_data = { 'CGATScripts' : ['./scripts/*.py', './scripts/*.pyx', 
     #                                   './scripts/*.pyxbld', './scripts/*.pl' ],

@@ -27,7 +27,7 @@ gtf2table.py - annotate genes/transcripts
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Genomics Genesets
 
 Purpose
 -------

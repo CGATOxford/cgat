@@ -27,7 +27,7 @@ fastq2fastq.py - manipulate fastq files
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Genomics NGS Sequence
+:Tags: Genomics NGS Sequences
 
 Purpose
 -------

@@ -27,7 +27,7 @@ fastq2table.py - compute stats on reads in fastq files
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Genomics NGS Sequence
+:Tags: Genomics NGS Sequences
 
 Purpose
 -------
@@ -37,18 +37,37 @@ summary statistics for each read.
 
 The output is a tab-delimited text file with the following columns:
 
-read - read identifier present in input fastq file
-nfailed - number of reads that fall below Q10
-nN - number of ambiguous base calls (N)
-nval - number of bases in the read
-min - minimum base quality score for the read
-max - maximum base quality for the read
-mean - mean base quality for the read
-median - median base quality for the read
-stddev - standard devitation of quality scores for the read
-sum - sum of quality scores for the read
-q1 - 25th percentile of quality scores for the read
-q3 - 25th percentile of quality scores for the read
++----------+----------------------------------------+
+|*Column*  |*Content*                               |
++----------+----------------------------------------+
+|read      |read identifier present in input fastq  |
+|          |file                                    |
++----------+----------------------------------------+
+|nfailed   |number of reads that fall below Q10     |
++----------+----------------------------------------+
+|nN        |number of ambiguous base calls (N)      |
++----------+----------------------------------------+
+|nval      |number of bases in the read             |
++----------+----------------------------------------+
+|min       |minimum base quality score for the read |
++----------+----------------------------------------+
+|max       |maximum base quality for the read       |
++----------+----------------------------------------+
+|mean      |mean base quality for the read          |
++----------+----------------------------------------+
+|median    |median base quality for the read        |
++----------+----------------------------------------+
+|stddev    |standard devitation of quality scores   |
+|          |for the read                            |
++----------+----------------------------------------+
+|sum       |sum of quality scores for the read      |
++----------+----------------------------------------+
+|q1        |25th percentile of quality scores for   |
+|          |the read                                |
++----------+----------------------------------------+
+|q3        |25th percentile of quality scores for   |
+|          |the read                                |
++----------+----------------------------------------+
 
 Usage
 -----

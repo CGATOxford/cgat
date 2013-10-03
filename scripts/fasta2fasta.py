@@ -27,7 +27,6 @@ fasta2fasta.py - operate on sequences
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Python
 :Tags: Sequences
 
 Purpose

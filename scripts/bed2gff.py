@@ -18,7 +18,7 @@ bed2gff.py - convert bed to gff/gtf
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Genomics Intervals
 
 Purpose
 -------
