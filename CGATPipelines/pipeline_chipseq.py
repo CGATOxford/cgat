@@ -1939,11 +1939,8 @@ def annotateIntervals( infile, outfile ):
 
     statement = """
     zcat < %(infile)s 
-    | python %(scriptsdir)s/bed2gff.py --as-gtf 
-    | python %(scriptsdir)s/gtf2table.py 
-		--counter=position 
+    | python %(scriptsdir)s/bed2table.py 
 		--counter=classifier-chipseq 
-		--section=exons 
 		--counter=length 
 		--log=%(outfile)s.log 
 		--filename-gff=%(annotation_file)s 

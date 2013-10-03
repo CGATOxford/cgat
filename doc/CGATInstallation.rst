@@ -15,7 +15,7 @@ Installing CGAT should be straight-forward::
    pip install cgat
 
 CGAT depends on numerous other python packages which themselves might require
-manual intervention. Please see :ref:`Manual installation` for a
+manual intervention. Please see :ref:`ManualInstallation` for a
 step-by-step installation approach.
 
 Initialization
@@ -38,6 +38,8 @@ You might also want to run the script::
 
 to test if all the scripts with associated cython_ code compile
 cleanly.
+
+.. _ManualInstallation:
 
 Manual installation
 ===================

@@ -50,6 +50,10 @@ composition-na
 composition-cpg
     compute CpG densities and nucleotide frequencies in intervals. 
 
+classifier-chipseq 
+   classify chipseq intervals. Requires a :term:`gff`
+   file with genomic annotations (see :doc:`gtf2gff`.)
+
 Usage
 -----
 
@@ -92,11 +96,32 @@ import numpy
 import CGAT.IndexedGenome as IndexedGenome
 import pysam
 
+import gtf2table
+
 class Counter( object ):
     
     def __init__(self, fasta = None, *args, **kwargs ):
         self.fasta = fasta
 
+    def update(self, bed ):
+        self.bed = bed
+        self.count( bed )
+
+    def getSegments( self ):
+        return [self.bed]
+
+    def getHeader( self ):
+        return '\t'.join( self.headers )
+
+class CounterLength( Counter ):
+    headers = ['length']
+    
+    def count( self, bed ):
+        self.length = bed.end - bed.start
+
+    def __str__(self):
+        return str(self.length)
+    
 class CounterOverlap( Counter ):
     '''count overlap for each interval in tracks.'''
 
@@ -110,7 +135,7 @@ class CounterOverlap( Counter ):
 
         E.info( "reading intervals from %s" % self.filename )
 
-        self.index = Bed.readAndIndex( open( self.filename, "r"),
+        self.index = Bed.readAndIndex( IOTools.openFile( self.filename, "r"),
                                        per_track = True )
         
         E.info( "read intervals for %s tracks" % len(self.index) )
@@ -121,7 +146,7 @@ class CounterOverlap( Counter ):
             self.headers.extend( ["%s_nover" % track, "%s_bases" % track] )
             
     
-    def update( self, bed ):
+    def count( self, bed ):
         '''update internal counts.'''
 
         results = []
@@ -173,7 +198,7 @@ class CounterPeaks(Counter):
         if self.control_bamfiles:
             self.headers.extend( ["control_%s" % x for x in CounterPeaksResult._fields] )
 
-    def count( self, bed, bamfiles, offsets ):
+    def _count( self, bed, bamfiles, offsets ):
         '''count reads in bed interval.'''
 
         contig, start, end = bed.contig, bed.start, bed.end
@@ -244,14 +269,14 @@ class CounterPeaks(Counter):
 
         return CounterPeaksResult( length, nreads, avgval, peakval, npeaks, peakcenter )
 
-    def update( self, bed ):
+    def count( self, bed ):
         '''count reads per position.
         
         If offsets are given, shift tags by offset / 2 and extend
         by offset / 2.
         '''
 
-        self.result = self.count( bed, self.bamfiles, self.offsets )
+        self.result = self._count( bed, self.bamfiles, self.offsets )
         if self.control_bamfiles:
             self.control = self.count( bed, self.control_bamfiles, self.control_offsets )
 
@@ -270,7 +295,7 @@ class CounterCompositionNucleotides(Counter):
         Counter.__init__(self, *args, **kwargs )
         self.result_class = SequenceProperties.SequencePropertiesNA
         
-    def update(self, bed):
+    def count(self, bed ):
         s = self.fasta.getSequence( bed.contig, "+", bed.start, bed.end)
         self.result = self.result_class()
         self.result.loadSequence( s )
@@ -295,7 +320,8 @@ class CounterCompositionCpG(CounterCompositionNucleotides):
         CounterCompositionNucleotides.__init__(self, *args, **kwargs )
         self.result_class = SequenceProperties.SequencePropertiesCpg
 
-    def update(self, bed):
+    def count(self, bed):
+
         try:
             s = self.fasta.getSequence( bed.contig, "+", bed.start, bed.end+1)
             next_char = s[-1]
@@ -306,6 +332,122 @@ class CounterCompositionCpG(CounterCompositionNucleotides):
 
         self.result = self.result_class()
         self.result.loadSequence( s, next_char = next_char )
+
+
+##-----------------------------------------------------------------------------------
+class ClassifierChIPSeq( gtf2table.Classifier):
+    """classify ChIPSeq intervals based on a reference annotation.
+
+    This assumes the input is a genome annotation derived from an ENSEMBL gtf file
+    created with gff2gtf.py.
+
+    In contrast to transcripts, the intervals are fuzzy. Hence the classification
+    is based on a mixture of full/partial overlap.
+
+    An interval is classified as:
+
+    cds
+       mostly part of a CDS. These would be intervals fully within a CDS exon.
+    utr
+       mostly part of UTR. These are intervals fully within the UTR of a gene.
+    intergenic
+       mostly intergenic. These are intervals fully within the intergenic region
+       and more than 1kb from the closest exon.
+    upstream
+       not any of the above and partly upstream of a gene. These are intervals 
+       that might overlap part of the UTR or the 1kb segment before to the 5'-terminal 
+       exon of a gene.
+    downstream
+       not any of the abore and partly downstream of a gene. These are intervals 
+       that might overlap part of the UTR or the 1kb segment after to the 3'-terminal 
+       exon of a gene.
+    intronic
+       not any of the above and partly intronic. Note that these could also include
+       promotors of short alternative transcripts that skip one or more of the first
+       exons.
+    ambiguous
+       none of the above
+    """
+
+    header = [ "is_cds", "is_utr", "is_upstream", "is_downstream", "is_intronic", "is_intergenic", "is_flank", "is_ambiguous" ]
+
+    # sources to use for classification
+    sources = ("", ) 
+
+    # minimum coverage of a transcript to assign it to a class
+    mThresholdMinCoverage = 95
+
+    # full coverage of a transcript to assign it to a class
+    mThresholdFullCoverage = 99
+
+    # some coverage of a transcript to assign it to a class
+    mThresholdSomeCoverage = 10
+
+    def update( self, bed ):
+
+        # convert to a gtf entry
+        gtf = GTF.Entry()
+        gtf.fromBed( bed )
+        gtf.feature = 'exon'
+        gtf2table.Classifier.update( self, [gtf] )
+
+    def count(self):
+
+        for key in self.mKeys:
+            self.mCounters[key].update(self.mGFFs)
+
+        def s_min( *args ):
+            return sum( [ abs(self.mCounters[x].mPOverlap1) for x in args ] ) >= self.mThresholdMinCoverage
+
+        def s_excl( *args ):
+            return sum( [ abs(self.mCounters[x].mPOverlap1) for x in args ] ) < (100 - self.mThresholdMinCoverage)
+
+        def s_full( *args ):
+            return sum( [ abs(self.mCounters[x].mPOverlap1) for x in args ] ) >= self.mThresholdFullCoverage
+
+        def s_some( *args ):
+            return sum( [ abs(self.mCounters[x].mPOverlap1) for x in args ] ) >= self.mThresholdSomeCoverage
+
+        self.mIsCDS, self.mIsUTR, self.mIsIntergenic = False, False, False
+        self.mIsUpStream, self.mIsDownStream, self.mIsIntronic = False, False, False
+        self.mIsFlank, self.mIsAmbiguous = False, False
+
+        self.mIsCDS = s_full( ":CDS" )        
+        self.mIsUTR = s_full( ":UTR", ":UTR3", ":UTR5" ) 
+        self.mIsIntergenic = s_full( ":intergenic", ":telomeric" )
+
+        if not(self.mIsCDS or self.mIsUTR or self.mIsIntergenic):
+            self.mIsUpStream = s_some( ":5flank", ":UTR5" )
+            if not self.mIsUpStream: 
+                self.mIsDownStream = s_some( ":3flank", ":UTR3" )
+                if not self.mIsDownStream:
+                    self.mIsIntronic = s_some( ":intronic" )
+                    if not self.mIsIntronic:
+                        self.mIsFlank = s_some( ":flank" )
+
+        self.mIsAmbiguous = not( self.mIsUTR or \
+                                     self.mIsIntergenic or self.mIsIntronic or self.mIsCDS or \
+                                     self.mIsUpStream or self.mIsDownStream or self.mIsFlank)
+
+    def __str__(self):
+
+        def to( v ):
+            if v: return "1" 
+            else: return "0"
+
+        h = [ to(x) for x in (self.mIsCDS, 
+                              self.mIsUTR, 
+                              self.mIsUpStream,
+                              self.mIsDownStream,
+                              self.mIsIntronic,
+                              self.mIsIntergenic,
+                              self.mIsFlank,
+                              self.mIsAmbiguous,
+                              ) ]
+
+        for key in self.mKeys:
+            h.append( str(self.mCounters[key]) )
+        return "\t".join( h )
 
 ##------------------------------------------------------------
 def main( argv = None ):
@@ -322,8 +464,16 @@ def main( argv = None ):
     parser.add_option( "--control-bam-file", dest="control_bam_files", type="string",
                       help="filename with read mapping information for input/control. Multiple files can be submitted in a comma-separated list [default=%default]."  )
 
+    parser.add_option( "--filename-format", dest="filename_format", type="choice",
+                       choices=("bed", "gff", "gtf" ),
+                       help="format of secondary stream [default=%default]."  )
+
     parser.add_option("-c", "--counter", dest="counters", type="choice", action="append",
-                      choices=( "overlap", "peaks", "composition-na", "composition-cpg" ),
+                      choices=( "overlap", 
+                                "peaks", 
+                                "composition-na", 
+                                "composition-cpg",
+                                "classifier-chipseq"),
                       help="select counters to apply [default=%default]."  )
 
     parser.add_option("-o", "--offset", dest="offsets", type="int", action="append",
@@ -338,6 +488,9 @@ def main( argv = None ):
     parser.add_option("--bed-headers", dest="bed_headers", type="string",
                       help="supply ',' separated list of headers for bed component [default=%default]."  )
 
+    parser.add_option("-f", "--filename-gff", dest="filename_gff", type="string", action="append", metavar='bed',
+                      help="filename with extra gff files. The order is important [default=%default]."  )
+
     parser.set_defaults(
         genome_file = None,
         counters = [],
@@ -346,7 +499,9 @@ def main( argv = None ):
         control_bam_files = None,
         control_offsets = [],
         all_fields = False,
+        filename_format = None,
         bed_headers = "contig,start,end,name",
+        filename_gff = [],
         )
 
     (options, args) = E.Start( parser )
@@ -390,14 +545,23 @@ def main( argv = None ):
         elif c == "composition-cpg":
             counters.append( CounterCompositionCpG( fasta=fasta,
                                                     options = options ) )
+        elif c == "classifier-chipseq":
+            counters.append( ClassifierChIPSeq( filename_gff = options.filename_gff,
+                                                fasta = fasta,
+                                                options = options, 
+                                                prefix = None) )
 
 
     options.stdout.write( "\t".join( [x.strip() for x in options.bed_headers.split(",") ] ) )
-    for counter in counters: 
-        options.stdout.write("\t%s" % "\t".join( counter.headers ) )
-    options.stdout.write("\n")
+
+    options.stdout.write( "\t" + "\t".join( 
+            [ x.getHeader() for x in counters] ) + "\n" )
 
     for bed in Bed.iterator(options.stdin):
+
+	for counter in counters: 
+            counter.update(bed)
+
         if options.all_fields:
             options.stdout.write( str(bed) )
         else:
@@ -406,8 +570,8 @@ def main( argv = None ):
                                               str(bed.end), 
                                               bed.fields[0]) ) )
         for counter in counters: 
-            counter.update(bed)
             options.stdout.write("\t%s" % str(counter) )
+
         options.stdout.write("\n")
 
     E.Stop()

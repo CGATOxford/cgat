@@ -58,9 +58,6 @@ classifier
    Requires a :term:`gff` file with genomic annotations
    (see :doc:`gtf2gff`.)
 
-classifier-chipseq
-   classify chipseq intervals
-
 classifier-rnaseq
    classify rnaseq transcripts with respect to a reference
    geneset. Requires a :term:`gtf` file with a reference
@@ -369,10 +366,10 @@ class CounterLengths(_gtf2table.Counter):
 
     def count(self):
         segments = self.getSegments()
-        self.mResult = Stats.Summary( [x[1] - x[0] for x in segments ], mode="int", allow_empty = True )
+        self.result = Stats.Summary( [x[1] - x[0] for x in segments ], mode="int", allow_empty = True )
 
     def __str__(self):
-        return str(self.mResult)
+        return str(self.result)
 
 ##----------------------------------------------------------------
 class CounterSpliceSites(_gtf2table.Counter):
@@ -436,11 +433,11 @@ class CounterCompositionNucleotides(_gtf2table.Counter):
     def count(self):
         ee = self.getSegments()
         s = self.getSequence( ee )
-        self.mResult = SequenceProperties.SequencePropertiesNA()
-        self.mResult.loadSequence( s )
+        self.result = SequenceProperties.SequencePropertiesNA()
+        self.result.loadSequence( s )
 
     def __str__(self):
-        return str(self.mResult)
+        return str(self.result)
 
 ##-----------------------------------------------------------------------------------
 class CounterCompositionCpG(_gtf2table.Counter):
@@ -461,11 +458,11 @@ class CounterCompositionCpG(_gtf2table.Counter):
     def count(self):
         ee = self.getSegments()
         s = self.getSequence( ee )
-        self.mResult = SequenceProperties.SequencePropertiesCpg()
-        self.mResult.loadSequence( s )
+        self.result = SequenceProperties.SequencePropertiesCpg()
+        self.result.loadSequence( s )
 
     def __str__(self):
-        return str(self.mResult)
+        return str(self.result)
 
 ##-----------------------------------------------------------------------------------
 class CounterOverlap(_gtf2table.Counter):
@@ -883,7 +880,7 @@ class Classifier(_gtf2table.Counter):
     def count(self):
         
         for key in self.mKeys:
-            self.mCounters[key](self.mGFFs)
+            self.mCounters[key].update(self.mGFFs)
 
         def s_min( *args ):
             return sum( [ abs(self.mCounters[x].mPOverlap1) for x in args ] ) >= self.mThresholdMinCoverage
@@ -945,112 +942,6 @@ class Classifier(_gtf2table.Counter):
 
         return "\t".join( h )
 
-##-----------------------------------------------------------------------------------
-class ClassifierChIPSeq(Classifier):
-    """classify ChIPSeq intervals based on a reference annotation.
-
-    This assumes the input is a genome annotation derived from an ENSEMBL gtf file
-    created with gff2gtf.py.
-
-    In contrast to transcripts, the intervals are fuzzy. Hence the classification
-    is based on a mixture of full/partial overlap.
-
-    An interval is classified as:
-
-    cds
-       mostly part of a CDS. These would be intervals fully within a CDS exon.
-    utr
-       mostly part of UTR. These are intervals fully within the UTR of a gene.
-    intergenic
-       mostly intergenic. These are intervals fully within the intergenic region
-       and more than 1kb from the closest exon.
-    upstream
-       not any of the above and partly upstream of a gene. These are intervals 
-       that might overlap part of the UTR or the 1kb segment before to the 5'-terminal 
-       exon of a gene.
-    downstream
-       not any of the abore and partly downstream of a gene. These are intervals 
-       that might overlap part of the UTR or the 1kb segment after to the 3'-terminal 
-       exon of a gene.
-    intronic
-       not any of the above and partly intronic. Note that these could also include
-       promotors of short alternative transcripts that skip one or more of the first
-       exons.
-    ambiguous
-       none of the above
-    """
-
-    header = [ "is_cds", "is_utr", "is_upstream", "is_downstream", "is_intronic", "is_intergenic", "is_flank", "is_ambiguous" ]
-
-    # sources to use for classification
-    sources = ("", ) # "protein_coding", "pseudogene", )
-
-    # minimum coverage of a transcript to assign it to a class
-    mThresholdMinCoverage = 95
-
-    # full coverage of a transcript to assign it to a class
-    mThresholdFullCoverage = 99
-
-    # some coverage of a transcript to assign it to a class
-    mThresholdSomeCoverage = 10
-
-    def count(self):
-        
-        for key in self.mKeys:
-            self.mCounters[key](self.mGFFs)
-
-        def s_min( *args ):
-            return sum( [ abs(self.mCounters[x].mPOverlap1) for x in args ] ) >= self.mThresholdMinCoverage
-
-        def s_excl( *args ):
-            return sum( [ abs(self.mCounters[x].mPOverlap1) for x in args ] ) < (100 - self.mThresholdMinCoverage)
-
-        def s_full( *args ):
-            return sum( [ abs(self.mCounters[x].mPOverlap1) for x in args ] ) >= self.mThresholdFullCoverage
-
-        def s_some( *args ):
-            return sum( [ abs(self.mCounters[x].mPOverlap1) for x in args ] ) >= self.mThresholdSomeCoverage
-
-        self.mIsCDS, self.mIsUTR, self.mIsIntergenic = False, False, False
-        self.mIsUpStream, self.mIsDownStream, self.mIsIntronic = False, False, False
-        self.mIsFlank, self.mIsAmbiguous = False, False
-
-        self.mIsCDS = s_full( ":CDS" )        
-        self.mIsUTR = s_full( ":UTR", ":UTR3", ":UTR5" ) 
-        self.mIsIntergenic = s_full( ":intergenic", ":telomeric" )
-
-        if not(self.mIsCDS or self.mIsUTR or self.mIsIntergenic):
-            self.mIsUpStream = s_some( ":5flank", ":UTR5" )
-            if not self.mIsUpStream: 
-                self.mIsDownStream = s_some( ":3flank", ":UTR3" )
-                if not self.mIsDownStream:
-                    self.mIsIntronic = s_some( ":intronic" )
-                    if not self.mIsIntronic:
-                        self.mIsFlank = s_some( ":flank" )
-
-        self.mIsAmbiguous = not( self.mIsUTR or \
-                                     self.mIsIntergenic or self.mIsIntronic or self.mIsCDS or \
-                                     self.mIsUpStream or self.mIsDownStream or self.mIsFlank)
-
-    def __str__(self):
-
-        def to( v ):
-            if v: return "1" 
-            else: return "0"
-
-        h = [ to(x) for x in (self.mIsCDS, 
-                              self.mIsUTR, 
-                              self.mIsUpStream,
-                              self.mIsDownStream,
-                              self.mIsIntronic,
-                              self.mIsIntergenic,
-                              self.mIsFlank,
-                              self.mIsAmbiguous,
-                              ) ]
-
-        for key in self.mKeys:
-            h.append( str(self.mCounters[key]) )
-        return "\t".join( h )
 
 ##-----------------------------------------------------------------------------------
 class ClassifierRNASeq(_gtf2table.Counter):
@@ -3048,7 +2939,7 @@ class CounterQuality(_gtf2table.Counter):
 
     def count(self):
         ee = self.getSegments()
-        self.mResult = self.getQuality( ee )
+        self.result = self.getQuality( ee )
 
     def getQuality(self, segments):
         """get sequence from a set of segments."""
@@ -3067,8 +2958,8 @@ class CounterQuality(_gtf2table.Counter):
         return s
 
     def __str__(self):
-        s = Stats.Summary( self.mResult, mode = "int" )
-        values = ";".join( [ str(x) for x in self.mResult ] )
+        s = Stats.Summary( self.result, mode = "int" )
+        values = ";".join( [ str(x) for x in self.result ] )
         return "\t".join( (str(s),values ) )
 
 
@@ -3373,10 +3264,10 @@ class CounterBigwigCounts(_gtf2table.Counter):
         valid = valid[valid > 0]
 
         self.mCovered = len(valid)
-        self.mResult = t
+        self.result = t
 
     def __str__(self):
-        s = Stats.Summary( self.mResult, mode = "int" )
+        s = Stats.Summary( self.result, mode = "int" )
         return "\t".join( (str(self.mTotalLength),
                            "%5.2f" % (100.0 * self.mCovered / self.mTotalLength),
                            str(s),))
@@ -3424,7 +3315,6 @@ def main( argv = None ):
                       choices=(	"bigwig-counts",
 				"binding-pattern",
 				"classifier", 
-				"classifier-chipseq",
 				"classifier-rnaseq",
 				"classifier-rnaseq-splicing",
 				"classifier-polii",
@@ -3631,10 +3521,6 @@ def main( argv = None ):
             counters.append( Classifier( filename_gff = options.filename_gff,
                                          fasta = fasta,
                                          options = options, prefix = prefix) )
-        elif c == "classifier-chipseq":
-            counters.append( ClassifierChIPSeq( filename_gff = options.filename_gff,
-                                                fasta = fasta,
-                                                options = options, prefix = prefix) )
 
         elif c == "classifier-rnaseq":
             counters.append( ClassifierRNASeq( filename_gff = options.filename_gff,
@@ -3679,8 +3565,7 @@ def main( argv = None ):
     for gffs in iterator( GTF.iterator(options.stdin) ):
         cc.input += 1
 
-	for counter in counters: counter(gffs)
-	
+	for counter in counters: counter.update(gffs)
 	    
         skip = len( [x for x in counters if x.skip] ) == len(counters)
         if skip:
