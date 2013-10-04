@@ -1,11 +1,3 @@
-## filter links with a list of tokens
-## usage:
-## perl filter_links_tokens.pl tokens < in > out
-##
-## Options:
-## -s: sufficient if one vertex matches
-## -r: reverse match: delete if a vertex matches
-## $Id$
 
 use strict;
 use Getopt::Std;

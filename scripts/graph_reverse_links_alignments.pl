@@ -1,11 +1,3 @@
-## rearrange links, make all links between the same two vertices
-## point into the same direction. Rearranges also alignments between
-## the links (note: field order).
-## 
-## usage:
-## perl rearrange_links_alignments.pl < in > out
-##
-## $Id$
 $| = 1;
 
 use strict;
