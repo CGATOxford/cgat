@@ -4,3 +4,16 @@ version:
     outputs: [stdout]
     references: []
     options: --version
+
+test_gtf:
+    stdin: hg19.small.gtf.gz
+    outputs: [stdout]
+    references: [gtf.tsv]
+    options: --is-gtf
+
+test_gff:
+    stdin: hg19.small.gtf.gz
+    outputs: [stdout]
+    references: [gff.tsv]
+    options: 
+

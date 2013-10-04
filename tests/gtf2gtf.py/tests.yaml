@@ -1,7 +1,234 @@
+
 version:
     stdin: null
     outputs: [stdout]
     references: []
     options: --version
+
+sort_gene:
+    stdin: hg19.chr19.gtf.gz
+    outputs: [stdout]
+    references: [sorted_gene.gtf.gz]
+    options: --sort=gene
+
+sort_contig_gene:
+    stdin: hg19.chr19.gtf.gz
+    outputs: [stdout]
+    references: [sorted_contig_gene.gtf.gz]
+    options: --sort=contig+gene
+
+sorted_transcript:
+    stdin: hg19.chr19.gtf.gz
+    outputs: [stdout]
+    references: [sorted_transcript.gtf.gz]
+    options: --sort=transcript
+
+sort_position:
+    stdin: hg19.chr19.gtf.gz
+    outputs: [stdout]
+    references: [sorted_position.gtf.gz]
+    options: --sort=position
+
+sort_position_gene:
+    stdin: hg19.chr19.gtf.gz
+    outputs: [stdout]
+    references: [sorted_position_gene.gtf.gz]
+    options: --sort=position+gene
+
+merge_exons:
+    stdin: hg19.small.sort_gene.gtf.gz
+    outputs: [stdout]
+    references: [hg19.small.sort_gene_merge_exons.gtf.gz]
+    options: --merge-exons
+
+merge_exons_distance:
+    stdin: hg19.small.sort_gene.gtf.gz
+    outputs: [stdout]
+    references: [hg19.small.sort_gene_merge_exons_distance.gtf.gz]
+    options: --merge-exons --merge-exons-distance=5000
+
+merge_transcripts:
+    stdin: hg19.small.sort_gene.gtf.gz
+    outputs: [stdout]
+    references: [hg19.small.sort_gene_merge_transcripts.gtf.gz]
+    options: --merge-transcript
+
+merge_transcripts_with_utr:
+    stdin: hg19.small.sort_gene.gtf.gz
+    outputs: [stdout]
+    references: [hg19.small.sort_gene_merge_transcripts_with_utr.gtf.gz]
+    options: --merge-transcripts --with-utr
+
+merge_genes:
+    stdin: sorted_transcript.gtf.gz
+    outputs: [stdout]
+    references: [sorted_transcript_merge_genes.gtf.gz]
+    options: --merge-genes
+
+join_exons:
+    stdin: hg19.small.sort_transcript.gtf.gz
+    outputs: [stdout]
+    references: [hg19.small.sort_transcript_join_exons.gtf.gz]
+    options: --join-exons
+
+intersect_transcripts:
+    stdin: hg19.small.sort_gene.gtf.gz
+    outputs: [stdout]
+    references: [hg19.small.sort_gene_intersect_transcripts.gtf.gz]
+    options: --intersect-transcripts
+
+intersect_transcripts_with_utr:
+    stdin: hg19.small.sort_gene.gtf.gz
+    outputs: [stdout]
+    references: [hg19.small.sort_gene_intersect_transcripts_with_utr.gtf.gz]
+    options: --intersect-transcripts --with-utr
+
+merge_introns:
+    stdin: hg19.small.sort_gene.gtf.gz
+    outputs: [stdout]
+    references: [hg19.small.sort_gene_merge_introns.gtf.gz]
+    options: --merge-introns
+
+exons_to_introns:
+    stdin: hg19.small.sort_gene.gtf.gz
+    outputs: [stdout]
+    references: [hg19.small.sort_gene_exons_to_introns.gtf.gz]
+    options: --exons2introns
+
+filter_gene_apply:
+    stdin: hg19.small.sorted_gene.gtf.gz
+    outputs: [stdout]
+    references: [hg19.small.filter_gene_apply.gtf.gz]
+    options: --filter=gene --apply=<DIR>/hg19.small.gene_id.tsv
+
+filter_transcript_apply:
+    stdin: hg19.small.sorted_gene.gtf.gz
+    outputs: [stdout]
+    references: [hg19.small.filter_transcript_apply.gtf.gz]
+    options: --filter=transcript --apply=<DIR>/hg19.small.transcript_id.tsv
+
+filter_gene_sample:
+    stdin: hg19.small.sorted_gene.gtf.gz
+    outputs: [stdout]
+    references: [hg19.small.filter_gene_sample.gtf.gz]
+    options: --filter=gene --sample-size=20
+
+filter_transcript_sample:
+    stdin: hg19.small.sorted_gene.gtf.gz
+    outputs: [stdout]
+    references: [hg19.small.filter_transcript_sample.gtf.gz]
+    options: --filter=transcript --sample-size=20
+
+filter_gene_sample_min_exon_length:
+    stdin: hg19.small.sort_gene.gtf.gz
+    outputs: [stdout]
+    references: [hg19.small.filter_gene_sample_min_exons_length.gtf.gz]
+    options: --filter=gene --sample-size=20 --min-exons-length=1000
+
+filter_gene_sample_reset_strand:
+    stdin: hg19.small.sort_gene.gtf.gz
+    outputs: [stdout]
+    references: [hg19.small.filter_gene_sample_reset_strand.gtf.gz]
+    options: --filter=gene --sample-size=20 --reset-strand
+
+filter_longest_gene:
+    stdin: hg19.small.sort_gene.gtf.gz 
+    outputs: [stdout]
+    references: [hg19.small.filter_longest_gene.gtf.gz]
+    options: --filter=longest-gene
+
+filter_longest_transcript:
+    stdin: hg19.small.sort_gene.gtf.gz 
+    outputs: [stdout]
+    references: [hg19.small.filter_longest_transcript.gtf.gz]
+    options: --filter=longest-transcript
+
+filter_representative_transcript:
+    stdin: hg19.small.sort_gene.gtf.gz 
+    outputs: [stdout]
+    references: [hg19.small.filter_representative_transcript.gtf.gz]
+    options: --filter=representative-transcript
+
+filter_longest_transcript_invert:
+    stdin: hg19.small.sort_gene.gtf.gz 
+    outputs: [stdout]
+    references: [hg19.small.filter_longest_transcript_invert.gtf.gz]
+    options: --filter=longest-transcript --invert-filter
+
+remove_overlapping:
+    stdin: sorted_gene.gtf.gz
+    outputs: [stdout]
+    references: [sorted_gene_remove_overlapping.gtf.gz]
+    options: --remove-overlapping=<DIR>/hg19.sort_gene.gtf.gz
+
+remove_duplicates:
+    stdin: hg19.chr19.gtf.gz
+    outputs: [stdout]
+    references: [hg19.chr19_remove_duplicates_gene.gtf.gz]
+    options: --remove-duplicates=gene
+
+remove_duplicates:
+    stdin: hg19.chr19.gtf.gz
+    outputs: [stdout]
+    references: [hg19.chr19_remove_duplicates_coordinates.gtf.gz]
+    options: --remove-duplicates=coordinates
+
+remove_duplicates:
+    stdin: hg19.chr19.gtf.gz
+    outputs: [stdout]
+    references: [hg19.chr19_remove_duplicates_transcripts.gtf.gz]
+    options: --remove-duplicates=transcript
+
+rename_gene:
+    stdin: hg19.small.sort_gene.gtf.gz
+    outputs: [stdout]
+    references: [hg19.small.sort_gene_rename.gtf.gz]
+    options: --rename=gene --apply=<DIR>/hg19.small.gene_map.tsv
+
+rename_transcript:
+    stdin: hg19.small.sort_gene.gtf.gz
+    outputs: [stdout]
+    references: [hg19.small.sort_gene_rename_transcript.gtf.gz]
+    options: --rename=gene --apply=<DIR>/hg19.small.transcript_map.tsv
+
+add_protein_id:
+    stdin: hg19.small.sort_gene.gtf.gz
+    outputs: [stdout]
+    references: [hg19.small.sort_gene_add_protein_id.gtf.gz]
+    options: --add-protein-id=<DIR>/hg19.small.protein_id.tsv
+
+renumber_genes:
+    stdin: hg19.small.sort_gene.gtf.gz
+    outputs: [stdout]
+    references: [hg19.small.sort_gene_renumber_genes.gtf.gz]
+    options: --renumber-genes=GENE%s
+
+renumber_transcripts:
+    stdin: hg19.small.sort_gene.gtf.gz
+    outputs: [stdout]
+    references: [hg19.small.sort_gene_renumber_transcripts.gtf.gz]
+    options: --renumber-transcripts=TRAN%s
+
+unset_genes:
+    stdin: hg19.small.sort_gene.gtf.gz
+    outputs: [stdout]
+    references: [hg19.small.sort_gene_unset_genes.gtf.gz]
+    options: --unset-genes=UNSET%s
+
+set_transcript_to_gene:
+    stdin: hg19.small.sort_gene.gtf.gz
+    outputs: [stdout]
+    references: [hg19.small.sort_gene_set_transcript_to_gene.gtf.gz]
+    options: --set-transcript-to-gene
+
+set_protein_to_transcript:
+    stdin: hg19.small.sort_gene.gtf.gz
+    outputs: [stdout]
+    references: [hg19.small.sort_gene_set_protein_to_transcript.gtf.gz]
+    options: --set-protein-to-transcript
+
+
+
+
 
 
