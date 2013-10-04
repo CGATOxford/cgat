@@ -14,6 +14,7 @@ would like a use case then please post a request on the `CGAT users group`_ webs
 .. toctree::
    :maxdepth: 2
 
+   recipes/nfkb_profile
    recipes/lncrna_cpg
    recipes/metagenome_contigs_kmers
 
