@@ -27,7 +27,7 @@ gff2histogram.py - compute histograms from intervals in gff or bed format
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Genomics Intervals
+:Tags: Genomics Intervals GFF Summary
 
 Purpose
 -------

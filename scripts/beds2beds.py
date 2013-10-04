@@ -27,7 +27,7 @@ beds2beds.py - decompose bed files
 :Author: Andreas Heger
 :Release: $Id: diff_bed.py 2866 2010-03-03 10:18:49Z andreas $
 :Date: |today|
-:Tags: Genomics Intervals
+:Tags: Genomics Intervals BED Manipulation
 
 Purpose
 -------

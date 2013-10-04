@@ -27,7 +27,7 @@ bams2bam.py - merge genomic and transcriptome mapped bamfiles
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Genomics NGS Geneset
+:Tags: Genomics NGS Geneset BAM Manipulation
 
 Purpose
 -------

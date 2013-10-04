@@ -27,7 +27,7 @@ gtf2fasta.py - annotate genomic bases from a gene set
 :Author: Andreas Heger
 :Release: $Id: gtf2fasta.py 2861 2010-02-23 17:36:32Z andreas $
 :Date: |today|
-:Tags: Genomics Genesets Sequences
+:Tags: Genomics Genesets Sequences GTF FASTA Transformation
 
 Purpose
 -------

@@ -27,7 +27,7 @@ bam2bam.py - modify bam files
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Genomics NGS
+:Tags: Genomics NGS BAM Manipulation
 
 Purpose
 -------

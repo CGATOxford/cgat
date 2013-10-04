@@ -27,7 +27,7 @@ gff2psl.py - convert from gff to psl
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Genomics Intervals
+:Tags: Genomics Intervals GFF PSL Conversion
 
 Purpose
 -------

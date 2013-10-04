@@ -27,7 +27,7 @@ bam_vs_gtf.py - compare bam file against gene set
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Genomics NGS Genesets
+:Tags: Genomics NGS Genesets BAM GTF Summary
 
 Purpose
 -------

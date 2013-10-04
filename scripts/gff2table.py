@@ -27,7 +27,7 @@ gff2table.py - compute features for intersection of two gff files
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Genomics Intervals 
+:Tags: Genomics Intervals Annotation Comparison GFF
 
 Purpose
 -------

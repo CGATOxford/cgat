@@ -27,7 +27,7 @@ beds2counts.py - compute overlap stats between multiple bed files
 :Author: Nick Ilott 
 :Release: $Id$
 :Date: |today|
-:Tags: Genomics Intervals
+:Tags: Genomics Intervals Comparison BED Counting
 
 Purpose
 -------

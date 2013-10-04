@@ -27,7 +27,7 @@ bam2geneprofile.py - build meta-gene profile for a set of transcripts/genes
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Genomics NGS Genesets Intervals
+:Tags: Genomics NGS Genesets Intervals GTF BAM Summary
 
 Purpose
 -------

@@ -27,7 +27,7 @@ fasta2variants.py - create sequence variants from a set of sequences
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Genomics Sequences Variants Protein
+:Tags: Genomics Sequences Variants Protein FASTA Transformation
 
 Purpose
 -------

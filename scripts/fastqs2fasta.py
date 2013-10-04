@@ -27,7 +27,7 @@ fastqs2fasta.py - interleave two fastq files
 :Author: Nick Ilott
 :Release: $Id$
 :Date: |today|
-:Tags: Genomics NGS
+:Tags: Genomics NGS FASTQ FASTA Conversion
 
 Purpose
 -------

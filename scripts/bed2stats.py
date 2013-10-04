@@ -27,7 +27,7 @@ bed2stats.py - summary of bed file contents
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Genomics Intervals Summary
+:Tags: Genomics Intervals Summary BED
 
 Purpose
 -------

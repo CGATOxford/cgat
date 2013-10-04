@@ -27,7 +27,7 @@ diff_bam.py - compare multiple bam files against each other
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Genomics NGS
+:Tags: Genomics NGS BAM Comparison
 
 Purpose
 -------

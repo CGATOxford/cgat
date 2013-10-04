@@ -27,7 +27,7 @@ fastas2fasta.py - concatenate sequences from multiple fasta files
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Genomics Sequences MultipleAlignments
+:Tags: Genomics Sequences MultipleAlignments FASTA Manipulation
 
 Purpose
 -------

@@ -27,7 +27,7 @@ gtf2gff.py - convert a transcript set to genomic features
 :Author: Andreas Heger
 :Release: $Id: gtf2gff.py 2861 2010-02-23 17:36:32Z andreas $
 :Date: |today|
-:Tags: Genomics Genesets Intervals
+:Tags: Genomics Genesets Intervals Transformation GTF GFF
 
 Purpose
 -------

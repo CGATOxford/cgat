@@ -27,7 +27,7 @@ fasta2kmercontent.py
 :Author: Nick Ilott
 :Release: $Id$
 :Date: |today|
-:Tags: Genomics Sequences
+:Tags: Genomics Sequences FASTA Summary
 
 Purpose
 -------

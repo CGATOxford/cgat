@@ -27,7 +27,7 @@ gff2stats.py - count features, etc. in gff file
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Genomics Intervals
+:Tags: Genomics Intervals GFF Summary
 
 Purpose
 -------

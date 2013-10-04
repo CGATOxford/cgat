@@ -27,7 +27,7 @@ gtf2gtf.py - manipulate transcript models
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Genomics Genesets
+:Tags: Genomics Genesets GTF Manipulation
 
 Purpose
 -------

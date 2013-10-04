@@ -27,7 +27,7 @@ gff2bed.py - convert from gff to bed
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Genomics Intervals
+:Tags: Genomics Intervals GFF BED Conversion
 
 Purpose
 -------

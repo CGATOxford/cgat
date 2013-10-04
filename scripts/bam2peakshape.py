@@ -27,7 +27,7 @@ bam2peakshape.py - compute peak shape features from a bam-file
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Genomics NGS Intervals
+:Tags: Genomics NGS Intervals BAM BED Summary
 
 Purpose
 -------

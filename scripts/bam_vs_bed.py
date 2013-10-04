@@ -27,7 +27,7 @@ bam_vs_bed.py - count context that reads map to
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Genomics NGS Intervals
+:Tags: Genomics NGS Intervals BAM BED Counting
 
 Purpose
 -------
