@@ -27,7 +27,7 @@ fasta2kmercontent.py
 :Author: Nick Ilott
 :Release: $Id$
 :Date: |today|
-:Tags: Genomics Sequence
+:Tags: Genomics Sequences
 
 Purpose
 -------
@@ -97,10 +97,12 @@ def main( argv = None ):
     if not argv: argv = sys.argv
 
     # setup command line parser
-    parser = optparse.OptionParser( version = "%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
-                                    usage = globals()["__doc__"] )
+    parser = E.OptionParser( version = "%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
+                             usage = globals()["__doc__"] )
+
     parser.add_option("-k", "--kmer", dest="kmer", type="int",
                       help="supply kmer length")
+
     parser.add_option("-p", "--proportion", dest = "proportion", action="store_true",
                       help="output proportions - overides the default output")
     

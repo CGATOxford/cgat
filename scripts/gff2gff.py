@@ -26,7 +26,7 @@ gff2gff.py - manipulate gff files
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Genomics Intervals
 
 Purpose
 -------

@@ -51,9 +51,6 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-
 Command line options
 --------------------
 
@@ -65,6 +62,7 @@ import re
 import optparse
 import glob
 import traceback
+import imp
 
 import CGAT.Experiment as E
 
@@ -104,9 +102,11 @@ def main( argv = None ):
         if os.path.exists( prefix + ".pyc"):
             os.remove( prefix + ".pyc" )
 
+        success = False
         try:
             __import__(basename, globals(), locals() )
             c.success += 1
+            success = True
             options.stdout.write("PASS %s\n" % basename )
             options.stdout.flush()
         except ImportError, msg:
@@ -119,6 +119,19 @@ def main( argv = None ):
             options.stdout.write( "FAIL %s\n%s\n" % (basename, msg))
             options.stdout.flush()
             traceback.print_exc()
+
+        if success:
+            # check for main
+            path = os.path.abspath( os.path.dirname(__file__) )
+            (file, pathname, description ) = imp.find_module( basename, [path,] )
+            module = imp.load_module( basename, file, pathname, description)
+            if "main" in dir(module):
+                c.has_main +=1 
+            else:
+                options.stdout.write( "FAIL %s - %s\n" % (basename, "no main"))
+                options.stdout.flush()
+                c.no_main += 1
+
         c.output += 1
 
     E.info( c )

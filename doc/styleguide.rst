@@ -231,7 +231,7 @@ restructured text. For example::
 Writing documentation for scripts
 ---------------------------------
 
-Please follow the example in :doc:`cgat_script_template` for
+Please follow the example in :doc:`scripts/cgat_script_template` for
 documenting scripts. In addition, please pay attention to the following:
 
 * Declare input data types for genomic data sets in optparse using 

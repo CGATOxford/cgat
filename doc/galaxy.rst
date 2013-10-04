@@ -5,7 +5,7 @@ Importing CGAT scripts into galaxy
 General Preparation
 ====================
 
-Add :file:`/ifs/devel/cgat` to :env:`PYTHONPATH`.
+Add :file:`/ifs/devel/cgat` to :envvar:`PYTHONPATH`.
 
 Make sure that extensions have been built::
 

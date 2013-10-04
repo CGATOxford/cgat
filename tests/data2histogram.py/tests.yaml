@@ -4,3 +4,30 @@ version:
     outputs: [stdout]
     references: []
     options: --version
+
+missing:
+    stdin: data.tsv
+    outputs: [stdout]
+    references: [missing.tsv]
+    options: --missing=0
+
+min_value:
+    stdin: data.tsv
+    outputs: [stdout]
+    references: [min_value.tsv]
+    options: --min-value=-5 --bin-size=0.5
+
+column1:
+    stdin: data.tsv
+    outputs: [stdout]
+    references: [column1.tsv]
+    options: --column=1
+
+column2:
+    stdin: data.tsv
+    outputs: [stdout]
+    references: [column2.tsv]
+    options: --column=2
+
+
+

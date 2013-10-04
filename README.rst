@@ -16,6 +16,8 @@ For questions, please subscribe and contact us at the
 `CGAT user group
 <https://groups.google.com/forum/?fromgroups#!forum/cgat-user-group>`_.
 
+Documentation of CGAT tools is available 
+`here <http://www.cgat.org/~andreas/documentation/cgat/cgat.html#cgat>`_.
 
 CGAT Tools
 ==========
@@ -28,9 +30,6 @@ To use CGAT Tools, use the ``cgat`` front-end. For example, to
 strip sequence and quality information from a bam_ file, type:
 
    cgat bam2bam --strip=sequence < in.bam > out.bam
-
-Documentation of CGAT tools is available 
-`here <http://www.cgat.org/~andreas/documentation/cgat/cgat.html#cgat>`_.
 
 CGAT Pipelines
 ==============

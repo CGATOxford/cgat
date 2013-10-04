@@ -4,3 +4,16 @@ version:
     outputs: [stdout]
     references: []
     options: --version
+
+genomic:
+    stdin: small.gtf
+    outputs: [stdout]
+    references: [genomic.test.hg19]
+    options: --method=genomic --genome-file=%DIR%/small
+
+histogram:
+    stdin: small.gtf
+    outputs: [19.hist]
+    references: [histogram.test.hg19]
+    options: --method=histogram --window=1 --genome-file=%DIR%/small --features=exon --output-filename-pattern="%s.hist"
+

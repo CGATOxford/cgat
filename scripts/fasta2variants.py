@@ -27,7 +27,7 @@ fasta2variants.py - create sequence variants from a set of sequences
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Genomics Variants Protein
+:Tags: Genomics Sequences Variants Protein
 
 Purpose
 -------
@@ -55,9 +55,6 @@ Type::
     python fasta2variants.py --help
 
 for command line help.
-
-Documentation
--------------
 
 Compressed (.gz) and various fasta format files (.fasta, .fna) are
 accepted. If the -c option is specified and the file is not a CDS

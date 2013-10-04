@@ -26,7 +26,7 @@ gff2fasta.py - output sequences from genomic features
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Genomics Intervals Sequences
 
 Purpose
 -------
@@ -49,9 +49,6 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-
 Command line options
 --------------------
 
@@ -70,10 +67,17 @@ import CGAT.Intervals as Intervals
 import bx.intervals.io
 import bx.intervals.intersection
 
-##------------------------------------------------------------------------
-if __name__ == "__main__":
+import CGAT.Experiment as E
 
-    parser = E.OptionParser( version = "%prog version: $Id: gff2fasta.py 2861 2010-02-23 17:36:32Z andreas $")
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
+
+    parser = E.OptionParser( version = "%prog version: $Id: gff2fasta.py 2861 2010-02-23 17:36:32Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option( "--is-gtf", dest="is_gtf", action="store_true",
                       help="input is gtf instead of gff."  )
@@ -158,6 +162,16 @@ if __name__ == "__main__":
 
     feature = options.feature
 
+#    for item in iterator:
+#	print len(item) # 3, 2
+#	for i in item:
+#	   print len(i) # 9, 9, 9, 9, 9
+#	   print i.contig
+#	   print i.strand
+#	   print i.transcript_id
+
+    # iterator is a list containing groups (lists) of features.
+    # Each group of features have in common the same transcript ID, in case of GTF files.
     for ichunk in iterator:
 
         ninput += 1
@@ -179,7 +193,7 @@ if __name__ == "__main__":
         if options.is_gtf:
             name = chunk[0].transcript_id
         else:
-            name = str(chunk[0].mAttributes)
+            name = str(chunk[0].attributes)
 
         lcontig = contigs[contig]
         positive = Genomics.IsPositiveStrand( strand )
@@ -243,3 +257,6 @@ if __name__ == "__main__":
                 (ninput, noutput, nmasked, nskipped_noexons, nskipped_masked, nskipped_length ) )
 
     E.Stop()
+    
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )

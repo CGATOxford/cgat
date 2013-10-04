@@ -6,25 +6,25 @@ version:
 
 intervalaccuracy:
     stdin: null 
-    options: --force --reporter=transcript --method=geneprofile --method=tssprofile %DIR%/tss.bed.gz %DIR%/twogenes.gtf.gz
+    options: --force --reporter=transcript --method=geneprofile --method=tssprofile %DIR%/tss.bed.gz %DIR%/twogenes.gtf.gz --matrix-format=multiple
     outputs: [tssprofile.lengths.tsv.gz, geneprofile.lengths.tsv.gz, tssprofile.none.tsv.gz, geneprofile.none.tsv.gz]
     references: [test1.tssprofile.lengths.tsv.gz, test1.geneprofile.lengths.tsv.gz, test1.tssprofile.none.tsv.gz, test1.geneprofile.none.tsv.gz]
 
 # do not compare pngs
 baseaccuracy:
     stdin: null 
-    options: --force --method=geneprofile -b %DIR%/multipleReadsSplicedOutAllIntronsAndSecondExon.bam -g %DIR%/onegene.gtf.gz --reporter=gene --resolution-cds=1400 --base-accuracy
+    options: --force --method=geneprofile -b %DIR%/multipleReadsSplicedOutAllIntronsAndSecondExon.bam -g %DIR%/onegene.gtf.gz --reporter=gene --resolution-cds=1400 --base-accuracy --matrix-format=multiple
     outputs: [geneprofile.lengths.tsv.gz, geneprofile.none.tsv.gz]
     references: [test2.geneprofile.lengths.tsv.gz, test2.geneprofile.none.tsv.gz]
 
 introns:
     stdin: null
-    options: --force -b %DIR%/multipleReadsSplicedOutAllIntronsAndSecondExon.bam -g %DIR%/onegeneWithoutAnyCDS.gtf.gz --method=geneprofilewithintrons  --reporter=gene --resolution-cds=1200 --resolution-introns=2800
+    options: --force -b %DIR%/multipleReadsSplicedOutAllIntronsAndSecondExon.bam -g %DIR%/onegeneWithoutAnyCDS.gtf.gz --method=geneprofilewithintrons  --reporter=gene --resolution-cds=1200 --resolution-introns=2800 --matrix-format=multiple
     outputs: [geneprofilewithintrons.lengths.tsv.gz, geneprofilewithintrons.none.tsv.gz]
     references: [test3.geneprofilewithintrons.lengths.tsv.gz, test3.geneprofilewithintrons.none.tsv.gz]
 
 geneprofileabsolutedistancefromthreeprimeend:
     stdin: null
-    options: --force -b %DIR%/multipleReadsSplicedOutAllIntronsAndSecondExon.bam -g %DIR%/onegeneWithoutAnyCDS.gtf.gz --method=geneprofileabsolutedistancefromthreeprimeend --reporter=gene --normalization=total-max --extension-exons-absolute-distance-topolya 1200 --extension-introns-absolute-distance-topolya 2800 --resolution-exons-absolute-distance-topolya 1200 --resolution-introns-absolute-distance-topolya 2800
+    options: --force -b %DIR%/multipleReadsSplicedOutAllIntronsAndSecondExon.bam -g %DIR%/onegeneWithoutAnyCDS.gtf.gz --method=geneprofileabsolutedistancefromthreeprimeend --reporter=gene --normalization=total-max --extension-exons-absolute-distance-topolya 1200 --extension-introns-absolute-distance-topolya 2800 --resolution-exons-absolute-distance-topolya 1200 --resolution-introns-absolute-distance-topolya 2800 --matrix-format=multiple
     outputs: [geneprofileabsolutedistancefromthreeprimeend.lengths.tsv.gz, geneprofileabsolutedistancefromthreeprimeend.none.tsv.gz]
     references: [test4.geneprofileabsolutedistancefromthreeprimeend.lengths.tsv.gz, test4.geneprofileabsolutedistancefromthreeprimeend.none.tsv.gz]

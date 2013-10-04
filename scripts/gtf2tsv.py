@@ -26,7 +26,7 @@ gtf2tsv.py - compare two genesets
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Genomics Genesets
 
 Purpose
 -------

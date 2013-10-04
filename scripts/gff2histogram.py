@@ -60,16 +60,13 @@ Usage
 
 Example::
 
-   python gff2histogram.py < in.bed 
+   python gff2histogram.py < in.gff
 
 Type::
 
    python gff2histogram.py --help
 
 for command line help.
-
-Documentation
--------------
 
 Command line options
 --------------------
@@ -80,27 +77,19 @@ import string
 import re
 import optparse
 
-USAGE="""python %s [OPTIONS] input1 input2
-
-compute simple statistics on the size of features and the 
-distance between features in a gff file.
-
-Methods:
-  hist: histogram of distance/sizes
-  stats: descriptive statistics of distance/sizes
-  overlaps: output overlapping features
-
-Version: $Id: gff2histogram.py 2781 2009-09-10 11:33:14Z andreas $
-""" % sys.argv[0]
-
 import CGAT.Experiment as E
 import CGAT.GTF as GTF
 import CGAT.Bed as Bed
 import CGAT.Histogram as Histogram
 import CGAT.Stats as Stats
 
-##------------------------------------------------------------------------
-if __name__ == "__main__":
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: gff2histogram.py 2781 2009-09-10 11:33:14Z andreas $")
 
@@ -252,3 +241,6 @@ if __name__ == "__main__":
                                                                 noverlaps) )
 
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )

@@ -27,7 +27,7 @@ diff_bed.py - count differences between several bed files
 :Author: Andreas Heger
 :Release: $Id: diff_bed.py 2866 2010-03-03 10:18:49Z andreas $
 :Date: |today|
-:Tags: Python
+:Tags: Genomics Intervals
 
 Purpose
 -------

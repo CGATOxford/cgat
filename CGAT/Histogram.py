@@ -256,7 +256,8 @@ def Print( h, intervalls = None, format = 0, nonull = None, format_value=None, f
     Write( sys.stdout, h, intervalls, format, nonull, format_value, format_bin )
     
 #-------------------------------------------------------------------------------------------------------
-def Write( outfile, h, intervalls = None, format = 0, nonull = None, format_value=None, format_bin=None ):
+def Write( outfile, h, intervalls = None, format = 0, nonull = None, 
+           format_value=None, format_bin=None ):
     """print a histogram.
 
     A histogram can either be a list/tuple of values or

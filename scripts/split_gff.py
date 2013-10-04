@@ -26,7 +26,7 @@ gff2chunks.py - split a gff file into chunks
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Genomics Intervals Genesets
 
 Purpose
 -------
@@ -50,9 +50,6 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-
 Command line options
 --------------------
 
@@ -61,22 +58,24 @@ Command line options
 import sys
 import re
 import os
+import CGAT.GTF as GTF
+import CGAT.IOTools as IOTools
 import CGAT.Experiment as E
 
 class OutputChunk:
     def __init__(self, options):
-        self.mNChunk = 0
-        self.mOptions = options
+        self.nchunk = 0
+        self.options = options
 
     def createOpen( self, mode = "w" , header = None):
         """open file. Check first, if directory exists.
         """
 
-        self.mNChunk += 1
-        filename = self.mOptions.output_pattern % self.mNChunk
+        self.nchunk += 1
+        filename = self.options.output_pattern % self.nchunk
 
-        if self.mOptions.dry_run:
-            self.mOptions.stdlog.write("# opening file %s\n" % filename )
+        if self.options.dry_run:
+            E.info( "opening file %s" % filename )
             return open("/dev/null", mode)
 
         if mode in ("w", "a"):
@@ -89,7 +88,7 @@ class OutputChunk:
         else:
             existed = False
         
-        f = open( filename, mode )
+        f = IOTools.openFile( filename, mode )
 
         if header and not existed:
             f.write( header + "\n" )
@@ -103,8 +102,13 @@ class OutputChunk:
         outfile.close()
         return len(chunk)
 
-##------------------------------------------------------------------------
-if __name__ == "__main__":
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: gff2chunks.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"] )
 
@@ -151,8 +155,11 @@ if __name__ == "__main__":
             
         noutput += outputChunk( chunk )
         nchunks += 1
-        
-    if options.loglevel >= 1:
-        options.stdlog.write( "# ninput=%i, noutput=%i, nchunks=%i\n" % (ninput, noutput, nchunks ) )
+
+    E.info( "ninput=%i, noutput=%i, nchunks=%i" % (ninput, noutput, nchunks ) )
 
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

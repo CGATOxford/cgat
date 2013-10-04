@@ -27,7 +27,7 @@ gff2table.py - compute features for intersection of two gff files
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Genomics Intervals 
 
 Purpose
 -------
@@ -60,9 +60,6 @@ Type::
    python gff2table.py --help
 
 for command line help.
-
-Documentation
--------------
 
 Command line options
 --------------------
@@ -345,7 +342,13 @@ def annotateWindows( contig, windows, gff_data, fasta, options ):
                       score,
                       extra_info) ) ) + "\n" )
                       
-if __name__ == "__main__":
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: gff2table.py 2861 2010-02-23 17:36:32Z andreas $", 
                                     usage = globals()["__doc__"])
@@ -401,7 +404,7 @@ if __name__ == "__main__":
         options.stdlog.write("# reading windows..." )
         options.stdlog.flush()
         
-    windows = GTF.readAsIntervals( GFF.iterator( IOTools.openFile(options.filename_windows, "r" ) ) )
+    windows = GTF.readAsIntervals( GTF.iterator( IOTools.openFile(options.filename_windows, "r" ) ) )
 
     if options.loglevel >= 1:
         options.stdlog.write("done\n" )
@@ -481,10 +484,11 @@ if __name__ == "__main__":
                              options )
             
 
-    if options.loglevel >= 1:
-        options.stdout.write( "# ninput_windows=%i, noutput_contigs=%i, ninput_contigs=%i, nskipped_windows=%i, nskipped_data=%i\n" %\
-                                  ( len(windows), noutput_contigs, len(contigs), ncontigs_skipped_windows, ncontigs_skipped_data ) )
+    E.info("ninput_windows=%i, noutput_contigs=%i, ninput_contigs=%i, nskipped_windows=%i, nskipped_data=%i" %\
+               ( len(windows), noutput_contigs, len(contigs), ncontigs_skipped_windows, ncontigs_skipped_data ) )
 
     E.Stop()
 
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
 

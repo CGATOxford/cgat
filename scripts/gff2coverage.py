@@ -25,7 +25,7 @@ gff2coverage.py - compute genomic coverage of gff intervals
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Genomics Intervals
 
 Purpose
 -------
@@ -47,9 +47,6 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-
 Command line options
 --------------------
 
@@ -68,16 +65,13 @@ import collections
 
 import CGAT.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
-
-USAGE="""python %s [OPTIONS] < stdin > stdout
-
-
-""" % sys.argv[0]
+import CGAT.IOTools as IOTools
+import CGAT.GTF as GTF
 
 def printValues( contig, max_size, window_size, values, options ):
     """output values."""
 
-    outfile = open( options.output_pattern % contig, "w" )
+    outfile = E.openOutputFile( contig, "w" )
 
     outfile.write( "abs_pos\trel_pos" )
 
@@ -110,10 +104,23 @@ def processChunk( contig, chunk, options, fasta = None ):
     
     if len(chunk) == 0: return
 
+    # check whether there are overlapping features or not
+    checked = []
+    for feature in chunk:
+        checked.append(feature)
+	others = [x for x in chunk if x not in checked]
+	for otherFeature in others:
+	   if GTF.Overlap(feature, otherFeature):
+		raise ValueError( " Histogram could not be created since the file contains overlapping features! \n%s\n%s  " % (feature, otherFeature) )
+    # clear auxiliary list
+    del checked[:]
+
+    # compute min_coordinate, max_coordinate for the histogram
+    min_coordinate = 1
     max_coordinate = max( map( lambda x: x.end, chunk) )
     ## compute window size
     if options.window_size:
-        window_size = window_size
+        window_size = options.window_size
         num_bins = int(math.ceil((float(max_coordinate) / window_size)))
     elif options.num_bins and fasta:
         contig_length = fasta.getLength( contig )
@@ -158,22 +165,40 @@ def processChunk( contig, chunk, options, fasta = None ):
 
     printValues( contig, max_coordinate, window_size, values, options )
     
-if __name__ == "__main__":
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: gff2coverage.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option( "-g", "--genome-file", dest="genome_file", type="string",
-                       help="filename with genome."  )
-
-    parser.add_option( "-o", "--output-pattern", dest="output_pattern", type="string",
-                       help="output pattern for filenames. %s is substituted with the contig name."  )
+                       help="filename with genome [default=%default]"  )
 
     parser.add_option( "-f", "--features", dest="features", type="string", action="append",
-                       help="features to collect."  )
+                       help="features to collect " 
+                       "[default=%default]" )
+
+    parser.add_option( "-w", "--window-size", dest="window_size", type="int", 
+                       help="window size in bp for histogram computation. "
+                       "Determines the bin size.  "
+                       "[default=%default]" )
+
+    parser.add_option( "-b", "--num-bins", dest="num_bins", type="int", 
+                       help="number of bins for histogram computation "
+                       "if window size is not given. "
+                       "[default=%default]" )
+
+    parser.add_option( "-m", "--method", dest="method", type="choice",
+                       choices = ("genomic", "histogram", ),
+                       help="methods to apply. "
+                       "[default=%default]"  )
 
     parser.set_defaults(
         genome_file = None,
-        output_pattern = "%s.hist",
         window_size = None,
         num_bins = 1000,
         value_format = "%6.4f",
@@ -181,7 +206,7 @@ if __name__ == "__main__":
         method = "genomic",
         )
 
-    (options, args) = E.Start( parser )
+    (options, args) = E.Start( parser, add_output_options = True )
 
     if options.genome_file:
         fasta = IndexedFasta.IndexedFasta( options.genome_file )
@@ -240,5 +265,7 @@ if __name__ == "__main__":
             
     E.Stop()
 
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
 
 

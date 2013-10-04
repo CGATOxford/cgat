@@ -52,9 +52,6 @@ directly. i.e "Pipeline" would specifiy Pipeline.py
 
 The script has currently only been tested with single input/output.
 
-Documentation
--------------
-
 Command line options
 --------------------
 

@@ -27,7 +27,7 @@ gtfs2graph.py - compute overlap graph between genes
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Genomics Genesets
 
 Purpose
 -------
@@ -48,9 +48,6 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-
 Command line options
 --------------------
 
@@ -60,13 +57,6 @@ import string
 import re
 import optparse
 import collections
-
-USAGE="""python %s [OPTIONS] input1 input2
-
-
-Version: $Id: gtfs2graph.py 2781 2009-09-10 11:33:14Z andreas $
-""" % sys.argv[0]
-
 
 import CGAT.Experiment as E
 import CGAT.GTF as GTF
@@ -247,7 +237,13 @@ class CounterGenes(Counter):
         idx2 = self.buildIndex( filename2 )
         self._run( filename1, idx2 )
 
-if __name__ == "__main__":
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: gtfs2graph.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
@@ -286,3 +282,7 @@ if __name__ == "__main__":
     counter.run( args[0], args[1] )
     
     E.Stop()    
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

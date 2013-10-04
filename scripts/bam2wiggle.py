@@ -27,7 +27,7 @@ bam2wiggle.py - convert bam to wig/bigwig file
 :Author: Andreas Heger
 :Release: $Id: bam2wiggle.py 2832 2009-11-24 16:11:06Z andreas $
 :Date: |today|
-:Tags: Python
+:Tags: Genomics NGS Intervals
 
 Purpose
 -------

@@ -22,7 +22,7 @@ There are several ways to build pipelines. For example, there are generic workfl
 systems like `taverna <http://www.taverna.org.uk>`_ which even provide GUIs for connecting
 tasks. A developer writes some glue code permitting the output of one application to
 be used as input for another application. Also, there are specialized workflow systems 
-for genomics, for example `galaxy <http://galaxy.psu.edu>`_, which allows you to save and share
+for genomics, for example galaxy_, which allows you to save and share
 analyses. New tools can be added to the system and new data imported easily for example
 from the UCSC genome browser.
 
@@ -62,6 +62,3 @@ tools to build a pipeline:
    * sqlite_ to store the results of the computational steps
    * sphinxreport_ to visualize the data in the sqlite database
 
-.. _ruffus: http://www.ruffus.org.uk/
-.. _sqlite: http://www.sqlite.org/
-.. _sphinxreport: http://code.google.com/p/sphinx-report/

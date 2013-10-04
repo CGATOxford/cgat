@@ -193,6 +193,20 @@ class Entry:
         self.transcript_id = transcript_id
         return self
 
+    def fromBed( self, other, **kwargs ):
+        """fill from a bed entry."""
+        self.contig = other.contig
+        self.source = kwargs.get("source", "bed")
+        self.feature = kwargs.get("feature", "interval" )
+        self.start = other.start
+        self.end = other.end
+        self.score = other.score
+        self.strand = other.strand
+        self.frame = kwargs.get("frame", ".")
+        self.gene_id = kwargs.get("gene_id", None )
+        self.transcript_id = kwargs.get("transcript_id", None )
+        return self
+
     def copy( self, other ):
         """fill from other entry.
         works both if other is :class:`GTF.Entry` or 

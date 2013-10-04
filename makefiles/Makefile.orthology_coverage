@@ -369,7 +369,7 @@ queries_counts.data:
 queries_counts.png: queries_counts.data
 	$(PRELOG)
 	@cut -f 3-`echo "3 + $(QUALITY_NUM_CLASSES)" | bc` queries_counts.data | grep "^[0-9]" |\
-	python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py \
+	python $(DIR_SCRIPTS_TOOLS)data2histogram.py \
 	--column=all |\
 	python $(DIR_SCRIPTS_TOOLS)plot_histogram.py \
 	--legend=counts,$(QUALITY_CLASSES_COMMA) --hardcopy=$@ 
@@ -391,7 +391,7 @@ queries_coverage.hist:
 				FROM $${x}.predictions AS p \
 				WHERE p.prediction_id = $(CMD_SUBSELECT_BEST_PREDICTION)" \
 		$(CONNECTION_OPTIONS) |\
-		python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py \
+		python $(DIR_SCRIPTS_TOOLS)data2histogram.py \
 		--cumulative	|\
 		grep -v "#" >> $@_$${x}.tmp; \
 	done;
@@ -432,7 +432,7 @@ queries_percent_identity.hist:
 				FROM $${x}.predictions AS p \
 				WHERE p.prediction_id = $(CMD_SUBSELECT_BEST_PREDICTION) " \
 		$(CONNECTION_OPTIONS) |\
-		python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py --cumulative |\
+		python $(DIR_SCRIPTS_TOOLS)data2histogram.py --cumulative |\
 		grep -v "#" >> $@_$${x}.tmp; \
 	done;
 	@python $(DIR_SCRIPTS_TOOLS)combine_histograms.py \

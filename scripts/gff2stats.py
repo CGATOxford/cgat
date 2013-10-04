@@ -27,7 +27,7 @@ gff2stats.py - count features, etc. in gff file
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Genomics Intervals
 
 Purpose
 -------
@@ -59,9 +59,6 @@ Type::
    python gff2stats.py --help
 
 for command line help.
-
-Documentation
--------------
 
 Command line options
 --------------------

@@ -37,10 +37,9 @@ This module is imported by most CGAT scripts. It provides convenient
 and consistent methods for
 
    * `Record keeping`_
-   * `Logging`_
    * `Benchmarking`_
 
-See :doc:`../scripts/script_template` on how to use this module.
+See :doc:`../scripts/cgat_script_template` on how to use this module.
 
 The basic usage of this module within a script is::
 
@@ -297,8 +296,6 @@ class AppendCommaOption(optparse.Option):
       but generally convenient.
 
     * Option values of "None" and "" are treated as default values.
-    
-    
     '''
 #    def check_value( self, opt, value ):
 #        # do not check type for ',' separated lists
@@ -347,7 +344,6 @@ class AppendCommaOption(optparse.Option):
 #################################################################
 class OptionParser( optparse.OptionParser ):
     '''CGAT derivative of OptionParser.
-
     '''
     
     def __init__(self, *args, **kwargs):
@@ -478,7 +474,7 @@ def Start( parser = None,
     *add_cluster_options* add common options for scripts submitting jobs to the cluster
     *add_output_options* add commond options for working with multiple output files
     *returns* a tuple (options,args) with options (a :py:class:`E.OptionParser` object 
-              and a list of positional arguments.
+        and a list of positional arguments.
 
     The :py:func:`Start` method will also set up a file logger.
 

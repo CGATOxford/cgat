@@ -54,7 +54,9 @@ Genomic intervals/features
     that overlapping intervals remain in the same file.
 
 :doc:`scripts/gff2coverage`
-    Output proportion of genome covered by various features.
+   This script computes the genomic coverage of intervals 
+   in a :term:`gff` formatted file. The coverage is computed
+   per feature.
 
 :doc:`scripts/gff2fasta`
     Output genomic sequences from intervals.

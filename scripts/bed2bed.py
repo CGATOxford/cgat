@@ -34,14 +34,16 @@ merge
 
 Merge together overlapping or adjecent intervals. The basic
 functionality is similar to bedtools merge, but with some additions: 
-* _merging by name_ specifiying the --merge-by-name option will mean
+
+* Merging by name: specifying the --merge-by-name option will mean
   that only overlaping (or adjacent intervals) with the same value in
   the 5th column of the bed will be merged 
 
-.. caution:: Intervals of the same name will only be merged if they 
+.. caution:: 
+   Intervals of the same name will only be merged if they 
    are consequtive in the bed file.
 
-* _Only output merged intervals_ By specifiying the --merge-min-intervals=n
+* Only output merged intervals: By specifiying the --merge-min-intervals=n
   options, only those intervals that were created by merging at least n
   intervals together will be output
 
@@ -56,16 +58,19 @@ contrast to merge-by-name above, two intervals do not need to be
 overlapping or within a certain distance to be merged.
 
 There are several methods to create the bins: 
-* _equal-bases_: Bins
-  are created to that they contain the same number of bases.  Specified
+
+* equal-bases: Bins are created to that they contain the same number of bases.  Specified
   by passing "equal-bases" to --binning-method. This is the default.  
-* _equal-intervals_: Score bins are create so that each bin contains the
+
+* equal-intervals: Score bins are create so that each bin contains the
   same number of intervals. Specified by passing "equal-intervals" to
   --binning-method.  
-* _equal-range_: Score bins are created so that
+
+* equal-range: Score bins are created so that
   each bin covers the same fraction of the total range of
   scores. Specified by passing "equal-range" to --binning-method.  
-* _bin-edges_: Score binds can be specified by manually passing a comma
+
+* bin-edges: Score binds can be specified by manually passing a comma
   seperated list of bin edges to --bin-edges.
 
 The number of bins is specified by the --num-bins options, and the
@@ -77,7 +82,7 @@ block
 Creates blocked bed12 outputs from a bed6, where intervals with the
 same name are merged together to create a single bed12 entry.
 
-.. caution:: NOTE: Input must be sorted so that entries of the same
+.. Caution:: Input must be sorted so that entries of the same
 name are together.
 
 filter-genome 
