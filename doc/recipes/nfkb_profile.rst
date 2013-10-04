@@ -47,7 +47,7 @@ Using the CGAT tool bam2geneprofile we can assess the binding profile of NFKB ac
                          --output-filename-pattern=nfkb_profile_%s
 
 
-This statement will produce a matrix as an output file named "nfkb_profile.geneprofile.matrix.tsv.gz" with the following format::
+This statement will produce a matrix as an output file named "nfkb_profile.geneprofile.matrix.tsv.gz" with the following format:
 
    +---+--------+----------+--------------+
    |bin|region  |region_bin|counts        |
@@ -94,11 +94,11 @@ over the gene model. Start R and type::
 
    > profile <- read.csv("nfkb_profile.geneprofile.matrix.tsv.gz", header = T, stringsAsFactors = F, sep = "\t")
  
-   > plot(profile$bin, profile$counts, cex = 0)   
+   > plot(profile$bin, profile$counts, cex = 0, xaxt = "none")   
 
    > lines(profile$bin, profile$counts, col = "blue")
 
-   > abline(v = c(1000, 2000))
+   > abline(v = c(1000, 2000), lty = 2)
 
    > mtext("upstream", adj = 0.1)
     
@@ -109,7 +109,7 @@ over the gene model. Start R and type::
 
 This set of commands will produce the figure shown.
 
-.. image:: ../plots/nfkb_profile.pdf 
+.. image:: ../plots/nfkb_profile.png
 
 
 This plot displays the predominance of NFKB binding at transcription start sites of protein coding genes. 
