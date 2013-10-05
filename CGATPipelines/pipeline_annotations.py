@@ -1773,8 +1773,8 @@ def runGenomeGCProfile( infile, outfile ):
     | python %(scriptsdir)s/fasta2bed.py 
         --verbose=2
         --method=GCProfile
-        --min-length=%(segmentation_min_length)i
-        --halting-parameter=%(segmentation_halting_parameter)i
+        --gcprofile-min-length=%(segmentation_min_length)i
+        --gcprofile-halting-parameter=%(segmentation_halting_parameter)i
         --log=%(outfile)s.log
     | bgzip
     > %(outfile)s

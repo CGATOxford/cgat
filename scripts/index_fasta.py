@@ -58,8 +58,9 @@ import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Experiment as E
 import sys, re, os
 
-def main():
-
+def main( argv = None ):
+ 
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: IndexedFasta.py 2801 2009-10-22 13:40:39Z andreas $", 
                              usage = globals()["__doc__"])

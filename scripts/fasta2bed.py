@@ -30,6 +30,9 @@ gaps
    ouput all locations of assembly gaps (blocks of `N`)
    in the genomic sequences
 
+ungapped
+   output ungapped locations in the genomic sequences
+
 Usage
 -----
 
@@ -209,6 +212,24 @@ def segmentFixedWidthWindows( infile, window_size ):
 
     return segments
 
+def gapped_regions( seq, gap_chars ):
+    '''iterator yielding gapped regions in seq.'''
+    is_gap = seq[0] in gap_chars
+    last = 0
+    size = len(seq)
+    for x,c in enumerate(seq):
+        if c in gap_chars:
+            if not is_gap:
+                last = x
+                is_gap = True
+        else:
+            if is_gap:
+                yield( last, x )
+                last = x
+                is_gap = False
+    if is_gap:
+        yield last, size
+
 def segmentGaps( infile, gap_char ):
 
     iterator = FastaIterator.FastaIterator( infile )
@@ -222,23 +243,34 @@ def segmentGaps( infile, gap_char ):
         if cur_record is None: break
         contig = re.sub("\s.*", "", cur_record.title )
 
-        if cur_record.sequence[0] in gap_char:
-            first_res = 0
-        else:
-            first_res = -1
-        for x, c in enumerate( cur_record.sequence ):
-            if c not in gap_char:
-                if first_res >= 0:
-                    yield ( contig, first_res, x, 0 )
-                first_res = -1
-            else:
-                if first_res < 0:
-                    first_res = x
+        for start, end in gapped_regions(cur_record.sequence, gap_char):
+            yield( contig, start, end, 0)
 
-            x += 1
+def segmentUngapped( infile, gap_char, min_gap_size = 0 ):
+
+    iterator = FastaIterator.FastaIterator( infile )
+
+    while 1:
+        try:
+            cur_record = iterator.next()
+        except StopIteration:
+            break
+
+        if cur_record is None: break
+        contig = re.sub("\s.*", "", cur_record.title )
+        size = len(cur_record.sequence)
+
+        last_end = 0
+        for start, end in gapped_regions(cur_record.sequence, gap_char):
+            if end - start < min_gap_size: continue
             
-        if first_res > 0:
-            yield( contig, first_res, x, 0 )
+            if last_end != 0:
+                yield( contig,last_end,start, 0)
+            last_end = end
+
+        if last_end < size:
+            yield( contig,last_end,size, 0)
+
             
 def main( argv = None ):
     """script main.
@@ -251,35 +283,41 @@ def main( argv = None ):
     # setup command line parser
     parser = E.OptionParser( version = "%prog version: $Id: fasta2bed.py 2861 2010-02-23 17:36:32Z andreas $", usage = globals()["__doc__"] )
 
-    parser.add_option("-g", "--gap-size", dest="gap_size", type="float",
+    parser.add_option("--gcprofile-gap-size", dest="gcprofile_gap_size", type="float",
                       help="GCProfile: Choose n as the gap size to be filtered "
                       "(If n > 1, n bp is set as the gap size to be filtered. "
                       "If 0 < n < 1, for example, n = 0.01, means gaps less than 1% "
-                      "of the input sequence length will be filtered [default=%default]."  )
+                      "of the input sequence length will be filtered "
+                      "[default=%default]."  )
 
-    parser.add_option("-i", "--min-length", dest="gcprofile_min_length", type="int",
+    parser.add_option("--gcprofile-min-length", dest="gcprofile_min_length", type="int",
                       help="GCProfile: minimum length [default=%default]" )
 
-    parser.add_option( "--halting-parameter", dest="gcprofile_halting_parameter", type="int",
+    parser.add_option( "--gcprofile-halting-parameter", dest="gcprofile_halting_parameter", type="int",
                        help="GCProfile: halting parameter [default=%default]" )
 
     parser.add_option("-m", "--method", dest="method", type="choice",
                       choices = ("GCProfile", 
                                  "fixed-width-windows-gc",
                                  "cpg",
-                                 "gaps",),
+                                 "gaps",
+                                 "ungapped",),
                       help="Method to use for segmentation [default=%default]" )
 
     parser.add_option( "-w", "--window-size=", dest="window_size", type="int",
                        help="window size for fixed-width windows [default=%default]." )
     
+    parser.add_option("--min-length", dest="min_length", type="int",
+                      help="minimum length for ungapped regions [default=%default]" )
+
     parser.set_defaults(
         gcprofile_halting_parameter = 1000,
         gcprofile_gap_size = 0.01,
         gcprofile_min_length = 3000,
         window_size = 10000,
         method = "GCProfile",
-        gap_char = "NnXx"
+        gap_char = "NnXx",
+        min_length = 0,
         )
 
     ## add common options (-h/--help, ...) and parse command line 
@@ -297,6 +335,8 @@ def main( argv = None ):
         segments = segmentFixedWidthWindows( options.stdin, options.window_size )
     elif options.method == "gaps":
         segments = segmentGaps( options.stdin, options.gap_char )
+    elif options.method == "ungapped":
+        segments = segmentUngapped( options.stdin, options.gap_char, options.min_length )
     else:
         raise ValueError("unknown method %s" % (method))
     x = 0
