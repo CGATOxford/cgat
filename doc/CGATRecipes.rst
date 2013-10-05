@@ -11,6 +11,7 @@ would like a use case then please post a request on the `CGAT users group`_ webs
    :maxdepth: 2
 
    recipes/gat
+   recipes/nfkb_profile
    recipes/lncrna_cpg
    recipes/metagenome_contigs_kmers
 
