@@ -211,8 +211,9 @@ def loadGiAccessionNumbers(infile, outfile):
 ###################################################
 @transform(SEQUENCE_FILES
            , regex("(\S+).(fastq.gz|fastq.1.gz)")
+           , add_inputs(buildGi2Taxa)
            , r"taxonomy.dir/\1.taxonomy.relab")
-def buildTrueTaxonomicRelativeAbundances(infile, outfile):
+def buildTrueTaxonomicRelativeAbundances(infiles, outfile):
     '''
     get species level relative abundances for the simulateds
     data. This involes creating maps between different identifiers
@@ -222,7 +223,7 @@ def buildTrueTaxonomicRelativeAbundances(infile, outfile):
     takes an age to run - can think of optimising this somehow
     '''
     to_cluster = True
-    P.submit("PipelineMetagenomeBenchmark", "buildTrueTaxonomicRelativeAbundances", infiles = infile, outfiles = outfile)
+    PipelineMetagenomeBenchmark.buildTrueTaxonomicRelativeAbundances(infiles, outfile)
 
 ###################################################
 ###################################################
