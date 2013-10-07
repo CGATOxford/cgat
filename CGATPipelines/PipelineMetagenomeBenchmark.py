@@ -39,42 +39,33 @@ PARAMS = P.PARAMS
 ################################################
 ################################################
 ################################################
-def buildTrueTaxonomicRelativeAbundances(infile, outfile):
+def buildTrueTaxonomicRelativeAbundances(infiles, outfile):
     '''
     get species level relative abundances for the simulateds
     data. This involes creating maps between different identifiers
     from the NCBI taxonomy. This is so that the results are comparable
     to species level analysis from metaphlan
-    The gi_taxid_nucl is a huge table and therefore this function
-    takes an age to run - can think of optimising this somehow
     '''
-    total = 0
-    rel_abundance = collections.defaultdict(int)
-    for fastq in Fastq.iterate(IOTools.openFile(infile)):
-        total += 1
-        gi = fastq.identifier.split("|")[1]
-        rel_abundance[gi] += 1
-    for gi, ab in rel_abundance.iteritems():
-        rel_abundance[gi] = float(ab)/total
-
-    dbh = sqlite3.connect(PARAMS["database"])
-    cc = dbh.cursor()
-    result = collections.defaultdict(float)
-    for gi in rel_abundance.keys():
-        E.info("processing gi %s" % gi)
-        taxid = cc.execute("""SELECT taxid FROM gi_taxid_nucl WHERE gi == '%s'""" % gi).fetchone()[0]
-        species_id = cc.execute("""SELECT species_id FROM categories WHERE taxid == '%s'""" % taxid).fetchone()[0]
-        species_name = cc.execute("""SELECT taxname FROM names WHERE taxid == '%s' AND description == 'scientific name'""" % species_id).fetchone()[0]
-        abundance = rel_abundance[gi]
-        E.info("mapped gi %s to taxid: %s, species_id: %s, species_name: %s" % (str(gi), str(taxid), str(species_id), species_name))
-        result[species_name] += abundance
-
+    levels = ["species", "genus", "family", "order", "class", "phylum"]
+    taxa = open(infiles[1])
+    header = taxa.readline()
+    gi2taxa = collections.defaultdict(list)
+    for line in taxa.readlines():
+        data = line[:-1].split("\t")
+        gi, species, genus, family, order, _class, phylum = data[0], data[1], data[2], data[3], data[4], data[5], data[6]
+        gi2taxa[gi] =  (species, genus, family, order, _class, phylum)
+        
     outf = open(outfile, "w")
-    outf.write("species_name\trelab\n")
-    for species_name, abundance in result.iteritems():
-        # create names consistent with metaphlan
-        species_name = species_name.replace(" ", "_")
-        outf.write("%s\t%f\n" % (species_name, abundance))
+    outf.write("level\ttaxa\trelab\n")
+    for i in range(len(levels)):
+        total = 0
+        result = collections.defaultdict(int)
+        for fastq in Fastq.iterate(IOTools.openFile(infiles[0])):
+            total += 1
+            gi = fastq.identifier.split("|")[1]
+            result[gi2taxa[gi][i]] += 1
+        for taxa, value in result.iteritems():
+            outf.write("%s\t%s\n" % (levels[i], taxa, value))
     outf.close()
 
 ################################################
