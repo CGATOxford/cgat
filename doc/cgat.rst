@@ -27,6 +27,7 @@ are below, followed by a :ref:`quickstart` guide.
    CGATUsage
    CGATRecipes
    CGATReference
+   developing
 
 .. _quickstart:
    

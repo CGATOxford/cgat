@@ -1,14 +1,3 @@
-#!/usr/bin/env perl
-#
-# $Id$
-#
-# plain2msf.pl < in > out
-# 
-# convert plain formatted malis (tab separated lists)(
-# to msf formated malis.
-# hmmbuild does complain, if the same identifier exists
-# twice. Thus, the second occurance of the same identifier
-# gets an 'a' appended, and so on.
 
 use strict;
 

@@ -1,10 +1,3 @@
-#!/usr/bin/env perl
-# $id$
-#
-# perl intersection.pl < in > out
-#
-# creates the intersection of two files, compares on the first field
-# 
 use strict;
 
 open(IN, "<$ARGV[0]") or die "could not find $ARGV[0]\n"; 

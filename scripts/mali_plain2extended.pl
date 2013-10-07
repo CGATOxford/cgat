@@ -1,11 +1,3 @@
-#!/usr/bin/env perl
-#
-# $Id$
-#
-# plain2extended.pl < in > out
-# 
-# extend a plain formatted alignment file
-# with end-sequences
 
 use strict;
 

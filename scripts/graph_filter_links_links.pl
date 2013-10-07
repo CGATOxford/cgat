@@ -1,7 +1,3 @@
-# filter one set of links with another set
-# -r: reverse selection, print out links not present in other set
-# -d: use direction, the direction of a link is taken into account
-# -m: do not merge information fields for joined entries
 use strict;
 use Getopt::Std;
 

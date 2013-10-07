@@ -1,10 +1,3 @@
-## filter links. Only one link (the first) between the same neighbours
-## is printed.
-##
-## usage:
-## perl filter_links_symmetric.pl < in > out
-##
-## $Id$
 
 use strict;
 

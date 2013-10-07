@@ -1,4 +1,3 @@
-#!/usr/bin/perl -w
 
 # This is a script which dumps out a gtf file from an
 # Ensemb-schema DB with gene models.
