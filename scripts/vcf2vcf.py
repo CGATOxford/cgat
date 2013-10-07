@@ -1,16 +1,3 @@
-####
-####
-##
-##
-## Copyright (C) 2008 Andreas Heger All rights reserved
-##
-## Author: Andreas Heger <heger@ebi.ac.uk>
-##
-## $Id: bed2bed.py 2861 2010-02-23 17:36:32Z andreas $
-##
-##
-####
-####
 '''
 vcf2vcf.py - manipulate vcf files
 =================================

@@ -1,10 +1,3 @@
-## filter links, remove redundant links 
-## (more than one link between the same neighbours)
-## usage:
-## perl graph_filter_links_redundant.pl < in > out
-## -d: direction is important
-##
-## $Id$
 
 use strict;
 use Getopt::Std;

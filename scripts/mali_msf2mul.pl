@@ -1,11 +1,3 @@
-#!/usr/bin/env perl
-#
-# $Id$
-#
-# msf2mul.pl < in > out
-# 
-# convert msf formatted malis 
-# to mul formated malis
 use strict;
 
 while(<STDIN>) {

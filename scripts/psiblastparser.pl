@@ -1,38 +1,3 @@
-#!/homes/adm_sand/pub/sgi/perl5
-################################################################################
-#   Gene prediction pipeline 
-#
-#   $Id: psiblastparser.pl 2686 2009-05-26 14:03:17Z andreas $
-#
-#   Copyright (C) 2004 ????
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
-## Original author: unknown, member of Sander group at EBI
-#
-# blastall -p blastp -i manyseqs.fasta ... | blastchunk.pl > manyseqs.rdb
-#
-# Aug 2011: modified by Andreas Heger to parse BLAST+ 2.2.25
-# 
-# modified by Andreas Heger to parse PSI-BLAST
-# 
-# modified by Andreas Heger to parse BLAST 2.2.14
-#		seems that Posted data as a marker for a chunk is not available any more, because
-#		database information is only posted at the end of the complete file.
-#
-# added option to use zero based coordinates and open/closed intervals
 $|=1;
 
 # use strict;

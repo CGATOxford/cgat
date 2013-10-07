@@ -1,4 +1,3 @@
-#!/bin/env python
 
 '''
 cgat_ruffus_profile.py - analyze ruffus logfile
