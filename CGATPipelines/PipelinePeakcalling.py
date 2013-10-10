@@ -1061,7 +1061,7 @@ def summarizeMACS2FDR( infiles, outfile ):
 ############################################################
 ############################################################
 ############################################################
-def bedGraphtoBigwig( infile, contigsfile, outfile, remove = True ):
+def bedGraphToBigwig( infile, contigsfile, outfile, remove = True ):
     '''convert a bedgraph file to a bigwig file.
 
     The bedgraph file is deleted on success.
