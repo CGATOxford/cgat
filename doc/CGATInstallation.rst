@@ -70,6 +70,9 @@ straight-forward::
 
     pip install cgat
 
+If you continue having problems with the installation please try the
+:ref:`CleanInstall` guide.
+
 Troubleshooting
 ---------------
 
