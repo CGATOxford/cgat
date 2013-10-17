@@ -5,6 +5,19 @@ version:
     references: []
     options: --version
 
+<<<<<<< HEAD
+test_gtf:
+    stdin: hg19.small.gtf.gz
+    outputs: [stdout]
+    references: [gtf.tsv]
+    options: --is-gtf
+
+test_gff:
+    stdin: hg19.small.gtf.gz
+    outputs: [stdout]
+    references: [gff.tsv]
+    options: 
+=======
 gff:
         stdin: hg19.chr19.gtf.gz
         outputs: [stdout]
@@ -16,4 +29,5 @@ gtf:
         outputs: [stdout]
         references: [gtf.tsv]
         options: --is-gtf
+>>>>>>> e31337f2a2004328f0aa642925a1580d7569e2b5
 

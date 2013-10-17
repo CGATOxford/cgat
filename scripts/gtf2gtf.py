@@ -67,12 +67,13 @@ appear consecutively within the file. This can be achevied using ``--sort``.
     Merges overlapping exons for all transcripts of a gene, outputting the 
     merged exons. Can be used in conjunction with ``--merge-exons-distance`` 
     to set the minimum distance that may appear between two exons before 
-    they are merged.
+    they are merged.If ``--with-utr`` is set, the output interval will also
+    contain UTR.
 
 ``--merge-transcripts``
     Merges all transcripts of a gene. Outputs contains a single interval that
-    spans the original gene (both introns and exons). If ``--with-utr`` is set,
-    the output interval will also contain UTR.
+    spans the original gene (both introns and exons). If ``--with-utr`` is 
+    set, the output interval will also contain UTR.
 
 ``--merge-genes``
     Merges genes that have overlapping exons, outputting a single gene_id and 
@@ -321,8 +322,8 @@ def main( argv = None ):
     parser.add_option("-f", "--filter", dest="filter", type="choice",
                       choices=("gene", "transcript", "longest-gene", "longest-transcript", "representative-transcript" ),
                       help="apply a filter to the input file. Available filters are: "
-                      "'gene-id': filter by gene_id, "
-                      "'transcript-id': filter by transcript_id, "
+                      "'gene': filter by gene_id, "
+                      "'transcript': filter by transcript_id, "
                       "'longest-gene': output the longest gene for overlapping genes ," 
                       "'longest-transcript': output the longest transcript per gene," 
                       "'representative-transcript': output the representative transcript per gene. "
