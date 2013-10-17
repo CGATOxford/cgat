@@ -98,7 +98,7 @@ def concatenateTables( outfile, options, args ):
         if len(lines) == 0: continue
         
         # files have titles - use these
-        if options.titles:
+        if options.input_has_titles:
             if first:
                 titles = lines[0]
                 if options.cat == None:
@@ -136,6 +136,7 @@ def joinTables( outfile, options, args ):
     keys = {}
     sorted_keys = []
     sizes = {}
+
     if options.merge:
         titles=["count"]
     else:
@@ -184,8 +185,9 @@ def joinTables( outfile, options, args ):
         max_size = 0
         ncolumns = 0
 
-        if options.titles:
+        if options.input_has_titles:
             data = string.split(lines[0][:-1], "\t")
+            # no titles have been defined so far
             if not titles:
                 key = "-".join( [data[x] for x in options.columns] )                
                 titles = [key]
@@ -291,7 +293,7 @@ def joinTables( outfile, options, args ):
                     headers += [""] * (tables[t][0] - 1)                
 
             ## use headers as titles, if headers is given and skip-titles is turned on
-            if options.titles and options.skip_titles:
+            if options.input_has_titles and options.skip_titles:
                 titles = headers
             else:
             ## otherwise: print the headers out right away            
@@ -299,7 +301,7 @@ def joinTables( outfile, options, args ):
 
         order = range(0, len(tables)+1)
 
-        if options.titles or (options.use_file_prefix or options.add_file_prefix):
+        if options.input_has_titles or (options.use_file_prefix or options.add_file_prefix):
 
             if options.sort:
                 sort_order = []
@@ -364,7 +366,7 @@ def joinTables( outfile, options, args ):
     else:
 
         # for multi-column table, just write
-        if options.titles:
+        if options.input_has_titles:
             outfile.write( "\t".join( map(lambda x: titles[x], range(len(titles)))))
             outfile.write("\n")
 
@@ -391,7 +393,7 @@ def main( argv = sys.argv ):
     parser = E.OptionParser( version = "%prog version: $Id: combine_tables.py 2782 2009-09-10 11:40:29Z andreas $", 
                              usage = globals()["__doc__"])
 
-    parser.add_option("-t", "--no-titles", dest="titles", action="store_false",
+    parser.add_option("-t", "--no-titles", dest="input_has_titles", action="store_false",
                       help="no titles in input."  )
 
     parser.add_option( "--ignore-titles", dest = "ignore_titles", action="store_true",
@@ -407,7 +409,7 @@ def main( argv = sys.argv ):
                       help="add headers for files as a ,-separated list [%default]."  )
 
     parser.add_option( "-c", "--columns", dest="columns", type="string",
-                      help="columns to use for joining. Multiple columns can be specified as a comma-separated list [default=%default]."  )
+                       help="columns to use for joining. Multiple columns can be specified as a comma-separated list [default=%default]."  )
     
     parser.add_option( "-k", "--take", dest="take", type="string", action="append",
                        help = "columns to take. If not set, all columns except for "
@@ -455,8 +457,11 @@ def main( argv = sys.argv ):
     parser.add_option( "--regex-end", dest="regex_end", type="string",
                       help="regular expression to end collecting table in a file [default=%default]" )
 
+    parser.add_option( "--test", dest="test", type="int",
+                      help="test combining tables with first X rows [default=%default]" )
+
     parser.set_defaults(
-        titles = True,
+        input_has_titles = True,
         skip_titles = False,
         missing_value = "na",
         headers = None,
@@ -474,6 +479,7 @@ def main( argv = sys.argv ):
         take = [],
         regex_filename = "(.*)",
         prefixes = None,
+        test = 0,
         )
 
     (options, args) = E.Start( parser, argv = argv )
