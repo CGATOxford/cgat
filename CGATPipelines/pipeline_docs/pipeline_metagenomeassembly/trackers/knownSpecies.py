@@ -28,14 +28,17 @@ class Species(TrackerSQL):
         return self.getAll("""SELECT * FROM species_present_fa""")
 
 
-class Alignments(TrackerSQL):
+class KnownAlignments(TrackerSQL):
     
     def __call__(self, track, slice = None):
         '''
         return picard stats results
         '''
-        def __call__(self, track, slice = None):
-            return self.getAll("""SELECT * FROM """)
+        result = {}
+        for data in self.execute("""SELECT track, PCT_PF_READS_ALIGNED FROM known_genomes_picard_stats_alignment_summary_metrics"""):
+            result[data[0]] = data[1]
+        return result
+
 
 
 

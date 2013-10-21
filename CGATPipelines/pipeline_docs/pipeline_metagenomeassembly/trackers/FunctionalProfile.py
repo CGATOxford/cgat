@@ -4,7 +4,7 @@ import collections
 import numpy as np
 
 
-class AlignmentCount(TrackerSQL):
+class AlignmentCounts(TrackerSQL):
     
     def __call__(self, track, slice = None):
         

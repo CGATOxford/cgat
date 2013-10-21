@@ -42,9 +42,9 @@ reads.
    Summary of functional categories represented by reads
 
 
-
 .. report:: FunctionalProfile.CogCounts
-   :render: interleaved-barplot
+   :render: interleaved-bar-plot
+   :mpl-rc: figure.figsize=(20,10);legend.fontsize=10
    :legend-location: lower-right
 
    Summary of functional categories represented by reads

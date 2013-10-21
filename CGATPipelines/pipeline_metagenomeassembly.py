@@ -225,7 +225,7 @@ def connect():
 ###################################################################
 ###################################################################
 ###################################################################
-# Taxonomic profiling
+# Should reads be pooled
 ###################################################################
 ###################################################################
 ###################################################################
@@ -233,8 +233,38 @@ SEQUENCEFILES = ("*.fasta", "*.fasta.gz", "*.fasta.1.gz"
                  , "*.fastq","*.fastq.gz", "*.fastq.1.gz")
 SEQUENCEFILES_REGEX = regex(r"(\S+).(fasta$|fasta.gz|fasta.1.gz|fastq$|fastq.gz|fastq.1.gz)")
  
-###################################################################                                                                                                                                                                          
-###################################################################                                                                                                                                                                          
+
+def pool_out(infiles):
+    '''
+    return outfile name dependent on
+    input pairedness
+    '''
+    out = {"separate": "1",
+                    False: ""}
+    inf = infiles[0]
+    paired = PipelineMetagenomeAssembly.PairedData().checkPairs(inf)
+    if paired:
+        paired = paired[0]
+    format = PipelineMetagenomeAssembly.PairedData().getFormat(inf)
+    outname = "agg-agg-agg.%s" % format
+    return outname
+
+############################################################
+@active_if(PARAMS["pool_reads"])
+@merge(SEQUENCEFILES
+       , pool_out([x for x in glob.glob("*R*.fast*") if not x.endswith(".2.gz") and not x.endswith(".2")])) # bit of a hack
+def poolReadsAcrossConditions(infiles, outfile):
+    '''
+    pool reads across conditions
+    '''
+    statement = PipelineMetagenomeAssembly.pool_reads(infiles, outfile)
+    P.run()
+
+###################################################################
+###################################################################
+###################################################################
+# Taxonomic profiling
+###################################################################
 ###################################################################                                                                                                                                                                          
 ## load number of reads                                                                                                                                                                                                                      
 ###################################################################                                                                                                                                                                          
@@ -273,6 +303,34 @@ def loadReadCounts( infiles, outfile ):
 ###################################################################                                                                                                                                                                          
 ###################################################################                                                                                                                                                                          
 ## preprocess reads for metaphlan and IDBA
+###################################################################                                                                                                                                                                          
+@active_if("idba" in ASSEMBLERS and PARAMS["pool_reads"])
+@transform(poolReadsAcrossConditions, regex("(\S+)\.fastq\.(\S+)gz"), r"\1.fa")
+def preprocessIdba(infile, outfile):
+    '''
+    preprocess pooled reads for IDBA
+    '''
+    # check for second read in the pair
+    if infile.endswith(".fastq.gz"):
+        E.info("converting fastq file to fasta file")
+        outf = open(outfile, "w")
+        for fastq in Fastq.iterate(IOTools.openFile(infile)):
+            outf.write("%s\n%s\n" % (">" + fastq.identifier, fastq.seq))
+        outf.close()
+    elif infile.endswith(".1.gz"):
+        read2 = P.snip(infile, ".1.gz") + ".2.gz"
+        assert os.path.exists(read2), "file does not exist %s" % read2
+    
+        statement = '''python %(scriptsdir)s/fastqs2fasta.py 
+                   -a %(infile)s 
+                   -b %(read2)s 
+                   --log=%(infile)s.log 
+                   > %(outfile)s'''
+        P.run()
+
+
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
 ###################################################################                                                                                                                                                                          
 @transform(SEQUENCEFILES, SEQUENCEFILES_REGEX, r"\1.fa")
 def preprocessReads(infile, outfile):
@@ -605,7 +663,7 @@ def loadPicardStatsOnKnownSpeciesAlignments( infiles, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-@follows(buildPicardStatsOnKnownSpeciesAlignments)
+@follows(loadPicardStatsOnKnownSpeciesAlignments)
 def presentSpeciesAlignment():
     pass
 
@@ -787,6 +845,19 @@ def loadCOGCounts(infile, outfile):
                    '''
     P.run()
 
+##################################################################
+@follows(loadCOGCounts
+         , loadRpsblastAlignmentStats)
+def functional_profile():
+    pass
+
+###################################################################                                                                                                                                                                         
+# Have reads been pooled
+###################################################################                                                                                                                                                                          
+SEQUENCE_TARGETS = {1: poolReadsAcrossConditions,
+                    0: SEQUENCEFILES,
+                    "": SEQUENCEFILES}
+
 ###################################################################                                                                                                                                                                         
 ###################################################################                                                                                                                                                                          
 ###################################################################                                                                                                                                                                          
@@ -794,7 +865,7 @@ def loadCOGCounts(infile, outfile):
 ###################################################################                                                                                                                                                                          
 @active_if("metavelvet" in ASSEMBLERS)
 @follows(mkdir("metavelvet.dir"))
-@transform( SEQUENCEFILES,
+@transform( SEQUENCE_TARGETS[PARAMS["pool_reads"]],
             SEQUENCEFILES_REGEX
             , r"metavelvet.dir/\1.contigs.fa")
 def runMetavelvet(infile, outfile):
@@ -866,9 +937,13 @@ def loadMetavelvetStats(infile, outfile):
 ###################################################################                                                                                                                                                                          
 ## assemble reads with idba
 ###################################################################                                                                                                                                                                          
+IDBA_TARGETS = {1: preprocessIdba,
+                0: preprocessReads,
+                "": preprocessReads}
+
 @active_if("idba" in ASSEMBLERS)
 @follows(mkdir("idba.dir"))
-@transform(preprocessReads, regex("(\S+).fa"), r"idba.dir/\1.contigs.fa")
+@transform(IDBA_TARGETS[PARAMS["pool_reads"]], regex("(\S+).fa"), r"idba.dir/\1.contigs.fa")
 def runIdba(infile, outfile):
     '''
     run idba on each track
@@ -906,7 +981,7 @@ def loadIdbaStats(infile, outfile):
 ###################################################################                                                                                                                                                                          
 @active_if("ray" in ASSEMBLERS)
 @follows(mkdir("ray.dir"))
-@transform( SEQUENCEFILES,
+@transform( SEQUENCE_TARGETS[PARAMS["pool_reads"]],
             SEQUENCEFILES_REGEX
             , r"ray.dir/\1.contigs.fa")
 def runRay(infile, outfile):
@@ -1249,7 +1324,7 @@ INDEX = index[MAPPER]
 @active_if("metavelvet" in ASSEMBLERS)
 @transform(SEQUENCEFILES
            , SEQUENCEFILES_REGEX
-           , add_inputs(INDEX)
+           , add_inputs(INDEX, runMetavelvet)
            , r"metavelvet.dir/\1.filtered.contigs.bam")
 def mapReadsAgainstMetavelvetContigs(infiles, outfile):
     '''
@@ -1259,13 +1334,17 @@ def mapReadsAgainstMetavelvetContigs(infiles, outfile):
     to_cluster = True
     index_dir = os.path.dirname(outfile)
 
+    if "agg" not in infiles[1]:
+        genome = re.search(".*R[0-9]*", infiles[0]).group(0) + ".filtered.contigs.fa"
+    else:
+        genome = "agg-agg-agg.filtered.contigs"
+
     if infiles[1].endswith(".bt2") or infiles[1].endswith(".ebwt"):
-        genome = re.search(".*R[0-9]*", infiles[0]).group(0) + ".filtered.contigs"
-        infile, reffile = infile,  os.path.join(index_dir, genome) + ".fa"
+        infile, reffile = infiles[0],  os.path.join(index_dir, genome) + ".fa"
         m = PipelineMapping.Bowtie( executable = P.substituteParameters( **locals() )["bowtie_executable"] )
 
     elif infiles[1].endswith("bwt"):
-        genome = re.search(".*R[0-9]*", infiles[0]).group(0) + ".filtered.contigs.fa"
+        genome = genome + ".fa"
         job_options= " -l mem_free=%s" % (PARAMS["bwa_memory"])
         bwa_index_dir = index_dir
         bwa_aln_options = PARAMS["bwa_aln_options"]
@@ -1281,7 +1360,7 @@ def mapReadsAgainstMetavelvetContigs(infiles, outfile):
 @active_if("idba" in ASSEMBLERS)
 @transform(SEQUENCEFILES
            , SEQUENCEFILES_REGEX
-           , add_inputs(INDEX)
+           , add_inputs(INDEX, runIdba)
            , r"idba.dir/\1.filtered.contigs.bam")
 def mapReadsAgainstIdbaContigs(infiles, outfile):
     '''
@@ -1291,13 +1370,17 @@ def mapReadsAgainstIdbaContigs(infiles, outfile):
     to_cluster = True
     index_dir = os.path.dirname(outfile)
 
+    if "agg" not in infiles[1]:
+        genome = re.search(".*R[0-9]*", infiles[0]).group(0) + ".filtered.contigs.fa"
+    else:
+        genome = "agg-agg-agg.filtered.contigs"
+
     if infiles[1].endswith(".bt2") or infiles[1].endswith(".ebwt"):
-        genome = re.search(".*R[0-9]*", infiles[0]).group(0) + ".filtered.contigs"
-        infile, reffile = infile,  os.path.join(index_dir, genome) + ".fa"
+        infile, reffile = infiles[0],  os.path.join(index_dir, genome) + ".fa"
         m = PipelineMapping.Bowtie( executable = P.substituteParameters( **locals() )["bowtie_executable"] )
 
     elif infiles[1].endswith("bwt"):
-        genome = re.search(".*R[0-9]*", infiles[0]).group(0) + ".filtered.contigs.fa"
+        genome = genome + ".fa"
         job_options= " -l mem_free=%s" % (PARAMS["bwa_memory"])
         bwa_index_dir = index_dir
         bwa_aln_options = PARAMS["bwa_aln_options"]
@@ -1313,8 +1396,8 @@ def mapReadsAgainstIdbaContigs(infiles, outfile):
 @active_if("ray" in ASSEMBLERS)
 @transform(SEQUENCEFILES
            , SEQUENCEFILES_REGEX
-           , add_inputs(INDEX)
-           , r"ray.dir/\1.filtered.bam")
+           , add_inputs(INDEX, runRay)
+           , r"ray.dir/\1.filtered.contigs.bam")
 def mapReadsAgainstRayContigs(infiles, outfile):
     '''
     map reads against Ray contigs
@@ -1323,13 +1406,17 @@ def mapReadsAgainstRayContigs(infiles, outfile):
     to_cluster = True
     index_dir = os.path.dirname(outfile)
 
+    if "agg" not in infiles[1]:
+        genome = re.search(".*R[0-9]*", infiles[0]).group(0) + ".filtered.contigs.fa"
+    else:
+        genome = "agg-agg-agg.filtered.contigs"
+
     if infiles[1].endswith(".bt2") or infiles[1].endswith(".ebwt"):
-        genome = re.search(".*R[0-9]*", infiles[0]).group(0) + ".filtered.contigs"
-        infile, reffile = infile,  os.path.join(index_dir, genome) + ".fa"
+        infile, reffile = infiles[0],  os.path.join(index_dir, genome) + ".fa"
         m = PipelineMapping.Bowtie( executable = P.substituteParameters( **locals() )["bowtie_executable"] )
 
     elif infiles[1].endswith("bwt"):
-        genome = re.search(".*R[0-9]*", infiles[0]).group(0) + ".filtered.contigs.fa"
+        genome = genome + ".fa"
         job_options= " -l mem_free=%s" % (PARAMS["bwa_memory"])
         bwa_index_dir = index_dir
         bwa_aln_options = PARAMS["bwa_aln_options"]
@@ -1338,7 +1425,6 @@ def mapReadsAgainstRayContigs(infiles, outfile):
         m = PipelineMapping.BWA()
     statement = m.build( (inf,), outfile ) 
     P.run()
-
 
 ###################################################################                                                                                                                                                                          
 ###################################################################                                                                                                                                                                          
@@ -1349,35 +1435,6 @@ alignment_targets = {"metavelvet":mapReadsAgainstMetavelvetContigs
                      , "ray":mapReadsAgainstRayContigs}
 for x in ASSEMBLERS:
     ALIGNMENT_TARGETS.append(alignment_targets[x])
-
-###################################################################                                                                                                                                                                          
-###################################################################                                                                                                                                                                          
-###################################################################                                                                                                                                                                          
-@transform("ray.dir/sim-15M250BP-R1.bam"
-           , regex("(\S+).dir/(\S+).bam")
-           , r"\1.dir/\1_\2.unique")
-def countUniqueAlignments(infile, outfile):
-    '''
-    count the number of uniquely mapping reads
-    '''
-    samfile = pysam.Samfile(infile)
-    c_unique = 0
-    c_total = 0
-    E.info("iterating over bam file")
-    for alignment in samfile.fetch():
-        c_total += 1
-        nh = [x[1] for x in alignment.tags if x[0] == "NH"]
-        print nh
-        # hack - need to discover why some reads do not contain
-        # nh tag - maybe if not mapped
-        if len(nh) == 0: continue
-        if nh[0] == 1:
-            c_unique += 1
-            print c_unique
-    E.info("writing results for %s" % infile)
-    outf = open(outfile, "w")
-    outf.write("total_reads\tpunique\n%i\t%f\n" % (c_total, float(c_unique/c_total)))
-    outf.close()
 
 ###################################################################                                                                                                                                                                          
 ###################################################################                                                                                                                                                                          
@@ -1440,7 +1497,7 @@ def buildCoverageOverContigs(infile, outfile):
     '''
     to_cluster = True
     size = infile
-    bam = P.snip(infile, ".contigs.lengths.tsv") + ".bam"
+    bam = P.snip(infile, ".lengths.tsv") + ".bam"
     statement = '''bedtools genomecov -ibam %(bam)s -g %(size)s -d | gzip > %(outfile)s'''
     P.run()
 
@@ -1489,7 +1546,7 @@ def coverage():
           , coverage
           , contig_stats
           , metaphlan
-          , metagenemark
+          , functional_profile
           , presentSpeciesAlignment)
 def full():
     pass

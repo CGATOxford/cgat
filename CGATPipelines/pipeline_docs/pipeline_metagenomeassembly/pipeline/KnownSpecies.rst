@@ -46,7 +46,7 @@ Alignment summary to reference genomes
 Below is a summary of the results of alignments to reference genomes
 
 
-.. report:: knownSpecies.Alignments
+.. report:: knownSpecies.KnownAlignments
    :render: interleaved-bar-plot
    
 
