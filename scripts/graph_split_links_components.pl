@@ -1,18 +1,3 @@
-## $Id$
-##
-## usage:
-## perl split_links_components.pl [OPTIONS] components < graph.in
-##
-## split links according to components. Only links inside the same
-## component are kept.
-##
-## use the cat function as a workaround of
-## the file size limit restrictions in perl
-## as opposed to the ones in the kernel/shell
-## -> this is too slow.
-## check for file size and then switch output mode
-##
-## note: in this implemenation a token can belong to several components!
 $| = 1;
 
 use strict;

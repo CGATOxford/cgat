@@ -49,7 +49,8 @@ class Counter:
 
     mMinIntronSize = 10
 
-    def __init__(self, fasta = None, section = None, options = None, prefix = None):
+    def __init__(self, fasta = None, section = None, 
+                 options = None, prefix = None):
 
         self.fasta = fasta
         self.section = section
@@ -64,7 +65,7 @@ class Counter:
         # counter 
         self.counter = E.Counter()
 
-    def __call__(self, gffs):
+    def update(self, gffs):
         self.mGFFs = gffs
         self.skip = False
         self.count()

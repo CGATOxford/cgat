@@ -10,3 +10,9 @@ cpg:
         outputs: [stdout]
         references: [test_cpg.tsv]
         options: --genome=<DIR>/hg19.chr19 --counter=composition-cpg
+
+classify_chipseq:
+        stdin: srf.hg19.chr19.bed.gz
+        outputs: [stdout]
+        references: [classifier_chipseq.tsv]
+        options: --genome-file=<DIR>/hg19.chr19 --counter=classifier-chipseq --filename-gff=<DIR>/annotations.hg19.chr19.gff.gz   

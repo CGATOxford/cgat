@@ -3,9 +3,9 @@
 
 .. _Pipeline:
 
-========
-Pipeline
-========
+=============================================
+Metagenomic profiling and assembly pipeline
+=============================================
 
 The following pages contain automatically
 created tables and images from the pipeline.
@@ -15,8 +15,14 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
-   pipeline/PipelineTest.rst
-   trackers/Trackers.rst
+   pipeline/Introduction.rst
+   pipeline/ReadSummary.rst
+   pipeline/AbundanceEstimation.rst
+   pipeline/FunctionalProfiling.rst
+   pipeline/KnownSpecies.rst
+   pipeline/Assembly.rst
+   pipeline/AssemblyCoverage.rst
+   pipeline/GeneFinding.rst
 
 Errors:
 

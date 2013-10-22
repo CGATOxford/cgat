@@ -85,7 +85,7 @@ if not os.path.exists( SCRIPTS_DIR):
 PARAMS = { 
     'scriptsdir' : SCRIPTS_DIR,
     'toolsdir' : SCRIPTS_DIR,
-    'cmd-farm' : """%s/farm.py 
+    'cmd-farm' : """python %s/farm.py 
                 --method=drmaa 
                 --cluster-priority=-10 
 		--cluster-queue=all.q 
@@ -494,19 +494,29 @@ def mergeAndLoad( infiles,
                   prefixes = None ):
     '''merge categorical tables and load into a database.
 
-    The tables are merged and entered row-wise, i.e each file is 
-    a row unless *row_wise* is set to False. The latter is useful if 
-    histograms are being merged.
+    The tables are merged and entered row-wise, i.e each file is a
+    row. If *row_wise* is set to False, each table will be a column in
+    the resulting table. This is useful if histograms are being
+    merged.
 
-    `columns` denotes the columns to be taken. By default, the first
+    *columns* denotes the columns to be taken. By default, the first
     two columns are taken with the first being the key. Filenames are 
     stored in a ``track`` column. Directory names are chopped off.
 
-    If `columns` is set to None, all columns will be taken. Here, column
-    names will receive a prefix. If ``prefixes`` is None, the filename
-    will be added as a prefix. If ``prefixes`` is a list, the respective
-    prefix will be added to each column. The length of ``prefixes`` and
-    ``infiles`` need to be the same.
+    If *columns* is set to None, all columns will be taken. Here,
+    column names will receive a prefix (*prefixes*). If *prefixes* is
+    None, the filename will be added as a prefix. 
+
+    If *prefixes* is a list, the respective prefix will be added to
+    each column. The length of *prefixes* and *infiles* need to be the
+    same.
+
+    The track names are given by the filenames without any paths. If
+    *suffix* is given, the suffix will be removed. If *regex* is set,
+    the full filename will be used to extract a track name via the
+    supplied regular expression.
+
+    *options* are passed on to ``csv2db.py``.
     '''
     if len(infiles) == 0:
         raise ValueError( "no files for merging")

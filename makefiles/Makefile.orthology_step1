@@ -580,7 +580,7 @@ blast_normalized.links: blast_asymmetric.links
 # 	rm -rf step6.dir
 
 # %.hist: %.data
-# 	cut -f 2 $*.data | python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py --scale=10.0 > $@
+# 	cut -f 2 $*.data | python $(DIR_SCRIPTS_TOOLS)data2histogram.py --scale=10.0 > $@
 
 # %.chist: %.hist
 # 	python $(DIR_SCRIPTS_TOOLS)histogram2histogram.py < $*.hist | cut -f 1,5 > $@
@@ -676,11 +676,11 @@ blast_normalized.links: blast_asymmetric.links
 
 # analysis1:
 # 	cut -f 4 blast_nonparalogs_nonredundant.kaks |\
-# 	python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py --scale=100.0 > blast_nonparalogs_nonredudant.hist
+# 	python $(DIR_SCRIPTS_TOOLS)data2histogram.py --scale=100.0 > blast_nonparalogs_nonredudant.hist
 # 	cut -f 4 paralogs_asymmetric.kaks |\
-# 	python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py --scale=100.0 > paralogs_asymmetric.hist
+# 	python $(DIR_SCRIPTS_TOOLS)data2histogram.py --scale=100.0 > paralogs_asymmetric.hist
 # 	cut -f 4 paralogs_nonredundant.kaks |\
-# 	python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py --scale=100.0 > paralogs_nonredundant.hist
+# 	python $(DIR_SCRIPTS_TOOLS)data2histogram.py --scale=100.0 > paralogs_nonredundant.hist
 # 	python $(DIR_SCRIPTS_TOOLS)histogram2histogram.py < blast_nonparalogs_nonredundant.hist | cut -f 1,5 > blast_nonparalogs_nonredundant.chist
 # 	python $(DIR_SCRIPTS_TOOLS)histogram2histogram.py < paralogs_asymmetric.hist | cut -f 1,5 > paralogs_asymmetric.chist
 # 	python $(DIR_SCRIPTS_TOOLS)histogram2histogram.py < paralogs_nonredundant.hist | cut -f 1,5 > paralogs_nonredundant.chist

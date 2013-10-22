@@ -1,6 +1,3 @@
-## calculate a roc curve
-## input is from stdin, first field is + or - for true
-##	or false positive, respectively.
 use strict;
 use Getopt::Std;
 

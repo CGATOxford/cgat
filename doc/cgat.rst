@@ -27,6 +27,7 @@ are below, followed by a :ref:`quickstart` guide.
    CGATUsage
    CGATRecipes
    CGATReference
+   developing
 
 .. _quickstart:
    
@@ -38,7 +39,7 @@ To install the CGAT tools, type::
    pip install cgat
 
 This will install the CGAT scripts and libraries together with the
-required dependencies. See :ref:`Installation Instructions` for
+required dependencies. See :ref:`CGATInstallation` for
 dependencies and troubleshooting.
 
 CGAT tools are run from the unix command line. Lets assume we have
@@ -106,8 +107,8 @@ other interval intersections. Here, we will use another CGAT tool,
 
 The scripts follow a consistent naming scheme centered around common
 genomic formats. Because of the common genomic formats, the tools can
-be easily combined with other tools such as bedtools (Quinlan and
-Hall, 2010) or UCSC tools (Kuhn et al. 2013).
+be easily combined with other tools such as bedtools_ (Quinlan and
+Hall, 2010) or `UCSC Tools`_ (Kuhn et al. 2013).
 
 
 .. _Heger & Ponting, 2007: 

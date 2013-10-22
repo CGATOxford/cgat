@@ -6,7 +6,7 @@ version:
     options: --version
 
 length:
-    stdin: hg19.chr19.gtf.gz
+    stdin: hg19.small.gtf.gz
     outputs: [stdout]
     references: [test1.tsv]
     options: --counter=length --counter=position --counter=composition-na --counter=composition-cpg --genome-file=%DIR%/hg19.chr19

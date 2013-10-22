@@ -1,25 +1,3 @@
-################################################################################
-#
-#   Gene prediction pipeline 
-#
-#   $Id: gtf2gtf.py 2861 2010-02-23 17:36:32Z andreas $
-#
-#   Copyright (C) 2004 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
 '''
 gtf2gtf.py - manipulate transcript models
 =========================================
@@ -27,55 +5,207 @@ gtf2gtf.py - manipulate transcript models
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Genomics Genesets
+:Tags: Genomics Genesets GTF Manipulation
 
 Purpose
 -------
 
-This script reads a gene set in :term:`gtf` format from stdin,
-applies some transformation, and outputs a new geneset in
-:term:`gtf` format to stdout.
+This script reads a gene set in :term:`gtf` format from stdin, applies some 
+transformation, and outputs a new gene set in :term:`gtf format to stdout. 
 
-Typical operations are:
+Options
+-------
 
-* merging exons/introns within a transcript/gene, such as:
-   ``--merge-exons``, ``--merge-transcripts``, ``--merge-genes``,
-   ``--exons2introns``. ``--join-exons``, ``--intersect-transcripts``,
-   ``--merge-introns``.
+Options available for use in this script can broadly be classified into four
+categories:
 
-* sorting the input (``--sort``)
+1. sorting gene sets
+2. manipulating gene models
+3. filtering gene sets
+4. setting/resetting fields within a gtf file
 
-* filtering/sampling transcripts/genes (``--filter``, ``--sample-size``,
-   ``--remove-overlapping``)
+Further options for working with gtf files are available in gff2gff.py, 
+which can be run with the specification --is-gtf
 
-* renaming transcripts/genes (``--unset-genes``, ``--set-protein-to-transcript``,
-  ``--set-gene-to-transcript``, --add-protein-id``, ``--set-transcript-to-gene``.
-  ``--rename``, ``--renumber-genes``, ``--renumber-transcripts``, 
-  ``--transcript2genes``)
 
-* others, such ass ``--reset-strand``.
+Sort gene sets
+++++++++++++++
 
-Most of the transformations require the input to be sorted 
-by gene and postion.
+``--sort``
+   Sorts entries in gtf file by one or more fields      
+
+      +---------------+---------------------------------------+
+      | option        | order in which fields are sorted      | 
+      +===============|=======================================+
+      | gene          | gene_id, transcript_id, contig, start |
+      +---------------+---------------------------------------+
+      | contig+gene   | contig, gene_id, transcript_id, start | 
+      +---------------+---------------------------------------+
+      | transcript    | transcript_id, contig, start          |
+      +---------------+---------------------------------------+
+      | position      | contig, start                         |
+      +---------------+---------------------------------------+
+      | position+gene | contig( gene_id, start )              |
+      +---------------+---------------------------------------+
+      | gene+position | gene_id, contig, start                | 
+      +---------------+---------------------------------------+
+   
+   N.B. position+gene sorts by gene_id, start, then subsequently sorts
+   flattened gene lists by contig, start
+
+
+Manipulate gene-models
+++++++++++++++++++++++
+
+Options that can be used to alter the features represented in a :term:`gtf`
+file. For further detail see command line options.
+
+Input gtfs need to be sorted so that features for a gene or transcript 
+appear consecutively within the file. This can be achevied using ``--sort``.
+
+``--merge-exons``
+    Merges overlapping exons for all transcripts of a gene, outputting the 
+    merged exons. Can be used in conjunction with ``--merge-exons-distance`` 
+    to set the minimum distance that may appear between two exons before 
+    they are merged.If ``--with-utr`` is set, the output interval will also
+    contain UTR.
+
+``--merge-transcripts``
+    Merges all transcripts of a gene. Outputs contains a single interval that
+    spans the original gene (both introns and exons). If ``--with-utr`` is 
+    set, the output interval will also contain UTR.
+
+``--merge-genes``
+    Merges genes that have overlapping exons, outputting a single gene_id and 
+    transcript_id for all exons of overlapping genes. 
+    (Ignores strand information.)
+    
+``--join-exons``
+    Joins together all exons of a transcript, outputting a single interval that 
+    spans the original transcript (both introns and exons).
+
+``--intersect-transcripts``
+    Finds regions representing the intersect of all transcripts of a gene.
+    Output will contain intervals spanning only those bases covered by all 
+    transcripts. If ``--with-utr`` is set, the UTR will also be included in the 
+    intersect.
+
+``--merge-introns``
+    Merges the region spanned by introns for all transcripts of a gene.
+    Outputs a single interval that spans the region between the start and end of
+    the first and last intron, respectively.
+
+``--exons2introns``
+    Merges overlapping introns for all transcripts of a gene, outputting the 
+    merged introns. Use ``--intron-min-length`` to ignore merged introns below a
+    specified length. Use ``--intron-border`` to specify a number of residues to
+    remove at either end of output introns (residues are removed prior to 
+    filtering on size when used in conjunction with ``--intron-min-length``).
+    
+``--transcripts2genes``    
+    Currently it doesn't work... 
+    pysam.TabProxies.GTFProxy has no attribute 'gene_id'    
+    May be used in conjunction with ``--reset-strand``    
+
+The option ``--permit-duplicates`` may be specified in order to
+allow gene-ids to be duplicated within the input :term:`gtf` file
+(i.e. for the same gene-id to appear non-consecutively within the
+input file). However, this option currently only works for
+``--merge-exons``, ``--merge-transcripts``, ``--merge-introns``, and
+``--intersect-transcripts``. It DOES NOT work for ``--merge-genes``,
+``--join-exons``, or ``--exons2introns``.
+
+Filter gene sets
+++++++++++++++++
+
+Options that can be used to filter :term:`gtf` files. For further
+detail see command line options.
+
+Input gtfs need to be sorted so that features for a gene or transcript 
+ appear consecutively within the file. This can be achevied using ``--sort``.
+
+``--filter``
+    When filtering on the basis of 'gene-id' or 'transcript-id' a filename 
+    containing ids to be removed may provided using ``--apply``. Alternatively,
+    a random subsample of genes/transcripts may be retained using 
+    ``--sample-size``. Use ``--min-exons-length`` in conjunction with 
+    ``--sample-size`` to specify a minimum length for genes/transcripts to be 
+    retained. Use ``--reset-strand`` to set strand to '.' in output.
+
+    Other filter options include longest-gene, longest-transcript, 
+    or representative-transcript.
+
+    When filtering on the basis of gene-id, transcript-id or longest-gene,
+    ``--invert-filter`` may be used to invert the selection.
+
+``--remove-overlapping``
+    Takes as argument a :term:`gff` formatted file. Any transcripts that 
+    intersect intervals in the supplied file are removed. 
+    (Does not account for strand.)
+
+``--remove-duplicates``
+    Setting to 'gene', 'transcript', or 'coordinates' will remove any interval for
+    which non-consecutive occurrances of specified term appear in input :term:`gtf`
+    file.
+    Setting to 'ucsc', will remove any interval for which transcript-id contains
+    '_dup'.
+
+
+Set/reset fields
+++++++++++++++++
+
+Options for altering fields within :term:`gtf`. For further details see command 
+ line options.
+
+``--rename``
+    When a mapping file is provided using ``--apply``, renames either 
+    gene-id or transcript-id. Outputs a :term:`gtf` file with field renamed. Any
+    entry in input :term:`gtf` not appearing in mapping file is discarded. 
+
+``--add-protein-id``
+    Takes as argument a file that maps transcript-id to protein-id and appends the
+    protein-id provided to the attributes field.
+    Any entry ininput :term:`gtf` not appearing in mapping file is discarded. 
+
+``--renumber-genes``
+    Renumber genes from 1 using the pattern provided, e.g. ENSG%s
+
+``--renumber-transcripts``
+    Renumber transcripts from 1 using the pattern provided, e.g. ENST%s
+
+``--unset-genes``
+    Renumber genes from 1 using the pattern provided, e.g. ENSG%s. Transcripts 
+    with the same gene-id in input :term:`gtf` file will have different gene-ids
+    in the output :term:`gtf` file.
+
+``--set-transcript-to-gene``
+    Will reset the transcript-id to the gene-id
+
+``--set-gene-to-transcript``
+    Will reset the gene-id to the transcript-id
+
+``--set-protein-to-transcript``
+    Will append transcript to attributes field as 'protein_id'
+
+``--set-score-to-distance``
+    Will reset the score field (field 6) of each feature in input :term:`gtf` to be
+    the distance from transcription start site to the start of the feature. 
+    (Assumes input file is sorted by transcript-id)
+
 
 Usage
 -----
 
 Example::
 
-   python gtf2gtf.py --merge-exons < in.gtf > out.gtf
+    python gtf2gtf.py --sort=gene | python gtf2gtf.py --intersect-transcripts --with-utr --renumber-transcripts= MERGED%s
 
 Type::
 
-   python gtf2gtf.py --help
+    python gtf2gtf.py --help
 
-for command line help.
-
-Documentation
--------------
-
-Code
-----
+Command line Options
+--------------------
 
 '''
 import os
@@ -192,8 +322,8 @@ def main( argv = None ):
     parser.add_option("-f", "--filter", dest="filter", type="choice",
                       choices=("gene", "transcript", "longest-gene", "longest-transcript", "representative-transcript" ),
                       help="apply a filter to the input file. Available filters are: "
-                      "'gene-id': filter by gene_id, "
-                      "'transcript-id': filter by transcript_id, "
+                      "'gene': filter by gene_id, "
+                      "'transcript': filter by transcript_id, "
                       "'longest-gene': output the longest gene for overlapping genes ," 
                       "'longest-transcript': output the longest transcript per gene," 
                       "'representative-transcript': output the representative transcript per gene. "
@@ -204,7 +334,7 @@ def main( argv = None ):
                       
 
     parser.add_option("-r", "--rename", dest="rename", type="choice",
-                      choices=("gene", "transcript","longest-gene"),
+                      choices=("gene", "transcript" ),
                       help="rename genes or transcripts with a map given by the option `--apply`. "
                       "Those that can not be renamed are removed "
                       "[default=%default]."  )
@@ -288,7 +418,7 @@ def main( argv = None ):
         reset_strand = False,
         with_utr = False,
         invert_filter = False,
-        remove_duplications = None,
+        remove_duplicates = None,
         remove_overlapping = None,
         renumber_genes = None,
         unset_genes = None,

@@ -1,4 +1,3 @@
-# extract list of tokens from links
 use strict;
 
 my %tokens;

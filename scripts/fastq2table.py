@@ -1,25 +1,3 @@
-################################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
 '''
 fastq2table.py - compute stats on reads in fastq files
 ======================================================
@@ -27,20 +5,59 @@ fastq2table.py - compute stats on reads in fastq files
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Genomics NGS Sequence
+:Tags: Genomics NGS Sequences FASTQ Annotation
 
 Purpose
 -------
 
 This script iterates over a fastq file and outputs
-read statistits for each read.
+summary statistics for each read.
+
+The output is a tab-delimited text file with the following columns:
+
++----------+----------------------------------------+
+|*Column*  |*Content*                               |
++----------+----------------------------------------+
+|read      |read identifier present in input fastq  |
+|          |file                                    |
++----------+----------------------------------------+
+|nfailed   |number of reads that fall below Q10     |
++----------+----------------------------------------+
+|nN        |number of ambiguous base calls (N)      |
++----------+----------------------------------------+
+|nval      |number of bases in the read             |
++----------+----------------------------------------+
+|min       |minimum base quality score for the read |
++----------+----------------------------------------+
+|max       |maximum base quality for the read       |
++----------+----------------------------------------+
+|mean      |mean base quality for the read          |
++----------+----------------------------------------+
+|median    |median base quality for the read        |
++----------+----------------------------------------+
+|stddev    |standard devitation of quality scores   |
+|          |for the read                            |
++----------+----------------------------------------+
+|sum       |sum of quality scores for the read      |
++----------+----------------------------------------+
+|q1        |25th percentile of quality scores for   |
+|          |the read                                |
++----------+----------------------------------------+
+|q3        |25th percentile of quality scores for   |
+|          |the read                                |
++----------+----------------------------------------+
 
 Usage
 -----
 
 Example::
 
-   python fastq2table.py < in.fastq > out.tsv
+   python fastq2table.py --guess-format=sanger < in.fastq > out.tsv
+
+In this example we know that our data have quality scores formatted as sanger. Given that
+illumina-1.8 quality scores are highly overlapping with sanger, this option defaults to
+sanger qualities. In default mode the script may not be able to distinguish
+highly overlapping sets of quality scores.
 
 Type::
 
@@ -48,11 +65,8 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-
-Code
-----
+Command line options
+--------------------
 
 '''
 
@@ -80,12 +94,15 @@ def main( argv = None ):
                                     usage = globals()["__doc__"] )
 
     parser.add_option( "--guess-format", dest="guess_format", type="choice",
-                      choices = ('sanger', 'solexa', 'phred64', 'integer' ),
-                      help="quality score format to assume if ambiguous [default=%default]."  )
+                      choices = ('sanger', 'solexa', 'phred64', 'illumina-1.8', 'integer' ),
+                      help="The default behaviour of the script is to guess the quality format of the input fastq file. The user can specify \
+                            the quality format of the input file using the --format option. The script will use this format if the \
+                            sequence qualities are ambiguous.[default=%default]."  )
 
     parser.add_option("-f", "--change-format", dest="change_format", type="choice",
-                      choices = ('sanger', 'solexa', 'phred64', 'integer' ),
-                      help="guess quality score format and set quality scores to format [default=%default]."  )
+                      choices = ('sanger', 'solexa', 'phred64', 'illumina-1.8', 'integer' ),
+                      help="The script will guess the quality format of the input file and convert \
+                            quality scores to the destination format unless --format is specified [default=%default]."  )
 
     parser.set_defaults(
         change_format = None,
@@ -103,7 +120,8 @@ def main( argv = None ):
                                           format = options.change_format,
                                           guess = options.guess_format )
     else:
-        iterator = Fastq.iterate_guess( options.stdin )
+        iterator = Fastq.iterate_guess( options.stdin,
+                                        guess = options.guess_format )
 
     options.stdout.write( "read\tnfailed\tnN\t%s\n" % ("\t".join(Stats.Summary().getHeaders()) ) )
 

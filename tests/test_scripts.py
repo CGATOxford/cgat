@@ -6,7 +6,10 @@ import re
 import sys
 import glob
 import gzip
-from nose.tools import assert_equal
+import imp
+import warnings
+
+from nose.tools import assert_equal, ok_
 
 ######################################### 
 # List of tests to perform.
@@ -19,7 +22,28 @@ from nose.tools import assert_equal
 # 5. List of reference files
 import yaml
 
+def check_main( script ):
+    '''test is if a script can be imported and has a main function.
+    '''
+
+    # The following tries importing, but I ran into problems - thus simply
+    # do a textual check for now
+    # path, basename = os.path.split(script)
+    # pyxfile = os.path.join( path, "_") + basename + "x"
+    # # ignore script with pyximport for now, something does not work
+    # if not os.path.exists( pyxfile ):
+    #     with warnings.catch_warnings() as w:
+    #         warnings.simplefilter("ignore")
+    #         (file, pathname, description ) = imp.find_module( basename[:-3], [path,] )
+    #         module = imp.load_module( basename, file, pathname, description)
+
+    #     ok_( "main" in dir(module), "no main function" )
+
+    # check for text match
+    ok_( [ x for x in open(script) if x.startswith("def main(") ], "no main function" )
+
 def check_script( test_name, script, stdin, options, outputs, references, workingdir ):
+    '''check script.'''
     
     tmpdir = tempfile.mkdtemp()
 
@@ -100,6 +124,13 @@ def test_scripts():
     scriptdirs.sort()        
 
     for scriptdir in scriptdirs:
+
+        script_name = os.path.basename(scriptdir)
+
+        check_main.description = os.path.join( scriptdir, "def_main" )
+        yield( check_main,
+               os.path.abspath( os.path.join( "scripts", script_name )) )
+
         fn = '%s/tests.yaml' % scriptdir
         if not os.path.exists( fn ): continue
 
@@ -107,7 +138,6 @@ def test_scripts():
         
         for test, values in script_tests.items():
             check_script.description = os.path.join( scriptdir, test)
-            script_name = os.path.basename(scriptdir)
 
             # deal with scripts in subdirectories. These are prefixed by a "<subdir>_" 
             # for example: optic_compare_projects.py is optic/compare_procjets.py
@@ -115,6 +145,7 @@ def test_scripts():
                 parts = script_name.split("_")
                 if os.path.exists( os.path.join( "scripts", parts[0], "_".join(parts[1:]))):
                     script_name = os.path.join(parts[0], "_".join(parts[1:]))
+
                     
             yield( check_script,
                    test,

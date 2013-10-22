@@ -1,11 +1,3 @@
-#!/usr/bin/env perl
-#
-# $Id$
-#
-# aln2mul.pl < in > out
-# 
-# convert aln formated malis
-# to mul formated malis
 
 my %lines;
 <STDIN>;

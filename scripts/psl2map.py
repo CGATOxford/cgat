@@ -1,16 +1,3 @@
-####
-####
-##
-##
-## Copyright (C) 2008 Andreas Heger All rights reserved
-##
-## Author: Andreas Heger <heger@ebi.ac.uk>
-##
-## $Id: psl2map.py 2781 2009-09-10 11:33:14Z andreas $
-##
-##
-####
-####
 
 '''
 psl2map.py - build a mappping from blat alignments
@@ -44,11 +31,8 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-
-Code
-----
+Command line options
+--------------------
 
 '''
 

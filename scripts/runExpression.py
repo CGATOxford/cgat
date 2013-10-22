@@ -1,25 +1,3 @@
-################################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
 '''
 runExpression.py - wrap various differential expression tools
 =============================================================
@@ -77,9 +55,6 @@ The script will call each of the method and output a variety of diagnostic plots
 
 Usage
 -----
-
-Documentation
--------------
 
 Command line options
 --------------------
@@ -139,7 +114,7 @@ def main( argv = None ):
                       help="output filename [default=%default]."  )
 
     parser.add_option("-m", "--method", dest="method", type="choice",
-                      choices = ("deseq", "edger", "cuffdiff", "summary" ),
+                      choices = ("deseq", "edger", "cuffdiff", "summary", "dump" ),
                       help="differential expression method to apply [default=%default]."  )
 
     parser.add_option( "--deseq-dispersion-method", dest="deseq_dispersion_method", type="choice",
@@ -205,7 +180,15 @@ def main( argv = None ):
         assert options.input_filename_tags and os.path.exists(options.input_filename_tags)
         Expression.outputTagSummary( options.input_filename_tags,
                                      options.stdout,
-                                     options.output_filename_pattern )
+                                     options.output_filename_pattern,
+                                     filename_design = options.input_filename_design
+                                     )
+
+    elif options.method == "dump":
+        assert options.input_filename_tags and os.path.exists(options.input_filename_tags)
+        Expression.dumpTagData( options.input_filename_tags,
+                                options.input_filename_design,
+                                outfile = options.stdout )
 
     if fh and os.path.exists( fh.name): os.unlink( fh.name )
 

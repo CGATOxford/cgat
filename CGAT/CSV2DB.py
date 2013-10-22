@@ -127,6 +127,7 @@ def quoteTableName( name, quote_char = "_", backend="sqlite" ):
         return re.sub( "[-(),\[\]]:", "_", name )
 
 def createTable( dbhandle, error, options, rows = None, headers = None,
+                 first_column = None,
                  existing_tables = []):
 
     ## create table by guessing column types from data type.
@@ -151,7 +152,7 @@ def createTable( dbhandle, error, options, rows = None, headers = None,
     ## associate headers to field names
     columns = []
     present = {}
-    for h in headers:
+    for header_index, h in enumerate(headers):
         hh = h
         if options.lowercase:
             hh = string.lower(h)
@@ -182,7 +183,11 @@ def createTable( dbhandle, error, options, rows = None, headers = None,
             t = "TEXT"
 
         # remove special characters from column names
-        if hh == "": raise ValueError("column '%s' without header " % h )
+        if hh == "": 
+            if first_column != None and header_index == 0:
+                hh = first_column
+            else:
+                raise ValueError("column '%s' without header " % h )
         hh = columns_to_rename.get( hh, hh )
         hh = re.sub( '''['"]''', "", hh)
         hh = re.sub( "[,;.:\-\+/ ()%?]", "_", hh)
@@ -333,6 +338,7 @@ def run( infile, options ):
                 # create empty table and exit
                 take, map_column2type, ignored = createTable( dbhandle, error, headers = reader.fieldnames,
                                                               options = options,
+                                                              first_column = options.first_column,
                                                               existing_tables = existing_tables )
                 E.info( "empty table created" )
             return
@@ -342,6 +348,7 @@ def run( infile, options ):
         take, map_column2type, ignored = createTable( dbhandle, error,
                                                       rows = rows,
                                                       options = options,
+                                                      first_column = options.first_column,
                                                       existing_tables = existing_tables )
 
 
@@ -515,6 +522,10 @@ def buildParser( ):
 
     parser.add_option("--rename-column", dest="rename_columns", type="string", action="append",
                       help="rename columns [default=%default]." )
+
+    parser.add_option("--first-column", dest="first_column", type="string", 
+                      help="name of first column - permits loading CSV table where the first "
+                      "column name is the empty string [default=%default]." )
     
     parser.add_option("-e", "--ignore-empty", dest="ignore_empty", action="store_true",
                       help="ignore columns which are all empty [default=%default]." )
@@ -537,6 +548,7 @@ def buildParser( ):
 
     parser.add_option( "-z", "--from-zipped", dest="from_zipped", action="store_true",
                        help="input is zipped.")
+
     parser.add_option( "--utf8", dest="utf", action="store_true",
                        help="standard in is encoded as UTF8 rather than local default, WARNING: does not strip comment lines yet [default=%default]")
 

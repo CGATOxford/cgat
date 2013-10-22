@@ -1,16 +1,3 @@
-####
-####
-##
-##
-## Copyright (C) 2008 Andreas Heger All rights reserved
-##
-## Author: Andreas Heger <heger@ebi.ac.uk>
-##
-## $Id: bed2bed.py 2861 2010-02-23 17:36:32Z andreas $
-##
-##
-####
-####
 '''
 vcf2vcf.py - manipulate vcf files
 =================================
@@ -87,6 +74,7 @@ import shutil
 
 import CGAT.Experiment as E
 import CGAT.Stats as Stats
+import CGAT.IOTools as IOTools
 import CGAT.VCF as VCF
     
 def main( argv = sys.argv ):
@@ -101,10 +89,9 @@ def main( argv = sys.argv ):
     
     (options, args) = E.Start( parser, add_pipe_options = True )
 
-
     noutput = 0
     
-    infile = VCF.VCFFile( open(args[0], "r") )
+    infile = VCF.VCFFile( options.stdin )
 
     if options.reorder: 
         order = options.reorder.split(",")

@@ -1,16 +1,3 @@
-####
-####
-##
-##
-## Copyright (C) 2008 Andreas Heger All rights reserved
-##
-## Author: Andreas Heger <heger@ebi.ac.uk>
-##
-## $Id: bed2gff.py 2861 2010-02-23 17:36:32Z andreas $
-##
-##
-####
-####
 """
 bed2gff.py - convert bed to gff/gtf
 ===================================
@@ -18,7 +5,7 @@ bed2gff.py - convert bed to gff/gtf
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Genomics Intervals BED GFF Conversion
 
 Purpose
 -------

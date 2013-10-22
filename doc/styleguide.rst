@@ -231,7 +231,7 @@ restructured text. For example::
 Writing documentation for scripts
 ---------------------------------
 
-Please follow the example in :doc:`cgat_script_template` for
+Please follow the example in :doc:`scripts/cgat_script_template` for
 documenting scripts. In addition, please pay attention to the following:
 
 * Declare input data types for genomic data sets in optparse using 
@@ -252,21 +252,39 @@ documenting scripts. In addition, please pay attention to the following:
   categories. Please choose from the following controlled
   vocabulary. If needed, additional terms can be added to this list.
 
-  * Genomics
-  * NGS
-  * MultipleAlignment
-  * GenomeAlignment
-  * Intervals
-  * Genesets
-  * Sequences
-  * Statistics
-  * Summary
-  * Variants
-  * Protein
-
-
-
-
+  * Broad Themes
+    * Genomics
+    * NGS
+    * MultipleAlignment
+    * GenomeAlignment
+    * Intervals
+    * Genesets
+    * Sequences
+    * Variants
+    * Protein
+  * Formats
+    * BAM
+    * BED
+    * GFF
+    * GTF
+    * FASTA
+    * FASTQ
+    * WIGGLE
+    * PSL
+    * CHAIN
+  * Actions
+    * Summary - summarizing entities within a file, such as
+      counting the number of intervals within a file, etc.
+    * Annotation - annotating individual entities within a file,
+      such as adding length, composition, etc. to intervals.
+    * Comparison - comparing the same type of entities, such as
+      overlapping to sets of intervals.
+    * Conversion - converting between different formats for the
+      similar types of objects (Intervals in gff/bed format).
+    * Transformation - transforming one entity into another, such
+      as transforming intervals into sequences.
+    * Manipulation - changing entities within a file, such as
+      filtering sequences.
 
 
 

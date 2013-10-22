@@ -1,25 +1,3 @@
-################################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id: chain2stats.py 10 2011-04-21 11:07:33Z steve $
-#
-#   Copyright (C) 2011 Stephen Sansom
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
 '''
 chain2stats.py
 ==============
@@ -27,7 +5,7 @@ chain2stats.py
 :Author: Stephen Sansom
 :Release: $Id$
 :Date: |today|
-:Tags: Genomics GenomeAlignment Summary
+:Tags: Genomics GenomeAlignment Summary CHAIN
 
 Purpose
 -------
@@ -61,7 +39,6 @@ Command line options
 #import modules
 import os
 import sys
-from optparse import OptionParser
 from operator import add
 from numpy import *
 from operator import itemgetter,attrgetter
@@ -487,8 +464,8 @@ def main(argv = None ):
     if not argv: argv = sys.argv
     
     #get the options
-    parser = OptionParser(version = "%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
-                          usage = globals()["__doc__"] )
+    parser = E.OptionParser(version = "%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
+                            usage = globals()["__doc__"] )
 
     parser.add_option("-c", "--chainfile", dest="chainfile", type="string",
                       help="the chain file to analyse", metavar="FILE")

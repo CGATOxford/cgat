@@ -1,11 +1,3 @@
-#!/usr/bin/env perl
-#
-# $Id$
-#
-# mali_plain2aln.pl < in > out
-# 
-# convert aln formated malis
-# to mul formated malis
 
 use strict;
 

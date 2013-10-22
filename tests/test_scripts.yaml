@@ -1,3 +1,0 @@
-restrict:
-        manifest:
-        regex: fastq2fastq.py

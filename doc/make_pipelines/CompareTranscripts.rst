@@ -116,7 +116,7 @@ Usage
 
 The pipeline is controlled by running `make`_ targets. The results of the pipeline
 computation are stored as tab separated tables in the working directory. Most of these
-tables are then imported into an `sqlite`_ database called ``csvdb`` (see :term:`PARAM_DATABASE`).
+tables are then imported into an sqlite_ database called ``csvdb`` (see :term:`PARAM_DATABASE`).
 
 Annotation
 ~~~~~~~~~~
@@ -371,8 +371,3 @@ The following parameters can be set in the :file:`Makefile`:
 
    Overview of pipeline parameters.
 
-.. _make: http://www.gnu.org/software/make
-
-.. _sqlite: http://www.sqlite.org 
-
-.. _ucsc: http://genome.ucsc.edu

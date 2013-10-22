@@ -1,10 +1,3 @@
-#!/usr/bin/env perl
-# $id$
-#
-# perl set_rest.pl > out
-#
-# calculates the rest of B in A
-# 
 use strict;
 
 open(IN, "<$ARGV[0]") or die "could not find $ARGV[0]\n"; 

@@ -1,39 +1,18 @@
-################################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
 '''
-fastqs2fasta.py
+fastqs2fasta.py - interleave two fastq files
 =============================================
 
 :Author: Nick Ilott
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Genomics NGS FASTQ FASTA Conversion
 
 Purpose
 -------
 
-This script is used to interleave two :term:`fastq`-formatted files (paired data) into a single :term:`fasta`-formatted file. Read1 is followed by 
-read2 in the resultant file. 
+This script is used to interleave two :term:`fastq`-formatted files
+(paired data) into a single :term:`fasta`-formatted file. Read1 is
+followed by read2 in the resultant file.
 
 :term:`fastq` files MUST be sorted by read identifier.
 
@@ -51,8 +30,8 @@ Type::
 for command line help.
 
 
-Code
-----
+Command line options
+--------------------
 
 '''
 
@@ -82,8 +61,8 @@ def main( argv = None ):
     if not argv: argv = sys.argv
 
     # setup command line parser
-    parser = optparse.OptionParser( version = "%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
-                                    usage = globals()["__doc__"] )
+    parser = E.OptionParser( version = "%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
+                             usage = globals()["__doc__"] )
 
     parser.add_option("-a", "--fastq1", dest="fastq1", type="string",
                       help="supply read1 fastq file"  )

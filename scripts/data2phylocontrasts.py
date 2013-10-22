@@ -1,17 +1,3 @@
-####
-####
-##
-## Project PairsDBTools
-##
-## Copyright (C) 2002 Andreas Heger All rights reserved
-##
-## Author: Andreas Heger <heger@ebi.ac.uk>
-##
-## $Id: data2phylocontrasts.py 2782 2009-09-10 11:40:29Z andreas $
-##
-##
-####
-####
 """
 data2phylocontrasts.py - compute phylogenetic independent contrasts
 ==============================================================
@@ -46,11 +32,8 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-
-Code
-----
+Command line options
+--------------------
 
 """ 
 
