@@ -8,9 +8,10 @@ within the read data.
 .. report:: CpGCoverage.CpGCoverage
    :render: line-plot
    :transform: aggregate
-   :logscale: y
-   :xrange: 0,50
-   :tf-aggregate: cumulative
+   :xrange: 0,20
+   :yrange: 0,1
+   :tf-aggregate: normalized-total,cumulative
+   :xtitle: read depth
 
    Cumulative plot of coverage of CpG dinucleotides with 
    reads.
@@ -26,7 +27,7 @@ within protein coding sequence and within repeats.
    Number of CpG dinucleotides in protein coding regions and repeats.
 
 .. report:: CpGCoverage.CpGContext
-   :render: table
+   :render: pie-plot
    :tracks: total,protein_coding,repeats
    :pie-first-is-total: other
 
@@ -35,6 +36,7 @@ within protein coding sequence and within repeats.
 .. report:: CpGCoverage.CpGContext
    :render: table
    :force:
+   :transpose:
 
    Number of CpG dinucleotides in different genomic regions.
 

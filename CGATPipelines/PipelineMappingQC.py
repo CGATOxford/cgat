@@ -333,11 +333,11 @@ def loadPicardDuplicationStats( infiles, outfile ):
     loadPicardMetrics( infiles, outfile, suffix )
     loadPicardHistogram( infiles, outfile, suffix, "coverage_multiple" )
 
-def loadPicardDuplicateStats( infiles, outfile ):
+def loadPicardDuplicateStats( infiles, outfile, pipeline_suffix= ".bam" ):
     '''load picard duplicate filtering stats.'''
 
-    loadPicardMetrics( infiles, outfile, "duplicate_metrics", pipeline_suffix = ".bam" )
-    loadPicardHistogram( infiles, outfile, "duplicate_metrics", "duplicates", pipeline_suffix = ".bam" )
+    loadPicardMetrics( infiles, outfile, "duplicate_metrics", pipeline_suffix = pipeline_suffix )
+    loadPicardHistogram( infiles, outfile, "duplicate_metrics", "duplicates", pipeline_suffix = pipeline_suffix )
 
 def buildBAMStats( infile, outfile ):
     '''Count number of reads mapped, duplicates, etc. '''

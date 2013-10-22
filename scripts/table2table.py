@@ -158,12 +158,13 @@ def readAndTransposeTable( infile, options ):
 def readAndGroupTable( infile, options ):
     """read table from infile and group.
     """
-    
     fields, table  = CSV.ReadTable( infile, with_header = options.has_headers, as_rows = True )
-
     options.columns = getColumns( fields, options.columns )
+    assert options.group_column not in options.columns
 
     converter = float
+    new_fields = [ fields[options.group_column] ] + [ fields[x] for x in options.columns ]
+
     if options.group_function == "min":
         f = min
     elif options.group_function == "max":
@@ -181,37 +182,34 @@ def readAndGroupTable( infile, options ):
     elif options.group_function == "stats":
         f = lambda x: str(Stats.DistributionalParameters(x))
         # update headers
-        new_fields = []
-        for c in range(len(fields)):
-            if c == options.group_column or c not in options.columns:
-                new_fields.append( fields[c] )
-                continue
+        new_fields = [ fields[options.group_column] ]
+        for c in options.columns:
             new_fields += list( map(lambda x: "%s_%s" % (fields[c], x), Stats.DistributionalParameters().getHeaders() ) )
-        fields = new_fields
 
     ## convert values to floats (except for group_column)
-    ## Delete rows with unconvertable values
+    ## Delete rows with unconvertable values and not in options.columns
     new_table = []
     for row in table:
         skip = False
+        new_row = [ row[options.group_column] ]
+
         for c in options.columns:
-            if c == options.group_column: continue
             if row[c] == options.missing_value:
-                row[c] = row[c]
+                new_row.append(row[c])
             else:
                 try:
-                    row[c] = converter(row[c])
+                    new_row.append( converter(row[c]) )
                 except ValueError:
                     skip = True
                     break
-        if not skip: new_table.append(row)
+        if not skip: new_table.append(new_row)
     table = new_table
 
     new_rows = CSV.GroupTable( table,
-                               group_column = options.group_column,
+                               group_column = 0,
                                group_function = f )
 
-    options.stdout.write("\t".join(fields) + "\n")        
+    options.stdout.write("\t".join(new_fields) + "\n")        
     for row in new_rows:
         options.stdout.write( "\t".join( map(str,row) ) + "\n")
 
@@ -383,7 +381,7 @@ if __name__ == "__main__":
                       help="value to use for various algorithms."  )
 
     parser.add_option("--group", dest="group_column", type="int",
-                      help="group values by column."  )
+                      help="group values by column. Supply an integer column [default=%default]"  )
 
     parser.add_option("--group-function", dest="group_function", type="choice",
                       choices=("min", "max", "sum", "mean", "stats", "cat", "uniq"),

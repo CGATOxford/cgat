@@ -5,11 +5,11 @@ CGAT Code Clean Installation
 ============================
 
 CGAT Code Collection depends on numerous system libraries. Here you have two ways of
-installing all of these dependencies: :ref:`QuickInstallation` or a :ref:`ManualInstallation`.
+installing all of these dependencies: :ref:`CleanQuickInstallation` or a :ref:`CleanManualInstallation`.
 
 System requirements: this installation guide works in Red Hat Linux Enterprise 6.x-based operating systems.
 
-.. _QuickInstallation:
+.. _CleanQuickInstallation:
 
 Quick installation
 ==================
@@ -57,7 +57,7 @@ When you are done, you may deactivate the CGAT virtual environment::
         deactivate
 
 
-.. _ManualInstallation:
+.. _CleanManualInstallation:
 
 Manual installation
 ===================
