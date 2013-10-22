@@ -114,7 +114,7 @@ def main( argv = None ):
                       help="output filename [default=%default]."  )
 
     parser.add_option("-m", "--method", dest="method", type="choice",
-                      choices = ("deseq", "edger", "cuffdiff", "summary" ),
+                      choices = ("deseq", "edger", "cuffdiff", "summary", "dump" ),
                       help="differential expression method to apply [default=%default]."  )
 
     parser.add_option( "--deseq-dispersion-method", dest="deseq_dispersion_method", type="choice",
@@ -180,7 +180,15 @@ def main( argv = None ):
         assert options.input_filename_tags and os.path.exists(options.input_filename_tags)
         Expression.outputTagSummary( options.input_filename_tags,
                                      options.stdout,
-                                     options.output_filename_pattern )
+                                     options.output_filename_pattern,
+                                     filename_design = options.input_filename_design
+                                     )
+
+    elif options.method == "dump":
+        assert options.input_filename_tags and os.path.exists(options.input_filename_tags)
+        Expression.dumpTagData( options.input_filename_tags,
+                                options.input_filename_design,
+                                outfile = options.stdout )
 
     if fh and os.path.exists( fh.name): os.unlink( fh.name )
 

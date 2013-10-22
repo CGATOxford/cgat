@@ -24,8 +24,10 @@ def countReadsWithinWindows( bedfile, windowfile, outfile, counting_method = "mi
     '''
     to_cluster = True
 
+    job_options = "-l mem_free=4G"
+
     if counting_method == "midpoint":
-        f = '''awk '{a = $2+($3-$2)/2; printf("%%s\\t%%i\\t%%i\\n", $1, a, a+1)}' '''
+        f = '''| awk '{a = $2+($3-$2)/2; printf("%s\\t%i\\t%i\\n", $1, a, a+1)}' '''
     elif countig_method == "nucleotide":
         f = ""
     else: 
@@ -36,7 +38,6 @@ def countReadsWithinWindows( bedfile, windowfile, outfile, counting_method = "mi
     %(f)s
     | coverageBed -a stdin -b %(windowfile)s -split
     | sort -k1,1 -k2,2n 
-    | awk 'BEGIN{OFS="\\t"};{print $4,$7}'
     | gzip
     > %(outfile)s
     '''
