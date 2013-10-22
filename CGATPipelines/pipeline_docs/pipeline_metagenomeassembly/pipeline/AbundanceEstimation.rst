@@ -34,9 +34,29 @@ Note that only the relative abundances of those groups that are present at > 1% 
 
 .. report:: RelativeAbundance.RelativeAbundance
    :render: stacked-bar-plot
+   :mpl-rc: legend.fontsize=10
    :legend-location: lower-right
 
    Relative abundances
+
+
+The number of reads that were used for assigning taxonomic groups is described below. It is likely that many reads
+will not contribute to the distribution as many will not map to clade-specific markers in the database. In addition
+this description if of reads that are assigned at the highest taxonomic level i.e. phylum and 
+there are likely many fewer reads that are assigned at the level of the species.
+
+
+.. report:: RelativeAbundance.ContributingReads
+   :render: table
+
+   Proportion of reads that contribute to assignment of taxonomic level
+
+
+.. report:: RelativeAbundance.ContributingReads
+   :render: interleaved-bar-plot
+
+   Proportion of reads that contribute to assignment of taxonomic level
+
 
 
 
@@ -53,6 +73,7 @@ Below are plots displaying the total number of taxa that were identified in each
 
 .. report:: RelativeAbundance.TotalSpecies
    :render: interleaved-bar-plot
+   :mpl-rc: legend.fontsize=10
    :legend-location: lower-right
 
    Total taxa

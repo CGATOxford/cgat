@@ -83,7 +83,7 @@ class PairedData(Format):
         assert len(glob.glob(read2)) > 0, "cannot find %s file for read 2 in the pair for %s" % (read2, infile)
         return ("separate", read2)
 
-    def checkPairs(self, infile):
+    def checkPairs(self, infile, ntries = 10):
         '''
         Function to check if pairs exist interleaved
         within a file. If not it will check for separate
@@ -100,6 +100,7 @@ class PairedData(Format):
         elif format in ["fasta.1.gz", "fastq.1.gz"]:
             return self.checkPairedFile(infile)
         
+        c = 0
         for record in iterator(inf):
             if record.quals:
                 # make sure there are not other "/" in the sequence name
@@ -111,11 +112,36 @@ class PairedData(Format):
             seq_id = seq_id[0]
             if seq_id not in pairs:
                 pairs.add(seq_id)
+                if c >= ntries: break
+                paired = False
+                return paired
             else:
                 print "found pair for %s" % (seq_id)
                 paired = "interleaved"
                 break
         return paired
+
+#############################
+# pooling reads across 
+# conditions
+#############################
+def pool_reads(infiles, outfile):
+    '''
+    pool raw reads across conditions
+    '''
+    # check first file for format and pairedness
+    paired = PairedData().checkPairs(infiles[0])
+    format = PairedData().getFormat(infiles[0])
+    infs = " ".join(infiles)
+    
+    if not paired:
+        statement = '''zcat %(infs)s | gzip > %(outfile)s''' % locals()
+    else:
+        infs2 = " ".join([P.snip(x, format) + format.replace("1", "2") for x in infiles]  )
+        outf2 = outfile.replace(format, format.replace("1","2"))
+        statement = '''zcat %(infs)s | gzip > %(outfile)s;
+                       zcat %(infs2)s | gzip > %(outf2)s''' % locals()
+    return statement
 
 #############################
 # filtering contigs by length
@@ -468,7 +494,7 @@ class Metaphlan(Idba):
         
         if method == "read_map":
             statement = '''cat %(infile)s                                                                                                                                                                                                           
-                      | python %%(scriptsdir)s/metaphlan.py -t reads_map                                                                                                                                                                              
+                      | metaphlan.py -t reads_map                                                                                                                                                                              
                        --input_type multifasta %%(method)s %%(metaphlan_db)s --no_map                                                                                                                                                                      
                       | python %%(scriptsdir)s/metaphlan2table.py -t read_map                                                                                                                                                              
                        --log=%%(outfile)s.log                                                                                                                                                                                                     
@@ -476,7 +502,7 @@ class Metaphlan(Idba):
                       ; sed -i 's/order/_order/g' %%(outfile)s''' % locals()
         elif method == "rel_ab":
             statement = '''cat %(infile)s                                                                                                                                                                                                           
-                      | python %%(scriptsdir)s/metaphlan.py -t rel_ab                                                                                                                                                                              
+                      | metaphlan.py -t rel_ab                                                                                                                                                                              
                        --input_type multifasta %%(method)s %%(metaphlan_db)s --no_map                                                                                                                                                                                                                                                                                                                                   
                       | python %%(scriptsdir)s/metaphlan2table.py -t rel_ab 
                        --log=%%(outfile)s.log                                                                                                                                                                                                   
