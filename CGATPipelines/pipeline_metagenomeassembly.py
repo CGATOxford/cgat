@@ -722,22 +722,22 @@ def buildRpsblastAlignmentStats(infiles, outfile):
     track = os.path.basename(P.snip(infiles[0], ".rpblast.result.gz"))
 
     total = cc.execute("""SELECT total_reads FROM reads_summary WHERE track == '%s'""" % track).fetchone()[0]
+
     # Note only dealing with one of the pair at the 
     # moment
-    total = float(total)/2
-    c = 0
-    reads = set()
+ #    total = float(total)/2
     
+    total = float(total)
+    reads = set()
+
     outf = open(outfile, "w")
     # count unique alignments
-    for line in open(infiles[0]).readlines():
+    for line in IOTools.openFile(infiles[0]).readlines():
         if line.startswith("#"): continue
         data = line[:-1].split("\t")
         if data[0] not in reads:
             reads.add(data[0])
-            c+= 1
-
-    prop = float(c)/total
+    prop = float(len(reads))/total
     outf.write("%s\t%f\n" % (track, prop))
     outf.close()
 
@@ -795,8 +795,11 @@ def countCOGAssignments(infiles, outfile):
     job_options = " -l mem_free=30G"
     countsfile = [x for x in infiles[1:3] if infiles[0].find(P.snip(x, ".nreads")) != -1]
     countsfile = countsfile[0]
+    
+    # TODO: sort this out for single ended data
     total = open(countsfile).readline().split("\t")[1][:-1]
-    total = int(float(total)/2)
+#    total = int(float(total)/2)
+    total = int(total)
 
     description_file = PARAMS["COG_description"]
     inf = infiles[0]
@@ -1471,7 +1474,10 @@ def buildPicardStats(infile, outfile):
     '''build alignment stats using picard.
     Note that picards counts reads but they are in fact alignments.
     '''
-    reffile = P.snip(infile, ".bam") + ".contigs.fa"
+    if PARAMS["pool_reads"]:
+        reffile = os.path.join(os.path.dirname(infile),"agg-agg-agg.filtered.contigs.fa")
+    else:
+        reffile = P.snip(infile, ".bam") + ".fa"
     PipelineMappingQC.buildPicardAlignmentStats( infile, 
                                                  outfile,
                                                  reffile )
@@ -1490,15 +1496,21 @@ def loadPicardStats( infiles, outfile ):
 ###################################################################                                                                                                                                                                          
 ###################################################################                                                                                                                                                                          
 @follows(*ALIGNMENT_TARGETS)
-@transform(buildContigLengths, suffix(".lengths.tsv"), ".coverage.gz")
-def buildCoverageOverContigs(infile, outfile):
+@transform(ALIGNMENT_TARGETS,
+           suffix(".bam"),
+           add_inputs(buildContigLengths),
+           ".coverage.gz")
+def buildCoverageOverContigs(infiles, outfile):
     '''
     build histograms of the coverage over each of the contigs
     '''
     to_cluster = True
-    size = infile
-    bam = P.snip(infile, ".lengths.tsv") + ".bam"
-    statement = '''bedtools genomecov -ibam %(bam)s -g %(size)s -d | gzip > %(outfile)s'''
+    bam = infiles[0]
+    if PARAMS["pool_reads"]:
+        genome = [inf for inf in infiles[1:len(infiles)] if inf.find(os.path.dirname(bam)) != -1][0]
+    else:
+        genome = infiles[0].replace(".bam", ".lengths.tsv")
+    statement = '''bedtools genomecov -ibam %(bam)s -g %(genome)s -d | gzip > %(outfile)s'''
     P.run()
 
 ###################################################################                                                                                                                                                                          
@@ -1517,8 +1529,48 @@ def buildCoverageStats(infile, outfile):
 ###################################################################                                                                                                                                                                          
 ###################################################################                                                                                                                                                                          
 ###################################################################                                                                                                                                                                          
+@transform(buildCoverageStats
+           , suffix(".gz")
+           , add_inputs(buildContigLengths)
+           , ".postprocess.gz")
+def postprocessCoverageStats(infiles, outfile):
+    '''
+    genomeCoverageBed outputs only non-zero depth. Add a "0" to 
+    contigs that have zero coverage
+    '''
+    stats_file =  infiles[0]
+    inf = IOTools.openFile(stats_file)
+    header = inf.readline()
+
+    if PARAMS["pool_reads"]:
+        contigs = [x for x in infiles[1:len(infiles)] if x.find(os.path.dirname(stats_file)) != -1][0]
+    else:
+        contigs = stats_file.replace(".coverage.stats.gz", ".lengths.tsv")
+
+    contig2stats = {}
+    for line in inf.readlines():
+        data = line[:-1].split("\t")
+        contig, mean, sd = data[0], data[1], data[2]
+        contig2stats[contig] = (mean, sd)
+
+    inf2 = open(contigs)
+    header2 = inf2.readline()
+    outf = gzip.open(outfile, "w")
+    outf.write(header)
+    for line in inf2.readlines():
+        data = line[:-1].split("\t")
+        contig, length = data[0], data[1]
+        if contig in contig2stats.keys():
+            outf.write("%s\t%s\t%s\n" % (contig, contig2stats[contig][0], contig2stats[contig][1]))
+        else:
+            outf.write("%s\t0\t0\n" % contig)
+    outf.close()
+
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
 @jobs_limit(1, "db")
-@transform(buildCoverageStats, suffix(".gz"), ".load")
+@transform(postprocessCoverageStats, suffix(".postprocess.gz"), ".load")
 def loadCoverageStats(infile, outfile):
     '''
     load coverage stats
