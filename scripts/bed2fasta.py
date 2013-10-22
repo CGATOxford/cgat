@@ -78,34 +78,7 @@ import CGAT.Masker as Masker
 ############################################################
 ############################################################
 ############################################################
-def maskSequences( sequences, masker = None):
-    '''return a list of masked sequence.
 
-    *masker* can be one of
-        dust/dustmasker * run dustmasker on sequences
-        softmask        * use softmask to hardmask sequences
-    '''
-
-    if masker in ("dust", "dustmasker"):
-        masker_object = Masker.MaskerDustMasker()
-    else:
-        masker_object = None
-
-    if masker == "softmask":
-        # the genome sequence is repeat soft-masked
-        masked_seq = sequences
-    elif masker in ("dust", "dustmasker"):
-        # run dust
-        masked_seq = masker_object.maskSequences( [ x.upper() for x in sequences ] )
-    elif masker == None:
-        masked_seq = [x.upper() for x in sequences ]
-    else:
-        raise ValueError("unknown masker %s" % masker )
-
-    # hard mask softmasked characters
-    masked_seq = [re.sub( "[a-z]","N", x) for x in masked_seq ]
-
-    return masked_seq
 
 ##------------------------------------------------------------------------
 if __name__ == "__main__":
@@ -189,7 +162,7 @@ if __name__ == "__main__":
             
     E.info( "collected %i sequences" % len(seqs) )
 
-    masked = maskSequences( seqs, options.masker )
+    masked = Masker.maskSequences( seqs, options.masker )
     options.stdout.write("\n".join( [ ">%s\n%s" % (x,y) for x,y in zip(ids, masked) ] ) + "\n" )
 
     E.info( "masked %i sequences" % len(seqs) )
