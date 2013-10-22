@@ -1,7 +1,7 @@
 
 basic_test:
-    stdin: srf.hg19.bed
+    stdin: srf.hg19.chr19.bed.gz
     outputs: [stdout]
     references: [srf.hg19_reference.fasta.gz]
-    options: --genome-file <DIR>/hg19
+    options: --genome-file <DIR>/hg19.chr19
     description: convert bed intervals into fasta sequences 
