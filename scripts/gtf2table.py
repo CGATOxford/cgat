@@ -181,7 +181,7 @@ import bx.intervals.io
 import bx.intervals.intersection
 
 try:
-    import alignlib
+    import alignlib_lite
 except ImportError:
     pass
 
@@ -732,7 +732,7 @@ class CounterCoverage(CounterOverlap):
         segments = self.getSegments()
         segments.sort()
 
-        map_genome2transcript = alignlib.py_makeAlignmentBlocks()
+        map_genome2transcript = alignlib_lite.py_makeAlignmentBlocks()
 
         x = 0
         for start, end in segments:

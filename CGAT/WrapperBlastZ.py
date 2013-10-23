@@ -180,17 +180,17 @@ if __name__ == "__main__":
     
     wrapper = BlastZ( options.options )
 
-    import alignlib
+    import alignlib_lite
     seqs1 = Genomics.ReadPeptideSequences( open(options.input_filename_seq1, "r") )
     seqs2 = Genomics.ReadPeptideSequences( open(options.input_filename_seq2, "r") )
     seq1 = seqs1[seqs1.keys()[0]]
     seq2 = seqs2[seqs2.keys()[0]]    
-    result = alignlib.py_makeAlignmentVector()
+    result = alignlib_lite.py_makeAlignmentVector()
     wrapper.Align( seq1, seq2, result) 
 
-    print str( alignlib.py_AlignmentFormatExplicit( result,
-                                                 alignlib.py_makeSequence( seq1 ),
-                                                 alignlib.py_makeSequence( seq2 ) ) )
+    print str( alignlib_lite.py_AlignmentFormatExplicit( result,
+                                                 alignlib_lite.py_makeSequence( seq1 ),
+                                                 alignlib_lite.py_makeSequence( seq2 ) ) )
     
     E.Stop()
         

@@ -44,7 +44,7 @@ import types
 import CGAT.Experiment as E
 import CGAT.Blat as Blat
 import CGAT.Iterators as Iterators
-import alignlib
+import alignlib_lite
 import CGAT.IndexedFasta as IndexedFasta
 
 def fillAlignment( map_alignment, alignment ):
@@ -126,20 +126,20 @@ def main():
             alignment = alignment[::-1]
 
         # get map of gene to alignment
-        map_gene2mali = alignlib.py_makeAlignmentVector()
+        map_gene2mali = alignlib_lite.py_makeAlignmentVector()
         fillAlignment( map_gene2mali, alignment )
 
         # get quality scores
         quality_scores = quality.getSequence( match.mSbjctId, "+", match.mSbjctFrom, match.mSbjctTo)
 
 
-        # print str(alignlib.py_AlignmentFormatEmissions( map_gene2genome))
-        # print str(alignlib.py_AlignmentFormatEmissions( map_gene2mali))
+        # print str(alignlib_lite.py_AlignmentFormatEmissions( map_gene2genome))
+        # print str(alignlib_lite.py_AlignmentFormatEmissions( map_gene2mali))
         # print quality_scores
 
-        map_mali2genome = alignlib.py_makeAlignmentVector()
-        alignlib.py_combineAlignment( map_mali2genome, map_gene2mali, map_gene2genome, alignlib.RR )
-        # print str(alignlib.py_AlignmentFormatEmissions( map_mali2genome))
+        map_mali2genome = alignlib_lite.py_makeAlignmentVector()
+        alignlib_lite.py_combineAlignment( map_mali2genome, map_gene2mali, map_gene2genome, alignlib.RR )
+        # print str(alignlib_lite.py_AlignmentFormatEmissions( map_mali2genome))
 
         # shuffle quality scores, but only those that are aligned
         if options.random:

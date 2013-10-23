@@ -45,7 +45,7 @@ import types
 
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
-import alignlib
+import alignlib_lite
 import CGAT.FastaIterator as FastaIterator
 
 ##------------------------------------------------------------
@@ -75,15 +75,15 @@ if __name__ == '__main__':
         sequence = re.sub( " ", "", cur_record.sequence)
         l = len(sequence)
 
-        map_sequence2mali = alignlib.py_makeAlignmentVector()        
+        map_sequence2mali = alignlib_lite.py_makeAlignmentVector()        
 
-        alignlib.py_AlignmentFormatExplicit( 0, sequence,
+        alignlib_lite.py_AlignmentFormatExplicit( 0, sequence,
                                           0, "X" * l ).copy( map_sequence2mali )
 
         options.stdout.write( "\t".join( (
                 cur_record.title,
                 "ref",
-                str( alignlib.py_AlignmentFormatBlocks( map_sequence2mali ) ) ) ) + "\n" )
+                str( alignlib_lite.py_AlignmentFormatBlocks( map_sequence2mali ) ) ) ) + "\n" )
         
         noutput += 1
 

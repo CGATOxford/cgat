@@ -72,7 +72,7 @@ import collections
 
 import CGAT.IOTools as IOTools
 import CGAT.Experiment as E
-import alignlib
+import alignlib_lite
 
 def chain_iterator( infile ):
     lines = []
@@ -93,8 +93,8 @@ def validateChain( infile ):
     No overlapping target coordinates.
     '''
     
-    pairs_t2q = collections.defaultdict( alignlib.py_makeAlignmentBlocks )
-    pairs_q2t = collections.defaultdict( alignlib.py_makeAlignmentBlocks )
+    pairs_t2q = collections.defaultdict( alignlib_lite.py_makeAlignmentBlocks )
+    pairs_q2t = collections.defaultdict( alignlib_lite.py_makeAlignmentBlocks )
 
     
     for lines in chain_iterator( infile ):
@@ -174,7 +174,7 @@ def buildPairs( infile ):
     build target2query alignments.
     The target is always on the positive strand.
     '''
-    pairs = collections.defaultdict( alignlib.py_makeAlignmentBlocks )
+    pairs = collections.defaultdict( alignlib_lite.py_makeAlignmentBlocks )
 
     def chain_iterator( infile ):
         lines = []
@@ -258,8 +258,8 @@ def compareChains( pairs1, pairs2 ):
             continue
 
         chain2 = pairs2[key1]
-        nsame = alignlib.py_getAlignmentIdentity( chain1, chain2, alignlib.RR )
-        noverlap = alignlib.py_getAlignmentOverlap( chain1, chain2, alignlib.RR )
+        nsame = alignlib_lite.py_getAlignmentIdentity( chain1, chain2, alignlib.RR )
+        noverlap = alignlib_lite.py_getAlignmentOverlap( chain1, chain2, alignlib.RR )
         ndifferent = noverlap - nsame
         nunique = ntotal - noverlap
 

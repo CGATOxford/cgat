@@ -47,7 +47,7 @@ import CGAT.Experiment as E
 import CGAT.WrapperCodeML as WrapperCodeML
 import CGAT.Stats as Stats
 import CGAT.Mali as Mali
-import alignlib
+import alignlib_lite
 
 def selectPositiveSites( results, selection_mode, options, mali = None ):
     """returns sites, which are consistently estimated to be positively selected.
@@ -173,9 +173,9 @@ def mapSites2Codons( total_sites, max_per_site ):
 def convertMali2Mali( mali ):
     """convert a mali to a profile."""
 
-    new_mali = alignlib.py_makeMultipleAlignment()
+    new_mali = alignlib_lite.py_makeMultipleAlignment()
     for id in mali.getIdentifiers():
-        s = alignlib.py_makeAlignatumFromString( mali[id] )
+        s = alignlib_lite.py_makeAlignatumFromString( mali[id] )
         s.thisown = 0
         new_mali.addAlignatum( s )
 
@@ -333,23 +333,23 @@ if __name__ == "__main__":
         if tmap_mali.getAlphabet() == "na":
             tmap_mali.apply( translate )
         
-        map_old2new = alignlib.py_makeAlignmentVector()
+        map_old2new = alignlib_lite.py_makeAlignmentVector()
 
-        mali1 = alignlib.py_makeProfileFromMali( convertMali2Mali( tmali ) )
+        mali1 = alignlib_lite.py_makeProfileFromMali( convertMali2Mali( tmali ) )
 
         if tmap_mali.getLength() == 1:
             
             s = tmap_mali.values()[0].mString
-            mali2 = alignlib.py_makeSequence( s )
+            mali2 = alignlib_lite.py_makeSequence( s )
             ## see if you can find an identical subsequence and then align to thisD
             for x in tmali.values():
                 if s in re.sub( "[- .]+", "", x.mString):
-                    mali1 = alignlib.py_makeSequence( x.mString )
+                    mali1 = alignlib_lite.py_makeSequence( x.mString )
                     break
         else:
-            mali2 = alignlib.py_makeProfileFromMali( convertMali2Mali( tmap_mali ) )        
+            mali2 = alignlib_lite.py_makeProfileFromMali( convertMali2Mali( tmap_mali ) )        
 
-        alignator = alignlib.py_makeAlignatorDPFull( alignlib.ALIGNMENT_LOCAL, -10.0, -2.0 )
+        alignator = alignlib_lite.py_makeAlignatorDPFull( alignlib.ALIGNMENT_LOCAL, -10.0, -2.0 )
         alignator.align( map_old2new, mali1, mali2 )
 
         consensus = tmap_mali.getConsensus()

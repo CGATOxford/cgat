@@ -99,7 +99,7 @@ with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     import networkx
 
-import alignlib
+import alignlib_lite
 import bx.intervals.io
 import bx.intervals.intersection
 
@@ -114,7 +114,7 @@ def readIntervals( infile, options ):
 
         for gffs in GTF.transcript_iterator( GTF.iterator(infile) ):
         
-            ali = alignlib.py_makeAlignmentBlocks()
+            ali = alignlib_lite.py_makeAlignmentBlocks()
             for gff in gffs:
                 if gff.feature != "exon": continue
                 ali.addDiagonal( gff.start, gff.end, 0 )
@@ -283,9 +283,9 @@ def pslMap( options ):
             E.debug( "working on query %s:%i-%i" % (match.mQueryId, qstart, qend) )
 
             mqstart, mqend = ( map_query2target.mapRowToCol(qstart, 
-                                                            alignlib.py_RIGHT), 
+                                                            alignlib_lite.py_RIGHT), 
                                map_query2target.mapRowToCol(qend, 
-                                                            alignlib.py_LEFT) )
+                                                            alignlib_lite.py_LEFT) )
                         
                 
             if match.strand == "-":
@@ -297,7 +297,7 @@ def pslMap( options ):
                 if tstart >= mqend or tend <= mqstart: continue
                 if tend - tstart < min_length: continue
 
-                new = alignlib.py_makeAlignmentBlocks()
+                new = alignlib_lite.py_makeAlignmentBlocks()
                     
                 if use_copy:
                     # do copy with range filter
@@ -314,7 +314,7 @@ def pslMap( options ):
                                       mtstart, mtend,
                                       mtend - mtstart ) )
                                      
-                    alignlib.py_copyAlignment( 
+                    alignlib_lite.py_copyAlignment( 
                         new, 
                         map_query2target,
                         qstart, qend,
@@ -323,25 +323,25 @@ def pslMap( options ):
                     # do copy with alignment filter
                     map_query = qval
                     if map_query:
-                        tmp = alignlib.py_makeAlignmentBlocks()                        
-                        alignlib.py_copyAlignment( tmp, map_query2target, map_query, alignlib.RR )
+                        tmp = alignlib_lite.py_makeAlignmentBlocks()                        
+                        alignlib_lite.py_copyAlignment( tmp, map_query2target, map_query, alignlib.RR )
                         if options.loglevel >= 5:
                             options.stdlog.write( "######## mapping query ###########\n" )
-                            options.stdlog.write( "# %s\n" % str(alignlib.py_AlignmentFormatEmissions( map_query2target ) ))
-                            options.stdlog.write( "# %s\n" % str(alignlib.py_AlignmentFormatEmissions( map_query ) ))
-                            options.stdlog.write( "# %s\n" % str(alignlib.py_AlignmentFormatEmissions( tmp ) ))
+                            options.stdlog.write( "# %s\n" % str(alignlib_lite.py_AlignmentFormatEmissions( map_query2target ) ))
+                            options.stdlog.write( "# %s\n" % str(alignlib_lite.py_AlignmentFormatEmissions( map_query ) ))
+                            options.stdlog.write( "# %s\n" % str(alignlib_lite.py_AlignmentFormatEmissions( tmp ) ))
                     else:
                         tmp = map_query2target
                         
                     map_target = tval
                     if map_target:
-                        new = alignlib.py_makeAlignmentBlocks()
-                        alignlib.py_copyAlignment( new, tmp, map_target, alignlib.CR )                        
+                        new = alignlib_lite.py_makeAlignmentBlocks()
+                        alignlib_lite.py_copyAlignment( new, tmp, map_target, alignlib.CR )                        
                         if options.loglevel >= 5:
                             options.stdlog.write( "######## mapping target ###########\n" )
-                            options.stdlog.write( "# before: %s\n" % str(alignlib.py_AlignmentFormatEmissions( tmp ) ))
-                            options.stdlog.write( "# map   : %s\n" % str(alignlib.py_AlignmentFormatEmissions( map_target ) ))
-                            options.stdlog.write( "# after : %s\n" % str(alignlib.py_AlignmentFormatEmissions( new ) ))
+                            options.stdlog.write( "# before: %s\n" % str(alignlib_lite.py_AlignmentFormatEmissions( tmp ) ))
+                            options.stdlog.write( "# map   : %s\n" % str(alignlib_lite.py_AlignmentFormatEmissions( map_target ) ))
+                            options.stdlog.write( "# after : %s\n" % str(alignlib_lite.py_AlignmentFormatEmissions( new ) ))
                     else:
                         new = tmp
 
@@ -349,8 +349,8 @@ def pslMap( options ):
                     E.debug("putative match with intervals: %s and %s: %i-%i" % \
                                 (str(query), str(target), qstart, qend ))
                     if options.loglevel >= 5:
-                        E.debug( "input : %s" % str(alignlib.py_AlignmentFormatEmissions( map_query2target ) ))
-                        E.debug( "final : %s" % str(alignlib.py_AlignmentFormatEmissions( new ) ) )
+                        E.debug( "input : %s" % str(alignlib_lite.py_AlignmentFormatEmissions( map_query2target ) ))
+                        E.debug( "final : %s" % str(alignlib_lite.py_AlignmentFormatEmissions( new ) ) )
 
                     if new.getLength() > 0:
                         n = match.copy()
@@ -384,7 +384,7 @@ def pslMerge( options ):
 
         new = matches[0].copy()
 
-        map_query2target = alignlib.py_makeAlignmentBlocks()
+        map_query2target = alignlib_lite.py_makeAlignmentBlocks()
 
         graph = networkx.DiGraph()
         graph.add_nodes_from(xrange(len(matches)+2))
@@ -439,7 +439,7 @@ def pslMerge( options ):
 
         for match in matches:
             m = match.getMapQuery2Target()
-            alignlib.py_addAlignment2Alignment( map_query2target, m )
+            alignlib_lite.py_addAlignment2Alignment( map_query2target, m )
 
         new.fromMap( map_query2target, use_strand = True )
         

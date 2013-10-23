@@ -35,7 +35,7 @@ Code
 '''
 import re, string, sys
 
-try: import alignlib
+try: import alignlib_lite
 except ImportError: pass
 
 class Map:
@@ -69,8 +69,8 @@ class Map:
 
     def MapRange( self, query_token, query_from, query_to ):
         """map something."""
-        map_query2sbjct = alignlib.py_makeAlignataVector()
-        alignlib.py_fillAlignataCompressed( map_query2sbjct,
+        map_query2sbjct = alignlib_lite.py_makeAlignataVector()
+        alignlib_lite.py_fillAlignataCompressed( map_query2sbjct,
                                          self.mQueryFrom, self.mQueryAli,
                                          self.mSbjctFrom, self.mSbjctAli)
         
@@ -99,8 +99,8 @@ class Map:
 
     def Expand( self ):
         if not self.mIsExpanded:
-            self.mMapQuery2Sbjct = alignlib.py_makeAlignataVector()
-            alignlib.py_fillAlignataCompressed( self.mMapQuery2Sbjct,
+            self.mMapQuery2Sbjct = alignlib_lite.py_makeAlignataVector()
+            alignlib_lite.py_fillAlignataCompressed( self.mMapQuery2Sbjct,
                                              self.mQueryFrom, self.mQueryAli,
                                              self.mSbjctFrom, self.mSbjctAli )
         self.mIsExpanded = True
@@ -112,7 +112,7 @@ class Map:
         
     def Contract( self ):
         if self.mIsExpanded:
-            self.mQueryAli, self.mSbjctAli = alignlib.py_writeAlignataCompressed( self.mMapQuery2Sbjct )
+            self.mQueryAli, self.mSbjctAli = alignlib_lite.py_writeAlignataCompressed( self.mMapQuery2Sbjct )
             self.mQueryFrom = self.mMapQuery2Sbjct.getRowFrom()
             self.mQueryTo = self.mMapQuery2Sbjct.getRowTo()        
             self.mSbjctFrom = self.mMapQuery2Sbjct.getColFrom()
@@ -135,8 +135,8 @@ class Map:
           self.mIsExpanded)
 
         if self.mIsExpanded:
-            m.mMapQuery2Sbjct = alignlib.py_makeAlignataVector()
-            alignlib.py_copyAlignata( m.mMapQuery2Sbjct, self.mMapQuery2Sbjct )
+            m.mMapQuery2Sbjct = alignlib_lite.py_makeAlignataVector()
+            alignlib_lite.py_copyAlignata( m.mMapQuery2Sbjct, self.mMapQuery2Sbjct )
             
         return m
         
@@ -144,28 +144,28 @@ class Map:
 
         self.Expand()
         
-        tmp = alignlib.py_makeAlignataVector()
+        tmp = alignlib_lite.py_makeAlignataVector()
 
         if map_query:
             tmp.Clear()
             map_query.Expand()
-            alignlib.py_combineAlignata( tmp,
+            alignlib_lite.py_combineAlignata( tmp,
                                       map_query.mMapQuery2Sbjct,
                                       self.mMapQuery2Sbjct,
-                                      alignlib.py_RR )
+                                      alignlib_lite.py_RR )
             map_query.Clear()
-            alignlib.py_copyAlignata( self.mMapQuery2Sbjct, tmp )
+            alignlib_lite.py_copyAlignata( self.mMapQuery2Sbjct, tmp )
             self.mQueryToken = map_query.mSbjctToken
             
         if map_sbjct:
             tmp.Clear()
             map_sbjct.Expand()
-            alignlib.py_combineAlignata( tmp,
+            alignlib_lite.py_combineAlignata( tmp,
                                       self.mMapQuery2Sbjct,
                                       map_sbjct.mMapQuery2Sbjct,
-                                      alignlib.py_CR )
+                                      alignlib_lite.py_CR )
             map_sbjct.Clear()
-            alignlib.py_copyAlignata( self.mMapQuery2Sbjct, tmp )
+            alignlib_lite.py_copyAlignata( self.mMapQuery2Sbjct, tmp )
             self.mSbjctToken = map_sbjct.mSbjctToken
             
         self.Contract()

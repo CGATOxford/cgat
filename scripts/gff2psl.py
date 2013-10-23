@@ -43,7 +43,7 @@ import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Blat as Blat
 import CGAT.Genomics as Genomics
 import CGAT.GTF as GTF
-import alignlib
+import alignlib_lite
 import CGAT.Intervals as Intervals
 
 def main( argv = None ):
@@ -108,7 +108,7 @@ def main( argv = None ):
 
         ninput += 1
 
-        result = alignlib.py_makeAlignmentBlocks()
+        result = alignlib_lite.py_makeAlignmentBlocks()
 
         xstart = 0
 

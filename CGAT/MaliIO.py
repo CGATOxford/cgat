@@ -34,7 +34,7 @@ Code
 
 '''
 import string, sys, re
-try: import alignlib
+try: import alignlib_lite
 except ImportError: pass
 
 ##---------------------------------------------------------------------------------------
@@ -129,7 +129,7 @@ def readPicasso( infile ):
     """read alignment in the non-defined picasso format.
     """
 
-    mali = alignlib.py_makeMultipleAlignment()
+    mali = alignlib_lite.py_makeMultipleAlignment()
 
     while 1:
         line = infile.readline()
@@ -138,7 +138,7 @@ def readPicasso( infile ):
         x = re.search( "\d+\s+([A-Z\-\.]*)\s+\d+", line)
         if x:
             s = x.groups()[0]
-            a = alignlib.py_makeAlignatumFromString(s)
+            a = alignlib_lite.py_makeAlignatumFromString(s)
             a.thisown = 0
             mali.addAlignatum( a )
             
@@ -347,7 +347,7 @@ def getMapFromMali( seq1, seq2, gap_char = "-" ):
     xpos = 0
     ypos = 0
 
-    map_a2b = alignlib.py_makeAlignataVector()
+    map_a2b = alignlib_lite.py_makeAlignataVector()
     # build map between genomic sequences:
     for p in range(len(seq1)):
 

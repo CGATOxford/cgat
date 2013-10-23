@@ -42,7 +42,7 @@ import re
 import os
 import string
 import getopt
-import alignlib
+import alignlib_lite
 
 param_master = 0
 param_format = None
@@ -98,7 +98,7 @@ if __name__ == '__main__':
         sbjct_from, sbjct_ali, sbjct_to, sbjct_id = lines[index]
 
         print "#", sbjct_id
-        map_master2sbjct = alignlib.py_makeAlignataVector()
+        map_master2sbjct = alignlib_lite.py_makeAlignataVector()
 
         sbjct_index  = string.atoi(sbjct_from)
         master_index = string.atoi(master_from)

@@ -45,7 +45,7 @@ import CGAT.Stats as Stats
 import CGAT.Blat as Blat
 
 import CGAT.Wiggle as Wiggle
-import alignlib
+import alignlib_lite
 
 if __name__ == '__main__':
 
@@ -111,8 +111,8 @@ if __name__ == '__main__':
 
         # psl always matches on the forward strand
 
-        map_genome2query = alignlib.py_makeAlignmentBlocks()
-        f = alignlib.py_AlignmentFormatBlat( "%i\t%i\t%i\t%i\t%s\t%s\t%s\n" % (\
+        map_genome2query = alignlib_lite.py_makeAlignmentBlocks()
+        f = alignlib_lite.py_AlignmentFormatBlat( "%i\t%i\t%i\t%i\t%s\t%s\t%s\n" % (\
                 match.mSbjctFrom,
                 match.mSbjctTo,
                 match.mQueryFrom,

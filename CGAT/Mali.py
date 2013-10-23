@@ -1323,19 +1323,19 @@ class SequenceCollection( Mali ):
 ###############################################################################            
 def convertMali2Alignlib( mali ):
     '''convert a multiple alignment of type :class:`Mali`
-    into an alignlib.py_multiple alignment object.
+    into an alignlib_lite.py_multiple alignment object.
     '''
 
-    import alignlib
-    m = alignlib.py_makeMultipleAlignment()
+    import alignlib_lite
+    m = alignlib_lite.py_makeMultipleAlignment()
     for identifier in mali.getIdentifiers():
-        a = alignlib.py_makeAlignatum( mali[identifier] )
+        a = alignlib_lite.py_makeAlignatum( mali[identifier] )
         m.add( a )
     return m
 
 ###############################################################################            
 def convertAlignlib2Mali( mali, identifiers = None, seqs = None ):
-    """convert a multiple alignment into an alignlib.py_multiple alignment object."""
+    """convert a multiple alignment into an alignlib_lite.py_multiple alignment object."""
     m = Mali()
 
     if not identifiers:
@@ -1347,8 +1347,8 @@ def convertAlignlib2Mali( mali, identifiers = None, seqs = None ):
             a = mali.getRow( x )
             m.addSequence( identifiers[x], a.getFrom(), a.getTo(), a.getString() )
     else:
-        import alignlib
-        output = alignlib.py_MultAlignmentFormatPlain( mali, seqs )
+        import alignlib_lite
+        output = alignlib_lite.py_MultAlignmentFormatPlain( mali, seqs )
         for x in range(mali.getNumSequences()):
             a = output.mData[ x ]
             m.addSequence( identifiers[x], a.getFrom(), a.getTo(), a.getString() )

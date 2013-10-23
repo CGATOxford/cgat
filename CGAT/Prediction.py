@@ -32,7 +32,7 @@ Prediction.py - Gene prediction with exonerate/genewise
 import os, sys, string, re, getopt, tempfile, copy
 
 import Genomics
-import alignlib
+import alignlib_lite
 
 ## number of nucleotides to ignore for counting stop-codons
 ## This used to be three, but is now set to 0 in order to keep
@@ -105,7 +105,7 @@ class Prediction:
         self.mSbjctAli = ""
         
         if self.mExpand:
-            self.mMapPeptide2Translation = alignlib.py_makeAlignmentVector()
+            self.mMapPeptide2Translation = alignlib_lite.py_makeAlignmentVector()
             self.mMapPeptide2Genome = []
         else:
             self.mMapPeptide2Translation = None
@@ -170,8 +170,8 @@ class Prediction:
         new_entry.mSbjctAli = self.mSbjctAli 
 
         if self.mExpand:
-            new_entry.mMapPeptide2Translation = alignlib.py_makeAlignmentVector()
-            alignlib.py_copyAlignment( new_entry.mMapPeptide2Translation, self.mMapPeptide2Translation)
+            new_entry.mMapPeptide2Translation = alignlib_lite.py_makeAlignmentVector()
+            alignlib_lite.py_copyAlignment( new_entry.mMapPeptide2Translation, self.mMapPeptide2Translation)
             new_entry.mMapPeptide2Genome = Genomics.String2Alignment( new_entry.mAlignmentString) 
         else:
             new_entry.mMapPeptide2Translation = self.mMapPeptide2Translation = None
@@ -183,7 +183,7 @@ class Prediction:
         self.mExpand = True
         
         if self.mMapPeptide2Translation.getLength() > 0:
-            f = alignlib.py_AlignmentFormatEmissions( self.mMapPeptide2Translation )
+            f = alignlib_lite.py_AlignmentFormatEmissions( self.mMapPeptide2Translation )
             self.mQueryAli, self.mSbjctAli = f.mRowAlignment, f.mColAlignment
             self.mQueryFrom = self.mMapPeptide2Translation.getRowFrom()
             self.mQueryTo = self.mMapPeptide2Translation.getRowTo()
@@ -330,9 +330,9 @@ class Prediction:
         
         ## there might be some reference counting issues, thus
         ## do it the explicit way.
-        alignlib.py_addAlignment2Alignment( this.mMapPeptide2Translation, other.mMapPeptide2Translation)
-        self.mMapPeptide2Translation = alignlib.py_makeAlignmentVector()
-        alignlib.py_addAlignment2Alignment( self.mMapPeptide2Translation, this.mMapPeptide2Translation )
+        alignlib_lite.py_addAlignment2Alignment( this.mMapPeptide2Translation, other.mMapPeptide2Translation)
+        self.mMapPeptide2Translation = alignlib_lite.py_makeAlignmentVector()
+        alignlib_lite.py_addAlignment2Alignment( self.mMapPeptide2Translation, this.mMapPeptide2Translation )
         
         self.mTranslation = this.mTranslation
         
@@ -347,7 +347,7 @@ class Prediction:
                                       lambda x: string.join(map(str, x), " "),
                                       self.mMapPeptide2Genome), " ")
 
-        f = alignlib.py_AlignmentFormatEmssions( self.mMapPeptide2Translation )
+        f = alignlib_lite.py_AlignmentFormatEmssions( self.mMapPeptide2Translation )
         self.mQueryAli, self.mSbjctAli = f.mRowAlignment, f.mColAlignment
 
         ## summary parameters
@@ -437,7 +437,7 @@ class Prediction:
             
         if self.mExpand:
             if self.mMapPeptide2Translation.getLength() > 0:
-                f = alignlib.py_AlignmentFormatEmissions( self.mMapPeptide2Translation )
+                f = alignlib_lite.py_AlignmentFormatEmissions( self.mMapPeptide2Translation )
                 row_ali, col_ali = f.mRowAlignment, f.mColAlignment
                 self.mQueryFrom = self.mMapPeptide2Translation.getRowFrom()
                 self.mQueryTo = self.mMapPeptide2Translation.getRowTo()
@@ -555,10 +555,10 @@ class Prediction:
             sys.exit(0)
             
         if self.mExpand:
-            self.mMapPeptide2Translation = alignlib.py_makeAlignmentVector()
+            self.mMapPeptide2Translation = alignlib_lite.py_makeAlignmentVector()
 
             if self.mQueryAli != "" and self.mSbjctAli != "":
-                alignlib.py_AlignmentFormatEmissions( self.mQueryFrom, self.mQueryAli,
+                alignlib_lite.py_AlignmentFormatEmissions( self.mQueryFrom, self.mQueryAli,
                                                    self.mSbjctFrom, self.mSbjctAli ).copy( self.mMapPeptide2Translation )
 
             self.mMapPeptide2Genome = Genomics.String2Alignment( self.mAlignmentString )
@@ -659,11 +659,11 @@ class Prediction:
                    self.mNFrameShifts, self.mNAssembled))
 
         if self.mExpand:        
-            self.mMapPeptide2Translation = alignlib.py_makeAlignmentVector()
+            self.mMapPeptide2Translation = alignlib_lite.py_makeAlignmentVector()
 
             if self.mQueryAli != "" and self.mSbjctAli != "":
                 
-                alignlib.py_AlignmentFormatExplicit(
+                alignlib_lite.py_AlignmentFormatExplicit(
                     self.mQueryFrom, self.mQueryAli,
                     self.mSbjctFrom, self.mSbjctAli).copy( self.mMapPeptide2Translation )
 

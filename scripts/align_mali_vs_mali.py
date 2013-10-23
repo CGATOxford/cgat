@@ -43,7 +43,7 @@ import optparse
 import CGAT.Experiment as E
 import CGAT.Mali as Mali
 import CGAT.IOTools as IOTools
-import alignlib
+import alignlib_lite
 
 def main( argv = None ):
     """script main.
@@ -91,25 +91,25 @@ def main( argv = None ):
     cmali2 = Mali.convertMali2Alignlib( mali2 )
 
     if options.mode == "local":
-        mode = alignlib.py_ALIGNMENT_LOCAL
+        mode = alignlib_lite.py_ALIGNMENT_LOCAL
     elif options.mode == "global":
-        mode = alignlib.py_ALIGNMENT_GLOBAL
+        mode = alignlib_lite.py_ALIGNMENT_GLOBAL
         
-    alignator = alignlib.py_makeAlignatorDPFull( mode,
+    alignator = alignlib_lite.py_makeAlignatorDPFull( mode,
                                               options.gop, options.gep )
 
-    alignlib.py_setDefaultEncoder( alignlib.getEncoder( alignlib.Protein20) )
-    alignlib.py_setDefaultLogOddor( alignlib.makeLogOddorDirichlet( 0.3 ) )
-    alignlib.py_setDefaultRegularizor( alignlib.makeRegularizorDirichletPrecomputed() )
+    alignlib_lite.py_setDefaultEncoder( alignlib.getEncoder( alignlib.Protein20) )
+    alignlib_lite.py_setDefaultLogOddor( alignlib.makeLogOddorDirichlet( 0.3 ) )
+    alignlib_lite.py_setDefaultRegularizor( alignlib.makeRegularizorDirichletPrecomputed() )
 
-    cprofile1 = alignlib.py_makeProfile( cmali1 )
-    cprofile2 = alignlib.py_makeProfile( cmali2 )
+    cprofile1 = alignlib_lite.py_makeProfile( cmali1 )
+    cprofile2 = alignlib_lite.py_makeProfile( cmali2 )
 
-    result = alignlib.py_makeAlignmentVector()
+    result = alignlib_lite.py_makeAlignmentVector()
 
     alignator.align( result, cprofile1, cprofile2 )
 
-    E.debug( "result=\n%s" % alignlib.py_AlignmentFormatEmissions( result) )
+    E.debug( "result=\n%s" % alignlib_lite.py_AlignmentFormatEmissions( result) )
 
     cmali1.add( cmali2, result )
 

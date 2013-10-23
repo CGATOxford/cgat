@@ -824,70 +824,73 @@ for x in METHODS:
           *DIFFTARGETS )
 def diff_windows(): pass
 
-# #########################################################################
-# @transform( (runDESeq, runEdgeR), suffix(".gz"), ".merged.gz" )
-# def mergeDMRWindows( infile, outfile ):
-#     '''merge overlapping windows.'''
+#########################################################################
+@transform( *DIFFTARGETS, suffix(".gz"), ".merged.gz" )
+def mergeDMRWindows( infile, outfile ):
+    '''merge overlapping windows.
 
-#     to_cluster = True
+    Orientation of the test is inverted.
+    '''
 
-#     statement = '''
-#     zcat %(infile)s
-#     | python %(scriptsdir)s/medip_merge_intervals.py
-#           --log=%(outfile)s.log
-#           --invert
-#           --output-filename-pattern=%(outfile)s.%%s.bed.gz
-#     | gzip
-#     > %(outfile)s
-#     '''
+    to_cluster = True
 
-#     P.run()
+    statement = '''
+    zcat %(infile)s
+    | python %(scriptsdir)s/medip_merge_intervals.py
+          --log=%(outfile)s.log
+          --invert
+          --output-filename-pattern=%(outfile)s.%%s.bed.gz
+    | gzip
+    > %(outfile)s
+    '''
 
-# #########################################################################
-# @jobs_limit(1)
-# @transform( mergeDMRWindows, suffix(".merged.gz"), ".load" )
-# def loadDMRWindows( infile, outfile ):
-#     '''merge overlapping windows.'''
-#     P.load( infile, outfile, options = "--quick" )
+    P.run()
 
-# #########################################################################
-# @collate( loadDMRWindows, regex( "(\S+)[.](\S+).load" ), r"\2_stats.tsv" )
-# def buildDMRStats( infiles, outfile ):
-#     '''compute differential methylation stats.'''
-#     tablenames = [P.toTable( x ) for x in infiles ] 
-#     method = P.snip( outfile, "_stats.tsv" )
-#     PipelineMedip.buildDMRStats( tablenames, method, outfile )
+#########################################################################
+@jobs_limit(1)
+@transform( mergeDMRWindows, suffix(".merged.gz"), ".load" )
+def loadDMRWindows( infile, outfile ):
+     '''merge overlapping windows.'''
+     P.load( infile, outfile, options = "--quick" )
 
-# #########################################################################
-# @transform( buildDMRStats, suffix(".tsv"), ".load" )
-# def loadDMRStats( infile, outfile ):
-#     '''load DMR stats into table.'''
-#     P.load( infile, outfile )
+#########################################################################
+@collate( loadDMRWindows, regex( "(\S+)[.](\S+).load" ), r"\2_stats.tsv" )
+def buildDMRStats( infiles, outfile ):
+    '''compute differential methylation stats.'''
+    tablenames = [P.toTable( x ) for x in infiles ] 
+    method = P.snip( outfile, "_stats.tsv" )
+    PipelineWindows.buildDMRStats( tablenames, method, outfile )
 
-# #########################################################################
-# #########################################################################
-# #########################################################################
-# @transform( mergeDMRWindows,
-#             suffix(".merged.gz"),
-#             ".stats")
-# def buildDMRWindowStats( infile, outfile ):
-#     '''compute tiling window size statistics from bed file.'''
+#########################################################################
+@transform( buildDMRStats, suffix(".tsv"), ".load" )
+def loadDMRStats( infile, outfile ):
+    '''load DMR stats into table.'''
+    P.load( infile, outfile )
 
-#     to_cluster = True
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( mergeDMRWindows,
+            suffix(".merged.gz"),
+            ".stats")
+def buildDMRWindowStats( infile, outfile ):
+    '''compute window size statistics of DMR from bed file.'''
 
-#     statement = '''
-#     zcat %(infile)s
-#     | grep -v 'contig'
-#     | python %(scriptsdir)s/gff2histogram.py 
-#                    --force
-#                    --format=bed 
-#                    --data=size
-#                    --method=hist
-#                    --method=stats
-#                    --output-filename-pattern=%(outfile)s.%%s.tsv
-#     > %(outfile)s
-#     '''
-#     P.run()
+    to_cluster = True
+
+    statement = '''
+    zcat %(infile)s
+    | grep -v 'contig'
+    | python %(scriptsdir)s/gff2histogram.py 
+                   --force
+                   --format=bed 
+                   --data=size
+                   --method=hist
+                   --method=stats
+                   --output-filename-pattern=%(outfile)s.%%s.tsv
+    > %(outfile)s
+    '''
+    P.run()
 
 
 # #########################################################################
