@@ -115,7 +115,7 @@ def main( argv = None ):
            target_end,
            target_length) ]
 
-        map_query2target = alignlib.makeAlignmentBlocks()
+        map_query2target = alignlib.py_makeAlignmentBlocks()
         
         qstart, tstart = psl.mQueryStart, psl.mSbjctStart
         

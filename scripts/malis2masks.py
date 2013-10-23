@@ -126,20 +126,20 @@ def main():
             alignment = alignment[::-1]
 
         # get map of gene to alignment
-        map_gene2mali = alignlib.makeAlignmentVector()
+        map_gene2mali = alignlib.py_makeAlignmentVector()
         fillAlignment( map_gene2mali, alignment )
 
         # get quality scores
         quality_scores = quality.getSequence( match.mSbjctId, "+", match.mSbjctFrom, match.mSbjctTo)
 
 
-        # print str(alignlib.AlignmentFormatEmissions( map_gene2genome))
-        # print str(alignlib.AlignmentFormatEmissions( map_gene2mali))
+        # print str(alignlib.py_AlignmentFormatEmissions( map_gene2genome))
+        # print str(alignlib.py_AlignmentFormatEmissions( map_gene2mali))
         # print quality_scores
 
-        map_mali2genome = alignlib.makeAlignmentVector()
-        alignlib.combineAlignment( map_mali2genome, map_gene2mali, map_gene2genome, alignlib.RR )
-        # print str(alignlib.AlignmentFormatEmissions( map_mali2genome))
+        map_mali2genome = alignlib.py_makeAlignmentVector()
+        alignlib.py_combineAlignment( map_mali2genome, map_gene2mali, map_gene2genome, alignlib.RR )
+        # print str(alignlib.py_AlignmentFormatEmissions( map_mali2genome))
 
         # shuffle quality scores, but only those that are aligned
         if options.random:

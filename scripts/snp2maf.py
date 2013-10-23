@@ -53,22 +53,22 @@ import alignlib
 def alignIndels( all_alleles, colcounts, extend_by = 0 ):
     '''align all indel-regions.'''
 
-    aa = alignlib.makeAlignatorDPFull( alignlib.ALIGNMENT_LOCAL, 0, 0 )     
-    alignator = alignlib.makeMultipleAlignatorSimple( aa)
+    aa = alignlib.py_makeAlignatorDPFull( alignlib.ALIGNMENT_LOCAL, 0, 0 )     
+    alignator = alignlib.py_makeMultipleAlignatorSimple( aa)
 
     ids = all_alleles.keys()
 
     for x,c in enumerate(colcounts):
         if c <= 1: continue
-        sequences = alignlib.StringVector()
+        sequences = alignlib.py_StringVector()
         for sid in ids:
             for allele in all_alleles[sid]:
                 sequences.append( allele[x] )
 
-        mali = alignlib.makeMultAlignment()
+        mali = alignlib.py_makeMultAlignment()
         alignator.align( mali, sequences )
         realigned = []
-        for line in str(alignlib.MultAlignmentFormatPlain( mali, sequences )).split("\n")[:-1]:
+        for line in str(alignlib.py_MultAlignmentFormatPlain( mali, sequences )).split("\n")[:-1]:
             data = line[:-1].split("\t")
             realigned.append( data[1] )
         assert len(realigned) == len(sequences)

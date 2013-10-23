@@ -41,7 +41,6 @@ include scripts/diff_bed.py
 include scripts/diff_chains.py
 include scripts/diff_fasta.py
 include scripts/diff_gtf.py
-include scripts/diff_gtfs.py
 include scripts/fasta2bed.py
 include scripts/fasta2fasta.py
 include scripts/fasta2kmercontent.py
@@ -64,6 +63,7 @@ include scripts/gtf2gff.py
 include scripts/gtf2gtf.py
 include scripts/gtf2tsv.py
 include scripts/gtf2table.py
+include scripts/gtfs2tsv.py
 include scripts/index_fasta.py
 include scripts/split_gff.py
 include scripts/vcf2vcf.py

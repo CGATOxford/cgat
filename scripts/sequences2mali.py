@@ -46,9 +46,9 @@ import CGAT.FastaIterator as FastaIterator
 def convertMali2Mali( mali ):
     """convert a mali to a profile."""
 
-    new_mali = alignlib.makeMultipleAlignment()
+    new_mali = alignlib.py_makeMultipleAlignment()
     for id in mali.getIdentifiers():
-        s = alignlib.makeAlignatumFromString( mali[id] )
+        s = alignlib.py_makeAlignatumFromString( mali[id] )
         s.thisown = 0
         new_mali.addAlignatum( s )
 
@@ -107,18 +107,18 @@ if __name__ == '__main__':
         new_mali = convertMali2Mali( mali )
 
         if options.alignment_method == "sw":
-            alignator = alignlib.makeAlignatorFullDP( options.gop, options.gep )
+            alignator = alignlib.py_makeAlignatorFullDP( options.gop, options.gep )
         else:
-            alignator = alignlib.makeAlignatorFullDPGlobal( options.gop, options.gep )            
+            alignator = alignlib.py_makeAlignatorFullDPGlobal( options.gop, options.gep )            
         
         while 1:
             cur_record = iterator.next()
             if cur_record is None: break
 
-            map_mali2seq = alignlib.makeAlignataVector()
+            map_mali2seq = alignlib.py_makeAlignataVector()
 
-            sequence = alignlib.makeSequence( cur_record.sequence )
-            profile = alignlib.makeProfileFromMali( new_mali )
+            sequence = alignlib.py_makeSequence( cur_record.sequence )
+            profile = alignlib.py_makeProfileFromMali( new_mali )
 
             if options.loglevel >= 4:
                 options.stdlog.write(profile.Write())
@@ -129,7 +129,7 @@ if __name__ == '__main__':
                 options.stdlog.write( map_mali2seq.Write() )
 
             ## add sequence to mali
-            a = alignlib.makeAlignatumFromString( cur_record.sequence )
+            a = alignlib.py_makeAlignatumFromString( cur_record.sequence )
             a.thisown = 0
                 
             new_mali.addAlignatum( a, map_mali2seq, 1, 1, 1, 1, 1 )

@@ -732,7 +732,7 @@ class CounterCoverage(CounterOverlap):
         segments = self.getSegments()
         segments.sort()
 
-        map_genome2transcript = alignlib.makeAlignmentBlocks()
+        map_genome2transcript = alignlib.py_makeAlignmentBlocks()
 
         x = 0
         for start, end in segments:

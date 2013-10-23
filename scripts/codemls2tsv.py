@@ -173,9 +173,9 @@ def mapSites2Codons( total_sites, max_per_site ):
 def convertMali2Mali( mali ):
     """convert a mali to a profile."""
 
-    new_mali = alignlib.makeMultipleAlignment()
+    new_mali = alignlib.py_makeMultipleAlignment()
     for id in mali.getIdentifiers():
-        s = alignlib.makeAlignatumFromString( mali[id] )
+        s = alignlib.py_makeAlignatumFromString( mali[id] )
         s.thisown = 0
         new_mali.addAlignatum( s )
 
@@ -333,23 +333,23 @@ if __name__ == "__main__":
         if tmap_mali.getAlphabet() == "na":
             tmap_mali.apply( translate )
         
-        map_old2new = alignlib.makeAlignmentVector()
+        map_old2new = alignlib.py_makeAlignmentVector()
 
-        mali1 = alignlib.makeProfileFromMali( convertMali2Mali( tmali ) )
+        mali1 = alignlib.py_makeProfileFromMali( convertMali2Mali( tmali ) )
 
         if tmap_mali.getLength() == 1:
             
             s = tmap_mali.values()[0].mString
-            mali2 = alignlib.makeSequence( s )
+            mali2 = alignlib.py_makeSequence( s )
             ## see if you can find an identical subsequence and then align to thisD
             for x in tmali.values():
                 if s in re.sub( "[- .]+", "", x.mString):
-                    mali1 = alignlib.makeSequence( x.mString )
+                    mali1 = alignlib.py_makeSequence( x.mString )
                     break
         else:
-            mali2 = alignlib.makeProfileFromMali( convertMali2Mali( tmap_mali ) )        
+            mali2 = alignlib.py_makeProfileFromMali( convertMali2Mali( tmap_mali ) )        
 
-        alignator = alignlib.makeAlignatorDPFull( alignlib.ALIGNMENT_LOCAL, -10.0, -2.0 )
+        alignator = alignlib.py_makeAlignatorDPFull( alignlib.ALIGNMENT_LOCAL, -10.0, -2.0 )
         alignator.align( map_old2new, mali1, mali2 )
 
         consensus = tmap_mali.getConsensus()

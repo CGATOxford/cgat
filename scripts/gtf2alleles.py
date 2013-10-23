@@ -429,7 +429,7 @@ def buildAlleles( transcript,
 
         # map between the new cds sequence and the reference
         # sequence
-        map_cds2reference = alignlib.makeAlignmentBlocks()
+        map_cds2reference = alignlib.py_makeAlignmentBlocks()
 
         ###################################################
         # process first exon

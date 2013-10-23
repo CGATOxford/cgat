@@ -91,25 +91,25 @@ def main( argv = None ):
     cmali2 = Mali.convertMali2Alignlib( mali2 )
 
     if options.mode == "local":
-        mode = alignlib.ALIGNMENT_LOCAL
+        mode = alignlib.py_ALIGNMENT_LOCAL
     elif options.mode == "global":
-        mode = alignlib.ALIGNMENT_GLOBAL
+        mode = alignlib.py_ALIGNMENT_GLOBAL
         
-    alignator = alignlib.makeAlignatorDPFull( mode,
+    alignator = alignlib.py_makeAlignatorDPFull( mode,
                                               options.gop, options.gep )
 
-    alignlib.setDefaultEncoder( alignlib.getEncoder( alignlib.Protein20) )
-    alignlib.setDefaultLogOddor( alignlib.makeLogOddorDirichlet( 0.3 ) )
-    alignlib.setDefaultRegularizor( alignlib.makeRegularizorDirichletPrecomputed() )
+    alignlib.py_setDefaultEncoder( alignlib.getEncoder( alignlib.Protein20) )
+    alignlib.py_setDefaultLogOddor( alignlib.makeLogOddorDirichlet( 0.3 ) )
+    alignlib.py_setDefaultRegularizor( alignlib.makeRegularizorDirichletPrecomputed() )
 
-    cprofile1 = alignlib.makeProfile( cmali1 )
-    cprofile2 = alignlib.makeProfile( cmali2 )
+    cprofile1 = alignlib.py_makeProfile( cmali1 )
+    cprofile2 = alignlib.py_makeProfile( cmali2 )
 
-    result = alignlib.makeAlignmentVector()
+    result = alignlib.py_makeAlignmentVector()
 
     alignator.align( result, cprofile1, cprofile2 )
 
-    E.debug( "result=\n%s" % alignlib.AlignmentFormatEmissions( result) )
+    E.debug( "result=\n%s" % alignlib.py_AlignmentFormatEmissions( result) )
 
     cmali1.add( cmali2, result )
 

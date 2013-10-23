@@ -83,7 +83,7 @@ if __name__ == "__main__":
         print "# read %i sequences" % len(sequences)
         
     for k in sequences.keys():
-        sequences[k] = alignlib.makeSequence( sequences[k] )
+        sequences[k] = alignlib.py_makeSequence( sequences[k] )
 
     if options.loglevel >= 2:
         print "# converted %i sequences" % len(sequences)
@@ -91,7 +91,7 @@ if __name__ == "__main__":
     ninput, noutput, nskipped, nfailed = 0, 0, 0, 0
     link = BlastAlignments.Link()
 
-    ali = alignlib.makeAlignataVector()
+    ali = alignlib.py_makeAlignataVector()
     
     for line in sys.stdin:
         
@@ -105,10 +105,10 @@ if __name__ == "__main__":
             continue
         
         ali.Clear()
-        alignlib.fillAlignataCompressed( ali, link.mQueryFrom, link.mQueryAli, link.mSbjctFrom, link.mSbjctAli )
+        alignlib.py_fillAlignataCompressed( ali, link.mQueryFrom, link.mQueryAli, link.mSbjctFrom, link.mSbjctAli )
 
 
-        result = alignlib.writePairAlignment( sequences[link.mQueryToken], sequences[link.mSbjctToken], ali ).split("\n")
+        result = alignlib.py_writePairAlignment( sequences[link.mQueryToken], sequences[link.mSbjctToken], ali ).split("\n")
 
         if len(result) != 3:
             nfailed += 1

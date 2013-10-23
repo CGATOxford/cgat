@@ -81,7 +81,7 @@ def connectToUCSC():
 def getRepeatsFromUCSC( dbhandle, repclasses, outfile ):
     '''select repeats from UCSC and write to *outfile* in gff format.
 
-    If *repclasses* is None, all repeats will be collected.
+    If *repclasses* is None or an empty list, all repeats will be collected.
     '''
 
     # Repeats are either stored in a single ``rmsk`` table (hg19) or in

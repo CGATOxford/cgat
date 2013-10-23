@@ -498,13 +498,13 @@ class PredictionParserGenewise( PredictionParser ):
             peptide_sequence = self.getPeptideSequence( entry.mQueryToken )
 
             if peptide_sequence:
-                row_seq = alignlib.makeSequence( peptide_sequence )
-                col_seq = alignlib.makeSequence( entry.mTranslation )
-                alignlib.rescoreAlignment( entry.mMapPeptide2Translation, row_seq, col_seq )
+                row_seq = alignlib.py_makeSequence( peptide_sequence )
+                col_seq = alignlib.py_makeSequence( entry.mTranslation )
+                alignlib.py_rescoreAlignment( entry.mMapPeptide2Translation, row_seq, col_seq )
 
                 entry.mQueryLength = len(peptide_sequence)            
-                entry.mPercentIdentity = alignlib.calculatePercentIdentity( entry.mMapPeptide2Translation, row_seq, col_seq ) * 100
-                entry.mPercentSimilarity = alignlib.calculatePercentSimilarity( entry.mMapPeptide2Translation ) * 100
+                entry.mPercentIdentity = alignlib.py_calculatePercentIdentity( entry.mMapPeptide2Translation, row_seq, col_seq ) * 100
+                entry.mPercentSimilarity = alignlib.py_calculatePercentSimilarity( entry.mMapPeptide2Translation ) * 100
                 entry.mQueryCoverage = ( entry.mMapPeptide2Translation.getRowTo() - \
                                          entry.mMapPeptide2Translation.getRowFrom() + 1 ) * 100 /\
                                          entry.mQueryLength
@@ -545,9 +545,9 @@ class PredictionParserGenewise( PredictionParser ):
                        entry.mMapPeptide2Translation.getRowFrom() )
                 print str(entry)
                 print string.join(lines,"")
-                row_seq = alignlib.makeSequence( peptide_sequence )
-                col_seq = alignlib.makeSequence( entry.mTranslation )
-                print str( alignlib.AlignmentFormatExplicit( entry.mMapPeptide2Translation, row_seq, col_seq ))
+                row_seq = alignlib.py_makeSequence( peptide_sequence )
+                col_seq = alignlib.py_makeSequence( entry.mTranslation )
+                print str( alignlib.py_AlignmentFormatExplicit( entry.mMapPeptide2Translation, row_seq, col_seq ))
                 sys.exit(1)
             if entry.mQueryTo != entry.mMapPeptide2Translation.getRowTo() and \
                    entry.mMapPeptide2Genome[-1][0] != "G":
@@ -557,9 +557,9 @@ class PredictionParserGenewise( PredictionParser ):
                    entry.mMapPeptide2Translation.getRowTo() )
                 print str(entry)                
                 print string.join(lines,"")
-                row_seq = alignlib.makeSequence( peptide_sequence )
-                col_seq = alignlib.makeSequence( entry.mTranslation )
-                print str( alignlib.AlignmentFormatExplicit( entry.mMapPeptide2Translation, row_seq, col_seq ))
+                row_seq = alignlib.py_makeSequence( peptide_sequence )
+                col_seq = alignlib.py_makeSequence( entry.mTranslation )
+                print str( alignlib.py_AlignmentFormatExplicit( entry.mMapPeptide2Translation, row_seq, col_seq ))
                 sys.exit(1)
 
             ## fix coordinates
@@ -760,7 +760,7 @@ class PredictionParserGenewise( PredictionParser ):
         sbjct_peptide_from = 1
 
         map_peptide2genome = []
-        map_query2sbjct = alignlib.makeAlignmentVector()
+        map_query2sbjct = alignlib.py_makeAlignmentVector()
 
         ## count number of matches/indels as proxy for pid
         ## See above for a loop, where counting could be done
@@ -785,7 +785,7 @@ class PredictionParserGenewise( PredictionParser ):
             if query_state == "LOOP_STATE" and x > 0:
                 if map_peptide2genome:
                     self.mAlignments.append( (map_peptide2genome, map_query2sbjct, nmatches, nindels) )
-                map_query2sbjct = alignlib.makeAlignmentVector()
+                map_query2sbjct = alignlib.py_makeAlignmentVector()
                 map_peptide2genome = []
                 query_peptide_from = states[x+1][1] + 2
                 sbjct_peptide_from = 1
@@ -879,7 +879,7 @@ class PredictionParserGenewise( PredictionParser ):
                     sbjct_increment = 0
 
             if code and query_increment and sbjct_increment:
-                alignlib.addDiagonal2Alignment( map_query2sbjct, 
+                alignlib.py_addDiagonal2Alignment( map_query2sbjct, 
                                                query_peptide_from, query_peptide_from + query_increment - 1,
                                                sbjct_peptide_from - query_peptide_from
                                                )

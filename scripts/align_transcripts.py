@@ -450,7 +450,7 @@ def buildFragments( exons, input, pseudogenes, options, coordinate_factor=3,
                                 options.stdlog.flush()
                             
                             # build map of consensus cds to peptide cds
-                            cons_map_p2c = alignlib.makeAlignmentVector()
+                            cons_map_p2c = alignlib.py_makeAlignmentVector()
                             this_cds = segment.mCds[c]
                             try:
                                 cons_map_p2c = getMapPeptide2Cds( pep_consensus,
@@ -681,7 +681,7 @@ sequences will be aligned to the cds sequences. This produces better coordinates
             map_peptide2cds[x] = map_p2c
 
             if options.loglevel >= 3:
-                f = alignlib.AlignmentFormatEmissions( map_p2c )
+                f = alignlib.py_AlignmentFormatEmissions( map_p2c )
                 options.stdlog.write("# p2c: " + "\t".join( map(str, (x, str(f),
                                                                       len(input[x]), len(cds_sequences[x])) ) )+"\n")
             
@@ -795,7 +795,7 @@ sequences will be aligned to the cds sequences. This produces better coordinates
                 genome_start = ee[0].mGenomeFrom
                 genome_starts[key] = (is_negative_strand, genome_start)
 
-                map_c2g = alignlib.makeAlignmentBlocks()
+                map_c2g = alignlib.py_makeAlignmentBlocks()
 
                 for e in ee:
                     # map boundaries
@@ -809,7 +809,7 @@ sequences will be aligned to the cds sequences. This produces better coordinates
                                     (key, len(input[key]),
                                      e.mPeptideFrom, peptide_from,
                                      e.mPeptideTo, peptide_to))
-                        E.debug("%s" %str(alignlib.AlignmentFormatEmissions( map_p2c )) )
+                        E.debug("%s" %str(alignlib.py_AlignmentFormatEmissions( map_p2c )) )
                         nunmappable += 1
                         continue
 
@@ -1230,10 +1230,10 @@ sequences will be aligned to the cds sequences. This produces better coordinates
                 nwarnings_sequence += 1
                 
             if options.force_map:
-                map_old2new = alignlib.makeAlignmentVector()
-                alignator = alignlib.makeAlignatorDPFull( alignlib.ALIGNMENT_GLOBAL, -10.0, -1.0 )
-                s1 = alignlib.makeSequence( sold )
-                s2 = alignlib.makeSequence( snew )
+                map_old2new = alignlib.py_makeAlignmentVector()
+                alignator = alignlib.py_makeAlignatorDPFull( alignlib.ALIGNMENT_GLOBAL, -10.0, -1.0 )
+                s1 = alignlib.py_makeSequence( sold )
+                s2 = alignlib.py_makeSequence( snew )
                 alignator.align( map_old2new, s1, s2 )
 
                 val.threadSequence( snew, map_old2new )
@@ -1283,8 +1283,8 @@ sequences will be aligned to the cds sequences. This produces better coordinates
                 #################################
                 # map alignment pos to genome
                 map_c2g = map_cds2genome[key]
-                map_pos2genome = alignlib.makeAlignmentBlocks()
-                alignlib.combineAlignment( map_pos2genome, map_pos2cds, map_c2g, alignlib.CR )
+                map_pos2genome = alignlib.py_makeAlignmentBlocks()
+                alignlib.py_combineAlignment( map_pos2genome, map_pos2cds, map_c2g, alignlib.CR )
 
                 coords = []            
                 is_negative_strand, start = genome_starts[key]
@@ -1305,7 +1305,7 @@ sequences will be aligned to the cds sequences. This produces better coordinates
                 map_pos2cds.switchRowCol()
                 map_cds2pos = map_pos2cds
 
-                alignatum = alignlib.makeAlignatum( cds_sequences[key] )
+                alignatum = alignlib.py_makeAlignatum( cds_sequences[key] )
 
                 alignatum.mapOnAlignment( map_cds2pos, len(p) * 3 )
                 s = alignatum.getString()

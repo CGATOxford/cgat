@@ -463,13 +463,19 @@ def joined_iterator(gffs, group_field = None):
     last_group_id = None
     matches = []
 
+    if group_field == None:
+        group_function = lambda x: x.attributes
+    elif group_field == "gene_id":
+        group_function = lambda x: x.gene_id
+    elif group_field == "transcript_id":
+        group_function = lambda x: x.transcript_id
+    else:
+        group_function = lambda x: x[group_field]
+
     for gff in gffs:
         
-        if group_field:
-            group_id = gff.fields[group_field]
-        else:
-            group_id = gff.attributes
-                
+        group_id = group_function(gff)
+
         if last_group_id != group_id:
             if last_group_id: yield matches
             matches = []

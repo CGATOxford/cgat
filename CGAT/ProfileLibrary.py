@@ -129,11 +129,11 @@ class ProfileLibrary:
     def setWeightor( self, weightor ):
         """set the sequence weightor to use for profile creation."""
         if weightor == None or weightor == "none":
-            self.mWeightor = alignlib.makeNoWeightor() 
+            self.mWeightor = alignlib.py_makeNoWeightor() 
         elif weightor == "Henikoff" :
-            self.mWeightor = alignlib.makeWeightorHenikoff()
+            self.mWeightor = alignlib.py_makeWeightorHenikoff()
         elif weightor == "HenikoffKimmen":
-            self.mWeightor = alignlib.makeWeightorHenikoffKimmen()
+            self.mWeightor = alignlib.py_makeWeightorHenikoffKimmen()
 
     def __loadIndex( self ):
 
@@ -168,7 +168,7 @@ class ProfileLibrary:
         if name not in self.mIndex: raise KeyError
 
         self.mInfileDatabase.seek( self.mIndex[name][0] )
-        return alignlib.loadAlignandum( self.mInfileDatabase )
+        return alignlib.py_loadAlignandum( self.mInfileDatabase )
 
     def create( self, infile ):
         """create profile library from file."""
@@ -183,7 +183,7 @@ class ProfileLibrary:
             ninput += 1
 
             m = Mali.convertMali2Alignlib( mali )
-            p = alignlib.makeProfile( m, weightor = self.mWeightor )
+            p = alignlib.py_makeProfile( m, weightor = self.mWeightor )
             p.prepare()
 
             self.appendProfile( mali.getName(), p )
@@ -202,7 +202,7 @@ class ProfileLibrary:
 
             ninput += 1
             m = Mali.convertMali2Alignlib( mali )
-            p1 = alignlib.makeProfile( m )
+            p1 = alignlib.py_makeProfile( m )
             p1.prepare()
             
             p2 = self.getProfile( mali.getName() )

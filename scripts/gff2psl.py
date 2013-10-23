@@ -108,7 +108,7 @@ def main( argv = None ):
 
         ninput += 1
 
-        result = alignlib.makeAlignmentBlocks()
+        result = alignlib.py_makeAlignmentBlocks()
 
         xstart = 0
 

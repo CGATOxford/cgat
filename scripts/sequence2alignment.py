@@ -75,15 +75,15 @@ if __name__ == '__main__':
         sequence = re.sub( " ", "", cur_record.sequence)
         l = len(sequence)
 
-        map_sequence2mali = alignlib.makeAlignmentVector()        
+        map_sequence2mali = alignlib.py_makeAlignmentVector()        
 
-        alignlib.AlignmentFormatExplicit( 0, sequence,
+        alignlib.py_AlignmentFormatExplicit( 0, sequence,
                                           0, "X" * l ).copy( map_sequence2mali )
 
         options.stdout.write( "\t".join( (
                 cur_record.title,
                 "ref",
-                str( alignlib.AlignmentFormatBlocks( map_sequence2mali ) ) ) ) + "\n" )
+                str( alignlib.py_AlignmentFormatBlocks( map_sequence2mali ) ) ) ) + "\n" )
         
         noutput += 1
 

@@ -283,7 +283,7 @@ def GetIntronType( sequence ):
 def AlignPair( pair, anchor = 0 ):
     """align a pair of introns."""
 
-    map_intron_a2b = alignlib.makeAlignmentVector()
+    map_intron_a2b = alignlib.py_makeAlignmentVector()
 
     if param_loglevel >= 1:
         print "# aligning %s-%i with %s-%i: lengths %i and %i" % (pair.mToken1, pair.mIntronId1,
@@ -318,10 +318,10 @@ def AlignPair( pair, anchor = 0 ):
         return False
 
 
-    seq1 = alignlib.makeSequence( pair.mAlignedSequence1 )
-    seq2 = alignlib.makeSequence( pair.mAlignedSequence2 )
+    seq1 = alignlib.py_makeSequence( pair.mAlignedSequence1 )
+    seq2 = alignlib.py_makeSequence( pair.mAlignedSequence2 )
     
-    data = alignlib.AlignmentFormatExplicit( map_intron_a2b, seq1, seq2 )
+    data = alignlib.py_AlignmentFormatExplicit( map_intron_a2b, seq1, seq2 )
 
     pair.mFrom1, pair.mAlignedSequence1, pair.mTo1 = data.mRowFrom, data.mRowAlignment, data.mRowTo
     pair.mFrom2, pair.mAlignedSequence2, pair.mTo2 = data.mColFrom, data.mColAlignment, data.mColTo
@@ -470,7 +470,7 @@ if __name__ == '__main__':
                        unaligned_pair.mToken2 == pair.mToken2 and \
                        unaligned_pair.mIntronId1 == pair.mIntronId1:
 
-                    map_a2b = alignlib.makeAlignmentVector()
+                    map_a2b = alignlib.py_makeAlignmentVector()
                     f = AlignmentFormatEmissions( 
                         pair.mFrom1, 
                         pair.mAlignedSequence1,
@@ -478,9 +478,9 @@ if __name__ == '__main__':
                         pair.mAlignedSequence2).copy( map_a2b )
                     map_a2b.moveAlignment( -unaligned_pair.mFrom1 + 1, -unaligned_pair.mFrom2 + 1 )            
 
-                    data = alignlib.AlignmentFormatExplicit( map_a2b,
-                                                             alignlib.makeSequence( unaligned_pair.mAlignedSequence1),
-                                                             alignlib.makeSequence( unaligned_pair.mAlignedSequence2) )
+                    data = alignlib.py_AlignmentFormatExplicit( map_a2b,
+                                                             alignlib.py_makeSequence( unaligned_pair.mAlignedSequence1),
+                                                             alignlib.py_makeSequence( unaligned_pair.mAlignedSequence2) )
 
                     from1, ali1, to1 = data.mRowFrom, data.mRowAlignment, data.mRowTo
                     from2, ali2, to2 = data.mColFrom, data.mColAlignment, data.mColTo

@@ -73,8 +73,8 @@ if __name__ == '__main__':
             print globals()["__doc__"]
             sys.exit(0)
 
-    alignator = alignlib.makeAlignatorDPFull( alignlib.ALIGNMENT_LOCAL, param_gop, param_gep )
-    map_query2token = alignlib.makeAlignmentVector()
+    alignator = alignlib.py_makeAlignatorDPFull( alignlib.ALIGNMENT_LOCAL, param_gop, param_gep )
+    map_query2token = alignlib.py_makeAlignmentVector()
     
     for line in sys.stdin:
         if line[0] == "#": continue
@@ -82,16 +82,16 @@ if __name__ == '__main__':
         query_token, sbjct_token, query_sequence, sbjct_sequence = string.split(line[:-1], "\t")
 
         map_query2token.clear()
-        row = alignlib.makeSequence(query_sequence)
-        col = alignlib.makeSequence(sbjct_sequence)
+        row = alignlib.py_makeSequence(query_sequence)
+        col = alignlib.py_makeSequence(sbjct_sequence)
         alignator.align( map_query2token, row, col )
 
-        pidentity = 100.0 * alignlib.calculatePercentIdentity( map_query2token, row, col )
-        psimilarity = 100.0 * alignlib.calculatePercentSimilarity( map_query2token )        
+        pidentity = 100.0 * alignlib.py_calculatePercentIdentity( map_query2token, row, col )
+        psimilarity = 100.0 * alignlib.py_calculatePercentSimilarity( map_query2token )        
         print string.join( map(str, (
             query_token, sbjct_token,
             map_query2token.getScore(),
-            alignlib.AlignmentFormatEmissions( map_query2token ),
+            alignlib.py_AlignmentFormatEmissions( map_query2token ),
             pidentity,
             psimilarity,
             map_query2token.getNumGaps()) ), "\t" )
