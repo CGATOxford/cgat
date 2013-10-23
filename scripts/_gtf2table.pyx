@@ -305,7 +305,6 @@ class CounterReadCounts(Counter):
 
     def countFloat(self):
         '''count by weighting multi-mapping reads.'''
-
         
         segments = self.getSegments()
         contig = self.getContig()
@@ -385,6 +384,9 @@ class CounterReadCounts(Counter):
         else:
             is_reverse = True
 
+        # count only once per read name
+        counted = set()
+
         for start, end in segments:
             for samfile in self.mBamFiles:
                 last_any_pos = -1
@@ -392,6 +394,8 @@ class CounterReadCounts(Counter):
                 last_anti_pos = -1
                 for read in samfile.fetch( contig, start, end ):
                     if not read.overlap( start, end ): continue
+                    if read.qname in counted: continue
+                    counted.add(read.qname)
 
                     nanysense_all_counts += 1
                     if last_any_pos != read.pos:

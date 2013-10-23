@@ -115,7 +115,7 @@ import CGAT.Experiment as E
 import CGAT.MaliIO as MaliIO
 import scipy
 import CGAT.Exons as Exons
-import alignlib
+import alignlib_lite
 import CGAT.Genomics as Genomics
 import numpy
 
@@ -396,7 +396,7 @@ def WriteGeneStructureCorrespondence( mali, identifiers, exons, param_master_pat
             cmp_exons = []
 
             if param_loglevel >= 5:
-                print alignlib.writeAlignataTable(map_cmp2ref)
+                print alignlib_lite.py_writeAlignataTable(map_cmp2ref)
             
             for e in exons[key1]:
                 ne = e.GetCopy()

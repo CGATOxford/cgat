@@ -1125,7 +1125,7 @@ def importRepeatsFromUCSC( infile, outfile ):
     The repeats are stored as a :term:`gff` formatted file.
     '''
 
-    repclasses="','".join(PARAMS["ucsc_repeattypes"].split(","))
+    repclasses=P.asList( PARAMS["ucsc_repeattypes"] )
     dbhandle = PipelineUCSC.connectToUCSC()
     PipelineUCSC.getRepeatsFromUCSC( dbhandle, repclasses, outfile )
 
@@ -1151,12 +1151,15 @@ def countTotalRepeatLength( infile, outfile):
     ''' Count total repeat length and add to database '''
     dbhandle = sqlite3.connect( PARAMS["database"] )
     cc = dbhandle.cursor()
+    statement = """DROP TABLE IF EXISTS repeat_length"""
+    cc.execute( statement )
+
     statement = """create table repeat_length as SELECT sum(stop-start) as total_repeat_length from repeats"""
     cc.execute( statement )
+
     cc.close()
     
-    statement = "touch %(outfile)s"
-    P.run()
+    P.touch( outfile )
 
 ############################################################
 ############################################################

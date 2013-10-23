@@ -42,7 +42,7 @@ import optparse
 
 import CGAT.Experiment as E
 import CGAT.BlastAlignments as BlastAlignments
-import alignlib
+import alignlib_lite
 import CGAT.Genomics as Genomics
 import CGAT.Exons as Exons
 import CGAT.FastaIterator as FastaIterator
@@ -66,9 +66,9 @@ class Map:
         
     def expand( self ):
         if not self.mMapOld2New:
-            self.mMapOld2New = alignlib.makeAlignmentVector()
+            self.mMapOld2New = alignlib_lite.py_makeAlignmentVector()
         
-            alignlib.AlignmentFormatEmissions( 
+            alignlib_lite.py_AlignmentFormatEmissions( 
                 self.mOldFrom, self.mOldAli,
                 self.mNewFrom, self.mNewAli).copy( self.mMapOld2New )
             
@@ -118,7 +118,7 @@ def Write( map_row2col, row_seq, col_seq, link,
 
     if not status:
 
-        f = alignlib.AlignmentFormatExplicit( map_row2col, row_seq, col_seq )
+        f = alignlib_lite.py_AlignmentFormatExplicit( map_row2col, row_seq, col_seq )
         
         row_from = map_row2col.getRowFrom()
         row_to = map_row2col.getRowTo()
@@ -334,8 +334,8 @@ if __name__ == '__main__':
     else:
         outfile = None
         
-    map_row2col = alignlib.makeAlignmentVector()
-    tmp1_map_row2col = alignlib.makeAlignmentVector()
+    map_row2col = alignlib_lite.py_makeAlignmentVector()
+    tmp1_map_row2col = alignlib_lite.py_makeAlignmentVector()
     counts = {}
 
     iterations = 0
@@ -361,8 +361,8 @@ if __name__ == '__main__':
         if options.loglevel >= 3:
             options.stdlog.write( "# read link %s\n" %  str(link) )
             
-        row_seq = alignlib.makeSequence( sequences[link.mQueryToken] )
-        col_seq = alignlib.makeSequence( sequences[link.mSbjctToken] )
+        row_seq = alignlib_lite.py_makeSequence( sequences[link.mQueryToken] )
+        col_seq = alignlib_lite.py_makeSequence( sequences[link.mSbjctToken] )
 
         if options.one_based_coordinates:
             link.mQueryFrom -= 1
@@ -376,7 +376,7 @@ if __name__ == '__main__':
             
         map_row2col.clear()
 
-        alignlib.AlignmentFormatEmissions(
+        alignlib_lite.py_AlignmentFormatEmissions(
             link.mQueryFrom, link.mQueryAli,
             link.mSbjctFrom, link.mSbjctAli ).copy(  map_row2col )
         
@@ -385,28 +385,28 @@ if __name__ == '__main__':
             map_old2new[link.mQueryToken].expand()
             if options.loglevel >= 3:
                 options.stdlog.write( "# combining in row with %s\n" %\
-                                      str(alignlib.AlignmentFormatEmissions(map_old2new[link.mQueryToken].mMapOld2New ) ))
+                                      str(alignlib_lite.py_AlignmentFormatEmissions(map_old2new[link.mQueryToken].mMapOld2New ) ))
 
-            alignlib.combineAlignment( tmp1_map_row2col,
+            alignlib_lite.py_combineAlignment( tmp1_map_row2col,
                                       map_old2new[link.mQueryToken].mMapOld2New,
                                       map_row2col,
-                                      alignlib.RR )
+                                      alignlib_lite.py_RR )
             map_old2new[link.mQueryToken].clear()
-            alignlib.copyAlignment( map_row2col, tmp1_map_row2col )
+            alignlib_lite.py_copyAlignment( map_row2col, tmp1_map_row2col )
 
         if link.mSbjctToken in map_old2new:
             tmp1_map_row2col.clear()
             map_old2new[link.mSbjctToken].expand()            
             if options.loglevel >= 3:
                 options.stdlog.write( "# combining in col with %s\n" %\
-                                      str(alignlib.AlignmentFormatEmissions(map_old2new[link.mSbjctToken].mMapOld2New ) ))
+                                      str(alignlib_lite.py_AlignmentFormatEmissions(map_old2new[link.mSbjctToken].mMapOld2New ) ))
 
-            alignlib.combineAlignment( tmp1_map_row2col,
+            alignlib_lite.py_combineAlignment( tmp1_map_row2col,
                                        map_row2col,
                                        map_old2new[link.mSbjctToken].mMapOld2New,
-                                       alignlib.CR )
+                                       alignlib_lite.py_CR )
             map_old2new[link.mSbjctToken].clear()
-            alignlib.copyAlignment( map_row2col, tmp1_map_row2col )
+            alignlib_lite.py_copyAlignment( map_row2col, tmp1_map_row2col )
 
         dr = row_seq.getLength() - map_row2col.getRowTo() 
         dc = col_seq.getLength() - map_row2col.getColTo() 
@@ -416,11 +416,11 @@ if __name__ == '__main__':
                                            link.mSbjctToken,
                                            row_seq.getLength(),
                                            col_seq.getLength(),
-                                           str(alignlib.AlignmentFormatEmissions(map_row2col))))
+                                           str(alignlib_lite.py_AlignmentFormatEmissions(map_row2col))))
             
 
         if options.loglevel >= 2:
-            options.stdlog.write( str( alignlib.AlignmentFormatExplicit( map_row2col, 
+            options.stdlog.write( str( alignlib_lite.py_AlignmentFormatExplicit( map_row2col, 
                                                                          row_seq, 
                                                                          col_seq )) + "\n" )
         ## check for incomplete codons
@@ -428,13 +428,13 @@ if __name__ == '__main__':
 
             naligned = map_row2col.getNumAligned()
             
-            # turned off, while fixing alignlib
+            # turned off, while fixing alignlib_lite
             if naligned % 3 != 0:
                 options.stdlog.write( "# %s\n" % str(map_row2col) )
                 options.stdlog.write( "# %s\n" % str(link) )
                 options.stdlog.write( "# %s\n" % str(map_old2new[link.mQueryToken]) )
                 options.stdlog.write( "# %s\n" % str(map_old2new[link.mSbjctToken]) )
-                options.stdlog.write( "#\n%s\n" % alignlib.AlignmentFormatExplicit( map_row2col, 
+                options.stdlog.write( "#\n%s\n" % alignlib_lite.py_AlignmentFormatExplicit( map_row2col, 
                                                                                     row_seq,
                                                                                     col_seq ) )
 
@@ -465,7 +465,7 @@ if __name__ == '__main__':
                 from1, to1 = GetAdjustedBoundaries( a, exons1 )
                 from2, to2 = GetAdjustedBoundaries( b, exons2 )
 
-                alignlib.copyAlignment( tmp1_map_row2col, map_row2col,
+                alignlib_lite.py_copyAlignment( tmp1_map_row2col, map_row2col,
                                        from1+1, to1, from2+1, to2 )
                 
                 mode = Write( tmp1_map_row2col, row_seq, col_seq, link,

@@ -279,9 +279,9 @@ class Match:
         the negative strand.
         """
 
-        map_query2target = alignlib.makeAlignmentBlocks()
+        map_query2target = alignlib_lite.py_makeAlignmentBlocks()
 
-        f = alignlib.AlignmentFormatBlat( "%i\t%i\t%i\t%i\t%s\t%s\t%s\n" % (\
+        f = alignlib_lite.py_AlignmentFormatBlat( "%i\t%i\t%i\t%i\t%s\t%s\t%s\n" % (\
                 min( self.mQueryBlockStarts ),
                 max( self.mQueryBlockStarts ),
                 min( self.mSbjctBlockStarts ),
@@ -299,9 +299,9 @@ class Match:
         the negative strand.
         """
 
-        map_target2query = alignlib.makeAlignmentBlocks()
+        map_target2query = alignlib_lite.py_makeAlignmentBlocks()
 
-        f = alignlib.AlignmentFormatBlat( "%i\t%i\t%i\t%i\t%s\t%s\t%s\n" % (\
+        f = alignlib_lite.py_AlignmentFormatBlat( "%i\t%i\t%i\t%i\t%s\t%s\t%s\n" % (\
                 min( self.mSbjctBlockStarts ),
                 max( self.mSbjctBlockStarts ),
                 min( self.mQueryBlockStarts ),
@@ -319,7 +319,7 @@ class Match:
         """return a map between query to target."""
 
         self.mNMatches = map_query2target.getNumAligned()
-        f = alignlib.AlignmentFormatBlat( map_query2target )
+        f = alignlib_lite.py_AlignmentFormatBlat( map_query2target )
 
         self.mQueryFrom, self.mQueryTo, self.mSbjctFrom, self.mSbjctTo, \
             self.mQueryBlockStarts, self.mSbjctBlockStarts, self.mBlockSizes = str(f).split("\t")
@@ -353,7 +353,7 @@ class Match:
         self.mQueryLength = query_size
         self.mSbjctLength = target_size
 
-        map_query2target = alignlib.makeAlignmentBlocks()
+        map_query2target = alignlib_lite.py_makeAlignmentBlocks()
         
         assert len(query_seq) == len(target_seq)
 

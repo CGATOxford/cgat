@@ -35,7 +35,7 @@ Code
 
 import numpy
 import os, sys, string, re, time, array, hashlib, base64, tempfile, math
-try: import alignlib
+try: import alignlib_lite
 except ImportError: pass
 
 import AString
@@ -743,7 +743,7 @@ def Alignment2DNA( alignment, query_from = 0, sbjct_from = 0):
     alignment.
     """
 
-    map_query2sbjct = alignlib.makeAlignmentVector()
+    map_query2sbjct = alignlib_lite.py_makeAlignmentVector()
 
     ## count in nucleotides for query
     query_pos = query_from * 3
@@ -776,7 +776,7 @@ def Alignment2DNA( alignment, query_from = 0, sbjct_from = 0):
             l_query = l_sbjct
                 
         if l_query > 0 and l_sbjct > 0:
-            alignlib.addDiagonal2Alignment( map_query2sbjct,
+            alignlib_lite.py_addDiagonal2Alignment( map_query2sbjct,
                                             query_pos, query_pos + l_query,
                                             sbjct_pos - query_pos )
                 
@@ -1230,7 +1230,7 @@ def Alignment2PeptideAlignment( alignment,
     How to handle frameshifts?
     """
 
-    map_query2sbjct = alignlib.makeAlignmentVector()
+    map_query2sbjct = alignlib_lite.py_makeAlignmentVector()
 
     query_pos = query_from
     sbjct_pos = 0
@@ -1269,7 +1269,7 @@ def Alignment2PeptideAlignment( alignment,
             query_increment = l_query
             
         if query_increment and sbjct_increment:
-            alignlib.addDiagonal2Alignment( map_query2sbjct,
+            alignlib_lite.py_addDiagonal2Alignment( map_query2sbjct,
                                             query_pos, query_pos + query_increment,
                                             sbjct_pos - query_pos )
 
@@ -1342,7 +1342,7 @@ def Alignment2CDNA( alignment,
 
     fragments = []
     sbjct_pos = 0
-    map_query2sbjct = alignlib.makeAlignmentVector()
+    map_query2sbjct = alignlib_lite.py_makeAlignmentVector()
 
     ## count in nucleotides for query
     query_pos = query_from * 3
@@ -1374,7 +1374,7 @@ def Alignment2CDNA( alignment,
                 fragments.append(genome[sbjct_pos:sbjct_pos+l_sbjct])
 
             if l_query > 0 and l_sbjct > 0:
-                alignlib.addDiagonal2Alignment( map_query2sbjct,
+                alignlib_lite.py_addDiagonal2Alignment( map_query2sbjct,
                                                 query_pos, 
                                                 query_pos + l_query,
                                                 cdna_pos - query_pos )
@@ -1811,7 +1811,7 @@ def makeSubstitutionMatrix( type = "EMBOSS" ):
         os.write( handle_tmpfile, string.join( map(str, m), "\t") + "\n")
     os.close(handle_tmpfile)
 
-    smatrix = alignlib.readSubstitutionMatrixAA( filename_tmpfile )
+    smatrix = alignlib_lite.py_readSubstitutionMatrixAA( filename_tmpfile )
     os.remove( filename_tmpfile)
     return smatrix, gop, gep
 

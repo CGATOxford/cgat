@@ -53,7 +53,7 @@ import CGAT.Genomics as Genomics
 import CGAT.GTF as GTF
 import CGAT.Blat as Blat
 import CGAT.Variants as Variants
-import alignlib
+import alignlib_lite
 import pysam
 
 Allele = collections.namedtuple( 'Allele',
@@ -429,7 +429,7 @@ def buildAlleles( transcript,
 
         # map between the new cds sequence and the reference
         # sequence
-        map_cds2reference = alignlib.makeAlignmentBlocks()
+        map_cds2reference = alignlib_lite.py_makeAlignmentBlocks()
 
         ###################################################
         # process first exon

@@ -62,6 +62,7 @@ import sys
 import os
 import collections
 import itertools
+import re
 
 from rpy2.robjects import r as R
 import rpy2.robjects as ro
@@ -656,11 +657,11 @@ def runEdgeR( infile,
         legend = []
         for pair in pairs:
             for g1, g2 in itertools.combinations(groups, 2 ):
-                key = "pair_%s_%s_vs_%s" % (pair, g1,g2)
+                key = re.sub( "-", "_", "pair_%s_%s_vs_%s" % (pair, g1,g2))
                 legend.append( key )
-                print R('''colnames( countsTable) ''')
-                print R(''' pairs=='%s' ''' % pair)
-                print R(''' groups=='%s' ''' % g1)
+                #print R('''colnames( countsTable) ''')
+                #print R(''' pairs=='%s' ''' % pair)
+                #print R(''' groups=='%s' ''' % g1)
                 R('''a = rowSums( countsTable[pairs == '%s' & groups == '%s'] ) ''' % (pair,g1) )
                 R('''b = rowSums( countsTable[pairs == '%s' & groups == '%s'] ) ''' % (pair,g2) )
                 R('''c = cumsum( sort(a - b) )''' )
