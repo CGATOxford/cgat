@@ -825,11 +825,12 @@ for x in METHODS:
 def diff_windows(): pass
 
 #########################################################################
-@transform( *DIFFTARGETS, suffix(".gz"), ".merged.gz" )
+@transform( DIFFTARGETS, suffix(".gz"), ".merged.gz" )
 def mergeDMRWindows( infile, outfile ):
     '''merge overlapping windows.
 
-    Orientation of the test is inverted.
+    Sample/control labels are by default inverted to reflect
+    that unmethylated windows are of principal interest.
     '''
 
     to_cluster = True
@@ -893,100 +894,88 @@ def buildDMRWindowStats( infile, outfile ):
     P.run()
 
 
-# #########################################################################
-# #########################################################################
-# #########################################################################
-# @transform( mergeDMRWindows, regex(  "(.*)\.(.*).merged.gz"), r"\1_\2.dmr.bed.gz" )
-# def buildDMRBed( infile, outfile ):
-#     '''output bed6 file with differentially methylated regions.
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( mergeDMRWindows, regex(  "(.*)\.(.*).merged.gz"), r"\1_\2.dmr.bed.gz" )
+def buildDMRBed( infile, outfile ):
+    '''output bed6 file with differentially methylated regions.
 
-#     Overlapping/book-ended entries are merged.
+    Overlapping/book-ended entries are merged.
 
-#     The score is the average log fold change.
-#     '''
+    The score is the average log fold change.
+    '''
     
-#     to_cluster = True
+    to_cluster = True
 
-#     statement = '''zcat %(infile)s
-#     | python %(scriptsdir)s/csv_cut.py contig start end l2fold significant
-#     | awk '$5 == "1" {printf("%%s\\t%%i\\t%%i\\t%%i\\t%%f\\n", $1,$2,$3,++a,$4)}'
-#     | gzip > %(outfile)s'''
+    statement = '''zcat %(infile)s
+    | python %(scriptsdir)s/csv_cut.py contig start end l2fold significant
+    | awk '$5 == "1" {printf("%%s\\t%%i\\t%%i\\t%%i\\t%%f\\n", $1,$2,$3,++a,$4)}'
+    | gzip > %(outfile)s'''
 
-# #    | mergeBed -i stdin -scores mean 
+#    | mergeBed -i stdin -scores mean 
 
-#     P.run()
+    P.run()
 
-# @merge( buildDMRBed, "dmr_overlap.tsv.gz" )
-# def computeDMROverlap( infiles, outfile ):
-#     '''compute overlap between bed sets.'''
+@merge( buildDMRBed, "dmr_overlap.tsv.gz" )
+def computeDMROverlap( infiles, outfile ):
+    '''compute overlap between bed sets.'''
     
-#     to_cluster = True
+    to_cluster = True
 
-#     if os.path.exists(outfile): 
-#         # note: update does not work due to quoting
-#         os.rename( outfile, "orig." + outfile )
-#         options = "--update=orig.%s" % outfile
-#     else:
-#         options = ""
+    if os.path.exists(outfile): 
+        # note: update does not work due to quoting
+        os.rename( outfile, "orig." + outfile )
+        options = "--update=orig.%s" % outfile
+    else:
+        options = ""
     
-#     infiles = " ".join( infiles )
+    infiles = " ".join( infiles )
 
-#     # note: need to quote track names
-#     statement = '''
-#         python %(scriptsdir)s/diff_bed.py 
-#               --pattern-id=".*/(.*).dmr.bed.gz"
-#               --log=%(outfile)s.log 
-#               %(options)s %(infiles)s 
-#         | awk -v OFS="\\t" '!/^#/ { gsub( /-/,"_", $1); gsub(/-/,"_",$2); } {print}'
-#         | gzip
-#         > %(outfile)s
-#         '''
+    # note: need to quote track names
+    statement = '''
+        python %(scriptsdir)s/diff_bed.py 
+              --pattern-id=".*/(.*).dmr.bed.gz"
+              --log=%(outfile)s.log 
+              %(options)s %(infiles)s 
+        | awk -v OFS="\\t" '!/^#/ { gsub( /-/,"_", $1); gsub(/-/,"_",$2); } {print}'
+        | gzip
+        > %(outfile)s
+        '''
 
-#     P.run()
+    P.run()
 
-# #########################################################################
-# #########################################################################
-# #########################################################################
-# @transform( mergeDMRWindows, regex(  "(.*)\.(.*).merged.gz"), r"\1_\2.bed.gz" )
-# def buildMRBed( infile, outfile ):
-#     '''output bed6 file with methylated regions.
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( mergeDMRWindows, regex(  "(.*)\.(.*).merged.gz"), r"\1_\2.bed.gz" )
+def buildMRBed( infile, outfile ):
+    '''output bed6 file with methylated regions.
 
-#     All regions are output, even the insignificant ones.
+    All regions are output, even the insignificant ones.
 
-#     The score is the log fold change.
-#     '''
+    The score is the log fold change.
+    '''
     
-#     outf = IOTools.openFile( outfile, "w" )
-#     c = E.Counter()
-#     for row in csv.DictReader( IOTools.openFile( infile ),
-#                                dialect = "excel-tab" ):
-#         c.input += 1
+    outf = IOTools.openFile( outfile, "w" )
+    c = E.Counter()
+    for row in csv.DictReader( IOTools.openFile( infile ),
+                               dialect = "excel-tab" ):
+        c.input += 1
 
-#         contig, start, end = re.match("(.*):(\d+)-(\d+)", row["interval_id"] ).groups()
-#         c.output += 1
-#         outf.write( "\t".join( (contig, start, end, str(c.input), row["lfold"] ) ) + "\n" )
+        contig, start, end = re.match("(.*):(\d+)-(\d+)", row["interval_id"] ).groups()
+        c.output += 1
+        outf.write( "\t".join( (contig, start, end, str(c.input), row["lfold"] ) ) + "\n" )
         
-#     outf.close()
+    outf.close()
     
-#     E.info( "%s" % str(c) )
+    E.info( "%s" % str(c) )
 
-# #########################################################################
-# #########################################################################
-# #########################################################################
-# @follows( loadPicardDuplicateStats,
-#           loadPicardAlignmentStats,
-#           loadPicardGCStats,
-#           loadBAMStats )
-# def mapping(): pass
+@follows( loadDMRWindows, loadDMRStats,buildDMRBed, buildMRBed )
+def dmr(): pass
 
-# @follows( aggregateTiledReadCounts,
-#           loadDMRStats,
-#           buildDMRBed,
-#           computeDMROverlap)
-# def callDMRs(): pass
-
-# @follows( mapping, callDMRs) 
-# def full(): pass
+@follows( diff_windows, dmr) 
+def full(): pass
 
 ###################################################################
 ###################################################################
