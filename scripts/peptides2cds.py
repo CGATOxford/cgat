@@ -55,7 +55,7 @@ def AlignExhaustive( seq_wobble, seq_cds, seq_peptide, map_p2c, options, diag_wi
     """
 
     gop, gep = -1.0, -1.0
-    matrix = alignlib_lite.py_makeSubstitutionMatrixBackTranslation( 1, -10, 1, alignlib.getDefaultEncoder() )
+    matrix = alignlib_lite.py_makeSubstitutionMatrixBackTranslation( 1, -10, 1, alignlib_lite.py_getDefaultEncoder() )
     alignlib_lite.py_setDefaultSubstitutionMatrix( matrix )
 
     if seq_wobble.getLength() < 10000:
@@ -63,7 +63,7 @@ def AlignExhaustive( seq_wobble, seq_cds, seq_peptide, map_p2c, options, diag_wi
             options.stdlog.write( "# using full dynamic programing matrix.\n" )
             options.stdlog.flush()
         # do not penalize gaps at the end, because sometimes the last codon might be missing
-        alignator = alignlib_lite.py_makeAlignatorDPFull( alignlib.ALIGNMENT_GLOBAL, gop, gep, 1, 1 )
+        alignator = alignlib_lite.py_makeAlignatorDPFull( alignlib_lite.py_ALIGNMENT_GLOBAL, gop, gep, 1, 1 )
     else:
         diag_width = abs(seq_wobble.getLength() - seq_cds.getLength()) + 1
         if options.loglevel >= 6:
@@ -128,7 +128,7 @@ def AlignCodonBased( seq_wobble, seq_cds, seq_peptide, map_p2c, options,
     map_p2c.clear()
 
     gop, gep = -1.0, -1.0
-    matrix = alignlib_lite.py_makeSubstitutionMatrixBackTranslation( 1, -10, 1, alignlib.getDefaultEncoder() )
+    matrix = alignlib_lite.py_makeSubstitutionMatrixBackTranslation( 1, -10, 1, alignlib_lite.py_getDefaultEncoder() )
 
     pep_seq = seq_peptide.asString()
     cds_seq = seq_cds.asString()

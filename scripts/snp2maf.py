@@ -53,7 +53,7 @@ import alignlib_lite
 def alignIndels( all_alleles, colcounts, extend_by = 0 ):
     '''align all indel-regions.'''
 
-    aa = alignlib_lite.py_makeAlignatorDPFull( alignlib.ALIGNMENT_LOCAL, 0, 0 )     
+    aa = alignlib_lite.py_makeAlignatorDPFull( alignlib_lite.py_ALIGNMENT_LOCAL, 0, 0 )     
     alignator = alignlib_lite.py_makeMultipleAlignatorSimple( aa)
 
     ids = all_alleles.keys()

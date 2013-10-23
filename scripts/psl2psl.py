@@ -324,7 +324,7 @@ def pslMap( options ):
                     map_query = qval
                     if map_query:
                         tmp = alignlib_lite.py_makeAlignmentBlocks()                        
-                        alignlib_lite.py_copyAlignment( tmp, map_query2target, map_query, alignlib.RR )
+                        alignlib_lite.py_copyAlignment( tmp, map_query2target, map_query, alignlib_lite.py_RR )
                         if options.loglevel >= 5:
                             options.stdlog.write( "######## mapping query ###########\n" )
                             options.stdlog.write( "# %s\n" % str(alignlib_lite.py_AlignmentFormatEmissions( map_query2target ) ))
@@ -336,7 +336,7 @@ def pslMap( options ):
                     map_target = tval
                     if map_target:
                         new = alignlib_lite.py_makeAlignmentBlocks()
-                        alignlib_lite.py_copyAlignment( new, tmp, map_target, alignlib.CR )                        
+                        alignlib_lite.py_copyAlignment( new, tmp, map_target, alignlib_lite.py_CR )                        
                         if options.loglevel >= 5:
                             options.stdlog.write( "######## mapping target ###########\n" )
                             options.stdlog.write( "# before: %s\n" % str(alignlib_lite.py_AlignmentFormatEmissions( tmp ) ))

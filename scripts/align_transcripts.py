@@ -1231,7 +1231,7 @@ sequences will be aligned to the cds sequences. This produces better coordinates
                 
             if options.force_map:
                 map_old2new = alignlib_lite.py_makeAlignmentVector()
-                alignator = alignlib_lite.py_makeAlignatorDPFull( alignlib.ALIGNMENT_GLOBAL, -10.0, -1.0 )
+                alignator = alignlib_lite.py_makeAlignatorDPFull( alignlib_lite.py_ALIGNMENT_GLOBAL, -10.0, -1.0 )
                 s1 = alignlib_lite.py_makeSequence( sold )
                 s2 = alignlib_lite.py_makeSequence( snew )
                 alignator.align( map_old2new, s1, s2 )
@@ -1284,7 +1284,7 @@ sequences will be aligned to the cds sequences. This produces better coordinates
                 # map alignment pos to genome
                 map_c2g = map_cds2genome[key]
                 map_pos2genome = alignlib_lite.py_makeAlignmentBlocks()
-                alignlib_lite.py_combineAlignment( map_pos2genome, map_pos2cds, map_c2g, alignlib.CR )
+                alignlib_lite.py_combineAlignment( map_pos2genome, map_pos2cds, map_c2g, alignlib_lite.py_CR )
 
                 coords = []            
                 is_negative_strand, start = genome_starts[key]

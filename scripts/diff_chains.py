@@ -258,8 +258,8 @@ def compareChains( pairs1, pairs2 ):
             continue
 
         chain2 = pairs2[key1]
-        nsame = alignlib_lite.py_getAlignmentIdentity( chain1, chain2, alignlib.RR )
-        noverlap = alignlib_lite.py_getAlignmentOverlap( chain1, chain2, alignlib.RR )
+        nsame = alignlib_lite.py_getAlignmentIdentity( chain1, chain2, alignlib_lite.py_RR )
+        noverlap = alignlib_lite.py_getAlignmentOverlap( chain1, chain2, alignlib_lite.py_RR )
         ndifferent = noverlap - nsame
         nunique = ntotal - noverlap
 

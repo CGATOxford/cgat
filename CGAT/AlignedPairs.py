@@ -403,7 +403,7 @@ class AlignedPair( UnalignedPair ):
         elif method == "nw":
             seq1 = alignlib_lite.py_makeSequence( s1 )
             seq2 = alignlib_lite.py_makeSequence( s2 )
-            alignator = alignlib_lite.py_makeAlignatorDPFull( alignlib.ALIGNMENT_GLOBAL,
+            alignator = alignlib_lite.py_makeAlignatorDPFull( alignlib_lite.py_ALIGNMENT_GLOBAL,
                                                       gop=-12.0,
                                                       gep=-2.0 )
             alignator.align( map_a2b, seq1, seq2 )

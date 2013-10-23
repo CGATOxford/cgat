@@ -98,9 +98,9 @@ def main( argv = None ):
     alignator = alignlib_lite.py_makeAlignatorDPFull( mode,
                                               options.gop, options.gep )
 
-    alignlib_lite.py_setDefaultEncoder( alignlib.getEncoder( alignlib.Protein20) )
-    alignlib_lite.py_setDefaultLogOddor( alignlib.makeLogOddorDirichlet( 0.3 ) )
-    alignlib_lite.py_setDefaultRegularizor( alignlib.makeRegularizorDirichletPrecomputed() )
+    alignlib_lite.py_setDefaultEncoder( alignlib_lite.py_getEncoder( alignlib_lite.py_Protein20) )
+    alignlib_lite.py_setDefaultLogOddor( alignlib_lite.py_makeLogOddorDirichlet( 0.3 ) )
+    alignlib_lite.py_setDefaultRegularizor( alignlib_lite.py_makeRegularizorDirichletPrecomputed() )
 
     cprofile1 = alignlib_lite.py_makeProfile( cmali1 )
     cprofile2 = alignlib_lite.py_makeProfile( cmali2 )

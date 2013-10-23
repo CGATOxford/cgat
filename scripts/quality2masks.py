@@ -148,7 +148,7 @@ def main():
         # print quality_scores
 
         map_mali2genome = alignlib_lite.py_makeAlignmentVector()
-        alignlib_lite.py_combineAlignment( map_mali2genome, map_gene2mali, map_gene2genome, alignlib.RR )
+        alignlib_lite.py_combineAlignment( map_mali2genome, map_gene2mali, map_gene2genome, alignlib_lite.py_RR )
         # print str(alignlib_lite.py_AlignmentFormatEmissions( map_mali2genome))
 
         # shuffle quality scores, but only those that are aligned

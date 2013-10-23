@@ -277,7 +277,7 @@ def countEffectsOnTranscript( var_seq, ref_seq,
     var_pos = 0
 
     map_ref2var = alignlib_lite.py_makeAlignmentVector()
-    alignator = alignlib_lite.py_makeAlignatorDPFull( alignlib.ALIGNMENT_GLOBAL,
+    alignator = alignlib_lite.py_makeAlignatorDPFull( alignlib_lite.py_ALIGNMENT_GLOBAL,
                                               -10.0,
                                               -2.0 )
 

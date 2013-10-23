@@ -349,7 +349,7 @@ if __name__ == "__main__":
         else:
             mali2 = alignlib_lite.py_makeProfileFromMali( convertMali2Mali( tmap_mali ) )        
 
-        alignator = alignlib_lite.py_makeAlignatorDPFull( alignlib.ALIGNMENT_LOCAL, -10.0, -2.0 )
+        alignator = alignlib_lite.py_makeAlignatorDPFull( alignlib_lite.py_ALIGNMENT_LOCAL, -10.0, -2.0 )
         alignator.align( map_old2new, mali1, mali2 )
 
         consensus = tmap_mali.getConsensus()

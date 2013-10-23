@@ -73,7 +73,7 @@ if __name__ == '__main__':
             print globals()["__doc__"]
             sys.exit(0)
 
-    alignator = alignlib_lite.py_makeAlignatorDPFull( alignlib.ALIGNMENT_LOCAL, param_gop, param_gep )
+    alignator = alignlib_lite.py_makeAlignatorDPFull( alignlib_lite.py_ALIGNMENT_LOCAL, param_gop, param_gep )
     map_query2token = alignlib_lite.py_makeAlignmentVector()
     
     for line in sys.stdin:
