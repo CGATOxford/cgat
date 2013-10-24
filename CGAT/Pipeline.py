@@ -44,7 +44,12 @@ import ConfigParser
 import Database
 
 # talking to a cluster
-import drmaa
+try:
+    import drmaa
+    HAS_DRMAA = True
+except RuntimeError:
+    HAS_DRMAA = False
+
 # talking to mercurial
 import hgapi
 
