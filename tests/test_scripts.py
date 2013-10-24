@@ -108,6 +108,8 @@ def test_scripts():
 
     scriptdirs = glob.glob( "tests/*.py" )
 
+    scriptdirs = [ x for x in scriptdirs if os.path.isdir( x ) ]
+
     if os.path.exists( "tests/test_scripts.yaml" ):
         config = yaml.load( open( "tests/test_scripts.yaml" ) )
         if config != None:

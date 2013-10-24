@@ -1,19 +1,11 @@
 import os
 import re
 import sys
-
-from ruffus import *
+import collections
 
 import CGAT.Experiment as E
 import CGAT.Pipeline as P
 import CGAT.IOTools as IOTools
-import CGAT.GTF as GTF
-import CGAT.Stats as Stats
-
-try:
-    PARAMS = P.getParameters()
-except IOError:
-    pass
 
 #########################################################################
 #########################################################################
@@ -97,120 +89,78 @@ def aggregateWindowsReadCounts( infiles, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-def buildDMRStats( tables, method, outfile ):
+def buildDMRStats( infile, outfile, method ):
     '''build dmr summary statistics.
-    
-    Creates some diagnostic plots in
-
-    <exportdir>/<method> directory.
-
-    Tables should be labeled <tileset>_<design>_<method>.
-
     '''
+    results = collections.defaultdict( lambda : collections.defaultdict(int) )
+    status =  collections.defaultdict( lambda : collections.defaultdict(int) )
+    x = 0
+    for line in IOTools.iterate( IOTools.openFile( infile ) ):
+        key = (line.treatment_name, line.control_name )
+        r,s = results[key], status[key]
+        r["tested"] += 1
+        s[line.status] += 1
 
-    dbhandle = sqlite3.connect( PARAMS["database"] )
+        is_significant = line.significant == "1"
+        up = float(line.l2fold) > 0
+        down = float(line.l2fold) < 0
+        fold2up = float(line.l2fold) > 1
+        fold2down = float(line.l2fold) < -1
+        fold2 = fold2up or fold2down
 
-    def togeneset( tablename ):
-        return re.match("([^_]+)_", tablename ).groups()[0]
+        if up: r["up"] += 1
+        if down: r["down"] += 1
 
-    keys_status = "OK", "NOTEST", "FAIL", "NOCALL"
+        if is_significant:
+            r["significant"] += 1
+            if up: r["significant_up"] += 1
+            if down: r["significant_down"] += 1
+            if fold2: r["fold2"] += 1
+            if fold2up: r["l2fold_up"] += 1
+            if fold2down: r["l2fold_down"] += 1
+            
+    header1, header2 = set(), set()
+    for r in results.values(): header1.update( r.keys() )
+    for s in status.values(): header2.update( s.keys() )
+    
+    header = ["method", "treatment", "control" ]
+    header1 = list(header1)
+    header2 = list(header2)
 
     outf = IOTools.openFile( outfile, "w" )
-    outf.write( "\t".join( ("tileset", "design", "track1", "track2", "tested",
-                            "\t".join( [ "status_%s" % x for x in keys_status ] ),
-                            "significant",
-                            "up", "down",
-                            "twofold",
-                            "twofold_up", "twofold_down",
-                            ) ) + "\n" )
+    outf.write( "\t".join(header + header1 + header2) + "\n" )
 
-    all_tables = set(Database.getTables( dbhandle ))
-    outdir = os.path.join( PARAMS["exportdir"], "diff_methylation" )
+    for treatment,control in results.keys():
+        key = (treatment,control)
+        r = results[key]
+        s = status[key]
+        outf.write( "%s\t%s\t%s\t" % (method,treatment, control))
+        outf.write( "\t".join( [str(r[x]) for x in header1 ] ) + "\t" )
+        outf.write( "\t".join( [str(s[x]) for x in header2 ] ) + "\n" )
 
-    for tablename in tables:
 
-        prefix = P.snip( tablename, "_%s" % method )
-        tileset, design = prefix.split("_")
+        # ###########################################
+        # ###########################################
+        # ###########################################
+        # # plot length versus P-Value
+        # data = Database.executewait( dbhandle, 
+        #                              '''SELECT end - start, pvalue 
+        #                      FROM %(tablename)s
+        #                      WHERE significant'''% locals() ).fetchall()
 
-        def toDict( vals, l = 2 ):
-            return collections.defaultdict( int, [ (tuple( x[:l]), x[l]) for x in vals ] )
+        # # require at least 10 datapoints - otherwise smooth scatter fails
+        # if len(data) > 10:
+        #     data = zip(*data)
 
-        E.info( "collecting data from %s" % tablename )
-        
-        tested = toDict( Database.executewait( dbhandle,
-                                               """SELECT treatment_name, control_name, COUNT(*) FROM %(tablename)s 
-                                GROUP BY treatment_name,control_name""" % locals() ).fetchall() )
-        status = toDict( Database.executewait( dbhandle,
-                                               """SELECT treatment_name, control_name, status, COUNT(*) FROM %(tablename)s 
-                                GROUP BY treatment_name,control_name,status""" % locals() ).fetchall(), 3 )
-        signif = toDict( Database.executewait( dbhandle,
-                                               """SELECT treatment_name, control_name, COUNT(*) FROM %(tablename)s 
-                                WHERE significant
-                                GROUP BY treatment_name,control_name""" % locals() ).fetchall() )
-        fold2 = toDict( Database.executewait( dbhandle,
-                """SELECT treatment_name, control_name, COUNT(*) FROM %(tablename)s 
-                                WHERE (l2fold >= 1 or l2fold <= -1) AND significant
-                                GROUP BY treatment_name,control_name,significant""" % locals() ).fetchall() )
+        #     pngfile = "%(outdir)s/%(tileset)s_%(design)s_%(method)s_pvalue_vs_length.png" % locals()
+        #     R.png( pngfile )
+        #     R.smoothScatter( R.log10( ro.FloatVector(data[0]) ),
+        #                      R.log10( ro.FloatVector(data[1]) ),
+        #                      xlab = 'log10( length )',
+        #                      ylab = 'log10( pvalue )',
+        #                      log="x", pch=20, cex=.1 )
 
-        up = toDict( Database.executewait( dbhandle,
-                                                """SELECT treatment_name, control_name, COUNT(*) FROM %(tablename)s 
-                                WHERE l2fold > 0 AND significant
-                                GROUP BY treatment_name,control_name,significant""" % locals() ).fetchall() )
+        #     R['dev.off']()
 
-        down = toDict( Database.executewait( dbhandle,
-                                             """SELECT treatment_name, control_name, COUNT(*) FROM %(tablename)s 
-                                WHERE l2fold < 0 AND significant
-                                GROUP BY treatment_name,control_name,significant""" % locals() ).fetchall() )
-
-        fold2up = toDict( Database.executewait( dbhandle,
-                                           """SELECT treatment_name, control_name, COUNT(*) FROM %(tablename)s 
-                                WHERE l2fold > 1 AND significant
-                                GROUP BY treatment_name,control_name,significant""" % locals() ).fetchall() )
-
-        fold2down = toDict( Database.executewait( dbhandle,
-                                             """SELECT treatment_name, control_name, COUNT(*) FROM %(tablename)s 
-                                WHERE l2fold < -1 AND significant
-                                GROUP BY treatment_name,control_name,significant""" % locals() ).fetchall() )
-        
-        groups = tested.keys()
-
-        for treatment_name, control_name in groups:
-            k = (treatment_name,control_name)
-            outf.write( "\t".join(map(str, (
-                            tileset,
-                            design,
-                            treatment_name,
-                            control_name,
-                            tested[k],
-                            "\t".join( [ str(status[(treatment_name,control_name,x)]) for x in keys_status]),
-                            signif[(k)],
-                            up[k], down[k],
-                            fold2[k],
-                            fold2up[k], fold2down[k] ) ) ) + "\n" )
-                            
-
-        ###########################################
-        ###########################################
-        ###########################################
-        # plot length versus P-Value
-        data = Database.executewait( dbhandle, 
-                                     '''SELECT end - start, pvalue 
-                             FROM %(tablename)s
-                             WHERE significant'''% locals() ).fetchall()
-
-        # require at least 10 datapoints - otherwise smooth scatter fails
-        if len(data) > 10:
-            data = zip(*data)
-
-            pngfile = "%(outdir)s/%(tileset)s_%(design)s_%(method)s_pvalue_vs_length.png" % locals()
-            R.png( pngfile )
-            R.smoothScatter( R.log10( ro.FloatVector(data[0]) ),
-                             R.log10( ro.FloatVector(data[1]) ),
-                             xlab = 'log10( length )',
-                             ylab = 'log10( pvalue )',
-                             log="x", pch=20, cex=.1 )
-
-            R['dev.off']()
-
-    outf.close()
+#    outf.close()
 

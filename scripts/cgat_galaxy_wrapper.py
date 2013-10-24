@@ -170,5 +170,16 @@ def __main__():
                 dirname, basename = os.path.split(fn)
                 outf.write('''<li><a href="%s">%s</a></li>\n''' % (basename, basename))
                 
-if __name__=="__main__": __main__()
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
+
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
 

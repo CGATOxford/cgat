@@ -192,7 +192,14 @@ class BuilderRegion(Builder):
         self.mOutFile.write( "%s\t%s\t%i\t%i\t%i\t%i\n" % (self.mOutputId, contig, start, end, end - start, len(reads) ))
         self.mOutFile.flush()
 
-if __name__ == "__main__":
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: maq2assembly.py 2781 2009-09-10 11:33:14Z andreas $")
 
@@ -253,3 +260,7 @@ if __name__ == "__main__":
     options.stdlog.write("# ninput=%i, noutput=%i\n" % (ninput, noutput) )
 
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

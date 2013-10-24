@@ -194,7 +194,14 @@ def GetAdjustedBoundaries( id, exons ):
 
     return f, t
 
-if __name__ == '__main__':
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: links2fasta.py 2446 2009-01-27 16:32:35Z andreas $", usage = globals()["__doc__"] )
 
@@ -502,3 +509,7 @@ if __name__ == '__main__':
         options.stdlog.write("# ninput=%i, noutput=%i, nskipped=%i\n" % (ninput, noutput, nskipped) )
 
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

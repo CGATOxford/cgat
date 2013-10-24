@@ -50,7 +50,14 @@ param_multiple_alignment = None
 
 GAPCHARS=(".", "-")
 
-if __name__ == '__main__':
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
      
     try:
         optlist, args = getopt.getopt(sys.argv[1:],
@@ -129,4 +136,8 @@ if __name__ == '__main__':
 
 
 
+
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
 

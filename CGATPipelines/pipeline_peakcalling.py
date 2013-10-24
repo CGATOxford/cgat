@@ -595,7 +595,9 @@ def checkDataQuality( infile, outfile ):
 def loadDataQuality( infiles, outfile ):
     '''load data quality information.'''
 
-    P.concatenateAndLoad( infiles, outfile, regex_filename = "(.*).data_quality" )
+    P.concatenateAndLoad( infiles, outfile, 
+                          regex_filename = "(.*).data_quality",
+                          has_titles = False)
 
 ####################################################################
 @follows( normalizeBAM )
@@ -1145,8 +1147,8 @@ def loadSPPQualityMetrics( infiles, outfile ):
     '''load spp quality metrics.'''
     P.concatenateAndLoad( infiles, outfile,
                           regex_filename = "spp.dir/(.*).qual",
+                          has_titles = False,
                           header = "track,bamfile,mapped_reads,estFragLen,corr_estFragLen,phantomPeak,corr_phantomPeak,argmin_corr,min_corr,nsc,rsc,quality")
-    
 
 ######################################################################
 ######################################################################

@@ -211,7 +211,14 @@ def WriteEntry( query_token,
     return 1
 
 ##------------------------------------------------------------
-if __name__ == '__main__':
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: gpipe/assignments2pairs.py 2011 2008-07-04 10:40:51Z andreas $", usage = globals()["__doc__"] )
 
@@ -658,4 +665,8 @@ if __name__ == '__main__':
     print E.GetFooter()
     
     
+
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
 

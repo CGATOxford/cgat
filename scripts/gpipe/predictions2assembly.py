@@ -381,7 +381,14 @@ def GetContig( prediction ):
         return (prediction.mSbjctToken, global_reverse_sequences[ prediction.mSbjctToken ], True)        
                                        
 ##------------------------------------------------------------
-if __name__ == '__main__':
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     try:
         optlist, args = getopt.getopt(sys.argv[1:], param_short_options, param_long_options)
@@ -667,4 +674,8 @@ if __name__ == '__main__':
 
     print E.GetFooter()
     
+
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
 

@@ -51,7 +51,14 @@ import CGAT.Tree as Tree
 import CGAT.IOTools as IOTools
 import CGAT.WrapperPhylip as WrapperPhylip
 
-if __name__ == "__main__":
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: matrix2tree.py 2782 2009-09-10 11:40:29Z andreas $")
 
@@ -276,3 +283,7 @@ if __name__ == "__main__":
                 options.stdlog.write("# ninput=%i, nreference=%i, noutput=%i\n" % ( len(matrix)-1, nref, len(tree.get_terminals()) ) )
 
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

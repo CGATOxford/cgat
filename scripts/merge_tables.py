@@ -50,7 +50,14 @@ import numpy
 
 parser = E.OptionParser( version = "%prog version: $Id: merge_tables.py 2782 2009-09-10 11:40:29Z andreas $")
 
-if __name__ == "__main__":
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser.add_option("-t", "--table", dest="tables", type="string",
                       help="tables to merge.",
@@ -86,3 +93,7 @@ if __name__ == "__main__":
         print string.join( frags, "\t" )
     
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

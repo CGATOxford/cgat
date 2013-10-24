@@ -80,7 +80,14 @@ import CGAT.PredictionParser as PredictionParser
 import CGAT.Exons as Exons
 
 ##------------------------------------------------------------
-if __name__ == '__main__':
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: gpipe/compare_predictions2exons.py 2011 2008-07-04 10:40:51Z andreas $",
                                     usage = globals()["__doc__"] )
@@ -601,3 +608,7 @@ if __name__ == '__main__':
                                                                             nmissed_length,
                                                                             nempty_alignments) )
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

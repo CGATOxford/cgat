@@ -852,21 +852,23 @@ def mergeDMRWindows( infile, outfile ):
 @transform( mergeDMRWindows, suffix(".merged.gz"), ".load" )
 def loadDMRWindows( infile, outfile ):
      '''merge overlapping windows.'''
-     P.load( infile, outfile, options = "--quick" )
+     P.load( infile, outfile, 
+             options = "--quick" )
 
 #########################################################################
-@collate( loadDMRWindows, regex( "(\S+)[.](\S+).load" ), r"\2_stats.tsv" )
-def buildDMRStats( infiles, outfile ):
+@transform( mergeDMRWindows, suffix(".merged.gz"), ".stats" )
+def buildDMRStats( infile, outfile ):
     '''compute differential methylation stats.'''
-    tablenames = [P.toTable( x ) for x in infiles ] 
-    method = P.snip( outfile, "_stats.tsv" )
-    PipelineWindows.buildDMRStats( tablenames, method, outfile )
-
+    method = os.path.dirname(infile)
+    method = P.snip( method, ".dir")
+    PipelineWindows.buildDMRStats( infile, outfile, method=method )
+    
 #########################################################################
-@transform( buildDMRStats, suffix(".tsv"), ".load" )
-def loadDMRStats( infile, outfile ):
+@merge( buildDMRStats, "dmr_stats.load" )
+def loadDMRStats( infiles, outfile ):
     '''load DMR stats into table.'''
-    P.load( infile, outfile )
+    P.concatenateAndLoad( infiles, outfile,
+                          regex_filename = ".*\/(.*).tsv.stats")
 
 #########################################################################
 #########################################################################

@@ -102,7 +102,14 @@ def PrintValues( outfile, values,  options, prefix = "",titles = None):
         print "q3\t%s"     % (string.join( map(lambda v: options.value_format % scipy.stats.scoreatpercentile(v,per=75), values), "\t"))
 
 ##---------------------------------------------------------------------------------------------------------        
-if __name__ == '__main__':
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: data2stats.py 2782 2009-09-10 11:40:29Z andreas $")
 
@@ -311,4 +318,8 @@ if __name__ == '__main__':
 
 
 
+
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
 

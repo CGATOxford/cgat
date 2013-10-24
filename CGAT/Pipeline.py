@@ -441,13 +441,15 @@ def concatenateAndLoad( infiles,
                         regex_filename = None, 
                         header = None, 
                         cat = None, 
-                        titles = False, 
+                        has_titles = True, 
                         options = "" ):
     '''concatenate categorical tables and load into a database.
 
     Concatenation assumes that the header is the same in all files.
-    The first file will be taken in completion, headers
-    in other files will be removed.
+    The first file will be taken in completion, headers in other files 
+    will be removed.
+
+    If *has_titles* is False, the tables are assumed to have no titles.
     '''
     
     infiles = " ".join(infiles)
@@ -466,8 +468,7 @@ def concatenateAndLoad( infiles,
     if not cat:
         cat = "track"
         
-    if titles == False:
-        no_titles = "--no-titles"
+    if has_titles == False: no_titles = "--no-titles"
     else: no_titles = ""
 
     options = " ".join(options)

@@ -802,7 +802,14 @@ def iterator_filter_fasta( infile, query_fasta, sbjct_fasta, options ):
 
     E.info( "ninput=%i, noutput=%i, nerrors=%i" % (ninput, noutput,nerrors) )
 
-if __name__ == '__main__':
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: psl2psl.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"] )
 
@@ -944,3 +951,7 @@ if __name__ == '__main__':
         options.stdout.write( "%s\n" % str( psl ) )
 
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+
