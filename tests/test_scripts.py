@@ -50,9 +50,10 @@ def check_script( test_name, script, stdin, options, outputs, references, workin
     stdout = os.path.join( tmpdir, 'stdout' )
     if stdin: 
         if stdin.endswith( ".gz"):
-            stdin = '< <( zcat %s/%s)' % (os.path.abspath(workingdir), stdin)
+            # zcat on osX requires .Z suffix
+            stdin = 'gunzip < %s/%s |' % (os.path.abspath(workingdir), stdin)
         else:
-            stdin = '< %s/%s' % (os.path.abspath(workingdir), stdin)
+            stdin = 'cat %s/%s |' % (os.path.abspath(workingdir), stdin)
     else: stdin = ""
 
     if options:
@@ -64,10 +65,11 @@ def check_script( test_name, script, stdin, options, outputs, references, workin
         options = ""
 
     # use /bin/bash in order to enable "<( )" syntax in shells 
-    statement = ( "/bin/bash -c 'python %(script)s "
-                  " %(options)s"
-                  " %(stdin)s"
+    statement = ( "/bin/bash -c '%(stdin)s python %(script)s "
+                  " %(options)s" 
                   " > %(stdout)s'" ) % locals()
+
+    print statement
 
     retval = subprocess.call( statement, 
                               shell = True,
