@@ -1620,7 +1620,12 @@ def update_report():
 
 
 if __name__== "__main__":
-    sys.exit( P.main(sys.argv) )
+    if sys.argv[1] == "plot":
+        pipeline_printout_graph("test.pdf", "pdf",[full], no_key_legend=True,
+                                size = (4,4),
+                                user_colour_scheme = {"colour_scheme_index" :1})
+    else:
+        sys.exit( P.main(sys.argv) )
     
 
 
