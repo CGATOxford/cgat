@@ -2799,7 +2799,14 @@ def processGeneTrees( gene_nexus, options ):
     return
     
 ##------------------------------------------------------------------------------------------
-if __name__ == "__main__":
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: optic/analyze_orthology_multiple.py 2781 2009-09-10 11:33:14Z andreas $")
 
@@ -3608,4 +3615,8 @@ local-dups: print locally duplicated genes in each cluster. Local duplications a
             printSVGSpeciesTrees( species_nexus.trees, total_counts_nodes, options )
                 
     E.Stop()
+
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
 

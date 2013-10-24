@@ -127,7 +127,14 @@ def PrintNodes( nodes, labels, colours):
     
 
 ##---------------------------------------------------------------------------------------------------------
-if __name__ == "__main__":
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     #--------------------------------------------------------
     # command line parsing options
@@ -415,4 +422,8 @@ if __name__ == "__main__":
 
 
 
+
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
 

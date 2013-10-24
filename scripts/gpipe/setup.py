@@ -102,7 +102,14 @@ def AddOptions( outfile,  infile, source_directory, options ):
     outfile.write("\n")
     
 
-if __name__ == "__main__":
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: gpipe/setup.py 2781 2009-09-10 11:33:14Z andreas $")
 
@@ -235,4 +242,8 @@ if __name__ == "__main__":
     print "Working directory is %s.\n" % (os.path.realpath(target_directory))
 
     E.Stop()
+
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
 

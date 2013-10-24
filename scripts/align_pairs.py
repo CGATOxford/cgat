@@ -104,8 +104,9 @@ def getFile( section, options ):
             return open( options.output_filename_pattern, "w" )
     return options.stdout
         
-##------------------------------------------------------------
-if __name__ == '__main__':
+def main( argv = None ):
+    
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: align_pairs.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"] )
 
@@ -249,5 +250,6 @@ CATEGORY\tMETHOD\tTOKEN1\tID1\tTOTAL1\tLEN1\tTOKEN2\tID2\tTOTAL2\tLEN2\tNALIGNED
                                                                             nerrors,
                                                                             ntoken_pairs, npairs ) )
     E.Stop()
-    sys.exit(0)
 
+if __name__ == '__main__':
+    sys.exit(main( sys.argv ) )

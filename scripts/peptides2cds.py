@@ -402,7 +402,14 @@ def getMapPeptide2Cds( peptide_sequence, cds_sequence, options ):
     return map_p2c
     
         
-if __name__ == "__main__":
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: peptides2cds.py 2890 2010-04-07 08:58:54Z andreas $")
 
@@ -523,3 +530,7 @@ if __name__ == "__main__":
 
 
             
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

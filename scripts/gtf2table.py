@@ -122,6 +122,9 @@ read-coverage
 read-extension
 
 read-counts
+   count number of reads overlapping a gene or transcript. Counts
+   uniquely by read name and counts duplicate and non-duplicate (reads)
+   separately.
 
 splice
    output splicing summary of gene

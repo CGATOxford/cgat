@@ -75,7 +75,14 @@ import scipy.stats
 parser = E.OptionParser( version = "%prog version: $Id: optic/analyze_cluster_expansion.py 2781 2009-09-10 11:33:14Z andreas $")
 
 
-if __name__ == "__main__":
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser.add_option("-m", "--map", dest="map", type="string",
                       help="filename of map with ids to components."  )
@@ -179,3 +186,7 @@ if __name__ == "__main__":
     
     print "# ncomponents=%i" % (len(map_component2id))
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

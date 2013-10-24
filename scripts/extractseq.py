@@ -44,7 +44,14 @@ import math
 import CGAT.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
 
-if __name__ == "__main__":
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: extractseq.py 2861 2010-02-23 17:36:32Z andreas $")
 
@@ -161,3 +168,7 @@ if __name__ == "__main__":
     E.info("ninput=%i, noutput=%i, nskipped=%i" % (ninput, noutput, nskipped))
 
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

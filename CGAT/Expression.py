@@ -1682,4 +1682,4 @@ def dumpTagData( filename_tags, filename_design, outfile ):
                       sep='\t',
                       quote=FALSE)''' % locals() )
     
-    
+

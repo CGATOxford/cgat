@@ -17,6 +17,16 @@ to codon sequences.
 The script is aware of gene structures will correctly align
 exons in sequence. 
 
+If there are multiple transcripts for a gene, concatenate the
+exons into one pseudo-transcript and submit that to the multiple
+alignment in order to avoid incompatible exons to be aligned.
+After alignment, the pseudo-transcripts are split into separate
+parts again.
+
+If the peptide sequence contains at least one character ``U``, the
+sequence is assumed to be selonoprotein. 
+
+
 Usage
 -----
 
@@ -40,21 +50,6 @@ import string
 import re
 import optparse
 import math
-
-USAGE="""python %s [OPTIONS] < transcripts > filtered
-
-Align peptide/DNA sequences.
-
-If there are multiple transcripts for a gene, concatenate the
-exons into one pseudo-transcript and submit that to the multiple
-alignment in order to avoid incompatible exons to be aligned.
-After alignment, the pseudo-transcripts are split into separate
-parts again.
-
-If the peptide sequence contains at least one character ``U``, the
-sequence is assumed to be selonoprotein. 
-
-""" % sys.argv[0]
 
 import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
@@ -504,9 +499,11 @@ def writeToFile( mali, section, options, is_aligned = True ):
         
     if is_aligned and not mali.checkLength():
         raise "mali in file %s has entries of different lengths" % (options.output_filename_pattern % section)
-        
+
 ##------------------------------------------------------------
-if __name__ == '__main__':
+def main( argv = None ):
+    
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: align_transcripts.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
@@ -1336,4 +1333,6 @@ sequences will be aligned to the cds sequences. This produces better coordinates
     E.Stop()
 
     
+if __name__ == "__main__":
+    sys.exit(main( sys.argv ) )
 

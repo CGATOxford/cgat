@@ -479,7 +479,14 @@ def checkCodon( codon, options ):
     return is_ok, is_aligned, is_all_gaps
     
 ##------------------------------------------------------------
-if __name__ == '__main__':
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
 
     parser = E.OptionParser( version = "%prog version: $Id: optic/prune_multiple_alignment.py 2654 2009-05-06 13:51:22Z andreas $", usage = globals()["__doc__"])
@@ -851,3 +858,7 @@ if __name__ == '__main__':
     E.Stop()
     
     
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

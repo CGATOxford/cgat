@@ -59,7 +59,14 @@ chr8    gpipe   CDS     202417740       202417805       59.0909090909   -       
 
 parser = E.OptionParser( version = "%prog version: $Id: gff_ensembl2gbrowser.py 2781 2009-09-10 11:33:14Z andreas $")
 
-if __name__ == "__main__":
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser.add_option( "-s", "--source-id", dest="source_id", type="string",
                        help="source_id to use." )
@@ -143,3 +150,7 @@ if __name__ == "__main__":
         options.stdout.write(str(n) + "\n")
         
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

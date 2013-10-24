@@ -44,7 +44,14 @@ import CGAT.Experiment as E
 import pgdb
 import CGAT.IOTools as IOTools
 
-if __name__  == "__main__":
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: compare_histograms.py 2782 2009-09-10 11:40:29Z andreas $")
 
@@ -108,3 +115,7 @@ if __name__  == "__main__":
                                        options.number_format % d2) )
                             
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+
