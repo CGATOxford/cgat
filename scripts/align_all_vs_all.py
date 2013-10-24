@@ -48,11 +48,12 @@ import CGAT.Experiment as E
 import alignlib_lite
 import CGAT.FastaIterator as FastaIterator
 
-""" program $Id: align_all_vs_all.py 2782 2009-09-10 11:40:29Z andreas $
-"""
-if __name__ == "__main__":
+def main( argv = None ):
+    
+    if argv == None: argv = sys.argv
 
-    parser = E.OptionParser( version = "%prog version: $Id: align_all_vs_all.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: align_all_vs_all.py 2782 2009-09-10 11:40:29Z andreas $",
+                             usage = globals()["__doc__"] )
 
     parser.add_option("-s", "--sequences", dest="filename_sequences", type="string",
                       help="input file with sequences"  )
@@ -108,3 +109,6 @@ if __name__ == "__main__":
             
 
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit(main( sys.argv ) )
