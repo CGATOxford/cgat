@@ -5,7 +5,6 @@ version:
     references: []
     options: --version
 
-<<<<<<< HEAD
 sort_gene:
     stdin: hg19.chr19.gtf.gz
     outputs: [stdout]
@@ -17,19 +16,6 @@ sort_contig_gene:
     outputs: [stdout]
     references: [sorted_contig_gene.gtf.gz]
     options: --sort=contig+gene
-=======
-merged_exons:
-    stdin: hg19.chr19.gtf.gz
-    outputs: [stdout]
-    references: [merge_exons.gtf.gz]
-    options: --merge-exons
-
-renumber:
-    stdin: hg19.chr19.gtf.gz
-    outputs: [stdout]
-    references: [renumber.gtf.gz]
-    options: --renumber-transcripts=%05i --renumber-genes=%05i
->>>>>>> e31337f2a2004328f0aa642925a1580d7569e2b5
 
 sorted_transcript:
     stdin: hg19.chr19.gtf.gz
@@ -37,7 +23,6 @@ sorted_transcript:
     references: [sorted_transcript.gtf.gz]
     options: --sort=transcript
 
-<<<<<<< HEAD
 sort_position:
     stdin: hg19.chr19.gtf.gz
     outputs: [stdout]
@@ -245,7 +230,5 @@ set_protein_to_transcript:
 
 
 
-=======
->>>>>>> e31337f2a2004328f0aa642925a1580d7569e2b5
 
 

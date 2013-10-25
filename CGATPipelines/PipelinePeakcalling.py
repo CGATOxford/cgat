@@ -1070,7 +1070,7 @@ def bedGraphToBigwig( infile, contigsfile, outfile, remove = True ):
     if not os.path.exists( infile ):
         raise OSError( "bedgraph file %s does not exist" % infile )
 
-    if not os.path.exists( contigfile ):
+    if not os.path.exists( contigsfile ):
         raise OSError( "contig size file %s does not exist" % infile )
     
     statement = '''
@@ -1129,10 +1129,10 @@ def runMACS2( infile, outfile, controlfile = None ):
     # convert normalized bed graph to bigwig
     # saves 75% of space
     # compressing only saves 60%   
-    bedGraphToBigwig( outfile + "_treat_pileup.bgd", 
+    bedGraphToBigwig( outfile + "_treat_pileup.bdg", 
                       os.path.join(PARAMS["annotations_dir"], "contigs.tsv"),
                       outfile + "_treat_pileup.bw" )
-    bedGraphToBigwig( outfile + "_control_lambda.bgd", 
+    bedGraphToBigwig( outfile + "_control_lambda.bdg", 
                       os.path.join(PARAMS["annotations_dir"], "contigs.tsv"),
                       outfile + "_control_lambda.bw" )
 
@@ -1422,8 +1422,13 @@ def loadMACS2( infile, outfile, bamfile, controlfile = None ):
         P.touch( outfile )
         return
 
+    # jethro os.mkdir can't create nested directories
+    # exportdir = os.path.join(PARAMS['exportdir'], 'macs2' )
     exportdir = os.path.join(PARAMS['exportdir'], 'macs2' )
-    if not os.path.exists( exportdir ):
+    if not os.path.exists( PARAMS[ 'exportdir' ] ):
+        os.mkdir( PARAMS[ 'exportdir' ] )
+        os.mkdir( exportdir )
+    elif not os.path.exists( exportdir ):
         os.mkdir( exportdir )
 
     ###############################################################
