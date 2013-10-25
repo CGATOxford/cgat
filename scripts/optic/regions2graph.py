@@ -544,7 +544,14 @@ def ExchangeStreams( old_predictions, new_predictions ):
     new_predictions.open( mode = "w" )
 
 ##------------------------------------------------------------
-if __name__ == '__main__':
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: optic/regions2graph.py 2754 2009-09-04 16:50:22Z andreas $", usage = globals()["__doc__"] )
 
@@ -1021,3 +1028,7 @@ if __name__ == '__main__':
               (nread, ninput, njoined, nclusters, region_id, neliminated_suboptimal, neliminated_overlap, noutput, nfiltered ))
 
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

@@ -45,7 +45,14 @@ import csv
 import CGAT.CSV as CSV
 import CGAT.IOTools as IOTools
 
-if __name__ == '__main__':
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: vcfstats_sqlite.py 0001 2011-04-13 davids $", usage = globals()["__doc__"])
 
@@ -205,4 +212,8 @@ if __name__ == '__main__':
 
     E.Stop()
     sys.exit(0)
+
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
 

@@ -82,7 +82,7 @@ def main( argv = None ):
                              usage = globals()["__doc__"] )
 
     parser.add_option("-s", "--correct-gap-shift", dest="correct_shift", action="store_true",
-                      help="correct gap length shifts in alignments. Requires alignlib. "
+                      help="correct gap length shifts in alignments. Requires alignlib_lite.py_ "
                       "[%default]")
     parser.add_option("-1", "--pattern1", dest="pattern1", type="string",
                       help="pattern to extract identifier from in identifiers1. "
@@ -108,9 +108,9 @@ def main( argv = None ):
 
     if options.correct_shift:
         try:
-            import alignlib
+            import alignlib_lite
         except ImportError:
-            raise ImportError("option --correct-shift requires alignlib, but alignlib not found" )
+            raise ImportError("option --correct-shift requires alignlib_lite.py_ but alignlib not found" )
 
     seqs1 = Genomics.ReadPeptideSequences( IOTools.openFile(args[0], "r") )
     seqs2 = Genomics.ReadPeptideSequences( IOTools.openFile(args[1], "r") )    
@@ -191,7 +191,7 @@ def main( argv = None ):
             ## correct for different gap lengths
             if options.correct_shift:
                         
-                map_a2b = alignlib.makeAlignmentVector()
+                map_a2b = alignlib_lite.py_makeAlignmentVector()
 
                 a, b = 0, 0
                 keep = False
@@ -218,7 +218,7 @@ def main( argv = None ):
                 else:
                     keep = True
                     nfixed += 1
-                    f = alignlib.AlignmentFormatEmissions( map_a2b)
+                    f = alignlib_lite.py_AlignmentFormatEmissions( map_a2b)
                     print "fix\t%s\t%s" % (k, str(f))
 
                 if not keep:

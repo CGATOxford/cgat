@@ -83,9 +83,14 @@ class Target:
             lines.append( "" )
             lines.append( "  " + "\n  ".join( self.mComment ) )
         return "\n".join(lines)
-            
 
-if __name__  == "__main__":
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: cgat_make2help.py 2781 2009-09-10 11:33:14Z andreas $")
 
@@ -230,3 +235,6 @@ if __name__  == "__main__":
         options.stdout.write("    %s\n" % makefile )
         
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )

@@ -89,9 +89,9 @@ import multiprocessing
 
 try:
     import drmaa
-    HASDRMAA = True
-except ImportError:
-    HASDRMAA = False
+    HAS_DRMAA = True
+except (ImportError, RuntimeError):
+    HAS_DRMAA = False
 
 
 def chunk_iterator_lines( infile, args, prefix, use_header = False ):

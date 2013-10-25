@@ -32,7 +32,7 @@ PredictionParser.py - Parser for exonerate/genewise output
 import os, sys, string, re, getopt, tempfile, copy
 
 import Genomics, GTF
-try: import alignlib
+try: import alignlib_lite
 except ImportError: pass
 
 ## number of nucleotides to ignore for counting stop-codons
@@ -106,7 +106,7 @@ class PredictionParserEntry :
         self.mSbjctAli = ""
         
         if self.mExpand:
-            self.mMapPeptide2Translation = alignlib.makeAlignmentVector()
+            self.mMapPeptide2Translation = alignlib_lite.py_makeAlignmentVector()
             self.mMapPeptide2Genome = []
         else:
             self.mMapPeptide2Translation = None
@@ -171,8 +171,8 @@ class PredictionParserEntry :
         new_entry.mSbjctAli = self.mSbjctAli 
 
         if self.mExpand:
-            new_entry.mMapPeptide2Translation = alignlib.makeAlignmentVector()
-            alignlib.copyAlignment( new_entry.mMapPeptide2Translation, self.mMapPeptide2Translation)
+            new_entry.mMapPeptide2Translation = alignlib_lite.py_makeAlignmentVector()
+            alignlib_lite.py_copyAlignment( new_entry.mMapPeptide2Translation, self.mMapPeptide2Translation)
             new_entry.mMapPeptide2Genome = Genomics.String2Alignment( new_entry.mAlignmentString) 
         else:
             new_entry.mMapPeptide2Translation = self.mMapPeptide2Translation = None
@@ -280,7 +280,7 @@ class PredictionParserEntry :
 
         nself  = self.mMapPeptide2Translation.getLength() - self.mMapPeptide2Translation.getNumGaps()
         nother = other.mMapPeptide2Translation.getLength() - other.mMapPeptide2Translation.getNumGaps()
-        alignlib.addAlignment2Alignment( self.mMapPeptide2Translation, other.mMapPeptide2Translation )
+        alignlib_lite.py_addAlignment2Alignment( self.mMapPeptide2Translation, other.mMapPeptide2Translation )
 
         self.mQueryFrom = self.mMapPeptide2Translation.getRowFrom()
         self.mQueryTo = self.mMapPeptide2Translation.getRowTo()
@@ -329,7 +329,7 @@ class PredictionParserEntry :
             
         if self.mExpand:
             if self.mMapPeptide2Translation.getLength() > 0:
-                f = alignlib.AlignmentFormatEmissions( self.mMapPeptide2Translation )
+                f = alignlib_lite.py_AlignmentFormatEmissions( self.mMapPeptide2Translation )
                 row_ali, col_ali = f.mRowAlignment, f.mColAlignment
                 self.mQueryFrom = self.mMapPeptide2Translation.getRowFrom()
                 self.mQueryTo = self.mMapPeptide2Translation.getRowTo()
@@ -447,10 +447,10 @@ class PredictionParserEntry :
             sys.exit(0)
             
         if self.mExpand:
-            self.mMapPeptide2Translation = alignlib.makeAlignmentVector()
+            self.mMapPeptide2Translation = alignlib_lite.py_makeAlignmentVector()
 
             if self.mQueryAli != "" and self.mSbjctAli != "":
-                f = alignlib.AlignmentFormatEmissions()
+                f = alignlib_lite.py_AlignmentFormatEmissions()
                 f.mRowFrom = self.mQueryFrom
                 f.mColFrom = self.SbjctFrom
                 f.mRowAlignment = self.mQueryAli
@@ -554,10 +554,10 @@ class PredictionParserEntry :
                    self.mNFrameShifts, self.mNAssembled))
 
         if self.mExpand:        
-            self.mMapPeptide2Translation = alignlib.makeAlignmentVector()
+            self.mMapPeptide2Translation = alignlib_lite.py_makeAlignmentVector()
 
             if self.mQueryAli != "" and self.mSbjctAli != "":
-                f = alignlib.AlignmentFormatEmissions()
+                f = alignlib_lite.py_AlignmentFormatEmissions()
                 f.mRowFrom = self.mQueryFrom
                 f.mColFrom = self.mSbjctFrom
                 f.mRowAlignment = self.mQueryAli
@@ -858,13 +858,13 @@ class PredictionParserGenewise( PredictionParser ):
             entry.mSbjctStrand = self.mSbjctStrand
 
             if peptide_sequence:
-                row_seq = alignlib.makeSequence( peptide_sequence )
-                col_seq = alignlib.makeSequence( entry.mTranslation )
-                alignlib.rescoreAlignment( entry.mMapPeptide2Translation, row_seq, col_seq )
+                row_seq = alignlib_lite.py_makeSequence( peptide_sequence )
+                col_seq = alignlib_lite.py_makeSequence( entry.mTranslation )
+                alignlib_lite.py_rescoreAlignment( entry.mMapPeptide2Translation, row_seq, col_seq )
         
                 entry.mQueryLength = len(peptide_sequence)            
-                entry.mPercentIdentity = alignlib.calculatePercentIdentity( entry.mMapPeptide2Translation, row_seq, col_seq ) * 100
-                entry.mPercentSimilarity = alignlib.calculatePercentSimilarity( entry.mMapPeptide2Translation ) * 100
+                entry.mPercentIdentity = alignlib_lite.py_calculatePercentIdentity( entry.mMapPeptide2Translation, row_seq, col_seq ) * 100
+                entry.mPercentSimilarity = alignlib_lite.py_calculatePercentSimilarity( entry.mMapPeptide2Translation ) * 100
                 entry.mQueryCoverage = ( entry.mMapPeptide2Translation.getRowTo() - \
                                          entry.mMapPeptide2Translation.getRowFrom() + 1 ) * 100 /\
                                          entry.mQueryLength
@@ -896,9 +896,9 @@ class PredictionParserGenewise( PredictionParser ):
                        entry.mMapPeptide2Translation.getRowFrom() )
                 print str(entry)
                 print string.join(lines,"")
-                row_seq = alignlib.makeSequence( peptide_sequence )
-                col_seq = alignlib.makeSequence( entry.mTranslation )
-                print alignlib.AlignmentFormatExplicit( entry.mMapPeptide2Translation, row_seq, col_seq )
+                row_seq = alignlib_lite.py_makeSequence( peptide_sequence )
+                col_seq = alignlib_lite.py_makeSequence( entry.mTranslation )
+                print alignlib_lite.py_AlignmentFormatExplicit( entry.mMapPeptide2Translation, row_seq, col_seq )
                 sys.exit(1)
             if entry.mQueryTo != entry.mMapPeptide2Translation.getRowTo() and \
                    entry.mMapPeptide2Genome[-1][0] != "G":
@@ -908,9 +908,9 @@ class PredictionParserGenewise( PredictionParser ):
                    entry.mMapPeptide2Translation.getRowTo() )
                 print str(entry)                
                 print string.join(lines,"")
-                row_seq = alignlib.makeSequence( peptide_sequence )
-                col_seq = alignlib.makeSequence( entry.mTranslation )
-                print alignlib.AlignmentFormatExplicit( entry.mMapPeptide2Translation, row_seq, col_seq )
+                row_seq = alignlib_lite.py_makeSequence( peptide_sequence )
+                col_seq = alignlib_lite.py_makeSequence( entry.mTranslation )
+                print alignlib_lite.py_AlignmentFormatExplicit( entry.mMapPeptide2Translation, row_seq, col_seq )
                 sys.exit(1)
 
             (entry.mNIntrons, entry.mNFrameShifts, entry.mNGaps, entry.mNSplits, entry.mNStopCodons, disruptions) = \
@@ -1011,7 +1011,7 @@ class PredictionParserGenewise( PredictionParser ):
                             ( "END", "END") : None,
                             }
         
-        raise "might be broken with new alignlib - check"
+        raise "might be broken with new alignlib_lite.py_- check"
 
         ## note: all the numbers including the ranges can be negative (-1 for first position) !
         rx = re.compile( "^(\S+)\s+\[(\S+):(\S+)\s+\"(\S+)\"\s+(\S+)\],\[(\S+):(\S+)\s+\"(\S+)\"\s+(\S+)\]" )
@@ -1175,7 +1175,7 @@ class PredictionParserGenewise( PredictionParser ):
                     sbjct_increment = 0
 
             if code and query_increment and sbjct_increment:
-                alignlib.addDiagonal2Alignment(  self.mMatches[n].mMapPeptide2Translation,
+                alignlib_lite.py_addDiagonal2Alignment(  self.mMatches[n].mMapPeptide2Translation,
                                                  query_peptide_from, query_peptide_from + query_increment,
                                                  sbjct_peptide_from - query_peptide_from
                                                  )
@@ -1278,7 +1278,7 @@ def Blocks2Alignment( query_block_starts,
     sbjct_offset = sbjct_block_starts[0]
     current_phase = 0
 
-    map_peptide2translation = alignlib.makeAlignmentVector()
+    map_peptide2translation = alignlib_lite.py_makeAlignmentVector()
 
     query_peptide_pos = query_block_starts[0]
     sbjct_peptide_pos = 0
@@ -1291,7 +1291,7 @@ def Blocks2Alignment( query_block_starts,
         lintron = sbjct_block_starts[x+1] - ( sbjct_block_starts[x] + lsbjct * 3 )
         
         ## do peptide2translation alignment
-        alignlib.addDiagonal2Alignment( map_peptide2translation,
+        alignlib_lite.py_addDiagonal2Alignment( map_peptide2translation,
                                         query_peptide_pos,
                                         query_peptide_pos + lquery,
                                         sbjct_peptide_pos - query_peptide_pos )
@@ -1315,7 +1315,7 @@ def Blocks2Alignment( query_block_starts,
 
     lquery = block_sizes[-1]
     lsbjct = block_sizes[-1]
-    alignlib.addDiagonal2Alignment( map_peptide2translation,
+    alignlib_lite.py_addDiagonal2Alignment( map_peptide2translation,
                                     query_peptide_pos,
                                     query_peptide_pos + lquery,
                                     sbjct_peptide_pos - query_peptide_pos )
@@ -1346,7 +1346,7 @@ def Blocks2AlignmentCDNA( query_block_starts,
     query_pos = 0
     current_phase = 0
 
-    map_peptide2translation = alignlib.makeAlignmentVector()
+    map_peptide2translation = alignlib_lite.py_makeAlignmentVector()
 
     query_peptide_pos = query_block_starts[0]/3
     sbjct_peptide_pos = 0
@@ -1434,7 +1434,7 @@ def Blocks2AlignmentCDNA( query_block_starts,
             phase = new_phase
         
         # do peptide2translation alignment
-        alignlib.addDiagonal2Alignment( map_peptide2translation,
+        alignlib_lite.py_addDiagonal2Alignment( map_peptide2translation,
                                         query_peptide_pos,
                                         query_peptide_pos + naminos,
                                         sbjct_peptide_pos - query_peptide_pos)
@@ -1453,7 +1453,7 @@ def Blocks2AlignmentCDNA( query_block_starts,
     
     naminos = (nbases - phase) / 3
 
-    alignlib.addDiagonal2Alignment( map_peptide2translation,
+    alignlib_lite.py_addDiagonal2Alignment( map_peptide2translation,
                                     query_peptide_pos,
                                     query_peptide_pos + naminos,
                                     sbjct_peptide_pos - query_peptide_pos )
@@ -1642,12 +1642,12 @@ class PredictionParserBlatCDNA (PredictionParser):
 ##                 p = query_block_starts[x] + block_sizes[x]
                 
 ##             peptide_sequence = string.join( peptide_sequence, "")
-##             row_seq = alignlib.makeSequence( peptide_sequence )
-##             col_seq = alignlib.makeSequence( entry.mTranslation )
-##             alignlib.rescoreAlignment( entry.mMapPeptide2Translation, row_seq, col_seq )
+##             row_seq = alignlib_lite.py_makeSequence( peptide_sequence )
+##             col_seq = alignlib_lite.py_makeSequence( entry.mTranslation )
+##             alignlib_lite.py_rescoreAlignment( entry.mMapPeptide2Translation, row_seq, col_seq )
         
-##             entry.mPercentIdentity = alignlib.calculatePercentIdentity( entry.mMapPeptide2Translation, row_seq, col_seq ) * 100
-##             entry.mPercentSimilarity = alignlib.calculatePercentSimilarity( entry.mMapPeptide2Translation ) * 100
+##             entry.mPercentIdentity = alignlib_lite.py_calculatePercentIdentity( entry.mMapPeptide2Translation, row_seq, col_seq ) * 100
+##             entry.mPercentSimilarity = alignlib_lite.py_calculatePercentSimilarity( entry.mMapPeptide2Translation ) * 100
         
             matches.append( entry )
 
@@ -1779,12 +1779,12 @@ class PredictionParserBlatTrans (PredictionParser):
                 p = query_block_starts[x] + block_sizes[x]
                 
             peptide_sequence = string.join( peptide_sequence, "")
-            row_seq = alignlib.makeSequence( peptide_sequence )
-            col_seq = alignlib.makeSequence( entry.mTranslation )
-            alignlib.rescoreAlignment( entry.mMapPeptide2Translation, row_seq, col_seq )
+            row_seq = alignlib_lite.py_makeSequence( peptide_sequence )
+            col_seq = alignlib_lite.py_makeSequence( entry.mTranslation )
+            alignlib_lite.py_rescoreAlignment( entry.mMapPeptide2Translation, row_seq, col_seq )
         
-            entry.mPercentIdentity = alignlib.calculatePercentIdentity( entry.mMapPeptide2Translation, row_seq, col_seq ) * 100
-            entry.mPercentSimilarity = alignlib.calculatePercentSimilarity( entry.mMapPeptide2Translation ) * 100
+            entry.mPercentIdentity = alignlib_lite.py_calculatePercentIdentity( entry.mMapPeptide2Translation, row_seq, col_seq ) * 100
+            entry.mPercentSimilarity = alignlib_lite.py_calculatePercentSimilarity( entry.mMapPeptide2Translation ) * 100
             
             matches.append( entry )
 

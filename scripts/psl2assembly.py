@@ -70,7 +70,7 @@ import CGAT.Experiment as E
 import CGAT.Histogram as Histogram
 import CGAT.Blat as Blat
 import CGAT.IndexedFasta as IndexedFasta
-import alignlib
+import alignlib_lite
 import CGAT.Mali as Mali
 import CGAT.Stats as Stats
 import CGAT.Genomics as Genomics
@@ -186,19 +186,19 @@ class Builder(Processor):
             self.options.stdlog.write("# pileup started\n" )
             self.options.stdlog.flush()
 
-        mali = alignlib.makeMultAlignment()
+        mali = alignlib_lite.py_makeMultAlignment()
 
         genome = self.mGenomeFasta.getSequence( sbjct_id, "+", sbjct_start, sbjct_end )        
 
         if map_genome2transcript:
-            mapped = alignlib.makeAlignmentBlocks()
+            mapped = alignlib_lite.py_makeAlignmentBlocks()
             genome = "".join( [ genome[x] for x in range(len(genome)) if map_genome2transcript.mapRowToCol(x) != -1 ] )
 
         identifiers = ["%s:%s" % (self.mOutputId, "genome" ) ]
-        ali = alignlib.makeAlignmentBlocks()
+        ali = alignlib_lite.py_makeAlignmentBlocks()
         lgenome = sbjct_end - sbjct_start
         ali.addDiagonal( 0, lgenome, 0 )
-        seqs = alignlib.StringVector()
+        seqs = alignlib_lite.py_StringVector()
         seqs.append( genome )
         mali.add( ali )
 
@@ -212,19 +212,19 @@ class Builder(Processor):
             
             if self.options.loglevel >= 4:
 
-                a = str(alignlib.AlignmentFormatExplicit( match.mMapTarget2Query,
-                                                          alignlib.makeSequence( genome ),
-                                                          alignlib.makeSequence( query ) ))
+                a = str(alignlib_lite.py_AlignmentFormatExplicit( match.mMapTarget2Query,
+                                                          alignlib_lite.py_makeSequence( genome ),
+                                                          alignlib_lite.py_makeSequence( query ) ))
 
-                # self.options.stdlog.write( str( alignlib.AlignmentFormatExplicit( match.mMapTarget2Query, 
-#                                                                                  alignlib.makeSequence( genome ),
-#                                                                                  alignlib.makeSequence( query ) ) ) + "\n" )
+                # self.options.stdlog.write( str( alignlib_lite.py_AlignmentFormatExplicit( match.mMapTarget2Query, 
+#                                                                                  alignlib_lite.py_makeSequence( genome ),
+#                                                                                  alignlib_lite.py_makeSequence( query ) ) ) + "\n" )
             
             if map_genome2transcript:
-                alignlib.combineAlignment( mapped, 
+                alignlib_lite.py_combineAlignment( mapped, 
                                            map_genome2transcript,
                                            match.mMapTarget2Query,
-                                           alignlib.RR )
+                                           alignlib_lite.py_RR )
                                             
                 mali.add( mapped )
             else:
@@ -355,7 +355,7 @@ class BuilderTranscribedLocus(Builder):
         residues = list( residues )
         residues.sort()
         
-        map_transcript2genome = alignlib.makeAlignmentBlocks()
+        map_transcript2genome = alignlib_lite.py_makeAlignmentBlocks()
 
         sequence = []
 
@@ -568,7 +568,7 @@ class BuilderTranscriptSpliced(BuilderTranscribedLocus):
                                 is_intron[y] = 1
                             self.mFixedOverruns += 1
                 
-        map_transcript2genome = alignlib.makeAlignmentBlocks()
+        map_transcript2genome = alignlib_lite.py_makeAlignmentBlocks()
 
         sequence = []
 
@@ -858,7 +858,7 @@ class BuilderConsensus(Builder):
         lgenome = sbjct_end - sbjct_start
         is_exon, is_intron, is_terminal = self.getReadCounts( matches, lgenome )
         
-        map_genome2transcript = alignlib.makeAlignmentVector()
+        map_genome2transcript = alignlib_lite.py_makeAlignmentVector()
 
         c = 0
         for x in range(lgenome):
@@ -867,7 +867,7 @@ class BuilderConsensus(Builder):
                 c+=1
                 
         if options.loglevel >= 3:
-            options.stdlog.write( "# %s\n" % str(alignlib.AlignmentFormatEmissions( map_genome2transcript)) )
+            options.stdlog.write( "# %s\n" % str(alignlib_lite.py_AlignmentFormatEmissions( map_genome2transcript)) )
             options.stdlog.flush()
 
         mali, identifiers, seqs = self.buildPileUp( sbjct_id, sbjct_start, sbjct_end, matches,
@@ -1278,10 +1278,10 @@ class FilterExonExtenders(Filter):
         new_matches_without_introns = []
         for match_without_introns in matches_without_introns:
             for match_with_introns in matches_with_introns:
-                d = alignlib.getAlignmentShortestDistance( \
+                d = alignlib_lite.py_getAlignmentShortestDistance( \
                     match_without_introns.mMapTarget2Query, 
                     match_with_introns.mMapTarget2Query, 
-                    alignlib.RR )
+                    alignlib_lite.py_RR )
 
                 if d > 0: continue
 
@@ -1293,23 +1293,23 @@ class FilterExonExtenders(Filter):
                         continue
 
                     # check overlap with this match
-                    intron_map = alignlib.makeAlignmentBlocks()
+                    intron_map = alignlib_lite.py_makeAlignmentBlocks()
                     intron_map.addDiagonal( intron_start - sbjct_start, 
                                             intron_end - sbjct_start, 
                                             0 )
 
-                    d = alignlib.getAlignmentShortestDistance( \
+                    d = alignlib_lite.py_getAlignmentShortestDistance( \
                         match_without_introns.mMapTarget2Query, 
                         intron_map,
-                        alignlib.RR )
+                        alignlib_lite.py_RR )
 
                     if d > 0: continue
                     intron_sequence = self.mGenomeFasta.getSequence( sbjct_id, "+", intron_start, intron_end )
                     intron_type, prime5, prime3 = Genomics.GetIntronType( intron_sequence, both_strands = True )
                     
-                    overlap = alignlib.getAlignmentOverlap( match_without_introns.mMapTarget2Query, 
+                    overlap = alignlib_lite.py_getAlignmentOverlap( match_without_introns.mMapTarget2Query, 
                                                             intron_map,
-                                                            alignlib.RR )
+                                                            alignlib_lite.py_RR )
 
                     if intron_type != "unknown" and overlap > self.mMinLengthExonExtender:
                         
@@ -1516,10 +1516,10 @@ class FilterDuplicates(Filter):
                 ly = my.mQueryLength
 
                 # make sure they overlap
-                overlap = alignlib.getAlignmentOverlap( \
+                overlap = alignlib_lite.py_getAlignmentOverlap( \
                     mx.mMapTarget2Query, 
                     my.mMapTarget2Query, 
-                    alignlib.RR )
+                    alignlib_lite.py_RR )
 
                 if overlap < self.mMinAlignmentOverlap: continue
 
@@ -1577,7 +1577,14 @@ def readMapId2Coverage( infile ):
 
     return map_id2coverage
 
-if __name__ == '__main__':
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: psl2assembly.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"] )
 
@@ -1940,3 +1947,7 @@ if __name__ == '__main__':
                                   n_pre_filtered_reads, n_post_filtered_reads))
 
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

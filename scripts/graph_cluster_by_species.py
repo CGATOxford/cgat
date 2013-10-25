@@ -376,7 +376,14 @@ def clusterByReciprocity( links, map_transcript2id, options ):
     return components, map_synonyms
 
 ##-------------------------------------------------------------------------------
-if __name__ == "__main__":
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: graph_cluster_by_species.py 2782 2009-09-10 11:40:29Z andreas $")
 
@@ -493,3 +500,7 @@ if __name__ == "__main__":
         options.stdlog.write( "# final component sizes: %s\n" % ",".join(map( lambda x: str(len(x)), components)))
 
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

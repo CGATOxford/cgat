@@ -42,7 +42,13 @@ import tempfile
 import CGAT.Experiment as E
 import csv
 
-if __name__ == "__main__":
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: csv_rename.py 2782 2009-09-10 11:40:29Z andreas $")
 
@@ -67,14 +73,14 @@ if __name__ == "__main__":
         mapper[a.strip()] = b.strip()
     
     while 1:
-        line = sys.stdin.readline()
+        line = options.stdin.readline()
         
         if not line:
             E.Stop()
             sys.exit(0)
         
         if line[0] == "#": 
-            sys.stdout.write( line )
+            options.stdout.write( line )
             continue
         
         break
@@ -90,9 +96,9 @@ if __name__ == "__main__":
     
     options.stdout.write( "\t".join( header ) + "\n" )
     nlines = 0
-    for line in sys.stdin:
+    for line in options.stdin:
         nlines += 1
-        sys.stdout.write( line )
+        options.stdout.write( line )
             
     if options.loglevel >= 1:
         ninput = len(header)
@@ -100,3 +106,7 @@ if __name__ == "__main__":
         options.stdout.write( "# ninput=%i, noutput=%i, nreplaced=%i, nlines=%i\n" % (ninput,noutput,nreplaced,nlines) )
 
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

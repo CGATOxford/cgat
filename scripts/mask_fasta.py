@@ -60,7 +60,14 @@ def maskSequence( sequence, regions, mask_char = "N" ):
     return v.tostring(), nmasked, errors
 
 
-if __name__ == '__main__':
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
 
     parser = E.OptionParser( version = "%prog version: $Id: mask_fasta.py 2782 2009-09-10 11:40:29Z andreas $")
@@ -194,3 +201,7 @@ if __name__ == '__main__':
         options.stdlog.write( "# nkeys=%i, nwritten=%i, nmasked=%i, nerrors=%i\n" % (total_keys, total_written, total_masked, nerrors) )
 
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

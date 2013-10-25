@@ -17,6 +17,16 @@ to codon sequences.
 The script is aware of gene structures will correctly align
 exons in sequence. 
 
+If there are multiple transcripts for a gene, concatenate the
+exons into one pseudo-transcript and submit that to the multiple
+alignment in order to avoid incompatible exons to be aligned.
+After alignment, the pseudo-transcripts are split into separate
+parts again.
+
+If the peptide sequence contains at least one character ``U``, the
+sequence is assumed to be selonoprotein. 
+
+
 Usage
 -----
 
@@ -41,21 +51,6 @@ import re
 import optparse
 import math
 
-USAGE="""python %s [OPTIONS] < transcripts > filtered
-
-Align peptide/DNA sequences.
-
-If there are multiple transcripts for a gene, concatenate the
-exons into one pseudo-transcript and submit that to the multiple
-alignment in order to avoid incompatible exons to be aligned.
-After alignment, the pseudo-transcripts are split into separate
-parts again.
-
-If the peptide sequence contains at least one character ``U``, the
-sequence is assumed to be selonoprotein. 
-
-""" % sys.argv[0]
-
 import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.Mali as Mali
@@ -63,7 +58,7 @@ import CGAT.Exons as Exons
 import CGAT.WrapperMuscle as WrapperMuscle
 import CGAT.Intervals as Intervals
 from peptides2cds import getMapPeptide2Cds
-import alignlib
+import alignlib_lite
 import CGAT.GTF as GTF
 import CGAT.IOTools as IOTools
 
@@ -450,7 +445,7 @@ def buildFragments( exons, input, pseudogenes, options, coordinate_factor=3,
                                 options.stdlog.flush()
                             
                             # build map of consensus cds to peptide cds
-                            cons_map_p2c = alignlib.makeAlignmentVector()
+                            cons_map_p2c = alignlib_lite.py_makeAlignmentVector()
                             this_cds = segment.mCds[c]
                             try:
                                 cons_map_p2c = getMapPeptide2Cds( pep_consensus,
@@ -504,9 +499,11 @@ def writeToFile( mali, section, options, is_aligned = True ):
         
     if is_aligned and not mali.checkLength():
         raise "mali in file %s has entries of different lengths" % (options.output_filename_pattern % section)
-        
+
 ##------------------------------------------------------------
-if __name__ == '__main__':
+def main( argv = None ):
+    
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: align_transcripts.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
@@ -681,7 +678,7 @@ sequences will be aligned to the cds sequences. This produces better coordinates
             map_peptide2cds[x] = map_p2c
 
             if options.loglevel >= 3:
-                f = alignlib.AlignmentFormatEmissions( map_p2c )
+                f = alignlib_lite.py_AlignmentFormatEmissions( map_p2c )
                 options.stdlog.write("# p2c: " + "\t".join( map(str, (x, str(f),
                                                                       len(input[x]), len(cds_sequences[x])) ) )+"\n")
             
@@ -795,7 +792,7 @@ sequences will be aligned to the cds sequences. This produces better coordinates
                 genome_start = ee[0].mGenomeFrom
                 genome_starts[key] = (is_negative_strand, genome_start)
 
-                map_c2g = alignlib.makeAlignmentBlocks()
+                map_c2g = alignlib_lite.py_makeAlignmentBlocks()
 
                 for e in ee:
                     # map boundaries
@@ -809,7 +806,7 @@ sequences will be aligned to the cds sequences. This produces better coordinates
                                     (key, len(input[key]),
                                      e.mPeptideFrom, peptide_from,
                                      e.mPeptideTo, peptide_to))
-                        E.debug("%s" %str(alignlib.AlignmentFormatEmissions( map_p2c )) )
+                        E.debug("%s" %str(alignlib_lite.py_AlignmentFormatEmissions( map_p2c )) )
                         nunmappable += 1
                         continue
 
@@ -1230,10 +1227,10 @@ sequences will be aligned to the cds sequences. This produces better coordinates
                 nwarnings_sequence += 1
                 
             if options.force_map:
-                map_old2new = alignlib.makeAlignmentVector()
-                alignator = alignlib.makeAlignatorDPFull( alignlib.ALIGNMENT_GLOBAL, -10.0, -1.0 )
-                s1 = alignlib.makeSequence( sold )
-                s2 = alignlib.makeSequence( snew )
+                map_old2new = alignlib_lite.py_makeAlignmentVector()
+                alignator = alignlib_lite.py_makeAlignatorDPFull( alignlib_lite.py_ALIGNMENT_GLOBAL, -10.0, -1.0 )
+                s1 = alignlib_lite.py_makeSequence( sold )
+                s2 = alignlib_lite.py_makeSequence( snew )
                 alignator.align( map_old2new, s1, s2 )
 
                 val.threadSequence( snew, map_old2new )
@@ -1283,8 +1280,8 @@ sequences will be aligned to the cds sequences. This produces better coordinates
                 #################################
                 # map alignment pos to genome
                 map_c2g = map_cds2genome[key]
-                map_pos2genome = alignlib.makeAlignmentBlocks()
-                alignlib.combineAlignment( map_pos2genome, map_pos2cds, map_c2g, alignlib.CR )
+                map_pos2genome = alignlib_lite.py_makeAlignmentBlocks()
+                alignlib_lite.py_combineAlignment( map_pos2genome, map_pos2cds, map_c2g, alignlib_lite.py_CR )
 
                 coords = []            
                 is_negative_strand, start = genome_starts[key]
@@ -1305,7 +1302,7 @@ sequences will be aligned to the cds sequences. This produces better coordinates
                 map_pos2cds.switchRowCol()
                 map_cds2pos = map_pos2cds
 
-                alignatum = alignlib.makeAlignatum( cds_sequences[key] )
+                alignatum = alignlib_lite.py_makeAlignatum( cds_sequences[key] )
 
                 alignatum.mapOnAlignment( map_cds2pos, len(p) * 3 )
                 s = alignatum.getString()
@@ -1336,4 +1333,6 @@ sequences will be aligned to the cds sequences. This produces better coordinates
     E.Stop()
 
     
+if __name__ == "__main__":
+    sys.exit(main( sys.argv ) )
 

@@ -79,7 +79,14 @@ import CGAT.IndexedFasta as IndexedFasta
 import alignlib
 
 ##------------------------------------------------------------
-if __name__ == "__main__":
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: gpipe/prediction2pairs.py 2031 2008-07-15 09:19:05Z andreas $", usage = globals()["__doc__"])
 
@@ -208,3 +215,7 @@ if __name__ == "__main__":
         options.stdlog.write("# ninput=%i, noutput=%i, nsanity=%i, nlength=%i, n3=%i\n" % (ninput, noutput, nsanity, nlength, n3) )
                                   
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

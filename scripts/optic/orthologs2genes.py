@@ -188,7 +188,14 @@ def Write( old_transcripts, map_transcript2location, fix, options ):
         options.stdout.write( "\n".join(map(str,new_transcripts)) + "\n")
     
     
-if __name__  == "__main__":
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: optic/orthologs2genes.py 2889 2010-04-07 08:57:57Z andreas $")
     
@@ -294,4 +301,8 @@ if __name__  == "__main__":
     E.info( "ninput=%i, noutput=%i, nmissed=%i, skipped=%i" % (ninput, noutput, nmissed, nskipped) )
     E.Stop()
 
+
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
 

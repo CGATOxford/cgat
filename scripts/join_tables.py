@@ -67,7 +67,14 @@ def GetData( f ):
     
     return line[:-1].split("\t")
         
-if __name__ == "__main__":
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: join_tables.py 2782 2009-09-10 11:40:29Z andreas $")
 
@@ -162,3 +169,7 @@ if __name__ == "__main__":
             f.close()
 
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

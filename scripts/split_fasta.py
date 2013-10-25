@@ -129,7 +129,14 @@ class FilesChunks(Files):
         return self.mFilename
         
             
-if __name__ == "__main__":
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: split_fasta.py 1714 2007-12-11 16:51:12Z andreas $")
     
@@ -234,3 +241,7 @@ if __name__ == "__main__":
         print "# input=%i, output=%i, ndeleted=%i" % (ninput, noutput, ndeleted)
         
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

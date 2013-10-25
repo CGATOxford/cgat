@@ -111,6 +111,8 @@ path:
 +--------------------+-------------------+------------------------------------------------+
 |bedtools            |>=2.17.0           |BED interval analysis suite                     |
 +--------------------+-------------------+------------------------------------------------+
+|bwa                 |>=0.5.9            |Short read alignment algorithm                  |
++--------------------+-------------------+------------------------------------------------+
 |bowtie              |>=0.12.7           |Short read alignment algorithm                  |
 +--------------------+-------------------+------------------------------------------------+
 |bowtie2             |>=2.0.0            |Short read alignment algorithm                  |
@@ -118,6 +120,8 @@ path:
 |blastn              |>=2.2.25           |Simlilarity searching algorithm (nucleotides)   |
 +--------------------+-------------------+------------------------------------------------+
 |blastp              |>=2.2.25           |Simlilarity searching algorithm (proteins)      |
++--------------------+-------------------+------------------------------------------------+
+|rpsblast            |>=2.2.25           |Simlilarity searching algorithm (profiles)      |
 +--------------------+-------------------+------------------------------------------------+
 
 
@@ -205,6 +209,7 @@ ASSEMBLERS = P.asList( PARAMS["assemblers"] )
 MAPPER = PARAMS["coverage_mapper"]
 BOWTIE = MAPPER == "bowtie"
 BOWTIE2 = MAPPER == "bowtie2"
+BWA = MAPPER == "bwa"
 
 ###################################################################
 ###################################################################
@@ -220,7 +225,7 @@ def connect():
 ###################################################################
 ###################################################################
 ###################################################################
-# genome assembly
+# Should reads be pooled
 ###################################################################
 ###################################################################
 ###################################################################
@@ -228,8 +233,38 @@ SEQUENCEFILES = ("*.fasta", "*.fasta.gz", "*.fasta.1.gz"
                  , "*.fastq","*.fastq.gz", "*.fastq.1.gz")
 SEQUENCEFILES_REGEX = regex(r"(\S+).(fasta$|fasta.gz|fasta.1.gz|fastq$|fastq.gz|fastq.1.gz)")
  
-###################################################################                                                                                                                                                                          
-###################################################################                                                                                                                                                                          
+
+def pool_out(infiles):
+    '''
+    return outfile name dependent on
+    input pairedness
+    '''
+    out = {"separate": "1",
+                    False: ""}
+    inf = infiles[0]
+    paired = PipelineMetagenomeAssembly.PairedData().checkPairs(inf)
+    if paired:
+        paired = paired[0]
+    format = PipelineMetagenomeAssembly.PairedData().getFormat(inf)
+    outname = "agg-agg-agg.%s" % format
+    return outname
+
+############################################################
+@active_if(PARAMS["pool_reads"])
+@merge(SEQUENCEFILES
+       , pool_out([x for x in glob.glob("*R*.fast*") if not x.endswith(".2.gz") and not x.endswith(".2")])) # bit of a hack
+def poolReadsAcrossConditions(infiles, outfile):
+    '''
+    pool reads across conditions
+    '''
+    statement = PipelineMetagenomeAssembly.pool_reads(infiles, outfile)
+    P.run()
+
+###################################################################
+###################################################################
+###################################################################
+# Taxonomic profiling
+###################################################################
 ###################################################################                                                                                                                                                                          
 ## load number of reads                                                                                                                                                                                                                      
 ###################################################################                                                                                                                                                                          
@@ -247,6 +282,7 @@ def countReads( infile, outfile ):
 def loadReadCounts( infiles, outfile ):
     '''load read counts into database.'''
 
+    to_cluster = False
     outf = P.getTempFile()
     outf.write( "track\ttotal_reads\n")
     for infile in infiles:
@@ -255,14 +291,46 @@ def loadReadCounts( infiles, outfile ):
         nreads = int( lines[0][:-1].split("\t")[1])
         outf.write( "%s\t%i\n" % (track,nreads))
     outf.close()
+    inname = outf.name
 
-    P.load( outf.name, outfile )
+    tablename = P.toTable(outfile)
+    statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s --log=%(outfile)s.log 
+                  < %(inname)s > %(outfile)s'''
+    P.run()
     os.unlink(outf.name)
 
 ###################################################################                                                                                                                                                                          
 ###################################################################                                                                                                                                                                          
 ###################################################################                                                                                                                                                                          
 ## preprocess reads for metaphlan and IDBA
+###################################################################                                                                                                                                                                          
+@active_if("idba" in ASSEMBLERS and PARAMS["pool_reads"])
+@transform(poolReadsAcrossConditions, regex("(\S+)\.fastq\.(\S+)gz"), r"\1.fa")
+def preprocessIdba(infile, outfile):
+    '''
+    preprocess pooled reads for IDBA
+    '''
+    # check for second read in the pair
+    if infile.endswith(".fastq.gz"):
+        E.info("converting fastq file to fasta file")
+        outf = open(outfile, "w")
+        for fastq in Fastq.iterate(IOTools.openFile(infile)):
+            outf.write("%s\n%s\n" % (">" + fastq.identifier, fastq.seq))
+        outf.close()
+    elif infile.endswith(".1.gz"):
+        read2 = P.snip(infile, ".1.gz") + ".2.gz"
+        assert os.path.exists(read2), "file does not exist %s" % read2
+    
+        statement = '''python %(scriptsdir)s/fastqs2fasta.py 
+                   -a %(infile)s 
+                   -b %(read2)s 
+                   --log=%(infile)s.log 
+                   > %(outfile)s'''
+        P.run()
+
+
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
 ###################################################################                                                                                                                                                                          
 @transform(SEQUENCEFILES, SEQUENCEFILES_REGEX, r"\1.fa")
 def preprocessReads(infile, outfile):
@@ -291,11 +359,516 @@ def preprocessReads(infile, outfile):
 ###################################################################                                                                                                                                                                          
 ###################################################################                                                                                                                                                                          
 ###################################################################                                                                                                                                                                          
+## annotate metagenomic reads with metaphlan
+###################################################################                                                                                                                                                                          
+@follows(mkdir("metaphlan.dir"))
+@transform(preprocessReads
+           , regex("(\S+).fa")
+            , r"metaphlan.dir/\1.readmap")
+def buildMetaphlanReadmap(infile, outfile):
+    '''
+    metaphlan is a program used in metagenomics. It assigns
+    reads to clades based on specific genetic markers via 
+    blastn searching
+    '''
+    to_cluster = True
+
+    # at present the pipeline will take a set of files
+    # and compute the abundances of different taxonomic groups
+    # based on ALL reads i.e. paired data are combined into
+    # a single file for analysis
+    if PARAMS["metaphlan_executable"] == "bowtie2":
+        assert os.path.exists(PARAMS["metaphlan_db"] + ".1.bt2"), "missing file %s: Are you sure you have the correct database for bowtie2?" % PARAMS["metaphlan_db"] + ".1.bt2"
+        method = "--bowtie2db"
+    elif PARAMS["metaphlan_executable"] == "blast":
+        assert os.path.exists(PARAMS["metaphlan_db"] + "nin"), "missing file %s: Are you sure you have the correct database for blast?" % PARAMS["metaphlan_db"] + "nin"
+        method = "--blastdb"
+    statement = PipelineMetagenomeAssembly.Metaphlan().build(infile, method="read_map")
+    P.run()
+
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+@transform(buildMetaphlanReadmap, suffix(".readmap"), ".readmap.load")
+def loadMetaphlanReadmaps(infile, outfile):
+    '''
+    load the metaphlan read maps
+    '''
+    P.load(infile,outfile)
+
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+@merge(loadMetaphlanReadmaps, "metaphlan.dir/taxonomic.counts")
+def countMetaphlanTaxonomicGroups(infiles, outfile):
+    '''
+    count the total number of species that
+    were found by metaphlan
+    '''
+    outf = open(outfile, "w")
+    outf.write("track\ttaxon_level\tcount\n")
+    taxons = ["_order", "class", "family", "genus", "kingdom", "phylum", "species"]
+    dbh = connect()
+    cc = dbh.cursor()
+    for infile in infiles:
+        table = P.toTable(infile)
+        track = P.snip(table, "_readmap")
+        for taxon in taxons:
+            count = cc.execute("""SELECT COUNT(DISTINCT %s) FROM %s""" % (taxon, table)).fetchone()[0]
+            outf.write("\t".join([track, taxon, str(count)]) + "\n")
+    outf.close()
+
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+@follows(mkdir("metaphlan.dir"))
+@transform(preprocessReads
+           , regex("(\S+).fa")
+           , r"metaphlan.dir/\1.relab")
+def buildMetaphlanRelativeAbundance(infile, outfile):
+    '''
+    metaphlan is a program used in metagenomics. It assigns
+    reads to clades based on specific genetic markers via 
+    blastn searching
+    '''
+    to_cluster = True
+    # at present the pipeline will take a set of files
+    # and compute the abundances of different taxonomic groups
+    # based on ALL reads i.e. paired data are combined into
+    # a single file for analysis
+    if PARAMS["metaphlan_executable"] == "bowtie2":
+        assert os.path.exists(PARAMS["metaphlan_db"] + ".1.bt2"), "missing file %s: Are you sure you have the correct database for bowtie2?" % PARAMS["metaphlan_db"] + ".1.bt2"
+        method = "--bowtie2db"
+    elif PARAMS["metaphlan_executable"] == "blast":
+        assert os.path.exists(PARAMS["metaphlan_db"] + "nin"), "missing file %s: Are you sure you have the correct database for bowtie2?" % PARAMS["metaphlan_db"] + "nin"
+        method = "--blastdb"
+
+    statement = PipelineMetagenomeAssembly.Metaphlan().build(infile, method="rel_ab")
+    P.run()
+
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+@transform(buildMetaphlanRelativeAbundance, suffix(".relab"), ".relab.load")
+def loadMetaphlanRelativeAbundances(infile, outfile):
+    '''
+    load the metaphlan relative abundances
+    '''
+    P.load(infile,outfile)
+
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+@merge(loadMetaphlanRelativeAbundances, "metaphlan.dir/taxonomic.abundances")
+def buildMetaphlanTaxonomicAbundances(infiles, outfile):
+    '''
+    build a file that combines taxonomic abundances 
+    from each sample
+    '''
+    dbh = connect()
+    cc = dbh.cursor()
+    outf = open(outfile, "w")
+    outf.write("track\ttaxon_level\ttaxon\tabundance\tidx\n")
+    for infile in infiles:
+        table = P.toTable(infile)
+        track = P.snip(table, "_relab")
+        for data in cc.execute("""SELECT taxon_level, taxon, rel_abundance FROM %s""" % table).fetchall():
+            # remove unassigned species at this point
+            idx = track.split("_")[1]
+            if data[1].find("unclassified") != -1: continue
+            outf.write("\t".join([track, data[0], data[1], str(data[2]), idx]) + "\n")
+    outf.close()
+
+#########################################
+# taxonomic classification targets
+#########################################
+@follows(loadMetaphlanRelativeAbundances
+         , buildMetaphlanTaxonomicAbundances
+         , countMetaphlanTaxonomicGroups
+         , loadMetaphlanReadmaps)
+def metaphlan():
+    pass
+
+###################################################################
+###################################################################
+###################################################################
+# Once we have an idea of the species that are in our samples we
+# would like to align all of our reads to those genomes to assess
+# the expected number of novel species i.e. reads that don't map
+# to anything that is predicted to be present
+###################################################################
+###################################################################
+###################################################################
+@follows(mkdir("known_genomes.dir"))
+@transform(buildMetaphlanRelativeAbundance
+           , regex("(\S+)/(\S+).relab")
+           , r"known_genomes.dir/\2.species")
+def buildPresentSpeciesList(infile, outfile):
+    '''
+    build files with the list of species that are present
+    in each sample
+    '''
+    to_cluster = True
+    statement = '''cat %(infile)s | python %(scriptsdir)s/metaphlan2species.py --log=%(outfile)s.log > %(outfile)s'''
+    P.run()
+
+###################################################################
+###################################################################
+###################################################################
+@merge(buildPresentSpeciesList, "known_genomes.dir/species_present.tsv")
+def buildUnionOfPresentSpecies(infiles, outfile):
+    '''
+    build a union set of present species for mapping reads to 
+    genomes
+    '''
+    species_set = set()
+    for infile in infiles:
+        for line in open(infile).readlines():
+            species = line[:-1]
+            if species not in species_set:
+                species_set.add(species)
+    outf = open(outfile, "w")
+    for species in species_set:
+        outf.write("%s\n" % species)
+
+
+###################################################################
+###################################################################
+###################################################################
+@transform(buildUnionOfPresentSpecies
+          , suffix(".tsv")
+          , ".fa.gz")
+def buildPresentSpeciesMultiFasta(infile, outfile):
+    '''
+    build a multi fasta file for alignment purposes
+    '''
+    genomes=PARAMS["known_species_genomesdir"]
+    statement = '''python %(scriptsdir)s/species2multifasta.py
+                   --level=genus
+                   --genomes=%(genomes)s
+                   --species=%(infile)s
+                   --log=%(outfile)s.log
+                   | gzip
+                   > %(outfile)s'''
+    P.run()
+
+###################################################################
+###################################################################
+###################################################################
+@transform(buildPresentSpeciesMultiFasta, suffix(".fa.gz"), ".fa.load")
+def loadGenomesAnalysed(infile, outfile):
+    '''
+    load the species that go into the mapping analysis
+    '''
+    to_cluster = False
+    tmp = P.getTempFilename()
+    statement = '''zcat %(infile)s | grep ">" | sed 's/>//g' | sed 's/|/ /g' > %(tmp)s'''
+    P.run()
+
+    tablename = P.toTable(outfile)
+    statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s --log=%(outfile)s.log
+                   < %(tmp)s > %(outfile)s; rm -rf %(tmp)s'''
+    
+    P.run()
+
+###################################################################
+###################################################################
+###################################################################
+index_suffix = {"bowtie":".ebwt"
+          , "bowtie2":".bt2"
+          , "bwa":".bwt"}
+
+###################################################################
+###################################################################
+###################################################################
+@transform(buildPresentSpeciesMultiFasta
+           , suffix(".gz")
+           , ".gz%s" % index_suffix[PARAMS["known_species_aligner"]])
+def buildIndexOnPresentSpecies(infile, outfile):
+    '''
+    build index for the known species genomes
+    '''
+    if outfile.endswith(".bwt"):
+        statement = '''bwa index %(infile)s >& %(outfile)s.log'''
+    elif outfile.endswith(".bt2"):
+        statement = '''bowtie build -f %(infile)s >& %(outfile)s.log'''
+    elif outfile.endswith(".ebwt"):
+        statement = '''bowtie build -f %(infile)s >& %(outfile)s.log'''
+    P.run()
+
+###################################################################
+###################################################################
+###################################################################
+@follows(buildIndexOnPresentSpecies)
+@transform(SEQUENCEFILES
+           , SEQUENCEFILES_REGEX
+           , add_inputs(buildPresentSpeciesMultiFasta)
+           , r"known_genomes.dir/\1.bam")
+def mapReadsAgainstKnownSpecies(infiles, outfile):
+    '''
+    map raw reads against known species
+    '''
+    genome = os.path.basename(infiles[1])    
+    if index_suffix[PARAMS["known_species_aligner"]].endswith(".bwt"):
+        infile = infiles[0]
+        bwa_index_dir = os.path.dirname(outfile)
+        bwa_aln_options = PARAMS["known_species_bwa_aln_options"]
+        bwa_sampe_options=PARAMS["known_species_bwa_sampe_options"]
+        bwa_threads=PARAMS["known_species_bwa_threads"]
+        m = PipelineMapping.BWA()
+
+    elif index_suffix[PARAMS["known_species_aligner"]].endswith(".ebwt"):
+        bowtie_index_dir = os.path.dirname(outfile)
+        bowtie_options=PARAMS["known_species_bowtie_options"]
+        infile, reffile = infiles[0],  os.path.join(bowtie_index_dir, genome) + ".fa.gz"
+        m = PipelineMapping.Bowtie( executable = P.substituteParameters( **locals() )["known_species_executable"] )
+
+    elif index_suffix[PARAMS["known_species_aligner"]].endswith(".bt2"):
+        bowtie2_index_dir = os.path.dirname(outfile)
+        bowtie2_options=PARAMS["known_species_bowtie2_options"]
+        infile, reffile = infiles[0],  os.path.join(bowtie2_index_dir, genome) + ".fa.gz"
+        m = PipelineMapping.Bowtie2( executable = P.substituteParameters( **locals() )["known_species_executable"] )
+
+    statement = m.build( (infile,), outfile ) 
+    P.run()
+
+###################################################################
+###################################################################
+###################################################################
+@transform(mapReadsAgainstKnownSpecies
+           , regex("(\S+).dir/(\S+).bam")
+           , add_inputs(buildPresentSpeciesMultiFasta)
+           , r"\1-\1.dir/\2.picard_stats")
+def buildPicardStatsOnKnownSpeciesAlignments(infiles, outfile):
+    '''
+    build statistics for the alignment of reads against known
+    species
+    '''
+    reffile = infiles[1]
+    infile = infiles[0]
+    PipelineMappingQC.buildPicardAlignmentStats( infile, 
+                                                 outfile,
+                                                 reffile )
+
+
+###################################################################
+###################################################################
+###################################################################
+@merge( buildPicardStatsOnKnownSpeciesAlignments, "known_genomes.dir/picard_stats.load" )
+def loadPicardStatsOnKnownSpeciesAlignments( infiles, outfile ):
+    '''merge alignment stats into single tables.'''
+
+    PipelineMappingQC.loadPicardAlignmentStats( infiles, outfile )
+
+###################################################################
+###################################################################
+###################################################################
+@follows(loadPicardStatsOnKnownSpeciesAlignments)
+def presentSpeciesAlignment():
+    pass
+
+###################################################################
+###################################################################
+###################################################################
+# Functional assignments using rpsblast and COG categories
+###################################################################
+###################################################################
+###################################################################
+@follows(mkdir("function.dir"))
+@transform(SEQUENCEFILES
+           , SEQUENCEFILES_REGEX
+           , r"function.dir/\1.rpblast.result.gz")
+def runBlastOnRawSequences(infile, outfile):
+    '''
+    run a translated blast on raw sequenced reads
+    '''
+    to_cluster = True    
+    job_options = job_options = " -l mem_free=30G"
+
+    db = PARAMS["rpsblast_db"]
+    evalue = PARAMS["rpsblast_evalue"]
+    
+    # at the moment this only considers
+    # one read in a pair - needs to be adapted for
+    # paired data
+
+    # converts to fasta on the fly using sed
+    statement = '''zcat %(infile)s
+                  | sed -n '1~4s/^@/>/p;2~4p'
+                  | python %(scriptsdir)s/farm.py 
+                  --split-at-regex="^>(\S+)" 
+                  --chunksize=100000
+                  "rpsblast -db %(db)s 
+                  -evalue %(evalue)s
+                  -soft_masking True
+                  -outfmt 6"
+                  | gzip > %(outfile)s'''
+    P.run()
+
+###################################################################                                                                                                                                                                         
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+@transform(runBlastOnRawSequences
+           , suffix(".result.gz")
+           , add_inputs(loadReadCounts)
+           , ".stats")
+def buildRpsblastAlignmentStats(infiles, outfile):
+    '''
+    count the proportion of reads that can be aligned 
+    to protein CDD sequences
+    '''
+    dbh = connect()
+    cc = dbh.cursor()
+    track = os.path.basename(P.snip(infiles[0], ".rpblast.result.gz"))
+
+    total = cc.execute("""SELECT total_reads FROM reads_summary WHERE track == '%s'""" % track).fetchone()[0]
+
+    # Note only dealing with one of the pair at the 
+    # moment
+ #    total = float(total)/2
+    
+    total = float(total)
+    reads = set()
+
+    outf = open(outfile, "w")
+    # count unique alignments
+    for line in IOTools.openFile(infiles[0]).readlines():
+        if line.startswith("#"): continue
+        data = line[:-1].split("\t")
+        if data[0] not in reads:
+            reads.add(data[0])
+    prop = float(len(reads))/total
+    outf.write("%s\t%f\n" % (track, prop))
+    outf.close()
+
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+@merge(buildRpsblastAlignmentStats, "function.dir/rpsblast_alignment_stats.load")
+def loadRpsblastAlignmentStats(infiles, outfile):
+    '''
+    load alignment statistics
+    '''
+    to_cluster = False
+    tmp = P.getTempFilename()
+    infs = " ".join(infiles)
+    statement = '''cat %(infs)s > %(tmp)s'''
+    P.run()
+    tablename = P.toTable(outfile)
+    statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s --header=track,proportion
+                   --log=%(outfile)s.log < %(tmp)s > %(outfile)s'''
+    P.run()
+
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+@transform(runBlastOnRawSequences
+           , suffix(".gz")
+           , ".cog.gz")
+def assignCOGsToAlignments(infile, outfile):
+    '''
+    assign clusters of orthologous groups ids to the
+    protein alignment
+    '''
+    job_options = " -l mem_free=30G"
+    mapfile = PARAMS["COG_map"]
+    
+    statement = '''zcat %(infile)s 
+                  | python %(scriptsdir)s/rpsblast_cdd2cog.py 
+                  --cog-map=%(mapfile)s --log=%(outfile)s.log
+                  | gzip > %(outfile)s'''
+    P.run()
+
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+@transform(assignCOGsToAlignments
+           , suffix(".gz")
+           , add_inputs(countReads)
+           , ".counts.gz")
+def countCOGAssignments(infiles, outfile):
+    '''
+    calculate the proportion of reads that are assigned to each
+    COG and add annotation
+    '''
+    to_cluster = True
+    job_options = " -l mem_free=30G"
+    countsfile = [x for x in infiles[1:3] if infiles[0].find(P.snip(x, ".nreads")) != -1]
+    countsfile = countsfile[0]
+    
+    # TODO: sort this out for single ended data
+    total = open(countsfile).readline().split("\t")[1][:-1]
+#    total = int(float(total)/2)
+    total = int(total)
+
+    description_file = PARAMS["COG_description"]
+    inf = infiles[0]
+
+    statement = '''zcat %(inf)s 
+                   | python %(scriptsdir)s/rpsblast_cog2counts.py
+                   --cog-description=%(description_file)s
+                   --nreads=%(total)s
+                   --log=%(outfile)s.log
+                   | gzip > %(outfile)s'''
+
+    P.run()
+
+###################################################################                                                                                                                                                                         
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+@transform(countCOGAssignments, suffix(".gz"), ".load")
+def loadCOGCounts(infile, outfile):
+    '''
+    load COG funtion counts
+    '''
+    to_cluster = False
+    # need to preprocess the data - this is dependent
+    # on the map file that was used in the previous step
+    temp = P.getTempFile()
+    function2counts = collections.defaultdict(float)
+    inf = IOTools.openFile(infile)
+    header = inf.readline()
+    for line in inf.readlines():
+        data = line[:-1].split("\t")
+        function, prop = data[1], data[2]
+        function2counts[function] += float(prop)
+
+    temp.write("funtion\tproportion\n")
+    for function, prop in function2counts.iteritems():
+        temp.write("%s\t%f\n" % (function, prop))
+    temp.close()
+
+    temp_name = temp.name
+
+    tablename = P.toTable(outfile)
+    statement = '''python %(scriptsdir)s/csv2db.py
+                   -t %(tablename)s
+                   --log=%(outfile)s.log
+                   < %(temp_name)s > %(outfile)s
+                   '''
+    P.run()
+
+##################################################################
+@follows(loadCOGCounts
+         , loadRpsblastAlignmentStats)
+def functional_profile():
+    pass
+
+###################################################################                                                                                                                                                                         
+# Have reads been pooled
+###################################################################                                                                                                                                                                          
+SEQUENCE_TARGETS = {1: poolReadsAcrossConditions,
+                    0: SEQUENCEFILES,
+                    "": SEQUENCEFILES}
+
+###################################################################                                                                                                                                                                         
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
 ## assemble reads with meta-velvet
 ###################################################################                                                                                                                                                                          
 @active_if("metavelvet" in ASSEMBLERS)
 @follows(mkdir("metavelvet.dir"))
-@transform( SEQUENCEFILES,
+@transform( SEQUENCE_TARGETS[PARAMS["pool_reads"]],
             SEQUENCEFILES_REGEX
             , r"metavelvet.dir/\1.contigs.fa")
 def runMetavelvet(infile, outfile):
@@ -367,9 +940,13 @@ def loadMetavelvetStats(infile, outfile):
 ###################################################################                                                                                                                                                                          
 ## assemble reads with idba
 ###################################################################                                                                                                                                                                          
+IDBA_TARGETS = {1: preprocessIdba,
+                0: preprocessReads,
+                "": preprocessReads}
+
 @active_if("idba" in ASSEMBLERS)
 @follows(mkdir("idba.dir"))
-@transform(preprocessReads, regex("(\S+).fa"), r"idba.dir/\1.contigs.fa")
+@transform(IDBA_TARGETS[PARAMS["pool_reads"]], regex("(\S+).fa"), r"idba.dir/\1.contigs.fa")
 def runIdba(infile, outfile):
     '''
     run idba on each track
@@ -407,13 +984,14 @@ def loadIdbaStats(infile, outfile):
 ###################################################################                                                                                                                                                                          
 @active_if("ray" in ASSEMBLERS)
 @follows(mkdir("ray.dir"))
-@transform( SEQUENCEFILES,
+@transform( SEQUENCE_TARGETS[PARAMS["pool_reads"]],
             SEQUENCEFILES_REGEX
             , r"ray.dir/\1.contigs.fa")
 def runRay(infile, outfile):
     '''
     run Ray on each track
     '''
+    to_cluster = False
     job_options=" -l mem_free=30G -pe dedicated 5"
     statement = PipelineMetagenomeAssembly.Ray().build(infile)
     P.run()
@@ -722,105 +1300,144 @@ def buildAssemblyBowtie2Indices(infile, outfile):
 ###################################################################                                                                                                                                                                          
 ###################################################################                                                                                                                                                                          
 ###################################################################                                                                                                                                                                          
-## map with bowtie
+@active_if(BWA)
+@transform(filterContigs, suffix(".fa"), ".fa.bwt")
+def buildAssemblyBWAIndices(infile, outfile):
+    '''
+    build bwa indices
+    '''
+    to_cluster = True
+    statement = '''bwa index %(infile)s'''
+    P.run()
+    P.touch(outfile)
+
 ###################################################################                                                                                                                                                                          
-bowtie_index = {"bowtie":buildAssemblyBowtieIndices
-                , "bowtie2":buildAssemblyBowtie2Indices}
-BOWTIE_INDEX = bowtie_index[MAPPER]
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+## map 
+###################################################################                                                                                                                                                                          
+index = {"bowtie":buildAssemblyBowtieIndices
+         , "bowtie2":buildAssemblyBowtie2Indices
+         , "bwa":buildAssemblyBWAIndices}
+INDEX = index[MAPPER]
 
 ###################################################################                                                                                                                                                                          
 ###################################################################                                                                                                                                                                          
 ###################################################################                                                                                                                                                                          
 @active_if("metavelvet" in ASSEMBLERS)
-@follows(BOWTIE_INDEX)
-@transform(SEQUENCEFILES, SEQUENCEFILES_REGEX, r"metavelvet.dir/\1.filtered.bam")
-def mapReadsWithBowtieAgainstMetavelvetContigs(infile, outfile):
+@transform(SEQUENCEFILES
+           , SEQUENCEFILES_REGEX
+           , add_inputs(INDEX, runMetavelvet)
+           , r"metavelvet.dir/\1.filtered.contigs.bam")
+def mapReadsAgainstMetavelvetContigs(infiles, outfile):
     '''
-    map reads against contigs with bowtie
+    map reads against metavelvet contigs
     '''
+    inf = infiles[0]
     to_cluster = True
+    index_dir = os.path.dirname(outfile)
 
-    bowtie_index_dir = "metavelvet.dir"
-    genome = re.search(".*R[0-9]*", infile).group(0) + ".filtered.contigs"
-    infile, reffile = infile,  os.path.join(bowtie_index_dir, genome) + ".fa"
-    m = PipelineMapping.Bowtie( executable = P.substituteParameters( **locals() )["bowtie_executable"] )
-    statement = m.build( (infile,), outfile ) 
+    if "agg" not in infiles[1]:
+        genome = re.search(".*R[0-9]*", infiles[0]).group(0) + ".filtered.contigs.fa"
+    else:
+        genome = "agg-agg-agg.filtered.contigs"
+
+    if infiles[1].endswith(".bt2") or infiles[1].endswith(".ebwt"):
+        infile, reffile = infiles[0],  os.path.join(index_dir, genome) + ".fa"
+        m = PipelineMapping.Bowtie( executable = P.substituteParameters( **locals() )["bowtie_executable"] )
+
+    elif infiles[1].endswith("bwt"):
+        genome = genome + ".fa"
+        job_options= " -l mem_free=%s" % (PARAMS["bwa_memory"])
+        bwa_index_dir = index_dir
+        bwa_aln_options = PARAMS["bwa_aln_options"]
+        bwa_sampe_options=PARAMS["bwa_sampe_options"]
+        bwa_threads=PARAMS["bwa_threads"]
+        m = PipelineMapping.BWA()
+    statement = m.build( (inf,), outfile ) 
     P.run()
 
 ###################################################################                                                                                                                                                                          
 ###################################################################                                                                                                                                                                          
 ###################################################################                                                                                                                                                                          
 @active_if("idba" in ASSEMBLERS)
-@follows(BOWTIE_INDEX)
-@transform(SEQUENCEFILES, SEQUENCEFILES_REGEX, r"idba.dir/\1.filtered.bam")
-def mapReadsWithBowtieAgainstIdbaContigs(infile, outfile):
+@transform(SEQUENCEFILES
+           , SEQUENCEFILES_REGEX
+           , add_inputs(INDEX, runIdba)
+           , r"idba.dir/\1.filtered.contigs.bam")
+def mapReadsAgainstIdbaContigs(infiles, outfile):
     '''
-    map reads against contigs with bowtie
+    map reads against idba contigs
     '''
+    inf = infiles[0]
     to_cluster = True
-    bowtie_index_dir = "idba.dir"
-    genome = re.search(".*R[0-9]*", infile).group(0) + ".filtered.contigs"
-    infile, reffile = infile,  os.path.join(bowtie_index_dir, genome) + ".fa"
-    m = PipelineMapping.Bowtie( executable = P.substituteParameters( **locals() )["bowtie_executable"] )
-    statement = m.build( (infile,), outfile ) 
+    index_dir = os.path.dirname(outfile)
+
+    if "agg" not in infiles[1]:
+        genome = re.search(".*R[0-9]*", infiles[0]).group(0) + ".filtered.contigs.fa"
+    else:
+        genome = "agg-agg-agg.filtered.contigs"
+
+    if infiles[1].endswith(".bt2") or infiles[1].endswith(".ebwt"):
+        infile, reffile = infiles[0],  os.path.join(index_dir, genome) + ".fa"
+        m = PipelineMapping.Bowtie( executable = P.substituteParameters( **locals() )["bowtie_executable"] )
+
+    elif infiles[1].endswith("bwt"):
+        genome = genome + ".fa"
+        job_options= " -l mem_free=%s" % (PARAMS["bwa_memory"])
+        bwa_index_dir = index_dir
+        bwa_aln_options = PARAMS["bwa_aln_options"]
+        bwa_sampe_options=PARAMS["bwa_sampe_options"]
+        bwa_threads=PARAMS["bwa_threads"]
+        m = PipelineMapping.BWA()
+    statement = m.build( (inf,), outfile ) 
     P.run()
 
 ###################################################################                                                                                                                                                                          
 ###################################################################                                                                                                                                                                          
 ###################################################################                                                                                                                                                                          
 @active_if("ray" in ASSEMBLERS)
-@follows(BOWTIE_INDEX)
-@transform(SEQUENCEFILES, SEQUENCEFILES_REGEX, r"ray.dir/\1.filtered.bam")
-def mapReadsWithBowtieAgainstRayContigs(infile, outfile):
+@transform(SEQUENCEFILES
+           , SEQUENCEFILES_REGEX
+           , add_inputs(INDEX, runRay)
+           , r"ray.dir/\1.filtered.contigs.bam")
+def mapReadsAgainstRayContigs(infiles, outfile):
     '''
-    map reads against contigs with bowtie
+    map reads against Ray contigs
     '''
+    inf = infiles[0]
     to_cluster = True
-    bowtie_index_dir = "ray.dir"
-    genome = re.search(".*R[0-9]*", infile).group(0) + ".filtered.contigs"
-    infile, reffile = infile,  os.path.join(bowtie_index_dir, genome) + ".fa"
-    m = PipelineMapping.Bowtie( executable = P.substituteParameters( **locals() )["bowtie_executable"] )
-    statement = m.build( (infile,), outfile ) 
+    index_dir = os.path.dirname(outfile)
+
+    if "agg" not in infiles[1]:
+        genome = re.search(".*R[0-9]*", infiles[0]).group(0) + ".filtered.contigs.fa"
+    else:
+        genome = "agg-agg-agg.filtered.contigs"
+
+    if infiles[1].endswith(".bt2") or infiles[1].endswith(".ebwt"):
+        infile, reffile = infiles[0],  os.path.join(index_dir, genome) + ".fa"
+        m = PipelineMapping.Bowtie( executable = P.substituteParameters( **locals() )["bowtie_executable"] )
+
+    elif infiles[1].endswith("bwt"):
+        genome = genome + ".fa"
+        job_options= " -l mem_free=%s" % (PARAMS["bwa_memory"])
+        bwa_index_dir = index_dir
+        bwa_aln_options = PARAMS["bwa_aln_options"]
+        bwa_sampe_options=PARAMS["bwa_sampe_options"]
+        bwa_threads=PARAMS["bwa_threads"]
+        m = PipelineMapping.BWA()
+    statement = m.build( (inf,), outfile ) 
     P.run()
 
 ###################################################################                                                                                                                                                                          
 ###################################################################                                                                                                                                                                          
 ###################################################################                                                                                                                                                                          
 ALIGNMENT_TARGETS = []
-alignment_targets = {"metavelvet":mapReadsWithBowtieAgainstMetavelvetContigs
-                     , "idba":mapReadsWithBowtieAgainstIdbaContigs
-                     , "ray":mapReadsWithBowtieAgainstRayContigs}
+alignment_targets = {"metavelvet":mapReadsAgainstMetavelvetContigs
+                     , "idba":mapReadsAgainstIdbaContigs
+                     , "ray":mapReadsAgainstRayContigs}
 for x in ASSEMBLERS:
     ALIGNMENT_TARGETS.append(alignment_targets[x])
-
-###################################################################                                                                                                                                                                          
-###################################################################                                                                                                                                                                          
-###################################################################                                                                                                                                                                          
-@transform("ray.dir/sim-15M250BP-R1.bam"
-           , regex("(\S+).dir/(\S+).bam")
-           , r"\1.dir/\1_\2.unique")
-def countUniqueAlignments(infile, outfile):
-    '''
-    count the number of uniquely mapping reads
-    '''
-    samfile = pysam.Samfile(infile)
-    c_unique = 0
-    c_total = 0
-    E.info("iterating over bam file")
-    for alignment in samfile.fetch():
-        c_total += 1
-        nh = [x[1] for x in alignment.tags if x[0] == "NH"]
-        print nh
-        # hack - need to discover why some reads do not contain
-        # nh tag - maybe if not mapped
-        if len(nh) == 0: continue
-        if nh[0] == 1:
-            c_unique += 1
-            print c_unique
-    E.info("writing results for %s" % infile)
-    outf = open(outfile, "w")
-    outf.write("total_reads\tpunique\n%i\t%f\n" % (c_total, float(c_unique/c_total)))
-    outf.close()
 
 ###################################################################                                                                                                                                                                          
 ###################################################################                                                                                                                                                                          
@@ -857,7 +1474,10 @@ def buildPicardStats(infile, outfile):
     '''build alignment stats using picard.
     Note that picards counts reads but they are in fact alignments.
     '''
-    reffile = P.snip(infile, ".bam") + ".contigs.fa"
+    if PARAMS["pool_reads"]:
+        reffile = os.path.join(os.path.dirname(infile),"agg-agg-agg.filtered.contigs.fa")
+    else:
+        reffile = P.snip(infile, ".bam") + ".fa"
     PipelineMappingQC.buildPicardAlignmentStats( infile, 
                                                  outfile,
                                                  reffile )
@@ -876,15 +1496,21 @@ def loadPicardStats( infiles, outfile ):
 ###################################################################                                                                                                                                                                          
 ###################################################################                                                                                                                                                                          
 @follows(*ALIGNMENT_TARGETS)
-@transform(buildContigLengths, suffix(".lengths.tsv"), ".coverage.gz")
-def buildCoverageOverContigs(infile, outfile):
+@transform(ALIGNMENT_TARGETS,
+           suffix(".bam"),
+           add_inputs(buildContigLengths),
+           ".coverage.gz")
+def buildCoverageOverContigs(infiles, outfile):
     '''
     build histograms of the coverage over each of the contigs
     '''
     to_cluster = True
-    size = infile
-    bam = P.snip(infile, ".contigs.lengths.tsv") + ".bam"
-    statement = '''bedtools genomecov -ibam %(bam)s -g %(size)s -d | gzip > %(outfile)s'''
+    bam = infiles[0]
+    if PARAMS["pool_reads"]:
+        genome = [inf for inf in infiles[1:len(infiles)] if inf.find(os.path.dirname(bam)) != -1][0]
+    else:
+        genome = infiles[0].replace(".bam", ".lengths.tsv")
+    statement = '''bedtools genomecov -ibam %(bam)s -g %(genome)s -d | gzip > %(outfile)s'''
     P.run()
 
 ###################################################################                                                                                                                                                                          
@@ -903,8 +1529,48 @@ def buildCoverageStats(infile, outfile):
 ###################################################################                                                                                                                                                                          
 ###################################################################                                                                                                                                                                          
 ###################################################################                                                                                                                                                                          
+@transform(buildCoverageStats
+           , suffix(".gz")
+           , add_inputs(buildContigLengths)
+           , ".postprocess.gz")
+def postprocessCoverageStats(infiles, outfile):
+    '''
+    genomeCoverageBed outputs only non-zero depth. Add a "0" to 
+    contigs that have zero coverage
+    '''
+    stats_file =  infiles[0]
+    inf = IOTools.openFile(stats_file)
+    header = inf.readline()
+
+    if PARAMS["pool_reads"]:
+        contigs = [x for x in infiles[1:len(infiles)] if x.find(os.path.dirname(stats_file)) != -1][0]
+    else:
+        contigs = stats_file.replace(".coverage.stats.gz", ".lengths.tsv")
+
+    contig2stats = {}
+    for line in inf.readlines():
+        data = line[:-1].split("\t")
+        contig, mean, sd = data[0], data[1], data[2]
+        contig2stats[contig] = (mean, sd)
+
+    inf2 = open(contigs)
+    header2 = inf2.readline()
+    outf = gzip.open(outfile, "w")
+    outf.write(header)
+    for line in inf2.readlines():
+        data = line[:-1].split("\t")
+        contig, length = data[0], data[1]
+        if contig in contig2stats.keys():
+            outf.write("%s\t%s\t%s\n" % (contig, contig2stats[contig][0], contig2stats[contig][1]))
+        else:
+            outf.write("%s\t0\t0\n" % contig)
+    outf.close()
+
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
 @jobs_limit(1, "db")
-@transform(buildCoverageStats, suffix(".gz"), ".load")
+@transform(postprocessCoverageStats, suffix(".postprocess.gz"), ".load")
 def loadCoverageStats(infile, outfile):
     '''
     load coverage stats
@@ -923,140 +1589,6 @@ def loadCoverageStats(infile, outfile):
 def coverage():
     pass
 
-###################################################################                                                                                                                                                                          
-###################################################################                                                                                                                                                                          
-###################################################################                                                                                                                                                                          
-## annotate metagenomic reads with metaphlan
-###################################################################                                                                                                                                                                          
-@follows(mkdir("metaphlan.dir"))
-@transform(preprocessReads
-           , regex("(\S+).fa")
-            , r"metaphlan.dir/\1.readmap")
-def buildMetaphlanReadmap(infile, outfile):
-    '''
-    metaphlan is a program used in metagenomics. It assigns
-    reads to clades based on specific genetic markers via 
-    blastn searching
-    '''
-    to_cluster = True
-
-    # at present the pipeline will take a set of files
-    # and compute the abundances of different taxonomic groups
-    # based on ALL reads i.e. paired data are combined into
-    # a single file for analysis
-    if PARAMS["metaphlan_executable"] == "bowtie2":
-        assert os.path.exists(PARAMS["metaphlan_db"] + ".1.bt2"), "missing file %s: Are you sure you have the correct database for bowtie2?" % PARAMS["metaphlan_db"] + ".1.bt2"
-        method = "--bowtie2db"
-    elif PARAMS["metaphlan_executable"] == "blast":
-        assert os.path.exists(PARAMS["metaphlan_db"] + "nin"), "missing file %s: Are you sure you have the correct database for blast?" % PARAMS["metaphlan_db"] + "nin"
-        method = "--blastdb"
-    statement = PipelineMetagenomeAssembly.Metaphlan().build(infile, method="read_map")
-    P.run()
-
-###################################################################                                                                                                                                                                          
-###################################################################                                                                                                                                                                          
-###################################################################                                                                                                                                                                          
-@transform(buildMetaphlanReadmap, suffix(".readmap"), ".readmap.load")
-def loadMetaphlanReadmaps(infile, outfile):
-    '''
-    load the metaphlan read maps
-    '''
-    P.load(infile,outfile)
-
-###################################################################                                                                                                                                                                          
-###################################################################                                                                                                                                                                          
-###################################################################                                                                                                                                                                          
-@merge(loadMetaphlanReadmaps, "metaphlan.dir/taxonomic.counts")
-def countMetaphlanTaxonomicGroups(infiles, outfile):
-    '''
-    count the total number of species that
-    were found by metaphlan
-    '''
-    outf = open(outfile, "w")
-    outf.write("track\ttaxon_level\tcount\n")
-    taxons = ["_order", "class", "family", "genus", "kingdom", "phylum", "species"]
-    dbh = connect()
-    cc = dbh.cursor()
-    for infile in infiles:
-        table = P.toTable(infile)
-        track = P.snip(table, "_readmap")
-        for taxon in taxons:
-            count = cc.execute("""SELECT COUNT(DISTINCT %s) FROM %s""" % (taxon, table)).fetchone()[0]
-            outf.write("\t".join([track, taxon, str(count)]) + "\n")
-    outf.close()
-
-###################################################################                                                                                                                                                                          
-###################################################################                                                                                                                                                                          
-###################################################################                                                                                                                                                                          
-@follows(mkdir("metaphlan.dir"))
-@transform(preprocessReads
-           , regex("(\S+).fa")
-           , r"metaphlan.dir/\1.relab")
-def buildMetaphlanRelativeAbundance(infile, outfile):
-    '''
-    metaphlan is a program used in metagenomics. It assigns
-    reads to clades based on specific genetic markers via 
-    blastn searching
-    '''
-    to_cluster = True
-    # at present the pipeline will take a set of files
-    # and compute the abundances of different taxonomic groups
-    # based on ALL reads i.e. paired data are combined into
-    # a single file for analysis
-    if PARAMS["metaphlan_executable"] == "bowtie2":
-        assert os.path.exists(PARAMS["metaphlan_db"] + ".1.bt2"), "missing file %s: Are you sure you have the correct database for bowtie2?" % PARAMS["metaphlan_db"] + ".1.bt2"
-        method = "--bowtie2db"
-    elif PARAMS["metaphlan_executable"] == "blast":
-        assert os.path.exists(PARAMS["metaphlan_db"] + "nin"), "missing file %s: Are you sure you have the correct database for bowtie2?" % PARAMS["metaphlan_db"] + "nin"
-        method = "--blastdb"
-
-    statement = PipelineMetagenomeAssembly.Metaphlan().build(infile, method="rel_ab")
-    P.run()
-
-###################################################################                                                                                                                                                                          
-###################################################################                                                                                                                                                                          
-###################################################################                                                                                                                                                                          
-@transform(buildMetaphlanRelativeAbundance, suffix(".relab"), ".relab.load")
-def loadMetaphlanRelativeAbundances(infile, outfile):
-    '''
-    load the metaphlan relative abundances
-    '''
-    P.load(infile,outfile)
-
-###################################################################                                                                                                                                                                          
-###################################################################                                                                                                                                                                          
-###################################################################                                                                                                                                                                          
-@merge(loadMetaphlanRelativeAbundances, "metaphlan.dir/taxonomic.abundances")
-def buildMetaphlanTaxonomicAbundances(infiles, outfile):
-    '''
-    build a file that combines taxonomic abundances 
-    from each sample
-    '''
-    dbh = connect()
-    cc = dbh.cursor()
-    outf = open(outfile, "w")
-    outf.write("track\ttaxon_level\ttaxon\tabundance\tidx\n")
-    for infile in infiles:
-        table = P.toTable(infile)
-        track = P.snip(table, "_relab")
-        for data in cc.execute("""SELECT taxon_level, taxon, rel_abundance FROM %s""" % table).fetchall():
-            # remove unassigned species at this point
-            idx = track.split("_")[1]
-            if data[1].find("unclassified") != -1: continue
-            outf.write("\t".join([track, data[0], data[1], str(data[2]), idx]) + "\n")
-    outf.close()
-
-#########################################
-# taxonomic classification targets
-#########################################
-@follows(loadMetaphlanRelativeAbundances
-         , buildMetaphlanTaxonomicAbundances
-         , countMetaphlanTaxonomicGroups
-         , loadMetaphlanReadmaps)
-def metaphlan():
-    pass
-
-
 ####################
 # full targets
 ####################
@@ -1066,7 +1598,8 @@ def metaphlan():
           , coverage
           , contig_stats
           , metaphlan
-          , metagenemark)
+          , functional_profile
+          , presentSpeciesAlignment)
 def full():
     pass
 
@@ -1087,10 +1620,10 @@ def update_report():
 
 
 if __name__== "__main__":
-    
-    if sys.argv [3] == "plotToFile":
-        pipeline_printout_graph ("flowchart.jpg", "jpg", [full],
-                                 user_colour_scheme = {"colour_scheme_index" :6})
+    if sys.argv[1] == "plot":
+        pipeline_printout_graph("test.pdf", "pdf",[full], no_key_legend=True,
+                                size = (4,4),
+                                user_colour_scheme = {"colour_scheme_index" :1})
     else:
         sys.exit( P.main(sys.argv) )
     

@@ -115,7 +115,7 @@ import CGAT.Experiment as E
 import CGAT.MaliIO as MaliIO
 import scipy
 import CGAT.Exons as Exons
-import alignlib
+import alignlib_lite
 import CGAT.Genomics as Genomics
 import numpy
 
@@ -396,7 +396,7 @@ def WriteGeneStructureCorrespondence( mali, identifiers, exons, param_master_pat
             cmp_exons = []
 
             if param_loglevel >= 5:
-                print alignlib.writeAlignataTable(map_cmp2ref)
+                print alignlib_lite.py_writeAlignataTable(map_cmp2ref)
             
             for e in exons[key1]:
                 ne = e.GetCopy()
@@ -997,7 +997,14 @@ def WriteRadius( mali, identifiers, prefix = "", gap_char = "-"):
     
             
 ##------------------------------------------------------------
-if __name__ == '__main__':
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     try:
         optlist, args = getopt.getopt(sys.argv[1:], param_short_options, param_long_options)
@@ -1227,3 +1234,7 @@ if __name__ == '__main__':
     print E.GetFooter()
     
     
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

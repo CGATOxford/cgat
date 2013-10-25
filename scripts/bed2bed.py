@@ -19,16 +19,19 @@ This script provides several methods:
 merge 
 +++++
 
-Merge together overlapping or adjecent intervals. The basic
+Merge together overlapping or adjacent intervals. The basic
 functionality is similar to bedtools merge, but with some additions: 
 
 * Merging by name: specifying the --merge-by-name option will mean
   that only overlaping (or adjacent intervals) with the same value in
-  the 5th column of the bed will be merged 
+  the 4th column of the bed will be merged 
+
+* Removing overlapping intervals with inconsistent names: set the
+   ``--remove-inconsistent`` option.
 
 .. caution:: 
    Intervals of the same name will only be merged if they 
-   are consequtive in the bed file.
+   are consecutive in the bed file.
 
 * Only output merged intervals: By specifiying the --merge-min-intervals=n
   options, only those intervals that were created by merging at least n
@@ -116,7 +119,11 @@ import CGAT.IOTools as IOTools
 import CGAT.Bed as Bed
 import pysam
 
-def merge( iterator, max_distance = 0, by_name = False, min_intervals = 1 ):
+def merge( iterator, 
+           max_distance = 0, 
+           by_name = False, 
+           min_intervals = 1,
+           remove_inconsistent = False ):
     """iterator for merging adjacent bed entries.
 
     *max_distance* > 0 permits merging of intervals that are
@@ -124,8 +131,14 @@ def merge( iterator, max_distance = 0, by_name = False, min_intervals = 1 ):
 
     If *by_name = True*, only entries with the same name are merged.
     
+    If *remove_inconsistent*, overlapping intervals where the names
+    are inconsistent will be removed.
+    
     The score gives the number of intervals that have been merged.
     """
+
+    if remove_inconsistent and by_name:
+        assert ValueError( "using both remove_inconsistent and by_name makes no sense" )
 
     def iterate_chunks( iterator ):
         last = iterator.next()
@@ -151,22 +164,28 @@ def merge( iterator, max_distance = 0, by_name = False, min_intervals = 1 ):
         if to_join: yield to_join
         raise StopIteration
 
-    ninput, noutput, nskipped_min_intervals = 0, 0, 0
+    c = E.Counter()
 
     for to_join in iterate_chunks(iterator):
 
-        ninput += 1
+        c.input += 1
         if len(to_join) < min_intervals: 
-            nskipped_min_intervals += 1
+            c.skipped_min_intervals += 1
             continue
+
+        if remove_inconsistent:
+            names = set([ x.name for x in to_join ] )
+            if len(names) > 1: 
+                c.skipped_inconcistent_intervals += 1
+                continue
 
         a = to_join[0]
         a.end = to_join[-1].end
         a.score = len(to_join)
         yield a
-        noutput += 1
+        c.output += 1
 
-    E.info( "ninput=%i, noutput=%i, nskipped_min_intervals=%i" % (ninput, noutput, nskipped_min_intervals) )
+    E.info( str(c) )
 
 def filterGenome( iterator, contigs ):
     """remove bed intervals that are outside of contigs.
@@ -316,7 +335,7 @@ def extendInterval(iterator, distance):
 def main( argv = sys.argv ):
 
     parser = E.OptionParser( version = "%prog version: $Id: bed2bed.py 2861 2010-02-23 17:36:32Z andreas $", 
-                                    usage = globals()["__doc__"] )
+                             usage = globals()["__doc__"] )
 
     #IMS: new method: extend intervals by set amount
     parser.add_option( "-m", "--method", dest="methods", type="choice", action="append",
@@ -342,6 +361,10 @@ def main( argv = sys.argv ):
     parser.add_option( "--merge-by-name", dest="merge_by_name", action="store_true",
                       help="only merge intervals with the same name [default=%default]"  )
 
+    parser.add_option( "--remove-inconsistent", dest="remove_inconsistent", action="store_true",
+                      help="when merging, do not output intervals where the names of overlapping intervals "
+                      "do not match [default=%default]"  )
+
     parser.add_option( "--offset", dest="offset",  type="int",
                       help="offset for shifting intervals [default=%default]"  )
 
@@ -354,6 +377,7 @@ def main( argv = sys.argv ):
     parser.set_defaults( methods = [],
                          merge_distance = 0,
                          binning_method = "equal-bases",
+                         merge_by_name = False,
                          genome_file = None,
                          bam_file = None,
                          num_bins = 5,
@@ -361,7 +385,8 @@ def main( argv = sys.argv ):
                          bin_edges = None,
                          offset = 10000,
                          test = None,
-                         extend_distance=1000)
+                         extend_distance=1000,
+                         remove_inconsistent = False)
     
     (options, args) = E.Start( parser, add_pipe_options = True )
 
@@ -386,9 +411,11 @@ def main( argv = sys.argv ):
             if not contigs: raise ValueError("please supply contig sizes" )
             processor = sanitizeGenome( processor, contigs )
         elif method == "merge":
-            processor = merge( processor, options.merge_distance,
+            processor = merge( processor, 
+                               options.merge_distance,
                                by_name = options.merge_by_name,
-                               min_intervals = options.merge_min_intervals )
+                               min_intervals = options.merge_min_intervals,
+                               remove_inconsistent = options.remove_inconsistent )
         elif method == "bins":
             if options.bin_edges:
                 bin_edges = map(float, options.bin_edges.split(","))

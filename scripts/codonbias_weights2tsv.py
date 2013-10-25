@@ -161,9 +161,15 @@ def WriteOverviewFrequencies( fields, table, options ):
             output += WriteChanges( fields[x], fields[y], changed, options )            
 
     WriteOutput( output, options )
-    
-if __name__ == "__main__":
 
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
+    
     parser = E.OptionParser( version = "%prog version: $Id: codonbias_weights2tsv.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option( "--methods", dest="methods", type="string",
@@ -202,4 +208,7 @@ if __name__ == "__main__":
                 WriteOverviewFrequencies( fields, table, options )
             else:
                 WriteOverviewWeights( fields, table, options )            
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
         

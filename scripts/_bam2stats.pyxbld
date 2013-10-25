@@ -4,10 +4,15 @@ def make_ext(modname, pyxfilename):
     import pysam
     import os
     import numpy
+    import sys
     dirname = os.path.dirname( pysam.__file__ )
+    if sys.platform != 'darwin':
+        extra_link_args = [ os.path.join( pysam_dirname, "csamtools.so")]
+    else:
+	extra_link_args = []
     return Extension( name = modname,      
                       sources = [pyxfilename],
-                      extra_link_args=[ os.path.join( dirname, "csamtools.so")],
+                      extra_link_args = extra_link_args,
                       include_dirs =  [ numpy.get_include() ] + pysam.get_include(),
                       define_macros = pysam.get_defines() )
 

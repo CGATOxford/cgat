@@ -47,7 +47,13 @@ import CGAT.TreeTools as TreeTools
 
 import CGAT.Stats as Stats
 
-if __name__ == "__main__":
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
     
     parser = E.OptionParser( version = "%prog version: $Id: codeml2tsv.py 2781 2009-09-10 11:33:14Z andreas $" )
 
@@ -176,3 +182,6 @@ write-ka-tree: write out ka tree(s).
                 x += 1
         
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )

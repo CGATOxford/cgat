@@ -1,20 +1,11 @@
-import os, sys, re, types, itertools, math
-
-from SphinxReport.Tracker import *
-from SphinxReport.Utils import PARAMS as P
-
 from MedipReport import *
 
 ##############################################################
 ##############################################################
 ##############################################################
-class TrackerDMRSummaryDESeq( ProjectTracker, SingleTableTrackerRows ):
-    table = "deseq_stats"
-    fields = ("tileset", "design", "track1", "track2" )
-
-class TrackerDMRSummaryEdgeR( ProjectTracker, SingleTableTrackerRows ):
-    table = "edger_stats"
-    fields = ("tileset", "design", "track1", "track2" )
+class TrackerDMRSummary( ProjectTracker, SingleTableTrackerRows ):
+    table = "dmr_stats"
+    fields = ( "method", "track", "treatment", "control" )
 
 # ##############################################################
 # ##############################################################

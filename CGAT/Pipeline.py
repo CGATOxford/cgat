@@ -44,7 +44,12 @@ import ConfigParser
 import Database
 
 # talking to a cluster
-import drmaa
+try:
+    import drmaa
+    HAS_DRMAA = True
+except RuntimeError:
+    HAS_DRMAA = False
+
 # talking to mercurial
 import hgapi
 
@@ -85,7 +90,7 @@ if not os.path.exists( SCRIPTS_DIR):
 PARAMS = { 
     'scriptsdir' : SCRIPTS_DIR,
     'toolsdir' : SCRIPTS_DIR,
-    'cmd-farm' : """%s/farm.py 
+    'cmd-farm' : """python %s/farm.py 
                 --method=drmaa 
                 --cluster-priority=-10 
 		--cluster-queue=all.q 
@@ -441,13 +446,15 @@ def concatenateAndLoad( infiles,
                         regex_filename = None, 
                         header = None, 
                         cat = None, 
-                        titles = False, 
+                        has_titles = True, 
                         options = "" ):
     '''concatenate categorical tables and load into a database.
 
     Concatenation assumes that the header is the same in all files.
-    The first file will be taken in completion, headers
-    in other files will be removed.
+    The first file will be taken in completion, headers in other files 
+    will be removed.
+
+    If *has_titles* is False, the tables are assumed to have no titles.
     '''
     
     infiles = " ".join(infiles)
@@ -466,8 +473,7 @@ def concatenateAndLoad( infiles,
     if not cat:
         cat = "track"
         
-    if titles == False:
-        no_titles = "--no-titles"
+    if has_titles == False: no_titles = "--no-titles"
     else: no_titles = ""
 
     options = " ".join(options)
@@ -494,19 +500,29 @@ def mergeAndLoad( infiles,
                   prefixes = None ):
     '''merge categorical tables and load into a database.
 
-    The tables are merged and entered row-wise, i.e each file is 
-    a row unless *row_wise* is set to False. The latter is useful if 
-    histograms are being merged.
+    The tables are merged and entered row-wise, i.e each file is a
+    row. If *row_wise* is set to False, each table will be a column in
+    the resulting table. This is useful if histograms are being
+    merged.
 
-    `columns` denotes the columns to be taken. By default, the first
+    *columns* denotes the columns to be taken. By default, the first
     two columns are taken with the first being the key. Filenames are 
     stored in a ``track`` column. Directory names are chopped off.
 
-    If `columns` is set to None, all columns will be taken. Here, column
-    names will receive a prefix. If ``prefixes`` is None, the filename
-    will be added as a prefix. If ``prefixes`` is a list, the respective
-    prefix will be added to each column. The length of ``prefixes`` and
-    ``infiles`` need to be the same.
+    If *columns* is set to None, all columns will be taken. Here,
+    column names will receive a prefix (*prefixes*). If *prefixes* is
+    None, the filename will be added as a prefix. 
+
+    If *prefixes* is a list, the respective prefix will be added to
+    each column. The length of *prefixes* and *infiles* need to be the
+    same.
+
+    The track names are given by the filenames without any paths. If
+    *suffix* is given, the suffix will be removed. If *regex* is set,
+    the full filename will be used to extract a track name via the
+    supplied regular expression.
+
+    *options* are passed on to ``csv2db.py``.
     '''
     if len(infiles) == 0:
         raise ValueError( "no files for merging")

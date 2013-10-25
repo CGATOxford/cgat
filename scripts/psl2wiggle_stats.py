@@ -45,9 +45,16 @@ import CGAT.Stats as Stats
 import CGAT.Blat as Blat
 
 import CGAT.Wiggle as Wiggle
-import alignlib
+import alignlib_lite
 
-if __name__ == '__main__':
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: psl2wiggle_stats.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"] )
 
@@ -111,8 +118,8 @@ if __name__ == '__main__':
 
         # psl always matches on the forward strand
 
-        map_genome2query = alignlib.makeAlignmentBlocks()
-        f = alignlib.AlignmentFormatBlat( "%i\t%i\t%i\t%i\t%s\t%s\t%s\n" % (\
+        map_genome2query = alignlib_lite.py_makeAlignmentBlocks()
+        f = alignlib_lite.py_AlignmentFormatBlat( "%i\t%i\t%i\t%i\t%s\t%s\t%s\n" % (\
                 match.mSbjctFrom,
                 match.mSbjctTo,
                 match.mQueryFrom,
@@ -155,3 +162,7 @@ if __name__ == '__main__':
         options.stdlog.write( "# ninput=%i, noutput=%i, nskipped=%i\n" % (ninput, noutput, nskipped) )
 
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

@@ -11,6 +11,8 @@ import warnings
 
 from nose.tools import assert_equal, ok_
 
+SUBDIRS = ("gpipe", "optic")
+
 ######################################### 
 # List of tests to perform.
 ######################################### 
@@ -39,6 +41,10 @@ def check_main( script ):
 
     #     ok_( "main" in dir(module), "no main function" )
 
+    # subsitute gpipe and other subdirectories.
+    for s in SUBDIRS:
+        script = re.sub( "%s_" % s, "%s/" %s, script )
+
     # check for text match
     ok_( [ x for x in open(script) if x.startswith("def main(") ], "no main function" )
 
@@ -50,9 +56,10 @@ def check_script( test_name, script, stdin, options, outputs, references, workin
     stdout = os.path.join( tmpdir, 'stdout' )
     if stdin: 
         if stdin.endswith( ".gz"):
-            stdin = '< <( zcat %s/%s)' % (os.path.abspath(workingdir), stdin)
+            # zcat on osX requires .Z suffix
+            stdin = 'gunzip < %s/%s |' % (os.path.abspath(workingdir), stdin)
         else:
-            stdin = '< %s/%s' % (os.path.abspath(workingdir), stdin)
+            stdin = 'cat %s/%s |' % (os.path.abspath(workingdir), stdin)
     else: stdin = ""
 
     if options:
@@ -64,10 +71,11 @@ def check_script( test_name, script, stdin, options, outputs, references, workin
         options = ""
 
     # use /bin/bash in order to enable "<( )" syntax in shells 
-    statement = ( "/bin/bash -c 'python %(script)s "
-                  " %(options)s"
-                  " %(stdin)s"
+    statement = ( "/bin/bash -c '%(stdin)s python %(script)s "
+                  " %(options)s" 
                   " > %(stdout)s'" ) % locals()
+
+    print statement
 
     retval = subprocess.call( statement, 
                               shell = True,
@@ -101,6 +109,8 @@ def test_scripts():
     '''yield list of scripts to test.'''
 
     scriptdirs = glob.glob( "tests/*.py" )
+
+    scriptdirs = [ x for x in scriptdirs if os.path.isdir( x ) ]
 
     if os.path.exists( "tests/test_scripts.yaml" ):
         config = yaml.load( open( "tests/test_scripts.yaml" ) )

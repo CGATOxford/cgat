@@ -13,7 +13,7 @@ Purpose
 build a map between peptides to cdnas. This script deals with
 frameshifts but not with larger indels. 
 
-This script requires the :mod:`alignlib` library and :file:`muscle`
+This script requires the :mod:`alignlib_lite.py_ library and :file:`muscle`
 to be installed.
 
 Usage
@@ -42,7 +42,7 @@ import time
 import optparse
 import CGAT.Experiment as E
 import CGAT.BlastAlignments as BlastAlignments
-import alignlib
+import alignlib_lite
 import CGAT.Genomics as Genomics
 import CGAT.FastaIterator as FastaIterator
 import CGAT.IOTools as IOTools
@@ -55,22 +55,22 @@ def AlignExhaustive( seq_wobble, seq_cds, seq_peptide, map_p2c, options, diag_wi
     """
 
     gop, gep = -1.0, -1.0
-    matrix = alignlib.makeSubstitutionMatrixBackTranslation( 1, -10, 1, alignlib.getDefaultEncoder() )
-    alignlib.setDefaultSubstitutionMatrix( matrix )
+    matrix = alignlib_lite.py_makeSubstitutionMatrixBackTranslation( 1, -10, 1, alignlib_lite.py_getDefaultEncoder() )
+    alignlib_lite.py_setDefaultSubstitutionMatrix( matrix )
 
     if seq_wobble.getLength() < 10000:
         if options.loglevel >= 6:
             options.stdlog.write( "# using full dynamic programing matrix.\n" )
             options.stdlog.flush()
         # do not penalize gaps at the end, because sometimes the last codon might be missing
-        alignator = alignlib.makeAlignatorDPFull( alignlib.ALIGNMENT_GLOBAL, gop, gep, 1, 1 )
+        alignator = alignlib_lite.py_makeAlignatorDPFull( alignlib_lite.py_ALIGNMENT_GLOBAL, gop, gep, 1, 1 )
     else:
         diag_width = abs(seq_wobble.getLength() - seq_cds.getLength()) + 1
         if options.loglevel >= 6:
             options.stdlog.write( "# using dot alignment with diagonal %i\n" % diag_width )
             options.stdlog.flush()
 
-        dots = alignlib.makeAlignmentMatrixRow()
+        dots = alignlib_lite.py_makeAlignmentMatrixRow()
             
         for x in range(0, seq_wobble.getLength()):
             xr = seq_wobble.asResidue( x )
@@ -83,9 +83,9 @@ def AlignExhaustive( seq_wobble, seq_cds, seq_peptide, map_p2c, options, diag_wi
             options.stdlog.write( "# finished adding %i dots" % dots.getLength() )
             options.stdlog.flush()
 
-        alignator_dummy = alignlib.makeAlignatorPrebuilt( dots )
+        alignator_dummy = alignlib_lite.py_makeAlignatorPrebuilt( dots )
         
-        alignator = alignlib.makeAlignatorDots( alignator_dummy, gop, gep )
+        alignator = alignlib_lite.py_makeAlignatorDots( alignator_dummy, gop, gep )
 
     alignator.align( map_p2c, seq_wobble, seq_cds )
 
@@ -128,7 +128,7 @@ def AlignCodonBased( seq_wobble, seq_cds, seq_peptide, map_p2c, options,
     map_p2c.clear()
 
     gop, gep = -1.0, -1.0
-    matrix = alignlib.makeSubstitutionMatrixBackTranslation( 1, -10, 1, alignlib.getDefaultEncoder() )
+    matrix = alignlib_lite.py_makeSubstitutionMatrixBackTranslation( 1, -10, 1, alignlib_lite.py_getDefaultEncoder() )
 
     pep_seq = seq_peptide.asString()
     cds_seq = seq_cds.asString()
@@ -177,7 +177,7 @@ def AlignCodonBased( seq_wobble, seq_cds, seq_peptide, map_p2c, options,
         # deal with mismatches
         if s <= 0:
 
-            tmp_map_p2c = alignlib.makeAlignmentVector()
+            tmp_map_p2c = alignlib_lite.py_makeAlignmentVector()
 
             ## backtrack to previous three codons and align
             ## three codons for double frameshifts that span two codons and
@@ -193,7 +193,7 @@ def AlignCodonBased( seq_wobble, seq_cds, seq_peptide, map_p2c, options,
             x_start = max(0, x - dx )
             # map to ensure that no ambiguous residue mappings
             # exist after re-alignment
-            y_start = max(0, map_p2c.mapRowToCol( x_start, alignlib.RIGHT ))
+            y_start = max(0, map_p2c.mapRowToCol( x_start, alignlib_lite.py_RIGHT ))
 
             if (x_start, y_start) == last_start:
                 raise ValueError( "infinite loop detected" )
@@ -203,15 +203,15 @@ def AlignCodonBased( seq_wobble, seq_cds, seq_peptide, map_p2c, options,
             x_end = min(x_start + 2 * d, len(wobble_seq) )
             y_end = min(y_start + 2 * d, len(cds_seq) )
 
-            wobble_fragment = alignlib.makeSequence(wobble_seq[x_start:x_end])
-            cds_fragment = alignlib.makeSequence(cds_seq[y_start:y_end])
+            wobble_fragment = alignlib_lite.py_makeSequence(wobble_seq[x_start:x_end])
+            cds_fragment = alignlib_lite.py_makeSequence(cds_seq[y_start:y_end])
             
             AlignExhaustive( wobble_fragment, cds_fragment, "", tmp_map_p2c, options )
 
             if options.loglevel >= 10:
                  options.stdlog.write("# fragmented alignment from %i-%i, %i-%i:\n%s\n" % (x_start, x_end,
                                                                                            y_start, y_end,
-                                                                                           str(alignlib.AlignmentFormatExplicit( tmp_map_p2c,
+                                                                                           str(alignlib_lite.py_AlignmentFormatExplicit( tmp_map_p2c,
                                                                                                                                  wobble_fragment, 
                                                                                                                                  cds_fragment ))))
                  
@@ -285,7 +285,7 @@ def AlignCodonBased( seq_wobble, seq_cds, seq_peptide, map_p2c, options,
 def PrintPrettyAlignment( seq_wobble, seq_cds, seq_pep, map_p2c, options ):
     """print a pretty alignment."""
 
-    f = alignlib.AlignmentFormatExplicit( map_p2c, seq_wobble, seq_cds )
+    f = alignlib_lite.py_AlignmentFormatExplicit( map_p2c, seq_wobble, seq_cds )
     wobble_ali, cds_ali = f.mRowAlignment, f.mColAlignment
     
     wi, ci, pi = 0, 0, 0
@@ -343,11 +343,11 @@ def getMapPeptide2Cds( peptide_sequence, cds_sequence, options ):
         options.stdlog.write( "# wobble sequence  (%5i): %s\n" % (len(w), w) )
         options.stdlog.flush()
 
-    seq_wobble = alignlib.makeSequence( w )
-    seq_cds = alignlib.makeSequence( string.upper(c) )
-    seq_peptide = alignlib.makeSequence( p )
+    seq_wobble = alignlib_lite.py_makeSequence( w )
+    seq_cds = alignlib_lite.py_makeSequence( string.upper(c) )
+    seq_peptide = alignlib_lite.py_makeSequence( p )
 
-    map_p2c = alignlib.makeAlignmentVector()
+    map_p2c = alignlib_lite.py_makeAlignmentVector()
 
     try:
         AlignCodonBased( seq_wobble, seq_cds, seq_peptide, map_p2c, options = options )
@@ -367,7 +367,7 @@ def getMapPeptide2Cds( peptide_sequence, cds_sequence, options ):
         if options.loglevel >= 2:
             options.stdlog.write("# too many gaps (%i>%i), realigning exhaustively.\n" % (ngaps, max_gaps ) )
             options.stdlog.flush()
-        full_map_p2c = alignlib.makeAlignmentVector()
+        full_map_p2c = alignlib_lite.py_makeAlignmentVector()
         
         AlignExhaustive( seq_wobble, seq_cds, seq_peptide, full_map_p2c, options )
         if options.loglevel >= 6:
@@ -402,7 +402,14 @@ def getMapPeptide2Cds( peptide_sequence, cds_sequence, options ):
     return map_p2c
     
         
-if __name__ == "__main__":
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: peptides2cds.py 2890 2010-04-07 08:58:54Z andreas $")
 
@@ -494,14 +501,14 @@ if __name__ == "__main__":
             identifier = peptide_identifier
 
         if options.output_format =="alignment":
-            options.stdout.write("\t".join( map(str, (identifier, alignlib.AlignmentFormatEmissions( map_p2c ),
+            options.stdout.write("\t".join( map(str, (identifier, alignlib_lite.py_AlignmentFormatEmissions( map_p2c ),
                                                       len(cur_record.sequence), len(cds_sequences[identifier])) ) )+"\n")
             
         elif options.output_format == "fasta":
 
             map_p2c.switchRowCol()
 
-            alignatum = alignlib.makeAlignatum( c )
+            alignatum = alignlib_lite.py_makeAlignatum( c )
             
             alignatum.mapOnAlignment( map_p2c, len(p) * 3 )
 
@@ -523,3 +530,7 @@ if __name__ == "__main__":
 
 
             
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

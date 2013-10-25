@@ -45,11 +45,18 @@ import types
 
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
-import alignlib
+import alignlib_lite
 import CGAT.FastaIterator as FastaIterator
 
 ##------------------------------------------------------------
-if __name__ == '__main__':
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: sequence2alignment.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
 
@@ -75,15 +82,15 @@ if __name__ == '__main__':
         sequence = re.sub( " ", "", cur_record.sequence)
         l = len(sequence)
 
-        map_sequence2mali = alignlib.makeAlignmentVector()        
+        map_sequence2mali = alignlib_lite.py_makeAlignmentVector()        
 
-        alignlib.AlignmentFormatExplicit( 0, sequence,
+        alignlib_lite.py_AlignmentFormatExplicit( 0, sequence,
                                           0, "X" * l ).copy( map_sequence2mali )
 
         options.stdout.write( "\t".join( (
                 cur_record.title,
                 "ref",
-                str( alignlib.AlignmentFormatBlocks( map_sequence2mali ) ) ) ) + "\n" )
+                str( alignlib_lite.py_AlignmentFormatBlocks( map_sequence2mali ) ) ) ) + "\n" )
         
         noutput += 1
 
@@ -92,3 +99,7 @@ if __name__ == '__main__':
         
     E.Stop()
     
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

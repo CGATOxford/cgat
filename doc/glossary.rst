@@ -80,9 +80,6 @@ File formats
     maf
         maf
    
-    fastq
-        
-
     rdf
         `Resource description framework <http://en.wikipedia.org/wiki/Resource_Description_Framework>`_
 

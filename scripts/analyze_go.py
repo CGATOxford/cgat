@@ -65,7 +65,14 @@ def WriteBackground( go_type, options, suffix ):
     outfile.close()
     
 
-if __name__ == "__main__":
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: analyze_go.py 309 2005-12-01 15:50:26Z andreas $")
 
@@ -93,3 +100,7 @@ if __name__ == "__main__":
         
 
     
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

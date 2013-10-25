@@ -721,7 +721,14 @@ def PrintMembers( rep_id, outfile, eliminated, eliminated_by_method ):
     return nmembers 
     
 ##------------------------------------------------------------
-if __name__ == '__main__':
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: gpipe/select_transcripts.py 2263 2008-11-17 16:36:29Z andreas $", usage = globals()["__doc__"] )
 
@@ -1157,4 +1164,8 @@ if __name__ == '__main__':
 
     E.Stop()
 
+
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
 

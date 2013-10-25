@@ -62,6 +62,7 @@ import sys
 import os
 import collections
 import itertools
+import re
 
 from rpy2.robjects import r as R
 import rpy2.robjects as ro
@@ -509,12 +510,16 @@ def loadTagData( tags_filename, design_filename ):
  
     E.info( "filtered data: %i observations for %i samples" % tuple( R('''dim(countsTable)''') ) )
 
-def filterTagData( min_sample_counts = 10):
-    '''filter tag data.'''
+def filterTagData( min_window_counts = 1, min_sample_counts = 10):
+    '''filter tag data.
+
+    * remove rows with at least x number of counts
+    * remove samples with a total of less that *min_sample_counts*
+    '''
     
     # Remove windows with no data
     R( '''max_counts = apply(countsTable,1,max)''' )
-    R( '''countsTable = countsTable[max_counts>0,]''')
+    R( '''countsTable = countsTable[max_counts>%i,]''' % min_window_counts )
     E.info( "removed %i empty rows" % tuple( R('''sum(max_counts == 0)''') ) )
     observations, samples = tuple( R('''dim(countsTable)'''))
     E.info( "trimmed data: %i observations for %i samples" % (observations, samples ))
@@ -559,10 +564,15 @@ def groupTagData(ref_group = None):
 
     return groups, pairs, has_replicates, has_pairs
     
-def plotHeatmap():
-    '''plot a heatmap.'''
-    
-    R('''dists <- dist( t(as.matrix(countsTable)) )''')
+def plotHeatmap( method = "correlation" ):
+    '''plot a heatmap.
+    '''
+
+    if method == "correlation":
+        R('''dists <- dist( (1 - cor(countsTable)) / 2 )''')
+    else:
+        R('''dists <- dist( t(as.matrix(countsTable)), method = '%s' )''' % method)
+
     R('''heatmap( as.matrix( dists ), symm=TRUE )''' )
 
 def runEdgeR( infile, 
@@ -647,11 +657,11 @@ def runEdgeR( infile,
         legend = []
         for pair in pairs:
             for g1, g2 in itertools.combinations(groups, 2 ):
-                key = "pair_%s_%s_vs_%s" % (pair, g1,g2)
+                key = re.sub( "-", "_", "pair_%s_%s_vs_%s" % (pair, g1,g2))
                 legend.append( key )
-                print R('''colnames( countsTable) ''')
-                print R(''' pairs=='%s' ''' % pair)
-                print R(''' groups=='%s' ''' % g1)
+                #print R('''colnames( countsTable) ''')
+                #print R(''' pairs=='%s' ''' % pair)
+                #print R(''' groups=='%s' ''' % g1)
                 R('''a = rowSums( countsTable[pairs == '%s' & groups == '%s'] ) ''' % (pair,g1) )
                 R('''b = rowSums( countsTable[pairs == '%s' & groups == '%s'] ) ''' % (pair,g2) )
                 R('''c = cumsum( sort(a - b) )''' )
@@ -1585,25 +1595,37 @@ def runCuffdiff( bamfiles,
         with IOTools.openFile( outfile, "w" ) as outf:
             writeExpressionResults( outf, results )
     
-def outputTagSummary( filename_tags, outfile, output_filename_pattern ):
+def outputTagSummary( filename_tags, 
+                      outfile, output_filename_pattern,
+                      filename_design = None):
     '''output summary values for a count table.'''
 
     E.info( "loading tag data from %s" % filename_tags)
-    
-    outfile.write( "metric\tvalues\n" )
 
-    R( '''countsTable = read.delim( '%(filename_tags)s', 
-                                     header = TRUE,
-                                     row.names = 1,
-                                     stringsAsFactors = TRUE,
-                                     comment.char = '#' )''' % locals() )
+    if filename_design != None:
+        # load all tag data
+        loadTagData( filename_tags, filename_design )
+
+        # filter
+        nobservations, nsamples = filterTagData()
+        
+    else:
+        # read complete table
+        R( '''countsTable = read.delim( '%(filename_tags)s', 
+                                         header = TRUE,
+                                         row.names = 1,
+                                         stringsAsFactors = TRUE,
+                                         comment.char = '#' )''' % locals() )
+
+        nobservations, nsamples = tuple(R('''dim(countsTable)'''))
+        E.info( "read data: %i observations for %i samples" % (nobservations,nsamples))
+        E.debug( "sample names: %s" % R('''colnames(countsTable)'''))
 
     nrows, ncolumns = tuple(R('''dim(countsTable)'''))
-    E.info( "read data: %i observations for %i samples" % (nrows,ncolumns))
-    E.debug( "sample names: %s" % R('''colnames(countsTable)'''))
 
-    outfile.write( "number of rows\t%i\n" % nrows )
-    outfile.write( "number of columns\t%i\n" % ncolumns )
+    outfile.write( "metric\tvalue\tpercent\n" )
+    outfile.write( "number of observations\t%i\t100\n" % nobservations )
+    outfile.write( "number of samples\t%i\t100\n" % nsamples )
     
     # Count windows with no data
     R( '''max_counts = apply(countsTable,1,max)''' )
@@ -1614,18 +1636,50 @@ def outputTagSummary( filename_tags, outfile, output_filename_pattern ):
     R( '''write.table( table(max_counts), file='%(outfilename)s', sep="\t", row.names=FALSE, quote=FALSE)''' % locals())
 
     # removing empty rows
-    E.info( "removing rows with no counts" )
+    E.info( "removing rows with no counts in any sample" )
     R( '''countsTable = countsTable[max_counts>0,]''')
 
     for x in range( 0,20):
         nempty = tuple( R('''sum(max_counts <= %i)''' % x))[0]
-        outfile.write( "max<=%i\t%i\t%f\n" % (x, nempty, 100.0 * nempty / nrows ) )
+        outfile.write( "max per row<=%i\t%i\t%f\n" % (x, nempty, 100.0 * nempty / nrows ) )
                        
     E.info( "removed %i empty rows" % tuple( R('''sum(max_counts == 0)''') ) )
     observations, samples = tuple( R('''dim(countsTable)'''))
     E.info( "trimmed data: %i observations for %i samples" % (observations, samples ))
 
+    # build correlation
+    R('''correlations = cor(countsTable)''')
+    outfilename = output_filename_pattern + "correlation.tsv"
+    E.info( "outputting sample correlations to %s" % outfilename )
+    R('''write.table( correlations, file='%(outfilename)s', sep="\t", 
+                      row.names=TRUE,
+                      col.names=NA, 
+                      quote=FALSE)''' % locals())
+
+    # output heatmap based on correlations
     outfilename = output_filename_pattern + "heatmap.svg"
     R.svg( outfilename )
-    plotHeatmap()
+    plotHeatmap( method = "correlation" )
     R['dev.off']()    
+
+def dumpTagData( filename_tags, filename_design, outfile ):
+    '''output filtered tag table.'''
+
+    if outfile == sys.stdout:
+        outfilename = ""
+    else:
+        outfilename = outfile.name
+
+    # load all tag data
+    loadTagData( filename_tags, filename_design )
+
+    # filter
+    nobservations, nsamples = filterTagData()
+
+    # output
+    R('''write.table( countsTable, 
+                      file='%(outfilename)s',
+                      sep='\t',
+                      quote=FALSE)''' % locals() )
+    
+

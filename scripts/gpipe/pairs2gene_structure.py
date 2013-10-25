@@ -104,7 +104,14 @@ param_filename_suffix = ".fasta"
 param_filename_prefix = ""
 
 ##------------------------------------------------------------
-if __name__ == '__main__':
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     try:
         optlist, args = getopt.getopt(sys.argv[1:],
@@ -244,3 +251,7 @@ if __name__ == '__main__':
             
     print E.GetFooter()
     
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

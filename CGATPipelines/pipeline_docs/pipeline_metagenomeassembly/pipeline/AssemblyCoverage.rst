@@ -74,20 +74,12 @@ are plotted below. This gives an indication as to the number of species that are
 is sufficient variablity in abundance between species present.
 
 
-.. report:: Tracker.TrackerImages
-   :render: gallery-plot
-   :tracker: coverage.dir/*coverage.png
-   :layout: column-2
+.. report:: AssemblyCoverage.CoverageMean
+   :render: line-plot
+   :transform: histogram
 
-   Histogram of average coverage over contigs
+   Histogram mean coverage over contigs
 
-
-.. report:: Tracker.TrackerImages
-   :render: gallery-plot
-   :tracker: coverage.dir/*density.png
-   :layout: column-2
-
-   Histogram of average coverage over contigs
 
 
 Variability in coverage
@@ -101,13 +93,6 @@ over each contig. It is not feasible to plot the coverage over each base for eve
 so we attempt to proxy this by looking at the distribution of the standard deviation of base
 coverage over the contigs. This may reveal populations of contigs that show a higher than expected
 standard deviation.
-
-
-.. report:: AssemblyCoverage.CoverageMean
-   :render: line-plot
-   :transform: histogram
-
-   Histogram mean coverage over contigs
 
 
 .. report:: AssemblyCoverage.CoverageSd

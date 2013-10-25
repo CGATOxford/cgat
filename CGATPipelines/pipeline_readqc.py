@@ -1,5 +1,5 @@
 """
-====================
+1====================
 ReadQc pipeline
 ====================
 
@@ -275,9 +275,13 @@ ILLUMINA_ADAPTORS = { "Genomic-DNA-Adaptor" : "GATCGGAAGAGCTCGTATGCCGTCTTCTGCTTG
                       "Genomic-PCR-Primer" : "CAAGCAGAAGACGGCATACGAGCTCTTCCGATCT",
                       "Paired-End-Adaptor" : "GATCGGAAGAGCGGTTCAGCAGGAATGCCGAG",
                       "Paired-End-PCR-Primer" : "CAAGCAGAAGACGGCATACGAGATCGGTCTCGGCATTCCTGCTGAACCGCTCTTCCGATCT",
+                      "TruSeq-HT-Adaptor-I3" : "GATCGGAAGAGCACACGTCTGAACTCCAGTCACTTAGGCATCTCGTATGC",
+                      "TruSeq-Adaptor-I7" : "GATCGGAAGAGCACACGTCTGAACTCCAGTCACCAGGTTCTATCTCGTAT",
+                      "TruSeq-Adaptor-I4" : "GATCGGAAGAGCACACGTCTGAACTCCAGTCACTGCCGGCTATCTCGTAT",
                       "TruSeq-HT-Adaptor-I5" : "AATGATACGGCGACCACCGAGATCTACACNNNNNACACTCTTTCCCTACACGACGCTCTTCCGATCT",
                       "TruSeq-HT-Adaptor-I7" : "GATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNNATCTCGTATGCCGTCTTCTGCTTG",
                       "TruSeq-LT-Adaptor-I6" : "GATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNATCTCGTATGCCGTCTTCTGCTTG",
+                      "TruSeq-Adaptor-I11" : "GATCGGAAGAGCACACGTCTGAACTCCAGTCACGGCTACATCTCGTATGC",
                       "TruSeq-Small-RNA-Adaptor" : "TGGAATTCTCGGGTGCCAAGG",
                       "TruSeq-Small-RNA-RT-Primer" : "GCCTTGGCACCCGAGAATTCCA",
                       "TruSeq-Small-RNA-PCR-Primer" : "AATGATACGGCGACCACCGAGATCTACACGTTCAGAGTTCTACAGTCCGA",
@@ -305,6 +309,8 @@ ILLUMINA_ADAPTORS = { "Genomic-DNA-Adaptor" : "GATCGGAAGAGCTCGTATGCCGTCTTCTGCTTG
                       "SmartIIA": "AAGCAGTGGTATCAACGCAGAGTAC",
                       "Illumina-Nextera-v2-Primer1" : "GTCTCGTGGGCTCGGAGATGTGTATAAGAGACAG",
                       "Illumina-Nextera-v2-Primer2" : "TCGTCGGCAGCGTCAGATGTGTATAAGAGACAG",
+                      "Illumina-Paired-End_Primer2" : "CGGTTCAGCAGGAATGCCGAGACCGATCTCGTATGCCGTCTTCTGCTTGA",
+                      "Illumina-Single-End-Adpator2" : "GATCGGAAGAGCTCGTATGCCGTCTTCTGCTTGGAAAGGAAGAGCACACG",
                       "Nextera-Transposon-End-Sequence" : "AGATGTGTATAAGAGACAG",
                       "Epicentre-Nextera-Primer1" : "AATGATACGGCGACCACCGA",
                       "Epicentre-Nextera-Primer2" : "CAAGCAGAAGACGGCATACGA",
@@ -416,6 +422,75 @@ def processReads( infiles, outfile ):
         track = P.snip( outfile, ".fastq.gz" )
 
 
+    if PARAMS["process_combine_reads"]:
+        E.warn("combining reads cannot be can not be combined with other processing for paired ended reads")
+        if not infile2: raise IOError("must have paired data to combine reads")
+
+        read_len, frag_len, frag_stdev = PARAMS["combine_reads_read_length"], \
+            PARAMS["combine_reads_fragment_length"], \
+            PARAMS["combine_reads_fragment_length_stdev"]
+
+        fragment_options = " ".join(map(str,[read_len, frag_len, frag_stdev]))
+
+        if PARAMS["combine_reads_max_overlap"]:
+            E.warn("if specifying --max-overlap read and fragment length options will be ignored")
+            max_overlap="--max-overlap=%i" % PARAMS["combine_reads_max_overlap"]
+            fragment_options = ""
+
+        elif not PARAMS["combine_reads_max_overlap"] and len(fragment_options.strip().split(" ")) < 3:
+            E.warn("have not specified --read-len, --frag-len, --frag-len-stddev: default --max-overlap used")
+            max_overlap = ""
+            fragment_options = ""
+
+        elif PARAMS["combine_reads_read_length"] and PARAMS["combine_reads_fragment_length"] and PARAMS["combine_reads_fragment_length_stdev"]:
+            if PARAMS["combine_reads_max_overlap"]:
+                E.warn("--max-overlap will override the specified read and fragment length options")
+            max_overlap = ""
+            fragment_options = """--read-len=%(read_len)i
+                                  --fragment-len=%(frag_len)i
+                                  --fragment-len-stddev=%(frag_stdev)i""" % locals() 
+        else:
+            max_overlap = ""
+            fragment_options = ""
+
+        if not PARAMS["combine_reads_min_overlap"]:
+            min_overlap = ""
+        else:
+            min_overlap = "--min-overlap=%i" % PARAMS["combine_reads_min_overlap"]
+        if not PARAMS["combine_reads_threads"]:
+            threads = ""
+        else:
+            threads = "--threads=%i" % PARAMS["combine_reads_threads"]
+        if not PARAMS["combine_reads_phred_offset"]:
+            phred_offset = ""
+        else:
+            phred_offset = "--phred-offset=%i" % PARAMS["combine_reads_phred_offset"]
+        if not PARAMS["combine_reads_max_mismatch_density"]:
+            max_mismatch_density = ""
+        else:
+            max_mismatch_density = "--max-mismatch-density=%f" % PARAMS["combine_reads_max_mismatch_density"]
+
+        statement = '''flash 
+                     %(min_overlap)s
+                     %(max_overlap)s
+                     %(max_mismatch_density)s
+                     %(phred_offset)s
+                     %(fragment_options)s
+                     --output-prefix=%(track)s
+                     %(threads)s
+                     --compress
+                     %(infile)s %(infile2)s >> %(outfile)s.log
+                     '''
+        P.run()
+        if PARAMS["combine_reads_concatenate"]:
+            infiles = " ".join([track + x for x in  [".notCombined_1.fastq.gz", ".notCombined_2.fastq.gz", ".extendedFrags.fastq.gz"]])
+            statement = '''zcat %(infiles)s | gzip > %(outfile)s; rm -rf %(infiles)s'''
+        else:
+            statement = '''mv %(track)s.extendedFrags.fastq.gz %(outfile)s'''
+        P.run()
+        return
+
+
     if PARAMS["process_sample"] and infile2:
         E.warn( "sampling can not be combined with other processing for paired ended reads")
         statement = '''zcat %(infile)s
@@ -469,6 +544,7 @@ def processReads( infiles, outfile ):
     if PARAMS["process_filter"]:
         s.append( 'fastq_quality_filter -Q %(offset)i -v %(filter_options)s 2>> %(outfile)s_filter.log')
         do_sth = True
+
 
     if PARAMS["process_sample"]:
         s.append( 'python %(scriptsdir)s/fastq2fastq.py --sample=%(sample_proportion)f --log=%(outfile)s_sample.log' )

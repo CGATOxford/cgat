@@ -96,7 +96,14 @@ def findCodonReverse( sequence, start, found_codons, abort_codons = None ):
     return found, start
 
 ##------------------------------------------------------------
-if __name__ == '__main__':
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: gpipe/predictions2transcripts.py 1841 2008-05-08 12:07:13Z andreas $",
                                     usage = globals()["__doc__"] )
@@ -451,3 +458,7 @@ if __name__ == '__main__':
             ninput, noutput, nseqs_extended, nseqs_filled, nfilled))
         
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+
