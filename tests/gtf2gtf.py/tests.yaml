@@ -96,40 +96,22 @@ exons_to_introns:
     options: --exons2introns
 
 filter_gene_apply:
-    stdin: hg19.small.sorted_gene.gtf.gz
+    stdin: hg19.small.sort_gene.gtf.gz
     outputs: [stdout]
     references: [hg19.small.filter_gene_apply.gtf.gz]
     options: --filter=gene --apply=<DIR>/hg19.small.gene_id.tsv
 
 filter_transcript_apply:
-    stdin: hg19.small.sorted_gene.gtf.gz
+    stdin: hg19.small.sort_gene.gtf.gz
     outputs: [stdout]
     references: [hg19.small.filter_transcript_apply.gtf.gz]
     options: --filter=transcript --apply=<DIR>/hg19.small.transcript_id.tsv
-
-filter_gene_sample:
-    stdin: hg19.small.sorted_gene.gtf.gz
-    outputs: [stdout]
-    references: [hg19.small.filter_gene_sample.gtf.gz]
-    options: --filter=gene --sample-size=20
-
-filter_transcript_sample:
-    stdin: hg19.small.sorted_gene.gtf.gz
-    outputs: [stdout]
-    references: [hg19.small.filter_transcript_sample.gtf.gz]
-    options: --filter=transcript --sample-size=20
 
 filter_gene_sample_min_exon_length:
     stdin: hg19.small.sort_gene.gtf.gz
     outputs: [stdout]
     references: [hg19.small.filter_gene_sample_min_exons_length.gtf.gz]
     options: --filter=gene --sample-size=20 --min-exons-length=1000
-
-filter_gene_sample_reset_strand:
-    stdin: hg19.small.sort_gene.gtf.gz
-    outputs: [stdout]
-    references: [hg19.small.filter_gene_sample_reset_strand.gtf.gz]
-    options: --filter=gene --sample-size=20 --reset-strand
 
 filter_longest_gene:
     stdin: hg19.small.sort_gene.gtf.gz 
@@ -159,7 +141,7 @@ remove_overlapping:
     stdin: sorted_gene.gtf.gz
     outputs: [stdout]
     references: [sorted_gene_remove_overlapping.gtf.gz]
-    options: --remove-overlapping=<DIR>/hg19.sort_gene.gtf.gz
+    options: --remove-overlapping=<DIR>/sorted_gene.gtf.gz
 
 remove_duplicates:
     stdin: hg19.chr19.gtf.gz
@@ -176,7 +158,7 @@ remove_duplicates:
 remove_duplicates:
     stdin: hg19.chr19.gtf.gz
     outputs: [stdout]
-    references: [hg19.chr19_remove_duplicates_transcripts.gtf.gz]
+    references: [hg19.chr19_remove_duplicates_transcript.gtf.gz]
     options: --remove-duplicates=transcript
 
 rename_gene:
