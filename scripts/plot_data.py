@@ -379,7 +379,7 @@ def main( argv = None ):
     if options.function:
         xstart, xend = pylab.gca().get_xlim()
         increment = (xend - xstart) / 100.0
-        exec("f = lambda x: %s" % options.function )
+        exec "f = lambda x: %s" % options.function in locals()
         xvals, yvals = [], []
         for x in range(0,100):
             xvals.append( xstart )

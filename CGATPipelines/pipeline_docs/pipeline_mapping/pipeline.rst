@@ -19,9 +19,12 @@ Contents:
    pipeline/MappingContext.rst
    pipeline/MappingAlignmentStatistics.rst
    pipeline/MappingComplexity.rst
-   pipeline/MappingTophat.rst
-   pipeline/MappingStar.rst
-   pipeline/Validation.rst
+   .. ifconfig:: "tophat" in MAPPERS:
+      pipeline/MappingTophat.rst
+   .. ifconfig:: "star" in MAPPERS:
+      pipeline/MappingStar.rst
+   .. ifconfig:: "tophat" in MAPPERS or "star" in MAPPERS or "gsnap" in MAPPERS
+      pipeline/Validation.rst
    python/Trackers.rst
  
 .. errorlist::

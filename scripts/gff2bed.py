@@ -46,7 +46,8 @@ def main( argv = sys.argv ):
 
     parser.add_option( "--name", dest="name", type="choice",
                        help = "field to use as the name field [%default]",
-                       choices = ("gene_id", "transcript_id", "class", "family", "feature", "source" ) )
+                       choices = ("gene_id", "transcript_id", "class", "family", 
+                                  "feature", "source", "repName" ) )
     
     parser.add_option( "--track", dest="track", type="choice",
                        choices=("feature", "source", None),

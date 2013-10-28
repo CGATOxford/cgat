@@ -1016,7 +1016,6 @@ def runDESeq( infile,
     
     Various plots are generate - annotation is from the manual (version 1.4)
 
-
     SVCPlot:
        squared coefficient of variation. Ratio of variance at base level to the
        square of the base mean.
@@ -1093,7 +1092,7 @@ def runDESeq( infile,
         E.warn( "no size factors - can not estimate - no output" )
         return
 
-    # Estimate variance
+    # estimate variance
     if has_replicates:
         E.info("replicates - estimating variance from replicates" )
     else:
@@ -1105,12 +1104,18 @@ def runDESeq( infile,
                                      method='%(dispersion_method)s',
                                      fitType='%(fit_type)s' )''' % locals())
 
-    # Plot size factors
-    deseqPlotSizeFactors( '%(outfile_prefix)ssize_factors.png''' % locals() )
+    # plot fit
+    R.png( '''%(outfile_prefix)sdispersion_estimates.png''' % locals() )
+    R('''plotDispEsts( cds )''')
+    R['dev.off']()
+                       
+    # plot size factors
+    deseqPlotSizeFactors( '%(outfile_prefix)ssize_factors.png' % locals() )
 
     # output size factors
     deseqOutputSizeFactors( "%(outfile_prefix)ssize_factors.tsv" % locals() ) 
-
+    
+    # plot scatter plots of pairs
     deseqPlotPairs('%(outfile_prefix)spairs.png' % locals()) 
 
     # in DESeq versions > 1.6 the following can be used

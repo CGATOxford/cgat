@@ -110,7 +110,6 @@ def test_scripts():
 
     scriptdirs = glob.glob( "tests/*.py" )
 
-    scriptdirs = [ x for x in scriptdirs if os.path.isdir( x ) ]
 
     if os.path.exists( "tests/test_scripts.yaml" ):
         config = yaml.load( open( "tests/test_scripts.yaml" ) )
@@ -129,7 +128,13 @@ def test_scripts():
                 if "regex" in values:
                     rx = re.compile( values["regex"] )
                     scriptdirs = filter( rx.search, scriptdirs )
-                    
+
+    # ignore those which don't exist as tests (files added through MANIFEST.in,
+    # such as version.py, __init__.py, ...
+    scriptdirs = [ x for x in scriptdirs if os.path.exists( x ) ]                    
+
+    # ignore non-directories
+    scriptdirs = [ x for x in scriptdirs if os.path.isdir( x ) ]
 
     scriptdirs.sort()        
 

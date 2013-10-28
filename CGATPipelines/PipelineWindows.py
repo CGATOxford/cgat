@@ -110,22 +110,24 @@ def buildDMRStats( infile, outfile, method ):
 
         if up: r["up"] += 1
         if down: r["down"] += 1
+        if fold2up: r["l2fold_up"] += 1
+        if fold2down: r["l2fold_down"] += 1
 
         if is_significant:
             r["significant"] += 1
             if up: r["significant_up"] += 1
             if down: r["significant_down"] += 1
             if fold2: r["fold2"] += 1
-            if fold2up: r["l2fold_up"] += 1
-            if fold2down: r["l2fold_down"] += 1
+            if fold2up: r["significant_l2fold_up"] += 1
+            if fold2down: r["significant_l2fold_down"] += 1
             
     header1, header2 = set(), set()
     for r in results.values(): header1.update( r.keys() )
     for s in status.values(): header2.update( s.keys() )
     
     header = ["method", "treatment", "control" ]
-    header1 = list(header1)
-    header2 = list(header2)
+    header1 = list(sorted(header1))
+    header2 = list(sorted(header2))
 
     outf = IOTools.openFile( outfile, "w" )
     outf.write( "\t".join(header + header1 + header2) + "\n" )
@@ -138,6 +140,15 @@ def buildDMRStats( infile, outfile, method ):
         outf.write( "\t".join( [str(r[x]) for x in header1 ] ) + "\t" )
         outf.write( "\t".join( [str(s[x]) for x in header2 ] ) + "\n" )
 
+def outputAllWindows( infile, outfile ):
+    '''output all Windows as a bed file with the l2fold change
+    as a score.
+    '''
+    outf = IOTools.openFile( outfile, "w" )
+    for line in IOTools.iterate( IOTools.openFile( infile ) ):
+        outf.write( "\t".join( (line.contig, line.start, line.end, "%6.4f" % float(line.l2fold ))) + "\n" ) 
+
+    outf.close()
 
         # ###########################################
         # ###########################################
@@ -161,6 +172,4 @@ def buildDMRStats( infile, outfile, method ):
         #                      log="x", pch=20, cex=.1 )
 
         #     R['dev.off']()
-
-#    outf.close()
 

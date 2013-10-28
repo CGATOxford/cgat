@@ -848,12 +848,12 @@ def mergeDMRWindows( infile, outfile ):
     P.run()
 
 #########################################################################
-@jobs_limit(1)
-@transform( mergeDMRWindows, suffix(".merged.gz"), ".load" )
-def loadDMRWindows( infile, outfile ):
-     '''merge overlapping windows.'''
-     P.load( infile, outfile, 
-             options = "--quick" )
+# @jobs_limit(1)
+# @transform( mergeDMRWindows, suffix(".merged.gz"), ".load" )
+# def loadDMRWindows( infile, outfile ):
+#      '''merge overlapping windows.'''
+#      P.load( infile, outfile, 
+#              options = "--quick" )
 
 #########################################################################
 @transform( mergeDMRWindows, suffix(".merged.gz"), ".stats" )
@@ -862,7 +862,40 @@ def buildDMRStats( infile, outfile ):
     method = os.path.dirname(infile)
     method = P.snip( method, ".dir")
     PipelineWindows.buildDMRStats( infile, outfile, method=method )
-    
+
+#########################################################################
+@transform( mergeDMRWindows, suffix(".merged.gz"), ".merged.gz.all.bed.gz" )
+def outputAllWindows( infile, outfile ):
+    '''output all bed windows.'''
+    PipelineWindows.outputAllWindows( infile, outfile )
+
+#########################################################################
+@transform( outputAllWindows, suffix(".all.bed.gz"), 
+            (".top.bed.gz", ".bottom.bed.gz" ) )
+def outputTopWindows( infile, outfiles ):
+    '''output bed with largest/smallest l2fold changes.
+    '''
+    outfile = outfiles[0]
+
+    statement = '''zcat %(infile)s
+    | awk '$4 !~ /inf/'
+    | sort -k4,4n 
+    | tail -n %(bed_export)i 
+    | gzip > %(outfile)s
+    '''
+    P.run()
+
+    outfile = outfiles[1]
+
+    statement = '''zcat %(infile)s
+    | awk '$4 !~ /inf/'
+    | sort -k4,4n 
+    | head -n %(bed_export)i 
+    | gzip 
+    > %(outfile)s
+    '''
+    P.run()
+
 #########################################################################
 @merge( buildDMRStats, "dmr_stats.load" )
 def loadDMRStats( infiles, outfile ):
@@ -895,30 +928,37 @@ def buildDMRWindowStats( infile, outfile ):
     '''
     P.run()
 
-
 #########################################################################
 #########################################################################
 #########################################################################
-@transform( mergeDMRWindows, regex(  "(.*)\.(.*).merged.gz"), r"\1_\2.dmr.bed.gz" )
-def buildDMRBed( infile, outfile ):
-    '''output bed6 file with differentially methylated regions.
-
-    Overlapping/book-ended entries are merged.
-
-    The score is the average log fold change.
+@follows( mkdir("bed.dir") )
+@merge( mergeDMRWindows, "bed.out" )
+def buildDMRBed( infiles, outfile ):
+    '''output bed6 files with differentially methylated regions of interest.
     '''
     
     to_cluster = True
 
-    statement = '''zcat %(infile)s
-    | python %(scriptsdir)s/csv_cut.py contig start end l2fold significant
-    | awk '$5 == "1" {printf("%%s\\t%%i\\t%%i\\t%%i\\t%%f\\n", $1,$2,$3,++a,$4)}'
-    | gzip > %(outfile)s'''
+    for infile in infiles:
+        dirname, fname = os.path.split( infile )
+        method = P.snip( dirname, ".dir" )
+        design = re.sub( ".tsv.*", "", fname )
 
-#    | mergeBed -i stdin -scores mean 
+        # create links for existing files
+        targetname = os.path.join( "bed.dir", design + "-" + fname )
+        if not os.path.exists( targetname ):
+            os.symlink( infile, targetname )
+
+        # output top/bottom x number of intervals
+            
+
 
     P.run()
 
+
+#########################################################################
+#########################################################################
+#########################################################################
 @merge( buildDMRBed, "dmr_overlap.tsv.gz" )
 def computeDMROverlap( infiles, outfile ):
     '''compute overlap between bed sets.'''
@@ -973,7 +1013,7 @@ def buildMRBed( infile, outfile ):
     
     E.info( "%s" % str(c) )
 
-@follows( loadDMRWindows, loadDMRStats,buildDMRBed, buildMRBed )
+@follows( loadDMRStats, buildDMRBed, buildMRBed )
 def dmr(): pass
 
 @follows( diff_windows, dmr) 
@@ -1008,44 +1048,14 @@ def update_report():
 def publish():
     '''publish files.'''
 
+    # directory : files
+    export_files = { "bamfiles": glob.glob("*.bam") + glob.glob("*.bam.bai"),
+                     "bigwigfiles": glob.glob("*.bw"),
+                     "bedfiles": glob.glob("deseq.dir/*.bed.gz") + glob.glob("edger.dir/*.bed.gz"),
+                     }
+
     # publish web pages
-    P.publish_report()
-
-    # publish additional data
-    web_dir = PARAMS["web_dir"]
-    project_id = P.getProjectId()
-
-    ucsc_urls = {
-        "bam": 
-        """track type=bam name="%(track)s" bigDataUrl=http://www.cgat.org/downloads/%(project_id)s/%(dirname)s/%(filename)s""" ,
-        "bigwig":
-        """track type=bigWig name="%(track)s" bigDataUrl=http://www.cgat.org/downloads/%(project_id)s/%(dirname)s/%(filename)s""" ,
-        }
-        
-    # directory, files
-    exportfiles = (
-        ( "bamfiles", glob.glob( "*/*.genome.bam" ) + glob.glob( "*/*.genome.bam.bai" ), "bam" ),
-        ( "bamfiles", glob.glob( "*/*.prep.bam" ) + glob.glob( "*/*.prep.bam.bai" ), "bam" ),
-        ( "medips", glob.glob( "*/*.bigwig" ), "bigwig"),
-        )
-    
-    ucsc_files = []
-
-    for targetdir, filenames, datatype in exportfiles:
-        for src in filenames:
-            filename = os.path.basename(src)
-            dest = "%s/%s/%s" % (web_dir, targetdir, filename)
-            suffix = os.path.splitext( src )
-            if suffix in ucsc_urls: ucsc_files.append( ( datatype, targetdir, filename ) )
-            dest = os.path.abspath( dest )
-            if not os.path.exists( dest ):
-                os.symlink( os.path.abspath(src), dest )
-
-    # output ucsc links
-    for ucsctype, dirname, filename in ucsc_files:
-        filename = os.path.basename( filename )
-        track = P.snip( filename, ucsctype )
-        print ucsc_urls[ucsctype] % locals()
+    P.publish_report( export_files = export_files )
 
 if __name__== "__main__":
     sys.exit( P.main(sys.argv) )

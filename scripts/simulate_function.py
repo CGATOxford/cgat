@@ -84,7 +84,7 @@ def main( argv = None ):
     if options.xrange: options.xrange = map(float, options.xrange.split(","))
     if options.yrange: options.yrange = map(float, options.yrange.split(","))
 
-    exec("f = lambda x: %s" % options.function )
+    exec "f = lambda x: %s" % options.function in locals()
         
     options.stdout.write( "x\ty\n" )
     x = options.xrange[0]
@@ -94,8 +94,6 @@ def main( argv = None ):
         x += options.xrange[2]
 
     E.Stop()
-    
-        
 
 if __name__ == "__main__":
     sys.exit( main( sys.argv) )

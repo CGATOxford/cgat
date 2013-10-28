@@ -1,3 +1,5 @@
+.. _CGATInstallationOSX:
+
 =================
 OS X installation
 =================
@@ -6,7 +8,7 @@ This section describes the installation process on OS X. The installation
 below has been tested on a MacBook Pro running OS X 10.8.5.
 
 Begin by installing `homebrew <http://brew.sh/>`_ by following these
-`instructions <http://hackercodex.com/guide/mac-osx-mountain-lion-10.8-configuration/`_
+`instructions <http://hackercodex.com/guide/mac-osx-mountain-lion-10.8-configuration/>`_
 
 Next, install various packages::
 
@@ -17,7 +19,7 @@ Next, install various packages::
    brew install python --with-brewed-openssl
 
 Install the R package from `here <http://cran.r-project.org/bin/macosx/>`_ and 
-_bedtools::
+bedtools_::
 
    wget http://bedtools.googlecode.com/files/BEDTools.v2.17.0.tar.gz
    tar -xvzf http://bedtools.googlecode.com/files/BEDTools.v2.17.0.tar.gz
