@@ -1,0 +1,83 @@
+=============
+Release Notes
+=============
+
+Release 0.1.8
+=============
+
+* OS X compatibility release
+* various bugfixes
+
+Contributors
+============
+
+The following people have contributed to the CGAT Code collection:
+
+* Andreas Heger
+* Antonio Berlanga-Taylor
+* Martin Dienstbier
+* Nicholas Ilott
+* Jethro Johnson
+* Katherine Fawcett
+* Stephen Sansom
+* David Sims
+* Ian Sudbery
+* Hu Xiaoming
+* Lesheng Kong
+
+3rd party code
+==============
+
+The CGAT code collection has been made possible by the many developers
+in the bioinformatics and python community that have made their code
+available for sharing. The code collection includes some snippets of
+code taken from elsewhere for convenience, most notably:
+
+1. IGV.py from Brent Petersen 
+   https://github.com/brentp/bio-playground/blob/master/igv/igv.py
+
+2. Nested containment list from the Pygr project
+   http://code.google.com/p/pygr/
+
+3. SVGdraw.py was written by Fedor Baart & Hans de Wit
+
+4. list_overlap.py from Brent Petersen
+   https://github.com/brentp/bio-playground/blob/master/utils/list_overlap_p.py
+
+5. Iterators.py from an unknown source.
+
+Licence
+=======
+
+The CGAT code is released under the new BSD licence::
+
+    Copyright (c) 2013, Andreas Heger, MRC CGAT
+
+    All rights reserved.
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions are
+    met:
+
+	Redistributions of source code must retain the above copyright
+	notice, this list of conditions and the following disclaimer.
+	Redistributions in binary form must reproduce the above copyright
+	notice, this list of conditions and the following disclaimer in
+	the documentation and/or other materials provided with the
+	distribution.  Neither the name of the Medical Research Council nor the
+	names of its contributors may be used to endorse or promote
+	products derived from this software without specific prior written
+	permission.
+
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+    A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+    HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+    SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+    LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+    DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+    THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
