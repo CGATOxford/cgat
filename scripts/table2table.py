@@ -39,6 +39,10 @@ flatten-table
 as-column
    Output table as a single column. Colums in the original table are appended and output.
 
+collapse-table
+   Collapse a table of two columns with row names in the first column. Outputs a table
+   with multiple columns for each row name.
+
 Methods for numerical columns
 +++++++++++++++++++++++++++++
 
@@ -102,6 +106,7 @@ import optparse
 import math
 import types
 import itertools
+import collections
 
 import CGAT.Experiment as E
 import CGAT.CSV as CSV
@@ -242,6 +247,51 @@ def readAndExpandTable( infile, options ):
         for n in range(nrows):
             options.stdout.write( "\t".join( [ d[n] for d in data ] ) + "\n" )
 
+##########################################################
+##########################################################
+##########################################################        
+def readAndCollapseTable( infile, options, missing_value = "" ):
+    '''collapse a table.
+
+    Collapse a table of two columns with row names in the first
+    column. Outputs a table with multiple columns for each row name.
+    '''
+
+    fields, table  = CSV.ReadTable( infile, with_header = options.has_headers, as_rows = True )
+
+    if len(fields) != 2: 
+        raise NotImplementedError( "can only work on tables with two columns" )
+
+    values = collections.defaultdict( list )
+    
+    # column header after which to add
+    separator = table[0][0]
+    row_names = set( [ x[0] for x in table ] )
+
+    row_name, value = table[0]
+    values[row_name].append( value )
+    added = set( [ row_name ])
+    for row_name, value in table[1:]:
+        if row_name == separator:
+            for r in row_names: 
+                if r not in added: values[r].append( missing_value )
+            added = set()
+
+        values[row_name].append( value )
+        added.add( row_name )
+
+    for r in row_names: 
+        if r not in added: values[r].append( missing_value )
+        
+    sizes = set([ len(x) for x in values.values() ])
+    assert len(sizes) == 1, "unequal number of row_names"
+    size = list(sizes)[0]
+
+    options.stdout.write( "row\t%s\n" % ( "\t".join( ["column_%i" % x for x in range(size)] ) ) )
+    
+    for key, row in values.items():
+        options.stdout.write( "%s\t%s\n" % (key, "\t".join( row) ) )
+    
 ##########################################################
 ##########################################################
 ##########################################################        
@@ -397,11 +447,14 @@ def main( argv = None ):
     parser.add_option("--join-table", dest="join_column", type="int",
                       help="join rows in a table by columns."  )
 
+    parser.add_option("--collapse-table", dest="collapse_table", type="string",
+                      help="collapse a table. Value determines the missing variable [%default]."  )
+
     parser.add_option("--join-column-name", dest="join_column_name", type="int",
                       help="use this column as a prefix."  )
 
     parser.add_option("--flatten-table", dest="flatten_table", action="store_true",
-                      help="flatten table."  )
+                      help="flatten a table [%default]."  )
 
     parser.add_option("--as-column", dest="as_column", action="store_true",
                       help="output table as a single column."  )
@@ -415,11 +468,15 @@ def main( argv = None ):
     parser.add_option( "--fdr-method", dest="fdr_method", type="choice",
                       choices = ( "BH", "bonferroni", "holm", "hommel", "hochberg", "BY" ),
                       help="method to perform multiple testing correction by controlling the fdr [default=%default]."  )
+
     #IMS: add option to use a column as the row id in flatten
     parser.add_option("--id-column", dest="id_column", type ="string",
-                      help="list of column(s) to use as the row id when flattening the table. If None, then row number is used. [defualt=%default].")
+                      help="list of column(s) to use as the row id when flattening the table. "
+                      "If None, then row number is used. [default=%default].")
+
     parser.add_option("--variable-name", dest="variable_name", type = "string",
                       help="the column header for the 'variable' column when flattening [default=%default].")
+
     parser.add_option("--value-name", dest="value_name", type = "string",
                       help="the column header for the 'value' column when flattening [default=%default].")
 
@@ -441,6 +498,7 @@ def main( argv = None ):
         missing_value = "na",
         sort_rows = None,
         flatten_table= False,
+        collapse_table = None,
         separator = ";",
         expand = False,
         join_column = None,
@@ -544,6 +602,9 @@ def main( argv = None ):
 
     elif options.expand_table:
         readAndExpandTable( options.stdin, options )
+
+    elif options.collapse_table != None:
+        readAndCollapseTable( options.stdin, options, options.collapse_table )
 
     elif "grep" in options.methods:
 

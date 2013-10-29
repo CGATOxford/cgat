@@ -11,7 +11,7 @@ Purpose
 -------
 
 This script reads a gene set in :term:`gtf` format from stdin, applies some 
-transformation, and outputs a new gene set in :term:`gtf format to stdout. 
+transformation, and outputs a new gene set in :term:`gtf` format to stdout. 
 
 Options
 -------
@@ -36,7 +36,7 @@ Sort gene sets
 
       +---------------+---------------------------------------+
       | option        | order in which fields are sorted      | 
-      +===============|=======================================+
+      +---------------|---------------------------------------+
       | gene          | gene_id, transcript_id, contig, start |
       +---------------+---------------------------------------+
       | contig+gene   | contig, gene_id, transcript_id, start | 
