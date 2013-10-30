@@ -93,6 +93,7 @@ def buildDMRStats( infile, outfile, method ):
     '''build dmr summary statistics.
     '''
     results = collections.defaultdict( lambda : collections.defaultdict(int) )
+
     status =  collections.defaultdict( lambda : collections.defaultdict(int) )
     x = 0
     for line in IOTools.iterate( IOTools.openFile( infile ) ):

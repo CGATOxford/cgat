@@ -118,49 +118,25 @@ def main( argv = None ):
 
         rx_window = re.compile(options.pattern_window)
         # filter any of the DESeq/EdgeR message that end up at the top of the output file
-        keep = False
-        invert = False
-        for line in options.stdin:
 
-            if line.startswith("test_id"): 
-                keep = True
-                data = line[:-1].split( "\t" )
-                # replace test_id with contig, start, end
-                if data[1].startswith("control"): invert = True
-                continue
+        for data in IOTools.iterate( options.stdin ):
 
-            if line.startswith("#"): continue
-
-            if not keep: 
-                continue
-
-            try:
-                (test_id,
-                 a_name, a_mean, a_std,
-                 b_name, b_mean, b_std, 
-                 pvalue, qvalue, l2fold, fold,
-                 significant, status) = line[:-1].split("\t")
-            except ValueError:
-                E.warn('parsing error in line %s' % line )
-                continue
-
-            contig, start, end = rx_window.match(test_id ).groups()
-            significant = int(significant)
+            contig, start, end = rx_window.match( data.test_id ).groups()
             start, end = map( int, (start, end ) )
-            pvalue, qvalue, l2fold, fold = map( float, (pvalue, qvalue, l2fold, fold) )
-            (a_mean, a_std, b_mean, b_std) = \
-                map( float, (a_mean, a_std, b_mean, b_std) )
-
-            if invert: 
-                a_name, b_name = b_name, a_name
-                a_mean, b_mean = b_mean, a_mean
-                a_std, b_std = b_std, a_std
 
             yield DATA._make( (contig, start, end,
-                               a_name, a_mean, a_std,
-                               b_name, b_mean, b_std,     
-                               pvalue, qvalue, l2fold, fold,
-                               significant, status,
+                               data.treatment_name, 
+                               float(data.treatment_mean), 
+                               float(data.treatment_std),
+                               data.control_name, 
+                               float(data.control_mean), 
+                               float(data.control_std),     
+                               float(data.pvalue), 
+                               float(data.qvalue), 
+                               float(data.l2fold), 
+                               float(data.fold),
+                               int(data.significant), 
+                               data.status,
                                0) )
             
             

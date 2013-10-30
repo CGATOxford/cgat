@@ -21,15 +21,23 @@ Contents:
    pipeline/MappingComplexity.rst
    python/Trackers.rst
 
-.. ifconfig:: "tophat" in MAPPERS:
+.. ifconfig:: "bwa" in MAPPERS
+
    .. toctree::
       pipeline/MappingTophat.rst
 
-.. ifconfig:: "star" in MAPPERS:
+.. ifconfig:: "tophat" in MAPPERS
+
+   .. toctree::
+      pipeline/MappingTophat.rst
+
+.. ifconfig:: "star" in MAPPERS
+
    .. toctree::
       pipeline/MappingStar.rst
 
-.. ifconfig:: "tophat" in MAPPERS or "star" in MAPPERS or "gsnap" in
+.. ifconfig:: "tophat" in MAPPERS or "star" in MAPPERS or "gsnap" in MAPPERS
+
    .. toctree::
       pipeline/Validation.rst
  

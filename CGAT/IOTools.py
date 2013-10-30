@@ -778,13 +778,15 @@ def iterate( infile ):
 
     n = 0
     for line in infile:
-        n += 1
         if line.startswith("#"): continue
+        n += 1
         if n == 1: 
             header = line[:-1].split()
             DATA = collections.namedtuple( "DATA", header )
             continue
 
+        print DATA
+        print line[:-1].split()
         result = DATA( *line[:-1].split() )
 
         yield result

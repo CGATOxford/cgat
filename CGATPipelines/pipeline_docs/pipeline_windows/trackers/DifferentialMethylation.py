@@ -7,6 +7,24 @@ class TrackerDMRSummary( ProjectTracker, SingleTableTrackerRows ):
     table = "dmr_stats"
     fields = ( "method", "track", "treatment", "control" )
 
+class TrackerDESeqSizeFactors( ProjectTracker ):
+    pattern = "(.*)_deseq_size_factors" 
+    
+    def __call__(self, track ):
+        return self.getAll( "SELECT sample, * FROM %(track)s_deseq_size_factors" )
+
+class TrackerDESeqSummary( ProjectTracker ):
+    pattern = "(.*)_deseq_summary" 
+    
+    def __call__(self, track ):
+        return self.getAll( "SELECT sample, * FROM %(track)s_deseq_summary" )
+
+class TrackerDESeqSummary( ProjectTracker ):
+    pattern = "(.*)_edger_summary" 
+    
+    def __call__(self, track ):
+        return self.getAll( "SELECT sample, * FROM %(track)s_edger_summary" )
+
 # ##############################################################
 # ##############################################################
 # ##############################################################
