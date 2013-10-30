@@ -79,7 +79,8 @@ rank
    substitute cells with their ranks in a column
 
 fdr
-   compute an FDR over all columns selected. Replace cells with the qvalues.
+   compute an FDR over selected columns. Replaces the columns
+   with the qvalues.
 
 Usage
 -----
@@ -120,7 +121,14 @@ def getColumns( fields, columns = "all" ):
     elif columns == "all-but-first":
         return list(range( 1, len(fields) ))
     else:
-        return map( lambda x: int(x) - 1, columns.split(","))
+        map_field2column = dict( [(y,x) for x,y in enumerate( fields) ] )
+        c = []
+        for x in columns.split(","):
+            if x in map_field2column:
+                c.append(map_field2column[x])
+            else:
+                c.append( int(x) - 1 )
+        return c
 
 ##########################################################
 ##########################################################
@@ -469,6 +477,10 @@ def main( argv = None ):
                       choices = ( "BH", "bonferroni", "holm", "hommel", "hochberg", "BY" ),
                       help="method to perform multiple testing correction by controlling the fdr [default=%default]."  )
 
+    parser.add_option( "--fdr-add-column", dest="fdr_add_column", type="string",
+                       help = "add new column instead of replacing existing columns. "
+                       "The value of the option will be used as prefix if there are multiple columns [%default]" )
+
     #IMS: add option to use a column as the row id in flatten
     parser.add_option("--id-column", dest="id_column", type ="string",
                       help="list of column(s) to use as the row id when flattening the table. "
@@ -506,6 +518,7 @@ def main( argv = None ):
         compute_fdr = None,
         as_column = False,
         fdr_method= "BH",
+        fdr_add_column = None,
         id_column=None,
         variable_name="column",
         value_name="value",
@@ -729,23 +742,39 @@ def main( argv = None ):
                     for c in options.columns:                
                         for r in range(nrows):
                             if type(table[c][r]) == types.FloatType and \
-                                   table[c][r] < boundary:
+                                    table[c][r] < boundary:
                                 table[c][r] = new_value
 
             elif method == "fdr":
                 pvalues = []
                 for c in options.columns: pvalues.extend( table[c] )
 
-                assert max(pvalues) <= 1.0, "pvalues > 1 in table"
-                assert min(pvalues) >= 0, "pvalue < 0 in table"
+                assert max(pvalues) <= 1.0, "pvalues > 1 in table: max=%s" % str(max(pvalues))
+                assert min(pvalues) >= 0, "pvalue < 0 in table: min=%s" % str(min(pvalues))
 
                 # convert to str to avoid test for float downstream
                 qvalues = map(str, Stats.adjustPValues( pvalues, method = options.fdr_method ))
 
-                x = 0
-                for c in options.columns: 
-                    table[c] = qvalues[x:x+nrows]
-                    x += nrows
+                if options.fdr_add_column == None:
+                    x = 0
+                    for c in options.columns: 
+                        table[c] = qvalues[x:x+nrows]
+                        x += nrows
+                else:
+                    # add new column headers
+
+                    if len(options.columns) == 1:
+                        fields.append( options.fdr_add_column )
+                    else:
+                        for co in options.columns:
+                            fields.append( options.fdr_add_column + fields[c] )
+
+                    x = 0
+                    for c in options.columns:
+                        # add a new column
+                        table.append(qvalues[x:x+nrows])
+                        x += nrows
+                    ncols += len(options.columns)
 
             elif method == "normalize-by-table":
 
