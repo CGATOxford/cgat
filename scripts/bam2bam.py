@@ -277,6 +277,11 @@ def main( argv = None ):
             pysam_out.close()
 
         if options.inplace:
+            # set date and file permissions according to original
+            # Note: currently it will not update user and group.
+            original = os.stat(bamfile)
+            os.utime( tmpfile.name, (original.st_atime, original.st_mtime) )
+            os.chmod( tmpfile.name, original.st_mode ) 
             # move new file over original copy
             shutil.move( tmpfile.name, bamfile )
             # re-index
