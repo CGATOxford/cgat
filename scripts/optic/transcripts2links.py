@@ -85,7 +85,14 @@ def WriteLinks( outfile, chunk, weight = 0.0, separator = "|"):
                            str(weight) + "\n")
     
     
-if __name__ == "__main__":
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: optic/transcripts2links.py 2781 2009-09-10 11:33:14Z andreas $")
 
@@ -178,3 +185,7 @@ if __name__ == "__main__":
             WriteLinks( sys.stdout, c, options.weight, options.separator)
 
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

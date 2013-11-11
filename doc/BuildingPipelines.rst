@@ -300,6 +300,8 @@ Note that report building requries two files in the :term:`working directory`:
    * :file:`sphinxreport.ini` - configuration values for Sphinxreport_.
    * :file:`conf.py` - configuration values for sphinx.
 
+The section :ref:`WritingReports` contains more information.
+
 .. _ConfigurationValues:
 
 Configuration values

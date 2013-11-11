@@ -4,10 +4,14 @@
 CGAT Code Clean Installation
 ============================
 
-CGAT Code Collection depends on numerous system libraries. Here you have two ways of
-installing all of these dependencies: :ref:`CleanQuickInstallation` or a :ref:`CleanManualInstallation`.
+The section describes the steps to install the CGAT Code collection and its
+dependencies inside a newly created environment. The instructions below have
+been tested on a Red Hat Linux Enterprise 6.x-based operating system.
+For instructions for OS X, see :ref:`CGATInstallationOSX`.
 
-System requirements: this installation guide works in Red Hat Linux Enterprise 6.x-based operating systems.
+The :ref:`CleanQuickInstallation` uses CGAT supplied scripts for
+installation, while :ref:`CleanManualInstallation` lists all the 
+steps individually.
 
 .. _CleanQuickInstallation:
 

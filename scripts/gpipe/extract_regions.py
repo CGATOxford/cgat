@@ -465,7 +465,14 @@ def ProcessPredictions( dbhandle, schema, options, prediction_ids, taboo_regions
         options.stdlog.write( "# %s: ninput=%i, npredictions=%i, nlocations=%i, noutput=%i, nskipped_length=%i, nskipped_overlap=%i, nskipped_doubles=%i\n" % (
             schema, len(prediction_ids), len(tokens), len(locations), noutput, nskipped_length, nskipped_overlap, nskipped_doubles))
 
-if __name__ == "__main__":
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: gpipe/extract_regions.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
@@ -626,3 +633,7 @@ if __name__ == "__main__":
         ProcessPredictions( dbhandle, options.schema, options, prediction_ids, taboo_regions )        
 
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

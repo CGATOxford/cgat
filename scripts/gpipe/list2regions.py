@@ -95,7 +95,14 @@ param_border = 100
 from predict_genes import PredictorExonerate, PredictorGenewise
 
 ##------------------------------------------------------------
-if __name__ == '__main__':
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     try:
         optlist, args = getopt.getopt(sys.argv[1:],
@@ -202,3 +209,7 @@ if __name__ == '__main__':
     if param_loglevel >= 1:
         print "# found=%i, missed=%i, failed=%i" % (nfound, nmissed, nfailed) 
         
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

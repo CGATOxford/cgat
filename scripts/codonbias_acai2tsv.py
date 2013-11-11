@@ -133,8 +133,13 @@ CODON_PREFERENCES = {
     }
     }
 
+def main( argv = None ):
+    """script main.
 
-if __name__ == "__main__":
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: codonbias_acai2tsv.py 865 2007-01-15 13:44:43Z andreas $")
 
@@ -493,4 +498,7 @@ if __name__ == "__main__":
             outfile.write( "%s\t%f\n" % ( codon, usages[codon]) )
 
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
     

@@ -111,7 +111,14 @@ def GetCounts( r, priority ):
     return dd
 
 
-if __name__ == "__main__":
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser.add_option("-g", "--genomes", dest="genomes", type="string",
                       help="genomes to analyse."  )
@@ -247,3 +254,7 @@ if __name__ == "__main__":
     sys.stdout.write("all\t%s\n" % "\t".join(map(lambda x: "%i" % x, totals )))
 
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

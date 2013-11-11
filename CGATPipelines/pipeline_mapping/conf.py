@@ -38,6 +38,20 @@ version = '1.0'
 release = '1'
 
 ################################################################
+# Adding custom configuration variables for ifconfig extension
+def setup(app):
+    app.add_config_value('MAPPERS', '', True)
+
+#  Setting custom configuration variables
+import CGAT.Pipeline as P
+P.getParameters(
+    ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
+     "../pipeline.ini",
+     "pipeline.ini" ] )
+
+MAPPERS = P.asList( P.PARAMS["mappers" ] )
+
+#################################################################
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.

@@ -19,10 +19,27 @@ Contents:
    pipeline/MappingContext.rst
    pipeline/MappingAlignmentStatistics.rst
    pipeline/MappingComplexity.rst
-   pipeline/MappingTophat.rst
-   pipeline/MappingStar.rst
-   pipeline/Validation.rst
    python/Trackers.rst
+
+.. ifconfig:: "bwa" in MAPPERS
+
+   .. toctree::
+      pipeline/MappingTophat.rst
+
+.. ifconfig:: "tophat" in MAPPERS
+
+   .. toctree::
+      pipeline/MappingTophat.rst
+
+.. ifconfig:: "star" in MAPPERS
+
+   .. toctree::
+      pipeline/MappingStar.rst
+
+.. ifconfig:: "tophat" in MAPPERS or "star" in MAPPERS or "gsnap" in MAPPERS
+
+   .. toctree::
+      pipeline/Validation.rst
  
 .. errorlist::
 

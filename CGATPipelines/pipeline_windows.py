@@ -647,7 +647,8 @@ def summarizeAllWindowsReadCounts( infile, outfile ):
             add_inputs( aggregateWindowsReadCounts ),
             r"counts.dir/\1_stats.tsv" )
 def summarizeWindowsReadCounts( infiles, outfile ):
-    '''perform summarization of read counts'''
+    '''perform summarization of read counts within experiments.
+    '''
 
     design_file, counts_file = infiles    
     prefix = P.snip(outfile, ".tsv")
@@ -750,18 +751,26 @@ def runDE( infiles, outfile, outdir, method ):
 
     The job is split into smaller sections. The order of the input 
     data is randomized in order to avoid any biases due to chromosomes.
+
+    At the end, a new q-value is computed from all results.
     '''
 
     to_cluster = True
     
     design_file, counts_file = infiles
 
+    prefix = os.path.basename( outfile )
+
+    # the post-processing strips away the warning,
+    # renames the qvalue column to old_qvalue
+    # and adds a new qvalue column after recomputing
+    # over all windows.
     statement = '''zcat %(counts_file)s 
               | perl %(scriptsdir)s/randomize_lines.pl -h
               | %(cmd-farm)s
                   --input-header 
                   --output-header 
-                  --split-at-lines=100000 
+                  --split-at-lines=200000 
                   --cluster-options="-l mem_free=8G"
                   --log=%(outfile)s.log
                   --output-pattern=%(outdir)s/%%s
@@ -770,18 +779,30 @@ def runDE( infiles, outfile, outdir, method ):
               --method=%(method)s
               --filename-tags=-
               --filename-design=%(design_file)s
-              --output-filename-pattern=%%DIR%%/
+              --output-filename-pattern=%%DIR%%/%(prefix)s_
               --deseq-fit-type=%(deseq_fit_type)s
               --deseq-dispersion-method=%(deseq_dispersion_method)s
+              --deseq-sharing-mode=%(deseq_sharing_mode)s
+              --filter-min-counts-per-row=%(tags_filter_min_counts_per_row)i
+              --filter-min-counts-per-sample=%(tags_filter_min_counts_per_sample)i
+              --filter-percentile-rowsums=%(tags_filter_percentile_rowsums)i
               --log=%(outfile)s.log
               --fdr=%(edger_fdr)f"
               | grep -v "warnings"
+              | perl %(scriptsdir)s/regtail.pl ^test_id
+              | perl -p -e "s/qvalue/old_qvalue/"
+              | python %(scriptsdir)s/table2table.py 
+              --log=%(outfile)s.log
+              --method=fdr 
+              --column=pvalue
+              --fdr-method=BH
+              --fdr-add-column=qvalue
               | gzip
               > %(outfile)s '''
 
     P.run()
 
-@follows( mkdir("deseq.dir") )
+@follows( mkdir("deseq.dir"), mkdir("deseq.dir/plots") )
 @transform( "design*.tsv",
             regex( "(.*).tsv" ),
             add_inputs( aggregateWindowsReadCounts ),
@@ -793,6 +814,32 @@ def runDESeq( infiles, outfile ):
     it contains a similar output and similar fdr compared to cuffdiff.
     '''
     runDE( infiles, outfile, "deseq.dir", "deseq" )
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( runDESeq, suffix(".tsv.gz"), ".load" )
+def loadDESeq( infile, outfile ):
+    '''load DESeq per-chunk summary stats.'''
+
+    prefix = P.snip( outfile, ".load" )
+
+    if os.path.exists( infile + "_size_factors.tsv" ):
+        P.load( infile + "_size_factors.tsv", 
+                prefix + "_deseq_size_factors.load", 
+                collapse = True,
+                transpose = "sample")
+
+    for fn in glob.glob( infile + "*_summary.tsv" ):
+        prefix = P.snip(fn[len(infile)+1:], "_summary.tsv")
+
+        P.load( fn, 
+                prefix + ".deseq_summary.load", 
+                collapse = 0,
+                transpose = "sample")
+
+    P.touch( outfile )
+
 
 #########################################################################
 #########################################################################
@@ -813,7 +860,7 @@ def runEdgeR( infiles, outfile ):
 
 
 DIFFTARGETS = []
-mapToTargets = { 'deseq': (runDESeq,),
+mapToTargets = { 'deseq': (loadDESeq,runDESeq,),
                  'edger' : (runEdgeR,),
                  }
 for x in METHODS:
@@ -848,25 +895,53 @@ def mergeDMRWindows( infile, outfile ):
     P.run()
 
 #########################################################################
-@jobs_limit(1)
-@transform( mergeDMRWindows, suffix(".merged.gz"), ".load" )
-def loadDMRWindows( infile, outfile ):
-     '''merge overlapping windows.'''
-     P.load( infile, outfile, options = "--quick" )
-
-#########################################################################
-@collate( loadDMRWindows, regex( "(\S+)[.](\S+).load" ), r"\2_stats.tsv" )
-def buildDMRStats( infiles, outfile ):
+@transform( mergeDMRWindows, suffix(".merged.gz"), ".stats" )
+def buildDMRStats( infile, outfile ):
     '''compute differential methylation stats.'''
-    tablenames = [P.toTable( x ) for x in infiles ] 
-    method = P.snip( outfile, "_stats.tsv" )
-    PipelineWindows.buildDMRStats( tablenames, method, outfile )
+    method = os.path.dirname(infile)
+    method = P.snip( method, ".dir")
+    PipelineWindows.buildDMRStats( infile, outfile, method=method )
 
 #########################################################################
-@transform( buildDMRStats, suffix(".tsv"), ".load" )
-def loadDMRStats( infile, outfile ):
+@transform( mergeDMRWindows, suffix(".merged.gz"), ".merged.gz.all.bed.gz" )
+def outputAllWindows( infile, outfile ):
+    '''output all bed windows.'''
+    PipelineWindows.outputAllWindows( infile, outfile )
+
+#########################################################################
+@transform( outputAllWindows, suffix(".all.bed.gz"), 
+            (".top.bed.gz", ".bottom.bed.gz" ) )
+def outputTopWindows( infile, outfiles ):
+    '''output bed with largest/smallest l2fold changes.
+    '''
+    outfile = outfiles[0]
+
+    statement = '''zcat %(infile)s
+    | awk '$4 !~ /inf/'
+    | sort -k4,4n 
+    | tail -n %(bed_export)i 
+    | gzip > %(outfile)s
+    '''
+    P.run()
+
+    outfile = outfiles[1]
+
+    statement = '''zcat %(infile)s
+    | awk '$4 !~ /inf/'
+    | sort -k4,4n 
+    | head -n %(bed_export)i 
+    | gzip 
+    > %(outfile)s
+    '''
+    P.run()
+
+#########################################################################
+@merge( buildDMRStats, "dmr_stats.load" )
+def loadDMRStats( infiles, outfile ):
     '''load DMR stats into table.'''
-    P.load( infile, outfile )
+    P.concatenateAndLoad( infiles, outfile,
+                          missing_value = 0,
+                          regex_filename = ".*\/(.*).tsv.stats")
 
 #########################################################################
 #########################################################################
@@ -893,57 +968,36 @@ def buildDMRWindowStats( infile, outfile ):
     '''
     P.run()
 
-
 #########################################################################
 #########################################################################
 #########################################################################
-@transform( mergeDMRWindows, regex(  "(.*)\.(.*).merged.gz"), r"\1_\2.dmr.bed.gz" )
-def buildDMRBed( infile, outfile ):
-    '''output bed6 file with differentially methylated regions.
-
-    Overlapping/book-ended entries are merged.
-
-    The score is the average log fold change.
-    '''
+# @merge( buildDMRBed, "dmr_overlap.tsv.gz" )
+# def computeDMROverlap( infiles, outfile ):
+#     '''compute overlap between bed sets.'''
     
-    to_cluster = True
+#     to_cluster = True
 
-    statement = '''zcat %(infile)s
-    | python %(scriptsdir)s/csv_cut.py contig start end l2fold significant
-    | awk '$5 == "1" {printf("%%s\\t%%i\\t%%i\\t%%i\\t%%f\\n", $1,$2,$3,++a,$4)}'
-    | gzip > %(outfile)s'''
-
-#    | mergeBed -i stdin -scores mean 
-
-    P.run()
-
-@merge( buildDMRBed, "dmr_overlap.tsv.gz" )
-def computeDMROverlap( infiles, outfile ):
-    '''compute overlap between bed sets.'''
+#     if os.path.exists(outfile): 
+#         # note: update does not work due to quoting
+#         os.rename( outfile, "orig." + outfile )
+#         options = "--update=orig.%s" % outfile
+#     else:
+#         options = ""
     
-    to_cluster = True
+#     infiles = " ".join( infiles )
 
-    if os.path.exists(outfile): 
-        # note: update does not work due to quoting
-        os.rename( outfile, "orig." + outfile )
-        options = "--update=orig.%s" % outfile
-    else:
-        options = ""
-    
-    infiles = " ".join( infiles )
+#     # note: need to quote track names
+#     statement = '''
+#         python %(scriptsdir)s/diff_bed.py 
+#               --pattern-id=".*/(.*).dmr.bed.gz"
+#               --log=%(outfile)s.log 
+#               %(options)s %(infiles)s 
+#         | awk -v OFS="\\t" '!/^#/ { gsub( /-/,"_", $1); gsub(/-/,"_",$2); } {print}'
+#         | gzip
+#         > %(outfile)s
+#         '''
 
-    # note: need to quote track names
-    statement = '''
-        python %(scriptsdir)s/diff_bed.py 
-              --pattern-id=".*/(.*).dmr.bed.gz"
-              --log=%(outfile)s.log 
-              %(options)s %(infiles)s 
-        | awk -v OFS="\\t" '!/^#/ { gsub( /-/,"_", $1); gsub(/-/,"_",$2); } {print}'
-        | gzip
-        > %(outfile)s
-        '''
-
-    P.run()
+#     P.run()
 
 #########################################################################
 #########################################################################
@@ -971,7 +1025,7 @@ def buildMRBed( infile, outfile ):
     
     E.info( "%s" % str(c) )
 
-@follows( loadDMRWindows, loadDMRStats,buildDMRBed, buildMRBed )
+@follows( loadDMRStats, outputAllWindows, outputTopWindows )
 def dmr(): pass
 
 @follows( diff_windows, dmr) 
@@ -1006,44 +1060,14 @@ def update_report():
 def publish():
     '''publish files.'''
 
+    # directory : files
+    export_files = { "bamfiles": glob.glob("*.bam") + glob.glob("*.bam.bai"),
+                     "bigwigfiles": glob.glob("*.bw"),
+                     "bedfiles": glob.glob("deseq.dir/*.bed.gz") + glob.glob("edger.dir/*.bed.gz"),
+                     }
+
     # publish web pages
-    P.publish_report()
-
-    # publish additional data
-    web_dir = PARAMS["web_dir"]
-    project_id = P.getProjectId()
-
-    ucsc_urls = {
-        "bam": 
-        """track type=bam name="%(track)s" bigDataUrl=http://www.cgat.org/downloads/%(project_id)s/%(dirname)s/%(filename)s""" ,
-        "bigwig":
-        """track type=bigWig name="%(track)s" bigDataUrl=http://www.cgat.org/downloads/%(project_id)s/%(dirname)s/%(filename)s""" ,
-        }
-        
-    # directory, files
-    exportfiles = (
-        ( "bamfiles", glob.glob( "*/*.genome.bam" ) + glob.glob( "*/*.genome.bam.bai" ), "bam" ),
-        ( "bamfiles", glob.glob( "*/*.prep.bam" ) + glob.glob( "*/*.prep.bam.bai" ), "bam" ),
-        ( "medips", glob.glob( "*/*.bigwig" ), "bigwig"),
-        )
-    
-    ucsc_files = []
-
-    for targetdir, filenames, datatype in exportfiles:
-        for src in filenames:
-            filename = os.path.basename(src)
-            dest = "%s/%s/%s" % (web_dir, targetdir, filename)
-            suffix = os.path.splitext( src )
-            if suffix in ucsc_urls: ucsc_files.append( ( datatype, targetdir, filename ) )
-            dest = os.path.abspath( dest )
-            if not os.path.exists( dest ):
-                os.symlink( os.path.abspath(src), dest )
-
-    # output ucsc links
-    for ucsctype, dirname, filename in ucsc_files:
-        filename = os.path.basename( filename )
-        track = P.snip( filename, ucsctype )
-        print ucsc_urls[ucsctype] % locals()
+    P.publish_report( export_files = export_files )
 
 if __name__== "__main__":
     sys.exit( P.main(sys.argv) )

@@ -336,7 +336,14 @@ def AlignPair( pair, anchor = 0 ):
     return True
 
 ##------------------------------------------------------------
-if __name__ == '__main__':
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     try:
         optlist, args = getopt.getopt(sys.argv[1:], param_short_options, param_long_options)
@@ -569,3 +576,7 @@ if __name__ == '__main__':
     print "# input=%i, skipped=%i, nerrors=%i, transcripts=%i, introns=%i" % (ninput, nskipped, nerrors,
                                                                               ntoken_pairs, nintron_pairs )
     print E.GetFooter()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

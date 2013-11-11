@@ -133,10 +133,10 @@ def main( argv = None ):
         if options.fixed_width_windows:
             for x in range(0, size, window_increment):
                 if x + window_size > size: continue
-                options.stdout.write( "%s\t%i\t%i" % (contig, x, min(size, x + window_size)))
+                options.stdout.write( "%s\t%i\t%i\n" % (contig, x, min(size, x + window_size)))
                 counter.windows += 1
         else:
-            options.stdout.write( "%s\t%i\t%i" % (contig, 0, size))
+            options.stdout.write( "%s\t%i\t%i\n" % (contig, 0, size))
             counter.windows += 1
 
         counter.output += 1

@@ -39,17 +39,9 @@ import optparse
 import math
 import tempfile
 
-
-"""do some table magic.
-
---sort: sort table 
-
-
-"""
 import CGAT.Experiment as E
 import csv
 
-parser = E.OptionParser( version = "%prog version: $Id: csv2csv.py 2782 2009-09-10 11:40:29Z andreas $")
 
 def ConvertDictionary( d ):
     """tries to convert values in a dictionary.
@@ -65,7 +57,15 @@ def ConvertDictionary( d ):
 
     return d
     
-if __name__ == "__main__":
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
+
+    parser = E.OptionParser( version = "%prog version: $Id: csv2csv.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option( "-s", "--sort", dest="sort", type="string" ,
                        help="fields to take (in sorted order).")
@@ -92,3 +92,6 @@ if __name__ == "__main__":
         writer.writerow(row)
         
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )

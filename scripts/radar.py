@@ -64,7 +64,14 @@ import CGAT.Genomics as Genomics
 import CGAT.FastaIterator as FastaIterator
 
 ##------------------------------------------------------------
-if __name__ == '__main__':
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: radar.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
 
@@ -131,3 +138,7 @@ if __name__ == '__main__':
             print x, distances[x]
                 
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

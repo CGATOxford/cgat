@@ -1,0 +1,12 @@
+
+## Creating a map file for gene-ids
+zcat hg19.small.gtf.gz | awk '{print $10}' | sed 's/"//g' | sed 's/;//' | sort -u | head -20 > hg19.small.gene_id.tsv
+cat hg19.small.gene_id.tsv | awk 'BEGIN {x = 1}; {print $0"\t"$1x; x++}' > hg19.small.gene_map.tsv
+
+## Creating a map file for transcript-ids
+zcat hg19.small.gtf.gz | awk '{print $12}' | sed 's/"//g' | sed 's/;//' | sort -u | head -20 > hg19.small.transcript_id.tsv
+cat hg19.small.transcript_id.tsv | awk 'BEGIN {x = 1}; {print $0"\t"$1x; x++}' > hg19.small.transcript_map.tsv
+
+## Creating a map file for protein-ids
+cat hg19.small.gene_id.tsv | sed 's/G/P/' > hg19.small.protein_id.tsv
+

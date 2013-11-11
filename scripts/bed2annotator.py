@@ -57,11 +57,18 @@ import CGAT.Bed as Bed
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.IOTools as IOTools
 
-if __name__ == "__main__":
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: bed2annotator2tsv.py 2885 2010-04-07 08:46:50Z andreas $", 
-                                    usage = globals()["__doc__"])
-        
+                             usage = globals()["__doc__"])
+    
     parser.add_option( "-g", "--genome-file", dest="genome_file", type="string",
                        help="filename with genome."  )
 
@@ -173,5 +180,7 @@ if __name__ == "__main__":
 
     E.Stop()
 
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
 
 

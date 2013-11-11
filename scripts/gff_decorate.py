@@ -319,7 +319,14 @@ def annotateWindows( contig, windows, gff_data, fasta, options ):
             w.addAttribute( "extra", extra_info )
         options.stdout.write( str(w) + "\n" )
         
-if __name__ == "__main__":
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: gff_decorate.py 2861 2010-02-23 17:36:32Z andreas $", usage = globals()["__doc__"])
 
@@ -452,4 +459,8 @@ if __name__ == "__main__":
 
     E.Stop()
 
+
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
 

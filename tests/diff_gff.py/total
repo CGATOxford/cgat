@@ -1,4 +1,0 @@
-chr	strand	total_left	total_right	noverlap	nidentical	nhalf	unique_left	unique_right	split_left	split_right
-19	+	22	22	23	17	2	5	0	6	1
-19	-	48	48	55	43	6	11	0	18	7
-all	all	70	70	78	60	8	16	0	24	8

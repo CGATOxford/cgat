@@ -77,7 +77,14 @@ import CGAT.BlastAlignments as BlastAlignments
 
 parser = E.OptionParser( version = "%prog version: $Id: optic/check_blast_run.py 2781 2009-09-10 11:33:14Z andreas $")
 
-if __name__ == "__main__":
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser.add_option("-n", "--vertices", dest="vertices", action = "append",
                       help="filename with vertices."  )
@@ -174,4 +181,8 @@ if __name__ == "__main__":
 			    outfile.write( "%i\t%s\t%s\n" % (x, options.vertices[x], y) )
 		    
     E.Stop()
+
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
 

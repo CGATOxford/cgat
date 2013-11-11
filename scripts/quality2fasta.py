@@ -114,7 +114,14 @@ class FromFastaIterator:
             self.mNOutput += 1
             yield cur_entry.title.strip(), "".join(s)
 
-if __name__ == "__main__":
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: quality2fasta.py 2781 2009-09-10 11:33:14Z andreas $")
 
@@ -206,3 +213,7 @@ if __name__ == "__main__":
                                    iterator.mNUnderFlow ))
 
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

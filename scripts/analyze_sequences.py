@@ -167,9 +167,12 @@ class SequenceProperties:
                            "p4dgc3",
                            ))
     
-if __name__ == "__main__":
+def main( argv = None ):
+    
+    if argv == None: argv = sys.argv
 
-    parser = E.OptionParser( version = "%prog version: $Id: analyze_sequences.py 2865 2010-03-03 10:18:28Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: analyze_sequences.py 2865 2010-03-03 10:18:28Z andreas $",
+                             usage = globals()["__doc__"] )
     
     parser.add_option("-s", "--species", dest="species", type="string",
                       help="species to use." )
@@ -203,3 +206,6 @@ if __name__ == "__main__":
         print cur_record.title + "\t" + str(s)
 
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit(main( sys.argv ) )

@@ -144,7 +144,14 @@ def ProcessGene( outfile, gene_id, qualities, options ):
 
     return noutput
 
-if __name__ == "__main__":
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser.add_option("-i", "--priority", dest="priority", type="string",
                       help="quality priority."  )
@@ -315,3 +322,7 @@ if __name__ == "__main__":
         options.stdlog.write("# ninput=%i, noutput=%i, nfiltered_ds=%i\n" % (ninput, noutput, nfiltered_ds))
     
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

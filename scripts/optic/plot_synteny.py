@@ -489,7 +489,14 @@ class PlotSyntenyGenomic( PlotSynteny ):
             for o in oo:
                 o.mRank = int((o.mFrom + o.mTo) / 2.0) * self.mScaleFactor2
     
-if __name__ == "__main__":
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: optic/plot_synteny.py 2781 2009-09-10 11:33:14Z andreas $")
 
@@ -577,3 +584,7 @@ if __name__ == "__main__":
     plot.writeToFile(sys.stdout)
     
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

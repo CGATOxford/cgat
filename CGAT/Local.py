@@ -176,19 +176,25 @@ def publish_report( prefix = "",
                 outf.close()
 
     if export_files:
-        bigwigs, bams = [], []
+        bigwigs, bams, beds = [], [], []
 
         for targetdir, filenames in export_files.items():
+            
+            targetdir = os.path.join( web_dir, targetdir )
+            if not os.path.exists( targetdir ): os.makedirs( targetdir )
+
             for src in filenames:
-                dest = "%s/%s/%s" % (web_dir, targetdir, os.path.basename(src))
+                dest = os.path.join( targetdir, os.path.basename(src) )
                 if dest.endswith( ".bam"): bams.append( (targetdir, dest ))
                 elif dest.endswith( ".bw"): bigwigs.append( (targetdir, dest ))
+                elif dest.endswith( ".bed.gz"): beds.append( (targetdir, dest ))
                 dest = os.path.abspath( dest )
                 if not os.path.exists( dest ):
                     try:
                         os.symlink( os.path.abspath(src), dest )
                     except OSError, msg:
-                        E.warn( "could not create symlink to %s: %s" % (dest, msg))
+                        E.warn( "could not create symlink from %s to %s: %s" % \
+                                    (os.path.abspath(src), dest, msg))
                         
         # output ucsc links
         with open( "urls.txt", "w" ) as outfile:
@@ -202,6 +208,10 @@ def publish_report( prefix = "",
                 track = filename[:-len(".bw")]
                 outfile.write( """track type=bigWig name="%(track)s" bigDataUrl=http://www.cgat.org/downloads/%(project_id)s/%(targetdir)s/%(filename)s\n""" % locals() )
 
+            for targetdir, fn in beds: 
+                filename = os.path.basename( fn )
+                track = filename[:-len(".bed.gz")]
+                outfile.write( """http://www.cgat.org/downloads/%(project_id)s/%(targetdir)s/%(filename)s\n""" % locals() )
         
         E.info( "UCSC urls are in urls.txt" )
 

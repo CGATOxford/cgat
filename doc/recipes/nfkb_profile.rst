@@ -1,6 +1,6 @@
 
 What is the binding profile of NFKB across gene models?
-========================================================
+=======================================================
 
 After processing RNA-seq data through alignment, gene/transcript abundance estimation and differential
 expression analysis, we are left with an unannotated list of differentially expressed genes. We may want
@@ -25,29 +25,33 @@ can do this fairly easily with a few files and a few commands.
 
 The input files that we require are:
 
-* A gtf file of protein coding gene transcripts. 
-
-* A bam file of NFKB ChIP-seq reads (NFKB.bam).
-
-Genesets can be easily downloaded from ENSEMBL or UCSC. For example we can download the ENSEMBL reference geneset
-by typing::
+* A :term:`gtf` file  containing a complete set of known protein coding gene transcripts, which may 
+  be downloaded from ENSEMBL by typing::
 
     wget ftp://ftp.ensembl.org/pub/release-73/gtf/homo_sapiens/Homo_sapiens.GRCh37.73.gtf.gz -o logfile
 
-We can then take all protein coding genes from thsi geneset with an awk statement::
+* A file containing aligned NFKB ChIP-seq reads in :term:`bam` format, which is available via UCSC::
+
+    wget http://hgdownload-test.cse.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeSydhTfbs/wgEncodeSydhTfbsGm10847NfkbTnfaIggrabAlnRep1.bam -o logfile
+
+    wget http://hgdownload-test.cse.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeSydhTfbs/wgEncodeSydhTfbsGm10847NfkbTnfaIggrabAlnRep1.bam.bai -o logfile
+
+
+We can then take all protein coding genes from this geneset with an awk statement::
 
     zcat Homo_sapiens.GRCh37.73.gtf.gz  | awk '$2=="protein_coding"' | gzip > coding_geneset.gtf.gz
 
-Using the CGAT tool bam2geneprofile we can assess the binding profile of NFKB across gene models::
+Using the CGAT tool bam2geneprofile we can then assess the binding profile of NFKB across gene models::
 
-    cgat bam2geneprofile --bamfile=NFKB.bam 
+    cgat bam2geneprofile --bamfile=wgEncodeSydhTfbsGm10847NfkbTnfaIggrabAlnRep1.bam
                          --gtffile=coding_geneset.gtf.gz 
                          --method=geneprofile 
                          --profile_normalization=counts
                          --output-filename-pattern=nfkb_profile_%s
 
 
-This statement will produce a matrix as an output file named "nfkb_profile.geneprofile.matrix.tsv.gz" with the following format:
+This statement will produce a matrix as an output file named "nfkb_profile.geneprofile.matrix.tsv.gz" 
+with the following format:
 
    +---+--------+----------+--------------+
    |bin|region  |region_bin|counts        |
@@ -72,13 +76,13 @@ This statement will produce a matrix as an output file named "nfkb_profile.genep
    +---+--------+----------+--------------+
  
 
-This data is amenable to further manipulation and visualisation. For example, we can use R to produce a profile plot
+These data are amenable to further manipulation and visualisation. For example, we can use R to produce a profile plot
 over the gene model. Start R and type::
 
    R version 2.15.2 (2012-10-26) -- "Trick or Treat"
    Copyright (C) 2012 The R Foundation for Statistical Computing
    ISBN 3-900051-07-0
-   Platform: x86_64-unknown-linux-gnu (64-bit)
+      Platform: x86_64-unknown-linux-gnu (64-bit)
 
    R is free software and comes with ABSOLUTELY NO WARRANTY.
    You are welcome to redistribute it under certain conditions.
@@ -109,10 +113,15 @@ over the gene model. Start R and type::
 
 This set of commands will produce the figure shown.
 
-.. image:: ../plots/nfkb_profile.png
+
+.. image:: ../plots/nfkb_profile.pdf
 
 
 This plot displays the predominance of NFKB binding at transcription start sites of protein coding genes. 
+
+
+Visulazing ChIP-seq read coverage across NFKB binding intervals
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 While NFKB binds to the TSSs of protein coding genes, it also binds to many intergenic regions of the genome. In addition
 to meta-gene profiles we may also want to know the chromatin state at which NFKB binding occurs. For example, we can
@@ -120,15 +129,80 @@ integrate additional histone modification ChIP-seq data from the ENCODE project.
 enhancers, respectively. We would like to visualise the profile of these marks at all the genomic locations of
 NFKB binding.
 
-The input files for this analysis are:
+For this example we require three further files:
 
-* bed intervals describing NFKB peaks (e.g. from a MACS peak calling analysis)
+* A file containing :term:`bed` intervals describing NFKB peaks (NFKB.bed_), which may either be downloaded directly or
+  created from the earlier :term:`bam` file of NFKB ChIP-seq reads using a peak caller such as MACS.
 
-* H3K4me1 and H3K4me3 alignment files in .bam format.
+* files containing aligned H3K4me1 and H3K4me3 ChIP-seq reads in :term:`bam` format (H3K4me3.bam_, H3K4me1.bam_)
+
+.. _NFKB.bed: http://www.cgat.org/~jethro/cgat/recipes/nfkb_profile/nfkb.bed
+.. _H3K4me3.bam: http://www.cgat.org/~jethro/cgat/recipes/nfkb_profile/H3K4me3.bam
+.. _H3K4me1.bam: http://www.cgat.org/~jethro/cgat/recipes/nfkb_profile/H3K4me1.bam
 
 
+Using the CGAT tool bam2peakshape it is possible to produce a matrix depicting read coverage across all intervals in
+the supplied :term:`bed` file.
+
+The following command line statement
+
+1) finds the peak of H3K4me3 read coverage within each interval
+
+2) calculates coverage across a 1000bp window centered around this peak
+
+3) outputs a matrix in which intervals are ranked by peak height.
+
+4) outputs an equivalent matrix depicting H3K4me1 coverage across the same windows::
+
+    cgat bam2peakshape   H3K4me3.bam
+                         NFKB.bed
+                         --control=H3K4me1.bam
+                         --sort=peak-height
+                         --output-filename-pattern=peakshape.%s
+                         > peakshape.table
+
+Two files are produced named peakshape.matrix_peak_height.gz & peakshape.control_peak_height.gz that contain matrices 
+depicting H3K4me3 coverage and H3K4me1 coverage across intervals, respectively.
+
+Both matrices are amenable to plotting as heatmaps using the R package gplots::
+
+   > library( gplots )
+
+   > library( RColorBrewer )
+
+   > # read the H3K4me3 matrix into R
+   > me3 <- read.csv( "peakshape.matrix_peak_height.gz", header=TRUE, sep="\t", row.names=1 ) 
+ 
+   > # convert to matrix
+   > me3.matrix <- as.matrix( me3 )
+
+   > # A proportion of NFkB intervals have no discernable H3K4me3 or H3K4me1 coverage. These are removed before plotting.
+   > me3.matrix <- me3.matrix[ c( 4000, 14906 ), ]
+
+   > # the remainder are plotted
+   > cols <- brewer.pal( 9, "Blues" )
+
+   > heatmap.2( me3.matrix, col=cols, Rowv=F, Colv=F, labRow="", key=FALSE, labCol="", trace="none", dendrogram="none", breaks=seq(0, 1000, 101) )
+
+   > # A second plot can be produced for the H3K4me1 data
+   > me1 <- read.csv( "peakshape.control_peak_height.gz", header=T, sep="\t", row.names=1 )
+
+   > me1.matrix <- as.matrix( me3 )
+
+   > me1.matrix <- me1.matrix[ c( 4000, 14906 ), ]
+
+   > cols <- brewer.pal( 9, "Greens" )
+
+   > heatmap.2( me1.matrix, col=cols, Rowv=F, Colv=F, labRow="", key=FALSE, labCol="", trace="none", dendrogram="none", breaks=seq(0, 100, 11))
+
+The resulting plots indicate that a subset of NFKB binding intervals may be characterised on the basis of their chromatin state:
 
 
+.. figure:: ../plots/H3K4me3_heatmap.png
+
+   H3K4me3
 
 
+.. figure:: ../plots/H3K4me1_heatmap.png
 
+   H3K4me1

@@ -149,7 +149,14 @@ def readLiftOver( infile, chromosome,
             
     return map_position, map_chromosome, map_chromosome2id, map_id2chromosome
 
-if __name__ == "__main__":
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser.add_option("-c", "--chromosome", dest="chromosome", type="string",
                       help="chromosome to take." )
@@ -207,3 +214,7 @@ if __name__ == "__main__":
     E.Stop()
 
     
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+
