@@ -214,19 +214,12 @@ def build_scaffold_lengths(contigs_file, outfile, params):
     '''
     output the distribution of scaffold lengths
     '''
-    PARAMS = params
-
-    if PARAMS["filter"]:
-        f = PARAMS["filter"]
-    else:
-        f = 0
     inf = open(contigs_file)
     outf = open(outfile, "w")
     outf.write("scaffold_name\tlength\n")
     for record in FastaIterator.iterate(inf):
         scaffold_length = len(list(record.sequence))
-        if scaffold_length > f:
-            outf.write("%s\t%i\n" % (record.title, scaffold_length))
+        outf.write("%s\t%i\n" % (record.title, scaffold_length))
     outf.close()
 
 ############################
@@ -422,6 +415,7 @@ class Ray(Idba):
         paired = self.checkPairs(infile)
 
         tempdir = P.getTempDir()
+
         # check whether the data are paired-end
         if not paired:
             pair = paired
@@ -456,10 +450,10 @@ class Ray(Idba):
         else:
             raise IOError, "do not support file of this type: %s" % infile
 
-        # note restrict use to 5 cores
+        # note restrict use to 10 cores
         
         statement = ''' %(gunzy)s
-                       ; mpiexec -n 5 %%(ray_executable)s %(common_options)s %(filetype)s %(files)s -o %(raydir)s
+                       ; mpiexec -n 10  %%(ray_executable)s %(common_options)s %(filetype)s %(files)s -o %(raydir)s >> %(raydir_orig)s/%(track)s.log
                        ; checkpoint; mv %(raydir)s/Scaffolds.fasta %(raydir_orig)s/%(track)s.scaffolds.fa
                        ; mv %(raydir)s/ScaffoldComponents.txt %(raydir_orig)s/%(track)s.scaffold_components.txt
                        ; mv %(raydir)s/ScaffoldLengths.txt %(raydir_orig)s/%(track)s.scaffold_lengths.txt
