@@ -158,6 +158,8 @@ def buildGi2Taxa(infiles, outfile):
     '''
     associate each input genome gi identifier to
     different taxonomic levels
+    TODO: this should be in a centralised database - no point haveing
+    it created multiple times. It can be rebuilt if things should change
     '''
     to_cluster = True
     gi_accessions = infiles[0]
@@ -193,8 +195,9 @@ def loadGiAccessionNumbers(infile, outfile):
            , r"taxonomy.dir/\1.taxonomy.relab")
 def buildTrueTaxonomicRelativeAbundances(infiles, outfile):
     '''
-    get species level relative abundances for the simulateds
-    data. This involes creating maps between different identifiers
+    relative abundances for the simulateds at different levels of
+    the taxonomy.
+    This involes creating maps between different identifiers
     from the NCBI taxonomy. This is so that the results are comparable
     to species level analysis from metaphlan
     The gi_taxid_nucl is a huge table and therefore this function
@@ -230,10 +233,11 @@ def loadEstimatedTaxonomicRelativeAbundances(infile, outfile):
 ###################################################
 ###################################################
 ###################################################
+@jobs_limit(1, "R")
 @transform(loadTrueTaxonomicAbundances
            , suffix(".load")
            , add_inputs(loadEstimatedTaxonomicRelativeAbundances)
-           , ".png")
+           , ".pdf")
 def plotRelativeAbundanceCorrelations(infiles, outfile):
     '''
     plot the correlation between the estimated 
@@ -255,6 +259,51 @@ def calculateFalsePositiveRate(infiles, outfile):
     abundances
     '''
     PipelineMetagenomeBenchmark.calculateFalsePositiveRate(infiles, outfile)
+
+###################################################
+###################################################
+###################################################
+@merge(calculateFalsePositiveRate, "taxonomy.dir/false_positives.tsv")
+def mergeFalsePositiveRates(infiles, outfile):
+    '''
+    merge the results of the false positive rate
+    calculations for plotting purposes
+    '''
+    header = "level\tfp_rate\ttp_rate\ttrack\tcutoff\n"
+    outf = open(outfile, "w")
+    outf.write(header)
+    for inf in infiles:
+        for line in open(inf).readlines():
+            outf.write(line)
+    outf.close()
+
+###################################################
+###################################################
+###################################################
+@transform(mergeFalsePositiveRates, suffix(".tsv"), ".pdf")
+def plotFalsePositiveRates(infile, outfile):
+    '''
+    barplot the false positive rates across
+    taxonomic levels
+    '''
+    R('''library(ggplot2)''')
+    R('''dat <- read.csv("%s", header = T, stringsAsFactors = F, sep = "\t")''' % infile)
+    for i in [0,1]:
+        # specificity
+        outf = P.snip(outfile, ".pdf") + ".%i.specificity.pdf" % i
+        R('''plot1 <- ggplot(dat[dat$cutoff == %i,], aes(x=reorder(level, fp_rate), y = fp_rate, fill = track, stat = "identity"))''' % i) 
+        R('''plot2 <- plot1 + geom_bar(position = "dodge", stat="identity")''')
+        R('''plot2 + scale_fill_manual(values = c("cadetblue", "slategray", "lightblue"))''')
+        R('''ggsave("%s")''' % outf)
+
+        # sensitivity
+        outf = P.snip(outfile, ".pdf") + ".%i.sensitivity.pdf" % i
+        R('''plot1 <- ggplot(dat[dat$cutoff == %i,], aes(x=reorder(level, fp_rate), y = tp_rate, fill = track, stat = "identity"))''' % i) 
+        R('''plot2 <- plot1 + geom_bar(position = "dodge", stat="identity")''')
+        R('''plot2 + scale_fill_manual(values = c("cadetblue", "slategray", "lightblue"))''')
+        R('''ggsave("%s")''' % outf)
+
+    P.touch(outfile)
 
 ###################################################
 ###################################################
