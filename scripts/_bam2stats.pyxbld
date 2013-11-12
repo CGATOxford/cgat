@@ -5,7 +5,7 @@ def make_ext(modname, pyxfilename):
     import os
     import numpy
     import sys
-    dirname = os.path.dirname( pysam.__file__ )
+    pysam_dirname = os.path.dirname( pysam.__file__ )
     if sys.platform != 'darwin':
         extra_link_args = [ os.path.join( pysam_dirname, "csamtools.so")]
     else:
