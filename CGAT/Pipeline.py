@@ -798,7 +798,7 @@ def joinStatements( statements, infile ):
     returns a single statement.
     '''
     
-    prefix = getTempFilename()
+    prefix = getTempFilename(".")
     pattern = "%s_%%i" % prefix
 
     result = []
