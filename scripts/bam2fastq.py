@@ -20,23 +20,14 @@ Example::
 
    python bam2fastq.py in.bam out.1.fastq out.2.fastq
 
-This command converts the BAM file in.bam into fastq files containing forward reads (out.1.fastq) and reverse reads 
-(out.2.fastq). 
+This command converts the BAM file in.bam into fastq files containing
+forward reads (out.1.fastq) and reverse reads (out.2.fastq).
 
 Type::
 
    python bam2fastq.py --help
 
 for command line help.
-
-Documentation
--------------
-
-This tool converts a BAM file containing paired-end reads into forward and reverse fastq files.
-
-For example::
-
-   python bam2fastq.py in.bam out.1.fastq out.2.fastq 
 
 Command line options
 --------------------
@@ -48,6 +39,7 @@ import sys
 import re
 import optparse
 import gzip
+import tempfile
 
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
@@ -75,42 +67,60 @@ def main( argv = None ):
     ## do sth
     assert len(args) == 3, "expected three command line arguments" 
 
+    fastqfile1, fastqfile2 = args[1], args[2]
+
     samfile = pysam.Samfile( args[0], "rb" )
-    outstream1 = IOTools.openFile( args[1], "w" )
-    outstream2 = IOTools.openFile( args[2], "w" )
+
+    tmpdir = tempfile.mkdtemp( )
+    
+    outtemp1 = os.path.join( tmpdir, "pair1.gz" )
+    outtemp2 = os.path.join( tmpdir, "pair2.gz" )
+
+    outstream1 = IOTools.openFile( outtemp1, "w" )
+    outstream2 = IOTools.openFile( outtemp2, "w" )
+
+    found1, found2 = set(), set()
+    read1_qlen, read2_qlen = 0, 0
 
     c = E.Counter()
     for read in samfile.fetch():
         c.input += 1
-        if read.mate_is_unmapped:
-            c.is_unmapped += 1
-            if read.is_read1:
-                seq1, seq2 = read.seq, "N" * read.qlen 
-                qual1, qual2 = read.qual, "B" * read.qlen
-            else:
-                seq1, seq2 = "N" * read.qlen, read.seq
-                qual1, qual2 = "B" * read.qlen, read.qual
-        else:
-            if read.is_read2: continue
-            try:
-                mate = samfile.mate( read )
-                c.found += 1
-            except ValueError, msg:
-                mate = None
-                c.failed += 1
-                
-            if mate:
-                seq1, seq2 = read.seq, mate.seq
-                qual1, qual2 = read.qual, mate.qual
-            else:
-                seq1, seq2 = read.seq, "N" * read.qlen 
-                qual1, qual2 = read.qual, "B" * read.qlen
+        if read.is_read1:
+            if read.qname not in found1:
+                outstream1.write( "\t".join( (read.qname, read.seq, read.qual) ) + "\n" )
+                found1.add(read.qname)
+                if not read1_qlen: read1_qlen = read.qlen
+                c.output1 += 1
+        elif read.is_read2:
+            if read.qname not in found2:
+                outstream2.write( "\t".join( (read.qname, read.seq, read.qual) ) + "\n" )
+                found2.add(read.qname)
+                if not read2_qlen: read2_qlen = read.qlen
+                c.output2 += 1
+            
+    for qname in found2.difference( found1):
+        outstream1.write( "\t".join( (qname, "N" * read1_qlen, "B" * read1_qlen) ) + "\n" )
+        c.extra1 += 1
 
-        c.output += 1
-        outstream1.write( "@%s\n%s\n+\n%s\n" % (read.qname, seq1, qual1 ) )
-        outstream2.write( "@%s\n%s\n+\n%s\n" % (read.qname, seq2, qual2 ) )
-        
+    for qname in found1.difference( found2):
+        outstream2.write( "\t".join( (qname, "N" * read2_qlen, "B" * read2_qlen) ) + "\n" )
+        c.extra2 += 1
+
     E.info( "%s" % str(c) )
+
+    outstream1.close()
+    outstream2.close()
+
+    E.info( "sorting fastq files" )
+    statement = '''zcat %s 
+                   | sort -k1,1 
+                   | awk '{printf("@%%s\\n%%s\\n+\\n%%s\\n", $1,$2,$3)}' 
+                   | gzip > %s'''
+        
+    E.run( statement % (outtemp1, fastqfile1) )
+    E.run( statement % (outtemp2, fastqfile2) )
+
+
 
     ## write footer and output benchmark information.
     E.Stop()

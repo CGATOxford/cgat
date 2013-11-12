@@ -174,3 +174,65 @@ def outputAllWindows( infile, outfile ):
 
         #     R['dev.off']()
 
+
+
+#########################################################################
+#########################################################################
+#########################################################################
+def runDE( infiles, outfile, outdir, method ):
+    '''run DESeq or EdgeR.
+
+    The job is split into smaller sections. The order of the input 
+    data is randomized in order to avoid any biases due to chromosomes and
+    break up local correlations.
+
+    At the end, a new q-value is computed from all results.
+    '''
+
+    to_cluster = True
+    
+    design_file, counts_file = infiles
+
+    prefix = os.path.basename( outfile )
+
+    # the post-processing strips away the warning,
+    # renames the qvalue column to old_qvalue
+    # and adds a new qvalue column after recomputing
+    # over all windows.
+    statement = '''zcat %(counts_file)s 
+              | perl %(scriptsdir)s/randomize_lines.pl -h
+              | %(cmd-farm)s
+                  --input-header 
+                  --output-header 
+                  --split-at-lines=200000 
+                  --cluster-options="-l mem_free=8G"
+                  --log=%(outfile)s.log
+                  --output-pattern=%(outdir)s/%%s
+                  --subdirs
+              "python %(scriptsdir)s/runExpression.py
+              --method=%(method)s
+              --filename-tags=-
+              --filename-design=%(design_file)s
+              --output-filename-pattern=%%DIR%%/%(prefix)s_
+              --deseq-fit-type=%(deseq_fit_type)s
+              --deseq-dispersion-method=%(deseq_dispersion_method)s
+              --deseq-sharing-mode=%(deseq_sharing_mode)s
+              --filter-min-counts-per-row=%(tags_filter_min_counts_per_row)i
+              --filter-min-counts-per-sample=%(tags_filter_min_counts_per_sample)i
+              --filter-percentile-rowsums=%(tags_filter_percentile_rowsums)i
+              --log=%(outfile)s.log
+              --fdr=%(edger_fdr)f"
+              | grep -v "warnings"
+              | perl %(scriptsdir)s/regtail.pl ^test_id
+              | perl -p -e "s/qvalue/old_qvalue/"
+              | python %(scriptsdir)s/table2table.py 
+              --log=%(outfile)s.log
+              --method=fdr 
+              --column=pvalue
+              --fdr-method=BH
+              --fdr-add-column=qvalue
+              | gzip
+              > %(outfile)s '''
+
+    P.run()
+

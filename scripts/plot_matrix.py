@@ -44,6 +44,7 @@ import CGAT.Experiment as E
 from array import array
 import math
 import numpy
+import pylab
 
 param_grid_size_x = 6
 

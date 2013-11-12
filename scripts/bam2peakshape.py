@@ -350,11 +350,6 @@ def buildResults( bedfile, fg_file, control_file, counter, options ):
 
     E.info( "interval processing: %s" % c )
 
-    if c.input == 0:
-        E.warn( "no data - no output" )
-        E.Stop()
-        return
-    
     return result, bins
 
 def main( argv = None ):

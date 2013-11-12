@@ -55,7 +55,7 @@ variable width
    variable width tiles. Tiles are defined based on overlap.
    
 fixed width - no overlap
-   fixed width tiles, no overlap between adjacent tiles.
+    fixed width tiles, no overlap between adjacent tiles.
 
 fixed width - overlap
    fixed width tiles, adjacent tiles are overlapping.
@@ -247,7 +247,7 @@ def prepareTags( infile, outfile ):
     track = P.snip( outfile, ".bed.gz" )
 
     tmpdir = P.getTempFilename()
-    
+
     current_file = infile
 
     nfiles = 0
@@ -267,7 +267,7 @@ def prepareTags( infile, outfile ):
         next_file = "%(tmpdir)s/bam_%(nfiles)i.bam" % locals()
 
         dedup_method = PARAMS["filtering_dedup_method"]
-        
+
         if dedup_method == 'samtools':
             statement.append( '''samtools rmdup - - ''' )
 
@@ -319,7 +319,7 @@ def loadPicardDuplicateStats( infiles, outfile ):
 #########################################################################
 #########################################################################
 @follows( mkdir( "background.dir" ))
-@transform( "*input*.bw",
+@transform( "*[Ii]nput*.bw",
             regex("(.*).bw"),
             r"background.dir/\1.bed.gz" )
 def buildBackgroundWindows( infile, outfile ):
@@ -357,7 +357,7 @@ def mergeBackgroundWindows( infiles, outfile ):
     | bgzip
     > %(outfile)s
     '''
-    
+
     P.run()
 
 #########################################################################
@@ -371,7 +371,7 @@ def mergeBackgroundWindows( infiles, outfile ):
             "cpg_context.tsv.gz" )
 def buildCpGAnnotation( infiles, outfile ):
     '''annotate the location of CpGs within the genome.'''
-    
+
     cpg_bed, context_bed = infiles
 
     statement = '''
@@ -398,7 +398,7 @@ def buildCoverageBed( infile, outfile ):
 
     Intervals containing only few reads (tiling_min_reads) are removed.
     '''
-    
+
     to_cluster = True
 
     statement = '''
@@ -417,6 +417,54 @@ def buildCoverageBed( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
+@transform( buildCoverageBed, suffix(".bed.gz"), ".tsv.gz" )
+def buildCpGComposition( infile, outfile ):
+    '''compute CpG density across regions covered by reads.
+    '''
+
+    statement = '''
+    zcat %(infile)s 
+    | python %(scriptsdir)s/bed2table.py
+          --counter=composition-cpg
+          --genome-file=%(genome_dir)s/%(genome)s
+    | gzip
+    > %(outfile)s
+    '''
+    P.run()
+
+@merge( None, "tags.dir/genomic.covered.tsv.gz" )
+def buildReferenceCpGComposition( infile, outfile ):
+    '''compute CpG densities across reference windows across
+    the genome.
+    '''
+
+    # remove windows which are more than 50% N - column 17
+    statement = '''
+    python %(scriptsdir)s/genome_bed.py
+                      -g %(genome_dir)s/%(genome)s
+                      --window=%(tiling_reference_window_size)i
+                      --shift=%(tiling_reference_window_shift)i
+                      --log=%(outfile)s.log
+    | awk '$1 !~ /%(tiling_remove_contigs)s/'
+    | python %(scriptsdir)s/bed2table.py
+          --counter=composition-cpg
+          --genome-file=%(genome_dir)s/%(genome)s
+    | awk '$1 == "contig" || $17 < 0.5'
+    | gzip
+    > %(outfile)s
+    '''
+    P.run()
+
+@transform( (buildCpGComposition,buildReferenceCpGComposition), 
+            suffix(".tsv.gz"), 
+            ".composition.load" )
+def loadCpGComposition( infile, outfile ):
+    '''load CpG Composition data.'''
+    P.load( infile, outfile )
+
+#########################################################################
+#########################################################################
+#########################################################################
 @transform( prepareTags, 
             suffix(".bed.gz"), 
             add_inputs( os.path.join( PARAMS["annotations_dir"], 
@@ -427,7 +475,7 @@ def buildCpGCoverage( infiles, outfile ):
 
     Reads are processed in the same way as by buildCoverageBed.
     '''
-    
+
     # coverageBed is inefficient. If bedfile and cpgfile
     # were sorted correspondingly the overlap analysis
     # could be done in very little memory.
@@ -444,7 +492,7 @@ def buildCpGCoverage( infiles, outfile ):
     | python %(scriptsdir)s/data2histogram.py
     | gzip
     > %(outfile)s
-    '''
+     '''
     P.run()
 
 #########################################################################
@@ -466,17 +514,17 @@ def buildWindows( infiles, outfile ):
 
     Remove windows in background.
     '''
-    
+
     tiling_method = PARAMS["tiling_method"]
 
     coverage_bed, background_bed = infiles[:-1], infiles[-1]
 
     to_cluster = True
-    
+
     coverage_bed = " ".join( coverage_bed )
 
     if tiling_method == "varwidth":
-        
+
         infiles = " ".join( infiles )
 
         statement = '''
@@ -489,13 +537,13 @@ def buildWindows( infiles, outfile ):
         '''
 
     elif tiling_method == "fixwidth_nooverlap":
-        
+
         statement = '''python %(scriptsdir)s/genome_bed.py
                       -g %(genome_dir)s/%(genome)s
                       --window=%(tiling_nonoverlapping_window)i
                       --shift=%(tiling_window_size)i
                       --log=%(outfile)s.log'''
-        
+
     elif tiling_method == "fixwidth_overlap":
 
         assert PARAMS["tiling_window_size"] % 2 == 0
@@ -506,6 +554,10 @@ def buildWindows( infiles, outfile ):
                       --window=%(tiling_window_size)i
                       --shift=%(shift)i
                       --log=%(outfile)s.log'''
+
+    elif os.path.exists( tiling_method ):
+        # existing file
+        statement = '''mergeBed -i %(tiling_method)s'''
 
     else:
         raise ValueError("unknow tiling method '%s'" % tiling_method)
@@ -560,7 +612,7 @@ def loadWindowStats( infile, outfile ):
 def buildBigBed( infile, outfile ):
     '''bed file with intervals that are covered by reads in any of the experiments.
     '''
-    
+
     to_cluster = True
     to_cluster = False
 
@@ -629,7 +681,7 @@ def aggregateWindowsReadCounts( infiles, outfile ):
             "_stats.tsv" )
 def summarizeAllWindowsReadCounts( infile, outfile ):
     '''perform summarization of read counts'''
-    
+
     prefix = P.snip(outfile, ".tsv")
     statement = '''python %(scriptsdir)s/runExpression.py
               --method=summary
@@ -671,7 +723,7 @@ def summarizeWindowsReadCounts( infiles, outfile ):
             r"dump.dir/\1.tsv.gz" )
 def dumpWindowsReadCounts( infiles, outfile ):
     '''output tag tables used for analysis.
-    
+
     This is for debugging purposes. The tables
     can be loaded into R for manual analysis.
     '''
@@ -701,14 +753,14 @@ def loadTagCountSummary( infile, outfile ):
 #########################################################################
 def loadMethylationData( infile, design_file ):
     '''load methylation data for deseq/edger analysis.
-    
+
     This method creates various R objects:
 
     countsTable : data frame with counts. 
     groups : vector with groups
 
     '''
-    
+
     E.info( "reading data")
     R( '''counts_table = read.delim( '%(infile)s', header = TRUE, 
                                                    row.names = 1, 
@@ -721,7 +773,7 @@ def loadMethylationData( infile, design_file ):
 
     # Make sample names R-like - substitute - for . and add the .prep suffix
     R('''pheno[,1] = gsub('-', '.', pheno[,1]) ''')
-    
+
     # Ensure pheno rows match count columns 
     R('''pheno2 = pheno[match(colnames(counts_table),pheno[,1]),,drop=FALSE]''' ) 
 
@@ -735,72 +787,13 @@ def loadMethylationData( infile, design_file ):
     R('''countsTable <- counts_table[ , includedSamples ]''')
     R('''groups <- factor(pheno2$group[ includedSamples ])''')
     R('''pairs = factor(pheno2$pair[ includedSamples ])''')
-    
+
     groups = R('''levels(groups)''')
     pairs = R('''levels(pairs)''')
 
     E.info( "filtered data: %i observations for %i samples" % tuple( R('''dim(countsTable)''') ) )
-    
+
     return groups, pairs
-
-#########################################################################
-#########################################################################
-#########################################################################
-def runDE( infiles, outfile, outdir, method ):
-    '''run DESeq or EdgeR.
-
-    The job is split into smaller sections. The order of the input 
-    data is randomized in order to avoid any biases due to chromosomes.
-
-    At the end, a new q-value is computed from all results.
-    '''
-
-    to_cluster = True
-    
-    design_file, counts_file = infiles
-
-    prefix = os.path.basename( outfile )
-
-    # the post-processing strips away the warning,
-    # renames the qvalue column to old_qvalue
-    # and adds a new qvalue column after recomputing
-    # over all windows.
-    statement = '''zcat %(counts_file)s 
-              | perl %(scriptsdir)s/randomize_lines.pl -h
-              | %(cmd-farm)s
-                  --input-header 
-                  --output-header 
-                  --split-at-lines=200000 
-                  --cluster-options="-l mem_free=8G"
-                  --log=%(outfile)s.log
-                  --output-pattern=%(outdir)s/%%s
-                  --subdirs
-              "python %(scriptsdir)s/runExpression.py
-              --method=%(method)s
-              --filename-tags=-
-              --filename-design=%(design_file)s
-              --output-filename-pattern=%%DIR%%/%(prefix)s_
-              --deseq-fit-type=%(deseq_fit_type)s
-              --deseq-dispersion-method=%(deseq_dispersion_method)s
-              --deseq-sharing-mode=%(deseq_sharing_mode)s
-              --filter-min-counts-per-row=%(tags_filter_min_counts_per_row)i
-              --filter-min-counts-per-sample=%(tags_filter_min_counts_per_sample)i
-              --filter-percentile-rowsums=%(tags_filter_percentile_rowsums)i
-              --log=%(outfile)s.log
-              --fdr=%(edger_fdr)f"
-              | grep -v "warnings"
-              | perl %(scriptsdir)s/regtail.pl ^test_id
-              | perl -p -e "s/qvalue/old_qvalue/"
-              | python %(scriptsdir)s/table2table.py 
-              --log=%(outfile)s.log
-              --method=fdr 
-              --column=pvalue
-              --fdr-method=BH
-              --fdr-add-column=qvalue
-              | gzip
-              > %(outfile)s '''
-
-    P.run()
 
 @follows( mkdir("deseq.dir"), mkdir("deseq.dir/plots") )
 @transform( "design*.tsv",
@@ -813,7 +806,7 @@ def runDESeq( infiles, outfile ):
     The final output is a table. It is slightly edited such that
     it contains a similar output and similar fdr compared to cuffdiff.
     '''
-    runDE( infiles, outfile, "deseq.dir", "deseq" )
+    PipelineWindews.runDE( infiles, outfile, "deseq.dir", method = "deseq" )
 
 #########################################################################
 #########################################################################
@@ -856,7 +849,7 @@ def runEdgeR( infiles, outfile ):
     the example in chapter 11 of the EdgeR manual.
     '''
 
-    runDE( infiles, outfile, "edger.dir", "edger" )
+    PipelineWindows.runDE( infiles, outfile, "edger.dir", method = "edger" )
 
 
 DIFFTARGETS = []

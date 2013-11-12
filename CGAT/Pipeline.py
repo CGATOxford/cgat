@@ -347,13 +347,16 @@ def isEmpty( filename ):
 
 def asList( param ):
     '''return a param as a list'''
-    if type(param) not in (types.ListType, types.TupleType):
+    if type(param) == str:
         try:
             params = [x.strip() for x in param.strip().split(",")]
         except AttributeError:
             params = [param.strip()]
         return [ x for x in params if x != ""]
-    else: return param
+    elif type(param) in (types.ListType, types.TupleType):
+        return param
+    else: 
+        return [param]
 
 def asTuple( param ):
     '''return a param as a list'''

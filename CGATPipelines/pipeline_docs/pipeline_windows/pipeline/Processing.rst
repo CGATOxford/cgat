@@ -2,34 +2,56 @@
 Tag counting
 =============
 
+.. _TagsSampleClustering:
+
 Sample clustering
 =================
+
+The following plots show how the various samples cluster according to
+the different experimental designs that have been submitted to the pipeline.
+
+Overall clustering
+------------------
 
 .. report:: Tracker.TrackerImages
    :render: gallery-plot
    :tracker: counts.dir/counts_stats_heatmap.svg
+   :width: 200
 
    Heatmap of overall sample similarity based on all samples
    Clustered using a correlation distance.
 
+Clustering within designs
+-------------------------
+
 .. report:: Tracker.TrackerImages
    :render: gallery-plot
    :tracker: counts.dir/design*_stats_heatmap.svg
+   :width: 200
 
    Heatmap of overall sample similarity for various
    experimental designs. Clustered using a correlation distance.
+
+Ungrouped heatmaps
+------------------
 
 .. report:: MedipReport.TagCountsCorrelations
    :render: matrix-plot
    :groupby: all
    :colorbar-format: %5.2f
    :zrange: 0.9,1.0
+   :width: 200
 
    Ungrouped heatmaps of sample similarity. Shown are heatmaps for
    completed data and various experimental designs.
 
+.. _TagsCounts:
+
 Tag counts in windows
 =====================
+
+The following tables report how many tag counts are reported
+in total across each window.
 
 .. report:: MedipReport.TagCountsSummary
    :render: table
@@ -45,10 +67,12 @@ Tag counts in windows
    Number of windows with a certain number of 
    tag counts for various experimental designs.
 
+.. _TagsWindows:
+
 Windows
 =======
 
-Window statistics
+Window statistics shows the distribution of window sizes used in the analysis.
 
 .. report:: MedipReport.WindowsSummary
    :render: table
@@ -63,8 +87,12 @@ Window statistics
 
    Distribution of tile size
 
+.. _TagsDuplicates:
+
 Duplicate statistics
 ====================
+
+Number and percentage of duplicate pairs removed before tag counting.
 
 .. report:: MedipReport.PicardDuplicatesMetrics
    :render: table

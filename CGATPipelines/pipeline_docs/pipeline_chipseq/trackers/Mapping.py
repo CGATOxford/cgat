@@ -1,13 +1,4 @@
-import os, sys, re, types, itertools, glob
-import matplotlib.pyplot as plt
-import numpy, scipy.stats
-import numpy.ma
-import Stats
-import Histogram
-
 from ChipseqReport import *
-
-from SphinxReport.Tracker import *
 
 class MappingSummary( ChipseqTracker, SingleTableTrackerRows ):
     table = "view_mapping"

@@ -232,6 +232,7 @@ Sample = PipelineTracks.Sample3
 suffixes = ["export.txt.gz",
             "sra",
             "fastq.gz",
+            "fastq.1.gz",
             "fa.gz",
             "cfastq.1.gz",
             "csfasta.gz" ]
@@ -360,7 +361,7 @@ def countReads( infile, outfile ):
 def loadReadCounts( infiles, outfile ):
     '''load read counts into database.'''
 
-    outf = P.getTempFile()
+    outf = P.getTempFile(".")
     outf.write( "track\ttotal_reads\n")
     for infile in infiles:
         track = P.snip(infile, ".nreads")
@@ -786,12 +787,18 @@ elif PARAMS["calling_caller"] == "zinba":
         '''run Zinba for peak detection.'''
         infile, controlfile = infiles
 
-        if not os.path.exists( os.path.join( outfile + "_files" , outfile + ".list")):
-            PipelineChipseq.runZinba( infile, outfile, controlfile, action = "predict" )
-        elif not os.path.exists( os.path.join( outfile + "_files" , outfile + ".model")):
-            PipelineChipseq.runZinba( infile, outfile, controlfile, action = "model" )
-#        else:
-#           PipelineChipseq.runZinba( infile, outfile, controlfile, action = "predict" )
+        if os.path.exists( os.path.join( outfile + "_files" , outfile + ".model")):
+            PipelineChipseq.runZinba( infile, 
+                                      outfile, 
+                                      controlfile, 
+                                      action = "model" )
+        elif os.path.exists( os.path.join( outfile + "_files" , outfile + ".list")):
+            PipelineChipseq.runZinba( infile, 
+                                      outfile, 
+                                      controlfile, 
+                                      action = "predict" )
+        else:
+            PipelineChipseq.runZinba( infile, outfile, controlfile, action = "full" )
         
     ############################################################
     ############################################################
@@ -905,7 +912,7 @@ def loadIntervalsFromBed( infile, outfile ):
     and conditions.
     '''
 
-    tmpfile = P.getTempFile()
+    tmpfile = P.getTempFile(".")
 
     headers = ("AvgVal","DisttoStart","GeneList","Length","PeakCenter","PeakVal","Position","interval_id","nCpGs","nGenes","nPeaks","nProbes","nPromoters", "contig","start","end" )
 
@@ -1674,7 +1681,7 @@ if PARAMS["tomtom_master_motif"] != "":
     def loadTomTom( infile, outfile ):
         '''compare ab-initio motifs against tomtom.'''
 
-        tmpfile = P.getTempFile()
+        tmpfile = P.getTempFile(".")
 
         tmpfile.write( "\t".join( \
             ("query_id", "target_id",
@@ -1769,7 +1776,7 @@ def collectMotifs( infile, outfile ):
 def loadMotifInformation( infiles, outfile ):
     '''load information about motifs into database.'''
     
-    outf = P.getTempFile()
+    outf = P.getTempFile( "." )
 
     outf.write("motif\n" )
 

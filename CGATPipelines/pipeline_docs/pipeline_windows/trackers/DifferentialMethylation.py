@@ -19,7 +19,7 @@ class TrackerDESeqSummary( ProjectTracker ):
     def __call__(self, track ):
         return self.getAll( "SELECT sample, * FROM %(track)s_deseq_summary" )
 
-class TrackerDESeqSummary( ProjectTracker ):
+class TrackerEdgeRSummary( ProjectTracker ):
     pattern = "(.*)_edger_summary" 
     
     def __call__(self, track ):

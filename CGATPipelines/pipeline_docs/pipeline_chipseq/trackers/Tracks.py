@@ -1,15 +1,6 @@
 '''Trackers for analysing chromatin tracks.'''
 
-import os, sys, re, types, itertools, glob
-import matplotlib.pyplot as plt
-import numpy, scipy.stats
-import numpy.ma
-import Stats
-import Histogram
-import ChipseqReport
-
-
-from SphinxReport.Tracker import *
+from ChipseqReport import *
 
 class TrackerTracks( TrackerSQL ):
 

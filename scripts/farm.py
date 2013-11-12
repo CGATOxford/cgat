@@ -319,7 +319,10 @@ class MapperEmpty:
         return id
 
 class ResultBuilder:
-    """the default result builder for table formatted output."""
+    """the default result builder for table formatted output.
+    
+    field_index : 
+    """
 
     def __init__( self, mapper = None, field_index = None, field_name = None):
         self.mMapper = mapper
@@ -741,8 +744,9 @@ def getOptionParser():
                        help = "renumber ids consecutively, supply a pattern [default=%default]." )
 
     parser.add_option( "--renumber-column", dest="renumber_column", type="string", action="append",
-                       help = "specify column to renumber. The format is regex:column, for example csv:1 or csv:id [default=%default]." )
-    
+                       help = "specify column to renumber. The format is regex:column, "
+                       "for example csv:1 or csv:id [default=%default]." )
+
     parser.add_option( "-r", "--reduce", dest="reduce", type="string", action="append",
                        help = "Add reduce functions for specific files. The format is file:reducer. The default reducer is 'table' for all files [default=%default]." )
     
@@ -949,7 +953,10 @@ def main():
         if options.binary:
             ResultBuilderBinary()( started_requests, options.stdout, options )
         else:
-            ResultBuilder( mapper = mapper, field_index = index, field_name = name )( started_requests, options.stdout, options )
+            ResultBuilder( mapper = mapper, 
+                           field_index = index, 
+                           field_name = name,
+                           )( started_requests, options.stdout, options )
 
         ## deal with logfiles : combine them into a single file
         x = re.search( "'--log=(\S+)'", cmd ) or re.search( "'--L\s+(\S+)'", cmd )

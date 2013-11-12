@@ -163,7 +163,8 @@ def writeSequencesForIntervals( track, filename,
                                 masker = [],
                                 offset = 0,
                                 shuffled = False,
-                                min_sequences = None ):
+                                min_sequences = None,
+                                order = "peakval" ):
     '''build a sequence set for motif discovery. Intervals are taken 
     from the table <track>_intervals in the database *dbhandle* and 
     save to *filename* in :term:`fasta` format.
@@ -185,20 +186,21 @@ def writeSequencesForIntervals( track, filename,
         * dust, dustmasker: apply dustmasker
         * softmask: mask softmasked genomic regions
 
+    *order* is the order by which peaks should be sorted. Possible values
+    are 'peakval' (peak value, descending order), 'score' (peak score, descending order) 
+
     '''
 
     fasta = IndexedFasta.IndexedFasta( os.path.join( PARAMS["genome_dir"], PARAMS["genome"] ) )
 
     cc = dbhandle.cursor()
 
-    if PARAMS["score"] == "peakval":
+    if order == "peakval":
         orderby = " ORDER BY peakval DESC"
-    elif PARAMS["score"] == "max":
+    elif order == "max":
         orderby = " ORDER BY score DESC"
-    elif PARAMS["score"] == "min":
-        orderby = " ORDER BY score ASC"
     else:
-        raise ValueError("Unknown value passed as score parameter, check your ini file")
+        raise ValueError("Unknown value passed as order parameter, check your ini file")
          
     tablename = "%s_intervals" % P.quote( track )
     if full:
@@ -464,7 +466,7 @@ def loadMAST( infile, outfile ):
 
     tablename = P.toTable( outfile )
 
-    tmpfile = tempfile.NamedTemporaryFile(delete=False)
+    tmpfile = P.getTempFile( ".")
 
     tmpfile.write( MAST.Match().header +\
                    "\tmotif\tcontig" \
@@ -479,7 +481,7 @@ def loadMAST( infile, outfile ):
     def readChunk( lines, chunk ):
         # use real file, as MAST parser can not deal with a
         # list of lines
-        tmpfile2 = tempfile.NamedTemporaryFile(delete=False)        
+        tmpfile2 = P.getTempFile(".")
         try:
             motif, part = re.match( ":: motif = (\S+) - (\S+) ::", lines[chunks[chunk]]).groups()
         except AttributeError:
@@ -859,7 +861,7 @@ def runMEME( track, outfile, dbhandle ):
     nseq = writeSequencesForIntervals( track, tmpfasta,
                                        dbhandle,
                                        full = False,
-                                       masker = PARAMS['motifs_masker'],
+                                       masker = P.asList(PARAMS['motifs_masker']),
                                        halfwidth = int(PARAMS["meme_halfwidth"]),
                                        maxsize = int(PARAMS["meme_max_size"]),
                                        proportion = PARAMS["meme_proportion"],

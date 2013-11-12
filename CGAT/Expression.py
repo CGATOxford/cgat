@@ -699,8 +699,10 @@ def runEdgeR( outfile,
         R.ggsave( '''%(outfile_prefix)sbalance_pairs.png''' % locals() )
         R['dev.off']()
 
+        
     # build DGEList object
-    R( '''countsTable = DGEList( countsTable, group = groups )''' )
+    # ignore message: "Calculating library sizes from column totals"
+    R( '''countsTable = suppressMessages(DGEList( countsTable, group = groups ))''' )
 
     # Relevel groups to make the results predictable - IMS
     if not ref_group is None:

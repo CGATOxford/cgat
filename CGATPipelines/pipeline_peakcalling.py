@@ -72,6 +72,19 @@ peakranger_ccat
     significance analysis of ChIP-seq with negative
     control.Bioinformatics 26(9): 1199-1204)
 
+scripture
+    As of version 2, scripture has added a ChIP-Seq module. The current
+    version (5/11/2013) is still marked beta. Scripture implements a
+    continuous segmentation algorithm. It scans windows of a fixed size
+    across the genome, identifies significant windows and merges/trims
+    to obtain peaks. Significance is assessed using the scan statistic
+    (Wallenstein and Neff, 1987).
+    Scripture in the pipeline is used according to Garber et al. (2012)
+    (PMID:22940246). Significant windows are filtered against input or
+    other control data (Garber et al.: whole cell extract) by computing
+    an enrichment scrore. Only significant windows above a certain 
+    enrichment score are kept.
+
 Peak callers have different strengths and weaknesses. Some might work
 well on broad peaks such as some histone marks, others work better for
 narrow, sharp peaks. Many callers these days attempt to call both
@@ -102,7 +115,6 @@ peaks, use :doc:`pipeline_intervals`.
 
    The pipeline currently expects that mulit-mapping reads (reads mapping to multiple locations)
    have been removed.
-
 QC
 ---
 
@@ -252,7 +264,7 @@ To run the example, simply unpack and untar::
 .. _sicer: http://home.gwu.edu/~wpeng/Software.htm
 .. _zinba: http://code.google.com/p/zinba/
 .. _peakranger: http://ranger.sourceforge.net/
-
+.. _scripture: http://www.broadinstitute.org/software/scripture/home
 
 Code
 ====
@@ -797,9 +809,17 @@ def callPeaksWithZinba( infiles, outfile ):
     infile, controlfile = infiles
 
     if os.path.exists( os.path.join( outfile + "_files" , outfile + ".model")):
-        PipelinePeakcalling.runZinba( infile, outfile, controlfile, action = "predict" )
+        PipelinePeakcalling.runZinba( infile, 
+                                  outfile, 
+                                  controlfile, 
+                                  action = "model" )
+
     elif os.path.exists( os.path.join( outfile + "_files" , outfile + ".list")):
-        PipelinePeakcalling.runZinba( infile, outfile, controlfile, action = "model" )
+        PipelinePeakcalling.runZinba( infile, 
+                                  outfile, 
+                                  controlfile, 
+                                  action = "predict" )
+
     else:
         PipelinePeakcalling.runZinba( infile, outfile, controlfile, action = "full" )
         
@@ -1245,8 +1265,37 @@ def plotIDR( infile, outfile ):
 
     P.run()
 
-############################################################
+######################################################################
+######################################################################
+##                                                                  ##
+##                           Scripture                              ## 
+##                                                                  ##
+######################################################################
+######################################################################
+@follows( mkdir("scripture.dir"), normalizeBAM )
+@files( [ ("%s.call.bam" % (x.asFile()), 
+           "scripture.dir/%s.scripture" % x.asFile() ) for x in TRACKS ] )
+def callPeaksWithScripture( infile, outfile ):
+    '''run SICER for peak detection.'''
+    track = P.snip( infile, ".call.bam" )
+    controlfile = "%s.call.bam" % getControl(Sample(track)).asFile()
 
+    contig_sizes = os.path.join( PARAMS["annotations_dir"],
+                                 PARAMS_ANNOTATIONS["interface_contigs" ] )
+
+    if not os.path.exists( controlfile ):
+        L.warn( "no controlfile '%s' for track '%s' not found " % (controlfile, track ) )
+        controlfile = None
+
+    PipelinePeakcalling.runScripture( infile, 
+                                      outfile, 
+                                      contig_sizes)
+
+@transform( callPeaksWithScripture, suffix(".scripture"), ".load")
+def loadScripture( infile, outfile ):
+    '''load scripture data.'''
+    bamfile, controlfile = getBamFiles( infile, ".scripture" )
+    PipelinePeakcalling.loadScripture( infile, outfile, bamfile, controlfile )
 
 ######################################################################
 ######################################################################
@@ -1264,6 +1313,7 @@ mapToCallingTargets = { 'macs': loadMACS,
                         'peakranger': loadPeakRanger,
                         'ccat' : loadPeakRangerCCAT ,
                         'spp': loadSPP,
+                        'scripture' : loadScripture,
                         }
 
 mapToSummaryTargets = { 'macs': [loadMACSSummary, loadMACSSummaryFDR],

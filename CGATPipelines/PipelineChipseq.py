@@ -250,7 +250,7 @@ def buildBAMforPeakCalling( infiles, outfile, dedup, mask):
 
     statement = []
     
-    tmpfile = P.getTempFilename()
+    tmpfile = P.getTempFilename(".")
 
     if len(infiles) > 1 and isinstance(infiles,str)==0:
         # assume: samtools merge output is sorted
@@ -378,7 +378,7 @@ def buildNormalizedBAM( infiles, outfile, normalize = True ):
     
     # if more than one samfile: sort
     if len(samfiles) > 1:
-        tmpfilename = P.getTempFilename()
+        tmpfilename = P.getTempFilename(".")
         pysam.sort( outfile, tmpfilename )
         shutil.move( tmpfilename + ".bam", outfile )
         os.unlink( tmpfilename )
@@ -933,7 +933,7 @@ def loadMACS( infile, outfile, bamfile, tablename = None ):
     samfiles = [ pysam.Samfile( bamfile, "rb" ) ]
     offsets = [ shift / 2 ]
 
-    outtemp = P.getTempFile()
+    outtemp = P.getTempFile(".")
     tmpfilename = outtemp.name
 
     outtemp.write( "\t".join( ( \
@@ -1147,7 +1147,9 @@ def runZinba( infile, outfile, controlfile, action = "full" ):
 
     to_cluster = True
 
-    job_options= "-l mem_free=16G -pe dedicated %i -R y" % PARAMS["zinba_threads"]
+    E.info( "zinba: running action %s" % (action ))
+
+    job_options= "-l mem_free=32G -pe dedicated %i -R y" % PARAMS["zinba_threads"]
 
     mappability_dir = os.path.join( PARAMS["zinba_mappability_dir"], 
                                     PARAMS["genome"],
@@ -1169,8 +1171,9 @@ def runZinba( infile, outfile, controlfile, action = "full" ):
 
     options = " ".join(options)
 
+    # python %(scriptsdir)s/WrapperZinba.py
     statement = '''
-    python %(scriptsdir)s/WrapperZinba.py
+    python /ifs/devel/andreas/cgat/CGAT/WrapperZinba.py
            --input-format=bam
            --fdr-threshold=%(zinba_fdr_threshold)f
            --fragment-size=%(zinba_fragment_size)s
@@ -1186,7 +1189,6 @@ def runZinba( infile, outfile, controlfile, action = "full" ):
     '''
 
     P.run()
-
 
 ############################################################
 ############################################################
@@ -1225,7 +1227,7 @@ def loadZinba( infile, outfile, bamfile,
 
     infilename = infile + ".peaks"
 
-    outtemp = P.getTempFile()
+    outtemp = P.getTempFile(".")
     tmpfilename = outtemp.name
 
     outtemp.write( "\t".join( ( \
@@ -1471,7 +1473,7 @@ def loadIntervalsFromBed( bedfile, track, outfile,
 
     '''
 
-    tmpfile = P.getTempFile()
+    tmpfile = P.getTempFile(".")
 
     headers = ("AvgVal","DisttoStart","GeneList","Length","PeakCenter","PeakVal","Position","interval_id","nCpGs","nGenes","nPeaks","nProbes","nPromoters", "contig","start","end" )
 

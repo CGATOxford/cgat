@@ -41,12 +41,15 @@ significantly different number of reads.
 
    Table of with results of differential enrichment analysis.
 
-
-
 .. ifconfig:: "deseq" in METHODS
 
    .. toctree::
       DESeq.rst
+
+.. ifconfig:: "deseq" in METHODS
+
+   .. toctree::
+      EdgeR.rst
 
 
 

@@ -2,20 +2,16 @@ import os, sys, re, types, itertools
 import matplotlib.pyplot as plt
 import numpy
 import numpy.ma
-import Stats
-import Histogram
-import ChipseqReport
+
+from ChipseqReport import *
 import Annotations
-
-
-from SphinxReport.Tracker import *
 
 ##################################################################################
 ##################################################################################
 ##################################################################################
 ## Looking at distance
 ##################################################################################
-class ClosestDistance(Annotations.AnnotationSlicer, ChipseqReport.DefaultTracker):
+class ClosestDistance(Annotations.AnnotationSlicer, DefaultTracker):
     """Closest distance of transcript models to gene models in the reference set."""
     mXLabel = "distance / bases"
     mPattern = "_distances$"

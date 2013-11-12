@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################################################################
 '''
-WrapperZinba.py - wrap zinba peak caller
+runZinba.py - wrap zinba peak caller
 ========================================
 
 :Author: Andreas Heger
@@ -53,14 +53,14 @@ Code
 import os, sys, re, optparse, tempfile, shutil, subprocess
 import collections
 
-import Experiment as E
-import IOTools
-
 ## for zinba
 from rpy2.robjects import r as R
 import rpy2.robjects as ro
 import rpy2.robjects.vectors as rovectors
 from rpy2.rinterface import RRuntimeError
+
+import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
 
 def bamToBed( infile, outfile ):
     '''convert bam to bed with bedtools.'''
@@ -327,7 +327,7 @@ def main( argv = None ):
         # see zinba.R
         # model selection only on chr19.
         if not os.path.exists( modelfile ):
-            raise OSError( "model file %s does not exist" )
+            raise OSError( "model file %s does not exist" % modelfile )
 
         E.info( "reading model from %s" % modelfile )
 

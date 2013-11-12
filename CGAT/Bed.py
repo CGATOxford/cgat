@@ -40,6 +40,13 @@ import itertools
 
 import NCL as ncl
 
+Headers = [
+    "contig", "start", "end",
+    "name", "score", "strand",
+    "thinkStart", "thickEnd",
+    "itemRGB", "blockCount",
+    "blockSizes", "blockStarts" ]
+
 class Bed(object):
     """an interval in bed format."""
 
