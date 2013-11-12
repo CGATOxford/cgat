@@ -57,12 +57,17 @@ The script implements the following methods:
    remove alignments based on a variety of flags.
 
 ``strip`` 
-   remove the sequence and/or quality scores from a bam-file
+   remove the sequence and/or quality scores from all reads in
+   a bam-file. If ``match``, sequence and quality are stripped 
+   for alignments without mismatches.
 
 ``set-sequence``
    set the sequence and quality scores in the bam file to some 
    dummy sequence. Necessary for some tools that can not work
    with bam-files without sequence.
+
+``unstrip``
+   add sequence and quality scores back to a bam file.
 
 By default, the script works from stdin and outputs to stdout.
 If the ``--inplace option`` is given, the script will modify
@@ -120,9 +125,13 @@ def main( argv = None ):
                        "[%default]" )
 
     parser.add_option( "--strip", dest="strip", type="choice",
-                       choices = ("sequence", "quality" ),
+                       choices = ("sequence", "quality", "match" ),
                        help = "remove parts of the bam-file. Note that stripping the sequence will "
                        "also strip the quality values [%default]" )
+
+    parser.add_option( "--unstrip", dest="strip", type="string",
+                       help = "add sequence and quality into bam file. "
+                       "Supply fastq file as parameter [%default]" )
 
     parser.add_option( "--filter", dest="filter", action="append", type="choice",
                        choices=('NM', 'CM', 'mapped', 'unique', "non-unique" ),
@@ -146,6 +155,7 @@ def main( argv = None ):
         output_sam = False,
         reference_bam = None,
         strip = None,
+        unstrip = None,
         set_sequence = False,
         inplace = False,
         )
@@ -165,6 +175,8 @@ def main( argv = None ):
 
     for bamfile in bamfiles:
 
+        E.info('processing %s' % bamfile )
+
         # reading bam from stdin does not work with only the "r" tag
         pysam_in = pysam.Samfile( bamfile, "rb" )
 
@@ -177,7 +189,7 @@ def main( argv = None ):
             tmpfile = tempfile.NamedTemporaryFile( delete=False, prefix = "ctmp" )
             tmpfile.close()
 
-            E.debug("writting temporary bam-file to %s" % tmpfile.name )
+            E.debug("writing temporary bam-file to %s" % tmpfile.name )
             pysam_out = pysam.Samfile( tmpfile.name, "wb", template = pysam_in )
 
         if options.filter:
@@ -261,10 +273,30 @@ def main( argv = None ):
                         read.qual = None
                         yield read
 
+                def strip_match( read ):
+                    for read in i:
+                        try:
+                            nm = read.opt( 'NM' )
+                        except KeyError:
+                            nm = 0
+                        if nm != 0:
+                            read.seq = None
+                        yield read
+
                 if options.strip == "sequence":
                     it = strip_sequence( it )
                 elif options.strip == "quality":
                     it = strip_quality( it )
+                elif options.strip == "match":
+                    it = strip_match( it )
+
+            if options.unstrip:
+                fastqfile = pysam.Fastqfile( options.unstrip )
+                fastq2sequence = {}
+                for x in fastqfile:
+                    fastq2sequence[x.name] = (x.sequence, x.quality )
+
+                
 
             if options.set_nh:
                 it = _bam2bam.SetNH( it )
