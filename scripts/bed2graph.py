@@ -44,8 +44,8 @@ Type::
 
 for command line help.
 
-Code
-----
+Command line options
+--------------------
 
 """ 
 

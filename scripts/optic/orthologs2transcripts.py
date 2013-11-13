@@ -1055,7 +1055,14 @@ def ReadTranscriptsAndCds( transcript_ids1, transcript_ids2 ):
     return transcripts1, transcripts2, cds1, cds2
     
 ##------------------------------------------------------------
-if __name__ == '__main__':
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     try:
         optlist, args = getopt.getopt(sys.argv[1:], param_short_options, param_long_options)
@@ -1293,3 +1300,7 @@ if __name__ == '__main__':
             
     print "# ninput=%i, noutput=%i, npairs=%i, nerrors=%i, nskipped=%i" % (ninput, noutput, npairs, total_nerrors, total_nskipped)
     print E.GetFooter()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

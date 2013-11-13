@@ -1,16 +1,3 @@
-####
-####
-##
-##
-## Copyright (C) 2008 Andreas Heger All rights reserved
-##
-## Author: Andreas Heger <andreas.heger@helsinki.fi>
-##
-## $Id: psl2gff.py 2781 2009-09-10 11:33:14Z andreas $
-##
-##
-####
-####
 '''
 psl2gff.py - convert from psl to gff
 ====================================
@@ -39,11 +26,8 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-
-Code
-----
+Command line options
+--------------------
 
 '''
 

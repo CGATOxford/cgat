@@ -11,17 +11,21 @@ include KNOWN_BUGS
 include THANKS.txt
 
 include install_requisites.sh
+include requires.txt
 
-# CGAT scripts to include - note that these
+exclude scripts/*
+
+# CGAT scripts to include - these
 # are named explicitely
-include scripts/bams2correlation.py
+include scripts/bam_vs_bam.py
+include scripts/bam_vs_bed.py
+include scripts/bam_vs_gtf.py
+include scripts/bam2bam.py
 include scripts/bam2bed.py
 include scripts/bam2fastq.py
 include scripts/bam2geneprofile.py
 include scripts/bam2peakshape.py
 include scripts/bam2stats.py
-include scripts/bam2transcriptContribution.py
-include scripts/bam2UniquePairs.py
 include scripts/bam2wiggle.py
 include scripts/bed2bed.py
 include scripts/beds2counts.py
@@ -32,15 +36,13 @@ include scripts/bed2table.py
 include scripts/beds2beds.py
 include scripts/chain2psl.py
 include scripts/chain2stats.py
+include scripts/diff_bam.py
 include scripts/diff_bed.py
 include scripts/diff_chains.py
 include scripts/diff_fasta.py
 include scripts/diff_gtf.py
-include scripts/diff_gtfs.py
 include scripts/fasta2bed.py
-include scripts/fasta2counts.py
 include scripts/fasta2fasta.py
-include scripts/fasta2gff.py
 include scripts/fasta2kmercontent.py
 include scripts/fasta2table.py
 include scripts/fasta2variants.py
@@ -48,7 +50,7 @@ include scripts/fastas2fasta.py
 include scripts/fastq2fastq.py
 include scripts/fastq2table.py
 include scripts/fastqs2fasta.py
-include scripts/fastqs2fastq.py
+include scripts/fastqs2fastqs.py
 include scripts/gff2bed.py
 include scripts/gff2coverage.py
 include scripts/gff2fasta.py
@@ -56,24 +58,20 @@ include scripts/gff2gff.py
 include scripts/gff2histogram.py
 include scripts/gff2psl.py
 include scripts/gff2stats.py
-include scripts/gff2table.py
-include scripts/go2plot.py
-include scripts/go2svg.py
 include scripts/gtf2fasta.py
 include scripts/gtf2gff.py
 include scripts/gtf2gtf.py
 include scripts/gtf2tsv.py
 include scripts/gtf2table.py
-include scripts/gtfs2graph.py
+include scripts/gtfs2tsv.py
 include scripts/index_fasta.py
-include scripts/rnaseq_bam_vs_bed.py
-include scripts/rnaseq_bam_vs_exons.py
-include scripts/rnaseq_bams_vs_bams.py
-include scripts/rnaseq_bams2bam.py
-include scripts/rnaseq_junction_bam2bam.py
-include scripts/softmask.py
 include scripts/split_gff.py
 include scripts/vcf2vcf.py
+
+# other scripts
+include scripts/__init__.py
+include scripts/cgat.py
+include scripts/version.py
 
 # extensions
 include scripts/*.pyxbld

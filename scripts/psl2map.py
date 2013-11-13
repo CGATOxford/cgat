@@ -1,16 +1,3 @@
-####
-####
-##
-##
-## Copyright (C) 2008 Andreas Heger All rights reserved
-##
-## Author: Andreas Heger <heger@ebi.ac.uk>
-##
-## $Id: psl2map.py 2781 2009-09-10 11:33:14Z andreas $
-##
-##
-####
-####
 
 '''
 psl2map.py - build a mappping from blat alignments
@@ -44,11 +31,8 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-
-Code
-----
+Command line options
+--------------------
 
 '''
 
@@ -275,7 +259,14 @@ def selectMatches( query_id, matches, options, queries_fasta = None ):
 
     return matches, None
 
-if __name__ == '__main__':
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: psl2map.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"] )
 
@@ -726,3 +717,7 @@ if __name__ == '__main__':
         options.stdlog.write("# omitted matches: pid=%i, query_coverage=%i, gaps=%i, regions=%i, nmatches=%i\n" % (nremoved_pid, nremoved_query_coverage, nremoved_gaps, nremoved_regions, nremoved_nmatches ))
 
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

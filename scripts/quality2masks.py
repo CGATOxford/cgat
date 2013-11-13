@@ -1,25 +1,3 @@
-################################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id$
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
 '''
 quality2masks.py - mask low-quality bases in multiple alignment
 ===============================================================
@@ -49,11 +27,8 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-
-Code
-----
+Command line options
+--------------------
 
 '''
 import os
@@ -68,7 +43,7 @@ import types
 import CGAT.Experiment as E
 import CGAT.Blat as Blat
 import CGAT.Iterators as Iterators
-import alignlib
+import alignlib_lite
 import CGAT.IndexedFasta as IndexedFasta
 
 def fillAlignment( map_alignment, alignment ):
@@ -157,7 +132,7 @@ def main():
             alignment = alignment[::-1]
 
         # get map of gene to alignment
-        map_gene2mali = alignlib.makeAlignmentVector()
+        map_gene2mali = alignlib_lite.py_makeAlignmentVector()
         fillAlignment( map_gene2mali, alignment )
 
         # get quality scores
@@ -168,13 +143,13 @@ def main():
             E.warn( "could not retrieve quality scores for %s:%i-%i: %s" % (match.mSbjctId, match.mSbjctFrom, match.mSbjctTo, msg) )
             continue
 
-        # print str(alignlib.AlignmentFormatEmissions( map_gene2genome))
-        # print str(alignlib.AlignmentFormatEmissions( map_gene2mali))
+        # print str(alignlib_lite.py_AlignmentFormatEmissions( map_gene2genome))
+        # print str(alignlib_lite.py_AlignmentFormatEmissions( map_gene2mali))
         # print quality_scores
 
-        map_mali2genome = alignlib.makeAlignmentVector()
-        alignlib.combineAlignment( map_mali2genome, map_gene2mali, map_gene2genome, alignlib.RR )
-        # print str(alignlib.AlignmentFormatEmissions( map_mali2genome))
+        map_mali2genome = alignlib_lite.py_makeAlignmentVector()
+        alignlib_lite.py_combineAlignment( map_mali2genome, map_gene2mali, map_gene2genome, alignlib_lite.py_RR )
+        # print str(alignlib_lite.py_AlignmentFormatEmissions( map_mali2genome))
 
         # shuffle quality scores, but only those that are aligned
         if options.random:

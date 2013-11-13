@@ -1,31 +1,3 @@
-################################################################################
-#   Gene prediction pipeline 
-#
-#   $Id: split_fasta.pl 1313 2007-06-20 13:12:16Z andreas $
-#
-#   Copyright (C) 2004 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
-#
-# Splits a fasta file on STDIN into files of $STEP_SIZE
-# Note: with ping you can test a range of nodes.
-#	Pinging a node is not enough, check also if you can 
-#	log in by scp'ing something to a target directory.
-#	note: node ranges are given in real numbering (starting from 0)
-#	thus, for mosix numbering, an offset of 1 has to be added.
 
 use strict;
 

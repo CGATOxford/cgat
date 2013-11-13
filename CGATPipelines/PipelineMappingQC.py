@@ -1,25 +1,3 @@
-################################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id: PipelineGO.py 2877 2010-03-27 17:42:26Z andreas $
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
 """
 ======================================================
 PipelineMappingQC.py - common tasks for QC'ing mapping
@@ -355,11 +333,11 @@ def loadPicardDuplicationStats( infiles, outfile ):
     loadPicardMetrics( infiles, outfile, suffix )
     loadPicardHistogram( infiles, outfile, suffix, "coverage_multiple" )
 
-def loadPicardDuplicateStats( infiles, outfile ):
+def loadPicardDuplicateStats( infiles, outfile, pipeline_suffix= ".bam" ):
     '''load picard duplicate filtering stats.'''
 
-    loadPicardMetrics( infiles, outfile, "duplicate_metrics", pipeline_suffix = ".bam" )
-    loadPicardHistogram( infiles, outfile, "duplicate_metrics", "duplicates", pipeline_suffix = ".bam" )
+    loadPicardMetrics( infiles, outfile, "duplicate_metrics", pipeline_suffix = pipeline_suffix )
+    loadPicardHistogram( infiles, outfile, "duplicate_metrics", "duplicates", pipeline_suffix = pipeline_suffix )
 
 def buildBAMStats( infile, outfile ):
     '''Count number of reads mapped, duplicates, etc. '''
@@ -409,6 +387,28 @@ def loadBAMStats( infiles, outfile ):
                       --skip-titles
                       --missing=0
                       --ignore-empty
+                   %(filenames)s
+                | perl -p -e "s/bin/%(suffix)s/"
+                | python %(scriptsdir)s/csv2db.py
+                      --table=%(tname)s 
+                      --allow-empty
+                >> %(outfile)s """
+        P.run()
+
+    # load mapping qualities, there are two columns per row
+    # 'all_reads' and 'filtered_reads'
+    # Here, only filtered_reads are used (--take=3)
+    for suffix in ("mapq",):
+        E.info( "loading bam stats - %s" % suffix )
+        filenames = " ".join( [ "%s.%s" % (x, suffix) for x in infiles ] )
+        tname = "%s_%s" % (tablename, suffix)
+        
+        statement = """python %(scriptsdir)s/combine_tables.py
+                      --header=%(header)s
+                      --skip-titles
+                      --missing=0
+                      --ignore-empty
+                      --take=3
                    %(filenames)s
                 | perl -p -e "s/bin/%(suffix)s/"
                 | python %(scriptsdir)s/csv2db.py

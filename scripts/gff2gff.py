@@ -1,24 +1,3 @@
-################################################################################
-#   Gene prediction pipeline 
-#
-#   $Id: gff2gff.py 2868 2010-03-03 10:19:52Z andreas $
-#
-#   Copyright (C) 2004 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
 '''
 gff2gff.py - manipulate gff files
 =================================
@@ -26,7 +5,7 @@ gff2gff.py - manipulate gff files
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Genomics Intervals GFF Manipulation
 
 Purpose
 -------
@@ -358,7 +337,10 @@ def main( argv = None ):
                       help="filename with genome."  )
 
     parser.add_option( "--complement-groups", dest="complement_groups", action="store_true",
-                       help="""complement groups. Will write introns from exons.""" )
+                       help="""complement groups. Will write introns from exons [%default].""" )
+
+    parser.add_option( "--group-field", dest="group_field", type="string",
+                       help="""gff field/attribute to group by such as gene_id, transrcipt_id, ... [%default].""" )
 
     parser.add_option( "--combine-groups", dest="combine_groups", action="store_true",
                        help="""combine groups.""" )
@@ -417,6 +399,7 @@ def main( argv = None ):
         skip_missing = False,
         remove_contigs = None,
         is_gtf = False,
+        group_field = None,
         )
 
     (options, args) = E.Start( parser, argv = argv )
@@ -439,17 +422,14 @@ def main( argv = None ):
     else:
         agp = None
         
-    if options.is_gtf:
-        gffs = GTF.iterator( options.stdin )
-    else:
-        gffs = GTF.iterator( options.stdin )
+    gffs = GTF.iterator( options.stdin )
 
     if options.add_up_flank or options.add_down_flank:
         
         if options.is_gtf:
             iterator = GTF.flat_gene_iterator( gffs )
         else:
-            iterator = GTF.joined_iterator( gffs )
+            iterator = GTF.joined_iterator( gffs, options.group_field )
         
         for chunk in iterator:
             is_positive = Genomics.IsPositiveStrand( chunk[0].strand )
@@ -504,8 +484,12 @@ def main( argv = None ):
 
     elif options.complement_groups:
         
-        iterator = GTF.joined_iterator( gffs )
+        iterator = GTF.joined_iterator( gffs, group_field = options.group_field )
+
         for chunk in iterator:
+            if options.is_gtf:
+                chunk = [ x for x in chunk if x.feature == "exon" ]
+                if len(chunk) == 0: continue
             chunk.sort()
             x = GTF.Entry()
             x.copy( chunk[0] )

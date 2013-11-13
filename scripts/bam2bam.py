@@ -1,25 +1,3 @@
-################################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
 '''
 bam2bam.py - modify bam files
 =============================
@@ -27,7 +5,7 @@ bam2bam.py - modify bam files
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Genomics NGS BAM Manipulation
 
 Purpose
 -------
@@ -299,6 +277,11 @@ def main( argv = None ):
             pysam_out.close()
 
         if options.inplace:
+            # set date and file permissions according to original
+            # Note: currently it will not update user and group.
+            original = os.stat(bamfile)
+            os.utime( tmpfile.name, (original.st_atime, original.st_mtime) )
+            os.chmod( tmpfile.name, original.st_mode ) 
             # move new file over original copy
             shutil.move( tmpfile.name, bamfile )
             # re-index

@@ -86,7 +86,10 @@ class Bed(object):
         self.fields[self.map_key2field[key]] = value
 
     def __getattr__(self, key ):
-        return self.fields[self.map_key2field[key]]
+        try: 
+            return self.fields[self.map_key2field[key]]
+        except IndexError:
+            return None
 
     @property
     def columns(self):

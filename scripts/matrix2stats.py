@@ -1,24 +1,3 @@
-################################################################################
-#   Gene prediction pipeline 
-#
-#   $Id: matrix2stats.py 2795 2009-09-16 15:29:23Z andreas $
-#
-#   Copyright (C) 2004 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
 '''
 matrix2stats.py - compute statistics on matrices
 ================================================
@@ -57,8 +36,8 @@ Type::
 
 for command line help.
 
-Code
-----
+Command line options
+--------------------
 '''
 
 
@@ -79,7 +58,14 @@ import CGAT.MatlabTools as MatlabTools
 import CGAT.Stats as Stats
 import scipy
 
-if __name__ == "__main__":
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: matrix2stats.py 2795 2009-09-16 15:29:23Z andreas $",
                                     usage = globals()["__doc__"] )
@@ -242,3 +228,7 @@ if __name__ == "__main__":
     E.info( "# ninput=%i, noutput=%i, nskipped=%i\n" % (ninput, noutput, nskipped) )
 
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

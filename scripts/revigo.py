@@ -1,25 +1,3 @@
-################################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
 '''
 revigo.py - apply semantic clustering to GO output
 ==================================================
@@ -94,8 +72,8 @@ The output of this program is similar but not identical to revigo. The algorithm
 and the input data are not identical. It seems that simrel values in this script are lower and thus the
 clustering is more conservative compared to revigo.
 
-Code
-----
+Command line options
+--------------------
 
 This module depends on unreleased code from http://code.google.com/p/gographer for parsing of the
 GO graph. The code has been modified to allow parsing of relationship information and record synonyms

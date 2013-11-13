@@ -293,6 +293,10 @@ def GroupTable( table,
                 group_column = 0,
                 group_function = min,
                 missing_value = "na"):
+    '''group table by *group_column*.
+
+    The table need not be sorted.
+    '''
 
     table.sort( lambda x,y: cmp(x[group_column], y[group_column]))
 

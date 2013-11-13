@@ -474,7 +474,14 @@ def BuildLines( dbhandle, statement, genome_lengths, prefix = "", default_color 
     return lines, sbjct_token, sbjct_strand, sbjct_from, sbjct_to
 
 ##------------------------------------------------------------
-if __name__ == '__main__':
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     try:
         optlist, args = getopt.getopt(sys.argv[1:], param_short_options, param_long_options)
@@ -694,4 +701,8 @@ if __name__ == '__main__':
     else:
         print string.join(lines, "\n")
         
+
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
 

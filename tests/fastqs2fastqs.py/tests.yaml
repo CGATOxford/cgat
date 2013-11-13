@@ -1,0 +1,7 @@
+
+standard_test:
+    stdin: null
+    outputs: [50K_reconciled.1.fastq , 50K_reconciled.2.fastq]
+    references: [50K_reconciled_reference.1.fastq , 50K_reconciled_reference.2.fastq]
+    options: --method reconcile --chop --output-pattern 50K_reconciled.%i.fastq <DIR>/50K.1.fastq.gz <DIR>/50K.2.fastq.gz
+    description: reconcile reads from a pair of fastq files

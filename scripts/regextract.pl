@@ -1,13 +1,3 @@
-#!/usr/bin/env perl
-# $id$
-#
-# perl regextract.pl regex1 n1 regex2 n2 [flag] < in > out
-#
-# regular expression extraction
-#
-# prints everything from stdin to stdout between two regular
-# expression that have matched. Delimiters are printed, unless flag is
-# set. N1 and n2 specify, how many of the regex matches are skipped
 
 my ($token1, $skip1, $token2, $skip2, $flag) = @ARGV;
 

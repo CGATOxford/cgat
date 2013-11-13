@@ -1,4 +1,3 @@
-# convert a list of dots to a tcoffee library file
 use strict;
 use Getopt::Std;
 

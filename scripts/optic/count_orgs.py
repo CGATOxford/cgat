@@ -82,7 +82,14 @@ def GetPattern( data, l ):
     pattern = string.join( pattern, "")
     return pattern
 
-if __name__ == "__main__":
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: optic/count_orgs.py 1706 2007-12-11 16:46:11Z andreas $", 
                              usage = globals()["__doc__"])
@@ -330,3 +337,7 @@ if __name__ == "__main__":
     if outfile != sys.stdout: outfile.close()
     
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

@@ -1,25 +1,3 @@
-################################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
 '''
 fastq2fastq.py - manipulate fastq files
 =============================================
@@ -27,13 +5,19 @@ fastq2fastq.py - manipulate fastq files
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Genomics NGS Sequences FASTQ Manipulation
 
 Purpose
 -------
 
-This script performs manipulations on :term:`fastq` formatted files. For example
-it can be used to change the quality score format or sample a subset of reads.
+This script performs manipulations on :term:`fastq` formatted
+files. For example it can be used to change the quality score format
+or sample a subset of reads.
+
+The script predominantly is used for manipulation of single fastq
+files. However, for some of its functionality it will take paired data
+using the --pair and --outfile-pair options. This applies to the
+--sample and --sort options.
 
 Usage
 -----
@@ -51,8 +35,8 @@ Type::
 for command line help.
 
 
-Code
-----
+Command line options
+--------------------
 
 '''
 
@@ -142,8 +126,7 @@ def main( argv = None ):
     elif options.sample:
         sample_threshold = min( 1.0, options.sample)
 
-        seed = random.seed( options.seed )
-        E.info( "random seed: %i" % seed )
+        random.seed( options.seed )
         
         if options.pair:
             if not options.outfile_pair:
@@ -200,7 +183,7 @@ def main( argv = None ):
         else:
             if not options.outfile_pair:
                 raise ValueError( "please specify output filename for second pair (--outfile-pair)")
-            
+            E.warn("consider sorting individual fastq files - this is memory intensive")
             entries1 = {}
             entries2 = {}
             for record1, record2 in itertools.izip( Fastq.iterate( options.stdin ), Fastq.iterate( IOTools.openFile( options.pair) ) ):

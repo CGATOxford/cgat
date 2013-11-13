@@ -2,6 +2,31 @@ from SphinxReport.Tracker import *
 import sqlite3
 import collections
 
+
+class ContributingReads(TrackerSQL):
+    '''
+    returns the proportion of reads 
+    that contribute to the relative abundance
+    estimations
+    '''
+    pattern = "(.*)_readmap"
+
+    def __call__(self, track, slice = None):
+
+        if len(track.split("_")) == 4:
+            dtrack = track.split("_")
+            dtrack = dtrack[0] + "-" + dtrack[1] + "_" + dtrack[2] + "-" + dtrack[3]
+        else:
+            dtrack = track.replace("_", "-")
+        total_stmt = """SELECT total_reads FROM reads_summary WHERE track == '%s'""" % dtrack
+        dbh = sqlite3.connect("csvdb")
+        cc = dbh.cursor()
+        total = cc.execute(total_stmt).fetchone()[0]
+        # returns the number at the phylum level
+        statement = """SELECT count(*) FROM %s_readmap""" % track
+        return float(self.execute(statement).fetchone()[0])/total
+
+
 class RelativeAbundance(TrackerSQL):
     '''
     summarises the relative abundance at

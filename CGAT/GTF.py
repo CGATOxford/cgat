@@ -193,6 +193,20 @@ class Entry:
         self.transcript_id = transcript_id
         return self
 
+    def fromBed( self, other, **kwargs ):
+        """fill from a bed entry."""
+        self.contig = other.contig
+        self.source = kwargs.get("source", "bed")
+        self.feature = kwargs.get("feature", "interval" )
+        self.start = other.start
+        self.end = other.end
+        self.score = other.score
+        self.strand = other.strand
+        self.frame = kwargs.get("frame", ".")
+        self.gene_id = kwargs.get("gene_id", None )
+        self.transcript_id = kwargs.get("transcript_id", None )
+        return self
+
     def copy( self, other ):
         """fill from other entry.
         works both if other is :class:`GTF.Entry` or 
@@ -449,13 +463,19 @@ def joined_iterator(gffs, group_field = None):
     last_group_id = None
     matches = []
 
+    if group_field == None:
+        group_function = lambda x: x.attributes
+    elif group_field == "gene_id":
+        group_function = lambda x: x.gene_id
+    elif group_field == "transcript_id":
+        group_function = lambda x: x.transcript_id
+    else:
+        group_function = lambda x: x[group_field]
+
     for gff in gffs:
         
-        if group_field:
-            group_id = gff.fields[group_field]
-        else:
-            group_id = gff.attributes
-                
+        group_id = group_function(gff)
+
         if last_group_id != group_id:
             if last_group_id: yield matches
             matches = []

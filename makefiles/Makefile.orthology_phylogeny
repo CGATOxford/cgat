@@ -759,7 +759,7 @@ analysis.dir/ks_master.hist: $(ANALYSIS_FILE_LINKS)
 		'{ if ( (match($$1,g1) && match($$2,g2)) || \
 			(match($$1,g2) && match($$2,g1)) ) { print; } }' \
 		< $(ANALYSIS_FILE_LINKS) |\
-		python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py \
+		python $(DIR_SCRIPTS_TOOLS)data2histogram.py \
 		--scale=100.0 \
 		--column=3 |\
 		grep -v "#" >> tmp_$${genome2}; \

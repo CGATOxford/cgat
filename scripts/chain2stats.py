@@ -1,25 +1,3 @@
-################################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id: chain2stats.py 10 2011-04-21 11:07:33Z steve $
-#
-#   Copyright (C) 2011 Stephen Sansom
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
 '''
 chain2stats.py
 ==============
@@ -27,21 +5,20 @@ chain2stats.py
 :Author: Stephen Sansom
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Genomics GenomeAlignment Summary CHAIN
 
 Purpose
 -------
 
-.. todo::
-   
-   This script computes the coverage of the target and query genomes represented by a UCSC chain file. 
+This script computes the coverage of the target and query genomes
+represented by a UCSC chain file.
 
 Usage
 -----
 
 Example::
 
-   python chain2stats.py -c chainfile
+   python chain2stats.py < sacCer3ToSacCer1.over.chain.gz
 
 Type::
 
@@ -52,16 +29,16 @@ for command line help.
 Documentation
 -------------
 
-For large chain file this script requires a substantial amount of memory for chromosome pair analysis.
+For large chain file this script requires a substantial amount of
+memory for chromosome pair analysis.
 
-Code
-----
+Command line options
+---------------------
 '''
 
 #import modules
 import os
 import sys
-from optparse import OptionParser
 from operator import add
 from numpy import *
 from operator import itemgetter,attrgetter
@@ -70,13 +47,14 @@ import bx.bitset_builders
 import collections
 
 import CGAT.Experiment as E
-from CGAT.IndexedFasta import IndexedFasta
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.IOTools as IOTools
 
 ############################ Functions/Generators ############################
 
 def chain_iterator(infile):
     lines = []
-    for line in open(infile,'r'):
+    for line in infile:
         if line.startswith("#"): continue
         if line.strip() == "": continue 
         if line.startswith("chain"):
@@ -486,8 +464,8 @@ def main(argv = None ):
     if not argv: argv = sys.argv
     
     #get the options
-    parser = OptionParser(version = "%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
-                          usage = globals()["__doc__"] )
+    parser = E.OptionParser(version = "%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
+                            usage = globals()["__doc__"] )
 
     parser.add_option("-c", "--chainfile", dest="chainfile", type="string",
                       help="the chain file to analyse", metavar="FILE")
@@ -507,8 +485,6 @@ def main(argv = None ):
                       help="Check chains for erroneous contig sizes using the given db",default=False)
     parser.add_option("-r", "--report", dest="report", action="store_true",
                       help="Write out tab-delimited reports for each analysis",default=False)
-
-
 
     (options, args) = E.Start(parser, argv = argv, add_output_options = True )
     
@@ -538,7 +514,7 @@ def main(argv = None ):
         counters.append(CounterOfErrors(options))
 
     #iterate over the chains and counters
-    for chain in chain_iterator(options.chainfile):
+    for chain in chain_iterator(options.stdin):
         c = Chain(chain)
         for counter in counters:
             counter.add(c)

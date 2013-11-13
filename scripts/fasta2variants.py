@@ -1,25 +1,3 @@
-################################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id$
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
 '''
 fasta2variants.py - create sequence variants from a set of sequences
 ====================================================================
@@ -27,7 +5,7 @@ fasta2variants.py - create sequence variants from a set of sequences
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Python Fasta Variants Coding CDS Protein
+:Tags: Genomics Sequences Variants Protein FASTA Transformation
 
 Purpose
 -------
@@ -36,9 +14,9 @@ This script reads a collection of sequences in :term:`fasta` format and
 outputs a table of possible variants. It outputs for each position in
 a protein sequence the number of variants.
 
-If the input sequences are nucleotide coding (CDS) sequences, for each variant a weight
-is output indicating the number of times that variant can occur
-from single nucleotide changes.
+If the input sequences are nucleotide coding (CDS) sequences, for each
+variant a weight is output indicating the number of times that variant
+can occur from single nucleotide changes.
 
 Usage
 -----
@@ -47,7 +25,8 @@ Example::
 
     python fasta2variants.py -I CCDS_nucleotide.current.fna.gz -L CDS.log -S CDS.output -c
 
-This will take a CDS file as input, save the log and output files, and count variants based on single nucleotide changes using the -c option. 
+This will take a CDS file as input, save the log and output files, and
+count variants based on single nucleotide changes using the -c option.
 
 Type::
 
@@ -55,12 +34,13 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-Compressed (.gz) and various fasta format files (.fasta, .fna) are accepted. If the -c option is specified and the file is not a CDS sequence the script will throw an error ('length of sequence '<input_file>' is not a multiple of 3').
+Compressed (.gz) and various fasta format files (.fasta, .fna) are
+accepted. If the -c option is specified and the file is not a CDS
+sequence the script will throw an error ('length of sequence
+'<input_file>' is not a multiple of 3').
 
-Code
-----
+Command line options
+--------------------
 
 '''
 import os

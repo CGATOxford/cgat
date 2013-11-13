@@ -1,25 +1,3 @@
-################################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id: bam2wiggle.py 2832 2009-11-24 16:11:06Z andreas $
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
 """
 bam2wiggle.py - convert bam to wig/bigwig file
 ==============================================
@@ -27,7 +5,7 @@ bam2wiggle.py - convert bam to wig/bigwig file
 :Author: Andreas Heger
 :Release: $Id: bam2wiggle.py 2832 2009-11-24 16:11:06Z andreas $
 :Date: |today|
-:Tags: Python
+:Tags: Genomics NGS Intervals Conversion BAM WIGGLE
 
 Purpose
 -------
@@ -65,8 +43,8 @@ Type::
 
 for command line help.
 
-Code
-----
+Command line options
+--------------------
 
 """ 
 
@@ -285,9 +263,11 @@ def main( argv = None ):
         outf = lambda outfile, contig, start, end, val: \
             outfile.write("%s\t%i\t%i\t%i\n" % (contig, start, end,val))
 
-    output_filename = os.path.abspath( options.output_filename )
-
     ninput, nskipped, ncontigs = 0, 0, 0
+
+    output_filename = options.output_filename 
+    if output_filename:
+        output_filename = os.path.abspath( output_filename )
 
     if options.shift > 0 or options.extend > 0 or options.merge_pairs:
 

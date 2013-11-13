@@ -1,25 +1,3 @@
-################################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id$
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
 '''
 liftover.py - 
 ======================================================
@@ -49,11 +27,8 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-
-Code
-----
+Command line options
+--------------------
 
 '''
 import os
@@ -174,7 +149,14 @@ def readLiftOver( infile, chromosome,
             
     return map_position, map_chromosome, map_chromosome2id, map_id2chromosome
 
-if __name__ == "__main__":
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser.add_option("-c", "--chromosome", dest="chromosome", type="string",
                       help="chromosome to take." )
@@ -232,3 +214,7 @@ if __name__ == "__main__":
     E.Stop()
 
     
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

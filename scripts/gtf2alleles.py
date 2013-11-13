@@ -1,25 +1,3 @@
-################################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id: gtf2alleles.py 2886 2010-04-07 08:47:46Z andreas $
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
 """
 gtf2alleles.py - predict effects of variants on gene set
 ========================================================
@@ -55,8 +33,8 @@ Type::
 
 for command line help.
 
-Code
-----
+Command line options
+--------------------
 
 """ 
 
@@ -75,7 +53,7 @@ import CGAT.Genomics as Genomics
 import CGAT.GTF as GTF
 import CGAT.Blat as Blat
 import CGAT.Variants as Variants
-import alignlib
+import alignlib_lite
 import pysam
 
 Allele = collections.namedtuple( 'Allele',
@@ -451,7 +429,7 @@ def buildAlleles( transcript,
 
         # map between the new cds sequence and the reference
         # sequence
-        map_cds2reference = alignlib.makeAlignmentBlocks()
+        map_cds2reference = alignlib_lite.py_makeAlignmentBlocks()
 
         ###################################################
         # process first exon

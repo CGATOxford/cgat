@@ -1,25 +1,3 @@
-################################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id$
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
 '''
 calculate_histogram_2D.py - calculate 2D histogram
 ==================================================
@@ -49,11 +27,8 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-
-Code
-----
+Command line options
+--------------------
 
 '''
 import sys
@@ -81,9 +56,16 @@ param_bin_size2 = 1
 param_titles = True
 
 ##---------------------------------------------------------------------------------------------------------        
-if __name__ == '__main__':
+def main( argv = None ):
+    """script main.
 
-    parser = E.OptionParser( version = "%prog version: $Id: calculate_histogram_2D.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
+
+    parser = E.OptionParser( version = "%prog version: $Id: calculate_histogram_2D.py 2782 2009-09-10 11:40:29Z andreas $", 
+                             usage = globals()["__doc__"])
 
     parser.add_option("-t", "--titles", dest="titles", action="store_true",
                       help="input data has title in first row [default=%default]." )
@@ -151,8 +133,9 @@ if __name__ == '__main__':
 
     Histogram2D.Print(h, bin_function=lambda x: (x[0] * options.bin_size1, x[1] * options.bin_size2, x[2]))
 
-    if options.loglevel >= 1:
-        options.stdlog.write( "# ninput=%i, noutput=%i, nskipped=%i\n" % (ninput,noutput,nskipped) )
+    E.info( "ninput=%i, noutput=%i, nskipped=%i" % (ninput,noutput,nskipped) )
 
     E.Stop()
 
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )

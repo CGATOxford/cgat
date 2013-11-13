@@ -22,7 +22,6 @@ It really helps if you are familiar with following:
    * mercurial_ in order to up-to-date code
 
 .. _python: http:www.python.org
-.. _ruffus: http://code.google.com/p/ruffus/
 .. _sge: http://wikis.sun.com/display/GridEngine/Home
 .. _mercurial: http://mercurial.selenic.com/wiki/
 .. _sphinxreport: http://code.google.com/p/sphinx-report/

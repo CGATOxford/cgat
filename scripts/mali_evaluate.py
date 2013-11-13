@@ -1,25 +1,3 @@
-################################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id$
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
 '''
 mali_evaluate.py - 
 ======================================================
@@ -49,11 +27,8 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-
-Code
-----
+Command line options
+--------------------
 
 '''
 import os
@@ -140,7 +115,7 @@ import CGAT.Experiment as E
 import CGAT.MaliIO as MaliIO
 import scipy
 import CGAT.Exons as Exons
-import alignlib
+import alignlib_lite
 import CGAT.Genomics as Genomics
 import numpy
 
@@ -421,7 +396,7 @@ def WriteGeneStructureCorrespondence( mali, identifiers, exons, param_master_pat
             cmp_exons = []
 
             if param_loglevel >= 5:
-                print alignlib.writeAlignataTable(map_cmp2ref)
+                print alignlib_lite.py_writeAlignataTable(map_cmp2ref)
             
             for e in exons[key1]:
                 ne = e.GetCopy()
@@ -1022,7 +997,14 @@ def WriteRadius( mali, identifiers, prefix = "", gap_char = "-"):
     
             
 ##------------------------------------------------------------
-if __name__ == '__main__':
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     try:
         optlist, args = getopt.getopt(sys.argv[1:], param_short_options, param_long_options)
@@ -1252,3 +1234,7 @@ if __name__ == '__main__':
     print E.GetFooter()
     
     
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

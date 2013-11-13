@@ -24,14 +24,8 @@ Genomics
    scripts/psl2wiggle.rst
    scripts/psl2wiggle_stats.rst
    scripts/diff_gtf.rst
-   scripts/diff_gtfs.rst
-   scripts/fasta2counts.rst
-   scripts/fasta2properties.rst
-   scripts/fasta2gaps.rst
    scripts/fasta2gff.rst
-   scripts/fasta2spliced.rst
    scripts/gff2psl.rst
-   scripts/gff2chunks.rst
    scripts/gff2coverage.rst
    scripts/gff2fasta.rst
    scripts/gtf2alleles.rst
@@ -40,12 +34,10 @@ Genomics
    scripts/gff2plot.rst
    scripts/gff2stats.rst
    scripts/gff2view.rst
-   scripts/gff2wiggle_stats.rst
    scripts/gff_decorate.rst
    scripts/gtf2gff.rst
    scripts/gtf2gtf.rst
    scripts/gtf2reads.rst
-   scripts/gtf2tab.rst
    scripts/gtf2table.rst
    scripts/gtfs2graph.rst
    scripts/gtf2fasta.rst
@@ -58,8 +50,6 @@ Genomics
    scripts/analyze_readpositions.rst
    scripts/combine_gff.rst
    scripts/quality2fasta.rst
-   scripts/wiggle_build_index.rst
-   scripts/wiggle_extract_ranges_indexed.rst
    scripts/bam2wiggle.rst
    scripts/bed2annotator.rst
    scripts/bed2graph.rst
@@ -140,7 +130,6 @@ Sequences and rates
 
    scripts/align_pairs.rst
    scripts/align_all_vs_all.rst
-   scripts/concatenate_sequences.rst
    scripts/jalview.rst
    scripts/mali2bootstrap.rst
    scripts/mali2mali.rst
@@ -150,9 +139,7 @@ Sequences and rates
    scripts/malis2malis.rst
    scripts/malis2profiles.rst
    scripts/sequence2alignment.rst
-   scripts/sequence2sequence.rst
    scripts/sequences2mali.rst
-   scripts/shuffle_fasta.rst
    scripts/mask_fasta.rst
    scripts/index_fasta.rst
    scripts/mali2kaks.rst
@@ -211,7 +198,6 @@ Stats
    scripts/r_mann_whitney_u.rst
    scripts/r_table2scatter.rst
    scripts/r_test.rst
-   scripts/calculate_histogram.rst
    scripts/calculate_histogram_2D.rst
    scripts/nmf.rst
    scripts/simulate_function.rst
@@ -256,12 +242,9 @@ Other
    scripts/rename_links.rst
    scripts/cgat_log2wiki.rst
    scripts/cgat_script_template.rst
-   scripts/linezip.rst
    scripts/convert_time2seconds.rst
    scripts/cgat_html_add_toc.rst
    scripts/set_diff.rst
-   scripts/map_numbers.rst
-   scripts/cgat_add_script_template.rst
 
 .. Pipelines
 .. ---------
@@ -468,7 +451,7 @@ Unsorted
    scripts/barplotGo.rst
    scripts/beds2counts.rst
    scripts/bed2fasta.rst
-   scripts/bed2summary.rst
+   scripts/bed2stats.rst
    scripts/bed2table.rst
    scripts/beds2beds.rst
    scripts/blast2table.rst
@@ -482,7 +465,6 @@ Unsorted
    scripts/fastq2fastq.rst
    scripts/fastq2solid.rst
    scripts/fastq2table.rst
-   scripts/fastqs2fastq.rst
    scripts/filter_reads.rst
    scripts/genelist_analysis.rst
    scripts/genome_bed.rst
@@ -502,17 +484,25 @@ Unsorted
    scripts/probeset2gene.rst
    scripts/cgat_rebuild_extensions.rst
    scripts/revigo.rst
-   scripts/rnaseq_bam_vs_bed.rst
-   scripts/rnaseq_bam_vs_exons.rst
-   scripts/rnaseq_bams2bam.rst
-   scripts/rnaseq_bams_vs_bams.rst
-   scripts/rnaseq_junction_bam2bam.rst
    scripts/cgat_ruffus_profile.rst
    scripts/run_function.rst
    scripts/snp2snp.rst
-   scripts/softmask.rst
    scripts/solexa2stats.rst
    scripts/tree_map_leaves.rst
    scripts/vcf2vcf.rst
    scripts/vcfstats2db.rst
    scripts/wig2wig.rst
+   scripts/bam_vs_bam.rst
+   scripts/bam_vs_bed.rst
+   scripts/bam_vs_gtf.rst
+   scripts/cgat2rdf.rst
+   scripts/diff_bam.rst
+   scripts/fasta2fasta.rst
+   scripts/fasta2kmercontent.rst
+   scripts/fastas2fasta.rst
+   scripts/fastqs2fasta.rst
+   scripts/fastqs2fastqs.rst
+   scripts/gtf2tsv.rst
+   scripts/gtfs2tsv.rst
+   scripts/rnaseq_junction_bam2bam.rst
+   scripts/split_gff.rst

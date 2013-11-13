@@ -1,26 +1,3 @@
-#!/bin/env python
-################################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id$
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
 '''
 farm.py - execute a cmd on the cluster
 ======================================
@@ -88,8 +65,8 @@ The following command will split a fasta file at every 10 sequences::
    implement better error messages
    use sge array jobs for job control
 
-Code
-----
+Command line options
+--------------------
 
 '''
 
@@ -112,9 +89,9 @@ import multiprocessing
 
 try:
     import drmaa
-    HASDRMAA = True
-except ImportError:
-    HASDRMAA = False
+    HAS_DRMAA = True
+except (ImportError, RuntimeError):
+    HAS_DRMAA = False
 
 
 def chunk_iterator_lines( infile, args, prefix, use_header = False ):

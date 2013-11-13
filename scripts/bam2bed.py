@@ -1,25 +1,3 @@
-################################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id$
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
 """
 bam2bed.py - convert bam formatted file to bed formatted file
 =============================================================
@@ -27,7 +5,7 @@ bam2bed.py - convert bam formatted file to bed formatted file
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Genomics NGS Intervals
+:Tags: Genomics NGS Intervals BAM BED Conversion
 
 Purpose
 -------
@@ -72,15 +50,18 @@ For example::
 
 Options
 ^^^^^^^
-+-------------------+------------------------------------------------------------------+
-|--region, -r       |output read intervals that overlap a specified region             |
-+-------------------+------------------------------------------------------------------+
-|--merge-pairs, -m  |merge paired-end reads and output interval for entire fragment    |
-+-------------------+------------------------------------------------------------------+
-|--max-insert-size  |only merge if insert size is less than specified no. of bases     |
-+-------------------+------------------------------------------------------------------+
-|--min-insert-size  |only merge if insert size is greater than specified no. of bases  |
-+-------------------+------------------------------------------------------------------+
++-------------------+--------------------------------------------------------+
+|--region, -r       |output read intervals that overlap a specified region   |
++-------------------+--------------------------------------------------------+
+|--merge-pairs, -m  |merge paired-end reads and output interval for entire   |
+|                   |fragment                                                |
++-------------------+--------------------------------------------------------+
+|--max-insert-size  |only merge if insert size is less than specified no. of |
+|                   |bases                                                   |
++-------------------+--------------------------------------------------------+
+|--min-insert-size  |only merge if insert size is greater than specified     |
+|                   |no. of bases                                            |
++-------------------+--------------------------------------------------------+
 
 For example,
 
@@ -88,10 +69,10 @@ To output read intervals that overlap chromosome 1, coordinates 13000-13100::
 
    samtools view example.bam
 
-   READ1     163     1       13040   15      76M     =       13183   219     ...
-   READ2     99      1       13120   0       76M     =       13207   163     ...
-   READ1     83      1       13183   7       76M     =       13040   -219    ...
-   READ2     147     1       13207   0       76M     =       13120   -163    ...
+   READ1     163     1       13040   15      76M     =       13183   219 ...
+   READ2     99      1       13120   0       76M     =       13207   163 ...
+   READ1     83      1       13183   7       76M     =       13040   -219...
+   READ2     147     1       13207   0       76M     =       13120   -163...
 
    python bam2bed.py example.bam --region '1:13000:13100'
 
@@ -166,8 +147,8 @@ def main( argv = None ):
 
     (options, args) = E.Start( parser, argv = argv )
 
-    if len(args) != 1:
-        raise ValueError( "no samfile specified - see --help for usage" )
+    if len(args) == 0:
+        args.append( "-" )
     
     samfile = pysam.Samfile( args[0], "rb" )
 

@@ -1,25 +1,3 @@
-###############################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id$
-#
-#   Copyright (C) 
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
 """
 ==========================
 metagenome simulation
@@ -102,7 +80,6 @@ import random
 
 import numpy
 import sqlite3
-import CGAT.GFF as GFF
 import CGAT.GTF as GTF
 import CGAT.IOTools as IOTools
 import CGAT.IndexedFasta as IndexedFasta
@@ -120,7 +97,7 @@ import pysam
 import CGAT.Fastq as Fastq
 import sqlite3
 import CGATPipelines.PipelineMetagenomeBenchmark as PipelineMetagenomeBenchmark
-import CGATPipelines.PipelineGenomeAssembly as PipelineGenomeAssembly
+import CGATPipelines.PipelineMetagenomeAssembly as PipelineMetagenomeAssembly
 
 ###################################################
 ###################################################
@@ -159,96 +136,75 @@ def dbList(xset):
 ######################################################
 ######################################################
 @follows(mkdir("taxonomy.dir"))
-@transform(os.path.join(PARAMS["taxonomy_taxdir"], "names.dmp")
-           , regex("(\S+)/(\S+).dmp")
-           , r"taxonomy.dir/\2.dmp.gz")
-def parseTaxonomyNamesFile(infile, outfile):
+@merge(GENOMES
+       , r"taxonomy.dir/gi_accessions.tsv")
+def buildGiAccessionNumbers(infiles, outfile):
     '''
-    parse the ncbi taxonomy file
+    build a list of gi accession numbers from the genomes
+    in order to get assignments of taxa from them
     '''
-    inf = open(infile)
-    header = inf.readline()
-    outf = gzip.open(outfile, "w")
-    outf.write("taxid\ttaxname\tdescription\n")
-    for line in inf.readlines():
-        data = "".join(line[:-1].split("\t")).split("|")
-        taxid, name, description = data[0], data[1], data[3]
-        outf.write("%s\t%s\t%s\n" % (taxid, name, description))
+    # first line in each file is the contig name
+    outf = open(outfile, "w")
+    for inf in infiles:
+        outf.write(open(inf).readline().split("|")[1] + "\n")
     outf.close()
-
+        
 ######################################################
 ######################################################
 ######################################################
-@transform(parseTaxonomyNamesFile, suffix(".dmp.gz"), ".load")
-def loadTaxonomyNames(infile, outfile):
+@merge([buildGiAccessionNumbers] + [os.path.join(PARAMS["taxonomy_taxdir"], x) for x in ["ncbi.map", "gi_taxid_nucl.dmp.gz", "ncbi.lvl", "nodes.dmp"]]
+       , "taxonomy.dir/gi2taxa.tsv")
+def buildGi2Taxa(infiles, outfile):
     '''
-    load taxonomic names
-    '''
-    to_cluster = True
-    P.load(infile, outfile, "--index=taxid")
-
-######################################################
-######################################################
-######################################################
-@follows(mkdir("taxonomy.dir"))
-@transform(os.path.join(PARAMS["taxonomy_taxdir"], "categories.dmp")
-           , regex("(\S+)/(\S+).dmp")
-           , r"taxonomy.dir/\2.dmp.gz")
-def parseCategoriesFile(infile, outfile):
-    '''
-    parse categories file
-    '''
-    inf = open(infile)
-    outf = gzip.open(outfile, "w")
-    outf.write("kingdom\tspecies_id\ttaxid\n")
-    for line in inf.readlines():
-        data = line[:-1].split("\t")
-        outf.write("%s\t%s\t%s\n" % (data[0], data[1], data[2]))
-    outf.close()
-
-######################################################
-######################################################
-######################################################
-@follows(mkdir("taxonomy.dir"))
-@transform(parseCategoriesFile, suffix(".dmp.gz"), ".load")
-def loadCategoriesFile(infile, outfile):
-    '''
-    load the taxonomic categories file
+    associate each input genome gi identifier to
+    different taxonomic levels
+    TODO: this should be in a centralised database - no point haveing
+    it created multiple times. It can be rebuilt if things should change
     '''
     to_cluster = True
-    P.load(infile, outfile, "--index=taxid")
+    gi_accessions = infiles[0]
+    ncbi_map = infiles[1]
+    gi2taxid_map = infiles[2]
+    codes = infiles[3]
+    nodes = infiles[4]
+    statement = '''python %(scriptsdir)s/gi2parents.py 
+                   -g %(gi_accessions)s
+                   -m %(ncbi_map)s
+                   -n %(gi2taxid_map)s
+                   -c %(codes)s
+                   -t %(nodes)s 
+                   --log=%(outfile)s.log > %(outfile)s'''
+    P.run()
 
-###################################################
-###################################################
-###################################################
-@follows(mkdir("taxonomy.dir"))
-@transform(os.path.join(PARAMS["taxonomy_taxdir"], "gi_taxid_nucl.dmp.gz")
-           , regex("(\S+)/(\S+).dmp.gz")
-           , r"taxonomy.dir/\2.load")
-def loadGi2Taxid(infile, outfile):
+######################################################
+######################################################
+######################################################
+@transform(buildGiAccessionNumbers, suffix(".tsv"), ".load")
+def loadGiAccessionNumbers(infile, outfile):
     '''
-    load gi to taxid mapping
+    load the gi acesssion numbers
     '''
-    to_cluster = True
-    P.load(infile, outfile, "--header=gi,taxid --index=taxid")
+    P.load(infile, outfile)
 
 ###################################################
 ###################################################
 ###################################################
 @transform(SEQUENCE_FILES
            , regex("(\S+).(fastq.gz|fastq.1.gz)")
+           , add_inputs(buildGi2Taxa)
            , r"taxonomy.dir/\1.taxonomy.relab")
-def buildTrueTaxonomicRelativeAbundances(infile, outfile):
+def buildTrueTaxonomicRelativeAbundances(infiles, outfile):
     '''
-    get species level relative abundances for the simulateds
-    data. This involes creating maps between different identifiers
+    relative abundances for the simulateds at different levels of
+    the taxonomy.
+    This involes creating maps between different identifiers
     from the NCBI taxonomy. This is so that the results are comparable
     to species level analysis from metaphlan
     The gi_taxid_nucl is a huge table and therefore this function
     takes an age to run - can think of optimising this somehow
     '''
     to_cluster = True
-    P.submit("PipelineMetagenomeBenchmark", "buildTrueTaxonomicRelativeAbundances", infiles = infile, outfiles = outfile)
+    PipelineMetagenomeBenchmark.buildTrueTaxonomicRelativeAbundances(infiles, outfile)
 
 ###################################################
 ###################################################
@@ -277,10 +233,11 @@ def loadEstimatedTaxonomicRelativeAbundances(infile, outfile):
 ###################################################
 ###################################################
 ###################################################
+@jobs_limit(1, "R")
 @transform(loadTrueTaxonomicAbundances
            , suffix(".load")
            , add_inputs(loadEstimatedTaxonomicRelativeAbundances)
-           , ".png")
+           , ".pdf")
 def plotRelativeAbundanceCorrelations(infiles, outfile):
     '''
     plot the correlation between the estimated 
@@ -306,6 +263,51 @@ def calculateFalsePositiveRate(infiles, outfile):
 ###################################################
 ###################################################
 ###################################################
+@merge(calculateFalsePositiveRate, "taxonomy.dir/false_positives.tsv")
+def mergeFalsePositiveRates(infiles, outfile):
+    '''
+    merge the results of the false positive rate
+    calculations for plotting purposes
+    '''
+    header = "level\tfp_rate\ttp_rate\ttrack\tcutoff\n"
+    outf = open(outfile, "w")
+    outf.write(header)
+    for inf in infiles:
+        for line in open(inf).readlines():
+            outf.write(line)
+    outf.close()
+
+###################################################
+###################################################
+###################################################
+@transform(mergeFalsePositiveRates, suffix(".tsv"), ".pdf")
+def plotFalsePositiveRates(infile, outfile):
+    '''
+    barplot the false positive rates across
+    taxonomic levels
+    '''
+    R('''library(ggplot2)''')
+    R('''dat <- read.csv("%s", header = T, stringsAsFactors = F, sep = "\t")''' % infile)
+    for i in [0,1]:
+        # specificity
+        outf = P.snip(outfile, ".pdf") + ".%i.specificity.pdf" % i
+        R('''plot1 <- ggplot(dat[dat$cutoff == %i,], aes(x=reorder(level, fp_rate), y = fp_rate, fill = track, stat = "identity"))''' % i) 
+        R('''plot2 <- plot1 + geom_bar(position = "dodge", stat="identity")''')
+        R('''plot2 + scale_fill_manual(values = c("cadetblue", "slategray", "lightblue"))''')
+        R('''ggsave("%s")''' % outf)
+
+        # sensitivity
+        outf = P.snip(outfile, ".pdf") + ".%i.sensitivity.pdf" % i
+        R('''plot1 <- ggplot(dat[dat$cutoff == %i,], aes(x=reorder(level, fp_rate), y = tp_rate, fill = track, stat = "identity"))''' % i) 
+        R('''plot2 <- plot1 + geom_bar(position = "dodge", stat="identity")''')
+        R('''plot2 + scale_fill_manual(values = c("cadetblue", "slategray", "lightblue"))''')
+        R('''ggsave("%s")''' % outf)
+
+    P.touch(outfile)
+
+###################################################
+###################################################
+###################################################
 @transform(calculateFalsePositiveRate, suffix(".fp"), ".fp.load")
 def loadFalsePositiveRate(infile, outfile):
     '''
@@ -316,10 +318,7 @@ def loadFalsePositiveRate(infile, outfile):
 ###################################################
 ###################################################
 ###################################################
-@follows(loadTaxonomyNames
-         ,loadCategoriesFile
-         ,loadGi2Taxid
-         , loadFalsePositiveRate
+@follows(loadFalsePositiveRate
          , plotRelativeAbundanceCorrelations)
 def taxonomy():
     pass

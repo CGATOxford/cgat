@@ -1,25 +1,3 @@
-###############################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id$
-#
-#   Copyright (C) 2009 Tildon Grant Belgard
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
 """
 =====================
 Peak calling pipeline
@@ -617,7 +595,9 @@ def checkDataQuality( infile, outfile ):
 def loadDataQuality( infiles, outfile ):
     '''load data quality information.'''
 
-    P.concatenateAndLoad( infiles, outfile, regex_filename = "(.*).data_quality" )
+    P.concatenateAndLoad( infiles, outfile, 
+                          regex_filename = "(.*).data_quality",
+                          has_titles = False)
 
 ####################################################################
 @follows( normalizeBAM )
@@ -1167,8 +1147,8 @@ def loadSPPQualityMetrics( infiles, outfile ):
     '''load spp quality metrics.'''
     P.concatenateAndLoad( infiles, outfile,
                           regex_filename = "spp.dir/(.*).qual",
+                          has_titles = False,
                           header = "track,bamfile,mapped_reads,estFragLen,corr_estFragLen,phantomPeak,corr_phantomPeak,argmin_corr,min_corr,nsc,rsc,quality")
-    
 
 ######################################################################
 ######################################################################

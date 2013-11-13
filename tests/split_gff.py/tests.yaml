@@ -4,3 +4,9 @@ version:
     outputs: [stdout]
     references: []
     options: --version
+
+chunks:
+    stdin: hg19.small.gtf.gz
+    outputs: [000001.chunk,000002.chunk,000003.chunk,000004.chunk,000005.chunk,000006.chunk]
+    references: []
+    options: --min-chunk-size=10

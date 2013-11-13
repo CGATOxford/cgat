@@ -1,36 +1,18 @@
-################################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
 '''
 cgat.py - Computational Genomics Analysis Tools
 ===============================================
 
-:Author: Andreas Heger
+:Author: Andreas Heger, CGAT
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Genomics
 
-The tools are grouped by keywords. For this message 
-and a list of available tools type::
+To use a specific tool, type::
+
+    cgat <tool> [tool options] [tool arguments]
+
+Tools are grouped by keywords. For this message and a list of
+available keywords type::
     
     cgat --help
 
@@ -38,15 +20,15 @@ For a list of tools matching a certain keyword, type::
 
    cgat --help <keyword>
 
-Use::
+or::
 
    cgat --help all
 
 for a list of all available tools.
 
-To get help for a specific command, type::
+To get help for a specific tool, type::
 
-    cgat <command> --help
+    cgat <tool> --help
 '''
 
 import os
@@ -65,15 +47,18 @@ def mapKeyword2Script( path ):
         with open( script, 'r') as inf:
             data = [ x for x in inf.readlines( 10000 ) if x.startswith(':Tags:') ]
             if data:
-                keywords = [x.strip() for x in data[0][5:].split(' ')]
+                keywords = [x.strip() for x in data[0][6:].split(' ') ]
                 for x in keywords:
-                    map_keyword2script[x].append( s )
+                    if x: map_keyword2script[x].append( s )
+
     return map_keyword2script
 
 def printListInColumns( l, ncolumns ):
     '''output list *l* in *ncolumns*.'''
-    
     ll = len(l)
+
+    if ll == 0: return
+
     max_width = max( [len(x) for x in l ] ) + 3
     n = ll // ncolumns
     if ll % 3 != 0: n += 1
@@ -82,7 +67,7 @@ def printListInColumns( l, ncolumns ):
     columns = [ l[x*n:x*n+n] for x in range(ncolumns ) ]
 
     # add empty fields for missing columns in last row
-    for x in range( len(l) % ncolumns): columns[-x].append('')
+    for x in range( ncolumns - (len(l) % ncolumns)): columns[-(x+1)].append('')
 
     # convert to rows
     rows = zip( *columns )
@@ -94,12 +79,12 @@ def printListInColumns( l, ncolumns ):
     # put it all together
     return '\n'.join( [ pattern % row for row in rows ] )
 
-def main():
+def main(argv = None):
 
     argv = sys.argv
 
     path = os.path.abspath( os.path.dirname(__file__) )
-
+ 
     if len(argv) == 1 or argv[1] == "--help" or argv[1] == "-h":
         print(globals()["__doc__"])
 
@@ -108,7 +93,7 @@ def main():
         if len(argv) <= 2:
             
             print('CGAT tools are grouped by keywords. The following keywords')
-            print('are available:')
+            print('are defined:\n')
             print("%s\n" % printListInColumns( map_keyword2script.keys(),
                                                3 ))
 

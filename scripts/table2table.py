@@ -1,25 +1,3 @@
-################################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id$
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
 '''
 table2table.py - operate on tables
 ==================================
@@ -61,6 +39,10 @@ flatten-table
 as-column
    Output table as a single column. Colums in the original table are appended and output.
 
+collapse-table
+   Collapse a table of two columns with row names in the first column. Outputs a table
+   with multiple columns for each row name.
+
 Methods for numerical columns
 +++++++++++++++++++++++++++++
 
@@ -97,7 +79,8 @@ rank
    substitute cells with their ranks in a column
 
 fdr
-   compute an FDR over all columns selected. Replace cells with the qvalues.
+   compute an FDR over selected columns. Replaces the columns
+   with the qvalues.
 
 Usage
 -----
@@ -112,11 +95,8 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-
-Code
-----
+Command line options
+--------------------
 
 '''
 import os
@@ -127,6 +107,7 @@ import optparse
 import math
 import types
 import itertools
+import collections
 
 import CGAT.Experiment as E
 import CGAT.CSV as CSV
@@ -140,7 +121,14 @@ def getColumns( fields, columns = "all" ):
     elif columns == "all-but-first":
         return list(range( 1, len(fields) ))
     else:
-        return map( lambda x: int(x) - 1, columns.split(","))
+        map_field2column = dict( [(y,x) for x,y in enumerate( fields) ] )
+        c = []
+        for x in columns.split(","):
+            if x in map_field2column:
+                c.append(map_field2column[x])
+            else:
+                c.append( int(x) - 1 )
+        return c
 
 ##########################################################
 ##########################################################
@@ -183,12 +171,13 @@ def readAndTransposeTable( infile, options ):
 def readAndGroupTable( infile, options ):
     """read table from infile and group.
     """
-    
     fields, table  = CSV.ReadTable( infile, with_header = options.has_headers, as_rows = True )
-
     options.columns = getColumns( fields, options.columns )
+    assert options.group_column not in options.columns
 
     converter = float
+    new_fields = [ fields[options.group_column] ] + [ fields[x] for x in options.columns ]
+
     if options.group_function == "min":
         f = min
     elif options.group_function == "max":
@@ -206,37 +195,34 @@ def readAndGroupTable( infile, options ):
     elif options.group_function == "stats":
         f = lambda x: str(Stats.DistributionalParameters(x))
         # update headers
-        new_fields = []
-        for c in range(len(fields)):
-            if c == options.group_column or c not in options.columns:
-                new_fields.append( fields[c] )
-                continue
+        new_fields = [ fields[options.group_column] ]
+        for c in options.columns:
             new_fields += list( map(lambda x: "%s_%s" % (fields[c], x), Stats.DistributionalParameters().getHeaders() ) )
-        fields = new_fields
 
     ## convert values to floats (except for group_column)
-    ## Delete rows with unconvertable values
+    ## Delete rows with unconvertable values and not in options.columns
     new_table = []
     for row in table:
         skip = False
+        new_row = [ row[options.group_column] ]
+
         for c in options.columns:
-            if c == options.group_column: continue
             if row[c] == options.missing_value:
-                row[c] = row[c]
+                new_row.append(row[c])
             else:
                 try:
-                    row[c] = converter(row[c])
+                    new_row.append( converter(row[c]) )
                 except ValueError:
                     skip = True
                     break
-        if not skip: new_table.append(row)
+        if not skip: new_table.append(new_row)
     table = new_table
 
     new_rows = CSV.GroupTable( table,
-                               group_column = options.group_column,
+                               group_column = 0,
                                group_function = f )
 
-    options.stdout.write("\t".join(fields) + "\n")        
+    options.stdout.write("\t".join(new_fields) + "\n")        
     for row in new_rows:
         options.stdout.write( "\t".join( map(str,row) ) + "\n")
 
@@ -269,6 +255,51 @@ def readAndExpandTable( infile, options ):
         for n in range(nrows):
             options.stdout.write( "\t".join( [ d[n] for d in data ] ) + "\n" )
 
+##########################################################
+##########################################################
+##########################################################        
+def readAndCollapseTable( infile, options, missing_value = "" ):
+    '''collapse a table.
+
+    Collapse a table of two columns with row names in the first
+    column. Outputs a table with multiple columns for each row name.
+    '''
+
+    fields, table  = CSV.ReadTable( infile, with_header = options.has_headers, as_rows = True )
+
+    if len(fields) != 2: 
+        raise NotImplementedError( "can only work on tables with two columns" )
+
+    values = collections.defaultdict( list )
+    
+    # column header after which to add
+    separator = table[0][0]
+    row_names = set( [ x[0] for x in table ] )
+
+    row_name, value = table[0]
+    values[row_name].append( value )
+    added = set( [ row_name ])
+    for row_name, value in table[1:]:
+        if row_name == separator:
+            for r in row_names: 
+                if r not in added: values[r].append( missing_value )
+            added = set()
+
+        values[row_name].append( value )
+        added.add( row_name )
+
+    for r in row_names: 
+        if r not in added: values[r].append( missing_value )
+        
+    sizes = set([ len(x) for x in values.values() ])
+    assert len(sizes) == 1, "unequal number of row_names"
+    size = list(sizes)[0]
+
+    options.stdout.write( "row\t%s\n" % ( "\t".join( ["column_%i" % x for x in range(size)] ) ) )
+    
+    for key, row in values.items():
+        options.stdout.write( "%s\t%s\n" % (key, "\t".join( row) ) )
+    
 ##########################################################
 ##########################################################
 ##########################################################        
@@ -348,7 +379,14 @@ def readAndJoinTable( infile, options ):
 ##########################################################
 ##########################################################
 ##########################################################        
-if __name__ == "__main__":
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: table2table.py 2782 2009-09-10 11:40:29Z andreas $")
 
@@ -408,7 +446,7 @@ if __name__ == "__main__":
                       help="value to use for various algorithms."  )
 
     parser.add_option("--group", dest="group_column", type="int",
-                      help="group values by column."  )
+                      help="group values by column. Supply an integer column [default=%default]"  )
 
     parser.add_option("--group-function", dest="group_function", type="choice",
                       choices=("min", "max", "sum", "mean", "stats", "cat", "uniq"),
@@ -417,11 +455,14 @@ if __name__ == "__main__":
     parser.add_option("--join-table", dest="join_column", type="int",
                       help="join rows in a table by columns."  )
 
+    parser.add_option("--collapse-table", dest="collapse_table", type="string",
+                      help="collapse a table. Value determines the missing variable [%default]."  )
+
     parser.add_option("--join-column-name", dest="join_column_name", type="int",
                       help="use this column as a prefix."  )
 
     parser.add_option("--flatten-table", dest="flatten_table", action="store_true",
-                      help="flatten table."  )
+                      help="flatten a table [%default]."  )
 
     parser.add_option("--as-column", dest="as_column", action="store_true",
                       help="output table as a single column."  )
@@ -435,11 +476,19 @@ if __name__ == "__main__":
     parser.add_option( "--fdr-method", dest="fdr_method", type="choice",
                       choices = ( "BH", "bonferroni", "holm", "hommel", "hochberg", "BY" ),
                       help="method to perform multiple testing correction by controlling the fdr [default=%default]."  )
+
+    parser.add_option( "--fdr-add-column", dest="fdr_add_column", type="string",
+                       help = "add new column instead of replacing existing columns. "
+                       "The value of the option will be used as prefix if there are multiple columns [%default]" )
+
     #IMS: add option to use a column as the row id in flatten
     parser.add_option("--id-column", dest="id_column", type ="string",
-                      help="list of column(s) to use as the row id when flattening the table. If None, then row number is used. [defualt=%default].")
+                      help="list of column(s) to use as the row id when flattening the table. "
+                      "If None, then row number is used. [default=%default].")
+
     parser.add_option("--variable-name", dest="variable_name", type = "string",
                       help="the column header for the 'variable' column when flattening [default=%default].")
+
     parser.add_option("--value-name", dest="value_name", type = "string",
                       help="the column header for the 'value' column when flattening [default=%default].")
 
@@ -461,6 +510,7 @@ if __name__ == "__main__":
         missing_value = "na",
         sort_rows = None,
         flatten_table= False,
+        collapse_table = None,
         separator = ";",
         expand = False,
         join_column = None,
@@ -468,6 +518,7 @@ if __name__ == "__main__":
         compute_fdr = None,
         as_column = False,
         fdr_method= "BH",
+        fdr_add_column = None,
         id_column=None,
         variable_name="column",
         value_name="value",
@@ -564,6 +615,9 @@ if __name__ == "__main__":
 
     elif options.expand_table:
         readAndExpandTable( options.stdin, options )
+
+    elif options.collapse_table != None:
+        readAndCollapseTable( options.stdin, options, options.collapse_table )
 
     elif "grep" in options.methods:
 
@@ -688,23 +742,39 @@ if __name__ == "__main__":
                     for c in options.columns:                
                         for r in range(nrows):
                             if type(table[c][r]) == types.FloatType and \
-                                   table[c][r] < boundary:
+                                    table[c][r] < boundary:
                                 table[c][r] = new_value
 
             elif method == "fdr":
                 pvalues = []
                 for c in options.columns: pvalues.extend( table[c] )
 
-                assert max(pvalues) <= 1.0, "pvalues > 1 in table"
-                assert min(pvalues) >= 0, "pvalue < 0 in table"
+                assert max(pvalues) <= 1.0, "pvalues > 1 in table: max=%s" % str(max(pvalues))
+                assert min(pvalues) >= 0, "pvalue < 0 in table: min=%s" % str(min(pvalues))
 
                 # convert to str to avoid test for float downstream
                 qvalues = map(str, Stats.adjustPValues( pvalues, method = options.fdr_method ))
 
-                x = 0
-                for c in options.columns: 
-                    table[c] = qvalues[x:x+nrows]
-                    x += nrows
+                if options.fdr_add_column == None:
+                    x = 0
+                    for c in options.columns: 
+                        table[c] = qvalues[x:x+nrows]
+                        x += nrows
+                else:
+                    # add new column headers
+
+                    if len(options.columns) == 1:
+                        fields.append( options.fdr_add_column )
+                    else:
+                        for co in options.columns:
+                            fields.append( options.fdr_add_column + fields[c] )
+
+                    x = 0
+                    for c in options.columns:
+                        # add a new column
+                        table.append(qvalues[x:x+nrows])
+                        x += nrows
+                    ncols += len(options.columns)
 
             elif method == "normalize-by-table":
 
@@ -751,3 +821,7 @@ if __name__ == "__main__":
 
     E.Stop()
     
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

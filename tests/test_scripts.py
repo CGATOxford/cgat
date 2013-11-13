@@ -6,7 +6,12 @@ import re
 import sys
 import glob
 import gzip
-from nose.tools import assert_equal
+import imp
+import warnings
+
+from nose.tools import assert_equal, ok_
+
+SUBDIRS = ("gpipe", "optic")
 
 ######################################### 
 # List of tests to perform.
@@ -19,16 +24,42 @@ from nose.tools import assert_equal
 # 5. List of reference files
 import yaml
 
+def check_main( script ):
+    '''test is if a script can be imported and has a main function.
+    '''
+
+    # The following tries importing, but I ran into problems - thus simply
+    # do a textual check for now
+    # path, basename = os.path.split(script)
+    # pyxfile = os.path.join( path, "_") + basename + "x"
+    # # ignore script with pyximport for now, something does not work
+    # if not os.path.exists( pyxfile ):
+    #     with warnings.catch_warnings() as w:
+    #         warnings.simplefilter("ignore")
+    #         (file, pathname, description ) = imp.find_module( basename[:-3], [path,] )
+    #         module = imp.load_module( basename, file, pathname, description)
+
+    #     ok_( "main" in dir(module), "no main function" )
+
+    # subsitute gpipe and other subdirectories.
+    for s in SUBDIRS:
+        script = re.sub( "%s_" % s, "%s/" %s, script )
+
+    # check for text match
+    ok_( [ x for x in open(script) if x.startswith("def main(") ], "no main function" )
+
 def check_script( test_name, script, stdin, options, outputs, references, workingdir ):
+    '''check script.'''
     
     tmpdir = tempfile.mkdtemp()
 
     stdout = os.path.join( tmpdir, 'stdout' )
     if stdin: 
         if stdin.endswith( ".gz"):
-            stdin = '< <( zcat %s/%s)' % (os.path.abspath(workingdir), stdin)
+            # zcat on osX requires .Z suffix
+            stdin = 'gunzip < %s/%s |' % (os.path.abspath(workingdir), stdin)
         else:
-            stdin = '< %s/%s' % (os.path.abspath(workingdir), stdin)
+            stdin = 'cat %s/%s |' % (os.path.abspath(workingdir), stdin)
     else: stdin = ""
 
     if options:
@@ -40,10 +71,11 @@ def check_script( test_name, script, stdin, options, outputs, references, workin
         options = ""
 
     # use /bin/bash in order to enable "<( )" syntax in shells 
-    statement = ( "/bin/bash -c 'python %(script)s "
-                  " %(options)s"
-                  " %(stdin)s"
+    statement = ( "/bin/bash -c '%(stdin)s python %(script)s "
+                  " %(options)s" 
                   " > %(stdout)s'" ) % locals()
+
+    print statement
 
     retval = subprocess.call( statement, 
                               shell = True,
@@ -78,6 +110,7 @@ def test_scripts():
 
     scriptdirs = glob.glob( "tests/*.py" )
 
+
     if os.path.exists( "tests/test_scripts.yaml" ):
         config = yaml.load( open( "tests/test_scripts.yaml" ) )
         if config != None:
@@ -86,13 +119,33 @@ def test_scripts():
                 if "glob" in values:
                     scriptdirs = glob.glob( "tests/*.py" )
                 
+                if "manifest" in values:
+                    # take scripts defined in the MANIFEST.in file
+                    scriptdirs = [x for x in open( "MANIFEST.in" ) if x.startswith("include scripts") and x.endswith(".py\n") ]
+                    scriptdirs = [re.sub( "include\s*scripts/", "tests/", x[:-1] ) for x in scriptdirs ]
+                #sys.stderr.write("%s\n" % scriptdirs )
+
                 if "regex" in values:
                     rx = re.compile( values["regex"] )
                     scriptdirs = filter( rx.search, scriptdirs )
 
+    # ignore those which don't exist as tests (files added through MANIFEST.in,
+    # such as version.py, __init__.py, ...
+    scriptdirs = [ x for x in scriptdirs if os.path.exists( x ) ]                    
+
+    # ignore non-directories
+    scriptdirs = [ x for x in scriptdirs if os.path.isdir( x ) ]
+
     scriptdirs.sort()        
 
     for scriptdir in scriptdirs:
+
+        script_name = os.path.basename(scriptdir)
+
+        check_main.description = os.path.join( scriptdir, "def_main" )
+        yield( check_main,
+               os.path.abspath( os.path.join( "scripts", script_name )) )
+
         fn = '%s/tests.yaml' % scriptdir
         if not os.path.exists( fn ): continue
 
@@ -100,7 +153,6 @@ def test_scripts():
         
         for test, values in script_tests.items():
             check_script.description = os.path.join( scriptdir, test)
-            script_name = os.path.basename(scriptdir)
 
             # deal with scripts in subdirectories. These are prefixed by a "<subdir>_" 
             # for example: optic_compare_projects.py is optic/compare_procjets.py
@@ -108,6 +160,7 @@ def test_scripts():
                 parts = script_name.split("_")
                 if os.path.exists( os.path.join( "scripts", parts[0], "_".join(parts[1:]))):
                     script_name = os.path.join(parts[0], "_".join(parts[1:]))
+
                     
             yield( check_script,
                    test,

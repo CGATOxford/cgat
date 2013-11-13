@@ -1,25 +1,3 @@
-################################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id$
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
 '''
 introns2rates.py - compute rates of aligned intron sequences
 ============================================================
@@ -61,11 +39,8 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-
-Code
-----
+Command line options
+--------------------
 
 '''
 import os
@@ -80,7 +55,7 @@ import CGAT.Genomics as Genomics
 import CGAT.Exons as Exons
 import CGAT.WrapperBaseML as WrapperBaseML
 import CGAT.WrapperGblocks as WrapperGblocks
-import alignlib
+import alignlib_lite
 
 import CGAT.WrapperDialign as WrapperDialign
 import CGAT.WrapperDBA as WrapperDBA
@@ -308,7 +283,7 @@ def GetIntronType( sequence ):
 def AlignPair( pair, anchor = 0 ):
     """align a pair of introns."""
 
-    map_intron_a2b = alignlib.makeAlignmentVector()
+    map_intron_a2b = alignlib_lite.py_makeAlignmentVector()
 
     if param_loglevel >= 1:
         print "# aligning %s-%i with %s-%i: lengths %i and %i" % (pair.mToken1, pair.mIntronId1,
@@ -343,10 +318,10 @@ def AlignPair( pair, anchor = 0 ):
         return False
 
 
-    seq1 = alignlib.makeSequence( pair.mAlignedSequence1 )
-    seq2 = alignlib.makeSequence( pair.mAlignedSequence2 )
+    seq1 = alignlib_lite.py_makeSequence( pair.mAlignedSequence1 )
+    seq2 = alignlib_lite.py_makeSequence( pair.mAlignedSequence2 )
     
-    data = alignlib.AlignmentFormatExplicit( map_intron_a2b, seq1, seq2 )
+    data = alignlib_lite.py_AlignmentFormatExplicit( map_intron_a2b, seq1, seq2 )
 
     pair.mFrom1, pair.mAlignedSequence1, pair.mTo1 = data.mRowFrom, data.mRowAlignment, data.mRowTo
     pair.mFrom2, pair.mAlignedSequence2, pair.mTo2 = data.mColFrom, data.mColAlignment, data.mColTo
@@ -361,7 +336,14 @@ def AlignPair( pair, anchor = 0 ):
     return True
 
 ##------------------------------------------------------------
-if __name__ == '__main__':
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     try:
         optlist, args = getopt.getopt(sys.argv[1:], param_short_options, param_long_options)
@@ -495,7 +477,7 @@ if __name__ == '__main__':
                        unaligned_pair.mToken2 == pair.mToken2 and \
                        unaligned_pair.mIntronId1 == pair.mIntronId1:
 
-                    map_a2b = alignlib.makeAlignmentVector()
+                    map_a2b = alignlib_lite.py_makeAlignmentVector()
                     f = AlignmentFormatEmissions( 
                         pair.mFrom1, 
                         pair.mAlignedSequence1,
@@ -503,9 +485,9 @@ if __name__ == '__main__':
                         pair.mAlignedSequence2).copy( map_a2b )
                     map_a2b.moveAlignment( -unaligned_pair.mFrom1 + 1, -unaligned_pair.mFrom2 + 1 )            
 
-                    data = alignlib.AlignmentFormatExplicit( map_a2b,
-                                                             alignlib.makeSequence( unaligned_pair.mAlignedSequence1),
-                                                             alignlib.makeSequence( unaligned_pair.mAlignedSequence2) )
+                    data = alignlib_lite.py_AlignmentFormatExplicit( map_a2b,
+                                                             alignlib_lite.py_makeSequence( unaligned_pair.mAlignedSequence1),
+                                                             alignlib_lite.py_makeSequence( unaligned_pair.mAlignedSequence2) )
 
                     from1, ali1, to1 = data.mRowFrom, data.mRowAlignment, data.mRowTo
                     from2, ali2, to2 = data.mColFrom, data.mColAlignment, data.mColTo
@@ -594,3 +576,7 @@ if __name__ == '__main__':
     print "# input=%i, skipped=%i, nerrors=%i, transcripts=%i, introns=%i" % (ninput, nskipped, nerrors,
                                                                               ntoken_pairs, nintron_pairs )
     print E.GetFooter()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

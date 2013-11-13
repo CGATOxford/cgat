@@ -1,25 +1,3 @@
-################################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id: snp2maf.py 2875 2010-03-27 17:42:04Z andreas $
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
 """
 snp2map.py - build maf formatted multiple genomic alignments from SNPs
 ======================================================================
@@ -50,8 +28,8 @@ Type::
 
 for command line help.
 
-Code
-----
+Command line options
+--------------------
 
 """ 
 
@@ -70,27 +48,27 @@ import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Genomics as Genomics
 import CGAT.GTF as GTF
 import CGAT.Variants as Variants
-import alignlib
+import alignlib_lite
 
 def alignIndels( all_alleles, colcounts, extend_by = 0 ):
     '''align all indel-regions.'''
 
-    aa = alignlib.makeAlignatorDPFull( alignlib.ALIGNMENT_LOCAL, 0, 0 )     
-    alignator = alignlib.makeMultipleAlignatorSimple( aa)
+    aa = alignlib_lite.py_makeAlignatorDPFull( alignlib_lite.py_ALIGNMENT_LOCAL, 0, 0 )     
+    alignator = alignlib_lite.py_makeMultipleAlignatorSimple( aa)
 
     ids = all_alleles.keys()
 
     for x,c in enumerate(colcounts):
         if c <= 1: continue
-        sequences = alignlib.StringVector()
+        sequences = alignlib_lite.py_StringVector()
         for sid in ids:
             for allele in all_alleles[sid]:
                 sequences.append( allele[x] )
 
-        mali = alignlib.makeMultAlignment()
+        mali = alignlib_lite.py_makeMultAlignment()
         alignator.align( mali, sequences )
         realigned = []
-        for line in str(alignlib.MultAlignmentFormatPlain( mali, sequences )).split("\n")[:-1]:
+        for line in str(alignlib_lite.py_MultAlignmentFormatPlain( mali, sequences )).split("\n")[:-1]:
             data = line[:-1].split("\t")
             realigned.append( data[1] )
         assert len(realigned) == len(sequences)

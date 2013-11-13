@@ -134,7 +134,14 @@ http://wwwfgu.anat.ox.ac.uk/~andreas/documentation/cgat/pipelines/Gpipe.html
 
 from CGAT.Local import getMakefiles, getScripts, getModules
 
-if __name__ == "__main__":
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: gpipe/export_code.py 2781 2009-09-10 11:33:14Z andreas $")
 
@@ -282,3 +289,7 @@ if __name__ == "__main__":
         shutil.rmtree( tmp_dir )
         
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

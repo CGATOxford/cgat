@@ -1,25 +1,3 @@
-################################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
 '''
 align_mali_vs_mali.py - align two multiple alignments
 =====================================================
@@ -52,11 +30,8 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-
-Code
-----
+Command line options
+--------------------
 
 '''
 
@@ -68,7 +43,7 @@ import optparse
 import CGAT.Experiment as E
 import CGAT.Mali as Mali
 import CGAT.IOTools as IOTools
-import alignlib
+import alignlib_lite
 
 def main( argv = None ):
     """script main.
@@ -116,25 +91,25 @@ def main( argv = None ):
     cmali2 = Mali.convertMali2Alignlib( mali2 )
 
     if options.mode == "local":
-        mode = alignlib.ALIGNMENT_LOCAL
+        mode = alignlib_lite.py_ALIGNMENT_LOCAL
     elif options.mode == "global":
-        mode = alignlib.ALIGNMENT_GLOBAL
+        mode = alignlib_lite.py_ALIGNMENT_GLOBAL
         
-    alignator = alignlib.makeAlignatorDPFull( mode,
+    alignator = alignlib_lite.py_makeAlignatorDPFull( mode,
                                               options.gop, options.gep )
 
-    alignlib.setDefaultEncoder( alignlib.getEncoder( alignlib.Protein20) )
-    alignlib.setDefaultLogOddor( alignlib.makeLogOddorDirichlet( 0.3 ) )
-    alignlib.setDefaultRegularizor( alignlib.makeRegularizorDirichletPrecomputed() )
+    alignlib_lite.py_setDefaultEncoder( alignlib_lite.py_getEncoder( alignlib_lite.py_Protein20) )
+    alignlib_lite.py_setDefaultLogOddor( alignlib_lite.py_makeLogOddorDirichlet( 0.3 ) )
+    alignlib_lite.py_setDefaultRegularizor( alignlib_lite.py_makeRegularizorDirichletPrecomputed() )
 
-    cprofile1 = alignlib.makeProfile( cmali1 )
-    cprofile2 = alignlib.makeProfile( cmali2 )
+    cprofile1 = alignlib_lite.py_makeProfile( cmali1 )
+    cprofile2 = alignlib_lite.py_makeProfile( cmali2 )
 
-    result = alignlib.makeAlignmentVector()
+    result = alignlib_lite.py_makeAlignmentVector()
 
     alignator.align( result, cprofile1, cprofile2 )
 
-    E.debug( "result=\n%s" % alignlib.AlignmentFormatEmissions( result) )
+    E.debug( "result=\n%s" % alignlib_lite.py_AlignmentFormatEmissions( result) )
 
     cmali1.add( cmali2, result )
 

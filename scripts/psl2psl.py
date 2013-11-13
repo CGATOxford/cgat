@@ -1,16 +1,3 @@
-####
-####
-##
-##
-## Copyright (C) 2008 Andreas Heger All rights reserved
-##
-## Author: Andreas Heger <andreas.heger@helsinki.fi>
-##
-## $Id: psl2psl.py 2781 2009-09-10 11:33:14Z andreas $
-##
-##
-####
-####
 '''
 psl2psl.py - manipulate psl files
 ===================================
@@ -84,11 +71,8 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-
-Code
-----
+Command line options
+--------------------
 '''
 
 
@@ -115,7 +99,7 @@ with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     import networkx
 
-import alignlib
+import alignlib_lite
 import bx.intervals.io
 import bx.intervals.intersection
 
@@ -130,7 +114,7 @@ def readIntervals( infile, options ):
 
         for gffs in GTF.transcript_iterator( GTF.iterator(infile) ):
         
-            ali = alignlib.makeAlignmentBlocks()
+            ali = alignlib_lite.py_makeAlignmentBlocks()
             for gff in gffs:
                 if gff.feature != "exon": continue
                 ali.addDiagonal( gff.start, gff.end, 0 )
@@ -299,9 +283,9 @@ def pslMap( options ):
             E.debug( "working on query %s:%i-%i" % (match.mQueryId, qstart, qend) )
 
             mqstart, mqend = ( map_query2target.mapRowToCol(qstart, 
-                                                            alignlib.RIGHT), 
+                                                            alignlib_lite.py_RIGHT), 
                                map_query2target.mapRowToCol(qend, 
-                                                            alignlib.LEFT) )
+                                                            alignlib_lite.py_LEFT) )
                         
                 
             if match.strand == "-":
@@ -313,7 +297,7 @@ def pslMap( options ):
                 if tstart >= mqend or tend <= mqstart: continue
                 if tend - tstart < min_length: continue
 
-                new = alignlib.makeAlignmentBlocks()
+                new = alignlib_lite.py_makeAlignmentBlocks()
                     
                 if use_copy:
                     # do copy with range filter
@@ -330,7 +314,7 @@ def pslMap( options ):
                                       mtstart, mtend,
                                       mtend - mtstart ) )
                                      
-                    alignlib.copyAlignment( 
+                    alignlib_lite.py_copyAlignment( 
                         new, 
                         map_query2target,
                         qstart, qend,
@@ -339,25 +323,25 @@ def pslMap( options ):
                     # do copy with alignment filter
                     map_query = qval
                     if map_query:
-                        tmp = alignlib.makeAlignmentBlocks()                        
-                        alignlib.copyAlignment( tmp, map_query2target, map_query, alignlib.RR )
+                        tmp = alignlib_lite.py_makeAlignmentBlocks()                        
+                        alignlib_lite.py_copyAlignment( tmp, map_query2target, map_query, alignlib_lite.py_RR )
                         if options.loglevel >= 5:
                             options.stdlog.write( "######## mapping query ###########\n" )
-                            options.stdlog.write( "# %s\n" % str(alignlib.AlignmentFormatEmissions( map_query2target ) ))
-                            options.stdlog.write( "# %s\n" % str(alignlib.AlignmentFormatEmissions( map_query ) ))
-                            options.stdlog.write( "# %s\n" % str(alignlib.AlignmentFormatEmissions( tmp ) ))
+                            options.stdlog.write( "# %s\n" % str(alignlib_lite.py_AlignmentFormatEmissions( map_query2target ) ))
+                            options.stdlog.write( "# %s\n" % str(alignlib_lite.py_AlignmentFormatEmissions( map_query ) ))
+                            options.stdlog.write( "# %s\n" % str(alignlib_lite.py_AlignmentFormatEmissions( tmp ) ))
                     else:
                         tmp = map_query2target
                         
                     map_target = tval
                     if map_target:
-                        new = alignlib.makeAlignmentBlocks()
-                        alignlib.copyAlignment( new, tmp, map_target, alignlib.CR )                        
+                        new = alignlib_lite.py_makeAlignmentBlocks()
+                        alignlib_lite.py_copyAlignment( new, tmp, map_target, alignlib_lite.py_CR )                        
                         if options.loglevel >= 5:
                             options.stdlog.write( "######## mapping target ###########\n" )
-                            options.stdlog.write( "# before: %s\n" % str(alignlib.AlignmentFormatEmissions( tmp ) ))
-                            options.stdlog.write( "# map   : %s\n" % str(alignlib.AlignmentFormatEmissions( map_target ) ))
-                            options.stdlog.write( "# after : %s\n" % str(alignlib.AlignmentFormatEmissions( new ) ))
+                            options.stdlog.write( "# before: %s\n" % str(alignlib_lite.py_AlignmentFormatEmissions( tmp ) ))
+                            options.stdlog.write( "# map   : %s\n" % str(alignlib_lite.py_AlignmentFormatEmissions( map_target ) ))
+                            options.stdlog.write( "# after : %s\n" % str(alignlib_lite.py_AlignmentFormatEmissions( new ) ))
                     else:
                         new = tmp
 
@@ -365,8 +349,8 @@ def pslMap( options ):
                     E.debug("putative match with intervals: %s and %s: %i-%i" % \
                                 (str(query), str(target), qstart, qend ))
                     if options.loglevel >= 5:
-                        E.debug( "input : %s" % str(alignlib.AlignmentFormatEmissions( map_query2target ) ))
-                        E.debug( "final : %s" % str(alignlib.AlignmentFormatEmissions( new ) ) )
+                        E.debug( "input : %s" % str(alignlib_lite.py_AlignmentFormatEmissions( map_query2target ) ))
+                        E.debug( "final : %s" % str(alignlib_lite.py_AlignmentFormatEmissions( new ) ) )
 
                     if new.getLength() > 0:
                         n = match.copy()
@@ -400,7 +384,7 @@ def pslMerge( options ):
 
         new = matches[0].copy()
 
-        map_query2target = alignlib.makeAlignmentBlocks()
+        map_query2target = alignlib_lite.py_makeAlignmentBlocks()
 
         graph = networkx.DiGraph()
         graph.add_nodes_from(xrange(len(matches)+2))
@@ -455,7 +439,7 @@ def pslMerge( options ):
 
         for match in matches:
             m = match.getMapQuery2Target()
-            alignlib.addAlignment2Alignment( map_query2target, m )
+            alignlib_lite.py_addAlignment2Alignment( map_query2target, m )
 
         new.fromMap( map_query2target, use_strand = True )
         
@@ -818,7 +802,14 @@ def iterator_filter_fasta( infile, query_fasta, sbjct_fasta, options ):
 
     E.info( "ninput=%i, noutput=%i, nerrors=%i" % (ninput, noutput,nerrors) )
 
-if __name__ == '__main__':
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: psl2psl.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"] )
 
@@ -960,3 +951,7 @@ if __name__ == '__main__':
         options.stdout.write( "%s\n" % str( psl ) )
 
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

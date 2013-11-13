@@ -1,25 +1,3 @@
-################################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id$
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
 '''
 codemls2tsv.py - analyze results from site-specific codeml run
 =======================================================================
@@ -53,11 +31,8 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-
-Code
-----
+Command line options
+--------------------
 
 '''
 import os
@@ -72,7 +47,7 @@ import CGAT.Experiment as E
 import CGAT.WrapperCodeML as WrapperCodeML
 import CGAT.Stats as Stats
 import CGAT.Mali as Mali
-import alignlib
+import alignlib_lite
 
 def selectPositiveSites( results, selection_mode, options, mali = None ):
     """returns sites, which are consistently estimated to be positively selected.
@@ -198,15 +173,21 @@ def mapSites2Codons( total_sites, max_per_site ):
 def convertMali2Mali( mali ):
     """convert a mali to a profile."""
 
-    new_mali = alignlib.makeMultipleAlignment()
+    new_mali = alignlib_lite.py_makeMultipleAlignment()
     for id in mali.getIdentifiers():
-        s = alignlib.makeAlignatumFromString( mali[id] )
+        s = alignlib_lite.py_makeAlignatumFromString( mali[id] )
         s.thisown = 0
         new_mali.addAlignatum( s )
 
     return new_mali
 
-if __name__ == "__main__":
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
     
     parser = E.OptionParser( version = "%prog version: $Id: codemls2tsv.py 2781 2009-09-10 11:33:14Z andreas $" )
 
@@ -358,23 +339,23 @@ if __name__ == "__main__":
         if tmap_mali.getAlphabet() == "na":
             tmap_mali.apply( translate )
         
-        map_old2new = alignlib.makeAlignmentVector()
+        map_old2new = alignlib_lite.py_makeAlignmentVector()
 
-        mali1 = alignlib.makeProfileFromMali( convertMali2Mali( tmali ) )
+        mali1 = alignlib_lite.py_makeProfileFromMali( convertMali2Mali( tmali ) )
 
         if tmap_mali.getLength() == 1:
             
             s = tmap_mali.values()[0].mString
-            mali2 = alignlib.makeSequence( s )
+            mali2 = alignlib_lite.py_makeSequence( s )
             ## see if you can find an identical subsequence and then align to thisD
             for x in tmali.values():
                 if s in re.sub( "[- .]+", "", x.mString):
-                    mali1 = alignlib.makeSequence( x.mString )
+                    mali1 = alignlib_lite.py_makeSequence( x.mString )
                     break
         else:
-            mali2 = alignlib.makeProfileFromMali( convertMali2Mali( tmap_mali ) )        
+            mali2 = alignlib_lite.py_makeProfileFromMali( convertMali2Mali( tmap_mali ) )        
 
-        alignator = alignlib.makeAlignatorDPFull( alignlib.ALIGNMENT_LOCAL, -10.0, -2.0 )
+        alignator = alignlib_lite.py_makeAlignatorDPFull( alignlib_lite.py_ALIGNMENT_LOCAL, -10.0, -2.0 )
         alignator.align( map_old2new, mali1, mali2 )
 
         consensus = tmap_mali.getConsensus()
@@ -589,7 +570,9 @@ if __name__ == "__main__":
             if options.loglevel >= 1:
                 options.stdlog.write("# sites: ninput=%i, noutput=%i, nskipped=%i\n" % (len(sites), nmapped, nunmapped))
                 
-    if options.loglevel >= 1:
-        options.stdlog.write("# ninput=%i, noutput=%i, nskipped=%i\n" % (ninput, noutput, nskipped))
+    E.info( "ninput=%i, noutput=%i, nskipped=%i" % (ninput, noutput, nskipped))
     
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )

@@ -1,11 +1,3 @@
-## $Id$
-##
-## usage:
-## perl filter_links_components.pl [OPTIONS] components < graph.in
-##
-## filter links according to components. Only links inside the same
-## component are kept.
-##
 $| = 1;
 
 use strict;

@@ -1,25 +1,3 @@
-################################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id: chain2psl.py 2899 2010-04-13 14:37:37Z andreas $
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
 """
 diff_chains.py - compare to chain formatted files
 =================================================
@@ -27,7 +5,7 @@ diff_chains.py - compare to chain formatted files
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Genomics GenomeAlignment
+:Tags: Genomics GenomeAlignment CHAIN Comparison
 
 Purpose
 -------
@@ -94,7 +72,7 @@ import collections
 
 import CGAT.IOTools as IOTools
 import CGAT.Experiment as E
-import alignlib
+import alignlib_lite
 
 def chain_iterator( infile ):
     lines = []
@@ -115,8 +93,8 @@ def validateChain( infile ):
     No overlapping target coordinates.
     '''
     
-    pairs_t2q = collections.defaultdict( alignlib.makeAlignmentBlocks )
-    pairs_q2t = collections.defaultdict( alignlib.makeAlignmentBlocks )
+    pairs_t2q = collections.defaultdict( alignlib_lite.py_makeAlignmentBlocks )
+    pairs_q2t = collections.defaultdict( alignlib_lite.py_makeAlignmentBlocks )
 
     
     for lines in chain_iterator( infile ):
@@ -196,7 +174,7 @@ def buildPairs( infile ):
     build target2query alignments.
     The target is always on the positive strand.
     '''
-    pairs = collections.defaultdict( alignlib.makeAlignmentBlocks )
+    pairs = collections.defaultdict( alignlib_lite.py_makeAlignmentBlocks )
 
     def chain_iterator( infile ):
         lines = []
@@ -280,8 +258,8 @@ def compareChains( pairs1, pairs2 ):
             continue
 
         chain2 = pairs2[key1]
-        nsame = alignlib.getAlignmentIdentity( chain1, chain2, alignlib.RR )
-        noverlap = alignlib.getAlignmentOverlap( chain1, chain2, alignlib.RR )
+        nsame = alignlib_lite.py_getAlignmentIdentity( chain1, chain2, alignlib_lite.py_RR )
+        noverlap = alignlib_lite.py_getAlignmentOverlap( chain1, chain2, alignlib_lite.py_RR )
         ndifferent = noverlap - nsame
         nunique = ntotal - noverlap
 

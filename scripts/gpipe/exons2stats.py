@@ -75,7 +75,14 @@ import CGAT.Exons as Exons
 
 parser = E.OptionParser( version = "%prog version: $Id: gpipe/exons2stats.py 2781 2009-09-10 11:33:14Z andreas $")
 
-if __name__ == "__main__":
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
 
     parser.add_option("-q", "--quality", dest="quality", type="string",
@@ -142,4 +149,8 @@ if __name__ == "__main__":
 
 
 
+
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
 

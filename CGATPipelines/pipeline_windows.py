@@ -1,25 +1,3 @@
-################################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id$
-#
-#   Copyright (C) 2009 Tildon Grant Belgard
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
 """
 ================
 Windows pipeline
@@ -164,9 +142,7 @@ Code
 # load modules
 from ruffus import *
 
-import CGAT.Experiment as E
 import logging as L
-import CGAT.Database as Database
 import sys
 import os
 import re
@@ -181,17 +157,20 @@ import random
 import csv
 import numpy
 import sqlite3
+
+import CGAT.Experiment as E
+import CGAT.Database as Database
 import CGAT.GTF as GTF
 import CGAT.IOTools as IOTools
-import CGAT.IndexedFasta as IndexedFasta
-import CGATPipelines.PipelineGeneset as PipelineGeneset
-import CGATPipelines.PipelineMapping as PipelineMapping
 import CGAT.Stats as Stats
-import CGATPipelines.PipelineTracks as PipelineTracks
-import CGATPipelines.PipelineMappingQC as PipelineMappingQC
-import CGATPipelines.PipelineMedip as PipelineMedip
+import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Pipeline as P
 import CGAT.Expression as Expression
+import CGATPipelines.PipelineGeneset as PipelineGeneset
+import CGATPipelines.PipelineWindows as PipelineWindows
+import CGATPipelines.PipelineMapping as PipelineMapping
+import CGATPipelines.PipelineTracks as PipelineTracks
+import CGATPipelines.PipelineMappingQC as PipelineMappingQC
 
 from rpy2.robjects import r as R
 import rpy2.robjects as ro
@@ -216,6 +195,8 @@ PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],
 ###################################################################
 # load all tracks - exclude input/control tracks
 Sample = PipelineTracks.Sample3
+
+METHODS = P.asList( PARAMS["methods" ] )
 
 ###################################################################
 ###################################################################
@@ -328,6 +309,15 @@ def prepareTags( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
+@merge( prepareTags, "picard_duplicates.load" )
+def loadPicardDuplicateStats( infiles, outfile ):
+    '''Merge Picard duplicate stats into single table and load into SQLite.
+    '''
+    PipelineMappingQC.loadPicardDuplicateStats( infiles, outfile, pipeline_suffix = ".bed.gz" )
+
+#########################################################################
+#########################################################################
+#########################################################################
 @follows( mkdir( "background.dir" ))
 @transform( "*input*.bw",
             regex("(.*).bw"),
@@ -354,7 +344,7 @@ def buildBackgroundWindows( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@merge( buildBackgroundWindows, "background.dir/merged.bed.gz" )
+@merge( buildBackgroundWindows, "background.dir/background.bed.gz" )
 def mergeBackgroundWindows( infiles, outfile ):
     '''build a single bed file of regions with elevated background.'''
 
@@ -373,11 +363,31 @@ def mergeBackgroundWindows( infiles, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@merge( prepareTags, "picard_duplicates.load" )
-def loadPicardDuplicateStats( infiles, outfile ):
-    '''Merge Picard duplicate stats into single table and load into SQLite.
-    '''
-    PipelineMappingQC.loadPicardDuplicateStats( infiles, outfile )
+@transform( os.path.join( PARAMS["annotations_dir"], 
+                          PARAMS_ANNOTATIONS["interface_cpg_bed"] ),
+            regex(".*/([^/]*).bed.gz"), 
+            add_inputs( os.path.join( PARAMS["annotations_dir"],
+                                      PARAMS_ANNOTATIONS["interface_genomic_context_bed"]) ),
+            "cpg_context.tsv.gz" )
+def buildCpGAnnotation( infiles, outfile ):
+    '''annotate the location of CpGs within the genome.'''
+    
+    cpg_bed, context_bed = infiles
+
+    statement = '''
+    python %(scriptsdir)s/bam_vs_bed.py --min-overlap=0.5 %(cpg_bed)s %(context_bed)s
+    | gzip 
+    > %(outfile)s'''
+
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( buildCpGAnnotation, suffix( ".tsv.gz" ), ".load" )
+def loadCpGAnnotation( infile, outfile ):
+    '''load CpG annotations.'''
+    P.load( infile, outfile )
 
 #########################################################################
 #########################################################################
@@ -452,20 +462,25 @@ def loadCpGCoverage( infiles, outfile ):
 #########################################################################
 @merge( (buildCoverageBed, mergeBackgroundWindows), "windows.bed.gz")
 def buildWindows( infiles, outfile ):
-    '''build tiling windows according to parameter tiling_method.'''
+    '''build tiling windows according to parameter tiling_method.
+
+    Remove windows in background.
+    '''
     
     tiling_method = PARAMS["tiling_method"]
 
-    coverage_bed, background_bed = infiles
+    coverage_bed, background_bed = infiles[:-1], infiles[-1]
 
     to_cluster = True
     
-    if tiling_method == "variablewidth":
+    coverage_bed = " ".join( coverage_bed )
+
+    if tiling_method == "varwidth":
         
         infiles = " ".join( infiles )
 
         statement = '''
-        zcat *.covered.bed.gz
+        zcat %(coverage_bed)s
         | sort -k1,1 -k2,2n
         | python %(scriptsdir)s/bed2bed.py
               --method=merge
@@ -473,7 +488,7 @@ def buildWindows( infiles, outfile ):
               --log=%(outfile)s.log
         '''
 
-    elif tiling_method == "fixed_width_nooverlap":
+    elif tiling_method == "fixwidth_nooverlap":
         
         statement = '''python %(scriptsdir)s/genome_bed.py
                       -g %(genome_dir)s/%(genome)s
@@ -481,16 +496,19 @@ def buildWindows( infiles, outfile ):
                       --shift=%(tiling_window_size)i
                       --log=%(outfile)s.log'''
         
-    elif tiling_method == "fixed_width_nooverlap":
+    elif tiling_method == "fixwidth_overlap":
 
-        assert PARAMS["window_size"] % 2 == 0
-        shift = PARAMS["window_size"] // 2
+        assert PARAMS["tiling_window_size"] % 2 == 0
+        shift = PARAMS["tiling_window_size"] // 2
 
         statement = '''python %(scriptsdir)s/genome_bed.py
                       -g %(genome_dir)s/%(genome)s
                       --window=%(tiling_window_size)i
                       --shift=%(shift)i
                       --log=%(outfile)s.log'''
+
+    else:
+        raise ValueError("unknow tiling method '%s'" % tiling_method)
 
     statement += '''
         | awk '$1 !~ /%(tiling_remove_contigs)s/'
@@ -525,6 +543,14 @@ def buildWindowStats( infile, outfile ):
     '''
     P.run()
 
+@transform( buildWindowStats,
+            suffix(".stats"),
+            "_stats.load")
+def loadWindowStats( infile, outfile ):
+    '''load window statistics.'''
+    P.load( infile + ".hist.tsv", P.snip(infile,".stats") + "_hist" + ".load")
+    P.load( infile + ".stats.tsv", outfile )
+
 #########################################################################
 #########################################################################
 #########################################################################
@@ -556,12 +582,13 @@ def buildBigBed( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
+@follows( mkdir( "counts.dir" ) )
 @transform( prepareTags,
-            suffix(".bed.gz"), 
+            regex(".*/(.*).bed.gz"), 
             add_inputs( buildWindows ),
-            r".counts.bed.gz" )
+            r"counts.dir/\1.counts.bed.gz" )
 def countReadsWithinWindows(infiles, outfile ):
-    '''build read counds for variable width windows.'''
+    '''build read counds for windows.'''
     bedfile, windowfile = infiles
     PipelineWindows.countReadsWithinWindows( bedfile,
                                              windowfile,
@@ -569,10 +596,8 @@ def countReadsWithinWindows(infiles, outfile ):
                                              counting_method = PARAMS['tiling_counting_method'] )
 
 #########################################################################
-@follows( mkdir( "diff_methylation" ) )
-@collate( countReadsWithinWindows,
-          regex( ".*\.([^.]+).tilecounts.bed.gz"),
-          r"diff_methylation/\1.counts.tsv.gz")
+@merge( countReadsWithinWindows,
+        r"counts.dir/counts.tsv.gz")
 def aggregateWindowsReadCounts( infiles, outfile ):
     '''aggregate tag counts for each window.
 
@@ -602,7 +627,7 @@ def aggregateWindowsReadCounts( infiles, outfile ):
 @transform( aggregateWindowsReadCounts,
             suffix(".tsv.gz"),
             "_stats.tsv" )
-def summarizeWindowsReadCounts( infile, outfile ):
+def summarizeAllWindowsReadCounts( infile, outfile ):
     '''perform summarization of read counts'''
     
     prefix = P.snip(outfile, ".tsv")
@@ -617,8 +642,61 @@ def summarizeWindowsReadCounts( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-def loadWindowSummary( infile, outfile ):
-    pass
+@transform( "design*.tsv",
+            regex( "(.*).tsv" ),
+            add_inputs( aggregateWindowsReadCounts ),
+            r"counts.dir/\1_stats.tsv" )
+def summarizeWindowsReadCounts( infiles, outfile ):
+    '''perform summarization of read counts within experiments.
+    '''
+
+    design_file, counts_file = infiles    
+    prefix = P.snip(outfile, ".tsv")
+    statement = '''python %(scriptsdir)s/runExpression.py
+              --method=summary
+              --filename-design=%(design_file)s
+              --filename-tags=%(counts_file)s
+              --output-filename-pattern=%(prefix)s_
+              --log=%(outfile)s.log
+              > %(outfile)s'''
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@follows( mkdir("dump.dir") )
+@transform( "design*.tsv",
+            regex( "(.*).tsv" ),
+            add_inputs( aggregateWindowsReadCounts ),
+            r"dump.dir/\1.tsv.gz" )
+def dumpWindowsReadCounts( infiles, outfile ):
+    '''output tag tables used for analysis.
+    
+    This is for debugging purposes. The tables
+    can be loaded into R for manual analysis.
+    '''
+    design_file, counts_file = infiles
+
+    statement = '''python %(scriptsdir)s/runExpression.py
+              --method=dump
+              --filename-design=%(design_file)s
+              --filename-tags=%(counts_file)s
+              --log=%(outfile)s.log
+              > %(outfile)s'''
+
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( (summarizeWindowsReadCounts, summarizeAllWindowsReadCounts), 
+            suffix("_stats.tsv"), "_stats.load" )
+def loadTagCountSummary( infile, outfile ):
+    '''load windows summary.'''
+    P.load(infile, outfile )
+    P.load( P.snip(infile, ".tsv")+ "_correlation.tsv",
+            P.snip( outfile, "_stats.load") + "_correlation.load",
+            options = "--first-column=track")
 
 #########################################################################
 def loadMethylationData( infile, design_file ):
@@ -668,214 +746,231 @@ def loadMethylationData( infile, design_file ):
 #########################################################################
 #########################################################################
 #########################################################################
-def runDE( infiles, outfile, method ):
+def runDE( infiles, outfile, outdir, method ):
     '''run DESeq or EdgeR.
 
     The job is split into smaller sections. The order of the input 
     data is randomized in order to avoid any biases due to chromosomes.
+
+    At the end, a new q-value is computed from all results.
     '''
 
     to_cluster = True
     
-    infile, design_file = infiles
-    design = P.snip( os.path.basename(design_file), ".tsv")
-    tiling = P.snip( os.path.basename( infile ), ".counts.tsv.gz" )
+    design_file, counts_file = infiles
 
-    outdir = os.path.join( PARAMS["exportdir"], "diff_methylation", "%s_%s_%s_" % (tiling, design, method ) )
+    prefix = os.path.basename( outfile )
 
-    statement = '''zcat %(infile)s 
+    # the post-processing strips away the warning,
+    # renames the qvalue column to old_qvalue
+    # and adds a new qvalue column after recomputing
+    # over all windows.
+    statement = '''zcat %(counts_file)s 
               | perl %(scriptsdir)s/randomize_lines.pl -h
               | %(cmd-farm)s
                   --input-header 
                   --output-header 
-                  --split-at-lines=100000 
+                  --split-at-lines=200000 
                   --cluster-options="-l mem_free=8G"
                   --log=%(outfile)s.log
-                  --output-pattern=%(outdir)s%%s
+                  --output-pattern=%(outdir)s/%%s
                   --subdirs
               "python %(scriptsdir)s/runExpression.py
               --method=%(method)s
               --filename-tags=-
               --filename-design=%(design_file)s
-              --output-filename-pattern=%%DIR%%/
+              --output-filename-pattern=%%DIR%%/%(prefix)s_
               --deseq-fit-type=%(deseq_fit_type)s
               --deseq-dispersion-method=%(deseq_dispersion_method)s
+              --deseq-sharing-mode=%(deseq_sharing_mode)s
+              --filter-min-counts-per-row=%(tags_filter_min_counts_per_row)i
+              --filter-min-counts-per-sample=%(tags_filter_min_counts_per_sample)i
+              --filter-percentile-rowsums=%(tags_filter_percentile_rowsums)i
               --log=%(outfile)s.log
               --fdr=%(edger_fdr)f"
               | grep -v "warnings"
+              | perl %(scriptsdir)s/regtail.pl ^test_id
+              | perl -p -e "s/qvalue/old_qvalue/"
+              | python %(scriptsdir)s/table2table.py 
+              --log=%(outfile)s.log
+              --method=fdr 
+              --column=pvalue
+              --fdr-method=BH
+              --fdr-add-column=qvalue
               | gzip
               > %(outfile)s '''
 
     P.run()
 
+@follows( mkdir("deseq.dir"), mkdir("deseq.dir/plots") )
+@transform( "design*.tsv",
+            regex( "(.*).tsv" ),
+            add_inputs( aggregateWindowsReadCounts ),
+            r"deseq.dir/\1.tsv.gz" )
+def runDESeq( infiles, outfile ):
+    '''estimate differential expression using DESeq.
 
-# @follows( aggregateTiledReadCounts, mkdir( os.path.join( PARAMS["exportdir"], "diff_methylation")) )
-# @files( [ ( (data, design), 
-#             "diff_methylation/%s_%s.deseq.gz" % (P.snip(os.path.basename(data),".counts.tsv.gz"),
-#                                    P.snip(os.path.basename(design),".tsv" ) ) ) \
-#               for data, design in itertools.product( 
-#                                                glob.glob("diff_methylation/*.counts.tsv.gz"),
-#                                                P.asList(PARAMS["deseq_designs"]) ) ] )
-# def runDESeq( infiles, outfile ):
-#     '''estimate differential expression using DESeq.
+    The final output is a table. It is slightly edited such that
+    it contains a similar output and similar fdr compared to cuffdiff.
+    '''
+    runDE( infiles, outfile, "deseq.dir", "deseq" )
 
-#     The final output is a table. It is slightly edited such that
-#     it contains a similar output and similar fdr compared to cuffdiff.
-#     '''
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( runDESeq, suffix(".tsv.gz"), ".load" )
+def loadDESeq( infile, outfile ):
+    '''load DESeq per-chunk summary stats.'''
 
-#     runDE( infiles, outfile, "deseq" )
+    prefix = P.snip( outfile, ".load" )
 
-# #########################################################################
-# #########################################################################
-# #########################################################################
-# @follows( aggregateTiledReadCounts, mkdir( os.path.join( PARAMS["exportdir"], "diff_methylation")) )
-# @files( [ ( (data, design), 
-#             "diff_methylation/%s_%s.edger.gz" % (P.snip(os.path.basename(data),".counts.tsv.gz"),
-#                                                  P.snip(os.path.basename(design),".tsv" ) ) ) \
-#               for data, design in itertools.product( 
-#                                                glob.glob("diff_methylation/*.counts.tsv.gz"),
-#                                                P.asList(PARAMS["deseq_designs"]) ) ] )
-# def runEdgeR( infiles, outfile ):
-#     '''estimate differential methylation using EdgeR
+    if os.path.exists( infile + "_size_factors.tsv" ):
+        P.load( infile + "_size_factors.tsv", 
+                prefix + "_deseq_size_factors.load", 
+                collapse = True,
+                transpose = "sample")
+
+    for fn in glob.glob( infile + "*_summary.tsv" ):
+        prefix = P.snip(fn[len(infile)+1:], "_summary.tsv")
+
+        P.load( fn, 
+                prefix + ".deseq_summary.load", 
+                collapse = 0,
+                transpose = "sample")
+
+    P.touch( outfile )
+
+
+#########################################################################
+#########################################################################
+#########################################################################
+@follows( mkdir("edger.dir") )
+@transform( "design*.tsv",
+            regex( "(.*).tsv" ),
+            add_inputs( aggregateWindowsReadCounts ),
+            r"edger.dir/\1.tsv.gz" )
+def runEdgeR( infiles, outfile ):
+    '''estimate differential methylation using EdgeR
     
-#     This method applies a paired test. The analysis follows
-#     the example in chapter 11 of the EdgeR manual.
-#     '''
+    This method applies a paired test. The analysis follows
+    the example in chapter 11 of the EdgeR manual.
+    '''
 
-#     runDE( infiles, outfile, "edger" )
-
-# #########################################################################
-# @transform( (runDESeq, runEdgeR), suffix(".gz"), ".merged.gz" )
-# def mergeDMRWindows( infile, outfile ):
-#     '''merge overlapping windows.'''
-
-#     to_cluster = True
-
-#     statement = '''
-#     zcat %(infile)s
-#     | python %(scriptsdir)s/medip_merge_intervals.py
-#           --log=%(outfile)s.log
-#           --invert
-#           --output-filename-pattern=%(outfile)s.%%s.bed.gz
-#     | gzip
-#     > %(outfile)s
-#     '''
-
-#     P.run()
-
-# #########################################################################
-# @jobs_limit(1)
-# @transform( mergeDMRWindows, suffix(".merged.gz"), ".load" )
-# def loadDMRWindows( infile, outfile ):
-#     '''merge overlapping windows.'''
-#     P.load( infile, outfile, options = "--quick" )
-
-# #########################################################################
-# @collate( loadDMRWindows, regex( "(\S+)[.](\S+).load" ), r"\2_stats.tsv" )
-# def buildDMRStats( infiles, outfile ):
-#     '''compute differential methylation stats.'''
-#     tablenames = [P.toTable( x ) for x in infiles ] 
-#     method = P.snip( outfile, "_stats.tsv" )
-#     PipelineMedip.buildDMRStats( tablenames, method, outfile )
-
-# #########################################################################
-# @transform( buildDMRStats, suffix(".tsv"), ".load" )
-# def loadDMRStats( infile, outfile ):
-#     '''load DMR stats into table.'''
-#     P.load( infile, outfile )
-
-# #########################################################################
-# #########################################################################
-# #########################################################################
-# @transform( mergeDMRWindows,
-#             suffix(".merged.gz"),
-#             ".stats")
-# def buildDMRWindowStats( infile, outfile ):
-#     '''compute tiling window size statistics from bed file.'''
-
-#     to_cluster = True
-
-#     statement = '''
-#     zcat %(infile)s
-#     | grep -v 'contig'
-#     | python %(scriptsdir)s/gff2histogram.py 
-#                    --force
-#                    --format=bed 
-#                    --data=size
-#                    --method=hist
-#                    --method=stats
-#                    --output-filename-pattern=%(outfile)s.%%s.tsv
-#     > %(outfile)s
-#     '''
-#     P.run()
-
-# #########################################################################
-# #########################################################################
-# #########################################################################
-# @merge( (buildWindowStats, buildDMRWindowStats),
-#         "tileinfo.load" )
-# def loadWindowStats( infiles, outfile ):
-#     '''load tiling stats into database.'''
-#     prefix = P.snip(outfile, ".load")
-
-#     files = " ".join( [ "%s.stats.tsv" % x for x in infiles ] )
-
-#     tablename = P.snip( outfile, ".load" ) + "_stats" 
-
-#     statement = """
-#     python %(scriptsdir)s/combine_tables.py 
-#            --cat=track 
-#            --regex-filename="(.*).stats.stats.tsv" 
-#            %(files)s
-#     | python %(scriptsdir)s/csv2db.py 
-#            %(csv2db_options)s
-#            --index=track
-#            --table=%(tablename)s 
-#     > %(outfile)s"""
-#     P.run()
-   
-#     files = " ".join( [ "%s.hist.tsv" % x for x in infiles ] )
-
-#     tablename = P.snip( outfile, ".load" ) + "_hist" 
-    
-#     statement = """
-#     python %(scriptsdir)s/combine_tables.py 
-#            --regex-filename="(.*).stats.hist.tsv" 
-#            --sort-keys=numeric
-#            --use-file-prefix
-#            %(files)s
-#     | python %(scriptsdir)s/csv2db.py 
-#            %(csv2db_options)s
-#            --index=track
-#            --table=%(tablename)s 
-#     >> %(outfile)s"""
-
-#     P.run()
+    runDE( infiles, outfile, "edger.dir", "edger" )
 
 
-# #########################################################################
-# #########################################################################
-# #########################################################################
-# @transform( mergeDMRWindows, regex(  "(.*)\.(.*).merged.gz"), r"\1_\2.dmr.bed.gz" )
-# def buildDMRBed( infile, outfile ):
-#     '''output bed6 file with differentially methylated regions.
+DIFFTARGETS = []
+mapToTargets = { 'deseq': (loadDESeq,runDESeq,),
+                 'edger' : (runEdgeR,),
+                 }
+for x in METHODS:
+    DIFFTARGETS.extend( mapToTargets[x] )
+        
+@follows( loadTagCountSummary, 
+          loadWindowStats,
+          *DIFFTARGETS )
+def diff_windows(): pass
 
-#     Overlapping/book-ended entries are merged.
+#########################################################################
+@transform( DIFFTARGETS, suffix(".gz"), ".merged.gz" )
+def mergeDMRWindows( infile, outfile ):
+    '''merge overlapping windows.
 
-#     The score is the average log fold change.
-#     '''
-    
-#     to_cluster = True
+    Sample/control labels are by default inverted to reflect
+    that unmethylated windows are of principal interest.
+    '''
 
-#     statement = '''zcat %(infile)s
-#     | python %(scriptsdir)s/csv_cut.py contig start end l2fold significant
-#     | awk '$5 == "1" {printf("%%s\\t%%i\\t%%i\\t%%i\\t%%f\\n", $1,$2,$3,++a,$4)}'
-#     | gzip > %(outfile)s'''
+    to_cluster = True
 
-# #    | mergeBed -i stdin -scores mean 
+    statement = '''
+    zcat %(infile)s
+    | python %(scriptsdir)s/medip_merge_intervals.py
+          --log=%(outfile)s.log
+          --invert
+          --output-filename-pattern=%(outfile)s.%%s.bed.gz
+    | gzip
+    > %(outfile)s
+    '''
 
-#     P.run()
+    P.run()
 
+#########################################################################
+@transform( mergeDMRWindows, suffix(".merged.gz"), ".stats" )
+def buildDMRStats( infile, outfile ):
+    '''compute differential methylation stats.'''
+    method = os.path.dirname(infile)
+    method = P.snip( method, ".dir")
+    PipelineWindows.buildDMRStats( infile, outfile, method=method )
+
+#########################################################################
+@transform( mergeDMRWindows, suffix(".merged.gz"), ".merged.gz.all.bed.gz" )
+def outputAllWindows( infile, outfile ):
+    '''output all bed windows.'''
+    PipelineWindows.outputAllWindows( infile, outfile )
+
+#########################################################################
+@transform( outputAllWindows, suffix(".all.bed.gz"), 
+            (".top.bed.gz", ".bottom.bed.gz" ) )
+def outputTopWindows( infile, outfiles ):
+    '''output bed with largest/smallest l2fold changes.
+    '''
+    outfile = outfiles[0]
+
+    statement = '''zcat %(infile)s
+    | awk '$4 !~ /inf/'
+    | sort -k4,4n 
+    | tail -n %(bed_export)i 
+    | gzip > %(outfile)s
+    '''
+    P.run()
+
+    outfile = outfiles[1]
+
+    statement = '''zcat %(infile)s
+    | awk '$4 !~ /inf/'
+    | sort -k4,4n 
+    | head -n %(bed_export)i 
+    | gzip 
+    > %(outfile)s
+    '''
+    P.run()
+
+#########################################################################
+@merge( buildDMRStats, "dmr_stats.load" )
+def loadDMRStats( infiles, outfile ):
+    '''load DMR stats into table.'''
+    P.concatenateAndLoad( infiles, outfile,
+                          missing_value = 0,
+                          regex_filename = ".*\/(.*).tsv.stats")
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( mergeDMRWindows,
+            suffix(".merged.gz"),
+            ".stats")
+def buildDMRWindowStats( infile, outfile ):
+    '''compute window size statistics of DMR from bed file.'''
+
+    to_cluster = True
+
+    statement = '''
+    zcat %(infile)s
+    | grep -v 'contig'
+    | python %(scriptsdir)s/gff2histogram.py 
+                   --force
+                   --format=bed 
+                   --data=size
+                   --method=hist
+                   --method=stats
+                   --output-filename-pattern=%(outfile)s.%%s.tsv
+    > %(outfile)s
+    '''
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
 # @merge( buildDMRBed, "dmr_overlap.tsv.gz" )
 # def computeDMROverlap( infiles, outfile ):
 #     '''compute overlap between bed sets.'''
@@ -904,49 +999,37 @@ def runDE( infiles, outfile, method ):
 
 #     P.run()
 
-# #########################################################################
-# #########################################################################
-# #########################################################################
-# @transform( mergeDMRWindows, regex(  "(.*)\.(.*).merged.gz"), r"\1_\2.bed.gz" )
-# def buildMRBed( infile, outfile ):
-#     '''output bed6 file with methylated regions.
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( mergeDMRWindows, regex(  "(.*)\.(.*).merged.gz"), r"\1_\2.bed.gz" )
+def buildMRBed( infile, outfile ):
+    '''output bed6 file with methylated regions.
 
-#     All regions are output, even the insignificant ones.
+    All regions are output, even the insignificant ones.
 
-#     The score is the log fold change.
-#     '''
+    The score is the log fold change.
+    '''
     
-#     outf = IOTools.openFile( outfile, "w" )
-#     c = E.Counter()
-#     for row in csv.DictReader( IOTools.openFile( infile ),
-#                                dialect = "excel-tab" ):
-#         c.input += 1
+    outf = IOTools.openFile( outfile, "w" )
+    c = E.Counter()
+    for row in csv.DictReader( IOTools.openFile( infile ),
+                               dialect = "excel-tab" ):
+        c.input += 1
 
-#         contig, start, end = re.match("(.*):(\d+)-(\d+)", row["interval_id"] ).groups()
-#         c.output += 1
-#         outf.write( "\t".join( (contig, start, end, str(c.input), row["lfold"] ) ) + "\n" )
+        contig, start, end = re.match("(.*):(\d+)-(\d+)", row["interval_id"] ).groups()
+        c.output += 1
+        outf.write( "\t".join( (contig, start, end, str(c.input), row["lfold"] ) ) + "\n" )
         
-#     outf.close()
+    outf.close()
     
-#     E.info( "%s" % str(c) )
+    E.info( "%s" % str(c) )
 
-# #########################################################################
-# #########################################################################
-# #########################################################################
-# @follows( loadPicardDuplicateStats,
-#           loadPicardAlignmentStats,
-#           loadPicardGCStats,
-#           loadBAMStats )
-# def mapping(): pass
+@follows( loadDMRStats, outputAllWindows, outputTopWindows )
+def dmr(): pass
 
-# @follows( aggregateTiledReadCounts,
-#           loadDMRStats,
-#           buildDMRBed,
-#           computeDMROverlap)
-# def callDMRs(): pass
-
-# @follows( mapping, callDMRs) 
-# def full(): pass
+@follows( diff_windows, dmr) 
+def full(): pass
 
 ###################################################################
 ###################################################################
@@ -977,44 +1060,14 @@ def update_report():
 def publish():
     '''publish files.'''
 
+    # directory : files
+    export_files = { "bamfiles": glob.glob("*.bam") + glob.glob("*.bam.bai"),
+                     "bigwigfiles": glob.glob("*.bw"),
+                     "bedfiles": glob.glob("deseq.dir/*.bed.gz") + glob.glob("edger.dir/*.bed.gz"),
+                     }
+
     # publish web pages
-    P.publish_report()
-
-    # publish additional data
-    web_dir = PARAMS["web_dir"]
-    project_id = P.getProjectId()
-
-    ucsc_urls = {
-        "bam": 
-        """track type=bam name="%(track)s" bigDataUrl=http://www.cgat.org/downloads/%(project_id)s/%(dirname)s/%(filename)s""" ,
-        "bigwig":
-        """track type=bigWig name="%(track)s" bigDataUrl=http://www.cgat.org/downloads/%(project_id)s/%(dirname)s/%(filename)s""" ,
-        }
-        
-    # directory, files
-    exportfiles = (
-        ( "bamfiles", glob.glob( "*/*.genome.bam" ) + glob.glob( "*/*.genome.bam.bai" ), "bam" ),
-        ( "bamfiles", glob.glob( "*/*.prep.bam" ) + glob.glob( "*/*.prep.bam.bai" ), "bam" ),
-        ( "medips", glob.glob( "*/*.bigwig" ), "bigwig"),
-        )
-    
-    ucsc_files = []
-
-    for targetdir, filenames, datatype in exportfiles:
-        for src in filenames:
-            filename = os.path.basename(src)
-            dest = "%s/%s/%s" % (web_dir, targetdir, filename)
-            suffix = os.path.splitext( src )
-            if suffix in ucsc_urls: ucsc_files.append( ( datatype, targetdir, filename ) )
-            dest = os.path.abspath( dest )
-            if not os.path.exists( dest ):
-                os.symlink( os.path.abspath(src), dest )
-
-    # output ucsc links
-    for ucsctype, dirname, filename in ucsc_files:
-        filename = os.path.basename( filename )
-        track = P.snip( filename, ucsctype )
-        print ucsc_urls[ucsctype] % locals()
+    P.publish_report( export_files = export_files )
 
 if __name__== "__main__":
     sys.exit( P.main(sys.argv) )

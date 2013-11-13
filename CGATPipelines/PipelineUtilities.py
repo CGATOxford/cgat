@@ -1,25 +1,3 @@
-################################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id: PipelineGO.py 2877 2010-03-27 17:42:26Z andreas $
-#
-#   Copyright (C) 2013 Steve Sansom
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
 """
 =============================================================
 PipelineUtilities.py - helper functions for CGAT pipelines
@@ -94,8 +72,13 @@ def execute(queries, database=PARAMS.get("database",""), attach=False):
 
 def fetch(query, database=PARAMS.get("database",""), attach=False):
     '''Fetch all query results and return'''
-    dbhandle = sqlite3.connect( database )
-    cc = dbhandle.cursor()
+    
+    try:
+        cc=database.cursor()
+    except AttributeError:
+
+        dbhandle = sqlite3.connect( database )
+        cc = dbhandle.cursor()
 
     if attach: db_execute(cc, attach)
 
@@ -110,7 +93,7 @@ def fetch_with_names(query, database=PARAMS.get("database",""), attach=False):
 
     try:
         cc=database.cursor()
-    except:
+    except AttributeError:
         dbhandle = sqlite3.connect( database )
         cc = dbhandle.cursor()
 
@@ -134,8 +117,11 @@ def fetch_with_names(query, database=PARAMS.get("database",""), attach=False):
 def fetch_DataFrame(query, database=PARAMS.get("database",""), attach=False):
     '''Fetch query results and returns them as a pandas dataframe'''
 
-    dbhandle = sqlite3.connect( database )
-    cc = dbhandle.cursor()
+    try:
+        cc=database.cursor()
+    except AttributeError:
+        dbhandle = sqlite3.connect( database )
+        cc = dbhandle.cursor()
 
     if attach:
         db_execute(cc,attach)

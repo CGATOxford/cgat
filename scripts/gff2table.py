@@ -1,25 +1,3 @@
-################################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id$
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
 '''
 gff2table.py - compute features for intersection of two gff files
 =================================================================
@@ -27,7 +5,7 @@ gff2table.py - compute features for intersection of two gff files
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Genomics Intervals Annotation Comparison GFF
 
 Purpose
 -------
@@ -61,11 +39,8 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-
-Code
-----
+Command line options
+--------------------
 
 '''
 import sys
@@ -345,7 +320,13 @@ def annotateWindows( contig, windows, gff_data, fasta, options ):
                       score,
                       extra_info) ) ) + "\n" )
                       
-if __name__ == "__main__":
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: gff2table.py 2861 2010-02-23 17:36:32Z andreas $", 
                                     usage = globals()["__doc__"])
@@ -401,7 +382,7 @@ if __name__ == "__main__":
         options.stdlog.write("# reading windows..." )
         options.stdlog.flush()
         
-    windows = GTF.readAsIntervals( GFF.iterator( IOTools.openFile(options.filename_windows, "r" ) ) )
+    windows = GTF.readAsIntervals( GTF.iterator( IOTools.openFile(options.filename_windows, "r" ) ) )
 
     if options.loglevel >= 1:
         options.stdlog.write("done\n" )
@@ -481,10 +462,11 @@ if __name__ == "__main__":
                              options )
             
 
-    if options.loglevel >= 1:
-        options.stdout.write( "# ninput_windows=%i, noutput_contigs=%i, ninput_contigs=%i, nskipped_windows=%i, nskipped_data=%i\n" %\
-                                  ( len(windows), noutput_contigs, len(contigs), ncontigs_skipped_windows, ncontigs_skipped_data ) )
+    E.info("ninput_windows=%i, noutput_contigs=%i, ninput_contigs=%i, nskipped_windows=%i, nskipped_data=%i" %\
+               ( len(windows), noutput_contigs, len(contigs), ncontigs_skipped_windows, ncontigs_skipped_data ) )
 
     E.Stop()
 
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
 

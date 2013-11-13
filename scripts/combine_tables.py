@@ -1,25 +1,3 @@
-################################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id$
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
 '''
 combine_tables.py - join tables
 ===============================
@@ -55,11 +33,8 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-
-Code
-----
+Command line options
+--------------------
 
 '''
 import sys
@@ -69,12 +44,14 @@ import os
 import time
 import glob
 import optparse
+import collections
 
 import CGAT.IOTools as IOTools
 import CGAT.Experiment as E
 
-def readTable( filename, options ):
-    '''read table and filter.'''
+def readTable( filename, options):
+    '''read table and filter.
+    '''
 
     if os.path.exists(filename):
         lines = IOTools.openFile(filename, "r").readlines()
@@ -109,6 +86,8 @@ def concatenateTables( outfile, options, args ):
 
     first = True
 
+    missing_value = options.missing_value
+
     rx = re.compile( options.regex_filename )
 
     if options.headers == None or options.headers == "auto":
@@ -116,37 +95,42 @@ def concatenateTables( outfile, options, args ):
     else:
         row_headers = [options.headers]
 
-    for nindex, filename in enumerate(options.filenames):
+    tables = []
+    # read all tables
+    for filename in options.filenames:
+        tables.append( readTable( filename, options ) )
 
-        lines = readTable( filename, options )
-    
-        if len(lines) == 0: continue
+    if options.cat == None:
+        if len(row_headers)==1:
+            row_head_titles = [ "filename" ]
+        else:
+            row_head_titles = [ "pattern" + str(x) for x in range(len(row_headers)) ]
+    else:
+        row_head_titles = [ x.strip() for x in options.cat.split(",") ]
+
+    # collect titles
+    if options.input_has_titles:
+        titles = collections.OrderedDict()
+        for table in tables:
+            for key in table[0][:-1].split("\t"):
+                titles[key] = 1
+        outfile.write( "%s\t%s\n" % \
+                           ( "\t".join([x for x in row_head_titles ]),
+                             "\t".join( titles.keys() ) ) )
+        all_titles = set(titles.keys())
+
+    for nindex, table in enumerate( tables ):
         
-        # files have titles - use these
-        if options.titles:
-            if first:
-                titles = lines[0]
-                if options.cat == None:
-                    if len(row_headers)==1:
-                        row_head_titles = [ "filename" ]
-                    else:
-                        row_head_titles = [ "patten" + str(x) for x in range(len(row_headers)) ]
-                else:
-                    row_head_titles = [ x.strip() for x in options.cat.split(",") ]
+        extra = ""
+        if options.input_has_titles:
+            t = set(table[0][:-1].split("\t"))
+            diff = all_titles.difference(t)
+            if len(diff) > 0:
+                extra = "\t" + "\t".join( [missing_value] * len(diff))
+            del table[0]
 
-                if len(row_head_titles) != len(row_headers[0]):
-                    raise ValueError("Different number of row headers and titles specified")
-
-                header = "\t".join([x for x in row_head_titles ]) + "\t%s" % titles
-                outfile.write( header  )
-                first = False
-            else:
-                if titles != lines[0]:
-                    raise ValueError("incompatible headers: %s != %s" % (str(titles), lines[0]) )
-            del lines[0]
-
-        for l in lines:
-            row = "\t".join([str(x) for x in  row_headers[nindex]]) + "\t%s" % l
+        for l in table:
+            row = "\t".join([str(x) for x in  row_headers[nindex]]) + "\t%s%s\n" % (l[:-1], extra)
             outfile.write(row )
             
 def joinTables( outfile, options, args ):
@@ -161,6 +145,7 @@ def joinTables( outfile, options, args ):
     keys = {}
     sorted_keys = []
     sizes = {}
+
     if options.merge:
         titles=["count"]
     else:
@@ -169,7 +154,13 @@ def joinTables( outfile, options, args ):
     headers_to_delete = []
 
     if options.take:
-        take = [ x - 1 for x in options.take]
+        take = []
+        # convert numeric columns for filtering
+        for x in options.take:
+            try:
+                take.append( int(x) - 1 )
+            except ValueError:
+                take.append( x )
     else:
         # tables with max 100 columns
         take = None
@@ -203,14 +194,15 @@ def joinTables( outfile, options, args ):
         max_size = 0
         ncolumns = 0
 
-        if options.titles:
+        if options.input_has_titles:
             data = string.split(lines[0][:-1], "\t")
+            # no titles have been defined so far
             if not titles:
                 key = "-".join( [data[x] for x in options.columns] )                
                 titles = [key]
             
             for x in range(len(data)):
-                if x in options.columns or (take and x not in take): continue
+                if x in options.columns or (take and x not in take ): continue
                 ncolumns += 1
                 if options.add_file_prefix:
                     try:
@@ -310,7 +302,7 @@ def joinTables( outfile, options, args ):
                     headers += [""] * (tables[t][0] - 1)                
 
             ## use headers as titles, if headers is given and skip-titles is turned on
-            if options.titles and options.skip_titles:
+            if options.input_has_titles and options.skip_titles:
                 titles = headers
             else:
             ## otherwise: print the headers out right away            
@@ -318,7 +310,7 @@ def joinTables( outfile, options, args ):
 
         order = range(0, len(tables)+1)
 
-        if options.titles or (options.use_file_prefix or options.add_file_prefix):
+        if options.input_has_titles or (options.use_file_prefix or options.add_file_prefix):
 
             if options.sort:
                 sort_order = []
@@ -383,7 +375,7 @@ def joinTables( outfile, options, args ):
     else:
 
         # for multi-column table, just write
-        if options.titles:
+        if options.input_has_titles:
             outfile.write( "\t".join( map(lambda x: titles[x], range(len(titles)))))
             outfile.write("\n")
 
@@ -410,7 +402,7 @@ def main( argv = sys.argv ):
     parser = E.OptionParser( version = "%prog version: $Id: combine_tables.py 2782 2009-09-10 11:40:29Z andreas $", 
                              usage = globals()["__doc__"])
 
-    parser.add_option("-t", "--no-titles", dest="titles", action="store_false",
+    parser.add_option("-t", "--no-titles", dest="input_has_titles", action="store_false",
                       help="no titles in input."  )
 
     parser.add_option( "--ignore-titles", dest = "ignore_titles", action="store_true",
@@ -419,17 +411,18 @@ def main( argv = sys.argv ):
     parser.add_option("-i", "--skip-titles", dest="skip_titles", action="store_true",
                       help="skip output of titles."  )
 
-    parser.add_option("-m", "--missing", dest="missing_value", type="string",
+    parser.add_option("-m", "--missing", "--missing-value", dest="missing_value", type="string",
                       help="entry to use for missing values."  )
 
     parser.add_option( "--headers", dest="headers", type="string",
                       help="add headers for files as a ,-separated list [%default]."  )
 
     parser.add_option( "-c", "--columns", dest="columns", type="string",
-                      help="columns to use for joining. Multiple columns can be specified as a comma-separated list [default=%default]."  )
+                       help="columns to use for joining. Multiple columns can be specified as a comma-separated list [default=%default]."  )
     
-    parser.add_option( "-k", "--take", dest="take", type=int, action="append",
-                       help = "columns to take. If not set, all columns except for the join columns are taken [%default]" )
+    parser.add_option( "-k", "--take", dest="take", type="string", action="append",
+                       help = "columns to take. If not set, all columns except for "
+                       "the join columns are taken [%default]" )
 
     parser.add_option( "-g", "--glob", dest="glob", type="string",
                       help="wildcard expression for table names."  )
@@ -473,8 +466,11 @@ def main( argv = sys.argv ):
     parser.add_option( "--regex-end", dest="regex_end", type="string",
                       help="regular expression to end collecting table in a file [default=%default]" )
 
+    parser.add_option( "--test", dest="test", type="int",
+                      help="test combining tables with first X rows [default=%default]" )
+
     parser.set_defaults(
-        titles = True,
+        input_has_titles = True,
         skip_titles = False,
         missing_value = "na",
         headers = None,
@@ -492,6 +488,7 @@ def main( argv = sys.argv ):
         take = [],
         regex_filename = "(.*)",
         prefixes = None,
+        test = 0,
         )
 
     (options, args) = E.Start( parser, argv = argv )

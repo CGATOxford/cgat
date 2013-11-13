@@ -1,13 +1,3 @@
-#!/usr/bin/env perl
-# $Id$
-#
-# randomize_lines.pl < IN > OUT
-#
-# randomize lines from STDIN
-#
-# If the -h option (header) is given, the first line is kept in place.
-# The default is to randomize all lines.
-#
 use strict;
 use Getopt::Std;
 

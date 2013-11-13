@@ -72,7 +72,14 @@ print list of all transcripts within a gene.
 import CGAT.Experiment as E
 
 ##------------------------------------------------------------
-if __name__ == '__main__':
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: gpipe/gene2gene.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
@@ -133,4 +140,8 @@ if __name__ == '__main__':
     E.info( "ninput=%i, noutput=%i, nskipped=%i, nerrors=%i" % (ninput, noutput, nskipped, nerrors) )
 
     E.Stop()
+
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
 

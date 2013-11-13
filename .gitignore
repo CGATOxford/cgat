@@ -1,4 +1,9 @@
 *.py[cod]
+.*
+
+# Vim auxiliary files
+*~
+*.swp
 
 # C extensions
 *.so
@@ -25,6 +30,8 @@ pip-log.txt
 .coverage
 .tox
 nosetests.xml
+test_scripts.yaml
+hg19.chr19.gtf.gz
 
 # Translations
 *.mo

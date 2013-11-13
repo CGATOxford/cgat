@@ -1,17 +1,3 @@
-####
-####
-##
-## Project PairsDBTools
-##
-## Copyright (C) 2002 Andreas Heger All rights reserved
-##
-## Author: Andreas Heger <heger@ebi.ac.uk>
-##
-## $Id: data2phylocontrasts.py 2782 2009-09-10 11:40:29Z andreas $
-##
-##
-####
-####
 """
 data2phylocontrasts.py - compute phylogenetic independent contrasts
 ==============================================================
@@ -46,11 +32,8 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-
-Code
-----
+Command line options
+--------------------
 
 """ 
 
@@ -80,7 +63,14 @@ def calculateCorrelationCoefficient( a, b):
     return s1 / math.sqrt( abs(s2) * abs(s3) )
 
 ##---------------------------------------------------------------------------------------------------------        
-if __name__ == '__main__':
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: data2phylocontrasts.py 2782 2009-09-10 11:40:29Z andreas $",
                                     usage = globals()["__doc__"] )
@@ -318,4 +308,8 @@ if __name__ == '__main__':
 
 
 
+
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
 

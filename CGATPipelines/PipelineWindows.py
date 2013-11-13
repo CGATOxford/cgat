@@ -1,19 +1,11 @@
 import os
 import re
 import sys
-
-from ruffus import *
+import collections
 
 import CGAT.Experiment as E
 import CGAT.Pipeline as P
 import CGAT.IOTools as IOTools
-import CGAT.GTF as GTF
-import CGAT.Stats as Stats
-
-try:
-    PARAMS = P.getParameters()
-except IOError:
-    pass
 
 #########################################################################
 #########################################################################
@@ -24,8 +16,10 @@ def countReadsWithinWindows( bedfile, windowfile, outfile, counting_method = "mi
     '''
     to_cluster = True
 
+    job_options = "-l mem_free=4G"
+
     if counting_method == "midpoint":
-        f = '''awk '{a = $2+($3-$2)/2; printf("%%s\\t%%i\\t%%i\\n", $1, a, a+1)}' '''
+        f = '''| awk '{a = $2+($3-$2)/2; printf("%s\\t%i\\t%i\\n", $1, a, a+1)}' '''
     elif countig_method == "nucleotide":
         f = ""
     else: 
@@ -36,7 +30,6 @@ def countReadsWithinWindows( bedfile, windowfile, outfile, counting_method = "mi
     %(f)s
     | coverageBed -a stdin -b %(windowfile)s -split
     | sort -k1,1 -k2,2n 
-    | awk 'BEGIN{OFS="\\t"};{print $4,$7}'
     | gzip
     > %(outfile)s
     '''
@@ -91,4 +84,93 @@ def aggregateWindowsReadCounts( infiles, outfile ):
     outf.close()
 
     os.unlink(tmpfile)
+
+
+#########################################################################
+#########################################################################
+#########################################################################
+def buildDMRStats( infile, outfile, method ):
+    '''build dmr summary statistics.
+    '''
+    results = collections.defaultdict( lambda : collections.defaultdict(int) )
+
+    status =  collections.defaultdict( lambda : collections.defaultdict(int) )
+    x = 0
+    for line in IOTools.iterate( IOTools.openFile( infile ) ):
+        key = (line.treatment_name, line.control_name )
+        r,s = results[key], status[key]
+        r["tested"] += 1
+        s[line.status] += 1
+
+        is_significant = line.significant == "1"
+        up = float(line.l2fold) > 0
+        down = float(line.l2fold) < 0
+        fold2up = float(line.l2fold) > 1
+        fold2down = float(line.l2fold) < -1
+        fold2 = fold2up or fold2down
+
+        if up: r["up"] += 1
+        if down: r["down"] += 1
+        if fold2up: r["l2fold_up"] += 1
+        if fold2down: r["l2fold_down"] += 1
+
+        if is_significant:
+            r["significant"] += 1
+            if up: r["significant_up"] += 1
+            if down: r["significant_down"] += 1
+            if fold2: r["fold2"] += 1
+            if fold2up: r["significant_l2fold_up"] += 1
+            if fold2down: r["significant_l2fold_down"] += 1
+            
+    header1, header2 = set(), set()
+    for r in results.values(): header1.update( r.keys() )
+    for s in status.values(): header2.update( s.keys() )
+    
+    header = ["method", "treatment", "control" ]
+    header1 = list(sorted(header1))
+    header2 = list(sorted(header2))
+
+    outf = IOTools.openFile( outfile, "w" )
+    outf.write( "\t".join(header + header1 + header2) + "\n" )
+
+    for treatment,control in results.keys():
+        key = (treatment,control)
+        r = results[key]
+        s = status[key]
+        outf.write( "%s\t%s\t%s\t" % (method,treatment, control))
+        outf.write( "\t".join( [str(r[x]) for x in header1 ] ) + "\t" )
+        outf.write( "\t".join( [str(s[x]) for x in header2 ] ) + "\n" )
+
+def outputAllWindows( infile, outfile ):
+    '''output all Windows as a bed file with the l2fold change
+    as a score.
+    '''
+    outf = IOTools.openFile( outfile, "w" )
+    for line in IOTools.iterate( IOTools.openFile( infile ) ):
+        outf.write( "\t".join( (line.contig, line.start, line.end, "%6.4f" % float(line.l2fold ))) + "\n" ) 
+
+    outf.close()
+
+        # ###########################################
+        # ###########################################
+        # ###########################################
+        # # plot length versus P-Value
+        # data = Database.executewait( dbhandle, 
+        #                              '''SELECT end - start, pvalue 
+        #                      FROM %(tablename)s
+        #                      WHERE significant'''% locals() ).fetchall()
+
+        # # require at least 10 datapoints - otherwise smooth scatter fails
+        # if len(data) > 10:
+        #     data = zip(*data)
+
+        #     pngfile = "%(outdir)s/%(tileset)s_%(design)s_%(method)s_pvalue_vs_length.png" % locals()
+        #     R.png( pngfile )
+        #     R.smoothScatter( R.log10( ro.FloatVector(data[0]) ),
+        #                      R.log10( ro.FloatVector(data[1]) ),
+        #                      xlab = 'log10( length )',
+        #                      ylab = 'log10( pvalue )',
+        #                      log="x", pch=20, cex=.1 )
+
+        #     R['dev.off']()
 

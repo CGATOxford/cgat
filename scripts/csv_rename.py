@@ -1,25 +1,3 @@
-################################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id$
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
 '''
 csv_rename.py - rename columns in a table
 =========================================
@@ -47,11 +25,8 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-
-Code
-----
+Command line options
+--------------------
 
 '''
 import os
@@ -67,7 +42,13 @@ import tempfile
 import CGAT.Experiment as E
 import csv
 
-if __name__ == "__main__":
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: csv_rename.py 2782 2009-09-10 11:40:29Z andreas $")
 
@@ -92,14 +73,14 @@ if __name__ == "__main__":
         mapper[a.strip()] = b.strip()
     
     while 1:
-        line = sys.stdin.readline()
+        line = options.stdin.readline()
         
         if not line:
             E.Stop()
             sys.exit(0)
         
         if line[0] == "#": 
-            sys.stdout.write( line )
+            options.stdout.write( line )
             continue
         
         break
@@ -115,9 +96,9 @@ if __name__ == "__main__":
     
     options.stdout.write( "\t".join( header ) + "\n" )
     nlines = 0
-    for line in sys.stdin:
+    for line in options.stdin:
         nlines += 1
-        sys.stdout.write( line )
+        options.stdout.write( line )
             
     if options.loglevel >= 1:
         ninput = len(header)
@@ -125,3 +106,7 @@ if __name__ == "__main__":
         options.stdout.write( "# ninput=%i, noutput=%i, nreplaced=%i, nlines=%i\n" % (ninput,noutput,nreplaced,nlines) )
 
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

@@ -1,25 +1,3 @@
-################################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
 '''
 medip_merge_intervals.py - merge differentially methylated regions
 ==================================================================
@@ -140,49 +118,25 @@ def main( argv = None ):
 
         rx_window = re.compile(options.pattern_window)
         # filter any of the DESeq/EdgeR message that end up at the top of the output file
-        keep = False
-        invert = False
-        for line in options.stdin:
 
-            if line.startswith("test_id"): 
-                keep = True
-                data = line[:-1].split( "\t" )
-                # replace test_id with contig, start, end
-                if data[1].startswith("control"): invert = True
-                continue
+        for data in IOTools.iterate( options.stdin ):
 
-            if line.startswith("#"): continue
-
-            if not keep: 
-                continue
-
-            try:
-                (test_id,
-                 a_name, a_mean, a_std,
-                 b_name, b_mean, b_std, 
-                 pvalue, qvalue, l2fold, fold,
-                 significant, status) = line[:-1].split("\t")
-            except ValueError:
-                E.warn('parsing error in line %s' % line )
-                continue
-
-            contig, start, end = rx_window.match(test_id ).groups()
-            significant = int(significant)
+            contig, start, end = rx_window.match( data.test_id ).groups()
             start, end = map( int, (start, end ) )
-            pvalue, qvalue, l2fold, fold = map( float, (pvalue, qvalue, l2fold, fold) )
-            (a_mean, a_std, b_mean, b_std) = \
-                map( float, (a_mean, a_std, b_mean, b_std) )
-
-            if invert: 
-                a_name, b_name = b_name, a_name
-                a_mean, b_mean = b_mean, a_mean
-                a_std, b_std = b_std, a_std
 
             yield DATA._make( (contig, start, end,
-                               a_name, a_mean, a_std,
-                               b_name, b_mean, b_std,     
-                               pvalue, qvalue, l2fold, fold,
-                               significant, status,
+                               data.treatment_name, 
+                               float(data.treatment_mean), 
+                               float(data.treatment_std),
+                               data.control_name, 
+                               float(data.control_mean), 
+                               float(data.control_std),     
+                               float(data.pvalue), 
+                               float(data.qvalue), 
+                               float(data.l2fold), 
+                               float(data.fold),
+                               int(data.significant), 
+                               data.status,
                                0) )
             
             

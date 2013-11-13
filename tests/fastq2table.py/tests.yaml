@@ -1,6 +1,18 @@
-
 version:
     stdin: null
     outputs: [stdout]
     references: []
     options: --version
+
+small:
+        stdin: small.fastq.gz
+        outputs: [stdout]
+        references: [small.tsv]
+        options: --guess-format=sanger
+
+test_changing_format:
+    stdin: small.fastq.gz
+    outputs: [stdout]
+    references: [change_format.tsv]
+    options: --guess-format sanger --change-format illumina-1.8
+    description: build summary when format of quality scores is changed from a known format

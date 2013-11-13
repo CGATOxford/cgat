@@ -1,25 +1,3 @@
-################################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id$
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
 '''
 psl2wiggle_stats.py - intersect psl and wiggle files to compute stats
 =====================================================================
@@ -49,11 +27,8 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-
-Code
-----
+Command line options
+--------------------
 
 '''
 
@@ -70,9 +45,16 @@ import CGAT.Stats as Stats
 import CGAT.Blat as Blat
 
 import CGAT.Wiggle as Wiggle
-import alignlib
+import alignlib_lite
 
-if __name__ == '__main__':
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: psl2wiggle_stats.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"] )
 
@@ -136,8 +118,8 @@ if __name__ == '__main__':
 
         # psl always matches on the forward strand
 
-        map_genome2query = alignlib.makeAlignmentBlocks()
-        f = alignlib.AlignmentFormatBlat( "%i\t%i\t%i\t%i\t%s\t%s\t%s\n" % (\
+        map_genome2query = alignlib_lite.py_makeAlignmentBlocks()
+        f = alignlib_lite.py_AlignmentFormatBlat( "%i\t%i\t%i\t%i\t%s\t%s\t%s\n" % (\
                 match.mSbjctFrom,
                 match.mSbjctTo,
                 match.mQueryFrom,
@@ -180,3 +162,7 @@ if __name__ == '__main__':
         options.stdlog.write( "# ninput=%i, noutput=%i, nskipped=%i\n" % (ninput, noutput, nskipped) )
 
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

@@ -1,16 +1,3 @@
-####
-####
-##
-##
-## Copyright (C) 2008 Andreas Heger All rights reserved
-##
-## Author: Andreas Heger <heger@ebi.ac.uk>
-##
-## $Id: psl2wiggle.py 2834 2009-11-24 16:11:23Z andreas $
-##
-##
-####
-####
 '''
 psl2wiggle.py - convert from psl to wiggle
 ==========================================
@@ -42,11 +29,8 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-
-Code
-----
+Command line options
+--------------------
 
 '''
 

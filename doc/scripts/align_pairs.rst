@@ -1,5 +1,5 @@
 
 .. automodule:: align_pairs
 
-.. program-output:: python ../scripts/align_pairs.py --help
+.. program-output:: python ../scripts/align_pairs.py --no-usage --help
 

@@ -1,25 +1,3 @@
-################################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id$
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
 '''
 analyze_sequences.py - compute some sequence properties
 =======================================================
@@ -47,11 +25,8 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-
-Code
-----
+Command line options
+--------------------
 
 '''
 import os
@@ -192,9 +167,12 @@ class SequenceProperties:
                            "p4dgc3",
                            ))
     
-if __name__ == "__main__":
+def main( argv = None ):
+    
+    if argv == None: argv = sys.argv
 
-    parser = E.OptionParser( version = "%prog version: $Id: analyze_sequences.py 2865 2010-03-03 10:18:28Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: analyze_sequences.py 2865 2010-03-03 10:18:28Z andreas $",
+                             usage = globals()["__doc__"] )
     
     parser.add_option("-s", "--species", dest="species", type="string",
                       help="species to use." )
@@ -228,3 +206,6 @@ if __name__ == "__main__":
         print cur_record.title + "\t" + str(s)
 
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit(main( sys.argv ) )

@@ -1,25 +1,3 @@
-################################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id$
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
 '''
 align_pairs.py - align nucleotide sequence pairs
 ================================================
@@ -47,11 +25,8 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-
-Code
-----
+Command line options
+--------------------
 
 '''
 import os
@@ -129,8 +104,9 @@ def getFile( section, options ):
             return open( options.output_filename_pattern, "w" )
     return options.stdout
         
-##------------------------------------------------------------
-if __name__ == '__main__':
+def main( argv = None ):
+    
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: align_pairs.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"] )
 
@@ -274,5 +250,6 @@ CATEGORY\tMETHOD\tTOKEN1\tID1\tTOTAL1\tLEN1\tTOKEN2\tID2\tTOTAL2\tLEN2\tNALIGNED
                                                                             nerrors,
                                                                             ntoken_pairs, npairs ) )
     E.Stop()
-    sys.exit(0)
 
+if __name__ == '__main__':
+    sys.exit(main( sys.argv ) )

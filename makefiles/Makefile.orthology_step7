@@ -84,7 +84,7 @@ full_orthologs.ks_hists: full_orthologs.ks_table
 	for genome in $(PARAM_GENOMES); do \
 		grep -e "^$${genome}" -e "^	" < full_orthologs.ks_table |\
 		cut -f 2- |\
-		python $(DIR_SCRIPTS_TOOLS)calculate_histogram.py --column=all --titles --scale=10.0 > $@.$${genome} ;\
+		python $(DIR_SCRIPTS_TOOLS)data2histogram.py --column=all --titles --scale=10.0 > $@.$${genome} ;\
 	done
 
 full_orthologs.ks_stats: full_orthologs.ks_table

@@ -34,6 +34,9 @@ def merge_pairs( Samfile input_samfile,
     cdef int c_min_insert_size = min_insert_size
     cdef int start, end
     cdef int take_columns = 6
+
+    # point to array of contig lengths
+    cdef uint32_t *contig_sizes = input_samfile.samfile.header.target_len
     
     if bed_format != None:
         if bed_format < 3 or bed_format > 6: 
@@ -73,6 +76,10 @@ def merge_pairs( Samfile input_samfile,
         else:
             start = read.mpos
             end = read.pos + read.rlen
+
+        # truncate at contig end - overhanging reads might cause problems with chrM
+        if end > contig_sizes[read.mrnm]:
+            end = contig_sizes[read.mrnm]
 
         # count output pair as two so that it squares with ninput
         noutput += 2

@@ -83,7 +83,7 @@ class PairedData(Format):
         assert len(glob.glob(read2)) > 0, "cannot find %s file for read 2 in the pair for %s" % (read2, infile)
         return ("separate", read2)
 
-    def checkPairs(self, infile):
+    def checkPairs(self, infile, ntries = 10):
         '''
         Function to check if pairs exist interleaved
         within a file. If not it will check for separate
@@ -100,6 +100,7 @@ class PairedData(Format):
         elif format in ["fasta.1.gz", "fastq.1.gz"]:
             return self.checkPairedFile(infile)
         
+        c = 0
         for record in iterator(inf):
             if record.quals:
                 # make sure there are not other "/" in the sequence name
@@ -111,11 +112,36 @@ class PairedData(Format):
             seq_id = seq_id[0]
             if seq_id not in pairs:
                 pairs.add(seq_id)
+                if c >= ntries: break
+                paired = False
+                return paired
             else:
                 print "found pair for %s" % (seq_id)
                 paired = "interleaved"
                 break
         return paired
+
+#############################
+# pooling reads across 
+# conditions
+#############################
+def pool_reads(infiles, outfile):
+    '''
+    pool raw reads across conditions
+    '''
+    # check first file for format and pairedness
+    paired = PairedData().checkPairs(infiles[0])
+    format = PairedData().getFormat(infiles[0])
+    infs = " ".join(infiles)
+    
+    if not paired:
+        statement = '''zcat %(infs)s | gzip > %(outfile)s''' % locals()
+    else:
+        infs2 = " ".join([P.snip(x, format) + format.replace("1", "2") for x in infiles]  )
+        outf2 = outfile.replace(format, format.replace("1","2"))
+        statement = '''zcat %(infs)s | gzip > %(outfile)s;
+                       zcat %(infs2)s | gzip > %(outf2)s''' % locals()
+    return statement
 
 #############################
 # filtering contigs by length
@@ -188,20 +214,12 @@ def build_scaffold_lengths(contigs_file, outfile, params):
     '''
     output the distribution of scaffold lengths
     '''
-    PARAMS = params
-
-    if PARAMS["filter"]:
-        f = PARAMS["filter"]
-    else:
-        f = 0
     inf = open(contigs_file)
     outf = open(outfile, "w")
     outf.write("scaffold_name\tlength\n")
     for record in FastaIterator.iterate(inf):
         scaffold_length = len(list(record.sequence))
-        if scaffold_length > f:
-            # rename sequences if they have a space in them
-            outf.write("%s\t%i\n" % (record.title.replace(" ", "_"), scaffold_length))
+        outf.write("%s\t%i\n" % (record.title, scaffold_length))
     outf.close()
 
 ############################
@@ -253,7 +271,7 @@ class Metavelvet(Assembler):
         self.stats_file = track + ".stats.txt"
 
         # velveth and velvetg have to be run to build hash tables and initial de bruijn graphs
-        statement = '''%%(velveth_executable)s %(outdir)s %%(kmer)i -%(format)s -%(read_type)s %(pair)s %(files)s
+        statement = '''%%(velveth_executable)s %(outdir)s %%(kmer)i -%(format)s -%(read_type)s %(pair)s %(files)s >> %(metavelvet_dir)s/%(track)s_velveth.log
                       ; checkpoint
                       ; mv %(outdir)s/Log %(metavelvet_dir)s/%(track)s.velveth.log
                       ; cd %(outdir)s; %%(velvetg_executable)s %(outdir)s -exp_cov auto -ins_length %%(velvetg_insert_length)i
@@ -265,11 +283,12 @@ class Metavelvet(Assembler):
                       ; gzip %(metavelvet_dir)s/%(track)s.sequences
                       ; mv %(outdir)s/Graph2 %(metavelvet_dir)s/%(track)s.graph2
                       ; gzip %(metavelvet_dir)s/%(track)s.graph2
-                      ; mv %(outdir)s/meta-velvetg.contigs.fa %(metavelvet_dir)s/%(track)s.contigs.fa
+                      ; cat %(outdir)s/meta-velvetg.contigs.fa | python %%(scriptsdir)s/rename_contigs.py -a metavelvet --log=%(metavelvet_dir)s/%(track)s.contigs.log
+                        >  %(metavelvet_dir)s/%(track)s.contigs.fa
                       ; sed -i 's/in/_in/g' %(outdir)s/meta-velvetg.Graph2-stats.txt
                       ; mv  %(outdir)s/meta-velvetg.Graph2-stats.txt %(metavelvet_dir)s/%(track)s.stats.txt
                       ; rm -rf %(outdir)s''' % locals()
-        return statement
+        P.run()
 
 ##########################
 # meta-idba
@@ -345,7 +364,8 @@ class Idba(Metavelvet):
         # NB at the moment we assume the default maxkmer of 100
         statement = '''%%(idba_executable)s -r %(infile)s -o %(tempdir)s %%(idba_options)s
                        ; mv %(tempdir)s/scaffold.fa idba.dir/%(track)s.scaffolds.fa
-                       ; mv %(tempdir)s/contig-%%(idba_maxkmer)s.fa idba.dir/%(track)s.contigs.fa''' % locals()
+                       ; cat %(tempdir)s/contig-%%(idba_maxkmer)s.fa | python %%(scriptsdir)s/rename_contigs.py -a idba --log=%(outdir)s/%(track)s.contigs.log
+                        > idba.dir/%(track)s.contigs.fa''' % locals()
 
         shutil.rmtree(tempdir)
         return statement
@@ -384,6 +404,7 @@ class Ray(Idba):
     '''
     ray contig assembler
     '''
+
     def build(self, infile):
         '''
         build statement for running Ray
@@ -394,6 +415,7 @@ class Ray(Idba):
         paired = self.checkPairs(infile)
 
         tempdir = P.getTempDir()
+
         # check whether the data are paired-end
         if not paired:
             pair = paired
@@ -428,15 +450,16 @@ class Ray(Idba):
         else:
             raise IOError, "do not support file of this type: %s" % infile
 
-        # note restrict use to 5 cores
+        # note restrict use to 10 cores
         
         statement = ''' %(gunzy)s
-                       ; mpiexec -n 5 %%(ray_executable)s %(common_options)s %(filetype)s %(files)s -o %(raydir)s
+                       ; mpiexec -n 10  %%(ray_executable)s %(common_options)s %(filetype)s %(files)s -o %(raydir)s >> %(raydir_orig)s/%(track)s.log
                        ; checkpoint; mv %(raydir)s/Scaffolds.fasta %(raydir_orig)s/%(track)s.scaffolds.fa
                        ; mv %(raydir)s/ScaffoldComponents.txt %(raydir_orig)s/%(track)s.scaffold_components.txt
                        ; mv %(raydir)s/ScaffoldLengths.txt %(raydir_orig)s/%(track)s.scaffold_lengths.txt
                        ; mv %(raydir)s/ScaffoldLinks.txt %(raydir_orig)s/%(track)s.scaffold_links.txt
-                       ; mv %(raydir)s/Contigs.fasta %(raydir_orig)s/%(track)s.contigs.fa
+                       ; cat %(raydir)s/Contigs.fasta | python %%(scriptsdir)s/rename_contigs.py -a ray --log=%(raydir_orig)s/%(track)s.contigs.log
+                         > %(raydir_orig)s/%(track)s.contigs.fa
                        ; mv %(raydir)s/OutputNumbers.txt %(raydir_orig)s/%(track)s.numbers.txt
                        ; mv %(raydir)s/CoverageDistribution.txt %(raydir_orig)s/graph/%(track)s.coverage_distribution.txt
                        ; mkdir %(raydir)s/graph
@@ -448,6 +471,7 @@ class Ray(Idba):
                        ; mv %(raydir)s/LibraryStatistics.txt %(raydir_orig)s/%(track)s.library_statistics.txt
                        ; mv %(raydir)s/LibraryData.xml %(raydir_orig)s/%(track)s.library_data.xml 
                        ; rm -rf %(tempdir)s''' % locals()
+
         return statement
 
 
@@ -468,7 +492,7 @@ class Metaphlan(Idba):
         
         if method == "read_map":
             statement = '''cat %(infile)s                                                                                                                                                                                                           
-                      | python %%(scriptsdir)s/metaphlan.py -t reads_map                                                                                                                                                                              
+                      | metaphlan.py -t reads_map                                                                                                                                                                              
                        --input_type multifasta %%(method)s %%(metaphlan_db)s --no_map                                                                                                                                                                      
                       | python %%(scriptsdir)s/metaphlan2table.py -t read_map                                                                                                                                                              
                        --log=%%(outfile)s.log                                                                                                                                                                                                     
@@ -476,7 +500,7 @@ class Metaphlan(Idba):
                       ; sed -i 's/order/_order/g' %%(outfile)s''' % locals()
         elif method == "rel_ab":
             statement = '''cat %(infile)s                                                                                                                                                                                                           
-                      | python %%(scriptsdir)s/metaphlan.py -t rel_ab                                                                                                                                                                              
+                      | metaphlan.py -t rel_ab                                                                                                                                                                              
                        --input_type multifasta %%(method)s %%(metaphlan_db)s --no_map                                                                                                                                                                                                                                                                                                                                   
                       | python %%(scriptsdir)s/metaphlan2table.py -t rel_ab 
                        --log=%%(outfile)s.log                                                                                                                                                                                                   

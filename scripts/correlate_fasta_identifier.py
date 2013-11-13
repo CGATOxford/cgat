@@ -1,25 +1,3 @@
-################################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id$
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
 '''
 correlate_fasta_identifier.py - 
 ======================================================
@@ -32,9 +10,8 @@ correlate_fasta_identifier.py -
 Purpose
 -------
 
-.. todo::
-   
-   describe purpose of the script.
+Given two :term:`fasta` formatted files, substitute
+identifiers in stream with those given in file with filename.
 
 Usage
 -----
@@ -49,11 +26,8 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-
-Code
-----
+Command line options
+--------------------
 
 '''
 import os
@@ -63,25 +37,18 @@ import re
 import getopt
 import tempfile
 
-USAGE="""python %s [OPTIONS] filename < stdin > stdout
-
-Version: $Id: correlate_fasta_identifier.py 14 2005-08-09 15:24:07Z andreas $
-
-Given two :term:`fasta` formatted files, substitute
-identifiers in stream with those given in file with filename.
-
-Options:
--h, --help                      print this message.
--v, --verbose=                  loglevel.
-"""
-
 param_loglevel = 0
 
 param_long_options=["verbose=", "help", "version"]
 param_short_options="v:h"
 
-##------------------------------------------------------------
-if __name__ == '__main__':
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     try:
         optlist, args = getopt.getopt(sys.argv[1:], param_short_options, param_long_options)
@@ -119,5 +86,6 @@ if __name__ == '__main__':
             line = ">" + identifiers[x] + "\n"
             x += 1
         print line[:-1]
-    
             
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )

@@ -1,4 +1,4 @@
-.. _medipseqpipeline:
+.. _windowspipeline:
 
 =============================
 MeDIP-Seq Pipeline
@@ -12,6 +12,7 @@ plots from the MeDIP-Seq pipeline.
 
    pipeline/Status.rst
    pipeline/CpGCoverage.rst
+   pipeline/Processing.rst
    pipeline/DifferentialMethylation.rst
 
 .. errorlist::

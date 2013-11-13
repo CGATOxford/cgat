@@ -1,25 +1,3 @@
-################################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id$
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
 '''
 mali2kaks.py - rate analysis with PAML
 ======================================
@@ -52,11 +30,8 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-
-Code
-----
+Command line options
+--------------------
 
 '''
 import os
@@ -823,7 +798,14 @@ def processMali( mali, options ):
 ##-------------------------------------------------------------------
 ##-------------------------------------------------------------------
 
-if __name__ == "__main__":
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
     
     parser = E.OptionParser( version = "%prog version: $Id: mali2kaks.py 2781 2009-09-10 11:33:14Z andreas $" )
 
@@ -1027,4 +1009,8 @@ in the model. Provide values in a comma-separated list [%default].""")
         processMali( mali, options )
 
     E.Stop()
+
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
 

@@ -1,24 +1,3 @@
-################################################################################
-#   Gene prediction pipeline 
-#
-#   $Id: gff2fasta.py 2861 2010-02-23 17:36:32Z andreas $
-#
-#   Copyright (C) 2004 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
 '''
 gff2fasta.py - output sequences from genomic features
 =====================================================
@@ -26,7 +5,7 @@ gff2fasta.py - output sequences from genomic features
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Python
+:Tags: Genomics Intervals Sequences GFF Fasta Transformation
 
 Purpose
 -------
@@ -49,11 +28,8 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-
-Code
-----
+Command line options
+--------------------
 
 '''
 import sys
@@ -70,10 +46,17 @@ import CGAT.Intervals as Intervals
 import bx.intervals.io
 import bx.intervals.intersection
 
-##------------------------------------------------------------------------
-if __name__ == "__main__":
+import CGAT.Experiment as E
 
-    parser = E.OptionParser( version = "%prog version: $Id: gff2fasta.py 2861 2010-02-23 17:36:32Z andreas $")
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
+
+    parser = E.OptionParser( version = "%prog version: $Id: gff2fasta.py 2861 2010-02-23 17:36:32Z andreas $", usage = globals()["__doc__"])
 
     parser.add_option( "--is-gtf", dest="is_gtf", action="store_true",
                       help="input is gtf instead of gff."  )
@@ -158,6 +141,16 @@ if __name__ == "__main__":
 
     feature = options.feature
 
+#    for item in iterator:
+#	print len(item) # 3, 2
+#	for i in item:
+#	   print len(i) # 9, 9, 9, 9, 9
+#	   print i.contig
+#	   print i.strand
+#	   print i.transcript_id
+
+    # iterator is a list containing groups (lists) of features.
+    # Each group of features have in common the same transcript ID, in case of GTF files.
     for ichunk in iterator:
 
         ninput += 1
@@ -179,7 +172,7 @@ if __name__ == "__main__":
         if options.is_gtf:
             name = chunk[0].transcript_id
         else:
-            name = str(chunk[0].mAttributes)
+            name = str(chunk[0].attributes)
 
         lcontig = contigs[contig]
         positive = Genomics.IsPositiveStrand( strand )
@@ -243,3 +236,6 @@ if __name__ == "__main__":
                 (ninput, noutput, nmasked, nskipped_noexons, nskipped_masked, nskipped_length ) )
 
     E.Stop()
+    
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )

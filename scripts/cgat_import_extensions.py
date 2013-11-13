@@ -1,25 +1,3 @@
-################################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
 '''
 cgat_import_extensions.py - test importing all scripts
 ======================================================
@@ -51,11 +29,8 @@ Type::
 
 for command line help.
 
-Documentation
--------------
-
-Code
-----
+Command line options
+--------------------
 
 '''
 
@@ -65,6 +40,7 @@ import re
 import optparse
 import glob
 import traceback
+import imp
 
 import CGAT.Experiment as E
 
@@ -104,9 +80,11 @@ def main( argv = None ):
         if os.path.exists( prefix + ".pyc"):
             os.remove( prefix + ".pyc" )
 
+        success = False
         try:
             __import__(basename, globals(), locals() )
             c.success += 1
+            success = True
             options.stdout.write("PASS %s\n" % basename )
             options.stdout.flush()
         except ImportError, msg:
@@ -119,6 +97,19 @@ def main( argv = None ):
             options.stdout.write( "FAIL %s\n%s\n" % (basename, msg))
             options.stdout.flush()
             traceback.print_exc()
+
+        if success:
+            # check for main
+            path = os.path.abspath( os.path.dirname(__file__) )
+            (file, pathname, description ) = imp.find_module( basename, [path,] )
+            module = imp.load_module( basename, file, pathname, description)
+            if "main" in dir(module):
+                c.has_main +=1 
+            else:
+                options.stdout.write( "FAIL %s - %s\n" % (basename, "no main"))
+                options.stdout.flush()
+                c.no_main += 1
+
         c.output += 1
 
     E.info( c )

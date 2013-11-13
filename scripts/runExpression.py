@@ -1,25 +1,3 @@
-################################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
 '''
 runExpression.py - wrap various differential expression tools
 =============================================================
@@ -77,9 +55,6 @@ The script will call each of the method and output a variety of diagnostic plots
 
 Usage
 -----
-
-Documentation
--------------
 
 Command line options
 --------------------
@@ -139,7 +114,7 @@ def main( argv = None ):
                       help="output filename [default=%default]."  )
 
     parser.add_option("-m", "--method", dest="method", type="choice",
-                      choices = ("deseq", "edger", "cuffdiff", "summary" ),
+                      choices = ("deseq", "edger", "cuffdiff", "summary", "dump" ),
                       help="differential expression method to apply [default=%default]."  )
 
     parser.add_option( "--deseq-dispersion-method", dest="deseq_dispersion_method", type="choice",
@@ -150,12 +125,27 @@ def main( argv = None ):
                       choices = ("parametric", "local"),
                       help="fit type for deseq [default=%default]."  )
 
+    parser.add_option( "--deseq-sharing-mode", dest="deseq_sharing_mode", type="choice",
+                      choices = ("maximum", "fit-only", "gene-est-only"),
+                      help="deseq sharing mode [default=%default]."  )
+
     parser.add_option("-f", "--fdr", dest="fdr", type="float",
                       help="fdr to apply [default=%default]."  )
+
+    parser.add_option("-R", "--save-R", dest="save_r_environment", type="string",
+                      help="save R environment [default=%default]."  )
 
     parser.add_option("-r","--reference-group", dest="ref_group", type="string",
                       help="Group to use as reference to compute fold changes against [default=$default]")
 
+    parser.add_option( "--filter-min-counts-per-row", dest="filter_min_counts_per_row", type="int",
+                      help="remove rows with less than this number of counts in total [default=%default]."  )
+
+    parser.add_option( "--filter-min-counts-per-sample", dest="filter_min_counts_per_sample", type="int",
+                      help="remove samples with less than this number of counts in total [default=%default]."  )
+
+    parser.add_option( "--filter-percentile-rowsums", dest="filter_percentile_rowsums", type="int",
+                      help="remove percent of rows with lowest total counts [default=%default]."  )
 
     parser.set_defaults(
         input_filename_tags = "-",
@@ -165,7 +155,12 @@ def main( argv = None ):
         fdr = 0.1,
         deseq_dispersion_method = "pooled",
         deseq_fit_type = "local",
-        ref_group = None
+        deseq_sharing_mode = "maximum",
+        ref_group = None,
+        save_r_environment = None,
+        filter_min_counts_per_row = 1,
+        filter_min_counts_per_sample = 10,
+        filter_percentile_rowsums = 0,
         )
 
     ## add common options (-h/--help, ...) and parse command line 
@@ -179,35 +174,71 @@ def main( argv = None ):
     else:
         fh = None
 
-    if options.method == "deseq":
+    # load tag data and filter
+    if options.method in ("deseq", "edger"):
         assert options.input_filename_tags and os.path.exists(options.input_filename_tags)
         assert options.input_filename_design and os.path.exists(options.input_filename_design)
-        Expression.runDESeq( options.input_filename_tags,
-                             options.input_filename_design,
-                             options.output_filename,
-                             options.output_filename_pattern,
-                             fdr = options.fdr,
-                             dispersion_method = options.deseq_dispersion_method,
-                             fit_type = options.deseq_fit_type,
-                             ref_group = options.ref_group)
 
-    elif options.method == "edger":
-        assert options.input_filename_tags and os.path.exists(options.input_filename_tags)
-        assert options.input_filename_design and os.path.exists(options.input_filename_design)
-        Expression.runEdgeR( options.input_filename_tags,
-                             options.input_filename_design,
-                             options.output_filename,
-                             options.output_filename_pattern,
-                             fdr = options.fdr,
-                             ref_group = options.ref_group)
+        Expression.loadTagData( options.input_filename_tags, 
+                                options.input_filename_design )
+            
+        nobservations, nsamples = Expression.filterTagData(                                  
+            filter_min_counts_per_row = options.filter_min_counts_per_row,
+            filter_min_counts_per_sample = options.filter_min_counts_per_sample,
+            filter_percentile_rowsums = options.filter_percentile_rowsums )
+        
+        if nobservations == 0:
+            E.warn( "no observations - no output" )
+            return
+        
+        if nsamples == 0:
+            E.warn( "no samples remain after filtering - no output" )
+            return
 
-    elif options.method == "summary":
-        assert options.input_filename_tags and os.path.exists(options.input_filename_tags)
-        Expression.outputTagSummary( options.input_filename_tags,
-                                     options.stdout,
-                                     options.output_filename_pattern )
+        sample_names = R('''colnames(countsTable)''')
+        E.info( "%i samples to test at %i observations: %s" % ( nsamples, nobservations,
+                                                                ",".join( sample_names)))
+
+    try:
+        if options.method == "deseq":
+            Expression.runDESeq( outfile = options.output_filename,
+                                 outfile_prefix = options.output_filename_pattern,
+                                 fdr = options.fdr,
+                                 dispersion_method = options.deseq_dispersion_method,
+                                 fit_type = options.deseq_fit_type,
+                                 sharing_mode = options.deseq_sharing_mode,
+                                 ref_group = options.ref_group,
+                                 )
+
+        elif options.method == "edger":
+            Expression.runEdgeR( outfile = options.output_filename,
+                                 outfile_prefix = options.output_filename_pattern,
+                                 fdr = options.fdr,
+                                 ref_group = options.ref_group)
+
+        elif options.method == "summary":
+            Expression.outputTagSummary( options.input_filename_tags,
+                                         options.stdout,
+                                         options.output_filename_pattern,
+                                         filename_design = options.input_filename_design
+                                         )
+
+        elif options.method == "dump":
+            assert options.input_filename_tags and os.path.exists(options.input_filename_tags)
+            Expression.dumpTagData( options.input_filename_tags,
+                                    options.input_filename_design,
+                                    outfile = options.stdout )
+
+    except rpy2.rinterface.RRuntimeError, msg:
+        if options.save_r_environment:
+            E.info("saving R image to %s" % options.save_r_environment)
+            R['save.image']( options.save_r_environment )
+        raise
 
     if fh and os.path.exists( fh.name): os.unlink( fh.name )
+
+    if options.save_r_environment:
+        R['save.image']( options.save_r_environment )
 
     E.Stop()
 

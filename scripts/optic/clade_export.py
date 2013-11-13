@@ -362,7 +362,14 @@ Column  Content
     return
 
 
-if __name__ == "__main__":
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: optic/clade_export.py 2781 2009-09-10 11:33:14Z andreas $")
 
@@ -463,3 +470,7 @@ I might clean up identifiers in the future.
             options.stdlog.flush()            
     
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

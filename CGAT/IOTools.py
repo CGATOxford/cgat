@@ -772,4 +772,25 @@ def openFile( filename, mode = "r", create_dir = False ):
         return open( filename, mode )
 
 
+def iterate( infile ):
+    '''iterate over infile and return a namedtuple according to 
+    first row.'''
+
+    n = 0
+    for line in infile:
+        if line.startswith("#"): continue
+        n += 1
+        if n == 1: 
+            header = line[:-1].split()
+            DATA = collections.namedtuple( "DATA", header )
+            continue
+
+        print DATA
+        print line[:-1].split()
+        result = DATA( *line[:-1].split() )
+
+        yield result
+
+
+
 
