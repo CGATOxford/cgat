@@ -118,10 +118,10 @@ def main( argv = None ):
 
 
     parser.add_option("-r", "--region", dest="region", type="string",
-                      help = "samtools region string [default=%default]. " )
+                      help = "output read intervals that overlap samtools region string [default=%default]. " )
 
     parser.add_option("-m", "--merge-pairs", dest="merge_pairs", action="store_true",
-                      help = "merge paired-ended reads into a single bed interval [default=%default]. " )
+                      help = "merge paired-ended reads and output interval for entire fragment [default=%default]. " )
 
     parser.add_option( "--max-insert-size", dest="max_insert_size", type = "int",
                       help = "only merge paired-end reads if they are less than # bases apart. " 
