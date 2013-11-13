@@ -1,3 +1,4 @@
+
 ################################################################################
 #
 #   MRC FGU Computational Genomics Group
@@ -485,7 +486,7 @@ def processReads( infiles, outfile ):
 
     # NICK - may replace fastx trimmer
     if PARAMS["process_trim_quality"]:
-        s.append( 'fastq_quality_trimmer -Q %(offset)i  -v %(trim_options)s 2>> %(outfile)s_trim.log' )
+        s.append( 'fastq_quality_trimmer -Q %(offset)i  -v %(trim_quality_options)s 2>> %(outfile)s_trim.log' )
         do_sth = True
 
     if PARAMS["process_filter"]:
