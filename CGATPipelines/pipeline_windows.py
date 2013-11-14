@@ -683,6 +683,7 @@ def summarizeAllWindowsReadCounts( infile, outfile ):
     '''perform summarization of read counts'''
 
     prefix = P.snip(outfile, ".tsv")
+    job_options = "-l mem_free=4G"
     statement = '''python %(scriptsdir)s/runExpression.py
               --method=summary
               --filename-tags=%(infile)s
@@ -806,7 +807,7 @@ def runDESeq( infiles, outfile ):
     The final output is a table. It is slightly edited such that
     it contains a similar output and similar fdr compared to cuffdiff.
     '''
-    PipelineWindews.runDE( infiles, outfile, "deseq.dir", method = "deseq" )
+    PipelineWindows.runDE( infiles, outfile, "deseq.dir", method = "deseq" )
 
 #########################################################################
 #########################################################################
@@ -851,6 +852,24 @@ def runEdgeR( infiles, outfile ):
 
     PipelineWindows.runDE( infiles, outfile, "edger.dir", method = "edger" )
 
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( runEdgeR, suffix(".tsv.gz"), ".load" )
+def loadEdgeR( infile, outfile ):
+    '''load EdgeR per-chunk summary stats.'''
+
+    prefix = P.snip( outfile, ".load" )
+
+    for fn in glob.glob( infile + "*_summary.tsv" ):
+        prefix = P.snip(fn[len(infile)+1:], "_summary.tsv")
+
+        P.load( fn, 
+                prefix + ".deseq_summary.load", 
+                collapse = 0,
+                transpose = "sample")
+
+    P.touch( outfile )
 
 DIFFTARGETS = []
 mapToTargets = { 'deseq': (loadDESeq,runDESeq,),

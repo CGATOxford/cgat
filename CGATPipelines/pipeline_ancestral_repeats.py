@@ -336,7 +336,7 @@ def importRepeatsFromUCSC( infile, outfile, ucsc_database, repeattypes, genome )
     for table in tables:
         E.info( "loading repeats from %s" % table )
         cc = dbhandle.cursor()
-        cc.execute("""SELECT genoName, 'repeat', 'exon', genoStart+1, genoEnd, strand, '.', '.', 
+        cc.execute("""SELECT genoName, 'repeat', 'exon', genoStart+1, genoEnd, '.', strand, '.', 
                       CONCAT('class \\"', repClass, '\\"; family \\"', repFamily, '\\";')
                FROM %(table)s
                WHERE repClass in ('%(repclasses)s') """ % locals() )
@@ -441,23 +441,36 @@ def buildAlignedRepeats( infiles, outfile ):
     infile_query = PARAMS["query"] + "_merged.gff.gz" 
 
     # using farm.py to send to cluster
-    to_cluster = False
-
     # granularity should be set automatically.
     granularity=5000
 
     # need to escape pipe symbols within farm.py command
-    statement = r'''
+    #to_cluster = False
+    # statement = r'''
+    #     gunzip < %(interface_alignment_psl)s
+    #     | %(cmd-farm)s --split-at-lines=%(granularity)i --log=%(outfile)s.log --binary 
+    #          "python %(scriptsdir)s/psl2psl.py 
+    #             --method=test 
+    #     	--log=%(outfile)s.log 
+    #           | python %(scriptsdir)s/psl2psl.py 
+    #     	--method=map 
+    #     	--filter-query=%(infile_query)s
+    #     	--filter-target=%(infile_target)s
+    #     	--log=%(outfile)s.log " 
+    #      | gzip 
+    #      > %(outfile)s'''
+    # P.run()
+
+    statement = '''
         gunzip < %(interface_alignment_psl)s
-        | %(cmd-farm)s --split-at-lines=%(granularity)i --log=%(outfile)s.log --binary 
-             "python %(scriptsdir)s/psl2psl.py 
+        | python %(scriptsdir)s/psl2psl.py 
 	        --method=test 
 		--log=%(outfile)s.log 
-	      | python %(scriptsdir)s/psl2psl.py 
+	| python %(scriptsdir)s/psl2psl.py 
 		--method=map 
-		--filter-query=<(gunzip < %(infile_query)s )
-		--filter-target=<(gunzip < %(infile_target)s )
-		--log=%(outfile)s.log " 
+		--filter-query=%(infile_query)s
+		--filter-target=%(infile_target)s
+		--log=%(outfile)s.log
          | gzip 
          > %(outfile)s'''
     P.run()

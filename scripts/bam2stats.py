@@ -263,7 +263,9 @@ def main( argv = None ):
     parser.add_option( "-d", "--output-details", dest="output_details", action="store_true",
                        help = "output per-read details [%default]" )
     parser.add_option( "-q", "--filename-fastq", dest = "filename_fastq",
-                       help = "filename with fasta sequences [%default]" )
+                       help = "filename with sequences and quality scores. This file is only "
+                       "used to collect sequence identifiers. Thus, for paired end data a "
+                       "single file is sufficient [%default]" )
 
     parser.set_defaults(
         filename_rna = None,
@@ -288,6 +290,9 @@ def main( argv = None ):
         outfile_details = E.openOutputFile( "details", "w")
     else:
         outfile_details = None
+
+    if options.filename_fastq and not os.path.exists( options.filename_fastq ):
+        raise IOError("file %s does not exist" % options.filename_fastq)
 
     counter, flags_counts, nh_filtered, nh_all, nm_filtered, nm_all, mapq, mapq_all, max_hi = \
         _bam2stats.count( pysam_in, 

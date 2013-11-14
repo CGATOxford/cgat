@@ -68,6 +68,10 @@ def main( argv = None ):
     assert len(args) == 3, "expected three command line arguments" 
 
     fastqfile1, fastqfile2 = args[1], args[2]
+    
+    # only output compressed data
+    if not fastqfile1.endswith(".gz"): fastqfile1 += ".gz"
+    if not fastqfile2.endswith(".gz"): fastqfile2 += ".gz"
 
     samfile = pysam.Samfile( args[0], "rb" )
 
@@ -119,8 +123,6 @@ def main( argv = None ):
         
     E.run( statement % (outtemp1, fastqfile1) )
     E.run( statement % (outtemp2, fastqfile2) )
-
-
 
     ## write footer and output benchmark information.
     E.Stop()

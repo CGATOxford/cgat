@@ -15,4 +15,4 @@ fastq:
         stdin: paired.bam
         outputs: [stdout, details]
         references: [fastq.tsv, details]
-        options: --output-details --filename-fastq=<DIR>/paired.fastq.gz --force
+        options: --output-details --filename-fastq=<DIR>/paired.fastq.1.gz --force

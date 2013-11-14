@@ -600,7 +600,8 @@ def plotHeatmap( method = "correlation" ):
 def plotPCA():
     '''plot a PCA plot from countsTable.'''
     
-    R('''pca = prcomp(t(countsTable]))''')
+    R('''library( RColorBrewer )''')
+    R('''pca = prcomp(t(countsTable))''')
     R('''if (length(groups) >= 3) colours = brewer.pal(nlevels(fac), "Paired") else colours = c("green", "blue")''')
     R('''xyplot( PC2 ~ PC1, data = as.data.frame(pca$x ), 
                  groups=groups, col = colours, 
