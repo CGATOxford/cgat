@@ -35,8 +35,8 @@ iterating over the file. The metrics output are:
 |                        |strand (bam flag)                         |
 +------------------------+------------------------------------------+
 |proper_pair             |alignments in which both pairs have been  |
-|                        |mapped properly ly (according to the      |
-|                        |mapper) (bam flag)                        |
+|                        |mapped properly (according to the mapper) |
+|                        |(bam flag)                                |
 +------------------------+------------------------------------------+
 |read1                   |alignments for 1st read of pair (bam flag)|
 +------------------------+------------------------------------------+
@@ -51,12 +51,12 @@ iterating over the file. The metrics output are:
 +------------------------+------------------------------------------+
 |secondary               |alignment is not primary alignment        |
 +------------------------+------------------------------------------+
-|alignments_rna          |alignments mapping to regions of          |
-|                        |repetitive RNA                            |
+|alignments_rna          |alignments mapping to regions specified in|
+|                        |a .gff file                               |
 +------------------------+------------------------------------------+
-|alignments_no_rna       |alignments mapping not to regions of      |
-|                        |repetitive RNA (if --remove -rna has been |
-|                        |set, otherwise equal to mapped)           |
+|alignments_no_rna       |alignments not mapping to regions in a    |
+|                        |.gff file (if --remove-rna has been set,  |
+|                        |otherwise equal to mapped)                |
 +------------------------+------------------------------------------+
 |alignments_duplicates   |number of alignments mapping to the same  |
 |                        |location                                  |
@@ -94,8 +94,7 @@ iterating over the file. The metrics output are:
 +------------------------+------------------------------------------+
 
 Additionally, the script outputs histograms for the following tags and
-scores. These histograms are only computed for alignments not within
-regions of repetitive RNA.
+scores.
 
 * NM: number of mismatches in alignments.
 * NH: number of hits of reads.
@@ -118,7 +117,7 @@ metrics output are:
 |pairs_proper_unique      |pairs which are proper and map uniquely.|
 +-------------------------+----------------------------------------+
 |pairs_incomplete         |pairs in which one of the reads maps    |
-|                         |uniquel, but the other does not map.    |
+|                         |uniquely, but the other does not map.   |
 +-------------------------+----------------------------------------+
 |pairs_proper_duplicate   |pairs which are proper and unique, but  |
 |                         |marked as duplicates.                   |

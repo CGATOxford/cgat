@@ -348,11 +348,12 @@ def preprocessReads(infile, outfile):
     elif infile.endswith(".1.gz"):
         read2 = P.snip(infile, ".1.gz") + ".2.gz"
         assert os.path.exists(read2), "file does not exist %s" % read2
-    
+        
+        log = infile.replace("fastq.","")
         statement = '''python %(scriptsdir)s/fastqs2fasta.py 
                    -a %(infile)s 
                    -b %(read2)s 
-                   --log=%(infile)s.log 
+                   --log=%(log)s.log 
                    > %(outfile)s'''
         P.run()
 
@@ -1345,7 +1346,7 @@ def mapReadsAgainstMetavelvetContigs(infiles, outfile):
         bwa_aln_options = PARAMS["bwa_aln_options"]
         bwa_sampe_options=PARAMS["bwa_sampe_options"]
         bwa_threads=PARAMS["bwa_threads"]
-        m = PipelineMapping.BWA()
+        m = PipelineMapping.BWA(remove_non_unique = True)
     statement = m.build( (inf,), outfile ) 
     P.run()
 
@@ -1381,7 +1382,7 @@ def mapReadsAgainstIdbaContigs(infiles, outfile):
         bwa_aln_options = PARAMS["bwa_aln_options"]
         bwa_sampe_options=PARAMS["bwa_sampe_options"]
         bwa_threads=PARAMS["bwa_threads"]
-        m = PipelineMapping.BWA()
+        m = PipelineMapping.BWA(remove_non_unique = True)
     statement = m.build( (inf,), outfile ) 
     P.run()
 
@@ -1417,7 +1418,7 @@ def mapReadsAgainstRayContigs(infiles, outfile):
         bwa_aln_options = PARAMS["bwa_aln_options"]
         bwa_sampe_options=PARAMS["bwa_sampe_options"]
         bwa_threads=PARAMS["bwa_threads"]
-        m = PipelineMapping.BWA()
+        m = PipelineMapping.BWA(remove_non_unique = True)
     statement = m.build( (inf,), outfile ) 
     P.run()
 
