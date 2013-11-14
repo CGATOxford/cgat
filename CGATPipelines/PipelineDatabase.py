@@ -37,7 +37,7 @@ def importFromIterator(
 
     '''
     
-    tmpfile = P.getTempFile()
+    tmpfile = P.getTempFile(".")
 
     if columns:
         keys, values = zip( *columns.items() )
