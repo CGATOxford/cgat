@@ -16,6 +16,10 @@ For questions, please subscribe and contact us at the
 `CGAT user group
 <https://groups.google.com/forum/?fromgroups#!forum/cgat-user-group>`_.
 
+IMPORTANT: We are currently experiencing problems with our servers,
+the documentation below is unfortunately not available while we are looking
+for alternative locations.
+
 Documentation of CGAT tools is available 
 `here <http://www.cgat.org/~andreas/documentation/cgat/cgat.html#cgat>`_.
 
