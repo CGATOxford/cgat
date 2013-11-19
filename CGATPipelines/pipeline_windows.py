@@ -667,8 +667,6 @@ def aggregateWindowsReadCounts( infiles, outfile ):
     For bed6: use column 7
     For bed12: use column 13
 
-    This method uses the maximum number of reads found in any interval as the tag count.
-
     Tiles with no counts will not be output.
     '''
     PipelineWindows.aggregateWindowsReadCounts( infiles, outfile )
@@ -683,7 +681,7 @@ def summarizeAllWindowsReadCounts( infile, outfile ):
     '''perform summarization of read counts'''
 
     prefix = P.snip(outfile, ".tsv")
-    job_options = "-l mem_free=4G"
+    job_options = "-l mem_free=32G"
     statement = '''python %(scriptsdir)s/runExpression.py
               --method=summary
               --filename-tags=%(infile)s
@@ -871,9 +869,26 @@ def loadEdgeR( infile, outfile ):
 
     P.touch( outfile )
 
+
+#########################################################################
+#########################################################################
+#########################################################################
+@follows( mkdir("roi.dir"))
+@transform( "design*.tsv",
+            regex( "(.*).tsv" ),
+            add_inputs( aggregateWindowsReadCounts ),
+            r"roi.dir/\1.tsv.gz" )
+def runFilterAnalysis( infiles, outfile ):
+    '''output windows applying a filtering criterion.
+    
+    Does not apply a threshold.
+    '''
+    PipelineWindows.outputRegionsOfInterest( infiles, outfile )
+
 DIFFTARGETS = []
 mapToTargets = { 'deseq': (loadDESeq,runDESeq,),
                  'edger' : (runEdgeR,),
+                 'filter' : (runFilterAnalysis,)
                  }
 for x in METHODS:
     DIFFTARGETS.extend( mapToTargets[x] )
@@ -920,6 +935,7 @@ def outputAllWindows( infile, outfile ):
     '''output all bed windows.'''
     PipelineWindows.outputAllWindows( infile, outfile )
 
+
 #########################################################################
 @transform( outputAllWindows, suffix(".all.bed.gz"), 
             (".top.bed.gz", ".bottom.bed.gz" ) )
@@ -932,7 +948,7 @@ def outputTopWindows( infile, outfiles ):
     | awk '$4 !~ /inf/'
     | sort -k4,4n 
     | tail -n %(bed_export)i 
-    | gzip > %(outfile)s
+    | gzip > %(outfile)s || true
     '''
     P.run()
 
@@ -943,7 +959,7 @@ def outputTopWindows( infile, outfiles ):
     | sort -k4,4n 
     | head -n %(bed_export)i 
     | gzip 
-    > %(outfile)s
+    > %(outfile)s || true
     '''
     P.run()
 

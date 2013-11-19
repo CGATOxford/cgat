@@ -461,10 +461,6 @@ def concatenateAndLoad( infiles,
                         options = "" ):
     '''concatenate categorical tables and load into a database.
 
-    Concatenation assumes that the header is the same in all files.
-    The first file will be taken in completion, headers in other files 
-    will be removed.
-
     If *has_titles* is False, the tables are assumed to have no titles.
     '''
     
@@ -999,7 +995,7 @@ def run( **kwargs ):
     #     run on cluster
     elif (options.get( "job_queue" ) or 
           ("to_cluster" not in options or options.get( "to_cluster" ))) \
-            and not GLOBAL_OPTIONS.without_cluster:
+          and (GLOBAL_OPTIONS and not GLOBAL_OPTIONS.without_cluster):
 
         statement = buildStatement( **options )
 

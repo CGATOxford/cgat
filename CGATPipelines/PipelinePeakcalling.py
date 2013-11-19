@@ -1104,9 +1104,11 @@ def runMACS2( infile, outfile, controlfile = None ):
     # used to set the option --format=bampe
     # removed to let macs2 detect the format.
 
+    # format bam needs to be set explicitely, autodetection does not work.
     # -B --SPMR: ask macs to create a bed-graph file with fragment pileup per million reads
     statement = '''
                     macs2 callpeak 
+                    --format=BAM
                     -t %(infile)s 
                     -c %(control)s 
                     --verbose=10 

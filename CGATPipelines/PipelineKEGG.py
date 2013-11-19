@@ -20,7 +20,10 @@ def importKEGGAssignments(outfile, mart, host, biomart_dataset):
     R.library("biomaRt")
 
     E.info("getting entrez to ensembl mapping ...")
-    mart = R.useMart(biomart=mart, host = host, path = "/biomart/martservice", dataset = biomart_dataset)
+    mart = R.useMart(biomart=mart, 
+                     host = host, 
+                     path = "/biomart/martservice", 
+                     dataset = biomart_dataset)
     
     entrez2ensembl = R.getBM(attributes = ro.StrVector(["ensembl_gene_id","entrezgene"]),
                              mart = mart)

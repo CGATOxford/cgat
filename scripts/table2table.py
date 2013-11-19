@@ -277,6 +277,7 @@ def readAndCollapseTable( infile, options, missing_value = "" ):
     row_names = set( [ x[0] for x in table ] )
 
     row_name, value = table[0]
+
     values[row_name].append( value )
     added = set( [ row_name ])
     for row_name, value in table[1:]:

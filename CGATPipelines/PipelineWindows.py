@@ -6,6 +6,7 @@ import collections
 import CGAT.Experiment as E
 import CGAT.Pipeline as P
 import CGAT.IOTools as IOTools
+import CGAT.Expression as Expression
 
 #########################################################################
 #########################################################################
@@ -55,8 +56,6 @@ def aggregateWindowsReadCounts( infiles, outfile ):
     For bed: use column 5
     For bed6: use column 7
     For bed12: use column 13
-
-    This method uses the maximum number of reads found in any interval as the tag count.
 
     Tiles with no counts will not be output.
     '''
@@ -175,6 +174,62 @@ def outputAllWindows( infile, outfile ):
         #     R['dev.off']()
 
 
+def outputRegionsOfInterest( infiles, outfile, max_per_sample = 10, sum_per_group = 40 ):
+    '''output windows according to various filters.
+
+    The output is a mock analysis similar to a differential expression 
+    result.
+    '''
+    job_options = "-l mem_free=64G"
+
+    design_file, counts_file = infiles
+
+    design = Expression.readDesignFile( design_file )
+    
+    # remove tracks not included in the design
+    design = dict( [ (x,y) for x,y in design.items() if y.include ] )
+
+    # define the two groups
+    groups = sorted(set( [x.group for x in design.values() ] ))
+
+    # build a filtering statement
+    groupA, groupB = groups
+    upper_levelA = "max( (%s) ) < %f" % ( \
+        ",".join( \
+            [ "int(r['%s'])" % x for x,y in design.items() if y.group == groupA ] ),
+        max_per_sample )
+
+    sum_levelA = "sum( (%s) ) > %f" % ( \
+        ",".join( \
+            [ "int(r['%s'])" % x for x,y in design.items() if y.group == groupB ] ),
+        sum_per_group )
+
+    upper_levelB = "max( (%s) ) < %f" % ( \
+        ",".join( \
+            [ "int(r['%s'])" % x for x,y in design.items() if y.group == groupB ] ),
+        max_per_sample )
+
+    sum_levelB = "sum( (%s) ) > %f" % ( \
+        ",".join( \
+            [ "int(r['%s'])" % x for x,y in design.items() if y.group == groupA ] ),
+        sum_per_group )
+
+    statement = '''
+    zcat %(counts_file)s
+    | python %(scriptsdir)s/csv_select.py 
+            --log=%(outfile)s.log
+            "(%(upper_levelA)s and %(sum_levelA)s) or (%(upper_levelB)s and %(sum_levelB)s)"
+    | python %(scriptsdir)s/runExpression.py
+            --log=%(outfile)s.log          
+            --filename-design=%(design_file)s
+            --filename-tags=-
+            --method=mock
+            --filter-min-counts-per-sample=0 
+    | gzip 
+    > %(outfile)s
+    '''
+
+    P.run()
 
 #########################################################################
 #########################################################################

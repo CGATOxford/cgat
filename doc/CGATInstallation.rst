@@ -6,8 +6,7 @@ Installation instructions
 
 The section below describes how to install the CGAT scripts. Please
 note that we can not test our code on all systems and configurations
-out there. If something does not work, please try a
-:ref:`CleanInstall`. 
+out there. If something does not work, please try a :ref:`CleanInstall`. 
 
 Quick installation
 ==================
@@ -15,11 +14,11 @@ Quick installation
 Pre-install dependencies
 ------------------------
 
-Installing CGAT should be straight-forward::
+Installing CGAT can be straight-forward if all its dependencies are satisfied::
 
    pip install cgat
 
-CGAT depends on numerous other python packages which themselves might require
+However, CGAT depends on numerous other python packages which themselves might require
 manual intervention. Please see :ref:`ManualInstallation` for a
 step-by-step installation approach.
 
@@ -48,6 +47,12 @@ cleanly.
 
 Manual installation
 ===================
+
+The CGAT installation requires setuptools version 1.1 or higher
+to be installed. If your system has no setuptools installed, or
+an old version, please install setuptools_ first by::
+
+   wget https://bitbucket.org/pypa/setuptools/raw/bootstrap/ez_setup.py -O - | python
 
 CGAT depends on numerous other python packages not all of which
 might install cleanly. Here, we give some more detailed instructions.
@@ -88,10 +93,10 @@ PyGreSQL
     requires postgres-devel
 
 PyGTK
-    not installable via setuptools, install separately.
+    not installable via setuptools_, install separately.
 
-biopython
-    pip occasionally fails for biopython. If so, try installing 
+biopython_
+    pip occasionally fails for biopython_. If so, try installing 
     manually.
 
 .. _GalaxyInstallation:
@@ -134,3 +139,5 @@ CGAT repository and can be used to create all wrappers in one go::
 Within galaxy_, CGAT scripts will use samtools_ formatted genomic
 sequences, which are located in the ``sam_fa_indexes`` galaxy_ resource.
 
+.. _setuptools: https://pypi.python.org/pypi/setuptools
+.. _biopython: http://biopython.org/
