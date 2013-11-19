@@ -114,7 +114,7 @@ def main( argv = None ):
                       help="output filename [default=%default]."  )
 
     parser.add_option("-m", "--method", dest="method", type="choice",
-                      choices = ("deseq", "edger", "cuffdiff", "summary", "dump" ),
+                      choices = ("deseq", "edger", "cuffdiff", "mock", "summary", "dump" ),
                       help="differential expression method to apply [default=%default]."  )
 
     parser.add_option( "--deseq-dispersion-method", dest="deseq_dispersion_method", type="choice",
@@ -132,6 +132,9 @@ def main( argv = None ):
     parser.add_option("-f", "--fdr", dest="fdr", type="float",
                       help="fdr to apply [default=%default]."  )
 
+    parser.add_option("-p", "--pseudo-counts", dest="pseudo_counts", type="float",
+                      help="pseudocounts to add for mock analyis [default=%default]."  )
+
     parser.add_option("-R", "--save-R", dest="save_r_environment", type="string",
                       help="save R environment [default=%default]."  )
 
@@ -142,7 +145,8 @@ def main( argv = None ):
                       help="remove rows with less than this number of counts in total [default=%default]."  )
 
     parser.add_option( "--filter-min-counts-per-sample", dest="filter_min_counts_per_sample", type="int",
-                      help="remove samples with less than this number of counts in total [default=%default]."  )
+                      help="remove samples with a maximum count per sample of "
+                       "less than this numer   [default=%default]."  )
 
     parser.add_option( "--filter-percentile-rowsums", dest="filter_percentile_rowsums", type="int",
                       help="remove percent of rows with lowest total counts [default=%default]."  )
@@ -161,6 +165,7 @@ def main( argv = None ):
         filter_min_counts_per_row = 1,
         filter_min_counts_per_sample = 10,
         filter_percentile_rowsums = 0,
+        pseudo_counts = 0,
         )
 
     ## add common options (-h/--help, ...) and parse command line 
@@ -175,7 +180,7 @@ def main( argv = None ):
         fh = None
 
     # load tag data and filter
-    if options.method in ("deseq", "edger"):
+    if options.method in ("deseq", "edger", "mock"):
         assert options.input_filename_tags and os.path.exists(options.input_filename_tags)
         assert options.input_filename_design and os.path.exists(options.input_filename_design)
 
@@ -215,6 +220,13 @@ def main( argv = None ):
                                  outfile_prefix = options.output_filename_pattern,
                                  fdr = options.fdr,
                                  ref_group = options.ref_group)
+
+        elif options.method == "mock":
+            Expression.runMockAnalysis( outfile = options.output_filename,
+                                        outfile_prefix = options.output_filename_pattern,
+                                        ref_group = options.ref_group,
+                                        pseudo_counts = options.pseudo_counts,
+                                        )
 
         elif options.method == "summary":
             Expression.outputTagSummary( options.input_filename_tags,

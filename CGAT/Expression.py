@@ -517,7 +517,7 @@ def filterTagData( filter_min_counts_per_row = 1,
 
     * remove rows with at least x number of counts
 
-    * remove samples with a total of less that *min_sample_counts*
+    * remove samples with a maximum of *min_sample_counts*
 
     * remove the lowest percentile of rows in the table, sorted
        by total tags per row
@@ -542,7 +542,7 @@ def filterTagData( filter_min_counts_per_row = 1,
                     (nempty_samples, ",".join( [sample_names[x] for x,y in enumerate( empty_samples) if y]) ) )
         R('''countsTable <- countsTable[, max_counts >= %i]''' % filter_min_counts_per_sample)
         R('''groups <- groups[max_counts >= %i]''' % filter_min_counts_per_sample)
-        R('''pairs <- pairs[max_counts >= %i]''' % filter_min_counts_per_samplee)
+        R('''pairs <- pairs[max_counts >= %i]''' % filter_min_counts_per_sample)
         observations, samples = tuple( R('''dim(countsTable)'''))
 
 
@@ -601,8 +601,9 @@ def plotPCA():
     '''plot a PCA plot from countsTable.'''
     
     R('''library( RColorBrewer )''')
+    R('''library( lattice )''')
     R('''pca = prcomp(t(countsTable))''')
-    R('''if (length(groups) >= 3) colours = brewer.pal(nlevels(fac), "Paired") else colours = c("green", "blue")''')
+    R('''if (length(groups) >= 3) colours = brewer.pal(nlevels(groups), "Paired") else colours = c("green", "blue")''')
     R('''xyplot( PC2 ~ PC1, data = as.data.frame(pca$x ), 
                  groups=groups, col = colours, 
                  main = draw.key(key = list(rect = list(col = colours), text = list(levels(groups)))),
@@ -1254,7 +1255,6 @@ def runDESeq( outfile,
         with IOTools.openFile(outfile, "w") as outf:
             writeExpressionResults(outf, all_results)
 
-
 Design = collections.namedtuple( "Design", ("include", "group", "pair") )
 
 def readDesignFile( design_file ):
@@ -1671,7 +1671,71 @@ def runCuffdiff( bamfiles,
     else:
         with IOTools.openFile( outfile, "w" ) as outf:
             writeExpressionResults( outf, results )
+
+def runMockAnalysis( outfile, 
+                     outfile_prefix, 
+                     ref_group = None,
+                     pseudo_counts = 0):
+    '''run a mock analysis on a count table.
+
+    compute fold enrichment values, but do not normalize or
+    perform any test.
+    '''
     
+    groups, pairs, has_replicates, has_pairs = groupTagData( ref_group )
+
+    all_results = []
+    for combination in itertools.combinations(groups,2):
+        control, treatment = combination
+        
+        R('''control_counts = rowSums( countsTable[groups == '%s'] )''' % control )
+        R('''treatment_counts = rowSums( countsTable[groups == '%s'] )''' % treatment )
+        
+        # add pseudocounts to enable analysis of regions 
+        # that are absent/present
+        if pseudo_counts: 
+            R('''control_counts = control_counts + %f''' % pseudo_counts )
+            R('''treatment_counts = treatment_counts + %f''' % pseudo_counts )
+            
+        R('''fc = treatment_counts / control_counts''')
+
+        results = []
+
+        for identifier, treatment_count, control_count, foldchange in \
+                zip( R('''rownames( countsTable)'''),
+                     R('''treatment_counts'''),
+                     R('''control_counts'''),
+                     R('''fc''')):
+            try:
+                log2fold = math.log( foldchange )
+            except ValueError:
+                log2fold = "Inf"
+            
+            results.append( GeneExpressionResult._make( ( \
+                        identifier,
+                        treatment,
+                        treatment_count,
+                        0,
+                        control,
+                        control_count,
+                        0,
+                        1,
+                        1,
+                        log2fold,
+                        foldchange,
+                        "0",
+                        "OK") ) )
+            
+            
+        all_results.extend( results )
+
+    if outfile == sys.stdout:
+        writeExpressionResults(outfile, all_results)
+    else:
+        with IOTools.openFile(outfile, "w") as outf:
+            writeExpressionResults(outf, all_results)
+
+        
 def outputTagSummary( filename_tags, 
                       outfile, output_filename_pattern,
                       filename_design = None):
@@ -1697,6 +1761,7 @@ def outputTagSummary( filename_tags,
         nobservations, nsamples = tuple(R('''dim(countsTable)'''))
         E.info( "read data: %i observations for %i samples" % (nobservations,nsamples))
         E.debug( "sample names: %s" % R('''colnames(countsTable)'''))
+        R('''groups = factor(colnames( countsTable ))''')
 
     nrows, ncolumns = tuple(R('''dim(countsTable)'''))
 
