@@ -40,8 +40,9 @@ except ImportError:
     ez_setup.use_setuptools()
 
 from setuptools import setup, find_packages, Extension
-major, minor = map(int, setuptools.__version__.split(".")[:2])
-if major < 1 or (major == 1 and minor < 1):
+
+from distutils.version import LooseVersion, StrictVersion
+if LooseVersion( setuptools.__version__ ) < LooseVersion( '1.1' ):
     raise ImportError("the CGAT code collection requires setuptools 1.1 higher")
 
 from Cython.Distutils import build_ext
