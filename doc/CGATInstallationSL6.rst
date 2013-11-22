@@ -86,7 +86,11 @@ You can either install them one by one or all at the same time with ``yum``::
         yum install boost-devel         # required by alignlib
         yum install sqlite-devel        # required by CGAT
 
-and perform the additional configuration for scipy::
+Please note that you may also need the EPEL (Extra Packages for Enterprise Linux) repository to install R::
+
+        yum install epel-release
+
+Now type this additional commands to get scipy working::
 
         ln -s /usr/lib64/libblas.so.3 /usr/lib64/libblas.so
         ln -s /usr/lib64/libatlas.so.3 /usr/lib64/libatlas.so
