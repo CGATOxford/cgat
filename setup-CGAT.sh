@@ -16,7 +16,7 @@ rm -rf Python-2.7.5
 # Create virtual environment
 cd
 cd CGAT
-wget https://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.10.1.tar.gz
+wget --no-check-certificate https://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.10.1.tar.gz
 tar xvfz virtualenv-1.10.1.tar.gz
 rm virtualenv-1.10.1.tar.gz
 cd virtualenv-1.10.1
