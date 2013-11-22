@@ -28,16 +28,10 @@ import CGAT.Stats as Stats
 import CGAT.SequenceProperties as SequenceProperties
 import CGAT.Genomics as Genomics
 import CGAT.Intervals as Intervals
-
-import bx
-import bx.bbi.bigwig_file
-import bx.intervals.io
-import bx.intervals.intersection
-import alignlib
-import numpy
 import CGAT.IndexedGenome as IndexedGenome
-import pysam
 
+import numpy
+import pysam
 
 class Counter:
     """
