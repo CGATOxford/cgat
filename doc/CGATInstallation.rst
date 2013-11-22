@@ -6,7 +6,7 @@ Installation instructions
 
 The section below describes how to install the CGAT scripts. Please
 note that we can not test our code on all systems and configurations
-out there. If something does not work, please try a :ref:`CleanInstall`. 
+out there. If something does not work, please try a :ref:`CGATCleanInstall`. 
 
 Quick installation
 ==================
@@ -81,7 +81,7 @@ straight-forward::
     pip install cgat
 
 If you continue having problems with the installation please try the
-:ref:`CleanInstall` guide.
+:ref:`CGATCleanInstall` guide.
 
 Troubleshooting
 ---------------

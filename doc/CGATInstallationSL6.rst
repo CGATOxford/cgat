@@ -1,19 +1,18 @@
-.. _CleanInstall:
+.. _CGATInstallationSL6:
 
-============================
-CGAT Code Clean Installation
-============================
+=================================
+Scientific Linux 6.X Installation
+=================================
 
-The section describes the steps to install the CGAT Code collection and its
-dependencies inside a newly created environment. The instructions below have
-been tested on a Red Hat Linux Enterprise 6.x-based operating system.
-For instructions for OS X, see :ref:`CGATInstallationOSX`.
+Scientific Linux is a Red Hat Enterprise Linux-based operating 
+system and therefore the instructions below should apply to all
+other derivatives as well.
 
-The :ref:`CleanQuickInstallation` uses CGAT supplied scripts for
-installation, while :ref:`CleanManualInstallation` lists all the 
+The :ref:`SL6QuickInstallation` uses CGAT supplied scripts for
+installation, while :ref:`SL6ManualInstallation` lists all the 
 steps individually.
 
-.. _CleanQuickInstallation:
+.. _SL6QuickInstallation:
 
 Quick installation
 ==================
@@ -61,7 +60,7 @@ When you are done, you may deactivate the CGAT virtual environment::
         deactivate
 
 
-.. _CleanManualInstallation:
+.. _SL6ManualInstallation:
 
 Manual installation
 ===================
@@ -69,7 +68,7 @@ Manual installation
 Install RPM dependencies
 ------------------------
 
-You can either install them one by one or all at the same time with yum::
+You can either install them one by one or all at the same time with ``yum``::
 
         yum install gcc                 # required by python
         yum install zlib-devel          # required by virtualenv
@@ -85,7 +84,7 @@ You can either install them one by one or all at the same time with yum::
         yum install readline-devel      # required by rpy2
         yum install mysql-devel         # required by MySQL-python
         yum install boost-devel         # required by alignlib
-        yum install sqlite-devel        # requited by CGAT
+        yum install sqlite-devel        # required by CGAT
 
 and perform the additional configuration for scipy::
 
@@ -117,7 +116,7 @@ Create an isolated virtual environment where all your Python packages will be in
 
         cd
         cd CGAT
-        curl -O https://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.10.1.tar.gz
+        wget https://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.10.1.tar.gz
         tar xvfz virtualenv-1.10.1.tar.gz
         rm virtualenv-1.10.1.tar.gz
         cd virtualenv-1.10.1
