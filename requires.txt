@@ -17,6 +17,8 @@ rdflib>=0.4.1
 rpy2>=2.3.4
 ruffus>=2.2
 scipy>=0.11
+#https://bitbucket.org/james_taylor/bx-python/get/tip.tar.bz2
+-e hg+http://bitbucket.org/james_taylor/bx-python#egg=bx-python-0.7.1
 # latest setutools required for automatic cythonization
 setuptools>=1.1
 sphinx>=1.0.5
