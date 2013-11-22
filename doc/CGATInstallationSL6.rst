@@ -116,7 +116,7 @@ Create an isolated virtual environment where all your Python packages will be in
 
         cd
         cd CGAT
-        wget https://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.10.1.tar.gz
+        wget --no-check-certificate https://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.10.1.tar.gz
         tar xvfz virtualenv-1.10.1.tar.gz
         rm virtualenv-1.10.1.tar.gz
         cd virtualenv-1.10.1
